@@ -28,6 +28,7 @@ import type {
   StickiesControlOutput,
   CalendarSnapshotData,
   StickiesSnapshotData,
+  type StickyColor,
 } from "./types.js";
 import { stateKey } from "../../sync/state.js";
 import {
@@ -464,7 +465,7 @@ export async function executeMemoryDelete(
 // Server-Side Calendar & Stickies Executors (Redis-backed)
 // ============================================================================
 
-interface AppStateToolContext extends MemoryToolContext {}
+type AppStateToolContext = MemoryToolContext;
 
 async function readCalendarState(
   redis: Redis,
@@ -763,7 +764,7 @@ export async function executeStickiesControl(
         notes: notes.map((n) => ({
           id: n.id,
           content: n.content,
-          color: n.color as any,
+          color: n.color as StickyColor,
           position: n.position,
           size: n.size,
         })),
@@ -790,7 +791,7 @@ export async function executeStickiesControl(
         note: {
           id: newNote.id,
           content: newNote.content,
-          color: newNote.color as any,
+          color: newNote.color as StickyColor,
           position: newNote.position,
           size: newNote.size,
         },

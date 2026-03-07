@@ -4,6 +4,7 @@ import {
   convertToModelMessages,
   type LanguageModel,
   type ModelMessage,
+  type ToolSet,
   type UIMessage,
 } from "ai";
 import {
@@ -148,7 +149,7 @@ export interface PrepareRyoConversationOptions {
 
 export interface PreparedRyoConversation {
   selectedModel: LanguageModel;
-  tools: ReturnType<typeof createChatTools>;
+  tools: ToolSet;
   enrichedMessages: ModelMessage[];
   loadedSections: string[];
   staticSystemPrompt: string;
@@ -661,7 +662,7 @@ export async function prepareRyoConversationModelInput(
     dailyNotesText: memoryContext.dailyNotesText,
   });
 
-  const baseTools = createChatTools(
+  const baseTools: ToolSet = createChatTools(
     {
       log,
       logError,
@@ -676,7 +677,7 @@ export async function prepareRyoConversationModelInput(
     },
     { profile: toolProfile }
   );
-  const tools = shouldEnableOpenAIWebSearch({ model, username })
+  const tools: ToolSet = shouldEnableOpenAIWebSearch({ model, username })
     ? {
         ...baseTools,
         web_search: createOpenAIWebSearchTool(systemState),
@@ -685,7 +686,7 @@ export async function prepareRyoConversationModelInput(
 
   const uiMessages = ensureUIMessageFormat(messages);
   const modelMessages = await convertToModelMessages(uiMessages, {
-    tools: tools as any,
+    tools,
   });
 
   const enrichedMessages = [

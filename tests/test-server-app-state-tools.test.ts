@@ -1,7 +1,9 @@
 import { describe, expect, test, mock, beforeEach } from "bun:test";
+import type { Redis } from "@upstash/redis";
 import {
   executeCalendarControl,
   executeStickiesControl,
+  type MemoryToolContext,
 } from "../api/chat/tools/executors";
 
 const calendarData = {
@@ -71,16 +73,23 @@ function createMockRedis(initialData: Record<string, unknown> = {}) {
       return "OK";
     }),
     _store: store,
-  } as any;
+  } as {
+    get: ReturnType<typeof mock>;
+    set: ReturnType<typeof mock>;
+    _store: Record<string, string>;
+  };
 }
 
-function createMockContext(redis: any, username = "testuser") {
+function createMockContext(
+  redis: ReturnType<typeof createMockRedis>,
+  username?: string
+): MemoryToolContext {
   return {
     log: mock(() => {}),
     logError: mock(() => {}),
     env: {},
-    username,
-    redis,
+    username: arguments.length >= 2 ? username : "testuser",
+    redis: redis as unknown as Redis,
     timeZone: "America/Los_Angeles",
   };
 }
@@ -208,8 +217,7 @@ describe("Server-side Calendar Executor", () => {
   });
 
   test("returns error without authentication", async () => {
-    const ctx = createMockContext(redis, undefined as any);
-    ctx.username = undefined as any;
+    const ctx = createMockContext(redis, undefined);
     const result = await executeCalendarControl({ action: "list" }, ctx);
     expect(result.success).toBe(false);
     expect(result.message).toContain("Authentication");
@@ -278,8 +286,7 @@ describe("Server-side Stickies Executor", () => {
   });
 
   test("returns error without authentication", async () => {
-    const ctx = createMockContext(redis, undefined as any);
-    ctx.username = undefined as any;
+    const ctx = createMockContext(redis, undefined);
     const result = await executeStickiesControl({ action: "list" }, ctx);
     expect(result.success).toBe(false);
   });

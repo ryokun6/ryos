@@ -28,20 +28,29 @@ describe("cloud sync shared helpers", () => {
   });
 
   test("categorizes Redis vs Blob sync domains", () => {
+    const invalidRedisDomain =
+      "files-documents" as unknown as Parameters<typeof isRedisSyncDomain>[0];
+    const invalidBlobDomain =
+      "settings" as unknown as Parameters<typeof isBlobSyncDomain>[0];
+    const invalidWallpaperDomain =
+      "custom-wallpapers" as unknown as Parameters<typeof isRedisSyncDomain>[0];
+    const invalidCalendarDomain =
+      "calendar" as unknown as Parameters<typeof isBlobSyncDomain>[0];
+
     expect(isRedisSyncDomain("settings")).toBe(true);
     expect(isRedisSyncDomain("calendar")).toBe(true);
     expect(isRedisSyncDomain("stickies")).toBe(true);
     expect(isRedisSyncDomain("songs")).toBe(true);
     expect(isRedisSyncDomain("videos")).toBe(true);
     expect(isRedisSyncDomain("files-metadata")).toBe(true);
-    expect(isRedisSyncDomain("files-documents" as any)).toBe(false);
-    expect(isRedisSyncDomain("custom-wallpapers" as any)).toBe(false);
+    expect(isRedisSyncDomain(invalidRedisDomain)).toBe(false);
+    expect(isRedisSyncDomain(invalidWallpaperDomain)).toBe(false);
 
     expect(isBlobSyncDomain("files-documents")).toBe(true);
     expect(isBlobSyncDomain("files-images")).toBe(true);
     expect(isBlobSyncDomain("custom-wallpapers")).toBe(true);
-    expect(isBlobSyncDomain("settings" as any)).toBe(false);
-    expect(isBlobSyncDomain("calendar" as any)).toBe(false);
+    expect(isBlobSyncDomain(invalidBlobDomain)).toBe(false);
+    expect(isBlobSyncDomain(invalidCalendarDomain)).toBe(false);
   });
 
   test("creates an empty metadata map", () => {

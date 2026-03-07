@@ -25,11 +25,6 @@ interface PersistedRedisStateDomain {
   createdAt: string;
 }
 
-type PersistedRedisStateMap = Record<
-  RedisSyncDomain,
-  PersistedRedisStateDomain | null
->;
-
 interface PutStateBody {
   domain?: string;
   data?: unknown;

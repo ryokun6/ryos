@@ -74,7 +74,7 @@ const MEMORY_TOOL_NAMES = [
   "memoryDelete",
 ] as const;
 
-const TELEGRAM_TOOL_NAMES = [
+const _TELEGRAM_TOOL_NAMES = [
   "memoryWrite",
   "memoryRead",
   "memoryDelete",
@@ -435,7 +435,7 @@ export function createChatTools(
           return executeStickiesControl(input, context);
         },
       },
-    } as Pick<typeof allTools, (typeof TELEGRAM_TOOL_NAMES)[number]>;
+    } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;
   }
 
   return Object.fromEntries(
