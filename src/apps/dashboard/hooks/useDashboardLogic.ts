@@ -45,6 +45,8 @@ export function useDashboardLogic() {
         dictionary: { width: 240, height: 220 },
         stickynote: { width: 200, height: 200 },
         translation: { width: 300, height: 170 },
+        calculator: { width: 160, height: 246 },
+        converter: { width: 340, height: 150 },
       };
       const size = sizeMap[type];
 
