@@ -338,9 +338,9 @@ export function ContactsAppComponent({
             className={cn(
               "flex-1 overflow-hidden",
               isMobileLayout
-                ? "flex flex-col gap-[5px]"
+                ? "flex flex-col w-full h-full"
                 : "flex",
-              isMacOsxTheme && "px-[5px] pb-[5px]",
+              isMacOsxTheme && !isMobileLayout && "px-[5px] pb-[5px]",
               !isMobileLayout && isMacOsxTheme && "gap-[5px]"
             )}
           >
@@ -396,7 +396,7 @@ export function ContactsAppComponent({
               </div>
             </Panel>
 
-            <Panel className="flex-1 min-w-0 flex flex-col">
+            <Panel className={cn("flex-1 min-w-0 flex flex-col", isMobileLayout && "w-full")}>
               <PanelHeader
                 title={selectedContact?.displayName || t("apps.contacts.title")}
                 useGeneva={useGeneva}
