@@ -385,7 +385,16 @@ export function useAutoCloudSync() {
       }
     });
 
-    void checkRemoteUpdates();
+    void checkRemoteUpdates().then(() => {
+      if (!isDomainEnabled("custom-wallpapers")) return;
+      const wallpaper = useDisplaySettingsStore.getState().currentWallpaper;
+      if (!wallpaper.startsWith("indexeddb://")) return;
+      const remoteMeta =
+        useCloudSyncStore.getState().remoteMetadata["custom-wallpapers"];
+      if (!remoteMeta?.updatedAt) {
+        queueUpload("custom-wallpapers");
+      }
+    });
     const intervalId = setInterval(() => {
       void checkRemoteUpdates();
     }, POLL_INTERVAL_MS);
