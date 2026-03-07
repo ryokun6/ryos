@@ -121,7 +121,9 @@ describe("telegram heartbeat helpers", () => {
 
     expect(prompt).toContain("recent Telegram chat snapshot");
     expect(prompt).toContain("use memoryRead");
-    expect(prompt).toContain("Telegram-safe tools");
+    expect(prompt).toContain("calendarControl");
+    expect(prompt).toContain("stickiesControl");
+    expect(prompt).toContain("web_search");
     expect(prompt).toContain("Do not infer, resurrect, or repeat stale tasks");
     expect(prompt).toContain("fresh insight");
     expect(prompt).toContain("did not get a user response");
