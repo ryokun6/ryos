@@ -658,7 +658,7 @@ export const documentsControlSchema = z
     action: z
       .enum(DOCUMENTS_ACTIONS)
       .describe(
-        "Action to perform: 'list' returns synced /Documents files, 'read' returns a document's content, 'write' creates or overwrites/appends/prepends a document, and 'edit' replaces one exact string match inside a document."
+        "Action to perform: 'list' returns synced /Documents files with their names and exact paths, 'read' returns a document's content, 'write' creates or overwrites/appends/prepends a document, and 'edit' replaces one exact string match inside a document."
       ),
     path: z
       .string()

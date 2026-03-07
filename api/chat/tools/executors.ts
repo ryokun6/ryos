@@ -554,6 +554,11 @@ function getDocumentNameFromPath(path: string): string {
   return path.split("/").filter(Boolean).pop() || "Untitled.md";
 }
 
+function getSyncedDocumentName(item: Pick<SyncedFileSystemItem, "path" | "name">): string {
+  const trimmedName = typeof item.name === "string" ? item.name.trim() : "";
+  return trimmedName || getDocumentNameFromPath(item.path);
+}
+
 function getDocumentContentAsString(entry: SyncedStoreItem | undefined): string | null {
   if (!entry) return null;
   return typeof entry.value.content === "string" ? entry.value.content : null;
@@ -601,16 +606,26 @@ export async function executeDocumentsControl(
           }
           return a.path.localeCompare(b.path);
         })
-        .map((item) => ({
-          path: item.path,
-          name: item.name,
-          size: item.size,
-          modifiedAt: item.modifiedAt,
-        }));
+        .map((item) => {
+          const name = getSyncedDocumentName(item);
+          return {
+            path: item.path,
+            name,
+            size: item.size,
+            modifiedAt: item.modifiedAt,
+          };
+        });
+
+      const message =
+        documents.length === 0
+          ? "No synced documents found."
+          : `Found ${documents.length} ${
+              documents.length === 1 ? "document" : "documents"
+            }: ${documents.map((document) => document.name).join(", ")}.`;
 
       return {
         success: true,
-        message: `Found ${documents.length} ${documents.length === 1 ? "document" : "documents"}.`,
+        message,
         documents,
       };
     }
@@ -639,12 +654,14 @@ export async function executeDocumentsControl(
         };
       }
 
+      const name = getSyncedDocumentName(item);
+
       return {
         success: true,
-        message: `Read document '${item.name}'.`,
+        message: `Read document '${name}'.`,
         document: {
           path: item.path,
-          name: item.name,
+          name,
           content,
           size: item.size,
           modifiedAt: item.modifiedAt,
@@ -790,8 +807,10 @@ export async function executeDocumentsControl(
 
       const finalContent = normalizedContent.replace(oldString, newString);
       const now = Date.now();
+      const name = getSyncedDocumentName(item);
       const updatedItem: SyncedFileSystemItem = {
         ...item,
+        name,
         size: createDocumentSize(finalContent),
         modifiedAt: now,
       };
@@ -802,7 +821,7 @@ export async function executeDocumentsControl(
       nextDocuments.push({
         key: item.uuid,
         value: {
-          name: item.name,
+          name,
           content: finalContent,
         },
       });
@@ -820,10 +839,10 @@ export async function executeDocumentsControl(
 
       return {
         success: true,
-        message: `Edited document '${item.name}'.`,
+        message: `Edited document '${name}'.`,
         document: {
           path,
-          name: item.name,
+          name,
           content: finalContent,
           size: updatedItem.size,
           modifiedAt: updatedItem.modifiedAt,

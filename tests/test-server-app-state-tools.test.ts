@@ -150,7 +150,34 @@ describe("Server-side Documents Executor", () => {
     const result = await executeDocumentsControl({ action: "list" }, context);
     expect(result.success).toBe(true);
     expect(result.documents).toHaveLength(1);
+    expect(result.documents?.[0].name).toBe("notes.md");
     expect(result.documents?.[0].path).toBe("/Documents/notes.md");
+    expect(result.message).toContain("notes.md");
+  });
+
+  test("list falls back to the filename when synced metadata is missing a name", async () => {
+    const namelessRedis = createMockRedis({
+      "sync:state:testuser:files-metadata": {
+        ...filesMetadataData,
+        data: {
+          ...filesMetadataData.data,
+          items: {
+            ...filesMetadataData.data.items,
+            "/Documents/notes.md": {
+              ...filesMetadataData.data.items["/Documents/notes.md"],
+              name: "",
+            },
+          },
+        },
+      },
+    });
+    const namelessContext = createMockContext(namelessRedis);
+
+    const result = await executeDocumentsControl({ action: "list" }, namelessContext);
+
+    expect(result.success).toBe(true);
+    expect(result.documents?.[0].name).toBe("notes.md");
+    expect(result.message).toContain("notes.md");
   });
 
   test("read returns document content", async () => {
