@@ -503,7 +503,7 @@ export async function streamTranslation(
 
   try {
     const result = streamText({
-      model: openai("gpt-5.2"),
+      model: openai("gpt-5.4"),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: textsToProcess },

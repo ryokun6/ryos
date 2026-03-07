@@ -6,8 +6,8 @@ export const AI_MODELS = {
     name: "sonnet-4.6",
     provider: "Anthropic",
   },
-  "gpt-5.2": {
-    name: "gpt-5.2",
+  "gpt-5.4": {
+    name: "gpt-5.4",
     provider: "OpenAI",
   },
   "gemini-3-flash": {
@@ -42,4 +42,4 @@ export const AI_MODEL_METADATA: AIModelInfo[] = Object.entries(AI_MODELS).map(
 );
 
 // Default model
-export const DEFAULT_AI_MODEL: SupportedModel = "gpt-5.2";
+export const DEFAULT_AI_MODEL: SupportedModel = "gpt-5.4";

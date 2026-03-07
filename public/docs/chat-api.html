@@ -319,7 +319,7 @@
   // Array of conversation messages
   messages: UIMessage[];
   
-  // AI model to use (optional, defaults to "gpt-5.2")
+  // AI model to use (optional, defaults to "gpt-5.4")
   model?: SupportedModel;
   
   // Optional proactive greeting mode (non-streaming JSON response)
@@ -443,10 +443,10 @@ data: {"type":"finish","finishReason":"stop"}</code></pre>
 }</code></pre>
 <h2>AI Models</h2>
 <h3>Supported Models</h3>
-<table><thead><tr><th>Model ID</th><th>Provider</th><th>Underlying Model</th></tr></thead><tbody><tr><td><code>gpt-5.2</code></td><td>OpenAI</td><td>gpt-5.2 (default)</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td><td>claude-sonnet-4-6</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td><td>gemini-3-flash-preview</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td><td>gemini-3.1-pro-preview</td></tr></tbody></table>
+<table><thead><tr><th>Model ID</th><th>Provider</th><th>Underlying Model</th></tr></thead><tbody><tr><td><code>gpt-5.4</code></td><td>OpenAI</td><td>gpt-5.4 (default)</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td><td>claude-sonnet-4-6</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td><td>gemini-3-flash-preview</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td><td>gemini-3.1-pro-preview</td></tr></tbody></table>
 <h3>Model Selection</h3>
 <pre><code>// Priority: Query param &gt; Body param &gt; Default
-const model = queryModel || bodyModel || "gpt-5.2";</code></pre>
+const model = queryModel || bodyModel || "gpt-5.4";</code></pre>
 <h2>Rate Limiting</h2>
 <table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>15 messages</td><td>5 hours</td></tr><tr><td>Anonymous</td><td>3 messages</td><td>24 hours</td></tr></tbody></table>
 <p>Anonymous users are identified by IP address. The special user "ryo" (with valid token) has unlimited access.</p>
@@ -620,7 +620,7 @@ function ChatComponent() {
       'X-Username': username
     },
     body: {
-      model: 'gpt-5.2',
+      model: 'gpt-5.4',
       systemState: { /* ... */ }
     }
   });

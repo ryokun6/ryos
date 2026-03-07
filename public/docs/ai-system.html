@@ -305,13 +305,13 @@
         <h1>AI System</h1>
 <p>Multi-provider AI with streaming responses, tool-loop orchestration, and a two-tier memory pipeline.</p>
 <h2>Providers</h2>
-<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td><code>gpt-5.2</code></td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td><code>sonnet-4.6</code></td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td><code>gemini-3-flash</code>, <code>gemini-3.1-pro-preview</code></td></tr></tbody></table>
-<p>Default model: <code>gpt-5.2</code></p>
+<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td><code>gpt-5.4</code></td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td><code>sonnet-4.6</code></td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td><code>gemini-3-flash</code>, <code>gemini-3.1-pro-preview</code></td></tr></tbody></table>
+<p>Default model: <code>gpt-5.4</code></p>
 <p>Specialized models used by specific flows: <ul><li><code>gemini-2.5-flash</code> (proactive greeting, applet text mode, chat-room auto replies)</li><li><code>gemini-2.5-flash-image</code> (applet image generation)</li><li><code>gemini-2.0-flash</code> (memory extraction and daily-notes processing)</li></ul></p>
 <pre class="mermaid">graph TD
     A[User Message] --> B[Chat API]
     B --> C{Provider Selection}
-    C -->|OpenAI| D[gpt-5.2]
+    C -->|OpenAI| D[gpt-5.4]
     C -->|Anthropic| E[claude-sonnet-4-6]
     C -->|Google| F[gemini-3-flash / gemini-3.1-pro-preview]
     D --> G[AI SDK Stream]

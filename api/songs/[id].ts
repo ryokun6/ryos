@@ -924,7 +924,7 @@ export default apiHandler<Record<string, unknown>>(
 
           // Use streamText with GPT-5.2
           const result = streamText({
-            model: openai("gpt-5.2"),
+            model: openai("gpt-5.4"),
             messages: [
               { role: "system", content: getTranslationSystemPrompt(language) },
               { role: "user", content: textsToProcess },
@@ -1170,7 +1170,7 @@ Output:
 2: <私:わたし>は<走:はし>る`;
 
           const result = streamText({
-            model: openai("gpt-5.2"),
+            model: openai("gpt-5.4"),
             messages: [
               { role: "system", content: furiganaSystemPrompt },
               { role: "user", content: textsToProcess },
@@ -1460,7 +1460,7 @@ Output:
 
           // Use streamText
           const result = streamText({
-            model: openai("gpt-5.2"),
+            model: openai("gpt-5.4"),
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: textsToProcess },

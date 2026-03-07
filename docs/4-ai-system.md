@@ -6,11 +6,11 @@ Multi-provider AI with streaming responses, tool-loop orchestration, and a two-t
 
 | Provider | SDK | Models |
 |----------|-----|--------|
-| OpenAI | `@ai-sdk/openai` | `gpt-5.2` |
+| OpenAI | `@ai-sdk/openai` | `gpt-5.4` |
 | Anthropic | `@ai-sdk/anthropic` | `sonnet-4.6` |
 | Google | `@ai-sdk/google` | `gemini-3-flash`, `gemini-3.1-pro-preview` |
 
-Default model: `gpt-5.2`
+Default model: `gpt-5.4`
 
 Specialized models used by specific flows:
 - `gemini-2.5-flash` (proactive greeting, applet text mode, chat-room auto replies)
@@ -21,7 +21,7 @@ Specialized models used by specific flows:
 graph TD
     A[User Message] --> B[Chat API]
     B --> C{Provider Selection}
-    C -->|OpenAI| D[gpt-5.2]
+    C -->|OpenAI| D[gpt-5.4]
     C -->|Anthropic| E[claude-sonnet-4-6]
     C -->|Google| F[gemini-3-flash / gemini-3.1-pro-preview]
     D --> G[AI SDK Stream]

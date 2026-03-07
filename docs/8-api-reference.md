@@ -147,6 +147,6 @@ Token-based sessions use a 90-day TTL. Auth-required endpoints use the shared `r
 
 | Provider | Models |
 |----------|--------|
-| OpenAI | gpt-5.2, gpt-4.1-mini, tts-1, whisper-1 |
+| OpenAI | gpt-5.4, gpt-4.1-mini, tts-1, whisper-1 |
 | Anthropic | sonnet-4.6 |
 | Google | gemini-3-flash, gemini-3.1-pro-preview, gemini-2.5-flash, gemini-2.5-flash-image, gemini-2.0-flash |
