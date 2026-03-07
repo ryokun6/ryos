@@ -23,6 +23,8 @@ export function getTelegramToolStatusText(
       return getTelegramCalendarStatusText(input);
     case "stickiesControl":
       return getTelegramStickiesStatusText(input);
+    case "contactsControl":
+      return getTelegramContactsStatusText(input);
     default:
       return "Using a tool...";
   }
@@ -71,6 +73,28 @@ function getTelegramStickiesStatusText(input: unknown): string {
       return "Clearing sticky notes...";
     default:
       return "Using stickies...";
+  }
+}
+
+function getTelegramContactsStatusText(input: unknown): string {
+  const action =
+    input && typeof input === "object" && "action" in input
+      ? String((input as { action?: unknown }).action || "")
+      : "";
+
+  switch (action) {
+    case "list":
+      return "Checking contacts...";
+    case "get":
+      return "Loading contact...";
+    case "create":
+      return "Adding contact...";
+    case "update":
+      return "Updating contact...";
+    case "delete":
+      return "Deleting contact...";
+    default:
+      return "Using contacts...";
   }
 }
 

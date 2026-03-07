@@ -194,6 +194,21 @@ export function ToolInvocationMessage({
         displayCallMessage = t("apps.chats.toolCalls.stickies.managing");
         break;
       }
+      case "contactsControl": {
+        const action = input?.action;
+        if (action === "list") {
+          displayCallMessage = t("apps.chats.toolCalls.contacts.listing");
+        } else if (action === "get") {
+          displayCallMessage = t("apps.chats.toolCalls.contacts.loading");
+        } else if (action === "create") {
+          displayCallMessage = t("apps.chats.toolCalls.contacts.creating");
+        } else if (action === "update") {
+          displayCallMessage = t("apps.chats.toolCalls.contacts.updating");
+        } else if (action === "delete") {
+          displayCallMessage = t("apps.chats.toolCalls.contacts.deleting");
+        }
+        break;
+      }
       case "infiniteMacControl": {
         const action = input?.action;
         const system = typeof input?.system === "string" ? input.system : "";
@@ -485,6 +500,43 @@ export function ToolInvocationMessage({
         displayResultMessage = firstLine;
       } else {
         displayResultMessage = t("apps.chats.toolCalls.stickies.updated");
+      }
+    } else if (toolName === "contactsControl") {
+      const out = output as {
+        success?: boolean;
+        message?: string;
+        contacts?: unknown[];
+        contact?: { displayName?: string } | null;
+      } | undefined;
+      const action = input?.action;
+
+      if (out?.success) {
+        if (action === "list" && out.contacts) {
+          displayResultMessage =
+            out.contacts.length === 0
+              ? t("apps.chats.toolCalls.contacts.noContacts")
+              : out.contacts.length === 1
+              ? t("apps.chats.toolCalls.contacts.foundOne")
+              : t("apps.chats.toolCalls.contacts.foundMany", {
+                  count: out.contacts.length,
+                });
+        } else if (action === "get" && out.contact?.displayName) {
+          displayResultMessage = t("apps.chats.toolCalls.contacts.loadedContact", {
+            name: out.contact.displayName,
+          });
+        } else if (action === "create" && out.contact?.displayName) {
+          displayResultMessage = t("apps.chats.toolCalls.contacts.createdContact", {
+            name: out.contact.displayName,
+          });
+        } else if (action === "update" && out.contact?.displayName) {
+          displayResultMessage = t("apps.chats.toolCalls.contacts.updatedContact", {
+            name: out.contact.displayName,
+          });
+        } else if (action === "delete" && out.message) {
+          displayResultMessage = out.message;
+        } else if (out.message) {
+          displayResultMessage = out.message;
+        }
       }
     } else if (toolName === "infiniteMacControl") {
       const action = input?.action;

@@ -658,6 +658,28 @@
         "changingSettings": "Einstellungen werden geändert…",
         "closed": "{{appName}} geschlossen",
         "closing": "{{appName}} wird geschlossen…",
+        "contacts": {
+          "created": "[TODO] Created {{name}}",
+          "createdContact": "[TODO] Created {{name}}",
+          "creating": "[TODO] Creating contact…",
+          "deleted": "[TODO] Deleted {{name}}",
+          "deleting": "[TODO] Deleting contact…",
+          "found": "[TODO] Found {{count}} contacts",
+          "foundMany": "[TODO] Found {{count}} contacts",
+          "foundOne": "[TODO] Found 1 contact",
+          "listing": "[TODO] Listing contacts…",
+          "loaded": "[TODO] Loaded {{name}}",
+          "loadedContact": "[TODO] Loaded {{name}}",
+          "loading": "[TODO] Loading contact…",
+          "missingData": "[TODO] Add at least a name, email, phone, or Telegram field",
+          "missingId": "[TODO] Missing contact ID",
+          "noContacts": "[TODO] No contacts found",
+          "noUpdates": "[TODO] No contact updates provided",
+          "notFound": "[TODO] Contact not found: {{id}}",
+          "updated": "[TODO] Updated {{name}}",
+          "updatedContact": "[TODO] Updated {{name}}",
+          "updating": "[TODO] Updating contact…"
+        },
         "contentWritten": "Inhalt geschrieben",
         "controllingPlayback": "Wiedergabe wird gesteuert…",
         "createdDocument": "Dokument erstellt: {{path}}",
@@ -844,6 +866,74 @@
         "writingContent": "Inhalt wird geschrieben…"
       }
     },
+    "contacts": {
+      "description": "[TODO] Address book with vCard import",
+      "emptySelection": "[TODO] Select a contact or create a new one to start editing details.",
+      "emptyState": "[TODO] No contacts yet. Create one or import a vCard to get started.",
+      "fields": {
+        "addresses": "[TODO] Addresses",
+        "birthday": "[TODO] Birthday",
+        "displayName": "[TODO] Display Name",
+        "emails": "[TODO] Email Addresses",
+        "firstName": "[TODO] First Name",
+        "jobTitle": "[TODO] Job Title",
+        "lastName": "[TODO] Last Name",
+        "nickname": "[TODO] Nickname",
+        "notes": "[TODO] Notes",
+        "organization": "[TODO] Organization",
+        "phones": "[TODO] Phone Numbers",
+        "source": "[TODO] Source",
+        "telegramUserId": "[TODO] Telegram User ID",
+        "telegramUsername": "[TODO] Telegram Username",
+        "urls": "[TODO] Websites / Links"
+      },
+      "help": {
+        "browseContacts": {
+          "description": "[TODO] Use the left sidebar to search and switch between saved contacts",
+          "title": "[TODO] Browse Contacts"
+        },
+        "cloudSync": {
+          "description": "[TODO] Enable Contacts sync in Control Panels to keep the address book in Redis",
+          "title": "[TODO] Cloud Sync"
+        },
+        "createContacts": {
+          "description": "[TODO] Choose File > New Contact to add names, phone numbers, email, and notes",
+          "title": "[TODO] Create Contacts"
+        },
+        "editDetails": {
+          "description": "[TODO] Update contact details in the inspector and changes save automatically",
+          "title": "[TODO] Edit Details"
+        },
+        "importVCards": {
+          "description": "[TODO] Import .vcf files from the File menu to bring contacts into ryOS",
+          "title": "[TODO] Import vCards"
+        },
+        "useWithRyo": {
+          "description": "[TODO] Ryo can list, create, update, and search synced contacts in chat and Telegram",
+          "title": "[TODO] Use with Ryo"
+        }
+      },
+      "menu": {
+        "about": "[TODO] About Contacts",
+        "deleteContact": "[TODO] Delete Contact",
+        "help": "[TODO] Contacts Help",
+        "importVCard": "[TODO] Import vCard…",
+        "newContact": "[TODO] New Contact"
+      },
+      "messages": {
+        "deleted": "[TODO] Deleted {{name}}",
+        "importEmpty": "[TODO] No contacts were imported from that vCard file.",
+        "importFailed": "[TODO] Failed to import vCard file.",
+        "imported": "[TODO] Imported {{imported}} new contacts and merged {{merged}} duplicates."
+      },
+      "name": "[TODO] Contacts",
+      "noSummary": "[TODO] No phone numbers, email, or notes yet",
+      "placeholders": {
+        "multiValue": "[TODO] Use a new line for each value"
+      },
+      "searchPlaceholder": "[TODO] Search contacts...",
+      "title": "[TODO] Contacts"
+    },
     "control-panels": {
       "aiModel": "KI-Modell",
       "aiModelDescription": "Wird in Chats, IE und mehr verwendet",
@@ -860,6 +950,7 @@
       "autoSync": {
         "calendar": "Kalender",
         "checking": "Cloud-Updates werden geprüft…",
+        "contacts": "[TODO] Contacts",
         "daysAgo": "vor {{count}}T",
         "description": "Synchronisiert ausgewählte Bibliotheken und Einstellungen nach wichtigen Änderungen automatisch mit der Cloud",
         "error": "Synchronisierungsproblem: {{error}}",

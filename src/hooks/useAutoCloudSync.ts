@@ -13,6 +13,7 @@ import { useDockStore } from "@/stores/useDockStore";
 import { useStickiesStore } from "@/stores/useStickiesStore";
 
 import { useCalendarStore } from "@/stores/useCalendarStore";
+import { useContactsStore } from "@/stores/useContactsStore";
 import { subscribeToCloudSyncDomainChanges } from "@/utils/cloudSyncEvents";
 import {
   downloadAndApplyCloudSyncDomain,
@@ -40,6 +41,7 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   videos: 4000,
   stickies: 3000,
   calendar: 4000,
+  contacts: 3000,
   "custom-wallpapers": 8000,
 };
 
@@ -55,6 +57,7 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
     videos: initialValue,
     stickies: initialValue,
     calendar: initialValue,
+    contacts: initialValue,
     "custom-wallpapers": initialValue,
   };
 }
@@ -69,6 +72,7 @@ export function useAutoCloudSync() {
   const syncVideos = useCloudSyncStore((state) => state.syncVideos);
   const syncStickies = useCloudSyncStore((state) => state.syncStickies);
   const syncCalendar = useCloudSyncStore((state) => state.syncCalendar);
+  const syncContacts = useCloudSyncStore((state) => state.syncContacts);
 
   const uploadTimersRef = useRef<
     Partial<Record<CloudSyncDomain, ReturnType<typeof setTimeout>>>
@@ -87,6 +91,7 @@ export function useAutoCloudSync() {
     videos: 0,
     stickies: 0,
     calendar: 0,
+    contacts: 0,
     "custom-wallpapers": 0,
   });
   const checkInFlightRef = useRef(false);
@@ -103,8 +108,17 @@ export function useAutoCloudSync() {
         syncVideos ? "1" : "0",
         syncStickies ? "1" : "0",
         syncCalendar ? "1" : "0",
+        syncContacts ? "1" : "0",
       ].join(""),
-    [syncCalendar, syncFiles, syncSettings, syncSongs, syncStickies, syncVideos]
+    [
+      syncCalendar,
+      syncContacts,
+      syncFiles,
+      syncSettings,
+      syncSongs,
+      syncStickies,
+      syncVideos,
+    ]
   );
 
   const clearUploadTimer = useCallback((domain: CloudSyncDomain) => {
@@ -432,6 +446,12 @@ export function useAutoCloudSync() {
       }
     });
 
+    const contactsUnsubscribe = useContactsStore.subscribe((state, prevState) => {
+      if (state.contacts !== prevState.contacts) {
+        queueUpload("contacts");
+      }
+    });
+
     // Clear any uploads queued by store hydration/initialization so the
     // first remote check can pull down data without being blocked by
     // "has pending upload" guards (e.g. initializeLibrary on new devices).
@@ -461,6 +481,7 @@ export function useAutoCloudSync() {
       dockUnsubscribe();
       stickiesUnsubscribe();
       calendarUnsubscribe();
+      contactsUnsubscribe();
     };
   }, [
     checkRemoteUpdates,

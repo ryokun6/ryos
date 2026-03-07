@@ -26,6 +26,7 @@ export const appIds = [
   "infinite-mac",
   "winamp",
   "calendar",
+  "contacts",
   "dashboard",
 ] as const;
 
@@ -60,6 +61,7 @@ export const appNames: Record<AppId, string> = {
   "infinite-mac": "Infinite Mac",
   "winamp": "Winamp",
   "calendar": "Calendar",
+  "contacts": "Contacts",
   "dashboard": "Dashboard",
 };
 

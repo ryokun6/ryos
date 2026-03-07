@@ -17,6 +17,8 @@ import {
   type CalendarGroup,
   type TodoItem,
 } from "@/stores/useCalendarStore";
+import { useContactsStore } from "@/stores/useContactsStore";
+import type { Contact } from "@/utils/contacts";
 import type { AIModel } from "@/types/aiModels";
 import type {
   DisplayMode,
@@ -132,6 +134,10 @@ interface CalendarSnapshotData {
   todos: TodoItem[];
 }
 
+interface ContactsSnapshotData {
+  contacts: Contact[];
+}
+
 type AnySnapshotData =
   | SettingsSnapshotData
   | FilesMetadataSnapshotData
@@ -140,6 +146,7 @@ type AnySnapshotData =
   | VideosSnapshotData
   | StickiesSnapshotData
   | CalendarSnapshotData
+  | ContactsSnapshotData
   | CustomWallpapersSnapshotData;
 
 function assertCompressionSupport(): void {
@@ -429,6 +436,12 @@ function serializeCalendarSnapshot(): CalendarSnapshotData {
   };
 }
 
+function serializeContactsSnapshot(): ContactsSnapshotData {
+  return {
+    contacts: useContactsStore.getState().contacts,
+  };
+}
+
 export async function createCloudSyncEnvelope(
   domain: CloudSyncDomain
 ): Promise<CloudSyncEnvelope<AnySnapshotData>> {
@@ -504,6 +517,13 @@ export async function createCloudSyncEnvelope(
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
         data: serializeCalendarSnapshot(),
+      };
+    case "contacts":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: serializeContactsSnapshot(),
       };
     case "custom-wallpapers":
       return {
@@ -634,6 +654,13 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
   });
 }
 
+function applyContactsSnapshot(data: ContactsSnapshotData): void {
+  useContactsStore.setState({
+    contacts: data.contacts,
+    selectedContactId: data.contacts[0]?.id ?? null,
+  });
+}
+
 async function applyCustomWallpapersSnapshot(
   data: CustomWallpapersSnapshotData
 ): Promise<void> {
@@ -711,6 +738,9 @@ export async function applyCloudSyncEnvelope(
       return;
     case "calendar":
       applyCalendarSnapshot(envelope.data as CalendarSnapshotData);
+      return;
+    case "contacts":
+      applyContactsSnapshot(envelope.data as ContactsSnapshotData);
       return;
     case "custom-wallpapers":
       await applyCustomWallpapersSnapshot(

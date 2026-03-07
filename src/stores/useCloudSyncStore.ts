@@ -25,6 +25,7 @@ interface CloudSyncStoreState {
   syncVideos: boolean;
   syncStickies: boolean;
   syncCalendar: boolean;
+  syncContacts: boolean;
   isCheckingRemote: boolean;
   lastCheckedAt: string | null;
   lastError: string | null;
@@ -64,12 +65,13 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
     videos: empty(),
     stickies: empty(),
     calendar: empty(),
+    contacts: empty(),
     "custom-wallpapers": empty(),
   };
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 4;
+const STORE_VERSION = 5;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -81,6 +83,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       syncVideos: true,
       syncStickies: true,
       syncCalendar: true,
+      syncContacts: true,
       isCheckingRemote: false,
       lastCheckedAt: null,
       lastError: null,
@@ -109,6 +112,9 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           case "calendar":
             set({ syncCalendar: enabled });
             return;
+          case "contacts":
+            set({ syncContacts: enabled });
+            return;
         }
       },
 
@@ -127,6 +133,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             return state.syncStickies;
           case "calendar":
             return state.syncCalendar;
+          case "contacts":
+            return state.syncContacts;
         }
       },
 
@@ -208,6 +216,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncVideos: state.syncVideos,
         syncStickies: state.syncStickies,
         syncCalendar: state.syncCalendar,
+        syncContacts: state.syncContacts,
         lastCheckedAt: state.lastCheckedAt,
         domainStatus: Object.fromEntries(
           Object.entries(state.domainStatus).map(([domain, status]) => [
@@ -267,6 +276,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncVideos: (candidate as Record<string, unknown>).syncVideos as boolean ?? true,
           syncStickies: (candidate as Record<string, unknown>).syncStickies as boolean ?? true,
           syncCalendar: candidate.syncCalendar ?? true,
+          syncContacts: (candidate as Record<string, unknown>).syncContacts as boolean ?? true,
           lastCheckedAt: candidate.lastCheckedAt ?? null,
           domainStatus,
         };
