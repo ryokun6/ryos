@@ -64,11 +64,12 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
     videos: empty(),
     stickies: empty(),
     calendar: empty(),
+    "custom-wallpapers": empty(),
   };
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 3;
+const STORE_VERSION = 4;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(

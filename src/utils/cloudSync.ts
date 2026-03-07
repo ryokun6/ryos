@@ -26,10 +26,17 @@ import type {
 } from "@/types/lyrics";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
+  isRedisSyncDomain,
+  isBlobSyncDomain,
+  REDIS_SYNC_DOMAINS,
+  BLOB_SYNC_DOMAINS,
   type CloudSyncDomain,
   type CloudSyncDomainMetadata,
   type CloudSyncEnvelope,
   type CloudSyncMetadataMap,
+  type RedisSyncDomain,
+  type BlobSyncDomain,
+  createEmptyCloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
 
 type AuthContext = {
@@ -93,8 +100,11 @@ interface SettingsSnapshotData {
     hiding: boolean;
     magnification: boolean;
   };
-  customWallpapers: StoreItemWithKey[];
+  /** @deprecated Wallpapers moved to custom-wallpapers domain. Kept for backward compat on restore. */
+  customWallpapers?: StoreItemWithKey[];
 }
+
+type CustomWallpapersSnapshotData = StoreItemWithKey[];
 
 interface FilesMetadataSnapshotData {
   items: Record<string, FileSystemItem>;
@@ -130,7 +140,8 @@ type AnySnapshotData =
   | SongsSnapshotData
   | VideosSnapshotData
   | StickiesSnapshotData
-  | CalendarSnapshotData;
+  | CalendarSnapshotData
+  | CustomWallpapersSnapshotData;
 
 function assertCompressionSupport(): void {
   if (
@@ -311,68 +322,69 @@ async function gunzipBase64Json<T>(base64Data: string): Promise<T> {
   return JSON.parse(jsonString) as T;
 }
 
-async function serializeSettingsSnapshot(): Promise<SettingsSnapshotData> {
+function serializeSettingsSnapshot(): SettingsSnapshotData {
   const displayState = useDisplaySettingsStore.getState();
   const audioState = useAudioSettingsStore.getState();
   const ipodState = useIpodStore.getState();
   const dockState = useDockStore.getState();
-  const db = await ensureIndexedDBInitialized();
 
+  return {
+    theme: useThemeStore.getState().current,
+    language: useLanguageStore.getState().current,
+    languageInitialized:
+      localStorage.getItem("ryos:language-initialized") === "true",
+    aiModel: useAppStore.getState().aiModel,
+    display: {
+      displayMode: displayState.displayMode,
+      shaderEffectEnabled: displayState.shaderEffectEnabled,
+      selectedShaderType: displayState.selectedShaderType,
+      currentWallpaper: displayState.currentWallpaper,
+      screenSaverEnabled: displayState.screenSaverEnabled,
+      screenSaverType: displayState.screenSaverType,
+      screenSaverIdleTime: displayState.screenSaverIdleTime,
+      debugMode: displayState.debugMode,
+      htmlPreviewSplit: displayState.htmlPreviewSplit,
+    },
+    audio: {
+      masterVolume: audioState.masterVolume,
+      uiVolume: audioState.uiVolume,
+      chatSynthVolume: audioState.chatSynthVolume,
+      speechVolume: audioState.speechVolume,
+      ipodVolume: audioState.ipodVolume,
+      uiSoundsEnabled: audioState.uiSoundsEnabled,
+      terminalSoundsEnabled: audioState.terminalSoundsEnabled,
+      typingSynthEnabled: audioState.typingSynthEnabled,
+      speechEnabled: audioState.speechEnabled,
+      keepTalkingEnabled: audioState.keepTalkingEnabled,
+      ttsModel: audioState.ttsModel,
+      ttsVoice: audioState.ttsVoice,
+      synthPreset: audioState.synthPreset,
+    },
+    ipod: {
+      displayMode: ipodState.displayMode,
+      showLyrics: ipodState.showLyrics,
+      lyricsAlignment: ipodState.lyricsAlignment,
+      lyricsFont: ipodState.lyricsFont,
+      romanization: ipodState.romanization,
+      lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage,
+      theme: ipodState.theme,
+      lcdFilterOn: ipodState.lcdFilterOn,
+    },
+    dock: {
+      pinnedItems: dockState.pinnedItems,
+      scale: dockState.scale,
+      hiding: dockState.hiding,
+      magnification: dockState.magnification,
+    },
+  };
+}
+
+async function serializeCustomWallpapersSnapshot(): Promise<CustomWallpapersSnapshotData> {
+  const db = await ensureIndexedDBInitialized();
   try {
-    const customWallpapers = await serializeStoreItems(
+    return await serializeStoreItems(
       await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
     );
-
-    return {
-      theme: useThemeStore.getState().current,
-      language: useLanguageStore.getState().current,
-      languageInitialized:
-        localStorage.getItem("ryos:language-initialized") === "true",
-      aiModel: useAppStore.getState().aiModel,
-      display: {
-        displayMode: displayState.displayMode,
-        shaderEffectEnabled: displayState.shaderEffectEnabled,
-        selectedShaderType: displayState.selectedShaderType,
-        currentWallpaper: displayState.currentWallpaper,
-        screenSaverEnabled: displayState.screenSaverEnabled,
-        screenSaverType: displayState.screenSaverType,
-        screenSaverIdleTime: displayState.screenSaverIdleTime,
-        debugMode: displayState.debugMode,
-        htmlPreviewSplit: displayState.htmlPreviewSplit,
-      },
-      audio: {
-        masterVolume: audioState.masterVolume,
-        uiVolume: audioState.uiVolume,
-        chatSynthVolume: audioState.chatSynthVolume,
-        speechVolume: audioState.speechVolume,
-        ipodVolume: audioState.ipodVolume,
-        uiSoundsEnabled: audioState.uiSoundsEnabled,
-        terminalSoundsEnabled: audioState.terminalSoundsEnabled,
-        typingSynthEnabled: audioState.typingSynthEnabled,
-        speechEnabled: audioState.speechEnabled,
-        keepTalkingEnabled: audioState.keepTalkingEnabled,
-        ttsModel: audioState.ttsModel,
-        ttsVoice: audioState.ttsVoice,
-        synthPreset: audioState.synthPreset,
-      },
-      ipod: {
-        displayMode: ipodState.displayMode,
-        showLyrics: ipodState.showLyrics,
-        lyricsAlignment: ipodState.lyricsAlignment,
-        lyricsFont: ipodState.lyricsFont,
-        romanization: ipodState.romanization,
-        lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage,
-        theme: ipodState.theme,
-        lcdFilterOn: ipodState.lcdFilterOn,
-      },
-      dock: {
-        pinnedItems: dockState.pinnedItems,
-        scale: dockState.scale,
-        hiding: dockState.hiding,
-        magnification: dockState.magnification,
-      },
-      customWallpapers,
-    };
   } finally {
     db.close();
   }
@@ -443,7 +455,7 @@ export async function createCloudSyncEnvelope(
         domain,
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
-        data: await serializeSettingsSnapshot(),
+        data: serializeSettingsSnapshot(),
       };
     case "files-metadata":
       return {
@@ -508,6 +520,13 @@ export async function createCloudSyncEnvelope(
         updatedAt,
         data: serializeCalendarSnapshot(),
       };
+    case "custom-wallpapers":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: await serializeCustomWallpapersSnapshot(),
+      };
   }
 }
 
@@ -516,11 +535,14 @@ async function applySettingsSnapshot(data: SettingsSnapshotData): Promise<void> 
   localStorage.setItem("ryos:language-initialized", data.languageInitialized ? "true" : "false");
   await useLanguageStore.getState().setLanguage(data.language);
 
-  const db = await ensureIndexedDBInitialized();
-  try {
-    await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, data.customWallpapers);
-  } finally {
-    db.close();
+  // Legacy: if the old settings envelope contained customWallpapers, restore them
+  if (data.customWallpapers && data.customWallpapers.length > 0) {
+    const db = await ensureIndexedDBInitialized();
+    try {
+      await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, data.customWallpapers);
+    } finally {
+      db.close();
+    }
   }
 
   useDisplaySettingsStore.setState({
@@ -627,6 +649,17 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
   });
 }
 
+async function applyCustomWallpapersSnapshot(
+  data: CustomWallpapersSnapshotData
+): Promise<void> {
+  const db = await ensureIndexedDBInitialized();
+  try {
+    await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, data);
+  } finally {
+    db.close();
+  }
+}
+
 export async function applyCloudSyncEnvelope(
   envelope: CloudSyncEnvelope<AnySnapshotData>
 ): Promise<void> {
@@ -673,18 +706,88 @@ export async function applyCloudSyncEnvelope(
     case "calendar":
       applyCalendarSnapshot(envelope.data as CalendarSnapshotData);
       return;
+    case "custom-wallpapers":
+      await applyCustomWallpapersSnapshot(
+        envelope.data as CustomWallpapersSnapshotData
+      );
+      return;
   }
+}
+
+function authHeaders(auth: AuthContext): Record<string, string> {
+  return {
+    Authorization: `Bearer ${auth.authToken}`,
+    "X-Username": auth.username,
+  };
 }
 
 export async function fetchCloudSyncMetadata(
   auth: AuthContext
 ): Promise<CloudSyncMetadataMap> {
-  const response = await abortableFetch(getApiUrl("/api/sync/auto"), {
-    method: "GET",
+  const [blobRes, redisRes] = await Promise.all([
+    abortableFetch(getApiUrl("/api/sync/auto"), {
+      method: "GET",
+      headers: authHeaders(auth),
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    }),
+    abortableFetch(getApiUrl("/api/sync/state"), {
+      method: "GET",
+      headers: authHeaders(auth),
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    }),
+  ]);
+
+  const merged = createEmptyCloudSyncMetadataMap();
+
+  if (blobRes.ok) {
+    const blobData = (await blobRes.json()) as { metadata?: Partial<CloudSyncMetadataMap> };
+    if (blobData.metadata) {
+      for (const domain of BLOB_SYNC_DOMAINS) {
+        const entry = blobData.metadata[domain as keyof typeof blobData.metadata];
+        if (entry) merged[domain] = entry as CloudSyncDomainMetadata;
+      }
+    }
+  }
+
+  if (redisRes.ok) {
+    const redisData = (await redisRes.json()) as { metadata?: Partial<CloudSyncMetadataMap> };
+    if (redisData.metadata) {
+      for (const domain of REDIS_SYNC_DOMAINS) {
+        const entry = redisData.metadata[domain as keyof typeof redisData.metadata];
+        if (entry) merged[domain] = entry as CloudSyncDomainMetadata;
+      }
+    }
+  }
+
+  if (!blobRes.ok && !redisRes.ok) {
+    throw new Error("Failed to fetch sync metadata from both endpoints");
+  }
+
+  return merged;
+}
+
+async function uploadRedisStateDomain(
+  domain: RedisSyncDomain,
+  auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  const envelope = await createCloudSyncEnvelope(domain);
+
+  const response = await abortableFetch(getApiUrl("/api/sync/state"), {
+    method: "PUT",
     headers: {
-      Authorization: `Bearer ${auth.authToken}`,
-      "X-Username": auth.username,
+      "Content-Type": "application/json",
+      ...authHeaders(auth),
     },
+    body: JSON.stringify({
+      domain,
+      data: envelope.data,
+      updatedAt: envelope.updatedAt,
+      version: envelope.version,
+    }),
     timeout: 15000,
     throwOnHttpError: false,
     retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -693,23 +796,20 @@ export async function fetchCloudSyncMetadata(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      (errorData as { error?: string }).error || "Failed to fetch sync metadata"
+      (errorData as { error?: string }).error || `Failed to sync ${domain} state`
     );
   }
 
-  const data = (await response.json()) as {
-    metadata?: CloudSyncMetadataMap;
-  };
-
-  if (!data.metadata) {
-    throw new Error("Sync metadata response was invalid.");
+  const result = (await response.json()) as { metadata?: CloudSyncDomainMetadata };
+  if (!result.metadata) {
+    throw new Error("State sync response was invalid.");
   }
 
-  return data.metadata;
+  return result.metadata;
 }
 
-export async function uploadCloudSyncDomain(
-  domain: CloudSyncDomain,
+async function uploadBlobDomain(
+  domain: BlobSyncDomain,
   auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
@@ -719,8 +819,7 @@ export async function uploadCloudSyncDomain(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${auth.authToken}`,
-      "X-Username": auth.username,
+      ...authHeaders(auth),
     },
     body: JSON.stringify({ domain }),
     timeout: 15000,
@@ -753,8 +852,7 @@ export async function uploadCloudSyncDomain(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${auth.authToken}`,
-      "X-Username": auth.username,
+      ...authHeaders(auth),
     },
     body: JSON.stringify({
       domain,
@@ -786,18 +884,71 @@ export async function uploadCloudSyncDomain(
   return metadataData.metadata;
 }
 
-export async function downloadAndApplyCloudSyncDomain(
+export async function uploadCloudSyncDomain(
   domain: CloudSyncDomain,
+  auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  if (isRedisSyncDomain(domain)) {
+    return uploadRedisStateDomain(domain, auth);
+  }
+  if (isBlobSyncDomain(domain)) {
+    return uploadBlobDomain(domain, auth);
+  }
+  throw new Error(`Unknown sync domain: ${domain}`);
+}
+
+async function downloadRedisStateDomain(
+  domain: RedisSyncDomain,
+  auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  const response = await abortableFetch(
+    getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
+    {
+      method: "GET",
+      headers: authHeaders(auth),
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      (errorData as { error?: string }).error ||
+        `Failed to download ${domain} state`
+    );
+  }
+
+  const result = (await response.json()) as {
+    data?: unknown;
+    metadata?: CloudSyncDomainMetadata;
+  };
+
+  if (result.data === undefined || !result.metadata) {
+    throw new Error("State download response was invalid.");
+  }
+
+  const envelope: CloudSyncEnvelope<AnySnapshotData> = {
+    domain,
+    version: result.metadata.version,
+    updatedAt: result.metadata.updatedAt,
+    data: result.data as AnySnapshotData,
+  };
+
+  await applyCloudSyncEnvelope(envelope);
+  return result.metadata;
+}
+
+async function downloadBlobDomain(
+  domain: BlobSyncDomain,
   auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const response = await abortableFetch(
     getApiUrl(`/api/sync/auto?domain=${encodeURIComponent(domain)}`),
     {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${auth.authToken}`,
-        "X-Username": auth.username,
-      },
+      headers: authHeaders(auth),
       timeout: 30000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -826,6 +977,18 @@ export async function downloadAndApplyCloudSyncDomain(
   );
 
   await applyCloudSyncEnvelope(envelope);
-
   return data.metadata;
+}
+
+export async function downloadAndApplyCloudSyncDomain(
+  domain: CloudSyncDomain,
+  auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  if (isRedisSyncDomain(domain)) {
+    return downloadRedisStateDomain(domain, auth);
+  }
+  if (isBlobSyncDomain(domain)) {
+    return downloadBlobDomain(domain, auth);
+  }
+  throw new Error(`Unknown sync domain: ${domain}`);
 }

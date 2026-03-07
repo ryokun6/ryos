@@ -22,7 +22,14 @@ import type {
   MemoryReadOutput,
   MemoryDeleteInput,
   MemoryDeleteOutput,
+  CalendarControlInput,
+  CalendarControlOutput,
+  StickiesControlInput,
+  StickiesControlOutput,
+  CalendarSnapshotData,
+  StickiesSnapshotData,
 } from "./types.js";
+import { stateKey } from "../../sync/state.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
@@ -450,5 +457,392 @@ export async function executeMemoryDelete(
       success: false,
       message: `Memory delete failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
+  }
+}
+
+// ============================================================================
+// Server-Side Calendar & Stickies Executors (Redis-backed)
+// ============================================================================
+
+interface AppStateToolContext extends MemoryToolContext {}
+
+async function readCalendarState(
+  redis: Redis,
+  username: string
+): Promise<CalendarSnapshotData | null> {
+  const raw = await redis.get<string | { data: CalendarSnapshotData }>(
+    stateKey(username, "calendar")
+  );
+  if (!raw) return null;
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  return parsed?.data ?? null;
+}
+
+async function writeCalendarState(
+  redis: Redis,
+  username: string,
+  data: CalendarSnapshotData
+): Promise<void> {
+  const now = new Date().toISOString();
+  await redis.set(
+    stateKey(username, "calendar"),
+    JSON.stringify({ data, updatedAt: now, version: 1, createdAt: now })
+  );
+  const metaKey = `sync:state:meta:${username}`;
+  const rawMeta = await redis.get<string | Record<string, unknown>>(metaKey);
+  const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
+  meta.calendar = { updatedAt: now, version: 1, createdAt: now };
+  await redis.set(metaKey, JSON.stringify(meta));
+}
+
+async function readStickiesState(
+  redis: Redis,
+  username: string
+): Promise<StickiesSnapshotData | null> {
+  const raw = await redis.get<string | { data: StickiesSnapshotData }>(
+    stateKey(username, "stickies")
+  );
+  if (!raw) return null;
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  return parsed?.data ?? null;
+}
+
+async function writeStickiesState(
+  redis: Redis,
+  username: string,
+  data: StickiesSnapshotData
+): Promise<void> {
+  const now = new Date().toISOString();
+  await redis.set(
+    stateKey(username, "stickies"),
+    JSON.stringify({ data, updatedAt: now, version: 1, createdAt: now })
+  );
+  const metaKey = `sync:state:meta:${username}`;
+  const rawMeta = await redis.get<string | Record<string, unknown>>(metaKey);
+  const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
+  meta.stickies = { updatedAt: now, version: 1, createdAt: now };
+  await redis.set(metaKey, JSON.stringify(meta));
+}
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export async function executeCalendarControl(
+  input: CalendarControlInput,
+  context: AppStateToolContext
+): Promise<CalendarControlOutput> {
+  if (!context.username) {
+    return { success: false, message: "Authentication required." };
+  }
+  if (!context.redis) {
+    return { success: false, message: "Storage not available." };
+  }
+
+  const { action } = input;
+
+  const state = await readCalendarState(context.redis, context.username);
+  if (!state) {
+    return {
+      success: false,
+      message: "No calendar data synced yet. Enable cloud sync in ryOS first.",
+    };
+  }
+
+  switch (action) {
+    case "list": {
+      let events = state.events;
+      if (input.date) {
+        events = events.filter((ev) => ev.date === input.date);
+      }
+      const formatted = events.map((ev) => ({
+        id: ev.id,
+        title: ev.title,
+        date: ev.date,
+        startTime: ev.startTime,
+        endTime: ev.endTime,
+        color: ev.color,
+        notes: ev.notes,
+      }));
+      return {
+        success: true,
+        message: input.date
+          ? `Found ${formatted.length} event(s) for ${input.date}.`
+          : `Found ${formatted.length} event(s) total.`,
+        events: formatted,
+      };
+    }
+
+    case "create": {
+      if (!input.title || !input.date) {
+        return { success: false, message: "Creating an event requires 'title' and 'date'." };
+      }
+      const now = Date.now();
+      const newEvent = {
+        id: generateId(),
+        title: input.title,
+        date: input.date,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        color: input.color || "blue",
+        calendarId: input.calendarId,
+        notes: input.notes,
+        createdAt: now,
+        updatedAt: now,
+      };
+      state.events.push(newEvent);
+      await writeCalendarState(context.redis, context.username, state);
+      context.log(`[calendarControl] Created event "${input.title}" on ${input.date}`);
+      return {
+        success: true,
+        message: `Created event "${input.title}" on ${input.date}.`,
+        event: {
+          id: newEvent.id,
+          title: newEvent.title,
+          date: newEvent.date,
+          startTime: newEvent.startTime,
+          endTime: newEvent.endTime,
+          color: newEvent.color,
+          notes: newEvent.notes,
+        },
+      };
+    }
+
+    case "update": {
+      if (!input.id) {
+        return { success: false, message: "Updating an event requires 'id'." };
+      }
+      const idx = state.events.findIndex((ev) => ev.id === input.id);
+      if (idx === -1) {
+        return { success: false, message: `Event with id '${input.id}' not found.` };
+      }
+      const ev = state.events[idx];
+      if (input.title !== undefined) ev.title = input.title;
+      if (input.date !== undefined) ev.date = input.date;
+      if (input.startTime !== undefined) ev.startTime = input.startTime;
+      if (input.endTime !== undefined) ev.endTime = input.endTime;
+      if (input.color !== undefined) ev.color = input.color;
+      if (input.notes !== undefined) ev.notes = input.notes;
+      ev.updatedAt = Date.now();
+      await writeCalendarState(context.redis, context.username, state);
+      return { success: true, message: `Updated event "${ev.title}".` };
+    }
+
+    case "delete": {
+      if (!input.id) {
+        return { success: false, message: "Deleting an event requires 'id'." };
+      }
+      const delIdx = state.events.findIndex((ev) => ev.id === input.id);
+      if (delIdx === -1) {
+        return { success: false, message: `Event with id '${input.id}' not found.` };
+      }
+      const deleted = state.events.splice(delIdx, 1)[0];
+      await writeCalendarState(context.redis, context.username, state);
+      return { success: true, message: `Deleted event "${deleted.title}".` };
+    }
+
+    case "listTodos": {
+      let todos = state.todos;
+      if (input.completed !== undefined) {
+        todos = todos.filter((t) => t.completed === input.completed);
+      }
+      if (input.date) {
+        todos = todos.filter((t) => t.dueDate === input.date);
+      }
+      return {
+        success: true,
+        message: `Found ${todos.length} todo(s).`,
+        todos: todos.map((t) => ({
+          id: t.id,
+          title: t.title,
+          completed: t.completed,
+          dueDate: t.dueDate,
+          calendarId: t.calendarId,
+        })),
+      };
+    }
+
+    case "createTodo": {
+      if (!input.title) {
+        return { success: false, message: "Creating a todo requires 'title'." };
+      }
+      const calendarId = input.calendarId || state.calendars[0]?.id || "home";
+      const newTodo = {
+        id: generateId(),
+        title: input.title,
+        completed: false,
+        dueDate: input.date || null,
+        calendarId,
+        createdAt: Date.now(),
+      };
+      state.todos.push(newTodo);
+      await writeCalendarState(context.redis, context.username, state);
+      context.log(`[calendarControl] Created todo "${input.title}"`);
+      return {
+        success: true,
+        message: `Created todo "${input.title}"${input.date ? ` due ${input.date}` : ""}.`,
+        todo: {
+          id: newTodo.id,
+          title: newTodo.title,
+          completed: false,
+          dueDate: newTodo.dueDate,
+          calendarId,
+        },
+      };
+    }
+
+    case "toggleTodo": {
+      if (!input.id) {
+        return { success: false, message: "Toggling a todo requires 'id'." };
+      }
+      const todo = state.todos.find((t) => t.id === input.id);
+      if (!todo) {
+        return { success: false, message: `Todo with id '${input.id}' not found.` };
+      }
+      todo.completed = !todo.completed;
+      await writeCalendarState(context.redis, context.username, state);
+      return {
+        success: true,
+        message: `Marked todo "${todo.title}" as ${todo.completed ? "completed" : "pending"}.`,
+        todo: {
+          id: todo.id,
+          title: todo.title,
+          completed: todo.completed,
+          dueDate: todo.dueDate,
+          calendarId: todo.calendarId,
+        },
+      };
+    }
+
+    case "deleteTodo": {
+      if (!input.id) {
+        return { success: false, message: "Deleting a todo requires 'id'." };
+      }
+      const todoIdx = state.todos.findIndex((t) => t.id === input.id);
+      if (todoIdx === -1) {
+        return { success: false, message: `Todo with id '${input.id}' not found.` };
+      }
+      const deletedTodo = state.todos.splice(todoIdx, 1)[0];
+      await writeCalendarState(context.redis, context.username, state);
+      return { success: true, message: `Deleted todo "${deletedTodo.title}".` };
+    }
+
+    default:
+      return { success: false, message: `Unknown action: ${action}` };
+  }
+}
+
+export async function executeStickiesControl(
+  input: StickiesControlInput,
+  context: AppStateToolContext
+): Promise<StickiesControlOutput> {
+  if (!context.username) {
+    return { success: false, message: "Authentication required." };
+  }
+  if (!context.redis) {
+    return { success: false, message: "Storage not available." };
+  }
+
+  const { action } = input;
+
+  const state = await readStickiesState(context.redis, context.username);
+  if (!state && action !== "create") {
+    return {
+      success: false,
+      message: "No stickies data synced yet. Enable cloud sync in ryOS first.",
+    };
+  }
+
+  const notes = state?.notes ?? [];
+
+  switch (action) {
+    case "list": {
+      if (notes.length === 0) {
+        return { success: true, message: "No stickies found." };
+      }
+      return {
+        success: true,
+        message: `Found ${notes.length} sticky note(s).`,
+        notes: notes.map((n) => ({
+          id: n.id,
+          content: n.content,
+          color: n.color as any,
+          position: n.position,
+          size: n.size,
+        })),
+      };
+    }
+
+    case "create": {
+      const now = Date.now();
+      const newNote = {
+        id: generateId(),
+        content: input.content || "",
+        color: input.color || "yellow",
+        position: input.position || { x: 100 + Math.random() * 200, y: 100 + Math.random() * 200 },
+        size: input.size || { width: 200, height: 200 },
+        createdAt: now,
+        updatedAt: now,
+      };
+      const updatedNotes = [...notes, newNote];
+      await writeStickiesState(context.redis, context.username!, { notes: updatedNotes });
+      context.log(`[stickiesControl] Created sticky note (${input.color || "yellow"})`);
+      return {
+        success: true,
+        message: `Created ${input.color || "yellow"} sticky note.`,
+        note: {
+          id: newNote.id,
+          content: newNote.content,
+          color: newNote.color as any,
+          position: newNote.position,
+          size: newNote.size,
+        },
+      };
+    }
+
+    case "update": {
+      if (!input.id) {
+        return { success: false, message: "Updating a sticky requires 'id'." };
+      }
+      const noteIdx = notes.findIndex((n) => n.id === input.id);
+      if (noteIdx === -1) {
+        return { success: false, message: `Sticky with id '${input.id}' not found.` };
+      }
+      const note = { ...notes[noteIdx] };
+      if (input.content !== undefined) note.content = input.content;
+      if (input.color !== undefined) note.color = input.color;
+      if (input.position !== undefined) note.position = input.position;
+      if (input.size !== undefined) note.size = input.size;
+      note.updatedAt = Date.now();
+      const updatedList = [...notes];
+      updatedList[noteIdx] = note;
+      await writeStickiesState(context.redis, context.username!, { notes: updatedList });
+      return { success: true, message: "Updated sticky note." };
+    }
+
+    case "delete": {
+      if (!input.id) {
+        return { success: false, message: "Deleting a sticky requires 'id'." };
+      }
+      const delIdx = notes.findIndex((n) => n.id === input.id);
+      if (delIdx === -1) {
+        return { success: false, message: `Sticky with id '${input.id}' not found.` };
+      }
+      const filtered = notes.filter((n) => n.id !== input.id);
+      await writeStickiesState(context.redis, context.username!, { notes: filtered });
+      return { success: true, message: "Deleted sticky note." };
+    }
+
+    case "clear": {
+      if (notes.length === 0) {
+        return { success: true, message: "No stickies to clear." };
+      }
+      const count = notes.length;
+      await writeStickiesState(context.redis, context.username!, { notes: [] });
+      return { success: true, message: `Cleared ${count} sticky note(s).` };
+    }
+
+    default:
+      return { success: false, message: `Unknown action: ${action}` };
   }
 }

@@ -409,3 +409,48 @@ export interface MemoryDeleteOutput {
   success: boolean;
   message: string;
 }
+
+// ============================================================================
+// App State Types (for server-side calendar/stickies executors)
+// ============================================================================
+
+export interface CalendarSnapshotData {
+  events: Array<{
+    id: string;
+    title: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    color: string;
+    calendarId?: string;
+    notes?: string;
+    createdAt: number;
+    updatedAt: number;
+  }>;
+  calendars: Array<{
+    id: string;
+    name: string;
+    color: string;
+    visible: boolean;
+  }>;
+  todos: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    dueDate: string | null;
+    calendarId: string;
+    createdAt: number;
+  }>;
+}
+
+export interface StickiesSnapshotData {
+  notes: Array<{
+    id: string;
+    content: string;
+    color: string;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+    createdAt: number;
+    updatedAt: number;
+  }>;
+}

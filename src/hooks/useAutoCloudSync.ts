@@ -40,6 +40,7 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   videos: 4000,
   stickies: 3000,
   calendar: 4000,
+  "custom-wallpapers": 8000,
 };
 
 function createDomainStringMap(initialValue: string | null): Record<CloudSyncDomain, string | null> {
@@ -54,6 +55,7 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
     videos: initialValue,
     stickies: initialValue,
     calendar: initialValue,
+    "custom-wallpapers": initialValue,
   };
 }
 
@@ -85,6 +87,7 @@ export function useAutoCloudSync() {
     videos: 0,
     stickies: 0,
     calendar: 0,
+    "custom-wallpapers": 0,
   });
   const checkInFlightRef = useRef(false);
 
@@ -282,6 +285,12 @@ export function useAutoCloudSync() {
           state.htmlPreviewSplit !== prevState.htmlPreviewSplit
         ) {
           queueUpload("settings");
+        }
+        if (
+          state.currentWallpaper !== prevState.currentWallpaper &&
+          state.currentWallpaper.startsWith("indexeddb://")
+        ) {
+          queueUpload("custom-wallpapers");
         }
       }
     );

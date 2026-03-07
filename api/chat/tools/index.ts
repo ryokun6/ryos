@@ -39,12 +39,18 @@ import type {
   MemoryDeleteInput,
 } from "./types.js";
 import * as schemas from "./schemas.js";
+import type {
+  CalendarControlInput,
+  StickiesControlInput,
+} from "./types.js";
 import {
   executeGenerateHtml,
   executeSearchSongs,
   executeMemoryWrite,
   executeMemoryRead,
   executeMemoryDelete,
+  executeCalendarControl,
+  executeStickiesControl,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -57,6 +63,8 @@ export {
   executeMemoryWrite,
   executeMemoryRead,
   executeMemoryDelete,
+  executeCalendarControl,
+  executeStickiesControl,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -66,7 +74,15 @@ const MEMORY_TOOL_NAMES = [
   "memoryDelete",
 ] as const;
 
-export type ChatToolProfile = "all" | "memory";
+const TELEGRAM_TOOL_NAMES = [
+  "memoryWrite",
+  "memoryRead",
+  "memoryDelete",
+  "calendarControl",
+  "stickiesControl",
+] as const;
+
+export type ChatToolProfile = "all" | "memory" | "telegram";
 export type ChatToolsContext = MemoryToolContext;
 
 /**
@@ -392,8 +408,32 @@ export function createChatTools(
     },
   };
 
-  if ((options.profile || "all") === "all") {
+  const profile = options.profile || "all";
+
+  if (profile === "all") {
     return allTools;
+  }
+
+  if (profile === "telegram") {
+    return {
+      memoryWrite: allTools.memoryWrite,
+      memoryRead: allTools.memoryRead,
+      memoryDelete: allTools.memoryDelete,
+      calendarControl: {
+        description: TOOL_DESCRIPTIONS.calendarControl,
+        inputSchema: schemas.calendarControlSchema,
+        execute: async (input: CalendarControlInput) => {
+          return executeCalendarControl(input, context);
+        },
+      },
+      stickiesControl: {
+        description: TOOL_DESCRIPTIONS.stickiesControl,
+        inputSchema: schemas.stickiesControlSchema,
+        execute: async (input: StickiesControlInput) => {
+          return executeStickiesControl(input, context);
+        },
+      },
+    } as Pick<typeof allTools, (typeof TELEGRAM_TOOL_NAMES)[number]>;
   }
 
   return Object.fromEntries(

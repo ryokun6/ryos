@@ -5,6 +5,8 @@ import {
   getLatestCloudSyncTimestamp,
   hasUnsyncedLocalChanges,
   isCloudSyncDomain,
+  isRedisSyncDomain,
+  isBlobSyncDomain,
   normalizeCloudSyncMetadataMap,
   shouldApplyRemoteUpdate,
 } from "../src/utils/cloudSyncShared";
@@ -19,22 +21,42 @@ describe("cloud sync shared helpers", () => {
     expect(isCloudSyncDomain("files-applets")).toBe(true);
     expect(isCloudSyncDomain("songs")).toBe(true);
     expect(isCloudSyncDomain("calendar")).toBe(true);
+    expect(isCloudSyncDomain("custom-wallpapers")).toBe(true);
     expect(isCloudSyncDomain("files")).toBe(false);
     expect(isCloudSyncDomain("widgets")).toBe(false);
     expect(isCloudSyncDomain(null)).toBe(false);
   });
 
+  test("categorizes Redis vs Blob sync domains", () => {
+    expect(isRedisSyncDomain("settings")).toBe(true);
+    expect(isRedisSyncDomain("calendar")).toBe(true);
+    expect(isRedisSyncDomain("stickies")).toBe(true);
+    expect(isRedisSyncDomain("songs")).toBe(true);
+    expect(isRedisSyncDomain("videos")).toBe(true);
+    expect(isRedisSyncDomain("files-metadata")).toBe(true);
+    expect(isRedisSyncDomain("files-documents" as any)).toBe(false);
+    expect(isRedisSyncDomain("custom-wallpapers" as any)).toBe(false);
+
+    expect(isBlobSyncDomain("files-documents")).toBe(true);
+    expect(isBlobSyncDomain("files-images")).toBe(true);
+    expect(isBlobSyncDomain("custom-wallpapers")).toBe(true);
+    expect(isBlobSyncDomain("settings" as any)).toBe(false);
+    expect(isBlobSyncDomain("calendar" as any)).toBe(false);
+  });
+
   test("creates an empty metadata map", () => {
-    expect(createEmptyCloudSyncMetadataMap()).toEqual({
-      settings: null,
-      "files-metadata": null,
-      "files-documents": null,
-      "files-images": null,
-      "files-trash": null,
-      "files-applets": null,
-      songs: null,
-      calendar: null,
-    });
+    const map = createEmptyCloudSyncMetadataMap();
+    expect(map.settings).toBeNull();
+    expect(map["files-metadata"]).toBeNull();
+    expect(map["files-documents"]).toBeNull();
+    expect(map["files-images"]).toBeNull();
+    expect(map["files-trash"]).toBeNull();
+    expect(map["files-applets"]).toBeNull();
+    expect(map.songs).toBeNull();
+    expect(map.videos).toBeNull();
+    expect(map.stickies).toBeNull();
+    expect(map.calendar).toBeNull();
+    expect(map["custom-wallpapers"]).toBeNull();
   });
 
   test("normalizes partial metadata safely", () => {
@@ -65,6 +87,7 @@ describe("cloud sync shared helpers", () => {
     expect(getCloudSyncCategory("files-metadata")).toBe("files");
     expect(getCloudSyncCategory("files-documents")).toBe("files");
     expect(getCloudSyncCategory("settings")).toBe("settings");
+    expect(getCloudSyncCategory("custom-wallpapers")).toBe("settings");
     expect(getCloudSyncCategory("songs")).toBe("songs");
     expect(getCloudSyncCategory("calendar")).toBe("calendar");
   });

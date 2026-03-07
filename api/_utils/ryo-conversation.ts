@@ -184,7 +184,7 @@ const CHANNEL_PROMPT_SECTIONS = {
 
 const CHANNEL_TOOL_PROFILES: Record<RyoConversationChannel, ChatToolProfile> = {
   chat: "all",
-  telegram: "memory",
+  telegram: "telegram",
 };
 
 const CHANNEL_STATE_PROFILES = {

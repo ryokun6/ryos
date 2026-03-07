@@ -9,6 +9,7 @@ export const CLOUD_SYNC_DOMAINS = [
   "videos",
   "stickies",
   "calendar",
+  "custom-wallpapers",
 ] as const;
 
 export type CloudSyncDomain = (typeof CLOUD_SYNC_DOMAINS)[number];
@@ -23,6 +24,35 @@ export const FILE_SYNC_DOMAINS = [
 ] as const;
 
 export type FileCloudSyncDomain = (typeof FILE_SYNC_DOMAINS)[number];
+
+export const REDIS_SYNC_DOMAINS = [
+  "settings",
+  "files-metadata",
+  "songs",
+  "videos",
+  "stickies",
+  "calendar",
+] as const;
+
+export type RedisSyncDomain = (typeof REDIS_SYNC_DOMAINS)[number];
+
+export const BLOB_SYNC_DOMAINS = [
+  "files-documents",
+  "files-images",
+  "files-trash",
+  "files-applets",
+  "custom-wallpapers",
+] as const;
+
+export type BlobSyncDomain = (typeof BLOB_SYNC_DOMAINS)[number];
+
+export function isRedisSyncDomain(domain: CloudSyncDomain): domain is RedisSyncDomain {
+  return (REDIS_SYNC_DOMAINS as readonly string[]).includes(domain);
+}
+
+export function isBlobSyncDomain(domain: CloudSyncDomain): domain is BlobSyncDomain {
+  return (BLOB_SYNC_DOMAINS as readonly string[]).includes(domain);
+}
 
 export interface CloudSyncDomainMetadata {
   updatedAt: string;
@@ -75,6 +105,7 @@ export function getCloudSyncCategory(
 
   switch (domain) {
     case "settings":
+    case "custom-wallpapers":
       return "settings";
     case "songs":
       return "songs";
@@ -99,6 +130,7 @@ export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
     videos: null,
     stickies: null,
     calendar: null,
+    "custom-wallpapers": null,
   };
 }
 
