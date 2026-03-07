@@ -1,4 +1,5 @@
 import type { DailyNote, DailyNoteEntry } from "./_memory.js";
+import type { TelegramConversationMessage } from "./telegram-link.js";
 
 export const TELEGRAM_HEARTBEAT_TARGET_USERNAME = "ryo";
 export const TELEGRAM_HEARTBEAT_INTERVAL_MINUTES = 30;
@@ -38,18 +39,28 @@ export interface TelegramHeartbeatNoteContext {
 export interface TelegramHeartbeatGateDecision {
   shouldSend: boolean;
   reason: string;
-  code: "no-actionable-notes" | "no-new-actionable-notes" | "send";
+  code:
+    | "no-current-signals"
+    | "no-new-signals"
+    | "send";
 }
 
 export interface TelegramHeartbeatPromptOptions {
   dailyNoteSnapshot: string;
   heartbeatLogSnapshot: string;
+  recentTelegramSnapshot: string;
 }
 
 export interface TelegramHeartbeatResult {
   shouldSend: boolean;
   replyText: string | null;
   reason: string | null;
+}
+
+export interface TelegramHeartbeatConversationContext {
+  recentMessages: TelegramConversationMessage[];
+  latestUserTimestamp: number | null;
+  latestMessageTimestamp: number | null;
 }
 
 function normalizeHeartbeatText(text: string): string {
@@ -93,32 +104,98 @@ export function splitTelegramHeartbeatEntries(
   };
 }
 
+function formatHeartbeatMessageTimestamp(message: TelegramConversationMessage): string {
+  return new Date(message.createdAt).toISOString();
+}
+
+export function buildTelegramHeartbeatConversationContext(
+  history: TelegramConversationMessage[],
+  maxMessages: number = 8
+): TelegramHeartbeatConversationContext {
+  const recentMessages = history.slice(-Math.max(0, maxMessages));
+  const latestUserTimestamp =
+    recentMessages
+      .filter((message) => message.role === "user")
+      .reduce<number | null>(
+        (latest, message) =>
+          latest === null || message.createdAt > latest ? message.createdAt : latest,
+        null
+      );
+  const latestMessageTimestamp =
+    recentMessages.length > 0
+      ? Math.max(...recentMessages.map((message) => message.createdAt))
+      : null;
+
+  return {
+    recentMessages,
+    latestUserTimestamp,
+    latestMessageTimestamp,
+  };
+}
+
+export function formatTelegramConversationEntries(
+  messages: TelegramConversationMessage[],
+  maxEntries: number = 8
+): string {
+  if (messages.length === 0) {
+    return "(none)";
+  }
+
+  return messages
+    .slice(-maxEntries)
+    .map((message) => {
+      const label = message.role === "assistant" ? "assistant" : "user";
+      const content = message.imageUrl
+        ? `[image] ${message.content}`
+        : message.content;
+      return `- ${formatHeartbeatMessageTimestamp(message)} ${label}: ${content}`;
+    })
+    .join("\n");
+}
+
+function getLatestSignalTimestamp(
+  noteContext: TelegramHeartbeatNoteContext,
+  conversationContext?: TelegramHeartbeatConversationContext
+): number | null {
+  return [noteContext.latestActionableTimestamp, conversationContext?.latestUserTimestamp ?? null]
+    .filter((value): value is number => typeof value === "number")
+    .reduce<number | null>(
+      (latest, value) => (latest === null || value > latest ? value : latest),
+      null
+    );
+}
+
 export function shouldSendTelegramHeartbeat(
-  noteContext: TelegramHeartbeatNoteContext
+  noteContext: TelegramHeartbeatNoteContext,
+  conversationContext?: TelegramHeartbeatConversationContext
 ): TelegramHeartbeatGateDecision {
-  if (noteContext.actionableEntries.length === 0) {
+  const latestSignalTimestamp = getLatestSignalTimestamp(
+    noteContext,
+    conversationContext
+  );
+
+  if (latestSignalTimestamp === null) {
     return {
       shouldSend: false,
-      reason: "nothing in today's daily notes needs attention",
-      code: "no-actionable-notes",
+      reason: "nothing current in daily notes or recent telegram chats needs attention",
+      code: "no-current-signals",
     };
   }
 
   if (
-    noteContext.latestActionableTimestamp !== null &&
     noteContext.latestLogTimestamp !== null &&
-    noteContext.latestActionableTimestamp <= noteContext.latestLogTimestamp
+    latestSignalTimestamp <= noteContext.latestLogTimestamp
   ) {
     return {
       shouldSend: false,
-      reason: "no new daily-note items since the last heartbeat check",
-      code: "no-new-actionable-notes",
+      reason: "no new daily-note items or telegram task signals since the last heartbeat check",
+      code: "no-new-signals",
     };
   }
 
   return {
     shouldSend: true,
-    reason: "daily notes contain something new that may need attention",
+    reason: "daily notes or recent telegram chats contain something new that may need attention",
     code: "send",
   };
 }
@@ -143,19 +220,29 @@ export function formatTelegramHeartbeatEntries(
 export function buildTelegramHeartbeatPrompt({
   dailyNoteSnapshot,
   heartbeatLogSnapshot,
+  recentTelegramSnapshot,
 }: TelegramHeartbeatPromptOptions): string {
   return [
-    "Read today's daily-note snapshot first. Treat it as the source of truth for what currently needs attention.",
-    "Do not infer, resurrect, or repeat old tasks from prior Telegram chats unless today's daily notes explicitly show they still need attention.",
-    "Continue the conversation naturally only if today's daily notes contain something current and actionable.",
+    "Read today's daily-note snapshot and the recent Telegram chat snapshot first.",
+    "Use those two snapshots together to infer the user's current open tasks, blockers, and likely next actions.",
+    "Treat the recent Telegram chat snapshot as the record of what has already been said, suggested, answered, or completed.",
+    "Do not infer, resurrect, or repeat stale tasks when the recent chat or today's notes suggest they were already handled.",
+    "Only continue the conversation naturally if you can add net-new value grounded in today's notes or recent Telegram chats.",
+    "Before replying, internally extract: (1) open tasks that still need attention, (2) tasks already done or already acknowledged, and (3) ideas the assistant already suggested.",
+    "If a task is already complete, already answered, or you do not have a fresh angle, skip the message.",
     "If a full note or memory would help, use memoryRead before deciding.",
-    "Use other available Telegram-safe tools only when they help with one concrete, current need from today's daily notes.",
+    "Use other available Telegram-safe tools only when they help with one concrete, current need from today's notes or recent Telegram chats.",
     `If nothing currently needs attention, reply exactly ${TELEGRAM_HEARTBEAT_SKIP_TOKEN} or ${TELEGRAM_HEARTBEAT_SKIP_TOKEN}: <brief reason>.`,
     "If you do send a message, keep it concise, personal, and focused on one timely point.",
+    "Every sent message must contribute at least one fresh insight, synthesis, next step, dependency reminder, or concise new fact.",
+    "Do not paraphrase or lightly rewrite something already present in the recent Telegram chat snapshot or heartbeat log.",
     "Do not mention that this message is automated, scheduled, or a heartbeat.",
     "",
     "TODAY'S DAILY NOTES:",
     dailyNoteSnapshot || "(none)",
+    "",
+    "RECENT TELEGRAM CHAT:",
+    recentTelegramSnapshot || "(none)",
     "",
     "RECENT HEARTBEAT LOG:",
     heartbeatLogSnapshot || "(none)",
@@ -200,4 +287,39 @@ export function buildTelegramHeartbeatLogEntry(args: {
   return `${TELEGRAM_HEARTBEAT_LOG_PREFIX} ${
     args.sent ? "sent" : "skipped"
   } - ${detail}`;
+}
+
+function normalizeHeartbeatComparisonText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function isRepeatedTelegramHeartbeatReply(
+  replyText: string,
+  history: TelegramConversationMessage[],
+  maxAssistantMessages: number = 6
+): boolean {
+  const normalizedReply = normalizeHeartbeatComparisonText(replyText);
+  if (!normalizedReply) {
+    return false;
+  }
+
+  return history
+    .filter((message) => message.role === "assistant")
+    .slice(-Math.max(0, maxAssistantMessages))
+    .some((message) => {
+      const normalizedMessage = normalizeHeartbeatComparisonText(message.content);
+      if (!normalizedMessage) {
+        return false;
+      }
+
+      return (
+        normalizedReply === normalizedMessage ||
+        normalizedReply.includes(normalizedMessage) ||
+        normalizedMessage.includes(normalizedReply)
+      );
+    });
 }
