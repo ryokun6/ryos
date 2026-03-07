@@ -29,6 +29,7 @@ import { requestCloseWindow } from "@/utils/windowUtils";
 import {
   AnimatePresence,
   motion,
+  motionValue,
   LayoutGroup,
   useMotionValue,
   useSpring,
@@ -56,6 +57,8 @@ interface IconButtonProps {
   onContextMenu?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   mouseX: MotionValue<number>;
   magnifyEnabled: boolean;
+  managedTargetSize?: MotionValue<number>;
+  enableLayoutProjection?: boolean;
   isNew: boolean;
   isHovered: boolean;
   isSwapping: boolean;
@@ -78,10 +81,20 @@ interface DockSpacerProps {
   mouseX: MotionValue<number>;
   magnifyEnabled: boolean;
   baseSize?: number;
+  enableLayoutProjection?: boolean;
 }
 
 const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
-  ({ idKey, mouseX, magnifyEnabled, baseSize: baseSizeProp }, ref) => {
+  (
+    {
+      idKey,
+      mouseX,
+      magnifyEnabled,
+      baseSize: baseSizeProp,
+      enableLayoutProjection = false,
+    },
+    ref
+  ) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const baseSize = baseSizeProp ?? BASE_BUTTON_SIZE;
     const maxSize = Math.round(baseSize * MAX_SCALE);
@@ -146,8 +159,8 @@ const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
     return (
       <motion.div
         ref={setCombinedRef}
-        layout
-        layoutId={`dock-spacer-${idKey}`}
+        layout={enableLayoutProjection}
+        layoutId={enableLayoutProjection ? `dock-spacer-${idKey}` : undefined}
         initial={{ width: 0, height: 0 }}
         animate={{ width: baseSize + 8, height: baseSize }} // Base size for layout, actual size controlled by style
         exit={{ width: 0, height: 0 }}
@@ -185,6 +198,8 @@ const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
       onContextMenu,
       mouseX,
       magnifyEnabled,
+      managedTargetSize,
+      enableLayoutProjection = false,
       isNew,
       isHovered,
       isSwapping,
@@ -203,19 +218,19 @@ const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
     const maxButtonSize = Math.round(baseButtonSize * MAX_SCALE);
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const isPresent = useIsPresent();
-    
-    // Use a motion value for target size that we can imperatively update
-    const targetSize = useMotionValue(baseButtonSize);
+    const localTargetSize = useMotionValue(baseButtonSize);
+    const targetSize = managedTargetSize ?? localTargetSize;
     
     // Update target size when base size changes or magnification is disabled
     useEffect(() => {
-      if (!magnifyEnabled) {
+      if (!magnifyEnabled && !managedTargetSize) {
         targetSize.set(baseButtonSize);
       }
-    }, [baseButtonSize, magnifyEnabled, targetSize]);
+    }, [baseButtonSize, magnifyEnabled, managedTargetSize, targetSize]);
     
     // Calculate distance from cursor to icon center
     const distanceCalc = useTransform(mouseX, (val) => {
+      if (managedTargetSize) return Infinity;
       const bounds = wrapperRef.current?.getBoundingClientRect();
       if (!bounds || !Number.isFinite(val)) return Infinity;
       return val - (bounds.left + bounds.width / 2);
@@ -223,7 +238,7 @@ const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
     
     // Update target size based on cursor distance when magnification is enabled
     useEffect(() => {
-      if (!magnifyEnabled) return;
+      if (!magnifyEnabled || managedTargetSize) return;
       
       const unsubscribe = distanceCalc.on("change", (dist) => {
         if (!Number.isFinite(dist)) {
@@ -240,7 +255,14 @@ const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
       });
       
       return unsubscribe;
-    }, [magnifyEnabled, baseButtonSize, maxButtonSize, distanceCalc, targetSize]);
+    }, [
+      magnifyEnabled,
+      managedTargetSize,
+      baseButtonSize,
+      maxButtonSize,
+      distanceCalc,
+      targetSize,
+    ]);
     
     const sizeSpring = useSpring(targetSize, {
       mass: 0.15,
@@ -288,8 +310,8 @@ const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
     return (
       <motion.div
         ref={setCombinedRef}
-        layout
-        layoutId={`dock-icon-${idKey}`}
+        layout={enableLayoutProjection}
+        layoutId={enableLayoutProjection ? `dock-icon-${idKey}` : undefined}
         data-dock-icon={idKey}
         initial={isNew ? { scale: 0, opacity: 0 } : undefined}
         animate={{
@@ -461,10 +483,26 @@ interface DividerProps {
   onTouchEnd?: React.TouchEventHandler;
   onTouchMove?: React.TouchEventHandler;
   onTouchCancel?: React.TouchEventHandler;
+  enableLayoutProjection?: boolean;
 }
 
 const Divider = forwardRef<HTMLDivElement, DividerProps>(
-  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart, onContextMenu, onTouchStart, onTouchEnd, onTouchMove, onTouchCancel }, ref) => {
+  ({
+    idKey,
+    onDragOver,
+    onDrop,
+    onDragLeave,
+    isDropTarget,
+    height = 48,
+    resizable,
+    onResizeStart,
+    onContextMenu,
+    onTouchStart,
+    onTouchEnd,
+    onTouchMove,
+    onTouchCancel,
+    enableLayoutProjection = false,
+  }, ref) => {
     const baseWidth = 1;
     
     // Wrap handlers to stop propagation and prevent icon menus from triggering
@@ -496,8 +534,8 @@ const Divider = forwardRef<HTMLDivElement, DividerProps>(
     return (
       <motion.div
         ref={ref}
-        layout
-        layoutId={`dock-divider-${idKey}`}
+        layout={enableLayoutProjection}
+        layoutId={enableLayoutProjection ? `dock-divider-${idKey}` : undefined}
         initial={{ opacity: 0, scaleY: 0.8 }}
         animate={{ 
           opacity: 0.9, 
@@ -615,6 +653,11 @@ function MacDock() {
   const dockContainerRef = useRef<HTMLDivElement | null>(null);
   const dockBarRef = useRef<HTMLDivElement | null>(null);
   const iconRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
+  const iconCentersRef = useRef<Map<string, number>>(new Map());
+  const iconTargetSizesRef = useRef<Map<string, MotionValue<number>>>(new Map());
+  const iconMeasurementFrameRef = useRef<number | null>(null);
+  const pendingMagnifyMouseXRef = useRef<number | null>(null);
+  const magnifyAnimationFrameRef = useRef<number | null>(null);
   
   // App context menu state
   const [appContextMenu, setAppContextMenu] = useState<{
@@ -1970,11 +2013,6 @@ function MacDock() {
   // Effective magnification: disabled when resizing, on touch devices, or user preference
   const effectiveMagnifyEnabled = magnifyEnabled && !isResizing && dockMagnification;
 
-  // Ensure no magnification state is applied when disabled
-  useEffect(() => {
-    if (!effectiveMagnifyEnabled) mouseX.set(Infinity);
-  }, [effectiveMagnifyEnabled, mouseX]);
-
   // Track which icons have appeared before to control enter animations
   const seenIdsRef = useRef<Set<string>>(new Set());
   const [hasMounted, setHasMounted] = useState(false);
@@ -1997,6 +2035,159 @@ function MacDock() {
     if (!hasMounted) setHasMounted(true);
   }, [allVisibleIds, hasMounted]);
 
+  const enableDockLayoutProjection =
+    draggingItemId !== null ||
+    externalDragIndex !== null ||
+    isDividerDropTarget;
+
+  const getOrCreateIconTargetSize = useCallback(
+    (id: string) => {
+      const existing = iconTargetSizesRef.current.get(id);
+      if (existing) {
+        return existing;
+      }
+
+      const next = motionValue(scaledButtonSize);
+      iconTargetSizesRef.current.set(id, next);
+      return next;
+    },
+    [scaledButtonSize]
+  );
+
+  useEffect(() => {
+    const visibleIds = new Set(allVisibleIds);
+    for (const [id] of iconTargetSizesRef.current) {
+      if (!visibleIds.has(id)) {
+        iconTargetSizesRef.current.delete(id);
+      }
+    }
+    for (const [id] of iconCentersRef.current) {
+      if (!visibleIds.has(id)) {
+        iconCentersRef.current.delete(id);
+      }
+    }
+
+    allVisibleIds.forEach((id) => {
+      getOrCreateIconTargetSize(id).set(scaledButtonSize);
+    });
+  }, [allVisibleIds, getOrCreateIconTargetSize, scaledButtonSize]);
+
+  const measureDockIconCenters = useCallback(() => {
+    const nextCenters = new Map<string, number>();
+    for (const id of allVisibleIds) {
+      const element = iconRefsMap.current.get(id);
+      if (!element) {
+        continue;
+      }
+
+      const rect = element.getBoundingClientRect();
+      nextCenters.set(id, rect.left + rect.width / 2);
+    }
+
+    iconCentersRef.current = nextCenters;
+  }, [allVisibleIds]);
+
+  const scheduleDockIconMeasurement = useCallback(() => {
+    if (iconMeasurementFrameRef.current !== null) {
+      return;
+    }
+
+    iconMeasurementFrameRef.current = window.requestAnimationFrame(() => {
+      iconMeasurementFrameRef.current = null;
+      measureDockIconCenters();
+    });
+  }, [measureDockIconCenters]);
+
+  useEffect(() => {
+    scheduleDockIconMeasurement();
+  }, [scheduleDockIconMeasurement, allVisibleIds, scaledButtonSize]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      scheduleDockIconMeasurement();
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [scheduleDockIconMeasurement]);
+
+  const updateDockMagnification = useCallback(
+    (clientX: number) => {
+      const maxButtonSize = Math.round(scaledButtonSize * MAX_SCALE);
+      for (const id of allVisibleIds) {
+        const centerX = iconCentersRef.current.get(id);
+        const target = getOrCreateIconTargetSize(id);
+        if (centerX === undefined) {
+          target.set(scaledButtonSize);
+          continue;
+        }
+
+        const absDist = Math.abs(clientX - centerX);
+        if (absDist > DISTANCE) {
+          target.set(scaledButtonSize);
+          continue;
+        }
+
+        const t = 1 - absDist / DISTANCE;
+        target.set(scaledButtonSize + t * (maxButtonSize - scaledButtonSize));
+      }
+    },
+    [allVisibleIds, getOrCreateIconTargetSize, scaledButtonSize]
+  );
+
+  const scheduleDockMagnification = useCallback(
+    (clientX: number) => {
+      pendingMagnifyMouseXRef.current = clientX;
+      if (magnifyAnimationFrameRef.current !== null) {
+        return;
+      }
+
+      magnifyAnimationFrameRef.current = window.requestAnimationFrame(() => {
+        magnifyAnimationFrameRef.current = null;
+        const latestClientX = pendingMagnifyMouseXRef.current;
+        if (latestClientX === null) {
+          return;
+        }
+
+        updateDockMagnification(latestClientX);
+      });
+    },
+    [updateDockMagnification]
+  );
+
+  const resetDockMagnification = useCallback(() => {
+    pendingMagnifyMouseXRef.current = null;
+    if (magnifyAnimationFrameRef.current !== null) {
+      window.cancelAnimationFrame(magnifyAnimationFrameRef.current);
+      magnifyAnimationFrameRef.current = null;
+    }
+
+    mouseX.set(Infinity);
+    allVisibleIds.forEach((id) => {
+      getOrCreateIconTargetSize(id).set(scaledButtonSize);
+    });
+  }, [allVisibleIds, getOrCreateIconTargetSize, mouseX, scaledButtonSize]);
+
+  // Ensure no magnification state is applied when disabled.
+  useEffect(() => {
+    if (!effectiveMagnifyEnabled) {
+      resetDockMagnification();
+    }
+  }, [effectiveMagnifyEnabled, resetDockMagnification]);
+
+  useEffect(() => {
+    return () => {
+      if (iconMeasurementFrameRef.current !== null) {
+        window.cancelAnimationFrame(iconMeasurementFrameRef.current);
+      }
+      if (magnifyAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(magnifyAnimationFrameRef.current);
+      }
+    };
+  }, []);
+
   // No global pointer listeners; container updates mouseX and resets to Infinity on leave
 
   // index tracking no longer needed; sizing is per-element via motion values
@@ -2018,8 +2209,8 @@ function MacDock() {
       >
         <motion.div
           ref={dockBarRef}
-          layout
-          layoutRoot
+          layout={enableDockLayoutProjection}
+          layoutRoot={enableDockLayoutProjection}
           className="inline-flex items-end"
           initial={false}
           animate={{
@@ -2061,13 +2252,16 @@ function MacDock() {
             if (dockHiding) {
               showDock();
             }
+            if (effectiveMagnifyEnabled) {
+              scheduleDockIconMeasurement();
+            }
           }}
           onMouseLeave={() => {
             if (dockHiding) {
               hideDock();
             }
             if (effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu) {
-              mouseX.set(Infinity);
+              resetDockMagnification();
               handleIconLeave();
             }
           }}
@@ -2075,6 +2269,7 @@ function MacDock() {
             // Update mouse position for magnification
             if (effectiveMagnifyEnabled && !trashContextMenuPos && !appContextMenu) {
               mouseX.set(e.clientX);
+              scheduleDockMagnification(e.clientX);
             }
             // Restart auto-hide timer on mouse movement (desktop fallback, throttled)
             if (!isPhone && dockHiding) {
@@ -2102,7 +2297,10 @@ function MacDock() {
           onDrop={handleDockDrop}
         >
           <LayoutGroup>
-            <AnimatePresence mode="popLayout" initial={false}>
+            <AnimatePresence
+              mode={enableDockLayoutProjection ? "popLayout" : "sync"}
+              initial={false}
+            >
               {/* Left pinned items from dock store */}
               {(() => {
                 // Build array of elements with spacer inserted at correct position
@@ -2111,7 +2309,16 @@ function MacDock() {
                 pinnedItems.forEach((item, index) => {
                   // Insert spacer before this item if it's the drop target
                   if (externalDragIndex === index) {
-                    elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={effectiveMagnifyEnabled} baseSize={scaledButtonSize} />);
+                    elements.push(
+                      <DockSpacer
+                        key="dock-drop-spacer"
+                        idKey="dock-drop-spacer"
+                        mouseX={mouseX}
+                        magnifyEnabled={effectiveMagnifyEnabled}
+                        baseSize={scaledButtonSize}
+                        enableLayoutProjection={enableDockLayoutProjection}
+                      />
+                    );
                   }
                   
                   if (item.type === "app") {
@@ -2128,8 +2335,8 @@ function MacDock() {
                       <IconButton
                         key={appId}
                         ref={(el) => {
-                          if (el) iconRefsMap.current.set(item.id, el);
-                          else iconRefsMap.current.delete(item.id);
+                          if (el) iconRefsMap.current.set(appId, el);
+                          else iconRefsMap.current.delete(appId);
                         }}
                         label={label}
                         icon={icon}
@@ -2153,6 +2360,8 @@ function MacDock() {
                         isLoading={isLoading}
                         mouseX={mouseX}
                         magnifyEnabled={effectiveMagnifyEnabled}
+                        managedTargetSize={getOrCreateIconTargetSize(appId)}
+                        enableLayoutProjection={enableDockLayoutProjection}
                         isNew={hasMounted && !seenIdsRef.current.has(appId)}
                         isHovered={hoveredId === appId}
                         isSwapping={isSwapping}
@@ -2202,6 +2411,8 @@ function MacDock() {
                         }}
                         mouseX={mouseX}
                         magnifyEnabled={effectiveMagnifyEnabled}
+                        managedTargetSize={getOrCreateIconTargetSize(item.id)}
+                        enableLayoutProjection={enableDockLayoutProjection}
                         isNew={hasMounted && !seenIdsRef.current.has(item.id)}
                         isHovered={hoveredId === item.id}
                         isSwapping={isSwapping}
@@ -2221,7 +2432,16 @@ function MacDock() {
                 
                 // Add spacer at end if dropping after all items
                 if (externalDragIndex === pinnedItems.length) {
-                  elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={effectiveMagnifyEnabled} baseSize={scaledButtonSize} />);
+                  elements.push(
+                    <DockSpacer
+                      key="dock-drop-spacer"
+                      idKey="dock-drop-spacer"
+                      mouseX={mouseX}
+                      magnifyEnabled={effectiveMagnifyEnabled}
+                      baseSize={scaledButtonSize}
+                      enableLayoutProjection={enableDockLayoutProjection}
+                    />
+                  );
                 }
                 
                 return elements;
@@ -2238,6 +2458,7 @@ function MacDock() {
                   isDropTarget={isDividerDropTarget}
                   height={scaledButtonSize}
                   onContextMenu={handleDividerContextMenu}
+                  enableLayoutProjection={enableDockLayoutProjection}
                   {...dividerLongPress}
                 />
               )}
@@ -2253,6 +2474,10 @@ function MacDock() {
                   return (
                     <IconButton
                       key={item.instanceId}
+                      ref={(el) => {
+                        if (el) iconRefsMap.current.set(item.instanceId!, el);
+                        else iconRefsMap.current.delete(item.instanceId!);
+                      }}
                       label={label}
                       icon={icon}
                       idKey={item.instanceId}
@@ -2270,6 +2495,8 @@ function MacDock() {
                       isEmoji={isEmoji}
                       mouseX={mouseX}
                       magnifyEnabled={effectiveMagnifyEnabled}
+                      managedTargetSize={getOrCreateIconTargetSize(item.instanceId!)}
+                      enableLayoutProjection={enableDockLayoutProjection}
                       isNew={hasMounted && !seenIdsRef.current.has(item.instanceId!)}
                       isHovered={hoveredId === item.instanceId}
                       isSwapping={isSwapping}
@@ -2288,6 +2515,10 @@ function MacDock() {
                   return (
                     <IconButton
                       key={item.appId}
+                      ref={(el) => {
+                        if (el) iconRefsMap.current.set(item.appId, el);
+                        else iconRefsMap.current.delete(item.appId);
+                      }}
                       label={label}
                       icon={icon}
                       idKey={item.appId}
@@ -2297,6 +2528,8 @@ function MacDock() {
                       isLoading={isLoading}
                       mouseX={mouseX}
                       magnifyEnabled={effectiveMagnifyEnabled}
+                      managedTargetSize={getOrCreateIconTargetSize(item.appId)}
+                      enableLayoutProjection={enableDockLayoutProjection}
                       isNew={hasMounted && !seenIdsRef.current.has(item.appId)}
                       isHovered={hoveredId === item.appId}
                       isSwapping={isSwapping}
@@ -2318,6 +2551,7 @@ function MacDock() {
                 resizable={!isPhone}
                 onResizeStart={handleResizeStart}
                 onContextMenu={handleDividerContextMenu}
+                enableLayoutProjection={enableDockLayoutProjection}
                 {...dividerLongPress}
               />
 
@@ -2345,6 +2579,10 @@ function MacDock() {
                 return (
                   <IconButton
                     key="__applications__"
+                    ref={(el) => {
+                      if (el) iconRefsMap.current.set("__applications__", el);
+                      else iconRefsMap.current.delete("__applications__");
+                    }}
                     label={t("common.dock.applications")}
                     icon="/icons/default/applications.png"
                     idKey="__applications__"
@@ -2364,6 +2602,8 @@ function MacDock() {
                     onContextMenu={handleApplicationsContextMenu}
                     mouseX={mouseX}
                     magnifyEnabled={effectiveMagnifyEnabled}
+                    managedTargetSize={getOrCreateIconTargetSize("__applications__")}
+                    enableLayoutProjection={enableDockLayoutProjection}
                     isNew={hasMounted && !seenIdsRef.current.has("__applications__")}
                     isHovered={hoveredId === "__applications__"}
                     isSwapping={isSwapping}
@@ -2443,6 +2683,10 @@ function MacDock() {
                   >
                     <IconButton
                       key="__trash__"
+                      ref={(el) => {
+                        if (el) iconRefsMap.current.set("__trash__", el);
+                        else iconRefsMap.current.delete("__trash__");
+                      }}
                       label={t("common.dock.trash")}
                       icon={trashIcon}
                       idKey="__trash__"
@@ -2462,6 +2706,8 @@ function MacDock() {
                       onContextMenu={handleTrashContextMenu}
                       mouseX={mouseX}
                       magnifyEnabled={effectiveMagnifyEnabled}
+                      managedTargetSize={getOrCreateIconTargetSize("__trash__")}
+                      enableLayoutProjection={enableDockLayoutProjection}
                       isNew={hasMounted && !seenIdsRef.current.has("__trash__")}
                       isHovered={hoveredId === "__trash__"}
                       isSwapping={isSwapping}
@@ -2504,7 +2750,7 @@ function MacDock() {
         position={trashContextMenuPos}
         onClose={() => {
           setTrashContextMenuPos(null);
-          mouseX.set(Infinity);
+          resetDockMagnification();
         }}
       />
       <RightClickMenu
@@ -2512,7 +2758,7 @@ function MacDock() {
         position={applicationsContextMenuPos}
         onClose={() => {
           setApplicationsContextMenuPos(null);
-          mouseX.set(Infinity);
+          resetDockMagnification();
         }}
       />
       {appContextMenu && (
@@ -2521,7 +2767,7 @@ function MacDock() {
           position={appContextMenu}
           onClose={() => {
             setAppContextMenu(null);
-            mouseX.set(Infinity);
+            resetDockMagnification();
           }}
         />
       )}
@@ -2531,7 +2777,7 @@ function MacDock() {
           position={dividerContextMenuPos}
           onClose={() => {
             setDividerContextMenuPos(null);
-            mouseX.set(Infinity);
+            resetDockMagnification();
           }}
         />
       )}
