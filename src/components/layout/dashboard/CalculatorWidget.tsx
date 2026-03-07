@@ -33,10 +33,10 @@ const BUTTONS: ButtonSpec[] = [
   { label: "2", type: "digit" },
   { label: "3", type: "digit" },
   { label: "-", type: "operator", className: "accent" },
-  { label: "0", type: "digit", span: 2 },
+  { label: "0", type: "digit" },
   { label: ".", type: "decimal" },
   { label: "+", type: "operator", className: "accent" },
-  { label: "=", type: "equals", span: 4, className: "equals" },
+  { label: "=", type: "equals", className: "equals" },
 ];
 
 function formatNumber(value: number, precision: number): string {
@@ -75,6 +75,8 @@ export function CalculatorWidget({ widgetId }: CalculatorWidgetProps) {
   const [waitingForOperand, setWaitingForOperand] = useState(true);
   const [memory, setMemory] = useState(0);
   const precision = config?.precision ?? 4;
+  const aquaButtonSize = 26;
+  const xpButtonSize = 26;
 
   useEffect(() => {
     if (config?.display !== undefined && config.display !== display) {
@@ -229,7 +231,7 @@ export function CalculatorWidget({ widgetId }: CalculatorWidgetProps) {
         >
           {display}
         </div>
-        <div className="grid flex-1 grid-cols-4 gap-1.5">
+        <div className="grid flex-1 grid-cols-4 place-items-center gap-1.5">
           {BUTTONS.map((button) => (
             <button
               key={button.label}
@@ -237,14 +239,18 @@ export function CalculatorWidget({ widgetId }: CalculatorWidgetProps) {
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => pressButton(button)}
               style={{
-                gridColumn: `span ${button.span ?? 1}`,
                 border: "1px solid #ACA899",
                 background: button.className ? "#FAD39A" : "#FFF",
                 color: "#000",
                 fontSize: button.type === "equals" ? 16 : 13,
                 fontWeight: 700,
-                borderRadius: 3,
+                width: xpButtonSize,
+                height: xpButtonSize,
+                borderRadius: "50%",
                 boxShadow: "inset 1px 1px 0 rgba(255,255,255,0.8)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
               title={button.label}
             >
@@ -356,7 +362,7 @@ export function CalculatorWidget({ widgetId }: CalculatorWidgetProps) {
         </div>
 
         <div
-          className="grid flex-1 grid-cols-4 gap-2"
+          className="grid flex-1 grid-cols-4 place-items-center gap-[3px]"
           style={{ gridAutoRows: "1fr" }}
         >
           {BUTTONS.map((button) => {
@@ -376,8 +382,9 @@ export function CalculatorWidget({ widgetId }: CalculatorWidgetProps) {
                 }}
                 title={button.label}
                 style={{
-                  gridColumn: `span ${button.span ?? 1}`,
-                  borderRadius: isEquals ? 13 : 999,
+                  width: aquaButtonSize,
+                  height: aquaButtonSize,
+                  borderRadius: "50%",
                   border: "1px solid rgba(122,122,122,0.5)",
                   background: isEquals
                     ? "linear-gradient(180deg, #fffef7 0%, #f8daa9 40%, #efb15c 100%)"
@@ -390,8 +397,10 @@ export function CalculatorWidget({ widgetId }: CalculatorWidgetProps) {
                   fontSize: isEquals ? 18 : button.label.length > 2 ? 10 : 18,
                   fontWeight: 700,
                   lineHeight: 1,
-                  minHeight: isEquals ? 30 : 27,
                   textShadow: "0 1px 0 rgba(255,255,255,0.65)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 {button.label}

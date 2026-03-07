@@ -326,130 +326,149 @@ export function ConverterWidget({ widgetId }: ConverterWidgetProps) {
         />
       </div>
 
-      <div className="flex h-[calc(100%-20px)] flex-col gap-3 px-12 py-3">
-        <div className="grid grid-cols-[54px_1fr] items-center gap-2">
-          <div
-            style={{
-              fontSize: 12,
-              color: "#4b4b4b",
-              textShadow: "0 1px 0 rgba(255,255,255,0.9)",
-            }}
-          >
-            {t("apps.dashboard.converter.convert", "Convert")}
-          </div>
-          <select
-            value={category}
-            onChange={(e) => handleCategoryChange(e.target.value as ConverterCategory)}
-            onPointerDown={(e) => e.stopPropagation()}
-            style={{
-              ...controlStyle,
-              height: 24,
-              padding: "0 8px",
-              fontSize: 12,
-            }}
-          >
-            {Object.entries(categories).map(([key, definition]) => (
-              <option key={key} value={key}>
-                {definition.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-[1fr_20px_1fr] items-center gap-2">
-          <div className="flex flex-col gap-1.5">
-            <select
-              value={validFrom}
-              onChange={(e) => {
-                setFromUnit(e.target.value);
-                syncConfig({ fromUnit: e.target.value });
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              style={{
-                ...controlStyle,
-                height: 22,
-                padding: "0 8px",
-                fontSize: 11,
-              }}
-            >
-              {currentUnits.map((unit) => (
-                <option key={unit.key} value={unit.key}>
-                  {unit.label}
-                </option>
-              ))}
-            </select>
-            <input
-              value={value}
-              onChange={(e) => {
-                setValue(e.target.value);
-                syncConfig({ value: e.target.value });
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              style={{
-                ...controlStyle,
-                height: 30,
-                padding: "0 8px",
-                fontSize: 15,
-                background: "linear-gradient(180deg, #ffffff 0%, #ececec 100%)",
-              }}
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSwap}
-            onPointerDown={(e) => e.stopPropagation()}
-            title={t("apps.dashboard.converter.swap", "Swap units")}
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              border: "1px solid rgba(119,119,119,0.6)",
-              background: "linear-gradient(180deg, #fafafa 0%, #d0d0d0 100%)",
-              color: "#4d4d4d",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 1px rgba(0,0,0,0.18)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <ArrowsLeftRight size={11} weight="bold" />
-          </button>
-
-          <div className="flex flex-col gap-1.5">
-            <select
-              value={validTo}
-              onChange={(e) => {
-                setToUnit(e.target.value);
-                syncConfig({ toUnit: e.target.value });
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              style={{
-                ...controlStyle,
-                height: 22,
-                padding: "0 8px",
-                fontSize: 11,
-              }}
-            >
-              {currentUnits.map((unit) => (
-                <option key={unit.key} value={unit.key}>
-                  {unit.label}
-                </option>
-              ))}
-            </select>
+      <div
+        style={{
+          height: "calc(100% - 20px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "10px 14px 12px",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 248,
+            display: "grid",
+            gap: 8,
+            margin: "0 auto",
+          }}
+        >
+          <div className="grid grid-cols-[54px_minmax(0,1fr)] items-center gap-2">
             <div
               style={{
-                ...controlStyle,
-                height: 30,
-                padding: "0 8px",
-                fontSize: 15,
-                background: "linear-gradient(180deg, #ffffff 0%, #ececec 100%)",
-                display: "flex",
-                alignItems: "center",
+                fontSize: 12,
                 color: "#4b4b4b",
+                textShadow: "0 1px 0 rgba(255,255,255,0.9)",
               }}
             >
-              {converted}
+              {t("apps.dashboard.converter.convert", "Convert")}
+            </div>
+            <select
+              value={category}
+              onChange={(e) => handleCategoryChange(e.target.value as ConverterCategory)}
+              onPointerDown={(e) => e.stopPropagation()}
+              style={{
+                ...controlStyle,
+                height: 24,
+                padding: "0 8px",
+                fontSize: 12,
+              }}
+            >
+              {Object.entries(categories).map(([key, definition]) => (
+                <option key={key} value={key}>
+                  {definition.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-[minmax(0,1fr)_20px_minmax(0,1fr)] items-center gap-2">
+            <div className="flex flex-col gap-1.5">
+              <select
+                value={validFrom}
+                onChange={(e) => {
+                  setFromUnit(e.target.value);
+                  syncConfig({ fromUnit: e.target.value });
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                style={{
+                  ...controlStyle,
+                  height: 22,
+                  padding: "0 8px",
+                  fontSize: 11,
+                }}
+              >
+                {currentUnits.map((unit) => (
+                  <option key={unit.key} value={unit.key}>
+                    {unit.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  syncConfig({ value: e.target.value });
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                style={{
+                  ...controlStyle,
+                  height: 30,
+                  padding: "0 8px",
+                  fontSize: 15,
+                  background: "linear-gradient(180deg, #ffffff 0%, #ececec 100%)",
+                }}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSwap}
+              onPointerDown={(e) => e.stopPropagation()}
+              title={t("apps.dashboard.converter.swap", "Swap units")}
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                border: "1px solid rgba(119,119,119,0.6)",
+                background: "linear-gradient(180deg, #fafafa 0%, #d0d0d0 100%)",
+                color: "#4d4d4d",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 1px rgba(0,0,0,0.18)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                justifySelf: "center",
+              }}
+            >
+              <ArrowsLeftRight size={11} weight="bold" />
+            </button>
+
+            <div className="flex flex-col gap-1.5">
+              <select
+                value={validTo}
+                onChange={(e) => {
+                  setToUnit(e.target.value);
+                  syncConfig({ toUnit: e.target.value });
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                style={{
+                  ...controlStyle,
+                  height: 22,
+                  padding: "0 8px",
+                  fontSize: 11,
+                }}
+              >
+                {currentUnits.map((unit) => (
+                  <option key={unit.key} value={unit.key}>
+                    {unit.label}
+                  </option>
+                ))}
+              </select>
+              <div
+                style={{
+                  ...controlStyle,
+                  height: 30,
+                  padding: "0 8px",
+                  fontSize: 15,
+                  background: "linear-gradient(180deg, #ffffff 0%, #ececec 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  color: "#4b4b4b",
+                }}
+              >
+                {converted}
+              </div>
             </div>
           </div>
         </div>
