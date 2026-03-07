@@ -125,10 +125,10 @@ export default async function handler(
 
   const authSecret = getTelegramHeartbeatAuthSecret();
   if (!authSecret) {
-    logger.warn("Telegram heartbeat auth secret is not configured");
+    logger.warn("CRON_SECRET is not configured for telegram heartbeat");
     logger.response(503, Date.now() - startTime);
     sendJson(res, 503, {
-      error: "Telegram heartbeat secret is not configured",
+      error: "CRON_SECRET is not configured",
     });
     return;
   }

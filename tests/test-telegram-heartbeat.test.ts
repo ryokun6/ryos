@@ -148,21 +148,26 @@ describe("telegram heartbeat helpers", () => {
     ).toContain("[telegram heartbeat] skipped");
   });
 
-  test("prefers the telegram webhook secret for heartbeat auth", () => {
-    expect(
-      getTelegramHeartbeatAuthSecret({
-        TELEGRAM_WEBHOOK_SECRET: "telegram-secret",
-        CRON_SECRET: "cron-secret",
-      } as NodeJS.ProcessEnv)
-    ).toBe("telegram-secret");
-  });
-
-  test("falls back to CRON_SECRET when no telegram webhook secret exists", () => {
+  test("uses CRON_SECRET for heartbeat auth", () => {
     expect(
       getTelegramHeartbeatAuthSecret({
         CRON_SECRET: "cron-secret",
       } as NodeJS.ProcessEnv)
     ).toBe("cron-secret");
+  });
+
+  test("ignores telegram webhook secret and requires CRON_SECRET", () => {
+    expect(
+      getTelegramHeartbeatAuthSecret({
+        TELEGRAM_WEBHOOK_SECRET: "telegram-secret",
+        CRON_SECRET: "cron-secret",
+      } as NodeJS.ProcessEnv)
+    ).toBe("cron-secret");
+    expect(
+      getTelegramHeartbeatAuthSecret({
+        TELEGRAM_WEBHOOK_SECRET: "telegram-secret",
+      } as NodeJS.ProcessEnv)
+    ).toBeNull();
     expect(getTelegramHeartbeatAuthSecret({} as NodeJS.ProcessEnv)).toBeNull();
   });
 

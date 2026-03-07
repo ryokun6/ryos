@@ -12,11 +12,6 @@ export const TELEGRAM_HEARTBEAT_SKIP_TOKEN = "NO_HEARTBEAT";
 export function getTelegramHeartbeatAuthSecret(
   env: NodeJS.ProcessEnv = process.env
 ): string | null {
-  const webhookSecret = env.TELEGRAM_WEBHOOK_SECRET?.trim();
-  if (webhookSecret) {
-    return webhookSecret;
-  }
-
   const cronSecret = env.CRON_SECRET?.trim();
   return cronSecret || null;
 }
