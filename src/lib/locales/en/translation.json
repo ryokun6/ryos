@@ -2707,12 +2707,29 @@
       "emptyState": "No contacts yet. Create one or import a vCard to get started.",
       "emptySelection": "Select a contact or create a new one to start editing details.",
       "noSummary": "No phone numbers, email, or notes yet",
+      "groupHeaders": {
+        "groups": "Group",
+        "names": "Name"
+      },
+      "groups": {
+        "all": "All",
+        "imported": "Imported",
+        "telegram": "Telegram",
+        "work": "Work",
+        "birthdays": "Birthdays"
+      },
+      "buttons": {
+        "edit": "Edit"
+      },
       "menu": {
         "newContact": "New Contact",
         "importVCard": "Import vCard…",
         "deleteContact": "Delete Contact",
         "help": "Contacts Help",
         "about": "About Contacts"
+      },
+      "status": {
+        "cardsCount": "{{count}} cards"
       },
       "fields": {
         "displayName": "Display Name",

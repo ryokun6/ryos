@@ -9,7 +9,7 @@ import { appMetadata } from "..";
 import type { AppProps } from "@/apps/base/types";
 import { cn } from "@/lib/utils";
 import { getContactInitials, getContactSummary, type Contact } from "@/utils/contacts";
-import { Plus, Trash } from "@phosphor-icons/react";
+import { Plus, Trash, UploadSimple } from "@phosphor-icons/react";
 
 function splitMultivalueInput(value: string): string[] {
   return value
@@ -36,21 +36,92 @@ function ContactListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-start gap-3 px-3 py-2 text-left border-b transition-colors",
-        isSelected ? "bg-black/10" : "hover:bg-black/5"
+        "w-full flex items-center gap-2 px-3 py-1.5 text-left border-b transition-colors",
+        isSelected
+          ? "bg-[#b6b6b6] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
+          : "hover:bg-black/5"
       )}
       style={{ borderColor: "rgba(0,0,0,0.08)" }}
     >
-      <div className="shrink-0 w-9 h-9 rounded-full bg-[#d7c3a2] border border-black/15 flex items-center justify-center text-[11px] font-semibold text-black/75">
-        {getContactInitials(contact)}
-      </div>
+      <div className="shrink-0 w-3.5 h-3.5 rounded-[2px] border border-black/20 bg-[#efefef]" />
       <div className="min-w-0 flex-1">
-        <div className="text-[12px] font-semibold truncate">{contact.displayName}</div>
-        <div className="text-[11px] text-black/55 truncate">
-          {getContactSummary(contact) || "\u00A0"}
-        </div>
+        <div className="text-[12px] leading-tight truncate">{contact.displayName}</div>
       </div>
     </button>
+  );
+}
+
+function GroupListItem({
+  label,
+  count,
+  isSelected,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center justify-between gap-2 px-2.5 py-1 text-left text-[12px] transition-colors rounded-sm",
+        isSelected
+          ? "bg-[#7b7b7b] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
+          : "text-black/80 hover:bg-black/8"
+      )}
+    >
+      <span className="truncate">{label}</span>
+      <span className={cn("text-[10px]", isSelected ? "text-white/80" : "text-black/45")}>
+        {count}
+      </span>
+    </button>
+  );
+}
+
+function PanelHeader({
+  title,
+  trailing,
+}: {
+  title: string;
+  trailing?: ReactNode;
+}) {
+  return (
+    <div
+      className="flex items-center justify-between gap-2 px-2 py-1 text-[11px] border-b"
+      style={{
+        borderColor: "rgba(0,0,0,0.18)",
+        background:
+          "linear-gradient(to bottom, rgba(246,246,246,0.95), rgba(214,214,214,0.95))",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+      }}
+    >
+      <span className="font-semibold text-black/70">{title}</span>
+      {trailing}
+    </div>
+  );
+}
+
+function Panel({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={cn("overflow-hidden bg-white/90", className)}
+      style={{
+        border: "1px solid rgba(0, 0, 0, 0.55)",
+        boxShadow:
+          "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+      }}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -71,8 +142,35 @@ function Field({
   );
 }
 
-const inputClassName =
-  "w-full rounded-none border border-black/20 bg-white px-2 py-1.5 text-[12px] outline-none focus:border-black/45";
+const compactInputClassName =
+  "w-full rounded-none border border-black/20 bg-white px-2 py-1 text-[12px] outline-none focus:border-black/45";
+
+function DetailDots() {
+  return (
+    <div className="flex items-center gap-1 shrink-0 pt-1.5">
+      <span className="block h-3.5 w-3.5 rounded-full bg-[#e37e7e] border border-[#b34848]" />
+      <span className="block h-3.5 w-3.5 rounded-full bg-[#a3d79a] border border-[#619d59]" />
+    </div>
+  );
+}
+
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-3 py-2 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      <DetailDots />
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] font-semibold text-black/55 mb-1">{label}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export function ContactsAppComponent({
   isWindowOpen,
@@ -93,8 +191,12 @@ export function ContactsAppComponent({
     setIsAboutDialogOpen,
     searchQuery,
     setSearchQuery,
+    selectedGroupId,
+    contactGroups,
     contacts,
+    totalContacts,
     selectedContact,
+    handleSelectGroup,
     handleSelectContact,
     handleCreateContact,
     handleDeleteSelectedContact,
@@ -128,6 +230,7 @@ export function ContactsAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="contacts"
+        material={isMacOsxTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
@@ -135,39 +238,46 @@ export function ContactsAppComponent({
         <div
           className={cn(
             "h-full flex flex-col font-os-ui overflow-hidden",
-            isMacOsxTheme ? "bg-[#ece9e0]" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
+            isMacOsxTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
           )}
         >
-          <div className="flex-1 flex min-h-0">
-            <aside
-              className={cn(
-                "w-[250px] shrink-0 flex flex-col border-r",
-                isMacOsxTheme ? "bg-white/70" : "bg-black/0"
-              )}
-              style={{ borderColor: "rgba(0,0,0,0.08)" }}
-            >
-              <div className="p-3 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-                <div className="flex gap-2">
-                  <input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder={t("apps.contacts.searchPlaceholder")}
-                    className={inputClassName}
-                  />
-                  <Button
-                    type="button"
-                    variant={isSystem7Theme ? "player" : "retro"}
-                    onClick={handleCreateContact}
-                    className="h-auto px-2"
-                    title={t("apps.contacts.menu.newContact")}
-                  >
-                    <Plus size={14} weight="bold" />
-                  </Button>
-                </div>
-              </div>
+          <div className="flex items-center justify-end px-3 pt-2 pb-1">
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={t("apps.contacts.searchPlaceholder")}
+              className="w-[220px] rounded-full border border-black/20 bg-white px-3 py-1 text-[12px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none"
+            />
+          </div>
 
+          <div className={cn("flex-1 flex overflow-hidden", isMacOsxTheme && "gap-[5px] px-[5px] pb-[5px]")}>
+            <Panel className="w-[170px] shrink-0 flex flex-col min-h-0">
+              <PanelHeader
+                title={t("apps.contacts.groupHeaders.groups", {
+                  defaultValue: "Group",
+                })}
+              />
+              <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
+                {contactGroups.map((group) => (
+                  <GroupListItem
+                    key={group.id}
+                    label={group.label}
+                    count={group.contacts.length}
+                    isSelected={selectedGroupId === group.id}
+                    onClick={() => handleSelectGroup(group.id)}
+                  />
+                ))}
+              </div>
+            </Panel>
+
+            <Panel className="w-[245px] shrink-0 flex flex-col min-h-0">
+              <PanelHeader
+                title={t("apps.contacts.groupHeaders.names", {
+                  defaultValue: "Name",
+                })}
+              />
               <div className="flex-1 overflow-y-auto">
-                {contacts.length === 0 ? (
+                  {contacts.length === 0 ? (
                   <div className="px-4 py-6 text-[12px] text-black/55">
                     {t("apps.contacts.emptyState")}
                   </div>
@@ -182,162 +292,68 @@ export function ContactsAppComponent({
                   ))
                 )}
               </div>
-            </aside>
+            </Panel>
 
-            <main className="flex-1 min-w-0 overflow-y-auto">
-              {selectedContact ? (
-                <div className="p-4 md:p-5">
-                  <div className="flex items-start justify-between gap-4 mb-5">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-14 h-14 rounded-full bg-[#d7c3a2] border border-black/15 flex items-center justify-center text-lg font-semibold text-black/80 shrink-0">
-                        {getContactInitials(selectedContact)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[18px] font-semibold truncate">
-                          {selectedContact.displayName}
-                        </div>
-                        <div className="text-[12px] text-black/55 truncate">
-                          {getContactSummary(selectedContact) ||
-                            t("apps.contacts.noSummary")}
-                        </div>
-                      </div>
-                    </div>
+            <Panel className="flex-1 min-w-0 flex flex-col">
+              <PanelHeader
+                title={selectedContact?.displayName || t("apps.contacts.title")}
+                trailing={
+                  selectedContact ? (
                     <Button
                       type="button"
                       variant={isSystem7Theme ? "player" : "retro"}
                       onClick={handleDeleteSelectedContact}
-                      className="shrink-0"
+                      className="h-5 px-2 text-[10px]"
                     >
-                      <Trash size={13} weight="bold" />
+                      <Trash size={11} weight="bold" />
                     </Button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Field label={t("apps.contacts.fields.displayName")}>
+                  ) : undefined
+                }
+              />
+              {selectedContact ? (
+                <>
+                  <div className="flex items-start gap-3 px-4 pt-4 pb-2 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+                    <div className="w-16 h-16 shrink-0 rounded-[6px] bg-[linear-gradient(to_bottom,#b8b8b8,#dcdcdc)] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-xl font-semibold text-black/70">
+                      {getContactInitials(selectedContact)}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-2">
                       <input
-                        className={inputClassName}
+                        className="w-full border border-[#c59a37] bg-[#f9df7a] px-2 py-1 text-[18px] font-semibold outline-none"
                         value={selectedContact.displayName}
                         onChange={(event) =>
                           updateSelectedContact({ displayName: event.target.value })
                         }
                       />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.nickname")}>
-                      <input
-                        className={inputClassName}
-                        value={selectedContact.nickname}
-                        onChange={(event) =>
-                          updateSelectedContact({ nickname: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.firstName")}>
-                      <input
-                        className={inputClassName}
-                        value={selectedContact.firstName}
-                        onChange={(event) =>
-                          updateSelectedContact({ firstName: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.lastName")}>
-                      <input
-                        className={inputClassName}
-                        value={selectedContact.lastName}
-                        onChange={(event) =>
-                          updateSelectedContact({ lastName: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.organization")}>
-                      <input
-                        className={inputClassName}
-                        value={selectedContact.organization}
-                        onChange={(event) =>
-                          updateSelectedContact({ organization: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.jobTitle")}>
-                      <input
-                        className={inputClassName}
-                        value={selectedContact.title}
-                        onChange={(event) =>
-                          updateSelectedContact({ title: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.telegramUsername")}>
-                      <input
-                        className={inputClassName}
-                        value={selectedContact.telegramUsername}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            telegramUsername: event.target.value,
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.telegramUserId")}>
-                      <input
-                        className={inputClassName}
-                        value={selectedContact.telegramUserId}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            telegramUserId: event.target.value,
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.birthday")}>
-                      <input
-                        type="date"
-                        className={inputClassName}
-                        value={selectedContact.birthday || ""}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            birthday: event.target.value || null,
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field label={t("apps.contacts.fields.source")}>
-                      <input
-                        className={cn(inputClassName, "bg-black/5")}
-                        value={selectedContact.source}
-                        readOnly
-                      />
-                    </Field>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <input
+                          className={compactInputClassName}
+                          value={selectedContact.organization}
+                          onChange={(event) =>
+                            updateSelectedContact({ organization: event.target.value })
+                          }
+                          placeholder={t("apps.contacts.fields.organization")}
+                        />
+                        <input
+                          className={compactInputClassName}
+                          value={selectedContact.title}
+                          onChange={(event) =>
+                            updateSelectedContact({ title: event.target.value })
+                          }
+                          placeholder={t("apps.contacts.fields.jobTitle")}
+                        />
+                      </div>
+                      <div className="text-[12px] text-black/55 truncate">
+                        {getContactSummary(selectedContact) || t("apps.contacts.noSummary")}
+                      </div>
+                    </div>
+                  </div>
 
-                    <Field
-                      label={t("apps.contacts.fields.emails")}
-                      fullWidth
-                    >
+                  <div className="flex-1 overflow-y-auto px-4 pb-3">
+                    <DetailRow label={t("apps.contacts.fields.phones")}>
                       <textarea
-                        rows={3}
-                        className={inputClassName}
-                        value={formatMultivalue(
-                          selectedContact.emails.map((item) => item.value)
-                        )}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            emails: splitMultivalueInput(event.target.value),
-                          })
-                        }
-                        placeholder={t("apps.contacts.placeholders.multiValue")}
-                      />
-                    </Field>
-
-                    <Field
-                      label={t("apps.contacts.fields.phones")}
-                      fullWidth
-                    >
-                      <textarea
-                        rows={3}
-                        className={inputClassName}
-                        value={formatMultivalue(
-                          selectedContact.phones.map((item) => item.value)
-                        )}
+                        rows={2}
+                        className={compactInputClassName}
+                        value={formatMultivalue(selectedContact.phones.map((item) => item.value))}
                         onChange={(event) =>
                           updateSelectedContact({
                             phones: splitMultivalueInput(event.target.value),
@@ -345,31 +361,63 @@ export function ContactsAppComponent({
                         }
                         placeholder={t("apps.contacts.placeholders.multiValue")}
                       />
-                    </Field>
+                    </DetailRow>
 
-                    <Field label={t("apps.contacts.fields.urls")} fullWidth>
+                    <DetailRow label={t("apps.contacts.fields.emails")}>
                       <textarea
                         rows={2}
-                        className={inputClassName}
-                        value={formatMultivalue(
-                          selectedContact.urls.map((item) => item.value)
-                        )}
+                        className={compactInputClassName}
+                        value={formatMultivalue(selectedContact.emails.map((item) => item.value))}
                         onChange={(event) =>
                           updateSelectedContact({
-                            urls: splitMultivalueInput(event.target.value),
+                            emails: splitMultivalueInput(event.target.value),
                           })
                         }
                         placeholder={t("apps.contacts.placeholders.multiValue")}
                       />
-                    </Field>
+                    </DetailRow>
 
-                    <Field
-                      label={t("apps.contacts.fields.addresses")}
-                      fullWidth
-                    >
+                    <DetailRow label={t("apps.contacts.fields.birthday")}>
+                      <input
+                        type="date"
+                        className={compactInputClassName}
+                        value={selectedContact.birthday || ""}
+                        onChange={(event) =>
+                          updateSelectedContact({
+                            birthday: event.target.value || null,
+                          })
+                        }
+                      />
+                    </DetailRow>
+
+                    <DetailRow label={t("apps.contacts.fields.telegramUsername")}>
+                      <input
+                        className={compactInputClassName}
+                        value={selectedContact.telegramUsername}
+                        onChange={(event) =>
+                          updateSelectedContact({
+                            telegramUsername: event.target.value,
+                          })
+                        }
+                      />
+                    </DetailRow>
+
+                    <DetailRow label={t("apps.contacts.fields.telegramUserId")}>
+                      <input
+                        className={compactInputClassName}
+                        value={selectedContact.telegramUserId}
+                        onChange={(event) =>
+                          updateSelectedContact({
+                            telegramUserId: event.target.value,
+                          })
+                        }
+                      />
+                    </DetailRow>
+
+                    <DetailRow label={t("apps.contacts.fields.addresses")}>
                       <textarea
                         rows={3}
-                        className={inputClassName}
+                        className={compactInputClassName}
                         value={formatMultivalue(
                           selectedContact.addresses.map((item) => item.formatted)
                         )}
@@ -380,26 +428,119 @@ export function ContactsAppComponent({
                         }
                         placeholder={t("apps.contacts.placeholders.multiValue")}
                       />
-                    </Field>
+                    </DetailRow>
 
-                    <Field label={t("apps.contacts.fields.notes")} fullWidth>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                      <Field label={t("apps.contacts.fields.firstName")}>
+                        <input
+                          className={compactInputClassName}
+                          value={selectedContact.firstName}
+                          onChange={(event) =>
+                            updateSelectedContact({ firstName: event.target.value })
+                          }
+                        />
+                      </Field>
+                      <Field label={t("apps.contacts.fields.lastName")}>
+                        <input
+                          className={compactInputClassName}
+                          value={selectedContact.lastName}
+                          onChange={(event) =>
+                            updateSelectedContact({ lastName: event.target.value })
+                          }
+                        />
+                      </Field>
+                      <Field label={t("apps.contacts.fields.nickname")}>
+                        <input
+                          className={compactInputClassName}
+                          value={selectedContact.nickname}
+                          onChange={(event) =>
+                            updateSelectedContact({ nickname: event.target.value })
+                          }
+                        />
+                      </Field>
+                      <Field label={t("apps.contacts.fields.source")}>
+                        <input
+                          className={cn(compactInputClassName, "bg-black/5")}
+                          value={selectedContact.source}
+                          readOnly
+                        />
+                      </Field>
+                    </div>
+
+                    <DetailRow label={t("apps.contacts.fields.urls")}>
                       <textarea
-                        rows={6}
-                        className={inputClassName}
+                        rows={2}
+                        className={compactInputClassName}
+                        value={formatMultivalue(selectedContact.urls.map((item) => item.value))}
+                        onChange={(event) =>
+                          updateSelectedContact({
+                            urls: splitMultivalueInput(event.target.value),
+                          })
+                        }
+                        placeholder={t("apps.contacts.placeholders.multiValue")}
+                      />
+                    </DetailRow>
+
+                    <DetailRow label={t("apps.contacts.fields.notes")}>
+                      <textarea
+                        rows={4}
+                        className={compactInputClassName}
                         value={selectedContact.notes}
                         onChange={(event) =>
                           updateSelectedContact({ notes: event.target.value })
                         }
                       />
-                    </Field>
+                    </DetailRow>
                   </div>
-                </div>
+                </>
               ) : (
                 <div className="h-full flex items-center justify-center text-[13px] text-black/55 p-6 text-center">
                   {t("apps.contacts.emptySelection")}
                 </div>
               )}
-            </main>
+            </Panel>
+          </div>
+
+          <div
+            className="flex items-center justify-between px-2 py-1 border-t text-[11px]"
+            style={{
+              borderColor: "rgba(0,0,0,0.12)",
+              background: isMacOsxTheme
+                ? "linear-gradient(to bottom, rgba(226,226,226,0.95), rgba(196,196,196,0.95))"
+                : undefined,
+            }}
+          >
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant={isSystem7Theme ? "player" : "retro"}
+                onClick={handleCreateContact}
+                className="h-6 w-6 px-0"
+                title={t("apps.contacts.menu.newContact")}
+              >
+                <Plus size={12} weight="bold" />
+              </Button>
+              <Button
+                type="button"
+                variant={isSystem7Theme ? "player" : "retro"}
+                onClick={handleImport}
+                className="h-6 w-6 px-0"
+                title={t("apps.contacts.menu.importVCard")}
+              >
+                <UploadSimple size={12} weight="bold" />
+              </Button>
+            </div>
+            <div className="text-black/60">
+              {selectedContact
+                ? t("apps.contacts.buttons.edit", { defaultValue: "Edit" })
+                : "\u00A0"}
+            </div>
+            <div className="text-black/60">
+              {t("apps.contacts.status.cardsCount", {
+                count: totalContacts,
+                defaultValue: "{{count}} cards",
+              })}
+            </div>
           </div>
         </div>
 

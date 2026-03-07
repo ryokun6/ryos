@@ -867,6 +867,9 @@
       }
     },
     "contacts": {
+      "buttons": {
+        "edit": "[TODO] Edit"
+      },
       "description": "[TODO] Address book with vCard import",
       "emptySelection": "[TODO] Select a contact or create a new one to start editing details.",
       "emptyState": "[TODO] No contacts yet. Create one or import a vCard to get started.",
@@ -886,6 +889,17 @@
         "telegramUserId": "[TODO] Telegram User ID",
         "telegramUsername": "[TODO] Telegram Username",
         "urls": "[TODO] Websites / Links"
+      },
+      "groupHeaders": {
+        "groups": "[TODO] Group",
+        "names": "[TODO] Name"
+      },
+      "groups": {
+        "all": "[TODO] All",
+        "birthdays": "[TODO] Birthdays",
+        "imported": "[TODO] Imported",
+        "telegram": "[TODO] Telegram",
+        "work": "[TODO] Work"
       },
       "help": {
         "browseContacts": {
@@ -932,6 +946,9 @@
         "multiValue": "[TODO] Use a new line for each value"
       },
       "searchPlaceholder": "[TODO] Search contacts...",
+      "status": {
+        "cardsCount": "[TODO] {{count}} cards"
+      },
       "title": "[TODO] Contacts"
     },
     "control-panels": {

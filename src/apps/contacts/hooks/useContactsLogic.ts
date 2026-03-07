@@ -9,6 +9,14 @@ import type { Contact, ContactDraft } from "@/utils/contacts";
 import { contactMatchesQuery, sortContacts } from "@/utils/contacts";
 import { helpItems } from "..";
 
+type ContactGroupId = "all" | "imported" | "telegram" | "work" | "birthdays";
+
+interface ContactGroup {
+  id: ContactGroupId;
+  label: string;
+  contacts: Contact[];
+}
+
 export function useContactsLogic() {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("contacts", helpItems);
@@ -20,6 +28,7 @@ export function useContactsLogic() {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState<ContactGroupId>("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -43,13 +52,56 @@ export function useContactsLogic() {
   );
 
   const sortedContacts = useMemo(() => sortContacts(contacts), [contacts]);
+  const contactGroups = useMemo<ContactGroup[]>(() => {
+    const imported = sortedContacts.filter((contact) => contact.source === "vcard");
+    const telegram = sortedContacts.filter(
+      (contact) => Boolean(contact.telegramUsername || contact.telegramUserId)
+    );
+    const work = sortedContacts.filter((contact) =>
+      Boolean(contact.organization || contact.title)
+    );
+    const birthdays = sortedContacts.filter((contact) => Boolean(contact.birthday));
+
+    return [
+      {
+        id: "all",
+        label: t("apps.contacts.groups.all", { defaultValue: "All" }),
+        contacts: sortedContacts,
+      },
+      {
+        id: "imported",
+        label: t("apps.contacts.groups.imported", { defaultValue: "Imported" }),
+        contacts: imported,
+      },
+      {
+        id: "telegram",
+        label: t("apps.contacts.groups.telegram", { defaultValue: "Telegram" }),
+        contacts: telegram,
+      },
+      {
+        id: "work",
+        label: t("apps.contacts.groups.work", { defaultValue: "Work" }),
+        contacts: work,
+      },
+      {
+        id: "birthdays",
+        label: t("apps.contacts.groups.birthdays", { defaultValue: "Birthdays" }),
+        contacts: birthdays,
+      },
+    ];
+  }, [sortedContacts, t]);
+
+  const selectedGroup =
+    contactGroups.find((group) => group.id === selectedGroupId) || contactGroups[0];
+
   const filteredContacts = useMemo(() => {
+    const groupContacts = selectedGroup?.contacts || [];
     return searchQuery.trim()
-      ? sortedContacts.filter((contact) =>
+      ? groupContacts.filter((contact) =>
           contactMatchesQuery(contact, searchQuery)
         )
-      : sortedContacts;
-  }, [searchQuery, sortedContacts]);
+      : groupContacts;
+  }, [searchQuery, selectedGroup]);
 
   const selectedContact = useMemo(
     () =>
@@ -70,6 +122,7 @@ export function useContactsLogic() {
   }, [filteredContacts, selectedContactId, setSelectedContactId]);
 
   const handleCreateContact = () => {
+    setSelectedGroupId("all");
     const id = addContact({ source: "manual" });
     setSelectedContactId(id);
   };
@@ -88,6 +141,10 @@ export function useContactsLogic() {
 
   const handleSelectContact = (contact: Contact) => {
     setSelectedContactId(contact.id);
+  };
+
+  const handleSelectGroup = (groupId: ContactGroupId) => {
+    setSelectedGroupId(groupId);
   };
 
   const updateSelectedContact = (draft: ContactDraft) => {
@@ -149,8 +206,12 @@ export function useContactsLogic() {
     setIsAboutDialogOpen,
     searchQuery,
     setSearchQuery,
+    selectedGroupId,
+    contactGroups,
     contacts: filteredContacts,
+    totalContacts: sortedContacts.length,
     selectedContact,
+    handleSelectGroup,
     handleSelectContact,
     handleCreateContact,
     handleDeleteSelectedContact,
