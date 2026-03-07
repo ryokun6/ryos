@@ -42,6 +42,7 @@ import * as schemas from "./schemas.js";
 import type {
   CalendarControlInput,
   StickiesControlInput,
+  ContactsControlInput,
 } from "./types.js";
 import {
   executeGenerateHtml,
@@ -51,6 +52,7 @@ import {
   executeMemoryDelete,
   executeCalendarControl,
   executeStickiesControl,
+  executeContactsControl,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -65,6 +67,7 @@ export {
   executeMemoryDelete,
   executeCalendarControl,
   executeStickiesControl,
+  executeContactsControl,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -80,6 +83,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "memoryDelete",
   "calendarControl",
   "stickiesControl",
+  "contactsControl",
 ] as const;
 
 export type ChatToolProfile = "all" | "memory" | "telegram";
@@ -186,6 +190,15 @@ export const TOOL_DESCRIPTIONS = {
     "'deleteTodo' removes a todo by ID. " +
     "The Calendar app opens automatically when creating events or todos. " +
     "Use 'list'/'listTodos' first to get IDs before updating, toggling, or deleting.",
+
+  contactsControl:
+    "Manage contacts in ryOS and the synced Redis contacts store. " +
+    "Actions: 'list' returns contacts (optionally filtered by query across names, emails, phones, notes, and Telegram fields); " +
+    "'get' returns one contact by ID; " +
+    "'create' adds a contact with names, organization, phones, emails, URLs, addresses, birthday, notes, or Telegram details; " +
+    "'update' modifies an existing contact by ID; " +
+    "'delete' removes a contact by ID. " +
+    "Use 'list' first to get IDs before calling 'get', 'update', or 'delete'.",
 
   // Unified Memory Tools
   memoryWrite:
@@ -382,6 +395,11 @@ export function createChatTools(
       inputSchema: schemas.calendarControlSchema,
       // No execute - handled client-side (requires Zustand store access)
     },
+    contactsControl: {
+      description: TOOL_DESCRIPTIONS.contactsControl,
+      inputSchema: schemas.contactsControlSchema,
+      // No execute - handled client-side in web chat, server-side in Telegram
+    },
 
     // ============================================================================
     // Unified Memory Tools (Server-side execution)
@@ -433,6 +451,13 @@ export function createChatTools(
         inputSchema: schemas.stickiesControlSchema,
         execute: async (input: StickiesControlInput) => {
           return executeStickiesControl(input, context);
+        },
+      },
+      contactsControl: {
+        description: TOOL_DESCRIPTIONS.contactsControl,
+        inputSchema: schemas.contactsControlSchema,
+        execute: async (input: ContactsControlInput) => {
+          return executeContactsControl(input, context);
         },
       },
     } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;

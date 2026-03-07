@@ -1032,6 +1032,28 @@
           "deletedTodoMsg": "Deleted to-do \"{{title}}\".",
           "unknownAction": "Unknown action: {{action}}"
         },
+        "contacts": {
+          "listing": "Listing contacts…",
+          "loading": "Loading contact…",
+          "creating": "Creating contact…",
+          "updating": "Updating contact…",
+          "deleting": "Deleting contact…",
+          "found": "Found {{count}} contacts",
+          "foundOne": "Found 1 contact",
+          "foundMany": "Found {{count}} contacts",
+          "loaded": "Loaded {{name}}",
+          "loadedContact": "Loaded {{name}}",
+          "created": "Created {{name}}",
+          "createdContact": "Created {{name}}",
+          "updated": "Updated {{name}}",
+          "updatedContact": "Updated {{name}}",
+          "deleted": "Deleted {{name}}",
+          "noContacts": "No contacts found",
+          "missingId": "Missing contact ID",
+          "notFound": "Contact not found: {{id}}",
+          "missingData": "Add at least a name, email, phone, or Telegram field",
+          "noUpdates": "No contact updates provided"
+        },
         "infiniteMac": {
           "startingSystem": "Starting {{system}}…",
           "gettingStatus": "Getting status…",
@@ -2301,6 +2323,7 @@
         "videos": "Videos Library",
         "stickies": "Stickies",
         "calendar": "Calendar",
+        "contacts": "Contacts",
         "waiting": "Waiting for the next eligible change",
         "neverSynced": "Not yet synced",
         "checking": "Checking for cloud updates…",
@@ -2675,6 +2698,91 @@
         "noEvents": "No events to export"
       },
       "today": "Today"
+    },
+    "contacts": {
+      "name": "Contacts",
+      "title": "Contacts",
+      "description": "Address book with vCard import",
+      "searchPlaceholder": "Search contacts...",
+      "emptyState": "No contacts yet. Create one or import a vCard to get started.",
+      "emptySelection": "Select a contact or create a new one to start editing details.",
+      "noSummary": "No phone numbers, email, or notes yet",
+      "groupHeaders": {
+        "groups": "Group",
+        "names": "Name"
+      },
+      "groups": {
+        "all": "All",
+        "imported": "Imported",
+        "telegram": "Telegram",
+        "work": "Work",
+        "birthdays": "Birthdays"
+      },
+      "buttons": {
+        "edit": "Edit"
+      },
+      "menu": {
+        "newContact": "New Contact",
+        "importVCard": "Import vCard…",
+        "deleteContact": "Delete Contact",
+        "help": "Contacts Help",
+        "about": "About Contacts"
+      },
+      "status": {
+        "cardsCount": "{{count}} cards"
+      },
+      "fields": {
+        "displayName": "Display Name",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "nickname": "Nickname",
+        "organization": "Organization",
+        "jobTitle": "Job Title",
+        "emails": "Email Addresses",
+        "phones": "Phone Numbers",
+        "urls": "Websites / Links",
+        "addresses": "Addresses",
+        "birthday": "Birthday",
+        "telegramUsername": "Telegram Username",
+        "telegramUserId": "Telegram User ID",
+        "notes": "Notes",
+        "source": "Source"
+      },
+      "placeholders": {
+        "multiValue": "Use a new line for each value"
+      },
+      "messages": {
+        "deleted": "Deleted {{name}}",
+        "importEmpty": "No contacts were imported from that vCard file.",
+        "imported": "Imported {{imported}} new contacts and merged {{merged}} duplicates.",
+        "importFailed": "Failed to import vCard file."
+      },
+      "help": {
+        "browseContacts": {
+          "title": "Browse Contacts",
+          "description": "Use the left sidebar to search and switch between saved contacts"
+        },
+        "createContacts": {
+          "title": "Create Contacts",
+          "description": "Choose File > New Contact to add names, phone numbers, email, and notes"
+        },
+        "editDetails": {
+          "title": "Edit Details",
+          "description": "Update contact details in the inspector and changes save automatically"
+        },
+        "importVCards": {
+          "title": "Import vCards",
+          "description": "Import .vcf files from the File menu to bring contacts into ryOS"
+        },
+        "useWithRyo": {
+          "title": "Use with Ryo",
+          "description": "Ryo can list, create, update, and search synced contacts in chat and Telegram"
+        },
+        "cloudSync": {
+          "title": "Cloud Sync",
+          "description": "Enable Contacts sync in Control Panels to keep the address book in Redis"
+        }
+      }
     },
     "dashboard": {
       "name": "Dashboard",

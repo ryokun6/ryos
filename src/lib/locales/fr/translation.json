@@ -658,6 +658,28 @@
         "changingSettings": "Modification des paramètres…",
         "closed": "{{appName}} fermé",
         "closing": "Fermeture de {{appName}}…",
+        "contacts": {
+          "created": "Créé {{name}}",
+          "createdContact": "Créé {{name}}",
+          "creating": "Création du contact…",
+          "deleted": "Supprimé {{name}}",
+          "deleting": "Suppression du contact…",
+          "found": "{{count}} contacts trouvés",
+          "foundMany": "{{count}} contacts trouvés",
+          "foundOne": "1 contact trouvé",
+          "listing": "Liste des contacts…",
+          "loaded": "Chargé {{name}}",
+          "loadedContact": "Chargé {{name}}",
+          "loading": "Chargement du contact…",
+          "missingData": "Ajoutez au moins un champ nom, e-mail, téléphone ou Telegram",
+          "missingId": "ID de contact manquant",
+          "noContacts": "Aucun contact trouvé",
+          "noUpdates": "Aucune mise à jour de contact fournie",
+          "notFound": "Contact introuvable : {{id}}",
+          "updated": "Mis à jour {{name}}",
+          "updatedContact": "Mis à jour {{name}}",
+          "updating": "Mise à jour du contact…"
+        },
         "contentWritten": "Contenu écrit",
         "controllingPlayback": "Contrôle de la lecture…",
         "createdDocument": "Document créé : {{path}}",
@@ -844,6 +866,91 @@
         "writingContent": "Écriture du contenu…"
       }
     },
+    "contacts": {
+      "buttons": {
+        "edit": "Modifier"
+      },
+      "description": "Carnet d'adresses avec importation vCard",
+      "emptySelection": "Sélectionnez un contact ou créez-en un nouveau pour commencer à modifier les détails.",
+      "emptyState": "Aucun contact pour l'instant. Créez-en un ou importez une vCard pour commencer.",
+      "fields": {
+        "addresses": "Adresses",
+        "birthday": "Date de naissance",
+        "displayName": "Nom d'affichage",
+        "emails": "Adresses e-mail",
+        "firstName": "Prénom",
+        "jobTitle": "Fonction",
+        "lastName": "Nom de famille",
+        "nickname": "Surnom",
+        "notes": "Notes",
+        "organization": "Organisation",
+        "phones": "Numéros de téléphone",
+        "source": "Source",
+        "telegramUserId": "ID utilisateur Telegram",
+        "telegramUsername": "Nom d'utilisateur Telegram",
+        "urls": "Sites web / Liens"
+      },
+      "groupHeaders": {
+        "groups": "Groupe",
+        "names": "Nom"
+      },
+      "groups": {
+        "all": "Tous",
+        "birthdays": "Anniversaires",
+        "imported": "Importés",
+        "telegram": "Telegram",
+        "work": "Travail"
+      },
+      "help": {
+        "browseContacts": {
+          "description": "Utilisez la barre latérale gauche pour rechercher et basculer entre les contacts enregistrés",
+          "title": "Parcourir les contacts"
+        },
+        "cloudSync": {
+          "description": "Activez la synchronisation des contacts dans les Panneaux de configuration pour conserver le carnet d'adresses dans Redis",
+          "title": "Synchronisation Cloud"
+        },
+        "createContacts": {
+          "description": "Choisissez Fichier > Nouveau contact pour ajouter des noms, numéros de téléphone, e-mails et notes",
+          "title": "Créer des contacts"
+        },
+        "editDetails": {
+          "description": "Mettez à jour les détails du contact dans l'inspecteur et les modifications sont enregistrées automatiquement",
+          "title": "Modifier les détails"
+        },
+        "importVCards": {
+          "description": "Importez des fichiers .vcf depuis le menu Fichier pour importer des contacts dans ryOS",
+          "title": "Importer des vCards"
+        },
+        "useWithRyo": {
+          "description": "Ryo peut lister, créer, mettre à jour et rechercher des contacts synchronisés dans le chat et Telegram",
+          "title": "Utiliser avec Ryo"
+        }
+      },
+      "menu": {
+        "about": "À propos des contacts",
+        "deleteContact": "Supprimer le contact",
+        "help": "Aide Contacts",
+        "importVCard": "Importer une vCard…",
+        "newContact": "Nouveau contact"
+      },
+      "messages": {
+        "deleted": "« {{name}} » supprimé",
+        "importEmpty": "Aucun contact n’a été importé depuis ce fichier vCard.",
+        "importFailed": "Échec de l’importation du fichier vCard.",
+        "imported": "{{imported}} nouveaux contacts importés et {{merged}} doublons fusionnés."
+      },
+      "name": "Contacts",
+      "noSummary": "Aucun numéro de téléphone, e-mail ou note pour l’instant",
+      "placeholders": {
+        "multiValue": "Utilisez une nouvelle ligne pour chaque valeur"
+      },
+      "searchPlaceholder": "Rechercher des contacts…",
+      "status": {
+        "cardsCount": "{{count}} fiches"
+      },
+      "title": "Contacts"
+    },
     "control-panels": {
       "aiModel": "Modèle d'IA",
       "aiModelDescription": "Utilisé dans les discussions, IE, et plus encore",
@@ -860,6 +967,7 @@
       "autoSync": {
         "calendar": "Calendrier",
         "checking": "Vérification des mises à jour cloud…",
+        "contacts": "Contacts",
         "daysAgo": "il y a {{count}}j",
         "description": "Synchronise automatiquement les bibliothèques et réglages sélectionnés avec le cloud après des changements importants",
         "error": "Problème de synchronisation : {{error}}",

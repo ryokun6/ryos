@@ -658,6 +658,28 @@
         "changingSettings": "설정 변경 중…",
         "closed": "{{appName}} 닫힘",
         "closing": "{{appName}} 닫는 중…",
+        "contacts": {
+          "created": "{{name}} 생성됨",
+          "createdContact": "{{name}} 생성됨",
+          "creating": "연락처 생성 중…",
+          "deleted": "{{name}} 삭제됨",
+          "deleting": "연락처 삭제 중…",
+          "found": "연락처 {{count}}개 찾음",
+          "foundMany": "연락처 {{count}}개 찾음",
+          "foundOne": "연락처 1개 찾음",
+          "listing": "연락처 목록 불러오는 중…",
+          "loaded": "{{name}} 로드됨",
+          "loadedContact": "{{name}} 로드됨",
+          "loading": "연락처 로드 중…",
+          "missingData": "이름, 이메일, 전화번호 또는 텔레그램 필드 중 하나 이상을 추가하세요",
+          "missingId": "연락처 ID 누락",
+          "noContacts": "연락처를 찾을 수 없음",
+          "noUpdates": "제공된 연락처 업데이트 없음",
+          "notFound": "연락처를 찾을 수 없음: {{id}}",
+          "updated": "{{name}} 업데이트됨",
+          "updatedContact": "{{name}} 업데이트됨",
+          "updating": "연락처 업데이트 중…"
+        },
         "contentWritten": "내용 작성됨",
         "controllingPlayback": "재생 제어 중…",
         "createdDocument": "문서 생성됨: {{path}}",
@@ -844,6 +866,91 @@
         "writingContent": "내용 쓰는 중…"
       }
     },
+    "contacts": {
+      "buttons": {
+        "edit": "편집"
+      },
+      "description": "vCard 가져오기 지원 주소록",
+      "emptySelection": "세부 정보 편집을 시작하려면 연락처를 선택하거나 새로 만드세요.",
+      "emptyState": "아직 연락처가 없습니다. 새 연락처를 만들거나 vCard를 가져와서 시작하세요.",
+      "fields": {
+        "addresses": "주소",
+        "birthday": "생일",
+        "displayName": "표시 이름",
+        "emails": "이메일 주소",
+        "firstName": "이름",
+        "jobTitle": "직책",
+        "lastName": "성",
+        "nickname": "별명",
+        "notes": "메모",
+        "organization": "조직",
+        "phones": "전화번호",
+        "source": "출처",
+        "telegramUserId": "Telegram 사용자 ID",
+        "telegramUsername": "Telegram 사용자 이름",
+        "urls": "웹사이트 / 링크"
+      },
+      "groupHeaders": {
+        "groups": "그룹",
+        "names": "이름"
+      },
+      "groups": {
+        "all": "모두",
+        "birthdays": "생일",
+        "imported": "가져온 연락처",
+        "telegram": "텔레그램",
+        "work": "직장"
+      },
+      "help": {
+        "browseContacts": {
+          "description": "저장된 연락처를 검색하고 전환하려면 왼쪽 사이드바를 사용하세요",
+          "title": "연락처 찾아보기"
+        },
+        "cloudSync": {
+          "description": "주소록을 Redis에 보관하려면 제어판에서 연락처 동기화를 활성화하세요",
+          "title": "클라우드 동기화"
+        },
+        "createContacts": {
+          "description": "이름, 전화번호, 이메일, 메모를 추가하려면 파일 > 새 연락처를 선택하세요",
+          "title": "연락처 만들기"
+        },
+        "editDetails": {
+          "description": "검사기에서 연락처 세부 정보를 업데이트하면 변경 사항이 자동으로 저장됩니다",
+          "title": "세부 정보 편집"
+        },
+        "importVCards": {
+          "description": "연락처를 ryOS로 가져오려면 파일 메뉴에서 .vcf 파일을 가져오세요",
+          "title": "vCard 가져오기"
+        },
+        "useWithRyo": {
+          "description": "Ryo는 채팅 및 텔레그램에서 동기화된 연락처를 나열, 생성, 업데이트 및 검색할 수 있습니다",
+          "title": "Ryo와 함께 사용"
+        }
+      },
+      "menu": {
+        "about": "연락처 정보",
+        "deleteContact": "연락처 삭제",
+        "help": "연락처 도움말",
+        "importVCard": "vCard 가져오기…",
+        "newContact": "새 연락처"
+      },
+      "messages": {
+        "deleted": "{{name}} 삭제됨",
+        "importEmpty": "해당 vCard 파일에서 가져온 연락처가 없습니다.",
+        "importFailed": "vCard 파일을 가져오지 못했습니다.",
+        "imported": "{{imported}}개의 새 연락처를 가져왔고, {{merged}}개의 중복 항목을 병합했습니다."
+      },
+      "name": "연락처",
+      "noSummary": "아직 전화번호, 이메일 또는 메모가 없습니다",
+      "placeholders": {
+        "multiValue": "각 값을 새 줄에 입력"
+      },
+      "searchPlaceholder": "연락처 검색…",
+      "status": {
+        "cardsCount": "{{count}}개의 카드"
+      },
+      "title": "연락처"
+    },
     "control-panels": {
       "aiModel": "AI 모델",
       "aiModelDescription": "채팅, IE 등에서 사용됨",
@@ -860,6 +967,7 @@
       "autoSync": {
         "calendar": "캘린더",
         "checking": "클라우드 업데이트 확인 중…",
+        "contacts": "연락처",
         "daysAgo": "{{count}}일 전",
         "description": "중요한 변경 후 선택한 라이브러리와 설정을 자동으로 클라우드와 동기화합니다",
         "error": "동기화 문제: {{error}}",

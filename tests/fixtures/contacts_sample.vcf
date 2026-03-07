@@ -1,0 +1,19 @@
+BEGIN:VCARD
+VERSION:3.0
+FN:Avery Chen
+N:Chen;Avery;;;
+ORG:ryOS
+TITLE:Platform Engineer
+EMAIL;TYPE=WORK:avery@example.com
+TEL;TYPE=CELL:+1 555 0100
+URL:https://t.me/averyc
+NOTE:Prefers Telegram for quick replies.
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+FN:Maya Rivers
+N:Rivers;Maya;;;
+EMAIL;TYPE=HOME:maya@example.com
+TEL;TYPE=HOME:+1 555 0111
+ADR;TYPE=HOME:;;123 River St;Oakland;CA;94607;USA
+END:VCARD

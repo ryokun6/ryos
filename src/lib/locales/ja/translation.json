@@ -658,6 +658,28 @@
         "changingSettings": "設定を変更中…",
         "closed": "{{appName}} を閉じました",
         "closing": "{{appName}} を閉じています…",
+        "contacts": {
+          "created": "{{name}} を作成しました",
+          "createdContact": "{{name}} を作成しました",
+          "creating": "連絡先を作成中…",
+          "deleted": "{{name}} を削除しました",
+          "deleting": "連絡先を削除中…",
+          "found": "連絡先が {{count}} 件見つかりました",
+          "foundMany": "連絡先が {{count}} 件見つかりました",
+          "foundOne": "連絡先が 1 件見つかりました",
+          "listing": "連絡先を一覧表示中…",
+          "loaded": "{{name}} を読み込みました",
+          "loadedContact": "{{name}} を読み込みました",
+          "loading": "連絡先を読み込み中…",
+          "missingData": "少なくとも名前、メールアドレス、電話番号、またはTelegramフィールドを追加してください",
+          "missingId": "連絡先IDがありません",
+          "noContacts": "連絡先が見つかりませんでした",
+          "noUpdates": "連絡先の更新情報が提供されていません",
+          "notFound": "連絡先が見つかりません: {{id}}",
+          "updated": "{{name}} を更新しました",
+          "updatedContact": "{{name}} を更新しました",
+          "updating": "連絡先を更新中…"
+        },
         "contentWritten": "コンテンツを書き込みました",
         "controllingPlayback": "再生を制御中…",
         "createdDocument": "ドキュメントを作成しました: {{path}}",
@@ -844,6 +866,91 @@
         "writingContent": "コンテンツを書き込み中…"
       }
     },
+    "contacts": {
+      "buttons": {
+        "edit": "編集"
+      },
+      "description": "vCardインポート対応アドレス帳",
+      "emptySelection": "連絡先を選択するか、新規作成して詳細の編集を開始してください。",
+      "emptyState": "連絡先がまだありません。新規作成するか、vCardをインポートして開始してください。",
+      "fields": {
+        "addresses": "住所",
+        "birthday": "誕生日",
+        "displayName": "表示名",
+        "emails": "メールアドレス",
+        "firstName": "名",
+        "jobTitle": "役職",
+        "lastName": "姓",
+        "nickname": "ニックネーム",
+        "notes": "メモ",
+        "organization": "所属",
+        "phones": "電話番号",
+        "source": "ソース",
+        "telegramUserId": "TelegramユーザーID",
+        "telegramUsername": "Telegramユーザー名",
+        "urls": "ウェブサイト / リンク"
+      },
+      "groupHeaders": {
+        "groups": "グループ",
+        "names": "名前"
+      },
+      "groups": {
+        "all": "すべて",
+        "birthdays": "誕生日",
+        "imported": "インポート済み",
+        "telegram": "Telegram",
+        "work": "職場"
+      },
+      "help": {
+        "browseContacts": {
+          "description": "左サイドバーを使って、保存済みの連絡先を検索したり切り替えたりできます",
+          "title": "連絡先をブラウズ"
+        },
+        "cloudSync": {
+          "description": "コントロールパネルで連絡先の同期を有効にして、アドレス帳をRedisに保存します",
+          "title": "クラウド同期"
+        },
+        "createContacts": {
+          "description": "ファイル > 新規連絡先を選択して、名前、電話番号、メールアドレス、メモを追加します",
+          "title": "連絡先を作成"
+        },
+        "editDetails": {
+          "description": "インスペクタで連絡先の詳細を更新すると、変更は自動的に保存されます",
+          "title": "詳細を編集"
+        },
+        "importVCards": {
+          "description": "ファイルメニューから.vcfファイルをインポートして、連絡先をryOSに取り込みます",
+          "title": "vCardをインポート"
+        },
+        "useWithRyo": {
+          "description": "Ryoは、チャットやTelegramで同期された連絡先を一覧表示、作成、更新、検索できます",
+          "title": "Ryoと連携"
+        }
+      },
+      "menu": {
+        "about": "連絡先について",
+        "deleteContact": "連絡先を削除",
+        "help": "連絡先ヘルプ",
+        "importVCard": "vCardをインポート…",
+        "newContact": "新しい連絡先"
+      },
+      "messages": {
+        "deleted": "{{name}}を削除しました",
+        "importEmpty": "そのvCardファイルからは連絡先がインポートされませんでした。",
+        "importFailed": "vCardファイルのインポートに失敗しました。",
+        "imported": "{{imported}}件の新しい連絡先をインポートし、{{merged}}件の重複を統合しました。"
+      },
+      "name": "連絡先",
+      "noSummary": "電話番号、メール、メモはまだありません",
+      "placeholders": {
+        "multiValue": "各値は改行で入力してください"
+      },
+      "searchPlaceholder": "連絡先を検索…",
+      "status": {
+        "cardsCount": "{{count}}件"
+      },
+      "title": "連絡先"
+    },
     "control-panels": {
       "aiModel": "AIモデル",
       "aiModelDescription": "チャット、IEなどで使用",
@@ -860,6 +967,7 @@
       "autoSync": {
         "calendar": "カレンダー",
         "checking": "クラウド更新を確認中…",
+        "contacts": "連絡先",
         "daysAgo": "{{count}}日前",
         "description": "重要な更新後に、選択したライブラリと設定を自動的にクラウドへ同期します",
         "error": "同期の問題: {{error}}",

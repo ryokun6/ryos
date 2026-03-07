@@ -658,6 +658,28 @@
         "changingSettings": "Modifica impostazioni…",
         "closed": "Chiuso {{appName}}",
         "closing": "Chiusura {{appName}}…",
+        "contacts": {
+          "created": "Creato {{name}}",
+          "createdContact": "Creato {{name}}",
+          "creating": "Creazione contatto…",
+          "deleted": "Eliminato {{name}}",
+          "deleting": "Eliminazione contatto…",
+          "found": "Trovati {{count}} contatti",
+          "foundMany": "Trovati {{count}} contatti",
+          "foundOne": "Trovato 1 contatto",
+          "listing": "Elenco contatti…",
+          "loaded": "Caricato {{name}}",
+          "loadedContact": "Caricato {{name}}",
+          "loading": "Caricamento contatto…",
+          "missingData": "Aggiungi almeno un campo nome, email, telefono o Telegram",
+          "missingId": "ID contatto mancante",
+          "noContacts": "Nessun contatto trovato",
+          "noUpdates": "Nessun aggiornamento contatto fornito",
+          "notFound": "Contatto non trovato: {{id}}",
+          "updated": "Aggiornato {{name}}",
+          "updatedContact": "Aggiornato {{name}}",
+          "updating": "Aggiornamento contatto…"
+        },
         "contentWritten": "Contenuto scritto",
         "controllingPlayback": "Controllo riproduzione…",
         "createdDocument": "Documento creato: {{path}}",
@@ -844,6 +866,91 @@
         "writingContent": "Scrittura contenuto…"
       }
     },
+    "contacts": {
+      "buttons": {
+        "edit": "Modifica"
+      },
+      "description": "Rubrica con importazione vCard",
+      "emptySelection": "Seleziona un contatto o creane uno nuovo per iniziare a modificare i dettagli.",
+      "emptyState": "Nessun contatto ancora. Creane uno o importa una vCard per iniziare.",
+      "fields": {
+        "addresses": "Indirizzi",
+        "birthday": "Compleanno",
+        "displayName": "Nome visualizzato",
+        "emails": "Indirizzi email",
+        "firstName": "Nome",
+        "jobTitle": "Qualifica",
+        "lastName": "Cognome",
+        "nickname": "Soprannome",
+        "notes": "Note",
+        "organization": "Organizzazione",
+        "phones": "Numeri di telefono",
+        "source": "Origine",
+        "telegramUserId": "ID utente Telegram",
+        "telegramUsername": "Nome utente Telegram",
+        "urls": "Siti web / Link"
+      },
+      "groupHeaders": {
+        "groups": "Gruppo",
+        "names": "Nome"
+      },
+      "groups": {
+        "all": "Tutti",
+        "birthdays": "Compleanni",
+        "imported": "Importati",
+        "telegram": "Telegram",
+        "work": "Lavoro"
+      },
+      "help": {
+        "browseContacts": {
+          "description": "Usa la barra laterale sinistra per cercare e passare tra i contatti salvati",
+          "title": "Sfoglia Contatti"
+        },
+        "cloudSync": {
+          "description": "Abilita la sincronizzazione dei contatti nei Pannelli di Controllo per mantenere la rubrica in Redis",
+          "title": "Sincronizzazione Cloud"
+        },
+        "createContacts": {
+          "description": "Scegli File > Nuovo Contatto per aggiungere nomi, numeri di telefono, email e note",
+          "title": "Crea Contatti"
+        },
+        "editDetails": {
+          "description": "Aggiorna i dettagli del contatto nell'ispettore e le modifiche verranno salvate automaticamente",
+          "title": "Modifica Dettagli"
+        },
+        "importVCards": {
+          "description": "Importa file .vcf dal menu File per portare i contatti in ryOS",
+          "title": "Importa vCard"
+        },
+        "useWithRyo": {
+          "description": "Ryo può elencare, creare, aggiornare e cercare contatti sincronizzati in chat e Telegram",
+          "title": "Usa con Ryo"
+        }
+      },
+      "menu": {
+        "about": "Informazioni sui Contatti",
+        "deleteContact": "Elimina Contatto",
+        "help": "Aiuto Contatti",
+        "importVCard": "Importa vCard…",
+        "newContact": "Nuovo Contatto"
+      },
+      "messages": {
+        "deleted": "Eliminato {{name}}",
+        "importEmpty": "Nessun contatto è stato importato da quel file vCard.",
+        "importFailed": "Impossibile importare il file vCard.",
+        "imported": "Importati {{imported}} nuovi contatti e uniti {{merged}} duplicati."
+      },
+      "name": "Contatti",
+      "noSummary": "Ancora nessun numero di telefono, email o nota.",
+      "placeholders": {
+        "multiValue": "Usa una nuova riga per ogni valore"
+      },
+      "searchPlaceholder": "Cerca contatti…",
+      "status": {
+        "cardsCount": "{{count}} schede"
+      },
+      "title": "Contatti"
+    },
     "control-panels": {
       "aiModel": "Modello AI",
       "aiModelDescription": "Utilizzato in Chat, IE e altro",
@@ -860,6 +967,7 @@
       "autoSync": {
         "calendar": "Calendario",
         "checking": "Controllo degli aggiornamenti cloud…",
+        "contacts": "Contatti",
         "daysAgo": "{{count}}g fa",
         "description": "Sincronizza automaticamente le librerie e le impostazioni selezionate con il cloud dopo modifiche importanti",
         "error": "Problema di sincronizzazione: {{error}}",
