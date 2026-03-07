@@ -248,13 +248,107 @@ export function ContactsAppComponent({
             isMacOsxTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
           )}
         >
-          <div className="flex items-center justify-end px-3 pt-2 pb-1">
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={t("apps.contacts.searchPlaceholder")}
-              className="w-[220px] rounded-full border border-black/20 bg-white px-3 py-1 text-[12px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none"
-            />
+          <div
+            className={cn(
+              "flex items-center justify-between py-1.5 border-b",
+              isMacOsxTheme ? "px-1" : "px-2"
+            )}
+            style={{
+              borderColor: isXpTheme
+                ? "#ACA899"
+                : isMacOsxTheme
+                  ? "rgba(0,0,0,0.18)"
+                  : "rgba(0,0,0,0.1)",
+              background: isXpTheme
+                ? "#ECE9D8"
+                : isMacOsxTheme
+                  ? "transparent"
+                  : "#e0e0e0",
+            }}
+          >
+            {isMacOsxTheme ? (
+              <>
+                <div className="metal-inset-btn-group">
+                  <button
+                    type="button"
+                    className="metal-inset-btn metal-inset-icon"
+                    onClick={handleCreateContact}
+                    title={t("apps.contacts.menu.newContact")}
+                  >
+                    <Plus size={10} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    className="metal-inset-btn metal-inset-icon"
+                    onClick={handleImport}
+                    title={t("apps.contacts.menu.importVCard")}
+                  >
+                    <UploadSimple size={10} weight="bold" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="metal-inset-btn-group">
+                    <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]">
+                      {t("apps.contacts.buttons.edit", { defaultValue: "Edit" })}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={t("apps.contacts.searchPlaceholder")}
+                    className="w-[220px] rounded-full border border-black/20 bg-white px-3 py-1 text-[12px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none"
+                  />
+                  <div className="text-black/60 font-geneva-12 text-[11px] px-1">
+                    {t("apps.contacts.status.cardsCount", {
+                      count: totalContacts,
+                      defaultValue: "{{count}} cards",
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-0">
+                  <Button
+                    type="button"
+                    variant={isSystem7Theme ? "player" : "ghost"}
+                    onClick={handleCreateContact}
+                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    title={t("apps.contacts.menu.newContact")}
+                  >
+                    <Plus size={12} weight="bold" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={isSystem7Theme ? "player" : "ghost"}
+                    onClick={handleImport}
+                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    title={t("apps.contacts.menu.importVCard")}
+                  >
+                    <UploadSimple size={12} weight="bold" />
+                  </Button>
+                </div>
+                <div className={cn("text-[11px]", useGeneva && "font-geneva-12")}>
+                  {t("apps.contacts.buttons.edit", { defaultValue: "Edit" })}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={t("apps.contacts.searchPlaceholder")}
+                    className="w-[220px] rounded-full border border-black/20 bg-white px-3 py-1 text-[12px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none"
+                  />
+                  <div className={cn("text-black/60 text-[11px]", useGeneva && "font-geneva-12")}>
+                    {t("apps.contacts.status.cardsCount", {
+                      count: totalContacts,
+                      defaultValue: "{{count}} cards",
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className={cn("flex-1 flex overflow-hidden", isMacOsxTheme && "gap-[5px] px-[5px] pb-[5px]")}>
@@ -511,85 +605,6 @@ export function ContactsAppComponent({
             </Panel>
           </div>
 
-          <div
-            className={cn("flex items-center justify-between py-1.5 border-t", isMacOsxTheme ? "px-1" : "px-2")}
-            style={{
-              borderColor: isXpTheme ? "#ACA899" : isMacOsxTheme ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.1)",
-              background: isXpTheme ? "#ECE9D8" : isMacOsxTheme ? "transparent" : "#e0e0e0",
-            }}
-          >
-            {isMacOsxTheme ? (
-              <>
-                <div className="metal-inset-btn-group">
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    onClick={handleCreateContact}
-                    title={t("apps.contacts.menu.newContact")}
-                  >
-                    <Plus size={10} weight="bold" />
-                  </button>
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    onClick={handleImport}
-                    title={t("apps.contacts.menu.importVCard")}
-                  >
-                    <UploadSimple size={10} weight="bold" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="metal-inset-btn-group">
-                    <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]">
-                      {selectedContact
-                        ? t("apps.contacts.buttons.edit", { defaultValue: "Edit" })
-                        : t("apps.contacts.buttons.edit", { defaultValue: "Edit" })}
-                    </button>
-                  </div>
-                </div>
-                <div className="text-black/60 font-geneva-12 text-[11px] px-1">
-                  {t("apps.contacts.status.cardsCount", {
-                    count: totalContacts,
-                    defaultValue: "{{count}} cards",
-                  })}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-0">
-                  <Button
-                    type="button"
-                    variant={isSystem7Theme ? "player" : "ghost"}
-                    onClick={handleCreateContact}
-                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
-                    title={t("apps.contacts.menu.newContact")}
-                  >
-                    <Plus size={12} weight="bold" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={isSystem7Theme ? "player" : "ghost"}
-                    onClick={handleImport}
-                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
-                    title={t("apps.contacts.menu.importVCard")}
-                  >
-                    <UploadSimple size={12} weight="bold" />
-                  </Button>
-                </div>
-                <div className={cn("text-[11px]", useGeneva && "font-geneva-12")}>
-                  {selectedContact
-                    ? t("apps.contacts.buttons.edit", { defaultValue: "Edit" })
-                    : "\u00A0"}
-                </div>
-                <div className={cn("text-black/60 text-[11px]", useGeneva && "font-geneva-12")}>
-                  {t("apps.contacts.status.cardsCount", {
-                    count: totalContacts,
-                    defaultValue: "{{count}} cards",
-                  })}
-                </div>
-              </>
-            )}
-          </div>
         </div>
 
         <HelpDialog
