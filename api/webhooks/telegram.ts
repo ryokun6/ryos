@@ -18,6 +18,10 @@ import {
   type TelegramUpdate,
 } from "../_utils/telegram.js";
 import {
+  createTelegramStatusReporter,
+  getTelegramToolStatusText,
+} from "../_utils/telegram-status.js";
+import {
   prepareRyoConversationModelInput,
   type SimpleConversationMessage,
 } from "../_utils/ryo-conversation.js";
@@ -110,6 +114,37 @@ function injectImageIntoLastUserMessage(
   } as ModelMessage;
 
   return updated;
+}
+
+function wrapTelegramToolsWithStatus<T extends Record<string, unknown>>(
+  tools: T,
+  onToolStart: (toolName: string, input: unknown) => Promise<void>
+): T {
+  return Object.fromEntries(
+    Object.entries(tools).map(([toolName, tool]) => {
+      if (
+        !tool ||
+        typeof tool !== "object" ||
+        !("execute" in tool) ||
+        typeof (tool as { execute?: unknown }).execute !== "function"
+      ) {
+        return [toolName, tool];
+      }
+
+      return [
+        toolName,
+        {
+          ...tool,
+          execute: async (...args: unknown[]) => {
+            await onToolStart(toolName, args[0]);
+            return await (tool as { execute: (...callArgs: unknown[]) => Promise<unknown> }).execute(
+              ...args
+            );
+          },
+        },
+      ];
+    })
+  ) as T;
 }
 
 export default async function handler(
@@ -351,59 +386,89 @@ export default async function handler(
     ? injectImageIntoLastUserMessage(enrichedMessages as ModelMessage[], imageData)
     : (enrichedMessages as ModelMessage[]);
 
-  const { text } = await generateText({
-    model: selectedModel,
-    messages: finalMessages as any,
-    tools: tools as any,
-    temperature: 0.7,
-    maxOutputTokens: 4000,
-    stopWhen: stepCountIs(6),
-    providerOptions: {
-      openai: {
-        reasoningEffort: "none",
-      },
-    },
-  });
-
-  const replyText = text.trim();
-  if (!replyText) {
-    logger.warn("Generated empty Telegram reply", {
-      username: linkedAccount.username,
-      updateId: parsedUpdate.updateId,
-    });
-    logger.response(500, Date.now() - startTime);
-    sendJson(res, 500, { error: "Generated empty reply" });
-    return;
-  }
-
-  await sendTelegramMessage({
+  const statusReporter = createTelegramStatusReporter({
     botToken,
     chatId: parsedUpdate.chatId,
-    text: replyText,
-    replyToMessageId: parsedUpdate.messageId,
+    logWarn: (message, details) => logger.warn(message, details),
   });
 
-  const timestamp = Date.now();
-  await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
-    role: "user",
-    content: userMessageText || "[sent an image]",
-    createdAt: timestamp,
-    ...(imageData ? { imageUrl: "photo" } : {}),
-  });
-  await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
-    role: "assistant",
-    content: replyText,
-    createdAt: timestamp,
-  });
-  await markTelegramUpdateProcessed(redis, parsedUpdate.updateId);
+  try {
+    await statusReporter.start();
 
-  logger.info("Telegram message handled", {
-    username: linkedAccount.username,
-    telegramUserId: parsedUpdate.telegramUserId,
-    updateId: parsedUpdate.updateId,
-    hasImage: !!imageData,
-    replyLength: replyText.length,
-  });
-  logger.response(200, Date.now() - startTime);
-  sendJson(res, 200, { success: true, reply: replyText });
+    const toolsWithStatus = wrapTelegramToolsWithStatus(
+      tools as Record<string, unknown>,
+      async (toolName, input) => {
+        const statusText = getTelegramToolStatusText(toolName, input);
+        logger.info("Telegram tool started", {
+          username: linkedAccount.username,
+          toolName,
+          statusText,
+        });
+        await statusReporter.markTool(toolName, input);
+      }
+    );
+
+    const { text } = await generateText({
+      model: selectedModel,
+      messages: finalMessages,
+      tools: toolsWithStatus,
+      temperature: 0.7,
+      maxOutputTokens: 4000,
+      stopWhen: stepCountIs(6),
+      providerOptions: {
+        openai: {
+          reasoningEffort: "none",
+        },
+      },
+      onStepFinish: async (stepResult) => {
+        if (stepResult.toolResults.length > 0) {
+          await statusReporter.markThinking();
+        }
+      },
+    });
+
+    const replyText = text.trim();
+    if (!replyText) {
+      logger.warn("Generated empty Telegram reply", {
+        username: linkedAccount.username,
+        updateId: parsedUpdate.updateId,
+      });
+      logger.response(500, Date.now() - startTime);
+      sendJson(res, 500, { error: "Generated empty reply" });
+      return;
+    }
+
+    await sendTelegramMessage({
+      botToken,
+      chatId: parsedUpdate.chatId,
+      text: replyText,
+      replyToMessageId: parsedUpdate.messageId,
+    });
+
+    const timestamp = Date.now();
+    await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
+      role: "user",
+      content: userMessageText || "[sent an image]",
+      createdAt: timestamp,
+      ...(imageData ? { imageUrl: "photo" } : {}),
+    });
+    await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
+      role: "assistant",
+      content: replyText,
+      createdAt: timestamp,
+    });
+    await markTelegramUpdateProcessed(redis, parsedUpdate.updateId);
+
+    logger.info("Telegram message handled", {
+      username: linkedAccount.username,
+      telegramUserId: parsedUpdate.telegramUserId,
+      updateId: parsedUpdate.updateId,
+      hasImage: !!imageData,
+      replyLength: replyText.length,
+    });
+    logger.response(200, Date.now() - startTime);
+    sendJson(res, 200, { success: true, reply: replyText });
+  } finally {
+    await statusReporter.dispose();
+  }
 }

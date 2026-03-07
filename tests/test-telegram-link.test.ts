@@ -161,6 +161,7 @@ describe("telegram helpers", () => {
       lastName: null,
       isPrivateChat: true,
       startPayload: "link_abc",
+      photoFileId: null,
     });
   });
 
