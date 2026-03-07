@@ -1,10 +1,12 @@
 import type { DailyNote } from "../api/_utils/_memory";
 import { describe, expect, test } from "bun:test";
 import {
+  buildTelegramHeartbeatConversationContext,
   buildTelegramHeartbeatLogEntry,
   buildTelegramHeartbeatPrompt,
   buildTelegramHeartbeatRedisKey,
   formatTelegramHeartbeatEntries,
+  formatTelegramConversationEntries,
   getTelegramHeartbeatAuthSecret,
   getTelegramHeartbeatSlot,
   parseTelegramHeartbeatResult,
@@ -40,6 +42,24 @@ const sampleDailyNote: DailyNote = {
   updatedAt: 300,
 };
 
+const sampleConversationHistory = [
+  {
+    role: "user" as const,
+    content: "i still need to send the onboarding doc",
+    createdAt: 400,
+  },
+  {
+    role: "assistant" as const,
+    content: "want me to draft the onboarding doc follow-up?",
+    createdAt: 450,
+  },
+  {
+    role: "user" as const,
+    content: "done with that, now i need to review the cron behavior",
+    createdAt: 500,
+  },
+];
+
 describe("telegram heartbeat helpers", () => {
   test("builds stable slot keys for 30-minute windows", () => {
     const firstWindow = new Date("2026-03-07T18:00:00.000Z");
@@ -63,15 +83,20 @@ describe("telegram heartbeat helpers", () => {
   test("keeps the heartbeat prompt proactive and tool-aware", () => {
     const prompt = buildTelegramHeartbeatPrompt({
       dailyNoteSnapshot: "- 10:15:00: need to review the latest cron behavior",
+      recentTelegramSnapshot:
+        "- 2026-03-07T18:00:00.000Z user: done with the onboarding doc\n- 2026-03-07T18:05:00.000Z assistant: want me to review the cron behavior next?",
       heartbeatLogSnapshot:
         "- 09:30:00: [telegram heartbeat] sent - checking in about the onboarding doc edits",
     });
 
-    expect(prompt).toContain("Read today's daily-note snapshot first");
+    expect(prompt).toContain("recent Telegram chat snapshot");
     expect(prompt).toContain("use memoryRead");
     expect(prompt).toContain("Telegram-safe tools");
-    expect(prompt).toContain("Do not infer, resurrect, or repeat old tasks");
+    expect(prompt).toContain("Do not infer, resurrect, or repeat stale tasks");
+    expect(prompt).toContain("fresh insight");
+    expect(prompt).toContain("did not get a user response");
     expect(prompt).toContain("Do not mention that this message is automated");
+    expect(prompt).toContain("RECENT TELEGRAM CHAT:");
     expect(prompt).toContain(TELEGRAM_HEARTBEAT_SKIP_TOKEN);
   });
 
@@ -84,7 +109,7 @@ describe("telegram heartbeat helpers", () => {
     expect(noteContext.latestLogTimestamp).toBe(200);
   });
 
-  test("skips when no actionable notes or no new notes exist", () => {
+  test("skips when no current or no new signals exist", () => {
     expect(
       shouldSendTelegramHeartbeat(
         splitTelegramHeartbeatEntries({
@@ -92,12 +117,13 @@ describe("telegram heartbeat helpers", () => {
           entries: sampleDailyNote.entries.filter((entry) =>
             entry.content.startsWith("[telegram heartbeat]")
           ),
-        })
+        }),
+        buildTelegramHeartbeatConversationContext([])
       )
     ).toEqual({
       shouldSend: false,
-      reason: "nothing in today's daily notes needs attention",
-      code: "no-actionable-notes",
+      reason: "nothing current in daily notes or recent telegram chats needs attention",
+      code: "no-current-signals",
     });
 
     expect(
@@ -117,12 +143,39 @@ describe("telegram heartbeat helpers", () => {
                 "[telegram heartbeat] skipped - no new daily-note items since the last heartbeat check",
             },
           ],
-        })
+        }),
+        buildTelegramHeartbeatConversationContext([
+          {
+            role: "user",
+            content: "can you remind me about the onboarding doc?",
+            createdAt: 150,
+          },
+        ])
       )
     ).toEqual({
       shouldSend: false,
-      reason: "no new daily-note items since the last heartbeat check",
-      code: "no-new-actionable-notes",
+      reason: "no new daily-note items or telegram task signals since the last heartbeat check",
+      code: "no-new-signals",
+    });
+  });
+
+  test("sends when recent telegram chat has a newer signal than the last heartbeat log", () => {
+    const noteContext = splitTelegramHeartbeatEntries({
+      ...sampleDailyNote,
+      entries: sampleDailyNote.entries.filter((entry) =>
+        entry.content.startsWith("[telegram heartbeat]")
+      ),
+    });
+
+    expect(
+      shouldSendTelegramHeartbeat(
+        noteContext,
+        buildTelegramHeartbeatConversationContext(sampleConversationHistory)
+      )
+    ).toEqual({
+      shouldSend: true,
+      reason: "daily notes or recent telegram chats contain something new that may need attention",
+      code: "send",
     });
   });
 
@@ -146,6 +199,12 @@ describe("telegram heartbeat helpers", () => {
         reason: "nothing in today's daily notes needs attention",
       })
     ).toContain("[telegram heartbeat] skipped");
+  });
+
+  test("formats recent telegram chats for prompt context", () => {
+    expect(formatTelegramConversationEntries(sampleConversationHistory)).toContain(
+      "user: done with that, now i need to review the cron behavior"
+    );
   });
 
   test("uses CRON_SECRET for heartbeat auth", () => {
@@ -182,6 +241,8 @@ describe("telegram heartbeat helpers", () => {
           role: "user",
           content: buildTelegramHeartbeatPrompt({
             dailyNoteSnapshot: "- 10:15:00: need to review the latest cron behavior",
+            recentTelegramSnapshot:
+              "- 2026-03-07T18:00:00.000Z user: done with the onboarding doc\n- 2026-03-07T18:05:00.000Z assistant: want me to review the cron behavior next?",
             heartbeatLogSnapshot:
               "- 09:30:00: [telegram heartbeat] sent - checking in about the onboarding doc edits",
           }),

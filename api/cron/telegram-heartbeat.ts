@@ -15,10 +15,12 @@ import {
 import { sendTelegramMessage } from "../_utils/telegram.js";
 import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
 import {
+  buildTelegramHeartbeatConversationContext,
   buildTelegramHeartbeatLogEntry,
   buildTelegramHeartbeatPrompt,
   buildTelegramHeartbeatRedisKey,
   formatTelegramHeartbeatEntries,
+  formatTelegramConversationEntries,
   getTelegramHeartbeatAuthSecret,
   parseTelegramHeartbeatResult,
   shouldSendTelegramHeartbeat,
@@ -178,7 +180,9 @@ export default async function handler(
   const today = getTodayDateString(TELEGRAM_HEARTBEAT_TIME_ZONE);
   const todaysDailyNote = await getDailyNote(redis, username, today);
   const noteContext = splitTelegramHeartbeatEntries(todaysDailyNote);
-  const gateDecision = shouldSendTelegramHeartbeat(noteContext);
+  const history = await loadTelegramConversationHistory(redis, linkedAccount.chatId);
+  const conversationContext = buildTelegramHeartbeatConversationContext(history);
+  const gateDecision = shouldSendTelegramHeartbeat(noteContext, conversationContext);
 
   if (!gateDecision.shouldSend) {
     await appendHeartbeatLog(
@@ -198,11 +202,12 @@ export default async function handler(
       code: gateDecision.code,
       checkedAt: Date.now(),
     });
-    logger.info("Skipping telegram heartbeat after reading daily notes first", {
+    logger.info("Skipping telegram heartbeat after reading current notes and chats", {
       username,
       reason: gateDecision.reason,
       actionableEntries: noteContext.actionableEntries.length,
       logEntries: noteContext.logEntries.length,
+      recentMessages: conversationContext.recentMessages.length,
       date: today,
     });
     logger.response(200, Date.now() - startTime);
@@ -216,7 +221,6 @@ export default async function handler(
     return;
   }
 
-  const history = await loadTelegramConversationHistory(redis, linkedAccount.chatId);
   const conversationMessages: SimpleConversationMessage[] = [
     ...history.map((message, index) => ({
       id: `history-${index}`,
@@ -229,6 +233,9 @@ export default async function handler(
       content: buildTelegramHeartbeatPrompt({
         dailyNoteSnapshot: formatTelegramHeartbeatEntries(
           noteContext.actionableEntries
+        ),
+        recentTelegramSnapshot: formatTelegramConversationEntries(
+          conversationContext.recentMessages
         ),
         heartbeatLogSnapshot: formatTelegramHeartbeatEntries(
           noteContext.logEntries
