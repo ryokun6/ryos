@@ -209,37 +209,41 @@ export default async function handler(
     return;
   }
 
-  const userBurstLimit = await RateLimit.checkCounterLimit({
-    key: RateLimit.makeKey([
-      "rl",
-      "telegram",
-      "user",
-      parsedUpdate.telegramUserId,
-    ]),
-    windowSeconds: 5 * 60,
-    limit: 20,
-  });
-  if (!userBurstLimit.allowed) {
-    logger.warn("Telegram user burst rate limit exceeded", {
-      telegramUserId: parsedUpdate.telegramUserId,
-    });
-    logger.response(429, Date.now() - startTime);
-    sendJson(res, 429, { error: "Rate limit exceeded" });
-    return;
-  }
+  const isExemptUser = linkedAccount.username === "ryo";
 
-  const accountLimit = await RateLimit.checkCounterLimit({
-    key: RateLimit.makeKey(["rl", "telegram", "ryos", linkedAccount.username]),
-    windowSeconds: 5 * 60 * 60,
-    limit: 15,
-  });
-  if (!accountLimit.allowed) {
-    logger.warn("Linked ryOS user rate limit exceeded via Telegram", {
-      username: linkedAccount.username,
+  if (!isExemptUser) {
+    const userBurstLimit = await RateLimit.checkCounterLimit({
+      key: RateLimit.makeKey([
+        "rl",
+        "telegram",
+        "user",
+        parsedUpdate.telegramUserId,
+      ]),
+      windowSeconds: 5 * 60,
+      limit: 20,
     });
-    logger.response(429, Date.now() - startTime);
-    sendJson(res, 429, { error: "Rate limit exceeded" });
-    return;
+    if (!userBurstLimit.allowed) {
+      logger.warn("Telegram user burst rate limit exceeded", {
+        telegramUserId: parsedUpdate.telegramUserId,
+      });
+      logger.response(429, Date.now() - startTime);
+      sendJson(res, 429, { error: "Rate limit exceeded" });
+      return;
+    }
+
+    const accountLimit = await RateLimit.checkCounterLimit({
+      key: RateLimit.makeKey(["rl", "telegram", "ryos", linkedAccount.username]),
+      windowSeconds: 5 * 60 * 60,
+      limit: 15,
+    });
+    if (!accountLimit.allowed) {
+      logger.warn("Linked ryOS user rate limit exceeded via Telegram", {
+        username: linkedAccount.username,
+      });
+      logger.response(429, Date.now() - startTime);
+      sendJson(res, 429, { error: "Rate limit exceeded" });
+      return;
+    }
   }
 
   const history = await loadTelegramConversationHistory(redis, parsedUpdate.chatId);
