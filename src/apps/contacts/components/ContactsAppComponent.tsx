@@ -67,10 +67,10 @@ function GroupListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center justify-between gap-2 px-2.5 py-1 text-left text-[12px] transition-colors rounded-sm",
+        "w-full flex items-center justify-between gap-2 px-2 py-1 text-left text-[11px] transition-colors rounded-sm",
         isSelected
           ? "bg-[#7b7b7b] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
-          : "text-black/80 hover:bg-black/8"
+          : "text-black/80 hover:bg-black/5"
       )}
     >
       <span className="truncate">{label}</span>
@@ -84,22 +84,28 @@ function GroupListItem({
 function PanelHeader({
   title,
   trailing,
+  useGeneva = false,
 }: {
   title: string;
   trailing?: ReactNode;
+  useGeneva?: boolean;
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-2 px-2 py-1 text-[11px] border-b"
+      className={cn(
+        "flex items-center justify-between gap-2 px-2 py-0.5 text-[11px] border-b",
+        useGeneva && "font-geneva-12"
+      )}
       style={{
-        borderColor: "rgba(0,0,0,0.18)",
-        background:
-          "linear-gradient(to bottom, rgba(246,246,246,0.95), rgba(214,214,214,0.95))",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+        background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
+        color: "#222",
+        textShadow: "0 1px 0 #e1e1e1",
+        borderTop: "1px solid rgba(255,255,255,0.5)",
+        borderBottom: "1px solid #787878",
       }}
     >
-      <span className="font-semibold text-black/70">{title}</span>
-      {trailing}
+      <span className="font-regular text-center flex-1">{title}</span>
+      {trailing ? <span className="shrink-0">{trailing}</span> : null}
     </div>
   );
 }
@@ -205,6 +211,7 @@ export function ContactsAppComponent({
     handleFileSelected,
     fileInputRef,
   } = useContactsLogic();
+  const useGeneva = isMacOsxTheme || isSystem7Theme;
 
   const menuBar = (
     <ContactsMenuBar
@@ -256,8 +263,9 @@ export function ContactsAppComponent({
                 title={t("apps.contacts.groupHeaders.groups", {
                   defaultValue: "Group",
                 })}
+                useGeneva={useGeneva}
               />
-              <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
+              <div className={cn("flex-1 overflow-y-auto p-1.5 space-y-0.5 calendar-sidebar", useGeneva && "font-geneva-12")}>
                 {contactGroups.map((group) => (
                   <GroupListItem
                     key={group.id}
@@ -275,8 +283,9 @@ export function ContactsAppComponent({
                 title={t("apps.contacts.groupHeaders.names", {
                   defaultValue: "Name",
                 })}
+                useGeneva={useGeneva}
               />
-              <div className="flex-1 overflow-y-auto">
+              <div className={cn("flex-1 overflow-y-auto calendar-sidebar", useGeneva && "font-geneva-12")}>
                   {contacts.length === 0 ? (
                   <div className="px-4 py-6 text-[12px] text-black/55">
                     {t("apps.contacts.emptyState")}
@@ -297,6 +306,7 @@ export function ContactsAppComponent({
             <Panel className="flex-1 min-w-0 flex flex-col">
               <PanelHeader
                 title={selectedContact?.displayName || t("apps.contacts.title")}
+                useGeneva={useGeneva}
                 trailing={
                   selectedContact ? (
                     <Button
@@ -502,45 +512,83 @@ export function ContactsAppComponent({
           </div>
 
           <div
-            className="flex items-center justify-between px-2 py-1 border-t text-[11px]"
+            className={cn("flex items-center justify-between py-1.5 border-t", isMacOsxTheme ? "px-1" : "px-2")}
             style={{
-              borderColor: "rgba(0,0,0,0.12)",
-              background: isMacOsxTheme
-                ? "linear-gradient(to bottom, rgba(226,226,226,0.95), rgba(196,196,196,0.95))"
-                : undefined,
+              borderColor: isXpTheme ? "#ACA899" : isMacOsxTheme ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.1)",
+              background: isXpTheme ? "#ECE9D8" : isMacOsxTheme ? "transparent" : "#e0e0e0",
             }}
           >
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                variant={isSystem7Theme ? "player" : "retro"}
-                onClick={handleCreateContact}
-                className="h-6 w-6 px-0"
-                title={t("apps.contacts.menu.newContact")}
-              >
-                <Plus size={12} weight="bold" />
-              </Button>
-              <Button
-                type="button"
-                variant={isSystem7Theme ? "player" : "retro"}
-                onClick={handleImport}
-                className="h-6 w-6 px-0"
-                title={t("apps.contacts.menu.importVCard")}
-              >
-                <UploadSimple size={12} weight="bold" />
-              </Button>
-            </div>
-            <div className="text-black/60">
-              {selectedContact
-                ? t("apps.contacts.buttons.edit", { defaultValue: "Edit" })
-                : "\u00A0"}
-            </div>
-            <div className="text-black/60">
-              {t("apps.contacts.status.cardsCount", {
-                count: totalContacts,
-                defaultValue: "{{count}} cards",
-              })}
-            </div>
+            {isMacOsxTheme ? (
+              <>
+                <div className="metal-inset-btn-group">
+                  <button
+                    type="button"
+                    className="metal-inset-btn metal-inset-icon"
+                    onClick={handleCreateContact}
+                    title={t("apps.contacts.menu.newContact")}
+                  >
+                    <Plus size={10} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    className="metal-inset-btn metal-inset-icon"
+                    onClick={handleImport}
+                    title={t("apps.contacts.menu.importVCard")}
+                  >
+                    <UploadSimple size={10} weight="bold" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="metal-inset-btn-group">
+                    <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]">
+                      {selectedContact
+                        ? t("apps.contacts.buttons.edit", { defaultValue: "Edit" })
+                        : t("apps.contacts.buttons.edit", { defaultValue: "Edit" })}
+                    </button>
+                  </div>
+                </div>
+                <div className="text-black/60 font-geneva-12 text-[11px] px-1">
+                  {t("apps.contacts.status.cardsCount", {
+                    count: totalContacts,
+                    defaultValue: "{{count}} cards",
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-0">
+                  <Button
+                    type="button"
+                    variant={isSystem7Theme ? "player" : "ghost"}
+                    onClick={handleCreateContact}
+                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    title={t("apps.contacts.menu.newContact")}
+                  >
+                    <Plus size={12} weight="bold" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={isSystem7Theme ? "player" : "ghost"}
+                    onClick={handleImport}
+                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    title={t("apps.contacts.menu.importVCard")}
+                  >
+                    <UploadSimple size={12} weight="bold" />
+                  </Button>
+                </div>
+                <div className={cn("text-[11px]", useGeneva && "font-geneva-12")}>
+                  {selectedContact
+                    ? t("apps.contacts.buttons.edit", { defaultValue: "Edit" })
+                    : "\u00A0"}
+                </div>
+                <div className={cn("text-black/60 text-[11px]", useGeneva && "font-geneva-12")}>
+                  {t("apps.contacts.status.cardsCount", {
+                    count: totalContacts,
+                    defaultValue: "{{count}} cards",
+                  })}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
