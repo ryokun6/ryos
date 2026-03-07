@@ -3,6 +3,11 @@ import { stepCountIs, streamText } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import {
+  appendDailyNote,
+  getDailyNote,
+  getTodayDateString,
+} from "../_utils/_memory.js";
+import {
   appendTelegramConversationMessage,
   getLinkedTelegramAccountByUsername,
   loadTelegramConversationHistory,
@@ -10,11 +15,17 @@ import {
 import { sendTelegramMessage } from "../_utils/telegram.js";
 import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
 import {
+  buildTelegramHeartbeatLogEntry,
   buildTelegramHeartbeatPrompt,
   buildTelegramHeartbeatRedisKey,
+  formatTelegramHeartbeatEntries,
   getTelegramHeartbeatAuthSecret,
+  parseTelegramHeartbeatResult,
+  shouldSendTelegramHeartbeat,
+  splitTelegramHeartbeatEntries,
   TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
   TELEGRAM_HEARTBEAT_TARGET_USERNAME,
+  TELEGRAM_HEARTBEAT_TIME_ZONE,
 } from "../_utils/telegram-heartbeat.js";
 import {
   prepareRyoConversationModelInput,
@@ -60,6 +71,34 @@ function getTelegramModel(
     log(`Unsupported TELEGRAM_BOT_MODEL "${raw}", falling back to ${DEFAULT_MODEL}`);
   }
   return DEFAULT_MODEL;
+}
+
+async function markHeartbeatSlot(
+  redis: ReturnType<typeof createRedis>,
+  slotKey: string,
+  payload: Record<string, unknown>
+): Promise<void> {
+  await redis.set(slotKey, JSON.stringify(payload), {
+    ex: TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
+  });
+}
+
+async function appendHeartbeatLog(
+  redis: ReturnType<typeof createRedis>,
+  username: string,
+  text: string,
+  logger: ReturnType<typeof initLogger>["logger"]
+): Promise<void> {
+  const result = await appendDailyNote(redis, username, text, {
+    timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
+  });
+
+  if (!result.success) {
+    logger.warn("Failed to append telegram heartbeat log to daily notes", {
+      username,
+      message: result.message,
+    });
+  }
 }
 
 export default async function handler(
@@ -136,6 +175,47 @@ export default async function handler(
     return;
   }
 
+  const today = getTodayDateString(TELEGRAM_HEARTBEAT_TIME_ZONE);
+  const todaysDailyNote = await getDailyNote(redis, username, today);
+  const noteContext = splitTelegramHeartbeatEntries(todaysDailyNote);
+  const gateDecision = shouldSendTelegramHeartbeat(noteContext);
+
+  if (!gateDecision.shouldSend) {
+    await appendHeartbeatLog(
+      redis,
+      username,
+      buildTelegramHeartbeatLogEntry({
+        sent: false,
+        reason: gateDecision.reason,
+      }),
+      logger
+    );
+    await markHeartbeatSlot(redis, slotKey, {
+      username,
+      chatId: linkedAccount.chatId,
+      sent: false,
+      reason: gateDecision.reason,
+      code: gateDecision.code,
+      checkedAt: Date.now(),
+    });
+    logger.info("Skipping telegram heartbeat after reading daily notes first", {
+      username,
+      reason: gateDecision.reason,
+      actionableEntries: noteContext.actionableEntries.length,
+      logEntries: noteContext.logEntries.length,
+      date: today,
+    });
+    logger.response(200, Date.now() - startTime);
+    sendJson(res, 200, {
+      success: true,
+      sent: false,
+      reason: gateDecision.reason,
+      code: gateDecision.code,
+      username,
+    });
+    return;
+  }
+
   const history = await loadTelegramConversationHistory(redis, linkedAccount.chatId);
   const conversationMessages: SimpleConversationMessage[] = [
     ...history.map((message, index) => ({
@@ -146,7 +226,14 @@ export default async function handler(
     {
       id: `heartbeat-${Date.now()}`,
       role: "user",
-      content: buildTelegramHeartbeatPrompt(),
+      content: buildTelegramHeartbeatPrompt({
+        dailyNoteSnapshot: formatTelegramHeartbeatEntries(
+          noteContext.actionableEntries
+        ),
+        heartbeatLogSnapshot: formatTelegramHeartbeatEntries(
+          noteContext.logEntries
+        ),
+      }),
     },
   ];
 
@@ -166,6 +253,7 @@ export default async function handler(
     username,
     redis,
     model: telegramModel,
+    timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
     log: (...args: unknown[]) => logger.info(`[TelegramHeartbeat:${username}]`, args),
     logError: (...args: unknown[]) =>
       logger.error(`[TelegramHeartbeat:${username}]`, args),
@@ -205,7 +293,41 @@ export default async function handler(
     rawReply += chunk;
   }
 
-  const replyText = simplifyTelegramCitationDisplay(rawReply);
+  const heartbeatResult = parseTelegramHeartbeatResult(rawReply);
+  if (!heartbeatResult.shouldSend) {
+    await appendHeartbeatLog(
+      redis,
+      username,
+      buildTelegramHeartbeatLogEntry({
+        sent: false,
+        reason: heartbeatResult.reason,
+      }),
+      logger
+    );
+    await markHeartbeatSlot(redis, slotKey, {
+      username,
+      chatId: linkedAccount.chatId,
+      sent: false,
+      reason: heartbeatResult.reason,
+      code: "model-no-heartbeat",
+      checkedAt: Date.now(),
+    });
+    logger.info("Telegram heartbeat skipped by model decision", {
+      username,
+      reason: heartbeatResult.reason,
+    });
+    logger.response(200, Date.now() - startTime);
+    sendJson(res, 200, {
+      success: true,
+      sent: false,
+      reason: heartbeatResult.reason,
+      code: "model-no-heartbeat",
+      username,
+    });
+    return;
+  }
+
+  const replyText = simplifyTelegramCitationDisplay(heartbeatResult.replyText || "");
   if (!replyText) {
     logger.warn("Telegram heartbeat generated empty reply", { username });
     logger.response(500, Date.now() - startTime);
@@ -219,14 +341,15 @@ export default async function handler(
     text: replyText,
   });
 
-  await redis.set(
+  await markHeartbeatSlot(
+    redis,
     slotKey,
-    JSON.stringify({
+    {
       username,
       chatId: linkedAccount.chatId,
+      sent: true,
       sentAt: Date.now(),
-    }),
-    { ex: TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS }
+    }
   );
 
   await appendTelegramConversationMessage(redis, linkedAccount.chatId, {
@@ -234,6 +357,15 @@ export default async function handler(
     content: replyText,
     createdAt: Date.now(),
   });
+  await appendHeartbeatLog(
+    redis,
+    username,
+    buildTelegramHeartbeatLogEntry({
+      sent: true,
+      replyText,
+    }),
+    logger
+  );
 
   logger.info("Telegram heartbeat sent", {
     username,
