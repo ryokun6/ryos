@@ -38,11 +38,10 @@ function ContactListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-2 px-3 py-1.5 text-left border-b transition-colors",
+        "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors",
         isSelected ? "" : "hover:bg-black/5"
       )}
       style={{
-        borderColor: "rgba(0,0,0,0.08)",
         ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)" } : {}),
       }}
     >
@@ -80,11 +79,10 @@ function GroupListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[11px] transition-colors border-b",
+        "w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[11px] transition-colors",
         isSelected ? "" : "hover:bg-black/5"
       )}
       style={{
-        borderColor: "rgba(0,0,0,0.08)",
         ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)" } : {}),
       }}
     >
