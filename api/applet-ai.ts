@@ -10,6 +10,7 @@ import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import { isAllowedAppHost } from "./_utils/runtime-config.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -108,26 +109,6 @@ const RequestSchema = z
       path: ["images"],
     }
   );
-
-const ALLOWED_HOSTS = new Set([
-  "os.ryo.lu",
-  "ryo.lu",
-  "localhost:3000",
-  "localhost:5173",
-  "127.0.0.1:3000",
-  "127.0.0.1:5173",
-]);
-
-const isRyOSHost = (hostHeader: string | null): boolean => {
-  if (!hostHeader) return false;
-  const normalized = hostHeader.toLowerCase();
-  if (ALLOWED_HOSTS.has(normalized)) return true;
-  // Allow localhost with any port number
-  if (normalized === "localhost" || normalized === "127.0.0.1") return true;
-  if (/^localhost:\d+$/.test(normalized)) return true;
-  if (/^127\.0\.0\.1:\d+$/.test(normalized)) return true;
-  return false;
-};
 
 type RateLimitScope = "text-hour" | "image-hour";
 
@@ -303,7 +284,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
   },
   async ({ req, res, logger, startTime, origin, user, body }) => {
     const host = req.headers.host as string | undefined;
-    if (!isRyOSHost(host || null)) {
+    if (!isAllowedAppHost(host || null)) {
       logger.warn("Unauthorized host", { host });
       logger.response(403, Date.now() - startTime);
       res.status(403).json({ error: "Unauthorized host" });

@@ -1,4 +1,8 @@
 import { preconnect, preload, preinit } from "react-dom";
+import {
+  getRealtimeProvider,
+  getRealtimeWebSocketUrl,
+} from "@/utils/runtimeConfig";
 
 type FontResource = {
   href: string;
@@ -25,10 +29,20 @@ const FETCH_RESOURCES: FetchResource[] = [
   { href: "/data/applets.json" },
 ];
 
-const PRECONNECT_RESOURCES = [
-  "https://ws-us3.pusher.com",
-  "https://sockjs-us3.pusher.com",
-];
+function getPreconnectResources(): string[] {
+  if (getRealtimeProvider() === "local") {
+    try {
+      const websocketUrl = new URL(getRealtimeWebSocketUrl());
+      websocketUrl.protocol =
+        websocketUrl.protocol === "wss:" ? "https:" : "http:";
+      return [websocketUrl.origin];
+    } catch {
+      return [];
+    }
+  }
+
+  return ["https://ws-us3.pusher.com", "https://sockjs-us3.pusher.com"];
+}
 
 let primed = false;
 
@@ -68,7 +82,7 @@ export function primeReactResources(): void {
     )
   );
 
-  PRECONNECT_RESOURCES.forEach((href) =>
+  getPreconnectResources().forEach((href) =>
     safely(() =>
       preconnect(href, {
         crossOrigin: "anonymous",

@@ -2,7 +2,7 @@
  * Token handlers for chat-rooms API
  */
 
-import { Redis } from "@upstash/redis";
+import { createRedis } from "../../_utils/redis.js";
 import { CHAT_USERS_PREFIX } from "./_constants.js";
 import { logInfo, logError } from "../../_utils/_logging.js";
 import { isProfaneUsername } from "../../_utils/_validation.js";
@@ -31,11 +31,8 @@ import type {
 } from "./_types.js";
 
 // Create Redis client
-function getRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+function getRedis() {
+  return createRedis();
 }
 
 // ============================================================================

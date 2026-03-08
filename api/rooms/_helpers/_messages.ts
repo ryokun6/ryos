@@ -4,7 +4,7 @@
 
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import { Redis } from "@upstash/redis";
+import { createRedis } from "../../_utils/redis.js";
 import {
   getRoom,
   roomExists,
@@ -19,11 +19,8 @@ import {
 } from "./_redis.js";
 
 // Create Redis client
-function getRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+function getRedis() {
+  return createRedis();
 }
 import {
   CHAT_MESSAGES_PREFIX,
