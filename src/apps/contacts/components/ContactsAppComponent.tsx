@@ -50,10 +50,10 @@ function ContactListItem({
         <img
           src={contact.picture}
           alt=""
-          className="shrink-0 w-5 h-5 rounded-full border border-black/15 object-cover"
+          className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] object-cover"
         />
       ) : (
-        <div className="shrink-0 w-5 h-5 rounded-full border border-black/15 bg-[linear-gradient(to_bottom,#c8c8c8,#e0e0e0)] flex items-center justify-center text-[8px] font-semibold text-black/50">
+        <div className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] bg-[linear-gradient(to_bottom,#c8c8c8,#e0e0e0)] flex items-center justify-center text-[8px] font-semibold text-black/50">
           {getContactInitials(contact)}
         </div>
       )}
@@ -434,7 +434,7 @@ export function ContactsAppComponent({
                     <button
                       type="button"
                       onClick={() => setIsPicturePickerOpen(true)}
-                      className="w-12 h-12 shrink-0 rounded-full border border-black/15 flex items-center justify-center text-base font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      className="w-12 h-12 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-base font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                       style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #b8b8b8, #dcdcdc)" }}
                       title={t("apps.contacts.changePicture")}
                     >
