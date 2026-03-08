@@ -4,6 +4,7 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ContactsMenuBar } from "./ContactsMenuBar";
+import { UserPicturePicker } from "./UserPicturePicker";
 import { useContactsLogic } from "../hooks/useContactsLogic";
 import { appMetadata } from "..";
 import type { AppProps } from "@/apps/base/types";
@@ -38,13 +39,24 @@ function ContactListItem({
       onClick={onClick}
       className={cn(
         "w-full flex items-center gap-2 px-3 py-1.5 text-left border-b transition-colors",
-        isSelected
-          ? "bg-[#b6b6b6] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
-          : "hover:bg-black/5"
+        isSelected ? "" : "hover:bg-black/5"
       )}
-      style={{ borderColor: "rgba(0,0,0,0.08)" }}
+      style={{
+        borderColor: "rgba(0,0,0,0.08)",
+        ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)" } : {}),
+      }}
     >
-      <div className="shrink-0 w-3.5 h-3.5 rounded-[2px] border border-black/20 bg-[#efefef]" />
+      {contact.picture ? (
+        <img
+          src={contact.picture}
+          alt=""
+          className="shrink-0 w-5 h-5 rounded-full border border-black/15 object-cover"
+        />
+      ) : (
+        <div className="shrink-0 w-5 h-5 rounded-full border border-black/15 bg-[linear-gradient(to_bottom,#c8c8c8,#e0e0e0)] flex items-center justify-center text-[8px] font-semibold text-black/50">
+          {getContactInitials(contact)}
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="text-[12px] leading-tight truncate">{contact.displayName}</div>
       </div>
@@ -68,14 +80,16 @@ function GroupListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center justify-between gap-2 px-2 py-1 text-left text-[11px] transition-colors rounded-sm",
-        isSelected
-          ? "bg-[#7b7b7b] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
-          : "text-black/80 hover:bg-black/5"
+        "w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[11px] transition-colors border-b",
+        isSelected ? "" : "hover:bg-black/5"
       )}
+      style={{
+        borderColor: "rgba(0,0,0,0.08)",
+        ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)" } : {}),
+      }}
     >
       <span className="truncate">{label}</span>
-      <span className={cn("text-[10px]", isSelected ? "text-white/80" : "text-black/45")}>
+      <span className={cn("text-[10px]", isSelected ? "opacity-70" : "text-black/45")}>
         {count}
       </span>
     </button>
@@ -201,6 +215,7 @@ export function ContactsAppComponent({
   const useGeneva = isMacOsxTheme || isSystem7Theme;
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(820);
+  const [isPicturePickerOpen, setIsPicturePickerOpen] = useState(false);
   useResizeObserverWithRef(containerRef, (entry) => {
     setContainerWidth(entry.contentRect.width);
   });
@@ -355,7 +370,7 @@ export function ContactsAppComponent({
                 useGeneva={useGeneva}
                 bordered={isMacOsxTheme}
               />
-              <div className={cn("flex-1 overflow-y-auto p-1.5 space-y-0.5", useGeneva && "font-geneva-12")}>
+              <div className={cn("flex-1 overflow-y-auto", useGeneva && "font-geneva-12")}>
                 {contactGroups.map((group) => (
                   <GroupListItem
                     key={group.id}
@@ -421,9 +436,23 @@ export function ContactsAppComponent({
                 <>
                 <div className="flex-1 overflow-y-auto overflow-x-hidden">
                   <div className="flex items-start gap-3 pt-3 pb-2 px-4">
-                    <div className="w-12 h-12 shrink-0 rounded-[4px] bg-[linear-gradient(to_bottom,#b8b8b8,#dcdcdc)] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-base font-semibold text-black/70">
-                      {getContactInitials(selectedContact)}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsPicturePickerOpen(true)}
+                      className="w-12 h-12 shrink-0 rounded-[4px] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-base font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #b8b8b8, #dcdcdc)" }}
+                      title="Change picture"
+                    >
+                      {selectedContact.picture ? (
+                        <img
+                          src={selectedContact.picture}
+                          alt={selectedContact.displayName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        getContactInitials(selectedContact)
+                      )}
+                    </button>
                     <div className="min-w-0 flex-1 pt-0.5 space-y-1">
                       {isEditing ? (
                         <>
@@ -588,6 +617,12 @@ export function ContactsAppComponent({
           onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
           appId="contacts"
+        />
+        <UserPicturePicker
+          isOpen={isPicturePickerOpen}
+          onOpenChange={setIsPicturePickerOpen}
+          currentPicture={selectedContact?.picture ?? null}
+          onSelect={(picture) => updateSelectedContact({ picture })}
         />
 
         <input
