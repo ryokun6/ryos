@@ -14,6 +14,7 @@ import {
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
     expect(isCloudSyncDomain("settings")).toBe(true);
+    expect(isCloudSyncDomain("chats")).toBe(true);
     expect(isCloudSyncDomain("files-metadata")).toBe(true);
     expect(isCloudSyncDomain("files-images")).toBe(true);
     expect(isCloudSyncDomain("files-trash")).toBe(true);
@@ -37,6 +38,7 @@ describe("cloud sync shared helpers", () => {
       "calendar" as unknown as Parameters<typeof isBlobSyncDomain>[0];
 
     expect(isRedisSyncDomain("settings")).toBe(true);
+    expect(isRedisSyncDomain("chats")).toBe(true);
     expect(isRedisSyncDomain("calendar")).toBe(true);
     expect(isRedisSyncDomain("stickies")).toBe(true);
     expect(isRedisSyncDomain("songs")).toBe(true);
@@ -54,6 +56,7 @@ describe("cloud sync shared helpers", () => {
   test("creates an empty metadata map", () => {
     const map = createEmptyCloudSyncMetadataMap();
     expect(map.settings).toBeNull();
+    expect(map.chats).toBeNull();
     expect(map["files-metadata"]).toBeNull();
     expect(map["files-images"]).toBeNull();
     expect(map["files-trash"]).toBeNull();
@@ -93,6 +96,7 @@ describe("cloud sync shared helpers", () => {
     expect(getCloudSyncCategory("files-metadata")).toBe("files");
     expect(getCloudSyncCategory("files-images")).toBe("files");
     expect(getCloudSyncCategory("settings")).toBe("settings");
+    expect(getCloudSyncCategory("chats")).toBe("settings");
     expect(getCloudSyncCategory("custom-wallpapers")).toBe("settings");
     expect(getCloudSyncCategory("songs")).toBe("songs");
     expect(getCloudSyncCategory("calendar")).toBe("calendar");

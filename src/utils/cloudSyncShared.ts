@@ -1,5 +1,6 @@
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
+  "chats",
   "files-metadata",
   "files-images",
   "files-trash",
@@ -12,7 +13,13 @@ export const CLOUD_SYNC_DOMAINS = [
 ] as const;
 
 export type CloudSyncDomain = (typeof CLOUD_SYNC_DOMAINS)[number];
-export type CloudSyncCategory = "files" | "settings" | "songs" | "videos" | "stickies" | "calendar";
+export type CloudSyncCategory =
+  | "files"
+  | "settings"
+  | "songs"
+  | "videos"
+  | "stickies"
+  | "calendar";
 
 export const FILE_SYNC_DOMAINS = [
   "files-metadata",
@@ -25,6 +32,7 @@ export type FileCloudSyncDomain = (typeof FILE_SYNC_DOMAINS)[number];
 
 export const REDIS_SYNC_DOMAINS = [
   "settings",
+  "chats",
   "files-metadata",
   "songs",
   "videos",
@@ -102,6 +110,7 @@ export function getCloudSyncCategory(
 
   switch (domain) {
     case "settings":
+    case "chats":
     case "custom-wallpapers":
       return "settings";
     case "songs":
@@ -118,6 +127,7 @@ export function getCloudSyncCategory(
 export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
   return {
     settings: null,
+    chats: null,
     "files-metadata": null,
     "files-images": null,
     "files-trash": null,

@@ -31,6 +31,7 @@ const REMOTE_APPLY_SUPPRESSION_MS = 4000;
 
 const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   settings: 2500,
+  chats: 3000,
   "files-metadata": 8000,
   "files-images": 8000,
   "files-trash": 5000,
@@ -45,6 +46,7 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
 function createDomainStringMap(initialValue: string | null): Record<CloudSyncDomain, string | null> {
   return {
     settings: initialValue,
+    chats: initialValue,
     "files-metadata": initialValue,
     "files-images": initialValue,
     "files-trash": initialValue,
@@ -76,6 +78,7 @@ export function useAutoCloudSync() {
   );
   const remoteApplySuppressUntilRef = useRef<Record<CloudSyncDomain, number>>({
     settings: 0,
+    chats: 0,
     "files-metadata": 0,
     "files-images": 0,
     "files-trash": 0,
