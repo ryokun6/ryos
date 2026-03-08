@@ -10,7 +10,7 @@ import { appMetadata } from "..";
 import type { AppProps } from "@/apps/base/types";
 import { cn } from "@/lib/utils";
 import { getContactInitials, type Contact } from "@/utils/contacts";
-import { Plus, UploadSimple } from "@phosphor-icons/react";
+import { Plus, DownloadSimple } from "@phosphor-icons/react";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 
 function splitMultivalueInput(value: string): string[] {
@@ -294,7 +294,7 @@ export function ContactsAppComponent({
                       onClick={handleImport}
                       title={t("apps.contacts.menu.importVCard")}
                     >
-                      <UploadSimple size={12} weight="bold" />
+                      <DownloadSimple size={12} weight="bold" />
                     </button>
                   </div>
                 </div>
@@ -330,7 +330,7 @@ export function ContactsAppComponent({
                     className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
                     title={t("apps.contacts.menu.importVCard")}
                   >
-                    <UploadSimple size={12} weight="bold" />
+                    <DownloadSimple size={12} weight="bold" />
                   </Button>
                 </div>
                 <div className="flex-1" />
