@@ -9,9 +9,10 @@ import type { Redis } from "@upstash/redis";
 import { del, head } from "@vercel/blob";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
+  BLOB_SYNC_DOMAINS,
   createEmptyCloudSyncMetadataMap,
-  isCloudSyncDomain,
-  type CloudSyncDomain,
+  isBlobSyncDomain,
+  type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import { apiHandler } from "../_utils/api-handler.js";
 
@@ -27,12 +28,12 @@ interface PersistedAutoSyncDomainMetadata {
 }
 
 type PersistedAutoSyncMetadataMap = Record<
-  CloudSyncDomain,
+  BlobSyncDomain,
   PersistedAutoSyncDomainMetadata | null
 >;
 
 interface SaveAutoSyncMetadataBody {
-  domain?: CloudSyncDomain;
+  domain?: BlobSyncDomain;
   blobUrl?: string;
   updatedAt?: string;
   version?: number;
@@ -55,8 +56,8 @@ async function readPersistedMetadata(
     return normalized;
   }
 
-  for (const domain of Object.keys(normalized) as CloudSyncDomain[]) {
-    const value = (parsed as Partial<Record<CloudSyncDomain, unknown>>)[domain];
+  for (const domain of BLOB_SYNC_DOMAINS) {
+    const value = (parsed as Partial<Record<BlobSyncDomain, unknown>>)[domain];
     if (!value || typeof value !== "object") {
       normalized[domain] = null;
       continue;
@@ -91,12 +92,12 @@ async function readPersistedMetadata(
   return normalized;
 }
 
-function getRequestedDomain(req: VercelRequest): CloudSyncDomain | null {
+function getRequestedDomain(req: VercelRequest): BlobSyncDomain | null {
   const raw = Array.isArray(req.query.domain)
     ? req.query.domain[0]
     : req.query.domain;
 
-  return isCloudSyncDomain(raw) ? raw : null;
+  return isBlobSyncDomain(raw as never) ? (raw as BlobSyncDomain) : null;
 }
 
 export default apiHandler<SaveAutoSyncMetadataBody>(
@@ -143,7 +144,7 @@ async function handleSaveMetadata(
 ): Promise<void> {
   if (
     !body ||
-    !isCloudSyncDomain(body.domain) ||
+    !isBlobSyncDomain(body.domain as never) ||
     !body.blobUrl ||
     !body.updatedAt
   ) {
@@ -204,7 +205,7 @@ async function handleDomainDownload(
   res: VercelResponse,
   redis: Redis,
   username: string,
-  domain: CloudSyncDomain
+  domain: BlobSyncDomain
 ): Promise<void> {
   try {
     const metadata = await readPersistedMetadata(redis, username);

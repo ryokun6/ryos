@@ -243,6 +243,13 @@ export function getTelegramProviderStatusToolCall(
   return null;
 }
 
+export const TELEGRAM_OPENAI_PROVIDER_OPTIONS = {
+  openai: {
+    reasoningEffort: "none",
+    textVerbosity: "low",
+  },
+} as const;
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -538,11 +545,7 @@ export default async function handler(
       temperature: 0.7,
       maxOutputTokens: 4000,
       stopWhen: stepCountIs(6),
-      providerOptions: {
-        openai: {
-          reasoningEffort: "none",
-        },
-      },
+      providerOptions: TELEGRAM_OPENAI_PROVIDER_OPTIONS,
       onChunk: async ({ chunk }) => {
         if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
           return;

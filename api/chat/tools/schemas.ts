@@ -16,6 +16,8 @@ import {
   CALENDAR_ACTIONS,
   CALENDAR_COLORS,
   CONTACT_ACTIONS,
+  DOCUMENTS_ACTIONS,
+  DOCUMENT_WRITE_MODES,
 } from "./types.js";
 import {
   MAX_KEY_LENGTH,
@@ -686,16 +688,8 @@ export const contactsControlSchema = z
     notes: z
       .preprocess(normalizeOptionalString, z.string().max(2000).optional())
       .describe("Free-form notes."),
-    emails: z
-      .array(z.string().max(320))
-      .max(20)
-      .optional()
-      .describe("Email addresses."),
-    phones: z
-      .array(z.string().max(80))
-      .max(20)
-      .optional()
-      .describe("Phone numbers."),
+    emails: z.array(z.string().max(320)).max(20).optional().describe("Email addresses."),
+    phones: z.array(z.string().max(80)).max(20).optional().describe("Phone numbers."),
     urls: z
       .array(z.string().max(500))
       .max(20)
@@ -722,7 +716,10 @@ export const contactsControlSchema = z
       .describe("Telegram user id as a string."),
   })
   .superRefine((data, ctx) => {
-    if ((data.action === "get" || data.action === "update" || data.action === "delete") && !data.id) {
+    if (
+      (data.action === "get" || data.action === "update" || data.action === "delete") &&
+      !data.id
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `The '${data.action}' action requires the 'id' parameter.`,
@@ -772,10 +769,102 @@ export const contactsControlSchema = z
       if (!hasIdentity) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "The 'create' action requires at least a name, organization, email, phone, or telegram field.",
+          message:
+            "The 'create' action requires at least a name, organization, email, phone, or telegram field.",
           path: ["action"],
         });
       }
+    }
+  });
+
+// ============================================================================
+// Documents Control Schema
+// ============================================================================
+
+export const documentsControlSchema = z
+  .object({
+    action: z
+      .enum(DOCUMENTS_ACTIONS)
+      .describe(
+        "Action to perform: 'list' returns synced /Documents files with their names and exact paths, 'read' returns a document's content, 'write' creates or overwrites/appends/prepends a document, and 'edit' replaces one exact string match inside a document."
+      ),
+    path: z
+      .string()
+      .optional()
+      .describe(
+        "For 'read', 'write', and 'edit': full document path under /Documents, e.g. '/Documents/notes.md'."
+      ),
+    content: z
+      .string()
+      .optional()
+      .describe("For 'write': markdown content to save. Required for writes."),
+    mode: z
+      .enum(DOCUMENT_WRITE_MODES)
+      .optional()
+      .default("overwrite")
+      .describe(
+        "For 'write': 'overwrite' replaces content, 'append' adds to the end, 'prepend' adds to the start."
+      ),
+    old_string: z
+      .string()
+      .optional()
+      .describe(
+        "For 'edit': exact text to replace. Must match uniquely within the document."
+      ),
+    new_string: z.string().optional().describe("For 'edit': replacement text."),
+  })
+  .superRefine((data, ctx) => {
+    const path = data.path?.trim();
+    const requiresPath =
+      data.action === "read" || data.action === "write" || data.action === "edit";
+
+    if (requiresPath && !path) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `The '${data.action}' action requires the 'path' parameter.`,
+        path: ["path"],
+      });
+    }
+
+    if (path) {
+      if (!path.startsWith("/Documents/")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Document paths must be under /Documents.",
+          path: ["path"],
+        });
+      }
+      if (!path.endsWith(".md")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Document paths must end with .md.",
+          path: ["path"],
+        });
+      }
+    }
+
+    if (data.action === "write" && data.content === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'write' action requires the 'content' parameter.",
+        path: ["content"],
+      });
+    }
+
+    if (data.action === "edit" && data.old_string === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'edit' action requires the 'old_string' parameter.",
+        path: ["old_string"],
+      });
+    }
+
+    if (data.action === "edit" && data.new_string === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'edit' action requires the 'new_string' parameter.",
+        path: ["new_string"],
+      });
     }
   });
 

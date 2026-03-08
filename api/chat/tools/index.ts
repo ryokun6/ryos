@@ -41,6 +41,7 @@ import type {
 import * as schemas from "./schemas.js";
 import type {
   CalendarControlInput,
+  DocumentsControlInput,
   StickiesControlInput,
   ContactsControlInput,
 } from "./types.js";
@@ -51,6 +52,7 @@ import {
   executeMemoryRead,
   executeMemoryDelete,
   executeCalendarControl,
+  executeDocumentsControl,
   executeStickiesControl,
   executeContactsControl,
   type MemoryToolContext,
@@ -66,6 +68,7 @@ export {
   executeMemoryRead,
   executeMemoryDelete,
   executeCalendarControl,
+  executeDocumentsControl,
   executeStickiesControl,
   executeContactsControl,
   type MemoryToolContext,
@@ -81,6 +84,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "memoryWrite",
   "memoryRead",
   "memoryDelete",
+  "documentsControl",
   "calendarControl",
   "stickiesControl",
   "contactsControl",
@@ -162,6 +166,9 @@ export const TOOL_DESCRIPTIONS = {
   
   stickiesControl:
     "Manage sticky notes in ryOS. Actions: 'list' returns all stickies with their IDs, content, and colors; 'create' makes a new sticky note with optional content/text, color (yellow/blue/green/pink/purple/orange), position, size; 'update' modifies an existing sticky by ID - use this to set/replace text content, change color, or move it; 'delete' removes a sticky by ID; 'clear' removes all stickies. The Stickies app opens automatically when creating notes.",
+
+  documentsControl:
+    "Manage synced markdown documents in /Documents from headless contexts like Telegram. Actions: 'list' returns synced documents with document names and exact paths, 'read' returns a document's full content, 'write' creates or overwrites/appends/prepends a document, and 'edit' replaces one exact unique string match in an existing document. Use exact /Documents/*.md paths.",
 
   infiniteMacControl:
     "Control the Infinite Mac emulator to run classic Mac OS systems. Actions: " +
@@ -439,6 +446,13 @@ export function createChatTools(
       memoryWrite: allTools.memoryWrite,
       memoryRead: allTools.memoryRead,
       memoryDelete: allTools.memoryDelete,
+      documentsControl: {
+        description: TOOL_DESCRIPTIONS.documentsControl,
+        inputSchema: schemas.documentsControlSchema,
+        execute: async (input: DocumentsControlInput) => {
+          return executeDocumentsControl(input, context);
+        },
+      },
       calendarControl: {
         description: TOOL_DESCRIPTIONS.calendarControl,
         inputSchema: schemas.calendarControlSchema,

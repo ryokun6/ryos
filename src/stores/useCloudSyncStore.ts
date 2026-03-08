@@ -57,7 +57,6 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
   return {
     settings: empty(),
     "files-metadata": empty(),
-    "files-documents": empty(),
     "files-images": empty(),
     "files-trash": empty(),
     "files-applets": empty(),
@@ -251,7 +250,6 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           if (legacyFilesStatus) {
             for (const domain of [
               "files-metadata",
-              "files-documents",
               "files-images",
               "files-trash",
               "files-applets",

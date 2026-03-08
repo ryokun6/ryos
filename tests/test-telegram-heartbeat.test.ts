@@ -1,23 +1,53 @@
+import type { Redis } from "@upstash/redis";
 import type { DailyNote } from "../api/_utils/_memory";
 import { describe, expect, test } from "bun:test";
 import {
+  appendHeartbeatRecord,
+  getHeartbeatRecordsForDate,
+} from "../api/_utils/heartbeats";
+import {
+  buildTelegramHeartbeatHistoryContext,
+  buildTelegramHeartbeatNoteContext,
   buildTelegramHeartbeatConversationContext,
-  buildTelegramHeartbeatLogEntry,
   buildTelegramHeartbeatPrompt,
   buildTelegramHeartbeatRedisKey,
-  formatTelegramHeartbeatEntries,
+  buildTelegramHeartbeatStateSummary,
   formatTelegramConversationEntries,
+  formatTelegramHeartbeatDailyNoteEntries,
+  formatTelegramHeartbeatHistoryEntries,
   getTelegramHeartbeatAuthSecret,
   getTelegramHeartbeatSlot,
+  isTelegramHeartbeatLegacyNoteEntry,
   parseTelegramHeartbeatResult,
   shouldSendTelegramHeartbeat,
-  splitTelegramHeartbeatEntries,
   TELEGRAM_HEARTBEAT_CRON_PATH,
   TELEGRAM_HEARTBEAT_CRON_SCHEDULE,
   TELEGRAM_HEARTBEAT_SKIP_TOKEN,
+  TELEGRAM_HEARTBEAT_TOPIC,
   TELEGRAM_HEARTBEAT_TARGET_USERNAME,
 } from "../api/_utils/telegram-heartbeat";
 import { prepareRyoConversationModelInput } from "../api/_utils/ryo-conversation";
+
+class FakeRedis {
+  private readonly store = new Map<string, unknown>();
+
+  async get<T = unknown>(key: string): Promise<T | null> {
+    return (this.store.has(key) ? this.store.get(key) : null) as T | null;
+  }
+
+  async set(key: string, value: unknown): Promise<"OK"> {
+    this.store.set(key, value);
+    return "OK";
+  }
+
+  async del(key: string): Promise<number> {
+    return this.store.delete(key) ? 1 : 0;
+  }
+}
+
+function makeRedis(): Redis {
+  return new FakeRedis() as unknown as Redis;
+}
 
 const sampleDailyNote: DailyNote = {
   date: "2026-03-07",
@@ -91,7 +121,9 @@ describe("telegram heartbeat helpers", () => {
 
     expect(prompt).toContain("recent Telegram chat snapshot");
     expect(prompt).toContain("use memoryRead");
-    expect(prompt).toContain("Telegram-safe tools");
+    expect(prompt).toContain("calendarControl");
+    expect(prompt).toContain("stickiesControl");
+    expect(prompt).toContain("web_search");
     expect(prompt).toContain("Do not infer, resurrect, or repeat stale tasks");
     expect(prompt).toContain("fresh insight");
     expect(prompt).toContain("did not get a user response");
@@ -100,24 +132,66 @@ describe("telegram heartbeat helpers", () => {
     expect(prompt).toContain(TELEGRAM_HEARTBEAT_SKIP_TOKEN);
   });
 
-  test("splits actionable note entries from heartbeat log entries", () => {
-    const noteContext = splitTelegramHeartbeatEntries(sampleDailyNote);
+  test("keeps daily-note context clean by ignoring legacy heartbeat strings", () => {
+    const noteContext = buildTelegramHeartbeatNoteContext(sampleDailyNote);
 
-    expect(noteContext.actionableEntries).toHaveLength(2);
-    expect(noteContext.logEntries).toHaveLength(1);
+    expect(isTelegramHeartbeatLegacyNoteEntry(sampleDailyNote.entries[1].content)).toBe(true);
+    expect(noteContext.entries).toHaveLength(2);
     expect(noteContext.latestActionableTimestamp).toBe(300);
-    expect(noteContext.latestLogTimestamp).toBe(200);
+    expect(noteContext.entries.some((entry) => entry.content.startsWith("[telegram heartbeat]"))).toBe(
+      false
+    );
+  });
+
+  test("stores heartbeat executions in the dedicated heartbeats store", async () => {
+    const redis = makeRedis();
+    const timestamp = Date.UTC(2026, 2, 7, 18, 30, 0);
+
+    await appendHeartbeatRecord(redis, "ryo", {
+      timestamp,
+      shouldSend: false,
+      topic: TELEGRAM_HEARTBEAT_TOPIC,
+      skipReason: "no-new-signals",
+      stateSummary: "decision=no-new-signals",
+      timeZone: "UTC",
+    });
+    await appendHeartbeatRecord(redis, "ryo", {
+      timestamp: timestamp + 1,
+      shouldSend: true,
+      topic: "other-agent",
+      message: "sent from another topic",
+      stateSummary: "decision=sent",
+      timeZone: "UTC",
+    });
+
+    const heartbeatRecords = await getHeartbeatRecordsForDate(
+      redis,
+      "ryo",
+      "2026-03-07",
+      TELEGRAM_HEARTBEAT_TOPIC
+    );
+
+    expect(heartbeatRecords).toHaveLength(1);
+    expect(heartbeatRecords[0]).toMatchObject({
+      shouldSend: false,
+      topic: TELEGRAM_HEARTBEAT_TOPIC,
+      skipReason: "no-new-signals",
+      stateSummary: "decision=no-new-signals",
+    });
   });
 
   test("skips when no current or no new signals exist", () => {
+    const emptyHistory = buildTelegramHeartbeatHistoryContext([]);
+
     expect(
       shouldSendTelegramHeartbeat(
-        splitTelegramHeartbeatEntries({
+        buildTelegramHeartbeatNoteContext({
           ...sampleDailyNote,
           entries: sampleDailyNote.entries.filter((entry) =>
             entry.content.startsWith("[telegram heartbeat]")
           ),
         }),
+        emptyHistory,
         buildTelegramHeartbeatConversationContext([])
       )
     ).toEqual({
@@ -128,7 +202,7 @@ describe("telegram heartbeat helpers", () => {
 
     expect(
       shouldSendTelegramHeartbeat(
-        splitTelegramHeartbeatEntries({
+        buildTelegramHeartbeatNoteContext({
           ...sampleDailyNote,
           entries: [
             {
@@ -136,14 +210,19 @@ describe("telegram heartbeat helpers", () => {
               localTime: "09:00:00",
               content: "follow up on the onboarding doc edits",
             },
-            {
-              timestamp: 200,
-              localTime: "09:30:00",
-              content:
-                "[telegram heartbeat] skipped - no new daily-note items since the last heartbeat check",
-            },
           ],
         }),
+        buildTelegramHeartbeatHistoryContext([
+          {
+            id: "hb-1",
+            timestamp: 200,
+            shouldSend: false,
+            topic: TELEGRAM_HEARTBEAT_TOPIC,
+            message: null,
+            skipReason: "no new daily-note items since the last heartbeat check",
+            stateSummary: "decision=no-new-signals",
+          },
+        ]),
         buildTelegramHeartbeatConversationContext([
           {
             role: "user",
@@ -160,7 +239,7 @@ describe("telegram heartbeat helpers", () => {
   });
 
   test("sends when recent telegram chat has a newer signal than the last heartbeat log", () => {
-    const noteContext = splitTelegramHeartbeatEntries({
+    const noteContext = buildTelegramHeartbeatNoteContext({
       ...sampleDailyNote,
       entries: sampleDailyNote.entries.filter((entry) =>
         entry.content.startsWith("[telegram heartbeat]")
@@ -170,6 +249,17 @@ describe("telegram heartbeat helpers", () => {
     expect(
       shouldSendTelegramHeartbeat(
         noteContext,
+        buildTelegramHeartbeatHistoryContext([
+          {
+            id: "hb-1",
+            timestamp: 350,
+            shouldSend: true,
+            topic: TELEGRAM_HEARTBEAT_TOPIC,
+            message: "checking in about the onboarding doc edits",
+            skipReason: null,
+            stateSummary: "decision=sent",
+          },
+        ]),
         buildTelegramHeartbeatConversationContext(sampleConversationHistory)
       )
     ).toEqual({
@@ -179,10 +269,24 @@ describe("telegram heartbeat helpers", () => {
     });
   });
 
-  test("formats entries, parses skip decisions, and builds log lines", () => {
-    expect(formatTelegramHeartbeatEntries(sampleDailyNote.entries.slice(0, 1))).toContain(
+  test("formats entries, parses skip decisions, and builds state snapshots", () => {
+    expect(formatTelegramHeartbeatDailyNoteEntries(sampleDailyNote.entries.slice(0, 1))).toContain(
       "09:00:00: follow up on the onboarding doc edits"
     );
+    expect(
+      formatTelegramHeartbeatHistoryEntries([
+        {
+          id: "hb-1",
+          timestamp: 200,
+          localTime: "09:30:00",
+          shouldSend: false,
+          topic: TELEGRAM_HEARTBEAT_TOPIC,
+          message: null,
+          skipReason: "nothing in today's daily notes needs attention",
+          stateSummary: "decision=no-current-signals",
+        },
+      ])
+    ).toContain("09:30:00: skipped - nothing in today's daily notes needs attention");
     expect(parseTelegramHeartbeatResult("NO_HEARTBEAT: nothing needs attention")).toEqual({
       shouldSend: false,
       replyText: null,
@@ -194,11 +298,25 @@ describe("telegram heartbeat helpers", () => {
       reason: null,
     });
     expect(
-      buildTelegramHeartbeatLogEntry({
-        sent: false,
-        reason: "nothing in today's daily notes needs attention",
+      buildTelegramHeartbeatStateSummary({
+        noteContext: buildTelegramHeartbeatNoteContext(sampleDailyNote),
+        historyContext: buildTelegramHeartbeatHistoryContext([
+          {
+            id: "hb-1",
+            timestamp: 200,
+            shouldSend: false,
+            topic: TELEGRAM_HEARTBEAT_TOPIC,
+            message: null,
+            skipReason: "nothing in today's daily notes needs attention",
+            stateSummary: "decision=no-current-signals",
+          },
+        ]),
+        conversationContext: buildTelegramHeartbeatConversationContext(
+          sampleConversationHistory
+        ),
+        decisionCode: "send",
       })
-    ).toContain("[telegram heartbeat] skipped");
+    ).toContain("decision=send");
   });
 
   test("formats recent telegram chats for prompt context", () => {
@@ -255,6 +373,44 @@ describe("telegram heartbeat helpers", () => {
     expect("calendarControl" in prepared.tools).toBe(true);
     expect("stickiesControl" in prepared.tools).toBe(true);
     expect("web_search" in prepared.tools).toBe(true);
+  });
+
+  test("heartbeat can keep long-term memories without duplicating shared daily notes", async () => {
+    const prepared = await prepareRyoConversationModelInput({
+      channel: "telegram",
+      username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
+      model: "gpt-5.4",
+      messages: [
+        {
+          id: "heartbeat-1",
+          role: "user",
+          content: buildTelegramHeartbeatPrompt({
+            dailyNoteSnapshot: "- 10:15:00: need to review the latest cron behavior",
+            recentTelegramSnapshot:
+              "- 2026-03-07T18:00:00.000Z user: done with the onboarding doc",
+            heartbeatLogSnapshot: "- 09:30:00: sent - earlier check-in",
+          }),
+        },
+      ],
+      preloadedMemoryContext: {
+        userMemories: {
+          version: 1,
+          memories: [
+            {
+              key: "projects",
+              summary: "User is actively iterating on ryOS ambient agent behavior.",
+              updatedAt: 123,
+            },
+          ],
+        },
+        dailyNotesText: null,
+        userTimeZone: "America/Los_Angeles",
+      },
+    });
+
+    expect(prepared.dynamicSystemPrompt).toContain("## LONG-TERM MEMORIES");
+    expect(prepared.dynamicSystemPrompt).toContain("projects: User is actively iterating");
+    expect(prepared.dynamicSystemPrompt).not.toContain("## DAILY NOTES (recent journal)");
   });
 });
 

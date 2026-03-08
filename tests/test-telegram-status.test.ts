@@ -10,7 +10,10 @@ import {
   createTelegramStatusReporter,
   getTelegramToolStatusText,
 } from "../api/_utils/telegram-status";
-import { getTelegramProviderStatusToolCall } from "../api/webhooks/telegram";
+import {
+  getTelegramProviderStatusToolCall,
+  TELEGRAM_OPENAI_PROVIDER_OPTIONS,
+} from "../api/webhooks/telegram";
 
 describe("telegram status helpers", () => {
   test("maps tool names to concise status text", () => {
@@ -18,6 +21,9 @@ describe("telegram status helpers", () => {
     expect(getTelegramToolStatusText("webSearch", {})).toBe("Searching the web...");
     expect(getTelegramToolStatusText("memoryRead", {})).toBe("Checking memory...");
     expect(getTelegramToolStatusText("memoryWrite", {})).toBe("Saving to memory...");
+    expect(getTelegramToolStatusText("documentsControl", { action: "write" })).toBe(
+      "Saving document..."
+    );
     expect(getTelegramToolStatusText("calendarControl", { action: "createTodo" })).toBe(
       "Adding to calendar..."
     );
@@ -108,6 +114,15 @@ describe("telegram status helpers", () => {
         input: { action: "list" },
       })
     ).toBeNull();
+  });
+
+  test("uses low OpenAI text verbosity for Telegram replies", () => {
+    expect(TELEGRAM_OPENAI_PROVIDER_OPTIONS).toEqual({
+      openai: {
+        reasoningEffort: "none",
+        textVerbosity: "low",
+      },
+    });
   });
 });
 

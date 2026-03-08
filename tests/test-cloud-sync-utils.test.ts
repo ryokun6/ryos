@@ -15,7 +15,6 @@ describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
     expect(isCloudSyncDomain("settings")).toBe(true);
     expect(isCloudSyncDomain("files-metadata")).toBe(true);
-    expect(isCloudSyncDomain("files-documents")).toBe(true);
     expect(isCloudSyncDomain("files-images")).toBe(true);
     expect(isCloudSyncDomain("files-trash")).toBe(true);
     expect(isCloudSyncDomain("files-applets")).toBe(true);
@@ -29,7 +28,7 @@ describe("cloud sync shared helpers", () => {
 
   test("categorizes Redis vs Blob sync domains", () => {
     const invalidRedisDomain =
-      "files-documents" as unknown as Parameters<typeof isRedisSyncDomain>[0];
+      "files-images" as unknown as Parameters<typeof isRedisSyncDomain>[0];
     const invalidBlobDomain =
       "settings" as unknown as Parameters<typeof isBlobSyncDomain>[0];
     const invalidWallpaperDomain =
@@ -46,7 +45,6 @@ describe("cloud sync shared helpers", () => {
     expect(isRedisSyncDomain(invalidRedisDomain)).toBe(false);
     expect(isRedisSyncDomain(invalidWallpaperDomain)).toBe(false);
 
-    expect(isBlobSyncDomain("files-documents")).toBe(true);
     expect(isBlobSyncDomain("files-images")).toBe(true);
     expect(isBlobSyncDomain("custom-wallpapers")).toBe(true);
     expect(isBlobSyncDomain(invalidBlobDomain)).toBe(false);
@@ -57,7 +55,6 @@ describe("cloud sync shared helpers", () => {
     const map = createEmptyCloudSyncMetadataMap();
     expect(map.settings).toBeNull();
     expect(map["files-metadata"]).toBeNull();
-    expect(map["files-documents"]).toBeNull();
     expect(map["files-images"]).toBeNull();
     expect(map["files-trash"]).toBeNull();
     expect(map["files-applets"]).toBeNull();
@@ -94,7 +91,7 @@ describe("cloud sync shared helpers", () => {
 
   test("maps internal sync domains to user-facing categories", () => {
     expect(getCloudSyncCategory("files-metadata")).toBe("files");
-    expect(getCloudSyncCategory("files-documents")).toBe("files");
+    expect(getCloudSyncCategory("files-images")).toBe("files");
     expect(getCloudSyncCategory("settings")).toBe("settings");
     expect(getCloudSyncCategory("custom-wallpapers")).toBe("settings");
     expect(getCloudSyncCategory("songs")).toBe("songs");

@@ -3,6 +3,7 @@ import type { Redis } from "@upstash/redis";
 import {
   executeCalendarControl,
   executeContactsControl,
+  executeDocumentsControl,
   executeStickiesControl,
   type MemoryToolContext,
 } from "../api/chat/tools/executors";
@@ -88,6 +89,46 @@ const contactsData = {
   createdAt: "2026-03-06T00:00:00.000Z",
 };
 
+const filesMetadataData = {
+  data: {
+    items: {
+      "/Documents": {
+        path: "/Documents",
+        name: "Documents",
+        isDirectory: true,
+        type: "directory",
+        status: "active",
+        createdAt: 1000,
+        modifiedAt: 1000,
+      },
+      "/Documents/notes.md": {
+        path: "/Documents/notes.md",
+        name: "notes.md",
+        isDirectory: false,
+        type: "markdown",
+        status: "active",
+        uuid: "doc-1",
+        size: 13,
+        createdAt: 1000,
+        modifiedAt: 1000,
+      },
+    },
+    libraryState: "loaded",
+    documents: [
+      {
+        key: "doc-1",
+        value: {
+          name: "notes.md",
+          content: "hello world",
+        },
+      },
+    ],
+  },
+  updatedAt: "2026-03-06T00:00:00.000Z",
+  version: 1,
+  createdAt: "2026-03-06T00:00:00.000Z",
+};
+
 function createMockRedis(initialData: Record<string, unknown> = {}) {
   const store: Record<string, string> = {};
   for (const [key, value] of Object.entries(initialData)) {
@@ -124,6 +165,156 @@ function createMockContext(
     timeZone: "America/Los_Angeles",
   };
 }
+
+describe("Server-side Documents Executor", () => {
+  let redis: ReturnType<typeof createMockRedis>;
+  let context: ReturnType<typeof createMockContext>;
+
+  beforeEach(() => {
+    redis = createMockRedis({
+      "sync:state:testuser:files-metadata": filesMetadataData,
+    });
+    context = createMockContext(redis);
+  });
+
+  test("list returns synced documents", async () => {
+    const result = await executeDocumentsControl({ action: "list" }, context);
+    expect(result.success).toBe(true);
+    expect(result.documents).toHaveLength(1);
+    expect(result.documents?.[0].name).toBe("notes.md");
+    expect(result.documents?.[0].path).toBe("/Documents/notes.md");
+    expect(result.message).toContain("notes.md");
+  });
+
+  test("list falls back to the filename when synced metadata is missing a name", async () => {
+    const namelessRedis = createMockRedis({
+      "sync:state:testuser:files-metadata": {
+        ...filesMetadataData,
+        data: {
+          ...filesMetadataData.data,
+          items: {
+            ...filesMetadataData.data.items,
+            "/Documents/notes.md": {
+              ...filesMetadataData.data.items["/Documents/notes.md"],
+              name: "",
+            },
+          },
+        },
+      },
+    });
+    const namelessContext = createMockContext(namelessRedis);
+
+    const result = await executeDocumentsControl({ action: "list" }, namelessContext);
+
+    expect(result.success).toBe(true);
+    expect(result.documents?.[0].name).toBe("notes.md");
+    expect(result.message).toContain("notes.md");
+  });
+
+  test("read returns document content", async () => {
+    const result = await executeDocumentsControl(
+      { action: "read", path: "/Documents/notes.md" },
+      context
+    );
+    expect(result.success).toBe(true);
+    expect(result.document?.content).toBe("hello world");
+  });
+
+  test("write creates a new document and persists combined state", async () => {
+    const result = await executeDocumentsControl(
+      {
+        action: "write",
+        path: "/Documents/todo.md",
+        content: "- buy milk",
+      },
+      context
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.document?.path).toBe("/Documents/todo.md");
+    expect(result.document?.content).toBe("- buy milk");
+    expect(redis.set).toHaveBeenCalled();
+  });
+
+  test("write appends to an existing document", async () => {
+    const result = await executeDocumentsControl(
+      {
+        action: "write",
+        path: "/Documents/notes.md",
+        content: "\nmore",
+        mode: "append",
+      },
+      context
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.document?.content).toBe("hello world\nmore");
+  });
+
+  test("edit replaces exactly one match", async () => {
+    const result = await executeDocumentsControl(
+      {
+        action: "edit",
+        path: "/Documents/notes.md",
+        old_string: "world",
+        new_string: "ryos",
+      },
+      context
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.document?.content).toBe("hello ryos");
+  });
+
+  test("edit fails when old_string matches multiple locations", async () => {
+    const repeatedRedis = createMockRedis({
+      "sync:state:testuser:files-metadata": {
+        ...filesMetadataData,
+        data: {
+          ...filesMetadataData.data,
+          documents: [
+            {
+              key: "doc-1",
+              value: {
+                name: "notes.md",
+                content: "todo todo",
+              },
+            },
+          ],
+        },
+      },
+    });
+    const repeatedContext = createMockContext(repeatedRedis);
+
+    const result = await executeDocumentsControl(
+      {
+        action: "edit",
+        path: "/Documents/notes.md",
+        old_string: "todo",
+        new_string: "done",
+      },
+      repeatedContext
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("matched 2 locations");
+  });
+
+  test("returns error when no file sync data exists", async () => {
+    const emptyRedis = createMockRedis({});
+    const ctx = createMockContext(emptyRedis);
+    const result = await executeDocumentsControl({ action: "list" }, ctx);
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("cloud sync");
+  });
+
+  test("returns error without authentication", async () => {
+    const ctx = createMockContext(redis, undefined);
+    const result = await executeDocumentsControl({ action: "list" }, ctx);
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("Authentication");
+  });
+});
 
 describe("Server-side Calendar Executor", () => {
   let redis: ReturnType<typeof createMockRedis>;

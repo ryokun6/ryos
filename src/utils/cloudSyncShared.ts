@@ -1,7 +1,6 @@
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
   "files-metadata",
-  "files-documents",
   "files-images",
   "files-trash",
   "files-applets",
@@ -25,7 +24,6 @@ export type CloudSyncCategory =
 
 export const FILE_SYNC_DOMAINS = [
   "files-metadata",
-  "files-documents",
   "files-images",
   "files-trash",
   "files-applets",
@@ -46,7 +44,6 @@ export const REDIS_SYNC_DOMAINS = [
 export type RedisSyncDomain = (typeof REDIS_SYNC_DOMAINS)[number];
 
 export const BLOB_SYNC_DOMAINS = [
-  "files-documents",
   "files-images",
   "files-trash",
   "files-applets",
@@ -133,7 +130,6 @@ export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
   return {
     settings: null,
     "files-metadata": null,
-    "files-documents": null,
     "files-images": null,
     "files-trash": null,
     "files-applets": null,
