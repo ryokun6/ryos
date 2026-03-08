@@ -30,6 +30,9 @@ describe("telegram status helpers", () => {
     expect(getTelegramToolStatusText("stickiesControl", { action: "clear" })).toBe(
       "Clearing sticky notes..."
     );
+    expect(getTelegramToolStatusText("contactsControl", { action: "update" })).toBe(
+      "Updating contact..."
+    );
     expect(getTelegramToolStatusText("unknownTool", {})).toBe("Using a tool...");
   });
 

@@ -293,12 +293,14 @@ export function ControlPanelsAppComponent({
     syncVideos,
     syncStickies,
     syncCalendar,
+    syncContacts,
     setSyncFiles,
     setSyncSettings,
     setSyncSongs,
     setSyncVideos,
     setSyncStickies,
     setSyncCalendar,
+    setSyncContacts,
     isAutoSyncChecking,
     autoSyncLastCheckedAt,
     autoSyncLastError,
@@ -729,6 +731,20 @@ export function ControlPanelsAppComponent({
                           <Switch
                             checked={syncCalendar}
                             onCheckedChange={setSyncCalendar}
+                            className="data-[state=checked]:bg-[#000000]"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="space-y-0.5">
+                            <Label>{t("apps.control-panels.autoSync.contacts")}</Label>
+                            <p className="text-[11px] text-neutral-600 font-geneva-12">
+                              {formatSyncStatus(autoSyncDomainStatus.contacts, t)}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={syncContacts}
+                            onCheckedChange={setSyncContacts}
                             className="data-[state=checked]:bg-[#000000]"
                           />
                         </div>

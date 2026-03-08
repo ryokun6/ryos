@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-02T04:01:59.039Z",
+  "generatedAt": "2026-03-07T21:35:19.163Z",
   "themes": {
     "default": [
       "app.png",
@@ -12,6 +12,7 @@
       "calendar.png",
       "cdrom.png",
       "cola.png",
+      "contacts.png",
       "control-panels/appearance-manager/app.png",
       "control-panels/appearance-manager/background-center.png",
       "control-panels/appearance-manager/background-fill.png",
@@ -146,7 +147,9 @@
       "cdrom.png",
       "chess.png",
       "console.png",
+      "contacts.png",
       "control-panels/appearance-manager/app.png",
+      "dashboard.png",
       "desktop.png",
       "dictionary.png",
       "directory.png",

@@ -141,6 +141,14 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "deleteEvents",
     "autoSave",
   ],
+  contacts: [
+    "browseContacts",
+    "createContacts",
+    "editDetails",
+    "importVCards",
+    "useWithRyo",
+    "cloudSync",
+  ],
   dashboard: [
     "openDashboard",
     "clockWidget",

@@ -54,6 +54,7 @@ import {
   handleStickiesControl,
   handleInfiniteMacControl,
   handleCalendarControl,
+  handleContactsControl,
   type ToolContext,
   type LaunchAppInput,
   type CloseAppInput,
@@ -63,6 +64,7 @@ import {
   type StickiesControlInput,
   type InfiniteMacControlInput,
   type CalendarControlInput,
+  type ContactsControlInput,
 } from "../tools";
 
 /**
@@ -1730,6 +1732,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           case "calendarControl": {
             handleCalendarControl(
               toolCall.input as CalendarControlInput,
+              toolCall.toolCallId,
+              toolContext
+            );
+            result = ""; // Handler manages its own result
+            break;
+          }
+          case "contactsControl": {
+            handleContactsControl(
+              toolCall.input as ContactsControlInput,
               toolCall.toolCallId,
               toolContext
             );

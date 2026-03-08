@@ -15,6 +15,7 @@ import {
   MEMORY_MODES,
   CALENDAR_ACTIONS,
   CALENDAR_COLORS,
+  CONTACT_ACTIONS,
   DOCUMENTS_ACTIONS,
   DOCUMENT_WRITE_MODES,
 } from "./types.js";
@@ -650,6 +651,133 @@ export const calendarControlSchema = z.object({
 });
 
 // ============================================================================
+// Contacts Control Schema
+// ============================================================================
+
+export const contactsControlSchema = z
+  .object({
+    action: z
+      .enum(CONTACT_ACTIONS)
+      .describe(
+        "Action to perform: 'list' searches/list contacts, 'get' returns one contact by id, 'create' adds a contact, 'update' modifies a contact by id, and 'delete' removes a contact by id."
+      ),
+    id: z
+      .preprocess(normalizeOptionalString, z.string().optional())
+      .describe("For 'get', 'update', and 'delete': the contact id returned by 'list'."),
+    query: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'list': optional search query across names, phones, emails, notes, and telegram fields."),
+    displayName: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("Primary display name for the contact."),
+    firstName: z
+      .preprocess(normalizeOptionalString, z.string().max(120).optional())
+      .describe("First name."),
+    lastName: z
+      .preprocess(normalizeOptionalString, z.string().max(120).optional())
+      .describe("Last name."),
+    nickname: z
+      .preprocess(normalizeOptionalString, z.string().max(120).optional())
+      .describe("Nickname."),
+    organization: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("Organization or company."),
+    title: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("Job title."),
+    notes: z
+      .preprocess(normalizeOptionalString, z.string().max(2000).optional())
+      .describe("Free-form notes."),
+    emails: z.array(z.string().max(320)).max(20).optional().describe("Email addresses."),
+    phones: z.array(z.string().max(80)).max(20).optional().describe("Phone numbers."),
+    urls: z
+      .array(z.string().max(500))
+      .max(20)
+      .optional()
+      .describe("URLs such as websites or social profiles."),
+    addresses: z
+      .array(z.string().max(500))
+      .max(20)
+      .optional()
+      .describe("Postal addresses as formatted strings."),
+    birthday: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, {
+        message: "Birthday must be YYYY-MM-DD format",
+      })
+      .nullable()
+      .optional()
+      .describe("Birthday in YYYY-MM-DD format."),
+    telegramUsername: z
+      .preprocess(normalizeOptionalString, z.string().max(120).optional())
+      .describe("Telegram username without the @ prefix."),
+    telegramUserId: z
+      .preprocess(normalizeOptionalString, z.string().max(120).optional())
+      .describe("Telegram user id as a string."),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      (data.action === "get" || data.action === "update" || data.action === "delete") &&
+      !data.id
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `The '${data.action}' action requires the 'id' parameter.`,
+        path: ["id"],
+      });
+    }
+
+    if (data.action === "update") {
+      const hasUpdates = Boolean(
+        data.displayName ||
+          data.firstName ||
+          data.lastName ||
+          data.nickname ||
+          data.organization ||
+          data.title ||
+          data.notes ||
+          data.telegramUsername ||
+          data.telegramUserId ||
+          data.birthday ||
+          data.emails?.length ||
+          data.phones?.length ||
+          data.urls?.length ||
+          data.addresses?.length
+      );
+
+      if (!hasUpdates) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'update' action requires at least one field to change.",
+          path: ["action"],
+        });
+      }
+    }
+
+    if (data.action === "create") {
+      const hasIdentity = Boolean(
+        data.displayName ||
+          data.firstName ||
+          data.lastName ||
+          data.organization ||
+          data.telegramUsername ||
+          data.telegramUserId ||
+          data.emails?.length ||
+          data.phones?.length
+      );
+
+      if (!hasIdentity) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "The 'create' action requires at least a name, organization, email, phone, or telegram field.",
+          path: ["action"],
+        });
+      }
+    }
+  });
+
+// ============================================================================
 // Documents Control Schema
 // ============================================================================
 
@@ -669,9 +797,7 @@ export const documentsControlSchema = z
     content: z
       .string()
       .optional()
-      .describe(
-        "For 'write': markdown content to save. Required for writes."
-      ),
+      .describe("For 'write': markdown content to save. Required for writes."),
     mode: z
       .enum(DOCUMENT_WRITE_MODES)
       .optional()
@@ -685,14 +811,12 @@ export const documentsControlSchema = z
       .describe(
         "For 'edit': exact text to replace. Must match uniquely within the document."
       ),
-    new_string: z
-      .string()
-      .optional()
-      .describe("For 'edit': replacement text."),
+    new_string: z.string().optional().describe("For 'edit': replacement text."),
   })
   .superRefine((data, ctx) => {
     const path = data.path?.trim();
-    const requiresPath = data.action === "read" || data.action === "write" || data.action === "edit";
+    const requiresPath =
+      data.action === "read" || data.action === "write" || data.action === "edit";
 
     if (requiresPath && !path) {
       ctx.addIssue({

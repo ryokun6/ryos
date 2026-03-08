@@ -42,6 +42,7 @@ export interface BaseApp<TInitialData = unknown> {
     | "infinite-mac"
     | "winamp"
     | "calendar"
+    | "contacts"
     | "dashboard";
   name: string;
   icon: string | { type: "image"; src: string };

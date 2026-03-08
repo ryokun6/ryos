@@ -658,6 +658,28 @@
         "changingSettings": "正在變更設定…",
         "closed": "已關閉 {{appName}}",
         "closing": "關閉 {{appName}}…",
+        "contacts": {
+          "created": "已建立 {{name}}",
+          "createdContact": "已建立 {{name}}",
+          "creating": "正在建立聯絡人…",
+          "deleted": "已刪除 {{name}}",
+          "deleting": "正在刪除聯絡人…",
+          "found": "找到 {{count}} 位聯絡人",
+          "foundMany": "找到 {{count}} 位聯絡人",
+          "foundOne": "找到 1 位聯絡人",
+          "listing": "正在列出聯絡人…",
+          "loaded": "已載入 {{name}}",
+          "loadedContact": "已載入 {{name}}",
+          "loading": "正在載入聯絡人…",
+          "missingData": "至少新增一個姓名、電子郵件、電話或 Telegram 欄位",
+          "missingId": "缺少聯絡人 ID",
+          "noContacts": "未找到任何聯絡人",
+          "noUpdates": "未提供聯絡人更新資訊",
+          "notFound": "找不到聯絡人：{{id}}",
+          "updated": "已更新 {{name}}",
+          "updatedContact": "已更新 {{name}}",
+          "updating": "正在更新聯絡人…"
+        },
         "contentWritten": "內容已寫入",
         "controllingPlayback": "控制播放…",
         "createdDocument": "已建立文件：{{path}}",
@@ -844,6 +866,91 @@
         "writingContent": "寫入內容…"
       }
     },
+    "contacts": {
+      "buttons": {
+        "edit": "編輯"
+      },
+      "description": "通訊錄（支援 vCard 匯入）",
+      "emptySelection": "選取聯絡人或建立新聯絡人以開始編輯詳細資料。",
+      "emptyState": "尚無聯絡人。建立聯絡人或匯入 vCard 以開始使用。",
+      "fields": {
+        "addresses": "地址",
+        "birthday": "生日",
+        "displayName": "顯示名稱",
+        "emails": "電子郵件地址",
+        "firstName": "名字",
+        "jobTitle": "職稱",
+        "lastName": "姓氏",
+        "nickname": "暱稱",
+        "notes": "備註",
+        "organization": "機構",
+        "phones": "電話號碼",
+        "source": "來源",
+        "telegramUserId": "Telegram 使用者 ID",
+        "telegramUsername": "Telegram 使用者名稱",
+        "urls": "網站／連結"
+      },
+      "groupHeaders": {
+        "groups": "群組",
+        "names": "姓名"
+      },
+      "groups": {
+        "all": "全部",
+        "birthdays": "生日",
+        "imported": "已匯入",
+        "telegram": "Telegram",
+        "work": "工作"
+      },
+      "help": {
+        "browseContacts": {
+          "description": "使用左側邊欄搜尋並切換已儲存的聯絡人",
+          "title": "瀏覽聯絡人"
+        },
+        "cloudSync": {
+          "description": "在「控制面板」中啟用聯絡人同步，以將通訊錄保留在 Redis 中",
+          "title": "雲端同步"
+        },
+        "createContacts": {
+          "description": "選擇「檔案」>「新增聯絡人」以新增姓名、電話號碼、電子郵件和備註",
+          "title": "建立聯絡人"
+        },
+        "editDetails": {
+          "description": "在檢查器中更新聯絡人詳細資訊，變更會自動儲存",
+          "title": "編輯詳細資訊"
+        },
+        "importVCards": {
+          "description": "從「檔案」選單匯入 .vcf 檔案，將聯絡人帶入 ryOS",
+          "title": "匯入 vCard"
+        },
+        "useWithRyo": {
+          "description": "Ryo 可以在聊天和 Telegram 中列出、建立、更新和搜尋已同步的聯絡人",
+          "title": "搭配 Ryo 使用"
+        }
+      },
+      "menu": {
+        "about": "關於聯絡人",
+        "deleteContact": "刪除聯絡人",
+        "help": "聯絡人輔助說明",
+        "importVCard": "匯入 vCard…",
+        "newContact": "新增聯絡人"
+      },
+      "messages": {
+        "deleted": "已刪除 {{name}}",
+        "importEmpty": "沒有聯絡人從該 vCard 檔案匯入。",
+        "importFailed": "無法匯入 vCard 檔案。",
+        "imported": "已匯入 {{imported}} 個新聯絡人並合併了 {{merged}} 個重複項目。"
+      },
+      "name": "聯絡人",
+      "noSummary": "尚未有電話號碼、電子郵件或備註",
+      "placeholders": {
+        "multiValue": "每個值使用新行"
+      },
+      "searchPlaceholder": "搜尋聯絡人…",
+      "status": {
+        "cardsCount": "{{count}} 張卡片"
+      },
+      "title": "聯絡人"
+    },
     "control-panels": {
       "aiModel": "AI 模型",
       "aiModelDescription": "用於聊天、IE 等",
@@ -860,6 +967,7 @@
       "autoSync": {
         "calendar": "行事曆",
         "checking": "正在檢查雲端更新…",
+        "contacts": "聯絡人",
         "daysAgo": "{{count}}天前",
         "description": "在重要更新後，自動將選取的資料庫與設定同步到雲端",
         "error": "同步問題：{{error}}",

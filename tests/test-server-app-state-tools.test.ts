@@ -2,6 +2,7 @@ import { describe, expect, test, mock, beforeEach } from "bun:test";
 import type { Redis } from "@upstash/redis";
 import {
   executeCalendarControl,
+  executeContactsControl,
   executeDocumentsControl,
   executeStickiesControl,
   type MemoryToolContext,
@@ -48,6 +49,36 @@ const stickiesData = {
         color: "yellow",
         position: { x: 100, y: 100 },
         size: { width: 200, height: 200 },
+        createdAt: 1000,
+        updatedAt: 1000,
+      },
+    ],
+  },
+  updatedAt: "2026-03-06T00:00:00.000Z",
+  version: 1,
+  createdAt: "2026-03-06T00:00:00.000Z",
+};
+
+const contactsData = {
+  data: {
+    contacts: [
+      {
+        id: "contact-1",
+        displayName: "Avery Chen",
+        firstName: "Avery",
+        lastName: "Chen",
+        nickname: "",
+        organization: "ryOS",
+        title: "Engineer",
+        notes: "Prefers Telegram.",
+        emails: [{ id: "email-1", label: "work", value: "avery@example.com" }],
+        phones: [{ id: "phone-1", label: "mobile", value: "+1 555 0100" }],
+        addresses: [],
+        urls: [],
+        birthday: "1991-02-03",
+        telegramUsername: "averyc",
+        telegramUserId: "4242",
+        source: "manual",
         createdAt: 1000,
         updatedAt: 1000,
       },
@@ -480,5 +511,78 @@ describe("Server-side Stickies Executor", () => {
     const ctx = createMockContext(redis, undefined);
     const result = await executeStickiesControl({ action: "list" }, ctx);
     expect(result.success).toBe(false);
+  });
+});
+
+describe("Server-side Contacts Executor", () => {
+  let redis: ReturnType<typeof createMockRedis>;
+  let context: ReturnType<typeof createMockContext>;
+
+  beforeEach(() => {
+    redis = createMockRedis({
+      "sync:state:testuser:contacts": contactsData,
+    });
+    context = createMockContext(redis);
+  });
+
+  test("list returns all contacts", async () => {
+    const result = await executeContactsControl({ action: "list" }, context);
+    expect(result.success).toBe(true);
+    expect(result.contacts).toHaveLength(1);
+    expect(result.contacts?.[0].displayName).toBe("Avery Chen");
+  });
+
+  test("list filters by query", async () => {
+    const result = await executeContactsControl(
+      { action: "list", query: "telegram" },
+      context
+    );
+    expect(result.success).toBe(true);
+    expect(result.contacts).toHaveLength(1);
+  });
+
+  test("get returns one contact", async () => {
+    const result = await executeContactsControl(
+      { action: "get", id: "contact-1" },
+      context
+    );
+    expect(result.success).toBe(true);
+    expect(result.contact?.telegramUsername).toBe("averyc");
+  });
+
+  test("create adds contact and persists", async () => {
+    const result = await executeContactsControl(
+      {
+        action: "create",
+        displayName: "Maya Rivers",
+        emails: ["maya@example.com"],
+      },
+      context
+    );
+    expect(result.success).toBe(true);
+    expect(result.contact?.displayName).toBe("Maya Rivers");
+    expect(redis.set).toHaveBeenCalled();
+  });
+
+  test("update modifies an existing contact", async () => {
+    const result = await executeContactsControl(
+      {
+        action: "update",
+        id: "contact-1",
+        notes: "Updated note",
+      },
+      context
+    );
+    expect(result.success).toBe(true);
+    expect(result.contact?.notes).toBe("Updated note");
+  });
+
+  test("delete removes a contact", async () => {
+    const result = await executeContactsControl(
+      { action: "delete", id: "contact-1" },
+      context
+    );
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("Deleted");
   });
 });

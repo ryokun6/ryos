@@ -5,6 +5,8 @@
  * supporting both server-side and client-side tool execution.
  */
 
+import type { Contact } from "../../../src/utils/contacts.js";
+
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
 export type ThemeId = typeof THEME_IDS[number];
@@ -331,6 +333,56 @@ export interface CalendarControlOutput {
 }
 
 // ============================================================================
+// Contacts Control Types
+// ============================================================================
+
+export const CONTACT_ACTIONS = ["list", "get", "create", "update", "delete"] as const;
+export type ContactsAction = typeof CONTACT_ACTIONS[number];
+
+export interface ContactsControlInput {
+  action: ContactsAction;
+  id?: string;
+  query?: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  nickname?: string;
+  organization?: string;
+  title?: string;
+  notes?: string;
+  emails?: string[];
+  phones?: string[];
+  urls?: string[];
+  addresses?: string[];
+  birthday?: string | null;
+  telegramUsername?: string | null;
+  telegramUserId?: string | null;
+}
+
+export interface ContactToolRecord {
+  id: string;
+  displayName: string;
+  organization: string;
+  title: string;
+  emails: string[];
+  phones: string[];
+  urls: string[];
+  addresses: string[];
+  telegramUsername: string | null;
+  telegramUserId: string | null;
+  birthday: string | null;
+  notes?: string | null;
+  summary?: string | null;
+}
+
+export interface ContactsControlOutput {
+  success: boolean;
+  message: string;
+  contacts?: ContactToolRecord[];
+  contact?: ContactToolRecord | null;
+}
+
+// ============================================================================
 // Documents Control Types
 // ============================================================================
 
@@ -494,4 +546,8 @@ export interface StickiesSnapshotData {
     createdAt: number;
     updatedAt: number;
   }>;
+}
+
+export interface ContactsSnapshotData {
+  contacts: Contact[];
 }

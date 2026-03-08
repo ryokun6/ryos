@@ -142,6 +142,11 @@ const LazyCalendarApp = createLazyComponent<unknown>(
   "calendar"
 );
 
+const LazyContactsApp = createLazyComponent<unknown>(
+  () => import("@/apps/contacts/components/ContactsAppComponent").then(m => ({ default: m.ContactsAppComponent })),
+  "contacts"
+);
+
 const LazyDashboardApp = createLazyComponent<unknown>(
   () => import("@/apps/dashboard/components/DashboardAppComponent").then(m => ({ default: m.DashboardAppComponent })),
   "dashboard"
@@ -176,6 +181,7 @@ import {
 } from "@/apps/infinite-mac/metadata";
 import { appMetadata as winampMetadata, helpItems as winampHelpItems } from "@/apps/winamp";
 import { appMetadata as calendarMetadata, helpItems as calendarHelpItems } from "@/apps/calendar/metadata";
+import { appMetadata as contactsMetadata, helpItems as contactsHelpItems } from "@/apps/contacts";
 import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 
@@ -464,6 +470,19 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 700, height: 520 },
       minSize: { width: 300, height: 380 },
+    } as WindowConstraints,
+  },
+  ["contacts"]: {
+    id: "contacts",
+    name: "Contacts",
+    icon: { type: "image", src: contactsMetadata.icon },
+    description: "Address book with vCard import",
+    component: LazyContactsApp,
+    helpItems: contactsHelpItems,
+    metadata: contactsMetadata,
+    windowConfig: {
+      defaultSize: { width: 820, height: 560 },
+      minSize: { width: 360, height: 420 },
     } as WindowConstraints,
   },
   ["dashboard"]: {

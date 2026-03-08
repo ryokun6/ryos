@@ -23,6 +23,7 @@ export type AppId =
   | "infinite-mac"
   | "winamp"
   | "calendar"
+  | "contacts"
   | "dashboard";
 
 /**
@@ -149,6 +150,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     "infinite-mac": ["classicMacEmulator", "selectSystem", "pauseResume", "backToSystems"],
     winamp: ["playMusic", "equalizer", "playlist", "skins", "shuffleRepeat", "controls"],
     calendar: ["navigateMonths", "createEvents", "dayView", "colorCoding", "deleteEvents", "autoSave"],
+    contacts: ["browseContacts", "createContacts", "editDetails", "importVCards", "useWithRyo", "cloudSync"],
     dashboard: ["openDashboard", "clockWidget", "calendarWidget", "weatherWidget", "moveWidgets", "closeDashboard"],
   };
 

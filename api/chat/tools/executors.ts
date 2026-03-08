@@ -28,8 +28,11 @@ import type {
   DocumentsControlOutput,
   StickiesControlInput,
   StickiesControlOutput,
+  ContactsControlInput,
+  ContactsControlOutput,
   CalendarSnapshotData,
   StickiesSnapshotData,
+  ContactsSnapshotData,
   type StickyColor,
 } from "./types.js";
 import { stateKey } from "../../sync/state.js";
@@ -42,6 +45,19 @@ import {
   getDailyNote,
   getTodayDateString,
 } from "../../_utils/_memory.js";
+import {
+  contactMatchesQuery,
+  createContactFromDraft,
+  getContactSummary,
+  type ContactDraft,
+  sortContacts,
+  updateContactFromDraft,
+} from "../../../src/utils/contacts.js";
+import {
+  readContactsState,
+  serializeContactForTool,
+  writeContactsState,
+} from "../../_utils/contacts.js";
 
 /**
  * Execute generateHtml tool
@@ -1231,4 +1247,141 @@ export async function executeStickiesControl(
     default:
       return { success: false, message: `Unknown action: ${action}` };
   }
+}
+
+function toContactsDraft(input: ContactsControlInput): ContactDraft {
+  return {
+    displayName: input.displayName,
+    firstName: input.firstName,
+    lastName: input.lastName,
+    nickname: input.nickname,
+    organization: input.organization,
+    title: input.title,
+    notes: input.notes,
+    emails: input.emails,
+    phones: input.phones,
+    urls: input.urls,
+    addresses: input.addresses,
+    birthday: input.birthday,
+    telegramUsername: input.telegramUsername,
+    telegramUserId: input.telegramUserId,
+    source: "ai",
+  };
+}
+
+export async function executeContactsControl(
+  input: ContactsControlInput,
+  context: AppStateToolContext
+): Promise<ContactsControlOutput> {
+  if (!context.username) {
+    return { success: false, message: "Authentication required." };
+  }
+  if (!context.redis) {
+    return { success: false, message: "Storage not available." };
+  }
+
+  const state: ContactsSnapshotData = await readContactsState(
+    context.redis,
+    context.username
+  );
+
+  switch (input.action) {
+    case "list": {
+      const contacts = input.query
+        ? state.contacts.filter((contact) =>
+            contactMatchesQuery(contact, input.query || "")
+          )
+        : state.contacts;
+
+      return {
+        success: true,
+        message:
+          contacts.length === 0
+            ? "No contacts found."
+            : `Found ${contacts.length} ${
+                contacts.length === 1 ? "contact" : "contacts"
+              }.`,
+        contacts: contacts.map(serializeContactForTool),
+      };
+    }
+
+    case "get": {
+      const contact = state.contacts.find((item) => item.id === input.id);
+      if (!contact) {
+        return {
+          success: false,
+          message: `Contact with id '${input.id}' not found.`,
+        };
+      }
+
+      return {
+        success: true,
+        message: `Loaded contact "${contact.displayName}".`,
+        contact: serializeContactForTool(contact),
+      };
+    }
+
+    case "create": {
+      const contact = createContactFromDraft(toContactsDraft(input));
+      await writeContactsState(context.redis, context.username, {
+        contacts: sortContacts([...state.contacts, contact]),
+      });
+      context.log(
+        `[contactsControl] Created contact "${contact.displayName}" (${getContactSummary(contact)})`
+      );
+      return {
+        success: true,
+        message: `Created contact "${contact.displayName}".`,
+        contact: serializeContactForTool(contact),
+      };
+    }
+
+    case "update": {
+      const index = state.contacts.findIndex((item) => item.id === input.id);
+      if (index === -1) {
+        return {
+          success: false,
+          message: `Contact with id '${input.id}' not found.`,
+        };
+      }
+
+      const updated = updateContactFromDraft(
+        state.contacts[index],
+        toContactsDraft(input)
+      );
+      const nextContacts = [...state.contacts];
+      nextContacts[index] = updated;
+
+      await writeContactsState(context.redis, context.username, {
+        contacts: sortContacts(nextContacts),
+      });
+
+      return {
+        success: true,
+        message: `Updated contact "${updated.displayName}".`,
+        contact: serializeContactForTool(updated),
+      };
+    }
+
+    case "delete": {
+      const contact = state.contacts.find((item) => item.id === input.id);
+      if (!contact) {
+        return {
+          success: false,
+          message: `Contact with id '${input.id}' not found.`,
+        };
+      }
+
+      await writeContactsState(context.redis, context.username, {
+        contacts: state.contacts.filter((item) => item.id !== input.id),
+      });
+
+      return {
+        success: true,
+        message: `Deleted contact "${contact.displayName}".`,
+      };
+    }
+  }
+
+  return { success: false, message: `Unknown action: ${input.action}` };
 }
