@@ -308,7 +308,7 @@ export function AdminAppComponent({
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
       >
-        <div ref={containerRef} className="flex h-full w-full">
+        <div ref={containerRef} className="flex h-full w-full admin-force-font">
           {/* Sidebar */}
           <AdminSidebar
             activeSection={activeSection}
