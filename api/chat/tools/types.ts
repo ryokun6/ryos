@@ -550,4 +550,5 @@ export interface StickiesSnapshotData {
 
 export interface ContactsSnapshotData {
   contacts: Contact[];
+  myContactId?: string | null;
 }

@@ -21,8 +21,10 @@ export async function readContactsState(
   }
 
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  const data = parsed?.data as ContactsSnapshotData | undefined;
   return {
-    contacts: normalizeContacts(parsed?.data?.contacts),
+    contacts: normalizeContacts(data?.contacts),
+    myContactId: typeof data?.myContactId === "string" ? data.myContactId : null,
   };
 }
 

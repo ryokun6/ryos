@@ -83,6 +83,7 @@ const contactsData = {
         updatedAt: 1000,
       },
     ],
+    myContactId: "contact-1",
   },
   updatedAt: "2026-03-06T00:00:00.000Z",
   version: 1,
@@ -584,5 +585,32 @@ describe("Server-side Contacts Executor", () => {
     );
     expect(result.success).toBe(true);
     expect(result.message).toContain("Deleted");
+  });
+
+  test("create preserves myContactId in persisted state", async () => {
+    await executeContactsControl(
+      { action: "create", displayName: "New Person", emails: ["new@example.com"] },
+      context
+    );
+    const stored = JSON.parse(redis._store["sync:state:testuser:contacts"]);
+    expect(stored.data.myContactId).toBe("contact-1");
+  });
+
+  test("update preserves myContactId in persisted state", async () => {
+    await executeContactsControl(
+      { action: "update", id: "contact-1", notes: "Changed" },
+      context
+    );
+    const stored = JSON.parse(redis._store["sync:state:testuser:contacts"]);
+    expect(stored.data.myContactId).toBe("contact-1");
+  });
+
+  test("delete clears myContactId when the pinned contact is deleted", async () => {
+    await executeContactsControl(
+      { action: "delete", id: "contact-1" },
+      context
+    );
+    const stored = JSON.parse(redis._store["sync:state:testuser:contacts"]);
+    expect(stored.data.myContactId).toBe(null);
   });
 });
