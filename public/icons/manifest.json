@@ -1,8 +1,9 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-08T08:36:33.243Z",
+  "generatedAt": "2026-03-08T08:58:09.243Z",
   "themes": {
     "default": [
+      "account-login.png",
       "admin.png",
       "app.png",
       "apple.png",
@@ -141,6 +142,7 @@
       "winamp.png"
     ],
     "macosx": [
+      "account-login.png",
       "admin.png",
       "app.png",
       "apple.png",

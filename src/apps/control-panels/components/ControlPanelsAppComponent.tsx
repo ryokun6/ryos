@@ -44,6 +44,7 @@ import { getAppIconPath } from "@/config/appRegistry";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { getContactInitials } from "@/utils/contacts";
 import { PaperPlaneRight } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 
 // Version display component that reads from app store
 function VersionDisplay() {
@@ -187,14 +188,25 @@ function SyncSectionTitle({
 }) {
   return (
     <div className="flex items-center gap-3 min-w-0">
-      <ThemedIcon
-        name="/icons/default/cloud-sync.png"
-        alt=""
-        className="h-8 w-8 shrink-0 object-contain"
-      />
+      <div
+        className={cn(
+          controlPanelItemIconShell,
+          "flex items-center justify-center overflow-hidden"
+        )}
+      >
+        <ThemedIcon
+          name="/icons/default/cloud-sync.png"
+          alt=""
+          className="w-8 h-8 object-contain"
+        />
+      </div>
       <div className="min-w-0 space-y-1">
-        <Label className="text-[13px] font-medium font-geneva-12">{title}</Label>
-        <p className="text-[11px] text-neutral-600 font-geneva-12">{subtitle}</p>
+        <span className="block text-[13px] font-geneva-12 font-medium leading-tight truncate">
+          {title}
+        </span>
+        <p className="text-[11px] text-neutral-600 font-geneva-12 leading-tight truncate">
+          {subtitle}
+        </p>
       </div>
     </div>
   );
@@ -237,6 +249,7 @@ function SyncDomainRow({
 
 const userAvatarInitialsTextShadow =
   "0 2px 3px rgba(0, 0, 0, 0.45), 0 0 3px rgba(0, 0, 0, 0.15)";
+const controlPanelItemIconShell = "w-8 h-8 shrink-0";
 
 export function ControlPanelsAppComponent({
   isWindowOpen,
@@ -689,7 +702,7 @@ export function ControlPanelsAppComponent({
 
             <ThemedTabsContent value="sync">
               <div className="space-y-4 h-full overflow-y-auto p-4">
-                <div className="space-y-3">
+                <div className="space-y-3 pt-1">
                   {username ? (
                     <div className="flex items-center justify-between gap-4">
                       <SyncSectionTitle
@@ -716,7 +729,7 @@ export function ControlPanelsAppComponent({
                     <div className="flex items-center justify-between">
                       <SyncSectionTitle
                         title={t("apps.control-panels.autoSync.title")}
-                        subtitle={t("apps.control-panels.cloudSync.loginRequired")}
+                        subtitle={t("apps.control-panels.autoSync.description")}
                       />
                       <Button
                         variant="retro"
@@ -864,7 +877,12 @@ export function ControlPanelsAppComponent({
                   {!cloudProgress && (
                     <p className="text-[11px] text-neutral-600 font-geneva-12">
                       {!username
-                        ? t("apps.control-panels.cloudSync.loginRequired")
+                        ? t("apps.control-panels.cloudSync.description", {
+                            limit: (
+                              CLOUD_BACKUP_MAX_SIZE /
+                              (1024 * 1024)
+                            ).toFixed(0),
+                          })
                         : isCloudStatusLoading
                           ? t("apps.control-panels.cloudSync.checking")
                           : cloudSyncStatus?.hasBackup &&
@@ -893,13 +911,16 @@ export function ControlPanelsAppComponent({
             <ThemedTabsContent value="system">
               <div className="space-y-4 h-full overflow-y-auto p-4">
                 {/* User Account Section */}
-                <div className="space-y-2">
+                <div className="space-y-2 pt-1">
                   {username ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <div
-                            className="w-8 h-8 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden"
+                            className={cn(
+                              controlPanelItemIconShell,
+                              "rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden"
+                            )}
                             style={
                               myContact?.picture
                                 ? { background: "rgba(255, 255, 255, 0.72)" }
@@ -921,11 +942,11 @@ export function ControlPanelsAppComponent({
                               accountAvatarInitials
                             )}
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[13px] font-geneva-12 font-medium">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[13px] font-geneva-12 font-medium leading-tight truncate">
                               @{username}
                             </span>
-                            <span className="text-[11px] text-neutral-600 font-geneva-12">
+                            <span className="text-[11px] text-neutral-600 font-geneva-12 leading-tight truncate">
                               {t("apps.control-panels.loggedInToRyOS")}
                             </span>
                           </div>
@@ -980,17 +1001,31 @@ export function ControlPanelsAppComponent({
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-[13px] font-geneva-12 font-medium">
-                            {t("apps.control-panels.ryOSAccount")}
-                          </span>
-                          <span className="text-[11px] text-neutral-600 font-geneva-12">
-                            {t("apps.control-panels.loginToSendMessages")}
-                          </span>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={cn(
+                              controlPanelItemIconShell,
+                              "flex items-center justify-center overflow-hidden"
+                            )}
+                          >
+                            <img
+                              src="/apple-touch-icon.png"
+                              alt={t("apps.control-panels.ryOSAccount")}
+                              className="w-8 h-8 object-contain"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[13px] font-geneva-12 font-medium leading-tight truncate">
+                              {t("apps.control-panels.ryOSAccount")}
+                            </span>
+                            <span className="text-[11px] text-neutral-600 font-geneva-12 leading-tight truncate">
+                              {t("apps.control-panels.loginToSendMessages")}
+                            </span>
+                          </div>
                         </div>
                         <Button
-                          variant="retro"
+                          variant="default"
                           onClick={promptSetUsername}
                           className="h-7"
                         >
@@ -1001,42 +1036,52 @@ export function ControlPanelsAppComponent({
                   )}
                 </div>
 
-                {username ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 shrink-0 rounded-full bg-[#229ED9] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.18)] flex items-center justify-center">
-                          <PaperPlaneRight size={16} weight="fill" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[13px] font-geneva-12 font-medium">
-                            {t("apps.control-panels.telegram.title")}
-                          </span>
-                          <span className="text-[11px] text-neutral-600 font-geneva-12">
-                            {telegramLinkedAccount
+                <div className="space-y-2">
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-3",
+                      !username && "opacity-50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={cn(
+                          controlPanelItemIconShell,
+                          "rounded-full bg-[#229ED9] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.18)] flex items-center justify-center"
+                        )}
+                      >
+                        <PaperPlaneRight size={16} weight="fill" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[13px] font-geneva-12 font-medium">
+                          {t("apps.control-panels.telegram.title")}
+                        </span>
+                        <span className="text-[11px] text-neutral-600 font-geneva-12">
+                          {username
+                            ? telegramLinkedAccount
                               ? t("apps.control-panels.telegram.linkedAs", {
                                   account: getTelegramLinkedAccountLabel(
                                     telegramLinkedAccount
                                   ),
                                 })
-                              : t("apps.control-panels.telegram.description")}
-                          </span>
-                        </div>
+                              : t("apps.control-panels.telegram.description")
+                            : t("apps.control-panels.telegram.description")}
+                        </span>
                       </div>
-
-                      <Button
-                        variant="retro"
-                        onClick={openTelegramDialog}
-                        disabled={isTelegramStatusLoading}
-                        className="h-7"
-                      >
-                        {telegramLinkedAccount
-                          ? t("apps.control-panels.telegram.manage")
-                          : t("apps.control-panels.telegram.link")}
-                      </Button>
                     </div>
+
+                    <Button
+                      variant="retro"
+                      onClick={openTelegramDialog}
+                      disabled={!username || isTelegramStatusLoading}
+                      className="h-7"
+                    >
+                      {telegramLinkedAccount
+                        ? t("apps.control-panels.telegram.manage")
+                        : t("apps.control-panels.telegram.link")}
+                    </Button>
                   </div>
-                ) : null}
+                </div>
 
                 <hr
                   className="my-4 border-t"
