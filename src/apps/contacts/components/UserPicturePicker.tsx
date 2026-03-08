@@ -61,17 +61,18 @@ export function UserPicturePicker({
             type="button"
             onClick={() => handleSelect(picture.path)}
             className={cn(
-              "relative aspect-square rounded-[6px] border-2 overflow-hidden transition-all hover:scale-105 focus:outline-none",
+              "relative rounded-[6px] border-2 overflow-hidden transition-all hover:scale-105 focus:outline-none",
               currentPicture === picture.path
                 ? "border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
                 : "border-transparent hover:border-black/20"
             )}
             title={picture.name}
           >
+            <div style={{ paddingBottom: "100%" }} />
             <img
               src={picture.path}
               alt={picture.name}
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               loading="lazy"
             />
           </button>
