@@ -336,11 +336,8 @@ export function ContactsAppComponent({
 
           <div
             className={cn(
-              "flex-1 overflow-hidden w-full",
-              isMobileLayout
-                ? "flex flex-col w-full h-full items-stretch"
-                : "flex",
-              isMacOsxTheme && !isMobileLayout && "px-[5px] pb-[5px]",
+              "flex-1 overflow-hidden",
+              isMobileLayout ? "flex flex-col" : "flex",
               !isMobileLayout && isMacOsxTheme && "gap-[5px]"
             )}
           >
