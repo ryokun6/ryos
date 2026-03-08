@@ -2283,7 +2283,7 @@
       "login": "Login",
       "telegram": {
         "title": "Telegram",
-        "description": "Link a Telegram DM to chat with Ryo using your ryOS account",
+        "description": "Chat with Ryo in Telegram",
         "loggedOutDescription": "Log in to link Telegram to your ryOS account",
         "checking": "Checking Telegram link...",
         "linkedAs": "Linked as {{account}}",
@@ -2316,11 +2316,11 @@
       "backupRestoreDescription": "Backup or restore all app settings and files to a local file",
       "autoSync": {
         "title": "Cloud Sync",
-        "description": "Automatically sync selected libraries and settings to the cloud after significant updates",
+        "description": "Automatically sync selected data and settings to the cloud after significant updates",
         "files": "Files",
         "settings": "Settings",
-        "songs": "Songs Library",
-        "videos": "Videos Library",
+        "songs": "Songs",
+        "videos": "Videos",
         "stickies": "Stickies",
         "calendar": "Calendar",
         "contacts": "Contacts",

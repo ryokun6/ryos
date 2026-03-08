@@ -1,8 +1,9 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-07T21:35:19.163Z",
+  "generatedAt": "2026-03-08T08:16:36.758Z",
   "themes": {
     "default": [
+      "admin.png",
       "app.png",
       "apple.png",
       "applet.png",
@@ -56,6 +57,7 @@
       "info.png",
       "internet.png",
       "ipod.png",
+      "isync.png",
       "karaoke.png",
       "mac-classic.png",
       "mac.png",
@@ -77,6 +79,7 @@
       "macpaint/select.png",
       "macpaint/spray.png",
       "macpaint/text.png",
+      "minesweeper-app.png",
       "minesweeper.png",
       "movies.png",
       "music.png",
@@ -89,6 +92,7 @@
       "sites.png",
       "slideshow.png",
       "sound.png",
+      "soundboard.png",
       "sounds.png",
       "stickies.png",
       "synth.png",
@@ -136,6 +140,7 @@
       "winamp.png"
     ],
     "macosx": [
+      "admin.png",
       "app.png",
       "apple.png",
       "applet.png",
@@ -167,10 +172,12 @@
       "infinite-mac.png",
       "ipod-1g.png",
       "ipod.png",
+      "isync.png",
       "karaoke.png",
       "mac-classic.png",
       "mac.png",
       "media.png",
+      "minesweeper-app.png",
       "minesweeper.png",
       "movies.png",
       "paint.png",
@@ -179,6 +186,7 @@
       "question.png",
       "sites.png",
       "sound.png",
+      "soundboard.png",
       "sounds.png",
       "stickies.png",
       "synth.png",

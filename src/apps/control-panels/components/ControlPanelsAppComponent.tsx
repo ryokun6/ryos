@@ -39,6 +39,11 @@ import { useControlPanelsLogic } from "../hooks/useControlPanelsLogic";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { TelegramLinkDialog } from "@/components/dialogs/TelegramLinkDialog";
 import { getTelegramLinkedAccountLabel } from "@/hooks/useTelegramLink";
+import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { getAppIconPath } from "@/config/appRegistry";
+import { useContactsStore } from "@/stores/useContactsStore";
+import { getContactInitials } from "@/utils/contacts";
+import { PaperPlaneRight } from "@phosphor-icons/react";
 
 // Version display component that reads from app store
 function VersionDisplay() {
@@ -156,6 +161,82 @@ function formatSyncStatus(
     ? t("apps.control-panels.autoSync.lastSynced", { date: relative })
     : t("apps.control-panels.autoSync.neverSynced");
 }
+
+function getUsernameInitials(username: string): string {
+  const base = username.replace(/^@+/, "").trim();
+  if (!base) return "?";
+  return base.slice(0, 2).toUpperCase();
+}
+
+const AUTO_SYNC_ITEM_ICONS = {
+  files: "finder",
+  settings: "control-panels",
+  songs: "ipod",
+  videos: "videos",
+  stickies: "stickies",
+  calendar: "calendar",
+  contacts: "contacts",
+} as const;
+
+function SyncSectionTitle({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <ThemedIcon
+        name="/icons/default/isync.png"
+        alt=""
+        className="h-8 w-8 shrink-0 object-contain"
+      />
+      <div className="min-w-0 space-y-1">
+        <Label className="text-[13px] font-medium font-geneva-12">{title}</Label>
+        <p className="text-[11px] text-neutral-600 font-geneva-12">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function SyncDomainRow({
+  appId,
+  label,
+  status,
+  checked,
+  onCheckedChange,
+}: {
+  appId: (typeof AUTO_SYNC_ITEM_ICONS)[keyof typeof AUTO_SYNC_ITEM_ICONS];
+  label: string;
+  status: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <ThemedIcon
+          name={getAppIconPath(appId)}
+          alt=""
+          className="h-8 w-8 shrink-0 object-contain"
+        />
+        <div className="space-y-0.5 min-w-0">
+          <Label className="leading-none">{label}</Label>
+          <p className="text-[11px] text-neutral-600 font-geneva-12">{status}</p>
+        </div>
+      </div>
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        className="data-[state=checked]:bg-[#000000]"
+      />
+    </div>
+  );
+}
+
+const userAvatarInitialsTextShadow =
+  "0 2px 3px rgba(0, 0, 0, 0.45), 0 0 3px rgba(0, 0, 0, 0.15)";
 
 export function ControlPanelsAppComponent({
   isWindowOpen,
@@ -319,6 +400,11 @@ export function ControlPanelsAppComponent({
   } = useControlPanelsLogic({ initialData });
 
   const isAdmin = username?.toLowerCase() === "ryo";
+  const myContact = useContactsStore((state) =>
+    state.myContactId
+      ? state.contacts.find((contact) => contact.id === state.myContactId) ?? null
+      : null
+  );
   const [isTelegramDialogOpen, setIsTelegramDialogOpen] = React.useState(false);
 
   const openTelegramDialog = React.useCallback(async () => {
@@ -337,6 +423,10 @@ export function ControlPanelsAppComponent({
     telegramLinkSession,
     handleCreateTelegramLink,
   ]);
+  const accountAvatarLabel = myContact?.displayName || username || "";
+  const accountAvatarInitials = myContact
+    ? getContactInitials(myContact)
+    : getUsernameInitials(username || "");
 
   const menuBar = (
     <ControlPanelsMenuBar
@@ -602,12 +692,10 @@ export function ControlPanelsAppComponent({
                 <div className="space-y-3">
                   {username ? (
                     <div className="flex items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[13px] font-medium font-geneva-12">
-                          {t("apps.control-panels.autoSync.title")}
-                        </Label>
-                        <p className="text-[11px] text-neutral-600 font-geneva-12">
-                          {autoSyncEnabled
+                      <SyncSectionTitle
+                        title={t("apps.control-panels.autoSync.title")}
+                        subtitle={
+                          autoSyncEnabled
                             ? isAutoSyncChecking
                               ? t("apps.control-panels.autoSync.checking")
                               : formatRelativeTime(autoSyncLastCheckedAt, t)
@@ -615,9 +703,9 @@ export function ControlPanelsAppComponent({
                                     date: formatRelativeTime(autoSyncLastCheckedAt, t),
                                   })
                                 : t("apps.control-panels.autoSync.waiting")
-                            : t("apps.control-panels.autoSync.description")}
-                        </p>
-                      </div>
+                            : t("apps.control-panels.autoSync.description")
+                        }
+                      />
                       <Switch
                         checked={autoSyncEnabled}
                         onCheckedChange={setAutoSyncEnabled}
@@ -626,14 +714,10 @@ export function ControlPanelsAppComponent({
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-[13px] font-geneva-12 font-medium">
-                          {t("apps.control-panels.autoSync.title")}
-                        </span>
-                        <span className="text-[11px] text-neutral-600 font-geneva-12">
-                          {t("apps.control-panels.cloudSync.loginRequired")}
-                        </span>
-                      </div>
+                      <SyncSectionTitle
+                        title={t("apps.control-panels.autoSync.title")}
+                        subtitle={t("apps.control-panels.cloudSync.loginRequired")}
+                      />
                       <Button
                         variant="retro"
                         onClick={promptSetUsername}
@@ -650,104 +734,62 @@ export function ControlPanelsAppComponent({
                         className="mt-2 mb-4 border-t"
                         style={tabStyles.separatorStyle}
                       />
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <Label>{t("apps.control-panels.autoSync.files")}</Label>
-                            <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatSyncStatus(autoSyncDomainStatus.files, t)}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={syncFiles}
-                            onCheckedChange={setSyncFiles}
-                            className="data-[state=checked]:bg-[#000000]"
-                          />
-                        </div>
+                      <div className="space-y-3">
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.files}
+                          label={t("apps.control-panels.autoSync.files")}
+                          status={formatSyncStatus(autoSyncDomainStatus.files, t)}
+                          checked={syncFiles}
+                          onCheckedChange={setSyncFiles}
+                        />
 
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <Label>{t("apps.control-panels.autoSync.settings")}</Label>
-                            <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatSyncStatus(autoSyncDomainStatus.settings, t)}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={syncSettings}
-                            onCheckedChange={setSyncSettings}
-                            className="data-[state=checked]:bg-[#000000]"
-                          />
-                        </div>
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.settings}
+                          label={t("apps.control-panels.autoSync.settings")}
+                          status={formatSyncStatus(autoSyncDomainStatus.settings, t)}
+                          checked={syncSettings}
+                          onCheckedChange={setSyncSettings}
+                        />
 
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <Label>{t("apps.control-panels.autoSync.songs")}</Label>
-                            <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatSyncStatus(autoSyncDomainStatus.songs, t)}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={syncSongs}
-                            onCheckedChange={setSyncSongs}
-                            className="data-[state=checked]:bg-[#000000]"
-                          />
-                        </div>
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.songs}
+                          label={t("apps.control-panels.autoSync.songs")}
+                          status={formatSyncStatus(autoSyncDomainStatus.songs, t)}
+                          checked={syncSongs}
+                          onCheckedChange={setSyncSongs}
+                        />
 
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <Label>{t("apps.control-panels.autoSync.videos")}</Label>
-                            <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatSyncStatus(autoSyncDomainStatus.videos, t)}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={syncVideos}
-                            onCheckedChange={setSyncVideos}
-                            className="data-[state=checked]:bg-[#000000]"
-                          />
-                        </div>
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.videos}
+                          label={t("apps.control-panels.autoSync.videos")}
+                          status={formatSyncStatus(autoSyncDomainStatus.videos, t)}
+                          checked={syncVideos}
+                          onCheckedChange={setSyncVideos}
+                        />
 
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <Label>{t("apps.control-panels.autoSync.stickies")}</Label>
-                            <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatSyncStatus(autoSyncDomainStatus.stickies, t)}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={syncStickies}
-                            onCheckedChange={setSyncStickies}
-                            className="data-[state=checked]:bg-[#000000]"
-                          />
-                        </div>
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.stickies}
+                          label={t("apps.control-panels.autoSync.stickies")}
+                          status={formatSyncStatus(autoSyncDomainStatus.stickies, t)}
+                          checked={syncStickies}
+                          onCheckedChange={setSyncStickies}
+                        />
 
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <Label>{t("apps.control-panels.autoSync.calendar")}</Label>
-                            <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatSyncStatus(autoSyncDomainStatus.calendar, t)}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={syncCalendar}
-                            onCheckedChange={setSyncCalendar}
-                            className="data-[state=checked]:bg-[#000000]"
-                          />
-                        </div>
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.calendar}
+                          label={t("apps.control-panels.autoSync.calendar")}
+                          status={formatSyncStatus(autoSyncDomainStatus.calendar, t)}
+                          checked={syncCalendar}
+                          onCheckedChange={setSyncCalendar}
+                        />
 
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <Label>{t("apps.control-panels.autoSync.contacts")}</Label>
-                            <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatSyncStatus(autoSyncDomainStatus.contacts, t)}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={syncContacts}
-                            onCheckedChange={setSyncContacts}
-                            className="data-[state=checked]:bg-[#000000]"
-                          />
-                        </div>
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.contacts}
+                          label={t("apps.control-panels.autoSync.contacts")}
+                          status={formatSyncStatus(autoSyncDomainStatus.contacts, t)}
+                          checked={syncContacts}
+                          onCheckedChange={setSyncContacts}
+                        />
                       </div>
 
                       {autoSyncLastError && (
@@ -854,14 +896,39 @@ export function ControlPanelsAppComponent({
                 <div className="space-y-2">
                   {username ? (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-[13px] font-geneva-12 font-medium">
-                            @{username}
-                          </span>
-                          <span className="text-[11px] text-neutral-600 font-geneva-12">
-                            {t("apps.control-panels.loggedInToRyOS")}
-                          </span>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className="w-8 h-8 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden"
+                            style={
+                              myContact?.picture
+                                ? { background: "rgba(255, 255, 255, 0.72)" }
+                                : {
+                                    background:
+                                      "linear-gradient(to bottom, #dcdcdc, #b8b8b8)",
+                                    textShadow: userAvatarInitialsTextShadow,
+                                  }
+                            }
+                            aria-label={accountAvatarLabel}
+                          >
+                            {myContact?.picture ? (
+                              <img
+                                src={myContact.picture}
+                                alt={accountAvatarLabel}
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              accountAvatarInitials
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[13px] font-geneva-12 font-medium">
+                              @{username}
+                            </span>
+                            <span className="text-[11px] text-neutral-600 font-geneva-12">
+                              {t("apps.control-panels.loggedInToRyOS")}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           {debugMode && (
@@ -937,19 +1004,24 @@ export function ControlPanelsAppComponent({
                 {username ? (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex flex-col">
-                        <span className="text-[13px] font-geneva-12 font-medium">
-                          {t("apps.control-panels.telegram.title")}
-                        </span>
-                        <span className="text-[11px] text-neutral-600 font-geneva-12">
-                          {telegramLinkedAccount
-                            ? t("apps.control-panels.telegram.linkedAs", {
-                                account: getTelegramLinkedAccountLabel(
-                                  telegramLinkedAccount
-                                ),
-                              })
-                            : t("apps.control-panels.telegram.description")}
-                        </span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 shrink-0 rounded-full bg-[#229ED9] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.18)] flex items-center justify-center">
+                          <PaperPlaneRight size={16} weight="fill" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[13px] font-geneva-12 font-medium">
+                            {t("apps.control-panels.telegram.title")}
+                          </span>
+                          <span className="text-[11px] text-neutral-600 font-geneva-12">
+                            {telegramLinkedAccount
+                              ? t("apps.control-panels.telegram.linkedAs", {
+                                  account: getTelegramLinkedAccountLabel(
+                                    telegramLinkedAccount
+                                  ),
+                                })
+                              : t("apps.control-panels.telegram.description")}
+                          </span>
+                        </div>
                       </div>
 
                       <Button

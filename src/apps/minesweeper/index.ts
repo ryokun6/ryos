@@ -6,7 +6,7 @@ export const appMetadata = {
     url: "https://ryo.lu",
   },
   github: "https://github.com/ryokun6/ryos",
-  icon: "/icons/default/minesweeper.png",
+  icon: "/icons/default/minesweeper-app.png",
 };
 
 export const helpItems = [
