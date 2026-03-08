@@ -90,6 +90,31 @@ describe("Memory System Timestamp Tests", () => {
       expect(typeof entry.isoTimestamp === "string" && entry.isoTimestamp.endsWith("Z")).toBe(true);
     });
 
+    test("appendDailyNote can bucket by a source event timestamp", async () => {
+      const redis = makeRedis();
+      const username = "source_timestamp_user";
+      const tz = "Asia/Tokyo";
+      const sourceTimestamp = Date.UTC(2026, 0, 15, 15, 30, 45); // Jan 16 00:30:45 in Tokyo
+
+      const result = await appendDailyNote(redis, username, "Booked a midnight train", {
+        timeZone: tz,
+        timestamp: sourceTimestamp,
+      });
+      expect(result.success).toBe(true);
+      expect(result.date).toBe("2026-01-16");
+
+      const note = await getDailyNote(redis, username, "2026-01-16");
+      expect(note).not.toBeNull();
+      expect(note?.entries).toHaveLength(1);
+
+      const [entry] = note?.entries || [];
+      expect(entry.timestamp).toBe(sourceTimestamp);
+      expect(entry.isoTimestamp).toBe("2026-01-15T15:30:45.000Z");
+      expect(entry.localDate).toBe("2026-01-16");
+      expect(entry.localTime).toBe("00:30:45");
+      expect(entry.timeZone).toBe(tz);
+    });
+
     test("getRecentDateStrings returns unique descending dates", async () => {
       const tz = "America/Los_Angeles";
       const dates = getRecentDateStrings(5, tz);

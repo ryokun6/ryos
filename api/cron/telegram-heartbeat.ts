@@ -3,7 +3,9 @@ import { stepCountIs, streamText } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import { getDailyNote, getMemoryIndex, getTodayDateString } from "../_utils/_memory.js";
-import { appendHeartbeatRecord, getHeartbeatRecordsForDate } from "../_utils/heartbeats.js";
+import { appendHeartbeatRecord, getRecentHeartbeatRecords } from "../_utils/heartbeats.js";
+import { extractMemoriesFromConversation } from "../ai/extract-memories.js";
+import { processDailyNotesForUser } from "../ai/process-daily-notes.js";
 import {
   appendTelegramConversationMessage,
   getLinkedTelegramAccountByUsername,
@@ -21,9 +23,11 @@ import {
   formatTelegramConversationEntries,
   formatTelegramHeartbeatDailyNoteEntries,
   formatTelegramHeartbeatHistoryEntries,
+  getTelegramConversationSinceLastHeartbeat,
   getTelegramHeartbeatAuthSecret,
   parseTelegramHeartbeatResult,
   shouldSendTelegramHeartbeat,
+  TELEGRAM_HEARTBEAT_HISTORY_LOOKBACK_DAYS,
   TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
   TELEGRAM_HEARTBEAT_TOPIC,
   TELEGRAM_HEARTBEAT_TARGET_USERNAME,
@@ -207,17 +211,86 @@ export default async function handler(
     return;
   }
 
+  try {
+    const processedNotes = await processDailyNotesForUser(
+      redis,
+      username,
+      (...args: unknown[]) => logger.info("[TelegramHeartbeatDailyNotes]", args),
+      (...args: unknown[]) => logger.error("[TelegramHeartbeatDailyNotes]", args),
+      TELEGRAM_HEARTBEAT_TIME_ZONE
+    );
+    if (processedNotes.processed > 0 || processedNotes.skippedDates.length > 0) {
+      logger.info("Telegram heartbeat processed past daily notes", {
+        username,
+        processed: processedNotes.processed,
+        created: processedNotes.created,
+        updated: processedNotes.updated,
+        dates: processedNotes.dates,
+        skippedDates: processedNotes.skippedDates,
+      });
+    }
+  } catch (error) {
+    logger.warn("Telegram heartbeat failed to process past daily notes", {
+      username,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  const history = await loadTelegramConversationHistory(redis, linkedAccount.chatId);
+  const recentHeartbeatRecords = await getRecentHeartbeatRecords(
+    redis,
+    username,
+    TELEGRAM_HEARTBEAT_HISTORY_LOOKBACK_DAYS,
+    TELEGRAM_HEARTBEAT_TIME_ZONE,
+    TELEGRAM_HEARTBEAT_TOPIC
+  );
+  const heartbeatHistoryContext = buildTelegramHeartbeatHistoryContext(
+    recentHeartbeatRecords
+  );
+
+  const newTelegramConversation = getTelegramConversationSinceLastHeartbeat(
+    history,
+    heartbeatHistoryContext.latestHeartbeatTimestamp
+  );
+
+  if (newTelegramConversation.length > 0) {
+    try {
+      const extractionResult = await extractMemoriesFromConversation({
+        redis,
+        username,
+        messages: newTelegramConversation.map((message) => ({
+          role: message.role,
+          content: message.imageUrl ? `[image] ${message.content}` : message.content,
+          metadata: {
+            createdAt: message.createdAt,
+          },
+        })),
+        timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
+        storeLongTermMemories: false,
+        markTodayProcessed: false,
+        log: (...args: unknown[]) => logger.info("[TelegramHeartbeatChatDelta]", args),
+        logError: (...args: unknown[]) =>
+          logger.error("[TelegramHeartbeatChatDelta]", args),
+      });
+      logger.info("Telegram heartbeat processed new chat delta", {
+        username,
+        messagesProcessed: newTelegramConversation.length,
+        dailyNotes: extractionResult.dailyNotes,
+        extracted: extractionResult.extracted,
+        skippedReason: extractionResult.skippedReason ?? null,
+      });
+    } catch (error) {
+      logger.warn("Telegram heartbeat failed to process chat delta", {
+        username,
+        error: error instanceof Error ? error.message : String(error),
+        messagesProcessed: newTelegramConversation.length,
+      });
+    }
+  }
+
   const today = getTodayDateString(TELEGRAM_HEARTBEAT_TIME_ZONE);
   const todaysDailyNote = await getDailyNote(redis, username, today);
   const noteContext = buildTelegramHeartbeatNoteContext(todaysDailyNote);
-  const heartbeatRecords = await getHeartbeatRecordsForDate(
-    redis,
-    username,
-    today,
-    TELEGRAM_HEARTBEAT_TOPIC
-  );
-  const heartbeatHistoryContext = buildTelegramHeartbeatHistoryContext(heartbeatRecords);
-  const history = await loadTelegramConversationHistory(redis, linkedAccount.chatId);
   const conversationContext = buildTelegramHeartbeatConversationContext(history);
   const gateDecision = shouldSendTelegramHeartbeat(
     noteContext,

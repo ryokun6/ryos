@@ -2329,6 +2329,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           messages: messagesToAnalyze.map(msg => ({
             role: msg.role,
             parts: msg.parts,
+            metadata: msg.metadata?.createdAt
+              ? {
+                  createdAt:
+                    msg.metadata.createdAt instanceof Date
+                      ? msg.metadata.createdAt.toISOString()
+                      : msg.metadata.createdAt,
+                }
+              : undefined,
           })),
         }),
         timeout: 15000,

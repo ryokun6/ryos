@@ -11,6 +11,7 @@ export const TELEGRAM_HEARTBEAT_TIME_ZONE = "America/Los_Angeles";
 export const TELEGRAM_HEARTBEAT_TOPIC = "telegram-heartbeat";
 export const TELEGRAM_HEARTBEAT_LOG_PREFIX = "[telegram heartbeat]";
 export const TELEGRAM_HEARTBEAT_SKIP_TOKEN = "NO_HEARTBEAT";
+export const TELEGRAM_HEARTBEAT_HISTORY_LOOKBACK_DAYS = 7;
 
 export function getTelegramHeartbeatAuthSecret(
   env: NodeJS.ProcessEnv = process.env
@@ -66,6 +67,30 @@ export interface TelegramHeartbeatConversationContext {
   recentMessages: TelegramConversationMessage[];
   latestUserTimestamp: number | null;
   latestMessageTimestamp: number | null;
+}
+
+export function getTelegramConversationSinceLastHeartbeat(
+  history: TelegramConversationMessage[],
+  latestHeartbeatTimestamp: number | null
+): TelegramConversationMessage[] {
+  if (history.length === 0) {
+    return [];
+  }
+
+  if (latestHeartbeatTimestamp === null) {
+    return history.slice();
+  }
+
+  const firstNewUserIndex = history.findIndex(
+    (message) =>
+      message.role === "user" && message.createdAt > latestHeartbeatTimestamp
+  );
+
+  if (firstNewUserIndex === -1) {
+    return [];
+  }
+
+  return history.slice(firstNewUserIndex);
 }
 
 function normalizeHeartbeatText(text: string): string {

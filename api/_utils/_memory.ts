@@ -290,7 +290,7 @@ export interface MemoryOperationResult {
  * A single entry in a daily note
  */
 export interface DailyNoteEntry {
-  /** Unix timestamp when this entry was added */
+  /** Unix timestamp for the source event this note refers to */
   timestamp: number;
   /** ISO 8601 UTC timestamp (e.g. 2026-02-28T08:21:32.000Z) */
   isoTimestamp?: string;
@@ -333,6 +333,8 @@ export interface DailyNoteOperationResult {
 export interface DailyNoteAppendOptions {
   /** User's IANA timezone (e.g. "Asia/Tokyo") */
   timeZone?: string;
+  /** Source event timestamp to preserve instead of using ingestion time */
+  timestamp?: number;
 }
 
 // ============================================================================
@@ -883,13 +885,20 @@ export async function appendDailyNote(
   }
 
   const resolvedTimeZone = normalizeTimeZone(options.timeZone);
-  const today = getTodayDateString(resolvedTimeZone);
-  const existing = await getDailyNote(redis, username, today);
+  const sourceTimestamp =
+    typeof options.timestamp === "number" && Number.isFinite(options.timestamp)
+      ? options.timestamp
+      : Date.now();
+  const timestampMetadata = buildTimestampMetadata(
+    sourceTimestamp,
+    resolvedTimeZone
+  );
+  const noteDate = timestampMetadata.localDate;
+  const existing = await getDailyNote(redis, username, noteDate);
 
   const now = Date.now();
-  const timestampMetadata = buildTimestampMetadata(now, resolvedTimeZone);
   const entry: DailyNoteEntry = {
-    timestamp: now,
+    timestamp: sourceTimestamp,
     isoTimestamp: timestampMetadata.isoTimestamp,
     localDate: timestampMetadata.localDate,
     localTime: timestampMetadata.localTime,
@@ -916,15 +925,15 @@ export async function appendDailyNote(
 
     return {
       success: true,
-      message: `Added to daily note for ${today}.`,
-      date: today,
+      message: `Added to daily note for ${noteDate}.`,
+      date: noteDate,
       entryCount: existing.entries.length,
     };
   }
 
   // Create new daily note
   const note: DailyNote = {
-    date: today,
+    date: noteDate,
     timeZone: resolvedTimeZone,
     entries: [entry],
     processedForMemories: false,
@@ -935,8 +944,8 @@ export async function appendDailyNote(
 
   return {
     success: true,
-    message: `Started daily note for ${today}.`,
-    date: today,
+    message: `Started daily note for ${noteDate}.`,
+    date: noteDate,
     entryCount: 1,
   };
 }
