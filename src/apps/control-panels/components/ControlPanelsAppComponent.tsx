@@ -172,11 +172,11 @@ function getUsernameInitials(username: string): string {
 const AUTO_SYNC_ITEM_ICONS = {
   files: "finder",
   settings: "control-panels",
+  calendar: "calendar",
+  contacts: "contacts",
   songs: "ipod",
   videos: "videos",
   stickies: "stickies",
-  calendar: "calendar",
-  contacts: "contacts",
 } as const;
 
 function SyncSectionTitle({
@@ -765,6 +765,22 @@ export function ControlPanelsAppComponent({
                         />
 
                         <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.calendar}
+                          label={t("apps.control-panels.autoSync.calendar")}
+                          status={formatSyncStatus(autoSyncDomainStatus.calendar, t)}
+                          checked={syncCalendar}
+                          onCheckedChange={setSyncCalendar}
+                        />
+
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.contacts}
+                          label={t("apps.control-panels.autoSync.contacts")}
+                          status={formatSyncStatus(autoSyncDomainStatus.contacts, t)}
+                          checked={syncContacts}
+                          onCheckedChange={setSyncContacts}
+                        />
+
+                        <SyncDomainRow
                           appId={AUTO_SYNC_ITEM_ICONS.songs}
                           label={t("apps.control-panels.autoSync.songs")}
                           status={formatSyncStatus(autoSyncDomainStatus.songs, t)}
@@ -786,22 +802,6 @@ export function ControlPanelsAppComponent({
                           status={formatSyncStatus(autoSyncDomainStatus.stickies, t)}
                           checked={syncStickies}
                           onCheckedChange={setSyncStickies}
-                        />
-
-                        <SyncDomainRow
-                          appId={AUTO_SYNC_ITEM_ICONS.calendar}
-                          label={t("apps.control-panels.autoSync.calendar")}
-                          status={formatSyncStatus(autoSyncDomainStatus.calendar, t)}
-                          checked={syncCalendar}
-                          onCheckedChange={setSyncCalendar}
-                        />
-
-                        <SyncDomainRow
-                          appId={AUTO_SYNC_ITEM_ICONS.contacts}
-                          label={t("apps.control-panels.autoSync.contacts")}
-                          status={formatSyncStatus(autoSyncDomainStatus.contacts, t)}
-                          checked={syncContacts}
-                          onCheckedChange={setSyncContacts}
                         />
                       </div>
 
