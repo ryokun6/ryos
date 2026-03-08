@@ -7,6 +7,7 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 
 interface ContactsMenuBarProps {
@@ -45,6 +46,10 @@ export function ContactsMenuBar({
           </MenubarItem>
           <MenubarItem onClick={onImport} className="text-md h-6 px-3">
             {t("apps.contacts.menu.importVCard")}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem onClick={requestCloudSyncCheck} className="text-md h-6 px-3">
+            {t("apps.contacts.menu.syncContacts", { defaultValue: "Sync Contacts" })}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onClose} className="text-md h-6 px-3">
