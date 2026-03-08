@@ -104,13 +104,17 @@ function normalizeOrigin(origin: string): string | null {
   return parsed?.origin ?? null;
 }
 
-function getConfiguredAllowedOrigins(): {
+interface ConfiguredAllowedOrigins {
   allowAll: boolean;
   origins: Set<string>;
-} {
+  /** Suffix patterns from entries like "*.ryo.lu" → ".ryo.lu" */
+  subdomainSuffixes: string[];
+}
+
+function getConfiguredAllowedOrigins(): ConfiguredAllowedOrigins {
   const raw = process.env.API_ALLOWED_ORIGINS;
   if (!raw) {
-    return { allowAll: false, origins: new Set() };
+    return { allowAll: false, origins: new Set(), subdomainSuffixes: [] };
   }
 
   const tokens = raw
@@ -119,18 +123,25 @@ function getConfiguredAllowedOrigins(): {
     .filter(Boolean);
 
   if (tokens.includes("*")) {
-    return { allowAll: true, origins: new Set() };
+    return { allowAll: true, origins: new Set(), subdomainSuffixes: [] };
   }
 
   const origins = new Set<string>();
+  const subdomainSuffixes: string[] = [];
+
   for (const token of tokens) {
+    const wildcard = token.match(/^\*\.(.+)$/);
+    if (wildcard) {
+      subdomainSuffixes.push(`.${wildcard[1].toLowerCase()}`);
+      continue;
+    }
     const normalized = normalizeOrigin(token);
     if (normalized) {
       origins.add(normalized);
     }
   }
 
-  return { allowAll: false, origins };
+  return { allowAll: false, origins, subdomainSuffixes };
 }
 
 export function getEffectiveOrigin(req: VercelRequest): string | null {
@@ -162,8 +173,27 @@ export function isAllowedOrigin(origin: string | null): boolean {
   }
 
   // Explicit self-host allowlist takes precedence.
-  if (configuredOrigins.origins.size > 0) {
+  const hasExplicitConfig =
+    configuredOrigins.origins.size > 0 ||
+    configuredOrigins.subdomainSuffixes.length > 0;
+
+  if (hasExplicitConfig) {
     if (configuredOrigins.origins.has(normalizedOrigin)) return true;
+
+    if (configuredOrigins.subdomainSuffixes.length > 0) {
+      const parsed = parseOrigin(normalizedOrigin);
+      if (parsed) {
+        const hostname = parsed.hostname.toLowerCase();
+        if (
+          configuredOrigins.subdomainSuffixes.some((suffix) =>
+            hostname.endsWith(suffix)
+          )
+        ) {
+          return true;
+        }
+      }
+    }
+
     // Keep localhost available in development even with explicit allowlist.
     if (env === "development" && isLocalhostOrigin(normalizedOrigin)) return true;
     return false;

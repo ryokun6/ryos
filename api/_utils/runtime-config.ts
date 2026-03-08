@@ -139,36 +139,58 @@ export function serializeClientRuntimeConfig(
   return JSON.stringify(buildClientRuntimeConfig(fallbackOrigin));
 }
 
-export function getAllowedAppHosts(): string[] {
+export function getAllowedAppHosts(): {
+  hosts: string[];
+  subdomainSuffixes: string[];
+} {
   const configured = getConfiguredPublicOrigin();
   const configuredHost = configured ? new URL(configured).host.toLowerCase() : null;
   const rawExtra = process.env.APP_ALLOWED_HOSTS || process.env.API_ALLOWED_HOSTS;
-  const extra = rawExtra
+  const tokens = rawExtra
     ? rawExtra
         .split(",")
         .map((item) => item.trim().toLowerCase())
         .filter(Boolean)
     : [];
 
-  return [
+  const hosts: string[] = [
     "os.ryo.lu",
     "localhost",
     "127.0.0.1",
     "[::1]",
     ...(configuredHost ? [configuredHost] : []),
-    ...extra,
   ];
+
+  const subdomainSuffixes: string[] = [];
+
+  for (const token of tokens) {
+    const wildcard = token.match(/^\*\.(.+)$/);
+    if (wildcard) {
+      subdomainSuffixes.push(`.${wildcard[1]}`);
+    } else {
+      hosts.push(token);
+    }
+  }
+
+  return { hosts, subdomainSuffixes };
 }
 
 export function isAllowedAppHost(hostHeader: string | null | undefined): boolean {
   if (!hostHeader) return false;
   const normalized = hostHeader.toLowerCase().trim();
-  const allowedHosts = new Set(getAllowedAppHosts());
+  const { hosts, subdomainSuffixes } = getAllowedAppHosts();
+  const allowedHosts = new Set(hosts);
 
   if (allowedHosts.has(normalized)) return true;
   if (/^localhost:\d+$/.test(normalized)) return true;
   if (/^127\.0\.0\.1:\d+$/.test(normalized)) return true;
   if (/^\[::1\](?::\d+)?$/.test(normalized)) return true;
+
+  const hostnameOnly = normalized.replace(/:\d+$/, "");
+  if (subdomainSuffixes.some((suffix) => hostnameOnly.endsWith(suffix))) {
+    return true;
+  }
+
   return false;
 }
 
