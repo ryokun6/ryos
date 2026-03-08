@@ -7,6 +7,7 @@
 import type { VercelResponse } from "@vercel/node";
 import type { Redis } from "@upstash/redis";
 import { gunzipSync } from "node:zlib";
+import type { AIChatMessage } from "../../src/types/chat.js";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
   REDIS_SYNC_DOMAINS,
@@ -14,6 +15,11 @@ import {
   type CloudSyncDomainMetadata,
   type RedisSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
+import {
+  getLinkedTelegramAccountByUsername,
+  loadTelegramConversationHistory,
+  type TelegramConversationMessage,
+} from "../_utils/telegram-link.js";
 import { apiHandler } from "../_utils/api-handler.js";
 
 export const runtime = "nodejs";
@@ -45,6 +51,10 @@ interface PersistedMetaEntry {
   updatedAt: string;
   version: number;
   createdAt: string;
+}
+
+interface ChatsSnapshotData {
+  aiMessages: AIChatMessage[];
 }
 
 interface PersistedAutoSyncDomainMetadata extends PersistedMetaEntry {
@@ -196,6 +206,83 @@ function getCombinedFilesMetadataEntry(
   };
 }
 
+function inferTelegramImageMediaType(imageUrl: string): string {
+  const normalized = imageUrl.toLowerCase();
+
+  if (normalized.startsWith("data:image/")) {
+    const match = normalized.match(/^data:(image\/[^;]+);/);
+    return match?.[1] || "image/*";
+  }
+
+  if (normalized.endsWith(".png")) {
+    return "image/png";
+  }
+  if (normalized.endsWith(".gif")) {
+    return "image/gif";
+  }
+  if (normalized.endsWith(".webp")) {
+    return "image/webp";
+  }
+  if (normalized.endsWith(".svg")) {
+    return "image/svg+xml";
+  }
+  if (normalized.endsWith(".jpg") || normalized.endsWith(".jpeg")) {
+    return "image/jpeg";
+  }
+
+  return "image/*";
+}
+
+function toTelegramChatMessage(
+  message: TelegramConversationMessage,
+  index: number
+): AIChatMessage {
+  return {
+    id: `telegram-${message.createdAt}-${index}`,
+    role: message.role,
+    parts: [
+      { type: "text", text: message.content },
+      ...(message.imageUrl
+        ? [
+            {
+              type: "file",
+              mediaType: inferTelegramImageMediaType(message.imageUrl),
+              url: message.imageUrl,
+            },
+          ]
+        : []),
+    ],
+    metadata: {
+      createdAt: new Date(message.createdAt),
+    },
+  };
+}
+
+async function getTelegramChatsEntry(
+  redis: Redis,
+  username: string
+): Promise<PersistedRedisStateDomain | null> {
+  const linkedAccount = await getLinkedTelegramAccountByUsername(redis, username);
+  if (!linkedAccount) {
+    return null;
+  }
+
+  const history = await loadTelegramConversationHistory(redis, linkedAccount.chatId);
+  const firstTimestamp = history[0]?.createdAt ?? linkedAccount.linkedAt;
+  const lastTimestamp = history[history.length - 1]?.createdAt ?? linkedAccount.linkedAt;
+
+  return {
+    data: {
+      aiMessages: history.map((message, index) =>
+        toTelegramChatMessage(message, index)
+      ),
+    } satisfies ChatsSnapshotData,
+    updatedAt: new Date(lastTimestamp).toISOString(),
+    version: AUTO_SYNC_SNAPSHOT_VERSION,
+    createdAt: new Date(firstTimestamp).toISOString(),
+  };
+}
+
 async function persistStateEntry(
   redis: Redis,
   username: string,
@@ -243,12 +330,20 @@ export default apiHandler<PutStateBody>(
         redis,
         username
       );
+      const telegramChatsEntry = await getTelegramChatsEntry(redis, username);
       const metadata: Record<string, CloudSyncDomainMetadata | null> = {};
       for (const domain of REDIS_SYNC_DOMAINS) {
         const entry = meta[domain];
         metadata[domain] =
           domain === "files-metadata"
             ? getCombinedFilesMetadataEntry(entry, legacyFilesDocumentsMeta)
+            : domain === "chats" && telegramChatsEntry
+              ? {
+                  updatedAt: telegramChatsEntry.updatedAt,
+                  version: telegramChatsEntry.version,
+                  totalSize: 0,
+                  createdAt: telegramChatsEntry.createdAt,
+                }
             : entry
               ? {
                   updatedAt: entry.updatedAt,
@@ -278,6 +373,24 @@ async function handleDomainDownload(
   username: string,
   domain: RedisSyncDomain
 ): Promise<void> {
+  if (domain === "chats") {
+    const telegramEntry = await getTelegramChatsEntry(redis, username);
+    if (telegramEntry) {
+      res.status(200).json({
+        ok: true,
+        domain,
+        data: telegramEntry.data,
+        metadata: {
+          updatedAt: telegramEntry.updatedAt,
+          version: telegramEntry.version,
+          totalSize: 0,
+          createdAt: telegramEntry.createdAt,
+        },
+      });
+      return;
+    }
+  }
+
   const raw = await redis.get<string | PersistedRedisStateDomain>(
     stateKey(username, domain)
   );
@@ -356,6 +469,23 @@ async function handlePutState(
 
   const domain = body.domain as RedisSyncDomain;
   const now = new Date().toISOString();
+
+  if (domain === "chats") {
+    const telegramEntry = await getTelegramChatsEntry(redis, username);
+    if (telegramEntry) {
+      res.status(200).json({
+        ok: true,
+        domain,
+        metadata: {
+          updatedAt: telegramEntry.updatedAt,
+          version: telegramEntry.version,
+          totalSize: 0,
+          createdAt: telegramEntry.createdAt,
+        },
+      });
+      return;
+    }
+  }
 
   const entry: PersistedRedisStateDomain = {
     data: body.data,

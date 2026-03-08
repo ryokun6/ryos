@@ -55,6 +55,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 
   return {
     settings: empty(),
+    chats: empty(),
     "files-metadata": empty(),
     "files-images": empty(),
     "files-trash": empty(),

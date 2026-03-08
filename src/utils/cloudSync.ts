@@ -11,6 +11,7 @@ import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useDockStore, type DockItem } from "@/stores/useDockStore";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import {
   useCalendarStore,
   type CalendarEvent,
@@ -18,6 +19,7 @@ import {
   type TodoItem,
 } from "@/stores/useCalendarStore";
 import type { AIModel } from "@/types/aiModels";
+import type { AIChatMessage } from "@/types/chat";
 import type {
   DisplayMode,
   LyricsAlignment,
@@ -111,6 +113,10 @@ interface FilesMetadataSnapshotData {
   documents?: FilesStoreSnapshotData;
 }
 
+interface ChatsSnapshotData {
+  aiMessages: AIChatMessage[];
+}
+
 type FilesStoreSnapshotData = StoreItemWithKey[];
 
 interface SongsSnapshotData {
@@ -135,6 +141,7 @@ interface CalendarSnapshotData {
 
 type AnySnapshotData =
   | SettingsSnapshotData
+  | ChatsSnapshotData
   | FilesMetadataSnapshotData
   | FilesStoreSnapshotData
   | SongsSnapshotData
@@ -365,6 +372,12 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
   };
 }
 
+function serializeChatsSnapshot(): ChatsSnapshotData {
+  return {
+    aiMessages: useChatsStore.getState().aiMessages,
+  };
+}
+
 async function serializeCustomWallpapersSnapshot(): Promise<CustomWallpapersSnapshotData> {
   const db = await ensureIndexedDBInitialized();
   try {
@@ -443,6 +456,13 @@ export async function createCloudSyncEnvelope(
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
         data: serializeSettingsSnapshot(),
+      };
+    case "chats":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: serializeChatsSnapshot(),
       };
     case "files-metadata":
       return {
@@ -607,6 +627,10 @@ async function applyFilesMetadataSnapshot(
   }
 }
 
+function applyChatsSnapshot(data: ChatsSnapshotData): void {
+  useChatsStore.getState().setAiMessages(data.aiMessages);
+}
+
 function applySongsSnapshot(data: SongsSnapshotData): void {
   useIpodStore.setState({
     tracks: data.tracks,
@@ -673,6 +697,9 @@ export async function applyCloudSyncEnvelope(
   switch (envelope.domain) {
     case "settings":
       await applySettingsSnapshot(envelope.data as SettingsSnapshotData);
+      return;
+    case "chats":
+      applyChatsSnapshot(envelope.data as ChatsSnapshotData);
       return;
     case "files-metadata":
       await applyFilesMetadataSnapshot(

@@ -2,6 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { gzipSync } from "node:zlib";
 import { createRedis } from "../api/_utils/redis";
 import { generateAuthToken, storeToken } from "../api/_utils/auth";
+import {
+  appendTelegramConversationMessage,
+  createTelegramLinkCode,
+  linkTelegramAccount,
+} from "../api/_utils/telegram-link";
 import { stateKey } from "../api/sync/state";
 import { BASE_URL, fetchWithAuth } from "./test-utils";
 
@@ -130,5 +135,84 @@ describe("sync state API legacy documents migration", () => {
         : migratedRaw;
     expect(migrated?.data?.documents).toBeArray();
     expect(migrated?.data?.documents).toHaveLength(1);
+  });
+
+  test("uses linked Telegram history as the chats sync source", async () => {
+    const telegramSyncUsername = `${TEST_USERNAME}_telegram`;
+    const telegramChatId = `${telegramSyncUsername}_chat`;
+    const telegramUserId = `${telegramSyncUsername}_user`;
+    const redis = createRedis();
+    const authToken = generateAuthToken();
+    await storeToken(redis, telegramSyncUsername, authToken);
+
+    const linkCode = await createTelegramLinkCode(redis, telegramSyncUsername);
+    await linkTelegramAccount(redis, {
+      code: linkCode.code,
+      telegramUserId,
+      chatId: telegramChatId,
+      telegramUsername: "ryotest",
+    });
+
+    await appendTelegramConversationMessage(redis, telegramChatId, {
+      role: "user",
+      content: "hello from telegram",
+      createdAt: Date.UTC(2026, 2, 7, 23, 40, 0),
+    });
+    await appendTelegramConversationMessage(redis, telegramChatId, {
+      role: "assistant",
+      content: "telegram is now the sync source",
+      createdAt: Date.UTC(2026, 2, 7, 23, 41, 0),
+      imageUrl: "https://example.com/reply.png",
+    });
+
+    await redis.set(
+      stateKey(telegramSyncUsername, "chats"),
+      JSON.stringify({
+        data: {
+          aiMessages: [
+            {
+              id: "local-only",
+              role: "assistant",
+              parts: [{ type: "text", text: "stale local snapshot" }],
+              metadata: { createdAt: "2026-03-07T23:39:00.000Z" },
+            },
+          ],
+        },
+        updatedAt: "2026-03-07T23:39:00.000Z",
+        version: 1,
+        createdAt: "2026-03-07T23:39:00.000Z",
+      })
+    );
+
+    const metadataRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      telegramSyncUsername,
+      authToken
+    );
+    expect(metadataRes.status).toBe(200);
+    const metadataJson = await metadataRes.json();
+    expect(metadataJson.metadata.chats?.updatedAt).toBe(
+      "2026-03-07T23:41:00.000Z"
+    );
+
+    const downloadRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state?domain=chats`,
+      telegramSyncUsername,
+      authToken
+    );
+    expect(downloadRes.status).toBe(200);
+    const downloadJson = await downloadRes.json();
+    expect(downloadJson.data.aiMessages).toHaveLength(2);
+    expect(downloadJson.data.aiMessages[0].parts[0].text).toBe(
+      "hello from telegram"
+    );
+    expect(downloadJson.data.aiMessages[1].parts[0].text).toBe(
+      "telegram is now the sync source"
+    );
+    expect(downloadJson.data.aiMessages[1].parts[1]).toMatchObject({
+      type: "file",
+      mediaType: "image/png",
+      url: "https://example.com/reply.png",
+    });
   });
 });
