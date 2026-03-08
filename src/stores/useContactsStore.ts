@@ -21,10 +21,13 @@ export interface ImportContactsResult extends ContactImportResult {
 interface ContactsStoreState {
   contacts: Contact[];
   selectedContactId: string | null;
+  myContactId: string | null;
   setSelectedContactId: (id: string | null) => void;
+  setMyContactId: (id: string | null) => void;
   addContact: (draft?: ContactDraft) => string;
   updateContact: (id: string, draft: ContactDraft) => void;
   deleteContact: (id: string) => void;
+  importContacts: (parsed: ContactImportResult) => ImportContactsResult;
   importVCardText: (text: string) => ImportContactsResult;
 }
 
@@ -44,13 +47,18 @@ export const useContactsStore = create<ContactsStoreState>()(
     (set, get) => ({
       contacts: INITIAL_CONTACTS,
       selectedContactId: INITIAL_CONTACTS[0]?.id ?? null,
+      myContactId: null,
 
       setSelectedContactId: (id) => set({ selectedContactId: id }),
+      setMyContactId: (id) => set((state) => ({
+        myContactId: id,
+        contacts: sortContacts(state.contacts, id),
+      })),
 
       addContact: (draft = {}) => {
         const contact = createContactFromDraft(draft);
         set((state) => ({
-          contacts: sortContacts([...state.contacts, contact]),
+          contacts: sortContacts([...state.contacts, contact], state.myContactId),
           selectedContactId: contact.id,
         }));
         return contact.id;
@@ -63,7 +71,8 @@ export const useContactsStore = create<ContactsStoreState>()(
               contact.id === id
                 ? updateContactFromDraft(contact, draft)
                 : contact
-            )
+            ),
+            state.myContactId
           ),
         }));
       },
@@ -75,11 +84,11 @@ export const useContactsStore = create<ContactsStoreState>()(
             state.selectedContactId === id
               ? getNextSelectedId(state.contacts, id)
               : state.selectedContactId,
+          myContactId: state.myContactId === id ? null : state.myContactId,
         }));
       },
 
-      importVCardText: (text) => {
-        const parsed = parseVCardText(text);
+      importContacts: (parsed) => {
         let importedCount = 0;
         let mergedCount = 0;
         let nextSelectedId: string | null = get().selectedContactId;
@@ -108,7 +117,7 @@ export const useContactsStore = create<ContactsStoreState>()(
           }
 
           return {
-            contacts: sortContacts(nextContacts),
+            contacts: sortContacts(nextContacts, state.myContactId),
             selectedContactId: nextSelectedId,
           };
         });
@@ -118,6 +127,10 @@ export const useContactsStore = create<ContactsStoreState>()(
           importedCount,
           mergedCount,
         };
+      },
+
+      importVCardText: (text) => {
+        return get().importContacts(parseVCardText(text));
       },
     }),
     {
@@ -134,10 +147,17 @@ export const useContactsStore = create<ContactsStoreState>()(
             ? persisted.selectedContactId
             : contacts[0]?.id ?? null;
 
+        const myContactId =
+          typeof persisted?.myContactId === "string" &&
+          contacts.some((contact) => contact.id === persisted.myContactId)
+            ? persisted.myContactId
+            : null;
+
         return {
           ...currentState,
           contacts,
           selectedContactId,
+          myContactId,
         };
       },
     }

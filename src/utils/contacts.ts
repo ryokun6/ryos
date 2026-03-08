@@ -163,7 +163,7 @@ function buildDisplayName({
   if (emails[0]?.value) return emails[0].value;
   if (phones[0]?.value) return phones[0].value;
   if (telegramUsername) return `@${telegramUsername}`;
-  return "Unnamed Contact";
+  return "New Contact";
 }
 
 function createValueId(prefix: string): string {
@@ -452,6 +452,7 @@ export function isSerializedContact(value: unknown): value is Contact {
     (value.birthday === null || typeof value.birthday === "string") &&
     typeof value.telegramUsername === "string" &&
     typeof value.telegramUserId === "string" &&
+    (value.picture == null || typeof value.picture === "string") &&
     isContactSource(value.source) &&
     isFiniteNumber(value.createdAt) &&
     isFiniteNumber(value.updatedAt)
@@ -486,6 +487,7 @@ export function normalizeContact(value: unknown, fallbackNow: number = Date.now(
       birthday: optionalNullableString(value.birthday),
       telegramUsername: optionalNullableString(value.telegramUsername),
       telegramUserId: optionalNullableString(value.telegramUserId),
+      picture: optionalNullableString(value.picture),
       source: isContactSource(value.source) ? value.source : "manual",
     },
     createdAt
@@ -514,10 +516,19 @@ export function updateContactFromDraft(
   draft: ContactDraft,
   now: number = Date.now()
 ): Contact {
+  const nameFieldChanged =
+    draft.firstName !== undefined ||
+    draft.lastName !== undefined ||
+    draft.nickname !== undefined ||
+    draft.organization !== undefined;
+  const clearDisplayName =
+    nameFieldChanged && draft.displayName === undefined;
+
   const updated = createContactFromDraft(
     {
       ...existing,
       ...draft,
+      ...(clearDisplayName ? { displayName: "" } : {}),
       emails: draft.emails ?? existing.emails,
       phones: draft.phones ?? existing.phones,
       addresses: draft.addresses ?? existing.addresses,
@@ -574,10 +585,14 @@ export function contactMatchesQuery(contact: Contact, query: string): boolean {
   return tokens.every((token) => haystack.includes(token));
 }
 
-export function sortContacts(contacts: Contact[]): Contact[] {
-  return [...contacts].sort((a, b) =>
-    a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" })
-  );
+export function sortContacts(contacts: Contact[], pinnedId?: string | null): Contact[] {
+  return [...contacts].sort((a, b) => {
+    if (pinnedId) {
+      if (a.id === pinnedId) return -1;
+      if (b.id === pinnedId) return 1;
+    }
+    return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" });
+  });
 }
 
 export function getContactInitials(contact: Contact): string {
@@ -794,6 +809,33 @@ export function parseVCardText(input: string): ContactImportResult {
         case "BDAY":
           draft.birthday = normalizeBirthday(value);
           break;
+        case "PHOTO": {
+          let photoUri: string | null = null;
+          if (value.startsWith("data:")) {
+            photoUri = value;
+          } else {
+            let isBase64 = false;
+            let mimeType = "image/jpeg";
+            for (const p of params) {
+              const [k, v] = p.split("=");
+              const uk = k.toUpperCase();
+              const uv = v?.toUpperCase() || "";
+              if (uk === "ENCODING" && (uv === "B" || uv === "BASE64")) isBase64 = true;
+              if (uk === "TYPE") {
+                const m: Record<string, string> = { JPEG: "image/jpeg", JPG: "image/jpeg", PNG: "image/png", GIF: "image/gif" };
+                mimeType = m[uv] || `image/${(v || "jpeg").toLowerCase()}`;
+              }
+              if (uk === "MEDIATYPE" && v) mimeType = v;
+            }
+            if (isBase64 || /^[A-Za-z0-9+/=\s]{20,}$/.test(value)) {
+              photoUri = `data:${mimeType};base64,${value.replace(/\s/g, "")}`;
+            } else if (value.startsWith("http://") || value.startsWith("https://")) {
+              photoUri = value;
+            }
+          }
+          if (photoUri) draft.picture = photoUri;
+          break;
+        }
         case "ADR": {
           const [
             postOfficeBox = "",
@@ -826,7 +868,7 @@ export function parseVCardText(input: string): ContactImportResult {
 
     const contact = createContactFromDraft(draft);
     const hasData =
-      contact.displayName !== "Unnamed Contact" ||
+      contact.displayName !== "New Contact" ||
       contact.emails.length > 0 ||
       contact.phones.length > 0 ||
       contact.addresses.length > 0 ||

@@ -9,6 +9,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
+import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 
 export function StickiesAppComponent({
   isWindowOpen,
@@ -16,6 +17,8 @@ export function StickiesAppComponent({
   isForeground,
   instanceId,
 }: AppProps) {
+  useEffect(() => { requestCloudSyncCheck(); }, []);
+
   const closeAppInstance = useAppStore((state) => state.closeAppInstance);
   
   const {

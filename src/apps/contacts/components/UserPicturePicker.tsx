@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { ALL_USER_PICTURES } from "@/utils/userPictures";
+import { resizeImageToBase64 } from "@/utils/imageResize";
 import { useTranslation } from "react-i18next";
 
 interface UserPicturePickerProps {
@@ -39,6 +40,8 @@ export function UserPicturePicker({
     ? { fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial', fontSize: "11px" }
     : undefined;
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleSelect = (path: string) => {
     onSelect(path);
     onOpenChange(false);
@@ -47,6 +50,19 @@ export function UserPicturePicker({
   const handleClear = () => {
     onSelect(null);
     onOpenChange(false);
+  };
+
+  const handleCustomImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const base64 = await resizeImageToBase64(file, 64);
+      onSelect(base64);
+      onOpenChange(false);
+    } catch {
+      // silently fail
+    }
   };
 
   const title = t("apps.contacts.picturePicker.title");
@@ -80,8 +96,23 @@ export function UserPicturePicker({
           </button>
         ))}
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleCustomImage}
+      />
       <DialogFooter className="mt-4 gap-1 sm:justify-between">
         <div className="flex gap-1 w-full sm:w-auto">
+          <Button
+            variant="retro"
+            onClick={() => fileInputRef.current?.click()}
+            className={cn("w-full sm:w-auto h-7", fontClassName)}
+            style={fontStyle}
+          >
+            {t("apps.contacts.picturePicker.chooseCustom", { defaultValue: "Choose Image…" })}
+          </Button>
           {currentPicture && (
             <Button
               variant="retro"

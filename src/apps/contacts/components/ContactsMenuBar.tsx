@@ -1,5 +1,6 @@
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
+  MenubarCheckboxItem,
   MenubarContent,
   MenubarItem,
   MenubarMenu,
@@ -7,6 +8,7 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 
 interface ContactsMenuBarProps {
@@ -16,7 +18,9 @@ interface ContactsMenuBarProps {
   onNewContact: () => void;
   onImport: () => void;
   onDeleteContact: () => void;
+  onMarkAsMine: () => void;
   hasSelectedContact: boolean;
+  isSelectedMine: boolean;
 }
 
 export function ContactsMenuBar({
@@ -26,7 +30,9 @@ export function ContactsMenuBar({
   onNewContact,
   onImport,
   onDeleteContact,
+  onMarkAsMine,
   hasSelectedContact,
+  isSelectedMine,
 }: ContactsMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -47,6 +53,10 @@ export function ContactsMenuBar({
             {t("apps.contacts.menu.importVCard")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem onClick={requestCloudSyncCheck} className="text-md h-6 px-3">
+            {t("apps.contacts.menu.syncContacts", { defaultValue: "Sync Contacts" })}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onClose} className="text-md h-6 px-3">
             {t("common.menu.close")}
           </MenubarItem>
@@ -58,6 +68,15 @@ export function ContactsMenuBar({
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarCheckboxItem
+            checked={isSelectedMine}
+            onClick={onMarkAsMine}
+            disabled={!hasSelectedContact}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.contacts.menu.markAsMine", { defaultValue: "Mark as Mine" })}
+          </MenubarCheckboxItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onDeleteContact}
             disabled={!hasSelectedContact}

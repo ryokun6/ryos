@@ -428,6 +428,7 @@
         "monthView": "Monatsansicht",
         "newEvent": "Neues Ereignis",
         "showToDoItems": "Aufgaben anzeigen",
+        "syncCalendar": "Kalender synchronisieren",
         "weekView": "Wochenansicht"
       },
       "name": "Kalender",
@@ -944,7 +945,9 @@
         "deleteContact": "Kontakt löschen",
         "help": "Kontakte-Hilfe",
         "importVCard": "vCard importieren…",
-        "newContact": "Neuer Kontakt"
+        "markAsMine": "Als meins markieren",
+        "newContact": "Neuer Kontakt",
+        "syncContacts": "Kontakte synchronisieren"
       },
       "messages": {
         "deleted": "{{name}} gelöscht",
@@ -956,6 +959,7 @@
       "noSummary": "Noch keine Telefonnummern, E-Mail-Adressen oder Notizen.",
       "picturePicker": {
         "cancel": "Abbrechen",
+        "chooseCustom": "Bild auswählen…",
         "description": "Bild für diesen Kontakt auswählen",
         "remove": "Entfernen",
         "title": "Bild auswählen"
@@ -2423,7 +2427,8 @@
         "deleteNote": "Notiz löschen",
         "help": "Stickies-Hilfe",
         "newNote": "Neue Notiz",
-        "note": "Notiz"
+        "note": "Notiz",
+        "syncStickies": "Stickies synchronisieren"
       },
       "name": "Stickies",
       "placeholder": "Notiz schreiben...",

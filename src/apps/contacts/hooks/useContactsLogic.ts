@@ -6,7 +6,9 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import type { Contact, ContactDraft } from "@/utils/contacts";
-import { contactMatchesQuery, sortContacts } from "@/utils/contacts";
+import { contactMatchesQuery, parseVCardText, sortContacts } from "@/utils/contacts";
+import { resizeImageToBase64 } from "@/utils/imageResize";
+import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { helpItems } from "..";
 
 type ContactGroupId = "all" | "imported" | "telegram" | "work" | "birthdays";
@@ -34,24 +36,28 @@ export function useContactsLogic() {
   const {
     contacts,
     selectedContactId,
+    myContactId,
     setSelectedContactId,
+    setMyContactId,
     addContact,
     updateContact,
     deleteContact,
-    importVCardText,
+    importContacts,
   } = useContactsStore(
     useShallow((state) => ({
       contacts: state.contacts,
       selectedContactId: state.selectedContactId,
+      myContactId: state.myContactId,
       setSelectedContactId: state.setSelectedContactId,
+      setMyContactId: state.setMyContactId,
       addContact: state.addContact,
       updateContact: state.updateContact,
       deleteContact: state.deleteContact,
-      importVCardText: state.importVCardText,
+      importContacts: state.importContacts,
     }))
   );
 
-  const sortedContacts = useMemo(() => sortContacts(contacts), [contacts]);
+  const sortedContacts = useMemo(() => sortContacts(contacts, myContactId), [contacts, myContactId]);
   const contactGroups = useMemo<ContactGroup[]>(() => {
     const imported = sortedContacts.filter((contact) => contact.source === "vcard");
     const telegram = sortedContacts.filter(
@@ -112,6 +118,10 @@ export function useContactsLogic() {
   );
 
   useEffect(() => {
+    requestCloudSyncCheck();
+  }, []);
+
+  useEffect(() => {
     const hasSelectedContact = filteredContacts.some(
       (contact) => contact.id === selectedContactId
     );
@@ -147,6 +157,13 @@ export function useContactsLogic() {
     setSelectedGroupId(groupId);
   };
 
+  const handleMarkAsMine = () => {
+    if (!selectedContact) return;
+    setMyContactId(
+      myContactId === selectedContact.id ? null : selectedContact.id
+    );
+  };
+
   const updateSelectedContact = (draft: ContactDraft) => {
     if (!selectedContact) {
       return;
@@ -168,7 +185,19 @@ export function useContactsLogic() {
 
     try {
       const text = await file.text();
-      const result = importVCardText(text);
+      const parsed = parseVCardText(text);
+
+      for (const contact of parsed.contacts) {
+        if (contact.picture) {
+          try {
+            contact.picture = await resizeImageToBase64(contact.picture, 64);
+          } catch {
+            contact.picture = null;
+          }
+        }
+      }
+
+      const result = importContacts(parsed);
 
       if (result.contacts.length === 0) {
         toast.error(t("apps.contacts.messages.importEmpty"));
@@ -215,6 +244,8 @@ export function useContactsLogic() {
     handleSelectContact,
     handleCreateContact,
     handleDeleteSelectedContact,
+    handleMarkAsMine,
+    myContactId,
     updateSelectedContact,
     handleImport,
     handleFileSelected,

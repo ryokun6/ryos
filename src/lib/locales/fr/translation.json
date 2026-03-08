@@ -428,6 +428,7 @@
         "monthView": "Vue Mois",
         "newEvent": "Nouvel événement",
         "showToDoItems": "Afficher les tâches",
+        "syncCalendar": "Synchroniser le calendrier",
         "weekView": "Vue Semaine"
       },
       "name": "Calendrier",
@@ -944,7 +945,9 @@
         "deleteContact": "Supprimer le contact",
         "help": "Aide Contacts",
         "importVCard": "Importer une vCard…",
-        "newContact": "Nouveau contact"
+        "markAsMine": "Marquer comme mien",
+        "newContact": "Nouveau contact",
+        "syncContacts": "Synchroniser les contacts"
       },
       "messages": {
         "deleted": "« {{name}} » supprimé",
@@ -956,6 +959,7 @@
       "noSummary": "Aucun numéro de téléphone, e-mail ou note pour l’instant",
       "picturePicker": {
         "cancel": "Annuler",
+        "chooseCustom": "Choisir une image…",
         "description": "Sélectionner une image pour ce contact",
         "remove": "Supprimer",
         "title": "Choisir une image"
@@ -2423,7 +2427,8 @@
         "deleteNote": "Supprimer le pense-bête",
         "help": "Aide de Stickies",
         "newNote": "Nouvelle note",
-        "note": "Note"
+        "note": "Note",
+        "syncStickies": "Synchroniser les notes"
       },
       "name": "Stickies",
       "placeholder": "Écrire une note...",

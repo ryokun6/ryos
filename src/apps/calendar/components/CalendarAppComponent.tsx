@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { CalendarMenuBar } from "./CalendarMenuBar";
+import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { EventDialog } from "./EventDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -825,11 +826,11 @@ function BottomToolbar({
             </div>
             <div className="metal-inset-btn-group">
               <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNewEvent} title={t("apps.calendar.menu.newEvent")}>
-                <Plus size={10} weight="bold" />
+                <Plus size={12} weight="bold" />
               </button>
               <button type="button" className="metal-inset-btn metal-inset-icon"
                 onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"} title={t("apps.calendar.sidebar.toDoItems")}>
-                <ListChecks size={10} weight="bold" />
+                <ListChecks size={12} weight="bold" />
               </button>
             </div>
           </div>
@@ -881,6 +882,8 @@ function BottomToolbar({
 export function CalendarAppComponent({
   isWindowOpen, onClose, isForeground, skipInitialSound, instanceId, onNavigateNext, onNavigatePrevious,
 }: AppProps) {
+  useEffect(() => { requestCloudSyncCheck(); }, []);
+
   const logic = useCalendarLogic();
   const {
     t, translatedHelpItems,

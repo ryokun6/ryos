@@ -14,7 +14,10 @@ import { useStickiesStore } from "@/stores/useStickiesStore";
 
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
-import { subscribeToCloudSyncDomainChanges } from "@/utils/cloudSyncEvents";
+import {
+  subscribeToCloudSyncDomainChanges,
+  subscribeToCloudSyncCheckRequests,
+} from "@/utils/cloudSyncEvents";
 import {
   downloadAndApplyCloudSyncDomain,
   fetchCloudSyncMetadata,
@@ -93,6 +96,7 @@ export function useAutoCloudSync() {
   });
   const checkInFlightRef = useRef(false);
   const wallpaperSeedDoneRef = useRef(false);
+  const contactsSeedDoneRef = useRef(false);
 
   const isSyncActive = Boolean(username && authToken && autoSyncEnabled);
 
@@ -286,6 +290,20 @@ export function useAutoCloudSync() {
           }
         }
       }
+
+      if (!contactsSeedDoneRef.current && isDomainEnabled("contacts")) {
+        contactsSeedDoneRef.current = true;
+        if (!metadataMap["contacts"]?.updatedAt) {
+          const localContacts = useContactsStore.getState().contacts;
+          if (localContacts.length > 0) {
+            console.log(`[CloudSync] Seed upload: ${localContacts.length} local contacts, no remote data`);
+            setTimeout(
+              () => queueUpload("contacts"),
+              REMOTE_APPLY_SUPPRESSION_MS + 1000
+            );
+          }
+        }
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to check cloud sync.";
@@ -314,6 +332,10 @@ export function useAutoCloudSync() {
     const syncEventsUnsubscribe = subscribeToCloudSyncDomainChanges((domain) => {
       console.log(`[CloudSync] Domain change event received: ${domain}`);
       queueUpload(domain);
+    });
+
+    const syncCheckUnsubscribe = subscribeToCloudSyncCheckRequests(() => {
+      void checkRemoteUpdates();
     });
 
     const themeUnsubscribe = useThemeStore.subscribe((state, prevState) => {
@@ -467,6 +489,7 @@ export function useAutoCloudSync() {
       clearAllUploadTimers();
       filesUnsubscribe();
       syncEventsUnsubscribe();
+      syncCheckUnsubscribe();
       themeUnsubscribe();
       languageUnsubscribe();
       displayUnsubscribe();

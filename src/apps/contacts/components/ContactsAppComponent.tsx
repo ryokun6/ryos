@@ -10,7 +10,7 @@ import { appMetadata } from "..";
 import type { AppProps } from "@/apps/base/types";
 import { cn } from "@/lib/utils";
 import { getContactInitials, type Contact } from "@/utils/contacts";
-import { Plus, UploadSimple } from "@phosphor-icons/react";
+import { Plus, DownloadSimple } from "@phosphor-icons/react";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 
 function splitMultivalueInput(value: string): string[] {
@@ -49,10 +49,10 @@ function ContactListItem({
         <img
           src={contact.picture}
           alt=""
-          className="shrink-0 w-5 h-5 rounded-full border border-black/15 object-cover"
+          className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] object-cover"
         />
       ) : (
-        <div className="shrink-0 w-5 h-5 rounded-full border border-black/15 bg-[linear-gradient(to_bottom,#c8c8c8,#e0e0e0)] flex items-center justify-center text-[8px] font-semibold text-black/50">
+        <div className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] bg-[linear-gradient(to_bottom,#e0e0e0,#c8c8c8)] flex items-center justify-center text-[8px] font-semibold text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.3)]">
           {getContactInitials(contact)}
         </div>
       )}
@@ -200,6 +200,8 @@ export function ContactsAppComponent({
     handleSelectContact,
     handleCreateContact,
     handleDeleteSelectedContact,
+    handleMarkAsMine,
+    myContactId,
     updateSelectedContact,
     handleImport,
     handleFileSelected,
@@ -224,7 +226,9 @@ export function ContactsAppComponent({
       onNewContact={handleCreateContact}
       onImport={handleImport}
       onDeleteContact={handleDeleteSelectedContact}
+      onMarkAsMine={handleMarkAsMine}
       hasSelectedContact={Boolean(selectedContact)}
+      isSelectedMine={selectedContact?.id === myContactId}
     />
   );
 
@@ -275,7 +279,7 @@ export function ContactsAppComponent({
                       onClick={handleCreateContact}
                       title={t("apps.contacts.menu.newContact")}
                     >
-                      <Plus size={9} weight="bold" />
+                      <Plus size={12} weight="bold" />
                     </button>
                     <button
                       type="button"
@@ -283,7 +287,7 @@ export function ContactsAppComponent({
                       onClick={handleImport}
                       title={t("apps.contacts.menu.importVCard")}
                     >
-                      <UploadSimple size={9} weight="bold" />
+                      <DownloadSimple size={12} weight="bold" />
                     </button>
                   </div>
                 </div>
@@ -294,7 +298,7 @@ export function ContactsAppComponent({
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={t("apps.contacts.searchPlaceholder")}
                     className={cn(
-                      "rounded-full border border-black/20 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none font-geneva-12",
+                      "rounded-full border border-black/40 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] outline-none font-geneva-12",
                       isMobileLayout ? "flex-1 min-w-0 max-w-none" : "w-[150px]"
                     )}
                   />
@@ -319,7 +323,7 @@ export function ContactsAppComponent({
                     className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
                     title={t("apps.contacts.menu.importVCard")}
                   >
-                    <UploadSimple size={12} weight="bold" />
+                    <DownloadSimple size={12} weight="bold" />
                   </Button>
                 </div>
                 <div className="flex-1" />
@@ -426,8 +430,8 @@ export function ContactsAppComponent({
                     <button
                       type="button"
                       onClick={() => setIsPicturePickerOpen(true)}
-                      className="w-12 h-12 shrink-0 rounded-[4px] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-base font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                      style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #b8b8b8, #dcdcdc)" }}
+                      className="w-12 h-12 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-base font-semibold text-white overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #dcdcdc, #b8b8b8)", textShadow: "0 1px 1px rgba(0,0,0,0.3)" }}
                       title={t("apps.contacts.changePicture")}
                     >
                       {selectedContact.picture ? (
@@ -543,10 +547,14 @@ export function ContactsAppComponent({
                     ) : (
                       <>
                         {selectedContact.phones.map((p) => (
-                          <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : t("apps.contacts.cardLabels.phone")}>{p.value}</CardRow>
+                          <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : t("apps.contacts.cardLabels.phone")}>
+                            <a href={`tel:${p.value}`} className="text-blue-600 hover:underline">{p.value}</a>
+                          </CardRow>
                         ))}
                         {selectedContact.emails.map((e) => (
-                          <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : t("apps.contacts.cardLabels.email")}>{e.value}</CardRow>
+                          <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : t("apps.contacts.cardLabels.email")}>
+                            <a href={`mailto:${e.value}`} className="text-blue-600 hover:underline">{e.value}</a>
+                          </CardRow>
                         ))}
                         {selectedContact.birthday && (
                           <CardRow label={t("apps.contacts.cardLabels.birthday")}>{formatBirthday(selectedContact.birthday)}</CardRow>
@@ -555,7 +563,9 @@ export function ContactsAppComponent({
                           <CardRow key={a.id} label={a.label && a.label !== "other" ? a.label : t("apps.contacts.cardLabels.home")}>{a.formatted}</CardRow>
                         ))}
                         {selectedContact.urls.map((u) => (
-                          <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : t("apps.contacts.cardLabels.url")}>{u.value}</CardRow>
+                          <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : t("apps.contacts.cardLabels.url")}>
+                            <a href={u.value.startsWith("http") ? u.value : `https://${u.value}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{u.value}</a>
+                          </CardRow>
                         ))}
                         {selectedContact.nickname && (
                           <CardRow label={t("apps.contacts.cardLabels.nickname")}>{selectedContact.nickname}</CardRow>

@@ -428,6 +428,7 @@
         "monthView": "月表示",
         "newEvent": "新規イベント",
         "showToDoItems": "To Do項目を表示",
+        "syncCalendar": "カレンダーを同期",
         "weekView": "週表示"
       },
       "name": "カレンダー",
@@ -944,7 +945,9 @@
         "deleteContact": "連絡先を削除",
         "help": "連絡先ヘルプ",
         "importVCard": "vCardをインポート…",
-        "newContact": "新しい連絡先"
+        "markAsMine": "自分のものにする",
+        "newContact": "新しい連絡先",
+        "syncContacts": "連絡先を同期"
       },
       "messages": {
         "deleted": "{{name}}を削除しました",
@@ -956,6 +959,7 @@
       "noSummary": "電話番号、メール、メモはまだありません",
       "picturePicker": {
         "cancel": "キャンセル",
+        "chooseCustom": "画像を選択…",
         "description": "この連絡先の写真を選択",
         "remove": "削除",
         "title": "写真を選択"
@@ -2423,7 +2427,8 @@
         "deleteNote": "付箋を削除",
         "help": "Stickies ヘルプ",
         "newNote": "新規付箋",
-        "note": "付箋"
+        "note": "付箋",
+        "syncStickies": "スティッキーズを同期"
       },
       "name": "スティッキーズ",
       "placeholder": "付箋を書く...",
