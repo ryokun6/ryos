@@ -53,7 +53,7 @@ function ContactListItem({
           className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] object-cover"
         />
       ) : (
-        <div className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] bg-[linear-gradient(to_bottom,#c8c8c8,#e0e0e0)] flex items-center justify-center text-[8px] font-semibold text-black/50">
+        <div className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] bg-[linear-gradient(to_bottom,#e0e0e0,#c8c8c8)] flex items-center justify-center text-[8px] font-semibold text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.3)]">
           {getContactInitials(contact)}
         </div>
       )}
@@ -434,8 +434,8 @@ export function ContactsAppComponent({
                     <button
                       type="button"
                       onClick={() => setIsPicturePickerOpen(true)}
-                      className="w-12 h-12 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-base font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                      style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #b8b8b8, #dcdcdc)" }}
+                      className="w-12 h-12 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-base font-semibold text-white overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #dcdcdc, #b8b8b8)", textShadow: "0 1px 1px rgba(0,0,0,0.3)" }}
                       title={t("apps.contacts.changePicture")}
                     >
                       {selectedContact.picture ? (
