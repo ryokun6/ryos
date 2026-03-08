@@ -4,6 +4,7 @@ import { LyricsAlignment, KoreanDisplay, JapaneseFurigana, LyricsFont, Romanizat
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
+import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
@@ -933,10 +934,16 @@ export const useIpodStore = create<IpodState>()(
 
           try {
             const url = new URL(input);
+            const publicOrigin = new URL(getAppPublicOrigin());
+            const isRyosShareHost =
+              url.hostname === "os.ryo.lu" ||
+              url.host === publicOrigin.host ||
+              (typeof window !== "undefined" &&
+                url.host === window.location.host);
 
-            // Handle os.ryo.lu/ipod/:id or os.ryo.lu/karaoke/:id format
+            // Handle ryOS share URLs like /ipod/:id or /karaoke/:id on any configured host
             if (
-              url.hostname === "os.ryo.lu" &&
+              isRyosShareHost &&
               (url.pathname.startsWith("/ipod/") || url.pathname.startsWith("/karaoke/"))
             ) {
               return url.pathname.split("/")[2] || null;

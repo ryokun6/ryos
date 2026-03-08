@@ -1,5 +1,6 @@
 // Shared CORS utilities for API routes (Node.js runtime only)
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { getConfiguredPublicOrigin } from "./runtime-config.js";
 
 type RuntimeEnv = "production" | "preview" | "development";
 
@@ -169,7 +170,9 @@ export function isAllowedOrigin(origin: string | null): boolean {
   }
 
   if (env === "production") {
-    return normalizedOrigin === PROD_ALLOWED_ORIGIN;
+    return (
+      normalizedOrigin === (getConfiguredPublicOrigin() || PROD_ALLOWED_ORIGIN)
+    );
   }
   if (env === "preview") {
     return isVercelPreviewOrigin(normalizedOrigin);

@@ -2,66 +2,30 @@
  * Pusher client and broadcast helpers for chat-rooms API
  * 
  * Performance optimizations:
- * - Uses triggerBatch for multi-channel broadcasts (up to 10 events per HTTP request)
+ * - Uses batch realtime fan-out for multi-channel broadcasts
  * - Skips redundant fan-out for public rooms
  * - Caches room data to avoid repeated Redis lookups
  */
 
-import Pusher from "pusher";
-import { Redis } from "@upstash/redis";
+import { createRedis } from "../../_utils/redis.js";
+import {
+  triggerRealtimeBatch,
+  triggerRealtimeEvent,
+} from "../../_utils/realtime.js";
 import { parseRoomData } from "./_redis.js";
 import { refreshRoomUserCount } from "./_presence.js";
 import { CHAT_ROOM_PREFIX } from "./_constants.js";
 import type { Room, Message } from "./_types.js";
 
 // Create Redis client
-function getRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+function getRedis() {
+  return createRedis();
 }
-
-// ============================================================================
-// Pusher Client
-// ============================================================================
-
-export const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID!,
-  key: process.env.PUSHER_KEY!,
-  secret: process.env.PUSHER_SECRET!,
-  cluster: process.env.PUSHER_CLUSTER!,
-  useTLS: true,
-});
-
-// ============================================================================
-// Batch Trigger Helper
-// ============================================================================
 
 interface BatchEvent {
   channel: string;
   name: string;
   data: unknown;
-}
-
-/**
- * Trigger multiple Pusher events in batches of up to 10 (Pusher's limit)
- * This reduces HTTP requests from N to ceil(N/10)
- */
-async function triggerBatched(events: BatchEvent[]): Promise<void> {
-  if (events.length === 0) return;
-  
-  // Pusher's triggerBatch supports up to 10 events per request
-  const BATCH_SIZE = 10;
-  const batches: BatchEvent[][] = [];
-  
-  for (let i = 0; i < events.length; i += BATCH_SIZE) {
-    batches.push(events.slice(i, i + BATCH_SIZE));
-  }
-  
-  await Promise.all(
-    batches.map((batch) => pusher.triggerBatch(batch))
-  );
 }
 
 // ============================================================================
@@ -114,7 +78,7 @@ export async function broadcastRoomUpdated(roomId: string): Promise<void> {
     const room: Room = { ...roomObj, userCount: count };
 
     if (!room.type || room.type === "public") {
-      await pusher.trigger("chats-public", "room-updated", { room });
+      await triggerRealtimeEvent("chats-public", "room-updated", { room });
     } else if (Array.isArray(room.members)) {
       await fanOutToPrivateMembers(roomId, "room-updated", { room });
     }
@@ -130,7 +94,7 @@ export async function broadcastRoomUpdated(roomId: string): Promise<void> {
 export async function broadcastRoomCreated(room: Room): Promise<void> {
   try {
     if (!room.type || room.type === "public") {
-      await pusher.trigger("chats-public", "room-created", { room });
+      await triggerRealtimeEvent("chats-public", "room-created", { room });
     } else if (Array.isArray(room.members) && room.members.length > 0) {
       // Use batch trigger for multiple members
       const events: BatchEvent[] = room.members.map((m) => ({
@@ -138,7 +102,7 @@ export async function broadcastRoomCreated(room: Room): Promise<void> {
         name: "room-created",
         data: { room },
       }));
-      await triggerBatched(events);
+      await triggerRealtimeBatch(events);
     }
   } catch (err) {
     console.error("[broadcastRoomCreated] Failed:", err);
@@ -156,7 +120,7 @@ export async function broadcastRoomDeleted(
 ): Promise<void> {
   try {
     if (!type || type === "public") {
-      await pusher.trigger("chats-public", "room-deleted", { roomId });
+      await triggerRealtimeEvent("chats-public", "room-deleted", { roomId });
     } else if (Array.isArray(members) && members.length > 0) {
       // Use batch trigger for multiple members
       const events: BatchEvent[] = members.map((m) => ({
@@ -164,7 +128,7 @@ export async function broadcastRoomDeleted(
         name: "room-deleted",
         data: { roomId },
       }));
-      await triggerBatched(events);
+      await triggerRealtimeBatch(events);
     }
   } catch (err) {
     console.error("[broadcastRoomDeleted] Failed:", err);
@@ -185,7 +149,7 @@ export async function broadcastNewMessage(
     const payload = { roomId, message };
     
     // Always trigger the room-specific channel (clients subscribe to this)
-    await pusher.trigger(channelName, "room-message", payload);
+    await triggerRealtimeEvent(channelName, "room-message", payload);
 
     // Only fan-out to private members if this is a private room
     // Pass room data if available to avoid redundant Redis lookup
@@ -215,7 +179,7 @@ export async function broadcastMessageDeleted(
     const channelName = `room-${roomId}`;
     const payload = { roomId, messageId };
     
-    await pusher.trigger(channelName, "message-deleted", payload);
+    await triggerRealtimeEvent(channelName, "message-deleted", payload);
 
     // Only fan-out to private members if this is a private room
     if (roomData) {
@@ -247,7 +211,7 @@ async function fanOutToPrivateMembersBatched(
     data: payload,
   }));
   
-  await triggerBatched(events);
+  await triggerRealtimeBatch(events);
 }
 
 /**
@@ -298,7 +262,7 @@ export async function broadcastToSpecificUsers(
       };
     });
 
-    await triggerBatched(events);
+    await triggerRealtimeBatch(events);
   } catch (err) {
     console.error("[broadcastToSpecificUsers] Failed to broadcast:", err);
   }

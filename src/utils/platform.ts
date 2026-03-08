@@ -2,6 +2,8 @@
  * Platform detection utilities
  */
 
+import { getAppPublicOrigin } from "@/utils/runtimeConfig";
+
 /**
  * Check if the app is running in Tauri (desktop app)
  */
@@ -23,7 +25,7 @@ export function isWeb(): boolean {
  */
 export function getApiBaseUrl(): string {
   if (isTauri()) {
-    return "https://os.ryo.lu";
+    return getAppPublicOrigin();
   }
   return "";
 }
