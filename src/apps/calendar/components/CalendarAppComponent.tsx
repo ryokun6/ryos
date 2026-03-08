@@ -826,11 +826,11 @@ function BottomToolbar({
             </div>
             <div className="metal-inset-btn-group">
               <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNewEvent} title={t("apps.calendar.menu.newEvent")}>
-                <Plus size={10} weight="bold" />
+                <Plus size={12} weight="bold" />
               </button>
               <button type="button" className="metal-inset-btn metal-inset-icon"
                 onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"} title={t("apps.calendar.sidebar.toDoItems")}>
-                <ListChecks size={10} weight="bold" />
+                <ListChecks size={12} weight="bold" />
               </button>
             </div>
           </div>
