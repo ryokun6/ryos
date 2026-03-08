@@ -134,6 +134,9 @@
         "dailyNotesProcessed": "每日筆記已處理",
         "delete": "刪除使用者",
         "entries": "條",
+        "heartbeatSent": "已發送",
+        "heartbeatSkipped": "已跳過",
+        "heartbeats": "心跳記錄",
         "lastActive": "上次活躍",
         "loading": "載入個人檔案中...",
         "longTermMemories": "長期記憶",
@@ -148,9 +151,6 @@
         "notFound": "找不到使用者",
         "pending": "待處理",
         "pendingTooltip": "尚未處理成長期記憶",
-        "heartbeats": "心跳記錄",
-        "heartbeatSent": "已發送",
-        "heartbeatSkipped": "已跳過",
         "processed": "已處理",
         "processedTooltip": "已處理成長期記憶",
         "processing": "處理中…",
@@ -171,11 +171,37 @@
         "placeholder": "搜尋使用者...",
         "songsPlaceholder": "搜尋歌曲..."
       },
+      "server": {
+        "buildInfo": "建置",
+        "commit": "提交",
+        "configured": "已設定",
+        "deployment": {
+          "coolify": "Coolify",
+          "dev": "開發",
+          "vercel": "Vercel"
+        },
+        "deploymentLabel": "部署",
+        "loading": "正在載入伺服器資訊...",
+        "notConfigured": "未設定",
+        "ok": "確定",
+        "provider": {
+          "local": "本地",
+          "pusher": "Pusher"
+        },
+        "realtime": "即時 / WebSocket",
+        "redis": "Redis",
+        "services": "服務",
+        "title": "伺服器",
+        "unhealthy": "不健康",
+        "version": "版本",
+        "websocket": "WebSocket (Pusher)"
+      },
       "sidebar": {
         "messagesCount": "{{count}} 則訊息",
         "online": "線上",
         "private": "私人",
         "rooms": "聊天室",
+        "server": "伺服器",
         "songs": "歌曲",
         "users": "使用者"
       },
@@ -871,6 +897,9 @@
       }
     },
     "contacts": {
+      "badges": {
+        "mine": "我的名片"
+      },
       "buttons": {
         "done": "完成",
         "edit": "編輯"
@@ -889,9 +918,6 @@
       "description": "通訊錄（支援 vCard 匯入）",
       "emptySelection": "選取聯絡人或建立新聯絡人",
       "emptyState": "尚無聯絡人。建立聯絡人或匯入 vCard 以開始使用。",
-      "badges": {
-        "mine": "我的名片"
-      },
       "fields": {
         "addresses": "地址",
         "birthday": "生日",
@@ -978,7 +1004,11 @@
         "cardsCount": "{{count}} 張卡片",
         "cardsCount_one": "{{count}} 名片"
       },
-      "title": "聯絡人"
+      "title": "聯絡人",
+      "views": {
+        "cardOnly": "僅限卡片",
+        "toggleGroups": "切換群組"
+      }
     },
     "control-panels": {
       "aiModel": "AI 模型",

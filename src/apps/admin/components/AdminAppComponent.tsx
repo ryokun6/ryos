@@ -4,6 +4,7 @@ import { AdminMenuBar } from "./AdminMenuBar";
 import { AdminSidebar } from "./AdminSidebar";
 import { UserProfilePanel } from "./UserProfilePanel";
 import { SongDetailPanel } from "./SongDetailPanel";
+import { ServerPanel } from "./ServerPanel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -325,7 +326,9 @@ export function AdminAppComponent({
           {/* Main Content */}
           <div className="flex-1 flex flex-col bg-white overflow-hidden">
             {/* Toolbar */}
-            {!selectedUserProfile && !selectedSongId && (
+            {!selectedUserProfile &&
+              !selectedSongId &&
+              activeSection !== "server" && (
               <div
                 className={cn(
                   "flex items-center gap-2 px-2 py-1.5 border-b",
@@ -547,6 +550,14 @@ export function AdminAppComponent({
 
             {/* Content Area */}
             <ScrollArea ref={scrollAreaRef} className="flex-1">
+              {/* Server View */}
+              {activeSection === "server" &&
+                !selectedRoomId &&
+                !selectedUserProfile &&
+                !selectedSongId && (
+                  <ServerPanel onRefresh={handleRefresh} />
+                )}
+
               {/* User Profile View */}
               {selectedUserProfile && (
                 <UserProfilePanel
@@ -885,22 +896,24 @@ export function AdminAppComponent({
             {/* Status Bar */}
             <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
               <span>
-                {activeSection === "users" && !selectedRoomId
-                  ? t("apps.admin.statusBar.usersCount", {
-                      count: users.length,
-                    })
-                  : activeSection === "songs" && !selectedRoomId
-                  ? t("apps.admin.statusBar.songsCount", {
-                      count: filteredSongs.length,
-                      defaultValue: `${filteredSongs.length} songs`,
-                    })
-                  : selectedRoomId
-                  ? t("apps.admin.statusBar.messagesCount", {
-                      count: roomMessages.length,
-                    })
-                  : t("apps.admin.statusBar.roomsCount", {
-                      count: rooms.length,
-                    })}
+                {activeSection === "server"
+                  ? t("apps.admin.server.title", "Server")
+                  : activeSection === "users" && !selectedRoomId
+                    ? t("apps.admin.statusBar.usersCount", {
+                        count: users.length,
+                      })
+                    : activeSection === "songs" && !selectedRoomId
+                      ? t("apps.admin.statusBar.songsCount", {
+                          count: filteredSongs.length,
+                          defaultValue: `${filteredSongs.length} songs`,
+                        })
+                      : selectedRoomId
+                        ? t("apps.admin.statusBar.messagesCount", {
+                            count: roomMessages.length,
+                          })
+                        : t("apps.admin.statusBar.roomsCount", {
+                            count: rooms.length,
+                          })}
               </span>
               <span>
                 {t("apps.admin.statusBar.loggedInAs", { username })}

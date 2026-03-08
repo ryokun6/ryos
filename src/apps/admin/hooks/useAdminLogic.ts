@@ -79,7 +79,7 @@ interface DeleteTarget {
   name: string;
 }
 
-type AdminSection = "users" | "rooms" | "songs";
+type AdminSection = "users" | "rooms" | "songs" | "server";
 
 const USERS_PER_PAGE = 100;
 const SONGS_PER_PAGE = 100;

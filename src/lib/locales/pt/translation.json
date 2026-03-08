@@ -134,6 +134,9 @@
         "dailyNotesProcessed": "Notas diárias processadas",
         "delete": "Excluir Usuário",
         "entries": "entradas",
+        "heartbeatSent": "enviado",
+        "heartbeatSkipped": "ignorado",
+        "heartbeats": "Registros de heartbeat",
         "lastActive": "Última atividade",
         "loading": "Carregando perfil...",
         "longTermMemories": "Memórias de Longo Prazo",
@@ -148,9 +151,6 @@
         "notFound": "Usuário não encontrado",
         "pending": "pendente",
         "pendingTooltip": "Ainda não processado em memória de longo prazo",
-        "heartbeats": "Registros de heartbeat",
-        "heartbeatSent": "enviado",
-        "heartbeatSkipped": "ignorado",
         "processed": "processado",
         "processedTooltip": "Processado em memória de longo prazo",
         "processing": "Processando…",
@@ -171,11 +171,37 @@
         "placeholder": "Pesquisar utilizadores...",
         "songsPlaceholder": "Pesquisar músicas..."
       },
+      "server": {
+        "buildInfo": "Compilação",
+        "commit": "Commit",
+        "configured": "Configurado",
+        "deployment": {
+          "coolify": "Coolify",
+          "dev": "Desenvolvimento",
+          "vercel": "Vercel"
+        },
+        "deploymentLabel": "Implantação",
+        "loading": "Carregando informações do servidor...",
+        "notConfigured": "Não configurado",
+        "ok": "OK",
+        "provider": {
+          "local": "Local",
+          "pusher": "Pusher"
+        },
+        "realtime": "Tempo real / WebSocket",
+        "redis": "Redis",
+        "services": "Serviços",
+        "title": "Servidor",
+        "unhealthy": "Não saudável",
+        "version": "Versão",
+        "websocket": "WebSocket (Pusher)"
+      },
       "sidebar": {
         "messagesCount": "{{count}} mensagens",
         "online": "online",
         "private": "Privado",
         "rooms": "Salas",
+        "server": "Servidor",
         "songs": "Músicas",
         "users": "Utilizadores"
       },
@@ -871,6 +897,9 @@
       }
     },
     "contacts": {
+      "badges": {
+        "mine": "Meu cartão"
+      },
       "buttons": {
         "done": "Concluído",
         "edit": "Editar"
@@ -889,9 +918,6 @@
       "description": "Livro de endereços com importação de vCard",
       "emptySelection": "Selecione um contato ou crie um novo",
       "emptyState": "Nenhum contato ainda. Crie um ou importe um vCard para começar.",
-      "badges": {
-        "mine": "Meu cartão"
-      },
       "fields": {
         "addresses": "Endereços",
         "birthday": "Aniversário",
@@ -978,7 +1004,11 @@
         "cardsCount": "{{count}} cartões",
         "cardsCount_one": "{{count}} cartão"
       },
-      "title": "Contatos"
+      "title": "Contatos",
+      "views": {
+        "cardOnly": "Somente Cartão",
+        "toggleGroups": "Alternar Grupos"
+      }
     },
     "control-panels": {
       "aiModel": "Modelo de IA",

@@ -2957,9 +2957,35 @@
         "users": "Users",
         "rooms": "Rooms",
         "songs": "Songs",
+        "server": "Server",
         "private": "Private",
         "messagesCount": "{{count}} messages",
         "online": "online"
+      },
+      "server": {
+        "title": "Server",
+        "loading": "Loading server info...",
+        "buildInfo": "Build",
+        "version": "Version",
+        "commit": "Commit",
+        "deploymentLabel": "Deployment",
+        "deployment": {
+          "dev": "Development",
+          "vercel": "Vercel",
+          "coolify": "Coolify"
+        },
+        "services": "Services",
+        "redis": "Redis",
+        "realtime": "Realtime / WebSocket",
+        "websocket": "WebSocket (Pusher)",
+        "provider": {
+          "local": "Local",
+          "pusher": "Pusher"
+        },
+        "ok": "OK",
+        "unhealthy": "Unhealthy",
+        "configured": "Configured",
+        "notConfigured": "Not configured"
       },
       "search": {
         "placeholder": "Search users...",

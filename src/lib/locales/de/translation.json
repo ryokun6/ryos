@@ -134,6 +134,9 @@
         "dailyNotesProcessed": "Tägliche Notizen verarbeitet",
         "delete": "Nutzer löschen",
         "entries": "Einträge",
+        "heartbeatSent": "gesendet",
+        "heartbeatSkipped": "übersprungen",
+        "heartbeats": "Heartbeat-Einträge",
         "lastActive": "Zuletzt aktiv",
         "loading": "Profil wird geladen...",
         "longTermMemories": "Langzeitgedächtnisse",
@@ -148,9 +151,6 @@
         "notFound": "Benutzer nicht gefunden",
         "pending": "ausstehend",
         "pendingTooltip": "Noch nicht ins Langzeitgedächtnis verarbeitet",
-        "heartbeats": "Heartbeat-Einträge",
-        "heartbeatSent": "gesendet",
-        "heartbeatSkipped": "übersprungen",
         "processed": "verarbeitet",
         "processedTooltip": "Ins Langzeitgedächtnis verarbeitet",
         "processing": "Wird verarbeitet…",
@@ -171,11 +171,37 @@
         "placeholder": "Benutzer suchen...",
         "songsPlaceholder": "Lieder suchen..."
       },
+      "server": {
+        "buildInfo": "Build",
+        "commit": "Commit",
+        "configured": "Konfiguriert",
+        "deployment": {
+          "coolify": "Coolify",
+          "dev": "Entwicklung",
+          "vercel": "Vercel"
+        },
+        "deploymentLabel": "Deployment",
+        "loading": "Serverinformationen werden geladen...",
+        "notConfigured": "Nicht konfiguriert",
+        "ok": "OK",
+        "provider": {
+          "local": "Lokal",
+          "pusher": "Pusher"
+        },
+        "realtime": "Echtzeit / WebSocket",
+        "redis": "Redis",
+        "services": "Dienste",
+        "title": "Server",
+        "unhealthy": "Fehlerhaft",
+        "version": "Version",
+        "websocket": "WebSocket (Pusher)"
+      },
       "sidebar": {
         "messagesCount": "{{count}} Nachrichten",
         "online": "online",
         "private": "Privat",
         "rooms": "Räume",
+        "server": "Server",
         "songs": "Lieder",
         "users": "Benutzer"
       },
@@ -871,6 +897,9 @@
       }
     },
     "contacts": {
+      "badges": {
+        "mine": "Meine Karte"
+      },
       "buttons": {
         "done": "Fertig",
         "edit": "Bearbeiten"
@@ -889,9 +918,6 @@
       "description": "Adressbuch mit vCard-Import",
       "emptySelection": "Wählen Sie einen Kontakt aus oder erstellen Sie einen neuen",
       "emptyState": "Noch keine Kontakte. Erstellen Sie einen oder importieren Sie eine vCard, um zu beginnen.",
-      "badges": {
-        "mine": "Meine Karte"
-      },
       "fields": {
         "addresses": "Adressen",
         "birthday": "Geburtstag",
@@ -978,7 +1004,11 @@
         "cardsCount": "{{count}} Kontakte",
         "cardsCount_one": "{{count}} Karte"
       },
-      "title": "Kontakte"
+      "title": "Kontakte",
+      "views": {
+        "cardOnly": "Nur Karte",
+        "toggleGroups": "Gruppen umschalten"
+      }
     },
     "control-panels": {
       "aiModel": "KI-Modell",

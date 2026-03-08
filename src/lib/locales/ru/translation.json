@@ -134,6 +134,9 @@
         "dailyNotesProcessed": "Ежедневные заметки обработаны",
         "delete": "Удалить пользователя",
         "entries": "записи",
+        "heartbeatSent": "отправлено",
+        "heartbeatSkipped": "пропущено",
+        "heartbeats": "Записи heartbeat",
         "lastActive": "Последняя активность",
         "loading": "Загрузка профиля...",
         "longTermMemories": "Долгосрочные воспоминания",
@@ -148,9 +151,6 @@
         "notFound": "Пользователь не найден",
         "pending": "в ожидании",
         "pendingTooltip": "Еще не обработано в долгосрочную память",
-        "heartbeats": "Записи heartbeat",
-        "heartbeatSent": "отправлено",
-        "heartbeatSkipped": "пропущено",
         "processed": "обработано",
         "processedTooltip": "Обработано в долгосрочную память",
         "processing": "Обработка…",
@@ -171,11 +171,37 @@
         "placeholder": "Поиск пользователей...",
         "songsPlaceholder": "Поиск песен..."
       },
+      "server": {
+        "buildInfo": "Сборка",
+        "commit": "Коммит",
+        "configured": "Настроено",
+        "deployment": {
+          "coolify": "Coolify",
+          "dev": "Разработка",
+          "vercel": "Vercel"
+        },
+        "deploymentLabel": "Развертывание",
+        "loading": "Загрузка информации о сервере...",
+        "notConfigured": "Не настроено",
+        "ok": "ОК",
+        "provider": {
+          "local": "Локальный",
+          "pusher": "Pusher"
+        },
+        "realtime": "В реальном времени / WebSocket",
+        "redis": "Redis",
+        "services": "Сервисы",
+        "title": "Сервер",
+        "unhealthy": "Неисправно",
+        "version": "Версия",
+        "websocket": "WebSocket (Pusher)"
+      },
       "sidebar": {
         "messagesCount": "{{count}} сообщений",
         "online": "онлайн",
         "private": "Приватный",
         "rooms": "Комнаты",
+        "server": "Сервер",
         "songs": "Песни",
         "users": "Пользователи"
       },
@@ -871,6 +897,9 @@
       }
     },
     "contacts": {
+      "badges": {
+        "mine": "Моя карточка"
+      },
       "buttons": {
         "done": "Готово",
         "edit": "Редактировать"
@@ -889,9 +918,6 @@
       "description": "Адресная книга с импортом vCard",
       "emptySelection": "Выберите контакт или создайте новый",
       "emptyState": "Контактов пока нет. Создайте контакт или импортируйте vCard, чтобы начать.",
-      "badges": {
-        "mine": "Моя карточка"
-      },
       "fields": {
         "addresses": "Адреса",
         "birthday": "День рождения",
@@ -978,7 +1004,11 @@
         "cardsCount": "{{count}} карточек",
         "cardsCount_one": "{{count}} карточка"
       },
-      "title": "Контакты"
+      "title": "Контакты",
+      "views": {
+        "cardOnly": "Только карта",
+        "toggleGroups": "Переключить группы"
+      }
     },
     "control-panels": {
       "aiModel": "Модель ИИ",

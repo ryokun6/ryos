@@ -33,6 +33,12 @@ export async function getAdminStats<TResponse>(
   return adminGet<TResponse>(auth, "getStats");
 }
 
+export async function getAdminServerInfo<TResponse>(
+  auth: ApiAuthContext
+): Promise<TResponse> {
+  return adminGet<TResponse>(auth, "getServerInfo");
+}
+
 export async function getAdminUsers<TResponse>(
   auth: ApiAuthContext
 ): Promise<TResponse> {

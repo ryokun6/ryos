@@ -134,6 +134,9 @@
         "dailyNotesProcessed": "日次メモを処理しました",
         "delete": "ユーザーを削除",
         "entries": "件",
+        "heartbeatSent": "送信済み",
+        "heartbeatSkipped": "スキップ",
+        "heartbeats": "ハートビート記録",
         "lastActive": "最終アクティブ",
         "loading": "プロフィールを読み込み中...",
         "longTermMemories": "長期記憶",
@@ -148,9 +151,6 @@
         "notFound": "ユーザーが見つかりませんでした",
         "pending": "処理待ち",
         "pendingTooltip": "まだ長期記憶として処理されていません",
-        "heartbeats": "ハートビート記録",
-        "heartbeatSent": "送信済み",
-        "heartbeatSkipped": "スキップ",
         "processed": "処理済み",
         "processedTooltip": "長期記憶として処理済み",
         "processing": "処理中…",
@@ -171,11 +171,37 @@
         "placeholder": "ユーザーを検索...",
         "songsPlaceholder": "曲を検索..."
       },
+      "server": {
+        "buildInfo": "ビルド",
+        "commit": "コミット",
+        "configured": "設定済み",
+        "deployment": {
+          "coolify": "Coolify",
+          "dev": "開発",
+          "vercel": "Vercel"
+        },
+        "deploymentLabel": "デプロイ",
+        "loading": "サーバー情報を読み込み中...",
+        "notConfigured": "未設定",
+        "ok": "OK",
+        "provider": {
+          "local": "ローカル",
+          "pusher": "Pusher"
+        },
+        "realtime": "リアルタイム / WebSocket",
+        "redis": "Redis",
+        "services": "サービス",
+        "title": "サーバー",
+        "unhealthy": "不健全",
+        "version": "バージョン",
+        "websocket": "WebSocket (Pusher)"
+      },
       "sidebar": {
         "messagesCount": "メッセージ{{count}}件",
         "online": "オンライン",
         "private": "プライベート",
         "rooms": "ルーム",
+        "server": "サーバー",
         "songs": "曲",
         "users": "ユーザー"
       },
@@ -871,6 +897,9 @@
       }
     },
     "contacts": {
+      "badges": {
+        "mine": "マイカード"
+      },
       "buttons": {
         "done": "完了",
         "edit": "編集"
@@ -889,9 +918,6 @@
       "description": "vCardインポート対応アドレス帳",
       "emptySelection": "連絡先を選択するか、新規作成",
       "emptyState": "連絡先がまだありません。新規作成するか、vCardをインポートして開始してください。",
-      "badges": {
-        "mine": "マイカード"
-      },
       "fields": {
         "addresses": "住所",
         "birthday": "誕生日",
@@ -978,7 +1004,11 @@
         "cardsCount": "{{count}}件",
         "cardsCount_one": "{{count}} 枚のカード"
       },
-      "title": "連絡先"
+      "title": "連絡先",
+      "views": {
+        "cardOnly": "カードのみ",
+        "toggleGroups": "グループを切り替える"
+      }
     },
     "control-panels": {
       "aiModel": "AIモデル",

@@ -15,6 +15,11 @@ import { resolveRequestAuth } from "./_utils/request-auth.js";
 import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
 import { getRecentHeartbeatRecords, type HeartbeatRecord } from "./_utils/heartbeats.js";
 import { processDailyNotesForUser } from "./ai/process-daily-notes.js";
+import {
+  getRedisBackend,
+  supportsRedisPubSub,
+} from "./_utils/redis.js";
+import { getRealtimeProvider } from "./_utils/runtime-config.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -219,6 +224,58 @@ async function unbanUser(redis: Redis, targetUsername: string): Promise<{ succes
     console.error(`Error unbanning user ${normalizedUsername}:`, error);
     return { success: false, error: "Failed to unban user" };
   }
+}
+
+function getDeployment(): "dev" | "vercel" | "coolify" {
+  if (process.env.VERCEL === "1" || process.env.VERCEL_ENV) {
+    return "vercel";
+  }
+  if (
+    process.env.COOLIFY_SERVICE_ID ||
+    process.env.COOLIFY_APP_ID ||
+    /coolify/i.test(process.env.DEPLOYMENT_TARGET || "")
+  ) {
+    return "coolify";
+  }
+  return "dev";
+}
+
+async function getServerInfo(redis: Redis): Promise<{
+  deployment: "dev" | "vercel" | "coolify";
+  redis: { backend: string; healthy: boolean };
+  websocket: { provider: "local" | "pusher"; configured: boolean };
+}> {
+  const deployment = getDeployment();
+  let redisBackend = "unknown";
+  let redisHealthy = false;
+  try {
+    redisBackend = getRedisBackend();
+    await redis.get("admin:health:ping");
+    redisHealthy = true;
+  } catch {
+    redisHealthy = false;
+  }
+
+  const realtimeProvider = getRealtimeProvider();
+  const pusherConfigured = !!(
+    process.env.PUSHER_APP_ID?.trim() &&
+    process.env.PUSHER_KEY?.trim() &&
+    process.env.PUSHER_SECRET?.trim() &&
+    process.env.PUSHER_CLUSTER?.trim()
+  );
+  const localConfigured =
+    realtimeProvider === "local" && supportsRedisPubSub();
+  const websocketConfigured =
+    realtimeProvider === "pusher" ? pusherConfigured : localConfigured;
+
+  return {
+    deployment,
+    redis: { backend: redisBackend, healthy: redisHealthy },
+    websocket: {
+      provider: realtimeProvider,
+      configured: websocketConfigured,
+    },
+  };
 }
 
 async function getStats(redis: Redis): Promise<{ totalUsers: number; totalRooms: number; totalMessages: number }> {
@@ -431,6 +488,13 @@ export default apiHandler<AdminRequest>(
           });
           logger.response(200, Date.now() - startTime);
           res.status(200).json({ heartbeats });
+          return;
+        }
+        case "getServerInfo": {
+          const serverInfo = await getServerInfo(redis);
+          logger.info("Server info retrieved", serverInfo);
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json(serverInfo);
           return;
         }
         default:

@@ -134,6 +134,9 @@
         "dailyNotesProcessed": "일일 노트 처리됨",
         "delete": "사용자 삭제",
         "entries": "항목",
+        "heartbeatSent": "전송됨",
+        "heartbeatSkipped": "건너뜀",
+        "heartbeats": "하트비트 기록",
         "lastActive": "마지막 활동",
         "loading": "프로필 로드 중...",
         "longTermMemories": "장기 기억",
@@ -148,9 +151,6 @@
         "notFound": "사용자를 찾을 수 없음",
         "pending": "대기 중",
         "pendingTooltip": "아직 장기 기억으로 처리되지 않음",
-        "heartbeats": "하트비트 기록",
-        "heartbeatSent": "전송됨",
-        "heartbeatSkipped": "건너뜀",
         "processed": "처리됨",
         "processedTooltip": "장기 기억으로 처리됨",
         "processing": "처리 중…",
@@ -171,11 +171,37 @@
         "placeholder": "사용자 검색...",
         "songsPlaceholder": "곡 검색..."
       },
+      "server": {
+        "buildInfo": "빌드",
+        "commit": "커밋",
+        "configured": "구성됨",
+        "deployment": {
+          "coolify": "쿨리파이",
+          "dev": "개발",
+          "vercel": "버셀"
+        },
+        "deploymentLabel": "배포",
+        "loading": "서버 정보 로드 중...",
+        "notConfigured": "구성되지 않음",
+        "ok": "확인",
+        "provider": {
+          "local": "로컬",
+          "pusher": "Pusher"
+        },
+        "realtime": "실시간 / WebSocket",
+        "redis": "레디스",
+        "services": "서비스",
+        "title": "서버",
+        "unhealthy": "비정상",
+        "version": "버전",
+        "websocket": "웹소켓 (푸셔)"
+      },
       "sidebar": {
         "messagesCount": "{{count}}개 메시지",
         "online": "온라인",
         "private": "비공개",
         "rooms": "방",
+        "server": "서버",
         "songs": "곡",
         "users": "사용자"
       },
@@ -871,6 +897,9 @@
       }
     },
     "contacts": {
+      "badges": {
+        "mine": "내 카드"
+      },
       "buttons": {
         "done": "완료",
         "edit": "편집"
@@ -889,9 +918,6 @@
       "description": "vCard 가져오기 지원 주소록",
       "emptySelection": "연락처를 선택하거나 새로 만드세요",
       "emptyState": "아직 연락처가 없습니다. 새 연락처를 만들거나 vCard를 가져와서 시작하세요.",
-      "badges": {
-        "mine": "내 카드"
-      },
       "fields": {
         "addresses": "주소",
         "birthday": "생일",
@@ -978,7 +1004,11 @@
         "cardsCount": "{{count}}개의 카드",
         "cardsCount_one": "{{count}} 카드"
       },
-      "title": "연락처"
+      "title": "연락처",
+      "views": {
+        "cardOnly": "카드만",
+        "toggleGroups": "그룹 토글"
+      }
     },
     "control-panels": {
       "aiModel": "AI 모델",

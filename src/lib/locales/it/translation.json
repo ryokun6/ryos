@@ -134,6 +134,9 @@
         "dailyNotesProcessed": "Note giornaliere elaborate",
         "delete": "Elimina utente",
         "entries": "voci",
+        "heartbeatSent": "inviato",
+        "heartbeatSkipped": "saltato",
+        "heartbeats": "Record heartbeat",
         "lastActive": "Ultima attività",
         "loading": "Caricamento profilo...",
         "longTermMemories": "Memorie a lungo termine",
@@ -148,9 +151,6 @@
         "notFound": "Utente non trovato",
         "pending": "in attesa",
         "pendingTooltip": "Non ancora elaborate in memoria a lungo termine",
-        "heartbeats": "Record heartbeat",
-        "heartbeatSent": "inviato",
-        "heartbeatSkipped": "saltato",
         "processed": "elaborate",
         "processedTooltip": "Elaborate in memoria a lungo termine",
         "processing": "Elaborazione…",
@@ -171,11 +171,37 @@
         "placeholder": "Cerca utenti...",
         "songsPlaceholder": "Cerca brani..."
       },
+      "server": {
+        "buildInfo": "Compilazione",
+        "commit": "Commit",
+        "configured": "Configurato",
+        "deployment": {
+          "coolify": "Coolify",
+          "dev": "Sviluppo",
+          "vercel": "Vercel"
+        },
+        "deploymentLabel": "Deployment",
+        "loading": "Caricamento informazioni server...",
+        "notConfigured": "Non configurato",
+        "ok": "OK",
+        "provider": {
+          "local": "Locale",
+          "pusher": "Pusher"
+        },
+        "realtime": "Tempo reale / WebSocket",
+        "redis": "Redis",
+        "services": "Servizi",
+        "title": "Server",
+        "unhealthy": "Non integro",
+        "version": "Versione",
+        "websocket": "WebSocket (Pusher)"
+      },
       "sidebar": {
         "messagesCount": "{{count}} messaggi",
         "online": "online",
         "private": "Privato",
         "rooms": "Stanze",
+        "server": "Server",
         "songs": "Brani",
         "users": "Utenti"
       },
@@ -871,6 +897,9 @@
       }
     },
     "contacts": {
+      "badges": {
+        "mine": "La mia scheda"
+      },
       "buttons": {
         "done": "Fatto",
         "edit": "Modifica"
@@ -889,9 +918,6 @@
       "description": "Rubrica con importazione vCard",
       "emptySelection": "Seleziona un contatto o creane uno nuovo",
       "emptyState": "Nessun contatto ancora. Creane uno o importa una vCard per iniziare.",
-      "badges": {
-        "mine": "La mia scheda"
-      },
       "fields": {
         "addresses": "Indirizzi",
         "birthday": "Compleanno",
@@ -978,7 +1004,11 @@
         "cardsCount": "{{count}} schede",
         "cardsCount_one": "{{count}} carta"
       },
-      "title": "Contatti"
+      "title": "Contatti",
+      "views": {
+        "cardOnly": "Solo scheda",
+        "toggleGroups": "Alterna gruppi"
+      }
     },
     "control-panels": {
       "aiModel": "Modello AI",
