@@ -868,8 +868,20 @@
     },
     "contacts": {
       "buttons": {
+        "done": "Hecho",
         "edit": "Editar"
       },
+      "cardLabels": {
+        "address": "dirección",
+        "birthday": "cumpleaños",
+        "email": "correo electrónico",
+        "home": "casa",
+        "nickname": "apodo",
+        "note": "nota",
+        "phone": "teléfono",
+        "url": "URL"
+      },
+      "changePicture": "Cambiar foto",
       "description": "Libreta de direcciones con importación de vCard",
       "emptySelection": "Selecciona un contacto o crea uno nuevo para empezar a editar los detalles.",
       "emptyState": "Aún no hay contactos. Crea uno o importa una vCard para empezar.",
@@ -942,12 +954,19 @@
       },
       "name": "Contactos",
       "noSummary": "Aún no hay números de teléfono, correo electrónico o notas",
+      "picturePicker": {
+        "cancel": "Cancelar",
+        "description": "Seleccionar una foto para este contacto",
+        "remove": "Eliminar",
+        "title": "Elegir foto"
+      },
       "placeholders": {
         "multiValue": "Usa una nueva línea para cada valor"
       },
       "searchPlaceholder": "Buscar contactos...",
       "status": {
-        "cardsCount": "{{count}} tarjetas"
+        "cardsCount": "{{count}} tarjetas",
+        "cardsCount_one": "{{count}} tarjeta"
       },
       "title": "Contactos"
     },

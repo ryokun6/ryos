@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { ALL_USER_PICTURES } from "@/utils/userPictures";
+import { useTranslation } from "react-i18next";
 
 interface UserPicturePickerProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export function UserPicturePicker({
   currentPicture,
   onSelect,
 }: UserPicturePickerProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
@@ -47,7 +49,7 @@ export function UserPicturePicker({
     onOpenChange(false);
   };
 
-  const title = "Choose Picture";
+  const title = t("apps.contacts.picturePicker.title");
 
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
@@ -87,7 +89,7 @@ export function UserPicturePicker({
               className={cn("w-full sm:w-auto h-7", fontClassName)}
               style={fontStyle}
             >
-              Remove
+              {t("apps.contacts.picturePicker.remove")}
             </Button>
           )}
         </div>
@@ -98,7 +100,7 @@ export function UserPicturePicker({
             className={cn("w-full sm:w-auto", !isMacTheme && "h-7", fontClassName)}
             style={fontStyle}
           >
-            Cancel
+            {t("apps.contacts.picturePicker.cancel")}
           </Button>
         </div>
       </DialogFooter>
@@ -129,7 +131,7 @@ export function UserPicturePicker({
                 {title}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                Select a picture for this contact
+                {t("apps.contacts.picturePicker.description")}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

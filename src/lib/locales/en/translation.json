@@ -2719,7 +2719,8 @@
         "birthdays": "Birthdays"
       },
       "buttons": {
-        "edit": "Edit"
+        "edit": "Edit",
+        "done": "Done"
       },
       "menu": {
         "newContact": "New Contact",
@@ -2729,7 +2730,8 @@
         "about": "About Contacts"
       },
       "status": {
-        "cardsCount": "{{count}} cards"
+        "cardsCount": "{{count}} cards",
+        "cardsCount_one": "{{count}} card"
       },
       "fields": {
         "displayName": "Display Name",
@@ -2747,6 +2749,23 @@
         "telegramUserId": "Telegram User ID",
         "notes": "Notes",
         "source": "Source"
+      },
+      "changePicture": "Change picture",
+      "cardLabels": {
+        "phone": "phone",
+        "email": "email",
+        "birthday": "birthday",
+        "address": "address",
+        "url": "url",
+        "nickname": "nickname",
+        "note": "note",
+        "home": "home"
+      },
+      "picturePicker": {
+        "title": "Choose Picture",
+        "remove": "Remove",
+        "cancel": "Cancel",
+        "description": "Select a picture for this contact"
       },
       "placeholders": {
         "multiValue": "Use a new line for each value"

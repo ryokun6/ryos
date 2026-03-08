@@ -441,7 +441,7 @@ export function ContactsAppComponent({
                       onClick={() => setIsPicturePickerOpen(true)}
                       className="w-12 h-12 shrink-0 rounded-[4px] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-base font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                       style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #b8b8b8, #dcdcdc)" }}
-                      title="Change picture"
+                      title={t("apps.contacts.changePicture")}
                     >
                       {selectedContact.picture ? (
                         <img
@@ -493,7 +493,7 @@ export function ContactsAppComponent({
                   <div className="px-3">
                     {isEditing ? (
                       <>
-                        <CardRow label="phone">
+                        <CardRow label={t("apps.contacts.cardLabels.phone")}>
                           <textarea
                             rows={2}
                             className={cn(editInputClass, "resize-none")}
@@ -502,7 +502,7 @@ export function ContactsAppComponent({
                             placeholder={t("apps.contacts.placeholders.multiValue")}
                           />
                         </CardRow>
-                        <CardRow label="email">
+                        <CardRow label={t("apps.contacts.cardLabels.email")}>
                           <textarea
                             rows={2}
                             className={cn(editInputClass, "resize-none")}
@@ -511,7 +511,7 @@ export function ContactsAppComponent({
                             placeholder={t("apps.contacts.placeholders.multiValue")}
                           />
                         </CardRow>
-                        <CardRow label="birthday">
+                        <CardRow label={t("apps.contacts.cardLabels.birthday")}>
                           <input
                             type="date"
                             className={editInputClass}
@@ -519,7 +519,7 @@ export function ContactsAppComponent({
                             onChange={(e) => updateSelectedContact({ birthday: e.target.value || null })}
                           />
                         </CardRow>
-                        <CardRow label="address">
+                        <CardRow label={t("apps.contacts.cardLabels.address")}>
                           <textarea
                             rows={2}
                             className={cn(editInputClass, "resize-none")}
@@ -528,7 +528,7 @@ export function ContactsAppComponent({
                             placeholder={t("apps.contacts.placeholders.multiValue")}
                           />
                         </CardRow>
-                        <CardRow label="url">
+                        <CardRow label={t("apps.contacts.cardLabels.url")}>
                           <textarea
                             rows={2}
                             className={cn(editInputClass, "resize-none")}
@@ -537,14 +537,14 @@ export function ContactsAppComponent({
                             placeholder={t("apps.contacts.placeholders.multiValue")}
                           />
                         </CardRow>
-                        <CardRow label="nickname">
+                        <CardRow label={t("apps.contacts.cardLabels.nickname")}>
                           <input
                             className={editInputClass}
                             value={selectedContact.nickname}
                             onChange={(e) => updateSelectedContact({ nickname: e.target.value })}
                           />
                         </CardRow>
-                        <CardRow label="note">
+                        <CardRow label={t("apps.contacts.cardLabels.note")}>
                           <textarea
                             rows={3}
                             className={cn(editInputClass, "resize-none")}
@@ -556,25 +556,25 @@ export function ContactsAppComponent({
                     ) : (
                       <>
                         {selectedContact.phones.map((p) => (
-                          <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : "phone"}>{p.value}</CardRow>
+                          <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : t("apps.contacts.cardLabels.phone")}>{p.value}</CardRow>
                         ))}
                         {selectedContact.emails.map((e) => (
-                          <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : "email"}>{e.value}</CardRow>
+                          <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : t("apps.contacts.cardLabels.email")}>{e.value}</CardRow>
                         ))}
                         {selectedContact.birthday && (
-                          <CardRow label="birthday">{formatBirthday(selectedContact.birthday)}</CardRow>
+                          <CardRow label={t("apps.contacts.cardLabels.birthday")}>{formatBirthday(selectedContact.birthday)}</CardRow>
                         )}
                         {selectedContact.addresses.map((a) => (
-                          <CardRow key={a.id} label={a.label && a.label !== "other" ? a.label : "home"}>{a.formatted}</CardRow>
+                          <CardRow key={a.id} label={a.label && a.label !== "other" ? a.label : t("apps.contacts.cardLabels.home")}>{a.formatted}</CardRow>
                         ))}
                         {selectedContact.urls.map((u) => (
-                          <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : "url"}>{u.value}</CardRow>
+                          <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : t("apps.contacts.cardLabels.url")}>{u.value}</CardRow>
                         ))}
                         {selectedContact.nickname && (
-                          <CardRow label="nickname">{selectedContact.nickname}</CardRow>
+                          <CardRow label={t("apps.contacts.cardLabels.nickname")}>{selectedContact.nickname}</CardRow>
                         )}
                         {selectedContact.notes && (
-                          <CardRow label="note">{selectedContact.notes}</CardRow>
+                          <CardRow label={t("apps.contacts.cardLabels.note")}>{selectedContact.notes}</CardRow>
                         )}
                       </>
                     )}
@@ -589,10 +589,10 @@ export function ContactsAppComponent({
                     className="text-[11px] font-semibold text-black/60 hover:text-black/80 px-3 py-0.5 rounded border border-black/15 bg-white/60"
                     onClick={() => setIsEditing(!isEditing)}
                   >
-                    {isEditing ? t("apps.contacts.done", { defaultValue: "Done" }) : t("apps.contacts.edit", { defaultValue: "Edit" })}
+                    {isEditing ? t("apps.contacts.buttons.done") : t("apps.contacts.buttons.edit")}
                   </button>
                   <span className="text-[10px] text-black/40">
-                    {contacts.length} {contacts.length === 1 ? "card" : "cards"}
+                    {t("apps.contacts.status.cardsCount", { count: contacts.length })}
                   </span>
                 </div>
                 </>

@@ -868,8 +868,20 @@
     },
     "contacts": {
       "buttons": {
+        "done": "完了",
         "edit": "編集"
       },
+      "cardLabels": {
+        "address": "住所",
+        "birthday": "誕生日",
+        "email": "メール",
+        "home": "自宅",
+        "nickname": "ニックネーム",
+        "note": "メモ",
+        "phone": "電話",
+        "url": "URL"
+      },
+      "changePicture": "写真を変更",
       "description": "vCardインポート対応アドレス帳",
       "emptySelection": "連絡先を選択するか、新規作成して詳細の編集を開始してください。",
       "emptyState": "連絡先がまだありません。新規作成するか、vCardをインポートして開始してください。",
@@ -942,12 +954,19 @@
       },
       "name": "連絡先",
       "noSummary": "電話番号、メール、メモはまだありません",
+      "picturePicker": {
+        "cancel": "キャンセル",
+        "description": "この連絡先の写真を選択",
+        "remove": "削除",
+        "title": "写真を選択"
+      },
       "placeholders": {
         "multiValue": "各値は改行で入力してください"
       },
       "searchPlaceholder": "連絡先を検索…",
       "status": {
-        "cardsCount": "{{count}}件"
+        "cardsCount": "{{count}}件",
+        "cardsCount_one": "{{count}} 枚のカード"
       },
       "title": "連絡先"
     },
