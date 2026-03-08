@@ -13,7 +13,7 @@ import {
   type WeekDay,
 } from "../hooks/useCalendarLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
-import { CaretLeft, CaretRight, Plus, ListChecks, Trash } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Plus, ListChecks, Trash, MagnifyingGlass, XCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, CalendarGroup, TodoItem } from "@/stores/useCalendarStore";
@@ -46,6 +46,20 @@ const HOUR_END = 24;
 const HOUR_HEIGHT = 40;
 const TODAY_RED = "#E25B4F";
 const TODAY_RED_XP = "#B53325";
+const SEARCH_DIM_OPACITY = 0.28;
+
+function matchesSearchQuery(value: string | undefined, normalizedQuery: string) {
+  if (!normalizedQuery) return true;
+  return (value || "").toLocaleLowerCase().includes(normalizedQuery);
+}
+
+function getEventSearchText(event: CalendarEvent) {
+  return [event.title, event.notes, event.date, event.startTime, event.endTime].filter(Boolean).join(" ");
+}
+
+function getEventOpacity(event: CalendarEvent, normalizedQuery: string) {
+  return matchesSearchQuery(getEventSearchText(event), normalizedQuery) ? 1 : SEARCH_DIM_OPACITY;
+}
 
 
 // ============================================================================
@@ -313,6 +327,7 @@ function WeekTimeGrid({
   isXpTheme,
   isMacOSTheme,
   isSystem7Theme,
+  searchQuery,
   hourLabels,
 }: {
   weekDates: WeekDay[];
@@ -324,6 +339,7 @@ function WeekTimeGrid({
   isXpTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
+  searchQuery: string;
   hourLabels: string[];
 }) {
   const { t } = useTranslation();
@@ -428,6 +444,7 @@ function WeekTimeGrid({
                       border: selectedEventId === ev.id
                         ? `1px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
                         : "1px solid transparent",
+                      opacity: getEventOpacity(ev, searchQuery),
                     }}
                   >
                     {ev.title}
@@ -495,6 +512,7 @@ function WeekTimeGrid({
                         boxShadow: selectedEventId === ev.id
                           ? `0 0 0 1px ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
                           : isMacOSTheme ? "0 1px 3px rgba(0,0,0,0.1)" : "0 1px 2px rgba(0,0,0,0.08)",
+                        opacity: getEventOpacity(ev, searchQuery),
                         zIndex: 2,
                       }}
                     >
@@ -546,6 +564,7 @@ function DayTimeGrid({
   isXpTheme,
   isMacOSTheme,
   isSystem7Theme,
+  searchQuery,
   hourLabels,
 }: {
   date: string;
@@ -557,6 +576,7 @@ function DayTimeGrid({
   isXpTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
+  searchQuery: string;
   hourLabels: string[];
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
@@ -620,6 +640,7 @@ function DayTimeGrid({
                 backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
                 color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
                 border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent",
+                opacity: getEventOpacity(ev, searchQuery),
               }}
             >
               {ev.title}
@@ -666,6 +687,7 @@ function DayTimeGrid({
                     backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
                     borderLeft: `3px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`,
                     boxShadow: selectedEventId === ev.id ? `0 0 0 1px ${EVENT_COLOR_MAP[ev.color]}` : isMacOSTheme ? "0 1px 3px rgba(0,0,0,0.1)" : "0 1px 2px rgba(0,0,0,0.08)",
+                    opacity: getEventOpacity(ev, searchQuery),
                     zIndex: 2,
                   }}
                 >
@@ -703,10 +725,10 @@ function DayTimeGrid({
 // ============================================================================
 
 function MonthGrid({
-  calendarGrid, selectedEventId, onDateClick, onDateDoubleClick, onEventClick, onEventDoubleClick, isXpTheme, narrowDayNames,
+  calendarGrid, selectedEventId, onDateClick, onDateDoubleClick, onEventClick, onEventDoubleClick, isXpTheme, searchQuery, narrowDayNames,
 }: {
   calendarGrid: CalendarDayCell[][]; selectedEventId: string | null; onDateClick: (date: string) => void; onDateDoubleClick: (date: string) => void;
-  onEventClick: (event: CalendarEvent) => void; onEventDoubleClick: (event: CalendarEvent) => void; isXpTheme: boolean; narrowDayNames: string[];
+  onEventClick: (event: CalendarEvent) => void; onEventDoubleClick: (event: CalendarEvent) => void; isXpTheme: boolean; searchQuery: string; narrowDayNames: string[];
 }) {
   const lastEventTapRef = useRef<{ id: string; time: number } | null>(null);
   const lastDateTapRef = useRef<{ id: string; time: number } | null>(null);
@@ -760,7 +782,8 @@ function MonthGrid({
                     <button key={ev.id} type="button" onClick={(e) => handleEventTap(ev, e)}
                       className="text-[8px] truncate rounded px-0.5 leading-snug w-full text-left"
                       style={{ backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue, color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
-                        border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent" }}
+                        border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent",
+                        opacity: getEventOpacity(ev, searchQuery) }}
                     >{ev.title}</button>
                   ))}
                   {cell.events.length > 2 && <span className="text-[8px] opacity-40 px-0.5">+{cell.events.length - 2}</span>}
@@ -781,11 +804,13 @@ function MonthGrid({
 function BottomToolbar({
   view, onSetView, onGoToToday, onNewEvent, onPrev, onNext,
   showTodoSidebar, onToggleTodoSidebar,
+  searchQuery, onSearchQueryChange, showSearch,
   isXpTheme, isMacOSTheme, isSystem7Theme, t,
 }: {
   view: string; onSetView: (v: "day" | "week" | "month") => void; onGoToToday: () => void; onNewEvent: () => void;
   onPrev: () => void; onNext: () => void;
   showTodoSidebar: boolean; onToggleTodoSidebar: () => void;
+  searchQuery: string; onSearchQueryChange: (value: string) => void; showSearch: boolean;
   isXpTheme: boolean; isMacOSTheme: boolean; isSystem7Theme: boolean; t: (key: string) => string;
 }) {
   const views: { id: "day" | "week" | "month"; label: string }[] = [
@@ -794,9 +819,56 @@ function BottomToolbar({
     { id: "month", label: t("apps.calendar.views.month") },
   ];
 
+  const searchField = showSearch ? (
+    <div className="flex items-center justify-center min-w-0">
+      <div className={cn("relative min-w-0", isMacOSTheme ? "w-[150px]" : "w-[170px]")}>
+        <MagnifyingGlass
+          size={13}
+          weight="bold"
+          className={cn(
+            "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2",
+            isMacOSTheme ? "text-black/45" : "text-black/35"
+          )}
+        />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => onSearchQueryChange(e.target.value)}
+          onKeyDown={(e) => e.stopPropagation()}
+          aria-label={t("common.search")}
+          title={t("common.search")}
+          className={cn(
+            "w-full outline-none min-w-0",
+            isMacOSTheme
+              ? "rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] font-geneva-12"
+              : "rounded-full border border-black/20 bg-white pl-7 pr-7 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]"
+          )}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => onSearchQueryChange("")}
+            className={cn(
+              "absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center",
+              isMacOSTheme ? "text-black/40 hover:text-black/60" : "text-black/35 hover:text-black/55"
+            )}
+            aria-label={t("spotlight.ariaLabels.clearSearch")}
+            title={t("spotlight.ariaLabels.clearSearch")}
+          >
+            <XCircle size={14} weight="fill" />
+          </button>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div
-      className={cn("flex items-center justify-between py-1.5 border-t", isMacOSTheme ? "px-1" : "px-2")}
+      className={cn(
+        "py-1.5 border-t flex items-center gap-2",
+        isMacOSTheme ? "px-1" : "px-2"
+      )}
       style={{
         borderColor: isXpTheme ? "#ACA899" : isMacOSTheme ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.1)",
         background: isXpTheme ? "#ECE9D8" : isMacOSTheme ? "transparent" : "#e0e0e0",
@@ -804,21 +876,30 @@ function BottomToolbar({
     >
       {isMacOSTheme ? (
         <>
-          <div className="metal-inset-btn-group">
-            <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onPrev}>
-              <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
-            </button>
-            {views.map((v) => (
-              <button key={v.id} type="button" className="metal-inset-btn font-geneva-12 !text-[11px]"
-                data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}>
-                {v.label}
+          <div className="shrink-0">
+            <div className="metal-inset-btn-group">
+              <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onPrev}>
+                <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
               </button>
-            ))}
-            <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNext}>
-              <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[5px] border-l-current" />
-            </button>
+              {views.map((v) => (
+                <button key={v.id} type="button" className="metal-inset-btn font-geneva-12 !text-[11px] w-[48px] justify-center px-0"
+                  data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}>
+                  {v.label}
+                </button>
+              ))}
+              <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNext}>
+                <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[5px] border-l-current" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          {showSearch ? (
+            <div className="flex-1 min-w-0 flex items-center justify-center">
+              {searchField}
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
+          <div className="flex items-center gap-1.5 shrink-0">
             <div className="metal-inset-btn-group">
               <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]" onClick={onGoToToday}>
                 {t("apps.calendar.today")}
@@ -837,7 +918,7 @@ function BottomToolbar({
         </>
       ) : (
         <>
-          <div className="flex items-center gap-0">
+          <div className="flex items-center gap-0 shrink-0">
             <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
               className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onPrev}>
               <CaretLeft size={12} weight="bold" />
@@ -845,7 +926,7 @@ function BottomToolbar({
             {views.map((v) => (
               <Button key={v.id} variant={isSystem7Theme ? "player" : "default"}
                 data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}
-                className={cn("h-[22px] px-2.5 text-[11px]", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
+                className={cn("h-[22px] w-[48px] px-0 text-[11px]", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
                 {v.label}
               </Button>
             ))}
@@ -854,7 +935,14 @@ function BottomToolbar({
               <CaretRight size={12} weight="bold" />
             </Button>
           </div>
-          <div className="flex items-center gap-0">
+          {showSearch ? (
+            <div className="flex-1 min-w-0 flex items-center justify-center">
+              {searchField}
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
+          <div className="flex items-center gap-0 shrink-0">
             <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onGoToToday}
               className={cn("h-6 text-[11px] px-2", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
               {t("apps.calendar.today")}
@@ -890,6 +978,7 @@ export function CalendarAppComponent({
     isHelpDialogOpen, setIsHelpDialogOpen, isAboutDialogOpen, setIsAboutDialogOpen,
     isEventDialogOpen, setIsEventDialogOpen,
     isXpTheme, isMacOSTheme, isSystem7Theme,
+    searchQuery, setSearchQuery,
     selectedDate, view, monthYearLabel, selectedDateLabel, calendarGrid, selectedDateEvents,
     narrowDayNames, hourLabels, weekDates, weekLabel,
     editingEvent, selectedEventId, setSelectedEventId, prefillTime,
@@ -919,6 +1008,8 @@ export function CalendarAppComponent({
   const showTodo = showTodoSidebar && !isNarrow;
   const showTodoFullWidth = showTodoSidebar && isNarrow;
   const effectiveView = view;
+  const safeSearchQuery = searchQuery ?? "";
+  const normalizedSearchQuery = useMemo(() => safeSearchQuery.trim().toLocaleLowerCase(), [safeSearchQuery]);
 
   const handlePrev = useCallback(() => {
     if (effectiveView === "week") navigateWeek(-1);
@@ -1070,19 +1161,19 @@ export function CalendarAppComponent({
                   <WeekTimeGrid weekDates={weekDates} selectedEventId={selectedEventId}
                     onDateClick={handleDateClick} onTimeSlotClick={handleNewEventAtTime}
                     onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} hourLabels={hourLabels} />
+                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels} />
                 )}
                 {effectiveView === "day" && (
                   <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
                     onTimeSlotClick={handleNewEventAtTime}
                     onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} hourLabels={hourLabels} />
+                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels} />
                 )}
                 {effectiveView === "month" && (
                   <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
                     onDateClick={handleDateClick} onDateDoubleClick={handleDateDoubleClick}
                     onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                    isXpTheme={isXpTheme} narrowDayNames={narrowDayNames} />
+                    isXpTheme={isXpTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
                 )}
               </div>
             )}
@@ -1134,6 +1225,7 @@ export function CalendarAppComponent({
             view={effectiveView} onSetView={setView} onGoToToday={goToToday} onNewEvent={handleNewEvent}
             onPrev={handlePrev} onNext={handleNext}
             showTodoSidebar={showTodoSidebar} onToggleTodoSidebar={() => setShowTodoSidebar(!showTodoSidebar)}
+            searchQuery={safeSearchQuery} onSearchQueryChange={setSearchQuery} showSearch={!isNarrow}
             isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} t={t}
           />
         </div>

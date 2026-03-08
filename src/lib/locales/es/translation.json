@@ -884,8 +884,11 @@
       },
       "changePicture": "Cambiar foto",
       "description": "Libreta de direcciones con importación de vCard",
-      "emptySelection": "Selecciona un contacto o crea uno nuevo para empezar a editar los detalles.",
+      "emptySelection": "Selecciona un contacto o crea uno nuevo",
       "emptyState": "Aún no hay contactos. Crea uno o importa una vCard para empezar.",
+      "badges": {
+        "mine": "Mi tarjeta"
+      },
       "fields": {
         "addresses": "Direcciones",
         "birthday": "Cumpleaños",
@@ -965,7 +968,7 @@
         "title": "Elegir foto"
       },
       "placeholders": {
-        "multiValue": "Usa una nueva línea para cada valor"
+        "multiValue": "Uno por línea"
       },
       "searchPlaceholder": "Buscar contactos...",
       "status": {

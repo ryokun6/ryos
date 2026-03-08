@@ -61,6 +61,7 @@ export function useCalendarLogic() {
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Store
   const {
@@ -567,6 +568,8 @@ export function useCalendarLogic() {
     setIsEventDialogOpen,
 
     // Calendar state
+    searchQuery,
+    setSearchQuery,
     selectedDate,
     currentMonth,
     currentYear,

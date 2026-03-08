@@ -884,8 +884,11 @@
       },
       "changePicture": "Cambia immagine",
       "description": "Rubrica con importazione vCard",
-      "emptySelection": "Seleziona un contatto o creane uno nuovo per iniziare a modificare i dettagli.",
+      "emptySelection": "Seleziona un contatto o creane uno nuovo",
       "emptyState": "Nessun contatto ancora. Creane uno o importa una vCard per iniziare.",
+      "badges": {
+        "mine": "La mia scheda"
+      },
       "fields": {
         "addresses": "Indirizzi",
         "birthday": "Compleanno",
@@ -965,7 +968,7 @@
         "title": "Scegli immagine"
       },
       "placeholders": {
-        "multiValue": "Usa una nuova riga per ogni valore"
+        "multiValue": "Uno per riga"
       },
       "searchPlaceholder": "Cerca contatti…",
       "status": {

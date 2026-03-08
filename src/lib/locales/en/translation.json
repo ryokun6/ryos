@@ -2707,7 +2707,7 @@
       "description": "Address book with vCard import",
       "searchPlaceholder": "Search contacts...",
       "emptyState": "No contacts yet. Create one or import a vCard to get started.",
-      "emptySelection": "Select a contact or create a new one to start editing details.",
+      "emptySelection": "Select a contact or create a new one",
       "noSummary": "No phone numbers, email, or notes yet",
       "groupHeaders": {
         "groups": "Group",
@@ -2723,6 +2723,13 @@
       "buttons": {
         "edit": "Edit",
         "done": "Done"
+      },
+      "badges": {
+        "mine": "My Card"
+      },
+      "views": {
+        "toggleGroups": "Toggle Groups",
+        "cardOnly": "Card Only"
       },
       "menu": {
         "newContact": "New Contact",
@@ -2773,7 +2780,7 @@
         "description": "Select a picture for this contact"
       },
       "placeholders": {
-        "multiValue": "Use a new line for each value"
+        "multiValue": "One per line"
       },
       "messages": {
         "deleted": "Deleted {{name}}",

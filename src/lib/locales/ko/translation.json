@@ -884,8 +884,11 @@
       },
       "changePicture": "사진 변경",
       "description": "vCard 가져오기 지원 주소록",
-      "emptySelection": "세부 정보 편집을 시작하려면 연락처를 선택하거나 새로 만드세요.",
+      "emptySelection": "연락처를 선택하거나 새로 만드세요",
       "emptyState": "아직 연락처가 없습니다. 새 연락처를 만들거나 vCard를 가져와서 시작하세요.",
+      "badges": {
+        "mine": "내 카드"
+      },
       "fields": {
         "addresses": "주소",
         "birthday": "생일",
@@ -965,7 +968,7 @@
         "title": "사진 선택"
       },
       "placeholders": {
-        "multiValue": "각 값을 새 줄에 입력"
+        "multiValue": "줄마다 하나"
       },
       "searchPlaceholder": "연락처 검색…",
       "status": {

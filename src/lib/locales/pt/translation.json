@@ -884,8 +884,11 @@
       },
       "changePicture": "Alterar imagem",
       "description": "Livro de endereços com importação de vCard",
-      "emptySelection": "Selecione um contato ou crie um novo para começar a editar os detalhes.",
+      "emptySelection": "Selecione um contato ou crie um novo",
       "emptyState": "Nenhum contato ainda. Crie um ou importe um vCard para começar.",
+      "badges": {
+        "mine": "Meu cartão"
+      },
       "fields": {
         "addresses": "Endereços",
         "birthday": "Aniversário",
@@ -965,7 +968,7 @@
         "title": "Escolher imagem"
       },
       "placeholders": {
-        "multiValue": "Use uma nova linha para cada valor"
+        "multiValue": "Um por linha"
       },
       "searchPlaceholder": "Pesquisar contatos...",
       "status": {

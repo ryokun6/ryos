@@ -884,8 +884,11 @@
       },
       "changePicture": "Bild ändern",
       "description": "Adressbuch mit vCard-Import",
-      "emptySelection": "Wählen Sie einen Kontakt aus oder erstellen Sie einen neuen, um Details zu bearbeiten.",
+      "emptySelection": "Wählen Sie einen Kontakt aus oder erstellen Sie einen neuen",
       "emptyState": "Noch keine Kontakte. Erstellen Sie einen oder importieren Sie eine vCard, um zu beginnen.",
+      "badges": {
+        "mine": "Meine Karte"
+      },
       "fields": {
         "addresses": "Adressen",
         "birthday": "Geburtstag",
@@ -965,7 +968,7 @@
         "title": "Bild auswählen"
       },
       "placeholders": {
-        "multiValue": "Jeden Wert in eine neue Zeile"
+        "multiValue": "Eine pro Zeile"
       },
       "searchPlaceholder": "Kontakte suchen…",
       "status": {

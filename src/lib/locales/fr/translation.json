@@ -884,8 +884,11 @@
       },
       "changePicture": "Changer l'image",
       "description": "Carnet d'adresses avec importation vCard",
-      "emptySelection": "Sélectionnez un contact ou créez-en un nouveau pour commencer à modifier les détails.",
+      "emptySelection": "Sélectionnez un contact ou créez-en un nouveau",
       "emptyState": "Aucun contact pour l'instant. Créez-en un ou importez une vCard pour commencer.",
+      "badges": {
+        "mine": "Ma fiche"
+      },
       "fields": {
         "addresses": "Adresses",
         "birthday": "Date de naissance",
@@ -965,7 +968,7 @@
         "title": "Choisir une image"
       },
       "placeholders": {
-        "multiValue": "Utilisez une nouvelle ligne pour chaque valeur"
+        "multiValue": "Une par ligne"
       },
       "searchPlaceholder": "Rechercher des contacts…",
       "status": {

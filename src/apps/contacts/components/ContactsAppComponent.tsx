@@ -10,7 +10,7 @@ import { appMetadata } from "..";
 import type { AppProps } from "@/apps/base/types";
 import { cn } from "@/lib/utils";
 import { getContactInitials, type Contact } from "@/utils/contacts";
-import { Plus, DownloadSimple } from "@phosphor-icons/react";
+import { Plus, DownloadSimple, MagnifyingGlass, XCircle, SidebarSimple, IdentificationCard } from "@phosphor-icons/react";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 
 function splitMultivalueInput(value: string): string[] {
@@ -24,13 +24,26 @@ function formatMultivalue(values: string[]): string {
   return values.join("\n");
 }
 
+function getMultivalueDraft(contact: Contact | null | undefined) {
+  return {
+    phones: formatMultivalue(contact?.phones.map((p) => p.value) || []),
+    emails: formatMultivalue(contact?.emails.map((e) => e.value) || []),
+    addresses: formatMultivalue(contact?.addresses.map((a) => a.formatted) || []),
+    urls: formatMultivalue(contact?.urls.map((u) => u.value) || []),
+  };
+}
+
 function ContactListItem({
   contact,
   isSelected,
+  isMine,
+  mineLabel,
   onClick,
 }: {
   contact: Contact;
   isSelected: boolean;
+  isMine: boolean;
+  mineLabel: string;
   onClick: () => void;
 }) {
   return (
@@ -38,7 +51,7 @@ function ContactListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors",
+        "w-full flex items-center gap-2 pl-2 pr-3 py-1.5 text-left transition-colors",
         isSelected ? "" : "hover:bg-black/5"
       )}
       style={{
@@ -52,12 +65,20 @@ function ContactListItem({
           className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] object-cover"
         />
       ) : (
-        <div className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] bg-[linear-gradient(to_bottom,#e0e0e0,#c8c8c8)] flex items-center justify-center text-[8px] font-semibold text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.3)]">
+        <div
+          className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] bg-[linear-gradient(to_bottom,#e0e0e0,#c8c8c8)] flex items-center justify-center text-[8px] font-semibold text-white"
+          style={{ textShadow: smallAvatarInitialsTextShadow }}
+        >
           {getContactInitials(contact)}
         </div>
       )}
-      <div className="min-w-0 flex-1">
-        <div className="text-[12px] leading-tight truncate">{contact.displayName}</div>
+      <div className="min-w-0 flex-1 flex items-center gap-2">
+        <div className="text-[12px] leading-tight truncate flex-1">{contact.displayName}</div>
+        {isMine ? (
+          <span className={cn("shrink-0 text-[10px]", isSelected ? "opacity-70" : "text-black/45")}>
+            {mineLabel}
+          </span>
+        ) : null}
       </div>
     </button>
   );
@@ -103,7 +124,9 @@ function PanelHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-2 px-2 py-0.5 text-[11px] border-b",
+        bordered
+          ? "relative text-[11px] font-regular text-center"
+          : "relative text-[9px] font-bold uppercase tracking-wide opacity-50 px-2.5 pt-2 pb-1",
         useGeneva && "font-geneva-12"
       )}
       style={bordered ? {
@@ -113,12 +136,11 @@ function PanelHeader({
         borderTop: "1px solid rgba(255,255,255,0.5)",
         borderBottom: "1px solid #787878",
       } : {
-        borderColor: "rgba(0,0,0,0.1)",
-        fontWeight: 600,
+        color: "rgba(0,0,0,0.5)",
       }}
     >
-      <span className={cn("flex-1", bordered && "font-regular text-center")}>{title}</span>
-      {trailing ? <span className="shrink-0">{trailing}</span> : null}
+      <span>{title}</span>
+      {trailing ? <span className="absolute right-2 top-1/2 -translate-y-1/2">{trailing}</span> : null}
     </div>
   );
 }
@@ -170,6 +192,12 @@ function formatBirthday(dateStr: string): string {
   return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
+const smallAvatarInitialsTextShadow =
+  "0 1px 1px rgba(0, 0, 0, 0.35), 0 0 2px rgba(0, 0, 0, 0.12)";
+
+const avatarInitialsTextShadow =
+  "0 2px 3px rgba(0, 0, 0, 0.45), 0 0 3px rgba(0, 0, 0, 0.15)";
+
 const editInputClass =
   "w-full bg-white/60 border border-black/10 rounded-sm px-1.5 py-0.5 text-[12px] outline-none focus:border-black/25";
 
@@ -208,22 +236,42 @@ export function ContactsAppComponent({
     fileInputRef,
   } = useContactsLogic();
   const useGeneva = isMacOsxTheme || isSystem7Theme;
+  const mineLabel = t("apps.contacts.badges.mine", { defaultValue: "My Card" });
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(820);
   const [isPicturePickerOpen, setIsPicturePickerOpen] = useState(false);
+  const shouldEditOnNextSelectionRef = useRef(false);
+  const [showGroupSidebar, setShowGroupSidebar] = useState(true);
+  const [isCardOnlyView, setIsCardOnlyView] = useState(false);
   useResizeObserverWithRef(containerRef, (entry) => {
     setContainerWidth(entry.contentRect.width);
   });
   const isMobileLayout = containerWidth < 640;
   const [isEditing, setIsEditing] = useState(false);
-  useEffect(() => { setIsEditing(false); }, [selectedContact?.id]);
+  const [multivalueDraft, setMultivalueDraft] = useState(() =>
+    getMultivalueDraft(selectedContact)
+  );
+  useEffect(() => {
+    setIsEditing(shouldEditOnNextSelectionRef.current);
+    shouldEditOnNextSelectionRef.current = false;
+  }, [selectedContact?.id]);
+  useEffect(() => {
+    setMultivalueDraft(getMultivalueDraft(selectedContact));
+  }, [isEditing, selectedContact?.id]);
+  const handleCreateContactAndEdit = () => {
+    shouldEditOnNextSelectionRef.current = true;
+    handleCreateContact();
+  };
+  const showGroupPanel = !isMobileLayout && showGroupSidebar && !isCardOnlyView;
+  const showListPanel = !isCardOnlyView;
+  const showCardPanel = true;
 
   const menuBar = (
     <ContactsMenuBar
       onClose={onClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
-      onNewContact={handleCreateContact}
+      onNewContact={handleCreateContactAndEdit}
       onImport={handleImport}
       onDeleteContact={handleDeleteSelectedContact}
       onMarkAsMine={handleMarkAsMine}
@@ -273,10 +321,34 @@ export function ContactsAppComponent({
               <>
                 <div className="flex items-center gap-1.5">
                   <div className="metal-inset-btn-group">
+                    {!isMobileLayout && (
+                      <button
+                        type="button"
+                        className="metal-inset-btn metal-inset-icon"
+                        data-state={showGroupSidebar && !isCardOnlyView ? "on" : "off"}
+                        onClick={() => setShowGroupSidebar((current) => !current)}
+                        title={t("apps.contacts.views.toggleGroups", { defaultValue: "Toggle Groups" })}
+                        aria-label={t("apps.contacts.views.toggleGroups", { defaultValue: "Toggle Groups" })}
+                      >
+                      <SidebarSimple size={12} />
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="metal-inset-btn metal-inset-icon"
-                      onClick={handleCreateContact}
+                      data-state={isCardOnlyView ? "on" : "off"}
+                      onClick={() => setIsCardOnlyView((current) => !current)}
+                      title={t("apps.contacts.views.cardOnly", { defaultValue: "Card Only" })}
+                      aria-label={t("apps.contacts.views.cardOnly", { defaultValue: "Card Only" })}
+                    >
+                      <IdentificationCard size={12} />
+                    </button>
+                  </div>
+                  <div className="metal-inset-btn-group">
+                    <button
+                      type="button"
+                      className="metal-inset-btn metal-inset-icon"
+                      onClick={handleCreateContactAndEdit}
                       title={t("apps.contacts.menu.newContact")}
                     >
                       <Plus size={12} weight="bold" />
@@ -293,24 +365,63 @@ export function ContactsAppComponent({
                 </div>
                 <div className="flex-1" />
                 <div className={cn("flex items-center gap-2", isMobileLayout && "flex-1 min-w-0")}>
-                  <input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder={t("apps.contacts.searchPlaceholder")}
-                    className={cn(
-                      "rounded-full border border-black/40 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] outline-none font-geneva-12",
-                      isMobileLayout ? "flex-1 min-w-0 max-w-none" : "w-[150px]"
+                  <div className={cn("relative", isMobileLayout ? "flex-1 min-w-0 max-w-none" : "w-[150px]")}>
+                    <MagnifyingGlass
+                      size={13}
+                      weight="bold"
+                      className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-black/45"
+                    />
+                    <input
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      aria-label={t("apps.contacts.searchPlaceholder")}
+                      title={t("apps.contacts.searchPlaceholder")}
+                      className="w-full rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] outline-none font-geneva-12"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center text-black/40 hover:text-black/60"
+                        aria-label={t("spotlight.ariaLabels.clearSearch")}
+                        title={t("spotlight.ariaLabels.clearSearch")}
+                      >
+                        <XCircle size={14} weight="fill" />
+                      </button>
                     )}
-                  />
+                  </div>
                 </div>
               </>
             ) : (
               <>
                 <div className="flex items-center gap-0">
+                  {!isMobileLayout && (
+                    <Button
+                      type="button"
+                      variant={isSystem7Theme ? "player" : "ghost"}
+                      onClick={() => setShowGroupSidebar((current) => !current)}
+                      data-state={showGroupSidebar && !isCardOnlyView ? "on" : "off"}
+                      className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                      title={t("apps.contacts.views.toggleGroups", { defaultValue: "Toggle Groups" })}
+                    >
+                      <SidebarSimple size={12} />
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant={isSystem7Theme ? "player" : "ghost"}
-                    onClick={handleCreateContact}
+                    onClick={() => setIsCardOnlyView((current) => !current)}
+                    data-state={isCardOnlyView ? "on" : "off"}
+                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    title={t("apps.contacts.views.cardOnly", { defaultValue: "Card Only" })}
+                  >
+                    <IdentificationCard size={12} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={isSystem7Theme ? "player" : "ghost"}
+                    onClick={handleCreateContactAndEdit}
                     className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
                     title={t("apps.contacts.menu.newContact")}
                   >
@@ -328,15 +439,32 @@ export function ContactsAppComponent({
                 </div>
                 <div className="flex-1" />
                 <div className={cn("flex items-center gap-2 min-w-0", isMobileLayout && "flex-1")}>
-                  <input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder={t("apps.contacts.searchPlaceholder")}
-                    className={cn(
-                      "rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none min-w-0",
-                      isMobileLayout ? "flex-1 max-w-none" : "w-[170px]"
+                  <div className={cn("relative min-w-0", isMobileLayout ? "flex-1 max-w-none" : "w-[170px]")}>
+                    <MagnifyingGlass
+                      size={13}
+                      weight="bold"
+                      className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-black/35"
+                    />
+                    <input
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      aria-label={t("apps.contacts.searchPlaceholder")}
+                      title={t("apps.contacts.searchPlaceholder")}
+                      className="w-full rounded-full border border-black/20 bg-white pl-7 pr-7 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none min-w-0"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center text-black/35 hover:text-black/55"
+                        aria-label={t("spotlight.ariaLabels.clearSearch")}
+                        title={t("spotlight.ariaLabels.clearSearch")}
+                      >
+                        <XCircle size={14} weight="fill" />
+                      </button>
                     )}
-                  />
+                  </div>
                 </div>
               </>
             )}
@@ -349,7 +477,7 @@ export function ContactsAppComponent({
               !isMobileLayout && isMacOsxTheme && "gap-[5px]"
             )}
           >
-            {!isMobileLayout && (
+            {showGroupPanel && (
             <Panel
               bordered={isMacOsxTheme}
               className="w-[170px] shrink-0 flex flex-col min-h-0"
@@ -375,19 +503,26 @@ export function ContactsAppComponent({
             </Panel>
             )}
 
+            {showListPanel && (
             <Panel
               bordered={isMacOsxTheme}
               className={cn(
                 "flex flex-col min-h-0",
                 isMobileLayout
-                  ? "w-full max-w-none self-stretch h-[140px] shrink-0 basis-auto"
-                  : "w-[245px] shrink-0"
+                  ? showCardPanel
+                    ? "w-full max-w-none self-stretch h-[140px] shrink-0 basis-auto"
+                    : "flex-1 w-full max-w-none self-stretch basis-auto"
+                  : showCardPanel
+                    ? "w-[245px] shrink-0"
+                    : "flex-1 min-w-0"
               )}
               style={
                 !isMacOsxTheme
-                  ? isMobileLayout
+                  ? showCardPanel && isMobileLayout
                     ? { borderBottom: "1px solid rgba(0,0,0,0.08)" }
-                    : { borderRight: "1px solid rgba(0,0,0,0.08)" }
+                    : showCardPanel
+                      ? { borderRight: "1px solid rgba(0,0,0,0.08)" }
+                      : undefined
                   : undefined
               }
             >
@@ -399,23 +534,23 @@ export function ContactsAppComponent({
                 bordered={isMacOsxTheme}
               />
               <div className={cn("flex-1 overflow-y-auto", useGeneva && "font-geneva-12")}>
-                {contacts.length === 0 ? (
-                  <div className="px-4 py-6 text-[12px] text-black/55">
-                    {t("apps.contacts.emptyState")}
-                  </div>
-                ) : (
+                {contacts.length === 0 ? null : (
                   contacts.map((contact) => (
                     <ContactListItem
                       key={contact.id}
                       contact={contact}
                       isSelected={selectedContact?.id === contact.id}
+                      isMine={contact.id === myContactId}
+                      mineLabel={mineLabel}
                       onClick={() => handleSelectContact(contact)}
                     />
                   ))
                 )}
               </div>
             </Panel>
+            )}
 
+            {showCardPanel && (
             <Panel
               bordered={isMacOsxTheme}
               className={cn(
@@ -431,7 +566,10 @@ export function ContactsAppComponent({
                       type="button"
                       onClick={() => setIsPicturePickerOpen(true)}
                       className="w-12 h-12 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-base font-semibold text-white overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                      style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #dcdcdc, #b8b8b8)", textShadow: "0 1px 1px rgba(0,0,0,0.3)" }}
+                      style={selectedContact.picture ? undefined : {
+                        background: "linear-gradient(to bottom, #dcdcdc, #b8b8b8)",
+                        textShadow: avatarInitialsTextShadow,
+                      }}
                       title={t("apps.contacts.changePicture")}
                     >
                       {selectedContact.picture ? (
@@ -488,8 +626,12 @@ export function ContactsAppComponent({
                           <textarea
                             rows={2}
                             className={cn(editInputClass, "resize-none")}
-                            value={formatMultivalue(selectedContact.phones.map((p) => p.value))}
-                            onChange={(e) => updateSelectedContact({ phones: splitMultivalueInput(e.target.value) })}
+                            value={multivalueDraft.phones}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setMultivalueDraft((prev) => ({ ...prev, phones: value }));
+                              updateSelectedContact({ phones: splitMultivalueInput(value) });
+                            }}
                             placeholder={t("apps.contacts.placeholders.multiValue")}
                           />
                         </CardRow>
@@ -497,8 +639,12 @@ export function ContactsAppComponent({
                           <textarea
                             rows={2}
                             className={cn(editInputClass, "resize-none")}
-                            value={formatMultivalue(selectedContact.emails.map((e) => e.value))}
-                            onChange={(e) => updateSelectedContact({ emails: splitMultivalueInput(e.target.value) })}
+                            value={multivalueDraft.emails}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setMultivalueDraft((prev) => ({ ...prev, emails: value }));
+                              updateSelectedContact({ emails: splitMultivalueInput(value) });
+                            }}
                             placeholder={t("apps.contacts.placeholders.multiValue")}
                           />
                         </CardRow>
@@ -514,8 +660,12 @@ export function ContactsAppComponent({
                           <textarea
                             rows={2}
                             className={cn(editInputClass, "resize-none")}
-                            value={formatMultivalue(selectedContact.addresses.map((a) => a.formatted))}
-                            onChange={(e) => updateSelectedContact({ addresses: splitMultivalueInput(e.target.value) })}
+                            value={multivalueDraft.addresses}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setMultivalueDraft((prev) => ({ ...prev, addresses: value }));
+                              updateSelectedContact({ addresses: splitMultivalueInput(value) });
+                            }}
                             placeholder={t("apps.contacts.placeholders.multiValue")}
                           />
                         </CardRow>
@@ -523,8 +673,12 @@ export function ContactsAppComponent({
                           <textarea
                             rows={2}
                             className={cn(editInputClass, "resize-none")}
-                            value={formatMultivalue(selectedContact.urls.map((u) => u.value))}
-                            onChange={(e) => updateSelectedContact({ urls: splitMultivalueInput(e.target.value) })}
+                            value={multivalueDraft.urls}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setMultivalueDraft((prev) => ({ ...prev, urls: value }));
+                              updateSelectedContact({ urls: splitMultivalueInput(value) });
+                            }}
                             placeholder={t("apps.contacts.placeholders.multiValue")}
                           />
                         </CardRow>
@@ -588,9 +742,19 @@ export function ContactsAppComponent({
                   >
                     {isEditing ? t("apps.contacts.buttons.done") : t("apps.contacts.buttons.edit")}
                   </button>
-                  <span className="text-[10px] text-black/40">
-                    {t("apps.contacts.status.cardsCount", { count: contacts.length })}
-                  </span>
+                  {isEditing ? (
+                    <button
+                      type="button"
+                      className="text-[10px] font-semibold text-[#8b1e1e] hover:text-[#6f1717] px-2.5 py-0.5 rounded border border-[#8b1e1e]/20 bg-[#fff5f5]"
+                      onClick={handleDeleteSelectedContact}
+                    >
+                      {t("common.dialog.delete")}
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-black/40">
+                      {t("apps.contacts.status.cardsCount", { count: contacts.length })}
+                    </span>
+                  )}
                 </div>
                 </>
               ) : (
@@ -599,6 +763,7 @@ export function ContactsAppComponent({
                 </div>
               )}
             </Panel>
+            )}
           </div>
 
         </div>

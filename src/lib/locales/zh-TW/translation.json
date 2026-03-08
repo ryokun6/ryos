@@ -884,8 +884,11 @@
       },
       "changePicture": "更改圖片",
       "description": "通訊錄（支援 vCard 匯入）",
-      "emptySelection": "選取聯絡人或建立新聯絡人以開始編輯詳細資料。",
+      "emptySelection": "選取聯絡人或建立新聯絡人",
       "emptyState": "尚無聯絡人。建立聯絡人或匯入 vCard 以開始使用。",
+      "badges": {
+        "mine": "我的名片"
+      },
       "fields": {
         "addresses": "地址",
         "birthday": "生日",
@@ -965,7 +968,7 @@
         "title": "選擇圖片"
       },
       "placeholders": {
-        "multiValue": "每個值使用新行"
+        "multiValue": "每行一個"
       },
       "searchPlaceholder": "搜尋聯絡人…",
       "status": {

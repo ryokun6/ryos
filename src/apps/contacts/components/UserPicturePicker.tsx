@@ -79,7 +79,7 @@ export function UserPicturePicker({
             type="button"
             onClick={() => handleSelect(picture.path)}
             className={cn(
-              "relative rounded-[6px] border-2 overflow-hidden transition-all hover:scale-105 focus:outline-none",
+              "relative rounded-[6px] border-2 overflow-hidden transition-colors focus:outline-none",
               currentPicture === picture.path
                 ? "border-blue-500 shadow-[0_0_0_1px_rgba(59,130,246,0.5)]"
                 : "border-transparent hover:border-black/20"

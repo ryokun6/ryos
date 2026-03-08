@@ -884,8 +884,11 @@
       },
       "changePicture": "写真を変更",
       "description": "vCardインポート対応アドレス帳",
-      "emptySelection": "連絡先を選択するか、新規作成して詳細の編集を開始してください。",
+      "emptySelection": "連絡先を選択するか、新規作成",
       "emptyState": "連絡先がまだありません。新規作成するか、vCardをインポートして開始してください。",
+      "badges": {
+        "mine": "マイカード"
+      },
       "fields": {
         "addresses": "住所",
         "birthday": "誕生日",
@@ -965,7 +968,7 @@
         "title": "写真を選択"
       },
       "placeholders": {
-        "multiValue": "各値は改行で入力してください"
+        "multiValue": "1行に1つ"
       },
       "searchPlaceholder": "連絡先を検索…",
       "status": {
