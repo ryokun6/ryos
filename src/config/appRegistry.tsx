@@ -482,7 +482,7 @@ export const appRegistry = {
     metadata: contactsMetadata,
     windowConfig: {
       defaultSize: { width: 820, height: 560 },
-      minSize: { width: 540, height: 420 },
+      minSize: { width: 360, height: 420 },
     } as WindowConstraints,
   },
   ["dashboard"]: {

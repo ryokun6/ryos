@@ -284,14 +284,14 @@ export function ContactsAppComponent({
                   </div>
                 </div>
                 <div className="flex-1" />
-                <div className="flex items-center gap-2">
+                <div className={cn("flex items-center gap-2", isMobileLayout && "flex-1 min-w-0")}>
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={t("apps.contacts.searchPlaceholder")}
                     className={cn(
                       "rounded-full border border-black/20 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none font-geneva-12",
-                      isMobileLayout ? "w-[120px]" : "w-[150px]"
+                      isMobileLayout ? "flex-1 min-w-0 max-w-none" : "w-[150px]"
                     )}
                   />
                 </div>
@@ -319,14 +319,14 @@ export function ContactsAppComponent({
                   </Button>
                 </div>
                 <div className="flex-1" />
-                <div className="flex items-center gap-2 min-w-0">
+                <div className={cn("flex items-center gap-2 min-w-0", isMobileLayout && "flex-1")}>
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={t("apps.contacts.searchPlaceholder")}
                     className={cn(
                       "rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none min-w-0",
-                      isMobileLayout ? "w-[130px]" : "w-[170px]"
+                      isMobileLayout ? "flex-1 max-w-none" : "w-[170px]"
                     )}
                   />
                 </div>
@@ -336,9 +336,9 @@ export function ContactsAppComponent({
 
           <div
             className={cn(
-              "flex-1 overflow-hidden",
+              "flex-1 overflow-hidden w-full",
               isMobileLayout
-                ? "flex flex-col w-full h-full"
+                ? "flex flex-col w-full h-full items-stretch"
                 : "flex",
               isMacOsxTheme && !isMobileLayout && "px-[5px] pb-[5px]",
               !isMobileLayout && isMacOsxTheme && "gap-[5px]"
@@ -369,7 +369,9 @@ export function ContactsAppComponent({
             <Panel
               className={cn(
                 "flex flex-col min-h-0",
-                isMobileLayout ? "w-full h-[140px] shrink-0" : "w-[245px] shrink-0"
+                isMobileLayout
+                  ? "w-full max-w-none self-stretch h-[140px] shrink-0 basis-auto"
+                  : "w-[245px] shrink-0"
               )}
             >
               <PanelHeader
@@ -396,7 +398,12 @@ export function ContactsAppComponent({
               </div>
             </Panel>
 
-            <Panel className={cn("flex-1 min-w-0 flex flex-col", isMobileLayout && "w-full")}>
+            <Panel
+              className={cn(
+                "flex-1 min-w-0 flex flex-col",
+                isMobileLayout && "w-full max-w-none self-stretch basis-auto"
+              )}
+            >
               <PanelHeader
                 title={selectedContact?.displayName || t("apps.contacts.title")}
                 useGeneva={useGeneva}
