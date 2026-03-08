@@ -945,6 +945,7 @@
         "deleteContact": "連絡先を削除",
         "help": "連絡先ヘルプ",
         "importVCard": "vCardをインポート…",
+        "markAsMine": "自分のものにする",
         "newContact": "新しい連絡先",
         "syncContacts": "連絡先を同期"
       },

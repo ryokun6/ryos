@@ -945,6 +945,7 @@
         "deleteContact": "연락처 삭제",
         "help": "연락처 도움말",
         "importVCard": "vCard 가져오기…",
+        "markAsMine": "내 것으로 표시",
         "newContact": "새 연락처",
         "syncContacts": "연락처 동기화"
       },

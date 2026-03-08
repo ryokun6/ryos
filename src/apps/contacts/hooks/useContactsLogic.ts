@@ -36,7 +36,9 @@ export function useContactsLogic() {
   const {
     contacts,
     selectedContactId,
+    myContactId,
     setSelectedContactId,
+    setMyContactId,
     addContact,
     updateContact,
     deleteContact,
@@ -45,7 +47,9 @@ export function useContactsLogic() {
     useShallow((state) => ({
       contacts: state.contacts,
       selectedContactId: state.selectedContactId,
+      myContactId: state.myContactId,
       setSelectedContactId: state.setSelectedContactId,
+      setMyContactId: state.setMyContactId,
       addContact: state.addContact,
       updateContact: state.updateContact,
       deleteContact: state.deleteContact,
@@ -53,7 +57,7 @@ export function useContactsLogic() {
     }))
   );
 
-  const sortedContacts = useMemo(() => sortContacts(contacts), [contacts]);
+  const sortedContacts = useMemo(() => sortContacts(contacts, myContactId), [contacts, myContactId]);
   const contactGroups = useMemo<ContactGroup[]>(() => {
     const imported = sortedContacts.filter((contact) => contact.source === "vcard");
     const telegram = sortedContacts.filter(
@@ -153,6 +157,13 @@ export function useContactsLogic() {
     setSelectedGroupId(groupId);
   };
 
+  const handleMarkAsMine = () => {
+    if (!selectedContact) return;
+    setMyContactId(
+      myContactId === selectedContact.id ? null : selectedContact.id
+    );
+  };
+
   const updateSelectedContact = (draft: ContactDraft) => {
     if (!selectedContact) {
       return;
@@ -233,6 +244,8 @@ export function useContactsLogic() {
     handleSelectContact,
     handleCreateContact,
     handleDeleteSelectedContact,
+    handleMarkAsMine,
+    myContactId,
     updateSelectedContact,
     handleImport,
     handleFileSelected,

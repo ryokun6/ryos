@@ -945,6 +945,7 @@
         "deleteContact": "Удалить контакт",
         "help": "Справка по Контактам",
         "importVCard": "Импортировать vCard…",
+        "markAsMine": "Отметить как моё",
         "newContact": "Новый контакт",
         "syncContacts": "Синхронизировать Контакты"
       },

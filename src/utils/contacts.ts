@@ -585,10 +585,14 @@ export function contactMatchesQuery(contact: Contact, query: string): boolean {
   return tokens.every((token) => haystack.includes(token));
 }
 
-export function sortContacts(contacts: Contact[]): Contact[] {
-  return [...contacts].sort((a, b) =>
-    a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" })
-  );
+export function sortContacts(contacts: Contact[], pinnedId?: string | null): Contact[] {
+  return [...contacts].sort((a, b) => {
+    if (pinnedId) {
+      if (a.id === pinnedId) return -1;
+      if (b.id === pinnedId) return 1;
+    }
+    return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" });
+  });
 }
 
 export function getContactInitials(contact: Contact): string {

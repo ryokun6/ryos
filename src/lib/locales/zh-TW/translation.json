@@ -945,6 +945,7 @@
         "deleteContact": "刪除聯絡人",
         "help": "聯絡人輔助說明",
         "importVCard": "匯入 vCard…",
+        "markAsMine": "標記為我的",
         "newContact": "新增聯絡人",
         "syncContacts": "同步聯絡資訊"
       },

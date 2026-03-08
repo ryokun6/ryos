@@ -207,6 +207,8 @@ export function ContactsAppComponent({
     handleSelectContact,
     handleCreateContact,
     handleDeleteSelectedContact,
+    handleMarkAsMine,
+    myContactId,
     updateSelectedContact,
     handleImport,
     handleFileSelected,
@@ -231,7 +233,9 @@ export function ContactsAppComponent({
       onNewContact={handleCreateContact}
       onImport={handleImport}
       onDeleteContact={handleDeleteSelectedContact}
+      onMarkAsMine={handleMarkAsMine}
       hasSelectedContact={Boolean(selectedContact)}
+      isSelectedMine={selectedContact?.id === myContactId}
     />
   );
 

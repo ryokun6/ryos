@@ -2728,6 +2728,7 @@
         "newContact": "New Contact",
         "importVCard": "Import vCard…",
         "syncContacts": "Sync Contacts",
+        "markAsMine": "Mark as Mine",
         "deleteContact": "Delete Contact",
         "help": "Contacts Help",
         "about": "About Contacts"

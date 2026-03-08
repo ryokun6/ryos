@@ -945,6 +945,7 @@
         "deleteContact": "Excluir Contato",
         "help": "Ajuda de Contatos",
         "importVCard": "Importar vCard…",
+        "markAsMine": "Marcar como Meu",
         "newContact": "Novo Contato",
         "syncContacts": "Sincronizar Contatos"
       },

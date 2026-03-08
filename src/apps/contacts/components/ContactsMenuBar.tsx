@@ -1,5 +1,6 @@
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
+  MenubarCheckboxItem,
   MenubarContent,
   MenubarItem,
   MenubarMenu,
@@ -17,7 +18,9 @@ interface ContactsMenuBarProps {
   onNewContact: () => void;
   onImport: () => void;
   onDeleteContact: () => void;
+  onMarkAsMine: () => void;
   hasSelectedContact: boolean;
+  isSelectedMine: boolean;
 }
 
 export function ContactsMenuBar({
@@ -27,7 +30,9 @@ export function ContactsMenuBar({
   onNewContact,
   onImport,
   onDeleteContact,
+  onMarkAsMine,
   hasSelectedContact,
+  isSelectedMine,
 }: ContactsMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -63,6 +68,15 @@ export function ContactsMenuBar({
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarCheckboxItem
+            checked={isSelectedMine}
+            onClick={onMarkAsMine}
+            disabled={!hasSelectedContact}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.contacts.menu.markAsMine", { defaultValue: "Mark as Mine" })}
+          </MenubarCheckboxItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onDeleteContact}
             disabled={!hasSelectedContact}
