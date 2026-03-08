@@ -15,6 +15,7 @@ import {
   formatTelegramConversationEntries,
   formatTelegramHeartbeatDailyNoteEntries,
   formatTelegramHeartbeatHistoryEntries,
+  getTelegramConversationSinceLastHeartbeat,
   getTelegramHeartbeatAuthSecret,
   getTelegramHeartbeatSlot,
   isTelegramHeartbeatLegacyNoteEntry,
@@ -323,6 +324,57 @@ describe("telegram heartbeat helpers", () => {
     expect(formatTelegramConversationEntries(sampleConversationHistory)).toContain(
       "user: done with that, now i need to review the cron behavior"
     );
+  });
+
+  test("returns full telegram history when no heartbeat has been recorded yet", () => {
+    expect(
+      getTelegramConversationSinceLastHeartbeat(sampleConversationHistory, null)
+    ).toEqual(sampleConversationHistory);
+  });
+
+  test("processes telegram chat starting from the first new user message after the last heartbeat", () => {
+    const delta = getTelegramConversationSinceLastHeartbeat(
+      [
+        {
+          role: "assistant" as const,
+          content: "earlier proactive nudge",
+          createdAt: 350,
+        },
+        ...sampleConversationHistory,
+        {
+          role: "assistant" as const,
+          content: "i can review the cron behavior next",
+          createdAt: 550,
+        },
+      ],
+      375
+    );
+
+    expect(delta).toEqual([
+      sampleConversationHistory[0],
+      sampleConversationHistory[1],
+      sampleConversationHistory[2],
+      {
+        role: "assistant",
+        content: "i can review the cron behavior next",
+        createdAt: 550,
+      },
+    ]);
+  });
+
+  test("ignores assistant-only activity after the last heartbeat", () => {
+    expect(
+      getTelegramConversationSinceLastHeartbeat(
+        [
+          {
+            role: "assistant",
+            content: "earlier proactive nudge",
+            createdAt: 600,
+          },
+        ],
+        500
+      )
+    ).toEqual([]);
   });
 
   test("uses CRON_SECRET for heartbeat auth", () => {
