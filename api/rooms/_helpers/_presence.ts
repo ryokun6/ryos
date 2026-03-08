@@ -3,7 +3,7 @@
  * Handles user presence tracking using Redis ZSETs
  */
 
-import { Redis } from "@upstash/redis";
+import { createRedis } from "../../_utils/redis.js";
 import { parseRoomData, setRoom } from "./_redis.js";
 import {
   CHAT_ROOM_PREFIX,
@@ -14,11 +14,8 @@ import {
 import type { Room, RoomWithUsers } from "./_types.js";
 
 // Create Redis client for presence operations
-function getRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+function getRedis() {
+  return createRedis();
 }
 
 // ============================================================================

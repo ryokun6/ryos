@@ -1,0 +1,15 @@
+.git
+.github
+.cursor
+.vercel
+node_modules
+dist
+src-tauri/target
+coverage
+*.log
+.env
+.env.*
+!.env.example
+README.md
+docs
+tests

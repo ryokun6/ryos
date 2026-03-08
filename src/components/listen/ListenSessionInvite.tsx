@@ -14,6 +14,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
+import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 
 interface ListenSessionInviteProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export function ListenSessionInvite({
     if (typeof window !== "undefined") {
       return window.location.origin;
     }
-    return "https://os.ryo.lu";
+    return getAppPublicOrigin();
   }, []);
 
   useEffect(() => {

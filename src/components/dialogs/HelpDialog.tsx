@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName, type AppId } from "@/utils/i18n";
 import { useAppStore } from "@/stores/useAppStore";
+import { getDocsBaseUrl } from "@/utils/runtimeConfig";
 
 // Map appId to doc URL path (most are same, but some have different names)
 const APP_DOC_NAMES: Partial<Record<AppId, string>> = {
@@ -94,9 +95,8 @@ export function HelpDialog({
   const handleViewDocs = () => {
     // Get the doc name for this app (use mapping or fall back to appId)
     const docName = appId ? (APP_DOC_NAMES[appId] || appId) : "";
-    const docsUrl = docName
-      ? `https://os.ryo.lu/docs/${docName}`
-      : "https://os.ryo.lu/docs";
+    const docsBaseUrl = getDocsBaseUrl();
+    const docsUrl = docName ? `${docsBaseUrl}/${docName}` : docsBaseUrl;
 
     launchApp("internet-explorer", {
       url: docsUrl,

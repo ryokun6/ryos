@@ -12,6 +12,20 @@ import { EventEmitter } from "node:events";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { getRedisBackend } from "../api/_utils/redis.js";
+import {
+  buildClientRuntimeConfig,
+  getRealtimeProvider,
+  getRealtimeWebSocketPath,
+  shouldEnableLocalRealtime,
+} from "../api/_utils/runtime-config.js";
+import {
+  ensureRealtimePubSubBridge,
+  registerRealtimeSocket,
+  subscribeRealtimeSocket,
+  unregisterRealtimeSocket,
+  unsubscribeRealtimeSocket,
+} from "../api/_utils/realtime.js";
 import {
   discoverApiRouteManifest,
   type ApiRouteManifestEntry,
@@ -273,7 +287,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WORKSPACE_ROOT = path.resolve(__dirname, "..");
 const API_ROOT = path.join(WORKSPACE_ROOT, "api");
+const DIST_ROOT = path.join(WORKSPACE_ROOT, "dist");
 const handlerCache = new Map<string, RouteHandler>();
+
+interface LocalRealtimeSocketData {
+  connectedAt: number;
+}
 
 function toUint8Array(chunk: unknown): Uint8Array | null {
   if (chunk === null || chunk === undefined) return null;
@@ -314,6 +333,22 @@ function parseEnvLine(line: string): { key: string; value: string } | null {
   return { key, value: value.replace(/\\n/g, "\n") };
 }
 
+function normalizeEnvValue(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).replace(/\\n/g, "\n");
+  }
+
+  return value.replace(/\\n/g, "\n");
+}
+
 async function loadEnvFile(filePath: string): Promise<void> {
   let content = "";
   try {
@@ -325,12 +360,18 @@ async function loadEnvFile(filePath: string): Promise<void> {
   for (const line of content.split(/\r?\n/g)) {
     const parsed = parseEnvLine(line);
     if (!parsed) continue;
-    if (process.env[parsed.key] !== undefined) continue;
+    if (process.env[parsed.key] !== undefined) {
+      process.env[parsed.key] = normalizeEnvValue(process.env[parsed.key]);
+      continue;
+    }
     process.env[parsed.key] = parsed.value;
   }
 }
 
 async function loadEnv(): Promise<void> {
+  for (const [key, value] of Object.entries(process.env)) {
+    process.env[key] = normalizeEnvValue(value);
+  }
   await loadEnvFile(path.join(WORKSPACE_ROOT, ".env"));
   await loadEnvFile(path.join(WORKSPACE_ROOT, ".env.local"));
 }
@@ -466,22 +507,155 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
+function jsResponse(source: string, status = 200): Response {
+  return new Response(source, {
+    status,
+    headers: {
+      "content-type": "application/javascript; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function isPathInsideRoot(rootPath: string, candidatePath: string): boolean {
+  const relative = path.relative(rootPath, candidatePath);
+  return relative !== ".." && !relative.startsWith(`..${path.sep}`);
+}
+
+async function getStaticFileResponse(
+  absolutePath: string,
+  options?: { headers?: Record<string, string> }
+): Promise<Response | null> {
+  if (!isPathInsideRoot(DIST_ROOT, absolutePath)) {
+    return null;
+  }
+
+  const file = Bun.file(absolutePath);
+  if (!(await file.exists())) {
+    return null;
+  }
+
+  const headers = new Headers(options?.headers);
+  if (!headers.has("content-type") && file.type) {
+    headers.set("content-type", file.type);
+  }
+
+  return new Response(file, { headers });
+}
+
+async function serveDistPath(
+  relativePath: string,
+  options?: { headers?: Record<string, string> }
+): Promise<Response | null> {
+  const sanitized = relativePath.replace(/^\/+/, "");
+  const absolutePath = path.resolve(DIST_ROOT, sanitized);
+  return await getStaticFileResponse(absolutePath, options);
+}
+
+async function serveSpaIndex(): Promise<Response> {
+  const response = await serveDistPath("index.html");
+  if (response) {
+    return response;
+  }
+
+  return jsonResponse(
+    {
+      error: "Frontend build output not found",
+      hint: "Run `bun run build` before starting the standalone production server.",
+    },
+    503
+  );
+}
+
+function shouldServeSpaFallback(pathname: string): boolean {
+  if (pathname === "/" || pathname === "") return true;
+  if (pathname.startsWith("/api/")) return false;
+  if (pathname === "/api") return false;
+  return !path.posix.basename(pathname).includes(".");
+}
+
+function buildAppConfigScript(origin: string): string {
+  return `window.__RYOS_RUNTIME_CONFIG__ = ${JSON.stringify(
+    buildClientRuntimeConfig(origin)
+  )};`;
+}
+
+async function handleStaticRequest(pathname: string): Promise<Response | null> {
+  if (pathname === "/docs" || pathname === "/docs/") {
+    return new Response(null, {
+      status: 302,
+      headers: { location: "/docs/overview" },
+    });
+  }
+
+  if (pathname === "/embed/infinite-mac") {
+    return await serveDistPath("embed/infinite-mac.html", {
+      headers: {
+        "Cross-Origin-Embedder-Policy": "credentialless",
+        "Cross-Origin-Opener-Policy": "same-origin",
+      },
+    });
+  }
+
+  if (pathname.startsWith("/docs/") && !pathname.endsWith(".html")) {
+    const cleanPath = pathname.replace(/^\/+/, "");
+    const docsResponse = await serveDistPath(`${cleanPath}.html`);
+    if (docsResponse) {
+      return docsResponse;
+    }
+  }
+
+  if (pathname !== "/") {
+    const directStatic = await serveDistPath(pathname);
+    if (directStatic) {
+      return directStatic;
+    }
+  }
+
+  if (shouldServeSpaFallback(pathname)) {
+    return await serveSpaIndex();
+  }
+
+  return null;
+}
+
 function validateEnv(): void {
-  const required: { name: string; description: string }[] = [
-    { name: "REDIS_KV_REST_API_URL", description: "Upstash Redis REST API URL" },
-    { name: "REDIS_KV_REST_API_TOKEN", description: "Upstash Redis REST API token" },
-  ];
+  const redisBackend = getRedisBackend();
+  const realtimeProvider = getRealtimeProvider();
+
+  const required: { name: string; description: string }[] =
+    redisBackend === "redis-url"
+      ? [{ name: "REDIS_URL", description: "Standard Redis connection URL" }]
+      : [
+          {
+            name: "REDIS_KV_REST_API_URL",
+            description: "Upstash Redis REST API URL",
+          },
+          {
+            name: "REDIS_KV_REST_API_TOKEN",
+            description: "Upstash Redis REST API token",
+          },
+        ];
 
   const optional: { name: string; description: string }[] = [
-    { name: "PUSHER_APP_ID", description: "Pusher app ID (real-time features)" },
-    { name: "PUSHER_KEY", description: "Pusher key" },
-    { name: "PUSHER_SECRET", description: "Pusher secret" },
-    { name: "PUSHER_CLUSTER", description: "Pusher cluster" },
     { name: "OPENAI_API_KEY", description: "OpenAI API key (AI + transcription)" },
     { name: "ELEVENLABS_API_KEY", description: "ElevenLabs API key (TTS)" },
     { name: "YOUTUBE_API_KEY", description: "YouTube Data API key" },
     { name: "INTERNAL_API_SECRET", description: "Internal API secret (Pusher broadcast)" },
   ];
+
+  if (realtimeProvider === "pusher") {
+    optional.unshift(
+      { name: "PUSHER_CLUSTER", description: "Pusher cluster" },
+      { name: "PUSHER_SECRET", description: "Pusher secret" },
+      { name: "PUSHER_KEY", description: "Pusher key" },
+      { name: "PUSHER_APP_ID", description: "Pusher app ID (real-time features)" }
+    );
+  } else if (redisBackend !== "redis-url") {
+    console.warn(
+      "[api-standalone] REALTIME_PROVIDER=local works best with REDIS_URL so websocket broadcasts can fan out across multiple instances. Falling back to in-process delivery only."
+    );
+  }
 
   const missing = required.filter((v) => !process.env[v.name]);
   const missingOptional = optional.filter((v) => !process.env[v.name]);
@@ -508,18 +682,54 @@ async function bootstrap(): Promise<void> {
 
   const API_PORT = Number(process.env.API_PORT || process.env.PORT || "3000");
   const API_HOST = process.env.API_HOST || "0.0.0.0";
+  const realtimeWebSocketPath = getRealtimeWebSocketPath();
   const routes = await discoverApiRouteManifest({
     workspaceRoot: WORKSPACE_ROOT,
     apiRoot: API_ROOT,
   });
 
-  Bun.serve({
+  if (shouldEnableLocalRealtime()) {
+    await ensureRealtimePubSubBridge();
+  }
+
+  Bun.serve<LocalRealtimeSocketData>({
     port: API_PORT,
     hostname: API_HOST,
     idleTimeout: 30,
-    fetch: async (request) => {
+    fetch: async (request, server) => {
       const url = new URL(request.url);
       const pathname = url.pathname;
+
+      if (pathname === "/health") {
+        return jsonResponse(
+          {
+            ok: true,
+            runtime: "standalone-bun-serve",
+            routeCount: routes.length,
+            realtimeProvider: getRealtimeProvider(),
+            redisBackend: getRedisBackend(),
+          },
+          200
+        );
+      }
+
+      if (pathname === "/app-config.js") {
+        return jsResponse(buildAppConfigScript(url.origin), 200);
+      }
+
+      if (shouldEnableLocalRealtime() && pathname === realtimeWebSocketPath) {
+        const upgraded = server.upgrade(request, {
+          data: {
+            connectedAt: Date.now(),
+          },
+        });
+
+        if (upgraded) {
+          return undefined as unknown as Response;
+        }
+
+        return jsonResponse({ error: "WebSocket upgrade failed" }, 400);
+      }
 
       if (pathname === "/api/health") {
         return jsonResponse(
@@ -533,7 +743,10 @@ async function bootstrap(): Promise<void> {
       }
 
       if (!pathname.startsWith("/api")) {
-        return jsonResponse({ error: "Not found" }, 404);
+        return (
+          (await handleStaticRequest(pathname)) ||
+          jsonResponse({ error: "Not found" }, 404)
+        );
       }
 
       const matched = matchRoute(pathname, routes);
@@ -586,6 +799,33 @@ async function bootstrap(): Promise<void> {
     error: (error) => {
       console.error("[api-standalone] Unhandled server error", error);
       return jsonResponse({ error: "Internal server error" }, 500);
+    },
+    websocket: {
+      open: (socket) => {
+        registerRealtimeSocket(socket);
+      },
+      message: (socket, message) => {
+        try {
+          const payload = JSON.parse(String(message)) as {
+            type?: string;
+            channel?: string;
+          };
+
+          if (payload.type === "subscribe" && payload.channel) {
+            subscribeRealtimeSocket(socket, payload.channel);
+            return;
+          }
+
+          if (payload.type === "unsubscribe" && payload.channel) {
+            unsubscribeRealtimeSocket(socket, payload.channel);
+          }
+        } catch (error) {
+          console.warn("[api-standalone] Invalid websocket payload", error);
+        }
+      },
+      close: (socket) => {
+        unregisterRealtimeSocket(socket);
+      },
     },
   });
 

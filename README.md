@@ -88,6 +88,7 @@ bun run dev:vite     # Start Vite dev server only (frontend-only, no API)
 bun run dev:api      # Start standalone Bun API server only (port 3000)
 bun run dev:vercel   # Optional: Vercel dev server (parity/debugging only)
 bun run build        # Build for production
+bun run start        # Start the self-host/Coolify production server
 bun run lint         # Run ESLint
 bun run preview      # Preview production build
 bun run api:start    # Run standalone API server in production mode
@@ -120,21 +121,63 @@ API_URL=http://localhost:3000 bun run test:new-api
 
 ## VPS / self-hosting path
 
-You can host ryOS on a VPS without Vercel by running:
+ryOS now supports a **single Bun production server** for self-hosting and container platforms like Coolify. That server handles:
 
-1. `bun run build` for frontend assets
-2. `bun run api:start` for API process
-3. Nginx/Caddy reverse proxy:
-   - Serve static frontend
-   - Proxy `/api/*` to the standalone API process
+- `/api/*`
+- static frontend assets from `dist/`
+- SPA deep links
+- docs clean URLs
+- optional local websocket realtime
 
-Set `API_ALLOWED_ORIGINS` (comma-separated origins) in production, for example:
+### Quick self-host start
 
 ```bash
-API_ALLOWED_ORIGINS="https://your-domain.com,https://www.your-domain.com"
+bun install
+bun run build
+APP_PUBLIC_ORIGIN="https://your-domain.com" \
+API_ALLOWED_ORIGINS="https://your-domain.com" \
+bun run start
 ```
 
-Detailed runbook: [`docs/self-hosting-vps.md`](docs/self-hosting-vps.md)
+### Redis backend options
+
+Use **either**:
+
+```bash
+# Standard Redis / Valkey / self-hosted Redis
+REDIS_URL="redis://default:password@redis:6379/0"
+```
+
+or:
+
+```bash
+# Upstash REST (existing Vercel-style path)
+REDIS_KV_REST_API_URL="https://..."
+REDIS_KV_REST_API_TOKEN="..."
+```
+
+### Realtime backend options
+
+Use **either**:
+
+```bash
+# Existing Pusher path
+REALTIME_PROVIDER="pusher"
+PUSHER_APP_ID="..."
+PUSHER_KEY="..."
+PUSHER_SECRET="..."
+PUSHER_CLUSTER="us3"
+```
+
+or:
+
+```bash
+# Local websocket path (best paired with REDIS_URL)
+REALTIME_PROVIDER="local"
+REALTIME_WS_PATH="/ws"
+```
+
+Detailed runbook: [`docs/1.3-self-hosting-vps.md`](docs/1.3-self-hosting-vps.md)
 
 ## License
 

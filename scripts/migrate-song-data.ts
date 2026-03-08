@@ -16,7 +16,7 @@
  * --verbose    Show detailed progress
  */
 
-import { Redis } from "@upstash/redis";
+import { createRedis, type RedisLike } from "../api/_utils/redis.js";
 
 // ANSI color codes
 const COLOR = {
@@ -106,15 +106,15 @@ interface NewSongDocument {
 }
 
 // Initialize Redis client
-function getRedisClient(): Redis | null {
-  const url = process.env.REDIS_KV_REST_API_URL;
-  const token = process.env.REDIS_KV_REST_API_TOKEN;
-
-  if (!url || !token) {
+function getRedisClient(): RedisLike | null {
+  if (
+    !process.env.REDIS_URL &&
+    (!process.env.REDIS_KV_REST_API_URL || !process.env.REDIS_KV_REST_API_TOKEN)
+  ) {
     return null;
   }
 
-  return new Redis({ url, token });
+  return createRedis();
 }
 
 // Simple djb2 string hash for cache key generation
@@ -160,7 +160,7 @@ function log(message: string, level: "info" | "success" | "warn" | "error" | "ve
   console.log(`  ${prefix} ${message}`);
 }
 
-async function scanKeys(redis: Redis, pattern: string): Promise<string[]> {
+async function scanKeys(redis: RedisLike, pattern: string): Promise<string[]> {
   const keys: string[] = [];
   let cursor = 0;
   
@@ -176,7 +176,7 @@ async function scanKeys(redis: Redis, pattern: string): Promise<string[]> {
   return keys;
 }
 
-async function migrateData(redis: Redis): Promise<{ migrated: number; skipped: number; errors: number }> {
+async function migrateData(redis: RedisLike): Promise<{ migrated: number; skipped: number; errors: number }> {
   const stats = { migrated: 0, skipped: 0, errors: 0 };
   const keysToDelete: string[] = [];
 

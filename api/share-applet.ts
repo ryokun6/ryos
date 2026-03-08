@@ -4,6 +4,7 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { resolveRequestAuth } from "./_utils/request-auth.js";
+import { getAppPublicOrigin } from "./_utils/runtime-config.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -224,7 +225,7 @@ export default apiHandler<Record<string, unknown>>(
       };
 
       await redis.set(key, JSON.stringify(appletData));
-      const shareUrl = `${origin || "https://os.ryo.lu"}/applet-viewer/${id}`;
+      const shareUrl = `${getAppPublicOrigin(origin)}/applet-viewer/${id}`;
 
       logger.info("Saved applet", { id, isUpdate });
       logger.response(200, Date.now() - startTime);
