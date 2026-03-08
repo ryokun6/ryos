@@ -50,8 +50,11 @@ export function UserPicturePicker({
   const title = "Choose Picture";
 
   const dialogContent = (
-    <div className={cn("flex flex-col min-h-0", isXpTheme ? "p-2 px-4" : "p-4 px-6")}>
-      <div className="grid grid-cols-4 gap-2 overflow-y-auto pr-1 min-h-0 flex-1">
+    <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
+      <div
+        className="grid grid-cols-4 gap-2 overflow-y-auto pr-1"
+        style={{ maxHeight: "320px" }}
+      >
         {ALL_USER_PICTURES.map((picture) => (
           <button
             key={picture.id}
@@ -74,7 +77,7 @@ export function UserPicturePicker({
           </button>
         ))}
       </div>
-      <DialogFooter className="mt-4 gap-1 sm:justify-between shrink-0">
+      <DialogFooter className="mt-4 gap-1 sm:justify-between">
         <div className="flex gap-1 w-full sm:w-auto">
           {currentPicture && (
             <Button
@@ -104,7 +107,7 @@ export function UserPicturePicker({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn("max-w-[380px] max-h-[85vh] flex flex-col", isXpTheme && "p-0 overflow-hidden")}
+        className={cn("max-w-[380px]", isXpTheme && "p-0 overflow-hidden")}
         style={isXpTheme ? { fontSize: "11px" } : undefined}
         onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       >
