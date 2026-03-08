@@ -5,7 +5,9 @@ export type SpotlightDynamicResultType =
   | "applet"
   | "music"
   | "site"
-  | "video";
+  | "video"
+  | "calendar"
+  | "contact";
 
 export interface SpotlightSearchFileSnapshot {
   path: string;
@@ -38,11 +40,33 @@ export interface SpotlightSearchVideoSnapshot {
   artist?: string;
 }
 
+export interface SpotlightSearchCalendarEventSnapshot {
+  id: string;
+  title: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  notes?: string;
+}
+
+export interface SpotlightSearchContactSnapshot {
+  id: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  organization: string;
+  emails: string[];
+  phones: string[];
+  picture: string | null;
+}
+
 export interface SpotlightSearchSnapshot {
   items: Record<string, SpotlightSearchFileSnapshot>;
   tracks: SpotlightSearchTrackSnapshot[];
   favorites: SpotlightSearchFavoriteSnapshot[];
   videos: SpotlightSearchVideoSnapshot[];
+  calendarEvents: SpotlightSearchCalendarEventSnapshot[];
+  contacts: SpotlightSearchContactSnapshot[];
 }
 
 export type SpotlightWorkerResultPayload =
@@ -84,6 +108,22 @@ export type SpotlightWorkerResultPayload =
       subtitle?: string;
       thumbnail: string;
       videoId: string;
+    }
+  | {
+      id: string;
+      type: "calendar";
+      title: string;
+      subtitle?: string;
+      date: string;
+    }
+  | {
+      id: string;
+      type: "contact";
+      title: string;
+      subtitle?: string;
+      contactId: string;
+      picture: string | null;
+      initials: string;
     };
 
 export interface SpotlightIndexMessage {

@@ -19,6 +19,8 @@ const SECTION_TYPE_ORDER: SpotlightResult["type"][] = [
   "app",
   "document",
   "applet",
+  "calendar",
+  "contact",
   "music",
   "site",
   "video",
@@ -32,6 +34,8 @@ function getSectionKey(type: SpotlightResult["type"]): string {
     app: "spotlight.sections.apps",
     document: "spotlight.sections.documents",
     applet: "spotlight.sections.applets",
+    calendar: "spotlight.sections.calendar",
+    contact: "spotlight.sections.contacts",
     music: "spotlight.sections.music",
     site: "spotlight.sections.sites",
     video: "spotlight.sections.videos",
@@ -598,7 +602,38 @@ export function SpotlightSearch() {
                                           setSelectedIndex(result.globalIndex)
                                         }
                                       >
-                                        {result.thumbnail ? (
+                                        {result.type === "contact" && result.thumbnail ? (
+                                          <img
+                                            src={result.thumbnail}
+                                            alt=""
+                                            className="flex-shrink-0 object-contain rounded-full"
+                                            style={{
+                                              width: iconPx,
+                                              height: iconPx,
+                                              background: "rgba(255,255,255,0.7)",
+                                              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.15)",
+                                            }}
+                                            loading="lazy"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = "none";
+                                            }}
+                                          />
+                                        ) : result.type === "contact" && result.initials ? (
+                                          <div
+                                            className="flex-shrink-0 rounded-full flex items-center justify-center font-semibold text-white"
+                                            style={{
+                                              width: iconPx,
+                                              height: iconPx,
+                                              fontSize: `${Math.round(iconPx * 0.4)}px`,
+                                              background: "linear-gradient(to bottom, #e0e0e0, #c8c8c8)",
+                                              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.15)",
+                                              textShadow: "0 1px 1px rgba(0,0,0,0.35), 0 0 2px rgba(0,0,0,0.12)",
+                                              lineHeight: 1,
+                                            }}
+                                          >
+                                            {result.initials}
+                                          </div>
+                                        ) : result.thumbnail ? (
                                           <img
                                             src={result.thumbnail}
                                             alt=""
@@ -732,7 +767,38 @@ export function SpotlightSearch() {
                               }
                             >
                               {/* Icon / Thumbnail */}
-                              {result.thumbnail ? (
+                              {result.type === "contact" && result.thumbnail ? (
+                                <img
+                                  src={result.thumbnail}
+                                  alt=""
+                                  className="flex-shrink-0 object-contain rounded-full"
+                                  style={{
+                                    width: iconPx,
+                                    height: iconPx,
+                                    background: "rgba(255,255,255,0.7)",
+                                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.15)",
+                                  }}
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = "none";
+                                  }}
+                                />
+                              ) : result.type === "contact" && result.initials ? (
+                                <div
+                                  className="flex-shrink-0 rounded-full flex items-center justify-center font-semibold text-white"
+                                  style={{
+                                    width: iconPx,
+                                    height: iconPx,
+                                    fontSize: `${Math.round(iconPx * 0.4)}px`,
+                                    background: "linear-gradient(to bottom, #e0e0e0, #c8c8c8)",
+                                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.15)",
+                                    textShadow: "0 1px 1px rgba(0,0,0,0.35), 0 0 2px rgba(0,0,0,0.12)",
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  {result.initials}
+                                </div>
+                              ) : result.thumbnail ? (
                                 <img
                                   src={result.thumbnail}
                                   alt=""
@@ -744,7 +810,6 @@ export function SpotlightSearch() {
                                   }}
                                   loading="lazy"
                                   onError={(e) => {
-                                    // Hide broken thumbnails
                                     (e.target as HTMLImageElement).style.display = "none";
                                   }}
                                 />
