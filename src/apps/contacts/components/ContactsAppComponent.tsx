@@ -420,48 +420,44 @@ export function ContactsAppComponent({
               {selectedContact ? (
                 <>
                 <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                  {isEditing ? (
-                    <div className="px-4 pt-3 pb-1 space-y-1.5">
-                      <div className="flex gap-2">
-                        <input
-                          className={editInputClass}
-                          placeholder={t("apps.contacts.fields.firstName")}
-                          value={selectedContact.firstName}
-                          onChange={(e) => updateSelectedContact({ firstName: e.target.value })}
-                        />
-                        <input
-                          className={editInputClass}
-                          placeholder={t("apps.contacts.fields.lastName")}
-                          value={selectedContact.lastName}
-                          onChange={(e) => updateSelectedContact({ lastName: e.target.value })}
-                        />
-                      </div>
-                      <input
-                        className={editInputClass}
-                        placeholder={t("apps.contacts.fields.organization")}
-                        value={selectedContact.organization}
-                        onChange={(e) => updateSelectedContact({ organization: e.target.value })}
-                      />
-                      <input
-                        className={editInputClass}
-                        placeholder={t("apps.contacts.fields.nickname")}
-                        value={selectedContact.nickname}
-                        onChange={(e) => updateSelectedContact({ nickname: e.target.value })}
-                      />
+                  <div className="flex items-start gap-3 pt-3 pb-2 px-4">
+                    <div className="w-12 h-12 shrink-0 rounded-[4px] bg-[linear-gradient(to_bottom,#b8b8b8,#dcdcdc)] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-base font-semibold text-black/70">
+                      {getContactInitials(selectedContact)}
                     </div>
-                  ) : (
-                    <div className="flex items-start gap-3 pt-3 pb-2 px-4">
-                      <div className="w-12 h-12 shrink-0 rounded-[4px] bg-[linear-gradient(to_bottom,#b8b8b8,#dcdcdc)] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-base font-semibold text-black/70">
-                        {getContactInitials(selectedContact)}
-                      </div>
-                      <div className="min-w-0 flex-1 pt-0.5">
-                        <div className="text-[15px] font-bold leading-tight">{selectedContact.displayName}</div>
-                        {selectedContact.organization && (
-                          <div className="text-[11px] text-black/50 mt-0.5">{selectedContact.organization}</div>
-                        )}
-                      </div>
+                    <div className="min-w-0 flex-1 pt-0.5 space-y-1">
+                      {isEditing ? (
+                        <>
+                          <div className="flex gap-1.5">
+                            <input
+                              className={cn(editInputClass, "text-[14px] font-bold")}
+                              placeholder={t("apps.contacts.fields.firstName")}
+                              value={selectedContact.firstName}
+                              onChange={(e) => updateSelectedContact({ firstName: e.target.value })}
+                            />
+                            <input
+                              className={cn(editInputClass, "text-[14px] font-bold")}
+                              placeholder={t("apps.contacts.fields.lastName")}
+                              value={selectedContact.lastName}
+                              onChange={(e) => updateSelectedContact({ lastName: e.target.value })}
+                            />
+                          </div>
+                          <input
+                            className={cn(editInputClass, "text-[11px]")}
+                            placeholder={t("apps.contacts.fields.organization")}
+                            value={selectedContact.organization}
+                            onChange={(e) => updateSelectedContact({ organization: e.target.value })}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-[15px] font-bold leading-tight">{selectedContact.displayName}</div>
+                          {selectedContact.organization && (
+                            <div className="text-[11px] text-black/50">{selectedContact.organization}</div>
+                          )}
+                        </>
+                      )}
                     </div>
-                  )}
+                  </div>
 
                   <div className="border-b mx-4 mb-0.5" style={{ borderColor: "rgba(0,0,0,0.08)" }} />
 
@@ -510,6 +506,13 @@ export function ContactsAppComponent({
                             value={formatMultivalue(selectedContact.urls.map((u) => u.value))}
                             onChange={(e) => updateSelectedContact({ urls: splitMultivalueInput(e.target.value) })}
                             placeholder={t("apps.contacts.placeholders.multiValue")}
+                          />
+                        </CardRow>
+                        <CardRow label="nickname">
+                          <input
+                            className={editInputClass}
+                            value={selectedContact.nickname}
+                            onChange={(e) => updateSelectedContact({ nickname: e.target.value })}
                           />
                         </CardRow>
                         <CardRow label="note">
