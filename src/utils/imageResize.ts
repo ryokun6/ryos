@@ -39,7 +39,7 @@ export function resizeImageToBase64(
         size,
         size
       );
-      resolve(canvas.toDataURL("image/png"));
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
     };
     img.onerror = () => reject(new Error("Failed to load image"));
 
