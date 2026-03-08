@@ -434,7 +434,7 @@ export function ContactsAppComponent({
                     <button
                       type="button"
                       onClick={() => setIsPicturePickerOpen(true)}
-                      className="w-12 h-12 shrink-0 rounded-[4px] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-base font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      className="w-12 h-12 shrink-0 rounded-full border border-black/15 flex items-center justify-center text-base font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                       style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #b8b8b8, #dcdcdc)" }}
                       title={t("apps.contacts.changePicture")}
                     >
