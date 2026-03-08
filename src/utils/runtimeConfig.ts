@@ -113,8 +113,15 @@ export function buildWebSocketUrl(origin: string, path: string): string {
 
 export function getRealtimeWebSocketUrl(): string {
   const configured = getClientRuntimeConfig().websocketUrl;
-  if (configured) return configured;
-  return buildWebSocketUrl(getAppPublicOrigin(), getRealtimeWebSocketPath());
+  const url = configured ?? buildWebSocketUrl(getAppPublicOrigin(), getRealtimeWebSocketPath());
+  if (
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    url.startsWith("ws://")
+  ) {
+    return url.replace("ws://", "wss://");
+  }
+  return url;
 }
 
 export function getPusherRuntimeConfig(): {
