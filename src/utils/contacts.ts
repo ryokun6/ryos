@@ -452,6 +452,7 @@ export function isSerializedContact(value: unknown): value is Contact {
     (value.birthday === null || typeof value.birthday === "string") &&
     typeof value.telegramUsername === "string" &&
     typeof value.telegramUserId === "string" &&
+    (value.picture == null || typeof value.picture === "string") &&
     isContactSource(value.source) &&
     isFiniteNumber(value.createdAt) &&
     isFiniteNumber(value.updatedAt)
