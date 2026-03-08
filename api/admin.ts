@@ -233,6 +233,11 @@ function getDeployment(): "dev" | "vercel" | "coolify" {
   if (
     process.env.COOLIFY_SERVICE_ID ||
     process.env.COOLIFY_APP_ID ||
+    process.env.COOLIFY_FQDN ||
+    process.env.COOLIFY_URL ||
+    process.env.COOLIFY_RESOURCE_UUID ||
+    process.env.COOLIFY_CONTAINER_NAME ||
+    process.env.COOLIFY_BRANCH ||
     /coolify/i.test(process.env.DEPLOYMENT_TARGET || "")
   ) {
     return "coolify";

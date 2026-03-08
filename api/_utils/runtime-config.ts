@@ -28,8 +28,16 @@ function trimTrailingSlash(value: string): string {
 
 function normalizeOrigin(value: string | null | undefined): string | null {
   if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  // If comma-separated (e.g. API_ALLOWED_ORIGINS), use first segment only
+  const first = trimmed.split(",")[0]?.trim();
+  if (!first) return null;
   try {
-    return trimTrailingSlash(new URL(value).origin);
+    const parsed = new URL(first.startsWith("http") ? first : `https://${first}`);
+    const origin = trimTrailingSlash(parsed.origin);
+    if (!origin || origin.includes(",")) return null;
+    return origin;
   } catch {
     return null;
   }
