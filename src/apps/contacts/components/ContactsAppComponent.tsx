@@ -79,14 +79,15 @@ function GroupListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center justify-between gap-2 px-2 py-1 text-left text-[11px] transition-colors rounded-sm",
+        "w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[11px] transition-colors border-b",
         isSelected
-          ? "bg-[#7b7b7b] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
-          : "text-black/80 hover:bg-black/5"
+          ? "bg-[#b6b6b6] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
+          : "hover:bg-black/5"
       )}
+      style={{ borderColor: "rgba(0,0,0,0.08)" }}
     >
       <span className="truncate">{label}</span>
-      <span className={cn("text-[10px]", isSelected ? "text-white/80" : "text-black/45")}>
+      <span className={cn("text-[10px]", isSelected ? "text-black/45" : "text-black/45")}>
         {count}
       </span>
     </button>
@@ -367,7 +368,7 @@ export function ContactsAppComponent({
                 useGeneva={useGeneva}
                 bordered={isMacOsxTheme}
               />
-              <div className={cn("flex-1 overflow-y-auto p-1.5 space-y-0.5", useGeneva && "font-geneva-12")}>
+              <div className={cn("flex-1 overflow-y-auto", useGeneva && "font-geneva-12")}>
                 {contactGroups.map((group) => (
                   <GroupListItem
                     key={group.id}
