@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -8,7 +8,7 @@ import { useContactsLogic } from "../hooks/useContactsLogic";
 import { appMetadata } from "..";
 import type { AppProps } from "@/apps/base/types";
 import { cn } from "@/lib/utils";
-import { getContactInitials, getContactSummary, type Contact } from "@/utils/contacts";
+import { getContactInitials, type Contact } from "@/utils/contacts";
 import { Plus, UploadSimple } from "@phosphor-icons/react";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 
@@ -86,10 +86,12 @@ function PanelHeader({
   title,
   trailing,
   useGeneva = false,
+  bordered = false,
 }: {
   title: string;
   trailing?: ReactNode;
   useGeneva?: boolean;
+  bordered?: boolean;
 }) {
   return (
     <div
@@ -97,15 +99,18 @@ function PanelHeader({
         "flex items-center justify-between gap-2 px-2 py-0.5 text-[11px] border-b",
         useGeneva && "font-geneva-12"
       )}
-      style={{
+      style={bordered ? {
         background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
         color: "#222",
         textShadow: "0 1px 0 #e1e1e1",
         borderTop: "1px solid rgba(255,255,255,0.5)",
         borderBottom: "1px solid #787878",
+      } : {
+        borderColor: "rgba(0,0,0,0.1)",
+        fontWeight: 600,
       }}
     >
-      <span className="font-regular text-center flex-1">{title}</span>
+      <span className={cn("flex-1", bordered && "font-regular text-center")}>{title}</span>
       {trailing ? <span className="shrink-0">{trailing}</span> : null}
     </div>
   );
@@ -114,17 +119,28 @@ function PanelHeader({
 function Panel({
   className,
   children,
+  bordered = true,
+  style,
 }: {
   className?: string;
   children: ReactNode;
+  bordered?: boolean;
+  style?: CSSProperties;
 }) {
   return (
     <div
-      className={cn("overflow-hidden bg-white/90", className)}
+      className={cn(
+        "overflow-hidden calendar-sidebar",
+        bordered ? "bg-white/90" : "bg-white",
+        className
+      )}
       style={{
-        border: "1px solid rgba(0, 0, 0, 0.55)",
-        boxShadow:
-          "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+        ...(bordered ? {
+          border: "1px solid rgba(0, 0, 0, 0.55)",
+          boxShadow:
+            "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+        } : {}),
+        ...style,
       }}
     >
       {children}
@@ -132,40 +148,23 @@ function Panel({
   );
 }
 
-function Field({
-  label,
-  children,
-  fullWidth = false,
-}: {
-  label: string;
-  children: ReactNode;
-  fullWidth?: boolean;
-}) {
+function CardRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className={cn("flex flex-col gap-1", fullWidth && "md:col-span-2")}>
-      <span className="text-[11px] font-semibold opacity-70">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-const compactInputClassName =
-  "w-full rounded-none border border-black/20 bg-white px-2 py-1 text-[12px] outline-none focus:border-black/45";
-
-function DetailRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="py-2 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-      <div className="text-[11px] font-semibold text-black/55 mb-1">{label}</div>
-      {children}
+    <div className="flex items-start py-[5px]">
+      <div className="w-16 shrink-0 text-right text-[11px] font-bold text-black/50 pr-2 pt-px">{label}</div>
+      <div className="flex-1 min-w-0 text-[12px]">{children}</div>
     </div>
   );
 }
+
+function formatBirthday(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+}
+
+const editInputClass =
+  "w-full bg-white/60 border border-black/10 rounded-sm px-1.5 py-0.5 text-[12px] outline-none focus:border-black/25";
 
 export function ContactsAppComponent({
   isWindowOpen,
@@ -206,6 +205,8 @@ export function ContactsAppComponent({
     setContainerWidth(entry.contentRect.width);
   });
   const isMobileLayout = containerWidth < 640;
+  const [isEditing, setIsEditing] = useState(false);
+  useEffect(() => { setIsEditing(false); }, [selectedContact?.id]);
 
   const menuBar = (
     <ContactsMenuBar
@@ -239,7 +240,7 @@ export function ContactsAppComponent({
         <div
           ref={containerRef}
           className={cn(
-            "h-full flex flex-col font-os-ui overflow-hidden",
+            "h-full w-full flex flex-col font-os-ui overflow-hidden",
             isMacOsxTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
           )}
         >
@@ -336,23 +337,25 @@ export function ContactsAppComponent({
 
           <div
             className={cn(
-              "flex-1 overflow-hidden w-full",
-              isMobileLayout
-                ? "flex flex-col w-full h-full items-stretch"
-                : "flex",
-              isMacOsxTheme && !isMobileLayout && "px-[5px] pb-[5px]",
+              "flex-1 overflow-hidden",
+              isMobileLayout ? "flex flex-col" : "flex",
               !isMobileLayout && isMacOsxTheme && "gap-[5px]"
             )}
           >
             {!isMobileLayout && (
-            <Panel className="w-[170px] shrink-0 flex flex-col min-h-0">
+            <Panel
+              bordered={isMacOsxTheme}
+              className="w-[170px] shrink-0 flex flex-col min-h-0"
+              style={!isMacOsxTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
+            >
               <PanelHeader
                 title={t("apps.contacts.groupHeaders.groups", {
                   defaultValue: "Group",
                 })}
                 useGeneva={useGeneva}
+                bordered={isMacOsxTheme}
               />
-              <div className={cn("flex-1 overflow-y-auto p-1.5 space-y-0.5 calendar-sidebar", useGeneva && "font-geneva-12")}>
+              <div className={cn("flex-1 overflow-y-auto p-1.5 space-y-0.5", useGeneva && "font-geneva-12")}>
                 {contactGroups.map((group) => (
                   <GroupListItem
                     key={group.id}
@@ -367,20 +370,29 @@ export function ContactsAppComponent({
             )}
 
             <Panel
+              bordered={isMacOsxTheme}
               className={cn(
                 "flex flex-col min-h-0",
                 isMobileLayout
                   ? "w-full max-w-none self-stretch h-[140px] shrink-0 basis-auto"
                   : "w-[245px] shrink-0"
               )}
+              style={
+                !isMacOsxTheme
+                  ? isMobileLayout
+                    ? { borderBottom: "1px solid rgba(0,0,0,0.08)" }
+                    : { borderRight: "1px solid rgba(0,0,0,0.08)" }
+                  : undefined
+              }
             >
               <PanelHeader
                 title={t("apps.contacts.groupHeaders.names", {
                   defaultValue: "Name",
                 })}
                 useGeneva={useGeneva}
+                bordered={isMacOsxTheme}
               />
-              <div className={cn("flex-1 overflow-y-auto calendar-sidebar", useGeneva && "font-geneva-12")}>
+              <div className={cn("flex-1 overflow-y-auto", useGeneva && "font-geneva-12")}>
                 {contacts.length === 0 ? (
                   <div className="px-4 py-6 text-[12px] text-black/55">
                     {t("apps.contacts.emptyState")}
@@ -399,197 +411,161 @@ export function ContactsAppComponent({
             </Panel>
 
             <Panel
+              bordered={isMacOsxTheme}
               className={cn(
                 "flex-1 min-w-0 flex flex-col",
                 isMobileLayout && "w-full max-w-none self-stretch basis-auto"
               )}
             >
-              <PanelHeader
-                title={selectedContact?.displayName || t("apps.contacts.title")}
-                useGeneva={useGeneva}
-              />
               {selectedContact ? (
                 <>
-                  <div className="flex items-start gap-3 px-4 pt-4 pb-2 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-                    <div className="w-16 h-16 shrink-0 rounded-[6px] bg-[linear-gradient(to_bottom,#b8b8b8,#dcdcdc)] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-xl font-semibold text-black/70">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                  <div className="flex items-start gap-3 pt-3 pb-2 px-4">
+                    <div className="w-12 h-12 shrink-0 rounded-[4px] bg-[linear-gradient(to_bottom,#b8b8b8,#dcdcdc)] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-base font-semibold text-black/70">
                       {getContactInitials(selectedContact)}
                     </div>
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <input
-                        className="w-full border border-[#c59a37] bg-[#f9df7a] px-2 py-1 text-[18px] font-semibold outline-none"
-                        value={selectedContact.displayName}
-                        onChange={(event) =>
-                          updateSelectedContact({ displayName: event.target.value })
-                        }
-                      />
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <input
-                          className={compactInputClassName}
-                          value={selectedContact.organization}
-                          onChange={(event) =>
-                            updateSelectedContact({ organization: event.target.value })
-                          }
-                          placeholder={t("apps.contacts.fields.organization")}
-                        />
-                        <input
-                          className={compactInputClassName}
-                          value={selectedContact.title}
-                          onChange={(event) =>
-                            updateSelectedContact({ title: event.target.value })
-                          }
-                          placeholder={t("apps.contacts.fields.jobTitle")}
-                        />
-                      </div>
-                      <div className="text-[12px] text-black/55 truncate">
-                        {getContactSummary(selectedContact) || t("apps.contacts.noSummary")}
-                      </div>
+                    <div className="min-w-0 flex-1 pt-0.5 space-y-1">
+                      {isEditing ? (
+                        <>
+                          <div className="flex gap-1.5">
+                            <input
+                              className={cn(editInputClass, "text-[14px] font-bold")}
+                              placeholder={t("apps.contacts.fields.firstName")}
+                              value={selectedContact.firstName}
+                              onChange={(e) => updateSelectedContact({ firstName: e.target.value })}
+                            />
+                            <input
+                              className={cn(editInputClass, "text-[14px] font-bold")}
+                              placeholder={t("apps.contacts.fields.lastName")}
+                              value={selectedContact.lastName}
+                              onChange={(e) => updateSelectedContact({ lastName: e.target.value })}
+                            />
+                          </div>
+                          <input
+                            className={cn(editInputClass, "text-[11px]")}
+                            placeholder={t("apps.contacts.fields.organization")}
+                            value={selectedContact.organization}
+                            onChange={(e) => updateSelectedContact({ organization: e.target.value })}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-[15px] font-bold leading-tight">{selectedContact.displayName}</div>
+                          {selectedContact.organization && (
+                            <div className="text-[11px] text-black/50">{selectedContact.organization}</div>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-4 pb-3">
-                    <DetailRow label={t("apps.contacts.fields.phones")}>
-                      <textarea
-                        rows={2}
-                        className={compactInputClassName}
-                        value={formatMultivalue(selectedContact.phones.map((item) => item.value))}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            phones: splitMultivalueInput(event.target.value),
-                          })
-                        }
-                        placeholder={t("apps.contacts.placeholders.multiValue")}
-                      />
-                    </DetailRow>
+                  
 
-                    <DetailRow label={t("apps.contacts.fields.emails")}>
-                      <textarea
-                        rows={2}
-                        className={compactInputClassName}
-                        value={formatMultivalue(selectedContact.emails.map((item) => item.value))}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            emails: splitMultivalueInput(event.target.value),
-                          })
-                        }
-                        placeholder={t("apps.contacts.placeholders.multiValue")}
-                      />
-                    </DetailRow>
-
-                    <DetailRow label={t("apps.contacts.fields.birthday")}>
-                      <input
-                        type="date"
-                        className={compactInputClassName}
-                        value={selectedContact.birthday || ""}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            birthday: event.target.value || null,
-                          })
-                        }
-                      />
-                    </DetailRow>
-
-                    <DetailRow label={t("apps.contacts.fields.telegramUsername")}>
-                      <input
-                        className={compactInputClassName}
-                        value={selectedContact.telegramUsername}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            telegramUsername: event.target.value,
-                          })
-                        }
-                      />
-                    </DetailRow>
-
-                    <DetailRow label={t("apps.contacts.fields.telegramUserId")}>
-                      <input
-                        className={compactInputClassName}
-                        value={selectedContact.telegramUserId}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            telegramUserId: event.target.value,
-                          })
-                        }
-                      />
-                    </DetailRow>
-
-                    <DetailRow label={t("apps.contacts.fields.addresses")}>
-                      <textarea
-                        rows={3}
-                        className={compactInputClassName}
-                        value={formatMultivalue(
-                          selectedContact.addresses.map((item) => item.formatted)
+                  <div className="px-3">
+                    {isEditing ? (
+                      <>
+                        <CardRow label="phone">
+                          <textarea
+                            rows={2}
+                            className={cn(editInputClass, "resize-none")}
+                            value={formatMultivalue(selectedContact.phones.map((p) => p.value))}
+                            onChange={(e) => updateSelectedContact({ phones: splitMultivalueInput(e.target.value) })}
+                            placeholder={t("apps.contacts.placeholders.multiValue")}
+                          />
+                        </CardRow>
+                        <CardRow label="email">
+                          <textarea
+                            rows={2}
+                            className={cn(editInputClass, "resize-none")}
+                            value={formatMultivalue(selectedContact.emails.map((e) => e.value))}
+                            onChange={(e) => updateSelectedContact({ emails: splitMultivalueInput(e.target.value) })}
+                            placeholder={t("apps.contacts.placeholders.multiValue")}
+                          />
+                        </CardRow>
+                        <CardRow label="birthday">
+                          <input
+                            type="date"
+                            className={editInputClass}
+                            value={selectedContact.birthday || ""}
+                            onChange={(e) => updateSelectedContact({ birthday: e.target.value || null })}
+                          />
+                        </CardRow>
+                        <CardRow label="address">
+                          <textarea
+                            rows={2}
+                            className={cn(editInputClass, "resize-none")}
+                            value={formatMultivalue(selectedContact.addresses.map((a) => a.formatted))}
+                            onChange={(e) => updateSelectedContact({ addresses: splitMultivalueInput(e.target.value) })}
+                            placeholder={t("apps.contacts.placeholders.multiValue")}
+                          />
+                        </CardRow>
+                        <CardRow label="url">
+                          <textarea
+                            rows={2}
+                            className={cn(editInputClass, "resize-none")}
+                            value={formatMultivalue(selectedContact.urls.map((u) => u.value))}
+                            onChange={(e) => updateSelectedContact({ urls: splitMultivalueInput(e.target.value) })}
+                            placeholder={t("apps.contacts.placeholders.multiValue")}
+                          />
+                        </CardRow>
+                        <CardRow label="nickname">
+                          <input
+                            className={editInputClass}
+                            value={selectedContact.nickname}
+                            onChange={(e) => updateSelectedContact({ nickname: e.target.value })}
+                          />
+                        </CardRow>
+                        <CardRow label="note">
+                          <textarea
+                            rows={3}
+                            className={cn(editInputClass, "resize-none")}
+                            value={selectedContact.notes}
+                            onChange={(e) => updateSelectedContact({ notes: e.target.value })}
+                          />
+                        </CardRow>
+                      </>
+                    ) : (
+                      <>
+                        {selectedContact.phones.map((p) => (
+                          <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : "phone"}>{p.value}</CardRow>
+                        ))}
+                        {selectedContact.emails.map((e) => (
+                          <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : "email"}>{e.value}</CardRow>
+                        ))}
+                        {selectedContact.birthday && (
+                          <CardRow label="birthday">{formatBirthday(selectedContact.birthday)}</CardRow>
                         )}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            addresses: splitMultivalueInput(event.target.value),
-                          })
-                        }
-                        placeholder={t("apps.contacts.placeholders.multiValue")}
-                      />
-                    </DetailRow>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                      <Field label={t("apps.contacts.fields.firstName")}>
-                        <input
-                          className={compactInputClassName}
-                          value={selectedContact.firstName}
-                          onChange={(event) =>
-                            updateSelectedContact({ firstName: event.target.value })
-                          }
-                        />
-                      </Field>
-                      <Field label={t("apps.contacts.fields.lastName")}>
-                        <input
-                          className={compactInputClassName}
-                          value={selectedContact.lastName}
-                          onChange={(event) =>
-                            updateSelectedContact({ lastName: event.target.value })
-                          }
-                        />
-                      </Field>
-                      <Field label={t("apps.contacts.fields.nickname")}>
-                        <input
-                          className={compactInputClassName}
-                          value={selectedContact.nickname}
-                          onChange={(event) =>
-                            updateSelectedContact({ nickname: event.target.value })
-                          }
-                        />
-                      </Field>
-                      <Field label={t("apps.contacts.fields.source")}>
-                        <input
-                          className={cn(compactInputClassName, "bg-black/5")}
-                          value={selectedContact.source}
-                          readOnly
-                        />
-                      </Field>
-                    </div>
-
-                    <DetailRow label={t("apps.contacts.fields.urls")}>
-                      <textarea
-                        rows={2}
-                        className={compactInputClassName}
-                        value={formatMultivalue(selectedContact.urls.map((item) => item.value))}
-                        onChange={(event) =>
-                          updateSelectedContact({
-                            urls: splitMultivalueInput(event.target.value),
-                          })
-                        }
-                        placeholder={t("apps.contacts.placeholders.multiValue")}
-                      />
-                    </DetailRow>
-
-                    <DetailRow label={t("apps.contacts.fields.notes")}>
-                      <textarea
-                        rows={4}
-                        className={compactInputClassName}
-                        value={selectedContact.notes}
-                        onChange={(event) =>
-                          updateSelectedContact({ notes: event.target.value })
-                        }
-                      />
-                    </DetailRow>
+                        {selectedContact.addresses.map((a) => (
+                          <CardRow key={a.id} label={a.label && a.label !== "other" ? a.label : "home"}>{a.formatted}</CardRow>
+                        ))}
+                        {selectedContact.urls.map((u) => (
+                          <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : "url"}>{u.value}</CardRow>
+                        ))}
+                        {selectedContact.nickname && (
+                          <CardRow label="nickname">{selectedContact.nickname}</CardRow>
+                        )}
+                        {selectedContact.notes && (
+                          <CardRow label="note">{selectedContact.notes}</CardRow>
+                        )}
+                      </>
+                    )}
                   </div>
+                </div>
+                <div
+                  className="shrink-0 flex items-center justify-between px-4 py-2 border-t"
+                  style={{ borderColor: "rgba(0,0,0,0.08)" }}
+                >
+                  <button
+                    type="button"
+                    className="text-[11px] font-semibold text-black/60 hover:text-black/80 px-3 py-0.5 rounded border border-black/15 bg-white/60"
+                    onClick={() => setIsEditing(!isEditing)}
+                  >
+                    {isEditing ? t("apps.contacts.done", { defaultValue: "Done" }) : t("apps.contacts.edit", { defaultValue: "Edit" })}
+                  </button>
+                  <span className="text-[10px] text-black/40">
+                    {contacts.length} {contacts.length === 1 ? "card" : "cards"}
+                  </span>
+                </div>
                 </>
               ) : (
                 <div className="h-full flex items-center justify-center text-[13px] text-black/55 p-6 text-center">
