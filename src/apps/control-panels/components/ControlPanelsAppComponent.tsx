@@ -171,9 +171,9 @@ function getUsernameInitials(username: string): string {
 
 const AUTO_SYNC_ITEM_ICONS = {
   files: "finder",
+  settings: "control-panels",
   calendar: "calendar",
   contacts: "contacts",
-  settings: "control-panels",
   songs: "ipod",
   videos: "videos",
   stickies: "stickies",
@@ -757,6 +757,14 @@ export function ControlPanelsAppComponent({
                         />
 
                         <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.settings}
+                          label={t("apps.control-panels.autoSync.settings")}
+                          status={formatSyncStatus(autoSyncDomainStatus.settings, t)}
+                          checked={syncSettings}
+                          onCheckedChange={setSyncSettings}
+                        />
+
+                        <SyncDomainRow
                           appId={AUTO_SYNC_ITEM_ICONS.calendar}
                           label={t("apps.control-panels.autoSync.calendar")}
                           status={formatSyncStatus(autoSyncDomainStatus.calendar, t)}
@@ -770,14 +778,6 @@ export function ControlPanelsAppComponent({
                           status={formatSyncStatus(autoSyncDomainStatus.contacts, t)}
                           checked={syncContacts}
                           onCheckedChange={setSyncContacts}
-                        />
-
-                        <SyncDomainRow
-                          appId={AUTO_SYNC_ITEM_ICONS.settings}
-                          label={t("apps.control-panels.autoSync.settings")}
-                          status={formatSyncStatus(autoSyncDomainStatus.settings, t)}
-                          checked={syncSettings}
-                          onCheckedChange={setSyncSettings}
                         />
 
                         <SyncDomainRow
