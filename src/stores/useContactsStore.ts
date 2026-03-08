@@ -25,6 +25,7 @@ interface ContactsStoreState {
   addContact: (draft?: ContactDraft) => string;
   updateContact: (id: string, draft: ContactDraft) => void;
   deleteContact: (id: string) => void;
+  importContacts: (parsed: ContactImportResult) => ImportContactsResult;
   importVCardText: (text: string) => ImportContactsResult;
 }
 
@@ -78,8 +79,7 @@ export const useContactsStore = create<ContactsStoreState>()(
         }));
       },
 
-      importVCardText: (text) => {
-        const parsed = parseVCardText(text);
+      importContacts: (parsed) => {
         let importedCount = 0;
         let mergedCount = 0;
         let nextSelectedId: string | null = get().selectedContactId;
@@ -118,6 +118,10 @@ export const useContactsStore = create<ContactsStoreState>()(
           importedCount,
           mergedCount,
         };
+      },
+
+      importVCardText: (text) => {
+        return get().importContacts(parseVCardText(text));
       },
     }),
     {

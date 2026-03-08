@@ -6,7 +6,8 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import type { Contact, ContactDraft } from "@/utils/contacts";
-import { contactMatchesQuery, sortContacts } from "@/utils/contacts";
+import { contactMatchesQuery, parseVCardText, sortContacts } from "@/utils/contacts";
+import { resizeImageToBase64 } from "@/utils/imageResize";
 import { helpItems } from "..";
 
 type ContactGroupId = "all" | "imported" | "telegram" | "work" | "birthdays";
@@ -38,7 +39,7 @@ export function useContactsLogic() {
     addContact,
     updateContact,
     deleteContact,
-    importVCardText,
+    importContacts,
   } = useContactsStore(
     useShallow((state) => ({
       contacts: state.contacts,
@@ -47,7 +48,7 @@ export function useContactsLogic() {
       addContact: state.addContact,
       updateContact: state.updateContact,
       deleteContact: state.deleteContact,
-      importVCardText: state.importVCardText,
+      importContacts: state.importContacts,
     }))
   );
 
@@ -168,7 +169,19 @@ export function useContactsLogic() {
 
     try {
       const text = await file.text();
-      const result = importVCardText(text);
+      const parsed = parseVCardText(text);
+
+      for (const contact of parsed.contacts) {
+        if (contact.picture) {
+          try {
+            contact.picture = await resizeImageToBase64(contact.picture, 64);
+          } catch {
+            contact.picture = null;
+          }
+        }
+      }
+
+      const result = importContacts(parsed);
 
       if (result.contacts.length === 0) {
         toast.error(t("apps.contacts.messages.importEmpty"));
