@@ -286,7 +286,7 @@ export function ContactsAppComponent({
                       onClick={handleCreateContact}
                       title={t("apps.contacts.menu.newContact")}
                     >
-                      <Plus size={9} weight="bold" />
+                      <Plus size={12} weight="bold" />
                     </button>
                     <button
                       type="button"
@@ -294,7 +294,7 @@ export function ContactsAppComponent({
                       onClick={handleImport}
                       title={t("apps.contacts.menu.importVCard")}
                     >
-                      <UploadSimple size={9} weight="bold" />
+                      <UploadSimple size={12} weight="bold" />
                     </button>
                   </div>
                 </div>
