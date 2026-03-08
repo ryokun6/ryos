@@ -8,7 +8,7 @@
  * This script will ONLY run when NODE_ENV or VERCEL_ENV is set to 'development'.
  */
 
-import { Redis } from "@upstash/redis";
+import { createRedis, type RedisLike } from "../api/_utils/redis.js";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -44,21 +44,24 @@ const DEV_USERS: DevUser[] = [
 ];
 
 // Initialize Redis client
-function getRedisClient(): Redis | null {
-  const url = process.env.REDIS_KV_REST_API_URL;
-  const token = process.env.REDIS_KV_REST_API_TOKEN;
-
-  if (!url || !token) {
+function getRedisClient(): RedisLike | null {
+  if (
+    !process.env.REDIS_URL &&
+    (!process.env.REDIS_KV_REST_API_URL || !process.env.REDIS_KV_REST_API_TOKEN)
+  ) {
     return null;
   }
 
-  return new Redis({ url, token });
+  return createRedis();
 }
 
 /**
  * Delete a user from Redis (user data, password hash, and tokens)
  */
-async function deleteUserFromRedis(redis: Redis, username: string): Promise<boolean> {
+async function deleteUserFromRedis(
+  redis: RedisLike,
+  username: string
+): Promise<boolean> {
   const normalizedUsername = username.toLowerCase();
 
   try {
