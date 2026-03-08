@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-08T08:16:36.758Z",
+  "generatedAt": "2026-03-08T08:36:33.243Z",
   "themes": {
     "default": [
       "admin.png",
@@ -12,6 +12,7 @@
       "bomb.svg",
       "calendar.png",
       "cdrom.png",
+      "cloud-sync.png",
       "cola.png",
       "contacts.png",
       "control-panels/appearance-manager/app.png",
@@ -151,6 +152,7 @@
       "bento.png",
       "cdrom.png",
       "chess.png",
+      "cloud-sync.png",
       "console.png",
       "contacts.png",
       "control-panels/appearance-manager/app.png",

@@ -13,7 +13,7 @@ import {
   type WeekDay,
 } from "../hooks/useCalendarLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
-import { CaretLeft, CaretRight, Plus, ListChecks, Trash, MagnifyingGlass, XCircle } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Plus, ListChecks, Trash, MagnifyingGlass, XCircle, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, CalendarGroup, TodoItem } from "@/stores/useCalendarStore";
@@ -803,14 +803,18 @@ function MonthGrid({
 
 function BottomToolbar({
   view, onSetView, onGoToToday, onNewEvent, onPrev, onNext,
+  showCalendarSidebar, onToggleCalendarSidebar,
   showTodoSidebar, onToggleTodoSidebar,
   searchQuery, onSearchQueryChange, showSearch,
+  isNarrow,
   isXpTheme, isMacOSTheme, isSystem7Theme, t,
 }: {
   view: string; onSetView: (v: "day" | "week" | "month") => void; onGoToToday: () => void; onNewEvent: () => void;
   onPrev: () => void; onNext: () => void;
+  showCalendarSidebar: boolean; onToggleCalendarSidebar: () => void;
   showTodoSidebar: boolean; onToggleTodoSidebar: () => void;
   searchQuery: string; onSearchQueryChange: (value: string) => void; showSearch: boolean;
+  isNarrow: boolean;
   isXpTheme: boolean; isMacOSTheme: boolean; isSystem7Theme: boolean; t: (key: string) => string;
 }) {
   const views: { id: "day" | "week" | "month"; label: string }[] = [
@@ -878,6 +882,28 @@ function BottomToolbar({
         <>
           <div className="shrink-0">
             <div className="metal-inset-btn-group">
+              {!isNarrow && (
+                <button
+                  type="button"
+                  className="metal-inset-btn metal-inset-icon"
+                  onClick={onToggleCalendarSidebar}
+                  data-state={showCalendarSidebar ? "on" : "off"}
+                  title={t("apps.calendar.sidebar.calendars")}
+                >
+                  <SidebarSimple size={14} />
+                </button>
+              )}
+              <button
+                type="button"
+                className="metal-inset-btn font-geneva-12 !text-[11px] w-[48px] justify-center px-0"
+                onClick={onGoToToday}
+              >
+                {t("apps.calendar.today")}
+              </button>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <div className="metal-inset-btn-group">
               <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onPrev}>
                 <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
               </button>
@@ -901,16 +927,16 @@ function BottomToolbar({
           )}
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="metal-inset-btn-group">
-              <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]" onClick={onGoToToday}>
-                {t("apps.calendar.today")}
-              </button>
-            </div>
-            <div className="metal-inset-btn-group">
               <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNewEvent} title={t("apps.calendar.menu.newEvent")}>
                 <Plus size={12} weight="bold" />
               </button>
-              <button type="button" className="metal-inset-btn metal-inset-icon"
-                onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"} title={t("apps.calendar.sidebar.toDoItems")}>
+              <button
+                type="button"
+                className="metal-inset-btn metal-inset-icon"
+                onClick={onToggleTodoSidebar}
+                data-state={showTodoSidebar ? "on" : "off"}
+                title={t("apps.calendar.sidebar.toDoItems")}
+              >
                 <ListChecks size={12} weight="bold" />
               </button>
             </div>
@@ -918,22 +944,41 @@ function BottomToolbar({
         </>
       ) : (
         <>
-          <div className="flex items-center gap-0 shrink-0">
-            <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
-              className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onPrev}>
-              <CaretLeft size={12} weight="bold" />
-            </Button>
-            {views.map((v) => (
-              <Button key={v.id} variant={isSystem7Theme ? "player" : "default"}
-                data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}
-                className={cn("h-[22px] w-[48px] px-0 text-[11px]", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
-                {v.label}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-0">
+              {!isNarrow && (
+                <Button
+                  variant={isSystem7Theme ? "player" : "ghost"}
+                  onClick={onToggleCalendarSidebar}
+                  data-state={showCalendarSidebar ? "on" : "off"}
+                  className={cn("h-6 w-6", isXpTheme && "text-black")}
+                  title={t("apps.calendar.sidebar.calendars")}
+                >
+                  <SidebarSimple size={14} />
+                </Button>
+              )}
+              <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onGoToToday}
+                className={cn("h-6 w-[48px] text-[11px] px-0", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
+                {t("apps.calendar.today")}
               </Button>
-            ))}
-            <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
-              className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onNext}>
-              <CaretRight size={12} weight="bold" />
-            </Button>
+            </div>
+            <div className="flex items-center gap-0">
+              <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
+                className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onPrev}>
+                <CaretLeft size={12} weight="bold" />
+              </Button>
+              {views.map((v) => (
+                <Button key={v.id} variant={isSystem7Theme ? "player" : "default"}
+                  data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}
+                  className={cn("h-[22px] w-[48px] px-0 text-[11px]", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
+                  {v.label}
+                </Button>
+              ))}
+              <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
+                className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onNext}>
+                <CaretRight size={12} weight="bold" />
+              </Button>
+            </div>
           </div>
           {showSearch ? (
             <div className="flex-1 min-w-0 flex items-center justify-center">
@@ -943,10 +988,6 @@ function BottomToolbar({
             <div className="flex-1" />
           )}
           <div className="flex items-center gap-0 shrink-0">
-            <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onGoToToday}
-              className={cn("h-6 text-[11px] px-2", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
-              {t("apps.calendar.today")}
-            </Button>
             <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onNewEvent}
               className={cn("h-6 w-6", isXpTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
               <Plus size={12} weight="bold" />
@@ -999,12 +1040,13 @@ export function CalendarAppComponent({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(700);
+  const [showCalendarSidebar, setShowCalendarSidebar] = useState(true);
   useResizeObserverWithRef(containerRef, (entry) => {
     setContainerWidth(entry.contentRect.width);
   });
 
   const isNarrow = containerWidth < 600;
-  const showSidebar = containerWidth >= 540;
+  const showSidebar = containerWidth >= 540 && showCalendarSidebar;
   const showTodo = showTodoSidebar && !isNarrow;
   const showTodoFullWidth = showTodoSidebar && isNarrow;
   const effectiveView = view;
@@ -1224,8 +1266,10 @@ export function CalendarAppComponent({
           <BottomToolbar
             view={effectiveView} onSetView={setView} onGoToToday={goToToday} onNewEvent={handleNewEvent}
             onPrev={handlePrev} onNext={handleNext}
+            showCalendarSidebar={showCalendarSidebar} onToggleCalendarSidebar={() => setShowCalendarSidebar((current) => !current)}
             showTodoSidebar={showTodoSidebar} onToggleTodoSidebar={() => setShowTodoSidebar(!showTodoSidebar)}
             searchQuery={safeSearchQuery} onSearchQueryChange={setSearchQuery} showSearch={!isNarrow}
+            isNarrow={isNarrow}
             isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} t={t}
           />
         </div>

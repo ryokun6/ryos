@@ -188,7 +188,7 @@ function SyncSectionTitle({
   return (
     <div className="flex items-center gap-3 min-w-0">
       <ThemedIcon
-        name="/icons/default/isync.png"
+        name="/icons/default/cloud-sync.png"
         alt=""
         className="h-8 w-8 shrink-0 object-contain"
       />

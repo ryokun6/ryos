@@ -2316,7 +2316,7 @@
       "backupRestoreDescription": "Backup or restore all app settings and files to a local file",
       "autoSync": {
         "title": "Cloud Sync",
-        "description": "Automatically sync selected data and settings to the cloud after significant updates",
+        "description": "Sync apps and settings across devices",
         "files": "Files",
         "settings": "Settings",
         "songs": "Songs",
