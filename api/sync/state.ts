@@ -14,6 +14,7 @@ import {
   type CloudSyncDomainMetadata,
   type RedisSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
+import { isSerializedContact } from "../../src/utils/contacts.js";
 import { apiHandler } from "../_utils/api-handler.js";
 
 export const runtime = "nodejs";
@@ -31,6 +32,15 @@ interface PutStateBody {
   data?: unknown;
   updatedAt?: string;
   version?: number;
+}
+
+function isContactsSnapshotData(value: unknown): value is { contacts: unknown[] } {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    Array.isArray((value as { contacts?: unknown[] }).contacts) &&
+    (value as { contacts: unknown[] }).contacts.every(isSerializedContact)
+  );
 }
 
 export function stateKey(username: string, domain: RedisSyncDomain): string {
@@ -355,6 +365,13 @@ async function handlePutState(
   }
 
   const domain = body.domain as RedisSyncDomain;
+  if (domain === "contacts" && !isContactsSnapshotData(body.data)) {
+    res.status(400).json({
+      error: "Invalid contacts snapshot payload",
+    });
+    return;
+  }
+
   const now = new Date().toISOString();
 
   const entry: PersistedRedisStateDomain = {

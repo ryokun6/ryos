@@ -74,9 +74,35 @@ export const DEFAULT_RYO_CONTACT_DRAFT: ContactDraft = {
   urls: ["https://ryo.lu", "https://x.com/ryolu_", "https://os.ryo.lu"],
   source: "manual",
 };
+const CONTACT_SOURCES: readonly ContactSource[] = [
+  "manual",
+  "vcard",
+  "telegram",
+  "ai",
+];
 
 function normalizedWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function optionalString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function optionalNullableString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isContactSource(value: unknown): value is ContactSource {
+  return typeof value === "string" && CONTACT_SOURCES.includes(value as ContactSource);
 }
 
 export function sanitizeTelegramUsername(value: string | null | undefined): string {
@@ -215,6 +241,69 @@ function normalizeContactAddress(input: ContactAddress | string): ContactAddress
   };
 }
 
+function normalizeContactValueList(
+  values: unknown
+): Array<ContactValue | string> {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  const normalized: Array<ContactValue | string> = [];
+
+  for (const value of values) {
+    if (typeof value === "string") {
+      normalized.push(value);
+      continue;
+    }
+
+    if (!isRecord(value)) {
+      continue;
+    }
+
+    normalized.push({
+      id: optionalString(value.id),
+      label: optionalString(value.label),
+      value: optionalString(value.value),
+    });
+  }
+
+  return normalized;
+}
+
+function normalizeContactAddressList(
+  values: unknown
+): Array<ContactAddress | string> {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  const normalized: Array<ContactAddress | string> = [];
+
+  for (const value of values) {
+    if (typeof value === "string") {
+      normalized.push(value);
+      continue;
+    }
+
+    if (!isRecord(value)) {
+      continue;
+    }
+
+    normalized.push({
+      id: optionalString(value.id),
+      label: optionalString(value.label),
+      street: optionalString(value.street),
+      city: optionalString(value.city),
+      region: optionalString(value.region),
+      postalCode: optionalString(value.postalCode),
+      country: optionalString(value.country),
+      formatted: optionalString(value.formatted),
+    });
+  }
+
+  return normalized;
+}
+
 function dedupeContactValues(values: ContactValue[]): ContactValue[] {
   const seen = new Set<string>();
   const result: ContactValue[] = [];
@@ -316,6 +405,108 @@ export function createContactFromDraft(
 
 export function createDefaultRyoContact(now: number = Date.now()): Contact {
   return createContactFromDraft(DEFAULT_RYO_CONTACT_DRAFT, now);
+}
+
+export function isSerializedContactValue(value: unknown): value is ContactValue {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    typeof value.value === "string"
+  );
+}
+
+export function isSerializedContactAddress(value: unknown): value is ContactAddress {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    typeof value.street === "string" &&
+    typeof value.city === "string" &&
+    typeof value.region === "string" &&
+    typeof value.postalCode === "string" &&
+    typeof value.country === "string" &&
+    typeof value.formatted === "string"
+  );
+}
+
+export function isSerializedContact(value: unknown): value is Contact {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.displayName === "string" &&
+    typeof value.firstName === "string" &&
+    typeof value.lastName === "string" &&
+    typeof value.nickname === "string" &&
+    typeof value.organization === "string" &&
+    typeof value.title === "string" &&
+    typeof value.notes === "string" &&
+    Array.isArray(value.emails) &&
+    value.emails.every(isSerializedContactValue) &&
+    Array.isArray(value.phones) &&
+    value.phones.every(isSerializedContactValue) &&
+    Array.isArray(value.addresses) &&
+    value.addresses.every(isSerializedContactAddress) &&
+    Array.isArray(value.urls) &&
+    value.urls.every(isSerializedContactValue) &&
+    (value.birthday === null || typeof value.birthday === "string") &&
+    typeof value.telegramUsername === "string" &&
+    typeof value.telegramUserId === "string" &&
+    isContactSource(value.source) &&
+    isFiniteNumber(value.createdAt) &&
+    isFiniteNumber(value.updatedAt)
+  );
+}
+
+export function normalizeContact(value: unknown, fallbackNow: number = Date.now()): Contact | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = normalizedWhitespace(optionalString(value.id));
+  if (!id) {
+    return null;
+  }
+
+  const createdAt = isFiniteNumber(value.createdAt) ? value.createdAt : fallbackNow;
+  const updatedAt = isFiniteNumber(value.updatedAt) ? value.updatedAt : createdAt;
+  const normalized = createContactFromDraft(
+    {
+      displayName: optionalString(value.displayName),
+      firstName: optionalString(value.firstName),
+      lastName: optionalString(value.lastName),
+      nickname: optionalString(value.nickname),
+      organization: optionalString(value.organization),
+      title: optionalString(value.title),
+      notes: optionalString(value.notes),
+      emails: normalizeContactValueList(value.emails),
+      phones: normalizeContactValueList(value.phones),
+      addresses: normalizeContactAddressList(value.addresses),
+      urls: normalizeContactValueList(value.urls),
+      birthday: optionalNullableString(value.birthday),
+      telegramUsername: optionalNullableString(value.telegramUsername),
+      telegramUserId: optionalNullableString(value.telegramUserId),
+      source: isContactSource(value.source) ? value.source : "manual",
+    },
+    createdAt
+  );
+
+  return {
+    ...normalized,
+    id,
+    createdAt,
+    updatedAt,
+  };
+}
+
+export function normalizeContacts(value: unknown): Contact[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => normalizeContact(entry))
+    .filter((entry): entry is Contact => Boolean(entry));
 }
 
 export function updateContactFromDraft(

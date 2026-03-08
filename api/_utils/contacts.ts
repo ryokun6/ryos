@@ -1,6 +1,6 @@
 import type { Redis } from "@upstash/redis";
 import type { Contact } from "../../src/utils/contacts.js";
-import { getContactSummary } from "../../src/utils/contacts.js";
+import { getContactSummary, normalizeContacts } from "../../src/utils/contacts.js";
 import type { ContactsSnapshotData } from "../chat/tools/types.js";
 import { stateKey } from "../sync/state.js";
 
@@ -21,7 +21,9 @@ export async function readContactsState(
   }
 
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-  return parsed?.data ?? { contacts: [] };
+  return {
+    contacts: normalizeContacts(parsed?.data?.contacts),
+  };
 }
 
 export async function writeContactsState(
