@@ -181,7 +181,7 @@ function CardRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-start py-[5px]">
       <div className="w-16 shrink-0 text-right text-[11px] font-bold text-black/50 pr-2 pt-px">{label}</div>
-      <div className="flex-1 min-w-0 text-[12px]">{children}</div>
+      <div className="flex-1 min-w-0 break-words text-[12px]">{children}</div>
     </div>
   );
 }
@@ -722,12 +722,12 @@ export function ContactsAppComponent({
                       <>
                         {selectedContact.phones.map((p) => (
                           <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : t("apps.contacts.cardLabels.phone")}>
-                            <a href={`tel:${p.value}`} className="text-blue-600 hover:underline">{p.value}</a>
+                            <a href={`tel:${p.value}`} className="break-all text-blue-600 hover:underline">{p.value}</a>
                           </CardRow>
                         ))}
                         {selectedContact.emails.map((e) => (
                           <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : t("apps.contacts.cardLabels.email")}>
-                            <a href={`mailto:${e.value}`} className="text-blue-600 hover:underline">{e.value}</a>
+                            <a href={`mailto:${e.value}`} className="break-all text-blue-600 hover:underline">{e.value}</a>
                           </CardRow>
                         ))}
                         {selectedContact.birthday && (
@@ -738,7 +738,7 @@ export function ContactsAppComponent({
                         ))}
                         {selectedContact.urls.map((u) => (
                           <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : t("apps.contacts.cardLabels.url")}>
-                            <a href={u.value.startsWith("http") ? u.value : `https://${u.value}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{u.value}</a>
+                            <a href={u.value.startsWith("http") ? u.value : `https://${u.value}`} target="_blank" rel="noopener noreferrer" className="break-all text-blue-600 hover:underline">{u.value}</a>
                           </CardRow>
                         ))}
                         {selectedContact.nickname && (
