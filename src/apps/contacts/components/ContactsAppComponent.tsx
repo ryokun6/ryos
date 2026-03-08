@@ -418,6 +418,7 @@ export function ContactsAppComponent({
               )}
             >
               {selectedContact ? (
+                <>
                 <div className="flex-1 overflow-y-auto overflow-x-hidden">
                   {isEditing ? (
                     <div className="px-4 pt-3 pb-1 space-y-1.5">
@@ -523,19 +524,19 @@ export function ContactsAppComponent({
                     ) : (
                       <>
                         {selectedContact.phones.map((p) => (
-                          <CardRow key={p.id} label={p.label || "phone"}>{p.value}</CardRow>
+                          <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : "phone"}>{p.value}</CardRow>
                         ))}
                         {selectedContact.emails.map((e) => (
-                          <CardRow key={e.id} label={e.label || "email"}>{e.value}</CardRow>
+                          <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : "email"}>{e.value}</CardRow>
                         ))}
                         {selectedContact.birthday && (
                           <CardRow label="birthday">{formatBirthday(selectedContact.birthday)}</CardRow>
                         )}
                         {selectedContact.addresses.map((a) => (
-                          <CardRow key={a.id} label={a.label || "home"}>{a.formatted}</CardRow>
+                          <CardRow key={a.id} label={a.label && a.label !== "other" ? a.label : "home"}>{a.formatted}</CardRow>
                         ))}
                         {selectedContact.urls.map((u) => (
-                          <CardRow key={u.id} label={u.label || "url"}>{u.value}</CardRow>
+                          <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : "url"}>{u.value}</CardRow>
                         ))}
                         {selectedContact.nickname && (
                           <CardRow label="nickname">{selectedContact.nickname}</CardRow>
@@ -546,23 +547,23 @@ export function ContactsAppComponent({
                       </>
                     )}
                   </div>
-
-                  <div
-                    className="flex items-center justify-between px-4 py-2 mt-auto border-t"
-                    style={{ borderColor: "rgba(0,0,0,0.08)" }}
-                  >
-                    <button
-                      type="button"
-                      className="text-[11px] font-semibold text-black/60 hover:text-black/80 px-3 py-0.5 rounded border border-black/15 bg-white/60"
-                      onClick={() => setIsEditing(!isEditing)}
-                    >
-                      {isEditing ? t("apps.contacts.done", { defaultValue: "Done" }) : t("apps.contacts.edit", { defaultValue: "Edit" })}
-                    </button>
-                    <span className="text-[10px] text-black/40">
-                      {contacts.length} {contacts.length === 1 ? "card" : "cards"}
-                    </span>
-                  </div>
                 </div>
+                <div
+                  className="shrink-0 flex items-center justify-between px-4 py-2 border-t"
+                  style={{ borderColor: "rgba(0,0,0,0.08)" }}
+                >
+                  <button
+                    type="button"
+                    className="text-[11px] font-semibold text-black/60 hover:text-black/80 px-3 py-0.5 rounded border border-black/15 bg-white/60"
+                    onClick={() => setIsEditing(!isEditing)}
+                  >
+                    {isEditing ? t("apps.contacts.done", { defaultValue: "Done" }) : t("apps.contacts.edit", { defaultValue: "Edit" })}
+                  </button>
+                  <span className="text-[10px] text-black/40">
+                    {contacts.length} {contacts.length === 1 ? "card" : "cards"}
+                  </span>
+                </div>
+                </>
               ) : (
                 <div className="h-full flex items-center justify-center text-[13px] text-black/55 p-6 text-center">
                   {t("apps.contacts.emptySelection")}
