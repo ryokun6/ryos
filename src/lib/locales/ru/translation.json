@@ -868,8 +868,20 @@
     },
     "contacts": {
       "buttons": {
+        "done": "Готово",
         "edit": "Редактировать"
       },
+      "cardLabels": {
+        "address": "адрес",
+        "birthday": "день рождения",
+        "email": "Эл. почта",
+        "home": "Дом",
+        "nickname": "псевдоним",
+        "note": "заметка",
+        "phone": "телефон",
+        "url": "URL"
+      },
+      "changePicture": "Изменить фото",
       "description": "Адресная книга с импортом vCard",
       "emptySelection": "Выберите контакт или создайте новый, чтобы начать редактирование данных.",
       "emptyState": "Контактов пока нет. Создайте контакт или импортируйте vCard, чтобы начать.",
@@ -942,12 +954,19 @@
       },
       "name": "Контакты",
       "noSummary": "Пока нет номеров телефонов, эл. почты или заметок",
+      "picturePicker": {
+        "cancel": "Отмена",
+        "description": "Выберите фото для этого контакта",
+        "remove": "Удалить",
+        "title": "Выбрать фото"
+      },
       "placeholders": {
         "multiValue": "Каждое значение с новой строки"
       },
       "searchPlaceholder": "Поиск контактов...",
       "status": {
-        "cardsCount": "{{count}} карточек"
+        "cardsCount": "{{count}} карточек",
+        "cardsCount_one": "{{count}} карточка"
       },
       "title": "Контакты"
     },

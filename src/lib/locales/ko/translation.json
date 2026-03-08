@@ -868,8 +868,20 @@
     },
     "contacts": {
       "buttons": {
+        "done": "완료",
         "edit": "편집"
       },
+      "cardLabels": {
+        "address": "주소",
+        "birthday": "생일",
+        "email": "이메일",
+        "home": "집",
+        "nickname": "별명",
+        "note": "메모",
+        "phone": "전화",
+        "url": "URL"
+      },
+      "changePicture": "사진 변경",
       "description": "vCard 가져오기 지원 주소록",
       "emptySelection": "세부 정보 편집을 시작하려면 연락처를 선택하거나 새로 만드세요.",
       "emptyState": "아직 연락처가 없습니다. 새 연락처를 만들거나 vCard를 가져와서 시작하세요.",
@@ -942,12 +954,19 @@
       },
       "name": "연락처",
       "noSummary": "아직 전화번호, 이메일 또는 메모가 없습니다",
+      "picturePicker": {
+        "cancel": "취소",
+        "description": "이 연락처에 사용할 사진을 선택하세요.",
+        "remove": "제거",
+        "title": "사진 선택"
+      },
       "placeholders": {
         "multiValue": "각 값을 새 줄에 입력"
       },
       "searchPlaceholder": "연락처 검색…",
       "status": {
-        "cardsCount": "{{count}}개의 카드"
+        "cardsCount": "{{count}}개의 카드",
+        "cardsCount_one": "{{count}} 카드"
       },
       "title": "연락처"
     },

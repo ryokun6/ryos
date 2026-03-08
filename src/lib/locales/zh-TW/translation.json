@@ -868,8 +868,20 @@
     },
     "contacts": {
       "buttons": {
+        "done": "完成",
         "edit": "編輯"
       },
+      "cardLabels": {
+        "address": "地址",
+        "birthday": "生日",
+        "email": "電子郵件",
+        "home": "住家",
+        "nickname": "暱稱",
+        "note": "備註",
+        "phone": "電話",
+        "url": "網址"
+      },
+      "changePicture": "更改圖片",
       "description": "通訊錄（支援 vCard 匯入）",
       "emptySelection": "選取聯絡人或建立新聯絡人以開始編輯詳細資料。",
       "emptyState": "尚無聯絡人。建立聯絡人或匯入 vCard 以開始使用。",
@@ -942,12 +954,19 @@
       },
       "name": "聯絡人",
       "noSummary": "尚未有電話號碼、電子郵件或備註",
+      "picturePicker": {
+        "cancel": "取消",
+        "description": "為此聯絡人選擇圖片",
+        "remove": "移除",
+        "title": "選擇圖片"
+      },
       "placeholders": {
         "multiValue": "每個值使用新行"
       },
       "searchPlaceholder": "搜尋聯絡人…",
       "status": {
-        "cardsCount": "{{count}} 張卡片"
+        "cardsCount": "{{count}} 張卡片",
+        "cardsCount_one": "{{count}} 名片"
       },
       "title": "聯絡人"
     },
