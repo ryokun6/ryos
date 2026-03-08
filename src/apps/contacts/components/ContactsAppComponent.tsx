@@ -418,7 +418,7 @@ export function ContactsAppComponent({
               )}
             >
               {selectedContact ? (
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden">
                   {isEditing ? (
                     <div className="px-4 pt-3 pb-1 space-y-1.5">
                       <div className="flex gap-2">
