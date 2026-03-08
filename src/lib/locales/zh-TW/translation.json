@@ -1206,7 +1206,7 @@
         "linkedAs": "已連結為 {{account}}",
         "loggedOutDescription": "登入以連結 Telegram 至您的 ryOS 帳戶",
         "loginRequired": "請登入以連結 Telegram",
-        "manage": "管理...",
+        "manage": "管理",
         "openTelegram": "開啟 Telegram",
         "preparing": "正在準備...",
         "title": "Telegram"

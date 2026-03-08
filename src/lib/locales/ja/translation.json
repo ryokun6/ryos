@@ -1206,7 +1206,7 @@
         "linkedAs": "{{account}}として連携済み",
         "loggedOutDescription": "TelegramをryOSアカウントに連携するには、ログインしてください。",
         "loginRequired": "Telegramを連携するにはログインしてください",
-        "manage": "管理...",
+        "manage": "管理",
         "openTelegram": "Telegramを開く",
         "preparing": "準備中...",
         "title": "テレグラム"
