@@ -3206,7 +3206,9 @@
     "sections": {
       "applets": "애플릿",
       "apps": "응용 프로그램",
+      "calendar": "캘린더",
       "commands": "명령어",
+      "contacts": "연락처",
       "documents": "문서",
       "music": "음악",
       "settings": "설정",

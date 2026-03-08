@@ -3191,7 +3191,9 @@
     "sections": {
       "applets": "Апплеты",
       "apps": "Приложения",
+      "calendar": "Календарь",
       "commands": "Команды",
+      "contacts": "Контакты",
       "documents": "Документы",
       "music": "Музыка",
       "settings": "Настройки",

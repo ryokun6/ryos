@@ -3191,7 +3191,9 @@
     "sections": {
       "applets": "Applet",
       "apps": "Applicazioni",
+      "calendar": "Calendario",
       "commands": "Comandi",
+      "contacts": "Contatti",
       "documents": "Documenti",
       "music": "Musica",
       "settings": "Impostazioni",

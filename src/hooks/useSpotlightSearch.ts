@@ -6,6 +6,8 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
+import { useCalendarStore } from "@/stores/useCalendarStore";
+import { useContactsStore } from "@/stores/useContactsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type {
@@ -23,6 +25,8 @@ export interface SpotlightResult {
     | "music"
     | "site"
     | "video"
+    | "calendar"
+    | "contact"
     | "setting"
     | "command"
     | "ai";
@@ -139,12 +143,32 @@ const buildSpotlightSearchSnapshot = (): SpotlightSearchSnapshot => {
   const { tracks } = useIpodStore.getState();
   const { favorites } = useInternetExplorerStore.getState();
   const { videos } = useVideoStore.getState();
+  const { events } = useCalendarStore.getState();
+  const { contacts } = useContactsStore.getState();
 
   return {
     items,
     tracks,
     favorites,
     videos,
+    calendarEvents: events.map((ev) => ({
+      id: ev.id,
+      title: ev.title,
+      date: ev.date,
+      startTime: ev.startTime,
+      endTime: ev.endTime,
+      notes: ev.notes,
+    })),
+    contacts: contacts.map((c) => ({
+      id: c.id,
+      displayName: c.displayName,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      organization: c.organization,
+      emails: c.emails.map((e) => e.value),
+      phones: c.phones.map((p) => p.value),
+      picture: c.picture,
+    })),
   };
 };
 
@@ -212,6 +236,31 @@ const mapWorkerResultToSpotlightResult = (
         thumbnail: result.thumbnail,
         action: () =>
           launchApp("videos", { initialData: { videoId: result.videoId } }),
+      };
+    case "calendar":
+      return {
+        id: result.id,
+        type: "calendar",
+        title: result.title,
+        subtitle: result.subtitle,
+        icon: getAppIconPath("calendar"),
+        action: () => {
+          useCalendarStore.getState().setSelectedDate(result.date);
+          launchApp("calendar");
+        },
+      };
+    case "contact":
+      return {
+        id: result.id,
+        type: "contact",
+        title: result.title,
+        subtitle: result.subtitle,
+        icon: getAppIconPath("contacts"),
+        thumbnail: result.picture || undefined,
+        action: () => {
+          useContactsStore.getState().setSelectedContactId(result.contactId);
+          launchApp("contacts");
+        },
       };
   }
 };
@@ -368,11 +417,33 @@ export function useSpotlightSearch(query: string): SpotlightSearchState {
       refreshWorkerIndex();
     });
 
+    let calendarEventsRef = useCalendarStore.getState().events;
+    const unsubscribeCalendar = useCalendarStore.subscribe((state) => {
+      if (state.events === calendarEventsRef) {
+        return;
+      }
+
+      calendarEventsRef = state.events;
+      refreshWorkerIndex();
+    });
+
+    let contactsRef = useContactsStore.getState().contacts;
+    const unsubscribeContacts = useContactsStore.subscribe((state) => {
+      if (state.contacts === contactsRef) {
+        return;
+      }
+
+      contactsRef = state.contacts;
+      refreshWorkerIndex();
+    });
+
     return () => {
       unsubscribeFiles();
       unsubscribeTracks();
       unsubscribeFavorites();
       unsubscribeVideos();
+      unsubscribeCalendar();
+      unsubscribeContacts();
 
       if (idleHandle !== null) {
         window.cancelIdleCallback(idleHandle);

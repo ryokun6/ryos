@@ -3206,7 +3206,9 @@
     "sections": {
       "applets": "小工具",
       "apps": "應用程式",
+      "calendar": "行事曆",
       "commands": "指令",
+      "contacts": "聯絡資訊",
       "documents": "文件",
       "music": "音樂",
       "settings": "設定",

@@ -279,6 +279,8 @@
       "music": "Music",
       "sites": "Sites",
       "videos": "Videos",
+      "calendar": "Calendar",
+      "contacts": "Contacts",
       "settings": "Settings",
       "commands": "Commands"
     },

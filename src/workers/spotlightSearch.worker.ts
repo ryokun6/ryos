@@ -18,6 +18,8 @@ type SpotlightIndex = {
   music: IndexedEntry[];
   sites: IndexedEntry[];
   videos: IndexedEntry[];
+  calendarEvents: IndexedEntry[];
+  contacts: IndexedEntry[];
 };
 
 const emptyIndex = (): SpotlightIndex => ({
@@ -26,6 +28,8 @@ const emptyIndex = (): SpotlightIndex => ({
   music: [],
   sites: [],
   videos: [],
+  calendarEvents: [],
+  contacts: [],
 });
 
 let currentIndex: SpotlightIndex = emptyIndex();
@@ -158,12 +162,55 @@ const buildIndex = (snapshot: SpotlightSearchSnapshot): SpotlightIndex => {
     },
   }));
 
+  const calendarEvents = snapshot.calendarEvents.map<IndexedEntry>((event) => {
+    const timeRange =
+      event.startTime && event.endTime
+        ? `${event.startTime}–${event.endTime}`
+        : event.startTime || undefined;
+    const subtitle = timeRange ? `${event.date} ${timeRange}` : event.date;
+
+    return {
+      searchText: normalizeText(event.title, event.date, event.notes, timeRange),
+      result: {
+        id: `cal-${event.id}`,
+        type: "calendar",
+        title: event.title,
+        subtitle,
+        date: event.date,
+      },
+    };
+  });
+
+  const contacts = snapshot.contacts.map<IndexedEntry>((contact) => {
+    const subtitle = contact.organization || contact.emails[0] || undefined;
+    return {
+      searchText: normalizeText(
+        contact.displayName,
+        contact.firstName,
+        contact.lastName,
+        contact.organization,
+        ...contact.emails,
+        ...contact.phones
+      ),
+      result: {
+        id: `contact-${contact.id}`,
+        type: "contact",
+        title: contact.displayName,
+        subtitle,
+        contactId: contact.id,
+        picture: contact.picture,
+      },
+    };
+  });
+
   return {
     documents,
     applets,
     music,
     sites,
     videos,
+    calendarEvents,
+    contacts,
   };
 };
 
@@ -185,6 +232,8 @@ const queryIndex = (query: string): SpotlightWorkerResultPayload[] => {
     ...collectMatches(currentIndex.music),
     ...collectMatches(currentIndex.sites),
     ...collectMatches(currentIndex.videos),
+    ...collectMatches(currentIndex.calendarEvents),
+    ...collectMatches(currentIndex.contacts),
   ];
 };
 

@@ -3206,7 +3206,9 @@
     "sections": {
       "applets": "Applets",
       "apps": "Applications",
+      "calendar": "Calendrier",
       "commands": "Commandes",
+      "contacts": "Contacts",
       "documents": "Documents",
       "music": "Musique",
       "settings": "Réglages",
