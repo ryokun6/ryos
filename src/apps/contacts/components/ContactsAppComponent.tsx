@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -86,10 +86,12 @@ function PanelHeader({
   title,
   trailing,
   useGeneva = false,
+  bordered = false,
 }: {
   title: string;
   trailing?: ReactNode;
   useGeneva?: boolean;
+  bordered?: boolean;
 }) {
   return (
     <div
@@ -97,15 +99,18 @@ function PanelHeader({
         "flex items-center justify-between gap-2 px-2 py-0.5 text-[11px] border-b",
         useGeneva && "font-geneva-12"
       )}
-      style={{
+      style={bordered ? {
         background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
         color: "#222",
         textShadow: "0 1px 0 #e1e1e1",
         borderTop: "1px solid rgba(255,255,255,0.5)",
         borderBottom: "1px solid #787878",
+      } : {
+        borderColor: "rgba(0,0,0,0.1)",
+        fontWeight: 600,
       }}
     >
-      <span className="font-regular text-center flex-1">{title}</span>
+      <span className={cn("flex-1", bordered && "font-regular text-center")}>{title}</span>
       {trailing ? <span className="shrink-0">{trailing}</span> : null}
     </div>
   );
@@ -114,17 +119,28 @@ function PanelHeader({
 function Panel({
   className,
   children,
+  bordered = true,
+  style,
 }: {
   className?: string;
   children: ReactNode;
+  bordered?: boolean;
+  style?: CSSProperties;
 }) {
   return (
     <div
-      className={cn("overflow-hidden bg-white/90", className)}
+      className={cn(
+        "overflow-hidden calendar-sidebar",
+        bordered ? "bg-white/90" : "bg-white",
+        className
+      )}
       style={{
-        border: "1px solid rgba(0, 0, 0, 0.55)",
-        boxShadow:
-          "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+        ...(bordered ? {
+          border: "1px solid rgba(0, 0, 0, 0.55)",
+          boxShadow:
+            "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+        } : {}),
+        ...style,
       }}
     >
       {children}
@@ -239,7 +255,7 @@ export function ContactsAppComponent({
         <div
           ref={containerRef}
           className={cn(
-            "h-full flex flex-col font-os-ui overflow-hidden",
+            "h-full w-full flex flex-col font-os-ui overflow-hidden",
             isMacOsxTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
           )}
         >
@@ -342,14 +358,19 @@ export function ContactsAppComponent({
             )}
           >
             {!isMobileLayout && (
-            <Panel className="w-[170px] shrink-0 flex flex-col min-h-0">
+            <Panel
+              bordered={isMacOsxTheme}
+              className="w-[170px] shrink-0 flex flex-col min-h-0"
+              style={!isMacOsxTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
+            >
               <PanelHeader
                 title={t("apps.contacts.groupHeaders.groups", {
                   defaultValue: "Group",
                 })}
                 useGeneva={useGeneva}
+                bordered={isMacOsxTheme}
               />
-              <div className={cn("flex-1 overflow-y-auto p-1.5 space-y-0.5 calendar-sidebar", useGeneva && "font-geneva-12")}>
+              <div className={cn("flex-1 overflow-y-auto p-1.5 space-y-0.5", useGeneva && "font-geneva-12")}>
                 {contactGroups.map((group) => (
                   <GroupListItem
                     key={group.id}
@@ -364,20 +385,29 @@ export function ContactsAppComponent({
             )}
 
             <Panel
+              bordered={isMacOsxTheme}
               className={cn(
                 "flex flex-col min-h-0",
                 isMobileLayout
                   ? "w-full max-w-none self-stretch h-[140px] shrink-0 basis-auto"
                   : "w-[245px] shrink-0"
               )}
+              style={
+                !isMacOsxTheme
+                  ? isMobileLayout
+                    ? { borderBottom: "1px solid rgba(0,0,0,0.08)" }
+                    : { borderRight: "1px solid rgba(0,0,0,0.08)" }
+                  : undefined
+              }
             >
               <PanelHeader
                 title={t("apps.contacts.groupHeaders.names", {
                   defaultValue: "Name",
                 })}
                 useGeneva={useGeneva}
+                bordered={isMacOsxTheme}
               />
-              <div className={cn("flex-1 overflow-y-auto calendar-sidebar", useGeneva && "font-geneva-12")}>
+              <div className={cn("flex-1 overflow-y-auto", useGeneva && "font-geneva-12")}>
                 {contacts.length === 0 ? (
                   <div className="px-4 py-6 text-[12px] text-black/55">
                     {t("apps.contacts.emptyState")}
@@ -396,6 +426,7 @@ export function ContactsAppComponent({
             </Panel>
 
             <Panel
+              bordered={isMacOsxTheme}
               className={cn(
                 "flex-1 min-w-0 flex flex-col",
                 isMobileLayout && "w-full max-w-none self-stretch basis-auto"
@@ -404,6 +435,7 @@ export function ContactsAppComponent({
               <PanelHeader
                 title={selectedContact?.displayName || t("apps.contacts.title")}
                 useGeneva={useGeneva}
+                bordered={isMacOsxTheme}
               />
               {selectedContact ? (
                 <>
