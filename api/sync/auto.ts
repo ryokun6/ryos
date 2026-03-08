@@ -11,10 +11,12 @@ import {
   AUTO_SYNC_SNAPSHOT_VERSION,
   BLOB_SYNC_DOMAINS,
   createEmptyCloudSyncMetadataMap,
+  getSyncChannelName,
   isBlobSyncDomain,
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { triggerRealtimeEvent } from "../_utils/realtime.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -128,7 +130,11 @@ export default apiHandler<SaveAutoSyncMetadataBody>(
     }
 
     if (method === "POST") {
-      await handleSaveMetadata(res, redis, username, body);
+      const sourceSessionId =
+        typeof req.headers["x-sync-session-id"] === "string"
+          ? req.headers["x-sync-session-id"]
+          : undefined;
+      await handleSaveMetadata(res, redis, username, body, sourceSessionId);
       return;
     }
 
@@ -140,7 +146,8 @@ async function handleSaveMetadata(
   res: VercelResponse,
   redis: Redis,
   username: string,
-  body: SaveAutoSyncMetadataBody | null
+  body: SaveAutoSyncMetadataBody | null,
+  sourceSessionId: string | undefined
 ): Promise<void> {
   if (
     !body ||
@@ -182,14 +189,27 @@ async function handleSaveMetadata(
 
     await redis.set(metaKey(username), JSON.stringify(existing));
 
+    try {
+      const channel = getSyncChannelName(username);
+      const payload = {
+        domain: body.domain,
+        updatedAt: existing[body.domain]!.updatedAt,
+        ...(sourceSessionId && { sourceSessionId }),
+      };
+      await triggerRealtimeEvent(channel, "domain-updated", payload);
+    } catch (realtimeErr) {
+      console.warn("[sync/auto] Failed to broadcast domain-updated:", realtimeErr);
+    }
+
+    const saved = existing[body.domain]!;
     res.status(200).json({
       ok: true,
       domain: body.domain,
       metadata: {
-        updatedAt: existing[body.domain]?.updatedAt,
-        version: existing[body.domain]?.version,
-        totalSize: existing[body.domain]?.totalSize,
-        createdAt: existing[body.domain]?.createdAt,
+        updatedAt: saved.updatedAt,
+        version: saved.version,
+        totalSize: saved.totalSize,
+        createdAt: saved.createdAt,
       },
     });
   } catch (error) {

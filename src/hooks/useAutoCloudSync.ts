@@ -15,22 +15,29 @@ import { useStickiesStore } from "@/stores/useStickiesStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import {
+  subscribePusherChannel,
+  unsubscribePusherChannel,
+} from "@/lib/pusherClient";
+import {
   subscribeToCloudSyncDomainChanges,
   subscribeToCloudSyncCheckRequests,
 } from "@/utils/cloudSyncEvents";
 import {
   downloadAndApplyCloudSyncDomain,
   fetchCloudSyncMetadata,
+  getSyncSessionId,
   uploadCloudSyncDomain,
 } from "@/utils/cloudSync";
 import {
   CLOUD_SYNC_DOMAINS,
+  getSyncChannelName,
+  isCloudSyncDomain,
   parseCloudSyncTimestamp,
   shouldApplyRemoteUpdate,
   type CloudSyncDomain,
 } from "@/utils/cloudSyncShared";
 
-const POLL_INTERVAL_MS = 5 * 60 * 1000;
+const POLL_INTERVAL_MS = 15 * 60 * 1000;
 const REMOTE_APPLY_SUPPRESSION_MS = 4000;
 
 const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
@@ -204,6 +211,56 @@ export function useAutoCloudSync() {
     [clearUploadTimer, isDomainEnabled, isSyncActive, uploadDomain]
   );
 
+  const syncChannelRef = useRef<{ name: string; unbind: () => void } | null>(
+    null
+  );
+  const realtimeInFlightRef = useRef(new Set<CloudSyncDomain>());
+
+  const handleRealtimeDomainUpdate = useCallback(
+    async (domain: CloudSyncDomain, remoteUpdatedAt: string) => {
+      if (!username || !authToken || !isDomainEnabled(domain)) return;
+      if (realtimeInFlightRef.current.has(domain)) return;
+
+      const syncState = useCloudSyncStore.getState();
+      const domainStatus = syncState.domainStatus[domain];
+
+      const shouldApply = shouldApplyRemoteUpdate({
+        remoteUpdatedAt,
+        lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
+        lastUploadedAt: domainStatus.lastUploadedAt,
+        lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
+        hasPendingUpload:
+          Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
+      });
+
+      if (!shouldApply) return;
+
+      remoteApplySuppressUntilRef.current[domain] = Date.now() + 120_000;
+      realtimeInFlightRef.current.add(domain);
+
+      try {
+        console.log(`[CloudSync] Realtime download: ${domain}`);
+        const appliedMetadata = await downloadAndApplyCloudSyncDomain(domain, {
+          username,
+          authToken,
+        });
+
+        useCloudSyncStore
+          .getState()
+          .markRemoteApplied(domain, appliedMetadata.updatedAt);
+        lastLocalChangeAtRef.current[domain] = appliedMetadata.updatedAt;
+        remoteApplySuppressUntilRef.current[domain] =
+          Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
+      } catch (error) {
+        console.error(`[CloudSync] Targeted download ${domain} failed:`, error);
+        remoteApplySuppressUntilRef.current[domain] = 0;
+      } finally {
+        realtimeInFlightRef.current.delete(domain);
+      }
+    },
+    [authToken, isDomainEnabled, username]
+  );
+
   const checkRemoteUpdates = useCallback(async () => {
     if (!username || !authToken || !isSyncActive || checkInFlightRef.current) {
       return;
@@ -313,6 +370,64 @@ export function useAutoCloudSync() {
       checkInFlightRef.current = false;
     }
   }, [authToken, isDomainEnabled, isSyncActive, queueUpload, username]);
+
+  const handleRealtimeDomainUpdateRef = useRef(handleRealtimeDomainUpdate);
+  handleRealtimeDomainUpdateRef.current = handleRealtimeDomainUpdate;
+
+  useEffect(() => {
+    if (!isSyncActive || !username) {
+      if (syncChannelRef.current) {
+        syncChannelRef.current.unbind();
+        unsubscribePusherChannel(syncChannelRef.current.name);
+        syncChannelRef.current = null;
+      }
+      return;
+    }
+
+    const channelName = getSyncChannelName(username);
+    const sessionId = getSyncSessionId();
+    const channel = subscribePusherChannel(channelName);
+
+    const handler = (data: unknown) => {
+      const payload = data as {
+        domain?: string;
+        updatedAt?: string;
+        sourceSessionId?: string;
+      };
+
+      if (payload.sourceSessionId === sessionId) return;
+
+      if (
+        !payload.domain ||
+        !payload.updatedAt ||
+        !isCloudSyncDomain(payload.domain)
+      ) {
+        console.warn("[CloudSync] Ignoring malformed realtime payload:", payload);
+        return;
+      }
+
+      void handleRealtimeDomainUpdateRef.current(
+        payload.domain,
+        payload.updatedAt
+      );
+    };
+
+    channel.bind("domain-updated", handler);
+    syncChannelRef.current = {
+      name: channelName,
+      unbind: () => {
+        channel.unbind("domain-updated", handler);
+      },
+    };
+
+    return () => {
+      if (syncChannelRef.current) {
+        syncChannelRef.current.unbind();
+        unsubscribePusherChannel(syncChannelRef.current.name);
+        syncChannelRef.current = null;
+      }
+    };
+  }, [isSyncActive, username]);
 
   useEffect(() => {
     if (!isSyncActive) {

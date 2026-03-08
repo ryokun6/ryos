@@ -46,6 +46,19 @@ type AuthContext = {
   authToken: string;
 };
 
+let _syncSessionId: string | null = null;
+
+/** Stable per-tab identifier used to skip self-originated realtime events. */
+export function getSyncSessionId(): string {
+  if (!_syncSessionId) {
+    _syncSessionId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+  return _syncSessionId;
+}
+
 interface StoreItem {
   [key: string]: unknown;
 }
@@ -756,6 +769,7 @@ function authHeaders(auth: AuthContext): Record<string, string> {
   return {
     Authorization: `Bearer ${auth.authToken}`,
     "X-Username": auth.username,
+    "X-Sync-Session-Id": getSyncSessionId(),
   };
 }
 

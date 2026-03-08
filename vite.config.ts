@@ -22,6 +22,10 @@ export default defineConfig({
   define: {
     // Expose VERCEL_ENV to the client for environment detection
     'import.meta.env.VITE_VERCEL_ENV': JSON.stringify(process.env.VERCEL_ENV || ''),
+    // Expose Pusher public key/cluster so the client connects to the correct app in dev
+    'import.meta.env.VITE_PUSHER_KEY': JSON.stringify(process.env.PUSHER_KEY || ''),
+    'import.meta.env.VITE_PUSHER_CLUSTER': JSON.stringify(process.env.PUSHER_CLUSTER || ''),
+    'import.meta.env.VITE_REALTIME_PROVIDER': JSON.stringify(process.env.REALTIME_PROVIDER || ''),
   },
   // Optimize JSON imports for better performance
   json: {
@@ -42,6 +46,10 @@ export default defineConfig({
             "/api": {
               target: standaloneApiProxyTarget,
               changeOrigin: true,
+            },
+            "/ws": {
+              target: standaloneApiProxyTarget,
+              ws: true,
             },
           },
         }

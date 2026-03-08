@@ -17,7 +17,6 @@ import { getRecentHeartbeatRecords, type HeartbeatRecord } from "./_utils/heartb
 import { processDailyNotesForUser } from "./ai/process-daily-notes.js";
 import {
   getRedisBackend,
-  supportsRedisPubSub,
 } from "./_utils/redis.js";
 import { getRealtimeProvider } from "./_utils/runtime-config.js";
 
@@ -268,8 +267,7 @@ async function getServerInfo(redis: Redis): Promise<{
     process.env.PUSHER_SECRET?.trim() &&
     process.env.PUSHER_CLUSTER?.trim()
   );
-  const localConfigured =
-    realtimeProvider === "local" && supportsRedisPubSub();
+  const localConfigured = realtimeProvider === "local";
   const websocketConfigured =
     realtimeProvider === "pusher" ? pusherConfigured : localConfigured;
 

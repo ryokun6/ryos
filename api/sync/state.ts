@@ -9,6 +9,7 @@ import type { Redis } from "@upstash/redis";
 import { gunzipSync } from "node:zlib";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
+  getSyncChannelName,
   REDIS_SYNC_DOMAINS,
   isRedisSyncDomain,
   type CloudSyncDomainMetadata,
@@ -16,6 +17,7 @@ import {
 } from "../../src/utils/cloudSyncShared.js";
 import { isSerializedContact } from "../../src/utils/contacts.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { triggerRealtimeEvent } from "../_utils/realtime.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -274,7 +276,11 @@ export default apiHandler<PutStateBody>(
     }
 
     if (method === "PUT") {
-      await handlePutState(res, redis, username, body);
+      const sourceSessionId =
+        typeof req.headers["x-sync-session-id"] === "string"
+          ? req.headers["x-sync-session-id"]
+          : undefined;
+      await handlePutState(res, redis, username, body, sourceSessionId);
       return;
     }
 
@@ -350,7 +356,8 @@ async function handlePutState(
   res: VercelResponse,
   redis: Redis,
   username: string,
-  body: PutStateBody | null
+  body: PutStateBody | null,
+  sourceSessionId: string | undefined
 ): Promise<void> {
   if (!body || !body.domain || body.data === undefined || !body.updatedAt) {
     res.status(400).json({
@@ -383,6 +390,18 @@ async function handlePutState(
 
   try {
     await persistStateEntry(redis, username, domain, entry);
+
+    try {
+      const channel = getSyncChannelName(username);
+      const payload = {
+        domain,
+        updatedAt: entry.updatedAt,
+        ...(sourceSessionId && { sourceSessionId }),
+      };
+      await triggerRealtimeEvent(channel, "domain-updated", payload);
+    } catch (realtimeErr) {
+      console.warn("[sync/state] Failed to broadcast domain-updated:", realtimeErr);
+    }
 
     res.status(200).json({
       ok: true,
