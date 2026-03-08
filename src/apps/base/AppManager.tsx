@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AnyApp } from "./types";
 import { MenuBar } from "@/components/layout/MenuBar";
@@ -260,7 +260,7 @@ export function AppManager({ apps }: AppManagerProps) {
   }, []);
 
   // Dashboard toggle helper: launch if not open, close if open
-  const toggleDashboard = () => {
+  const toggleDashboard = useCallback(() => {
     const insts = instancesRef.current;
     const dashboardInstance = Object.values(insts).find(
       (inst) => inst.appId === "dashboard" && inst.isOpen
@@ -270,10 +270,10 @@ export function AppManager({ apps }: AppManagerProps) {
     } else {
       launchAppRef.current("dashboard");
     }
-  };
+  }, [closeAppInstance]);
 
   // Close Dashboard if it's currently open
-  const closeDashboardIfOpen = () => {
+  const closeDashboardIfOpen = useCallback(() => {
     const insts = instancesRef.current;
     const dashboardInstance = Object.values(insts).find(
       (inst) => inst.appId === "dashboard" && inst.isOpen
@@ -281,7 +281,7 @@ export function AppManager({ apps }: AppManagerProps) {
     if (dashboardInstance) {
       closeAppInstance(dashboardInstance.instanceId);
     }
-  };
+  }, [closeAppInstance]);
 
   // Listen for expose view toggle events (e.g., from keyboard shortcut, dock menu)
   useEffect(() => {
@@ -329,7 +329,7 @@ export function AppManager({ apps }: AppManagerProps) {
       unsubscribeSpotlightToggle();
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [closeDashboardIfOpen, toggleDashboard]);
 
   // Global macOS-style window management and app switcher keyboard shortcuts
   useEffect(() => {

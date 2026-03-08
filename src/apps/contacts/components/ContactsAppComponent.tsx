@@ -250,15 +250,17 @@ export function ContactsAppComponent({
   });
   const isMobileLayout = containerWidth < 640;
   const [isEditing, setIsEditing] = useState(false);
+  const selectedContactRef = useRef(selectedContact);
   const [multivalueDraft, setMultivalueDraft] = useState(() =>
     getMultivalueDraft(selectedContact)
   );
+  selectedContactRef.current = selectedContact;
   useEffect(() => {
     setIsEditing(shouldEditOnNextSelectionRef.current);
     shouldEditOnNextSelectionRef.current = false;
   }, [selectedContact?.id]);
   useEffect(() => {
-    setMultivalueDraft(getMultivalueDraft(selectedContact));
+    setMultivalueDraft(getMultivalueDraft(selectedContactRef.current));
   }, [isEditing, selectedContact?.id]);
   useEffect(() => {
     if (!lastRemoteSyncAt) {

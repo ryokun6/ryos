@@ -1,7 +1,6 @@
 import { useMemo, useCallback } from "react";
 import { useCalendarStore, type CalendarEvent, type EventColor } from "@/stores/useCalendarStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { useShallow } from "zustand/react/shallow";
 import { requestAppLaunch } from "@/utils/appEventBus";
 import { useTranslation } from "react-i18next";
 import { useDashboardStore, type CalendarWidgetConfig } from "@/stores/useDashboardStore";
@@ -40,22 +39,16 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
 
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const calConfig = widget?.config as CalendarWidgetConfig | undefined;
-  const hiddenColors = calConfig?.hiddenColors ?? [];
+  const hiddenColors = useMemo(() => calConfig?.hiddenColors ?? [], [calConfig?.hiddenColors]);
 
-  const { allEvents, currentMonth, currentYear } = useCalendarStore(
-    useShallow((state) => ({
-      allEvents: state.events,
-      currentMonth: state.currentMonth,
-      currentYear: state.currentYear,
-    }))
-  );
+  const allEvents = useCalendarStore((state) => state.events);
 
   const events = useMemo(() => {
     if (hiddenColors.length === 0) return allEvents;
     return allEvents.filter((ev) => !hiddenColors.includes(ev.color));
   }, [allEvents, hiddenColors]);
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -116,7 +109,7 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
     }
 
     return weeks;
-  }, [events, currentMonth, currentYear, todayStr, now]);
+  }, [events, todayStr, now]);
 
   const dayHeaders = useMemo(() => getLocalizedDayHeaders(locale), [locale]);
 
@@ -285,7 +278,7 @@ export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const calConfig = widget?.config as CalendarWidgetConfig | undefined;
-  const hiddenColors = calConfig?.hiddenColors ?? [];
+  const hiddenColors = useMemo(() => calConfig?.hiddenColors ?? [], [calConfig?.hiddenColors]);
 
   const toggleColor = useCallback(
     (color: EventColor) => {
