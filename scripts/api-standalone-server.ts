@@ -333,6 +333,22 @@ function parseEnvLine(line: string): { key: string; value: string } | null {
   return { key, value: value.replace(/\\n/g, "\n") };
 }
 
+function normalizeEnvValue(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).replace(/\\n/g, "\n");
+  }
+
+  return value.replace(/\\n/g, "\n");
+}
+
 async function loadEnvFile(filePath: string): Promise<void> {
   let content = "";
   try {
@@ -344,12 +360,18 @@ async function loadEnvFile(filePath: string): Promise<void> {
   for (const line of content.split(/\r?\n/g)) {
     const parsed = parseEnvLine(line);
     if (!parsed) continue;
-    if (process.env[parsed.key] !== undefined) continue;
+    if (process.env[parsed.key] !== undefined) {
+      process.env[parsed.key] = normalizeEnvValue(process.env[parsed.key]);
+      continue;
+    }
     process.env[parsed.key] = parsed.value;
   }
 }
 
 async function loadEnv(): Promise<void> {
+  for (const [key, value] of Object.entries(process.env)) {
+    process.env[key] = normalizeEnvValue(value);
+  }
   await loadEnvFile(path.join(WORKSPACE_ROOT, ".env"));
   await loadEnvFile(path.join(WORKSPACE_ROOT, ".env.local"));
 }
