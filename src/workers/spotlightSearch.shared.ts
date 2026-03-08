@@ -123,6 +123,7 @@ export type SpotlightWorkerResultPayload =
       subtitle?: string;
       contactId: string;
       picture: string | null;
+      initials: string;
     };
 
 export interface SpotlightIndexMessage {

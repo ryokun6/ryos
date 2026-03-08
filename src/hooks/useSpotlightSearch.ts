@@ -36,6 +36,8 @@ export interface SpotlightResult {
   isEmoji?: boolean;
   /** Optional thumbnail URL (cover art, favicon, image preview) */
   thumbnail?: string;
+  /** Initials for avatar fallback (contacts) */
+  initials?: string;
   /** Override section header label (e.g. "Top Hits" for empty state) */
   sectionLabel?: string;
   action: () => void;
@@ -257,6 +259,7 @@ const mapWorkerResultToSpotlightResult = (
         subtitle: result.subtitle,
         icon: getAppIconPath("contacts"),
         thumbnail: result.picture || undefined,
+        initials: result.initials,
         action: () => {
           useContactsStore.getState().setSelectedContactId(result.contactId);
           launchApp("contacts");

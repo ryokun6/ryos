@@ -183,6 +183,11 @@ const buildIndex = (snapshot: SpotlightSearchSnapshot): SpotlightIndex => {
 
   const contacts = snapshot.contacts.map<IndexedEntry>((contact) => {
     const subtitle = contact.organization || contact.emails[0] || undefined;
+    const words = contact.displayName.split(/\s+/).filter(Boolean);
+    const initials = words.length > 0
+      ? words.slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("")
+      : "?";
+
     return {
       searchText: normalizeText(
         contact.displayName,
@@ -199,6 +204,7 @@ const buildIndex = (snapshot: SpotlightSearchSnapshot): SpotlightIndex => {
         subtitle,
         contactId: contact.id,
         picture: contact.picture,
+        initials,
       },
     };
   });
@@ -229,11 +235,11 @@ const queryIndex = (query: string): SpotlightWorkerResultPayload[] => {
   return [
     ...collectMatches(currentIndex.documents),
     ...collectMatches(currentIndex.applets),
+    ...collectMatches(currentIndex.calendarEvents),
+    ...collectMatches(currentIndex.contacts),
     ...collectMatches(currentIndex.music),
     ...collectMatches(currentIndex.sites),
     ...collectMatches(currentIndex.videos),
-    ...collectMatches(currentIndex.calendarEvents),
-    ...collectMatches(currentIndex.contacts),
   ];
 };
 
