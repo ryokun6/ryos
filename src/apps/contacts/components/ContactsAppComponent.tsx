@@ -261,15 +261,10 @@ export function ContactsAppComponent({
         >
           <div
             className={cn(
-              "flex items-center justify-between py-1.5 border-b gap-2",
+              "flex items-center justify-between py-1.5 gap-2",
               isMacOsxTheme ? "px-1" : "px-2"
             )}
             style={{
-              borderColor: isXpTheme
-                ? "#ACA899"
-                : isMacOsxTheme
-                  ? "rgba(0,0,0,0.18)"
-                  : "rgba(0,0,0,0.1)",
               background: isXpTheme
                 ? "#ECE9D8"
                 : isMacOsxTheme
