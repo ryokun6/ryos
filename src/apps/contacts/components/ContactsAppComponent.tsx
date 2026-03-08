@@ -555,10 +555,14 @@ export function ContactsAppComponent({
                     ) : (
                       <>
                         {selectedContact.phones.map((p) => (
-                          <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : t("apps.contacts.cardLabels.phone")}>{p.value}</CardRow>
+                          <CardRow key={p.id} label={p.label && p.label !== "other" ? p.label : t("apps.contacts.cardLabels.phone")}>
+                            <a href={`tel:${p.value}`} className="text-blue-600 hover:underline">{p.value}</a>
+                          </CardRow>
                         ))}
                         {selectedContact.emails.map((e) => (
-                          <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : t("apps.contacts.cardLabels.email")}>{e.value}</CardRow>
+                          <CardRow key={e.id} label={e.label && e.label !== "other" ? e.label : t("apps.contacts.cardLabels.email")}>
+                            <a href={`mailto:${e.value}`} className="text-blue-600 hover:underline">{e.value}</a>
+                          </CardRow>
                         ))}
                         {selectedContact.birthday && (
                           <CardRow label={t("apps.contacts.cardLabels.birthday")}>{formatBirthday(selectedContact.birthday)}</CardRow>
@@ -567,7 +571,9 @@ export function ContactsAppComponent({
                           <CardRow key={a.id} label={a.label && a.label !== "other" ? a.label : t("apps.contacts.cardLabels.home")}>{a.formatted}</CardRow>
                         ))}
                         {selectedContact.urls.map((u) => (
-                          <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : t("apps.contacts.cardLabels.url")}>{u.value}</CardRow>
+                          <CardRow key={u.id} label={u.label && u.label !== "other" ? u.label : t("apps.contacts.cardLabels.url")}>
+                            <a href={u.value.startsWith("http") ? u.value : `https://${u.value}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{u.value}</a>
+                          </CardRow>
                         ))}
                         {selectedContact.nickname && (
                           <CardRow label={t("apps.contacts.cardLabels.nickname")}>{selectedContact.nickname}</CardRow>
