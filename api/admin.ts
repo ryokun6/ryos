@@ -13,6 +13,7 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { resolveRequestAuth } from "./_utils/request-auth.js";
 import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
+import { getRecentHeartbeatRecords, type HeartbeatRecord } from "./_utils/heartbeats.js";
 import { processDailyNotesForUser } from "./ai/process-daily-notes.js";
 
 export const runtime = "nodejs";
@@ -408,6 +409,28 @@ export default apiHandler<AdminRequest>(
           });
           logger.response(200, Date.now() - startTime);
           res.status(200).json({ memories, dailyNotes });
+          return;
+        }
+        case "getUserHeartbeats": {
+          const targetUsername = req.query.username as string | undefined;
+          const days = Math.min(parseInt((req.query.days as string) || "7"), 30);
+          if (!targetUsername) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({ error: "Username is required" });
+            return;
+          }
+          const heartbeats = await getRecentHeartbeatRecords(
+            redis,
+            targetUsername.toLowerCase(),
+            days,
+          ) as HeartbeatRecord[];
+          logger.info("Heartbeats retrieved", {
+            targetUsername,
+            days,
+            count: heartbeats.length,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({ heartbeats });
           return;
         }
         default:

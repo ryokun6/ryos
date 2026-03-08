@@ -116,3 +116,11 @@ export async function forceAdminDailyNotes<TResponse>(
   });
 }
 
+export async function getAdminUserHeartbeats<TResponse>(
+  auth: ApiAuthContext,
+  username: string,
+  days?: number
+): Promise<TResponse> {
+  return adminGet<TResponse>(auth, "getUserHeartbeats", { username, days });
+}
+

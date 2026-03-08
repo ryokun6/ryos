@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight, Eraser, ArrowsClockwise } from "@phosphor-icons/react";
+import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight, Eraser, ArrowsClockwise, Heartbeat } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +21,7 @@ import {
   clearAdminUserMemories,
   deleteAdminUser,
   forceAdminDailyNotes,
+  getAdminUserHeartbeats,
   getAdminUserMemories,
   getAdminUserMessages,
   getAdminUserProfile,
@@ -66,6 +67,20 @@ interface DailyNote {
   updatedAt: number;
 }
 
+interface HeartbeatRecord {
+  id: string;
+  timestamp: number;
+  isoTimestamp?: string;
+  localDate?: string;
+  localTime?: string;
+  timeZone?: string;
+  shouldSend: boolean;
+  topic: string;
+  message: string | null;
+  skipReason: string | null;
+  stateSummary: string;
+}
+
 interface UserProfilePanelProps {
   username: string;
   onBack: () => void;
@@ -83,8 +98,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [memories, setMemories] = useState<UserMemory[]>([]);
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
+  const [heartbeats, setHeartbeats] = useState<HeartbeatRecord[]>([]);
   const [expandedMemories, setExpandedMemories] = useState<Set<string>>(new Set());
   const [expandedDailyNotes, setExpandedDailyNotes] = useState<Set<string>>(new Set());
+  const [expandedHeartbeats, setExpandedHeartbeats] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [banReason, setBanReason] = useState("");
   const [showBanInput, setShowBanInput] = useState(false);
@@ -151,6 +168,25 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     }
   }, [username, authToken, currentUser]);
 
+  const fetchHeartbeats = useCallback(async () => {
+    if (!currentUser || !authToken) return;
+    try {
+      const data = await getAdminUserHeartbeats<{
+        heartbeats?: HeartbeatRecord[];
+      }>(
+        {
+          username: currentUser,
+          token: authToken,
+        },
+        username,
+        7
+      );
+      setHeartbeats(data.heartbeats || []);
+    } catch (error) {
+      console.error("Failed to fetch heartbeats:", error);
+    }
+  }, [username, authToken, currentUser]);
+
   const toggleMemory = useCallback((key: string) => {
     setExpandedMemories((prev) => {
       const next = new Set(prev);
@@ -175,12 +211,24 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     });
   }, []);
 
+  const toggleHeartbeat = useCallback((id: string) => {
+    setExpandedHeartbeats((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([fetchProfile(), fetchMessages(), fetchMemories()]).finally(() => {
+    Promise.all([fetchProfile(), fetchMessages(), fetchMemories(), fetchHeartbeats()]).finally(() => {
       setIsLoading(false);
     });
-  }, [fetchProfile, fetchMessages, fetchMemories]);
+  }, [fetchProfile, fetchMessages, fetchMemories, fetchHeartbeats]);
 
   useEffect(() => {
     setIsRoomsOpen(false);
@@ -724,6 +772,88 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
               </div>
             </div>
           )}
+
+          {/* Heartbeat Records */}
+          {!isLoading && heartbeats.length > 0 && (() => {
+            const sentCount = heartbeats.filter(h => h.shouldSend).length;
+            const skippedCount = heartbeats.length - sentCount;
+            const reversedHeartbeats = [...heartbeats].reverse();
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <SectionHeader
+                    icon={<Heartbeat className="h-3 w-3" weight="bold" />}
+                  >
+                    {t("apps.admin.profile.heartbeats")} ({heartbeats.length})
+                  </SectionHeader>
+                  <span className="text-[10px] text-neutral-400">
+                    {sentCount} {t("apps.admin.profile.heartbeatSent")}, {skippedCount} {t("apps.admin.profile.heartbeatSkipped")}
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  {reversedHeartbeats.map((hb) => {
+                    const isExpanded = expandedHeartbeats.has(hb.id);
+                    const time = hb.localTime
+                      ? `${hb.localDate} ${hb.localTime}`
+                      : new Date(hb.timestamp).toLocaleString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        });
+                    return (
+                      <div key={hb.id}>
+                        <button
+                          onClick={() => toggleHeartbeat(hb.id)}
+                          className="flex items-center gap-1.5 w-full text-left text-[11px] hover:bg-gray-100/50 px-1 py-0.5 rounded transition-colors"
+                        >
+                          <CaretRight
+                            className={cn(
+                              "h-3 w-3 text-neutral-400 transition-transform flex-shrink-0",
+                              isExpanded && "rotate-90"
+                            )}
+                            weight="bold"
+                          />
+                          <span className={cn(
+                            "font-medium",
+                            hb.shouldSend ? "text-green-700" : "text-neutral-400"
+                          )}>
+                            {hb.shouldSend ? "sent" : "skipped"}
+                          </span>
+                          <span className="text-neutral-400 text-[10px] ml-1 truncate flex-1">
+                            {hb.shouldSend
+                              ? (hb.message ? hb.message.slice(0, 60) + (hb.message.length > 60 ? "..." : "") : "heartbeat sent")
+                              : (hb.skipReason || "—")}
+                          </span>
+                          <span className="text-neutral-400 text-[10px] whitespace-nowrap flex-shrink-0 ml-1">{time}</span>
+                        </button>
+                        {isExpanded && (
+                          <div className="pl-5 mt-1 mb-1.5 space-y-1">
+                            {hb.message && (
+                              <div className="text-[11px]">
+                                <span className="text-neutral-400">{t("apps.admin.tableHeaders.message")}:</span>{" "}
+                                <span className="text-neutral-700 whitespace-pre-wrap">{hb.message}</span>
+                              </div>
+                            )}
+                            {hb.skipReason && (
+                              <div className="text-[11px]">
+                                <span className="text-neutral-400">{t("apps.admin.profile.reason")}:</span>{" "}
+                                <span className="text-neutral-600">{hb.skipReason}</span>
+                              </div>
+                            )}
+                            <div className="text-[10px] text-neutral-400 font-mono break-all">
+                              {hb.stateSummary}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Rooms */}
           {isLoading ? (

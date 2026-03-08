@@ -178,6 +178,20 @@ const MAX_CONSOLIDATIONS_PER_BATCH = 5;
  */
 const MAX_EXTRACTIONS_PER_BATCH = 5;
 
+/**
+ * Maximum number of daily note entries to include in a single extraction prompt.
+ * When a day has more entries than this, we keep the most recent ones and
+ * prepend a count of omitted older entries to avoid prompt overflow that causes
+ * "response did not match schema" errors from the model.
+ */
+const MAX_ENTRIES_PER_EXTRACTION = 25;
+
+/**
+ * Maximum character length for the daily notes text sent to the AI model.
+ * Acts as a safety net if individual entries are very long.
+ */
+const MAX_DAILY_NOTES_TEXT_LENGTH = 6000;
+
 // ============================================================================
 // Batch Inner Logic
 // ============================================================================
@@ -323,20 +337,49 @@ async function _processSingleDayBatch(
   log: LogFn,
   logError: LogFn,
 ): Promise<{ created: number; updated: number }> {
-  // 1. Build text for this day only
+  // 1. Build text for this day only, truncating if too many entries
   const dailyNotesText = (() => {
-    const entries = note.entries
+    let entries = note.entries;
+    let preamble = "";
+
+    if (entries.length > MAX_ENTRIES_PER_EXTRACTION) {
+      const omitted = entries.length - MAX_ENTRIES_PER_EXTRACTION;
+      entries = entries.slice(-MAX_ENTRIES_PER_EXTRACTION);
+      preamble = `  (${omitted} earlier entries omitted)\n`;
+    }
+
+    const lines = entries
       .map(e => {
         const time = new Date(e.timestamp).toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
         });
-        return `  ${time}: ${e.content}`;
+        const content = e.content.length > 300
+          ? `${e.content.slice(0, 297)}...`
+          : e.content;
+        return `  ${time}: ${content}`;
       })
       .join("\n");
-    return `${note.date}:\n${entries}`;
+
+    let text = `${note.date}:\n${preamble}${lines}`;
+
+    if (text.length > MAX_DAILY_NOTES_TEXT_LENGTH) {
+      text = text.slice(0, MAX_DAILY_NOTES_TEXT_LENGTH) + "\n  ...(truncated)";
+    }
+
+    return text;
   })();
+
+  if (note.entries.length > MAX_ENTRIES_PER_EXTRACTION) {
+    log("[processDailyNotes] Truncated entries for extraction", {
+      username,
+      date: note.date,
+      totalEntries: note.entries.length,
+      includedEntries: MAX_ENTRIES_PER_EXTRACTION,
+      promptLength: dailyNotesText.length,
+    });
+  }
 
   // 2. Gather current memory state for dedup (fresh each batch to reflect earlier batches)
   const currentIndex = await getMemoryIndex(redis, username);
