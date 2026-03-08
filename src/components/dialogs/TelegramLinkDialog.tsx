@@ -16,6 +16,7 @@ import type {
   TelegramLinkedAccount,
 } from "@/api/telegram";
 import { getTelegramLinkedAccountLabel } from "@/hooks/useTelegramLink";
+import { ArrowRight, PaperPlaneRight } from "@phosphor-icons/react";
 
 interface TelegramLinkDialogProps {
   isOpen: boolean;
@@ -67,26 +68,21 @@ export function TelegramLinkDialog({
         ? t("apps.control-panels.telegram.checking")
         : t("apps.control-panels.telegram.description");
 
-  const previewContent = linkedAccount ? (
-    <div className="flex h-32 w-32 items-center justify-center border bg-white px-3 text-center">
-      <p
-        className={cn(
-          "break-words text-black",
-          isXpTheme
-            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-            : "font-geneva-12 text-xs"
-        )}
-        style={{
-          fontFamily: isXpTheme
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : undefined,
-          fontSize: isXpTheme ? "11px" : undefined,
-        }}
-      >
-        {linkedAccountLabel}
-      </p>
+  const telegramIconPreview = (
+    <div className="flex items-center justify-center gap-2">
+      <img
+        src="/icons/mac-192.png"
+        alt="ryOS"
+        className="h-8 w-8 shrink-0 object-contain"
+      />
+      <ArrowRight size={14} weight="bold" className="shrink-0 text-black/45" />
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#229ED9] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.18)]">
+        <PaperPlaneRight size={16} weight="fill" />
+      </div>
     </div>
-  ) : isStatusLoading && !shouldShowLinkSession ? (
+  );
+
+  const previewContent = isStatusLoading && !shouldShowLinkSession ? (
     <div className="flex h-32 w-32 items-center justify-center rounded bg-gray-100">
       <p
         className={cn(
@@ -105,26 +101,7 @@ export function TelegramLinkDialog({
         {t("common.dialog.share.generating")}
       </p>
     </div>
-  ) : shouldShowLinkSession ? null : (
-    <div className="flex h-32 w-32 items-center justify-center rounded bg-gray-100">
-      <p
-        className={cn(
-          "text-gray-500",
-          isXpTheme
-            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-            : "font-geneva-12 text-[10px]"
-        )}
-        style={{
-          fontFamily: isXpTheme
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : undefined,
-          fontSize: isXpTheme ? "10px" : undefined,
-        }}
-      >
-        {t("apps.control-panels.telegram.connect")}
-      </p>
-    </div>
-  );
+  ) : telegramIconPreview;
 
   const dialogContent = (
     <div className="w-full p-3">
