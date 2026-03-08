@@ -3149,7 +3149,10 @@
         "processed": "processed",
         "pending": "pending",
         "processedTooltip": "Processed into long-term memory",
-        "pendingTooltip": "Not yet processed into long-term memory"
+        "pendingTooltip": "Not yet processed into long-term memory",
+        "heartbeats": "Heartbeat Records",
+        "heartbeatSent": "sent",
+        "heartbeatSkipped": "skipped"
       },
       "dialogs": {
         "deleteTitle": "Delete {{type}}?",
