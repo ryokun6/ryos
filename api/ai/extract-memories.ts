@@ -33,11 +33,21 @@ export const maxDuration = 60;
 const extractionSchema = z.object({
   dailyNotes: z
     .array(
-      z
-        .string()
-        .min(1)
-        .max(300)
-        .describe("A concise note about what the USER said, did, or mentioned")
+      z.object({
+        content: z
+          .string()
+          .min(1)
+          .max(300)
+          .describe("A concise note about what the USER said, did, or mentioned"),
+        sourceMessageIndex: z
+          .number()
+          .int()
+          .nonnegative()
+          .optional()
+          .describe(
+            "0-based index of the user message that best anchors this note. Use the latest relevant user message when multiple messages support it."
+          ),
+      })
     )
     .describe(
       "Short-term journal entries. Capture what the user discussed, their mood, plans, topics. Do NOT repeat anything in EXISTING DAILY NOTES."
@@ -86,9 +96,20 @@ export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content?: string;
   parts?: Array<{ type: string; text?: string }>;
+  metadata?: {
+    createdAt?: string | number | Date;
+  };
+  createdAt?: string | number | Date;
+  timestamp?: number;
 }
 
 type LogFn = (...args: unknown[]) => void;
+
+export interface NormalizedConversationMessage {
+  role: "user" | "assistant";
+  text: string;
+  sourceTimestamp: number | null;
+}
 
 export interface ExtractMemoriesFromConversationOptions {
   redis: Redis;
@@ -109,6 +130,26 @@ export interface ExtractMemoriesFromConversationResult {
   skippedReason?: "empty-messages" | "conversation-too-short";
 }
 
+export function getChatMessageTimestamp(msg: ChatMessage): number | null {
+  const rawTimestamp = msg.metadata?.createdAt ?? msg.createdAt ?? msg.timestamp;
+
+  if (rawTimestamp instanceof Date) {
+    const timestamp = rawTimestamp.getTime();
+    return Number.isFinite(timestamp) ? timestamp : null;
+  }
+
+  if (typeof rawTimestamp === "number") {
+    return Number.isFinite(rawTimestamp) ? rawTimestamp : null;
+  }
+
+  if (typeof rawTimestamp === "string") {
+    const timestamp = new Date(rawTimestamp).getTime();
+    return Number.isFinite(timestamp) ? timestamp : null;
+  }
+
+  return null;
+}
+
 function getMessageText(msg: ChatMessage): string {
   if (msg.parts && Array.isArray(msg.parts)) {
     return msg.parts
@@ -119,11 +160,29 @@ function getMessageText(msg: ChatMessage): string {
   return msg.content || "";
 }
 
+export function resolveDailyNoteSourceTimestamp(
+  messages: NormalizedConversationMessage[],
+  sourceMessageIndex?: number
+): number | null {
+  if (!Number.isInteger(sourceMessageIndex) || messages.length === 0) {
+    return null;
+  }
+
+  for (let index = Math.min(sourceMessageIndex!, messages.length - 1); index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message.role === "user" && typeof message.sourceTimestamp === "number") {
+      return message.sourceTimestamp;
+    }
+  }
+
+  return null;
+}
+
 const EXTRACTION_PROMPT = `You are analyzing a conversation between a USER and an AI assistant named "Ryo" to extract memories.
 
 CRITICAL - WHO IS WHO:
-- Lines starting with "User:" are the HUMAN user. Extract facts about THEM.
-- Lines starting with "Ryo:" are the AI ASSISTANT. Do NOT attribute Ryo's statements, opinions, or knowledge to the user.
+- Lines labeled "User" are the HUMAN user. Extract facts about THEM.
+- Lines labeled "Ryo" are the AI ASSISTANT. Do NOT attribute Ryo's statements, opinions, or knowledge to the user.
 - Only extract what the USER directly said, asked, mentioned, or revealed about themselves.
 
 You will output TWO types of memories:
@@ -134,6 +193,9 @@ Capture what the USER discussed, their mood, plans, topics, questions, problems.
 - Be specific and factual
 - Skip small talk, greetings, trivial exchanges
 - Do NOT repeat anything already in EXISTING DAILY NOTES
+- For every note, include sourceMessageIndex pointing to the 0-based USER message index that best anchors the note
+- If a note is supported by multiple USER messages, use the latest relevant USER message index
+- Never point to a Ryo-only message if a USER message supports the note
 
 ## longTermMemories (permanent facts)
 Stable facts about the USER worth remembering permanently.
@@ -179,12 +241,24 @@ export async function extractMemoriesFromConversation({
   }
 
   const userTimeZone = normalizeTimeZone(timeZone);
-  const conversationText = messages
-    .filter((message) => message.role === "user" || message.role === "assistant")
-    .map((message) => {
-      const text = getMessageText(message);
+  const conversationMessages = messages
+    .filter(
+      (message): message is ChatMessage & { role: "user" | "assistant" } =>
+        message.role === "user" || message.role === "assistant"
+    )
+    .map((message) => ({
+      role: message.role,
+      text: getMessageText(message),
+      sourceTimestamp: getChatMessageTimestamp(message),
+    }));
+  const conversationText = conversationMessages
+    .map((message, index) => {
       const role = message.role === "user" ? "User" : "Ryo";
-      return `${role}: ${text}`;
+      const timestampLabel =
+        typeof message.sourceTimestamp === "number"
+          ? new Date(message.sourceTimestamp).toISOString()
+          : "unknown-time";
+      return `[${index}] ${role} @ ${timestampLabel}: ${message.text}`;
     })
     .join("\n\n");
 
@@ -259,12 +333,21 @@ export async function extractMemoriesFromConversation({
   });
 
   let dailyNotesStored = 0;
+  const touchedDates = new Set<string>();
   for (const note of result.dailyNotes) {
-    const storeResult = await appendDailyNote(redis, username, note, {
+    const sourceTimestamp = resolveDailyNoteSourceTimestamp(
+      conversationMessages,
+      note.sourceMessageIndex
+    );
+    const storeResult = await appendDailyNote(redis, username, note.content, {
       timeZone: userTimeZone,
+      ...(typeof sourceTimestamp === "number" ? { timestamp: sourceTimestamp } : {}),
     });
     if (storeResult.success) {
       dailyNotesStored++;
+      if (storeResult.date) {
+        touchedDates.add(storeResult.date);
+      }
     }
   }
 
@@ -368,7 +451,12 @@ export async function extractMemoriesFromConversation({
   }
 
   if (markTodayProcessed && (dailyNotesStored > 0 || hasExistingDailyEntries)) {
-    await markDailyNoteProcessed(redis, username, today);
+    if (hasExistingDailyEntries) {
+      touchedDates.add(today);
+    }
+    await Promise.all(
+      [...touchedDates].map((date) => markDailyNoteProcessed(redis, username, date))
+    );
   }
 
   log("[extractMemories] Done", {

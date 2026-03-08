@@ -261,6 +261,9 @@ export default async function handler(
         messages: newTelegramConversation.map((message) => ({
           role: message.role,
           content: message.imageUrl ? `[image] ${message.content}` : message.content,
+          metadata: {
+            createdAt: message.createdAt,
+          },
         })),
         timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
         storeLongTermMemories: false,
