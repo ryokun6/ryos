@@ -2,7 +2,7 @@
  * Generates a version.json file with build information
  * Format: MAJOR.MINOR (e.g., 10.1) + commit SHA
  * 
- * Uses VERCEL_GIT_COMMIT_SHA in production builds, falls back to 'dev' locally.
+ * Commit SHA from: VERCEL_GIT_COMMIT_SHA (Vercel), SOURCE_COMMIT (Coolify), GIT_COMMIT_SHA (generic CI), or git rev-parse; falls back to 'dev' if none available.
  * Run manually with `bun run version:bump` to increment MAJOR/MINOR.
  * Update DESKTOP_VERSION constant when releasing new desktop builds.
  */
@@ -49,16 +49,18 @@ if (isManualBump) {
 }
 
 // Get commit SHA from environment or git
-let commitSha = process.env.VERCEL_GIT_COMMIT_SHA || '';
-
-if (!commitSha) {
-  // Try to get from git locally
-  try {
-    commitSha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
-  } catch {
-    commitSha = 'dev';
-  }
-}
+// VERCEL_GIT_COMMIT_SHA: Vercel | SOURCE_COMMIT: Coolify | GIT_COMMIT_SHA: generic CI
+const commitSha =
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.SOURCE_COMMIT ||
+  process.env.GIT_COMMIT_SHA ||
+  (() => {
+    try {
+      return execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
+    } catch {
+      return 'dev';
+    }
+  })();
 
 const shortSha = commitSha === 'dev' ? 'dev' : commitSha.substring(0, 7);
 const buildTime = new Date().toISOString();
