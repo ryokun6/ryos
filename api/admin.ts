@@ -6,7 +6,12 @@
  */
 
 import { Redis } from "@upstash/redis";
-import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
+import {
+  CHAT_MESSAGES_PREFIX,
+  CHAT_ROOM_PREFIX,
+  CHAT_ROOMS_SET,
+  CHAT_USERS_PREFIX,
+} from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
@@ -36,6 +41,33 @@ interface UserProfile {
   bannedAt?: number;
   messageCount?: number;
   rooms?: { id: string; name: string }[];
+}
+
+interface UserActivityMessage {
+  id: string;
+  roomId: string;
+  roomName: string;
+  content: string;
+  timestamp: number;
+}
+
+interface UserRoomActivity {
+  messageCount: number;
+  rooms: { id: string; name: string }[];
+  messages: UserActivityMessage[];
+}
+
+const ROOM_ACTIVITY_SCAN_BATCH_SIZE = 25;
+
+function chunkArray<T>(items: T[], chunkSize: number): T[][] {
+  if (chunkSize <= 0) return [items];
+
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += chunkSize) {
+    chunks.push(items.slice(index, index + chunkSize));
+  }
+
+  return chunks;
 }
 
 async function deleteUser(redis: Redis, targetUsername: string): Promise<{ success: boolean; error?: string }> {
@@ -91,42 +123,6 @@ async function getUserProfile(redis: Redis, targetUsername: string): Promise<Use
     if (!userData) return null;
 
     const parsed = typeof userData === "string" ? JSON.parse(userData) : userData;
-    let messageCount = 0;
-    const userRooms: { id: string; name: string }[] = [];
-    
-    const roomIds = await redis.smembers("chat:rooms");
-    const roomNameMap: Record<string, string> = {};
-    
-    for (const roomId of roomIds || []) {
-      try {
-        const roomData = await redis.get<{ name: string } | string>(`chat:room:${roomId}`);
-        if (roomData) {
-          const p = typeof roomData === "string" ? JSON.parse(roomData) : roomData;
-          roomNameMap[roomId] = p.name || roomId;
-        } else {
-          roomNameMap[roomId] = roomId;
-        }
-      } catch {
-        roomNameMap[roomId] = roomId;
-      }
-    }
-    
-    for (const roomId of roomIds || []) {
-      const messages = await redis.lrange(`chat:messages:${roomId}`, 0, -1);
-      let roomMessageCount = 0;
-      
-      for (const msg of messages || []) {
-        const msgData = typeof msg === "string" ? JSON.parse(msg) : msg;
-        if (msgData?.username?.toLowerCase() === normalizedUsername) {
-          roomMessageCount++;
-          messageCount++;
-        }
-      }
-      
-      if (roomMessageCount > 0) {
-        userRooms.push({ id: roomId, name: roomNameMap[roomId] || roomId });
-      }
-    }
 
     return {
       username: parsed.username,
@@ -134,8 +130,6 @@ async function getUserProfile(redis: Redis, targetUsername: string): Promise<Use
       banned: parsed.banned || false,
       banReason: parsed.banReason,
       bannedAt: parsed.bannedAt,
-      messageCount,
-      rooms: userRooms,
     };
   } catch (error) {
     console.error(`Error fetching user profile for ${normalizedUsername}:`, error);
@@ -143,44 +137,153 @@ async function getUserProfile(redis: Redis, targetUsername: string): Promise<Use
   }
 }
 
-async function getUserMessages(redis: Redis, targetUsername: string, limit = 50): Promise<{ id: string; roomId: string; roomName: string; content: string; timestamp: number }[]> {
+async function getRoomNameMap(
+  redis: Redis,
+  roomIds: string[]
+): Promise<Record<string, string>> {
+  if (roomIds.length === 0) {
+    return {};
+  }
+
+  const roomKeys = roomIds.map((roomId) => `${CHAT_ROOM_PREFIX}${roomId}`);
+  const roomPayloads = await redis.mget<
+    ({ name?: string } | string | null)[]
+  >(...roomKeys);
+
+  const roomNameMap: Record<string, string> = {};
+  roomIds.forEach((roomId, index) => {
+    const rawRoom = roomPayloads?.[index];
+    if (!rawRoom) {
+      roomNameMap[roomId] = roomId;
+      return;
+    }
+
+    try {
+      const parsedRoom =
+        typeof rawRoom === "string" ? JSON.parse(rawRoom) : rawRoom;
+      roomNameMap[roomId] = parsedRoom?.name || roomId;
+    } catch {
+      roomNameMap[roomId] = roomId;
+    }
+  });
+
+  return roomNameMap;
+}
+
+async function getUserRoomActivity(
+  redis: Redis,
+  targetUsername: string,
+  limit = 50
+): Promise<UserRoomActivity> {
   const normalizedUsername = targetUsername.toLowerCase();
-  const messages: { id: string; roomId: string; roomName: string; content: string; timestamp: number }[] = [];
+  const recentMessages: Array<Omit<UserActivityMessage, "roomName">> = [];
+  const roomActivity = new Map<string, { latestTimestamp: number }>();
+  let messageCount = 0;
 
   try {
-    const roomIds = await redis.smembers("chat:rooms");
-    const roomNameMap: Record<string, string> = {};
-    
-    for (const roomId of roomIds || []) {
-      try {
-        const roomData = await redis.get<{ name: string } | string>(`chat:room:${roomId}`);
-        if (roomData) {
-          const p = typeof roomData === "string" ? JSON.parse(roomData) : roomData;
-          roomNameMap[roomId] = p.name || roomId;
-        } else {
-          roomNameMap[roomId] = roomId;
+    const roomIds = await redis.smembers(CHAT_ROOMS_SET);
+
+    for (const roomIdBatch of chunkArray(
+      roomIds || [],
+      ROOM_ACTIVITY_SCAN_BATCH_SIZE
+    )) {
+      const batchActivity = await Promise.all(
+        roomIdBatch.map(async (roomId) => {
+          try {
+            const roomMessages = await redis.lrange<
+              (Record<string, unknown> | string)[]
+            >(`${CHAT_MESSAGES_PREFIX}${roomId}`, 0, -1);
+            const matchingMessages: Array<Omit<UserActivityMessage, "roomName">> =
+              [];
+            let latestTimestamp = 0;
+
+            for (const rawMessage of roomMessages || []) {
+              const message =
+                typeof rawMessage === "string"
+                  ? JSON.parse(rawMessage)
+                  : rawMessage;
+              const messageUsername =
+                typeof message?.username === "string"
+                  ? message.username.toLowerCase()
+                  : "";
+
+              if (messageUsername !== normalizedUsername) {
+                continue;
+              }
+
+              const timestamp =
+                typeof message.timestamp === "number" ? message.timestamp : 0;
+              latestTimestamp = Math.max(latestTimestamp, timestamp);
+              matchingMessages.push({
+                id:
+                  typeof message.id === "string"
+                    ? message.id
+                    : `${roomId}:${timestamp}`,
+                roomId,
+                content:
+                  typeof message.content === "string" ? message.content : "",
+                timestamp,
+              });
+            }
+
+            return { roomId, matchingMessages, latestTimestamp };
+          } catch (error) {
+            console.error(`Error scanning room activity for ${roomId}:`, error);
+            return { roomId, matchingMessages: [], latestTimestamp: 0 };
+          }
+        })
+      );
+
+      for (const { roomId, matchingMessages, latestTimestamp } of batchActivity) {
+        if (matchingMessages.length === 0) {
+          continue;
         }
-      } catch {
-        roomNameMap[roomId] = roomId;
-      }
-    }
-    
-    for (const roomId of roomIds || []) {
-      const roomMessages = await redis.lrange(`chat:messages:${roomId}`, 0, -1);
-      for (const msg of roomMessages || []) {
-        const msgData = typeof msg === "string" ? JSON.parse(msg) : msg;
-        if (msgData?.username?.toLowerCase() === normalizedUsername) {
-          messages.push({ id: msgData.id, roomId, roomName: roomNameMap[roomId] || roomId, content: msgData.content, timestamp: msgData.timestamp });
-        }
+
+        messageCount += matchingMessages.length;
+        roomActivity.set(roomId, { latestTimestamp });
+        recentMessages.push(...matchingMessages);
       }
     }
 
-    messages.sort((a, b) => b.timestamp - a.timestamp);
-    return messages.slice(0, limit);
+    const matchedRoomIds = Array.from(roomActivity.keys());
+    const roomNameMap = await getRoomNameMap(redis, matchedRoomIds);
+    const safeLimit = Math.max(1, Math.min(limit, 100));
+
+    const rooms = matchedRoomIds
+      .map((roomId) => ({
+        id: roomId,
+        name: roomNameMap[roomId] || roomId,
+        latestTimestamp: roomActivity.get(roomId)?.latestTimestamp || 0,
+      }))
+      .sort((a, b) => b.latestTimestamp - a.latestTimestamp)
+      .map(({ id, name }) => ({ id, name }));
+
+    const messages = recentMessages
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, safeLimit)
+      .map((message) => ({
+        ...message,
+        roomName: roomNameMap[message.roomId] || message.roomId,
+      }));
+
+    return {
+      messageCount,
+      rooms,
+      messages,
+    };
   } catch (error) {
-    console.error(`Error fetching messages for ${normalizedUsername}:`, error);
-    return [];
+    console.error(`Error fetching room activity for ${normalizedUsername}:`, error);
+    return { messageCount: 0, rooms: [], messages: [] };
   }
+}
+
+async function getUserMessages(
+  redis: Redis,
+  targetUsername: string,
+  limit = 50
+): Promise<UserActivityMessage[]> {
+  const activity = await getUserRoomActivity(redis, targetUsername, limit);
+  return activity.messages;
 }
 
 async function banUser(redis: Redis, targetUsername: string, reason?: string): Promise<{ success: boolean; error?: string }> {
@@ -389,6 +492,25 @@ export default apiHandler<AdminRequest>(
           logger.info("Messages retrieved", { targetUsername, count: messages.length });
           logger.response(200, Date.now() - startTime);
           res.status(200).json({ messages });
+          return;
+        }
+        case "getUserRoomActivity": {
+          const targetUsername = req.query.username as string | undefined;
+          const limit = parseInt((req.query.limit as string) || "50");
+          if (!targetUsername) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({ error: "Username is required" });
+            return;
+          }
+          const activity = await getUserRoomActivity(redis, targetUsername, limit);
+          logger.info("Room activity retrieved", {
+            targetUsername,
+            roomCount: activity.rooms.length,
+            messageCount: activity.messageCount,
+            recentMessagesCount: activity.messages.length,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json(activity);
           return;
         }
         case "getUserMemories": {

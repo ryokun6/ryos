@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
   TableBody,
@@ -23,8 +24,8 @@ import {
   forceAdminDailyNotes,
   getAdminUserHeartbeats,
   getAdminUserMemories,
-  getAdminUserMessages,
   getAdminUserProfile,
+  getAdminUserRoomActivity,
   unbanAdminUser,
 } from "@/api/admin";
 import { ApiRequestError } from "@/api/core";
@@ -45,6 +46,12 @@ interface UserMessage {
   roomName?: string;
   content: string;
   timestamp: number;
+}
+
+interface UserRoomActivity {
+  messageCount: number;
+  rooms: { id: string; name: string }[];
+  messages: UserMessage[];
 }
 
 interface UserMemory {
@@ -95,7 +102,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const { t } = useTranslation();
   const { username: currentUser, authToken } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [messages, setMessages] = useState<UserMessage[]>([]);
+  const [roomActivity, setRoomActivity] = useState<UserRoomActivity | null>(null);
   const [memories, setMemories] = useState<UserMemory[]>([]);
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
   const [heartbeats, setHeartbeats] = useState<HeartbeatRecord[]>([]);
@@ -109,10 +116,12 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [isBanDialogOpen, setIsBanDialogOpen] = useState(false);
   const [isRoomsOpen, setIsRoomsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [hasLoadedRoomActivity, setHasLoadedRoomActivity] = useState(false);
   const [isClearMemoryDialogOpen, setIsClearMemoryDialogOpen] = useState(false);
   const [isForceProcessDialogOpen, setIsForceProcessDialogOpen] = useState(false);
   const [isClearingMemory, setIsClearingMemory] = useState(false);
   const [isProcessingNotes, setIsProcessingNotes] = useState(false);
+  const [isRoomActivityLoading, setIsRoomActivityLoading] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !authToken) return;
@@ -131,10 +140,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     }
   }, [username, authToken, currentUser, t]);
 
-  const fetchMessages = useCallback(async () => {
+  const fetchRoomActivity = useCallback(async () => {
     if (!currentUser || !authToken) return;
+    if (hasLoadedRoomActivity || isRoomActivityLoading) return;
+
+    setIsRoomActivityLoading(true);
     try {
-      const data = await getAdminUserMessages<{ messages?: UserMessage[] }>(
+      const data = await getAdminUserRoomActivity<UserRoomActivity>(
         {
           username: currentUser,
           token: authToken,
@@ -142,11 +154,31 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         username,
         50
       );
-      setMessages(data.messages || []);
+      setRoomActivity({
+        messageCount: data.messageCount || 0,
+        rooms: data.rooms || [],
+        messages: data.messages || [],
+      });
+      setHasLoadedRoomActivity(true);
     } catch (error) {
-      console.error("Failed to fetch messages:", error);
+      console.error("Failed to fetch room activity:", error);
+      toast.error(
+        t(
+          "apps.admin.errors.failedToFetchRoomActivity",
+          "Failed to load user room activity"
+        )
+      );
+    } finally {
+      setIsRoomActivityLoading(false);
     }
-  }, [username, authToken, currentUser]);
+  }, [
+    username,
+    authToken,
+    currentUser,
+    hasLoadedRoomActivity,
+    isRoomActivityLoading,
+    t,
+  ]);
 
   const fetchMemories = useCallback(async () => {
     if (!currentUser || !authToken) return;
@@ -225,14 +257,17 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([fetchProfile(), fetchMessages(), fetchMemories(), fetchHeartbeats()]).finally(() => {
+    Promise.all([fetchProfile(), fetchMemories(), fetchHeartbeats()]).finally(() => {
       setIsLoading(false);
     });
-  }, [fetchProfile, fetchMessages, fetchMemories, fetchHeartbeats]);
+  }, [fetchProfile, fetchMemories, fetchHeartbeats]);
 
   useEffect(() => {
     setIsRoomsOpen(false);
     setIsMessagesOpen(false);
+    setRoomActivity(null);
+    setHasLoadedRoomActivity(false);
+    setIsRoomActivityLoading(false);
   }, [username]);
 
   const handleBan = async () => {
@@ -375,6 +410,36 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     return new Date(timestamp).toLocaleString();
   };
 
+  const openRooms = useCallback(() => {
+    setIsRoomsOpen(true);
+    void fetchRoomActivity();
+  }, [fetchRoomActivity]);
+
+  const openMessages = useCallback(() => {
+    setIsMessagesOpen(true);
+    void fetchRoomActivity();
+  }, [fetchRoomActivity]);
+
+  const toggleRooms = useCallback(() => {
+    setIsRoomsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        void fetchRoomActivity();
+      }
+      return next;
+    });
+  }, [fetchRoomActivity]);
+
+  const toggleMessages = useCallback(() => {
+    setIsMessagesOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        void fetchRoomActivity();
+      }
+      return next;
+    });
+  }, [fetchRoomActivity]);
+
   if (!isLoading && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2">
@@ -389,8 +454,17 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   }
 
   const isTargetAdmin = username.toLowerCase() === "ryo";
-  const roomsCount = profile?.rooms?.length ?? 0;
-  const messagesCount = messages.length;
+  const rooms = roomActivity?.rooms ?? [];
+  const messages = roomActivity?.messages ?? [];
+  const roomsCount = hasLoadedRoomActivity ? rooms.length : null;
+  const messagesCount = hasLoadedRoomActivity
+    ? roomActivity?.messageCount ?? messages.length
+    : null;
+  const isMessagesTruncated =
+    hasLoadedRoomActivity &&
+    messagesCount !== null &&
+    messages.length > 0 &&
+    messages.length < messagesCount;
 
   // Skeleton placeholder component
   const Skeleton = ({ className }: { className?: string }) => (
@@ -433,6 +507,42 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         {icon}
         <span>{children}</span>
       </Component>
+    );
+  };
+  const LazySectionState = ({
+    onLoad,
+    emptyLabel,
+  }: {
+    onLoad: () => void;
+    emptyLabel: string;
+  }) => {
+    if (isRoomActivityLoading) {
+      return (
+        <div className="flex items-center gap-2 py-2 text-[11px] text-neutral-500">
+          <ActivityIndicator size={12} />
+          <span>{t("common.loading.default")}</span>
+        </div>
+      );
+    }
+
+    if (!hasLoadedRoomActivity) {
+      return (
+        <button
+          type="button"
+          onClick={onLoad}
+          className="aqua-button secondary h-6 px-2 text-[10px]"
+        >
+          <span>
+            {t("apps.admin.profile.loadOnDemand", "Load on demand")}
+          </span>
+        </button>
+      );
+    }
+
+    return (
+      <div className="text-[11px] text-neutral-400 text-center py-4">
+        {emptyLabel}
+      </div>
     );
   };
 
@@ -490,26 +600,52 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         <div className="p-3 space-y-4">
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="py-1.5">
+            <button
+              type="button"
+              onClick={openMessages}
+              disabled={isLoading}
+              className="py-1.5 text-left disabled:cursor-default"
+            >
               <SectionHeader className="mb-1">
                 {t("apps.admin.profile.messages")}
               </SectionHeader>
               {isLoading ? (
                 <Skeleton className="h-5 w-8" />
+              ) : isRoomActivityLoading && !hasLoadedRoomActivity ? (
+                <span className="text-[11px] text-neutral-500">
+                  {t("common.loading.default")}
+                </span>
+              ) : messagesCount !== null ? (
+                <span className="text-[14px] font-medium">{messagesCount}</span>
               ) : (
-                <span className="text-[14px] font-medium">{profile?.messageCount || 0}</span>
+                <span className="text-[11px] text-neutral-500">
+                  {t("apps.admin.profile.loadOnDemand", "Load on demand")}
+                </span>
               )}
-            </div>
-            <div className="py-1.5">
+            </button>
+            <button
+              type="button"
+              onClick={openRooms}
+              disabled={isLoading}
+              className="py-1.5 text-left disabled:cursor-default"
+            >
               <SectionHeader className="mb-1">
                 {t("apps.admin.profile.rooms")}
               </SectionHeader>
               {isLoading ? (
                 <Skeleton className="h-5 w-8" />
+              ) : isRoomActivityLoading && !hasLoadedRoomActivity ? (
+                <span className="text-[11px] text-neutral-500">
+                  {t("common.loading.default")}
+                </span>
+              ) : roomsCount !== null ? (
+                <span className="text-[14px] font-medium">{roomsCount}</span>
               ) : (
-                <span className="text-[14px] font-medium">{profile?.rooms?.length || 0}</span>
+                <span className="text-[11px] text-neutral-500">
+                  {t("apps.admin.profile.loadOnDemand", "Load on demand")}
+                </span>
               )}
-            </div>
+            </button>
           </div>
 
           {/* Ban Info */}
@@ -897,17 +1033,26 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           ) : (
             <div className="space-y-2">
               <SectionHeader
-                onClick={() => setIsRoomsOpen((prev) => !prev)}
+                onClick={toggleRooms}
                 isOpen={isRoomsOpen}
                 showCaret={true}
               >
-                {t("apps.admin.profile.activeRooms")} ({roomsCount})
+                {t("apps.admin.profile.activeRooms")}
+                {roomsCount !== null ? ` (${roomsCount})` : ""}
               </SectionHeader>
               {isRoomsOpen && (
                 <>
-                  {roomsCount > 0 && (
+                  {!hasLoadedRoomActivity || roomsCount === 0 ? (
+                    <LazySectionState
+                      onLoad={openRooms}
+                      emptyLabel={t(
+                        "apps.admin.profile.noActiveRooms",
+                        "No room activity found"
+                      )}
+                    />
+                  ) : (
                     <div className="flex flex-wrap gap-1">
-                      {profile?.rooms?.map((room) => (
+                      {rooms.map((room) => (
                         <span
                           key={room.id}
                           className="px-2 py-1 text-[10px] bg-gray-100 rounded"
@@ -934,53 +1079,66 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           ) : (
             <div className="space-y-2">
               <SectionHeader
-                onClick={() => setIsMessagesOpen((prev) => !prev)}
+                onClick={toggleMessages}
                 isOpen={isMessagesOpen}
                 showCaret={true}
               >
-                {t("apps.admin.profile.recentMessages")} ({messagesCount})
+                {t("apps.admin.profile.recentMessages")}
+                {messagesCount !== null ? ` (${messagesCount})` : ""}
               </SectionHeader>
               {isMessagesOpen && (
                 <>
-                  {messagesCount === 0 ? (
-                    <div className="text-[11px] text-neutral-400 text-center py-4">
-                      {t("apps.admin.profile.noMessages")}
-                    </div>
+                  {!hasLoadedRoomActivity || messages.length === 0 ? (
+                    <LazySectionState
+                      onLoad={openMessages}
+                      emptyLabel={t("apps.admin.profile.noMessages")}
+                    />
                   ) : (
-                    <Table className="table-fixed">
-                      <TableHeader>
-                        <TableRow className="text-[10px] border-none font-normal">
-                          <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[25%]">
-                            {t("apps.admin.profile.room")}
-                          </TableHead>
-                          <TableHead className="font-normal bg-gray-100/50 h-[24px]">
-                            {t("apps.admin.tableHeaders.message")}
-                          </TableHead>
-                          <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[20%]">
-                            {t("apps.admin.tableHeaders.time")}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody className="text-[11px]">
-                        {messages.map((message) => (
-                          <TableRow
-                            key={message.id}
-                            className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/30"
-                          >
-                            <TableCell>
-                              <span className="text-neutral-500">#</span>
-                              <span className="break-all">{message.roomName || message.roomId}</span>
-                            </TableCell>
-                            <TableCell className="min-w-0">
-                              <span className="line-clamp-2 break-words">{message.content}</span>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-neutral-500">
-                              {formatRelativeTime(message.timestamp)}
-                            </TableCell>
+                    <div className="space-y-2">
+                      {isMessagesTruncated && (
+                        <div className="text-[10px] text-neutral-400">
+                          {t("apps.admin.profile.showingLatestMessages", {
+                            shown: messages.length,
+                            total: messagesCount || messages.length,
+                            defaultValue: `Showing latest ${messages.length} of ${messagesCount || messages.length} messages`,
+                          })}
+                        </div>
+                      )}
+                      <Table className="table-fixed">
+                        <TableHeader>
+                          <TableRow className="text-[10px] border-none font-normal">
+                            <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[25%]">
+                              {t("apps.admin.profile.room")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                              {t("apps.admin.tableHeaders.message")}
+                            </TableHead>
+                            <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[20%]">
+                              {t("apps.admin.tableHeaders.time")}
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody className="text-[11px]">
+                          {messages.map((message) => (
+                            <TableRow
+                              key={message.id}
+                              className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/30"
+                            >
+                              <TableCell>
+                                <span className="text-neutral-500">#</span>
+                                <span className="break-all">{message.roomName || message.roomId}</span>
+                              </TableCell>
+                              <TableCell className="min-w-0">
+                                <span className="line-clamp-2 break-words">{message.content}</span>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-neutral-500">
+                                {formatRelativeTime(message.timestamp)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </>
               )}

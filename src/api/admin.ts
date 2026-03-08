@@ -54,6 +54,14 @@ export async function getAdminUserMessages<TResponse>(
   return adminGet<TResponse>(auth, "getUserMessages", { username, limit });
 }
 
+export async function getAdminUserRoomActivity<TResponse>(
+  auth: ApiAuthContext,
+  username: string,
+  limit?: number
+): Promise<TResponse> {
+  return adminGet<TResponse>(auth, "getUserRoomActivity", { username, limit });
+}
+
 export async function getAdminUserMemories<TResponse>(
   auth: ApiAuthContext,
   username: string
