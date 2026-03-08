@@ -714,6 +714,56 @@ function parseVCardLine(line: string): {
   };
 }
 
+function isPhotoBase64Continuation(line: string): boolean {
+  return /^[A-Za-z0-9+/=]+$/.test(line);
+}
+
+function isLikelyVCardPropertyLine(line: string): boolean {
+  return /^[A-Z0-9-]+(?:\.[A-Z0-9-]+)?(?:;[^:]*)?:/i.test(line);
+}
+
+function resolvePhotoValue(
+  lines: string[],
+  startIndex: number,
+  initialValue: string,
+  params: string[]
+): { value: string; nextIndex: number } {
+  let nextIndex = startIndex;
+  const chunks = initialValue ? [initialValue] : [];
+  const looksLikeBase64 =
+    params.some((param) => {
+      const [key, rawValue] = param.split("=");
+      const upperKey = key.toUpperCase();
+      const upperValue = rawValue?.toUpperCase() || "";
+      return (
+        upperValue === "B" ||
+        upperValue === "BASE64" ||
+        upperKey === "ENCODING" && (upperValue === "B" || upperValue === "BASE64")
+      );
+    }) || /^[A-Za-z0-9+/=\s]{20,}$/.test(initialValue);
+
+  if (!looksLikeBase64) {
+    return { value: initialValue, nextIndex };
+  }
+
+  for (let i = startIndex + 1; i < lines.length; i += 1) {
+    const candidate = lines[i];
+    if (isLikelyVCardPropertyLine(candidate) && !isPhotoBase64Continuation(candidate)) {
+      break;
+    }
+    if (!isPhotoBase64Continuation(candidate)) {
+      break;
+    }
+    chunks.push(candidate);
+    nextIndex = i;
+  }
+
+  return {
+    value: chunks.join(""),
+    nextIndex,
+  };
+}
+
 function extractTelegramUsernameFromValue(value: string): string {
   if (/t\.me\//i.test(value) || /telegram\.me\//i.test(value) || value.startsWith("@")) {
     return sanitizeTelegramUsername(value);
@@ -745,7 +795,8 @@ export function parseVCardText(input: string): ContactImportResult {
       .map((line) => line.trim())
       .filter(Boolean);
 
-    for (const line of lines) {
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const line = lines[lineIndex];
       if (
         line.toUpperCase() === "BEGIN:VCARD" ||
         line.toUpperCase() === "END:VCARD" ||
@@ -759,7 +810,13 @@ export function parseVCardText(input: string): ContactImportResult {
         continue;
       }
 
-      const { name, params, value } = parsed;
+      const { name, params } = parsed;
+      const resolved =
+        name === "PHOTO"
+          ? resolvePhotoValue(lines, lineIndex, parsed.value, params)
+          : { value: parsed.value, nextIndex: lineIndex };
+      const value = resolved.value;
+      lineIndex = resolved.nextIndex;
       const label = extractLabel(params);
 
       switch (name) {

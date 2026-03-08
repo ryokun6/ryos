@@ -138,6 +138,7 @@ interface CalendarSnapshotData {
 
 interface ContactsSnapshotData {
   contacts: Contact[];
+  myContactId: string | null;
 }
 
 type AnySnapshotData =
@@ -442,6 +443,7 @@ function serializeCalendarSnapshot(): CalendarSnapshotData {
 function serializeContactsSnapshot(): ContactsSnapshotData {
   return {
     contacts: useContactsStore.getState().contacts,
+    myContactId: useContactsStore.getState().myContactId,
   };
 }
 
@@ -657,11 +659,12 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
 }
 
 function applyContactsSnapshot(data: ContactsSnapshotData): void {
-  const contacts = normalizeContacts(data?.contacts);
-  useContactsStore.setState({
-    contacts,
-    selectedContactId: contacts[0]?.id ?? null,
-  });
+  useContactsStore
+    .getState()
+    .replaceContactsFromSync(
+      normalizeContacts(data?.contacts),
+      data?.myContactId ?? null
+    );
 }
 
 async function applyCustomWallpapersSnapshot(

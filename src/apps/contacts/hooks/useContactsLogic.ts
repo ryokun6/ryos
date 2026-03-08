@@ -37,6 +37,7 @@ export function useContactsLogic() {
     contacts,
     selectedContactId,
     myContactId,
+    lastRemoteSyncAt,
     setSelectedContactId,
     setMyContactId,
     addContact,
@@ -48,6 +49,7 @@ export function useContactsLogic() {
       contacts: state.contacts,
       selectedContactId: state.selectedContactId,
       myContactId: state.myContactId,
+      lastRemoteSyncAt: state.lastRemoteSyncAt,
       setSelectedContactId: state.setSelectedContactId,
       setMyContactId: state.setMyContactId,
       addContact: state.addContact,
@@ -189,10 +191,11 @@ export function useContactsLogic() {
 
       for (const contact of parsed.contacts) {
         if (contact.picture) {
+          const originalPicture = contact.picture;
           try {
-            contact.picture = await resizeImageToBase64(contact.picture, 64);
+            contact.picture = await resizeImageToBase64(originalPicture, 64);
           } catch {
-            contact.picture = null;
+            contact.picture = originalPicture;
           }
         }
       }
@@ -246,6 +249,7 @@ export function useContactsLogic() {
     handleDeleteSelectedContact,
     handleMarkAsMine,
     myContactId,
+    lastRemoteSyncAt,
     updateSelectedContact,
     handleImport,
     handleFileSelected,

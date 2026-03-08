@@ -62,7 +62,7 @@ function ContactListItem({
         <img
           src={contact.picture}
           alt=""
-          className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] object-cover"
+          className="shrink-0 w-5 h-5 rounded-full bg-white/70 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] object-contain"
         />
       ) : (
         <div
@@ -230,6 +230,7 @@ export function ContactsAppComponent({
     handleDeleteSelectedContact,
     handleMarkAsMine,
     myContactId,
+    lastRemoteSyncAt,
     updateSelectedContact,
     handleImport,
     handleFileSelected,
@@ -241,6 +242,7 @@ export function ContactsAppComponent({
   const [containerWidth, setContainerWidth] = useState(820);
   const [isPicturePickerOpen, setIsPicturePickerOpen] = useState(false);
   const shouldEditOnNextSelectionRef = useRef(false);
+  const skipNextMultivalueSyncRef = useRef(false);
   const [showGroupSidebar, setShowGroupSidebar] = useState(true);
   const [isCardOnlyView, setIsCardOnlyView] = useState(false);
   useResizeObserverWithRef(containerRef, (entry) => {
@@ -258,6 +260,16 @@ export function ContactsAppComponent({
   useEffect(() => {
     setMultivalueDraft(getMultivalueDraft(selectedContact));
   }, [isEditing, selectedContact?.id]);
+  useEffect(() => {
+    if (!lastRemoteSyncAt) {
+      return;
+    }
+    if (skipNextMultivalueSyncRef.current) {
+      skipNextMultivalueSyncRef.current = false;
+      return;
+    }
+    setMultivalueDraft(getMultivalueDraft(selectedContact));
+  }, [lastRemoteSyncAt, selectedContact]);
   const handleCreateContactAndEdit = () => {
     shouldEditOnNextSelectionRef.current = true;
     handleCreateContact();
@@ -330,7 +342,7 @@ export function ContactsAppComponent({
                         title={t("apps.contacts.views.toggleGroups", { defaultValue: "Toggle Groups" })}
                         aria-label={t("apps.contacts.views.toggleGroups", { defaultValue: "Toggle Groups" })}
                       >
-                      <SidebarSimple size={12} />
+                      <SidebarSimple size={14} />
                       </button>
                     )}
                     <button
@@ -341,7 +353,7 @@ export function ContactsAppComponent({
                       title={t("apps.contacts.views.cardOnly", { defaultValue: "Card Only" })}
                       aria-label={t("apps.contacts.views.cardOnly", { defaultValue: "Card Only" })}
                     >
-                      <IdentificationCard size={12} />
+                      <IdentificationCard size={14} />
                     </button>
                   </div>
                   <div className="metal-inset-btn-group">
@@ -405,7 +417,7 @@ export function ContactsAppComponent({
                       className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
                       title={t("apps.contacts.views.toggleGroups", { defaultValue: "Toggle Groups" })}
                     >
-                      <SidebarSimple size={12} />
+                      <SidebarSimple size={14} />
                     </Button>
                   )}
                   <Button
@@ -416,7 +428,7 @@ export function ContactsAppComponent({
                     className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
                     title={t("apps.contacts.views.cardOnly", { defaultValue: "Card Only" })}
                   >
-                    <IdentificationCard size={12} />
+                    <IdentificationCard size={14} />
                   </Button>
                   <Button
                     type="button"
@@ -566,17 +578,21 @@ export function ContactsAppComponent({
                       type="button"
                       onClick={() => setIsPicturePickerOpen(true)}
                       className="w-12 h-12 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-base font-semibold text-white overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                      style={selectedContact.picture ? undefined : {
-                        background: "linear-gradient(to bottom, #dcdcdc, #b8b8b8)",
-                        textShadow: avatarInitialsTextShadow,
-                      }}
+                      style={
+                        selectedContact.picture
+                          ? { background: "rgba(255, 255, 255, 0.72)" }
+                          : {
+                              background: "linear-gradient(to bottom, #dcdcdc, #b8b8b8)",
+                              textShadow: avatarInitialsTextShadow,
+                            }
+                      }
                       title={t("apps.contacts.changePicture")}
                     >
                       {selectedContact.picture ? (
                         <img
                           src={selectedContact.picture}
                           alt={selectedContact.displayName}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
                         getContactInitials(selectedContact)
@@ -629,6 +645,7 @@ export function ContactsAppComponent({
                             value={multivalueDraft.phones}
                             onChange={(e) => {
                               const value = e.target.value;
+                              skipNextMultivalueSyncRef.current = true;
                               setMultivalueDraft((prev) => ({ ...prev, phones: value }));
                               updateSelectedContact({ phones: splitMultivalueInput(value) });
                             }}
@@ -642,6 +659,7 @@ export function ContactsAppComponent({
                             value={multivalueDraft.emails}
                             onChange={(e) => {
                               const value = e.target.value;
+                              skipNextMultivalueSyncRef.current = true;
                               setMultivalueDraft((prev) => ({ ...prev, emails: value }));
                               updateSelectedContact({ emails: splitMultivalueInput(value) });
                             }}
@@ -663,6 +681,7 @@ export function ContactsAppComponent({
                             value={multivalueDraft.addresses}
                             onChange={(e) => {
                               const value = e.target.value;
+                              skipNextMultivalueSyncRef.current = true;
                               setMultivalueDraft((prev) => ({ ...prev, addresses: value }));
                               updateSelectedContact({ addresses: splitMultivalueInput(value) });
                             }}
@@ -676,6 +695,7 @@ export function ContactsAppComponent({
                             value={multivalueDraft.urls}
                             onChange={(e) => {
                               const value = e.target.value;
+                              skipNextMultivalueSyncRef.current = true;
                               setMultivalueDraft((prev) => ({ ...prev, urls: value }));
                               updateSelectedContact({ urls: splitMultivalueInput(value) });
                             }}

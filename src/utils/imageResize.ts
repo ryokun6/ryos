@@ -13,7 +13,32 @@ export function resizeImageToBase64(
         reject(new Error("Canvas not supported"));
         return;
       }
-      ctx.drawImage(img, 0, 0, size, size);
+
+      const sourceWidth = img.naturalWidth || img.width;
+      const sourceHeight = img.naturalHeight || img.height;
+
+      if (!sourceWidth || !sourceHeight) {
+        reject(new Error("Invalid image dimensions"));
+        return;
+      }
+
+      const squareSize = Math.min(sourceWidth, sourceHeight);
+      const sourceX = Math.floor((sourceWidth - squareSize) / 2);
+      const sourceY = Math.floor((sourceHeight - squareSize) / 2);
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(
+        img,
+        sourceX,
+        sourceY,
+        squareSize,
+        squareSize,
+        0,
+        0,
+        size,
+        size
+      );
       resolve(canvas.toDataURL("image/png"));
     };
     img.onerror = () => reject(new Error("Failed to load image"));

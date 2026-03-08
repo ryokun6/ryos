@@ -90,7 +90,7 @@ export function UserPicturePicker({
             <img
               src={picture.path}
               alt={picture.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full bg-white/70 object-contain"
               loading="lazy"
             />
           </button>

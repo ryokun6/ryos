@@ -40,6 +40,42 @@ describe("contacts vCard parsing", () => {
     expect(result.contacts[1].addresses[0]?.formatted).toContain("Oakland");
   });
 
+  test("parses inline photo data uris from vcards", () => {
+    const vcard = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      "FN:Photo Inline",
+      "PHOTO:data:image/png;base64,ZmFrZQ==",
+      "END:VCARD",
+    ].join("\n");
+
+    const result = parseVCardText(vcard);
+
+    expect(result.warnings).toHaveLength(0);
+    expect(result.contacts).toHaveLength(1);
+    expect(result.contacts[0].picture).toBe("data:image/png;base64,ZmFrZQ==");
+  });
+
+  test("parses multiline base64 photo payloads from legacy vcards", () => {
+    const vcard = [
+      "BEGIN:VCARD",
+      "VERSION:2.1",
+      "FN:Photo Legacy",
+      "PHOTO;ENCODING=BASE64;TYPE=PNG:",
+      "ZmFr",
+      "ZVBuZw==",
+      "EMAIL:photo@example.com",
+      "END:VCARD",
+    ].join("\n");
+
+    const result = parseVCardText(vcard);
+
+    expect(result.warnings).toHaveLength(0);
+    expect(result.contacts).toHaveLength(1);
+    expect(result.contacts[0].picture).toBe("data:image/png;base64,ZmFrZVBuZw==");
+    expect(result.contacts[0].emails[0]?.value).toBe("photo@example.com");
+  });
+
   test("merges duplicate contacts by email", () => {
     const existing = createContactFromDraft({
       displayName: "Avery Chen",

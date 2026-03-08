@@ -7,6 +7,7 @@ import {
   createContactFromDraft,
   findMatchingContact,
   mergeContacts,
+  normalizeContacts,
   parseVCardText,
   seedDefaultContacts,
   sortContacts,
@@ -22,6 +23,7 @@ interface ContactsStoreState {
   contacts: Contact[];
   selectedContactId: string | null;
   myContactId: string | null;
+  lastRemoteSyncAt: number;
   setSelectedContactId: (id: string | null) => void;
   setMyContactId: (id: string | null) => void;
   addContact: (draft?: ContactDraft) => string;
@@ -29,6 +31,10 @@ interface ContactsStoreState {
   deleteContact: (id: string) => void;
   importContacts: (parsed: ContactImportResult) => ImportContactsResult;
   importVCardText: (text: string) => ImportContactsResult;
+  replaceContactsFromSync: (
+    contacts: Contact[],
+    myContactId?: string | null
+  ) => void;
 }
 
 function getNextSelectedId(contacts: Contact[], deletedId: string): string | null {
@@ -48,6 +54,7 @@ export const useContactsStore = create<ContactsStoreState>()(
       contacts: INITIAL_CONTACTS,
       selectedContactId: INITIAL_CONTACTS[0]?.id ?? null,
       myContactId: null,
+      lastRemoteSyncAt: 0,
 
       setSelectedContactId: (id) => set({ selectedContactId: id }),
       setMyContactId: (id) => set((state) => ({
@@ -132,6 +139,27 @@ export const useContactsStore = create<ContactsStoreState>()(
       importVCardText: (text) => {
         return get().importContacts(parseVCardText(text));
       },
+
+      replaceContactsFromSync: (incomingContacts, incomingMyContactId = null) => {
+        set((state) => {
+          const contacts = sortContacts(normalizeContacts(incomingContacts), incomingMyContactId);
+          const selectedContactId = contacts.some(
+            (contact) => contact.id === state.selectedContactId
+          )
+            ? state.selectedContactId
+            : contacts[0]?.id ?? null;
+          const myContactId = contacts.some((contact) => contact.id === incomingMyContactId)
+            ? incomingMyContactId
+            : null;
+
+          return {
+            contacts,
+            selectedContactId,
+            myContactId,
+            lastRemoteSyncAt: Date.now(),
+          };
+        });
+      },
     }),
     {
       name: "contacts-storage",
@@ -158,6 +186,8 @@ export const useContactsStore = create<ContactsStoreState>()(
           contacts,
           selectedContactId,
           myContactId,
+          lastRemoteSyncAt:
+            typeof persisted?.lastRemoteSyncAt === "number" ? persisted.lastRemoteSyncAt : 0,
         };
       },
     }
