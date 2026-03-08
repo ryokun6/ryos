@@ -19,6 +19,7 @@ import {
 } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import type { Contact } from "@/utils/contacts";
+import { normalizeContacts } from "@/utils/contacts";
 import type { AIModel } from "@/types/aiModels";
 import type {
   DisplayMode,
@@ -656,9 +657,10 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
 }
 
 function applyContactsSnapshot(data: ContactsSnapshotData): void {
+  const contacts = normalizeContacts(data?.contacts);
   useContactsStore.setState({
-    contacts: data.contacts,
-    selectedContactId: data.contacts[0]?.id ?? null,
+    contacts,
+    selectedContactId: contacts[0]?.id ?? null,
   });
 }
 

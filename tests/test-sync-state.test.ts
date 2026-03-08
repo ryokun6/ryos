@@ -8,6 +8,20 @@ import { BASE_URL, fetchWithAuth } from "./test-utils";
 const TEST_USERNAME = `sync_state_tester_${Date.now()}_${Math.floor(
   Math.random() * 1000
 )}`;
+let authTokenPromise: Promise<string> | null = null;
+
+async function getAuthToken(): Promise<string> {
+  if (!authTokenPromise) {
+    authTokenPromise = (async () => {
+      const redis = createRedis();
+      const authToken = generateAuthToken();
+      await storeToken(redis, TEST_USERNAME, authToken);
+      return authToken;
+    })();
+  }
+
+  return authTokenPromise;
+}
 
 function createLegacyDocumentsBlobUrl() {
   const envelope = {
@@ -130,5 +144,81 @@ describe("sync state API legacy documents migration", () => {
         : migratedRaw;
     expect(migrated?.data?.documents).toBeArray();
     expect(migrated?.data?.documents).toHaveLength(1);
+  });
+});
+
+describe("sync state API contacts validation", () => {
+  test("rejects malformed contacts snapshots", async () => {
+    const authToken = await getAuthToken();
+
+    const res = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "contacts",
+          updatedAt: "2026-03-08T02:30:00.000Z",
+          version: 1,
+          data: {
+            contacts: [{ id: "bad-1", displayName: "Bad Contact" }],
+          },
+        }),
+      }
+    );
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect((json.error || "").toLowerCase()).toContain("contacts");
+  });
+
+  test("accepts fully serialized contacts snapshots", async () => {
+    const authToken = await getAuthToken();
+
+    const res = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "contacts",
+          updatedAt: "2026-03-08T02:31:00.000Z",
+          version: 1,
+          data: {
+            contacts: [
+              {
+                id: "contact-1",
+                displayName: "Good Contact",
+                firstName: "Good",
+                lastName: "Contact",
+                nickname: "",
+                organization: "",
+                title: "",
+                notes: "",
+                emails: [],
+                phones: [],
+                addresses: [],
+                urls: [],
+                birthday: null,
+                telegramUsername: "",
+                telegramUserId: "",
+                source: "manual",
+                createdAt: 1,
+                updatedAt: 1,
+              },
+            ],
+          },
+        }),
+      }
+    );
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.ok).toBe(true);
+    expect(json.domain).toBe("contacts");
   });
 });

@@ -3,7 +3,10 @@ import {
   createDefaultRyoContact,
   createContactFromDraft,
   findMatchingContact,
+  isSerializedContact,
   mergeContacts,
+  normalizeContact,
+  normalizeContacts,
   parseVCardText,
   seedDefaultContacts,
 } from "../src/utils/contacts";
@@ -76,5 +79,34 @@ describe("contacts vCard parsing", () => {
     const seededAgain = seedDefaultContacts([existingRyo]);
     expect(seededAgain).toHaveLength(1);
     expect(seededAgain[0].displayName).toBe("Ryo Lu");
+  });
+
+  test("normalizes sparse synced contacts into the full contact shape", () => {
+    const normalized = normalizeContact({
+      id: "bad-1",
+      displayName: "  Bad Sync Contact  ",
+      emails: [{ value: "bad@example.com" }],
+      source: "telegram",
+    });
+
+    expect(normalized).toBeTruthy();
+    expect(normalized?.id).toBe("bad-1");
+    expect(normalized?.displayName).toBe("Bad Sync Contact");
+    expect(normalized?.emails[0]?.value).toBe("bad@example.com");
+    expect(normalized?.phones).toEqual([]);
+    expect(normalized?.addresses).toEqual([]);
+    expect(normalized?.urls).toEqual([]);
+    expect(isSerializedContact(normalized)).toBe(true);
+  });
+
+  test("drops invalid synced contacts without ids", () => {
+    const normalized = normalizeContacts([
+      { displayName: "Missing Id" },
+      { id: "good-1", displayName: "Good Contact" },
+    ]);
+
+    expect(normalized).toHaveLength(1);
+    expect(normalized[0].id).toBe("good-1");
+    expect(isSerializedContact(normalized[0])).toBe(true);
   });
 });
