@@ -1,12 +1,39 @@
 import type PusherType from "pusher-js";
 import type { Channel } from "pusher-js";
 import * as PusherNamespace from "pusher-js";
+import {
+  getPusherRuntimeConfig,
+  getRealtimeProvider,
+  getRealtimeWebSocketUrl,
+} from "@/utils/runtimeConfig";
 
-// App-wide singleton so we don't open/close the WebSocket on every React Strict-Mode remount.
-// Also survives HMR to prevent connection churn during development.
+type ChannelEventHandler = {
+  bivarianceHack(data: unknown): void;
+}["bivarianceHack"];
+type ConnectionEventHandler = {
+  bivarianceHack(data?: unknown): void;
+}["bivarianceHack"];
+
+export interface RealtimeChannel {
+  name: string;
+  bind(eventName: string, handler: ChannelEventHandler): void;
+  unbind(eventName?: string, handler?: ChannelEventHandler): void;
+}
+
+export interface RealtimeConnection {
+  bind(eventName: string, handler: ConnectionEventHandler): void;
+  unbind(eventName?: string, handler?: ConnectionEventHandler): void;
+}
+
+export interface RealtimeClient {
+  connection: RealtimeConnection;
+  subscribe(channelName: string): RealtimeChannel;
+  unsubscribe(channelName: string): void;
+  channel(channelName: string): RealtimeChannel | undefined;
+}
 
 const globalWithPusher = globalThis as typeof globalThis & {
-  __pusherClient?: PusherType;
+  __pusherClient?: RealtimeClient;
   __pusherChannelRefCounts?: Record<string, number>;
   __pusherChannelRecoveryWarnings?: Record<string, true>;
   Pusher?: PusherConstructor;
@@ -20,16 +47,10 @@ type PusherConstructor = new (
   }
 ) => PusherType;
 
-// Use development Pusher key for local dev and Vercel preview deployments
-const isDevLikeEnvironment =
-  import.meta.env.DEV ||
-  import.meta.env.VITE_VERCEL_ENV === "development" ||
-  import.meta.env.VITE_VERCEL_ENV === "preview";
-
-const PUSHER_APP_KEY = isDevLikeEnvironment
-    ? "988dd649f3bdb6f0f995"
-    : "b47fd563805c8c42da1a";
-const PUSHER_CLUSTER = "us3";
+const pusherRuntimeConfig = getPusherRuntimeConfig();
+const PUSHER_APP_KEY = pusherRuntimeConfig.key;
+const PUSHER_CLUSTER = pusherRuntimeConfig.cluster;
+const PUSHER_FORCE_TLS = pusherRuntimeConfig.forceTLS;
 
 const getPusherConstructor = (): PusherConstructor => {
   const constructorFromModule = (
@@ -47,19 +68,236 @@ const getPusherConstructor = (): PusherConstructor => {
   throw new Error("[pusherClient] Pusher constructor not available");
 };
 
-export function getPusherClient(): PusherType {
-  if (!globalWithPusher.__pusherClient) {
-    const Pusher = getPusherConstructor();
-    // Create once and cache
-    globalWithPusher.__pusherClient = new Pusher(PUSHER_APP_KEY, {
-      cluster: PUSHER_CLUSTER,
-      forceTLS: true,
+class LocalRealtimeConnection implements RealtimeConnection {
+  private listeners = new Map<string, Set<ConnectionEventHandler>>();
+
+  bind(eventName: string, handler: ConnectionEventHandler): void {
+    const listeners = this.listeners.get(eventName) || new Set();
+    listeners.add(handler);
+    this.listeners.set(eventName, listeners);
+  }
+
+  unbind(eventName?: string, handler?: ConnectionEventHandler): void {
+    if (!eventName) {
+      this.listeners.clear();
+      return;
+    }
+
+    if (!handler) {
+      this.listeners.delete(eventName);
+      return;
+    }
+
+    const listeners = this.listeners.get(eventName);
+    if (!listeners) return;
+    listeners.delete(handler);
+    if (listeners.size === 0) {
+      this.listeners.delete(eventName);
+    }
+  }
+
+  emit(eventName: string, payload?: unknown): void {
+    const listeners = this.listeners.get(eventName);
+    if (!listeners) return;
+    listeners.forEach((listener) => listener(payload));
+  }
+}
+
+class LocalRealtimeChannel implements RealtimeChannel {
+  readonly name: string;
+  private listeners = new Map<string, Set<ChannelEventHandler>>();
+
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  bind(eventName: string, handler: ChannelEventHandler): void {
+    const listeners = this.listeners.get(eventName) || new Set();
+    listeners.add(handler);
+    this.listeners.set(eventName, listeners);
+  }
+
+  unbind(eventName?: string, handler?: ChannelEventHandler): void {
+    if (!eventName) {
+      this.listeners.clear();
+      return;
+    }
+
+    if (!handler) {
+      this.listeners.delete(eventName);
+      return;
+    }
+
+    const listeners = this.listeners.get(eventName);
+    if (!listeners) return;
+    listeners.delete(handler);
+    if (listeners.size === 0) {
+      this.listeners.delete(eventName);
+    }
+  }
+
+  emit(eventName: string, payload: unknown): void {
+    const listeners = this.listeners.get(eventName);
+    if (!listeners) return;
+    listeners.forEach((listener) => listener(payload));
+  }
+}
+
+class LocalRealtimeClient implements RealtimeClient {
+  readonly connection = new LocalRealtimeConnection();
+
+  private socket: WebSocket | null = null;
+  private reconnectTimer: number | null = null;
+  private reconnectDelayMs = 1000;
+  private destroyed = false;
+  private channels = new Map<string, LocalRealtimeChannel>();
+
+  constructor(private readonly websocketUrl: string) {
+    this.connect();
+  }
+
+  subscribe(channelName: string): RealtimeChannel {
+    const existing = this.channels.get(channelName);
+    if (existing) {
+      this.send({ type: "subscribe", channel: channelName });
+      return existing;
+    }
+
+    const channel = new LocalRealtimeChannel(channelName);
+    this.channels.set(channelName, channel);
+    this.send({ type: "subscribe", channel: channelName });
+    return channel;
+  }
+
+  unsubscribe(channelName: string): void {
+    this.channels.delete(channelName);
+    this.send({ type: "unsubscribe", channel: channelName });
+  }
+
+  channel(channelName: string): RealtimeChannel | undefined {
+    return this.channels.get(channelName);
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+    if (typeof window !== "undefined" && this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.socket?.close();
+    this.socket = null;
+  }
+
+  private connect(): void {
+    if (typeof window === "undefined" || this.destroyed) {
+      return;
+    }
+
+    if (this.socket && this.socket.readyState <= WebSocket.OPEN) {
+      return;
+    }
+
+    try {
+      this.socket = new WebSocket(this.websocketUrl);
+    } catch (error) {
+      this.connection.emit(
+        "error",
+        error instanceof Error
+          ? error
+          : new Error("[pusherClient] Failed to create local realtime socket")
+      );
+      this.scheduleReconnect();
+      return;
+    }
+
+    this.socket.addEventListener("open", () => {
+      this.reconnectDelayMs = 1000;
+      this.connection.emit("connected");
+      for (const channelName of this.channels.keys()) {
+        this.send({ type: "subscribe", channel: channelName });
+      }
     });
+
+    this.socket.addEventListener("message", (event) => {
+      try {
+        const payload = JSON.parse(String(event.data)) as {
+          type?: string;
+          channel?: string;
+          event?: string;
+          data?: unknown;
+        };
+        if (payload.type === "event" && payload.channel && payload.event) {
+          this.channels.get(payload.channel)?.emit(payload.event, payload.data);
+        }
+      } catch (error) {
+        this.connection.emit(
+          "error",
+          error instanceof Error
+            ? error
+            : new Error("[pusherClient] Failed to parse local realtime payload")
+        );
+      }
+    });
+
+    this.socket.addEventListener("error", () => {
+      this.connection.emit(
+        "error",
+        new Error("[pusherClient] Local realtime socket error")
+      );
+    });
+
+    this.socket.addEventListener("close", () => {
+      this.connection.emit("disconnected");
+      if (!this.destroyed) {
+        this.scheduleReconnect();
+      }
+    });
+  }
+
+  private scheduleReconnect(): void {
+    if (typeof window === "undefined" || this.destroyed) {
+      return;
+    }
+
+    if (this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer);
+    }
+
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+      this.reconnectDelayMs = Math.min(this.reconnectDelayMs * 2, 10000);
+    }, this.reconnectDelayMs);
+  }
+
+  private send(payload: unknown): void {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(payload));
+      return;
+    }
+
+    this.connect();
+  }
+}
+
+export function getPusherClient(): RealtimeClient {
+  if (!globalWithPusher.__pusherClient) {
+    if (getRealtimeProvider() === "local") {
+      globalWithPusher.__pusherClient = new LocalRealtimeClient(
+        getRealtimeWebSocketUrl()
+      );
+    } else {
+      const Pusher = getPusherConstructor();
+      globalWithPusher.__pusherClient = new Pusher(PUSHER_APP_KEY, {
+        cluster: PUSHER_CLUSTER,
+        forceTLS: PUSHER_FORCE_TLS,
+      }) as unknown as RealtimeClient;
+    }
   }
   return globalWithPusher.__pusherClient;
 }
 
-export type PusherChannel = Channel;
+export type PusherChannel = Channel | RealtimeChannel;
 
 const getChannelRefCounts = (): Record<string, number> => {
   if (!globalWithPusher.__pusherChannelRefCounts) {
@@ -95,10 +333,6 @@ const clearChannelRecoveryWarnings = (channelName: string): void => {
   ];
 };
 
-/**
- * Acquire a shared channel subscription.
- * Multiple consumers can subscribe safely without unsubscribing each other.
- */
 export function subscribePusherChannel(channelName: string): PusherChannel {
   const normalizedChannelName = normalizeChannelName(channelName);
   if (!normalizedChannelName) {
@@ -108,22 +342,19 @@ export function subscribePusherChannel(channelName: string): PusherChannel {
   const pusher = getPusherClient();
   const counts = getChannelRefCounts();
   const currentCount = counts[normalizedChannelName] || 0;
-  const existingChannel = (
-    pusher as unknown as { channel: (name: string) => PusherChannel | undefined }
-  ).channel(normalizedChannelName);
+  const existingChannel = pusher.channel(normalizedChannelName) as
+    | PusherChannel
+    | undefined;
 
   if (currentCount === 0) {
-    // Always call subscribe for the first local holder to ensure the channel is
-    // actively subscribed even if a stale channel object exists.
-    const subscribedChannel = pusher.subscribe(normalizedChannelName);
+    const subscribedChannel = pusher.subscribe(normalizedChannelName) as PusherChannel;
     counts[normalizedChannelName] = 1;
     clearChannelRecoveryWarnings(normalizedChannelName);
     return subscribedChannel;
   }
 
   if (!existingChannel) {
-    const subscribedChannel = pusher.subscribe(normalizedChannelName);
-    // Count became stale while channel was missing; recover to 1 active holder.
+    const subscribedChannel = pusher.subscribe(normalizedChannelName) as PusherChannel;
     warnChannelRecoveryOnce(
       `missing-channel:${normalizedChannelName}`,
       `Recovered missing channel "${normalizedChannelName}" while refcount was ${currentCount}`
@@ -136,10 +367,6 @@ export function subscribePusherChannel(channelName: string): PusherChannel {
   return existingChannel;
 }
 
-/**
- * Release a shared channel subscription.
- * Actual unsubscribe happens only when the final consumer releases it.
- */
 export function unsubscribePusherChannel(channelName: string): void {
   const normalizedChannelName = normalizeChannelName(channelName);
   if (!normalizedChannelName) {
@@ -167,12 +394,8 @@ export function unsubscribePusherChannel(channelName: string): void {
   counts[normalizedChannelName] = currentCount - 1;
 }
 
-// HMR cleanup - don't disconnect during HMR, the singleton survives via globalThis
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
-    // Intentionally keep the connection alive during HMR
-    // The globalThis singleton will be reused by the new module
-    // Reset channel refcounts to avoid stale holder counts across code reloads.
     globalWithPusher.__pusherChannelRefCounts = {};
     globalWithPusher.__pusherChannelRecoveryWarnings = {};
     console.debug("[pusherClient] HMR: keeping connection alive");

@@ -4,19 +4,11 @@
  * This endpoint is called by Edge functions that need to send Pusher events
  */
 
-import Pusher from "pusher";
 import { apiHandler } from "../_utils/api-handler.js";
+import { triggerRealtimeEvent } from "../_utils/realtime.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID!,
-  key: process.env.PUSHER_KEY!,
-  secret: process.env.PUSHER_SECRET!,
-  cluster: process.env.PUSHER_CLUSTER!,
-  useTLS: true,
-});
 
 interface BroadcastRequest {
   channel: string;
@@ -30,8 +22,15 @@ export default apiHandler(
     const { req, res, logger } = ctx;
 
     // Only allow internal calls (check for internal secret)
+    const expectedSecret = process.env.INTERNAL_API_SECRET?.trim();
+    if (!expectedSecret) {
+      logger.error("Internal API secret is not configured");
+      res.status(503).json({ error: "Internal broadcast secret not configured" });
+      return;
+    }
+
     const internalSecret = req.headers["x-internal-secret"];
-    if (internalSecret !== process.env.INTERNAL_API_SECRET) {
+    if (internalSecret !== expectedSecret) {
       logger.warn("Forbidden - invalid internal secret");
       res.status(403).json({ error: "Forbidden" });
       return;
@@ -45,7 +44,7 @@ export default apiHandler(
       return;
     }
 
-    await pusher.trigger(channel, event, data);
+    await triggerRealtimeEvent(channel, event, data);
     logger.info("Pusher broadcast sent", { channel, event });
     res.status(200).json({ success: true });
   }

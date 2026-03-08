@@ -1,9 +1,8 @@
 /**
  * Redis client and helper functions for listen-together sessions
- * Node.js runtime - uses Upstash Redis client
  */
 
-import { Redis } from "@upstash/redis";
+import { createRedis } from "../../_utils/redis.js";
 import type { ListenSession } from "./_types.js";
 import {
   LISTEN_SESSION_PREFIX,
@@ -15,11 +14,8 @@ import {
 // Redis Client Factory
 // ============================================================================
 
-function createRedisClient(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+function createRedisClient() {
+  return createRedis();
 }
 
 export { createRedisClient };
