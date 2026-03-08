@@ -4,6 +4,7 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ContactsMenuBar } from "./ContactsMenuBar";
+import { UserPicturePicker } from "./UserPicturePicker";
 import { useContactsLogic } from "../hooks/useContactsLogic";
 import { appMetadata } from "..";
 import type { AppProps } from "@/apps/base/types";
@@ -44,7 +45,15 @@ function ContactListItem({
       )}
       style={{ borderColor: "rgba(0,0,0,0.08)" }}
     >
-      <div className="shrink-0 w-3.5 h-3.5 rounded-[2px] border border-black/20 bg-[#efefef]" />
+      {contact.picture ? (
+        <img
+          src={contact.picture}
+          alt=""
+          className="shrink-0 w-3.5 h-3.5 rounded-[2px] border border-black/20 object-cover"
+        />
+      ) : (
+        <div className="shrink-0 w-3.5 h-3.5 rounded-[2px] border border-black/20 bg-[#efefef]" />
+      )}
       <div className="min-w-0 flex-1">
         <div className="text-[12px] leading-tight truncate">{contact.displayName}</div>
       </div>
@@ -202,6 +211,7 @@ export function ContactsAppComponent({
   const useGeneva = isMacOsxTheme || isSystem7Theme;
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(820);
+  const [isPicturePickerOpen, setIsPicturePickerOpen] = useState(false);
   useResizeObserverWithRef(containerRef, (entry) => {
     setContainerWidth(entry.contentRect.width);
   });
@@ -411,9 +421,23 @@ export function ContactsAppComponent({
               {selectedContact ? (
                 <>
                   <div className="flex items-start gap-3 px-4 pt-4 pb-2 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-                    <div className="w-16 h-16 shrink-0 rounded-[6px] bg-[linear-gradient(to_bottom,#b8b8b8,#dcdcdc)] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-xl font-semibold text-black/70">
-                      {getContactInitials(selectedContact)}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsPicturePickerOpen(true)}
+                      className="w-16 h-16 shrink-0 rounded-[6px] border border-black/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex items-center justify-center text-xl font-semibold text-black/70 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      style={selectedContact.picture ? undefined : { background: "linear-gradient(to bottom, #b8b8b8, #dcdcdc)" }}
+                      title="Change picture"
+                    >
+                      {selectedContact.picture ? (
+                        <img
+                          src={selectedContact.picture}
+                          alt={selectedContact.displayName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        getContactInitials(selectedContact)
+                      )}
+                    </button>
                     <div className="min-w-0 flex-1 space-y-2">
                       <input
                         className="w-full border border-[#c59a37] bg-[#f9df7a] px-2 py-1 text-[18px] font-semibold outline-none"
@@ -612,6 +636,12 @@ export function ContactsAppComponent({
           onOpenChange={setIsAboutDialogOpen}
           metadata={appMetadata}
           appId="contacts"
+        />
+        <UserPicturePicker
+          isOpen={isPicturePickerOpen}
+          onOpenChange={setIsPicturePickerOpen}
+          currentPicture={selectedContact?.picture ?? null}
+          onSelect={(picture) => updateSelectedContact({ picture })}
         />
 
         <input

@@ -33,6 +33,7 @@ export interface Contact {
   birthday: string | null;
   telegramUsername: string;
   telegramUserId: string;
+  picture: string | null;
   source: ContactSource;
   createdAt: number;
   updatedAt: number;
@@ -53,6 +54,7 @@ export interface ContactDraft {
   birthday?: string | null;
   telegramUsername?: string | null;
   telegramUserId?: string | null;
+  picture?: string | null;
   source?: ContactSource;
 }
 
@@ -302,6 +304,7 @@ export function createContactFromDraft(
     birthday: normalizeBirthday(draft.birthday),
     telegramUsername: sanitizeTelegramUsername(draft.telegramUsername),
     telegramUserId: normalizedWhitespace(draft.telegramUserId || ""),
+    picture: draft.picture ?? null,
     source: draft.source || "manual",
     createdAt: now,
     updatedAt: now,
@@ -328,6 +331,7 @@ export function updateContactFromDraft(
       phones: draft.phones ?? existing.phones,
       addresses: draft.addresses ?? existing.addresses,
       urls: draft.urls ?? existing.urls,
+      picture: draft.picture !== undefined ? draft.picture : existing.picture,
       source: draft.source ?? existing.source,
     },
     existing.createdAt
@@ -456,6 +460,7 @@ export function mergeContacts(existing: Contact, incoming: Contact): Contact {
     birthday: incoming.birthday || existing.birthday,
     telegramUsername: incoming.telegramUsername || existing.telegramUsername,
     telegramUserId: incoming.telegramUserId || existing.telegramUserId,
+    picture: incoming.picture || existing.picture,
     source: existing.source === "manual" ? existing.source : incoming.source,
     updatedAt: Date.now(),
   };
