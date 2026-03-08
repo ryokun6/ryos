@@ -69,6 +69,8 @@ describe("contacts vCard parsing", () => {
     expect(seeded[0].displayName).toBe("Ryo Lu");
     expect(seeded[0].emails[0]?.value).toBe("me@ryo.lu");
     expect(seeded[0].organization).toBe("Cursor");
+    expect(seeded[0].title).toBe("");
+    expect(seeded[0].notes).toBe("");
 
     const existingRyo = createDefaultRyoContact();
     const seededAgain = seedDefaultContacts([existingRyo]);

@@ -62,16 +62,12 @@ export interface ContactImportResult {
 }
 
 const EMPTY_CONTACT_VALUE_LABEL = "other";
-
 export const DEFAULT_RYO_CONTACT_DRAFT: ContactDraft = {
   displayName: "Ryo Lu",
   firstName: "Ryo",
   lastName: "Lu",
   nickname: "ryo",
   organization: "Cursor",
-  title: "Head of Design",
-  notes:
-    "head of design at Cursor and early designer at Notion. born july 1992 in Harbin, China and raised in Montreal from age 11. studied Computer Science and Biology at McGill. lives in San Francisco with cat buba. chinese name: 魯赫. japanese name: リョウ.",
   emails: ["me@ryo.lu"],
   urls: ["https://ryo.lu", "https://x.com/ryolu_", "https://os.ryo.lu"],
   source: "manual",
