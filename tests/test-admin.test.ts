@@ -18,6 +18,7 @@ let adminToken: string | null = null;
 // Test user for deletion tests
 let testUserToken: string | null = null;
 let testUsername: string | null = null;
+let activityRoomId: string | null = null;
 
 describe("admin", () => {
   beforeAll(async () => {
@@ -203,6 +204,86 @@ describe("admin", () => {
       );
       expect(adminUser).toBeTruthy();
       expect(typeof adminUser.lastActive).toBe("number");
+    });
+
+    test("GET getUserProfile - returns lightweight profile payload", async () => {
+      if (!adminToken || !testUsername) {
+        console.log("  ⚠️  Skipped (no admin token or test user available)");
+        return;
+      }
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin?action=getUserProfile&username=${encodeURIComponent(testUsername)}`,
+        ADMIN_USERNAME,
+        adminToken,
+        { method: "GET" }
+      );
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.username).toBe(testUsername);
+      expect(typeof data.lastActive).toBe("number");
+      expect("rooms" in data).toBe(false);
+      expect("messageCount" in data).toBe(false);
+    });
+
+    test("GET getUserRoomActivity - loads rooms and recent messages on demand", async () => {
+      if (!adminToken || !testUserToken || !testUsername) {
+        console.log("  ⚠️  Skipped (missing auth setup)");
+        return;
+      }
+
+      const createRoomRes = await fetchWithAuth(
+        `${BASE_URL}/api/rooms`,
+        ADMIN_USERNAME,
+        adminToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "private",
+            members: [testUsername],
+          }),
+        }
+      );
+      expect(createRoomRes.status).toBe(201);
+      const createRoomData = await createRoomRes.json();
+      activityRoomId = createRoomData.room?.id ?? null;
+      expect(activityRoomId).toBeTruthy();
+
+      const messageContent = `Admin activity test message ${Date.now()}`;
+      const sendMessageRes = await fetchWithAuth(
+        `${BASE_URL}/api/rooms/${activityRoomId}/messages`,
+        testUsername,
+        testUserToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: messageContent }),
+        }
+      );
+      expect(sendMessageRes.status).toBe(201);
+
+      const activityRes = await fetchWithAuth(
+        `${BASE_URL}/api/admin?action=getUserRoomActivity&username=${encodeURIComponent(testUsername)}&limit=10`,
+        ADMIN_USERNAME,
+        adminToken,
+        { method: "GET" }
+      );
+      expect(activityRes.status).toBe(200);
+      const activityData = await activityRes.json();
+
+      expect(typeof activityData.messageCount).toBe("number");
+      expect(activityData.messageCount).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(activityData.rooms)).toBe(true);
+      expect(Array.isArray(activityData.messages)).toBe(true);
+      expect(activityData.rooms.some((room: { id: string }) => room.id === activityRoomId)).toBe(true);
+      expect(
+        activityData.messages.some(
+          (message: { roomId: string; content: string }) =>
+            message.roomId === activityRoomId && message.content.includes("Admin activity test message")
+        )
+      ).toBe(true);
     });
 
     test("POST deleteUser - missing target username", async () => {
