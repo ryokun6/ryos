@@ -38,11 +38,10 @@ function ContactListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-2 px-3 py-1.5 text-left border-b transition-colors",
+        "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors",
         isSelected ? "" : "hover:bg-black/5"
       )}
       style={{
-        borderColor: "rgba(0,0,0,0.08)",
         ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)" } : {}),
       }}
     >
@@ -66,12 +65,10 @@ function ContactListItem({
 
 function GroupListItem({
   label,
-  count,
   isSelected,
   onClick,
 }: {
   label: string;
-  count: number;
   isSelected: boolean;
   onClick: () => void;
 }) {
@@ -80,18 +77,14 @@ function GroupListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[11px] transition-colors border-b",
+        "w-full flex items-center gap-2 px-3 py-1.5 text-left text-[11px] transition-colors",
         isSelected ? "" : "hover:bg-black/5"
       )}
       style={{
-        borderColor: "rgba(0,0,0,0.08)",
         ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)" } : {}),
       }}
     >
       <span className="truncate">{label}</span>
-      <span className={cn("text-[10px]", isSelected ? "opacity-70" : "text-black/45")}>
-        {count}
-      </span>
     </button>
   );
 }
@@ -370,7 +363,6 @@ export function ContactsAppComponent({
                   <GroupListItem
                     key={group.id}
                     label={group.label}
-                    count={group.contacts.length}
                     isSelected={selectedGroupId === group.id}
                     onClick={() => handleSelectGroup(group.id)}
                   />
