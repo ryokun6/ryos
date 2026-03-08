@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { CalendarMenuBar } from "./CalendarMenuBar";
+import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { EventDialog } from "./EventDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -881,6 +882,8 @@ function BottomToolbar({
 export function CalendarAppComponent({
   isWindowOpen, onClose, isForeground, skipInitialSound, instanceId, onNavigateNext, onNavigatePrevious,
 }: AppProps) {
+  useEffect(() => { requestCloudSyncCheck(); }, []);
+
   const logic = useCalendarLogic();
   const {
     t, translatedHelpItems,
