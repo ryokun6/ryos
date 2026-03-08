@@ -139,6 +139,8 @@ describe("sync state API legacy documents migration", () => {
 
   test("uses linked Telegram history as the chats sync source", async () => {
     const telegramSyncUsername = `${TEST_USERNAME}_telegram`;
+    const telegramChatId = `${telegramSyncUsername}_chat`;
+    const telegramUserId = `${telegramSyncUsername}_user`;
     const redis = createRedis();
     const authToken = generateAuthToken();
     await storeToken(redis, telegramSyncUsername, authToken);
@@ -146,17 +148,17 @@ describe("sync state API legacy documents migration", () => {
     const linkCode = await createTelegramLinkCode(redis, telegramSyncUsername);
     await linkTelegramAccount(redis, {
       code: linkCode.code,
-      telegramUserId: "2001",
-      chatId: "chat-sync-1",
+      telegramUserId,
+      chatId: telegramChatId,
       telegramUsername: "ryotest",
     });
 
-    await appendTelegramConversationMessage(redis, "chat-sync-1", {
+    await appendTelegramConversationMessage(redis, telegramChatId, {
       role: "user",
       content: "hello from telegram",
       createdAt: Date.UTC(2026, 2, 7, 23, 40, 0),
     });
-    await appendTelegramConversationMessage(redis, "chat-sync-1", {
+    await appendTelegramConversationMessage(redis, telegramChatId, {
       role: "assistant",
       content: "telegram is now the sync source",
       createdAt: Date.UTC(2026, 2, 7, 23, 41, 0),
