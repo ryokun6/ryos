@@ -428,6 +428,7 @@
         "monthView": "月檢視",
         "newEvent": "新增行程",
         "showToDoItems": "顯示待辦事項",
+        "syncCalendar": "同步行事曆",
         "weekView": "週檢視"
       },
       "name": "行事曆",
@@ -944,7 +945,8 @@
         "deleteContact": "刪除聯絡人",
         "help": "聯絡人輔助說明",
         "importVCard": "匯入 vCard…",
-        "newContact": "新增聯絡人"
+        "newContact": "新增聯絡人",
+        "syncContacts": "同步聯絡資訊"
       },
       "messages": {
         "deleted": "已刪除 {{name}}",
@@ -956,6 +958,7 @@
       "noSummary": "尚未有電話號碼、電子郵件或備註",
       "picturePicker": {
         "cancel": "取消",
+        "chooseCustom": "選擇影像…",
         "description": "為此聯絡人選擇圖片",
         "remove": "移除",
         "title": "選擇圖片"
@@ -2423,7 +2426,8 @@
         "deleteNote": "刪除便利貼",
         "help": "便利貼輔助說明",
         "newNote": "新增便利貼",
-        "note": "便利貼"
+        "note": "便利貼",
+        "syncStickies": "同步便條"
       },
       "name": "便利貼",
       "placeholder": "撰寫便利貼...",

@@ -428,6 +428,7 @@
         "monthView": "월 보기",
         "newEvent": "새 이벤트",
         "showToDoItems": "할 일 항목 보기",
+        "syncCalendar": "일정 동기화",
         "weekView": "주 보기"
       },
       "name": "캘린더",
@@ -944,7 +945,8 @@
         "deleteContact": "연락처 삭제",
         "help": "연락처 도움말",
         "importVCard": "vCard 가져오기…",
-        "newContact": "새 연락처"
+        "newContact": "새 연락처",
+        "syncContacts": "연락처 동기화"
       },
       "messages": {
         "deleted": "{{name}} 삭제됨",
@@ -956,6 +958,7 @@
       "noSummary": "아직 전화번호, 이메일 또는 메모가 없습니다",
       "picturePicker": {
         "cancel": "취소",
+        "chooseCustom": "사진 선택…",
         "description": "이 연락처에 사용할 사진을 선택하세요.",
         "remove": "제거",
         "title": "사진 선택"
@@ -2423,7 +2426,8 @@
         "deleteNote": "메모 삭제",
         "help": "Stickies 도움말",
         "newNote": "새 메모",
-        "note": "메모"
+        "note": "메모",
+        "syncStickies": "스티키 동기화"
       },
       "name": "스티커 메모",
       "placeholder": "메모 작성...",
