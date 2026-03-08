@@ -163,7 +163,7 @@ function buildDisplayName({
   if (emails[0]?.value) return emails[0].value;
   if (phones[0]?.value) return phones[0].value;
   if (telegramUsername) return `@${telegramUsername}`;
-  return "Unnamed Contact";
+  return "New Contact";
 }
 
 function createValueId(prefix: string): string {
@@ -516,10 +516,19 @@ export function updateContactFromDraft(
   draft: ContactDraft,
   now: number = Date.now()
 ): Contact {
+  const nameFieldChanged =
+    draft.firstName !== undefined ||
+    draft.lastName !== undefined ||
+    draft.nickname !== undefined ||
+    draft.organization !== undefined;
+  const clearDisplayName =
+    nameFieldChanged && draft.displayName === undefined;
+
   const updated = createContactFromDraft(
     {
       ...existing,
       ...draft,
+      ...(clearDisplayName ? { displayName: "" } : {}),
       emails: draft.emails ?? existing.emails,
       phones: draft.phones ?? existing.phones,
       addresses: draft.addresses ?? existing.addresses,
@@ -855,7 +864,7 @@ export function parseVCardText(input: string): ContactImportResult {
 
     const contact = createContactFromDraft(draft);
     const hasData =
-      contact.displayName !== "Unnamed Contact" ||
+      contact.displayName !== "New Contact" ||
       contact.emails.length > 0 ||
       contact.phones.length > 0 ||
       contact.addresses.length > 0 ||
