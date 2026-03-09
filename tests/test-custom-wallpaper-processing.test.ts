@@ -4,32 +4,12 @@ import {
   CUSTOM_WALLPAPER_MIME_TYPE,
   CUSTOM_WALLPAPER_RESIZE_HEIGHT_THRESHOLD,
   CUSTOM_WALLPAPER_TARGET_HEIGHT,
-  CUSTOM_WALLPAPER_TARGET_WIDTH,
   buildCustomWallpaperFilename,
-  calculateWallpaperCoverPlacement,
   convertImageFileToWallpaperJpeg,
   getCustomWallpaperOutputSize,
 } from "../src/utils/customWallpaperProcessing";
 
 describe("custom wallpaper processing", () => {
-  test("calculates centered cover placement for matching aspect ratios", () => {
-    const placement = calculateWallpaperCoverPlacement(3840, 2160);
-
-    expect(placement.offsetX).toBe(0);
-    expect(placement.offsetY).toBe(0);
-    expect(placement.drawWidth).toBe(CUSTOM_WALLPAPER_TARGET_WIDTH);
-    expect(placement.drawHeight).toBe(CUSTOM_WALLPAPER_TARGET_HEIGHT);
-  });
-
-  test("calculates centered cover placement for portrait images", () => {
-    const placement = calculateWallpaperCoverPlacement(1080, 1920);
-
-    expect(placement.offsetX).toBe(0);
-    expect(placement.offsetY).toBeCloseTo(-1166.6667, 3);
-    expect(placement.drawWidth).toBe(CUSTOM_WALLPAPER_TARGET_WIDTH);
-    expect(placement.drawHeight).toBeCloseTo(3413.3333, 3);
-  });
-
   test("normalizes generated filenames to jpg", () => {
     expect(buildCustomWallpaperFilename("Beach Sunset!!.png")).toBe(
       "Beach_Sunset.jpg"
@@ -45,11 +25,11 @@ describe("custom wallpaper processing", () => {
     });
   });
 
-  test("resizes images at or above 1400p to 1080p", () => {
+  test("resizes images at or above 1400p while preserving aspect ratio", () => {
     expect(
       getCustomWallpaperOutputSize(2560, CUSTOM_WALLPAPER_RESIZE_HEIGHT_THRESHOLD)
     ).toEqual({
-      width: CUSTOM_WALLPAPER_TARGET_WIDTH,
+      width: 2560,
       height: CUSTOM_WALLPAPER_TARGET_HEIGHT,
       shouldResize: true,
     });
@@ -59,7 +39,6 @@ describe("custom wallpaper processing", () => {
     const calls = {
       canvasWidth: 0,
       canvasHeight: 0,
-      fillRect: [] as Array<[number, number, number, number]>,
       drawImage: [] as Array<[unknown, number, number, number, number]>,
       toBlobType: "",
       toBlobQuality: 0,
@@ -94,9 +73,7 @@ describe("custom wallpaper processing", () => {
             },
             context: {
               fillStyle: "",
-              fillRect: (x, y, w, h) => {
-                calls.fillRect.push([x, y, w, h]);
-              },
+              fillRect: () => {},
               drawImage: (source, dx, dy, dWidth, dHeight) => {
                 calls.drawImage.push([source, dx, dy, dWidth, dHeight]);
               },
@@ -111,18 +88,16 @@ describe("custom wallpaper processing", () => {
     expect(converted.lastModified).toBe(456);
     expect(calls.canvasWidth).toBe(1366);
     expect(calls.canvasHeight).toBe(768);
-    expect(calls.fillRect).toEqual([]);
     expect(calls.drawImage).toEqual([[{ id: "small-image" }, 0, 0, 1366, 768]]);
     expect(calls.toBlobType).toBe(CUSTOM_WALLPAPER_MIME_TYPE);
     expect(calls.toBlobQuality).toBe(CUSTOM_WALLPAPER_JPEG_QUALITY);
     expect(calls.cleanedUp).toBe(true);
   });
 
-  test("converts larger uploads to 1080p jpeg", async () => {
+  test("converts larger uploads to 1400p jpeg with preserved aspect ratio", async () => {
     const calls = {
       canvasWidth: 0,
       canvasHeight: 0,
-      fillRect: [] as Array<[number, number, number, number]>,
       drawImage: [] as Array<[unknown, number, number, number, number]>,
       toBlobType: "",
       toBlobQuality: 0,
@@ -157,9 +132,7 @@ describe("custom wallpaper processing", () => {
             },
             context: {
               fillStyle: "",
-              fillRect: (x, y, w, h) => {
-                calls.fillRect.push([x, y, w, h]);
-              },
+              fillRect: () => {},
               drawImage: (source, dx, dy, dWidth, dHeight) => {
                 calls.drawImage.push([source, dx, dy, dWidth, dHeight]);
               },
@@ -172,15 +145,9 @@ describe("custom wallpaper processing", () => {
     expect(converted.name).toBe("Beach_Sunset.jpg");
     expect(converted.type).toBe(CUSTOM_WALLPAPER_MIME_TYPE);
     expect(converted.lastModified).toBe(123);
-    expect(calls.canvasWidth).toBe(CUSTOM_WALLPAPER_TARGET_WIDTH);
+    expect(calls.canvasWidth).toBe(1867);
     expect(calls.canvasHeight).toBe(CUSTOM_WALLPAPER_TARGET_HEIGHT);
-    expect(calls.fillRect).toEqual([[0, 0, 1920, 1080]]);
-    expect(calls.drawImage).toHaveLength(1);
-    expect(calls.drawImage[0]?.[0]).toEqual({ id: "decoded-image" });
-    expect(calls.drawImage[0]?.[1]).toBe(0);
-    expect(calls.drawImage[0]?.[2]).toBeCloseTo(-180, 5);
-    expect(calls.drawImage[0]?.[3]).toBe(1920);
-    expect(calls.drawImage[0]?.[4]).toBe(1440);
+    expect(calls.drawImage).toEqual([[{ id: "decoded-image" }, 0, 0, 1867, 1400]]);
     expect(calls.toBlobType).toBe(CUSTOM_WALLPAPER_MIME_TYPE);
     expect(calls.toBlobQuality).toBe(CUSTOM_WALLPAPER_JPEG_QUALITY);
     expect(calls.cleanedUp).toBe(true);

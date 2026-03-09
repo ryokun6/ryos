@@ -1,5 +1,7 @@
-export const CUSTOM_WALLPAPER_TARGET_WIDTH = 1920;
-export const CUSTOM_WALLPAPER_TARGET_HEIGHT = 1080;
+export const CUSTOM_WALLPAPER_TARGET_HEIGHT = 1400;
+export const CUSTOM_WALLPAPER_TARGET_WIDTH = Math.round(
+  (CUSTOM_WALLPAPER_TARGET_HEIGHT * 16) / 9
+);
 export const CUSTOM_WALLPAPER_RESIZE_HEIGHT_THRESHOLD = 1400;
 export const CUSTOM_WALLPAPER_MIME_TYPE = "image/jpeg";
 export const CUSTOM_WALLPAPER_JPEG_QUALITY = 0.9;
@@ -42,39 +44,10 @@ interface WallpaperProcessingDeps {
   createFile?: (blob: Blob, name: string, options: FilePropertyBag) => File;
 }
 
-export interface WallpaperCoverPlacement {
-  offsetX: number;
-  offsetY: number;
-  drawWidth: number;
-  drawHeight: number;
-}
-
 export interface WallpaperOutputSize {
   width: number;
   height: number;
   shouldResize: boolean;
-}
-
-export function calculateWallpaperCoverPlacement(
-  sourceWidth: number,
-  sourceHeight: number,
-  targetWidth = CUSTOM_WALLPAPER_TARGET_WIDTH,
-  targetHeight = CUSTOM_WALLPAPER_TARGET_HEIGHT
-): WallpaperCoverPlacement {
-  if (sourceWidth <= 0 || sourceHeight <= 0) {
-    throw new Error("Wallpaper source dimensions must be greater than zero");
-  }
-
-  const scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
-  const drawWidth = sourceWidth * scale;
-  const drawHeight = sourceHeight * scale;
-
-  return {
-    offsetX: (targetWidth - drawWidth) / 2,
-    offsetY: (targetHeight - drawHeight) / 2,
-    drawWidth,
-    drawHeight,
-  };
 }
 
 export function getCustomWallpaperOutputSize(
@@ -94,7 +67,9 @@ export function getCustomWallpaperOutputSize(
   }
 
   return {
-    width: CUSTOM_WALLPAPER_TARGET_WIDTH,
+    width: Math.round(
+      sourceWidth * (CUSTOM_WALLPAPER_TARGET_HEIGHT / sourceHeight)
+    ),
     height: CUSTOM_WALLPAPER_TARGET_HEIGHT,
     shouldResize: true,
   };
@@ -210,27 +185,7 @@ export async function convertImageFileToWallpaperJpeg(
   try {
     const outputSize = getCustomWallpaperOutputSize(image.width, image.height);
     const { canvas, context } = createCanvas(outputSize.width, outputSize.height);
-
-    if (outputSize.shouldResize) {
-      const placement = calculateWallpaperCoverPlacement(
-        image.width,
-        image.height,
-        outputSize.width,
-        outputSize.height
-      );
-
-      context.fillStyle = "#000000";
-      context.fillRect(0, 0, outputSize.width, outputSize.height);
-      context.drawImage(
-        image.source,
-        placement.offsetX,
-        placement.offsetY,
-        placement.drawWidth,
-        placement.drawHeight
-      );
-    } else {
-      context.drawImage(image.source, 0, 0, outputSize.width, outputSize.height);
-    }
+    context.drawImage(image.source, 0, 0, outputSize.width, outputSize.height);
 
     const blob = await blobToJpeg(canvas);
     return createFile(blob, buildCustomWallpaperFilename(file.name), {
