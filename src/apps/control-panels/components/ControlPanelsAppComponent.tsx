@@ -403,9 +403,11 @@ export function ControlPanelsAppComponent({
     cloudSyncStatus,
     isCloudBackingUp,
     isCloudRestoring,
+    isCloudForceSyncing,
     isCloudStatusLoading,
     isConfirmCloudRestoreOpen,
     setIsConfirmCloudRestoreOpen,
+    handleCloudForceSyncLocalWins,
     handleCloudBackup,
     handleCloudRestore,
     cloudProgress,
@@ -821,12 +823,41 @@ export function ControlPanelsAppComponent({
                   style={tabStyles.separatorStyle}
                 />
 
-                <div className="space-y-2">
+                <div
+                  className={cn(
+                    "space-y-2",
+                    !username && "opacity-50 pointer-events-none select-none"
+                  )}
+                >
+                  <Button
+                    variant="retro"
+                    onClick={handleCloudForceSyncLocalWins}
+                    disabled={
+                      isCloudForceSyncing ||
+                      isCloudBackingUp ||
+                      isCloudRestoring
+                    }
+                    tabIndex={!username ? -1 : undefined}
+                    className="w-full"
+                  >
+                    {isCloudForceSyncing
+                      ? t("apps.control-panels.cloudSync.forceSyncing")
+                      : t("apps.control-panels.cloudSync.forceSyncLocalWins")}
+                  </Button>
+                  <p className="text-[11px] text-neutral-600 font-geneva-12">
+                    {t("apps.control-panels.cloudSync.forceSyncDescription")}
+                  </p>
+
                   <div className="flex gap-2">
                     <Button
                       variant="retro"
                       onClick={handleCloudBackup}
-                      disabled={isCloudBackingUp || isCloudRestoring || !username}
+                      disabled={
+                        isCloudForceSyncing ||
+                        isCloudBackingUp ||
+                        isCloudRestoring
+                      }
+                      tabIndex={!username ? -1 : undefined}
                       className="flex-1"
                     >
                       {isCloudBackingUp
@@ -837,11 +868,12 @@ export function ControlPanelsAppComponent({
                       variant="retro"
                       onClick={() => setIsConfirmCloudRestoreOpen(true)}
                       disabled={
+                        isCloudForceSyncing ||
                         isCloudBackingUp ||
                         isCloudRestoring ||
-                        !cloudSyncStatus?.hasBackup ||
-                        !username
+                        !cloudSyncStatus?.hasBackup
                       }
+                      tabIndex={!username ? -1 : undefined}
                       className="flex-1"
                     >
                       {isCloudRestoring

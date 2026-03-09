@@ -1060,6 +1060,12 @@
         "confirmRestore": "클라우드에서 복원할까요?",
         "confirmRestoreDesc": "현재 설정과 파일이 모두 클라우드 백업으로 대체됩니다. ryOS가 다시 시작됩니다.",
         "description": "모든 설정과 파일을 클라우드에 백업하거나 복원합니다. 최대 {{limit}}MB.",
+        "forceSyncDescription": "활성화된 자동 동기화 항목별로 이 기기의 현재 데이터를 클라우드에 업로드합니다.",
+        "forceSyncFailed": "클라우드 데이터 강제 동기화에 실패했습니다.",
+        "forceSyncLocalWins": "강제 동기화",
+        "forceSyncNoDomains": "강제 동기화를 하려면 자동 동기화 항목을 하나 이상 활성화하십시오.",
+        "forceSyncSuccess": "클라우드 동기화가 완료되었습니다.",
+        "forceSyncing": "클라우드에 동기화 중…",
         "lastBackup": "마지막 클라우드 백업: {{date}} ({{size}}MB)",
         "loginRequired": "클라우드 동기화를 사용하려면 로그인하세요",
         "progress": {

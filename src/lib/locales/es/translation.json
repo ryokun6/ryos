@@ -1060,6 +1060,12 @@
         "confirmRestore": "¿Restaurar desde la nube?",
         "confirmRestoreDesc": "Esto reemplazará todos tus ajustes y archivos actuales con la copia de seguridad en la nube. ryOS se reiniciará.",
         "description": "Haz una copia de seguridad o restaura todos los ajustes y archivos en la nube. Máx. {{limit}} MB.",
+        "forceSyncDescription": "Subir los datos actuales de este dispositivo a la nube para cada elemento de Sincronización Automática habilitado.",
+        "forceSyncFailed": "No se pudo forzar la sincronización de los datos de la nube.",
+        "forceSyncLocalWins": "Forzar sincronización",
+        "forceSyncNoDomains": "Habilita al menos un elemento de Sincronización Automática para forzar la sincronización.",
+        "forceSyncSuccess": "Sincronización en la nube completada.",
+        "forceSyncing": "Sincronizando con la nube…",
         "lastBackup": "Última copia en la nube: {{date}} ({{size}} MB)",
         "loginRequired": "Inicia sesión para usar la sincronización en la nube",
         "progress": {
