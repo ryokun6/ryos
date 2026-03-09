@@ -20,6 +20,10 @@ import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getApiUrl } from "@/utils/platform";
 import { getTranslatedAppName } from "@/utils/i18n";
+import {
+  uploadBlobWithStorageInstruction,
+  type StorageUploadInstruction,
+} from "@/utils/storageUpload";
 import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
@@ -715,27 +719,19 @@ export function useControlPanelsLogic({
         );
       }
 
-      const { clientToken } = await tokenRes.json() as { clientToken: string };
-
-      // Step 2: Upload directly to Vercel Blob from the browser
-      const { put: blobPut } = await import("@vercel/blob/client");
+      const uploadInstruction = (await tokenRes.json()) as StorageUploadInstruction;
       const compressedBlob = new Blob([combined], { type: "application/gzip" });
-      const blobPath = `backups/${username}/backup.gz`;
-
-      const blobResult = await blobPut(blobPath, compressedBlob, {
-        access: "public",
-        token: clientToken,
-        contentType: "application/gzip",
-        multipart: combined.length > 4 * 1024 * 1024,
-        onUploadProgress: (progress) => {
-          // Upload progress maps from 50% to 90%
+      const uploadResult = await uploadBlobWithStorageInstruction(
+        compressedBlob,
+        uploadInstruction,
+        (progress) => {
           const overallPercent = 50 + (progress.percentage * 40) / 100;
           setCloudProgress({
             phase: t("apps.control-panels.cloudSync.progress.uploading"),
             percent: Math.round(overallPercent),
           });
-        },
-      });
+        }
+      );
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 92 });
 
@@ -749,7 +745,7 @@ export function useControlPanelsLogic({
           "X-Username": username,
         },
         body: JSON.stringify({
-          blobUrl: blobResult.url,
+          storageUrl: uploadResult.storageUrl,
           timestamp: backup.timestamp,
           version: backup.version,
           totalSize: combined.length,

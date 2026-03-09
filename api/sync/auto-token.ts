@@ -1,14 +1,14 @@
 /**
- * POST /api/sync/auto-token - Generate a client token for a domain-specific
- * auto-sync upload to Vercel Blob.
+ * POST /api/sync/auto-token - Generate direct-upload instructions for a
+ * domain-specific auto-sync upload.
  */
 
-import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import {
   isBlobSyncDomain,
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { createStorageUploadDescriptor } from "../_utils/storage.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -54,18 +54,18 @@ export default apiHandler<AutoTokenBody>(
     }
 
     try {
-      const clientToken = await generateClientTokenFromReadWriteToken({
+      const upload = await createStorageUploadDescriptor({
         pathname: syncPath(username, domain),
+        contentType: "application/gzip",
         allowedContentTypes: ["application/gzip", "application/octet-stream"],
         maximumSizeInBytes: MAX_SYNC_SIZE,
-        addRandomSuffix: false,
         allowOverwrite: true,
       });
 
-      res.status(200).json({ clientToken });
+      res.status(200).json(upload);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      console.error("Error generating auto-sync token:", message, error);
+      console.error("Error generating auto-sync upload instructions:", message, error);
       res.status(500).json({
         error: `Failed to generate auto-sync upload token: ${message}`,
       });

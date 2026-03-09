@@ -90,8 +90,20 @@ describe("auto cloud sync API", () => {
 
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(typeof data.clientToken).toBe("string");
-    expect(data.clientToken.length).toBeGreaterThan(0);
+    expect(typeof data.provider).toBe("string");
+    expect(typeof data.uploadMethod).toBe("string");
+
+    if (data.uploadMethod === "vercel-client-token") {
+      expect(typeof data.clientToken).toBe("string");
+      expect(data.clientToken.length).toBeGreaterThan(0);
+      return;
+    }
+
+    expect(data.uploadMethod).toBe("presigned-put");
+    expect(typeof data.uploadUrl).toBe("string");
+    expect(data.uploadUrl.length).toBeGreaterThan(0);
+    expect(typeof data.storageUrl).toBe("string");
+    expect(data.storageUrl.startsWith("s3://")).toBe(true);
   });
 
   test("POST /api/sync/auto rejects missing metadata fields", async () => {
