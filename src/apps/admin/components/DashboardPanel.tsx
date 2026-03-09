@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   ArrowsClockwise,
-  ChartBar,
   Lightning,
   Warning,
   Robot,
@@ -251,10 +250,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
     <div className="flex flex-col h-full font-geneva-12">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <ChartBar className="h-3.5 w-3.5 text-neutral-600" weight="bold" />
-          <span className="text-[12px] font-medium">Dashboard</span>
-        </div>
+        <span className="text-[12px] font-medium">Dashboard</span>
         <div className="flex items-center gap-1">
           {/* Range selector */}
           {[7, 14, 30].map((d) => (
