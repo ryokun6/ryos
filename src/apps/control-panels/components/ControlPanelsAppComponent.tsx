@@ -403,9 +403,11 @@ export function ControlPanelsAppComponent({
     cloudSyncStatus,
     isCloudBackingUp,
     isCloudRestoring,
+    isCloudForceSyncing,
     isCloudStatusLoading,
     isConfirmCloudRestoreOpen,
     setIsConfirmCloudRestoreOpen,
+    handleCloudForceSyncLocalWins,
     handleCloudBackup,
     handleCloudRestore,
     cloudProgress,
@@ -822,11 +824,35 @@ export function ControlPanelsAppComponent({
                 />
 
                 <div className="space-y-2">
+                  <Button
+                    variant="retro"
+                    onClick={handleCloudForceSyncLocalWins}
+                    disabled={
+                      isCloudForceSyncing ||
+                      isCloudBackingUp ||
+                      isCloudRestoring ||
+                      !username
+                    }
+                    className="w-full"
+                  >
+                    {isCloudForceSyncing
+                      ? t("apps.control-panels.cloudSync.forceSyncing")
+                      : t("apps.control-panels.cloudSync.forceSyncLocalWins")}
+                  </Button>
+                  <p className="text-[11px] text-neutral-600 font-geneva-12">
+                    {t("apps.control-panels.cloudSync.forceSyncDescription")}
+                  </p>
+
                   <div className="flex gap-2">
                     <Button
                       variant="retro"
                       onClick={handleCloudBackup}
-                      disabled={isCloudBackingUp || isCloudRestoring || !username}
+                      disabled={
+                        isCloudForceSyncing ||
+                        isCloudBackingUp ||
+                        isCloudRestoring ||
+                        !username
+                      }
                       className="flex-1"
                     >
                       {isCloudBackingUp
@@ -837,6 +863,7 @@ export function ControlPanelsAppComponent({
                       variant="retro"
                       onClick={() => setIsConfirmCloudRestoreOpen(true)}
                       disabled={
+                        isCloudForceSyncing ||
                         isCloudBackingUp ||
                         isCloudRestoring ||
                         !cloudSyncStatus?.hasBackup ||

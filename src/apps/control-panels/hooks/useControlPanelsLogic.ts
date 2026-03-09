@@ -32,6 +32,8 @@ import {
 } from "@/utils/cloudSyncShared";
 import { useShallow } from "zustand/react/shallow";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
+import { uploadCloudSyncDomain } from "@/utils/cloudSync";
+import { CLOUD_SYNC_DOMAINS } from "@/utils/cloudSyncShared";
 
 interface StoreItem {
   name: string;
@@ -488,6 +490,7 @@ export function useControlPanelsLogic({
   } | null>(null);
   const [isCloudBackingUp, setIsCloudBackingUp] = useState(false);
   const [isCloudRestoring, setIsCloudRestoring] = useState(false);
+  const [isCloudForceSyncing, setIsCloudForceSyncing] = useState(false);
   const [isCloudStatusLoading, setIsCloudStatusLoading] = useState(false);
   const [isConfirmCloudRestoreOpen, setIsConfirmCloudRestoreOpen] =
     useState(false);
@@ -778,6 +781,61 @@ export function useControlPanelsLogic({
       setTimeout(() => setCloudProgress(null), 1500);
     }
   }, [username, authToken, t, fetchCloudSyncStatus]);
+
+  /** Force-upload enabled auto sync domains so local state wins. */
+  const handleCloudForceSyncLocalWins = useCallback(async () => {
+    if (!username || !authToken) {
+      toast.error(t("apps.control-panels.cloudSync.loginRequired"));
+      return;
+    }
+
+    const syncStore = useCloudSyncStore.getState();
+    const enabledDomains = CLOUD_SYNC_DOMAINS.filter((domain) =>
+      syncStore.isDomainEnabled(domain)
+    );
+
+    if (enabledDomains.length === 0) {
+      toast.error(t("apps.control-panels.cloudSync.forceSyncNoDomains"));
+      return;
+    }
+
+    setIsCloudForceSyncing(true);
+
+    const failures: string[] = [];
+
+    try {
+      for (const domain of enabledDomains) {
+        syncStore.markUploadStart(domain);
+
+        try {
+          const metadata = await uploadCloudSyncDomain(domain, {
+            username,
+            authToken,
+          });
+          syncStore.markUploadSuccess(domain, metadata.updatedAt);
+          syncStore.updateRemoteMetadataForDomain(domain, metadata);
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : t("apps.control-panels.cloudSync.forceSyncFailed");
+          failures.push(message);
+          syncStore.markUploadFailure(domain, message);
+        }
+      }
+
+      if (failures.length > 0) {
+        toast.error(t("apps.control-panels.cloudSync.forceSyncFailed"), {
+          description: failures[0],
+        });
+        return;
+      }
+
+      toast.success(t("apps.control-panels.cloudSync.forceSyncSuccess"));
+    } finally {
+      setIsCloudForceSyncing(false);
+    }
+  }, [authToken, t, username]);
 
   /** Download and restore backup from cloud */
   const handleCloudRestore = useCallback(async () => {
@@ -1783,9 +1841,11 @@ export function useControlPanelsLogic({
     cloudSyncStatus,
     isCloudBackingUp,
     isCloudRestoring,
+    isCloudForceSyncing,
     isCloudStatusLoading,
     isConfirmCloudRestoreOpen,
     setIsConfirmCloudRestoreOpen,
+    handleCloudForceSyncLocalWins,
     handleCloudBackup,
     handleCloudRestore,
     cloudProgress,

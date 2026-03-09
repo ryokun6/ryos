@@ -1060,6 +1060,12 @@
         "confirmRestore": "Restaurer depuis le cloud ?",
         "confirmRestoreDesc": "Cela remplacera tous vos réglages et fichiers actuels par la sauvegarde cloud. ryOS redémarrera.",
         "description": "Sauvegardez ou restaurez tous les réglages et fichiers dans le cloud. Max {{limit}} Mo.",
+        "forceSyncDescription": "Charger les données actuelles de cet appareil vers le cloud pour chaque élément de synchronisation automatique activé.",
+        "forceSyncFailed": "Échec de la synchronisation forcée des données du cloud.",
+        "forceSyncLocalWins": "Synchronisation forcée",
+        "forceSyncNoDomains": "Activez au moins un élément de synchronisation automatique pour forcer la synchronisation.",
+        "forceSyncSuccess": "Synchronisation cloud terminée.",
+        "forceSyncing": "Synchronisation avec le cloud...",
         "lastBackup": "Dernière sauvegarde cloud : {{date}} ({{size}} Mo)",
         "loginRequired": "Veuillez vous connecter pour utiliser la synchronisation cloud",
         "progress": {

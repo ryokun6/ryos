@@ -1060,6 +1060,12 @@
         "confirmRestore": "クラウドから復元しますか？",
         "confirmRestoreDesc": "現在の設定とファイルはすべてクラウドバックアップで置き換えられます。ryOS は再起動します。",
         "description": "すべての設定とファイルをクラウドにバックアップまたは復元します。最大 {{limit}}MB。",
+        "forceSyncDescription": "有効な自動同期項目ごとに、このデバイスの現在のデータをクラウドにアップロードします。",
+        "forceSyncFailed": "クラウドデータの強制同期に失敗しました",
+        "forceSyncLocalWins": "強制同期",
+        "forceSyncNoDomains": "強制同期を行うには、少なくとも1つの自動同期項目を有効にしてください。",
+        "forceSyncSuccess": "クラウド同期が完了しました",
+        "forceSyncing": "クラウドに同期中…",
         "lastBackup": "最後のクラウドバックアップ: {{date}} ({{size}}MB)",
         "loginRequired": "クラウド同期を使うにはログインしてください",
         "progress": {

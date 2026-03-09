@@ -1060,6 +1060,12 @@
         "confirmRestore": "要從雲端還原嗎？",
         "confirmRestoreDesc": "這會以雲端備份取代你目前的所有設定與檔案，ryOS 將重新啟動。",
         "description": "將所有設定與檔案備份到雲端或從雲端還原。上限 {{limit}}MB。",
+        "forceSyncDescription": "將此裝置的目前資料上傳至雲端，以用於每個已啟用的自動同步項目。",
+        "forceSyncFailed": "強制同步雲端資料失敗",
+        "forceSyncLocalWins": "強制同步",
+        "forceSyncNoDomains": "請啟用至少一個自動同步項目才能強制同步",
+        "forceSyncSuccess": "雲端同步已完成",
+        "forceSyncing": "正在同步至雲端…",
         "lastBackup": "上次雲端備份：{{date}}（{{size}}MB）",
         "loginRequired": "請先登入以使用雲端同步",
         "progress": {
