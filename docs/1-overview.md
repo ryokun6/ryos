@@ -1,13 +1,13 @@
 # Overview
 
-ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 22 fully-functional apps, an AI assistant, and a complete virtual file system.
+ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 24 fully-functional apps, an AI assistant, and a complete virtual file system.
 
 Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
 ```mermaid
 graph TB
     subgraph Presentation["Presentation Layer"]
-        Apps[22 App Modules]
+        Apps[24 App Modules]
         UI[UI Components]
         Themes[4 Themes]
     end
@@ -52,7 +52,7 @@ graph TB
 ## Key Features
 
 - **[Multi-Theme Support](/docs/theme-system):** System 7, Mac OS X (Aqua), Windows XP, Windows 98
-- **[22 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, and more
+- **[24 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
 - **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
@@ -82,17 +82,17 @@ graph TB
 ## Project Structure
 
 ```
-├── _api/             # Node-style API endpoints (Vercel + standalone Bun server)
+├── api/              # Node-style API endpoints (Vercel + standalone Bun server)
 │   └── _utils/       # Shared API utilities (api-handler, middleware, auth, redis, etc.)
 ├── public/           # Static assets
 ├── src/
 │   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen)
-│   ├── apps/         # 20 app modules
+│   ├── apps/         # 24 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # 35 custom hooks
+│   ├── hooks/        # 41 custom hooks
 │   ├── lib/          # Libraries
-│   ├── stores/       # 24 Zustand stores
+│   ├── stores/       # 30 Zustand stores
 │   ├── styles/       # CSS
 │   ├── themes/       # 4 theme definitions
 │   ├── types/        # TypeScript types

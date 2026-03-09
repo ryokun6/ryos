@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 22 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 24 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 ## App Overview
 
@@ -26,6 +26,7 @@ ryOS includes 22 built-in applications, each designed to replicate classic deskt
 | [Infinite Mac](/docs/infinite-mac) | Classic Mac OS emulators | Entertainment |
 | [Stickies](/docs/stickies) | Sticky notes for quick reminders | Productivity |
 | [Calendar](/docs/calendar) | Month and day view calendar with events and color coding | Productivity |
+| [Contacts](/docs/contacts) | Address book with vCard import and cloud sync | Productivity |
 | [Dashboard](/docs/dashboard) | Widget panel with clock, calendar, and weather | Utilities |
 | [Admin](/docs/admin) | System administration panel (admin only) | System |
 

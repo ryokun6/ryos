@@ -225,6 +225,7 @@
     <a href="/docs/winamp" class="nav-child ">2.20 Winamp</a>
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
+    <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -515,10 +516,15 @@ const applet = await fetch(`/api/share-applet?id=${id}`).then(r =&gt; r.json());
 // List all applets
 const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.json());</code></pre>
 <hr>
+<h2>Stocks API</h2>
+<p>Provides real-time stock quote data for the Dashboard Stocks widget.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/stocks</code></td><td>Fetch stock quotes</td></tr></tbody></table>
+<hr>
 <h2>Sync APIs (Cloud Backup Metadata)</h2>
 <p>The sync endpoints manage backup metadata and retrieval around client-side Vercel Blob uploads.</p>
 <h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate short-lived Blob client upload token</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate short-lived Blob client upload token</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr><tr><td>GET, POST</td><td><code>/api/sync/auto</code></td><td>Automatic sync with Pusher/WebSocket notifications</td><td>Required</td></tr><tr><td>GET, PUT</td><td><code>/api/sync/state</code></td><td>Sync state read/write</td><td>Required</td></tr></tbody></table>
 <h3>POST /api/sync/backup-token</h3>
 <p>Generates a direct-upload token for <code>backups/{username}/backup.gz</code>.</p>
 <p>Response:</p>

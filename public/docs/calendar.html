@@ -225,6 +225,7 @@
     <a href="/docs/winamp" class="nav-child ">2.20 Winamp</a>
     <a href="/docs/calendar" class="nav-child active">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
+    <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -303,29 +304,31 @@
     <main class="content">
       <article>
         <h1>Calendar</h1>
-<p>Calendar is a date management application for ryOS that lets you view months, create events, and organize your schedule with color coding. It provides month and day views with persistent event storage.</p>
+<p>Calendar is an iCal-inspired date management application for ryOS that lets you view weeks and months, create events, and organize your schedule with color coding. It provides week and month views, cloud sync, AI integration, and persistent event storage.</p>
 <h2>Overview</h2>
-<p>Calendar helps ryOS users track appointments, deadlines, and events in a familiar monthly grid interface. Events are automatically saved and persist between sessions. The app supports color coding for visual organization and offers both month view for overview and day view for detailed scheduling.</p>
+<p>Calendar is an iCal-inspired date management application with week and month views, event creation with color coding, cloud sync, and AI integration. It helps ryOS users track appointments, deadlines, and events in an Apple iCal-inspired interface with brushed metal and Aqua styling. Events sync to the cloud and Ryo can create and manage events via chat. The app supports week view as the primary view, month view for overview, and offers Spotlight search integration for finding events quickly.</p>
 <h2>Features</h2>
-<ul><li><strong>Navigate Months:</strong> Use arrow buttons to move between months, or click Today to jump back to the current date</li></ul><ul><li><strong>Create Events:</strong> Double-click a date or use File > New Event to add calendar events</li><li><strong>Day View:</strong> Click a date to select it, then switch to Day view to see all events for that day</li><li><strong>Color Coding:</strong> Assign colors to events for easy visual organization</li><li><strong>Delete Events:</strong> Select an event and use Edit > Delete Event to remove it</li><li><strong>Auto-Save:</strong> Events are automatically saved and persist between sessions</li></ul>
+<ul><li><strong>Week View & Month View:</strong> iCal-style week view as the primary view with smooth navigation between weeks and months</li></ul><ul><li><strong>Create, Edit, and Delete Events:</strong> Double-click a date or use File > New Event to add events; edit and delete with color coding for visual organization</li><li><strong>Cloud Sync:</strong> Calendar events sync to the cloud</li><li><strong>AI Integration:</strong> Calendar AI tool—Ryo can create and manage events via chat</li><li><strong>Spotlight Search:</strong> Calendar events appear in Spotlight search results</li><li><strong>Brushed Metal + Aqua Styling:</strong> Matches classic macOS aesthetics</li><li><strong>Mobile-Responsive:</strong> Horizontal scrolling in week view on smaller screens</li><li><strong>Today Indicator:</strong> Red highlight for the current day</li><li><strong>Translucent Event Colors:</strong> Overlap visibility when events conflict</li><li><strong>Sync Menu Items:</strong> File menu includes sync options</li><li><strong>Date/Range Label:</strong> Displayed in the title bar (moved from bottom toolbar)</li><li><strong>Auto-Save:</strong> Events are automatically saved and persist between sessions</li></ul>
 <h2>User Guide</h2>
 <h3>Getting Started</h3>
-Launch Calendar from the application launcher. Use the month navigation arrows to move between months, or click Today to return to the current date.
+Launch Calendar from the application launcher. Use the week or month navigation to move between time periods, or click Today to return to the current date. Week view is the default primary view with an iCal-inspired layout.
 <h3>Key Actions</h3>
-<ul><li><strong>Add Event:</strong> Double-click any date in the month view, or use File > New Event</li><li><strong>View Day Details:</strong> Select a date and switch to Day view to see all events for that day</li><li><strong>Organize with Colors:</strong> Select an event and choose a color from the color options</li><li><strong>Remove Events:</strong> Select an event and use Edit > Delete Event</li></ul>
+<ul><li><strong>Add Event:</strong> Double-click any date in the week or month view, or use File > New Event</li><li><strong>Sync Events:</strong> Use File menu sync options to sync calendar data with the cloud</li><li><strong>Organize with Colors:</strong> Select an event and choose a color from the color options</li><li><strong>Remove Events:</strong> Select an event and use Edit > Delete Event</li><li><strong>Search Events:</strong> Use Spotlight to find calendar events from anywhere in ryOS</li></ul>
 <h3>Tips & Shortcuts</h3>
-<ul><li>Events auto-save as you create and edit them—no manual save needed</li><li>Use colors to distinguish between work, personal, and other event types</li></ul>
+<ul><li>Events auto-save as you create and edit them—no manual save needed</li><li>Use colors to distinguish between work, personal, and other event types</li><li>Ask Ryo in chat to create or manage events—AI integration handles the details</li></ul>
 <h2>Technical Details</h2>
 <h3>Window Configuration</h3>
-<ul><li>Default size: 400×360px (typical calendar dimensions)</li></ul>
+<ul><li>Default size: 700×520px</li><li>Minimum size: 300×380px</li></ul>
 <h3>Component Architecture</h3>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/CalendarAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/CalendarAppComponent.tsx</a></code> — Main application component</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/CalendarMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/CalendarMenuBar.tsx</a></code> — Menu bar with File, Edit, and View options</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/EventDialog.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/EventDialog.tsx</a></code> — Dialog for creating and editing events</li></ul>
-<h3>Hooks & Utilities</h3>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/hooks/useCalendarLogic.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/hooks/useCalendarLogic.ts</a></code> — Calendar state and event management</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/utils/parseIcal.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/utils/parseIcal.ts</a></code> — iCal format parsing (if supported)</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/CalendarAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/CalendarAppComponent.tsx</a></code> — Main app with week and month views</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/CalendarMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/CalendarMenuBar.tsx</a></code> — Menu bar with File, Edit, View options and sync</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/components/EventDialog.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/components/EventDialog.tsx</a></code> — Event create/edit dialog</li></ul>
+<h3>Hooks</h3>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/hooks/useCalendarLogic.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/hooks/useCalendarLogic.ts</a></code> — Calendar state, navigation, and event management</li></ul>
+<h3>Utilities</h3>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/calendar/utils/parseIcal.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/calendar/utils/parseIcal.ts</a></code> — iCal format parsing</li></ul>
 <h3>State Management</h3>
-Calendar stores events in IndexedDB or localStorage, persisting between sessions. State is managed via the useCalendarLogic hook.
+<code>useCalendarStore</code> (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/stores/useCalendarStore.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/stores/useCalendarStore.ts</a></code>) — Zustand store with IndexedDB persistence for events, calendars, and todos.
 <h2>Related Apps</h2>
-<ul><li><strong>Stickies:</strong> For quick reminders alongside scheduled events</li></ul><ul><li><strong>Dashboard:</strong> Includes a mini calendar widget that can show your events</li></ul>
+<ul><li><strong>Stickies:</strong> For quick reminders alongside scheduled events</li></ul><ul><li><strong>Dashboard:</strong> Includes a mini calendar widget that can show your events</li><li><strong>Chats:</strong> Ask Ryo to create or manage calendar events via the AI integration</li></ul>
       </article>
       
       <nav class="nav">

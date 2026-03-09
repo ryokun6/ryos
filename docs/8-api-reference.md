@@ -1,8 +1,8 @@
 # API Reference
 
-ryOS backend APIs use Node.js route handlers in `_api/`, deployable on Vercel or the standalone Bun API server.
+ryOS backend APIs use Node.js route handlers in `api/`, deployable on Vercel or the standalone Bun API server.
 
-Most actively refactored JSON routes use the shared `apiHandler` utility (`_api/_utils/api-handler.ts`) for CORS, method checks, auth resolution, and consistent error handling. Some specialized routes (for example multipart upload handlers) still use explicit/manual handling.
+Most actively refactored JSON routes use the shared `apiHandler` utility (`api/_utils/api-handler.ts`) for CORS, method checks, auth resolution, and consistent error handling. Some specialized routes (for example multipart upload handlers) still use explicit/manual handling.
 
 ## API Request Flow
 
@@ -95,9 +95,12 @@ graph LR
 | `/api/link-preview` | URL metadata extraction |
 | `/api/iframe-check` | Embeddability checking |
 | `/api/share-applet` | Applet sharing |
+| `/api/stocks` | Real-time stock quotes |
 | `/api/sync/backup-token` | Generate cloud backup upload token |
 | `/api/sync/backup` | Save/list/delete cloud backup metadata |
 | `/api/sync/status` | Cloud backup status summary |
+| `/api/sync/auto` | Automatic sync operations |
+| `/api/sync/state` | Sync state management |
 | `/api/admin` | Admin operations |
 
 ### Endpoint Categories Overview
@@ -130,6 +133,7 @@ graph TD
     Util --> preview["/link-preview"]
     Util --> iframe["/iframe-check"]
     Util --> share["/share-applet"]
+    Util --> stocks["/stocks"]
     Util --> admin["/admin"]
 ```
 
