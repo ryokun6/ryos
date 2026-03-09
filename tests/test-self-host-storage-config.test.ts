@@ -86,6 +86,8 @@ describe("self-host storage backend selection", () => {
     expect(upload.uploadUrl.startsWith(
       "https://bucket.example-account.r2.cloudflarestorage.com/"
     )).toBe(true);
+    expect(upload.uploadUrl.includes("x-amz-sdk-checksum-algorithm")).toBe(false);
+    expect(upload.uploadUrl.includes("x-amz-checksum-crc32")).toBe(false);
   });
 
   test("supports separate public endpoint for browser uploads", async () => {

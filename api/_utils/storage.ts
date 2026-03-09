@@ -188,6 +188,12 @@ function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
     region: config.region,
     endpoint,
     forcePathStyle,
+    // Match the boto3 object storage example more closely:
+    // - virtual-hosted style unless explicitly forced to path-style
+    // - only calculate request/response checksums when required so presigned
+    //   PUT URLs stay minimal for S3-compatible providers
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     credentials: {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
