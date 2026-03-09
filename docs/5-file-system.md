@@ -308,6 +308,10 @@ Desktop shortcuts support:
 - File shortcuts (opens the target file)
 - Theme-specific visibility (`hiddenOnThemes`)
 
+## Cloud Sync
+
+The cloud sync system (`/api/sync/*`) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs **calendar** events, **contacts**, and **stickies** from their respective stores (`useCalendarStore`, `useContactsStore`, `useStickiesStore`), enabling backup and real-time sync via Pusher or local WebSocket.
+
 ## Migration System
 
 Store version migrations handle schema changes:

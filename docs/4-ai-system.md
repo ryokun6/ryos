@@ -41,7 +41,7 @@ graph TD
 | `karaokeControl` | Karaoke playback control (shared music library with iPod, independent playback state) |
 | `generateHtml` | Create HTML applets with title and emoji icon |
 | `aquarium` | Render interactive emoji aquarium in chat |
-| `list` | List VFS items: `/Applets`, `/Documents`, `/Applications`, `/Music`, `/Applets Store` |
+| `list` | List VFS items: `/Applets`, `/Documents` (includes document names), `/Applications`, `/Music`, `/Applets Store` |
 | `open` | Open files/apps/media from virtual file system |
 | `read` | Read file contents (applets, documents, Applets Store items) |
 | `write` | Create/modify markdown documents (overwrite/append/prepend modes) |
@@ -50,6 +50,9 @@ graph TD
 | `settings` | Change language, theme, volume, speech, check-for-updates |
 | `stickiesControl` | List/create/update/delete/clear sticky notes |
 | `infiniteMacControl` | Control Infinite Mac emulator (launch system, screen read, mouse/keyboard actions, pause state) |
+| `calendarControl` | Create, update, delete, and list calendar events |
+| `contactsControl` | Search, create, update, and delete contacts |
+| `documentsControl` | List and read cloud-synced documents |
 | `memoryWrite` | Unified memory writer (`long_term` or `daily`) |
 | `memoryRead` | Unified memory reader (`long_term` by key or `daily` by date) |
 | `memoryDelete` | Delete long-term memory by key |
@@ -93,17 +96,19 @@ sequenceDiagram
 
 ## Tool Handlers
 
-Backend tool registry lives in `_api/chat/tools/`:
+Backend tool registry lives in `api/chat/tools/`:
 
-- `_api/chat/tools/types.ts` - Tool constants and TypeScript contracts
-- `_api/chat/tools/schemas.ts` - Zod input schemas and action-specific validation
-- `_api/chat/tools/executors.ts` - Server-side executors (`generateHtml`, `searchSongs`, memory tools)
-- `_api/chat/tools/index.ts` - `createChatTools()` registry (mixes server and client tools)
+- `api/chat/tools/types.ts` - Tool constants and TypeScript contracts
+- `api/chat/tools/schemas.ts` - Zod input schemas and action-specific validation
+- `api/chat/tools/executors.ts` - Server-side executors (`generateHtml`, `searchSongs`, memory tools)
+- `api/chat/tools/index.ts` - `createChatTools()` registry (mixes server and client tools)
 
 Client execution handlers remain in `src/apps/chats/tools/`:
 
 - `appHandlers.ts` - Launch/close app execution
 - `ipodHandler.ts` / `karaokeHandler.ts` - Media control execution
+- `calendarHandler.ts` - Calendar event management execution
+- `contactsHandler.ts` - Contact management execution
 - `settingsHandler.ts` - System settings updates
 - `stickiesHandler.ts` - Sticky note operations
 - `infiniteMacHandler.ts` - Infinite Mac control bridge
@@ -119,7 +124,7 @@ Client execution handlers remain in `src/apps/chats/tools/`:
 
 ## System Prompts
 
-Core prompt constants are defined in `_api/_utils/_aiPrompts.ts`:
+Core prompt constants are defined in `api/_utils/_aiPrompts.ts`:
 
 - `CORE_PRIORITY_INSTRUCTIONS` - Priority and memory-override rules
 - `RYO_PERSONA_INSTRUCTIONS` - Ryo identity and background
@@ -188,7 +193,7 @@ Pipeline behavior:
 
 ## apiHandler Pattern
 
-AI endpoints use a shared `_api/_utils/api-handler.ts` wrapper for consistency:
+AI endpoints use a shared `api/_utils/api-handler.ts` wrapper for consistency:
 
 - CORS and allowed-origin checks
 - Method gating + automatic `OPTIONS` handling
