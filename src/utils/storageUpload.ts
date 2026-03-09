@@ -66,7 +66,12 @@ function uploadWithXhr(
       reject(new Error(`Upload failed with status ${xhr.status}`));
     };
 
-    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onerror = () =>
+      reject(
+        new Error(
+          `Upload failed before an HTTP response was received for ${uploadUrl}. Check bucket CORS, endpoint reachability, and TLS/mixed-content configuration.`
+        )
+      );
     xhr.ontimeout = () => reject(new Error("Upload timed out"));
     xhr.send(body);
   });

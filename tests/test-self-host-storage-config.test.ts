@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { getStorageBackend } from "../api/_utils/storage";
+import {
+  createStorageUploadDescriptor,
+  getStorageBackend,
+} from "../api/_utils/storage";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -58,6 +61,55 @@ describe("self-host storage backend selection", () => {
 
     expect(() => getStorageBackend()).toThrow(
       "STORAGE_PROVIDER requests Vercel Blob"
+    );
+  });
+
+  test("defaults presigned URLs to path-style for s3-compatible endpoints", async () => {
+    process.env.STORAGE_PROVIDER = "s3-compatible";
+    process.env.S3_BUCKET = "bucket";
+    process.env.S3_REGION = "auto";
+    process.env.S3_ENDPOINT = "https://example-account.r2.cloudflarestorage.com";
+    process.env.S3_ACCESS_KEY_ID = "key";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+    delete process.env.S3_FORCE_PATH_STYLE;
+
+    const upload = await createStorageUploadDescriptor({
+      pathname: "sync/test/files-images.gz",
+      contentType: "application/gzip",
+      maximumSizeInBytes: 1024,
+    });
+
+    expect(upload.provider).toBe("s3");
+    if (upload.provider !== "s3") {
+      throw new Error("Expected an S3 upload descriptor");
+    }
+    expect(upload.uploadUrl.startsWith(
+      "https://example-account.r2.cloudflarestorage.com/bucket/"
+    )).toBe(true);
+  });
+
+  test("supports separate public endpoint for browser uploads", async () => {
+    process.env.STORAGE_PROVIDER = "s3-compatible";
+    process.env.S3_BUCKET = "bucket";
+    process.env.S3_REGION = "us-east-1";
+    process.env.S3_ENDPOINT = "http://minio:9000";
+    process.env.S3_PUBLIC_ENDPOINT = "https://storage.example.com";
+    process.env.S3_ACCESS_KEY_ID = "key";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+    process.env.S3_FORCE_PATH_STYLE = "true";
+
+    const upload = await createStorageUploadDescriptor({
+      pathname: "sync/test/files-images.gz",
+      contentType: "application/gzip",
+      maximumSizeInBytes: 1024,
+    });
+
+    expect(upload.provider).toBe("s3");
+    if (upload.provider !== "s3") {
+      throw new Error("Expected an S3 upload descriptor");
+    }
+    expect(upload.uploadUrl.startsWith("https://storage.example.com/bucket/")).toBe(
+      true
     );
   });
 });

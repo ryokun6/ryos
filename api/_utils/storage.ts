@@ -53,6 +53,7 @@ interface S3Config {
   bucket: string;
   region: string;
   endpoint: string;
+  publicEndpoint: string;
   accessKeyId: string;
   secretAccessKey: string;
   sessionToken: string | null;
@@ -61,6 +62,9 @@ interface S3Config {
 
 const s3ClientCache = globalThis as typeof globalThis & {
   __ryosS3Client?: S3Client;
+  __ryosS3PresignClient?: S3Client;
+  __ryosS3ClientCacheKey?: string;
+  __ryosS3PresignClientCacheKey?: string;
 };
 
 function getBlobReadWriteToken(): string | null {
@@ -80,10 +84,36 @@ function isTruthy(value: string | undefined): boolean {
   return value === "1" || value?.toLowerCase() === "true";
 }
 
+function isFalsy(value: string | undefined): boolean {
+  return value === "0" || value?.toLowerCase() === "false";
+}
+
+function shouldUsePathStyle(
+  endpoint: string,
+  explicit: string | undefined
+): boolean {
+  if (isTruthy(explicit)) {
+    return true;
+  }
+
+  if (isFalsy(explicit)) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(endpoint).hostname.toLowerCase();
+    return !hostname.endsWith("amazonaws.com");
+  } catch {
+    return true;
+  }
+}
+
 function getS3Config(): S3Config | null {
   const bucket = process.env.S3_BUCKET?.trim();
   const region = process.env.S3_REGION?.trim();
   const endpoint = process.env.S3_ENDPOINT?.trim();
+  const publicEndpoint =
+    process.env.S3_PUBLIC_ENDPOINT?.trim() || endpoint;
   const accessKeyId =
     process.env.S3_ACCESS_KEY_ID?.trim() ||
     process.env.AWS_ACCESS_KEY_ID?.trim();
@@ -95,7 +125,14 @@ function getS3Config(): S3Config | null {
     process.env.AWS_SESSION_TOKEN?.trim() ||
     null;
 
-  if (!bucket || !region || !endpoint || !accessKeyId || !secretAccessKey) {
+  if (
+    !bucket ||
+    !region ||
+    !endpoint ||
+    !publicEndpoint ||
+    !accessKeyId ||
+    !secretAccessKey
+  ) {
     return null;
   }
 
@@ -103,35 +140,102 @@ function getS3Config(): S3Config | null {
     bucket,
     region,
     endpoint,
+    publicEndpoint,
     accessKeyId,
     secretAccessKey,
     sessionToken,
-    forcePathStyle: isTruthy(process.env.S3_FORCE_PATH_STYLE),
+    forcePathStyle: shouldUsePathStyle(
+      endpoint,
+      process.env.S3_FORCE_PATH_STYLE
+    ),
   };
 }
 
-function getS3Client(): S3Client {
-  if (!s3ClientCache.__ryosS3Client) {
-    const config = getS3Config();
-    if (!config) {
-      throw new Error(
-        "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
-      );
-    }
+function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
+  const config = getS3Config();
+  if (!config) {
+    throw new Error(
+      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+    );
+  }
 
-    s3ClientCache.__ryosS3Client = new S3Client({
-      region: config.region,
-      endpoint: config.endpoint,
-      forcePathStyle: config.forcePathStyle,
-      credentials: {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
-        ...(config.sessionToken ? { sessionToken: config.sessionToken } : {}),
-      },
-    });
+  return new S3Client({
+    region: config.region,
+    endpoint,
+    forcePathStyle,
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+      ...(config.sessionToken ? { sessionToken: config.sessionToken } : {}),
+    },
+  });
+}
+
+function getS3ClientCacheKey(endpoint: string, forcePathStyle: boolean): string {
+  const config = getS3Config();
+  if (!config) {
+    throw new Error(
+      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+    );
+  }
+
+  return JSON.stringify({
+    region: config.region,
+    endpoint,
+    forcePathStyle,
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    sessionToken: config.sessionToken,
+  });
+}
+
+function getS3Client(): S3Client {
+  const config = getS3Config();
+  if (!config) {
+    throw new Error(
+      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+    );
+  }
+
+  const cacheKey = getS3ClientCacheKey(config.endpoint, config.forcePathStyle);
+  if (
+    !s3ClientCache.__ryosS3Client ||
+    s3ClientCache.__ryosS3ClientCacheKey !== cacheKey
+  ) {
+    s3ClientCache.__ryosS3Client = createS3Client(
+      config.endpoint,
+      config.forcePathStyle
+    );
+    s3ClientCache.__ryosS3ClientCacheKey = cacheKey;
   }
 
   return s3ClientCache.__ryosS3Client;
+}
+
+function getS3PresignClient(): S3Client {
+  const config = getS3Config();
+  if (!config) {
+    throw new Error(
+      "Missing S3-compatible storage configuration. Set S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+    );
+  }
+
+  const cacheKey = getS3ClientCacheKey(
+    config.publicEndpoint,
+    config.forcePathStyle
+  );
+  if (
+    !s3ClientCache.__ryosS3PresignClient ||
+    s3ClientCache.__ryosS3PresignClientCacheKey !== cacheKey
+  ) {
+    s3ClientCache.__ryosS3PresignClient = createS3Client(
+      config.publicEndpoint,
+      config.forcePathStyle
+    );
+    s3ClientCache.__ryosS3PresignClientCacheKey = cacheKey;
+  }
+
+  return s3ClientCache.__ryosS3PresignClient;
 }
 
 function toS3StorageUrl(pathname: string): string {
@@ -307,7 +411,7 @@ export async function createStorageUploadDescriptor(
   }
 
   const uploadUrl = await getSignedUrl(
-    getS3Client(),
+    getS3PresignClient(),
     new PutObjectCommand({
       Bucket: getS3Config()!.bucket,
       Key: pathname,
@@ -415,7 +519,7 @@ export async function createSignedDownloadUrl(
 
   const { bucket, key } = parseS3StorageUrl(storageUrl);
   return await getSignedUrl(
-    getS3Client(),
+    getS3PresignClient(),
     new GetObjectCommand({
       Bucket: bucket,
       Key: key,
