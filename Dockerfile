@@ -10,6 +10,8 @@ RUN bun run build
 
 FROM oven/bun:1.3.9 AS runtime
 
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -30,8 +32,5 @@ COPY --from=build /app/tsconfig.node.json ./tsconfig.node.json
 COPY --from=build /app/tsconfig.app.json ./tsconfig.app.json
 
 EXPOSE 3000
-
-HEALTHCHECK --interval=5s --timeout=5s --retries=10 --start-period=5s \
-  CMD bun -e "fetch('http://localhost:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
 CMD ["bun", "run", "start"]
