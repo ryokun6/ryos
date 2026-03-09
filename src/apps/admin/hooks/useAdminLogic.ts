@@ -27,6 +27,10 @@ import {
   listRooms as listRoomsApi,
 } from "@/api/rooms";
 import { listSongs } from "@/api/songs";
+import {
+  getClearedAdminDetailSelection,
+  type AdminSection,
+} from "../utils/navigationState";
 import { helpItems } from "..";
 
 /**
@@ -78,8 +82,6 @@ interface DeleteTarget {
   id: string;
   name: string;
 }
-
-type AdminSection = "users" | "rooms" | "songs" | "server";
 
 const USERS_PER_PAGE = 100;
 const SONGS_PER_PAGE = 100;
@@ -987,6 +989,25 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       fetchRoomMessages(selectedRoomId);
     }
   }, [selectedRoomId, fetchRoomMessages]);
+
+  // Close detail panels when switching to a different list section.
+  useEffect(() => {
+    const nextSelectionState = getClearedAdminDetailSelection(activeSection, {
+      selectedRoomId,
+      selectedUserProfile,
+      selectedSongId,
+    });
+
+    if (nextSelectionState.selectedSongId !== selectedSongId) {
+      setSelectedSongId(nextSelectionState.selectedSongId);
+    }
+    if (nextSelectionState.selectedUserProfile !== selectedUserProfile) {
+      setSelectedUserProfile(nextSelectionState.selectedUserProfile);
+    }
+    if (nextSelectionState.selectedRoomId !== selectedRoomId) {
+      setSelectedRoomId(nextSelectionState.selectedRoomId);
+    }
+  }, [activeSection, selectedSongId, selectedUserProfile, selectedRoomId]);
 
   const handleRefresh = useCallback(() => {
     if (isOffline) {
