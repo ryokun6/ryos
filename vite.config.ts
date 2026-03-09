@@ -47,6 +47,12 @@ export default defineConfig({
               target: standaloneApiProxyTarget,
               changeOrigin: true,
             },
+            // In local full-stack dev, runtime config should come from the API
+            // server so the browser sees the same realtime provider/path values.
+            "/app-config.js": {
+              target: standaloneApiProxyTarget,
+              changeOrigin: true,
+            },
             "/ws": {
               target: standaloneApiProxyTarget,
               ws: true,
