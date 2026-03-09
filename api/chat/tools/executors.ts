@@ -8,7 +8,7 @@
  * do not have executors here - they are handled by the client via onToolCall.
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../../_utils/redis.js";
 import type {
   ServerToolContext,
   GenerateHtmlInput,

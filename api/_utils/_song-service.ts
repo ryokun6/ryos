@@ -8,7 +8,7 @@
  * Split storage avoids exceeding Upstash's 10MB request limit when listing songs.
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 
 // =============================================================================
 // Types

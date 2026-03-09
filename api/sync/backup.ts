@@ -9,7 +9,7 @@
  */
 
 import type { VercelResponse } from "@vercel/node";
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../_utils/redis.js";
 import { del, head } from "@vercel/blob";
 import { USER_TTL_SECONDS } from "../_utils/auth/index.js";
 import { apiHandler } from "../_utils/api-handler.js";

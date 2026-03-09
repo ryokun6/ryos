@@ -4,7 +4,7 @@
  * Re-exports commonly used utilities for convenience.
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 import type { VercelRequest } from "@vercel/node";
 import { extractAuth, validateAuth } from "./auth/index.js";
 import type { AuthenticatedUser } from "./auth/index.js";

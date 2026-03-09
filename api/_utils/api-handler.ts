@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 import { initLogger } from "./_logging.js";
 import { getEffectiveOrigin, isAllowedOrigin, setCorsHeaders } from "./_cors.js";
 import { createRedis } from "./redis.js";

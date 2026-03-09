@@ -5,7 +5,7 @@
  */
 
 import type { VercelResponse } from "@vercel/node";
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../_utils/redis.js";
 import { gunzipSync } from "node:zlib";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,

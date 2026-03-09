@@ -1,4 +1,4 @@
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 import type { Contact } from "../../src/utils/contacts.js";
 import { getContactSummary, normalizeContacts } from "../../src/utils/contacts.js";
 import type { ContactsSnapshotData } from "../chat/tools/types.js";

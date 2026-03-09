@@ -8,7 +8,7 @@
  */
 
 import type { VercelRequest } from "@vercel/node";
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 import { extractAuthNormalized, validateAuth } from "./auth/index.js";
 
 export interface AuthenticatedRequestUser {

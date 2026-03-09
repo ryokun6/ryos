@@ -1,3 +1,10 @@
+/**
+ * Vercel Edge Middleware — generates OG meta tags for shared links.
+ *
+ * ⚠️  This file runs in Vercel Edge Runtime, which does NOT support Node.js TCP
+ * modules (ioredis).  We must use @upstash/redis (HTTP REST) directly here
+ * instead of the unified Redis adapter in api/_utils/redis.ts.
+ */
 import { Redis } from "@upstash/redis";
 
 // App display names for OG titles

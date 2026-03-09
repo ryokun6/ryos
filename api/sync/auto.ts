@@ -5,7 +5,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../_utils/redis.js";
 import { del, head } from "@vercel/blob";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,

@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai";
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 import {
   convertToModelMessages,
   type LanguageModel,

@@ -5,7 +5,7 @@
  * Node.js runtime with terminal logging
  */
 
-import { Redis } from "@upstash/redis";
+import type { Redis } from "./_utils/redis.js";
 import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";

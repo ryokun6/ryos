@@ -12,7 +12,7 @@
  *   analytics:aiu:{YYYY-MM-DD}      hash  { username|"anon": count }
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 
 const ANALYTICS_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 

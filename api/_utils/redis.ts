@@ -12,6 +12,8 @@
 import { Redis } from "@upstash/redis";
 import IORedis from "ioredis";
 
+export type { Redis };
+
 export type RedisBackend = "upstash-rest" | "redis-url";
 
 export interface RedisSetOptions {
@@ -30,6 +32,7 @@ export interface RedisSortedSetEntry {
 }
 
 export interface RedisPipelineLike {
+  get(key: string): this;
   set(key: string, value: unknown, options?: RedisSetOptions): this;
   del(...keys: string[]): this;
   sadd(key: string, ...members: string[]): this;
@@ -151,6 +154,11 @@ function serializeRedisValue(value: unknown): string {
 
 class StandardRedisPipelineAdapter implements RedisPipelineLike {
   constructor(private readonly pipelineClient: ReturnType<IORedis["pipeline"]>) {}
+
+  get(key: string): this {
+    this.pipelineClient.get(key);
+    return this;
+  }
 
   set(key: string, value: unknown, options?: RedisSetOptions): this {
     const serialized = serializeRedisValue(value);

@@ -5,7 +5,7 @@
  * Works in both Edge and Node.js runtimes.
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../redis.js";
 import type { AuthValidationResult } from "./_types.js";
 import {
   USER_TTL_SECONDS,

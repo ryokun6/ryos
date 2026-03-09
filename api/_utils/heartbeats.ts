@@ -1,4 +1,4 @@
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 import {
   buildTimestampMetadata,
   getRecentDateStrings,
