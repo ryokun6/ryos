@@ -112,12 +112,6 @@ function shouldUsePathStyle(explicit: string | undefined): boolean {
     return false;
   }
 
-  try {
-    new URL(endpoint);
-  } catch {
-    // Fall back to virtual-hosted style unless explicitly overridden.
-  }
-
   return false;
 }
 
