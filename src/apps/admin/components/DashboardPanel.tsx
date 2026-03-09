@@ -78,10 +78,12 @@ function formatDateLabel(dateStr: string): string {
 function MiniBarChart({
   data,
   valueKey,
+  color = "bg-neutral-400",
   height = 64,
 }: {
   data: DailyMetrics[];
   valueKey: keyof DailyMetrics;
+  color?: string;
   height?: number;
 }) {
   const values = data.map((d) => Number(d[valueKey]) || 0);
@@ -99,7 +101,7 @@ function MiniBarChart({
           >
             <div className="flex-1" />
             <div
-              className="w-full rounded-t-sm transition-all bg-neutral-400"
+              className={cn("w-full rounded-t-sm transition-all", color)}
               style={{ height: barH }}
             />
             <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:block bg-black/80 text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap z-10 pointer-events-none">
@@ -134,9 +136,9 @@ function StatCard({
           className={cn(
             "text-[10px]",
             trend.value > 0
-              ? "text-neutral-600"
+              ? "text-green-600"
               : trend.value < 0
-                ? "text-neutral-600"
+                ? "text-red-500"
                 : "text-neutral-400"
           )}
         >
@@ -316,7 +318,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
               API Calls
             </div>
-            <MiniBarChart data={days} valueKey="calls" height={56} />
+            <MiniBarChart data={days} valueKey="calls" color="bg-neutral-400" height={56} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
               <span>
                 {days.length > 0 ? formatDateLabel(days[0].date) : ""}
@@ -333,7 +335,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
               Unique Visitors
             </div>
-            <MiniBarChart data={days} valueKey="uniqueVisitors" height={56} />
+            <MiniBarChart data={days} valueKey="uniqueVisitors" color="bg-green-400" height={56} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
               <span>
                 {days.length > 0 ? formatDateLabel(days[0].date) : ""}
@@ -350,7 +352,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
               AI Requests
             </div>
-            <MiniBarChart data={days} valueKey="ai" height={56} />
+            <MiniBarChart data={days} valueKey="ai" color="bg-yellow-400" height={56} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
               <span>
                 {days.length > 0 ? formatDateLabel(days[0].date) : ""}
@@ -367,7 +369,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
               Errors
             </div>
-            <MiniBarChart data={days} valueKey="errors" height={56} />
+            <MiniBarChart data={days} valueKey="errors" color="bg-red-400" height={56} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
               <span>
                 {days.length > 0 ? formatDateLabel(days[0].date) : ""}
@@ -406,7 +408,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                     <div className="w-24 flex items-center gap-1.5">
                       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-neutral-300 rounded-full"
+                          className="h-full bg-neutral-400 rounded-full"
                           style={{
                             width: `${(ep.count / topEndpointMax) * 100}%`,
                           }}
@@ -442,7 +444,15 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                     key={sc.status}
                     className="flex items-center justify-between px-3 py-1.5"
                   >
-                    <span className="text-[11px] font-mono text-neutral-600">
+                    <span
+                      className={cn(
+                        "text-[11px] font-mono",
+                        sc.status.startsWith("2") && "text-green-600",
+                        sc.status.startsWith("3") && "text-neutral-600",
+                        sc.status.startsWith("4") && "text-yellow-600",
+                        sc.status.startsWith("5") && "text-red-600"
+                      )}
+                    >
                       {sc.status}
                     </span>
                     <span className="text-[10px] text-neutral-500 tabular-nums">
@@ -483,7 +493,16 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                           {formatNumber(entry.count)}
                         </span>
                         {rl && rl.limit > 0 && (
-                          <span className="text-[9px] text-neutral-400 tabular-nums">
+                          <span
+                            className={cn(
+                              "text-[9px] tabular-nums",
+                              rl.currentCount >= rl.limit
+                                ? "text-red-500"
+                                : rl.currentCount >= rl.limit * 0.8
+                                  ? "text-yellow-600"
+                                  : "text-green-600"
+                            )}
+                          >
                             {rl.currentCount}/{rl.limit}
                           </span>
                         )}
@@ -507,7 +526,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
               Avg Response Time (ms)
             </div>
-            <MiniBarChart data={days} valueKey="avgLatencyMs" height={48} />
+            <MiniBarChart data={days} valueKey="avgLatencyMs" color="bg-neutral-300" height={48} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
               <span>
                 {days.length > 0 ? formatDateLabel(days[0].date) : ""}
