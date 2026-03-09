@@ -12,6 +12,8 @@
 import { Redis } from "@upstash/redis";
 import IORedis from "ioredis";
 
+export type { Redis };
+
 export type RedisBackend = "upstash-rest" | "redis-url";
 
 export interface RedisSetOptions {
@@ -30,12 +32,18 @@ export interface RedisSortedSetEntry {
 }
 
 export interface RedisPipelineLike {
+  get(key: string): this;
   set(key: string, value: unknown, options?: RedisSetOptions): this;
   del(...keys: string[]): this;
   sadd(key: string, ...members: string[]): this;
   srem(key: string, ...members: string[]): this;
   zremrangebyscore(key: string, min: number | string, max: number | string): this;
   zcard(key: string): this;
+  hincrby(key: string, field: string, increment: number): this;
+  hgetall(key: string): this;
+  pfadd(key: string, ...elements: string[]): this;
+  pfcount(...keys: string[]): this;
+  expire(key: string, seconds: number): this;
   exec(): Promise<unknown[]>;
 }
 
@@ -62,6 +70,10 @@ export interface RedisLike {
   lrem(key: string, count: number, value: string): Promise<number>;
   llen(key: string): Promise<number>;
   mget<T = unknown>(...keys: string[]): Promise<(T | null)[]>;
+  hincrby(key: string, field: string, increment: number): Promise<number>;
+  hgetall<T = Record<string, string>>(key: string): Promise<T | null>;
+  pfadd(key: string, ...elements: string[]): Promise<number>;
+  pfcount(...keys: string[]): Promise<number>;
   zadd(key: string, entry: RedisSortedSetEntry): Promise<number>;
   zrem(key: string, member: string): Promise<number>;
   zremrangebyscore(
@@ -143,6 +155,11 @@ function serializeRedisValue(value: unknown): string {
 class StandardRedisPipelineAdapter implements RedisPipelineLike {
   constructor(private readonly pipelineClient: ReturnType<IORedis["pipeline"]>) {}
 
+  get(key: string): this {
+    this.pipelineClient.get(key);
+    return this;
+  }
+
   set(key: string, value: unknown, options?: RedisSetOptions): this {
     const serialized = serializeRedisValue(value);
     if (options?.nx && options?.ex) {
@@ -193,6 +210,35 @@ class StandardRedisPipelineAdapter implements RedisPipelineLike {
 
   zcard(key: string): this {
     this.pipelineClient.zcard(key);
+    return this;
+  }
+
+  hincrby(key: string, field: string, increment: number): this {
+    this.pipelineClient.hincrby(key, field, increment);
+    return this;
+  }
+
+  hgetall(key: string): this {
+    this.pipelineClient.hgetall(key);
+    return this;
+  }
+
+  pfadd(key: string, ...elements: string[]): this {
+    if (elements.length > 0) {
+      this.pipelineClient.pfadd(key, ...elements);
+    }
+    return this;
+  }
+
+  pfcount(...keys: string[]): this {
+    if (keys.length > 0) {
+      this.pipelineClient.pfcount(...keys);
+    }
+    return this;
+  }
+
+  expire(key: string, seconds: number): this {
+    this.pipelineClient.expire(key, seconds);
     return this;
   }
 
@@ -315,6 +361,26 @@ class StandardRedisAdapter implements RedisLike {
   async mget<T = unknown>(...keys: string[]): Promise<(T | null)[]> {
     if (keys.length === 0) return [];
     return (await this.client.mget(...keys)) as (T | null)[];
+  }
+
+  async hincrby(key: string, field: string, increment: number): Promise<number> {
+    return await this.client.hincrby(key, field, increment);
+  }
+
+  async hgetall<T = Record<string, string>>(key: string): Promise<T | null> {
+    const result = await this.client.hgetall(key);
+    if (!result || Object.keys(result).length === 0) return null;
+    return result as T;
+  }
+
+  async pfadd(key: string, ...elements: string[]): Promise<number> {
+    if (elements.length === 0) return 0;
+    return await this.client.pfadd(key, ...elements);
+  }
+
+  async pfcount(...keys: string[]): Promise<number> {
+    if (keys.length === 0) return 0;
+    return await this.client.pfcount(...keys);
   }
 
   async zadd(key: string, entry: RedisSortedSetEntry): Promise<number> {

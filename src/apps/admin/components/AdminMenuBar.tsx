@@ -10,7 +10,7 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 
-type AdminSection = "users" | "rooms" | "songs" | "server";
+type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
 
 interface AdminMenuBarProps {
   onClose: () => void;
@@ -63,6 +63,15 @@ export function AdminMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           {/* Section Selection */}
+          <MenubarCheckboxItem
+            checked={activeSection === "dashboard"}
+            onCheckedChange={(checked) => {
+              if (checked) onSectionChange("dashboard");
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.sidebar.dashboard", "Dashboard")}
+          </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={activeSection === "songs"}
             onCheckedChange={(checked) => {

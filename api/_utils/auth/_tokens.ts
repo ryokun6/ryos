@@ -4,7 +4,7 @@
  * Uses Web Crypto API for token generation (works in Edge runtime)
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../redis.js";
 import type { TokenInfo } from "./_types.js";
 import {
   AUTH_TOKEN_PREFIX,

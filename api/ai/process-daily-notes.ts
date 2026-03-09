@@ -21,7 +21,7 @@
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { Redis } from "@upstash/redis";
+import type { Redis } from "../_utils/redis.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import {
   getMemoryIndex,

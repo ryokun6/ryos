@@ -3,7 +3,7 @@
  * Edge-compatible - uses Web Crypto API
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../../_utils/redis.js";
 import { createRedis } from "../../_utils/redis.js";
 import type { Room, User, Message } from "./_types.js";
 import {

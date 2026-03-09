@@ -3,7 +3,7 @@
  * Focused tests for memory timestamps/timezones and temporary-memory cleanup.
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../api/_utils/redis.js";
 import {
   appendDailyNote,
   getDailyNote,

@@ -5,7 +5,7 @@
  * They do NOT use bcrypt and are safe for Edge runtime.
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../redis.js";
 import { PASSWORD_HASH_PREFIX } from "./_constants.js";
 
 // Re-export constants for convenience

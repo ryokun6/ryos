@@ -1,4 +1,4 @@
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../api/_utils/redis.js";
 import type { DailyNote } from "../api/_utils/_memory";
 import { describe, expect, test } from "bun:test";
 import {

@@ -16,7 +16,7 @@
  * - Updated via extraction from daily notes or direct user request
  */
 
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "./redis.js";
 
 // ============================================================================
 // Constants

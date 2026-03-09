@@ -1,5 +1,5 @@
 import { describe, expect, test, mock, beforeEach } from "bun:test";
-import type { Redis } from "@upstash/redis";
+import type { Redis } from "../api/_utils/redis.js";
 import {
   executeCalendarControl,
   executeContactsControl,
