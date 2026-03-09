@@ -642,7 +642,6 @@ function validateEnv(): void {
     { name: "OPENAI_API_KEY", description: "OpenAI API key (AI + transcription)" },
     { name: "ELEVENLABS_API_KEY", description: "ElevenLabs API key (TTS)" },
     { name: "YOUTUBE_API_KEY", description: "YouTube Data API key" },
-    { name: "INTERNAL_API_SECRET", description: "Internal API secret (Pusher broadcast)" },
   ];
 
   if (realtimeProvider === "pusher") {

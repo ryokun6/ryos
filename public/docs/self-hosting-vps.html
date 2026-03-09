@@ -356,6 +356,9 @@ REDIS_URL=redis://default:password@redis:6379/0
 REALTIME_PROVIDER=local
 REALTIME_WS_PATH=/ws</code></pre>
 <p>Coolify's reverse proxy supports WebSockets, so <code>/ws</code> can stay behind the normal app domain.</p>
+<h3>Version / build number (avoid "dev")</h3>
+<p>The app shows a version like <code>10.3 (abc1234)</code> from <code>version.json</code>. Without a commit SHA at build time, it falls back to <code>dev</code>. To show the real commit: <ol><li>In Coolify → your app → <strong>Advanced</strong> → enable <strong>Include Source Commit in Build</strong></li></ol><ol><li>The build script reads <code>SOURCE_COMMIT</code> (Coolify) or <code>VERCEL_GIT_COMMIT_SHA</code> (Vercel) or <code>GIT_COMMIT_SHA</code> (generic CI)</li></ol></p>
+<p>No extra env vars needed — Coolify injects <code>SOURCE_COMMIT</code> when that option is enabled.</p>
 <hr>
 <h2>6) VPS + systemd example</h2>
 <p>Example unit file:</p>

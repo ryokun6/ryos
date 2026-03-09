@@ -767,24 +767,6 @@ await fetch('/api/admin', {
   })
 });</code></pre>
 <hr>
-<h2>Pusher Broadcast API (Internal)</h2>
-<p>Internal relay endpoint used by server-side components that need to trigger Pusher from Node runtime.</p>
-<h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/pusher/broadcast</code></td><td>Trigger arbitrary Pusher event</td></tr></tbody></table>
-<h3>Security</h3>
-<p>Requires internal header:</p>
-<pre><code>X-Internal-Secret: &lt;INTERNAL_API_SECRET&gt;</code></pre>
-<h3>Request body</h3>
-<pre><code>{
-  "channel": "room-general",
-  "event": "room-message",
-  "data": { "message": "hello" }
-}</code></pre>
-<h3>Response</h3>
-<pre><code>{
-  "success": true
-}</code></pre>
-<hr>
 <h2>Error Handling</h2>
 <p>All utility APIs return consistent error responses:</p>
 <pre><code>{

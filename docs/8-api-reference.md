@@ -99,7 +99,6 @@ graph LR
 | `/api/sync/backup` | Save/list/delete cloud backup metadata |
 | `/api/sync/status` | Cloud backup status summary |
 | `/api/admin` | Admin operations |
-| `/api/pusher/broadcast` | Internal Pusher event relay |
 
 ### Endpoint Categories Overview
 
