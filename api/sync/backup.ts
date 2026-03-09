@@ -1,18 +1,22 @@
 /**
- * POST /api/sync/backup - Save backup metadata after client-side Vercel Blob upload
+ * POST /api/sync/backup - Save backup metadata after client-side storage upload
  * GET  /api/sync/backup - Download backup from cloud
  * DELETE /api/sync/backup - Delete cloud backup
  *
- * The actual blob upload is done client-side using @vercel/blob/client.
+ * The actual object upload is done client-side.
  * This endpoint stores metadata in Redis and handles download/delete.
  * Requires authentication (Bearer token + X-Username).
  */
 
 import type { VercelResponse } from "@vercel/node";
 import type { Redis } from "../_utils/redis.js";
-import { del, head } from "@vercel/blob";
 import { USER_TTL_SECONDS } from "../_utils/auth/index.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import {
+  deleteStoredObject,
+  downloadStoredObject,
+  headStoredObject,
+} from "../_utils/storage.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -29,15 +33,24 @@ interface BackupMeta {
   timestamp: string;
   version: number;
   totalSize: number;
-  blobUrl: string;
+  storageUrl?: string;
+  blobUrl?: string;
   createdAt: string;
 }
 
 interface SaveBackupMetadataBody {
-  blobUrl: string;
+  storageUrl?: string;
+  blobUrl?: string;
   timestamp: string;
   version: number;
   totalSize: number;
+}
+
+function getStoredLocation(value: {
+  storageUrl?: string | null;
+  blobUrl?: string | null;
+}): string | null {
+  return value.storageUrl || value.blobUrl || null;
 }
 
 export default apiHandler<SaveBackupMetadataBody>(
@@ -75,17 +88,17 @@ async function handleSaveMetadata(
   username: string,
   body: SaveBackupMetadataBody | null
 ): Promise<void> {
-  if (!body?.blobUrl || !body?.timestamp) {
-    res.status(400).json({ error: "Missing required fields: blobUrl, timestamp" });
+  const storageUrl = body ? getStoredLocation(body) : null;
+  if (!storageUrl || !body?.timestamp) {
+    res.status(400).json({ error: "Missing required fields: storageUrl, timestamp" });
     return;
   }
 
-  const { blobUrl, timestamp, version, totalSize } = body;
+  const { timestamp, version, totalSize } = body;
 
-  // Validate the blob URL points to a real blob
-  const blobInfo = await head(blobUrl).catch(() => null);
-  if (!blobInfo) {
-    res.status(400).json({ error: "Invalid blob URL: blob not found" });
+  const objectInfo = await headStoredObject(storageUrl).catch(() => null);
+  if (!objectInfo) {
+    res.status(400).json({ error: "Invalid storage URL: object not found" });
     return;
   }
 
@@ -97,11 +110,12 @@ async function handleSaveMetadata(
         typeof existingMeta === "string"
           ? JSON.parse(existingMeta)
           : existingMeta;
-      if (parsed.blobUrl && parsed.blobUrl !== blobUrl) {
+      const previousStorageUrl = getStoredLocation(parsed);
+      if (previousStorageUrl && previousStorageUrl !== storageUrl) {
         try {
-          await del(parsed.blobUrl);
+          await deleteStoredObject(previousStorageUrl);
         } catch {
-          // Ignore delete errors for old blob
+          // Ignore delete errors for old objects
         }
       }
     }
@@ -110,8 +124,9 @@ async function handleSaveMetadata(
     const meta: BackupMeta = {
       timestamp,
       version: version || 3,
-      totalSize: totalSize || blobInfo.size,
-      blobUrl,
+      totalSize: totalSize || objectInfo.size,
+      storageUrl,
+      blobUrl: storageUrl,
       createdAt: new Date().toISOString(),
     };
 
@@ -152,29 +167,21 @@ async function handleDownload(
     const meta: BackupMeta =
       typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta;
 
-    if (!meta.blobUrl) {
+    const storageUrl = getStoredLocation(meta);
+    if (!storageUrl) {
       res.status(404).json({ error: "No backup found" });
       return;
     }
 
-    // Verify blob still exists
-    const blobInfo = await head(meta.blobUrl).catch(() => null);
-    if (!blobInfo) {
-      // Blob was deleted, clean up metadata
+    const objectInfo = await headStoredObject(storageUrl).catch(() => null);
+    if (!objectInfo) {
       await redis.del(metaKey(username));
       res.status(404).json({ error: "Backup data not found. It may have expired." });
       return;
     }
 
-    // Fetch the blob data
-    const blobResponse = await fetch(meta.blobUrl);
-    if (!blobResponse.ok) {
-      res.status(500).json({ error: "Failed to retrieve backup data" });
-      return;
-    }
-
-    const arrayBuffer = await blobResponse.arrayBuffer();
-    const base64Data = Buffer.from(arrayBuffer).toString("base64");
+    const objectBytes = await downloadStoredObject(storageUrl);
+    const base64Data = Buffer.from(objectBytes).toString("base64");
 
     res.status(200).json({
       ok: true,
@@ -207,10 +214,10 @@ async function handleDelete(
     const meta: BackupMeta =
       typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta;
 
-    // Delete blob
-    if (meta.blobUrl) {
+    const storageUrl = getStoredLocation(meta);
+    if (storageUrl) {
       try {
-        await del(meta.blobUrl);
+        await deleteStoredObject(storageUrl);
       } catch {
         // Ignore delete errors
       }

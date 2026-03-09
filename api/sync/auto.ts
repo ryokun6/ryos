@@ -6,7 +6,6 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { Redis } from "../_utils/redis.js";
-import { del, head } from "@vercel/blob";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
   BLOB_SYNC_DOMAINS,
@@ -17,6 +16,11 @@ import {
 } from "../../src/utils/cloudSyncShared.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
+import {
+  createSignedDownloadUrl,
+  deleteStoredObject,
+  headStoredObject,
+} from "../_utils/storage.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -25,7 +29,8 @@ interface PersistedAutoSyncDomainMetadata {
   updatedAt: string;
   version: number;
   totalSize: number;
-  blobUrl: string;
+  storageUrl?: string;
+  blobUrl?: string;
   createdAt: string;
 }
 
@@ -36,6 +41,7 @@ type PersistedAutoSyncMetadataMap = Record<
 
 interface SaveAutoSyncMetadataBody {
   domain?: BlobSyncDomain;
+  storageUrl?: string;
   blobUrl?: string;
   updatedAt?: string;
   version?: number;
@@ -44,6 +50,13 @@ interface SaveAutoSyncMetadataBody {
 
 function metaKey(username: string) {
   return `sync:auto:meta:${username}`;
+}
+
+function getStoredLocation(value: {
+  storageUrl?: string | null;
+  blobUrl?: string | null;
+}): string | null {
+  return value.storageUrl || value.blobUrl || null;
 }
 
 async function readPersistedMetadata(
@@ -69,16 +82,18 @@ async function readPersistedMetadata(
     if (
       typeof candidate.updatedAt !== "string" ||
       typeof candidate.createdAt !== "string" ||
-      typeof candidate.blobUrl !== "string"
+      typeof getStoredLocation(candidate) !== "string"
     ) {
       normalized[domain] = null;
       continue;
     }
 
+    const storageUrl = getStoredLocation(candidate)!;
     normalized[domain] = {
       updatedAt: candidate.updatedAt,
       createdAt: candidate.createdAt,
-      blobUrl: candidate.blobUrl,
+      storageUrl,
+      blobUrl: storageUrl,
       version:
         typeof candidate.version === "number" && Number.isFinite(candidate.version)
           ? candidate.version
@@ -149,21 +164,22 @@ async function handleSaveMetadata(
   body: SaveAutoSyncMetadataBody | null,
   sourceSessionId: string | undefined
 ): Promise<void> {
+  const storageUrl = body ? getStoredLocation(body) : null;
   if (
     !body ||
     !isBlobSyncDomain(body.domain as never) ||
-    !body.blobUrl ||
+    !storageUrl ||
     !body.updatedAt
   ) {
     res.status(400).json({
-      error: "Missing required fields: domain, blobUrl, updatedAt",
+      error: "Missing required fields: domain, storageUrl, updatedAt",
     });
     return;
   }
 
-  const blobInfo = await head(body.blobUrl).catch(() => null);
-  if (!blobInfo) {
-    res.status(400).json({ error: "Invalid blob URL: blob not found" });
+  const objectInfo = await headStoredObject(storageUrl).catch(() => null);
+  if (!objectInfo) {
+    res.status(400).json({ error: "Invalid storage URL: object not found" });
     return;
   }
 
@@ -171,19 +187,21 @@ async function handleSaveMetadata(
     const existing = await readPersistedMetadata(redis, username);
     const previous = existing[body.domain];
 
-    if (previous?.blobUrl && previous.blobUrl !== body.blobUrl) {
+    const previousStorageUrl = previous ? getStoredLocation(previous) : null;
+    if (previousStorageUrl && previousStorageUrl !== storageUrl) {
       try {
-        await del(previous.blobUrl);
+        await deleteStoredObject(previousStorageUrl);
       } catch {
-        // Ignore stale blob cleanup failures.
+        // Ignore stale object cleanup failures.
       }
     }
 
     existing[body.domain] = {
       updatedAt: body.updatedAt,
       version: body.version || AUTO_SYNC_SNAPSHOT_VERSION,
-      totalSize: body.totalSize || blobInfo.size,
-      blobUrl: body.blobUrl,
+      totalSize: body.totalSize || objectInfo.size,
+      storageUrl,
+      blobUrl: storageUrl,
       createdAt: new Date().toISOString(),
     };
 
@@ -230,14 +248,15 @@ async function handleDomainDownload(
   try {
     const metadata = await readPersistedMetadata(redis, username);
     const entry = metadata[domain];
+    const storageUrl = entry ? getStoredLocation(entry) : null;
 
-    if (!entry?.blobUrl) {
+    if (!storageUrl) {
       res.status(404).json({ error: `No ${domain} sync data found` });
       return;
     }
 
-    const blobInfo = await head(entry.blobUrl).catch(() => null);
-    if (!blobInfo) {
+    const objectInfo = await headStoredObject(storageUrl).catch(() => null);
+    if (!objectInfo) {
       metadata[domain] = null;
       await redis.set(metaKey(username), JSON.stringify(metadata));
       res.status(404).json({
@@ -246,16 +265,16 @@ async function handleDomainDownload(
       return;
     }
 
-    // Return the CDN URL so the client can download the blob directly,
-    // avoiding server-side proxy timeouts for large files.
+    const downloadUrl = await createSignedDownloadUrl(storageUrl);
     res.status(200).json({
       ok: true,
       domain,
-      blobUrl: entry.blobUrl,
+      downloadUrl,
+      blobUrl: downloadUrl,
       metadata: {
         updatedAt: entry.updatedAt,
         version: entry.version,
-        totalSize: entry.totalSize,
+        totalSize: entry.totalSize || objectInfo.size,
         createdAt: entry.createdAt,
       },
     });

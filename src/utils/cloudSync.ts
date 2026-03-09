@@ -20,6 +20,10 @@ import {
 import { useContactsStore } from "@/stores/useContactsStore";
 import type { Contact } from "@/utils/contacts";
 import { normalizeContacts } from "@/utils/contacts";
+import {
+  uploadBlobWithStorageInstruction,
+  type StorageUploadInstruction,
+} from "@/utils/storageUpload";
 import type { AIModel } from "@/types/aiModels";
 import type {
   DisplayMode,
@@ -889,18 +893,10 @@ async function uploadBlobDomain(
     );
   }
 
-  const tokenData = (await tokenResponse.json()) as { clientToken: string };
-
-  const { put } = await import("@vercel/blob/client");
-  const blobResult = await put(
-    `sync/${auth.username}/${domain}.gz`,
+  const uploadInstruction = (await tokenResponse.json()) as StorageUploadInstruction;
+  const uploadResult = await uploadBlobWithStorageInstruction(
     new Blob([compressed], { type: "application/gzip" }),
-    {
-      access: "public",
-      token: tokenData.clientToken,
-      contentType: "application/gzip",
-      multipart: compressed.length > 4 * 1024 * 1024,
-    }
+    uploadInstruction
   );
 
   const metadataResponse = await abortableFetch(getApiUrl("/api/sync/auto"), {
@@ -911,7 +907,7 @@ async function uploadBlobDomain(
     },
     body: JSON.stringify({
       domain,
-      blobUrl: blobResult.url,
+      storageUrl: uploadResult.storageUrl,
       updatedAt: envelope.updatedAt,
       version: envelope.version,
       totalSize: compressed.length,
@@ -1019,15 +1015,17 @@ async function downloadBlobDomain(
   }
 
   const data = (await response.json()) as {
+    downloadUrl?: string;
     blobUrl?: string;
     metadata?: CloudSyncDomainMetadata;
   };
 
-  if (!data.blobUrl || !data.metadata) {
+  const downloadUrl = data.downloadUrl || data.blobUrl;
+  if (!downloadUrl || !data.metadata) {
     throw new Error("Sync download response was invalid.");
   }
 
-  const blobResponse = await fetch(data.blobUrl);
+  const blobResponse = await fetch(downloadUrl);
   if (!blobResponse.ok) {
     throw new Error(`Failed to fetch ${domain} blob from CDN`);
   }

@@ -1,14 +1,16 @@
 /**
- * POST /api/sync/backup-token - Generate a client token for direct Vercel Blob upload
- *
- * Returns a short-lived client token that allows the browser to upload
- * directly to Vercel Blob, bypassing the server for the actual file transfer.
+ * POST /api/sync/backup-token - Generate direct-upload instructions for cloud
+ * backup storage.
  *
  * Requires authentication (Bearer token + X-Username).
  */
 
-import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import { apiHandler } from "../_utils/api-handler.js";
+import {
+  createStorageUploadDescriptor,
+  getStorageUploadDebugInfo,
+  logStorageDebug,
+} from "../_utils/storage.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -29,7 +31,7 @@ export default apiHandler(
     methods: ["POST"],
     auth: "required",
   },
-  async ({ res, redis, user }): Promise<void> => {
+  async ({ req, res, redis, user }): Promise<void> => {
     const username = user?.username || "";
 
     // Rate limiting
@@ -46,18 +48,27 @@ export default apiHandler(
     }
 
     try {
-      const clientToken = await generateClientTokenFromReadWriteToken({
+      const upload = await createStorageUploadDescriptor({
         pathname: blobPath(username),
+        contentType: "application/gzip",
         allowedContentTypes: ["application/gzip", "application/octet-stream"],
         maximumSizeInBytes: MAX_BACKUP_SIZE,
-        addRandomSuffix: false,
         allowOverwrite: true,
       });
 
-      res.status(200).json({ clientToken });
+      logStorageDebug("Generated backup upload instructions", {
+        route: "/api/sync/backup-token",
+        username,
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        host: req.headers.host,
+        ...getStorageUploadDebugInfo(upload),
+      });
+
+      res.status(200).json(upload);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      console.error("Error generating client token:", message, error);
+      console.error("Error generating upload instructions:", message, error);
       res.status(500).json({ error: `Failed to generate upload token: ${message}` });
     }
   }

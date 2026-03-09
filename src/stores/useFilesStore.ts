@@ -1341,12 +1341,12 @@ export const useFilesStore = create<FilesStoreState>()(
             // Also register default files for lazy loading (uses cached JSON)
             Promise.all([
               loadDefaultFiles().then((data) => {
-                // Register default files for lazy loading so existing users
-                // can benefit from cached content loading
                 registerFilesForLazyLoad(data.files, state.items);
               }),
+              loadDefaultApplets().then((data) => {
+                registerFilesForLazyLoad(data.applets, state.items);
+              }),
               state.syncRootDirectoriesFromDefaults().then(() => {
-                // After syncing roots, ensure desktop shortcuts
                 if (state.ensureDefaultDesktopShortcuts) {
                   return state.ensureDefaultDesktopShortcuts();
                 }
