@@ -82,7 +82,8 @@ export function recordAnalyticsEvent(
   if (isAI) pipe.hincrby(dailyKey, "ai", 1);
   if (isError) pipe.hincrby(dailyKey, "errors", 1);
 
-  pipe.pfadd(k("uv", date), event.ip);
+  const visitorId = event.username || `ip:${event.ip}`;
+  pipe.pfadd(k("uv", date), visitorId);
   pipe.hincrby(k("ep", date), endpoint, 1);
   pipe.hincrby(k("st", date), String(event.status), 1);
 
