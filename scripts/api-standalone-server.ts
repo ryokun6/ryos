@@ -20,6 +20,7 @@ import {
   getRealtimeWebSocketPath,
   shouldEnableLocalRealtime,
 } from "../api/_utils/runtime-config.js";
+import { createOgShareResponse } from "../api/_utils/og-share.js";
 import {
   ensureRealtimePubSubBridge,
   registerRealtimeSocket,
@@ -747,6 +748,11 @@ async function bootstrap(): Promise<void> {
       }
 
       if (!pathname.startsWith("/api")) {
+        const ogShareResponse = await createOgShareResponse(request);
+        if (ogShareResponse) {
+          return ogShareResponse;
+        }
+
         return (
           (await handleStaticRequest(pathname)) ||
           jsonResponse({ error: "Not found" }, 404)
