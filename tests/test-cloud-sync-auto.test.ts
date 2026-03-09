@@ -106,6 +106,27 @@ describe("auto cloud sync API", () => {
     expect(data.storageUrl.startsWith("s3://")).toBe(true);
   });
 
+  test("POST /api/sync/auto-token accepts individual item uploads for image sync", async () => {
+    const authToken = await getAuthToken();
+    expect(authToken).toBeTruthy();
+
+    const res = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto-token`,
+      TEST_USERNAME,
+      authToken as string,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: "files-images", itemKey: "asset-123" }),
+      }
+    );
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(typeof data.pathname).toBe("string");
+    expect(data.pathname).toContain("files-images/items/asset-123.gz");
+  });
+
   test("POST /api/sync/auto rejects missing metadata fields", async () => {
     const authToken = await getAuthToken();
     expect(authToken).toBeTruthy();
@@ -126,6 +147,44 @@ describe("auto cloud sync API", () => {
     expect((data.error || "").toLowerCase()).toContain("missing");
   });
 
+  test("POST /api/sync/auto stores empty individual manifests", async () => {
+    const authToken = await getAuthToken();
+    expect(authToken).toBeTruthy();
+
+    const saveRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto`,
+      TEST_USERNAME,
+      authToken as string,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "custom-wallpapers",
+          updatedAt: "2026-03-09T15:45:00.000Z",
+          version: 1,
+          totalSize: 0,
+          items: {},
+        }),
+      }
+    );
+
+    expect(saveRes.status).toBe(200);
+    const saveData = await saveRes.json();
+    expect(saveData.metadata?.totalSize).toBe(0);
+
+    const downloadRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto?domain=custom-wallpapers`,
+      TEST_USERNAME,
+      authToken as string
+    );
+
+    expect(downloadRes.status).toBe(200);
+    const downloadData = await downloadRes.json();
+    expect(downloadData.mode).toBe("individual");
+    expect(downloadData.items).toEqual({});
+    expect(downloadData.metadata?.totalSize).toBe(0);
+  });
+
   test("POST /api/sync/auto-token rejects redis-only domains", async () => {
     const authToken = await getAuthToken();
     expect(authToken).toBeTruthy();
@@ -144,5 +203,25 @@ describe("auto cloud sync API", () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect((data.error || "").toLowerCase()).toContain("domain");
+  });
+
+  test("POST /api/sync/auto-token rejects item keys for legacy blob domains", async () => {
+    const authToken = await getAuthToken();
+    expect(authToken).toBeTruthy();
+
+    const res = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto-token`,
+      TEST_USERNAME,
+      authToken as string,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: "files-trash", itemKey: "asset-123" }),
+      }
+    );
+
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect((data.error || "").toLowerCase()).toContain("individual");
   });
 });
