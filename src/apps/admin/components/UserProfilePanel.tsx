@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight, Eraser, ArrowsClockwise, Heartbeat } from "@phosphor-icons/react";
+import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight, Eraser, ArrowsClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -898,7 +898,6 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   onClick={toggleHeartbeatsSection}
                   isOpen={isHeartbeatsOpen}
                   showCaret={true}
-                  icon={<Heartbeat className="h-3 w-3" weight="bold" />}
                 >
                   {t("apps.admin.profile.heartbeats")}
                   {hasLoadedHeartbeats ? ` (${heartbeats.length})` : ""}
