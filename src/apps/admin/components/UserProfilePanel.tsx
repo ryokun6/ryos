@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight, Eraser, ArrowsClockwise, Heartbeat } from "@phosphor-icons/react";
+import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight, Eraser, ArrowsClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +28,9 @@ import {
   unbanAdminUser,
 } from "@/api/admin";
 import { ApiRequestError } from "@/api/core";
+
+const RECENT_MESSAGES_LIMIT = 50;
+const HEARTBEAT_LOOKBACK_DAYS = 7;
 
 interface UserProfile {
   username: string;
@@ -109,6 +112,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [isBanDialogOpen, setIsBanDialogOpen] = useState(false);
   const [isRoomsOpen, setIsRoomsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [isMemoriesOpen, setIsMemoriesOpen] = useState(false);
+  const [isHeartbeatsOpen, setIsHeartbeatsOpen] = useState(false);
+  const [hasLoadedMessages, setHasLoadedMessages] = useState(false);
+  const [hasLoadedMemories, setHasLoadedMemories] = useState(false);
+  const [hasLoadedHeartbeats, setHasLoadedHeartbeats] = useState(false);
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+  const [isMemoriesLoading, setIsMemoriesLoading] = useState(false);
+  const [isHeartbeatsLoading, setIsHeartbeatsLoading] = useState(false);
   const [isClearMemoryDialogOpen, setIsClearMemoryDialogOpen] = useState(false);
   const [isForceProcessDialogOpen, setIsForceProcessDialogOpen] = useState(false);
   const [isClearingMemory, setIsClearingMemory] = useState(false);
@@ -140,11 +151,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           token: authToken,
         },
         username,
-        50
+        RECENT_MESSAGES_LIMIT
       );
       setMessages(data.messages || []);
+      return true;
     } catch (error) {
       console.error("Failed to fetch messages:", error);
+      return false;
     }
   }, [username, authToken, currentUser]);
 
@@ -163,8 +176,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
       );
       setMemories(data.memories || []);
       setDailyNotes(data.dailyNotes || []);
+      return true;
     } catch (error) {
       console.error("Failed to fetch memories:", error);
+      return false;
     }
   }, [username, authToken, currentUser]);
 
@@ -179,11 +194,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           token: authToken,
         },
         username,
-        7
+        HEARTBEAT_LOOKBACK_DAYS
       );
       setHeartbeats(data.heartbeats || []);
+      return true;
     } catch (error) {
       console.error("Failed to fetch heartbeats:", error);
+      return false;
     }
   }, [username, authToken, currentUser]);
 
@@ -224,16 +241,94 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   }, []);
 
   useEffect(() => {
-    setIsLoading(true);
-    Promise.all([fetchProfile(), fetchMessages(), fetchMemories(), fetchHeartbeats()]).finally(() => {
-      setIsLoading(false);
-    });
-  }, [fetchProfile, fetchMessages, fetchMemories, fetchHeartbeats]);
-
-  useEffect(() => {
+    setProfile(null);
+    setMessages([]);
+    setMemories([]);
+    setDailyNotes([]);
+    setHeartbeats([]);
+    setExpandedMemories(new Set());
+    setExpandedDailyNotes(new Set());
+    setExpandedHeartbeats(new Set());
+    setShowBanInput(false);
+    setBanReason("");
     setIsRoomsOpen(false);
     setIsMessagesOpen(false);
-  }, [username]);
+    setIsMemoriesOpen(false);
+    setIsHeartbeatsOpen(false);
+    setHasLoadedMessages(false);
+    setHasLoadedMemories(false);
+    setHasLoadedHeartbeats(false);
+    setIsMessagesLoading(false);
+    setIsMemoriesLoading(false);
+    setIsHeartbeatsLoading(false);
+    setIsLoading(true);
+    fetchProfile().finally(() => {
+      setIsLoading(false);
+    });
+  }, [fetchProfile]);
+
+  const loadMessages = useCallback(async () => {
+    if (hasLoadedMessages || isMessagesLoading) return;
+    setIsMessagesLoading(true);
+    try {
+      const didLoad = await fetchMessages();
+      if (didLoad) {
+        setHasLoadedMessages(true);
+      }
+    } finally {
+      setIsMessagesLoading(false);
+    }
+  }, [fetchMessages, hasLoadedMessages, isMessagesLoading]);
+
+  const loadMemories = useCallback(async () => {
+    if (hasLoadedMemories || isMemoriesLoading) return;
+    setIsMemoriesLoading(true);
+    try {
+      const didLoad = await fetchMemories();
+      if (didLoad) {
+        setHasLoadedMemories(true);
+      }
+    } finally {
+      setIsMemoriesLoading(false);
+    }
+  }, [fetchMemories, hasLoadedMemories, isMemoriesLoading]);
+
+  const loadHeartbeats = useCallback(async () => {
+    if (hasLoadedHeartbeats || isHeartbeatsLoading) return;
+    setIsHeartbeatsLoading(true);
+    try {
+      const didLoad = await fetchHeartbeats();
+      if (didLoad) {
+        setHasLoadedHeartbeats(true);
+      }
+    } finally {
+      setIsHeartbeatsLoading(false);
+    }
+  }, [fetchHeartbeats, hasLoadedHeartbeats, isHeartbeatsLoading]);
+
+  const toggleMessagesSection = useCallback(() => {
+    const nextIsOpen = !isMessagesOpen;
+    setIsMessagesOpen(nextIsOpen);
+    if (nextIsOpen && !hasLoadedMessages && !isMessagesLoading) {
+      void loadMessages();
+    }
+  }, [hasLoadedMessages, isMessagesLoading, isMessagesOpen, loadMessages]);
+
+  const toggleMemoriesSection = useCallback(() => {
+    const nextIsOpen = !isMemoriesOpen;
+    setIsMemoriesOpen(nextIsOpen);
+    if (nextIsOpen && !hasLoadedMemories && !isMemoriesLoading) {
+      void loadMemories();
+    }
+  }, [hasLoadedMemories, isMemoriesLoading, isMemoriesOpen, loadMemories]);
+
+  const toggleHeartbeatsSection = useCallback(() => {
+    const nextIsOpen = !isHeartbeatsOpen;
+    setIsHeartbeatsOpen(nextIsOpen);
+    if (nextIsOpen && !hasLoadedHeartbeats && !isHeartbeatsLoading) {
+      void loadHeartbeats();
+    }
+  }, [hasLoadedHeartbeats, isHeartbeatsLoading, isHeartbeatsOpen, loadHeartbeats]);
 
   const handleBan = async () => {
     if (!currentUser || !authToken) return;
@@ -390,7 +485,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
   const isTargetAdmin = username.toLowerCase() === "ryo";
   const roomsCount = profile?.rooms?.length ?? 0;
-  const messagesCount = messages.length;
+  const messagesCount = hasLoadedMessages
+    ? messages.length
+    : Math.min(profile?.messageCount ?? 0, RECENT_MESSAGES_LIMIT);
 
   // Skeleton placeholder component
   const Skeleton = ({ className }: { className?: string }) => (
@@ -617,270 +714,304 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <SectionHeader>
-                  {t("apps.admin.profile.longTermMemories")} ({memories.length})
-                </SectionHeader>
-                {memories.length > 0 && (
-                  <button
-                    onClick={() => setIsClearMemoryDialogOpen(true)}
-                    disabled={isClearingMemory}
-                    className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
-                  >
-                    <Eraser className="h-3 w-3" weight="bold" />
-                    <span>{isClearingMemory ? t("apps.admin.profile.clearing") : t("apps.admin.profile.clearAll")}</span>
-                  </button>
-                )}
-              </div>
-              {memories.length === 0 ? (
-                <div className="text-[11px] text-neutral-400 text-center py-4">
-                  {t("apps.admin.profile.noMemories")}
-                </div>
-              ) : (
-                <Table className="table-fixed">
-                  <TableHeader>
-                    <TableRow className="text-[10px] border-none font-normal">
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[30%]">
-                        {t("apps.admin.profile.memoryKey")}
-                      </TableHead>
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px]">
-                        {t("apps.admin.profile.memorySummary")}
-                      </TableHead>
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[20%]">
-                        {t("apps.admin.tableHeaders.time")}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="text-[11px]">
-                    {memories.map((memory, index) => {
-                      const isExpanded = expandedMemories.has(memory.key);
-                      return (
-                        <React.Fragment key={memory.key}>
-                          <TableRow
-                            onClick={() => toggleMemory(memory.key)}
-                            className={cn(
-                              "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
-                              index % 2 === 1 && "bg-gray-200/30"
-                            )}
+              <SectionHeader
+                onClick={toggleMemoriesSection}
+                isOpen={isMemoriesOpen}
+                showCaret={true}
+              >
+                {t("apps.admin.profile.longTermMemories")}
+                {hasLoadedMemories ? ` (${memories.length})` : ""}
+              </SectionHeader>
+              {isMemoriesOpen && (
+                <>
+                  {isMemoriesLoading ? (
+                    <div className="space-y-1">
+                      <Skeleton className="h-6 w-full" />
+                      <Skeleton className="h-6 w-full" />
+                      <Skeleton className="h-6 w-full" />
+                    </div>
+                  ) : (
+                    <>
+                      {memories.length > 0 && (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => setIsClearMemoryDialogOpen(true)}
+                            disabled={isClearingMemory}
+                            className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
                           >
-                            <TableCell>
-                              <span className="text-purple-700 font-medium break-all">{memory.key}</span>
-                              <CaretRight
-                                className={cn(
-                                  "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
-                                  isExpanded && "rotate-90"
-                                )}
-                                weight="bold"
-                              />
-                            </TableCell>
-                            <TableCell className="min-w-0">
-                              <span className="line-clamp-2 break-words text-neutral-500">{memory.summary}</span>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-neutral-500">
-                              {formatRelativeTime(memory.updatedAt)}
-                            </TableCell>
-                          </TableRow>
-                          {isExpanded && (
-                            <TableRow
-                              className={cn(
-                                "border-none",
-                                index % 2 === 1 ? "bg-gray-200/30" : ""
-                              )}
-                            >
-                              <TableCell colSpan={3} className="pt-0 pb-3">
-                                <div className="pl-2 border-l-2 border-purple-200">
-                                  <p className="text-[11px] whitespace-pre-wrap text-neutral-700">
-                                    {memory.content}
-                                  </p>
-                                </div>
-                              </TableCell>
+                            <Eraser className="h-3 w-3" weight="bold" />
+                            <span>{isClearingMemory ? t("apps.admin.profile.clearing") : t("apps.admin.profile.clearAll")}</span>
+                          </button>
+                        </div>
+                      )}
+                      {memories.length === 0 ? (
+                        <div className="text-[11px] text-neutral-400 text-center py-4">
+                          {t("apps.admin.profile.noMemories")}
+                        </div>
+                      ) : (
+                        <Table className="table-fixed">
+                          <TableHeader>
+                            <TableRow className="text-[10px] border-none font-normal">
+                              <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[30%]">
+                                {t("apps.admin.profile.memoryKey")}
+                              </TableHead>
+                              <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                                {t("apps.admin.profile.memorySummary")}
+                              </TableHead>
+                              <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[20%]">
+                                {t("apps.admin.tableHeaders.time")}
+                              </TableHead>
                             </TableRow>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                          </TableHeader>
+                          <TableBody className="text-[11px]">
+                            {memories.map((memory, index) => {
+                              const isExpanded = expandedMemories.has(memory.key);
+                              return (
+                                <React.Fragment key={memory.key}>
+                                  <TableRow
+                                    onClick={() => toggleMemory(memory.key)}
+                                    className={cn(
+                                      "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
+                                      index % 2 === 1 && "bg-gray-200/30"
+                                    )}
+                                  >
+                                    <TableCell>
+                                      <span className="text-purple-700 font-medium break-all">{memory.key}</span>
+                                      <CaretRight
+                                        className={cn(
+                                          "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
+                                          isExpanded && "rotate-90"
+                                        )}
+                                        weight="bold"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="min-w-0">
+                                      <span className="line-clamp-2 break-words text-neutral-500">{memory.summary}</span>
+                                    </TableCell>
+                                    <TableCell className="whitespace-nowrap text-neutral-500">
+                                      {formatRelativeTime(memory.updatedAt)}
+                                    </TableCell>
+                                  </TableRow>
+                                  {isExpanded && (
+                                    <TableRow
+                                      className={cn(
+                                        "border-none",
+                                        index % 2 === 1 ? "bg-gray-200/30" : ""
+                                      )}
+                                    >
+                                      <TableCell colSpan={3} className="pt-0 pb-3">
+                                        <div className="pl-2 border-l-2 border-purple-200">
+                                          <p className="text-[11px] whitespace-pre-wrap text-neutral-700">
+                                            {memory.content}
+                                          </p>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      )}
+                      {dailyNotes.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <SectionHeader>
+                              {t("apps.admin.profile.dailyNotes")} ({dailyNotes.reduce((acc, n) => acc + n.entries.length, 0)} {t("apps.admin.profile.entries")})
+                            </SectionHeader>
+                            <button
+                              onClick={() => setIsForceProcessDialogOpen(true)}
+                              disabled={isProcessingNotes}
+                              className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
+                            >
+                              <ArrowsClockwise className={cn("h-3 w-3", isProcessingNotes && "animate-spin")} weight="bold" />
+                              <span>{isProcessingNotes ? t("apps.admin.profile.processing") : t("apps.admin.profile.reprocess")}</span>
+                            </button>
+                          </div>
+                          <div className="space-y-1">
+                            {dailyNotes.map((note) => {
+                              const isExpanded = expandedDailyNotes.has(note.date);
+                              const today = new Date().toISOString().split("T")[0];
+                              const dateLabel = note.date === today ? `${note.date} (${t("apps.admin.profile.today")})` : note.date;
+                              return (
+                                <div key={note.date}>
+                                  <button
+                                    onClick={() => toggleDailyNote(note.date)}
+                                    className="flex items-center gap-1.5 w-full text-left text-[11px] hover:bg-gray-100/50 px-1 py-0.5 rounded transition-colors"
+                                  >
+                                    <CaretRight
+                                      className={cn(
+                                        "h-3 w-3 text-neutral-400 transition-transform flex-shrink-0",
+                                        isExpanded && "rotate-90"
+                                      )}
+                                      weight="bold"
+                                    />
+                                    <span className="text-amber-700 font-medium">{dateLabel}</span>
+                                    <span className="text-neutral-400 ml-1">
+                                      ({note.entries.length} {t("apps.admin.profile.entries")})
+                                      {note.processedForMemories ? (
+                                        <span className="text-green-600 ml-1" title={t("apps.admin.profile.processedTooltip")}>✓ {t("apps.admin.profile.processed")}</span>
+                                      ) : (
+                                        <span className="text-amber-500 ml-1" title={t("apps.admin.profile.pendingTooltip")}>○ {t("apps.admin.profile.pending")}</span>
+                                      )}
+                                    </span>
+                                  </button>
+                                  {isExpanded && (
+                                    <div className="pl-5 mt-1 space-y-1">
+                                      {note.entries.map((entry, i) => {
+                                        const time = new Date(entry.timestamp).toLocaleTimeString("en-US", {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                          hour12: true,
+                                        });
+                                        return (
+                                          <div key={i} className="text-[11px] flex gap-2">
+                                            <span className="text-neutral-400 whitespace-nowrap flex-shrink-0">{time}</span>
+                                            <span className="text-neutral-600">{entry.content}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
               )}
             </div>
           )}
 
-          {/* Daily Notes */}
-          {!isLoading && dailyNotes.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <SectionHeader>
-                  {t("apps.admin.profile.dailyNotes")} ({dailyNotes.reduce((acc, n) => acc + n.entries.length, 0)} {t("apps.admin.profile.entries")})
-                </SectionHeader>
-                <button
-                  onClick={() => setIsForceProcessDialogOpen(true)}
-                  disabled={isProcessingNotes}
-                  className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
-                >
-                  <ArrowsClockwise className={cn("h-3 w-3", isProcessingNotes && "animate-spin")} weight="bold" />
-                  <span>{isProcessingNotes ? t("apps.admin.profile.processing") : t("apps.admin.profile.reprocess")}</span>
-                </button>
-              </div>
-              <div className="space-y-1">
-                {dailyNotes.map((note) => {
-                  const isExpanded = expandedDailyNotes.has(note.date);
-                  const today = new Date().toISOString().split("T")[0];
-                  const dateLabel = note.date === today ? `${note.date} (${t("apps.admin.profile.today")})` : note.date;
-                  return (
-                    <div key={note.date}>
-                      <button
-                        onClick={() => toggleDailyNote(note.date)}
-                        className="flex items-center gap-1.5 w-full text-left text-[11px] hover:bg-gray-100/50 px-1 py-0.5 rounded transition-colors"
-                      >
-                        <CaretRight
-                          className={cn(
-                            "h-3 w-3 text-neutral-400 transition-transform flex-shrink-0",
-                            isExpanded && "rotate-90"
-                          )}
-                          weight="bold"
-                        />
-                        <span className="text-amber-700 font-medium">{dateLabel}</span>
-                        <span className="text-neutral-400 ml-1">
-                          ({note.entries.length} {t("apps.admin.profile.entries")})
-                          {note.processedForMemories ? (
-                            <span className="text-green-600 ml-1" title={t("apps.admin.profile.processedTooltip")}>✓ {t("apps.admin.profile.processed")}</span>
-                          ) : (
-                            <span className="text-amber-500 ml-1" title={t("apps.admin.profile.pendingTooltip")}>○ {t("apps.admin.profile.pending")}</span>
-                          )}
-                        </span>
-                      </button>
-                      {isExpanded && (
-                        <div className="pl-5 mt-1 space-y-1">
-                          {note.entries.map((entry, i) => {
-                            const time = new Date(entry.timestamp).toLocaleTimeString("en-US", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            });
-                            return (
-                              <div key={i} className="text-[11px] flex gap-2">
-                                <span className="text-neutral-400 whitespace-nowrap flex-shrink-0">{time}</span>
-                                <span className="text-neutral-600">{entry.content}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Heartbeat Records */}
-          {!isLoading && heartbeats.length > 0 && (() => {
+          {!isLoading && (() => {
             const sentCount = heartbeats.filter(h => h.shouldSend).length;
             const skippedCount = heartbeats.length - sentCount;
             const reversedHeartbeats = [...heartbeats].reverse();
             return (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <SectionHeader
-                    icon={<Heartbeat className="h-3 w-3" weight="bold" />}
-                  >
-                    {t("apps.admin.profile.heartbeats")} ({heartbeats.length})
-                  </SectionHeader>
-                  <span className="text-[10px] text-neutral-400">
-                    {sentCount} {t("apps.admin.profile.heartbeatSent")}, {skippedCount} {t("apps.admin.profile.heartbeatSkipped")}
-                  </span>
-                </div>
-                <Table className="table-fixed">
-                  <TableHeader>
-                    <TableRow className="text-[10px] border-none font-normal">
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[22%]">
-                        {t("apps.admin.tableHeaders.status")}
-                      </TableHead>
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px]">
-                        {t("apps.admin.tableHeaders.message")}
-                      </TableHead>
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[25%]">
-                        {t("apps.admin.tableHeaders.time")}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="text-[11px]">
-                    {reversedHeartbeats.map((hb, index) => {
-                      const isExpanded = expandedHeartbeats.has(hb.id);
-                      return (
-                        <React.Fragment key={hb.id}>
-                          <TableRow
-                            onClick={() => toggleHeartbeat(hb.id)}
-                            className={cn(
-                              "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
-                              index % 2 === 1 && "bg-gray-200/30"
-                            )}
-                          >
-                            <TableCell className="whitespace-nowrap">
-                              <span className={cn(
-                                "font-medium",
-                                hb.shouldSend ? "text-green-700" : "text-neutral-400"
-                              )}>
-                                {hb.shouldSend ? "sent" : "skipped"}
-                              </span>
-                              <CaretRight
-                                className={cn(
-                                  "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
-                                  isExpanded && "rotate-90"
-                                )}
-                                weight="bold"
-                              />
-                            </TableCell>
-                            <TableCell className="min-w-0">
-                              <span className="line-clamp-2 break-words text-neutral-500">
-                                {hb.shouldSend
-                                  ? (hb.message || "heartbeat sent")
-                                  : (hb.skipReason || "—")}
-                              </span>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-neutral-500">
-                              {formatRelativeTime(hb.timestamp)}
-                            </TableCell>
-                          </TableRow>
-                          {isExpanded && (
-                            <TableRow
-                              className={cn(
-                                "border-none",
-                                index % 2 === 1 ? "bg-gray-200/30" : ""
-                              )}
-                            >
-                              <TableCell colSpan={3} className="pt-0 pb-3">
-                                <div className="pl-2 border-l-2 border-green-200 space-y-1">
-                                  {hb.message && (
-                                    <p className="text-[11px] whitespace-pre-wrap text-neutral-700">
-                                      {hb.message}
-                                    </p>
-                                  )}
-                                  {hb.skipReason && (
-                                    <div className="text-[11px]">
-                                      <span className="text-neutral-400">{t("apps.admin.profile.reason")}:</span>{" "}
-                                      <span className="text-neutral-600">{hb.skipReason}</span>
-                                    </div>
-                                  )}
-                                  <div className="text-[10px] text-neutral-400 font-mono break-all">
-                                    {hb.stateSummary}
-                                  </div>
-                                  {(hb.localDate || hb.isoTimestamp) && (
-                                    <div className="text-[10px] text-neutral-400">
-                                      {hb.localDate
-                                        ? `${hb.localDate} ${hb.localTime || ""}${hb.timeZone ? ` (${hb.timeZone})` : ""}`
-                                        : new Date(hb.timestamp).toLocaleString()}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <SectionHeader
+                  onClick={toggleHeartbeatsSection}
+                  isOpen={isHeartbeatsOpen}
+                  showCaret={true}
+                >
+                  {t("apps.admin.profile.heartbeats")}
+                  {hasLoadedHeartbeats ? ` (${heartbeats.length})` : ""}
+                </SectionHeader>
+                {isHeartbeatsOpen && (
+                  <>
+                    {isHeartbeatsLoading ? (
+                      <div className="space-y-1">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-6 w-full" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-[10px] text-neutral-400">
+                          {sentCount} {t("apps.admin.profile.heartbeatSent")}, {skippedCount} {t("apps.admin.profile.heartbeatSkipped")}
+                        </div>
+                        {heartbeats.length > 0 && (
+                          <Table className="table-fixed">
+                            <TableHeader>
+                              <TableRow className="text-[10px] border-none font-normal">
+                                <TableHead className="font-normal bg-gray-100/50 h-[24px] w-[22%]">
+                                  {t("apps.admin.tableHeaders.status")}
+                                </TableHead>
+                                <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                                  {t("apps.admin.tableHeaders.message")}
+                                </TableHead>
+                                <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap w-[25%]">
+                                  {t("apps.admin.tableHeaders.time")}
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody className="text-[11px]">
+                              {reversedHeartbeats.map((hb, index) => {
+                                const isExpanded = expandedHeartbeats.has(hb.id);
+                                return (
+                                  <React.Fragment key={hb.id}>
+                                    <TableRow
+                                      onClick={() => toggleHeartbeat(hb.id)}
+                                      className={cn(
+                                        "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
+                                        index % 2 === 1 && "bg-gray-200/30"
+                                      )}
+                                    >
+                                      <TableCell className="whitespace-nowrap">
+                                        <span className={cn(
+                                          "font-medium",
+                                          hb.shouldSend ? "text-green-700" : "text-neutral-400"
+                                        )}>
+                                          {hb.shouldSend ? "sent" : "skipped"}
+                                        </span>
+                                        <CaretRight
+                                          className={cn(
+                                            "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
+                                            isExpanded && "rotate-90"
+                                          )}
+                                          weight="bold"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="min-w-0">
+                                        <span className="line-clamp-2 break-words text-neutral-500">
+                                          {hb.shouldSend
+                                            ? (hb.message || "heartbeat sent")
+                                            : (hb.skipReason || "—")}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="whitespace-nowrap text-neutral-500">
+                                        {formatRelativeTime(hb.timestamp)}
+                                      </TableCell>
+                                    </TableRow>
+                                    {isExpanded && (
+                                      <TableRow
+                                        className={cn(
+                                          "border-none",
+                                          index % 2 === 1 ? "bg-gray-200/30" : ""
+                                        )}
+                                      >
+                                        <TableCell colSpan={3} className="pt-0 pb-3">
+                                          <div className="pl-2 border-l-2 border-green-200 space-y-1">
+                                            {hb.message && (
+                                              <p className="text-[11px] whitespace-pre-wrap text-neutral-700">
+                                                {hb.message}
+                                              </p>
+                                            )}
+                                            {hb.skipReason && (
+                                              <div className="text-[11px]">
+                                                <span className="text-neutral-400">{t("apps.admin.profile.reason")}:</span>{" "}
+                                                <span className="text-neutral-600">{hb.skipReason}</span>
+                                              </div>
+                                            )}
+                                            <div className="text-[10px] text-neutral-400 font-mono break-all">
+                                              {hb.stateSummary}
+                                            </div>
+                                            {(hb.localDate || hb.isoTimestamp) && (
+                                              <div className="text-[10px] text-neutral-400">
+                                                {hb.localDate
+                                                  ? `${hb.localDate} ${hb.localTime || ""}${hb.timeZone ? ` (${hb.timeZone})` : ""}`
+                                                  : new Date(hb.timestamp).toLocaleString()}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                  </React.Fragment>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
               </div>
             );
           })()}
@@ -934,7 +1065,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           ) : (
             <div className="space-y-2">
               <SectionHeader
-                onClick={() => setIsMessagesOpen((prev) => !prev)}
+                onClick={toggleMessagesSection}
                 isOpen={isMessagesOpen}
                 showCaret={true}
               >
@@ -942,7 +1073,12 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
               </SectionHeader>
               {isMessagesOpen && (
                 <>
-                  {messagesCount === 0 ? (
+                  {isMessagesLoading ? (
+                    <div className="space-y-1">
+                      <Skeleton className="h-6 w-full" />
+                      <Skeleton className="h-6 w-full" />
+                    </div>
+                  ) : messagesCount === 0 ? (
                     <div className="text-[11px] text-neutral-400 text-center py-4">
                       {t("apps.admin.profile.noMessages")}
                     </div>

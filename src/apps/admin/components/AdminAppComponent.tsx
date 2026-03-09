@@ -571,6 +571,7 @@ export function AdminAppComponent({
               {/* User Profile View */}
               {selectedUserProfile && (
                 <UserProfilePanel
+                  key={selectedUserProfile}
                   username={selectedUserProfile}
                   onBack={() => setSelectedUserProfile(null)}
                   onUserDeleted={() => {
