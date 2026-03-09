@@ -49,6 +49,21 @@ export type StorageUploadDescriptor =
   | VercelBlobUploadDescriptor
   | S3UploadDescriptor;
 
+export interface StorageUploadDebugInfo {
+  provider: StorageBackend;
+  uploadMethod: StorageUploadDescriptor["uploadMethod"];
+  pathname: string;
+  maximumSizeInBytes: number;
+  contentType: string;
+  storageUrlScheme?: string;
+  storageBucket?: string;
+  publicEndpoint?: string;
+  sdkEndpoint?: string;
+  forcePathStyle?: boolean;
+  uploadUrl?: string;
+  uploadUrlOrigin?: string;
+}
+
 interface S3Config {
   bucket: string;
   region: string;
@@ -108,6 +123,15 @@ function shouldUsePathStyle(
   }
 }
 
+function sanitizeUrlForLogs(value: string): string {
+  try {
+    const parsed = new URL(value);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return value;
+  }
+}
+
 function getS3Config(): S3Config | null {
   const bucket = process.env.S3_BUCKET?.trim();
   const region = process.env.S3_REGION?.trim();
@@ -149,6 +173,18 @@ function getS3Config(): S3Config | null {
       process.env.S3_FORCE_PATH_STYLE
     ),
   };
+}
+
+export function shouldEnableStorageDebugLogs(): boolean {
+  return isTruthy(process.env.STORAGE_DEBUG);
+}
+
+export function logStorageDebug(message: string, details?: unknown): void {
+  if (!shouldEnableStorageDebugLogs()) {
+    return;
+  }
+
+  console.log("[storage]", message, details ?? "");
 }
 
 function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
@@ -431,6 +467,43 @@ export async function createStorageUploadDescriptor(
     headers: {
       "Content-Type": options.contentType,
     },
+  };
+}
+
+export function getStorageUploadDebugInfo(
+  descriptor: StorageUploadDescriptor
+): StorageUploadDebugInfo {
+  if (descriptor.provider === "vercel-blob") {
+    return {
+      provider: descriptor.provider,
+      uploadMethod: descriptor.uploadMethod,
+      pathname: descriptor.pathname,
+      maximumSizeInBytes: descriptor.maximumSizeInBytes,
+      contentType: descriptor.contentType,
+    };
+  }
+
+  const config = getS3Config();
+
+  return {
+    provider: descriptor.provider,
+    uploadMethod: descriptor.uploadMethod,
+    pathname: descriptor.pathname,
+    maximumSizeInBytes: descriptor.maximumSizeInBytes,
+    contentType: descriptor.contentType,
+    storageUrlScheme: "s3",
+    storageBucket: config?.bucket,
+    publicEndpoint: config?.publicEndpoint,
+    sdkEndpoint: config?.endpoint,
+    forcePathStyle: config?.forcePathStyle,
+    uploadUrl: sanitizeUrlForLogs(descriptor.uploadUrl),
+    uploadUrlOrigin: (() => {
+      try {
+        return new URL(descriptor.uploadUrl).origin;
+      } catch {
+        return undefined;
+      }
+    })(),
   };
 }
 

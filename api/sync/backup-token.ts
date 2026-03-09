@@ -6,7 +6,11 @@
  */
 
 import { apiHandler } from "../_utils/api-handler.js";
-import { createStorageUploadDescriptor } from "../_utils/storage.js";
+import {
+  createStorageUploadDescriptor,
+  getStorageUploadDebugInfo,
+  logStorageDebug,
+} from "../_utils/storage.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -27,7 +31,7 @@ export default apiHandler(
     methods: ["POST"],
     auth: "required",
   },
-  async ({ res, redis, user }): Promise<void> => {
+  async ({ req, res, redis, user }): Promise<void> => {
     const username = user?.username || "";
 
     // Rate limiting
@@ -50,6 +54,15 @@ export default apiHandler(
         allowedContentTypes: ["application/gzip", "application/octet-stream"],
         maximumSizeInBytes: MAX_BACKUP_SIZE,
         allowOverwrite: true,
+      });
+
+      logStorageDebug("Generated backup upload instructions", {
+        route: "/api/sync/backup-token",
+        username,
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        host: req.headers.host,
+        ...getStorageUploadDebugInfo(upload),
       });
 
       res.status(200).json(upload);

@@ -8,7 +8,11 @@ import {
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import { apiHandler } from "../_utils/api-handler.js";
-import { createStorageUploadDescriptor } from "../_utils/storage.js";
+import {
+  createStorageUploadDescriptor,
+  getStorageUploadDebugInfo,
+  logStorageDebug,
+} from "../_utils/storage.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -60,6 +64,16 @@ export default apiHandler<AutoTokenBody>(
         allowedContentTypes: ["application/gzip", "application/octet-stream"],
         maximumSizeInBytes: MAX_SYNC_SIZE,
         allowOverwrite: true,
+      });
+
+      logStorageDebug("Generated auto-sync upload instructions", {
+        route: "/api/sync/auto-token",
+        username,
+        domain,
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        host: req.headers.host,
+        ...getStorageUploadDebugInfo(upload),
       });
 
       res.status(200).json(upload);
