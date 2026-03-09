@@ -202,25 +202,29 @@ function mergeHashCounts(
 }
 
 /**
- * Summary-only view: 1 pipeline, 2×days commands.
+ * Summary-only view.
+ * 1 pipeline: 2 commands per day + 1 PFCOUNT across all UV keys for
+ * true cross-day unique visitor count (HLL union).
  */
 export async function getAnalyticsSummary(
   redis: Redis,
   days: number = 7
 ): Promise<AnalyticsSummary> {
   const dates = dateRange(days);
+  const uvKeys = dates.map((d) => k("uv", d));
 
   const pipe = redis.pipeline();
   for (const date of dates) {
     pipe.hgetall(k("daily", date));
     pipe.pfcount(k("uv", date));
   }
+  // Cross-day unique visitors via HLL union (single PFCOUNT with N keys)
+  if (uvKeys.length > 0) pipe.pfcount(...uvKeys);
   const results = await pipe.exec();
 
   let totalCalls = 0;
   let totalAI = 0;
   let totalErrors = 0;
-  let totalUV = 0;
   let totalLatSum = 0;
   let totalLatCnt = 0;
 
@@ -234,7 +238,6 @@ export async function getAnalyticsSummary(
     totalCalls += d.calls;
     totalAI += d.ai;
     totalErrors += d.errors;
-    totalUV += uv;
     totalLatSum += d.latsum;
     totalLatCnt += d.latcnt;
 
@@ -247,6 +250,12 @@ export async function getAnalyticsSummary(
       avgLatencyMs,
     };
   });
+
+  // Last result in the pipeline is the cross-day PFCOUNT union
+  const totalUV =
+    uvKeys.length > 0
+      ? ((results[dates.length * 2] as number) || 0)
+      : 0;
 
   return {
     days: dailyMetrics,
@@ -267,13 +276,14 @@ export async function getAnalyticsSummary(
  *
  * Per-day slot layout in the single pipeline:
  *   [hgetall(daily), pfcount(uv), hgetall(ep), hgetall(st), hgetall(aiu)]
- *   = 5 commands per day  →  35 commands for 7d, 150 for 30d, single round-trip.
+ *   = 5 commands per day, + 1 cross-day PFCOUNT at the end.
  */
 export async function getAnalyticsDetail(
   redis: Redis,
   days: number = 7
 ): Promise<AnalyticsDetail> {
   const dates = dateRange(days);
+  const uvKeys = dates.map((d) => k("uv", d));
   const CMDS_PER_DAY = 5;
 
   const pipe = redis.pipeline();
@@ -284,13 +294,12 @@ export async function getAnalyticsDetail(
     pipe.hgetall(k("st", date));
     pipe.hgetall(k("aiu", date));
   }
+  if (uvKeys.length > 0) pipe.pfcount(...uvKeys);
   const results = await pipe.exec();
 
-  // ── Parse summary ──
   let totalCalls = 0;
   let totalAI = 0;
   let totalErrors = 0;
-  let totalUV = 0;
   let totalLatSum = 0;
   let totalLatCnt = 0;
 
@@ -309,7 +318,6 @@ export async function getAnalyticsDetail(
     totalCalls += d.calls;
     totalAI += d.ai;
     totalErrors += d.errors;
-    totalUV += uv;
     totalLatSum += d.latsum;
     totalLatCnt += d.latcnt;
 
@@ -326,6 +334,11 @@ export async function getAnalyticsDetail(
       avgLatencyMs,
     };
   });
+
+  const totalUV =
+    uvKeys.length > 0
+      ? ((results[dates.length * CMDS_PER_DAY] as number) || 0)
+      : 0;
 
   const summary: AnalyticsSummary = {
     days: dailyMetrics,
