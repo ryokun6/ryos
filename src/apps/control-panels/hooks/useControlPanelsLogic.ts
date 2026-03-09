@@ -178,6 +178,32 @@ const base64ToBlob = (dataUrl: string): Blob => {
   return new Blob([array], { type: mime });
 };
 
+type CloudSyncStatusState = {
+  hasBackup: boolean;
+  metadata: {
+    timestamp: string;
+    version: number;
+    totalSize: number;
+    createdAt: string;
+  } | null;
+} | null;
+
+function isSameCloudSyncStatus(
+  prev: CloudSyncStatusState,
+  next: CloudSyncStatusState
+): boolean {
+  if (prev === next) return true;
+  if (!prev || !next) return prev === next;
+  if (prev.hasBackup !== next.hasBackup) return false;
+  if (!prev.metadata || !next.metadata) return prev.metadata === next.metadata;
+  return (
+    prev.metadata.timestamp === next.metadata.timestamp &&
+    prev.metadata.version === next.metadata.version &&
+    prev.metadata.totalSize === next.metadata.totalSize &&
+    prev.metadata.createdAt === next.metadata.createdAt
+  );
+}
+
 export interface UseControlPanelsLogicProps {
   initialData?: ControlPanelsInitialData;
 }
@@ -497,11 +523,17 @@ export function useControlPanelsLogic({
     phase: string;
     percent: number;
   } | null>(null);
+  const cloudProgressResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const isCloudStatusFetchInFlightRef = useRef(false);
 
   /** Fetch cloud backup status */
   const fetchCloudSyncStatus = useCallback(async () => {
     if (!username || !authToken) return;
+    if (isCloudStatusFetchInFlightRef.current) return;
 
+    isCloudStatusFetchInFlightRef.current = true;
     setIsCloudStatusLoading(true);
     try {
       const response = await abortableFetch(getApiUrl("/api/sync/status"), {
@@ -517,23 +549,36 @@ export function useControlPanelsLogic({
 
       if (response.ok) {
         const data = await response.json();
-        setCloudSyncStatus(data);
+        setCloudSyncStatus((previous) =>
+          isSameCloudSyncStatus(previous, data as CloudSyncStatusState)
+            ? previous
+            : (data as CloudSyncStatusState)
+        );
       }
     } catch (error) {
       console.error("[CloudSync] Error fetching status:", error);
     } finally {
       setIsCloudStatusLoading(false);
+      isCloudStatusFetchInFlightRef.current = false;
     }
   }, [username, authToken]);
 
   // Fetch cloud sync status when user is logged in
   useEffect(() => {
     if (username && authToken) {
-      fetchCloudSyncStatus();
+      void fetchCloudSyncStatus();
     } else {
-      setCloudSyncStatus(null);
+      setCloudSyncStatus((previous) => (previous === null ? previous : null));
     }
   }, [username, authToken, fetchCloudSyncStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (cloudProgressResetTimerRef.current) {
+        clearTimeout(cloudProgressResetTimerRef.current);
+      }
+    };
+  }, []);
 
   /** Upload current state to cloud */
   const handleCloudBackup = useCallback(async () => {
@@ -543,6 +588,10 @@ export function useControlPanelsLogic({
     }
 
     setIsCloudBackingUp(true);
+    if (cloudProgressResetTimerRef.current) {
+      clearTimeout(cloudProgressResetTimerRef.current);
+      cloudProgressResetTimerRef.current = null;
+    }
     setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.collecting"), percent: 0 });
 
     try {
@@ -775,7 +824,13 @@ export function useControlPanelsLogic({
     } finally {
       setIsCloudBackingUp(false);
       // Clear progress after a short delay so user can see completion
-      setTimeout(() => setCloudProgress(null), 1500);
+      if (cloudProgressResetTimerRef.current) {
+        clearTimeout(cloudProgressResetTimerRef.current);
+      }
+      cloudProgressResetTimerRef.current = setTimeout(() => {
+        setCloudProgress(null);
+        cloudProgressResetTimerRef.current = null;
+      }, 1500);
     }
   }, [username, authToken, t, fetchCloudSyncStatus]);
 
