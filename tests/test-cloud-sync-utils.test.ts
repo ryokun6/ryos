@@ -7,6 +7,7 @@ import {
   isCloudSyncDomain,
   isRedisSyncDomain,
   isBlobSyncDomain,
+  isIndividualBlobSyncDomain,
   normalizeCloudSyncMetadataMap,
   shouldApplyRemoteUpdate,
 } from "../src/utils/cloudSyncShared";
@@ -49,6 +50,11 @@ describe("cloud sync shared helpers", () => {
     expect(isBlobSyncDomain("custom-wallpapers")).toBe(true);
     expect(isBlobSyncDomain(invalidBlobDomain)).toBe(false);
     expect(isBlobSyncDomain(invalidCalendarDomain)).toBe(false);
+
+    expect(isIndividualBlobSyncDomain("files-images")).toBe(true);
+    expect(isIndividualBlobSyncDomain("custom-wallpapers")).toBe(true);
+    expect(isIndividualBlobSyncDomain("files-trash")).toBe(false);
+    expect(isIndividualBlobSyncDomain("settings" as never)).toBe(false);
   });
 
   test("creates an empty metadata map", () => {

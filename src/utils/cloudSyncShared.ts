@@ -52,6 +52,14 @@ export const BLOB_SYNC_DOMAINS = [
 
 export type BlobSyncDomain = (typeof BLOB_SYNC_DOMAINS)[number];
 
+export const INDIVIDUAL_BLOB_SYNC_DOMAINS = [
+  "files-images",
+  "custom-wallpapers",
+] as const;
+
+export type IndividualBlobSyncDomain =
+  (typeof INDIVIDUAL_BLOB_SYNC_DOMAINS)[number];
+
 export function isRedisSyncDomain(domain: CloudSyncDomain): domain is RedisSyncDomain {
   return (REDIS_SYNC_DOMAINS as readonly string[]).includes(domain);
 }
@@ -60,11 +68,33 @@ export function isBlobSyncDomain(domain: CloudSyncDomain): domain is BlobSyncDom
   return (BLOB_SYNC_DOMAINS as readonly string[]).includes(domain);
 }
 
+export function isIndividualBlobSyncDomain(
+  domain: CloudSyncDomain
+): domain is IndividualBlobSyncDomain {
+  return (INDIVIDUAL_BLOB_SYNC_DOMAINS as readonly string[]).includes(domain);
+}
+
 export interface CloudSyncDomainMetadata {
   updatedAt: string;
   version: number;
   totalSize: number;
   createdAt: string;
+}
+
+export interface CloudSyncBlobItemMetadata {
+  updatedAt: string;
+  signature: string;
+  size: number;
+  storageUrl?: string;
+  blobUrl?: string;
+}
+
+export interface CloudSyncBlobItemDownloadMetadata {
+  updatedAt: string;
+  signature: string;
+  size: number;
+  storageUrl: string;
+  downloadUrl: string;
 }
 
 export type CloudSyncMetadataMap = Record<

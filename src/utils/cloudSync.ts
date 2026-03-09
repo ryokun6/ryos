@@ -35,14 +35,17 @@ import {
   AUTO_SYNC_SNAPSHOT_VERSION,
   isRedisSyncDomain,
   isBlobSyncDomain,
+  isIndividualBlobSyncDomain,
   REDIS_SYNC_DOMAINS,
   BLOB_SYNC_DOMAINS,
   type CloudSyncDomain,
+  type CloudSyncBlobItemDownloadMetadata,
   type CloudSyncDomainMetadata,
   type CloudSyncEnvelope,
   type CloudSyncMetadataMap,
   type RedisSyncDomain,
   type BlobSyncDomain,
+  type IndividualBlobSyncDomain,
   createEmptyCloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
 type AuthContext = {
@@ -169,6 +172,25 @@ type AnySnapshotData =
   | ContactsSnapshotData
   | CustomWallpapersSnapshotData;
 
+interface SerializedStoreItemRecord {
+  item: StoreItemWithKey;
+  signature: string;
+}
+
+interface BlobSyncItemEnvelope {
+  domain: BlobSyncDomain;
+  key: string;
+  version: number;
+  updatedAt: string;
+  data: StoreItemWithKey;
+}
+
+interface IndividualBlobDomainResponse {
+  mode?: "individual";
+  items?: Record<string, CloudSyncBlobItemDownloadMetadata>;
+  metadata?: CloudSyncDomainMetadata;
+}
+
 function assertCompressionSupport(): void {
   if (
     typeof CompressionStream === "undefined" ||
@@ -195,6 +217,14 @@ const base64ToBlob = (dataUrl: string): Blob => {
   const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   return new Blob([array], { type: mime });
 };
+
+async function computeSyncSignature(value: unknown): Promise<string> {
+  const payload = new TextEncoder().encode(JSON.stringify(value));
+  const digest = await crypto.subtle.digest("SHA-256", payload);
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+}
 
 async function readStoreItems(
   db: IDBDatabase,
@@ -228,28 +258,58 @@ async function readStoreItems(
   });
 }
 
+async function serializeStoreItem(item: StoreItemWithKey): Promise<StoreItemWithKey> {
+  const serializedValue: Record<string, unknown> = {
+    ...item.value,
+  };
+
+  for (const key of Object.keys(item.value)) {
+    if (item.value[key] instanceof Blob) {
+      serializedValue[key] = await blobToBase64(item.value[key] as Blob);
+      serializedValue[`_isBlob_${key}`] = true;
+    }
+  }
+
+  return {
+    key: item.key,
+    value: serializedValue,
+  };
+}
+
 async function serializeStoreItems(
   items: StoreItemWithKey[]
 ): Promise<StoreItemWithKey[]> {
+  return Promise.all(items.map((item) => serializeStoreItem(item)));
+}
+
+async function serializeStoreItemRecords(
+  items: StoreItemWithKey[]
+): Promise<SerializedStoreItemRecord[]> {
   return Promise.all(
     items.map(async (item) => {
-      const serializedValue: Record<string, unknown> = {
-        ...item.value,
-      };
-
-      for (const key of Object.keys(item.value)) {
-        if (item.value[key] instanceof Blob) {
-          serializedValue[key] = await blobToBase64(item.value[key] as Blob);
-          serializedValue[`_isBlob_${key}`] = true;
-        }
-      }
-
+      const serializedItem = await serializeStoreItem(item);
       return {
-        key: item.key,
-        value: serializedValue,
+        item: serializedItem,
+        signature: await computeSyncSignature(serializedItem),
       };
     })
   );
+}
+
+function deserializeStoreItem(item: StoreItemWithKey): Record<string, unknown> {
+  const restoredValue: Record<string, unknown> = {
+    ...item.value,
+  };
+
+  for (const key of Object.keys(item.value)) {
+    const isBlobKey = `_isBlob_${key}`;
+    if (item.value[isBlobKey] === true && typeof item.value[key] === "string") {
+      restoredValue[key] = base64ToBlob(item.value[key] as string);
+      delete restoredValue[isBlobKey];
+    }
+  }
+
+  return restoredValue;
 }
 
 async function restoreStoreItems(
@@ -271,19 +331,7 @@ async function restoreStoreItems(
     clearRequest.onsuccess = () => {
       try {
         for (const item of items) {
-          const restoredValue: Record<string, unknown> = {
-            ...item.value,
-          };
-
-          for (const key of Object.keys(item.value)) {
-            const isBlobKey = `_isBlob_${key}`;
-            if (item.value[isBlobKey] === true && typeof item.value[key] === "string") {
-              restoredValue[key] = base64ToBlob(item.value[key] as string);
-              delete restoredValue[isBlobKey];
-            }
-          }
-
-          store.put(restoredValue, item.key);
+          store.put(deserializeStoreItem(item), item.key);
         }
       } catch (error) {
         transaction.abort();
@@ -292,6 +340,60 @@ async function restoreStoreItems(
     };
 
     clearRequest.onerror = () => reject(clearRequest.error);
+  });
+}
+
+async function upsertStoreItems(
+  db: IDBDatabase,
+  storeName: string,
+  items: StoreItemWithKey[]
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(storeName, "readwrite");
+    const store = transaction.objectStore(storeName);
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () =>
+      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
+
+    try {
+      for (const item of items) {
+        store.put(deserializeStoreItem(item), item.key);
+      }
+    } catch (error) {
+      transaction.abort();
+      reject(error);
+    }
+  });
+}
+
+async function deleteStoreItemsByKey(
+  db: IDBDatabase,
+  storeName: string,
+  keys: string[]
+): Promise<void> {
+  if (keys.length === 0) {
+    return;
+  }
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(storeName, "readwrite");
+    const store = transaction.objectStore(storeName);
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () =>
+      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
+
+    try {
+      for (const key of keys) {
+        store.delete(key);
+      }
+    } catch (error) {
+      transaction.abort();
+      reject(error);
+    }
   });
 }
 
@@ -402,6 +504,17 @@ async function serializeCustomWallpapersSnapshot(): Promise<CustomWallpapersSnap
   }
 }
 
+async function serializeCustomWallpapersRecords(): Promise<SerializedStoreItemRecord[]> {
+  const db = await ensureIndexedDBInitialized();
+  try {
+    return await serializeStoreItemRecords(
+      await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
+    );
+  } finally {
+    db.close();
+  }
+}
+
 async function serializeIndexedDbStoreSnapshot(
   storeName: string
 ): Promise<FilesStoreSnapshotData> {
@@ -412,6 +525,38 @@ async function serializeIndexedDbStoreSnapshot(
     return await serializeStoreItems(items);
   } finally {
     db.close();
+  }
+}
+
+async function serializeIndexedDbStoreRecords(
+  storeName: string
+): Promise<SerializedStoreItemRecord[]> {
+  const db = await ensureIndexedDBInitialized();
+
+  try {
+    return await serializeStoreItemRecords(await readStoreItems(db, storeName));
+  } finally {
+    db.close();
+  }
+}
+
+function getIndividualBlobStoreName(domain: IndividualBlobSyncDomain): string {
+  switch (domain) {
+    case "files-images":
+      return STORES.IMAGES;
+    case "custom-wallpapers":
+      return STORES.CUSTOM_WALLPAPERS;
+  }
+}
+
+async function serializeIndividualBlobDomainRecords(
+  domain: IndividualBlobSyncDomain
+): Promise<SerializedStoreItemRecord[]> {
+  switch (domain) {
+    case "custom-wallpapers":
+      return serializeCustomWallpapersRecords();
+    case "files-images":
+      return serializeIndexedDbStoreRecords(STORES.IMAGES);
   }
 }
 
@@ -691,28 +836,55 @@ async function applyCustomWallpapersSnapshot(
   const db = await ensureIndexedDBInitialized();
   try {
     await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, data);
-
-    const remoteKeys = new Set(data.map((item) => item.key));
-    const displayStore = useDisplaySettingsStore.getState();
-    const current = displayStore.currentWallpaper;
-    if (current?.startsWith("indexeddb://")) {
-      const id = current.substring("indexeddb://".length);
-      if (remoteKeys.has(id)) {
-        // Re-resolve: settings may have been applied before the blob data
-        // was available in IndexedDB, leaving wallpaperSource as the raw
-        // indexeddb:// reference. Now that the data is restored, re-resolve
-        // it to a fresh object URL.
-        await displayStore.setWallpaper(current);
-      } else {
-        useDisplaySettingsStore.setState({
-          currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-          wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
-        });
-      }
-    }
-    displayStore.bumpCustomWallpapersRevision();
   } finally {
     db.close();
+  }
+
+  await finalizeCustomWallpaperSync(data.map((item) => item.key));
+}
+
+async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promise<void> {
+  const remoteKeySet = new Set(remoteKeys);
+  const displayStore = useDisplaySettingsStore.getState();
+  const current = displayStore.currentWallpaper;
+
+  if (current?.startsWith("indexeddb://")) {
+    const id = current.substring("indexeddb://".length);
+    if (remoteKeySet.has(id)) {
+      await displayStore.setWallpaper(current);
+    } else {
+      useDisplaySettingsStore.setState({
+        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
+        wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+      });
+    }
+  }
+
+  displayStore.bumpCustomWallpapersRevision();
+}
+
+async function applyIndividualBlobDomain(
+  domain: IndividualBlobSyncDomain,
+  remoteKeys: string[],
+  changedItems: Record<string, StoreItemWithKey>
+): Promise<void> {
+  const storeName = getIndividualBlobStoreName(domain);
+  const db = await ensureIndexedDBInitialized();
+
+  try {
+    const existingItems = await readStoreItems(db, storeName);
+    const existingKeys = new Set(existingItems.map((item) => item.key));
+    const remoteKeySet = new Set(remoteKeys);
+    const keysToDelete = Array.from(existingKeys).filter((key) => !remoteKeySet.has(key));
+
+    await deleteStoreItemsByKey(db, storeName, keysToDelete);
+    await upsertStoreItems(db, storeName, Object.values(changedItems));
+  } finally {
+    db.close();
+  }
+
+  if (domain === "custom-wallpapers") {
+    await finalizeCustomWallpaperSync(remoteKeys);
   }
 }
 
@@ -864,23 +1036,60 @@ async function uploadRedisStateDomain(
   return result.metadata;
 }
 
-async function uploadBlobDomain(
+async function fetchBlobDomainInfo(
   domain: BlobSyncDomain,
   auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
-  const envelope = await createCloudSyncEnvelope(domain);
-  const dataItems = Array.isArray(envelope.data) ? envelope.data.length : 'N/A';
-  console.log(`[CloudSync:blob] ${domain}: serialized ${dataItems} items`);
-  const compressed = await gzipJson(envelope);
-  console.log(`[CloudSync:blob] ${domain}: compressed to ${compressed.length} bytes`);
+): Promise<
+  | (IndividualBlobDomainResponse & {
+      downloadUrl?: string;
+      blobUrl?: string;
+    })
+  | null
+> {
+  const response = await abortableFetch(
+    getApiUrl(`/api/sync/auto?domain=${encodeURIComponent(domain)}`),
+    {
+      method: "GET",
+      headers: authHeaders(auth),
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    }
+  );
 
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      (errorData as { error?: string }).error ||
+        `Failed to fetch ${domain} sync data`
+    );
+  }
+
+  return (await response.json()) as IndividualBlobDomainResponse & {
+    downloadUrl?: string;
+    blobUrl?: string;
+  };
+}
+
+async function requestBlobUploadInstruction(
+  domain: BlobSyncDomain,
+  auth: AuthContext,
+  itemKey?: string
+): Promise<StorageUploadInstruction> {
   const tokenResponse = await abortableFetch(getApiUrl("/api/sync/auto-token"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...authHeaders(auth),
     },
-    body: JSON.stringify({ domain }),
+    body: JSON.stringify({
+      domain,
+      ...(itemKey ? { itemKey } : {}),
+    }),
     timeout: 15000,
     throwOnHttpError: false,
     retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -893,25 +1102,20 @@ async function uploadBlobDomain(
     );
   }
 
-  const uploadInstruction = (await tokenResponse.json()) as StorageUploadInstruction;
-  const uploadResult = await uploadBlobWithStorageInstruction(
-    new Blob([compressed], { type: "application/gzip" }),
-    uploadInstruction
-  );
+  return (await tokenResponse.json()) as StorageUploadInstruction;
+}
 
+async function saveBlobDomainMetadata(
+  payload: Record<string, unknown>,
+  auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
   const metadataResponse = await abortableFetch(getApiUrl("/api/sync/auto"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...authHeaders(auth),
     },
-    body: JSON.stringify({
-      domain,
-      storageUrl: uploadResult.storageUrl,
-      updatedAt: envelope.updatedAt,
-      version: envelope.version,
-      totalSize: compressed.length,
-    }),
+    body: JSON.stringify(payload),
     timeout: 15000,
     throwOnHttpError: false,
     retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -933,6 +1137,139 @@ async function uploadBlobDomain(
   }
 
   return metadataData.metadata;
+}
+
+async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
+  const blobResponse = await fetch(downloadUrl);
+  if (!blobResponse.ok) {
+    throw new Error(`Failed to fetch sync blob from CDN: ${blobResponse.status}`);
+  }
+
+  const compressedBuf = await blobResponse.arrayBuffer();
+  const compressedBlob = new Blob([compressedBuf], { type: "application/gzip" });
+  const decompressedStream = compressedBlob
+    .stream()
+    .pipeThrough(new DecompressionStream("gzip"));
+  const jsonString = await new Response(decompressedStream).text();
+  return JSON.parse(jsonString) as T;
+}
+
+async function uploadLegacyBlobDomain(
+  domain: BlobSyncDomain,
+  auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  const envelope = await createCloudSyncEnvelope(domain);
+  const dataItems = Array.isArray(envelope.data) ? envelope.data.length : "N/A";
+  console.log(`[CloudSync:blob] ${domain}: serialized ${dataItems} items`);
+  const compressed = await gzipJson(envelope);
+  console.log(`[CloudSync:blob] ${domain}: compressed to ${compressed.length} bytes`);
+
+  const uploadInstruction = await requestBlobUploadInstruction(domain, auth);
+  const uploadResult = await uploadBlobWithStorageInstruction(
+    new Blob([compressed], { type: "application/gzip" }),
+    uploadInstruction
+  );
+
+  return saveBlobDomainMetadata(
+    {
+      domain,
+      storageUrl: uploadResult.storageUrl,
+      updatedAt: envelope.updatedAt,
+      version: envelope.version,
+      totalSize: compressed.length,
+    },
+    auth
+  );
+}
+
+async function uploadIndividualBlobDomain(
+  domain: IndividualBlobSyncDomain,
+  auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  const updatedAt = new Date().toISOString();
+  const localRecords = await serializeIndividualBlobDomainRecords(domain);
+  const remoteInfo = await fetchBlobDomainInfo(domain, auth);
+  const remoteItems =
+    remoteInfo?.mode === "individual" ? remoteInfo.items || {} : {};
+  const nextItems: Record<
+    string,
+    {
+      updatedAt: string;
+      signature: string;
+      size: number;
+      storageUrl: string;
+    }
+  > = {};
+  let uploadedCount = 0;
+
+  for (const record of localRecords) {
+    const existingRemoteItem = remoteItems[record.item.key];
+    if (
+      existingRemoteItem &&
+      existingRemoteItem.signature === record.signature &&
+      existingRemoteItem.storageUrl
+    ) {
+      nextItems[record.item.key] = {
+        updatedAt: existingRemoteItem.updatedAt,
+        signature: existingRemoteItem.signature,
+        size: existingRemoteItem.size,
+        storageUrl: existingRemoteItem.storageUrl,
+      };
+      continue;
+    }
+
+    const uploadInstruction = await requestBlobUploadInstruction(
+      domain,
+      auth,
+      record.item.key
+    );
+    const itemEnvelope: BlobSyncItemEnvelope = {
+      domain,
+      key: record.item.key,
+      version: AUTO_SYNC_SNAPSHOT_VERSION,
+      updatedAt,
+      data: record.item,
+    };
+    const compressed = await gzipJson(itemEnvelope);
+    const uploadResult = await uploadBlobWithStorageInstruction(
+      new Blob([compressed], { type: "application/gzip" }),
+      uploadInstruction
+    );
+
+    nextItems[record.item.key] = {
+      updatedAt,
+      signature: record.signature,
+      size: compressed.length,
+      storageUrl: uploadResult.storageUrl,
+    };
+    uploadedCount += 1;
+  }
+
+  console.log(
+    `[CloudSync:blob] ${domain}: uploaded ${uploadedCount}/${localRecords.length} individual items`
+  );
+
+  return saveBlobDomainMetadata(
+    {
+      domain,
+      updatedAt,
+      version: AUTO_SYNC_SNAPSHOT_VERSION,
+      totalSize: Object.values(nextItems).reduce((sum, item) => sum + item.size, 0),
+      items: nextItems,
+    },
+    auth
+  );
+}
+
+async function uploadBlobDomain(
+  domain: BlobSyncDomain,
+  auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  if (isIndividualBlobSyncDomain(domain)) {
+    return uploadIndividualBlobDomain(domain, auth);
+  }
+
+  return uploadLegacyBlobDomain(domain, auth);
 }
 
 export async function uploadCloudSyncDomain(
@@ -995,49 +1332,41 @@ async function downloadBlobDomain(
   domain: BlobSyncDomain,
   auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  const response = await abortableFetch(
-    getApiUrl(`/api/sync/auto?domain=${encodeURIComponent(domain)}`),
-    {
-      method: "GET",
-      headers: authHeaders(auth),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to download ${domain} sync data`
-    );
-  }
-
-  const data = (await response.json()) as {
-    downloadUrl?: string;
-    blobUrl?: string;
-    metadata?: CloudSyncDomainMetadata;
-  };
-
-  const downloadUrl = data.downloadUrl || data.blobUrl;
-  if (!downloadUrl || !data.metadata) {
+  const data = await fetchBlobDomainInfo(domain, auth);
+  if (!data?.metadata) {
     throw new Error("Sync download response was invalid.");
   }
 
-  const blobResponse = await fetch(downloadUrl);
-  if (!blobResponse.ok) {
-    throw new Error(`Failed to fetch ${domain} blob from CDN`);
+  if (isIndividualBlobSyncDomain(domain) && data.mode === "individual") {
+    const remoteItems = data.items || {};
+    const localRecords = await serializeIndividualBlobDomainRecords(domain);
+    const localRecordMap = new Map(
+      localRecords.map((record) => [record.item.key, record])
+    );
+    const changedItems: Record<string, StoreItemWithKey> = {};
+
+    for (const [itemKey, itemMetadata] of Object.entries(remoteItems)) {
+      const localRecord = localRecordMap.get(itemKey);
+      if (localRecord && localRecord.signature === itemMetadata.signature) {
+        continue;
+      }
+
+      const itemEnvelope = await downloadGzipJson<BlobSyncItemEnvelope>(
+        itemMetadata.downloadUrl
+      );
+      changedItems[itemKey] = itemEnvelope.data;
+    }
+
+    await applyIndividualBlobDomain(domain, Object.keys(remoteItems), changedItems);
+    return data.metadata;
   }
 
-  const compressedBuf = await blobResponse.arrayBuffer();
-  const compressedBlob = new Blob([compressedBuf], { type: "application/gzip" });
-  const decompressedStream = compressedBlob
-    .stream()
-    .pipeThrough(new DecompressionStream("gzip"));
-  const jsonString = await new Response(decompressedStream).text();
-  const envelope = JSON.parse(jsonString) as CloudSyncEnvelope<AnySnapshotData>;
+  const downloadUrl = data.downloadUrl || data.blobUrl;
+  if (!downloadUrl) {
+    throw new Error("Sync download response was invalid.");
+  }
 
+  const envelope = await downloadGzipJson<CloudSyncEnvelope<AnySnapshotData>>(downloadUrl);
   await applyCloudSyncEnvelope(envelope);
   return data.metadata;
 }

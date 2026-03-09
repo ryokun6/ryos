@@ -5,6 +5,7 @@
 
 import {
   isBlobSyncDomain,
+  isIndividualBlobSyncDomain,
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import { apiHandler } from "../_utils/api-handler.js";
@@ -23,9 +24,17 @@ const RATE_LIMIT_MAX = 20;
 
 interface AutoTokenBody {
   domain?: BlobSyncDomain;
+  itemKey?: string;
 }
 
-function syncPath(username: string, domain: BlobSyncDomain) {
+function isValidItemKey(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 512;
+}
+
+function syncPath(username: string, domain: BlobSyncDomain, itemKey?: string) {
+  if (itemKey) {
+    return `sync/${username}/${domain}/items/${encodeURIComponent(itemKey)}.gz`;
+  }
   return `sync/${username}/${domain}.gz`;
 }
 
@@ -38,10 +47,25 @@ export default apiHandler<AutoTokenBody>(
   async ({ req, res, redis, user, body }): Promise<void> => {
     const username = user?.username || "";
     const domain = body?.domain;
+    const itemKey = body?.itemKey;
 
     if (!isBlobSyncDomain(domain as never)) {
       res.status(400).json({ error: "Invalid sync domain" });
       return;
+    }
+
+    if (itemKey !== undefined) {
+      if (!isIndividualBlobSyncDomain(domain)) {
+        res.status(400).json({
+          error: "This sync domain does not support individual item uploads.",
+        });
+        return;
+      }
+
+      if (!isValidItemKey(itemKey)) {
+        res.status(400).json({ error: "Invalid sync item key" });
+        return;
+      }
     }
 
     const rateLimitKey = `rl:sync:auto:${username}:${domain}`;
@@ -59,7 +83,7 @@ export default apiHandler<AutoTokenBody>(
 
     try {
       const upload = await createStorageUploadDescriptor({
-        pathname: syncPath(username, domain),
+        pathname: syncPath(username, domain, itemKey),
         contentType: "application/gzip",
         allowedContentTypes: ["application/gzip", "application/octet-stream"],
         maximumSizeInBytes: MAX_SYNC_SIZE,
@@ -70,6 +94,7 @@ export default apiHandler<AutoTokenBody>(
         route: "/api/sync/auto-token",
         username,
         domain,
+        ...(itemKey ? { itemKey } : {}),
         origin: req.headers.origin,
         referer: req.headers.referer,
         host: req.headers.host,
