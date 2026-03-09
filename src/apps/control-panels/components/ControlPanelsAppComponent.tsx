@@ -825,6 +825,7 @@ export function ControlPanelsAppComponent({
                   <div className="flex gap-2">
                     <Button
                       variant="retro"
+                      type="button"
                       onClick={handleCloudBackup}
                       disabled={isCloudBackingUp || isCloudRestoring || !username}
                       className="flex-1"
@@ -835,6 +836,7 @@ export function ControlPanelsAppComponent({
                     </Button>
                     <Button
                       variant="retro"
+                      type="button"
                       onClick={() => setIsConfirmCloudRestoreOpen(true)}
                       disabled={
                         isCloudBackingUp ||

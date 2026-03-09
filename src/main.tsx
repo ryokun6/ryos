@@ -19,6 +19,14 @@ primeReactResources();
 // ============================================================================
 const handlePreloadError = (event: Event) => {
   console.warn("[ryOS] Chunk load failed:", event);
+
+  // In local dev, reloading can turn a transient failed preload into a full
+  // app remount/boot-screen cycle while Vite is still serving the requested
+  // chunk. Keep the app up and surface the warning instead.
+  if (import.meta.env.DEV) {
+    console.warn("[ryOS] Skipping preload-error reload in dev");
+    return;
+  }
   
   // Don't reload if offline - it won't help and will cause a flash loop
   if (!navigator.onLine) {
