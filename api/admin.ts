@@ -19,6 +19,7 @@ import {
   getRedisBackend,
 } from "./_utils/redis.js";
 import { getRealtimeProvider } from "./_utils/runtime-config.js";
+import { getAnalyticsSummary, getAnalyticsDetail, type AnalyticsSummary, type AnalyticsDetail } from "./_utils/_analytics.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -498,6 +499,22 @@ export default apiHandler<AdminRequest>(
           logger.info("Server info retrieved", serverInfo);
           logger.response(200, Date.now() - startTime);
           res.status(200).json(serverInfo);
+          return;
+        }
+        case "getAnalytics": {
+          const days = Math.min(Math.max(parseInt((req.query.days as string) || "7"), 1), 90);
+          const detail = req.query.detail === "true";
+          if (detail) {
+            const data: AnalyticsDetail = await getAnalyticsDetail(redis, days);
+            logger.info("Analytics detail retrieved", { days });
+            logger.response(200, Date.now() - startTime);
+            res.status(200).json(data);
+          } else {
+            const data: AnalyticsSummary = await getAnalyticsSummary(redis, days);
+            logger.info("Analytics summary retrieved", { days });
+            logger.response(200, Date.now() - startTime);
+            res.status(200).json(data);
+          }
           return;
         }
         default:

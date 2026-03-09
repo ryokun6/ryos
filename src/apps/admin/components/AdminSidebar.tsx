@@ -5,7 +5,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 
-type AdminSection = "users" | "rooms" | "songs" | "server";
+type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
 
 interface Room {
   id: string;
@@ -74,6 +74,29 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           className="space-y-1 flex-1 overflow-y-auto min-h-0"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
+          {/* Dashboard Section */}
+          <div
+            className={cn(
+              "py-1 px-5 cursor-pointer",
+              activeSection === "dashboard" ? "" : "hover:bg-black/5"
+            )}
+            style={
+              activeSection === "dashboard"
+                ? {
+                    background: "var(--os-color-selection-bg)",
+                    color: "var(--os-color-selection-text)",
+                  }
+                : undefined
+            }
+            onClick={() => {
+              playButtonClick();
+              onSectionChange("dashboard");
+              onRoomSelect(null);
+            }}
+          >
+            {t("apps.admin.sidebar.dashboard", "Dashboard")}
+          </div>
+
           {/* Server Section */}
           <div
             className={cn(

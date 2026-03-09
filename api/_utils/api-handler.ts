@@ -4,6 +4,8 @@ import { initLogger } from "./_logging.js";
 import { getEffectiveOrigin, isAllowedOrigin, setCorsHeaders } from "./_cors.js";
 import { createRedis } from "./redis.js";
 import { resolveRequestAuth, type AuthenticatedRequestUser } from "./request-auth.js";
+import { recordAnalyticsEvent } from "./_analytics.js";
+import { getClientIp } from "./_rate-limit.js";
 
 type AuthMode = "none" | "optional" | "required";
 
@@ -114,6 +116,7 @@ export function apiHandler<TBody = unknown>(
       user = authResult.user;
     }
 
+    let finalStatus = 200;
     try {
       await handler({
         req,
@@ -125,11 +128,22 @@ export function apiHandler<TBody = unknown>(
         user,
         body,
       });
+      finalStatus = res.statusCode ?? 200;
     } catch (error) {
       logger.error("Unhandled API handler error", error);
       logger.response(500, Date.now() - startTime);
       sendJsonError(res, 500, "Internal Server Error");
+      finalStatus = 500;
     }
+
+    recordAnalyticsEvent(redis, {
+      path: req.url || "/api/unknown",
+      method,
+      status: finalStatus,
+      latencyMs: Date.now() - startTime,
+      ip: getClientIp(req),
+      username: user?.username,
+    });
   };
 }
 

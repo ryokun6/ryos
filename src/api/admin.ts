@@ -130,3 +130,11 @@ export async function getAdminUserHeartbeats<TResponse>(
   return adminGet<TResponse>(auth, "getUserHeartbeats", { username, days });
 }
 
+export async function getAdminAnalytics<TResponse>(
+  auth: ApiAuthContext,
+  days: number = 7,
+  detail: boolean = false
+): Promise<TResponse> {
+  return adminGet<TResponse>(auth, "getAnalytics", { days, detail });
+}
+

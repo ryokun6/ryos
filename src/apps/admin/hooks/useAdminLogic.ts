@@ -193,7 +193,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     totalMessages: 0,
   });
 
-  const [activeSection, setActiveSection] = useState<AdminSection>("songs");
+  const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
   const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
   const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(
     null

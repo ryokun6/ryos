@@ -1,4 +1,4 @@
-export type AdminSection = "users" | "rooms" | "songs" | "server";
+export type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
 
 export interface AdminDetailSelectionState {
   selectedRoomId: string | null;

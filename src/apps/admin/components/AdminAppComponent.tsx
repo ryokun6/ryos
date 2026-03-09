@@ -2,6 +2,7 @@ import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { AdminMenuBar } from "./AdminMenuBar";
 import { AdminSidebar } from "./AdminSidebar";
+import { DashboardPanel } from "./DashboardPanel";
 import { UserProfilePanel } from "./UserProfilePanel";
 import { SongDetailPanel } from "./SongDetailPanel";
 import { ServerPanel } from "./ServerPanel";
@@ -328,7 +329,8 @@ export function AdminAppComponent({
             {/* Toolbar */}
             {!selectedUserProfile &&
               !selectedSongId &&
-              activeSection !== "server" && (
+              activeSection !== "server" &&
+              activeSection !== "dashboard" && (
               <div
                 className={cn(
                   "flex items-center gap-2 px-2 py-1.5 border-b",
@@ -550,6 +552,14 @@ export function AdminAppComponent({
 
             {/* Content Area */}
             <ScrollArea ref={scrollAreaRef} className="flex-1">
+              {/* Dashboard View */}
+              {activeSection === "dashboard" &&
+                !selectedRoomId &&
+                !selectedUserProfile &&
+                !selectedSongId && (
+                  <DashboardPanel onRefresh={handleRefresh} />
+                )}
+
               {/* Server View */}
               {activeSection === "server" &&
                 !selectedRoomId &&
@@ -896,7 +906,9 @@ export function AdminAppComponent({
             {/* Status Bar */}
             <div className="os-status-bar os-status-bar-text flex items-center justify-between px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
               <span>
-                {activeSection === "server"
+                {activeSection === "dashboard"
+                  ? t("apps.admin.sidebar.dashboard", "Dashboard")
+                  : activeSection === "server"
                   ? t("apps.admin.server.title", "Server")
                   : activeSection === "users" && !selectedRoomId
                     ? t("apps.admin.statusBar.usersCount", {
