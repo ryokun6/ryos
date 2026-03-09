@@ -5,6 +5,7 @@ import { DisplayMode } from "@/utils/displayMode";
 import { checkShaderPerformance } from "@/utils/performanceCheck";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
+import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.
@@ -38,18 +39,19 @@ const saveCustomWallpaper = async (file: File): Promise<string> => {
   if (!file.type.startsWith("image/"))
     throw new Error("Only image files allowed");
   try {
+    const processedFile = await convertImageFileToWallpaperJpeg(file);
     const db = await ensureIndexedDBInitialized();
     const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readwrite");
     const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-    const name = `custom_${Date.now()}_${file.name.replace(
+    const name = `custom_${Date.now()}_${processedFile.name.replace(
       /[^a-zA-Z0-9._-]/g,
       "_"
     )}`;
     const rec = {
       name,
-      blob: file,
+      blob: processedFile,
       content: "",
-      type: file.type,
+      type: processedFile.type,
       dateAdded: new Date().toISOString(),
     };
     await new Promise<void>((res, rej) => {
