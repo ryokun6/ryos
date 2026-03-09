@@ -26,6 +26,7 @@ import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
 } from "@/utils/cloudSyncEvents";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
 
@@ -1238,6 +1239,26 @@ export function useFileSystem(
 
     return unsubscribe;
   }, [loadFiles, options.skipLoad]);
+
+  useEffect(() => {
+    if (options.skipLoad) return;
+
+    const unsubscribe = useCloudSyncStore.subscribe((state, prevState) => {
+      const nextApplied = state.domainStatus["files-images"].lastAppliedRemoteAt;
+      const prevApplied =
+        prevState.domainStatus["files-images"].lastAppliedRemoteAt;
+
+      if (
+        nextApplied &&
+        nextApplied !== prevApplied &&
+        (currentPath === "/Images" || currentPath.startsWith("/Images/"))
+      ) {
+        loadFiles();
+      }
+    });
+
+    return unsubscribe;
+  }, [currentPath, loadFiles, options.skipLoad]);
 
   // --- handleFileSelect, Navigation Functions --- //
   const handleFileSelect = useCallback(

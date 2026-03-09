@@ -550,7 +550,13 @@ async function serveDistPath(
   options?: { headers?: Record<string, string> }
 ): Promise<Response | null> {
   const sanitized = relativePath.replace(/^\/+/, "");
-  const absolutePath = path.resolve(DIST_ROOT, sanitized);
+  let decodedPath = sanitized;
+  try {
+    decodedPath = decodeURIComponent(sanitized);
+  } catch {
+    return null;
+  }
+  const absolutePath = path.resolve(DIST_ROOT, decodedPath);
   return await getStaticFileResponse(absolutePath, options);
 }
 
