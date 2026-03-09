@@ -35,7 +35,7 @@ export default apiHandler<AutoTokenBody>(
     auth: "required",
     parseJsonBody: true,
   },
-  async ({ res, redis, user, body }): Promise<void> => {
+  async ({ req, res, redis, user, body }): Promise<void> => {
     const username = user?.username || "";
     const domain = body?.domain;
 
