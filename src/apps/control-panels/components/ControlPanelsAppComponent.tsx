@@ -43,6 +43,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { getContactInitials } from "@/utils/contacts";
+import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
@@ -734,7 +735,7 @@ export function ControlPanelsAppComponent({
                         subtitle={t("apps.control-panels.autoSync.description")}
                       />
                       <Button
-                        variant="retro"
+                        variant="default"
                         onClick={promptSetUsername}
                         className="h-7"
                       >
@@ -808,11 +809,24 @@ export function ControlPanelsAppComponent({
                       </div>
 
                       {autoSyncLastError && (
-                        <p className="text-[11px] text-red-700 font-geneva-12">
-                          {t("apps.control-panels.autoSync.error", {
-                            error: autoSyncLastError,
-                          })}
-                        </p>
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="min-w-0 flex-1 text-[11px] text-red-700 font-geneva-12">
+                            {t("apps.control-panels.autoSync.error", {
+                              error: autoSyncLastError,
+                            })}
+                          </p>
+                          <Button
+                            variant="retro"
+                            size="sm"
+                            onClick={requestCloudSyncCheck}
+                            disabled={isAutoSyncChecking}
+                            className="h-7 shrink-0"
+                          >
+                            {isAutoSyncChecking
+                              ? t("apps.control-panels.autoSync.checking")
+                              : t("common.retry", "Retry")}
+                          </Button>
+                        </div>
                       )}
                     </>
                   )}
