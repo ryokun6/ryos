@@ -10,11 +10,18 @@
  *   analytics:ep:{YYYY-MM-DD}       hash  { endpoint: count }
  *   analytics:st:{YYYY-MM-DD}       hash  { statusCode: count }
  *   analytics:aiu:{YYYY-MM-DD}      hash  { username|"anon": count }
+ *
+ * Performance:
+ *   Write path: 5–8 Redis commands per request in 1 pipeline (fire-and-forget).
+ *   EXPIRE is only sent once per calendar day per process to avoid waste.
+ *   Read path: admin-only, 1–2 pipelines depending on detail mode.
  */
 
 import type { Redis } from "./redis.js";
 
 const ANALYTICS_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
+
+let _lastTTLDate: string | null = null;
 
 function todayUTC(): string {
   return new Date().toISOString().slice(0, 10);
@@ -68,7 +75,6 @@ export function recordAnalyticsEvent(
 
   const pipe = redis.pipeline();
 
-  // Daily counters
   const dailyKey = k("daily", date);
   pipe.hincrby(dailyKey, "calls", 1);
   pipe.hincrby(dailyKey, "latsum", Math.round(event.latencyMs));
@@ -76,30 +82,25 @@ export function recordAnalyticsEvent(
   if (isAI) pipe.hincrby(dailyKey, "ai", 1);
   if (isError) pipe.hincrby(dailyKey, "errors", 1);
 
-  // Unique visitors (HyperLogLog)
-  const uvKey = k("uv", date);
-  pipe.pfadd(uvKey, event.ip);
-
-  // Endpoint breakdown
+  pipe.pfadd(k("uv", date), event.ip);
   pipe.hincrby(k("ep", date), endpoint, 1);
-
-  // Status code breakdown
   pipe.hincrby(k("st", date), String(event.status), 1);
 
-  // AI user breakdown
   if (isAI) {
-    const aiUser = event.username || "anonymous";
-    pipe.hincrby(k("aiu", date), aiUser, 1);
+    pipe.hincrby(k("aiu", date), event.username || "anonymous", 1);
   }
 
-  // Set TTL on all keys (idempotent — no-op if already set)
-  pipe.expire(dailyKey, ANALYTICS_TTL_SECONDS);
-  pipe.expire(uvKey, ANALYTICS_TTL_SECONDS);
-  pipe.expire(k("ep", date), ANALYTICS_TTL_SECONDS);
-  pipe.expire(k("st", date), ANALYTICS_TTL_SECONDS);
-  if (isAI) pipe.expire(k("aiu", date), ANALYTICS_TTL_SECONDS);
+  // Set TTL once per calendar day per process — avoids 4-5 redundant
+  // EXPIRE commands on every single request.
+  if (_lastTTLDate !== date) {
+    _lastTTLDate = date;
+    pipe.expire(dailyKey, ANALYTICS_TTL_SECONDS);
+    pipe.expire(k("uv", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(k("ep", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(k("st", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(k("aiu", date), ANALYTICS_TTL_SECONDS);
+  }
 
-  // Fire and forget — never block the response
   pipe.exec().catch((err) => {
     console.warn("[analytics] pipeline error (non-fatal):", err);
   });
@@ -170,6 +171,39 @@ function dateRange(days: number): string[] {
   return dates;
 }
 
+/**
+ * Parse a daily-hash result from the pipeline into numeric fields.
+ */
+function parseDailyHash(raw: Record<string, string> | null): {
+  calls: number;
+  ai: number;
+  errors: number;
+  latsum: number;
+  latcnt: number;
+} {
+  if (!raw) return { calls: 0, ai: 0, errors: 0, latsum: 0, latcnt: 0 };
+  return {
+    calls: parseInt(String(raw.calls || "0"), 10),
+    ai: parseInt(String(raw.ai || "0"), 10),
+    errors: parseInt(String(raw.errors || "0"), 10),
+    latsum: parseInt(String(raw.latsum || "0"), 10),
+    latcnt: parseInt(String(raw.latcnt || "0"), 10),
+  };
+}
+
+function mergeHashCounts(
+  map: Map<string, number>,
+  raw: Record<string, string> | null
+): void {
+  if (!raw) return;
+  for (const [key, cnt] of Object.entries(raw)) {
+    map.set(key, (map.get(key) || 0) + parseInt(String(cnt), 10));
+  }
+}
+
+/**
+ * Summary-only view: 1 pipeline, 2×days commands.
+ */
 export async function getAnalyticsSummary(
   redis: Redis,
   days: number = 7
@@ -181,7 +215,6 @@ export async function getAnalyticsSummary(
     pipe.hgetall(k("daily", date));
     pipe.pfcount(k("uv", date));
   }
-
   const results = await pipe.exec();
 
   let totalCalls = 0;
@@ -192,24 +225,27 @@ export async function getAnalyticsSummary(
   let totalLatCnt = 0;
 
   const dailyMetrics: DailyMetrics[] = dates.map((date, i) => {
-    const raw = (results[i * 2] as Record<string, string> | null) || {};
+    const d = parseDailyHash(
+      (results[i * 2] as Record<string, string> | null) || null
+    );
     const uv = (results[i * 2 + 1] as number) || 0;
+    const avgLatencyMs = d.latcnt > 0 ? Math.round(d.latsum / d.latcnt) : 0;
 
-    const calls = parseInt(String(raw.calls || "0"), 10);
-    const ai = parseInt(String(raw.ai || "0"), 10);
-    const errors = parseInt(String(raw.errors || "0"), 10);
-    const latsum = parseInt(String(raw.latsum || "0"), 10);
-    const latcnt = parseInt(String(raw.latcnt || "0"), 10);
-    const avgLatencyMs = latcnt > 0 ? Math.round(latsum / latcnt) : 0;
-
-    totalCalls += calls;
-    totalAI += ai;
-    totalErrors += errors;
+    totalCalls += d.calls;
+    totalAI += d.ai;
+    totalErrors += d.errors;
     totalUV += uv;
-    totalLatSum += latsum;
-    totalLatCnt += latcnt;
+    totalLatSum += d.latsum;
+    totalLatCnt += d.latcnt;
 
-    return { date, calls, ai, errors, uniqueVisitors: uv, avgLatencyMs };
+    return {
+      date,
+      calls: d.calls,
+      ai: d.ai,
+      errors: d.errors,
+      uniqueVisitors: uv,
+      avgLatencyMs,
+    };
   });
 
   return {
@@ -225,43 +261,83 @@ export async function getAnalyticsSummary(
   };
 }
 
+/**
+ * Detailed view: 1 pipeline for everything (summary + breakdowns),
+ * plus 1 optional small pipeline for AI rate-limit lookups.
+ *
+ * Per-day slot layout in the single pipeline:
+ *   [hgetall(daily), pfcount(uv), hgetall(ep), hgetall(st), hgetall(aiu)]
+ *   = 5 commands per day  →  35 commands for 7d, 150 for 30d, single round-trip.
+ */
 export async function getAnalyticsDetail(
   redis: Redis,
   days: number = 7
 ): Promise<AnalyticsDetail> {
-  const summary = await getAnalyticsSummary(redis, days);
+  const dates = dateRange(days);
+  const CMDS_PER_DAY = 5;
 
   const pipe = redis.pipeline();
-  // Aggregate endpoints across all days in range
-  const dates = dateRange(days);
   for (const date of dates) {
+    pipe.hgetall(k("daily", date));
+    pipe.pfcount(k("uv", date));
     pipe.hgetall(k("ep", date));
     pipe.hgetall(k("st", date));
     pipe.hgetall(k("aiu", date));
   }
-
   const results = await pipe.exec();
 
-  // Merge endpoint breakdowns
+  // ── Parse summary ──
+  let totalCalls = 0;
+  let totalAI = 0;
+  let totalErrors = 0;
+  let totalUV = 0;
+  let totalLatSum = 0;
+  let totalLatCnt = 0;
+
   const epMap = new Map<string, number>();
   const stMap = new Map<string, number>();
   const aiuMap = new Map<string, number>();
 
-  for (let i = 0; i < dates.length; i++) {
-    const epRaw = (results[i * 3] as Record<string, string> | null) || {};
-    const stRaw = (results[i * 3 + 1] as Record<string, string> | null) || {};
-    const aiuRaw = (results[i * 3 + 2] as Record<string, string> | null) || {};
+  const dailyMetrics: DailyMetrics[] = dates.map((date, i) => {
+    const base = i * CMDS_PER_DAY;
+    const d = parseDailyHash(
+      (results[base] as Record<string, string> | null) || null
+    );
+    const uv = (results[base + 1] as number) || 0;
+    const avgLatencyMs = d.latcnt > 0 ? Math.round(d.latsum / d.latcnt) : 0;
 
-    for (const [ep, cnt] of Object.entries(epRaw)) {
-      epMap.set(ep, (epMap.get(ep) || 0) + parseInt(String(cnt), 10));
-    }
-    for (const [st, cnt] of Object.entries(stRaw)) {
-      stMap.set(st, (stMap.get(st) || 0) + parseInt(String(cnt), 10));
-    }
-    for (const [u, cnt] of Object.entries(aiuRaw)) {
-      aiuMap.set(u, (aiuMap.get(u) || 0) + parseInt(String(cnt), 10));
-    }
-  }
+    totalCalls += d.calls;
+    totalAI += d.ai;
+    totalErrors += d.errors;
+    totalUV += uv;
+    totalLatSum += d.latsum;
+    totalLatCnt += d.latcnt;
+
+    mergeHashCounts(epMap, (results[base + 2] as Record<string, string> | null) || null);
+    mergeHashCounts(stMap, (results[base + 3] as Record<string, string> | null) || null);
+    mergeHashCounts(aiuMap, (results[base + 4] as Record<string, string> | null) || null);
+
+    return {
+      date,
+      calls: d.calls,
+      ai: d.ai,
+      errors: d.errors,
+      uniqueVisitors: uv,
+      avgLatencyMs,
+    };
+  });
+
+  const summary: AnalyticsSummary = {
+    days: dailyMetrics,
+    totals: {
+      calls: totalCalls,
+      ai: totalAI,
+      errors: totalErrors,
+      uniqueVisitors: totalUV,
+      avgLatencyMs:
+        totalLatCnt > 0 ? Math.round(totalLatSum / totalLatCnt) : 0,
+    },
+  };
 
   const topEndpoints = [...epMap.entries()]
     .map(([endpoint, count]) => ({ endpoint, count }))
@@ -277,42 +353,33 @@ export async function getAnalyticsDetail(
     .sort((a, b) => b.count - a.count)
     .slice(0, 20);
 
-  // Fetch current AI rate limit state for top AI users
+  // ── AI rate-limit lookups (small optional pipeline) ──
   const aiRateLimits: AIRateLimitInfo[] = [];
-  if (aiByUser.length > 0) {
+  const nonAnonUsers = aiByUser.filter((u) => u.username !== "anonymous");
+  if (nonAnonUsers.length > 0) {
     const rlPipe = redis.pipeline();
-    for (const { username } of aiByUser) {
-      const rlKey = username === "anonymous" ? null : `rl:ai:${username}`;
-      if (rlKey) rlPipe.get(rlKey);
+    for (const { username } of nonAnonUsers) {
+      rlPipe.get(`rl:ai:${username}`);
     }
     const rlResults = await rlPipe.exec();
-    let rlIdx = 0;
-    for (const { username } of aiByUser) {
-      if (username === "anonymous") {
-        aiRateLimits.push({
-          identifier: username,
-          currentCount: 0,
-          limit: 3,
-          windowLabel: "24h",
-        });
-      } else {
-        const count = parseInt(String(rlResults[rlIdx] || "0"), 10);
-        rlIdx++;
-        aiRateLimits.push({
-          identifier: username,
-          currentCount: count,
-          limit: username === "ryo" ? -1 : 15,
-          windowLabel: "5h",
-        });
-      }
+    for (let i = 0; i < nonAnonUsers.length; i++) {
+      const username = nonAnonUsers[i].username;
+      aiRateLimits.push({
+        identifier: username,
+        currentCount: parseInt(String(rlResults[i] || "0"), 10),
+        limit: username === "ryo" ? -1 : 15,
+        windowLabel: "5h",
+      });
     }
   }
+  if (aiuMap.has("anonymous")) {
+    aiRateLimits.push({
+      identifier: "anonymous",
+      currentCount: 0,
+      limit: 3,
+      windowLabel: "24h",
+    });
+  }
 
-  return {
-    summary,
-    topEndpoints,
-    statusCodes,
-    aiByUser,
-    aiRateLimits,
-  };
+  return { summary, topEndpoints, statusCodes, aiByUser, aiRateLimits };
 }
