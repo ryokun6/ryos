@@ -103,10 +103,7 @@ function isFalsy(value: string | undefined): boolean {
   return value === "0" || value?.toLowerCase() === "false";
 }
 
-function shouldUsePathStyle(
-  endpoint: string,
-  explicit: string | undefined
-): boolean {
+function shouldUsePathStyle(explicit: string | undefined): boolean {
   if (isTruthy(explicit)) {
     return true;
   }
@@ -116,11 +113,12 @@ function shouldUsePathStyle(
   }
 
   try {
-    const hostname = new URL(endpoint).hostname.toLowerCase();
-    return !hostname.endsWith("amazonaws.com");
+    new URL(endpoint);
   } catch {
-    return true;
+    // Fall back to virtual-hosted style unless explicitly overridden.
   }
+
+  return false;
 }
 
 function sanitizeUrlForLogs(value: string): string {
@@ -168,10 +166,7 @@ function getS3Config(): S3Config | null {
     accessKeyId,
     secretAccessKey,
     sessionToken,
-    forcePathStyle: shouldUsePathStyle(
-      endpoint,
-      process.env.S3_FORCE_PATH_STYLE
-    ),
+    forcePathStyle: shouldUsePathStyle(process.env.S3_FORCE_PATH_STYLE),
   };
 }
 
