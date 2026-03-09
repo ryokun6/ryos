@@ -4,7 +4,12 @@ import {
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
+  type S3ClientConfig,
 } from "@aws-sdk/client-s3";
+import {
+  RequestChecksumCalculation,
+  ResponseChecksumValidation,
+} from "@aws-sdk/middleware-flexible-checksums";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { del as deleteBlob, head as headBlob } from "@vercel/blob";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
@@ -184,7 +189,7 @@ function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
     );
   }
 
-  return new S3Client({
+  const clientConfig: S3ClientConfig = {
     region: config.region,
     endpoint,
     forcePathStyle,
@@ -192,14 +197,16 @@ function createS3Client(endpoint: string, forcePathStyle: boolean): S3Client {
     // - virtual-hosted style unless explicitly forced to path-style
     // - only calculate request/response checksums when required so presigned
     //   PUT URLs stay minimal for S3-compatible providers
-    requestChecksumCalculation: "WHEN_REQUIRED",
-    responseChecksumValidation: "WHEN_REQUIRED",
+    requestChecksumCalculation: RequestChecksumCalculation.WHEN_REQUIRED,
+    responseChecksumValidation: ResponseChecksumValidation.WHEN_REQUIRED,
     credentials: {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
       ...(config.sessionToken ? { sessionToken: config.sessionToken } : {}),
     },
-  });
+  };
+
+  return new S3Client(clientConfig);
 }
 
 function getS3ClientCacheKey(endpoint: string, forcePathStyle: boolean): string {
