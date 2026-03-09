@@ -823,16 +823,21 @@ export function ControlPanelsAppComponent({
                   style={tabStyles.separatorStyle}
                 />
 
-                <div className="space-y-2">
+                <div
+                  className={cn(
+                    "space-y-2",
+                    !username && "opacity-50 pointer-events-none select-none"
+                  )}
+                >
                   <Button
                     variant="retro"
                     onClick={handleCloudForceSyncLocalWins}
                     disabled={
                       isCloudForceSyncing ||
                       isCloudBackingUp ||
-                      isCloudRestoring ||
-                      !username
+                      isCloudRestoring
                     }
+                    tabIndex={!username ? -1 : undefined}
                     className="w-full"
                   >
                     {isCloudForceSyncing
@@ -850,9 +855,9 @@ export function ControlPanelsAppComponent({
                       disabled={
                         isCloudForceSyncing ||
                         isCloudBackingUp ||
-                        isCloudRestoring ||
-                        !username
+                        isCloudRestoring
                       }
+                      tabIndex={!username ? -1 : undefined}
                       className="flex-1"
                     >
                       {isCloudBackingUp
@@ -866,9 +871,9 @@ export function ControlPanelsAppComponent({
                         isCloudForceSyncing ||
                         isCloudBackingUp ||
                         isCloudRestoring ||
-                        !cloudSyncStatus?.hasBackup ||
-                        !username
+                        !cloudSyncStatus?.hasBackup
                       }
+                      tabIndex={!username ? -1 : undefined}
                       className="flex-1"
                     >
                       {isCloudRestoring
