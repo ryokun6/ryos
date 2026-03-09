@@ -1,5 +1,6 @@
 export const CUSTOM_WALLPAPER_TARGET_WIDTH = 1920;
 export const CUSTOM_WALLPAPER_TARGET_HEIGHT = 1080;
+export const CUSTOM_WALLPAPER_RESIZE_HEIGHT_THRESHOLD = 1400;
 export const CUSTOM_WALLPAPER_MIME_TYPE = "image/jpeg";
 export const CUSTOM_WALLPAPER_JPEG_QUALITY = 0.9;
 
@@ -48,6 +49,12 @@ export interface WallpaperCoverPlacement {
   drawHeight: number;
 }
 
+export interface WallpaperOutputSize {
+  width: number;
+  height: number;
+  shouldResize: boolean;
+}
+
 export function calculateWallpaperCoverPlacement(
   sourceWidth: number,
   sourceHeight: number,
@@ -67,6 +74,29 @@ export function calculateWallpaperCoverPlacement(
     offsetY: (targetHeight - drawHeight) / 2,
     drawWidth,
     drawHeight,
+  };
+}
+
+export function getCustomWallpaperOutputSize(
+  sourceWidth: number,
+  sourceHeight: number
+): WallpaperOutputSize {
+  if (sourceWidth <= 0 || sourceHeight <= 0) {
+    throw new Error("Wallpaper source dimensions must be greater than zero");
+  }
+
+  if (sourceHeight < CUSTOM_WALLPAPER_RESIZE_HEIGHT_THRESHOLD) {
+    return {
+      width: sourceWidth,
+      height: sourceHeight,
+      shouldResize: false,
+    };
+  }
+
+  return {
+    width: CUSTOM_WALLPAPER_TARGET_WIDTH,
+    height: CUSTOM_WALLPAPER_TARGET_HEIGHT,
+    shouldResize: true,
   };
 }
 
@@ -178,26 +208,29 @@ export async function convertImageFileToWallpaperJpeg(
   const image = await loadImage(file);
 
   try {
-    const { canvas, context } = createCanvas(
-      CUSTOM_WALLPAPER_TARGET_WIDTH,
-      CUSTOM_WALLPAPER_TARGET_HEIGHT
-    );
-    const placement = calculateWallpaperCoverPlacement(image.width, image.height);
+    const outputSize = getCustomWallpaperOutputSize(image.width, image.height);
+    const { canvas, context } = createCanvas(outputSize.width, outputSize.height);
 
-    context.fillStyle = "#000000";
-    context.fillRect(
-      0,
-      0,
-      CUSTOM_WALLPAPER_TARGET_WIDTH,
-      CUSTOM_WALLPAPER_TARGET_HEIGHT
-    );
-    context.drawImage(
-      image.source,
-      placement.offsetX,
-      placement.offsetY,
-      placement.drawWidth,
-      placement.drawHeight
-    );
+    if (outputSize.shouldResize) {
+      const placement = calculateWallpaperCoverPlacement(
+        image.width,
+        image.height,
+        outputSize.width,
+        outputSize.height
+      );
+
+      context.fillStyle = "#000000";
+      context.fillRect(0, 0, outputSize.width, outputSize.height);
+      context.drawImage(
+        image.source,
+        placement.offsetX,
+        placement.offsetY,
+        placement.drawWidth,
+        placement.drawHeight
+      );
+    } else {
+      context.drawImage(image.source, 0, 0, outputSize.width, outputSize.height);
+    }
 
     const blob = await blobToJpeg(canvas);
     return createFile(blob, buildCustomWallpaperFilename(file.name), {
