@@ -369,6 +369,7 @@
       inactiveText: string;
       border?: string;
       borderInactive?: string;
+      borderBottom?: string;
       pattern?: string;
     };
     
@@ -381,8 +382,11 @@
     
     trafficLights?: {
       close: string;
+      closeHover?: string;
       minimize: string;
+      minimizeHover?: string;
       maximize: string;
+      maximizeHover?: string;
     };
     
     selection: {
@@ -401,7 +405,14 @@
     borderWidth: string;
     radius: string;
     titleBarHeight: string;
+    titleBarRadius?: string;
     windowShadow: string;
+  };
+  
+  assets?: {
+    closeButton?: string;
+    maximizeButton?: string;
+    minimizeButton?: string;
   };
   
   wallpaperDefaults?: {

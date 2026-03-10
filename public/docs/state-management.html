@@ -370,6 +370,8 @@
         DisplayStore[useDisplaySettingsStore<br/>Wallpaper & Shaders]
         AudioStore[useAudioSettingsStore<br/>Volume & TTS]
         DockStore[useDockStore<br/>Pinned Items]
+        CloudStore[useCloudSyncStore<br/>Cloud Sync]
+        UndoStore[useUndoRedoStore<br/>Undo/Redo]
     end
 
     subgraph Media["Media Apps"]
@@ -385,12 +387,16 @@
     subgraph Productivity["Productivity"]
         FilesStore[useFilesStore<br/>Virtual FS]
         TerminalStore[useTerminalStore<br/>CLI State]
+        CalendarStore[useCalendarStore<br/>Events & Todos]
+        ContactsStore[useContactsStore<br/>Contacts]
     end
 
     AppStore --> |manages| Media
     AppStore --> |manages| Social
     AppStore --> |manages| Productivity
-    ChatsStore -.-> |auth| IpodStore</pre>
+    ChatsStore -.-> |auth| IpodStore
+    CloudStore -.-> |sync| FilesStore
+    CloudStore -.-> |sync| IpodStore</pre>
 <h2>Store Pattern</h2>
 <p>All stores follow a consistent Zustand pattern with persist middleware:</p>
 <pre><code>import { create } from "zustand";

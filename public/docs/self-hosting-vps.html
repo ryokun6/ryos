@@ -316,7 +316,7 @@ bun run build
 APP_PUBLIC_ORIGIN="https://your-domain.com" \
 API_ALLOWED_ORIGINS="https://your-domain.com" \
 bun run start</code></pre>
-<p>Important runtime envs: <ul><li><code>PORT</code> or <code>API_PORT</code> — listening port (defaults to <code>3000</code>)</li></ul><ul><li><code>API_HOST</code> — bind host (defaults to <code>0.0.0.0</code>)</li><li><code>APP_PUBLIC_ORIGIN</code> — canonical browser origin, e.g. <code>https://your-domain.com</code></li><li><code>API_ALLOWED_ORIGINS</code> — comma-separated allowed browser origins for <code>/api/<em></code>; supports wildcard subdomain patterns (e.g. <code></em>.example.com</code>)</li></ul></p>
+<p>Important runtime envs: <ul><li><code>PORT</code> or <code>API_PORT</code> — listening port (defaults to <code>3000</code>)</li></ul><ul><li><code>API_HOST</code> — bind host (defaults to <code>0.0.0.0</code>)</li><li><code>APP_PUBLIC_ORIGIN</code> — canonical browser origin, e.g. <code>https://your-domain.com</code></li><li><code>API_ALLOWED_ORIGINS</code> — comma-separated allowed browser origins for <code>/api/<em></code>; supports wildcard subdomain patterns (e.g. <code></em>.example.com</code>), and <code><em></code> to allow all origins</li><li><code>STORAGE_PROVIDER</code> — optional explicit storage backend (<code>s3</code>, <code>vercel-blob</code>); auto-detected if unset</li></ul></p>
 <hr>
 <h2>3) Redis backend options</h2>
 <p>ryOS supports <strong>two Redis modes</strong>.</p>
@@ -343,8 +343,26 @@ PUSHER_CLUSTER="us3"</code></pre>
 REALTIME_WS_PATH="/ws"</code></pre>
 <p>Notes: <ul><li>local websocket mode works best with <code>REDIS_URL</code></li></ul><ul><li>with <code>REDIS_URL</code>, websocket events can fan out across instances via Redis pub/sub</li><li>without <code>REDIS_URL</code>, local websocket delivery falls back to in-process fanout only</li></ul></p>
 <hr>
-<h2>5) Coolify deployment</h2>
-<p>The repository now includes a <code>Dockerfile</code> suitable for Coolify Dockerfile deployments.</p>
+<h2>5) Object storage backend</h2>
+<p>ryOS supports <strong>two object storage backends</strong> for cloud sync (backups, wallpapers, images).</p>
+<h3>Option A — S3-compatible (recommended for self-hosted)</h3>
+<p>Works with MinIO, Cloudflare R2, Backblaze B2, AWS S3, or any S3-compatible provider:</p>
+<pre><code>STORAGE_PROVIDER=s3
+S3_BUCKET=ryos-sync
+S3_REGION=us-east-1
+S3_ENDPOINT=https://s3.your-provider.com
+S3_PUBLIC_ENDPOINT=https://s3.your-provider.com  # public-facing URL (for presigned URLs)
+S3_ACCESS_KEY_ID=your-access-key
+S3_SECRET_ACCESS_KEY=your-secret-key
+S3_FORCE_PATH_STYLE=true   # required for MinIO and some providers</code></pre>
+<h3>Option B — Vercel Blob</h3>
+<p>Keeps compatibility with the existing Vercel-oriented setup:</p>
+<pre><code>STORAGE_PROVIDER=vercel-blob    # optional, auto-detected from token
+BLOB_READ_WRITE_TOKEN=vercel_blob_...</code></pre>
+<p>When <code>STORAGE_PROVIDER</code> is not set explicitly, the backend is auto-detected: Vercel Blob if <code>BLOB_READ_WRITE_TOKEN</code> is present, S3 if the S3 environment variables are set.</p>
+<hr>
+<h2>6) Coolify deployment</h2>
+<p>The repository includes a <code>Dockerfile</code> suitable for Coolify Dockerfile deployments. The image includes a health check endpoint at <code>/health</code>.</p>
 <h3>Suggested Coolify settings</h3>
 <ul><li><strong>Build Pack:</strong> Dockerfile</li></ul><ul><li><strong>Port Exposes:</strong> <code>3000</code> (or whatever you set via <code>PORT</code>)</li><li><strong>Command override:</strong> not required</li><li><strong>Environment variables:</strong> set them in the Coolify UI</li></ul>
 <p>Recommended environment set for a fully self-hosted stack:</p>
@@ -355,14 +373,20 @@ APP_PUBLIC_ORIGIN=https://your-domain.com
 API_ALLOWED_ORIGINS=https://your-domain.com
 REDIS_URL=redis://default:password@redis:6379/0
 REALTIME_PROVIDER=local
-REALTIME_WS_PATH=/ws</code></pre>
+REALTIME_WS_PATH=/ws
+STORAGE_PROVIDER=s3
+S3_BUCKET=ryos-sync
+S3_REGION=us-east-1
+S3_ENDPOINT=https://s3.your-provider.com
+S3_ACCESS_KEY_ID=your-access-key
+S3_SECRET_ACCESS_KEY=your-secret-key</code></pre>
 <p>Coolify's reverse proxy supports WebSockets, so <code>/ws</code> can stay behind the normal app domain.</p>
 <h3>Version / build number (avoid "dev")</h3>
 <p>The app shows a version like <code>10.3 (abc1234)</code> from <code>version.json</code>. Without a commit SHA at build time, it falls back to <code>dev</code>. To show the real commit: <ol><li>In Coolify → your app → <strong>Advanced</strong> → enable <strong>Include Source Commit in Build</strong></li></ol><ol><li>The build script reads <code>SOURCE_COMMIT</code> (Coolify) or <code>VERCEL_GIT_COMMIT_SHA</code> (Vercel) or <code>GIT_COMMIT_SHA</code> (generic CI)</li></ol></p>
 <p>No extra env vars needed — Coolify injects <code>SOURCE_COMMIT</code> when that option is enabled.</p>
-<p>Coolify deployments are auto-detected (via <code>COOLIFY_<em></code> environment variables) and displayed in the Admin app's Server page.</p>
+<p>Coolify deployments are auto-detected (via <code>COOLIFY_</em></code> environment variables) and displayed in the Admin app's Server page.</p>
 <hr>
-<h2>6) VPS + systemd example</h2>
+<h2>7) VPS + systemd example</h2>
 <p>Example unit file:</p>
 <pre><code>[Unit]
 Description=ryOS self-hosted server
@@ -389,7 +413,7 @@ Group=www-data
 [Install]
 WantedBy=multi-user.target</code></pre>
 <hr>
-<h2>7) Reverse proxy example (optional)</h2>
+<h2>8) Reverse proxy example (optional)</h2>
 <p>If you still want Nginx or Caddy in front, just proxy the single Bun server:</p>
 <pre><code>server {
   listen 443 ssl http2;
@@ -407,10 +431,10 @@ WantedBy=multi-user.target</code></pre>
 }</code></pre>
 <p>No separate static file server is required.</p>
 <hr>
-<h2>8) Notes and caveats</h2>
-<ul><li><code>/api/sync/</em></code> endpoints still use Vercel Blob (<code>@vercel/blob</code>).<ul><li>If you want full self-hosted backup/sync storage, plan a future migration to S3/R2/MinIO/etc.</li></ul></li></ul><ul><li>For local development without Vercel:<ul><li><code>bun run dev</code></li><li>or <code>bun run dev:api</code> + <code>bun run dev:vite</code></li></ul></li><li>API tests can target standalone mode:<ul><li><code>API_URL=http://localhost:3000 bun run test:new-api</code></li></ul></li></ul>
+<h2>9) Notes and caveats</h2>
+<ul><li><code>/api/sync/*</code> endpoints use the switchable storage adapter (<code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/storage.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/storage.ts</a></code>), which supports both Vercel Blob and S3-compatible storage. See section 5 for configuration.</li></ul><ul><li>For local development without Vercel:<ul><li><code>bun run dev</code></li><li>or <code>bun run dev:api</code> + <code>bun run dev:vite</code></li></ul></li><li>API tests can target standalone mode:<ul><li><code>API_URL=http://localhost:3000 bun run test:new-api</code></li></ul></li></ul>
 <hr>
-<h2>9) Troubleshooting Docker bridge networking</h2>
+<h2>10) Troubleshooting Docker bridge networking</h2>
 <p>If you deploy a multi-container self-hosted stack with <code>REDIS_URL</code> and see: <ul><li>container-to-container Redis connections timing out</li></ul><ul><li>local websocket fanout failing across instances</li><li>Docker DNS resolving service names correctly, but TCP never connects</li></ul></p>
 <p>then the issue is usually the host's Docker bridge / iptables setup, not ryOS itself.</p>
 <p>This showed up in nested Docker testing when the host had mixed <code>iptables-nft</code> and <code>iptables-legacy</code> state, and bridge traffic was blocked even though containers and DNS were healthy.</p>
