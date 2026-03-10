@@ -827,6 +827,11 @@ async function bootstrap(): Promise<void> {
             channel?: string;
           };
 
+          if (payload.type === "ping") {
+            socket.send(JSON.stringify({ type: "pong" }));
+            return;
+          }
+
           if (payload.type === "subscribe" && payload.channel) {
             subscribeRealtimeSocket(socket, payload.channel);
             return;

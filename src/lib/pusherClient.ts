@@ -68,8 +68,14 @@ const getPusherConstructor = (): PusherConstructor => {
   throw new Error("[pusherClient] Pusher constructor not available");
 };
 
+export type RealtimeConnectionState =
+  | "connected"
+  | "connecting"
+  | "disconnected";
+
 class LocalRealtimeConnection implements RealtimeConnection {
   private listeners = new Map<string, Set<ConnectionEventHandler>>();
+  state: RealtimeConnectionState = "connecting";
 
   bind(eventName: string, handler: ConnectionEventHandler): void {
     const listeners = this.listeners.get(eventName) || new Set();
@@ -143,17 +149,26 @@ class LocalRealtimeChannel implements RealtimeChannel {
   }
 }
 
+const HEARTBEAT_INTERVAL_MS = 30_000;
+const HEARTBEAT_TIMEOUT_MS = 10_000;
+const MAX_RECONNECT_DELAY_MS = 30_000;
+const INITIAL_RECONNECT_DELAY_MS = 1_000;
+
 class LocalRealtimeClient implements RealtimeClient {
   readonly connection = new LocalRealtimeConnection();
 
   private socket: WebSocket | null = null;
   private reconnectTimer: number | null = null;
-  private reconnectDelayMs = 1000;
+  private reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
   private destroyed = false;
   private channels = new Map<string, LocalRealtimeChannel>();
+  private heartbeatTimer: number | null = null;
+  private heartbeatTimeoutTimer: number | null = null;
+  private boundVisibilityHandler: (() => void) | null = null;
 
   constructor(private readonly websocketUrl: string) {
     this.connect();
+    this.setupVisibilityHandler();
   }
 
   subscribe(channelName: string): RealtimeChannel {
@@ -180,12 +195,101 @@ class LocalRealtimeClient implements RealtimeClient {
 
   destroy(): void {
     this.destroyed = true;
-    if (typeof window !== "undefined" && this.reconnectTimer !== null) {
+    this.clearAllTimers();
+    this.teardownVisibilityHandler();
+    this.socket?.close();
+    this.socket = null;
+  }
+
+  private setupVisibilityHandler(): void {
+    if (typeof document === "undefined") return;
+
+    this.boundVisibilityHandler = () => {
+      if (document.visibilityState === "visible" && !this.destroyed) {
+        if (
+          !this.socket ||
+          this.socket.readyState === WebSocket.CLOSED ||
+          this.socket.readyState === WebSocket.CLOSING
+        ) {
+          this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
+          this.connect();
+        } else if (this.socket.readyState === WebSocket.OPEN) {
+          this.sendPing();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", this.boundVisibilityHandler);
+  }
+
+  private teardownVisibilityHandler(): void {
+    if (typeof document === "undefined" || !this.boundVisibilityHandler) return;
+    document.removeEventListener(
+      "visibilitychange",
+      this.boundVisibilityHandler
+    );
+    this.boundVisibilityHandler = null;
+  }
+
+  private clearAllTimers(): void {
+    if (typeof window === "undefined") return;
+    if (this.reconnectTimer !== null) {
       window.clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    this.socket?.close();
-    this.socket = null;
+    if (this.heartbeatTimer !== null) {
+      window.clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    if (this.heartbeatTimeoutTimer !== null) {
+      window.clearTimeout(this.heartbeatTimeoutTimer);
+      this.heartbeatTimeoutTimer = null;
+    }
+  }
+
+  private startHeartbeat(): void {
+    if (typeof window === "undefined") return;
+    this.stopHeartbeat();
+
+    this.heartbeatTimer = window.setInterval(() => {
+      this.sendPing();
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  private stopHeartbeat(): void {
+    if (typeof window === "undefined") return;
+    if (this.heartbeatTimer !== null) {
+      window.clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    if (this.heartbeatTimeoutTimer !== null) {
+      window.clearTimeout(this.heartbeatTimeoutTimer);
+      this.heartbeatTimeoutTimer = null;
+    }
+  }
+
+  private sendPing(): void {
+    if (this.socket?.readyState !== WebSocket.OPEN) return;
+
+    try {
+      this.socket.send(JSON.stringify({ type: "ping" }));
+    } catch {
+      return;
+    }
+
+    if (this.heartbeatTimeoutTimer !== null) {
+      window.clearTimeout(this.heartbeatTimeoutTimer);
+    }
+    this.heartbeatTimeoutTimer = window.setTimeout(() => {
+      this.heartbeatTimeoutTimer = null;
+      if (this.socket?.readyState === WebSocket.OPEN) {
+        this.socket.close();
+      }
+    }, HEARTBEAT_TIMEOUT_MS);
+  }
+
+  private setConnectionState(state: RealtimeConnectionState): void {
+    this.connection.state = state;
   }
 
   private connect(): void {
@@ -197,9 +301,13 @@ class LocalRealtimeClient implements RealtimeClient {
       return;
     }
 
+    this.setConnectionState("connecting");
+    this.connection.emit("connecting");
+
     try {
       this.socket = new WebSocket(this.websocketUrl);
     } catch (error) {
+      this.setConnectionState("disconnected");
       this.connection.emit(
         "error",
         error instanceof Error
@@ -211,8 +319,10 @@ class LocalRealtimeClient implements RealtimeClient {
     }
 
     this.socket.addEventListener("open", () => {
-      this.reconnectDelayMs = 1000;
+      this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
+      this.setConnectionState("connected");
       this.connection.emit("connected");
+      this.startHeartbeat();
       for (const channelName of this.channels.keys()) {
         this.send({ type: "subscribe", channel: channelName });
       }
@@ -226,6 +336,15 @@ class LocalRealtimeClient implements RealtimeClient {
           event?: string;
           data?: unknown;
         };
+
+        if (payload.type === "pong") {
+          if (this.heartbeatTimeoutTimer !== null) {
+            window.clearTimeout(this.heartbeatTimeoutTimer);
+            this.heartbeatTimeoutTimer = null;
+          }
+          return;
+        }
+
         if (payload.type === "event" && payload.channel && payload.event) {
           this.channels.get(payload.channel)?.emit(payload.event, payload.data);
         }
@@ -247,6 +366,8 @@ class LocalRealtimeClient implements RealtimeClient {
     });
 
     this.socket.addEventListener("close", () => {
+      this.stopHeartbeat();
+      this.setConnectionState("disconnected");
       this.connection.emit("disconnected");
       if (!this.destroyed) {
         this.scheduleReconnect();
@@ -263,10 +384,16 @@ class LocalRealtimeClient implements RealtimeClient {
       window.clearTimeout(this.reconnectTimer);
     }
 
+    this.setConnectionState("connecting");
+    this.connection.emit("connecting");
+
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
-      this.reconnectDelayMs = Math.min(this.reconnectDelayMs * 2, 10000);
+      this.reconnectDelayMs = Math.min(
+        this.reconnectDelayMs * 2,
+        MAX_RECONNECT_DELAY_MS
+      );
     }, this.reconnectDelayMs);
   }
 
@@ -295,6 +422,24 @@ export function getPusherClient(): RealtimeClient {
     }
   }
   return globalWithPusher.__pusherClient;
+}
+
+export function getRealtimeConnectionState(): RealtimeConnectionState {
+  const client = globalWithPusher.__pusherClient;
+  if (!client) return "disconnected";
+
+  const conn = client.connection as
+    | LocalRealtimeConnection
+    | { state?: string };
+  if (conn && typeof conn.state === "string") {
+    const s = conn.state;
+    if (s === "connected") return "connected";
+    if (s === "connecting" || s === "initialized" || s === "unavailable")
+      return "connecting";
+    return "disconnected";
+  }
+
+  return "disconnected";
 }
 
 export type PusherChannel = Channel | RealtimeChannel;

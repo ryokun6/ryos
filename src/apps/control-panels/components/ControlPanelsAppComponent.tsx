@@ -46,6 +46,7 @@ import { getContactInitials } from "@/utils/contacts";
 import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { useRealtimeConnectionStatus } from "@/hooks/useRealtimeConnectionStatus";
 
 // Version display component that reads from app store
 function VersionDisplay() {
@@ -421,6 +422,7 @@ export function ControlPanelsAppComponent({
       ? state.contacts.find((contact) => contact.id === state.myContactId) ?? null
       : null
   );
+  const realtimeStatus = useRealtimeConnectionStatus();
   const [isTelegramDialogOpen, setIsTelegramDialogOpen] = React.useState(false);
 
   const openTelegramDialog = React.useCallback(async () => {
@@ -962,31 +964,50 @@ export function ControlPanelsAppComponent({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div
-                            className={cn(
-                              controlPanelItemIconShell,
-                              "rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden"
-                            )}
-                            style={
-                              myContact?.picture
-                                ? { background: "rgba(255, 255, 255, 0.72)" }
-                                : {
-                                    background:
-                                      "linear-gradient(to bottom, #dcdcdc, #b8b8b8)",
-                                    textShadow: userAvatarInitialsTextShadow,
-                                  }
-                            }
-                            aria-label={accountAvatarLabel}
-                          >
-                            {myContact?.picture ? (
-                              <img
-                                src={myContact.picture}
-                                alt={accountAvatarLabel}
-                                className="w-full h-full object-contain"
-                              />
-                            ) : (
-                              accountAvatarInitials
-                            )}
+                          <div className="relative shrink-0">
+                            <div
+                              className={cn(
+                                controlPanelItemIconShell,
+                                "rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden"
+                              )}
+                              style={
+                                myContact?.picture
+                                  ? { background: "rgba(255, 255, 255, 0.72)" }
+                                  : {
+                                      background:
+                                        "linear-gradient(to bottom, #dcdcdc, #b8b8b8)",
+                                      textShadow: userAvatarInitialsTextShadow,
+                                    }
+                              }
+                              aria-label={accountAvatarLabel}
+                            >
+                              {myContact?.picture ? (
+                                <img
+                                  src={myContact.picture}
+                                  alt={accountAvatarLabel}
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                accountAvatarInitials
+                              )}
+                            </div>
+                            <span
+                              className={cn(
+                                "absolute -bottom-px -right-px block h-[10px] w-[10px] rounded-full border-[1.5px] border-white",
+                                realtimeStatus === "connected"
+                                  ? "bg-green-500"
+                                  : realtimeStatus === "connecting"
+                                    ? "bg-amber-400"
+                                    : "bg-neutral-400"
+                              )}
+                              title={
+                                realtimeStatus === "connected"
+                                  ? t("apps.control-panels.connectionStatus.connected")
+                                  : realtimeStatus === "connecting"
+                                    ? t("apps.control-panels.connectionStatus.connecting")
+                                    : t("apps.control-panels.connectionStatus.disconnected")
+                              }
+                            />
                           </div>
                           <div className="flex flex-col gap-0.5 min-w-0">
                             <span className="text-[13px] font-geneva-12 font-medium leading-tight truncate">
