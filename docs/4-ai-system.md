@@ -50,12 +50,13 @@ graph TD
 | `settings` | Change language, theme, volume, speech, check-for-updates |
 | `stickiesControl` | List/create/update/delete/clear sticky notes |
 | `infiniteMacControl` | Control Infinite Mac emulator (launch system, screen read, mouse/keyboard actions, pause state) |
-| `calendarControl` | Create, update, delete, and list calendar events |
-| `contactsControl` | Search, create, update, and delete contacts |
-| `documentsControl` | List and read cloud-synced documents |
+| `calendarControl` | Create, update, delete, and list calendar events; create, toggle, delete, and list todos |
+| `contactsControl` | Search, create, update, and delete contacts (with Telegram field support) |
+| `documentsControl` | List, read, write, and edit cloud-synced markdown documents |
 | `memoryWrite` | Unified memory writer (`long_term` or `daily`) |
 | `memoryRead` | Unified memory reader (`long_term` by key or `daily` by date) |
 | `memoryDelete` | Delete long-term memory by key |
+| `web_search` | OpenAI provider web search (GPT-5.4 only, authenticated users, with geolocation context) |
 
 ## API Endpoints
 
@@ -69,6 +70,11 @@ graph TD
 | [`/api/ie-generate`](/docs/ai-generation-apis) | Internet Explorer time-travel page generation |
 | [`/api/speech`](/docs/media-api) | Text-to-speech synthesis |
 | [`/api/audio-transcribe`](/docs/media-api) | Audio transcription |
+| [`/api/webhooks/telegram`](/docs/chat-api) | Telegram bot webhook for DM chat (image support, web search, AI tool execution) |
+| [`/api/cron/telegram-heartbeat`](/docs/chat-api) | AI-powered proactive heartbeat messages via Telegram (cron-triggered) |
+| `/api/telegram/link/create` | Generate Telegram account linking code |
+| `/api/telegram/link/status` | Check Telegram link status |
+| `/api/telegram/link/disconnect` | Disconnect linked Telegram account |
 
 ## Architecture
 
@@ -100,8 +106,13 @@ Backend tool registry lives in `api/chat/tools/`:
 
 - `api/chat/tools/types.ts` - Tool constants and TypeScript contracts
 - `api/chat/tools/schemas.ts` - Zod input schemas and action-specific validation
-- `api/chat/tools/executors.ts` - Server-side executors (`generateHtml`, `searchSongs`, memory tools)
-- `api/chat/tools/index.ts` - `createChatTools()` registry (mixes server and client tools)
+- `api/chat/tools/executors.ts` - Server-side executors (`generateHtml`, `searchSongs`, memory tools, calendar, stickies, contacts, documents)
+- `api/chat/tools/index.ts` - `createChatTools()` registry with profile-based filtering (`all`, `memory`, `telegram`)
+
+Tool profiles control which tools are available per channel:
+- `all` (web chat): Full tool set — all client-side and server-side tools
+- `telegram`: Server-side subset — memory, calendar, stickies, contacts, documents (all execute server-side via Redis)
+- `memory`: Memory tools only
 
 Client execution handlers remain in `src/apps/chats/tools/`:
 
@@ -112,6 +123,12 @@ Client execution handlers remain in `src/apps/chats/tools/`:
 - `settingsHandler.ts` - System settings updates
 - `stickiesHandler.ts` - Sticky note operations
 - `infiniteMacHandler.ts` - Infinite Mac control bridge
+
+Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
+
+- `prepareRyoConversationModelInput()` - Unified entry point for both web chat and Telegram channels
+- Assembles static system prompt, dynamic context (memories, daily notes, system state), and tools
+- Handles model selection, message enrichment, and OpenAI web search injection
 
 ### Tool schema highlights
 
@@ -131,12 +148,14 @@ Core prompt constants are defined in `api/_utils/_aiPrompts.ts`:
 - `ANSWER_STYLE_INSTRUCTIONS` - Style and language behavior
 - `CODE_GENERATION_INSTRUCTIONS` - Applet generation constraints
 - `CHAT_INSTRUCTIONS` - Chats behavior and memory usage guidance
+- `TELEGRAM_CHAT_INSTRUCTIONS` - Telegram DM-specific behavior (plain text only, calendar/stickies/contacts/documents tool guidance)
 - `TOOL_USAGE_INSTRUCTIONS` - VFS and tool workflow rules
 - `MEMORY_INSTRUCTIONS` - Two-tier memory strategy and tool usage policy
 - `IE_HTML_GENERATION_INSTRUCTIONS` - Internet Explorer HTML generation rules
 
-Endpoint-specific prompts:
-- `/api/chat` composes a static system prompt from the core constants, then appends dynamic user/system state.
+Channel-specific prompt composition (via `ryo-conversation.ts`):
+- **Web chat** (`/api/chat`): `CORE_PRIORITY` + `ANSWER_STYLE` + `RYO_PERSONA` + `CHAT` + `TOOL_USAGE` + `MEMORY` + `CODE_GENERATION`, then appends dynamic user/system state.
+- **Telegram** (`/api/webhooks/telegram`): `CORE_PRIORITY` + `ANSWER_STYLE` + `RYO_PERSONA` + `TELEGRAM_CHAT` + `MEMORY`, then appends dynamic user context.
 - `/api/applet-ai` uses a dedicated compact applet system prompt for embedded UI contexts.
 - `/api/ie-generate` splits prompts into static + dynamic sections for year/URL-aware generation.
 
@@ -190,6 +209,7 @@ Pipeline behavior:
 2. Daily notes continue collecting while a day is active.
 3. `process-daily-notes` processes unprocessed past days (excludes today), consolidates overlaps, and marks each processed day.
 4. Chat endpoint can trigger `process-daily-notes` in the background during proactive greeting flow.
+5. Telegram heartbeat cron also triggers `process-daily-notes` and extracts memories from new Telegram chat messages since the last heartbeat.
 
 ## apiHandler Pattern
 
@@ -210,10 +230,15 @@ Common endpoint configurations in this AI stack:
 - `/api/ai/extract-memories`: `auth: "required"`, `parseJsonBody: true`
 - `/api/ai/process-daily-notes`: `auth: "required"`, `parseJsonBody: true`
 - `/api/ai/ryo-reply`: `auth: "required"`, `parseJsonBody: true`
+- `/api/webhooks/telegram`: Custom handler (webhook secret validation, Telegram-specific auth via linked accounts)
+- `/api/cron/telegram-heartbeat`: Custom handler (cron secret via `Authorization: Bearer` header)
 
 ## Additional AI Capabilities
 
-- **Proactive greetings**: `/api/chat` supports a non-streaming proactive greeting mode that uses memory context and can kick off background daily-note processing.
+- **Proactive greetings**: `/api/chat` supports a proactive greeting mode for logged-in users with memories. Uses `gemini-2.5-flash` to generate a short, context-aware greeting referencing recent activity or memories. Triggers background daily-note processing on each greeting.
+- **Telegram bot DM chat**: `/api/webhooks/telegram` enables private Telegram DM conversations with Ryo. Supports image attachments (downloaded and injected as multimodal content), web search, and server-side tool execution (memory, calendar, stickies, contacts, documents). Users link accounts via `/api/telegram/link/*` endpoints. Includes per-user burst and account-window rate limiting.
+- **Telegram heartbeat insights**: `/api/cron/telegram-heartbeat` runs on a 30-minute cron schedule. Analyzes today's daily notes, recent Telegram conversation, and heartbeat history to decide whether to proactively message the user. Processes daily notes and extracts memories from new chat messages before each decision. Uses gating logic to avoid redundant or stale nudges.
+- **Web search**: OpenAI provider `web_search` tool is automatically enabled for authenticated users on the `gpt-5.4` model. Includes geolocation context (country, city, region, timezone) when available.
 - **Chat-room auto replies**: `/api/ai/ryo-reply` generates room messages as `ryo` with dedicated rate limits.
 - **Applet multimodal AI**: `/api/applet-ai` supports text chat, image attachments in message history, and binary image generation responses.
 - **Infinite Mac visual loop**: `infiniteMacControl` can return screenshots for model-visible state inspection.
