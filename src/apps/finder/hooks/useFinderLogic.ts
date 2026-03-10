@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { getTranslatedFolderNameFromName } from "@/utils/i18n";
+import { compareFinderItemsByDisplayName } from "@/utils/finderDisplay";
 import { helpItems } from "../index";
 import { useFilesStoreShallow } from "@/stores/helpers";
 import { useDockStore } from "@/stores/useDockStore";
@@ -424,14 +425,17 @@ export function useFinderLogic({
     return [...files].sort((a, b) => {
       switch (sortType) {
         case "name":
-          return a.name.localeCompare(b.name);
+          return compareFinderItemsByDisplayName(a, b);
         case "kind": {
           // Sort by directory first, then by file extension
           if (a.isDirectory && !b.isDirectory) return -1;
           if (!a.isDirectory && b.isDirectory) return 1;
           const extA = a.name.split(".").pop() || "";
           const extB = b.name.split(".").pop() || "";
-          return extA.localeCompare(extB) || a.name.localeCompare(b.name);
+          return (
+            extA.localeCompare(extB, undefined, { sensitivity: "base" }) ||
+            compareFinderItemsByDisplayName(a, b)
+          );
         }
         case "size":
           // For now, directories are considered smaller than files
@@ -454,7 +458,7 @@ export function useFinderLogic({
           if (a.modifiedAt && !b.modifiedAt) return -1;
           if (!a.modifiedAt && b.modifiedAt) return 1;
           // If neither has a date, sort by name
-          return a.name.localeCompare(b.name);
+          return compareFinderItemsByDisplayName(a, b);
         default:
           return 0;
       }

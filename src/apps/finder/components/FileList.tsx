@@ -13,10 +13,10 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useState, useRef, useEffect, memo } from "react";
 import { useLongPress } from "@/hooks/useLongPress";
 import { isTouchDevice } from "@/utils/device";
+import { getFinderDisplayName } from "@/utils/finderDisplay";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
-import { getTranslatedFolderNameFromName, getTranslatedAppName, AppId } from "@/utils/i18n";
 
 export interface FileItem {
   name: string;
@@ -675,38 +675,7 @@ export function FileList({
   // Helper to compute display name. For Finder applets in /Applets ending with .app, hide extension
   // Also hide extensions for desktop shortcuts
   // For folders, use translated names
-  const getDisplayName = (file: FileItem): string => {
-    // For directories, use translated folder names
-    if (file.isDirectory) {
-      return getTranslatedFolderNameFromName(file.name);
-    }
-    
-    // For apps in /Applications, use translated app name
-    if (file.path.startsWith("/Applications/") && file.appId) {
-      return getTranslatedAppName(file.appId as AppId);
-    }
-    
-    // Hide extension for desktop shortcuts
-    if (file.path.startsWith("/Desktop/") && !file.isDirectory) {
-      // For desktop shortcuts, if it's an app alias, use translated app name
-      if (file.aliasType === "app" && file.aliasTarget) {
-        return getTranslatedAppName(file.aliasTarget as AppId);
-      }
-      if (file.appId) {
-        return getTranslatedAppName(file.appId as AppId);
-      }
-      return file.name.replace(/\.[^/.]+$/, "");
-    }
-    // Hide extension for applets
-    if (
-      file.path.startsWith("/Applets/") &&
-      !file.isDirectory &&
-      file.name.toLowerCase().endsWith(".app")
-    ) {
-      return file.name.slice(0, -4);
-    }
-    return file.name;
-  };
+  const getDisplayName = (file: FileItem): string => getFinderDisplayName(file);
 
   // ------------------- Render -------------------
 
