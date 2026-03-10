@@ -712,7 +712,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             {selectedAppletContent ? (
               <iframe
                 srcDoc={ensureMacFonts(
-                  sanitizeHtmlForSrcDoc(selectedAppletContent)
+                  sanitizeHtmlForSrcDoc(selectedAppletContent, {
+                    allowScripts: true,
+                  })
                 )}
                 title={displayName}
                 className="w-full h-full border-0"

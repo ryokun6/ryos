@@ -420,7 +420,9 @@ export default function HtmlPreview({
     // If no <html> tag, coreHtmlContent remains the original trimmedHtmlContent (fragment)
     // --- End modification ---
 
-    const sanitizedCoreHtmlContent = sanitizeHtmlForSrcDoc(coreHtmlContent);
+    const sanitizedCoreHtmlContent = sanitizeHtmlForSrcDoc(coreHtmlContent, {
+      allowScripts: true,
+    });
 
     // Use sanitized core HTML content for subsequent checks and processing
     const isFullHtmlDoc =

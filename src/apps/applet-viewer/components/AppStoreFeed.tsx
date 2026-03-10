@@ -528,7 +528,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         >
           {content ? (
             <iframe
-              srcDoc={ensureMacFonts(sanitizeHtmlForSrcDoc(content))}
+              srcDoc={ensureMacFonts(
+                sanitizeHtmlForSrcDoc(content, { allowScripts: true })
+              )}
               title={displayName}
               className="w-full h-full border-0"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"

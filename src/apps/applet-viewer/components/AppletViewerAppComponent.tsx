@@ -71,7 +71,9 @@ export function AppletViewerAppComponent({
     handleVerifyTokenSubmit,
     getAppletTitle,
   } = useAppletViewerLogic({ instanceId, initialData });
-  const sanitizedAppletHtmlContent = sanitizeHtmlForSrcDoc(htmlContent);
+  const sanitizedAppletHtmlContent = sanitizeHtmlForSrcDoc(htmlContent, {
+    allowScripts: true,
+  });
 
   const menuBar = (
     <AppletViewerMenuBar
