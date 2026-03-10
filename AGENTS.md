@@ -163,7 +163,7 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 ## Important Notes
 
 - **Linter warnings**: The codebase has pre-existing linter warnings for unused variables. These are not blockers.
-- **Pre-existing lint error**: There is one pre-existing `@typescript-eslint/no-explicit-any` error in `src/apps/winamp/components/WinampAppComponent.tsx`. Do not attempt to fix it unless asked.
+- **Pre-existing lint error**: There is one pre-existing `@typescript-eslint/no-empty-object-type` error in `api/sync/auto.ts`. Do not attempt to fix it unless asked. `bun run lint` exits with code 1 due to this.
 - **API endpoints**: API routes are Node-style handlers under `api/` and require Redis for caching/storage.
 - **Build process**: The build generates service worker files (`sw.js`, `workbox-*.js`) which are copied to `.vercel/output/static/`.
 - **Vercel CLI**: Installed globally, but optional for local testing now that standalone Bun API is available.
