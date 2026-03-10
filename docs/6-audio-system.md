@@ -10,7 +10,7 @@ Overview of ryOS audio capabilities and architecture.
 | Tone.js | Synthesizer app with polyphonic synthesis, effects chain, and Chat typing synthesis |
 | WaveSurfer.js | Waveform visualization for recorded sounds in Soundboard app |
 | MediaRecorder API | Audio recording functionality for Soundboard app |
-| ReactPlayer | YouTube video/audio playback in iPod app |
+| ReactPlayer | YouTube video/audio playback in iPod and Karaoke apps |
 | Webamp + YouTube IFrame API | Winamp playback via custom YouTube-backed media class |
 
 ## Architecture Overview
@@ -19,6 +19,7 @@ Overview of ryOS audio capabilities and architecture.
 graph TB
     subgraph Sources["Audio Sources"]
         iPod["iPod App<br/>(ReactPlayer)"]
+        Karaoke["Karaoke App<br/>(ReactPlayer)"]
         Winamp["Winamp App<br/>(Webamp + YouTubeMedia)"]
         Soundboard["Soundboard<br/>(HTMLAudioElement)"]
         UI["UI Sounds<br/>(useSound)"]
@@ -43,6 +44,7 @@ graph TB
     end
     
     iPod --> Ducking
+    Karaoke --> Ducking
     Winamp -->|"YouTube IFrame output"| Dest
     Soundboard --> GainNode
     UI --> GainNode
@@ -114,6 +116,24 @@ Uses ReactPlayer for YouTube video/audio playback with:
 - Seeking and playback state management
 - Fullscreen playback with synchronized lyrics display
 - Volume ducking when TTS is speaking (35% of original on non-iOS)
+- Track switching guard to prevent race conditions between YouTube load events and play/pause state
+- iOS Safari autoplay watchdog that detects blocked playback and reverts to paused state
+- CoverFlow album art browser with 3D perspective, triggered via long-press or menu
+
+#### Display Modes
+
+Both iPod (fullscreen) and Karaoke support selectable visual backgrounds behind lyrics:
+
+| Mode | Enum Value | Description |
+|------|-----------|-------------|
+| Video | `DisplayMode.Video` | YouTube music video (default) |
+| Cover | `DisplayMode.Cover` | Album/cover art overlay |
+| Landscapes | `DisplayMode.Landscapes` | Cycling landscape video wallpapers (`LandscapeVideoBackground`) |
+| Warp | `DisplayMode.Shader` | Kali-fold warp shader sampling cover art colors (`AmbientBackground`) |
+| Mesh Gradient | `DisplayMode.Mesh` | Mesh gradient shader backdrop (`MeshGradientBackground`) |
+| Water | `DisplayMode.Water` | Water/caustic shader over cover art (`WaterBackground`) |
+
+Display mode is stored in `useIpodStore` and shared between iPod and Karaoke.
 
 ### Winamp App
 
@@ -122,6 +142,17 @@ Uses Webamp with a custom `YouTubeMedia` backend:
 - Supports transport controls plus shuffle/repeat and skin switching
 - Uses a hidden YouTube iframe player with duration/time polling for Webamp sync
 - Playback currently stays outside the shared `AudioContext` ducking path
+
+### Karaoke App
+
+Uses ReactPlayer (same as iPod) with independent playback state via `useKaraokeStore`:
+- Shares iPod's music library, lyrics preferences, and display mode settings (`useIpodStore`)
+- Maintains its own playback state (current song, play/pause, loop, shuffle) so iPod and Karaoke can play different tracks simultaneously
+- Full-window video/visual background with lyrics overlay
+- Fullscreen portal with synchronized player handoff (position and play state synced between main and fullscreen ReactPlayer instances)
+- Track switching guard and iOS Safari autoplay watchdog (same technique as iPod)
+- iPod widget control: the iPod wheel and controls can operate Karaoke playback when both apps are open
+- Listen Together sessions for synchronized group playback via Pusher
 
 ### Soundboard App
 

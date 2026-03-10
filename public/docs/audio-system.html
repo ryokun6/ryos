@@ -306,11 +306,12 @@
         <h1>Audio System</h1>
 <p>Overview of ryOS audio capabilities and architecture.</p>
 <h2>Technologies</h2>
-<table><thead><tr><th>Technology</th><th>Usage</th></tr></thead><tbody><tr><td>Web Audio API</td><td>Core audio processing, centralized AudioContext management, UI sound playback, TTS audio scheduling</td></tr><tr><td>Tone.js</td><td>Synthesizer app with polyphonic synthesis, effects chain, and Chat typing synthesis</td></tr><tr><td>WaveSurfer.js</td><td>Waveform visualization for recorded sounds in Soundboard app</td></tr><tr><td>MediaRecorder API</td><td>Audio recording functionality for Soundboard app</td></tr><tr><td>ReactPlayer</td><td>YouTube video/audio playback in iPod app</td></tr><tr><td>Webamp + YouTube IFrame API</td><td>Winamp playback via custom YouTube-backed media class</td></tr></tbody></table>
+<table><thead><tr><th>Technology</th><th>Usage</th></tr></thead><tbody><tr><td>Web Audio API</td><td>Core audio processing, centralized AudioContext management, UI sound playback, TTS audio scheduling</td></tr><tr><td>Tone.js</td><td>Synthesizer app with polyphonic synthesis, effects chain, and Chat typing synthesis</td></tr><tr><td>WaveSurfer.js</td><td>Waveform visualization for recorded sounds in Soundboard app</td></tr><tr><td>MediaRecorder API</td><td>Audio recording functionality for Soundboard app</td></tr><tr><td>ReactPlayer</td><td>YouTube video/audio playback in iPod and Karaoke apps</td></tr><tr><td>Webamp + YouTube IFrame API</td><td>Winamp playback via custom YouTube-backed media class</td></tr></tbody></table>
 <h2>Architecture Overview</h2>
 <pre class="mermaid">graph TB
     subgraph Sources["Audio Sources"]
         iPod["iPod App<br/>(ReactPlayer)"]
+        Karaoke["Karaoke App<br/>(ReactPlayer)"]
         Winamp["Winamp App<br/>(Webamp + YouTubeMedia)"]
         Soundboard["Soundboard<br/>(HTMLAudioElement)"]
         UI["UI Sounds<br/>(useSound)"]
@@ -335,6 +336,7 @@
     end
     
     iPod --> Ducking
+    Karaoke --> Ducking
     Winamp -->|"YouTube IFrame output"| Dest
     Soundboard --> GainNode
     UI --> GainNode
@@ -376,9 +378,15 @@ source.stop(0);</code></pre>
 <h2>Audio Playback</h2>
 <p>ryOS provides multiple audio playback mechanisms:</p>
 <h3>iPod App</h3>
-<p>Uses ReactPlayer for YouTube video/audio playback with: <ul><li>Volume control via <code>ipodVolume</code> setting</li><li>Seeking and playback state management</li><li>Fullscreen playback with synchronized lyrics display</li><li>Volume ducking when TTS is speaking (35% of original on non-iOS)</li></ul></p>
+<p>Uses ReactPlayer for YouTube video/audio playback with: <ul><li>Volume control via <code>ipodVolume</code> setting</li><li>Seeking and playback state management</li><li>Fullscreen playback with synchronized lyrics display</li><li>Volume ducking when TTS is speaking (35% of original on non-iOS)</li><li>Track switching guard to prevent race conditions between YouTube load events and play/pause state</li><li>iOS Safari autoplay watchdog that detects blocked playback and reverts to paused state</li><li>CoverFlow album art browser with 3D perspective, triggered via long-press or menu</li></ul></p>
+<h4>Display Modes</h4>
+<p>Both iPod (fullscreen) and Karaoke support selectable visual backgrounds behind lyrics:</p>
+<table><thead><tr><th>Mode</th><th>Enum Value</th><th>Description</th></tr></thead><tbody><tr><td>Video</td><td><code>DisplayMode.Video</code></td><td>YouTube music video (default)</td></tr><tr><td>Cover</td><td><code>DisplayMode.Cover</code></td><td>Album/cover art overlay</td></tr><tr><td>Landscapes</td><td><code>DisplayMode.Landscapes</code></td><td>Cycling landscape video wallpapers (<code>LandscapeVideoBackground</code>)</td></tr><tr><td>Warp</td><td><code>DisplayMode.Shader</code></td><td>Kali-fold warp shader sampling cover art colors (<code>AmbientBackground</code>)</td></tr><tr><td>Mesh Gradient</td><td><code>DisplayMode.Mesh</code></td><td>Mesh gradient shader backdrop (<code>MeshGradientBackground</code>)</td></tr><tr><td>Water</td><td><code>DisplayMode.Water</code></td><td>Water/caustic shader over cover art (<code>WaterBackground</code>)</td></tr></tbody></table>
+<p>Display mode is stored in <code>useIpodStore</code> and shared between iPod and Karaoke.</p>
 <h3>Winamp App</h3>
 <p>Uses Webamp with a custom <code>YouTubeMedia</code> backend: <ul><li>Loads tracks from the iPod library into a Webamp playlist (YouTube IDs/URLs)</li><li>Supports transport controls plus shuffle/repeat and skin switching</li><li>Uses a hidden YouTube iframe player with duration/time polling for Webamp sync</li><li>Playback currently stays outside the shared <code>AudioContext</code> ducking path</li></ul></p>
+<h3>Karaoke App</h3>
+<p>Uses ReactPlayer (same as iPod) with independent playback state via <code>useKaraokeStore</code>: <ul><li>Shares iPod's music library, lyrics preferences, and display mode settings (<code>useIpodStore</code>)</li><li>Maintains its own playback state (current song, play/pause, loop, shuffle) so iPod and Karaoke can play different tracks simultaneously</li><li>Full-window video/visual background with lyrics overlay</li><li>Fullscreen portal with synchronized player handoff (position and play state synced between main and fullscreen ReactPlayer instances)</li><li>Track switching guard and iOS Safari autoplay watchdog (same technique as iPod)</li><li>iPod widget control: the iPod wheel and controls can operate Karaoke playback when both apps are open</li><li>Listen Together sessions for synchronized group playback via Pusher</li></ul></p>
 <h3>Soundboard App</h3>
 <p>Plays recorded audio clips using HTMLAudioElement: <ul><li>Supports multiple formats (WebM, MP4) with automatic browser detection</li><li>Base64-encoded audio storage</li><li>Waveform visualization using WaveSurfer.js (dynamically imported)</li><li>Per-slot playback state tracking</li></ul></p>
 <h3>UI Sounds (<code>useSound</code>)</h3>

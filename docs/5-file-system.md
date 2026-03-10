@@ -243,6 +243,30 @@ interface FinderInstance {
 }
 ```
 
+### Undo/Redo for File Operations
+
+Finder maintains a per-instance undo/redo stack for file operations:
+
+```typescript
+type FinderUndoAction =
+  | { type: "moveToTrash"; fileName: string; originalPath: string }
+  | { type: "rename"; basePath: string; oldName: string; newName: string };
+```
+
+Supported undo/redo actions:
+- **Move to Trash**: Undo restores the trashed item; redo re-trashes it
+- **Rename**: Undo reverts to the old name; redo reapplies the new name
+
+The stack is capped at 20 entries. Any new action clears the redo stack.
+
+### Reactive File View
+
+Finder automatically refreshes when the file store's `items` reference changes (e.g., after move-to-trash, restore, empty-trash, or cloud sync). This is achieved via a Zustand `subscribe()` call that triggers `loadFiles()` whenever `state.items` changes. Cloud sync updates for images are also detected through `useCloudSyncStore` subscription.
+
+### Sorting with Localized Names
+
+Finder sorts items using locale-aware comparison via `compareFinderItemsByDisplayName()` and `compareFinderSortText()` from `src/utils/finderDisplay.ts`. These utilities use `Intl.Collator` with the current UI language so that translated folder names (e.g., Japanese, Korean) sort correctly alongside Latin names.
+
 ### View Type Preferences
 
 Per-path view type preferences persist across sessions:
@@ -311,6 +335,19 @@ Desktop shortcuts support:
 ## Cloud Sync
 
 The cloud sync system (`/api/sync/*`) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs **calendar** events, **contacts**, and **stickies** from their respective stores (`useCalendarStore`, `useContactsStore`, `useStickiesStore`), enabling backup and real-time sync via Pusher or local WebSocket.
+
+### Domain-Based Change Tracking
+
+File operations emit domain-specific change events via `emitCloudSyncDomainChange()` and `emitCloudSyncDomainChanges()` so the sync system knows which data stores have been modified:
+
+| Domain | Triggers |
+|--------|----------|
+| `files-metadata` | Document save, format filesystem |
+| `files-images` | Image save, move, trash/restore |
+| `files-trash` | Move to trash, restore, empty trash |
+| `files-applets` | Applet save, fetch from share |
+
+Individual file operations (save, rename, move, trash, restore) emit the appropriate domain events to enable incremental sync rather than full-store uploads.
 
 ## Migration System
 

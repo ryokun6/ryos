@@ -306,28 +306,34 @@
         <h1>ryOS API Design Guide</h1>
 <p>This document outlines the current patterns and conventions used in the ryOS API.</p>
 <h2>Architecture Overview</h2>
-<p>The API is implemented as Node.js route handlers under <code>_api/</code>.   The default implementation pattern is the shared <code>apiHandler</code> wrapper, which centralizes: <ul><li>CORS preflight and response headers</li></ul><ul><li>origin allowlist checks</li><li>method allowlists</li><li>optional JSON body handling</li><li>optional/required auth resolution</li><li>logger setup and consistent fallback error handling</li></ul></p>
+<p>The API is implemented as Node.js route handlers under <code>api/</code>.   The default implementation pattern is the shared <code>apiHandler</code> wrapper, which centralizes: <ul><li>CORS preflight and response headers</li></ul><ul><li>origin allowlist checks</li><li>method allowlists</li><li>optional JSON body handling</li><li>optional/required auth resolution</li><li>logger setup and consistent fallback error handling</li></ul></p>
 <p>Auth boundaries are unified through <code>request-auth.ts</code>, which enforces paired auth headers.</p>
 <h2>File Structure</h2>
-<pre><code>_api/
+<pre><code>api/
 ├── _utils/
 │   ├── api-handler.ts      # Primary route wrapper
 │   ├── request-auth.ts     # Unified auth extraction + token validation
-│   ├── redis.ts            # Redis client factory
+│   ├── redis.ts            # Redis client factory (Upstash REST + standard Redis backends)
+│   ├── storage.ts          # Switchable object storage (Vercel Blob / S3)
+│   ├── contacts.ts         # Contacts state read/write helpers
 │   ├── _cors.ts            # Origin policy + CORS helpers
 │   ├── _rate-limit.ts      # Counter-based rate limit utilities
 │   ├── _validation.ts      # Input/profanity/escaping helpers
 │   ├── _ssrf.ts            # Safe URL fetch + SSRF protections
 │   ├── _sse.ts             # SSE stream helpers
 │   ├── _logging.ts         # Request-scoped logger
+│   ├── _aiModels.ts        # AI model registry and factory
+│   ├── _aiPrompts.ts       # Shared AI prompt templates
 │   └── constants.ts        # Shared constants
 ├── auth/                   # Auth/session endpoints
+├── chat/                   # Main AI chat endpoint + tool definitions
 ├── rooms/                  # Chat rooms/messages/presence
 ├── listen/                 # Listen Together session APIs
 ├── songs/                  # Song library + lyric processing
 ├── ai/                     # Memory processing + room AI reply
-├── sync/                   # Cloud backup metadata endpoints
-└── ...                     # Other feature routes</code></pre>
+├── sync/                   # Cloud backup + auto-sync endpoints
+├── telegram/               # Telegram account linking
+└── ...                     # Other feature routes (stocks, speech, etc.)</code></pre>
 <h3>Naming Conventions</h3>
 <ul><li><code>_helpers/</code> for domain-specific internal helpers</li></ul><ul><li><code>_utils/</code> for globally shared API utilities</li><li><code>_*.ts</code> files for internal/private modules</li><li><code>index.ts</code> for collection routes</li><li><code>[id].ts</code> and nested dynamic route folders for path params</li></ul>
 <h2>Common Patterns</h2>

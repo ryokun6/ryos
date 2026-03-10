@@ -517,20 +517,59 @@ const applet = await fetch(`/api/share-applet?id=${id}`).then(r =&gt; r.json());
 const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.json());</code></pre>
 <hr>
 <h2>Stocks API</h2>
-<p>Provides real-time stock quote data for the Dashboard Stocks widget.</p>
+<p>Provides real-time stock quote data for the Dashboard Stocks widget. Uses Yahoo Finance for quote and chart data.</p>
 <h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/stocks</code></td><td>Fetch stock quotes</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/stocks</code></td><td>Fetch stock quotes and optional chart data</td></tr></tbody></table>
+<h3>Request</h3>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>symbols</code></td><td>string</td><td>Yes</td><td>Comma-separated stock symbols (max 20)</td></tr><tr><td><code>chart</code></td><td>string</td><td>No</td><td>Symbol to fetch chart data for</td></tr><tr><td><code>range</code></td><td>string</td><td>No</td><td>Chart time range: <code>1d</code>, <code>5d</code>, <code>1mo</code>, <code>3mo</code>, <code>6mo</code> (default), <code>1y</code>, <code>2y</code></td></tr></tbody></table>
+<h3>Response</h3>
+<strong>Success (200):</strong>
+<pre><code>{
+  "quotes": [
+    {
+      "symbol": "AAPL",
+      "price": 198.50,
+      "change": 2.30,
+      "changePercent": 1.17,
+      "name": "Apple Inc."
+    }
+  ],
+  "chart": [
+    {
+      "timestamp": 1704067200000,
+      "close": 195.20
+    }
+  ]
+}</code></pre>
+<strong>Response Fields:</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>quotes</code></td><td>StockQuote[]</td><td>Array of stock quotes</td></tr><tr><td><code>chart</code></td><td>ChartPoint[]</td><td>Optional chart data (only when <code>chart</code> param provided)</td></tr></tbody></table>
+<strong>Error Responses:</strong>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td>Missing <code>symbols</code> parameter or no valid symbols</td></tr><tr><td>500</td><td>Failed to fetch stock data</td></tr></tbody></table>
+<h3>Caching</h3>
+<p>Responses include <code>Cache-Control: public, max-age=60, stale-while-revalidate=300</code>.</p>
+<h3>Example</h3>
+<pre><code>const response = await fetch('/api/stocks?symbols=AAPL,GOOGL,MSFT&amp;chart=AAPL&amp;range=1mo');
+const { quotes, chart } = await response.json();</code></pre>
 <hr>
 <h2>Sync APIs (Cloud Backup Metadata)</h2>
 <p>The sync endpoints manage backup metadata and retrieval around client-side Vercel Blob uploads.</p>
 <h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate short-lived Blob client upload token</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr><tr><td>GET, POST</td><td><code>/api/sync/auto</code></td><td>Automatic sync with Pusher/WebSocket notifications</td><td>Required</td></tr><tr><td>GET, PUT</td><td><code>/api/sync/state</code></td><td>Sync state read/write</td><td>Required</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate short-lived Blob client upload token</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/auto-token</code></td><td>Generate domain-specific auto-sync upload token</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr><tr><td>GET, POST</td><td><code>/api/sync/auto</code></td><td>Automatic sync with Pusher/WebSocket notifications</td><td>Required</td></tr><tr><td>GET, PUT</td><td><code>/api/sync/state</code></td><td>Sync state read/write</td><td>Required</td></tr></tbody></table>
 <h3>POST /api/sync/backup-token</h3>
 <p>Generates a direct-upload token for <code>backups/{username}/backup.gz</code>.</p>
 <p>Response:</p>
 <pre><code>{
   "clientToken": "vercel_blob_client_token..."
 }</code></pre>
+<h3>POST /api/sync/auto-token</h3>
+<p>Generates a direct-upload token for domain-specific auto-sync uploads (e.g., contacts, settings). Rate-limited to 20 requests/minute.</p>
+<p>Request body:</p>
+<pre><code>{
+  "domain": "contacts",
+  "itemKey": "optional-item-key"
+}</code></pre>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>domain</code></td><td>string</td><td>Sync domain (e.g., <code>"contacts"</code>, <code>"settings"</code>)</td></tr><tr><td><code>itemKey</code></td><td>string</td><td>Optional item key for individual blob sync domains</td></tr></tbody></table>
 <h3>GET /api/sync/status</h3>
 <p>Response:</p>
 <pre><code>{
@@ -772,6 +811,46 @@ await fetch('/api/admin', {
     reason: 'Repeated spam violations'
   })
 });</code></pre>
+<hr>
+<h2>Telegram Link API</h2>
+<p>Manages linking ryOS accounts to Telegram for cross-platform notifications and chat integration. All endpoints require authentication.</p>
+<h3>Endpoint Summary</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/telegram/link/create</code></td><td>Create a Telegram link code</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/telegram/link/status</code></td><td>Check link status</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/telegram/link/disconnect</code></td><td>Disconnect Telegram account</td><td>Required</td></tr></tbody></table>
+<h3>POST /api/telegram/link/create</h3>
+<p>Generates a link code for connecting a Telegram account. If a pending link already exists, returns the existing code.</p>
+<strong>Response (200):</strong>
+<pre><code>{
+  "code": "abc123",
+  "expiresIn": 300,
+  "botUsername": "ryos_bot",
+  "deepLink": "https://t.me/ryos_bot?start=link_abc123",
+  "linkedAccount": null
+}</code></pre>
+<p>If already linked:</p>
+<pre><code>{
+  "code": null,
+  "linkedAccount": {
+    "telegramId": 123456789,
+    "firstName": "Alice"
+  }
+}</code></pre>
+<h3>GET /api/telegram/link/status</h3>
+<p>Check whether the authenticated user has a linked Telegram account or a pending link session.</p>
+<strong>Response (200):</strong>
+<pre><code>{
+  "linked": true,
+  "account": {
+    "telegramId": 123456789,
+    "firstName": "Alice"
+  },
+  "pending": null
+}</code></pre>
+<h3>POST /api/telegram/link/disconnect</h3>
+<p>Disconnect a linked Telegram account.</p>
+<strong>Response (200):</strong>
+<pre><code>{
+  "success": true
+}</code></pre>
 <hr>
 <h2>Error Handling</h2>
 <p>All utility APIs return consistent error responses:</p>

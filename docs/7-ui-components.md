@@ -50,7 +50,7 @@ graph LR
 The UI system follows a layered approach:
 
 1. **Base Layer**: shadcn/ui components (19 components: button, dialog, input, select, etc.) provide accessible, themeable primitives
-2. **Custom Layer**: Specialized components (9 components: activity-indicator, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs
+2. **Custom Layer**: Specialized components (10 components: activity-indicator, aqua-checkbox, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs
 3. **Layout Layer**: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure
 4. **Application Layer**: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)
 
@@ -71,11 +71,12 @@ graph TD
     
     subgraph Layer 2: Custom
         B1[activity-indicator]
-        B2[audio-bars]
-        B3[dial]
-        B4[playback-bars]
-        B5[volume-bar]
-        B6[audio-input-button]
+        B2[aqua-checkbox]
+        B3[audio-bars]
+        B4[dial]
+        B5[playback-bars]
+        B6[volume-bar]
+        B7[audio-input-button]
     end
     
     subgraph Layer 1: Base
@@ -83,8 +84,8 @@ graph TD
         A2[button, dialog, input, select, ...]
     end
     
-    A1 --> B1 & B2 & B3 & B4 & B5 & B6
-    B1 & B2 & B3 & B4 & B5 & B6 --> C1 & C2 & C3 & C4
+    A1 --> B1 & B2 & B3 & B4 & B5 & B6 & B7
+    B1 & B2 & B3 & B4 & B5 & B6 & B7 --> C1 & C2 & C3 & C4
     C1 & C2 & C3 & C4 --> D1 & D2 & D3
 ```
 
@@ -92,5 +93,5 @@ All components are theme-aware, automatically adapting to the active system them
 
 ## Subsections
 
-- [Component Library](/docs/component-library) - Core UI component library including 19 shadcn components, 9 custom primitives, 16 shared components, and crash boundary components
+- [Component Library](/docs/component-library) - Core UI component library including 19 shadcn components, 10 custom primitives, 16 shared components, and crash boundary components
 - [Internationalization](/docs/i18n) - i18n hooks and translation system supporting 10 languages

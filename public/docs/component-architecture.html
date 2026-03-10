@@ -376,7 +376,12 @@
 └── shared/           # Cross-app utilities
     ├── ThemedIcon.tsx
     ├── TrafficLightButton.tsx
+    ├── ThemedTabs.tsx
     ├── EmojiAquarium.tsx
+    ├── FullscreenPlayerControls.tsx
+    ├── LinkPreview.tsx
+    ├── ImageAttachment.tsx
+    ├── LyricsSyncMode.tsx
     └── ...</code></pre>
 <code>AppManager</code> is part of the application shell (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/base/AppManager.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/base/AppManager.tsx</a></code>), where windows are rendered and wrapped with per-instance <code>AppErrorBoundary</code>.
 <h2>Layout Components</h2>
@@ -400,7 +405,7 @@
   children: React.ReactNode;
   title: string;
   appId: AppId;
-  material?: "default" | "transparent" | "notitlebar";
+  material?: "default" | "transparent" | "notitlebar" | "brushedmetal";
   windowConstraints?: WindowConstraints;
   instanceId?: string;
   menuBar?: React.ReactNode;
@@ -444,7 +449,7 @@
 <h2>UI Components</h2>
 <h3>shadcn-based Components</h3>
 <p>Standard UI primitives from shadcn/ui:</p>
-<table><thead><tr><th>Component</th><th>Base</th><th>Purpose</th></tr></thead><tbody><tr><td><code>button</code></td><td>CVA variants</td><td>Buttons with theme variants</td></tr><tr><td><code>dialog</code></td><td>Radix Dialog</td><td>Modal dialogs</td></tr><tr><td><code>dropdown-menu</code></td><td>Radix DropdownMenu</td><td>Context/dropdown menus</td></tr><tr><td><code>select</code></td><td>Radix Select</td><td>Selection dropdowns</td></tr><tr><td><code>slider</code></td><td>Radix Slider</td><td>Value sliders</td></tr><tr><td><code>switch</code></td><td>Radix Switch</td><td>Toggle switches</td></tr><tr><td><code>tabs</code></td><td>Radix Tabs</td><td>Tabbed interfaces</td></tr><tr><td><code>checkbox</code></td><td>Radix Checkbox</td><td>Checkboxes</td></tr><tr><td><code>tooltip</code></td><td>Radix Tooltip</td><td>Hover tooltips</td></tr><tr><td><code>scroll-area</code></td><td>Radix ScrollArea</td><td>Custom scrollbars</td></tr></tbody></table>
+<table><thead><tr><th>Component</th><th>Base</th><th>Purpose</th></tr></thead><tbody><tr><td><code>button</code></td><td>CVA variants</td><td>Buttons with theme variants</td></tr><tr><td><code>dialog</code></td><td>Radix Dialog</td><td>Modal dialogs</td></tr><tr><td><code>dropdown-menu</code></td><td>Radix DropdownMenu</td><td>Context/dropdown menus</td></tr><tr><td><code>select</code></td><td>Radix Select</td><td>Selection dropdowns</td></tr><tr><td><code>slider</code></td><td>Radix Slider</td><td>Value sliders</td></tr><tr><td><code>switch</code></td><td>Radix Switch</td><td>Toggle switches</td></tr><tr><td><code>tabs</code></td><td>Radix Tabs</td><td>Tabbed interfaces</td></tr><tr><td><code>checkbox</code></td><td>Radix Checkbox</td><td>Checkboxes</td></tr><tr><td><code>tooltip</code></td><td>Radix Tooltip</td><td>Hover tooltips</td></tr><tr><td><code>scroll-area</code></td><td>Radix ScrollArea</td><td>Custom scrollbars</td></tr><tr><td><code>input</code></td><td>Native</td><td>Text input fields</td></tr><tr><td><code>textarea</code></td><td>Native</td><td>Multiline text input</td></tr><tr><td><code>label</code></td><td>Radix Label</td><td>Form labels</td></tr><tr><td><code>badge</code></td><td>CVA variants</td><td>Status badges</td></tr><tr><td><code>card</code></td><td>Native</td><td>Card containers</td></tr><tr><td><code>table</code></td><td>Native</td><td>Data tables</td></tr><tr><td><code>alert</code></td><td>CVA variants</td><td>Alert messages</td></tr></tbody></table>
 <h3>Custom Components</h3>
 <p>ryOS-specific UI components:</p>
 <h4>audio-bars</h4>
@@ -508,7 +513,7 @@
 );</code></pre>
 <h2>Dialog Components</h2>
 <h3>Dialog Inventory</h3>
-<table><thead><tr><th>Dialog</th><th>Purpose</th><th>Has Sound</th></tr></thead><tbody><tr><td><code>AboutDialog</code></td><td>App information</td><td>No</td></tr><tr><td><code>AboutFinderDialog</code></td><td>System info</td><td>Yes</td></tr><tr><td><code>BootScreen</code></td><td>Boot animation</td><td>Yes</td></tr><tr><td><code>ConfirmDialog</code></td><td>Confirmations</td><td>Yes (Alert)</td></tr><tr><td><code>EmojiDialog</code></td><td>Emoji picker</td><td>No</td></tr><tr><td><code>HelpDialog</code></td><td>App help content</td><td>No</td></tr><tr><td><code>InputDialog</code></td><td>Text input</td><td>No</td></tr><tr><td><code>LoginDialog</code></td><td>Authentication</td><td>No</td></tr><tr><td><code>ShareItemDialog</code></td><td>Sharing options</td><td>No</td></tr><tr><td><code>SongSearchDialog</code></td><td>Song search</td><td>No</td></tr></tbody></table>
+<table><thead><tr><th>Dialog</th><th>Purpose</th><th>Has Sound</th></tr></thead><tbody><tr><td><code>AboutDialog</code></td><td>App information</td><td>No</td></tr><tr><td><code>AboutFinderDialog</code></td><td>System info</td><td>Yes</td></tr><tr><td><code>BootScreen</code></td><td>Boot animation</td><td>Yes</td></tr><tr><td><code>ConfirmDialog</code></td><td>Confirmations</td><td>Yes (Alert)</td></tr><tr><td><code>EmojiDialog</code></td><td>Emoji picker</td><td>No</td></tr><tr><td><code>HelpDialog</code></td><td>App help content</td><td>No</td></tr><tr><td><code>InputDialog</code></td><td>Text input</td><td>No</td></tr><tr><td><code>LoginDialog</code></td><td>Authentication</td><td>No</td></tr><tr><td><code>ShareItemDialog</code></td><td>Sharing options</td><td>No</td></tr><tr><td><code>SongSearchDialog</code></td><td>Song search</td><td>No</td></tr><tr><td><code>FutureSettingsDialog</code></td><td>Upcoming features teaser</td><td>No</td></tr><tr><td><code>LogoutDialog</code></td><td>Logout confirmation</td><td>No</td></tr><tr><td><code>LyricsSearchDialog</code></td><td>Lyrics search</td><td>No</td></tr><tr><td><code>TelegramLinkDialog</code></td><td>Telegram account linking</td><td>No</td></tr></tbody></table>
 <h3>Dialog Pattern</h3>
 <pre class="mermaid">graph TD
     A[Dialog Component] --> B[Dialog Root]
@@ -598,7 +603,7 @@
 }</code></pre>
 <h2>Error Boundary Components</h2>
 <code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/errors/ErrorBoundaries.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/errors/ErrorBoundaries.tsx</a></code> provides two shell-level resilience primitives:
-<ul><li><code>DesktopErrorBoundary</code>: wraps the desktop shell in <code>App.tsx</code> and offers a desktop reload recovery action.</li><li><code>AppErrorBoundary</code>: wraps each rendered app instance in <code>AppManager</code>, allowing relaunch/quit for a crashed window without taking down other windows.</li></ul>
+<ul><li><code>DesktopErrorBoundary</code>: wraps the desktop shell in <code>App.tsx</code> and offers a desktop reload recovery action.</li><li><code>AppErrorBoundary</code>: wraps each rendered app instance in <code>AppManager</code>, presenting a themed crash dialog with <strong>Relaunch</strong> and <strong>Quit</strong> buttons so the user can recover or dismiss a crashed window without taking down other windows. Crash details are reported via <code>reportRuntimeCrash</code>.</li></ul>
 <h2>Theme Integration Pattern</h2>
 <h3>Standard Pattern</h3>
 <pre><code>function MyComponent() {

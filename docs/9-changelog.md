@@ -6,54 +6,53 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## March 2026
 
-- Add Calendar app with iCal support, AI integration, and Dashboard widget.
-- Implement universal undo/redo mechanism for Finder, Paint, and TextEdit.
-- Introduce realtime sync notifications via Pusher/local WebSocket and Redis-direct cloud sync.
-- Enable Telegram bot linking with DM chat support, image support, and AI-powered heartbeat insights.
-- Redesign Dashboard with brushed metal UI, widget strip, and new widgets (iPod, Dictionary, Stocks, Translator).
-- Implement cloud sync for dock icons, iPod/karaoke settings, stickies, and videos library.
-- Support subdomain wildcard patterns in CORS and host allowlists.
+- Add Calendar app with iCal support, Dashboard widget overlay, and AI integration.
+- Implement cloud sync for dock icons, iPod/karaoke settings, stickies, wallpapers, images, contacts, and videos library.
+- Introduce a universal undo/redo mechanism for Finder, Paint, and TextEdit.
+- Redesign the Dashboard with a widget strip, improved placement, and new widgets like Stocks, Dictionary, and Translator.
+- Enhance Contacts app with vCard import, refined UI, and cloud sync.
+- Add Telegram bot linking, DM chat support, web search, and heartbeat insights.
 
 <details>
-<summary>Minor changes (9)</summary>
+<summary>Minor changes (10)</summary>
 
+- Improve iPod and karaoke playback performance and add iPod widget control for karaoke.
 - Refactor API endpoints to use apiHandler for improved security and consistency.
-- Improve Contacts app with vCard import, refined UI, and cloud sync.
-- Enhance iPod and karaoke playback performance and widget controls.
-- Fix various UI issues across Calendar, Contacts, Dashboard, and other apps.
-- Update documentation with comprehensive codebase audit, API references, and self-hosting guides.
-- Localize missing translations across various apps and control panels.
-- Add heartbeat records UI to admin user details page.
-- Improve crash dialog recovery UX and add quit option.
-- Optimize app performance with code splitting and memoization.
+- Fix smart widget placement to avoid overlap and default weather to San Francisco.
+- Update documentation for file system, audio system, AI system, apps index, and API reference.
+- Enhance admin app with usage analytics dashboard, server page, and improved user details.
+- Improve crash dialog recovery UX and add a quit option.
+- Refine the UI with a semantic color palette and clean up the dashboard.
+- Optimize analytics write and read paths for better performance.
+- Add switchable Vercel Blob and S3-compatible storage.
+- Support subdomain wildcard patterns in CORS and host allowlists.
 
 </details>
 
 ## February 2026
 
-- Add Winamp app with Webamp integration, including skins, YouTube seeking, and iPod library loading.
-- Implement cloud sync backup and restore functionality with increased limit and progress tracking.
-- Introduce two-tier memory system with daily notes and long-term memories, including admin panel updates.
-- Enhance Spotlight Search functionality and styling, including Tauri compatibility and improved localization.
-- Add proactive AI greeting for logged-in users with memories.
-- Implement display mode selection in Karaoke and iPod apps, including new water, mesh gradient, liquid, and warp modes.
-- Refactor AmbientBackground component with audio-reactive features and performance optimizations.
+- Implement Winamp integration with Webamp, including frameless mode, skins, YouTube seeking, and iPod library loading.
+- Introduce a two-tier memory system with daily notes and long-term memories, enhancing AI proactive greetings and user experience.
+- Enhance the AmbientBackground component with audio-reactive features and new liquid and warp display modes for iPod and Karaoke.
+- Implement display mode selection in KaraokeAppComponent and update display modes in iPod and Karaoke components.
+- Add app and desktop error boundaries for improved stability and user experience.
+- Implement app switcher functionality with keyboard shortcuts.
 
 <details>
 <summary>Minor changes (9)</summary>
 
-- Fix various Winamp UI and functionality issues, including playlist layout and media controls.
-- Improve error handling and crash fallbacks with new error boundaries and shared dialog chrome.
-- Update admin panel with detailed import progress states, rate-limit waits, and memory management tools.
-- Fix mobile input styles, spotlight positioning, and theme inconsistencies.
-- Localize Winamp and cloud sync strings across all locales.
-- Refactor app routing, event orchestration, and memory processing for improved performance and stability.
-- Update dependencies and resolve lint warnings across various components and hooks.
-- Improve System 7 dialog title bar styling and consistency.
-- Add crash test controls and app/desktop error boundaries.
+- Improve cloud backup and restore functionality with increased limit, progress tracking, and UI enhancements.
+- Refactor daily notes processing for improved efficiency and reduced timeouts.
+- Fix various issues related to Winamp integration, including icon theming, playlist layout, and foreground handling.
+- Localize Winamp and cloud sync strings across multiple languages.
+- Update admin panel to display daily notes alongside long-term memories and add memory management tools.
+- Fix issues related to proactive greeting display and animation.
+- Improve memory timestamps and stale-memory cleanup.
+- Update AI models and restrict debug mode to admin users.
+- Fix missing Vercel rewrites for specific URLs.
 
 </details>
 
 ---
 
-*This changelog is automatically generated and summarized from git history. Last updated: 2026-03-09*
+*This changelog is automatically generated and summarized from git history. Last updated: 2026-03-10*

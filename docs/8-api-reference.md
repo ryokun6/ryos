@@ -32,7 +32,7 @@ graph LR
 | [Messages API](/docs/messages-api) | Send and retrieve chat messages |
 | [Presence API](/docs/presence-api) | Presence tracking, user search, AI replies |
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
-| [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, admin |
+| [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, stocks, sync, admin |
 | [API Design Guide](/docs/api-design-guide) | Patterns and conventions for API development |
 
 ## Cross-Cutting Handler Pattern
@@ -44,6 +44,11 @@ graph LR
 - **Partial auth headers** return `400`.
 - **Invalid token/username pairs** return `401`.
 - **Optional-auth endpoints** can be anonymous while still validating provided auth headers.
+
+## Infrastructure Adapters
+
+- **Redis** (`api/_utils/redis.ts`): Centralized Redis client factory supporting Upstash REST (`REDIS_KV_REST_API_URL`) and standard Redis (`REDIS_URL`) backends with a unified API.
+- **Storage** (`api/_utils/storage.ts`): Switchable object storage adapter supporting Vercel Blob and S3-compatible backends for cloud backups and sync.
 
 ## Quick Reference
 
@@ -87,6 +92,9 @@ graph LR
 | `/api/listen/sessions/[id]/leave` | Leave listen session |
 | `/api/listen/sessions/[id]/sync` | Sync playback state (DJ only) |
 | `/api/listen/sessions/[id]/reaction` | Send emoji reaction |
+| `/api/telegram/link/create` | Create Telegram account link |
+| `/api/telegram/link/status` | Check Telegram link status |
+| `/api/telegram/link/disconnect` | Disconnect Telegram account |
 
 ### Utility Endpoints
 
@@ -100,6 +108,7 @@ graph LR
 | `/api/sync/backup` | Save/list/delete cloud backup metadata |
 | `/api/sync/status` | Cloud backup status summary |
 | `/api/sync/auto` | Automatic sync operations |
+| `/api/sync/auto-token` | Generate domain-specific auto-sync upload token |
 | `/api/sync/state` | Sync state management |
 | `/api/admin` | Admin operations |
 
@@ -129,11 +138,13 @@ graph TD
     Comm --> users["/users"]
     Comm --> ryo["/ai/ryo-reply"]
     Comm --> listen["/listen/sessions"]
+    Comm --> telegram["/telegram/link"]
     
     Util --> preview["/link-preview"]
     Util --> iframe["/iframe-check"]
     Util --> share["/share-applet"]
     Util --> stocks["/stocks"]
+    Util --> sync["/sync/*"]
     Util --> admin["/admin"]
 ```
 
