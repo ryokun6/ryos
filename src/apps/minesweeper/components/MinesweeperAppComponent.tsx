@@ -6,6 +6,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { appMetadata } from "..";
 import { isMobileDevice } from "@/utils/device";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -198,6 +199,22 @@ export function MinesweeperAppComponent({
 
   if (!isWindowOpen) return null;
 
+  const displayPanelStyle = isMacTheme
+    ? {
+        border: "1px solid rgba(0, 0, 0, 0.55)",
+        boxShadow:
+          "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.35)",
+      }
+    : undefined;
+
+  const boardFrameStyle = isMacTheme
+    ? {
+        border: "1px solid rgba(0, 0, 0, 0.55)",
+        boxShadow:
+          "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+      }
+    : undefined;
+
   return (
     <>
       <style>{minesweeperStyles}</style>
@@ -207,6 +224,7 @@ export function MinesweeperAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="minesweeper"
+        material={isMacTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
@@ -218,9 +236,29 @@ export function MinesweeperAppComponent({
           minHeight: 360,
         }}
       >
-        <div className="flex flex-col h-full bg-[#c0c0c0] p-1.5 w-full">
-          <div className="mb-1.5 flex justify-between items-center gap-2 py-1 bg-[#c0c0c0]">
-            <div className="flex-1 bg-[#8a9a8a] text-[#1a2a1a] text-lg px-2 py-0.5 border border-t-gray-800 border-l-gray-800 border-r-white border-b-white shadow-inner [text-shadow:1px_1px_0px_rgba(0,0,0,0.2)] h-[48px] flex items-center">
+        <div
+          className={cn(
+            "flex flex-col h-full w-full",
+            isMacTheme
+              ? "bg-transparent px-1.5 pb-1.5 pt-0.5 gap-1"
+              : "bg-[#c0c0c0] p-1.5"
+          )}
+        >
+          <div
+            className={cn(
+              "flex justify-between items-center gap-2",
+              isMacTheme ? "py-0.5" : "mb-1.5 py-1 bg-[#c0c0c0]"
+            )}
+          >
+            <div
+              className={cn(
+                "flex-1 text-lg border shadow-inner flex items-center",
+                isMacTheme
+                  ? "rounded-[4px] bg-gradient-to-b from-[#b5c4b9] to-[#7b8c80] text-[#152418] h-[44px] px-1.5 py-0.5"
+                  : "py-0.5 bg-[#8a9a8a] text-[#1a2a1a] border-t-gray-800 border-l-gray-800 border-r-white border-b-white [text-shadow:1px_1px_0px_rgba(0,0,0,0.2)]"
+              )}
+              style={displayPanelStyle}
+            >
               <div className="flex items-center justify-between text-sm relative w-full">
                 <div className="flex flex-col items-start w-[80px]">
                   <span
@@ -239,22 +277,33 @@ export function MinesweeperAppComponent({
                   </span>
                 </div>
                 <div className="flex flex-col items-center absolute left-1/2 -translate-x-1/2">
-                  <Button
-                    variant={isMacTheme ? "secondary" : "default"}
-                    size="sm"
-                    onClick={() =>
-                      gameOver || gameWon
-                        ? startNewGame()
-                        : setIsNewGameDialogOpen(true)
-                    }
-                    className={
-                      isMacTheme
-                        ? "!w-[34px] !h-[34px] aspect-square !rounded-full overflow-hidden flex items-center justify-center text-xl leading-none !p-0"
-                        : "aspect-square h-[34px] flex items-center justify-center text-xl leading-none bg-[#c0c0c0] hover:bg-[#d0d0d0] border-2 border-t-white border-l-white border-r-gray-800 border-b-gray-800 active:border active:border-gray-600 shadow-none p-0"
-                    }
-                  >
-                    {gameOver ? "💀" : gameWon ? "😎" : "🙂"}
-                  </Button>
+                  {isMacTheme ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        gameOver || gameWon
+                          ? startNewGame()
+                          : setIsNewGameDialogOpen(true)
+                      }
+                      className="metal-inset-btn !w-[36px] !h-[36px] !min-w-[36px] !rounded-full overflow-hidden flex items-center justify-center text-xl leading-none !p-0"
+                      aria-label={t("apps.minesweeper.dialogs.newGameTitle")}
+                    >
+                      {gameOver ? "💀" : gameWon ? "😎" : "🙂"}
+                    </button>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() =>
+                        gameOver || gameWon
+                          ? startNewGame()
+                          : setIsNewGameDialogOpen(true)
+                      }
+                      className="aspect-square h-[34px] flex items-center justify-center text-xl leading-none bg-[#c0c0c0] hover:bg-[#d0d0d0] border-2 border-t-white border-l-white border-r-gray-800 border-b-gray-800 active:border active:border-gray-600 shadow-none p-0"
+                    >
+                      {gameOver ? "💀" : gameWon ? "😎" : "🙂"}
+                    </Button>
+                  )}
                 </div>
                 <div className="flex flex-col items-end w-[80px]">
                   <span
@@ -275,7 +324,15 @@ export function MinesweeperAppComponent({
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-9 gap-0 bg-gray-800 p-[1px] border border-t-gray-800 border-l-gray-800 border-r-white border-b-white  max-w-[250px] m-auto">
+          <div
+            className={cn(
+              "grid grid-cols-9 gap-0 m-auto w-fit",
+              isMacTheme
+                ? "p-[2px] rounded-[4px] bg-[#b7bcc1]"
+                : "bg-gray-800 p-[1px] border border-t-gray-800 border-l-gray-800 border-r-white border-b-white max-w-[250px]"
+            )}
+            style={boardFrameStyle}
+          >
             {gameBoard.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
                 <Cell
