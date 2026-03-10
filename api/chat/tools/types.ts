@@ -37,6 +37,8 @@ export interface ServerToolContext {
   env: {
     YOUTUBE_API_KEY?: string;
     YOUTUBE_API_KEY_2?: string;
+    CURSOR_API_KEY?: string;
+    CURSOR_AGENTS_API_KEY?: string;
   };
 }
 
@@ -154,6 +156,72 @@ export interface SearchSongsOutput {
   results: SearchSongsResult[];
   message: string;
   hint?: string;
+}
+
+// Cursor agent actions
+export const CURSOR_AGENT_ACTIONS = [
+  "list",
+  "status",
+  "launch",
+  "followUp",
+] as const;
+export type CursorAgentAction = typeof CURSOR_AGENT_ACTIONS[number];
+
+// Cursor agent statuses
+export const CURSOR_AGENT_STATUSES = [
+  "RUNNING",
+  "FINISHED",
+  "ERROR",
+  "CREATING",
+  "EXPIRED",
+] as const;
+export type CursorAgentStatus = typeof CURSOR_AGENT_STATUSES[number];
+
+export interface CursorAgentRecord {
+  id: string;
+  name: string;
+  status: CursorAgentStatus | string;
+  createdAt: string;
+  summary?: string;
+  source: {
+    repository?: string;
+    ref?: string;
+    prUrl?: string;
+  };
+  target: {
+    branchName?: string;
+    url?: string;
+    prUrl?: string;
+    autoCreatePr?: boolean;
+    openAsCursorGithubApp?: boolean;
+    skipReviewerRequest?: boolean;
+  };
+}
+
+export interface CursorAgentsControlInput {
+  action: CursorAgentAction;
+  id?: string;
+  prompt?: string;
+  repository?: string;
+  ref?: string;
+  prUrl?: string;
+  limit?: number;
+  cursor?: string;
+  model?: string;
+  branchName?: string;
+  autoCreatePr?: boolean;
+  openAsCursorGithubApp?: boolean;
+  skipReviewerRequest?: boolean;
+  autoBranch?: boolean;
+}
+
+export interface CursorAgentsControlOutput {
+  success: boolean;
+  message: string;
+  agent?: CursorAgentRecord;
+  agents?: CursorAgentRecord[];
+  nextCursor?: string;
+  followUpAdded?: boolean;
 }
 
 // Settings input

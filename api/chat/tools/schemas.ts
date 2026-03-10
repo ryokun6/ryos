@@ -16,6 +16,7 @@ import {
   CALENDAR_ACTIONS,
   CALENDAR_COLORS,
   CONTACT_ACTIONS,
+  CURSOR_AGENT_ACTIONS,
   DOCUMENTS_ACTIONS,
   DOCUMENT_WRITE_MODES,
 } from "./types.js";
@@ -361,6 +362,104 @@ export const searchSongsSchema = z.object({
     .default(5)
     .describe("Maximum number of results to return (1-10, default 5)"),
 });
+
+/**
+ * Cursor agents control schema
+ */
+export const cursorAgentsControlSchema = z
+  .object({
+    action: z
+      .enum(CURSOR_AGENT_ACTIONS)
+      .describe(
+        "Action to perform: 'list' returns cloud agents, 'status' returns a single agent by id, 'launch' starts a new agent, and 'followUp' adds another instruction to an existing agent."
+      ),
+    id: z
+      .preprocess(normalizeOptionalString, z.string().optional())
+      .describe("For 'status' and 'followUp': the Cursor cloud agent id."),
+    prompt: z
+      .preprocess(normalizeOptionalString, z.string().optional())
+      .describe("For 'launch' and 'followUp': the instruction text to send to the agent."),
+    repository: z
+      .preprocess(normalizeOptionalString, z.string().url().optional())
+      .describe("For 'launch': GitHub repository URL. Required unless 'prUrl' is provided."),
+    ref: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'launch' with 'repository': base git ref such as 'main'."),
+    prUrl: z
+      .preprocess(normalizeOptionalString, z.string().url().optional())
+      .describe("For 'list': optional PR filter. For 'launch': optional source pull request URL instead of repository/ref."),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .optional()
+      .default(20)
+      .describe("For 'list': maximum number of agents to return (1-100, default 20)."),
+    cursor: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'list': pagination cursor from a previous result."),
+    model: z
+      .preprocess(normalizeOptionalString, z.string().max(120).optional())
+      .describe("For 'launch': optional explicit Cursor model id, or omit to use the default."),
+    branchName: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'launch': optional branch name for the agent target branch."),
+    autoCreatePr: z
+      .boolean()
+      .optional()
+      .describe("For 'launch': automatically create a PR when the agent finishes."),
+    openAsCursorGithubApp: z
+      .boolean()
+      .optional()
+      .describe("For 'launch': open the PR as the Cursor GitHub App. Only applies when autoCreatePr is true."),
+    skipReviewerRequest: z
+      .boolean()
+      .optional()
+      .describe("For 'launch': skip adding the user as a reviewer. Only applies when autoCreatePr is true and Cursor GitHub App is used."),
+    autoBranch: z
+      .boolean()
+      .optional()
+      .describe("For 'launch' with 'prUrl': whether to create a new branch instead of using the PR head branch."),
+  })
+  .superRefine((data, ctx) => {
+    if ((data.action === "status" || data.action === "followUp") && !data.id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `The '${data.action}' action requires the 'id' parameter.`,
+        path: ["id"],
+      });
+    }
+
+    if ((data.action === "launch" || data.action === "followUp") && !data.prompt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `The '${data.action}' action requires the 'prompt' parameter.`,
+        path: ["prompt"],
+      });
+    }
+
+    if (data.action === "launch") {
+      const hasRepository = Boolean(data.repository);
+      const hasPrUrl = Boolean(data.prUrl);
+
+      if (hasRepository === hasPrUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'launch' action requires exactly one of 'repository' or 'prUrl'.",
+          path: ["repository"],
+        });
+      }
+
+      if (!hasRepository && data.ref) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'ref' parameter can only be used with 'repository'.",
+          path: ["ref"],
+        });
+      }
+    }
+  });
 
 /**
  * Settings schema

@@ -42,10 +42,12 @@ import * as schemas from "./schemas.js";
 import type {
   CalendarControlInput,
   DocumentsControlInput,
+  CursorAgentsControlInput,
   StickiesControlInput,
   ContactsControlInput,
 } from "./types.js";
 import {
+  executeCursorAgentsControl,
   executeGenerateHtml,
   executeSearchSongs,
   executeMemoryWrite,
@@ -62,6 +64,7 @@ import {
 export * from "./types.js";
 export * from "./schemas.js";
 export {
+  executeCursorAgentsControl,
   executeGenerateHtml,
   executeSearchSongs,
   executeMemoryWrite,
@@ -88,6 +91,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "calendarControl",
   "stickiesControl",
   "contactsControl",
+  "cursorAgentsControl",
 ] as const;
 
 export type ChatToolProfile = "all" | "memory" | "telegram";
@@ -160,6 +164,9 @@ export const TOOL_DESCRIPTIONS = {
   
   searchSongs:
     "Search for songs/videos on YouTube. Returns a list of results with video IDs, titles, and channel names. Use this to help users find music to add to their iPod. PREFER official music videos from verified artist channels (look for 'VEVO' or the artist's official channel). AVOID karaoke versions, instrumental versions, playlists, compilations, 'best of' collections, lyric videos, and covers unless specifically requested. After getting results, you can use ipodControl with action 'addAndPlay' to add a song using its videoId.",
+
+  cursorAgentsControl:
+    "Manage Cursor Cloud Agents. Actions: 'list' returns recent agents (optional limit, cursor, or prUrl filter); 'status' returns one agent by id; 'launch' starts a new agent and requires a 'prompt' plus exactly one of 'repository' (+ optional 'ref') or 'prUrl'; 'followUp' adds another instruction to an existing agent and requires 'id' plus 'prompt'. Optional launch settings: 'model', 'branchName', 'autoCreatePr', 'openAsCursorGithubApp', 'skipReviewerRequest', and 'autoBranch'. Use only when the user explicitly wants to inspect or control Cursor agents.",
   
   settings:
     "Change system settings in ryOS. Use this tool when the user asks to change language, theme, volume, enable/disable speech, or check for updates. Multiple settings can be changed in a single call.",
@@ -336,6 +343,13 @@ export function createChatTools(
         return executeSearchSongs(input, context);
       },
     },
+    cursorAgentsControl: {
+      description: TOOL_DESCRIPTIONS.cursorAgentsControl,
+      inputSchema: schemas.cursorAgentsControlSchema,
+      execute: async (input: CursorAgentsControlInput) => {
+        return executeCursorAgentsControl(input, context);
+      },
+    },
 
     // ============================================================================
     // System Settings Tools (Client-side execution)
@@ -472,6 +486,13 @@ export function createChatTools(
         inputSchema: schemas.contactsControlSchema,
         execute: async (input: ContactsControlInput) => {
           return executeContactsControl(input, context);
+        },
+      },
+      cursorAgentsControl: {
+        description: TOOL_DESCRIPTIONS.cursorAgentsControl,
+        inputSchema: schemas.cursorAgentsControlSchema,
+        execute: async (input: CursorAgentsControlInput) => {
+          return executeCursorAgentsControl(input, context);
         },
       },
     } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;

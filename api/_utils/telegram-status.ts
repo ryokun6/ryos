@@ -27,6 +27,8 @@ export function getTelegramToolStatusText(
       return getTelegramStickiesStatusText(input);
     case "contactsControl":
       return getTelegramContactsStatusText(input);
+    case "cursorAgentsControl":
+      return getTelegramCursorAgentsStatusText(input);
     default:
       return "Using a tool...";
   }
@@ -117,6 +119,26 @@ function getTelegramContactsStatusText(input: unknown): string {
       return "Deleting contact...";
     default:
       return "Using contacts...";
+  }
+}
+
+function getTelegramCursorAgentsStatusText(input: unknown): string {
+  const action =
+    input && typeof input === "object" && "action" in input
+      ? String((input as { action?: unknown }).action || "")
+      : "";
+
+  switch (action) {
+    case "list":
+      return "Checking Cursor agents...";
+    case "status":
+      return "Checking agent status...";
+    case "launch":
+      return "Launching Cursor agent...";
+    case "followUp":
+      return "Sending follow-up...";
+    default:
+      return "Using Cursor agents...";
   }
 }
 

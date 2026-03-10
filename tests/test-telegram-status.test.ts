@@ -33,6 +33,9 @@ describe("telegram status helpers", () => {
     expect(getTelegramToolStatusText("contactsControl", { action: "update" })).toBe(
       "Updating contact..."
     );
+    expect(getTelegramToolStatusText("cursorAgentsControl", { action: "launch" })).toBe(
+      "Launching Cursor agent..."
+    );
     expect(getTelegramToolStatusText("unknownTool", {})).toBe("Using a tool...");
   });
 

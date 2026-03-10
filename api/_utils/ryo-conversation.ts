@@ -669,6 +669,8 @@ export async function prepareRyoConversationModelInput(
       env: {
         YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
         YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
+        CURSOR_API_KEY: process.env.CURSOR_API_KEY,
+        CURSOR_AGENTS_API_KEY: process.env.CURSOR_AGENTS_API_KEY,
       },
       username: username ?? null,
       redis,

@@ -11,6 +11,9 @@
 import type { Redis } from "../../_utils/redis.js";
 import type {
   ServerToolContext,
+  CursorAgentRecord,
+  CursorAgentsControlInput,
+  CursorAgentsControlOutput,
   GenerateHtmlInput,
   GenerateHtmlOutput,
   SearchSongsInput,
@@ -58,6 +61,100 @@ import {
   serializeContactForTool,
   writeContactsState,
 } from "../../_utils/contacts.js";
+
+const CURSOR_AGENTS_API_BASE_URL = "https://api.cursor.com/v0/agents";
+
+function getCursorApiKey(context: ServerToolContext): string | undefined {
+  return context.env.CURSOR_API_KEY || context.env.CURSOR_AGENTS_API_KEY;
+}
+
+function createCursorAuthHeaders(apiKey: string): HeadersInit {
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+}
+
+function createCursorErrorMessage(
+  status: number,
+  payload: unknown,
+  fallback: string
+): string {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "error" in payload &&
+    payload.error &&
+    typeof payload.error === "object" &&
+    "message" in payload.error &&
+    typeof payload.error.message === "string"
+  ) {
+    return payload.error.message;
+  }
+
+  if (typeof payload === "string" && payload.trim().length > 0) {
+    return payload;
+  }
+
+  return `${fallback} (HTTP ${status})`;
+}
+
+function normalizeCursorAgentRecord(raw: unknown): CursorAgentRecord {
+  const record = (raw && typeof raw === "object" ? raw : {}) as {
+    id?: string;
+    name?: string;
+    status?: string;
+    createdAt?: string;
+    summary?: string;
+    source?: {
+      repository?: string;
+      ref?: string;
+      prUrl?: string;
+    };
+    target?: {
+      branchName?: string;
+      url?: string;
+      prUrl?: string;
+      autoCreatePr?: boolean;
+      openAsCursorGithubApp?: boolean;
+      skipReviewerRequest?: boolean;
+    };
+  };
+
+  return {
+    id: record.id || "",
+    name: record.name || "Untitled agent",
+    status: record.status || "UNKNOWN",
+    createdAt: record.createdAt || "",
+    summary: record.summary,
+    source: {
+      repository: record.source?.repository,
+      ref: record.source?.ref,
+      prUrl: record.source?.prUrl,
+    },
+    target: {
+      branchName: record.target?.branchName,
+      url: record.target?.url,
+      prUrl: record.target?.prUrl,
+      autoCreatePr: record.target?.autoCreatePr,
+      openAsCursorGithubApp: record.target?.openAsCursorGithubApp,
+      skipReviewerRequest: record.target?.skipReviewerRequest,
+    },
+  };
+}
+
+async function parseCursorApiResponse(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
 
 /**
  * Execute generateHtml tool
@@ -209,6 +306,201 @@ export async function executeSearchSongs(
 
   // All keys exhausted
   throw new Error(`All YouTube API keys exhausted. Last error: ${lastError || 'Unknown'}`);
+}
+
+export async function executeCursorAgentsControl(
+  input: CursorAgentsControlInput,
+  context: ServerToolContext
+): Promise<CursorAgentsControlOutput> {
+  const apiKey = getCursorApiKey(context);
+
+  if (!apiKey) {
+    return {
+      success: false,
+      message:
+        "Cursor API key not configured. Set CURSOR_API_KEY or CURSOR_AGENTS_API_KEY to enable Cursor Agents.",
+    };
+  }
+
+  const headers = createCursorAuthHeaders(apiKey);
+  const { action } = input;
+
+  try {
+    switch (action) {
+      case "list": {
+        const url = new URL(CURSOR_AGENTS_API_BASE_URL);
+        if (input.limit) {
+          url.searchParams.set("limit", String(input.limit));
+        }
+        if (input.cursor) {
+          url.searchParams.set("cursor", input.cursor);
+        }
+        if (input.prUrl) {
+          url.searchParams.set("prUrl", input.prUrl);
+        }
+
+        context.log(`[cursorAgentsControl] Listing agents (${url.searchParams.toString() || "default"})`);
+        const response = await fetch(url.toString(), { headers });
+        const payload = await parseCursorApiResponse(response);
+
+        if (!response.ok) {
+          return {
+            success: false,
+            message: createCursorErrorMessage(response.status, payload, "Failed to list Cursor agents"),
+          };
+        }
+
+        const data = (payload && typeof payload === "object" ? payload : {}) as {
+          agents?: unknown[];
+          nextCursor?: string;
+        };
+        const agents = Array.isArray(data.agents)
+          ? data.agents.map((agent) => normalizeCursorAgentRecord(agent))
+          : [];
+
+        return {
+          success: true,
+          message:
+            agents.length === 0
+              ? "No Cursor agents found."
+              : `Found ${agents.length} Cursor ${agents.length === 1 ? "agent" : "agents"}.`,
+          agents,
+          nextCursor: data.nextCursor,
+        };
+      }
+
+      case "status": {
+        if (!input.id) {
+          return { success: false, message: "Agent id is required." };
+        }
+
+        context.log(`[cursorAgentsControl] Getting agent status for ${input.id}`);
+        const response = await fetch(
+          `${CURSOR_AGENTS_API_BASE_URL}/${encodeURIComponent(input.id)}`,
+          { headers }
+        );
+        const payload = await parseCursorApiResponse(response);
+
+        if (!response.ok) {
+          return {
+            success: false,
+            message: createCursorErrorMessage(response.status, payload, `Failed to get agent ${input.id}`),
+          };
+        }
+
+        const agent = normalizeCursorAgentRecord(payload);
+        return {
+          success: true,
+          message: `Agent "${agent.name}" is currently ${agent.status}.`,
+          agent,
+        };
+      }
+
+      case "launch": {
+        if (!input.prompt) {
+          return { success: false, message: "Launch prompt is required." };
+        }
+
+        const target: Record<string, unknown> = {};
+        if (input.branchName) target.branchName = input.branchName;
+        if (input.autoCreatePr !== undefined) target.autoCreatePr = input.autoCreatePr;
+        if (input.openAsCursorGithubApp !== undefined) {
+          target.openAsCursorGithubApp = input.openAsCursorGithubApp;
+        }
+        if (input.skipReviewerRequest !== undefined) {
+          target.skipReviewerRequest = input.skipReviewerRequest;
+        }
+        if (input.autoBranch !== undefined) target.autoBranch = input.autoBranch;
+
+        const body: Record<string, unknown> = {
+          prompt: { text: input.prompt },
+          source: input.prUrl
+            ? { prUrl: input.prUrl }
+            : {
+                repository: input.repository,
+                ...(input.ref ? { ref: input.ref } : {}),
+              },
+        };
+
+        if (input.model) {
+          body.model = input.model;
+        }
+        if (Object.keys(target).length > 0) {
+          body.target = target;
+        }
+
+        context.log("[cursorAgentsControl] Launching Cursor agent", {
+          repository: input.repository,
+          prUrl: input.prUrl,
+          branchName: input.branchName,
+        });
+
+        const response = await fetch(CURSOR_AGENTS_API_BASE_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        });
+        const payload = await parseCursorApiResponse(response);
+
+        if (!response.ok) {
+          return {
+            success: false,
+            message: createCursorErrorMessage(response.status, payload, "Failed to launch Cursor agent"),
+          };
+        }
+
+        const agent = normalizeCursorAgentRecord(payload);
+        return {
+          success: true,
+          message: `Launched Cursor agent "${agent.name}" (${agent.id}).`,
+          agent,
+        };
+      }
+
+      case "followUp": {
+        if (!input.id || !input.prompt) {
+          return {
+            success: false,
+            message: "Both agent id and prompt are required for follow-ups.",
+          };
+        }
+
+        context.log(`[cursorAgentsControl] Adding follow-up to ${input.id}`);
+        const response = await fetch(
+          `${CURSOR_AGENTS_API_BASE_URL}/${encodeURIComponent(input.id)}/followup`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              prompt: {
+                text: input.prompt,
+              },
+            }),
+          }
+        );
+        const payload = await parseCursorApiResponse(response);
+
+        if (!response.ok) {
+          return {
+            success: false,
+            message: createCursorErrorMessage(response.status, payload, `Failed to add follow-up to ${input.id}`),
+          };
+        }
+
+        return {
+          success: true,
+          message: `Added follow-up to Cursor agent ${input.id}.`,
+          followUpAdded: true,
+        };
+      }
+    }
+  } catch (error) {
+    context.logError("[cursorAgentsControl] Unexpected error:", error);
+    return {
+      success: false,
+      message: `Cursor agent request failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
 }
 
 // ============================================================================
