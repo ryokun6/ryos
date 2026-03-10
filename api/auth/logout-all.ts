@@ -6,6 +6,7 @@
 
 import { deleteAllUserTokens } from "../_utils/auth/index.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { buildClearAuthCookie } from "../_utils/_cookie.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -20,6 +21,7 @@ export default apiHandler(
     const username = user?.username || "";
     const deletedCount = await deleteAllUserTokens(redis, username);
 
+    res.setHeader("Set-Cookie", buildClearAuthCookie());
     logger.info("Logged out from all devices", { username, deletedCount });
     logger.response(200, Date.now() - startTime);
     res

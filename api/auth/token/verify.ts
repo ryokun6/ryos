@@ -6,6 +6,7 @@
 
 import { isProfaneUsername } from "../../_utils/_validation.js";
 import { apiHandler } from "../../_utils/api-handler.js";
+import { buildSetAuthCookie } from "../../_utils/_cookie.js";
 
 export const runtime = "nodejs";
 
@@ -25,6 +26,9 @@ export default apiHandler(
       res.status(401).json({ error: "Invalid authentication token" });
       return;
     }
+
+    // Set httpOnly cookie so the browser retains the session
+    res.setHeader("Set-Cookie", buildSetAuthCookie(username, user?.token || ""));
 
     if (user?.expired) {
       logger.info("Token within grace period", { username });

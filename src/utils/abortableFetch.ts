@@ -60,6 +60,7 @@ export async function abortableFetch(
 
     try {
       const response = await fetch(url, {
+        credentials: "include",
         ...fetchOptions,
         signal: controller.signal,
       });

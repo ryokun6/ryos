@@ -16,6 +16,7 @@ import {
 import * as RateLimit from "../../_utils/_rate-limit.js";
 import { getClientIp } from "../../_utils/_rate-limit.js";
 import { apiHandler } from "../../_utils/api-handler.js";
+import { buildSetAuthCookie, parseAuthCookie } from "../../_utils/_cookie.js";
 
 export const runtime = "nodejs";
 
@@ -48,8 +49,17 @@ export default apiHandler<RefreshRequest>(
       return;
     }
 
-    const rawUsername = body?.username;
-    const oldToken = body?.oldToken;
+    let rawUsername = body?.username;
+    let oldToken = body?.oldToken;
+
+    // Fall back to the httpOnly auth cookie when body params are absent
+    if ((!rawUsername || !oldToken) && req.headers.cookie) {
+      const cookieAuth = parseAuthCookie(req.headers.cookie);
+      if (cookieAuth) {
+        if (!rawUsername) rawUsername = cookieAuth.username;
+        if (!oldToken) oldToken = cookieAuth.token;
+      }
+    }
 
     if (!rawUsername || typeof rawUsername !== "string") {
       logger.warn("Missing username");
@@ -98,6 +108,7 @@ export default apiHandler<RefreshRequest>(
     const newToken = generateAuthToken();
     await storeToken(redis, username, newToken);
 
+    res.setHeader("Set-Cookie", buildSetAuthCookie(username, newToken));
     logger.info("Token refreshed successfully", { username });
     logger.response(201, Date.now() - startTime);
     res.status(201).json({ token: newToken });

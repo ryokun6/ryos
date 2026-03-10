@@ -7,6 +7,7 @@
 
 import { deleteToken } from "../_utils/auth/index.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { buildClearAuthCookie } from "../_utils/_cookie.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -23,6 +24,7 @@ export default apiHandler(
 
     await deleteToken(redis, token);
 
+    res.setHeader("Set-Cookie", buildClearAuthCookie());
     logger.info("User logged out", { username });
     logger.response(200, Date.now() - startTime);
     res.status(200).json({ success: true, message: "Logged out successfully" });

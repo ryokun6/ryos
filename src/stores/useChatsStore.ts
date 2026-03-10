@@ -17,9 +17,10 @@ import {
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
 
-// Recovery mechanism - uses different prefix to avoid reset
+// Username recovery - plain text, username is public info
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
-const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
+// Legacy key kept only so we can clean it up during migration
+const LEGACY_AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 
 // Token constants
 const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000; // 83 days in ms (refresh 7 days before 90-day expiry)
@@ -44,53 +45,49 @@ interface CreateRoomPayload {
   members?: string[];
 }
 
-// Simple encoding/decoding functions
-const encode = (value: string): string => {
-  return btoa(value.split("").reverse().join(""));
-};
-
-const decode = (encoded: string): string | null => {
-  try {
-    return atob(encoded).split("").reverse().join("");
-  } catch (e) {
-    console.error("[ChatsStore] Failed to decode value:", e);
-    return null;
-  }
-};
-
-// Username recovery functions
-const encodeUsername = (username: string): string => encode(username);
-const decodeUsername = (encoded: string): string | null => decode(encoded);
-
+// Username recovery: plain-text localStorage (username is not secret)
 const saveUsernameToRecovery = (username: string | null) => {
   if (username) {
-    localStorage.setItem(USERNAME_RECOVERY_KEY, encodeUsername(username));
+    localStorage.setItem(USERNAME_RECOVERY_KEY, username);
   }
 };
 
 const getUsernameFromRecovery = (): string | null => {
-  const encoded = localStorage.getItem(USERNAME_RECOVERY_KEY);
-  if (encoded) {
-    return decodeUsername(encoded);
+  const raw = localStorage.getItem(USERNAME_RECOVERY_KEY);
+  if (!raw) return null;
+  // Attempt to decode legacy btoa-encoded values
+  try {
+    const maybeDecoded = atob(raw).split("").reverse().join("");
+    if (/^[a-z0-9_-]+$/i.test(maybeDecoded)) return maybeDecoded;
+  } catch {
+    // Not base64 — treat as plain-text
   }
-  return null;
+  return raw;
 };
 
-// Auth token recovery functions
-const saveAuthTokenToRecovery = (token: string | null) => {
-  if (token) {
-    localStorage.setItem(AUTH_TOKEN_RECOVERY_KEY, encode(token));
-  } else {
-    localStorage.removeItem(AUTH_TOKEN_RECOVERY_KEY);
-  }
+/**
+ * Remove any legacy auth-token recovery data from localStorage.
+ * Auth tokens are now stored exclusively in httpOnly cookies.
+ */
+const clearLegacyTokenRecovery = () => {
+  localStorage.removeItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
 };
 
-const getAuthTokenFromRecovery = (): string | null => {
-  const encoded = localStorage.getItem(AUTH_TOKEN_RECOVERY_KEY);
-  if (encoded) {
-    return decode(encoded);
+/**
+ * Build auth headers when an in-memory token is available.
+ * When token is null the caller should rely on the httpOnly cookie
+ * (sent automatically by the browser with `credentials: "include"`).
+ */
+const buildOptionalAuthHeaders = (
+  username: string | null,
+  token: string | null
+): Record<string, string> => {
+  const headers: Record<string, string> = {};
+  if (token && username) {
+    headers["Authorization"] = `Bearer ${token}`;
+    headers["X-Username"] = username;
   }
-  return null;
+  return headers;
 };
 
 // Basic HTML entity decoder to normalize server-escaped message content
@@ -130,7 +127,8 @@ const getTokenRefreshTime = (username: string): number | null => {
   return time ? parseInt(time, 10) : null;
 };
 
-// API request wrapper with automatic token refresh
+// API request wrapper with automatic token refresh.
+// Works with Authorization header (in-memory token) or httpOnly cookie.
 const makeAuthenticatedRequest = async (
   url: string,
   options: RequestInit,
@@ -143,32 +141,29 @@ const makeAuthenticatedRequest = async (
     retry: { maxAttempts: 1, initialDelayMs: 250 },
   });
 
-  // If not 401 or no auth header, return as-is
-  if (
-    initialResponse.status !== 401 ||
-    !options.headers ||
-    !("Authorization" in options.headers)
-  ) {
+  if (initialResponse.status !== 401) {
     return initialResponse;
   }
 
   console.log("[ChatsStore] Received 401, attempting token refresh...");
 
-  // Attempt to refresh the token
   const refreshResult = await refreshToken();
 
-  if (!refreshResult.ok || !refreshResult.token) {
+  if (!refreshResult.ok) {
     console.log(
       "[ChatsStore] Token refresh failed, returning original 401 response"
     );
     return initialResponse;
   }
 
-  // Retry the request with the new token
-  const newHeaders = {
-    ...options.headers,
-    Authorization: `Bearer ${refreshResult.token}`,
+  // Build new headers — if we got a token back, send it explicitly;
+  // otherwise rely on the updated httpOnly cookie set by the refresh endpoint.
+  const newHeaders: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
   };
+  if (refreshResult.token) {
+    newHeaders["Authorization"] = `Bearer ${refreshResult.token}`;
+  }
 
   console.log("[ChatsStore] Retrying request with refreshed token");
   return abortableFetch(url, {
@@ -180,11 +175,8 @@ const makeAuthenticatedRequest = async (
   });
 };
 
-// Ensure recovery keys are set if values exist in store but not in recovery
-const ensureRecoveryKeysAreSet = (
-  username: string | null,
-  authToken: string | null
-) => {
+// Ensure username recovery key is set if username exists but recovery key doesn't
+const ensureUsernameRecovery = (username: string | null) => {
   if (username && !localStorage.getItem(USERNAME_RECOVERY_KEY)) {
     console.log(
       "[ChatsStore] Setting recovery key for existing username:",
@@ -192,10 +184,8 @@ const ensureRecoveryKeysAreSet = (
     );
     saveUsernameToRecovery(username);
   }
-  if (authToken && !localStorage.getItem(AUTH_TOKEN_RECOVERY_KEY)) {
-    console.log("[ChatsStore] Setting recovery key for existing auth token");
-    saveAuthTokenToRecovery(authToken);
-  }
+  // Always clean up legacy auth token from localStorage
+  clearLegacyTokenRecovery();
 };
 
 // Define the state structure
@@ -329,14 +319,13 @@ const getInitialState = (): Omit<
   | "clearUnread"
   | "setHasEverUsedChats"
 > => {
-  // Try to recover username and auth token if available
+  // Recover username from localStorage (auth token lives in httpOnly cookie)
   const recoveredUsername = getUsernameFromRecovery();
-  const recoveredAuthToken = getAuthTokenFromRecovery();
 
   return {
     aiMessages: [getInitialAiMessage()],
     username: recoveredUsername,
-    authToken: recoveredAuthToken,
+    authToken: null,
     hasPassword: null, // Unknown until checked
     rooms: [],
     currentRoomId: null,
@@ -351,7 +340,7 @@ const getInitialState = (): Omit<
   };
 };
 
-const STORE_VERSION = 2;
+const STORE_VERSION = 3;
 const STORE_NAME = "ryos:chats";
 
 export const useChatsStore = create<ChatsStoreState>()(
@@ -359,8 +348,8 @@ export const useChatsStore = create<ChatsStoreState>()(
     (set, get) => {
       // Get initial state
       const initialState = getInitialState();
-      // Ensure recovery keys are set if values exist
-      ensureRecoveryKeysAreSet(initialState.username, initialState.authToken);
+      // Ensure username recovery key is set; clean up legacy token storage
+      ensureUsernameRecovery(initialState.username);
 
       return {
         ...initialState,
@@ -368,36 +357,21 @@ export const useChatsStore = create<ChatsStoreState>()(
         // --- Actions ---
         setAiMessages: (messages) => set({ aiMessages: messages }),
         setUsername: (username) => {
-          // Save username to recovery storage when it's set
           saveUsernameToRecovery(username);
           set({ username });
 
-          // Check password status when username changes (if we have a token)
-          const currentToken = get().authToken;
-          if (username && currentToken) {
+          // Check password status when username changes (if we have auth — either token or cookie)
+          if (username) {
             setTimeout(() => {
               get().checkHasPassword();
             }, 100);
-          } else if (!username) {
-            // Clear password status when username is cleared
+          } else {
             set({ hasPassword: null });
           }
         },
         setAuthToken: (token) => {
-          // Save auth token to recovery storage when it's set
-          saveAuthTokenToRecovery(token);
+          // Token is kept in memory only (httpOnly cookie handles persistence)
           set({ authToken: token });
-
-          // Check password status when token changes (if we have a username)
-          const currentUsername = get().username;
-          if (token && currentUsername) {
-            setTimeout(() => {
-              get().checkHasPassword();
-            }, 100);
-          } else if (!token) {
-            // Clear password status when token is cleared
-            set({ hasPassword: null });
-          }
         },
         setHasPassword: (hasPassword) => {
           set({ hasPassword });
@@ -406,9 +380,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentUsername = get().username;
           const currentToken = get().authToken;
 
-          if (!currentUsername || !currentToken) {
+          if (!currentUsername) {
             console.log(
-              "[ChatsStore] checkHasPassword: No username or token, setting null"
+              "[ChatsStore] checkHasPassword: No username, setting null"
             );
             set({ hasPassword: null });
             return { ok: false, error: "Authentication required" };
@@ -423,10 +397,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               "/api/auth/password/check",
               {
                 method: "GET",
-                headers: {
-                  Authorization: `Bearer ${currentToken}`,
-                  "X-Username": currentUsername,
-                },
+                headers: buildOptionalAuthHeaders(currentUsername, currentToken),
                 timeout: 15000,
                 throwOnHttpError: false,
                 retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -466,7 +437,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentUsername = get().username;
           const currentToken = get().authToken;
 
-          if (!currentUsername || !currentToken) {
+          if (!currentUsername) {
             return { ok: false, error: "Authentication required" };
           }
 
@@ -477,8 +448,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: `Bearer ${currentToken}`,
-                  "X-Username": currentUsername,
+                  ...buildOptionalAuthHeaders(currentUsername, currentToken),
                 },
                 body: JSON.stringify({ password }),
                 timeout: 15000,
@@ -726,7 +696,6 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentUsername = get().username;
           const currentToken = get().authToken;
 
-          // If no username, nothing to do
           if (!currentUsername) {
             console.log(
               "[ChatsStore] No username set, skipping token generation"
@@ -734,31 +703,18 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: true };
           }
 
-          // If token already exists, nothing to do
           if (currentToken) {
-            console.log(
-              "[ChatsStore] Auth token already exists for user:",
-              currentUsername
-            );
             return { ok: true };
           }
 
-          // Username exists but no token - this is a legacy scenario.
-          // Modern auth flows (createUser, authenticateWithPassword) return tokens directly.
-          // This fallback exists for users who somehow have a username but no token.
+          // No in-memory token but we have a username — the httpOnly cookie
+          // may be providing auth. Allow the request to proceed; the server
+          // will read the cookie via `credentials: "include"`.
           console.log(
-            "[ChatsStore] Generating auth token for existing user:",
+            "[ChatsStore] No in-memory token; relying on httpOnly cookie for user:",
             currentUsername
           );
-
-          // Legacy scenario: user has username but no token. 
-          // This is rare - modern auth flows (register, login) return tokens directly.
-          // For now, return error and require re-authentication
-          console.warn(
-            "[ChatsStore] User has username but no token - requires re-authentication:",
-            currentUsername
-          );
-          return { ok: false, error: "Please log in again to continue" };
+          return { ok: true };
         },
         refreshAuthToken: async () => {
           const currentUsername = get().username;
@@ -769,19 +725,19 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Username required" };
           }
 
-          if (!currentToken) {
-            console.log(
-              "[ChatsStore] No auth token set, skipping token refresh"
-            );
-            return { ok: false, error: "Auth token required" };
-          }
-
           console.log(
             "[ChatsStore] Refreshing auth token for existing user:",
             currentUsername
           );
 
           try {
+            // When we have an in-memory token, send it in the body.
+            // Otherwise, the httpOnly cookie provides the old token.
+            const body: Record<string, string> = { username: currentUsername };
+            if (currentToken) {
+              body.oldToken = currentToken;
+            }
+
             const response = await abortableFetch(
               "/api/auth/token/refresh",
               {
@@ -789,10 +745,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                  username: currentUsername,
-                  oldToken: currentToken,
-                }),
+                body: JSON.stringify(body),
                 timeout: 15000,
                 throwOnHttpError: false,
                 retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -814,8 +767,6 @@ export const useChatsStore = create<ChatsStoreState>()(
             if (data.token) {
               console.log("[ChatsStore] Auth token refreshed successfully");
               set({ authToken: data.token });
-              saveAuthTokenToRecovery(data.token);
-              // Save token refresh time
               saveTokenRefreshTime(currentUsername);
               return { ok: true, token: data.token };
             } else {
@@ -892,17 +843,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
         },
         reset: () => {
-          // Before resetting, ensure we have the username and auth token saved
           const currentUsername = get().username;
-          const currentAuthToken = get().authToken;
           if (currentUsername) {
             saveUsernameToRecovery(currentUsername);
           }
-          if (currentAuthToken) {
-            saveAuthTokenToRecovery(currentAuthToken);
-          }
-
-          // Reset the store to initial state (which already tries to recover username and auth token)
           set(getInitialState());
         },
         logout: async () => {
@@ -911,15 +855,15 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentUsername = get().username;
           const currentToken = get().authToken;
 
-          // Inform server to invalidate current token if we have auth
-          if (currentUsername && currentToken) {
+          // Inform server to invalidate token (and clear httpOnly cookie).
+          // Works via Authorization header or cookie.
+          if (currentUsername) {
             try {
               await abortableFetch(getApiUrl("/api/auth/logout"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: `Bearer ${currentToken}`,
-                  "X-Username": currentUsername,
+                  ...buildOptionalAuthHeaders(currentUsername, currentToken),
                 },
                 timeout: 15000,
                 throwOnHttpError: false,
@@ -933,22 +877,19 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
           }
 
-          // Track user logout analytics before clearing data
           if (currentUsername) {
             track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
           }
 
           // Clear recovery keys from localStorage
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
-          localStorage.removeItem(AUTH_TOKEN_RECOVERY_KEY);
+          clearLegacyTokenRecovery();
 
-          // Clear token refresh time for current user
           if (currentUsername) {
             const tokenRefreshKey = `${TOKEN_LAST_REFRESH_KEY}${currentUsername}`;
             localStorage.removeItem(tokenRefreshKey);
           }
 
-          // Reset only user-specific data, preserve rooms and messages
           set((state) => ({
             ...state,
             aiMessages: [getInitialAiMessage()],
@@ -958,7 +899,6 @@ export const useChatsStore = create<ChatsStoreState>()(
             currentRoomId: null,
           }));
 
-          // Re-fetch rooms to show only public rooms visible to anonymous users
           try {
             await get().fetchRooms();
           } catch (error) {
@@ -1340,18 +1280,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           members: string[] = []
         ) => {
           const username = get().username;
-          const authToken = get().authToken;
 
           if (!username) {
             return { ok: false, error: "Username required" };
-          }
-
-          if (!authToken) {
-            // Try to ensure auth token exists
-            const tokenResult = await get().ensureAuthToken();
-            if (!tokenResult.ok) {
-              return { ok: false, error: "Authentication required" };
-            }
           }
 
           try {
@@ -1364,8 +1295,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             const headers: HeadersInit = {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${get().authToken}`,
-              "X-Username": username,
+              ...buildOptionalAuthHeaders(username, get().authToken),
             };
 
             const response = await makeAuthenticatedRequest(
@@ -1402,17 +1332,15 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         deleteRoom: async (roomId: string) => {
           const username = get().username;
-          const authToken = get().authToken;
 
-          if (!username || !authToken) {
+          if (!username) {
             return { ok: false, error: "Authentication required" };
           }
 
           try {
             const headers: HeadersInit = {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
-              "X-Username": username,
+              ...buildOptionalAuthHeaders(username, get().authToken),
             };
 
             const response = await makeAuthenticatedRequest(
@@ -1472,36 +1400,23 @@ export const useChatsStore = create<ChatsStoreState>()(
           try {
             const headers: HeadersInit = {
               "Content-Type": "application/json",
+              ...buildOptionalAuthHeaders(username, authToken),
             };
-
-            if (authToken) {
-              headers["Authorization"] = `Bearer ${authToken}`;
-              headers["X-Username"] = username;
-            }
 
             const messageUrl = `/api/rooms/${encodeURIComponent(roomId)}/messages`;
             const messageBody = JSON.stringify({
               content: content.trim(),
             });
 
-            const response = authToken
-              ? await makeAuthenticatedRequest(
-                  messageUrl,
-                  {
-                    method: "POST",
-                    headers,
-                    body: messageBody,
-                  },
-                  get().refreshAuthToken
-                )
-              : await abortableFetch(getApiUrl(messageUrl), {
-                  method: "POST",
-                  headers,
-                  body: messageBody,
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                });
+            const response = await makeAuthenticatedRequest(
+              messageUrl,
+              {
+                method: "POST",
+                headers,
+                body: messageBody,
+              },
+              get().refreshAuthToken
+            );
 
             if (!response.ok) {
               // Remove optimistic message on failure
@@ -1582,20 +1497,15 @@ export const useChatsStore = create<ChatsStoreState>()(
               set({ username: data.user.username });
 
               if (data.token) {
+                // Keep token in memory only; httpOnly cookie handles persistence
                 set({ authToken: data.token });
-                saveAuthTokenToRecovery(data.token);
-                // Save initial token creation time
                 saveTokenRefreshTime(data.user.username);
               }
 
-              // Check password status after user creation
-              if (data.token) {
-                setTimeout(() => {
-                  get().checkHasPassword();
-                }, 100); // Small delay to ensure token is set
-              }
+              setTimeout(() => {
+                get().checkHasPassword();
+              }, 100);
 
-              // Track user creation analytics
               track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
 
               return { ok: true };
@@ -1631,23 +1541,24 @@ export const useChatsStore = create<ChatsStoreState>()(
       version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage), // Use localStorage
       partialize: (state) => ({
-        // Select properties to persist
         aiMessages: state.aiMessages,
         username: state.username,
-        authToken: state.authToken, // Persist auth token
-        hasPassword: state.hasPassword, // Persist password status
+        // NOTE: authToken is intentionally NOT persisted to localStorage.
+        // Auth tokens are stored exclusively in httpOnly cookies to
+        // prevent exposure via XSS. See: cookie-based auth flow.
+        hasPassword: state.hasPassword,
         currentRoomId: state.currentRoomId,
         isSidebarVisible: state.isSidebarVisible,
         isChannelsOpen: state.isChannelsOpen,
         isPrivateOpen: state.isPrivateOpen,
-        rooms: state.rooms, // Persist rooms list
+        rooms: state.rooms,
         roomMessages: Object.fromEntries(
           Object.entries(state.roomMessages).map(([roomId, messages]) => [
             roomId,
             capRoomMessages(messages),
           ])
-        ), // Persist room messages cache (capped)
-        fontSize: state.fontSize, // Persist font size
+        ),
+        fontSize: state.fontSize,
         unreadCounts: state.unreadCounts,
         hasEverUsedChats: state.hasEverUsedChats,
       }),
@@ -1776,16 +1687,16 @@ export const useChatsStore = create<ChatsStoreState>()(
             console.error("[ChatsStore] Migration failed:", e);
           }
         }
-        // If persistedState exists, use it (already in new format or newer version)
         if (persistedState) {
           console.log("[ChatsStore] Using persisted state.");
           const state = persistedState as ChatsStoreState;
           const finalState = { ...state };
 
-          // If there's a username or auth token, save them to the recovery mechanism
-          if (finalState.username || finalState.authToken) {
-            ensureRecoveryKeysAreSet(finalState.username, finalState.authToken);
-          }
+          // Strip any leftover authToken from older persisted snapshots —
+          // it must never survive in localStorage.
+          finalState.authToken = null;
+
+          ensureUsernameRecovery(finalState.username);
 
           console.log("[ChatsStore] Final state from persisted:", finalState);
           console.log(
@@ -1796,11 +1707,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
           return finalState;
         }
-        // Fallback to initial state if migration fails or no persisted state
         console.log("[ChatsStore] Falling back to initial state.");
         return { ...getInitialState() } as ChatsStoreState;
       },
-      // --- Rehydration Check for Null Username ---
       onRehydrateStorage: () => {
         console.log("[ChatsStore] Rehydrating storage...");
         return (state, error) => {
@@ -1809,58 +1718,84 @@ export const useChatsStore = create<ChatsStoreState>()(
           } else if (state) {
             console.log(
               "[ChatsStore] Rehydration complete. Current state username:",
-              state.username,
-              "authToken:",
-              state.authToken ? "present" : "null"
+              state.username
             );
-            // Check if username is null AFTER rehydration
+
+            // Recover username if missing
             if (state.username === null) {
-              // First check the recovery key
               const recoveredUsername = getUsernameFromRecovery();
               if (recoveredUsername) {
                 console.log(
-                  `[ChatsStore] Found encoded username '${recoveredUsername}' in recovery storage. Applying.`
+                  `[ChatsStore] Recovered username '${recoveredUsername}' from recovery storage.`
                 );
                 state.username = recoveredUsername;
               } else {
-                // Fallback to checking old key
                 const oldUsernameKey = "chats:chatRoomUsername";
                 const oldUsername = localStorage.getItem(oldUsernameKey);
                 if (oldUsername) {
                   console.log(
-                    `[ChatsStore] Found old username '${oldUsername}' in localStorage during rehydration check. Applying.`
+                    `[ChatsStore] Recovered username '${oldUsername}' from legacy key.`
                   );
                   state.username = oldUsername;
-                  // Save to recovery mechanism as well
                   saveUsernameToRecovery(oldUsername);
                   localStorage.removeItem(oldUsernameKey);
-                  console.log(
-                    `[ChatsStore] Removed old key '${oldUsernameKey}' after rehydration fix.`
-                  );
-                } else {
-                  console.log(
-                    "[ChatsStore] Username is null, but no username found in recovery or old localStorage during rehydration check."
-                  );
                 }
               }
             }
 
-            // Check if auth token is null AFTER rehydration
-            if (state.authToken === null) {
-              const recoveredAuthToken = getAuthTokenFromRecovery();
-              if (recoveredAuthToken) {
-                console.log(
-                  "[ChatsStore] Found encoded auth token in recovery storage. Applying."
-                );
-                state.authToken = recoveredAuthToken;
-              }
-            }
+            // Auth token is never in localStorage; ensure any legacy data is removed
+            state.authToken = null;
+            clearLegacyTokenRecovery();
+            ensureUsernameRecovery(state.username);
 
-            // Ensure both are saved to recovery
-            ensureRecoveryKeysAreSet(state.username, state.authToken);
+            // Restore session from httpOnly cookie via the server.
+            // This runs async; the store will update once the server responds.
+            if (state.username) {
+              restoreSessionFromCookie(state.username);
+            }
           }
         };
       },
     }
   )
 );
+
+/**
+ * Attempt to verify the current httpOnly cookie with the server.
+ * On success the in-memory auth state is updated.  On failure the
+ * user is silently treated as unauthenticated until next login.
+ *
+ * Also handles migration: if an old token was in localStorage,
+ * the session endpoint sets the httpOnly cookie for the first time.
+ */
+async function restoreSessionFromCookie(expectedUsername: string) {
+  try {
+    const response = await abortableFetch("/api/auth/session", {
+      method: "GET",
+      timeout: 10000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 500 },
+    });
+
+    if (!response.ok) {
+      console.log("[ChatsStore] Session restore failed:", response.status);
+      return;
+    }
+
+    const data = await response.json();
+    if (data.authenticated && data.username) {
+      console.log("[ChatsStore] Session restored from cookie for", data.username);
+      const store = useChatsStore.getState();
+
+      if (store.username === expectedUsername) {
+        // Keep authToken null — the cookie is the source of truth
+        store.checkHasPassword();
+        store.checkAndRefreshTokenIfNeeded();
+      }
+    } else {
+      console.log("[ChatsStore] No valid session cookie found.");
+    }
+  } catch (err) {
+    console.warn("[ChatsStore] Session restore request failed:", err);
+  }
+}
