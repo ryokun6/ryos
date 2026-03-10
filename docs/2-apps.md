@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 24 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 23 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 ## App Overview
 
@@ -20,15 +20,15 @@ ryOS includes 24 built-in applications, each designed to replicate classic deskt
 | [Chats](/docs/chats) | Chat with Ryo AI assistant and join chat rooms | Communication |
 | [Internet Explorer](/docs/internet-explorer) | Web browser with AI-powered content generation | Web |
 | [Applet Store](/docs/applet-store) | Browse and run user-created HTML applets | Utilities |
-| [Control Panels](/docs/control-panels) | System settings for themes, wallpapers, and audio | System |
+| [Control Panels](/docs/control-panels) | System settings for themes, wallpapers, audio, AI models, and cloud sync | System |
 | [Minesweeper](/docs/minesweeper) | Classic puzzle game | Games |
 | [Virtual PC](/docs/virtual-pc) | 3D PC simulation experience | Entertainment |
 | [Infinite Mac](/docs/infinite-mac) | Classic Mac OS emulators | Entertainment |
 | [Stickies](/docs/stickies) | Sticky notes for quick reminders | Productivity |
-| [Calendar](/docs/calendar) | Month and day view calendar with events and color coding | Productivity |
+| [Calendar](/docs/calendar) | iCal-style calendar with month, week, and day views, todos, and cloud sync | Productivity |
 | [Contacts](/docs/contacts) | Address book with vCard import and cloud sync | Productivity |
-| [Dashboard](/docs/dashboard) | Widget panel with clock, calendar, and weather | Utilities |
-| [Admin](/docs/admin) | System administration panel (admin only) | System |
+| [Dashboard](/docs/dashboard) | Tiger-style widget overlay with clock, calendar, weather, stocks, iPod, translator, sticky notes, and dictionary | Utilities |
+| [Admin](/docs/admin) | Usage analytics dashboard with server info and user management (admin only) | System |
 
 ## App Architecture
 
