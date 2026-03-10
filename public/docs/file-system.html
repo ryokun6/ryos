@@ -473,6 +473,17 @@ await ensureFileContentLoaded(filePath, uuid);</code></pre>
   sortType: SortType;        // "name" | "date" | "size" | "kind"
   selectedFile: string | null;
 }</code></pre>
+<h3>Undo/Redo for File Operations</h3>
+<p>Finder maintains a per-instance undo/redo stack for file operations:</p>
+<pre><code>type FinderUndoAction =
+  | { type: "moveToTrash"; fileName: string; originalPath: string }
+  | { type: "rename"; basePath: string; oldName: string; newName: string };</code></pre>
+<p>Supported undo/redo actions: <ul><li><strong>Move to Trash</strong>: Undo restores the trashed item; redo re-trashes it</li><li><strong>Rename</strong>: Undo reverts to the old name; redo reapplies the new name</li></ul></p>
+<p>The stack is capped at 20 entries. Any new action clears the redo stack.</p>
+<h3>Reactive File View</h3>
+<p>Finder automatically refreshes when the file store's <code>items</code> reference changes (e.g., after move-to-trash, restore, empty-trash, or cloud sync). This is achieved via a Zustand <code>subscribe()</code> call that triggers <code>loadFiles()</code> whenever <code>state.items</code> changes. Cloud sync updates for images are also detected through <code>useCloudSyncStore</code> subscription.</p>
+<h3>Sorting with Localized Names</h3>
+<p>Finder sorts items using locale-aware comparison via <code>compareFinderItemsByDisplayName()</code> and <code>compareFinderSortText()</code> from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/finderDisplay.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/utils/finderDisplay.ts</a></code>. These utilities use <code>Intl.Collator</code> with the current UI language so that translated folder names (e.g., Japanese, Korean) sort correctly alongside Latin names.</p>
 <h3>View Type Preferences</h3>
 <p>Per-path view type preferences persist across sessions:</p>
 <pre><code>// Default view types by path
@@ -512,6 +523,10 @@ fileStore.createAlias(
 <p>Desktop shortcuts support: <ul><li>App shortcuts (launches the app)</li><li>File shortcuts (opens the target file)</li><li>Theme-specific visibility (<code>hiddenOnThemes</code>)</li></ul></p>
 <h2>Cloud Sync</h2>
 <p>The cloud sync system (<code>/api/sync/*</code>) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs <strong>calendar</strong> events, <strong>contacts</strong>, and <strong>stickies</strong> from their respective stores (<code>useCalendarStore</code>, <code>useContactsStore</code>, <code>useStickiesStore</code>), enabling backup and real-time sync via Pusher or local WebSocket.</p>
+<h3>Domain-Based Change Tracking</h3>
+<p>File operations emit domain-specific change events via <code>emitCloudSyncDomainChange()</code> and <code>emitCloudSyncDomainChanges()</code> so the sync system knows which data stores have been modified:</p>
+<table><thead><tr><th>Domain</th><th>Triggers</th></tr></thead><tbody><tr><td><code>files-metadata</code></td><td>Document save, format filesystem</td></tr><tr><td><code>files-images</code></td><td>Image save, move, trash/restore</td></tr><tr><td><code>files-trash</code></td><td>Move to trash, restore, empty trash</td></tr><tr><td><code>files-applets</code></td><td>Applet save, fetch from share</td></tr></tbody></table>
+<p>Individual file operations (save, rename, move, trash, restore) emit the appropriate domain events to enable incremental sync rather than full-store uploads.</p>
 <h2>Migration System</h2>
 <p>Store version migrations handle schema changes:</p>
 <pre><code>// Version history

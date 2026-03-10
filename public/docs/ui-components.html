@@ -330,7 +330,7 @@
 <h2>Technologies</h2>
 <ul><li><strong>React 19</strong> with TypeScript for type-safe component development</li></ul><ul><li><strong>Tailwind CSS</strong> for utility-first styling and theme support</li><li><strong>shadcn/ui</strong> component library for accessible, customizable UI primitives</li><li><strong>Framer Motion</strong> for animations and transitions</li></ul>
 <h2>Component Architecture</h2>
-<p>The UI system follows a layered approach: <ol><li><strong>Base Layer</strong>: shadcn/ui components (19 components: button, dialog, input, select, etc.) provide accessible, themeable primitives</li></ol><ol><li><strong>Custom Layer</strong>: Specialized components (9 components: activity-indicator, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs</li><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li><li><strong>Application Layer</strong>: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)</li></ol></p>
+<p>The UI system follows a layered approach: <ol><li><strong>Base Layer</strong>: shadcn/ui components (19 components: button, dialog, input, select, etc.) provide accessible, themeable primitives</li></ol><ol><li><strong>Custom Layer</strong>: Specialized components (10 components: activity-indicator, aqua-checkbox, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs</li><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li><li><strong>Application Layer</strong>: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)</li></ol></p>
 <pre class="mermaid">graph TD
     subgraph Layer 4: Application
         D1[Dialog Components]
@@ -347,11 +347,12 @@
     
     subgraph Layer 2: Custom
         B1[activity-indicator]
-        B2[audio-bars]
-        B3[dial]
-        B4[playback-bars]
-        B5[volume-bar]
-        B6[audio-input-button]
+        B2[aqua-checkbox]
+        B3[audio-bars]
+        B4[dial]
+        B5[playback-bars]
+        B6[volume-bar]
+        B7[audio-input-button]
     end
     
     subgraph Layer 1: Base
@@ -359,12 +360,12 @@
         A2[button, dialog, input, select, ...]
     end
     
-    A1 --> B1 & B2 & B3 & B4 & B5 & B6
-    B1 & B2 & B3 & B4 & B5 & B6 --> C1 & C2 & C3 & C4
+    A1 --> B1 & B2 & B3 & B4 & B5 & B6 & B7
+    B1 & B2 & B3 & B4 & B5 & B6 & B7 --> C1 & C2 & C3 & C4
     C1 & C2 & C3 & C4 --> D1 & D2 & D3</pre>
 <p>All components are theme-aware, automatically adapting to the active system theme (System 7, Mac OS X, Windows XP, Windows 98) through the theme system.</p>
 <h2>Subsections</h2>
-<ul><li><a href="/docs/component-library">Component Library</a> - Core UI component library including 19 shadcn components, 9 custom primitives, 16 shared components, and crash boundary components</li></ul><ul><li><a href="/docs/i18n">Internationalization</a> - i18n hooks and translation system supporting 10 languages</li></ul>
+<ul><li><a href="/docs/component-library">Component Library</a> - Core UI component library including 19 shadcn components, 10 custom primitives, 16 shared components, and crash boundary components</li></ul><ul><li><a href="/docs/i18n">Internationalization</a> - i18n hooks and translation system supporting 10 languages</li></ul>
       </article>
       
       <nav class="nav">

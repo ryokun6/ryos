@@ -348,8 +348,8 @@
   isForeground?: boolean;
   appId: AppId;
   isShaking?: boolean;
-  /** Window material: "default" (opaque), "transparent", "notitlebar" (immersive) */
-  material?: "default" | "transparent" | "notitlebar";
+  /** Window material: "default" (opaque), "transparent", "notitlebar" (immersive), "brushedmetal" (macOS aluminum) */
+  material?: "default" | "transparent" | "notitlebar" | "brushedmetal";
   skipInitialSound?: boolean;
   windowConstraints?: {
     minWidth?: number;
@@ -368,7 +368,7 @@
   titleBarRightContent?: React.ReactNode;
 }</code></pre>
 <h4>Material Modes</h4>
-<table><thead><tr><th>Mode</th><th>Description</th><th>Use Case</th></tr></thead><tbody><tr><td><code>default</code></td><td>Standard opaque window background</td><td>Most apps</td></tr><tr><td><code>transparent</code></td><td>Semi-transparent background</td><td>iPod, Photo Booth</td></tr><tr><td><code>notitlebar</code></td><td>Immersive mode with floating titlebar on hover</td><td>Videos, games</td></tr></tbody></table>
+<table><thead><tr><th>Mode</th><th>Description</th><th>Use Case</th></tr></thead><tbody><tr><td><code>default</code></td><td>Standard opaque window background</td><td>Most apps</td></tr><tr><td><code>transparent</code></td><td>Semi-transparent background</td><td>iPod, Photo Booth</td></tr><tr><td><code>notitlebar</code></td><td>Immersive mode with floating titlebar on hover</td><td>Videos, games</td></tr><tr><td><code>brushedmetal</code></td><td>macOS brushed aluminum surface</td><td>Terminal, Synth</td></tr></tbody></table>
 <h3>useWindowManager Hook</h3>
 <p>The <code>useWindowManager</code> hook (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useWindowManager.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/hooks/useWindowManager.ts</a></code>) manages window positioning, dragging, and resizing.</p>
 <pre><code>interface UseWindowManagerProps {
@@ -642,7 +642,7 @@ useEffect(() =&gt; {
   };
 }, [instanceId, performClose, interceptClose]);</code></pre>
 <p>Apps set <code>interceptClose={true}</code> on WindowFrame and listen for the close event to show unsaved changes dialogs.</p>
-<p>In addition, app-level crash isolation is handled outside <code>WindowFrame</code>: each rendered app instance is wrapped with <code>AppErrorBoundary</code> in <code>AppManager</code>, so a runtime crash in one window can be relaunched or quit without crashing the desktop.</p>
+<p>In addition, app-level crash isolation is handled outside <code>WindowFrame</code>: each rendered app instance is wrapped with <code>AppErrorBoundary</code> in <code>AppManager</code>, so a runtime crash in one window presents a crash dialog with both <strong>Relaunch</strong> and <strong>Quit</strong> options without crashing the desktop. The crash dialog adapts to the current OS theme and reports errors via <code>reportRuntimeCrash</code>.</p>
 <h2>Mobile Adaptations</h2>
 <table><thead><tr><th>Adaptation</th><th>Description</th></tr></thead><tbody><tr><td>Full-width windows</td><td>Windows stretch to screen width on mobile</td></tr><tr><td>Touch-sized handles</td><td>Larger resize handle hit areas</td></tr><tr><td>Swipe navigation</td><td>Horizontal swipe between apps (phone only)</td></tr><tr><td>Mobile default sizes</td><td>Per-app optimized dimensions</td></tr><tr><td>Simplified controls</td><td>Reduced window chrome on small screens</td></tr></tbody></table>
 <h2>Related Documentation</h2>
