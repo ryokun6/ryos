@@ -500,7 +500,9 @@ const STATIC_ASSETS = [
   '/assets/splash/hello.svg',
   '/assets/splash/macos.svg',
   '/assets/splash/win98.png',
+  '/assets/splash/win98.gif',
   '/assets/splash/xp.png',
+  '/assets/splash/xp-boot.gif',
   // Video player controls
   '/assets/videos/play.png',
   '/assets/videos/pause.png',
