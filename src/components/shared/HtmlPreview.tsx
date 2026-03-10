@@ -25,6 +25,7 @@ import { useEventListener } from "@/hooks/useEventListener";
 import DOMPurify from "dompurify";
 import { extractHtmlContent } from "./htmlPreviewUtils";
 import { emitFileUpdated } from "@/utils/appEventBus";
+import { sanitizeHtmlForSrcDoc } from "@/utils/sanitizeHtmlForSrcDoc";
 
 // Component to render ryOS Code Previews
 interface HtmlPreviewProps {
@@ -419,13 +420,15 @@ export default function HtmlPreview({
     // If no <html> tag, coreHtmlContent remains the original trimmedHtmlContent (fragment)
     // --- End modification ---
 
-    // Use coreHtmlContent for subsequent checks and processing
+    const sanitizedCoreHtmlContent = sanitizeHtmlForSrcDoc(coreHtmlContent);
+
+    // Use sanitized core HTML content for subsequent checks and processing
     const isFullHtmlDoc =
-      /<!DOCTYPE html>/i.test(coreHtmlContent) ||
-      /<html[\s>]/i.test(coreHtmlContent);
+      /<!DOCTYPE html>/i.test(sanitizedCoreHtmlContent) ||
+      /<html[\s>]/i.test(sanitizedCoreHtmlContent);
 
     if (isFullHtmlDoc) {
-      let modifiedContent = coreHtmlContent; // Start with the potentially extracted content
+      let modifiedContent = sanitizedCoreHtmlContent;
 
       // Attempt to inject into <head>
       const headEndMatch = /<\/head>/i.exec(modifiedContent);
@@ -482,7 +485,7 @@ export default function HtmlPreview({
   ${postStreamHeadContent} 
 </head>
 <body>
-  ${coreHtmlContent}
+  ${sanitizedCoreHtmlContent}
 </body>
 </html>`;
     }

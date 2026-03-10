@@ -10,6 +10,7 @@ import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { sanitizeHtmlForSrcDoc } from "@/utils/sanitizeHtmlForSrcDoc";
 
 interface AppStoreProps {
   theme?: string;
@@ -710,7 +711,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             >
             {selectedAppletContent ? (
               <iframe
-                srcDoc={ensureMacFonts(selectedAppletContent)}
+                srcDoc={ensureMacFonts(
+                  sanitizeHtmlForSrcDoc(selectedAppletContent)
+                )}
                 title={displayName}
                 className="w-full h-full border-0"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"

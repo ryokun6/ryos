@@ -9,6 +9,7 @@ import { AppStore } from "./AppStore";
 import { appMetadata, AppletViewerInitialData } from "../index";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
 import { useAppletViewerLogic } from "../hooks/useAppletViewerLogic";
+import { sanitizeHtmlForSrcDoc } from "@/utils/sanitizeHtmlForSrcDoc";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -70,6 +71,7 @@ export function AppletViewerAppComponent({
     handleVerifyTokenSubmit,
     getAppletTitle,
   } = useAppletViewerLogic({ instanceId, initialData });
+  const sanitizedAppletHtmlContent = sanitizeHtmlForSrcDoc(htmlContent);
 
   const menuBar = (
     <AppletViewerMenuBar
@@ -110,7 +112,9 @@ export function AppletViewerAppComponent({
             <div className="relative h-full w-full">
               <iframe
                 ref={iframeRef}
-                srcDoc={injectAppletAuthScript(ensureMacFonts(htmlContent))}
+                srcDoc={injectAppletAuthScript(
+                  ensureMacFonts(sanitizedAppletHtmlContent)
+                )}
                 title={windowTitle}
                 className="border-0"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"

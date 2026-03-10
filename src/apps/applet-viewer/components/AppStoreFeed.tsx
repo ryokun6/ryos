@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { sanitizeHtmlForSrcDoc } from "@/utils/sanitizeHtmlForSrcDoc";
 
 interface AppStoreFeedProps {
   theme?: string;
@@ -527,7 +528,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         >
           {content ? (
             <iframe
-              srcDoc={ensureMacFonts(content)}
+              srcDoc={ensureMacFonts(sanitizeHtmlForSrcDoc(content))}
               title={displayName}
               className="w-full h-full border-0"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
