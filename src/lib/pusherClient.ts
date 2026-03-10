@@ -158,6 +158,7 @@ class LocalRealtimeClient implements RealtimeClient {
   readonly connection = new LocalRealtimeConnection();
 
   private socket: WebSocket | null = null;
+  private socketId = 0;
   private reconnectTimer: number | null = null;
   private reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
   private destroyed = false;
@@ -165,10 +166,11 @@ class LocalRealtimeClient implements RealtimeClient {
   private heartbeatTimer: number | null = null;
   private heartbeatTimeoutTimer: number | null = null;
   private boundVisibilityHandler: (() => void) | null = null;
+  private boundOnlineHandler: (() => void) | null = null;
 
   constructor(private readonly websocketUrl: string) {
     this.connect();
-    this.setupVisibilityHandler();
+    this.setupBrowserHandlers();
   }
 
   subscribe(channelName: string): RealtimeChannel {
@@ -196,47 +198,70 @@ class LocalRealtimeClient implements RealtimeClient {
   destroy(): void {
     this.destroyed = true;
     this.clearAllTimers();
-    this.teardownVisibilityHandler();
+    this.teardownBrowserHandlers();
     this.socket?.close();
     this.socket = null;
   }
 
-  private setupVisibilityHandler(): void {
-    if (typeof document === "undefined") return;
+  private setupBrowserHandlers(): void {
+    if (typeof window === "undefined") return;
 
     this.boundVisibilityHandler = () => {
-      if (document.visibilityState === "visible" && !this.destroyed) {
-        if (
-          !this.socket ||
-          this.socket.readyState === WebSocket.CLOSED ||
-          this.socket.readyState === WebSocket.CLOSING
-        ) {
-          this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
-          this.connect();
-        } else if (this.socket.readyState === WebSocket.OPEN) {
-          this.sendPing();
-        }
-      }
+      if (document.visibilityState !== "visible" || this.destroyed) return;
+      this.handleWakeUp();
+    };
+
+    this.boundOnlineHandler = () => {
+      if (this.destroyed) return;
+      this.handleWakeUp();
     };
 
     document.addEventListener("visibilitychange", this.boundVisibilityHandler);
+    window.addEventListener("online", this.boundOnlineHandler);
   }
 
-  private teardownVisibilityHandler(): void {
-    if (typeof document === "undefined" || !this.boundVisibilityHandler) return;
-    document.removeEventListener(
-      "visibilitychange",
-      this.boundVisibilityHandler
-    );
-    this.boundVisibilityHandler = null;
+  private teardownBrowserHandlers(): void {
+    if (typeof window === "undefined") return;
+
+    if (this.boundVisibilityHandler) {
+      document.removeEventListener(
+        "visibilitychange",
+        this.boundVisibilityHandler
+      );
+      this.boundVisibilityHandler = null;
+    }
+
+    if (this.boundOnlineHandler) {
+      window.removeEventListener("online", this.boundOnlineHandler);
+      this.boundOnlineHandler = null;
+    }
   }
 
-  private clearAllTimers(): void {
+  private handleWakeUp(): void {
+    if (
+      !this.socket ||
+      this.socket.readyState === WebSocket.CLOSED ||
+      this.socket.readyState === WebSocket.CLOSING
+    ) {
+      this.cancelPendingReconnect();
+      this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
+      this.connect();
+    } else if (this.socket.readyState === WebSocket.OPEN) {
+      this.sendPing();
+    }
+  }
+
+  private cancelPendingReconnect(): void {
     if (typeof window === "undefined") return;
     if (this.reconnectTimer !== null) {
       window.clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+  }
+
+  private clearAllTimers(): void {
+    if (typeof window === "undefined") return;
+    this.cancelPendingReconnect();
     if (this.heartbeatTimer !== null) {
       window.clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
@@ -289,6 +314,7 @@ class LocalRealtimeClient implements RealtimeClient {
   }
 
   private setConnectionState(state: RealtimeConnectionState): void {
+    if (this.connection.state === state) return;
     this.connection.state = state;
   }
 
@@ -301,11 +327,17 @@ class LocalRealtimeClient implements RealtimeClient {
       return;
     }
 
+    this.cancelPendingReconnect();
+
+    const id = ++this.socketId;
+    const isCurrentSocket = () => id === this.socketId && !this.destroyed;
+
     this.setConnectionState("connecting");
     this.connection.emit("connecting");
 
+    let ws: WebSocket;
     try {
-      this.socket = new WebSocket(this.websocketUrl);
+      ws = new WebSocket(this.websocketUrl);
     } catch (error) {
       this.setConnectionState("disconnected");
       this.connection.emit(
@@ -318,7 +350,10 @@ class LocalRealtimeClient implements RealtimeClient {
       return;
     }
 
-    this.socket.addEventListener("open", () => {
+    this.socket = ws;
+
+    ws.addEventListener("open", () => {
+      if (!isCurrentSocket()) return;
       this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
       this.setConnectionState("connected");
       this.connection.emit("connected");
@@ -328,7 +363,8 @@ class LocalRealtimeClient implements RealtimeClient {
       }
     });
 
-    this.socket.addEventListener("message", (event) => {
+    ws.addEventListener("message", (event) => {
+      if (!isCurrentSocket()) return;
       try {
         const payload = JSON.parse(String(event.data)) as {
           type?: string;
@@ -358,15 +394,18 @@ class LocalRealtimeClient implements RealtimeClient {
       }
     });
 
-    this.socket.addEventListener("error", () => {
+    ws.addEventListener("error", () => {
+      if (!isCurrentSocket()) return;
       this.connection.emit(
         "error",
         new Error("[pusherClient] Local realtime socket error")
       );
     });
 
-    this.socket.addEventListener("close", () => {
+    ws.addEventListener("close", () => {
+      if (!isCurrentSocket()) return;
       this.stopHeartbeat();
+      this.socket = null;
       this.setConnectionState("disconnected");
       this.connection.emit("disconnected");
       if (!this.destroyed) {
@@ -380,21 +419,18 @@ class LocalRealtimeClient implements RealtimeClient {
       return;
     }
 
-    if (this.reconnectTimer !== null) {
-      window.clearTimeout(this.reconnectTimer);
-    }
+    this.cancelPendingReconnect();
 
     this.setConnectionState("connecting");
     this.connection.emit("connecting");
 
+    const delay = this.reconnectDelayMs;
+    this.reconnectDelayMs = Math.min(delay * 2, MAX_RECONNECT_DELAY_MS);
+
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
-      this.reconnectDelayMs = Math.min(
-        this.reconnectDelayMs * 2,
-        MAX_RECONNECT_DELAY_MS
-      );
-    }, this.reconnectDelayMs);
+    }, delay);
   }
 
   private send(payload: unknown): void {
