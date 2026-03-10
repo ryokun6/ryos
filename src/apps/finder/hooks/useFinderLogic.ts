@@ -20,7 +20,10 @@ import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { getTranslatedFolderNameFromName } from "@/utils/i18n";
-import { compareFinderItemsByDisplayName } from "@/utils/finderDisplay";
+import {
+  compareFinderItemsByDisplayName,
+  compareFinderSortText,
+} from "@/utils/finderDisplay";
 import { helpItems } from "../index";
 import { useFilesStoreShallow } from "@/stores/helpers";
 import { useDockStore } from "@/stores/useDockStore";
@@ -126,8 +129,9 @@ export function useFinderLogic({
   initialData,
   instanceId,
 }: UseFinderLogicProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("finder", helpItems);
+  const currentTheme = useThemeStore((state) => state.current);
 
   // Dialog state
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
@@ -422,10 +426,12 @@ export function useFinderLogic({
 
   // Sort files
   const sortedFiles = useMemo(() => {
+    const finderSortLanguage = i18n.resolvedLanguage || i18n.language;
+
     return [...files].sort((a, b) => {
       switch (sortType) {
         case "name":
-          return compareFinderItemsByDisplayName(a, b);
+          return compareFinderItemsByDisplayName(a, b, finderSortLanguage);
         case "kind": {
           // Sort by directory first, then by file extension
           if (a.isDirectory && !b.isDirectory) return -1;
@@ -433,8 +439,8 @@ export function useFinderLogic({
           const extA = a.name.split(".").pop() || "";
           const extB = b.name.split(".").pop() || "";
           return (
-            extA.localeCompare(extB, undefined, { sensitivity: "base" }) ||
-            compareFinderItemsByDisplayName(a, b)
+            compareFinderSortText(extA, extB, finderSortLanguage) ||
+            compareFinderItemsByDisplayName(a, b, finderSortLanguage)
           );
         }
         case "size":
@@ -458,12 +464,12 @@ export function useFinderLogic({
           if (a.modifiedAt && !b.modifiedAt) return -1;
           if (!a.modifiedAt && b.modifiedAt) return 1;
           // If neither has a date, sort by name
-          return compareFinderItemsByDisplayName(a, b);
+          return compareFinderItemsByDisplayName(a, b, finderSortLanguage);
         default:
           return 0;
       }
     });
-  }, [files, sortType]);
+  }, [files, sortType, i18n.language, i18n.resolvedLanguage, currentTheme]);
 
   const handleEmptyTrash = () => {
     setIsEmptyTrashDialogOpen(true);
@@ -1178,7 +1184,6 @@ export function useFinderLogic({
     },
   ];
 
-  const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   // Computed window title
