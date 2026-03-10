@@ -2275,6 +2275,11 @@
       "chatSynth": "Chat Synth",
       "selectAPreset": "Select a preset",
       "loggedInToRyOS": "Logged in to ryOS",
+      "connectionStatus": {
+        "connected": "Connected",
+        "connecting": "Connecting…",
+        "disconnected": "Disconnected"
+      },
       "logIn": "Log In",
       "setPassword": "Set Password",
       "logOut": "Log Out",
