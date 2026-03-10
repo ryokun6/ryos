@@ -211,14 +211,21 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
     setLoading(true);
     setGeoLocationName("");
 
+    const SF_LAT = 37.7749;
+    const SF_LON = -122.4194;
+
+    const fallbackToSF = () => {
+      setGeoLocationName(t("apps.dashboard.cities.sanFrancisco"));
+      fetchWeather(SF_LAT, SF_LON);
+    };
+
     if (cityConfig?.lat != null && cityConfig?.lon != null) {
       fetchWeather(cityConfig.lat, cityConfig.lon);
       return;
     }
 
     if (!navigator.geolocation) {
-      setError(t("apps.dashboard.weather.locationDenied"));
-      setLoading(false);
+      fallbackToSF();
       return;
     }
 
@@ -228,8 +235,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
         fetchLocationName(pos.coords.latitude, pos.coords.longitude);
       },
       () => {
-        setError(t("apps.dashboard.weather.enableLocation"));
-        setLoading(false);
+        fallbackToSF();
       },
       { timeout: 10000 }
     );

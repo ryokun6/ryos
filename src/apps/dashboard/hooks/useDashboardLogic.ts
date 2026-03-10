@@ -51,14 +51,50 @@ export function useDashboardLogic() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const margin = 20;
+      const padding = 20;
       const bottomReserved = 120;
-      const maxX = Math.max(margin, vw - size.width - margin);
-      const maxY = Math.max(margin, vh - size.height - bottomReserved);
-      const x = Math.max(margin, Math.min(200 + Math.floor(Math.random() * 200), maxX));
-      const y = Math.max(margin, Math.min(100 + Math.floor(Math.random() * 100), maxY));
 
       const currentWidgets = useDashboardStore.getState().widgets;
       const maxZ = Math.max(0, ...currentWidgets.map((w) => w.zIndex ?? 0));
+
+      const overlaps = (
+        cx: number,
+        cy: number,
+        cw: number,
+        ch: number
+      ): boolean =>
+        currentWidgets.some((w) => {
+          const wx = w.position.x - padding;
+          const wy = w.position.y - padding;
+          const ww = w.size.width + padding * 2;
+          const wh = w.size.height + padding * 2;
+          return cx < wx + ww && cx + cw > wx && cy < wy + wh && cy + ch > wy;
+        });
+
+      const step = 20;
+      const maxX = vw - size.width - margin;
+      const maxY = vh - size.height - bottomReserved;
+      let placed = false;
+      let x = margin;
+      let y = margin;
+
+      for (let cy = margin; cy <= maxY; cy += step) {
+        for (let cx = margin; cx <= maxX; cx += step) {
+          if (!overlaps(cx, cy, size.width, size.height)) {
+            x = cx;
+            y = cy;
+            placed = true;
+            break;
+          }
+        }
+        if (placed) break;
+      }
+
+      if (!placed) {
+        const cascade = (currentWidgets.length % 10) * 30;
+        x = Math.max(margin, Math.min(margin + cascade, maxX));
+        y = Math.max(margin, Math.min(margin + cascade, maxY));
+      }
 
       addWidget({ type, position: { x, y }, size, zIndex: maxZ + 1 });
     },
