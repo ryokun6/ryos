@@ -23,6 +23,7 @@ import {
   formatTelegramConversationEntries,
   formatTelegramHeartbeatDailyNoteEntries,
   formatTelegramHeartbeatHistoryEntries,
+  getCurrentBriefingType,
   getTelegramConversationSinceLastHeartbeat,
   getTelegramHeartbeatAuthSecret,
   parseTelegramHeartbeatResult,
@@ -288,6 +289,14 @@ export default async function handler(
     }
   }
 
+  const briefingType = getCurrentBriefingType(new Date(), TELEGRAM_HEARTBEAT_TIME_ZONE);
+  if (briefingType) {
+    logger.info("Telegram heartbeat detected scheduled briefing window", {
+      username,
+      briefingType,
+    });
+  }
+
   const today = getTodayDateString(TELEGRAM_HEARTBEAT_TIME_ZONE);
   const todaysDailyNote = await getDailyNote(redis, username, today);
   const noteContext = buildTelegramHeartbeatNoteContext(todaysDailyNote);
@@ -295,7 +304,8 @@ export default async function handler(
   const gateDecision = shouldSendTelegramHeartbeat(
     noteContext,
     heartbeatHistoryContext,
-    conversationContext
+    conversationContext,
+    briefingType
   );
 
   if (!gateDecision.shouldSend) {
@@ -360,6 +370,7 @@ export default async function handler(
         heartbeatLogSnapshot: formatTelegramHeartbeatHistoryEntries(
           heartbeatHistoryContext.entries
         ),
+        briefingType,
       }),
     },
   ];
@@ -517,6 +528,7 @@ export default async function handler(
     chatId: linkedAccount.chatId,
     replyLength: replyText.length,
     model: telegramModel,
+    briefingType: briefingType ?? undefined,
   });
   logger.response(200, Date.now() - startTime);
   sendJson(res, 200, {
@@ -524,5 +536,6 @@ export default async function handler(
     sent: true,
     username,
     replyLength: replyText.length,
+    ...(briefingType ? { briefingType } : {}),
   });
 }
