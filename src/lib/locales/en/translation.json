@@ -391,7 +391,8 @@
         "addToDesktop": "Add to Desktop",
         "rename": "Rename…",
         "duplicate": "Duplicate",
-        "moveToTrash": "Move to Trash"
+        "moveToTrash": "Move to Trash",
+        "shareViaAirDrop": "Share via AirDrop"
       },
       "dialogs": {
         "emptyTrash": {
@@ -432,6 +433,20 @@
         "type": "Type",
         "size": "Size",
         "modified": "Modified"
+      },
+      "airdrop": {
+        "title": "AirDrop",
+        "loginRequired": "Sign in to Chats to use AirDrop and share files with nearby users.",
+        "looking": "Looking for nearby users…",
+        "noUsers": "No one else is around. Ask someone to open AirDrop.",
+        "hint": "Drag files onto a user to share, or use the context menu on any file.",
+        "fileReceived": "Received \"{{fileName}}\" from @{{sender}}",
+        "saveFailed": "Failed to save received file",
+        "fileNotFound": "File not found",
+        "noContent": "Could not read file content",
+        "incomingFile": "@{{sender}} wants to send you \"{{fileName}}\"",
+        "accept": "Accept",
+        "decline": "Decline"
       },
       "defaultNames": {
         "untitledFolder": "untitled folder",

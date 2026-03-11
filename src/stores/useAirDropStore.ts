@@ -1,0 +1,229 @@
+import { create } from "zustand";
+import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  subscribePusherChannel,
+  unsubscribePusherChannel,
+} from "@/lib/pusherClient";
+import type { PusherChannel } from "@/lib/pusherClient";
+import { toast } from "sonner";
+
+export interface AirDropTransfer {
+  transferId: string;
+  sender: string;
+  fileName: string;
+  fileType: string;
+}
+
+interface AirDropState {
+  nearbyUsers: string[];
+  isDiscovering: boolean;
+  isSending: boolean;
+  pendingTransfers: AirDropTransfer[];
+
+  heartbeatInterval: ReturnType<typeof setInterval> | null;
+  discoverInterval: ReturnType<typeof setInterval> | null;
+  pusherChannel: PusherChannel | null;
+  subscribedUsername: string | null;
+
+  startAirDrop: (username: string) => void;
+  stopAirDrop: () => void;
+  fetchNearbyUsers: () => Promise<void>;
+  sendFile: (
+    recipient: string,
+    fileName: string,
+    content: string,
+    fileType?: string
+  ) => Promise<boolean>;
+  respondToTransfer: (
+    transferId: string,
+    accept: boolean
+  ) => Promise<{
+    success: boolean;
+    fileName?: string;
+    fileType?: string;
+    content?: string;
+    sender?: string;
+  }>;
+  removeTransfer: (transferId: string) => void;
+  subscribeToChannel: (username: string) => void;
+  unsubscribeFromChannel: () => void;
+}
+
+const makeApiRequest = async (
+  url: string,
+  options: RequestInit
+): Promise<Response> => {
+  return abortableFetch(url, {
+    ...options,
+    credentials: "include",
+    timeout: 15000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
+};
+
+export const useAirDropStore = create<AirDropState>((set, get) => ({
+  nearbyUsers: [],
+  isDiscovering: false,
+  isSending: false,
+  pendingTransfers: [],
+  heartbeatInterval: null,
+  discoverInterval: null,
+  pusherChannel: null,
+  subscribedUsername: null,
+
+  startAirDrop: (username: string) => {
+    const state = get();
+    if (state.heartbeatInterval) return;
+
+    const heartbeat = async () => {
+      try {
+        await makeApiRequest(getApiUrl("/api/airdrop/heartbeat"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch {
+        // Silently fail heartbeat
+      }
+    };
+
+    heartbeat();
+
+    const hbInterval = setInterval(heartbeat, 30000);
+    const discInterval = setInterval(() => get().fetchNearbyUsers(), 10000);
+
+    set({ heartbeatInterval: hbInterval, discoverInterval: discInterval });
+    get().fetchNearbyUsers();
+    get().subscribeToChannel(username);
+  },
+
+  stopAirDrop: () => {
+    const state = get();
+    if (state.heartbeatInterval) clearInterval(state.heartbeatInterval);
+    if (state.discoverInterval) clearInterval(state.discoverInterval);
+    set({
+      heartbeatInterval: null,
+      discoverInterval: null,
+      nearbyUsers: [],
+      isDiscovering: false,
+    });
+  },
+
+  fetchNearbyUsers: async () => {
+    try {
+      set({ isDiscovering: true });
+      const res = await makeApiRequest(getApiUrl("/api/airdrop/discover"), {
+        method: "GET",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ nearbyUsers: data.users || [] });
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      set({ isDiscovering: false });
+    }
+  },
+
+  sendFile: async (recipient, fileName, content, fileType) => {
+    set({ isSending: true });
+    try {
+      const res = await makeApiRequest(getApiUrl("/api/airdrop/send"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipient, fileName, fileType, content }),
+      });
+      if (res.ok) {
+        toast.success(`Sent "${fileName}" to @${recipient}`);
+        return true;
+      }
+      const err = await res.json().catch(() => ({ error: "Send failed" }));
+      toast.error(err.error || "Failed to send file");
+      return false;
+    } catch {
+      toast.error("Failed to send file");
+      return false;
+    } finally {
+      set({ isSending: false });
+    }
+  },
+
+  respondToTransfer: async (transferId, accept) => {
+    try {
+      const res = await makeApiRequest(getApiUrl("/api/airdrop/respond"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transferId, accept }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        get().removeTransfer(transferId);
+        return { success: true, ...data };
+      }
+      return { success: false };
+    } catch {
+      return { success: false };
+    }
+  },
+
+  removeTransfer: (transferId) => {
+    set((s) => ({
+      pendingTransfers: s.pendingTransfers.filter(
+        (t) => t.transferId !== transferId
+      ),
+    }));
+  },
+
+  subscribeToChannel: (username: string) => {
+    const state = get();
+    if (state.subscribedUsername === username && state.pusherChannel) return;
+
+    if (state.pusherChannel && state.subscribedUsername) {
+      unsubscribePusherChannel(`airdrop-${state.subscribedUsername}`);
+    }
+
+    const channelName = `airdrop-${username}`;
+    const channel = subscribePusherChannel(channelName);
+
+    channel.bind("airdrop-request", (data: unknown) => {
+      const transfer = data as AirDropTransfer;
+      set((s) => ({
+        pendingTransfers: [...s.pendingTransfers, transfer],
+      }));
+    });
+
+    channel.bind("airdrop-accepted", (data: unknown) => {
+      const { fileName, recipient } = data as {
+        fileName: string;
+        recipient: string;
+      };
+      toast.success(`@${recipient} accepted "${fileName}"`);
+    });
+
+    channel.bind("airdrop-declined", (data: unknown) => {
+      const { fileName, recipient } = data as {
+        fileName: string;
+        recipient: string;
+      };
+      toast.error(`@${recipient} declined "${fileName}"`);
+    });
+
+    set({ pusherChannel: channel, subscribedUsername: username });
+  },
+
+  unsubscribeFromChannel: () => {
+    const state = get();
+    if (state.subscribedUsername) {
+      const channel = state.pusherChannel;
+      if (channel) {
+        channel.unbind("airdrop-request");
+        channel.unbind("airdrop-accepted");
+        channel.unbind("airdrop-declined");
+      }
+      unsubscribePusherChannel(`airdrop-${state.subscribedUsername}`);
+    }
+    set({ pusherChannel: null, subscribedUsername: null });
+  },
+}));
