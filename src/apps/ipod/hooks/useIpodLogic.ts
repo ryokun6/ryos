@@ -113,6 +113,7 @@ export function useIpodLogic({
     toggleShuffle,
     togglePlay,
     setIsPlaying,
+    setDisplayMode,
     toggleVideo,
     toggleBacklight,
     setTheme,
@@ -154,6 +155,7 @@ export function useIpodLogic({
     refreshLyrics: s.refreshLyrics,
     setTrackLyricsSource: s.setTrackLyricsSource,
     clearTrackLyricsSource: s.clearTrackLyricsSource,
+    setDisplayMode: s.setDisplayMode,
     setLyricOffset: s.setLyricOffset,
     setCurrentFuriganaMap: s.setCurrentFuriganaMap,
   }));
@@ -1839,6 +1841,7 @@ export function useIpodLogic({
     showOfflineStatus,
     startTrackSwitch,
     togglePlay,
+    setDisplayMode,
     toggleVideo,
     toggleBacklight,
     setCurrentSongId,
