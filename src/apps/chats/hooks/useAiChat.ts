@@ -2323,18 +2323,21 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
     // Only extract if user is logged in and there are messages worth analyzing
-    if (currentUsername && currentToken && messagesToAnalyze.length > 2) {
+    if (currentUsername && messagesToAnalyze.length > 2) {
       console.log("[clearChats] Triggering async memory extraction...");
-      
-      // Fire and forget - don't await, don't block the UI
+
+      const memHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-User-Timezone": currentTimeZone,
+      };
+      if (currentToken) {
+        memHeaders["Authorization"] = `Bearer ${currentToken}`;
+        memHeaders["X-Username"] = currentUsername;
+      }
+
       abortableFetch(getApiUrl("/api/ai/extract-memories"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentToken}`,
-          "X-Username": currentUsername,
-          "X-User-Timezone": currentTimeZone,
-        },
+        headers: memHeaders,
         body: JSON.stringify({
           timeZone: currentTimeZone,
           messages: messagesToAnalyze.map(msg => ({

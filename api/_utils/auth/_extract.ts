@@ -1,9 +1,14 @@
 /**
  * Auth extraction utilities - Extract auth credentials from requests (Node.js runtime)
+ *
+ * Checks (in order):
+ *   1. Authorization header + X-Username header  (explicit)
+ *   2. httpOnly `ryos_auth` cookie               (implicit / after page reload)
  */
 
 import type { VercelRequest } from "@vercel/node";
 import type { ExtractedAuth } from "./_types.js";
+import { parseAuthCookie } from "../_cookie.js";
 
 // Helper to get header value from Node.js IncomingMessage headers
 function getHeader(req: VercelRequest, name: string): string | null {
@@ -15,23 +20,29 @@ function getHeader(req: VercelRequest, name: string): string | null {
 }
 
 /**
- * Extract authentication credentials from request headers
- * 
- * Expects:
- * - Authorization: Bearer <token>
- * - X-Username: <username>
+ * Extract authentication credentials from request.
+ *
+ * Prefers explicit Authorization + X-Username headers. Falls back to the
+ * httpOnly auth cookie when headers are absent.
  */
 export function extractAuth(request: VercelRequest): ExtractedAuth {
   const authHeader = getHeader(request, "authorization");
-  
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { username: null, token: null };
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    // Ignore placeholder values that leak when the client has no in-memory token
+    if (token && token !== "null" && token !== "undefined") {
+      const username = getHeader(request, "x-username");
+      return { username, token };
+    }
   }
 
-  const token = authHeader.substring(7); // Remove "Bearer " prefix
-  const username = getHeader(request, "x-username");
+  const cookieAuth = parseAuthCookie(request.headers.cookie);
+  if (cookieAuth) {
+    return { username: cookieAuth.username, token: cookieAuth.token };
+  }
 
-  return { username, token };
+  return { username: null, token: null };
 }
 
 /**

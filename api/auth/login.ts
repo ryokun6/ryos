@@ -15,6 +15,7 @@ import {
 } from "../_utils/auth/index.js";
 import { verifyPassword, getUserPasswordHash } from "../_utils/auth/_password.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { buildSetAuthCookie } from "../_utils/_cookie.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -106,6 +107,7 @@ export default apiHandler(
     const token = generateAuthToken();
     await storeToken(redis, username, token);
 
+    res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
     res.status(200).json({ token, username });
   }
 );
