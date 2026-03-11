@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import type { DragEvent } from "react";
 import { useAirDropStore } from "@/stores/useAirDropStore";
 import { useChatsStore } from "@/stores/useChatsStore";
@@ -24,12 +24,14 @@ interface UserAvatarProps {
   label: string;
   size?: "sm" | "lg";
   onDrop?: (username: string, fileName: string, content: string, fileType: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-function UserAvatar({ username, picture, initials, label, size = "sm", onDrop }: UserAvatarProps) {
+function UserAvatar({ username, picture, initials, label, size = "sm", onDrop, className, style }: UserAvatarProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const isLarge = size === "lg";
-  const avatarSize = isLarge ? "w-16 h-16" : "w-14 h-14";
+  const avatarSize = isLarge ? "w-16 h-16" : "w-12 h-12";
 
   const handleDragOver = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -79,7 +81,8 @@ function UserAvatar({ username, picture, initials, label, size = "sm", onDrop }:
 
   return (
     <div
-      className="flex flex-col items-center gap-1.5 cursor-default select-none"
+      className={cn("flex flex-col items-center gap-1 cursor-default select-none", className)}
+      style={style}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -115,13 +118,36 @@ function UserAvatar({ username, picture, initials, label, size = "sm", onDrop }:
       <span
         className={cn(
           "text-center leading-tight max-w-[80px] truncate",
-          isLarge ? "text-[12px] font-semibold" : "text-[11px]"
+          isLarge ? "text-[11px] font-semibold" : "text-[10px]"
         )}
       >
         {label}
       </span>
     </div>
   );
+}
+
+function positionsOnRings(count: number): Array<{ ring: number; angle: number }> {
+  if (count === 0) return [];
+  if (count === 1) return [{ ring: 1, angle: 270 }];
+  if (count === 2) return [{ ring: 1, angle: 240 }, { ring: 1, angle: 300 }];
+
+  const positions: Array<{ ring: number; angle: number }> = [];
+  const perRing = [3, 5, 8];
+  let placed = 0;
+  for (let r = 0; r < 3 && placed < count; r++) {
+    const slots = Math.min(perRing[r], count - placed);
+    const startAngle = 210;
+    const endAngle = 330;
+    for (let i = 0; i < slots; i++) {
+      const angle = slots === 1
+        ? (startAngle + endAngle) / 2
+        : startAngle + (i / (slots - 1)) * (endAngle - startAngle);
+      positions.push({ ring: r + 1, angle });
+      placed++;
+    }
+  }
+  return positions;
 }
 
 interface AirDropViewProps {
@@ -171,6 +197,16 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
     return () => window.removeEventListener("airdrop-file-drop", handler);
   }, [onSendFile]);
 
+  const otherUsers = useMemo(
+    () => nearbyUsers.filter((u) => u !== username),
+    [nearbyUsers, username]
+  );
+
+  const userPositions = useMemo(
+    () => positionsOnRings(otherUsers.length),
+    [otherUsers.length]
+  );
+
   if (!isAuthenticated || !username) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
@@ -187,53 +223,85 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
     );
   }
 
-  const otherUsers = nearbyUsers.filter((u) => u !== username);
+  const ringRadii = [80, 130, 180];
 
   return (
     <div
       ref={containerRef}
-      className="flex flex-col items-center justify-center h-full gap-6 px-8 select-none"
+      className="flex flex-col h-full select-none overflow-hidden"
     >
-      <UserAvatar
-        username={username}
-        picture={selfPicture}
-        initials={selfInitials}
-        label={selfLabel}
-        size="lg"
-        onDrop={onSendFile}
-      />
-
-      {otherUsers.length > 0 && (
-        <div className="flex flex-wrap items-center justify-center gap-5 max-w-[360px]">
-          {otherUsers.map((user) => (
-            <UserAvatar
-              key={user}
-              username={user}
-              initials={getUsernameInitials(user)}
-              label={`@${user}`}
-              onDrop={onSendFile}
+      {/* Radar area */}
+      <div className="flex-1 flex items-center justify-center relative min-h-0">
+        <div className="relative" style={{ width: ringRadii[2] * 2 + 40, height: ringRadii[2] * 2 + 40 }}>
+          {/* Concentric circles */}
+          {ringRadii.map((r, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full border pointer-events-none"
+              style={{
+                width: r * 2,
+                height: r * 2,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                borderColor: `rgba(0, 0, 0, ${0.12 - i * 0.03})`,
+              }}
             />
           ))}
-        </div>
-      )}
 
-      {otherUsers.length === 0 && (
-        <div className="flex flex-col items-center gap-2 text-center">
-          {isDiscovering ? (
-            <p className="text-[11px] text-neutral-500 animate-pulse">
-              {t("apps.finder.airdrop.looking")}
-            </p>
-          ) : (
-            <p className="text-[11px] text-neutral-500">
-              {t("apps.finder.airdrop.noUsers")}
-            </p>
-          )}
-        </div>
-      )}
+          {/* Center status text */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
+            {otherUsers.length === 0 && (
+              isDiscovering ? (
+                <p className="text-[11px] text-neutral-400 animate-pulse whitespace-nowrap">
+                  {t("apps.finder.airdrop.looking")}
+                </p>
+              ) : (
+                <p className="text-[11px] text-neutral-400 whitespace-nowrap">
+                  {t("apps.finder.airdrop.noUsers")}
+                </p>
+              )
+            )}
+          </div>
 
-      <p className="text-[10px] text-neutral-400 max-w-[260px] text-center">
-        {t("apps.finder.airdrop.hint")}
-      </p>
+          {/* Users placed on rings */}
+          {otherUsers.map((user, idx) => {
+            const pos = userPositions[idx];
+            if (!pos) return null;
+            const r = ringRadii[pos.ring - 1];
+            const rad = (pos.angle * Math.PI) / 180;
+            const x = Math.cos(rad) * r;
+            const y = Math.sin(rad) * r;
+            return (
+              <UserAvatar
+                key={user}
+                username={user}
+                initials={getUsernameInitials(user)}
+                label={`@${user}`}
+                onDrop={onSendFile}
+                className="absolute z-10"
+                style={{
+                  top: "50%",
+                  left: "50%",
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Self at bottom */}
+      <div className="flex flex-col items-center gap-1 pb-4 pt-2 shrink-0">
+        <UserAvatar
+          username={username}
+          picture={selfPicture}
+          initials={selfInitials}
+          label={selfLabel}
+          size="lg"
+          onDrop={onSendFile}
+        />
+      </div>
     </div>
   );
 }
