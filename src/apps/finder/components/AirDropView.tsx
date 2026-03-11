@@ -230,7 +230,7 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
       ref={containerRef}
       className="flex flex-col h-full select-none overflow-hidden"
     >
-      {/* Radar area */}
+      {/* Radar area with self at center */}
       <div className="flex-1 flex items-center justify-center relative min-h-0">
         <div className="relative" style={{ width: ringRadii[2] * 2 + 40, height: ringRadii[2] * 2 + 40 }}>
           {/* Concentric circles */}
@@ -249,19 +249,16 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
             />
           ))}
 
-          {/* Center status text */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
-            {otherUsers.length === 0 && (
-              isDiscovering ? (
-                <p className="text-[11px] text-neutral-400 animate-pulse whitespace-nowrap">
-                  {t("apps.finder.airdrop.looking")}
-                </p>
-              ) : (
-                <p className="text-[11px] text-neutral-400 whitespace-nowrap">
-                  {t("apps.finder.airdrop.noUsers")}
-                </p>
-              )
-            )}
+          {/* Self at center of rings */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+            <UserAvatar
+              username={username}
+              picture={selfPicture}
+              initials={selfInitials}
+              label={selfLabel}
+              size="lg"
+              onDrop={onSendFile}
+            />
           </div>
 
           {/* Users placed on rings */}
@@ -291,16 +288,24 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
         </div>
       </div>
 
-      {/* Self at bottom */}
-      <div className="flex flex-col items-center gap-1 pb-4 pt-2 shrink-0">
-        <UserAvatar
-          username={username}
-          picture={selfPicture}
-          initials={selfInitials}
-          label={selfLabel}
-          size="lg"
-          onDrop={onSendFile}
-        />
+      {/* Status text at bottom */}
+      <div className="shrink-0 pb-3 pt-1 text-center">
+        {otherUsers.length === 0 && (
+          isDiscovering ? (
+            <p className="text-[11px] text-neutral-400 animate-pulse">
+              {t("apps.finder.airdrop.looking")}
+            </p>
+          ) : (
+            <p className="text-[11px] text-neutral-400">
+              {t("apps.finder.airdrop.noUsers")}
+            </p>
+          )
+        )}
+        {otherUsers.length > 0 && (
+          <p className="text-[10px] text-neutral-400">
+            {t("apps.finder.airdrop.hint")}
+          </p>
+        )}
       </div>
     </div>
   );
