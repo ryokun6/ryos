@@ -39,7 +39,13 @@ import {
 } from "@/utils/cloudSyncShared";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000;
-const REMOTE_APPLY_SUPPRESSION_MS = 4000;
+const REMOTE_APPLY_SUPPRESSION_MS = 2000;
+
+// Safety windows used while a download is in-flight. These are narrowed to
+// REMOTE_APPLY_SUPPRESSION_MS once the download completes successfully, so
+// they only need to cover the worst-case download duration.
+const REALTIME_INFLIGHT_SUPPRESSION_MS = 30_000;
+const BATCH_INFLIGHT_SUPPRESSION_MS = 60_000;
 
 const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   settings: 2500,
@@ -197,8 +203,16 @@ export function useAutoCloudSync() {
         return;
       }
 
-      if (Date.now() < remoteApplySuppressUntilRef.current[domain]) {
-        console.log(`[CloudSync] queueUpload(${domain}) skipped: suppressed for ${remoteApplySuppressUntilRef.current[domain] - Date.now()}ms`);
+      const suppressUntil = remoteApplySuppressUntilRef.current[domain];
+      if (Date.now() < suppressUntil) {
+        const remainingMs = suppressUntil - Date.now();
+        const deferMs = remainingMs + UPLOAD_DEBOUNCE_MS[domain];
+        console.log(`[CloudSync] queueUpload(${domain}) deferred: suppressed for ${remainingMs}ms, will fire in ${deferMs}ms`);
+        lastLocalChangeAtRef.current[domain] = new Date().toISOString();
+        clearUploadTimer(domain);
+        uploadTimersRef.current[domain] = setTimeout(() => {
+          void uploadDomain(domain);
+        }, deferMs);
         return;
       }
 
@@ -236,7 +250,7 @@ export function useAutoCloudSync() {
 
       if (!shouldApply) return;
 
-      remoteApplySuppressUntilRef.current[domain] = Date.now() + 120_000;
+      remoteApplySuppressUntilRef.current[domain] = Date.now() + REALTIME_INFLIGHT_SUPPRESSION_MS;
       realtimeInFlightRef.current.add(domain);
 
       try {
@@ -280,7 +294,7 @@ export function useAutoCloudSync() {
       // changes currentWallpaper → subscriber queues custom-wallpapers
       // upload while IndexedDB is still empty). A generous window ensures
       // the entire batch completes before any upload can fire.
-      const batchSuppressUntil = Date.now() + 120_000;
+      const batchSuppressUntil = Date.now() + BATCH_INFLIGHT_SUPPRESSION_MS;
       for (const d of CLOUD_SYNC_DOMAINS) {
         remoteApplySuppressUntilRef.current[d] = batchSuppressUntil;
       }
