@@ -1669,7 +1669,9 @@ function CloudSyncIndicator() {
   const isCloudSyncActive = useCloudSyncStore(
     (state) =>
       state.isCheckingRemote ||
-      Object.values(state.domainStatus).some((status) => status.isUploading)
+      Object.values(state.domainStatus).some(
+        (status) => status.isUploading || status.isDownloading
+      )
   );
 
   if (isXpTheme || !isCloudSyncActive) return null;

@@ -13,6 +13,7 @@ interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
   lastAppliedRemoteAt: string | null;
   isUploading: boolean;
+  isDownloading: boolean;
 }
 
 type CloudSyncDomainStatusMap = Record<CloudSyncDomain, CloudSyncDomainStatus>;
@@ -44,6 +45,9 @@ interface CloudSyncStoreState {
   markUploadStart: (domain: CloudSyncDomain) => void;
   markUploadSuccess: (domain: CloudSyncDomain, uploadedAt: string) => void;
   markUploadFailure: (domain: CloudSyncDomain, error: string) => void;
+  markDownloadStart: (domain: CloudSyncDomain) => void;
+  markDownloadSuccess: (domain: CloudSyncDomain, appliedAt: string) => void;
+  markDownloadFailure: (domain: CloudSyncDomain, error: string) => void;
   markRemoteApplied: (domain: CloudSyncDomain, appliedAt: string) => void;
 }
 
@@ -52,6 +56,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
     lastUploadedAt: null,
     lastAppliedRemoteAt: null,
     isUploading: false,
+    isDownloading: false,
   });
 
   return {
@@ -191,6 +196,42 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           lastError: error,
         })),
 
+      markDownloadStart: (domain) =>
+        set((state) => ({
+          domainStatus: {
+            ...state.domainStatus,
+            [domain]: {
+              ...state.domainStatus[domain],
+              isDownloading: true,
+            },
+          },
+        })),
+
+      markDownloadSuccess: (domain, appliedAt) =>
+        set((state) => ({
+          domainStatus: {
+            ...state.domainStatus,
+            [domain]: {
+              ...state.domainStatus[domain],
+              isDownloading: false,
+              lastAppliedRemoteAt: appliedAt,
+            },
+          },
+          lastError: null,
+        })),
+
+      markDownloadFailure: (domain, error) =>
+        set((state) => ({
+          domainStatus: {
+            ...state.domainStatus,
+            [domain]: {
+              ...state.domainStatus[domain],
+              isDownloading: false,
+            },
+          },
+          lastError: error,
+        })),
+
       markRemoteApplied: (domain, appliedAt) =>
         set((state) => ({
           domainStatus: {
@@ -224,6 +265,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               lastUploadedAt: status.lastUploadedAt,
               lastAppliedRemoteAt: status.lastAppliedRemoteAt,
               isUploading: false,
+              isDownloading: false,
             },
           ])
         ) as CloudSyncDomainStatusMap,
@@ -240,6 +282,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
                 lastUploadedAt: saved.lastUploadedAt ?? null,
                 lastAppliedRemoteAt: saved.lastAppliedRemoteAt ?? null,
                 isUploading: false,
+                isDownloading: false,
               };
             }
           }
@@ -260,6 +303,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
                   lastAppliedRemoteAt:
                     legacyFilesStatus.lastAppliedRemoteAt ?? null,
                   isUploading: false,
+                  isDownloading: false,
                 };
               }
             }

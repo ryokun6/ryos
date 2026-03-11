@@ -406,10 +406,17 @@ export function ControlPanelsAppComponent({
     isCloudBackingUp,
     isCloudRestoring,
     isCloudForceSyncing,
+    isCloudForceUploading,
+    isCloudForceDownloading,
     isCloudStatusLoading,
     isConfirmCloudRestoreOpen,
     setIsConfirmCloudRestoreOpen,
-    handleCloudForceSyncLocalWins,
+    isConfirmForceUploadOpen,
+    setIsConfirmForceUploadOpen,
+    isConfirmForceDownloadOpen,
+    setIsConfirmForceDownloadOpen,
+    handleCloudForceUpload,
+    handleCloudForceDownload,
     handleCloudBackup,
     handleCloudRestore,
     cloudProgress,
@@ -845,21 +852,38 @@ export function ControlPanelsAppComponent({
                     !username && "opacity-50 pointer-events-none select-none"
                   )}
                 >
-                  <Button
-                    variant="retro"
-                    onClick={handleCloudForceSyncLocalWins}
-                    disabled={
-                      isCloudForceSyncing ||
-                      isCloudBackingUp ||
-                      isCloudRestoring
-                    }
-                    tabIndex={!username ? -1 : undefined}
-                    className="w-full"
-                  >
-                    {isCloudForceSyncing
-                      ? t("apps.control-panels.cloudSync.forceSyncing")
-                      : t("apps.control-panels.cloudSync.forceSyncLocalWins")}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="retro"
+                      onClick={() => setIsConfirmForceUploadOpen(true)}
+                      disabled={
+                        isCloudForceSyncing ||
+                        isCloudBackingUp ||
+                        isCloudRestoring
+                      }
+                      tabIndex={!username ? -1 : undefined}
+                      className="flex-1"
+                    >
+                      {isCloudForceUploading
+                        ? t("apps.control-panels.cloudSync.forceUploading")
+                        : t("apps.control-panels.cloudSync.forceUpload")}
+                    </Button>
+                    <Button
+                      variant="retro"
+                      onClick={() => setIsConfirmForceDownloadOpen(true)}
+                      disabled={
+                        isCloudForceSyncing ||
+                        isCloudBackingUp ||
+                        isCloudRestoring
+                      }
+                      tabIndex={!username ? -1 : undefined}
+                      className="flex-1"
+                    >
+                      {isCloudForceDownloading
+                        ? t("apps.control-panels.cloudSync.forceDownloading")
+                        : t("apps.control-panels.cloudSync.forceDownload")}
+                    </Button>
+                  </div>
                   <p className="text-[11px] text-neutral-600 font-geneva-12">
                     {t("apps.control-panels.cloudSync.forceSyncDescription")}
                   </p>
@@ -1569,6 +1593,32 @@ export function ControlPanelsAppComponent({
           }}
           title={t("apps.control-panels.cloudSync.confirmRestore")}
           description={t("apps.control-panels.cloudSync.confirmRestoreDesc")}
+        />
+        {/* Force Upload Confirmation */}
+        <ConfirmDialog
+          isOpen={isConfirmForceUploadOpen}
+          onOpenChange={setIsConfirmForceUploadOpen}
+          onConfirm={() => {
+            setIsConfirmForceUploadOpen(false);
+            handleCloudForceUpload();
+          }}
+          title={t("apps.control-panels.cloudSync.confirmForceUpload")}
+          description={t(
+            "apps.control-panels.cloudSync.confirmForceUploadDesc"
+          )}
+        />
+        {/* Force Download Confirmation */}
+        <ConfirmDialog
+          isOpen={isConfirmForceDownloadOpen}
+          onOpenChange={setIsConfirmForceDownloadOpen}
+          onConfirm={() => {
+            setIsConfirmForceDownloadOpen(false);
+            handleCloudForceDownload();
+          }}
+          title={t("apps.control-panels.cloudSync.confirmForceDownload")}
+          description={t(
+            "apps.control-panels.cloudSync.confirmForceDownloadDesc"
+          )}
         />
         <TelegramLinkDialog
           isOpen={isTelegramDialogOpen}
