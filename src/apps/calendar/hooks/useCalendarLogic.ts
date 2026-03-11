@@ -204,11 +204,16 @@ export function useCalendarLogic() {
     return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2024, 0, 7 + i)));
   }, [locale]);
 
+  const prefers24Hour = ["zh-TW", "ja", "de", "fr", "ko"].includes(locale);
+
   // Locale-aware hour labels (0–23)
   const hourLabels = useMemo(() => {
-    const fmt = new Intl.DateTimeFormat(locale, { hour: "numeric", hour12: undefined });
+    const fmt = new Intl.DateTimeFormat(locale, {
+      hour: "numeric",
+      ...(prefers24Hour ? { hour12: false } : {}),
+    });
     return Array.from({ length: 24 }, (_, h) => fmt.format(new Date(2024, 0, 1, h)));
-  }, [locale]);
+  }, [locale, prefers24Hour]);
 
   // ==========================================================================
   // WEEK VIEW DATA
