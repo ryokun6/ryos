@@ -130,15 +130,15 @@ function UserAvatar({ username, picture, initials, label, size = "sm", onDrop, c
 function positionsOnRings(count: number): Array<{ ring: number; angle: number }> {
   if (count === 0) return [];
   if (count === 1) return [{ ring: 1, angle: 270 }];
-  if (count === 2) return [{ ring: 1, angle: 240 }, { ring: 1, angle: 300 }];
+  if (count === 2) return [{ ring: 1, angle: 245 }, { ring: 1, angle: 295 }];
 
   const positions: Array<{ ring: number; angle: number }> = [];
-  const perRing = [3, 5, 8];
+  const perRing = [3, 4, 6];
   let placed = 0;
   for (let r = 0; r < 3 && placed < count; r++) {
     const slots = Math.min(perRing[r], count - placed);
-    const startAngle = 210;
-    const endAngle = 330;
+    const startAngle = 200;
+    const endAngle = 340;
     for (let i = 0; i < slots; i++) {
       const angle = slots === 1
         ? (startAngle + endAngle) / 2
@@ -223,7 +223,9 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
     );
   }
 
-  const ringRadii = [80, 130, 180];
+  const ringRadii = [90, 155, 220];
+  const radarSize = ringRadii[2] * 2 + 60;
+  const centerYOffset = 40;
 
   return (
     <div
@@ -232,8 +234,8 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
     >
       {/* Radar area with self at center */}
       <div className="flex-1 flex items-center justify-center relative min-h-0">
-        <div className="relative" style={{ width: ringRadii[2] * 2 + 40, height: ringRadii[2] * 2 + 40 }}>
-          {/* Concentric circles */}
+        <div className="relative" style={{ width: radarSize, height: radarSize }}>
+          {/* Concentric circles, shifted down */}
           {ringRadii.map((r, i) => (
             <div
               key={i}
@@ -241,7 +243,7 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
               style={{
                 width: r * 2,
                 height: r * 2,
-                top: "50%",
+                top: `calc(50% + ${centerYOffset}px)`,
                 left: "50%",
                 transform: "translate(-50%, -50%)",
                 borderColor: `rgba(0, 0, 0, ${0.12 - i * 0.03})`,
@@ -250,18 +252,24 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
           ))}
 
           {/* Self at center of rings */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+          <div
+            className="absolute z-20"
+            style={{
+              top: `calc(50% + ${centerYOffset}px)`,
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
+          >
             <UserAvatar
               username={username}
               picture={selfPicture}
               initials={selfInitials}
               label={selfLabel}
-              size="lg"
               onDrop={onSendFile}
             />
           </div>
 
-          {/* Users placed on rings */}
+          {/* Users placed on rings (upper half only) */}
           {otherUsers.map((user, idx) => {
             const pos = userPositions[idx];
             if (!pos) return null;
@@ -278,7 +286,7 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
                 onDrop={onSendFile}
                 className="absolute z-10"
                 style={{
-                  top: "50%",
+                  top: `calc(50% + ${centerYOffset}px)`,
                   left: "50%",
                   transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
                 }}
