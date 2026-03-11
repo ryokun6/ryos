@@ -1337,7 +1337,7 @@ export function useFinderLogic({
         t("apps.finder.window.finder")
       );
     }
-  }, [currentPath, t]);
+  }, [currentPath, isAirDropView, t]);
 
   // Drag handlers
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
