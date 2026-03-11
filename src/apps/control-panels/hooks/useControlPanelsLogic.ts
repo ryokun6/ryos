@@ -36,7 +36,10 @@ import {
 } from "@/utils/cloudSyncShared";
 import { useShallow } from "zustand/react/shallow";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
-import { uploadCloudSyncDomain } from "@/utils/cloudSync";
+import {
+  uploadCloudSyncDomain,
+  downloadAndApplyCloudSyncDomain,
+} from "@/utils/cloudSync";
 import { CLOUD_SYNC_DOMAINS } from "@/utils/cloudSyncShared";
 
 interface StoreItem {
@@ -494,7 +497,13 @@ export function useControlPanelsLogic({
   } | null>(null);
   const [isCloudBackingUp, setIsCloudBackingUp] = useState(false);
   const [isCloudRestoring, setIsCloudRestoring] = useState(false);
-  const [isCloudForceSyncing, setIsCloudForceSyncing] = useState(false);
+  const [isCloudForceUploading, setIsCloudForceUploading] = useState(false);
+  const [isCloudForceDownloading, setIsCloudForceDownloading] = useState(false);
+  const [isConfirmForceUploadOpen, setIsConfirmForceUploadOpen] =
+    useState(false);
+  const [isConfirmForceDownloadOpen, setIsConfirmForceDownloadOpen] =
+    useState(false);
+  const isCloudForceSyncing = isCloudForceUploading || isCloudForceDownloading;
   const [isCloudStatusLoading, setIsCloudStatusLoading] = useState(false);
   const [isConfirmCloudRestoreOpen, setIsConfirmCloudRestoreOpen] =
     useState(false);
@@ -779,7 +788,7 @@ export function useControlPanelsLogic({
   }, [username, authToken, t, fetchCloudSyncStatus]);
 
   /** Force-upload enabled auto sync domains so local state wins. */
-  const handleCloudForceSyncLocalWins = useCallback(async () => {
+  const handleCloudForceUpload = useCallback(async () => {
     if (!username || !authToken) {
       toast.error(t("apps.control-panels.cloudSync.loginRequired"));
       return;
@@ -795,7 +804,7 @@ export function useControlPanelsLogic({
       return;
     }
 
-    setIsCloudForceSyncing(true);
+    setIsCloudForceUploading(true);
 
     const failures: string[] = [];
 
@@ -814,22 +823,74 @@ export function useControlPanelsLogic({
           const message =
             error instanceof Error
               ? error.message
-              : t("apps.control-panels.cloudSync.forceSyncFailed");
+              : t("apps.control-panels.cloudSync.forceUploadFailed");
           failures.push(message);
           syncStore.markUploadFailure(domain, message);
         }
       }
 
       if (failures.length > 0) {
-        toast.error(t("apps.control-panels.cloudSync.forceSyncFailed"), {
+        toast.error(t("apps.control-panels.cloudSync.forceUploadFailed"), {
           description: failures[0],
         });
         return;
       }
 
-      toast.success(t("apps.control-panels.cloudSync.forceSyncSuccess"));
+      toast.success(t("apps.control-panels.cloudSync.forceUploadSuccess"));
     } finally {
-      setIsCloudForceSyncing(false);
+      setIsCloudForceUploading(false);
+    }
+  }, [authToken, t, username]);
+
+  /** Force-download enabled auto sync domains so cloud state wins. */
+  const handleCloudForceDownload = useCallback(async () => {
+    if (!username || !authToken) {
+      toast.error(t("apps.control-panels.cloudSync.loginRequired"));
+      return;
+    }
+
+    const syncStore = useCloudSyncStore.getState();
+    const enabledDomains = CLOUD_SYNC_DOMAINS.filter((domain) =>
+      syncStore.isDomainEnabled(domain)
+    );
+
+    if (enabledDomains.length === 0) {
+      toast.error(t("apps.control-panels.cloudSync.forceSyncNoDomains"));
+      return;
+    }
+
+    setIsCloudForceDownloading(true);
+
+    const failures: string[] = [];
+
+    try {
+      for (const domain of enabledDomains) {
+        try {
+          const metadata = await downloadAndApplyCloudSyncDomain(domain, {
+            username,
+            authToken,
+          });
+          syncStore.markRemoteApplied(domain, metadata.updatedAt);
+          syncStore.updateRemoteMetadataForDomain(domain, metadata);
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : t("apps.control-panels.cloudSync.forceDownloadFailed");
+          failures.push(message);
+        }
+      }
+
+      if (failures.length > 0) {
+        toast.error(t("apps.control-panels.cloudSync.forceDownloadFailed"), {
+          description: failures[0],
+        });
+        return;
+      }
+
+      toast.success(t("apps.control-panels.cloudSync.forceDownloadSuccess"));
+    } finally {
+      setIsCloudForceDownloading(false);
     }
   }, [authToken, t, username]);
 
@@ -1838,10 +1899,17 @@ export function useControlPanelsLogic({
     isCloudBackingUp,
     isCloudRestoring,
     isCloudForceSyncing,
+    isCloudForceUploading,
+    isCloudForceDownloading,
     isCloudStatusLoading,
     isConfirmCloudRestoreOpen,
     setIsConfirmCloudRestoreOpen,
-    handleCloudForceSyncLocalWins,
+    isConfirmForceUploadOpen,
+    setIsConfirmForceUploadOpen,
+    isConfirmForceDownloadOpen,
+    setIsConfirmForceDownloadOpen,
+    handleCloudForceUpload,
+    handleCloudForceDownload,
     handleCloudBackup,
     handleCloudRestore,
     cloudProgress,
