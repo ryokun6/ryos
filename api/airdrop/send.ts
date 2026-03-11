@@ -31,11 +31,6 @@ export default apiHandler<SendBody>(
 
     const { recipient, fileName, fileType, content } = body;
 
-    if (recipient === senderUsername) {
-      res.status(400).json({ error: "Cannot send to yourself" });
-      return;
-    }
-
     if (content.length > MAX_CONTENT_SIZE) {
       res.status(413).json({ error: "File too large (max 512KB)" });
       return;

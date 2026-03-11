@@ -2,6 +2,8 @@ import { useEffect, useCallback, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { useAirDropStore } from "@/stores/useAirDropStore";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useContactsStore } from "@/stores/useContactsStore";
+import { getContactInitials } from "@/utils/contacts";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -12,45 +14,30 @@ function getUsernameInitials(username: string): string {
   return base.slice(0, 2).toUpperCase();
 }
 
-const AVATAR_COLORS = [
-  "from-blue-400 to-blue-600",
-  "from-purple-400 to-purple-600",
-  "from-pink-400 to-pink-600",
-  "from-green-400 to-green-600",
-  "from-orange-400 to-orange-600",
-  "from-teal-400 to-teal-600",
-  "from-indigo-400 to-indigo-600",
-  "from-rose-400 to-rose-600",
-];
-
-function getColorForUsername(username: string): string {
-  let hash = 0;
-  for (let i = 0; i < username.length; i++) {
-    hash = username.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
+const avatarInitialsTextShadow =
+  "0 2px 3px rgba(0, 0, 0, 0.45), 0 0 3px rgba(0, 0, 0, 0.15)";
 
 interface UserAvatarProps {
   username: string;
+  picture?: string | null;
+  initials: string;
+  label: string;
   size?: "sm" | "lg";
   onDrop?: (username: string, fileName: string, content: string, fileType: string) => void;
-  isSelf?: boolean;
 }
 
-function UserAvatar({ username, size = "sm", onDrop, isSelf }: UserAvatarProps) {
+function UserAvatar({ username, picture, initials, label, size = "sm", onDrop }: UserAvatarProps) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const color = getColorForUsername(username);
   const isLarge = size === "lg";
+  const avatarSize = isLarge ? "w-16 h-16" : "w-14 h-14";
 
   const handleDragOver = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
-      if (isSelf) return;
       e.preventDefault();
       e.stopPropagation();
       setIsDragOver(true);
     },
-    [isSelf]
+    []
   );
 
   const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
@@ -64,7 +51,7 @@ function UserAvatar({ username, size = "sm", onDrop, isSelf }: UserAvatarProps) 
       e.preventDefault();
       e.stopPropagation();
       setIsDragOver(false);
-      if (isSelf || !onDrop) return;
+      if (!onDrop) return;
 
       try {
         const jsonData = e.dataTransfer.getData("application/json");
@@ -87,7 +74,7 @@ function UserAvatar({ username, size = "sm", onDrop, isSelf }: UserAvatarProps) 
         // Ignore parse errors
       }
     },
-    [isSelf, onDrop, username]
+    [onDrop, username]
   );
 
   return (
@@ -99,14 +86,31 @@ function UserAvatar({ username, size = "sm", onDrop, isSelf }: UserAvatarProps) 
     >
       <div
         className={cn(
-          "rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br shadow-lg transition-all",
-          color,
-          isLarge ? "w-16 h-16 text-xl" : "w-14 h-14 text-base",
-          isDragOver && !isSelf && "ring-4 ring-blue-400 scale-110",
-          !isSelf && "hover:scale-105"
+          "rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center font-semibold text-white overflow-hidden transition-all",
+          avatarSize,
+          isLarge ? "text-xl" : "text-[13px]",
+          isDragOver && "ring-4 ring-blue-400 scale-110",
+          "hover:scale-105"
         )}
+        style={
+          picture
+            ? { background: "rgba(255, 255, 255, 0.72)" }
+            : {
+                background: "linear-gradient(to bottom, #dcdcdc, #b8b8b8)",
+                textShadow: avatarInitialsTextShadow,
+              }
+        }
+        aria-label={label}
       >
-        {getUsernameInitials(username)}
+        {picture ? (
+          <img
+            src={picture}
+            alt={label}
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          initials
+        )}
       </div>
       <span
         className={cn(
@@ -114,7 +118,7 @@ function UserAvatar({ username, size = "sm", onDrop, isSelf }: UserAvatarProps) 
           isLarge ? "text-[12px] font-semibold" : "text-[11px]"
         )}
       >
-        {isSelf ? "You" : `@${username}`}
+        {label}
       </span>
     </div>
   );
@@ -133,6 +137,18 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
   const startAirDrop = useAirDropStore((s) => s.startAirDrop);
   const stopAirDrop = useAirDropStore((s) => s.stopAirDrop);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const myContact = useContactsStore((s) =>
+    s.myContactId
+      ? s.contacts.find((c) => c.id === s.myContactId) ?? null
+      : null
+  );
+
+  const selfLabel = myContact?.displayName || username || "";
+  const selfInitials = myContact
+    ? getContactInitials(myContact)
+    : getUsernameInitials(username || "");
+  const selfPicture = myContact?.picture ?? null;
 
   useEffect(() => {
     if (isAuthenticated && username) {
@@ -171,24 +187,37 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
     );
   }
 
+  const otherUsers = nearbyUsers.filter((u) => u !== username);
+
   return (
     <div
       ref={containerRef}
       className="flex flex-col items-center justify-center h-full gap-6 px-8 select-none"
     >
-      <UserAvatar username={username} size="lg" isSelf />
+      <UserAvatar
+        username={username}
+        picture={selfPicture}
+        initials={selfInitials}
+        label={selfLabel}
+        size="lg"
+        onDrop={onSendFile}
+      />
 
-      {nearbyUsers.length > 0 ? (
+      {otherUsers.length > 0 && (
         <div className="flex flex-wrap items-center justify-center gap-5 max-w-[360px]">
-          {nearbyUsers.map((user) => (
+          {otherUsers.map((user) => (
             <UserAvatar
               key={user}
               username={user}
+              initials={getUsernameInitials(user)}
+              label={`@${user}`}
               onDrop={onSendFile}
             />
           ))}
         </div>
-      ) : (
+      )}
+
+      {otherUsers.length === 0 && (
         <div className="flex flex-col items-center gap-2 text-center">
           {isDiscovering ? (
             <p className="text-[11px] text-neutral-500 animate-pulse">
