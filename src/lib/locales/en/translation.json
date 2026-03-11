@@ -211,7 +211,7 @@
       "system": "System",
       "mb": "MB",
       "clickToToggle": "Click to toggle",
-      "latestCommit": "Latest Commit"
+      "viewChangelog": "View Changelog"
     },
     "toast": {
       "updatingIcons": "Updating icons",

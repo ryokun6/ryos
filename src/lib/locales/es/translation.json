@@ -2932,7 +2932,7 @@
     "aboutThisMac": {
       "builtInMemory": "Memoria Integrada",
       "clickToToggle": "Clic para alternar",
-      "latestCommit": "Último commit",
+      "viewChangelog": "Ver registro de cambios",
       "description": "Información sobre ryOS en este equipo",
       "largestUnusedBlock": "Bloque Sin Usar Más Grande",
       "mb": "MB",

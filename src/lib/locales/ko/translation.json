@@ -2932,7 +2932,7 @@
     "aboutThisMac": {
       "builtInMemory": "내장 메모리",
       "clickToToggle": "클릭하여 전환",
-      "latestCommit": "최신 커밋",
+      "viewChangelog": "변경 내역 보기",
       "description": "이 컴퓨터의 ryOS 정보",
       "largestUnusedBlock": "가장 큰 사용 가능 블록",
       "mb": "MB",
