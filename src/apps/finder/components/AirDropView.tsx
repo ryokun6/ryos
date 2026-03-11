@@ -3,8 +3,8 @@ import type { DragEvent } from "react";
 import { useAirDropStore } from "@/stores/useAirDropStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { cn } from "@/lib/utils";
-import { WifiHigh } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
+import { ThemedIcon } from "@/components/shared/ThemedIcon";
 
 function getUsernameInitials(username: string): string {
   const base = username.replace(/^@+/, "").trim();
@@ -158,9 +158,7 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
   if (!isAuthenticated || !username) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-          <WifiHigh size={40} weight="bold" className="text-white" />
-        </div>
+        <ThemedIcon name="/icons/default/cloud-sync.png" alt="AirDrop" className="w-20 h-20" />
         <div>
           <p className="text-[13px] font-semibold mb-1">
             {t("apps.finder.airdrop.title")}
