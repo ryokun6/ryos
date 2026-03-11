@@ -223,7 +223,8 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
     );
   }
 
-  const ringRadii = [90, 155, 220];
+  const ringRadii = [100, 175, 250];
+  const avatarHalfH = 40;
 
   return (
     <div
@@ -249,7 +250,7 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
       {/* Self at center of rings (bottom of container) */}
       <div
         className="absolute z-20"
-        style={{ bottom: 80 - 32, left: "50%", transform: "translateX(-50%)" }}
+        style={{ bottom: 80 - avatarHalfH, left: "50%", transform: "translateX(-50%)" }}
       >
         <UserAvatar
           username={username}
@@ -277,7 +278,7 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
             onDrop={onSendFile}
             className="absolute z-10"
             style={{
-              bottom: 80 + -y - 32,
+              bottom: 80 - y - avatarHalfH,
               left: "50%",
               transform: `translateX(calc(-50% + ${x}px))`,
             }}
