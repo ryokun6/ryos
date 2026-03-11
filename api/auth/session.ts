@@ -25,12 +25,10 @@ export default apiHandler(
       return;
     }
 
-    // If the request was authenticated via header (not cookie), set the
-    // cookie so future page loads can restore the session from it.
-    const hadAuthHeader = req.headers.authorization?.startsWith("Bearer ");
-    if (hadAuthHeader) {
-      res.setHeader("Set-Cookie", buildSetAuthCookie(user.username, user.token));
-    }
+    // Always refresh the cookie so the Max-Age stays current.
+    // On migration (first load after upgrade), this converts the legacy
+    // Authorization-header token into the httpOnly cookie.
+    res.setHeader("Set-Cookie", buildSetAuthCookie(user.username, user.token));
 
     logger.info("Session restored", { username: user.username });
     logger.response(200, Date.now() - startTime);

@@ -74,6 +74,21 @@ const clearLegacyTokenRecovery = () => {
 };
 
 /**
+ * Read (and consume) a legacy btoa-encoded auth token from localStorage.
+ * Returns the plain-text token if one existed, or null.
+ */
+const consumeLegacyAuthToken = (): string | null => {
+  const encoded = localStorage.getItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
+  if (!encoded) return null;
+  localStorage.removeItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
+  try {
+    return atob(encoded).split("").reverse().join("");
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Build auth headers when an in-memory token is available.
  * When token is null the caller should rely on the httpOnly cookie
  * (sent automatically by the browser with `credentials: "include"`).
@@ -1692,9 +1707,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           const state = persistedState as ChatsStoreState;
           const finalState = { ...state };
 
-          // Strip any leftover authToken from older persisted snapshots —
-          // it must never survive in localStorage.
-          finalState.authToken = null;
+          // Keep any old authToken in memory so that onRehydrateStorage can
+          // use it one last time to call the session endpoint and set the
+          // httpOnly cookie. partialize no longer includes authToken, so it
+          // will NOT be re-persisted to localStorage.
 
           ensureUsernameRecovery(finalState.username);
 
@@ -1743,15 +1759,19 @@ export const useChatsStore = create<ChatsStoreState>()(
               }
             }
 
-            // Auth token is never in localStorage; ensure any legacy data is removed
+            // Collect any legacy token that survived in state (from v2 persist)
+            // or in the recovery key, so we can migrate it to a httpOnly cookie.
+            const legacyToken =
+              state.authToken || consumeLegacyAuthToken() || null;
             state.authToken = null;
             clearLegacyTokenRecovery();
             ensureUsernameRecovery(state.username);
 
-            // Restore session from httpOnly cookie via the server.
-            // This runs async; the store will update once the server responds.
+            // Restore session from httpOnly cookie — or, on the very first
+            // load after the upgrade, use the legacy token one last time so
+            // the server can set the cookie for future loads.
             if (state.username) {
-              restoreSessionFromCookie(state.username);
+              restoreSessionFromCookie(state.username, legacyToken);
             }
           }
         };
@@ -1761,17 +1781,32 @@ export const useChatsStore = create<ChatsStoreState>()(
 );
 
 /**
- * Attempt to verify the current httpOnly cookie with the server.
- * On success the in-memory auth state is updated.  On failure the
- * user is silently treated as unauthenticated until next login.
+ * Verify the current session with the server.
  *
- * Also handles migration: if an old token was in localStorage,
- * the session endpoint sets the httpOnly cookie for the first time.
+ * On repeat visits the httpOnly cookie authenticates the request
+ * automatically.  On the **first** visit after the upgrade from
+ * localStorage-based tokens, `legacyToken` is sent via the
+ * Authorization header so the server can validate it and set the
+ * httpOnly cookie for all future loads.
  */
-async function restoreSessionFromCookie(expectedUsername: string) {
+async function restoreSessionFromCookie(
+  expectedUsername: string,
+  legacyToken?: string | null
+) {
   try {
+    const headers: Record<string, string> = {};
+    if (legacyToken) {
+      console.log(
+        "[ChatsStore] Migrating legacy token to httpOnly cookie for",
+        expectedUsername
+      );
+      headers["Authorization"] = `Bearer ${legacyToken}`;
+      headers["X-Username"] = expectedUsername;
+    }
+
     const response = await abortableFetch("/api/auth/session", {
       method: "GET",
+      headers,
       timeout: 10000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 500 },
@@ -1784,16 +1819,19 @@ async function restoreSessionFromCookie(expectedUsername: string) {
 
     const data = await response.json();
     if (data.authenticated && data.username) {
-      console.log("[ChatsStore] Session restored from cookie for", data.username);
+      console.log(
+        "[ChatsStore] Session restored for",
+        data.username,
+        legacyToken ? "(migrated from localStorage)" : "(from cookie)"
+      );
       const store = useChatsStore.getState();
 
       if (store.username === expectedUsername) {
-        // Keep authToken null — the cookie is the source of truth
         store.checkHasPassword();
         store.checkAndRefreshTokenIfNeeded();
       }
     } else {
-      console.log("[ChatsStore] No valid session cookie found.");
+      console.log("[ChatsStore] No valid session found.");
     }
   } catch (err) {
     console.warn("[ChatsStore] Session restore request failed:", err);
