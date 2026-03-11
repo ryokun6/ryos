@@ -6,6 +6,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getTheme } from "@/themes";
+import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 
 const Dialog = ({
   children,
@@ -148,6 +149,7 @@ const DialogHeader = ({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
+  const closeRef = React.useRef<HTMLButtonElement>(null);
 
   if (isXpTheme) {
     return (
@@ -186,136 +188,26 @@ const DialogHeader = ({
         {...props}
       >
         {/* Traffic Light Buttons */}
-        <div className="flex items-center gap-2 ml-1.5">
-          {/* Close Button (Red) */}
-          <DialogPrimitive.Close asChild>
-            <button
-              className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
-              style={{
-                width: "13px",
-                height: "13px",
-                background:
-                  "linear-gradient(rgb(193, 58, 45), rgb(205, 73, 52))",
-                boxShadow:
-                  "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(225, 70, 64, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgba(150, 40, 30, 0.8) 0px 1px 3px inset, rgba(225, 70, 64, 0.75) 0px 2px 3px 1px inset",
-              }}
-              aria-label={t("common.dialog.close")}
-            >
-              {/* Top shine */}
-              <div
-                className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                style={{
-                  height: "33%",
-                  background:
-                    "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
-                  width: "calc(100% - 6px)",
-                  borderRadius: "6px 6px 0 0",
-                  top: "1px",
-                  filter: "blur(0.2px)",
-                  zIndex: 2,
-                }}
-              />
-              {/* Bottom glow */}
-              <div
-                className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-                style={{
-                  height: "33%",
-                  background:
-                    "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
-                  width: "calc(100% - 3px)",
-                  borderRadius: "0 0 6px 6px",
-                  bottom: "1px",
-                  filter: "blur(0.3px)",
-                }}
-              />
-            </button>
-          </DialogPrimitive.Close>
-          {/* Minimize Button (Yellow) - Inactive */}
-          <button
-            className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
-            style={{
-              width: "13px",
-              height: "13px",
-              background:
-                "linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625))",
-              boxShadow:
-                "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
-              pointerEvents: "none",
-            }}
-            aria-label={t("common.window.minimizeDisabled")}
-            disabled
-          >
-            {/* Top shine */}
-            <div
-              className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-              style={{
-                height: "33%",
-                background:
-                  "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
-                width: "calc(100% - 6px)",
-                borderRadius: "6px 6px 0 0",
-                top: "1px",
-                filter: "blur(0.2px)",
-                zIndex: 2,
-              }}
-            />
-            {/* Bottom glow */}
-            <div
-              className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-              style={{
-                height: "33%",
-                background:
-                  "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
-                width: "calc(100% - 3px)",
-                borderRadius: "0 0 6px 6px",
-                bottom: "1px",
-                filter: "blur(0.3px)",
-              }}
-            />
-          </button>
-          {/* Maximize Button (Green) - Inactive */}
-          <button
-            className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
-            style={{
-              width: "13px",
-              height: "13px",
-              background:
-                "linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625))",
-              boxShadow:
-                "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 2px 3px 1px #bbbbbb",
-              pointerEvents: "none",
-            }}
-            aria-label={t("common.window.maximizeDisabled")}
-            disabled
-          >
-            {/* Top shine */}
-            <div
-              className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-              style={{
-                height: "33%",
-                background:
-                  "linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.3))",
-                width: "calc(100% - 6px)",
-                borderRadius: "6px 6px 0 0",
-                top: "1px",
-                filter: "blur(0.2px)",
-                zIndex: 2,
-              }}
-            />
-            {/* Bottom glow */}
-            <div
-              className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none"
-              style={{
-                height: "33%",
-                background:
-                  "linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5))",
-                width: "calc(100% - 3px)",
-                borderRadius: "0 0 6px 6px",
-                bottom: "1px",
-                filter: "blur(0.3px)",
-              }}
-            />
-          </button>
+        <DialogPrimitive.Close ref={closeRef} className="hidden" />
+        <div className="group/traffic flex items-center gap-2 ml-1.5">
+          <TrafficLightButton
+            color="red"
+            onClick={() => closeRef.current?.click()}
+            isForeground={true}
+            ariaLabel={t("common.dialog.close")}
+          />
+          <TrafficLightButton
+            color="yellow"
+            onClick={() => {}}
+            isForeground={false}
+            ariaLabel={t("common.window.minimizeDisabled")}
+          />
+          <TrafficLightButton
+            color="green"
+            onClick={() => {}}
+            isForeground={false}
+            ariaLabel={t("common.window.maximizeDisabled")}
+          />
         </div>
 
         {/* Title */}
