@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import { X, Minus, Plus } from "@phosphor-icons/react";
+import type { Icon } from "@phosphor-icons/react";
 
 export type TrafficLightColor = "red" | "yellow" | "green";
 
@@ -10,22 +12,31 @@ interface TrafficLightButtonProps {
   ariaLabel: string;
 }
 
+const symbolIcons: Record<TrafficLightColor, Icon> = {
+  red: X,
+  yellow: Minus,
+  green: Plus,
+};
+
 const colorStyles: Record<
   TrafficLightColor,
-  { gradient: string; shadow: string }
+  { gradient: string; shadow: string; iconColor: string }
 > = {
   red: {
     gradient: "linear-gradient(rgb(193, 58, 45), rgb(205, 73, 52))",
+    iconColor: "rgba(130, 30, 20, 0.9)",
     shadow:
       "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(225, 70, 64, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgba(150, 40, 30, 0.8) 0px 1px 3px inset, rgba(225, 70, 64, 0.75) 0px 2px 3px 1px inset",
   },
   yellow: {
     gradient: "linear-gradient(rgb(202, 130, 13), rgb(253, 253, 149))",
+    iconColor: "rgba(130, 80, 8, 0.9)",
     shadow:
       "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgba(223, 161, 35, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgb(155, 78, 21) 0px 1px 3px inset, rgb(241, 157, 20) 0px 2px 3px 1px inset",
   },
   green: {
     gradient: "linear-gradient(rgb(111, 174, 58), rgb(138, 192, 50))",
+    iconColor: "rgba(45, 90, 18, 0.9)",
     shadow:
       "rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 1px 2px, rgb(59, 173, 29, 0.5) 0px 1px 1px, rgba(0, 0, 0, 0.3) 0px 0px 0px 0.5px inset, rgb(53, 91, 17) 0px 1px 3px inset, rgb(98, 187, 19) 0px 2px 3px 1px inset",
   },
@@ -52,11 +63,14 @@ export function TrafficLightButton({
   const styles = isForeground ? colorStyles[color] : inactiveStyles;
 
   return (
-    <div className="relative" style={{ width: "13px", height: "13px" }}>
+    <div className="group relative" style={{ width: "13px", height: "13px" }}>
       {/* Visual button */}
       <div
         aria-hidden="true"
-        className="rounded-full relative overflow-hidden cursor-default outline-none box-border"
+        className={cn(
+          "rounded-full relative overflow-hidden cursor-default outline-none box-border transition-[filter] duration-150",
+          isForeground && "group-hover:brightness-110"
+        )}
         style={{
           width: "13px",
           height: "13px",
@@ -91,6 +105,22 @@ export function TrafficLightButton({
             filter: "blur(0.3px)",
           }}
         />
+        {/* Action icon (×, −, +) shown on hover */}
+        {isForeground && (() => {
+          const Icon = symbolIcons[color];
+          return (
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover/traffic:opacity-100 transition-opacity duration-150"
+              style={{
+                zIndex: 1,
+                color: colorStyles[color].iconColor,
+                filter: "drop-shadow(0 0.5px 0 rgba(255,255,255,0.2))",
+              }}
+            >
+              <Icon size={10} weight="bold" />
+            </div>
+          );
+        })()}
       </div>
       {/* Clickable area (larger for easier interaction) */}
       <button

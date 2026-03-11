@@ -1432,7 +1432,7 @@ export function WindowFrame({
             >
               {/* Traffic Light Buttons */}
               <div
-                className="flex items-center gap-2 ml-1.5 relative"
+                className="group/traffic flex items-center gap-2 ml-1.5 relative"
                 data-titlebar-controls
               >
                 <TrafficLightButton
