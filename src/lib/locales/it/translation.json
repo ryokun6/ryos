@@ -624,6 +624,7 @@
         "usingModel": "Utilizzo di {{model}}"
       },
       "tokenStatus": {
+        "authenticated": "[TODO] Logged in",
         "clickToRefresh": "Fai clic per aggiornare manualmente il token",
         "daysAgo": "{{days}} giorni fa",
         "daysOld": "vecchio di {{days}} giorni",
@@ -1057,24 +1058,24 @@
         "backupSuccess": "Backup salvato nel cloud",
         "backupToCloud": "Backup nel cloud",
         "checking": "Controllo backup cloud…",
+        "confirmForceDownload": "Scaricare dal cloud?",
+        "confirmForceDownloadDesc": "I dati di questo dispositivo verranno sovrascritti con i dati del cloud per ogni elemento di Sincronizzazione Automatica abilitato.",
+        "confirmForceUpload": "Caricare sul cloud?",
+        "confirmForceUploadDesc": "I dati nel cloud verranno sovrascritti con i dati attuali di questo dispositivo per ogni elemento di Sincronizzazione Automatica abilitato.",
         "confirmRestore": "Ripristinare dal cloud?",
         "confirmRestoreDesc": "Questo sostituirà tutte le impostazioni e i file correnti con il backup nel cloud. ryOS verrà riavviato.",
         "description": "Esegui il backup o ripristina tutte le impostazioni e i file nel cloud. Max {{limit}} MB.",
-        "forceUpload": "Carica",
-        "forceUploading": "Caricamento…",
         "forceDownload": "Scarica",
-        "forceDownloading": "Scaricamento…",
-        "forceSyncDescription": "Carica o scarica gli elementi di Sincronizzazione Automatica abilitati.",
-        "forceUploadSuccess": "Caricamento sul cloud completato",
-        "forceUploadFailed": "Caricamento sul cloud non riuscito",
-        "forceDownloadSuccess": "Scaricamento dal cloud completato",
         "forceDownloadFailed": "Scaricamento dal cloud non riuscito",
         "forceDownloadNoData": "Nessun dato cloud trovato per gli elementi abilitati",
+        "forceDownloadSuccess": "Scaricamento dal cloud completato",
+        "forceDownloading": "Scaricamento…",
+        "forceSyncDescription": "Carica o scarica gli elementi di Sincronizzazione Automatica abilitati.",
         "forceSyncNoDomains": "Abilita prima almeno un elemento di Sincronizzazione Automatica",
-        "confirmForceUpload": "Caricare sul cloud?",
-        "confirmForceUploadDesc": "I dati nel cloud verranno sovrascritti con i dati attuali di questo dispositivo per ogni elemento di Sincronizzazione Automatica abilitato.",
-        "confirmForceDownload": "Scaricare dal cloud?",
-        "confirmForceDownloadDesc": "I dati di questo dispositivo verranno sovrascritti con i dati del cloud per ogni elemento di Sincronizzazione Automatica abilitato.",
+        "forceUpload": "Carica",
+        "forceUploadFailed": "Caricamento sul cloud non riuscito",
+        "forceUploadSuccess": "Caricamento sul cloud completato",
+        "forceUploading": "Caricamento…",
         "lastBackup": "Ultimo backup cloud: {{date}} ({{size}} MB)",
         "loginRequired": "Accedi per usare la sincronizzazione cloud",
         "progress": {
@@ -1093,6 +1094,11 @@
         "tooLarge": "Backup troppo grande ({{size}} MB). La dimensione massima compressa è {{limit}} MB."
       },
       "color": "Colore",
+      "connectionStatus": {
+        "connected": "[TODO] Connected",
+        "connecting": "[TODO] Connecting…",
+        "disconnected": "[TODO] Disconnected"
+      },
       "crashApp": "Arresta app",
       "crashDesktop": "Arresta desktop",
       "crt": "CRT",
@@ -1504,12 +1510,15 @@
         "emptyTrash": "Svuota Cestino...",
         "finderHelp": "Aiuto Finder",
         "forward": "Avanti",
+        "import": "Importa file…",
         "importFromDevice": "Importa da dispositivo...",
         "moveToTrash": "Sposta nel Cestino",
         "newFinderWindow": "Nuova finestra Finder",
         "newFolder": "Nuova cartella...",
+        "newWindow": "Nuova finestra",
         "putBack": "Ripristina",
-        "rename": "Rinomina..."
+        "rename": "Rinomina...",
+        "sidebar": "Barra laterale"
       },
       "messages": {
         "appletImported": "Applet importata!",
@@ -1524,7 +1533,8 @@
       },
       "name": "Finder",
       "placeholders": {
-        "enterPath": "Inserisci percorso"
+        "enterPath": "Inserisci percorso",
+        "search": "Cerca"
       },
       "statusBar": {
         "available": "disponibile",
@@ -2932,12 +2942,12 @@
     "aboutThisMac": {
       "builtInMemory": "Memoria integrata",
       "clickToToggle": "Clicca per alternare",
-      "viewChangelog": "Visualizza registro modifiche",
       "description": "Informazioni su ryOS su questo computer",
       "largestUnusedBlock": "Blocco più grande non utilizzato",
       "mb": "MB",
       "system": "Sistema",
       "title": "Informazioni su questo computer",
+      "viewChangelog": "Visualizza registro modifiche",
       "virtualMemory": "Memoria virtuale",
       "virtualMemoryOff": "Disattivato"
     },
@@ -3020,7 +3030,6 @@
       "keepNewDocument": "Mantieni nuovo documento",
       "madeBy": "Realizzato da",
       "openInGitHub": "Apri su GitHub",
-      "viewChangelog": "Visualizza registro modifiche",
       "save": "Salva",
       "saveBeforeClosing": "Salva le modifiche prima di chiudere.",
       "saveChanges": "Salva modifiche",
@@ -3050,6 +3059,7 @@
         "shareLinkOrScanToOpen": "Condividi il link o scansiona per aprire questo/a {{itemType}}"
       },
       "version": "Versione",
+      "viewChangelog": "Visualizza registro modifiche",
       "viewDocs": "Visualizza documentazione",
       "welcomeTo": "Benvenuto in {{appName}}"
     },

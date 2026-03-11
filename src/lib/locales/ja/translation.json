@@ -624,6 +624,7 @@
         "usingModel": "{{model}}を使用中"
       },
       "tokenStatus": {
+        "authenticated": "[TODO] Logged in",
         "clickToRefresh": "トークンを手動で更新するにはクリックしてください",
         "daysAgo": "{{days}}日前",
         "daysOld": "{{days}}日経過",
@@ -1057,24 +1058,24 @@
         "backupSuccess": "クラウドにバックアップを保存しました",
         "backupToCloud": "クラウドにバックアップ",
         "checking": "クラウドバックアップを確認中…",
+        "confirmForceDownload": "クラウドからダウンロードしますか？",
+        "confirmForceDownloadDesc": "有効な自動同期項目について、このデバイスのデータがクラウドのデータで上書きされます。",
+        "confirmForceUpload": "クラウドにアップロードしますか？",
+        "confirmForceUploadDesc": "有効な自動同期項目について、クラウドのデータがこのデバイスの現在のデータで上書きされます。",
         "confirmRestore": "クラウドから復元しますか？",
         "confirmRestoreDesc": "現在の設定とファイルはすべてクラウドバックアップで置き換えられます。ryOS は再起動します。",
         "description": "すべての設定とファイルをクラウドにバックアップまたは復元します。最大 {{limit}}MB。",
-        "forceUpload": "アップロード",
-        "forceUploading": "アップロード中…",
         "forceDownload": "ダウンロード",
-        "forceDownloading": "ダウンロード中…",
-        "forceSyncDescription": "有効な自動同期項目を強制的にアップロードまたはダウンロードします。",
-        "forceUploadSuccess": "クラウドへのアップロードが完了しました",
-        "forceUploadFailed": "クラウドへのアップロードに失敗しました",
-        "forceDownloadSuccess": "クラウドからのダウンロードが完了しました",
         "forceDownloadFailed": "クラウドからのダウンロードに失敗しました",
         "forceDownloadNoData": "有効な項目のクラウドデータが見つかりませんでした",
+        "forceDownloadSuccess": "クラウドからのダウンロードが完了しました",
+        "forceDownloading": "ダウンロード中…",
+        "forceSyncDescription": "有効な自動同期項目を強制的にアップロードまたはダウンロードします。",
         "forceSyncNoDomains": "まず自動同期項目を1つ以上有効にしてください",
-        "confirmForceUpload": "クラウドにアップロードしますか？",
-        "confirmForceUploadDesc": "有効な自動同期項目について、クラウドのデータがこのデバイスの現在のデータで上書きされます。",
-        "confirmForceDownload": "クラウドからダウンロードしますか？",
-        "confirmForceDownloadDesc": "有効な自動同期項目について、このデバイスのデータがクラウドのデータで上書きされます。",
+        "forceUpload": "アップロード",
+        "forceUploadFailed": "クラウドへのアップロードに失敗しました",
+        "forceUploadSuccess": "クラウドへのアップロードが完了しました",
+        "forceUploading": "アップロード中…",
         "lastBackup": "最後のクラウドバックアップ: {{date}} ({{size}}MB)",
         "loginRequired": "クラウド同期を使うにはログインしてください",
         "progress": {
@@ -1093,6 +1094,11 @@
         "tooLarge": "バックアップサイズが大きすぎます ({{size}}MB)。圧縮後の最大サイズは {{limit}}MB です。"
       },
       "color": "カラー",
+      "connectionStatus": {
+        "connected": "[TODO] Connected",
+        "connecting": "[TODO] Connecting…",
+        "disconnected": "[TODO] Disconnected"
+      },
       "crashApp": "アプリをクラッシュ",
       "crashDesktop": "デスクトップをクラッシュ",
       "crt": "CRT",
@@ -1504,12 +1510,15 @@
         "emptyTrash": "ゴミ箱を空にする...",
         "finderHelp": "Finder ヘルプ",
         "forward": "進む",
+        "import": "ファイルを読み込む…",
         "importFromDevice": "デバイスから読み込む...",
         "moveToTrash": "ゴミ箱に入れる",
         "newFinderWindow": "新規 Finder ウインドウ",
         "newFolder": "新規フォルダ...",
+        "newWindow": "新規ウインドウ",
         "putBack": "元に戻す",
-        "rename": "名称変更..."
+        "rename": "名称変更...",
+        "sidebar": "サイドバー"
       },
       "messages": {
         "appletImported": "アプレットをインポートしました！",
@@ -1524,7 +1533,8 @@
       },
       "name": "Finder",
       "placeholders": {
-        "enterPath": "パスを入力"
+        "enterPath": "パスを入力",
+        "search": "検索"
       },
       "statusBar": {
         "available": "利用可能",
@@ -2932,12 +2942,12 @@
     "aboutThisMac": {
       "builtInMemory": "内蔵メモリ",
       "clickToToggle": "クリックで切り替え",
-      "viewChangelog": "変更履歴を見る",
       "description": "このコンピュータのryOSについて",
       "largestUnusedBlock": "最大の未使用ブロック",
       "mb": "MB",
       "system": "システム",
       "title": "このコンピュータについて",
+      "viewChangelog": "変更履歴を見る",
       "virtualMemory": "仮想メモリ",
       "virtualMemoryOff": "オフ"
     },
@@ -3020,7 +3030,6 @@
       "keepNewDocument": "新規書類を保持",
       "madeBy": "作成者：",
       "openInGitHub": "GitHubで開く",
-      "viewChangelog": "変更履歴を見る",
       "save": "保存",
       "saveBeforeClosing": "閉じる前に変更を保存してください。",
       "saveChanges": "変更を保存",
@@ -3050,6 +3059,7 @@
         "shareLinkOrScanToOpen": "リンクを共有するか、スキャンしてこの {{itemType}} を開く"
       },
       "version": "バージョン",
+      "viewChangelog": "変更履歴を見る",
       "viewDocs": "ドキュメント",
       "welcomeTo": "{{appName}}へようこそ"
     },

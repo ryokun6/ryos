@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useRef, useState } from "react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { FinderMenuBar } from "./FinderMenuBar";
 import { AppProps } from "@/apps/base/types";
@@ -37,6 +37,7 @@ import {
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 
 function FinderPanel({
   className,
@@ -235,6 +236,13 @@ export function FinderAppComponent({
     canRedo: canRedoFileOp,
   });
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(700);
+  useResizeObserverWithRef(containerRef, (entry) => {
+    setContainerWidth(entry.contentRect.width);
+  });
+  const effectiveShowSidebar = showSidebar && containerWidth >= 500;
+
   const menuBar = (
     <FinderMenuBar
       onClose={onClose}
@@ -297,6 +305,7 @@ export function FinderAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <div
+          ref={containerRef}
           className={cn(
             "flex flex-col h-full w-full relative",
             isDraggingOver && currentPath === "/Documents"
@@ -369,11 +378,11 @@ export function FinderAppComponent({
                       {t("apps.finder.contextMenu.newFolder")}
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-md h-6 px-3" onClick={handleImportFile}>
-                      {t("apps.finder.menu.import", { defaultValue: "Import File…" })}
+                      {t("apps.finder.menu.import")}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem className="text-md h-6 px-3" onClick={handleNewWindow}>
-                      {t("apps.finder.menu.newWindow", { defaultValue: "New Window" })}
+                      {t("apps.finder.menu.newWindow")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -389,7 +398,7 @@ export function FinderAppComponent({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] outline-none font-geneva-12"
-                  placeholder={t("apps.finder.placeholders.search", { defaultValue: "Search" })}
+                  placeholder=""
                 />
                 {searchQuery && (
                   <button
@@ -469,7 +478,7 @@ export function FinderAppComponent({
           {isMacOSXTheme ? (
             <>
               <div className="flex-1 overflow-hidden flex gap-[5px]">
-                {showSidebar && (
+                {effectiveShowSidebar && (
                   <FinderPanel bordered className="w-[175px] shrink-0 flex flex-col min-h-0">
                     <div className="flex-1 overflow-y-auto font-geneva-12 py-1">
                       {sidebarItems.map((item) => (

@@ -624,6 +624,7 @@
         "usingModel": "Usando {{model}}"
       },
       "tokenStatus": {
+        "authenticated": "[TODO] Logged in",
         "clickToRefresh": "Clique para atualizar o token manualmente",
         "daysAgo": "há {{days}}d",
         "daysOld": "{{days}}d de idade",
@@ -1057,24 +1058,24 @@
         "backupSuccess": "Backup salvo na nuvem",
         "backupToCloud": "Backup na nuvem",
         "checking": "Verificando backup na nuvem…",
+        "confirmForceDownload": "Baixar da nuvem?",
+        "confirmForceDownloadDesc": "Os dados deste dispositivo serão substituídos pelos dados da nuvem para cada item de Sincronização Automática ativado.",
+        "confirmForceUpload": "Enviar para a nuvem?",
+        "confirmForceUploadDesc": "Os dados na nuvem serão substituídos pelos dados atuais deste dispositivo para cada item de Sincronização Automática ativado.",
         "confirmRestore": "Restaurar da nuvem?",
         "confirmRestoreDesc": "Isso substituirá todas as suas configurações e arquivos atuais pelo backup na nuvem. O ryOS será reiniciado.",
         "description": "Faça backup ou restaure todas as configurações e arquivos na nuvem. Máx. {{limit}} MB.",
-        "forceUpload": "Enviar",
-        "forceUploading": "Enviando…",
         "forceDownload": "Baixar",
-        "forceDownloading": "Baixando…",
-        "forceSyncDescription": "Enviar ou baixar itens de Sincronização Automática ativados.",
-        "forceUploadSuccess": "Envio para a nuvem concluído",
-        "forceUploadFailed": "Falha ao enviar para a nuvem",
-        "forceDownloadSuccess": "Download da nuvem concluído",
         "forceDownloadFailed": "Falha ao baixar da nuvem",
         "forceDownloadNoData": "Nenhum dado na nuvem encontrado para os itens ativados",
+        "forceDownloadSuccess": "Download da nuvem concluído",
+        "forceDownloading": "Baixando…",
+        "forceSyncDescription": "Enviar ou baixar itens de Sincronização Automática ativados.",
         "forceSyncNoDomains": "Ative pelo menos um item de Sincronização Automática primeiro",
-        "confirmForceUpload": "Enviar para a nuvem?",
-        "confirmForceUploadDesc": "Os dados na nuvem serão substituídos pelos dados atuais deste dispositivo para cada item de Sincronização Automática ativado.",
-        "confirmForceDownload": "Baixar da nuvem?",
-        "confirmForceDownloadDesc": "Os dados deste dispositivo serão substituídos pelos dados da nuvem para cada item de Sincronização Automática ativado.",
+        "forceUpload": "Enviar",
+        "forceUploadFailed": "Falha ao enviar para a nuvem",
+        "forceUploadSuccess": "Envio para a nuvem concluído",
+        "forceUploading": "Enviando…",
         "lastBackup": "Último backup na nuvem: {{date}} ({{size}} MB)",
         "loginRequired": "Faça login para usar a sincronização em nuvem",
         "progress": {
@@ -1093,6 +1094,11 @@
         "tooLarge": "Backup muito grande ({{size}} MB). O tamanho máximo compactado é {{limit}} MB."
       },
       "color": "Cor",
+      "connectionStatus": {
+        "connected": "[TODO] Connected",
+        "connecting": "[TODO] Connecting…",
+        "disconnected": "[TODO] Disconnected"
+      },
       "crashApp": "Travar App",
       "crashDesktop": "Travar Desktop",
       "crt": "CRT",
@@ -1504,12 +1510,15 @@
         "emptyTrash": "Esvaziar Lixo...",
         "finderHelp": "Ajuda do Finder",
         "forward": "Avançar",
+        "import": "Importar ficheiro…",
         "importFromDevice": "Importar de Dispositivo...",
         "moveToTrash": "Mover para o Lixo",
         "newFinderWindow": "Nova Janela do Finder",
         "newFolder": "Nova Pasta...",
+        "newWindow": "Nova janela",
         "putBack": "Colocar de Volta",
-        "rename": "Renomear..."
+        "rename": "Renomear...",
+        "sidebar": "Barra lateral"
       },
       "messages": {
         "appletImported": "Applet importado!",
@@ -1524,7 +1533,8 @@
       },
       "name": "Finder",
       "placeholders": {
-        "enterPath": "Inserir caminho"
+        "enterPath": "Inserir caminho",
+        "search": "Pesquisar"
       },
       "statusBar": {
         "available": "disponível",
@@ -2932,12 +2942,12 @@
     "aboutThisMac": {
       "builtInMemory": "Memória Integrada",
       "clickToToggle": "Clique para alternar",
-      "viewChangelog": "Ver registro de alterações",
       "description": "Informações sobre o ryOS neste computador",
       "largestUnusedBlock": "Maior Bloco Não Utilizado",
       "mb": "MB",
       "system": "Sistema",
       "title": "Sobre Este Computador",
+      "viewChangelog": "Ver registro de alterações",
       "virtualMemory": "Memória Virtual",
       "virtualMemoryOff": "Desativado"
     },
@@ -3020,7 +3030,6 @@
       "keepNewDocument": "Manter Novo Documento",
       "madeBy": "Feito por",
       "openInGitHub": "Abrir no GitHub",
-      "viewChangelog": "Ver registro de alterações",
       "save": "Salvar",
       "saveBeforeClosing": "Salve suas alterações antes de fechar.",
       "saveChanges": "Salvar Alterações",
@@ -3050,6 +3059,7 @@
         "shareLinkOrScanToOpen": "Compartilhe o link ou escaneie para abrir este {{itemType}}"
       },
       "version": "Versão",
+      "viewChangelog": "Ver registro de alterações",
       "viewDocs": "Ver documentação",
       "welcomeTo": "Bem-vindo ao {{appName}}"
     },

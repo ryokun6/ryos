@@ -624,6 +624,7 @@
         "usingModel": "Используется {{model}}"
       },
       "tokenStatus": {
+        "authenticated": "[TODO] Logged in",
         "clickToRefresh": "Нажмите, чтобы вручную обновить токен",
         "daysAgo": "{{days}} дн. назад",
         "daysOld": "{{days}} дней",
@@ -1057,24 +1058,24 @@
         "backupSuccess": "Резервная копия сохранена в облаке",
         "backupToCloud": "Резервная копия в облако",
         "checking": "Проверка облачной копии…",
+        "confirmForceDownload": "Скачать из облака?",
+        "confirmForceDownloadDesc": "Данные этого устройства будут перезаписаны данными из облака для каждого включённого элемента автосинхронизации.",
+        "confirmForceUpload": "Загрузить в облако?",
+        "confirmForceUploadDesc": "Данные в облаке будут перезаписаны текущими данными этого устройства для каждого включённого элемента автосинхронизации.",
         "confirmRestore": "Восстановить из облака?",
         "confirmRestoreDesc": "Это заменит все текущие настройки и файлы облачной резервной копией. ryOS будет перезапущена.",
         "description": "Резервируйте или восстанавливайте все настройки и файлы в облаке. Макс. {{limit}} МБ.",
-        "forceUpload": "Загрузить",
-        "forceUploading": "Загрузка…",
         "forceDownload": "Скачать",
-        "forceDownloading": "Скачивание…",
-        "forceSyncDescription": "Загрузить или скачать включённые элементы автосинхронизации.",
-        "forceUploadSuccess": "Загрузка в облако завершена",
-        "forceUploadFailed": "Не удалось загрузить в облако",
-        "forceDownloadSuccess": "Скачивание из облака завершено",
         "forceDownloadFailed": "Не удалось скачать из облака",
         "forceDownloadNoData": "Данные в облаке не найдены для включённых элементов",
+        "forceDownloadSuccess": "Скачивание из облака завершено",
+        "forceDownloading": "Скачивание…",
+        "forceSyncDescription": "Загрузить или скачать включённые элементы автосинхронизации.",
         "forceSyncNoDomains": "Сначала включите хотя бы один элемент автосинхронизации",
-        "confirmForceUpload": "Загрузить в облако?",
-        "confirmForceUploadDesc": "Данные в облаке будут перезаписаны текущими данными этого устройства для каждого включённого элемента автосинхронизации.",
-        "confirmForceDownload": "Скачать из облака?",
-        "confirmForceDownloadDesc": "Данные этого устройства будут перезаписаны данными из облака для каждого включённого элемента автосинхронизации.",
+        "forceUpload": "Загрузить",
+        "forceUploadFailed": "Не удалось загрузить в облако",
+        "forceUploadSuccess": "Загрузка в облако завершена",
+        "forceUploading": "Загрузка…",
         "lastBackup": "Последняя облачная копия: {{date}} ({{size}} МБ)",
         "loginRequired": "Войдите, чтобы использовать облачную синхронизацию",
         "progress": {
@@ -1093,6 +1094,11 @@
         "tooLarge": "Слишком большой размер резервной копии ({{size}} МБ). Максимальный размер в сжатом виде — {{limit}} МБ."
       },
       "color": "Цвет",
+      "connectionStatus": {
+        "connected": "[TODO] Connected",
+        "connecting": "[TODO] Connecting…",
+        "disconnected": "[TODO] Disconnected"
+      },
       "crashApp": "Сбой приложения",
       "crashDesktop": "Сбой рабочего стола",
       "crt": "ЭЛТ",
@@ -1504,12 +1510,15 @@
         "emptyTrash": "Очистить Корзину...",
         "finderHelp": "Справка Finder",
         "forward": "Вперед",
+        "import": "Импортировать файл…",
         "importFromDevice": "Импортировать с устройства...",
         "moveToTrash": "Переместить в Корзину",
         "newFinderWindow": "Новое окно Finder",
         "newFolder": "Новая папка...",
+        "newWindow": "Новое окно",
         "putBack": "Вернуть на место",
-        "rename": "Переименовать..."
+        "rename": "Переименовать...",
+        "sidebar": "Боковая панель"
       },
       "messages": {
         "appletImported": "Апплет импортирован!",
@@ -1524,7 +1533,8 @@
       },
       "name": "Finder",
       "placeholders": {
-        "enterPath": "Введите путь"
+        "enterPath": "Введите путь",
+        "search": "Поиск"
       },
       "statusBar": {
         "available": "доступно",
@@ -2932,12 +2942,12 @@
     "aboutThisMac": {
       "builtInMemory": "Встроенная память",
       "clickToToggle": "Нажмите, чтобы переключить",
-      "viewChangelog": "Просмотреть журнал изменений",
       "description": "Информация о ryOS на этом компьютере",
       "largestUnusedBlock": "Самый большой неиспользуемый блок",
       "mb": "МБ",
       "system": "Система",
       "title": "Об этом компьютере",
+      "viewChangelog": "Просмотреть журнал изменений",
       "virtualMemory": "Виртуальная память",
       "virtualMemoryOff": "Выкл."
     },
@@ -3020,7 +3030,6 @@
       "keepNewDocument": "Сохранить новый документ",
       "madeBy": "Разработано",
       "openInGitHub": "Открыть в GitHub",
-      "viewChangelog": "Просмотр журнала изменений",
       "save": "Сохранить",
       "saveBeforeClosing": "Сохраните изменения перед закрытием.",
       "saveChanges": "Сохранить изменения",
@@ -3050,6 +3059,7 @@
         "shareLinkOrScanToOpen": "Поделитесь ссылкой или отсканируйте, чтобы открыть этот {{itemType}}"
       },
       "version": "Версия",
+      "viewChangelog": "Просмотр журнала изменений",
       "viewDocs": "Смотреть документацию",
       "welcomeTo": "Добро пожаловать в {{appName}}"
     },

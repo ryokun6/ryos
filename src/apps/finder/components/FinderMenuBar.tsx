@@ -232,7 +232,7 @@ export function FinderMenuBar({
                 onCheckedChange={() => onToggleSidebar()}
                 className="text-md h-6 px-3"
               >
-                {t("apps.finder.menu.sidebar", { defaultValue: "Sidebar" })}
+                {t("apps.finder.menu.sidebar")}
               </MenubarCheckboxItem>
               <MenubarSeparator className="h-[2px] bg-black my-1" />
             </>

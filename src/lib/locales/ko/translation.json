@@ -624,6 +624,7 @@
         "usingModel": "{{model}} 사용 중"
       },
       "tokenStatus": {
+        "authenticated": "[TODO] Logged in",
         "clickToRefresh": "토큰을 수동으로 갱신하려면 클릭하세요.",
         "daysAgo": "{{days}}일 전",
         "daysOld": "{{days}}일 됨",
@@ -1057,24 +1058,24 @@
         "backupSuccess": "백업이 클라우드에 저장되었습니다",
         "backupToCloud": "클라우드 백업",
         "checking": "클라우드 백업 확인 중…",
+        "confirmForceDownload": "클라우드에서 다운로드하시겠습니까?",
+        "confirmForceDownloadDesc": "활성화된 자동 동기화 항목에 대해 이 기기의 데이터가 클라우드 데이터로 덮어쓰여집니다.",
+        "confirmForceUpload": "클라우드에 업로드하시겠습니까?",
+        "confirmForceUploadDesc": "활성화된 자동 동기화 항목에 대해 클라우드 데이터가 이 기기의 현재 데이터로 덮어쓰여집니다.",
         "confirmRestore": "클라우드에서 복원할까요?",
         "confirmRestoreDesc": "현재 설정과 파일이 모두 클라우드 백업으로 대체됩니다. ryOS가 다시 시작됩니다.",
         "description": "모든 설정과 파일을 클라우드에 백업하거나 복원합니다. 최대 {{limit}}MB.",
-        "forceUpload": "업로드",
-        "forceUploading": "업로드 중…",
         "forceDownload": "다운로드",
-        "forceDownloading": "다운로드 중…",
-        "forceSyncDescription": "활성화된 자동 동기화 항목을 강제로 업로드하거나 다운로드합니다.",
-        "forceUploadSuccess": "클라우드 업로드가 완료되었습니다",
-        "forceUploadFailed": "클라우드 업로드에 실패했습니다",
-        "forceDownloadSuccess": "클라우드 다운로드가 완료되었습니다",
         "forceDownloadFailed": "클라우드 다운로드에 실패했습니다",
         "forceDownloadNoData": "활성화된 항목에 대한 클라우드 데이터가 없습니다",
+        "forceDownloadSuccess": "클라우드 다운로드가 완료되었습니다",
+        "forceDownloading": "다운로드 중…",
+        "forceSyncDescription": "활성화된 자동 동기화 항목을 강제로 업로드하거나 다운로드합니다.",
         "forceSyncNoDomains": "먼저 자동 동기화 항목을 하나 이상 활성화하십시오",
-        "confirmForceUpload": "클라우드에 업로드하시겠습니까?",
-        "confirmForceUploadDesc": "활성화된 자동 동기화 항목에 대해 클라우드 데이터가 이 기기의 현재 데이터로 덮어쓰여집니다.",
-        "confirmForceDownload": "클라우드에서 다운로드하시겠습니까?",
-        "confirmForceDownloadDesc": "활성화된 자동 동기화 항목에 대해 이 기기의 데이터가 클라우드 데이터로 덮어쓰여집니다.",
+        "forceUpload": "업로드",
+        "forceUploadFailed": "클라우드 업로드에 실패했습니다",
+        "forceUploadSuccess": "클라우드 업로드가 완료되었습니다",
+        "forceUploading": "업로드 중…",
         "lastBackup": "마지막 클라우드 백업: {{date}} ({{size}}MB)",
         "loginRequired": "클라우드 동기화를 사용하려면 로그인하세요",
         "progress": {
@@ -1093,6 +1094,11 @@
         "tooLarge": "백업이 너무 큽니다 ({{size}}MB). 압축 후 최대 크기는 {{limit}}MB입니다."
       },
       "color": "색상",
+      "connectionStatus": {
+        "connected": "[TODO] Connected",
+        "connecting": "[TODO] Connecting…",
+        "disconnected": "[TODO] Disconnected"
+      },
       "crashApp": "앱 충돌",
       "crashDesktop": "데스크톱 충돌",
       "crt": "CRT",
@@ -1504,12 +1510,15 @@
         "emptyTrash": "휴지통 비우기...",
         "finderHelp": "Finder 도움말",
         "forward": "앞으로",
+        "import": "파일 가져오기…",
         "importFromDevice": "기기에서 가져오기...",
         "moveToTrash": "휴지통으로 이동",
         "newFinderWindow": "새 Finder 윈도우",
         "newFolder": "새 폴더...",
+        "newWindow": "새 윈도우",
         "putBack": "되돌리기",
-        "rename": "이름 변경..."
+        "rename": "이름 변경...",
+        "sidebar": "사이드바"
       },
       "messages": {
         "appletImported": "애플릿 가져오기 완료!",
@@ -1524,7 +1533,8 @@
       },
       "name": "Finder",
       "placeholders": {
-        "enterPath": "경로 입력"
+        "enterPath": "경로 입력",
+        "search": "검색"
       },
       "statusBar": {
         "available": "사용 가능",
@@ -2932,12 +2942,12 @@
     "aboutThisMac": {
       "builtInMemory": "내장 메모리",
       "clickToToggle": "클릭하여 전환",
-      "viewChangelog": "변경 내역 보기",
       "description": "이 컴퓨터의 ryOS 정보",
       "largestUnusedBlock": "가장 큰 사용 가능 블록",
       "mb": "MB",
       "system": "시스템",
       "title": "이 컴퓨터에 관하여",
+      "viewChangelog": "변경 내역 보기",
       "virtualMemory": "가상 메모리",
       "virtualMemoryOff": "끔"
     },
@@ -3020,7 +3030,6 @@
       "keepNewDocument": "새 문서 유지",
       "madeBy": "제작:",
       "openInGitHub": "GitHub에서 열기",
-      "viewChangelog": "변경 내역 보기",
       "save": "저장",
       "saveBeforeClosing": "닫기 전에 변경 사항을 저장하세요.",
       "saveChanges": "변경 사항 저장",
@@ -3050,6 +3059,7 @@
         "shareLinkOrScanToOpen": "링크를 공유하거나 스캔하여 이 {{itemType}}을(를) 여세요."
       },
       "version": "버전",
+      "viewChangelog": "변경 내역 보기",
       "viewDocs": "문서 보기",
       "welcomeTo": "{{appName}}에 오신 것을 환영합니다"
     },

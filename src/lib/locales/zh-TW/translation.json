@@ -624,6 +624,7 @@
         "usingModel": "使用 {{model}}"
       },
       "tokenStatus": {
+        "authenticated": "[TODO] Logged in",
         "clickToRefresh": "點擊以手動重新整理權杖",
         "daysAgo": "{{days}} 天前",
         "daysOld": "{{days}} 天",
@@ -1057,24 +1058,24 @@
         "backupSuccess": "備份已儲存到雲端",
         "backupToCloud": "雲端備份",
         "checking": "正在檢查雲端備份…",
+        "confirmForceDownload": "從雲端下載？",
+        "confirmForceDownloadDesc": "每個已啟用的自動同步項目的裝置資料將被雲端資料覆蓋。",
+        "confirmForceUpload": "上傳至雲端？",
+        "confirmForceUploadDesc": "每個已啟用的自動同步項目的雲端資料將被此裝置的目前資料覆蓋。",
         "confirmRestore": "要從雲端還原嗎？",
         "confirmRestoreDesc": "這會以雲端備份取代你目前的所有設定與檔案，ryOS 將重新啟動。",
         "description": "將所有設定與檔案備份到雲端或從雲端還原。上限 {{limit}}MB。",
-        "forceUpload": "上傳",
-        "forceUploading": "上傳中…",
         "forceDownload": "下載",
-        "forceDownloading": "下載中…",
-        "forceSyncDescription": "強制上傳或下載已啟用的自動同步項目。",
-        "forceUploadSuccess": "上傳至雲端已完成",
-        "forceUploadFailed": "上傳至雲端失敗",
-        "forceDownloadSuccess": "從雲端下載已完成",
         "forceDownloadFailed": "從雲端下載失敗",
         "forceDownloadNoData": "未找到已啟用項目的雲端資料",
+        "forceDownloadSuccess": "從雲端下載已完成",
+        "forceDownloading": "下載中…",
+        "forceSyncDescription": "強制上傳或下載已啟用的自動同步項目。",
         "forceSyncNoDomains": "請先啟用至少一個自動同步項目",
-        "confirmForceUpload": "上傳至雲端？",
-        "confirmForceUploadDesc": "每個已啟用的自動同步項目的雲端資料將被此裝置的目前資料覆蓋。",
-        "confirmForceDownload": "從雲端下載？",
-        "confirmForceDownloadDesc": "每個已啟用的自動同步項目的裝置資料將被雲端資料覆蓋。",
+        "forceUpload": "上傳",
+        "forceUploadFailed": "上傳至雲端失敗",
+        "forceUploadSuccess": "上傳至雲端已完成",
+        "forceUploading": "上傳中…",
         "lastBackup": "上次雲端備份：{{date}}（{{size}}MB）",
         "loginRequired": "請先登入以使用雲端同步",
         "progress": {
@@ -1093,6 +1094,11 @@
         "tooLarge": "備份檔過大（{{size}}MB）。壓縮後上限為 {{limit}}MB。"
       },
       "color": "全彩",
+      "connectionStatus": {
+        "connected": "[TODO] Connected",
+        "connecting": "[TODO] Connecting…",
+        "disconnected": "[TODO] Disconnected"
+      },
       "crashApp": "App 崩潰",
       "crashDesktop": "桌面崩潰",
       "crt": "CRT",
@@ -1504,12 +1510,15 @@
         "emptyTrash": "清空垃圾桶...",
         "finderHelp": "Finder 輔助說明",
         "forward": "往前",
+        "import": "輸入檔案…",
         "importFromDevice": "從裝置匯入...",
         "moveToTrash": "移至垃圾桶",
         "newFinderWindow": "新增 Finder 視窗",
         "newFolder": "新增檔案夾...",
+        "newWindow": "新增視窗",
         "putBack": "放回",
-        "rename": "重新命名..."
+        "rename": "重新命名...",
+        "sidebar": "側邊欄"
       },
       "messages": {
         "appletImported": "小程式已匯入！",
@@ -1524,7 +1533,8 @@
       },
       "name": "Finder",
       "placeholders": {
-        "enterPath": "輸入路徑"
+        "enterPath": "輸入路徑",
+        "search": "搜尋"
       },
       "statusBar": {
         "available": "可用",
@@ -2932,12 +2942,12 @@
     "aboutThisMac": {
       "builtInMemory": "內建記憶體",
       "clickToToggle": "按一下以切換",
-      "viewChangelog": "查看變更記錄",
       "description": "關於此電腦上的 ryOS 資訊",
       "largestUnusedBlock": "最大未用區塊",
       "mb": "MB",
       "system": "系統",
       "title": "關於此電腦",
+      "viewChangelog": "查看變更記錄",
       "virtualMemory": "虛擬記憶體",
       "virtualMemoryOff": "關閉"
     },
@@ -3020,7 +3030,6 @@
       "keepNewDocument": "保留新檔案",
       "madeBy": "製作：",
       "openInGitHub": "在 GitHub 開啟",
-      "viewChangelog": "查看更新日誌",
       "save": "儲存",
       "saveBeforeClosing": "在關閉前儲存您的變更。",
       "saveChanges": "儲存變更",
@@ -3050,6 +3059,7 @@
         "shareLinkOrScanToOpen": "分享連結或掃描以開啟此{{itemType}}"
       },
       "version": "版本",
+      "viewChangelog": "查看更新日誌",
       "viewDocs": "查看文檔",
       "welcomeTo": "歡迎使用{{appName}}"
     },
