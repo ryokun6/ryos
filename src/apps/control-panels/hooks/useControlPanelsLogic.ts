@@ -871,12 +871,14 @@ export function useControlPanelsLogic({
 
     try {
       for (const domain of enabledDomains) {
+        syncStore.markDownloadStart(domain);
+
         try {
           const metadata = await downloadAndApplyCloudSyncDomain(domain, {
             username,
             authToken,
           });
-          syncStore.markRemoteApplied(domain, metadata.updatedAt);
+          syncStore.markDownloadSuccess(domain, metadata.updatedAt);
           syncStore.updateRemoteMetadataForDomain(domain, metadata);
           appliedCount++;
         } catch (error) {
@@ -884,7 +886,10 @@ export function useControlPanelsLogic({
             error instanceof Error
               ? error.message
               : t("apps.control-panels.cloudSync.forceDownloadFailed");
-          if (!isNoDataError(message)) {
+          if (isNoDataError(message)) {
+            syncStore.markDownloadSuccess(domain, new Date().toISOString());
+          } else {
+            syncStore.markDownloadFailure(domain, message);
             failures.push(message);
           }
         }
