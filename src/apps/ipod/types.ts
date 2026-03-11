@@ -69,7 +69,7 @@ export interface FullScreenPortalProps {
   onSyncMode?: () => void;
   isSyncModeOpen?: boolean;
   syncModeContent?: React.ReactNode;
-  // Display mode (Karaoke only - video, cover, mesh, water, etc.)
+  // Display mode (video, cover, mesh, water, etc.)
   displayMode?: DisplayMode;
   onDisplayModeSelect?: (mode: DisplayMode) => void;
   displayModeOptions?: { value: DisplayMode; label: string }[];
