@@ -144,6 +144,8 @@ export function FinderAppComponent({
     // File system state
     currentPath,
     selectedFile,
+    selectedFiles,
+    selectionAnchorPath,
     isLoading,
     error,
     sortedFiles,
@@ -547,6 +549,8 @@ export function FinderAppComponent({
                           onFileOpen={handleFileOpen}
                           onFileSelect={handleFileSelect}
                           selectedFile={selectedFile}
+                          selectedFiles={selectedFiles}
+                          selectionAnchorPath={selectionAnchorPath}
                           viewType={viewType}
                           getFileType={getFileType}
                           onFileDrop={handleFileMoved}
@@ -606,6 +610,8 @@ export function FinderAppComponent({
                       onFileOpen={handleFileOpen}
                       onFileSelect={handleFileSelect}
                       selectedFile={selectedFile}
+                      selectedFiles={selectedFiles}
+                      selectionAnchorPath={selectionAnchorPath}
                       viewType={viewType}
                       getFileType={getFileType}
                       onFileDrop={handleFileMoved}

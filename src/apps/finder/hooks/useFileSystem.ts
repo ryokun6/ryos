@@ -55,6 +55,10 @@ const getParentPath = (path: string): string => {
   return `/${parts.slice(0, -1).join("/")}`;
 };
 
+const arePathArraysEqual = (first: readonly string[], second: readonly string[]) =>
+  first.length === second.length &&
+  first.every((path, index) => path === second[index]);
+
 const getCloudSyncDomainForContentStore = (
   storeName: string
 ): "files-metadata" | "files-images" | "files-trash" | "files-applets" | null => {
@@ -364,14 +368,26 @@ export function useFileSystem(
   const [localHistoryIndex, setLocalHistoryIndex] = useState(
     finderInstance?.navigationIndex || 0
   );
-  const [, setLocalSelectedFile] = useState<string | null>(
-    finderInstance?.selectedFile || null
+  const [localSelectedFiles, setLocalSelectedFiles] = useState<string[]>(
+    finderInstance?.selectedFiles ||
+      (finderInstance?.selectedFile ? [finderInstance.selectedFile] : [])
   );
+  const [localSelectionAnchorPath, setLocalSelectionAnchorPath] = useState<
+    string | null
+  >(finderInstance?.selectionAnchorPath || finderInstance?.selectedFile || null);
+  const [localSelectedFilePath, setLocalSelectedFilePath] = useState<
+    string | null
+  >(finderInstance?.selectedFile || null);
+  const [selectedFile, setSelectedFile] = useState<ExtendedDisplayFileItem>();
 
   // Determine which state to use
   const currentPath = finderInstance?.currentPath || localCurrentPath;
   const history = finderInstance?.navigationHistory || localHistory;
   const historyIndex = finderInstance?.navigationIndex || localHistoryIndex;
+  const selectedFilePath = finderInstance?.selectedFile || localSelectedFilePath;
+  const selectedFiles = finderInstance?.selectedFiles || localSelectedFiles;
+  const selectionAnchorPath =
+    finderInstance?.selectionAnchorPath || localSelectionAnchorPath;
 
   // State setters that work with both instance and local mode
   const setCurrentPath = useCallback(
@@ -419,12 +435,22 @@ export function useFileSystem(
     [instanceId, finderInstance, updateFinderInstance]
   );
 
-  const setSelectedFilePath = useCallback(
-    (path: string | null) => {
+  const syncSelectionState = useCallback(
+    (
+      primaryPath: string | null,
+      paths: string[],
+      anchorPath: string | null
+    ) => {
       if (instanceId && finderInstance) {
-        updateFinderInstance(instanceId, { selectedFile: path });
+        updateFinderInstance(instanceId, {
+          selectedFile: primaryPath,
+          selectedFiles: paths,
+          selectionAnchorPath: anchorPath,
+        });
       } else {
-        setLocalSelectedFile(path);
+        setLocalSelectedFilePath(primaryPath);
+        setLocalSelectedFiles(paths);
+        setLocalSelectionAnchorPath(anchorPath);
       }
     },
     [instanceId, finderInstance, updateFinderInstance]
@@ -432,7 +458,6 @@ export function useFileSystem(
 
   // Local UI state (not persisted to store)
   const [files, setFiles] = useState<ExtendedDisplayFileItem[]>([]);
-  const [selectedFile, setSelectedFile] = useState<ExtendedDisplayFileItem>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
   const objectUrlsRef = useRef<Set<string>>(new Set());
@@ -581,7 +606,7 @@ export function useFileSystem(
     (path: string) => {
       const normalizedPath = path.startsWith("/") ? path : `/${path}`;
       setSelectedFile(undefined);
-      setSelectedFilePath(null);
+      syncSelectionState(null, [], null);
       if (normalizedPath !== currentPath) {
         setHistory((prev) => {
           const newHistory = prev.slice(0, historyIndex + 1);
@@ -595,7 +620,7 @@ export function useFileSystem(
     [
       currentPath,
       historyIndex,
-      setSelectedFilePath,
+      syncSelectionState,
       setHistory,
       setHistoryIndex,
       setCurrentPath,
@@ -1260,13 +1285,64 @@ export function useFileSystem(
     return unsubscribe;
   }, [currentPath, loadFiles, options.skipLoad]);
 
+  useEffect(() => {
+    const filesByPath = new Map(files.map((file) => [file.path, file]));
+    const nextSelectedFiles = selectedFiles.filter((path) => filesByPath.has(path));
+    const nextPrimaryPath =
+      selectedFilePath && filesByPath.has(selectedFilePath)
+        ? selectedFilePath
+        : nextSelectedFiles[0] ?? null;
+    const nextAnchorPath =
+      selectionAnchorPath && filesByPath.has(selectionAnchorPath)
+        ? selectionAnchorPath
+        : nextPrimaryPath;
+    const nextSelectedFile = nextPrimaryPath
+      ? filesByPath.get(nextPrimaryPath)
+      : undefined;
+
+    if (selectedFile?.path !== nextSelectedFile?.path) {
+      setSelectedFile(nextSelectedFile);
+    } else if (selectedFile !== nextSelectedFile) {
+      setSelectedFile(nextSelectedFile);
+    }
+
+    if (
+      !arePathArraysEqual(nextSelectedFiles, selectedFiles) ||
+      nextPrimaryPath !== selectedFilePath ||
+      nextAnchorPath !== selectionAnchorPath
+    ) {
+      syncSelectionState(nextPrimaryPath, nextSelectedFiles, nextAnchorPath);
+    }
+  }, [
+    files,
+    selectedFile,
+    selectedFilePath,
+    selectedFiles,
+    selectionAnchorPath,
+    syncSelectionState,
+  ]);
+
   // --- handleFileSelect, Navigation Functions --- //
   const handleFileSelect = useCallback(
-    (file: ExtendedDisplayFileItem | undefined) => {
+    (
+      file: ExtendedDisplayFileItem | undefined,
+      options?: {
+        selectedPaths?: string[];
+        anchorPath?: string | null;
+      }
+    ) => {
+      const primaryPath = file?.path || null;
+      const nextSelectedFiles =
+        options?.selectedPaths || (primaryPath ? [primaryPath] : []);
+      const nextAnchorPath =
+        options?.anchorPath !== undefined
+          ? options.anchorPath
+          : primaryPath;
+
       setSelectedFile(file);
-      setSelectedFilePath(file?.path || null);
+      syncSelectionState(primaryPath, nextSelectedFiles, nextAnchorPath);
     },
-    [setSelectedFilePath]
+    [syncSelectionState]
   );
   const navigateUp = useCallback(() => {
     if (currentPath === "/") return;
@@ -1786,12 +1862,19 @@ export function useFileSystem(
       setHistory(["/"]);
       setHistoryIndex(0);
       setSelectedFile(undefined);
+      syncSelectionState(null, [], null);
       setError(undefined);
     } catch (err) {
       console.error("Error formatting file system:", err);
       setError("Failed to format file system");
     }
-  }, [resetFilesStore, setCurrentPath, setHistory, setHistoryIndex]);
+  }, [
+    resetFilesStore,
+    setCurrentPath,
+    setHistory,
+    setHistoryIndex,
+    syncSelectionState,
+  ]);
 
   // Calculate trash count based on store data
   const trashItemsCount = getItemsInPath("/Trash").length;
@@ -1961,6 +2044,8 @@ export function useFileSystem(
     currentPath,
     files,
     selectedFile,
+    selectedFiles,
+    selectionAnchorPath,
     isLoading,
     error,
     handleFileOpen,

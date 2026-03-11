@@ -1,6 +1,6 @@
 import { AnyApp } from "@/apps/base/types";
 import { AppId } from "@/config/appRegistry";
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { FileIcon } from "@/apps/finder/components/FileIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { useWallpaper } from "@/hooks/useWallpaper";
@@ -18,6 +18,14 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useEventListener } from "@/hooks/useEventListener";
+import {
+  createSelectionRect,
+  getIntersectingSelectionIds,
+  hasToggleModifier,
+  mergeSelectionIds,
+  resolveMultiSelection,
+  type SelectionPoint,
+} from "@/utils/selection";
 
 interface DesktopStyles {
   backgroundImage?: string;
@@ -52,6 +60,16 @@ const DEFAULT_SHORTCUT_ORDER: AppId[] = [
   "dashboard",
 ];
 
+type DesktopItemId = string;
+
+interface DesktopItemDefinition {
+  id: DesktopItemId;
+  kind: "app" | "shortcut";
+}
+
+const getDesktopAppItemId = (appId: string) => `app:${appId}`;
+const getDesktopShortcutItemId = (path: string) => `shortcut:${path}`;
+
 export function Desktop({
   apps,
   toggleApp,
@@ -59,10 +77,20 @@ export function Desktop({
   desktopStyles,
 }: DesktopProps) {
   const { t } = useTranslation();
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
-  const [selectedShortcutPath, setSelectedShortcutPath] = useState<string | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<DesktopItemId[]>([]);
+  const [selectionAnchorId, setSelectionAnchorId] =
+    useState<DesktopItemId | null>(null);
   const { wallpaperSource, isVideoWallpaper } = useWallpaper();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const desktopRef = useRef<HTMLDivElement>(null);
+  const marqueeStartRef = useRef<SelectionPoint | null>(null);
+  const marqueeBaseSelectionRef = useRef<DesktopItemId[]>([]);
+  const marqueeAdditiveRef = useRef(false);
+  const suppressClickAfterMarqueeRef = useRef(false);
+  const [selectionRect, setSelectionRect] = useState<{
+    start: SelectionPoint;
+    end: SelectionPoint;
+  } | null>(null);
   const [sortType, setSortType] = useState<SortType>("name");
   const [contextMenuPos, setContextMenuPos] = useState<{
     x: number;
@@ -409,14 +437,6 @@ export function Desktop({
     ...desktopStyles,
   };
 
-  const handleIconClick = (
-    appId: string,
-    event: React.MouseEvent<HTMLDivElement>
-  ) => {
-    event.stopPropagation();
-    setSelectedAppId(appId);
-  };
-
   const handleFinderOpen = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     localStorage.setItem("ryos:app:finder:initial-path", "/");
@@ -431,25 +451,31 @@ export function Desktop({
       };
       toggleApp(finderApp.id, undefined, launchOrigin);
     }
-    setSelectedAppId(null);
+    clearSelection();
   };
 
   const handleIconContextMenu = (appId: string, e: React.MouseEvent) => {
+    const itemId = getDesktopAppItemId(appId);
     e.preventDefault();
     e.stopPropagation();
     setContextMenuPos({ x: e.clientX, y: e.clientY });
     setContextMenuAppId(appId);
     setContextMenuShortcutPath(null);
-    setSelectedAppId(appId);
+    if (!selectedItemIds.includes(itemId)) {
+      applySelection([itemId], itemId);
+    }
   };
 
   const handleShortcutContextMenu = (shortcutPath: string, e: React.MouseEvent) => {
+    const itemId = getDesktopShortcutItemId(shortcutPath);
     e.preventDefault();
     e.stopPropagation();
     setContextMenuPos({ x: e.clientX, y: e.clientY });
     setContextMenuShortcutPath(shortcutPath);
     setContextMenuAppId(null);
-    setSelectedShortcutPath(shortcutPath);
+    if (!selectedItemIds.includes(itemId)) {
+      applySelection([itemId], itemId);
+    }
   };
 
   const handleShortcutDelete = () => {
@@ -459,6 +485,7 @@ export function Desktop({
       // Use removeItem which moves to trash
       removeItem(contextMenuShortcutPath);
     }
+    clearSelection();
     setContextMenuPos(null);
     setContextMenuShortcutPath(null);
   };
@@ -473,7 +500,7 @@ export function Desktop({
     } else {
       toggleApp(appId as AppId);
     }
-    setSelectedAppId(null);
+    clearSelection();
     setContextMenuPos(null);
   };
 
@@ -529,6 +556,167 @@ export function Desktop({
   // Create default shortcuts based on theme
   // Note: Logic moved to useFilesStore.ts (ensureDefaultDesktopShortcuts)
   // to handle initialization race conditions.
+
+  const desktopItemsInOrder = useMemo<DesktopItemDefinition[]>(() => {
+    const items: DesktopItemDefinition[] = [
+      {
+        id: getDesktopAppItemId("macintosh-hd"),
+        kind: "app",
+      },
+      ...desktopShortcuts.map((shortcut) => ({
+        id: getDesktopShortcutItemId(shortcut.path),
+        kind: "shortcut" as const,
+      })),
+    ];
+
+    if (desktopShortcuts.length === 0) {
+      items.push(
+        ...displayedApps.map((app) => ({
+          id: getDesktopAppItemId(app.id),
+          kind: "app" as const,
+        }))
+      );
+    }
+
+    if (currentTheme !== "macosx") {
+      items.push({
+        id: getDesktopAppItemId("trash"),
+        kind: "app",
+      });
+    }
+
+    return items;
+  }, [currentTheme, desktopShortcuts, displayedApps]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedItemIds([]);
+    setSelectionAnchorId(null);
+  }, []);
+
+  const applySelection = useCallback(
+    (nextSelectedIds: DesktopItemId[], nextAnchorId: DesktopItemId | null) => {
+      setSelectedItemIds(nextSelectedIds);
+      setSelectionAnchorId(nextAnchorId);
+    },
+    []
+  );
+
+  const updateSelectionFromMarquee = useCallback(
+    (start: SelectionPoint, end: SelectionPoint) => {
+      const desktop = desktopRef.current;
+      if (!desktop) return;
+
+      const intersectingIds = getIntersectingSelectionIds(
+        createSelectionRect(start, end),
+        Array.from(
+          desktop.querySelectorAll<HTMLElement>("[data-desktop-item-id]")
+        ).map((element) => ({
+          id: element.dataset.desktopItemId || "",
+          rect: {
+            left: element.getBoundingClientRect().left,
+            top: element.getBoundingClientRect().top,
+            right: element.getBoundingClientRect().right,
+            bottom: element.getBoundingClientRect().bottom,
+          },
+        }))
+      ).filter(Boolean);
+
+      const nextSelectedIds = marqueeAdditiveRef.current
+        ? mergeSelectionIds(
+            desktopItemsInOrder.map((item) => item.id),
+            marqueeBaseSelectionRef.current,
+            intersectingIds
+          )
+        : intersectingIds;
+      const nextAnchorId = nextSelectedIds[nextSelectedIds.length - 1] ?? null;
+      applySelection(nextSelectedIds, nextAnchorId);
+    },
+    [applySelection, desktopItemsInOrder]
+  );
+
+  useEffect(() => {
+    if (!selectionRect || !marqueeStartRef.current) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const start = marqueeStartRef.current;
+      if (!start) return;
+
+      const end = { x: event.clientX, y: event.clientY };
+      setSelectionRect({ start, end });
+      updateSelectionFromMarquee(start, end);
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      const start = marqueeStartRef.current;
+      if (!start) return;
+
+      const end = { x: event.clientX, y: event.clientY };
+      const movedEnough =
+        Math.abs(end.x - start.x) > 3 || Math.abs(end.y - start.y) > 3;
+
+      if (movedEnough) {
+        updateSelectionFromMarquee(start, end);
+      } else if (!marqueeAdditiveRef.current) {
+        clearSelection();
+      }
+
+      suppressClickAfterMarqueeRef.current = movedEnough;
+      marqueeStartRef.current = null;
+      setSelectionRect(null);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp, { once: true });
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [clearSelection, selectionRect, updateSelectionFromMarquee]);
+
+  const handleDesktopItemClick = (
+    itemId: DesktopItemId,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
+    event.stopPropagation();
+
+    const nextSelection = resolveMultiSelection({
+      orderedIds: desktopItemsInOrder.map((item) => item.id),
+      currentSelectedIds: selectedItemIds,
+      clickedId: itemId,
+      anchorId: selectionAnchorId,
+      modifiers: {
+        shiftKey: event.shiftKey,
+        toggleKey: hasToggleModifier(event),
+      },
+    });
+
+    applySelection(nextSelection.selectedIds, nextSelection.anchorId);
+  };
+
+  const handleBlankMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("[data-desktop-icon]")) return;
+
+    const start = { x: event.clientX, y: event.clientY };
+    marqueeStartRef.current = start;
+    marqueeBaseSelectionRef.current = selectedItemIds;
+    marqueeAdditiveRef.current = event.shiftKey || hasToggleModifier(event);
+    setSelectionRect({ start, end: start });
+  };
+
+  const handleDesktopClick = () => {
+    if (suppressClickAfterMarqueeRef.current) {
+      suppressClickAfterMarqueeRef.current = false;
+      onClick?.();
+      return;
+    }
+    if (!marqueeStartRef.current) {
+      clearSelection();
+    }
+    onClick?.();
+  };
 
 
   const getContextMenuItems = (): MenuItem[] => {
@@ -648,15 +836,28 @@ export function Desktop({
     return "/icons/default/file.png";
   };
 
+  const isItemSelected = useCallback(
+    (itemId: DesktopItemId) => selectedItemIds.includes(itemId),
+    [selectedItemIds]
+  );
+  const renderedSelectionRect =
+    selectionRect && desktopRef.current
+      ? createSelectionRect(selectionRect.start, selectionRect.end)
+      : null;
+  const desktopBounds = desktopRef.current?.getBoundingClientRect();
+
   return (
     <div
+      ref={desktopRef}
       className="absolute inset-0 min-h-screen h-full z-[-1] desktop-background"
-      onClick={onClick}
+      onMouseDown={handleBlankMouseDown}
+      onClick={handleDesktopClick}
       onContextMenu={(e) => {
         e.preventDefault();
         setContextMenuPos({ x: e.clientX, y: e.clientY });
         setContextMenuAppId(null);
         setContextMenuShortcutPath(null);
+        clearSelection();
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -736,27 +937,29 @@ export function Desktop({
               : "flex flex-col flex-wrap-reverse justify-start content-start h-full gap-x-3 gap-y-3"
           }
         >
-          <FileIcon
-            name={isXpTheme ? t("common.desktop.myComputer") : t("apps.finder.window.macintoshHd")}
-            isDirectory={true}
-            icon={
-              isXpTheme ? "/icons/default/pc.png" : "/icons/default/disk.png"
-            }
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedAppId("macintosh-hd");
-            }}
-            onDoubleClick={handleFinderOpen}
-            onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
-              handleIconContextMenu("macintosh-hd", e)
-            }
-            isSelected={selectedAppId === "macintosh-hd"}
-            size="large"
-          />
+          <div data-desktop-item-id={getDesktopAppItemId("macintosh-hd")}>
+            <FileIcon
+              name={isXpTheme ? t("common.desktop.myComputer") : t("apps.finder.window.macintoshHd")}
+              isDirectory={true}
+              icon={
+                isXpTheme ? "/icons/default/pc.png" : "/icons/default/disk.png"
+              }
+              onClick={(e) =>
+                handleDesktopItemClick(getDesktopAppItemId("macintosh-hd"), e)
+              }
+              onDoubleClick={handleFinderOpen}
+              onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
+                handleIconContextMenu("macintosh-hd", e)
+              }
+              isSelected={isItemSelected(getDesktopAppItemId("macintosh-hd"))}
+              size="large"
+            />
+          </div>
           {/* Display desktop shortcuts */}
           {desktopShortcuts.map((shortcut) => (
             <div
               key={shortcut.path}
+              data-desktop-item-id={getDesktopShortcutItemId(shortcut.path)}
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.effectAllowed = "move";
@@ -783,11 +986,12 @@ export function Desktop({
                 name={getDisplayName(shortcut)}
                 isDirectory={false}
                 icon={getShortcutIcon(shortcut)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedShortcutPath(shortcut.path);
-                  setSelectedAppId(null);
-                }}
+                onClick={(e) =>
+                  handleDesktopItemClick(
+                    getDesktopShortcutItemId(shortcut.path),
+                    e
+                  )
+                }
                 onDoubleClick={(e) => {
                   e.stopPropagation();
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -798,64 +1002,37 @@ export function Desktop({
                     height: rect.height,
                   };
                   handleAliasOpen(shortcut, launchOrigin);
-                  setSelectedShortcutPath(null);
+                  clearSelection();
                 }}
                 onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
                   handleShortcutContextMenu(shortcut.path, e)
                 }
-                isSelected={selectedShortcutPath === shortcut.path}
+                isSelected={isItemSelected(
+                  getDesktopShortcutItemId(shortcut.path)
+                )}
                 size="large"
-                data-desktop-icon="true"
               />
             </div>
           ))}
           {/* Display regular app icons (only if not using shortcuts) */}
           {desktopShortcuts.length === 0 && displayedApps.map((app) => (
-            <FileIcon
+            <div
               key={app.id}
-              name={getTranslatedAppName(app.id as AppId)}
-              isDirectory={false}
-              icon={
-                isXpTheme && app.id === "pc"
-                  ? `/icons/${currentTheme}/games.png`
-                  : getAppIconPath(app.id)
-              }
-              onClick={(e) => handleIconClick(app.id, e)}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                const launchOrigin: LaunchOriginRect = {
-                  x: rect.left,
-                  y: rect.top,
-                  width: rect.width,
-                  height: rect.height,
-                };
-                toggleApp(app.id, undefined, launchOrigin);
-                setSelectedAppId(null);
-              }}
-              onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
-                handleIconContextMenu(app.id, e)
-              }
-              isSelected={selectedAppId === app.id}
-              size="large"
-              data-desktop-icon="true"
-            />
-          ))}
-          {/* Display Trash icon at the end for non-macOS X themes */}
-          {currentTheme !== "macosx" && (
-            <FileIcon
-              name={t("common.menu.trash")}
-              isDirectory={true}
-              icon={trashIcon}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedAppId("trash");
-              }}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                localStorage.setItem("ryos:app:finder:initial-path", "/Trash");
-                const finderApp = apps.find((app) => app.id === "finder");
-                if (finderApp) {
+              data-desktop-item-id={getDesktopAppItemId(app.id)}
+            >
+              <FileIcon
+                name={getTranslatedAppName(app.id as AppId)}
+                isDirectory={false}
+                icon={
+                  isXpTheme && app.id === "pc"
+                    ? `/icons/${currentTheme}/games.png`
+                    : getAppIconPath(app.id)
+                }
+                onClick={(e) =>
+                  handleDesktopItemClick(getDesktopAppItemId(app.id), e)
+                }
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
                   const rect = e.currentTarget.getBoundingClientRect();
                   const launchOrigin: LaunchOriginRect = {
                     x: rect.left,
@@ -863,25 +1040,66 @@ export function Desktop({
                     width: rect.width,
                     height: rect.height,
                   };
-                  toggleApp(finderApp.id, undefined, launchOrigin);
+                  toggleApp(app.id, undefined, launchOrigin);
+                  clearSelection();
+                }}
+                onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
+                  handleIconContextMenu(app.id, e)
                 }
-                setSelectedAppId(null);
-              }}
-              onContextMenu={(e: React.MouseEvent<HTMLDivElement>) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setContextMenuPos({ x: e.clientX, y: e.clientY });
-                setContextMenuAppId("trash");
-                setContextMenuShortcutPath(null);
-                setSelectedAppId("trash");
-              }}
-              isSelected={selectedAppId === "trash"}
-              size="large"
-              data-desktop-icon="true"
-            />
+                isSelected={isItemSelected(getDesktopAppItemId(app.id))}
+                size="large"
+              />
+            </div>
+          ))}
+          {/* Display Trash icon at the end for non-macOS X themes */}
+          {currentTheme !== "macosx" && (
+            <div data-desktop-item-id={getDesktopAppItemId("trash")}>
+              <FileIcon
+                name={t("common.menu.trash")}
+                isDirectory={true}
+                icon={trashIcon}
+                onClick={(e) =>
+                  handleDesktopItemClick(getDesktopAppItemId("trash"), e)
+                }
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  localStorage.setItem("ryos:app:finder:initial-path", "/Trash");
+                  const finderApp = apps.find((app) => app.id === "finder");
+                  if (finderApp) {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const launchOrigin: LaunchOriginRect = {
+                      x: rect.left,
+                      y: rect.top,
+                      width: rect.width,
+                      height: rect.height,
+                    };
+                    toggleApp(finderApp.id, undefined, launchOrigin);
+                  }
+                  clearSelection();
+                }}
+                onContextMenu={(e: React.MouseEvent<HTMLDivElement>) => {
+                  handleIconContextMenu("trash", e);
+                }}
+                isSelected={isItemSelected(getDesktopAppItemId("trash"))}
+                size="large"
+              />
+            </div>
           )}
         </div>
       </div>
+      {renderedSelectionRect && desktopBounds ? (
+        <div
+          className="pointer-events-none absolute z-[2] border"
+          style={{
+            left: renderedSelectionRect.left - desktopBounds.left,
+            top: renderedSelectionRect.top - desktopBounds.top,
+            width: renderedSelectionRect.right - renderedSelectionRect.left,
+            height: renderedSelectionRect.bottom - renderedSelectionRect.top,
+            borderColor: "var(--os-color-selection-bg)",
+            backgroundColor: "rgb(from var(--os-color-selection-bg) r g b / 0.15)",
+          }}
+        />
+      ) : null}
       <RightClickMenu
         position={contextMenuPos}
         onClose={() => {
