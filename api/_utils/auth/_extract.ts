@@ -30,8 +30,9 @@ export function extractAuth(request: VercelRequest): ExtractedAuth {
 
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
-    // Ignore placeholder values that leak when the client has no in-memory token
-    if (token && token !== "null" && token !== "undefined") {
+    // Ignore placeholder / sentinel values — fall through to cookie auth instead.
+    // "__cookie_session__" is the client-side marker indicating cookie-only auth.
+    if (token && token !== "null" && token !== "undefined" && token !== "__cookie_session__") {
       const username = getHeader(request, "x-username");
       return { username, token };
     }

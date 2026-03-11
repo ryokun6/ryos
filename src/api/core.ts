@@ -1,6 +1,18 @@
 import { abortableFetch, type AbortableFetchOptions } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 
+/**
+ * Sentinel value stored in `authToken` when the user is authenticated
+ * via an httpOnly cookie rather than an in-memory token.  Auth gates
+ * treat it as truthy, but it must never be sent as a real Bearer token.
+ */
+export const COOKIE_SESSION_MARKER = "__cookie_session__";
+
+/** Returns true when the token is a real server-issued token (not null / marker). */
+export function isRealToken(token: string | null | undefined): token is string {
+  return !!token && token !== COOKIE_SESSION_MARKER;
+}
+
 export interface ApiAuthContext {
   username?: string | null;
   token?: string | null;
@@ -65,7 +77,7 @@ function buildHeaders(
     merged.set("Content-Type", "application/json");
   }
 
-  if (auth?.token && auth?.username) {
+  if (isRealToken(auth?.token) && auth?.username) {
     merged.set("Authorization", `Bearer ${auth.token}`);
     merged.set("X-Username", auth.username);
   }

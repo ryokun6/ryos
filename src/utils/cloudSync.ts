@@ -1,4 +1,5 @@
 import { abortableFetch } from "@/utils/abortableFetch";
+import { isRealToken } from "@/api/core";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import { getApiUrl } from "@/utils/platform";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -942,11 +943,14 @@ export async function applyCloudSyncEnvelope(
 }
 
 function authHeaders(auth: AuthContext): Record<string, string> {
-  return {
-    Authorization: `Bearer ${auth.authToken}`,
-    "X-Username": auth.username,
+  const h: Record<string, string> = {
     "X-Sync-Session-Id": getSyncSessionId(),
   };
+  if (isRealToken(auth.authToken)) {
+    h["Authorization"] = `Bearer ${auth.authToken}`;
+    h["X-Username"] = auth.username;
+  }
+  return h;
 }
 
 export async function fetchCloudSyncMetadata(

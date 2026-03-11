@@ -4,6 +4,7 @@ import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { loginWithPassword, verifyAuthToken } from "@/api/auth";
+import { isRealToken } from "@/api/core";
 
 export function useAuth() {
   const {
@@ -145,7 +146,7 @@ export function useAuth() {
           const result = await loginWithPassword({
             username: targetUsername,
             password: input.trim(),
-            oldToken: authToken ?? undefined,
+            oldToken: isRealToken(authToken) ? authToken : undefined,
           });
           if (result.token) {
             setAuthToken(result.token);
