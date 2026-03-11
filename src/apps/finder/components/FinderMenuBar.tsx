@@ -47,6 +47,8 @@ export interface FinderMenuBarProps {
   rootFolders?: FileItem[];
   onNewWindow?: () => void;
   instanceId?: string;
+  showSidebar?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export function FinderMenuBar({
@@ -76,6 +78,8 @@ export function FinderMenuBar({
   rootFolders,
   onNewWindow,
   instanceId,
+  showSidebar,
+  onToggleSidebar,
 }: FinderMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -221,6 +225,18 @@ export function FinderMenuBar({
           {t("common.menu.view")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          {isMacOsxTheme && onToggleSidebar && (
+            <>
+              <MenubarCheckboxItem
+                checked={showSidebar}
+                onCheckedChange={() => onToggleSidebar()}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.finder.menu.sidebar", { defaultValue: "Sidebar" })}
+              </MenubarCheckboxItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+            </>
+          )}
           <MenubarCheckboxItem
             checked={viewType === "small"}
             onCheckedChange={(checked) => {

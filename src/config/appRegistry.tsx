@@ -200,7 +200,7 @@ export const appRegistry = {
     helpItems: finderHelpItems,
     metadata: finderMetadata,
     windowConfig: {
-      defaultSize: { width: 400, height: 300 },
+      defaultSize: { width: 680, height: 400 },
       minSize: { width: 300, height: 200 },
     } as WindowConstraints,
   },

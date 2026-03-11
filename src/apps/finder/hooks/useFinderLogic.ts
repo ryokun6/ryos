@@ -145,6 +145,7 @@ export function useFinderLogic({
   );
 
   // UI state
+  const [searchQuery, setSearchQuery] = useState("");
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [storageSpace, setStorageSpace] = useState(calculateStorageSpace());
   const [contextMenuPos, setContextMenuPos] = useState<{
@@ -470,6 +471,12 @@ export function useFinderLogic({
       }
     });
   }, [files, sortType, i18n.language, i18n.resolvedLanguage, currentTheme]);
+
+  const filteredFiles = useMemo(() => {
+    if (!searchQuery.trim()) return sortedFiles;
+    const q = searchQuery.toLowerCase();
+    return sortedFiles.filter((f) => f.name.toLowerCase().includes(q));
+  }, [sortedFiles, searchQuery]);
 
   const handleEmptyTrash = () => {
     setIsEmptyTrashDialogOpen(true);
@@ -1185,6 +1192,33 @@ export function useFinderLogic({
   ];
 
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOSXTheme = currentTheme === "macosx";
+
+  // Sidebar state
+  const [showSidebar, setShowSidebar] = useState(true);
+
+  const SIDEBAR_HIDDEN_FOLDERS = new Set(["/Trash", "/Sites"]);
+
+  const sidebarItems = useMemo(() => {
+    const places = rootFolders
+      .filter((f) => !SIDEBAR_HIDDEN_FOLDERS.has(f.path))
+      .map((f) => ({
+        name: getTranslatedFolderNameFromName(f.name) || f.name,
+        path: f.path,
+        icon: f.icon,
+        divider: false,
+      }));
+    return [
+      { name: t("apps.finder.window.macintoshHd"), path: "/", icon: "/icons/default/disk.png", divider: true },
+      ...places,
+    ];
+  }, [rootFolders, t]);
+
+  const activeSidebarPath = useMemo(() => {
+    if (currentPath === "/") return "/";
+    const firstSegment = currentPath.split("/").filter(Boolean)[0];
+    return "/" + firstSegment;
+  }, [currentPath]);
 
   // Computed window title
   const windowTitle = useMemo(() => {
@@ -1325,7 +1359,11 @@ export function useFinderLogic({
     selectedFile,
     isLoading,
     error,
-    sortedFiles,
+    sortedFiles: filteredFiles,
+
+    // Search
+    searchQuery,
+    setSearchQuery,
 
     // View and sort
     viewType,
@@ -1389,7 +1427,14 @@ export function useFinderLogic({
     rootFolders,
     windowTitle,
     isXpTheme,
+    isMacOSXTheme,
     currentTheme,
+
+    // Sidebar
+    showSidebar,
+    setShowSidebar,
+    sidebarItems,
+    activeSidebarPath,
 
     // Drag handlers
     handleDragOver,

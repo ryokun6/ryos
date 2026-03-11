@@ -341,6 +341,14 @@
   border-right-color: rgba(0, 0, 0, 0.15);
 }
 
+.metal-inset-btn:disabled {
+  cursor: default;
+}
+
+.metal-inset-btn:disabled > * {
+  opacity: 0.35;
+}
+
 .metal-inset-btn.metal-inset-icon {
   padding: 2px 6px;
   min-width: 24px;
