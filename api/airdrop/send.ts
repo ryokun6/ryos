@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const maxDuration = 15;
 
 const TRANSFER_TTL_SECONDS = 300;
-const MAX_CONTENT_SIZE = 512 * 1024; // 512KB
+const MAX_CONTENT_SIZE = 5 * 1024 * 1024; // 5MB
 
 interface SendBody {
   recipient: string;
@@ -32,7 +32,7 @@ export default apiHandler<SendBody>(
     const { recipient, fileName, fileType, content } = body;
 
     if (content.length > MAX_CONTENT_SIZE) {
-      res.status(413).json({ error: "File too large (max 512KB)" });
+      res.status(413).json({ error: "File too large (max 5MB)" });
       return;
     }
 
