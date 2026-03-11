@@ -1069,6 +1069,7 @@
         "forceUploadFailed": "Upload in die Cloud fehlgeschlagen",
         "forceDownloadSuccess": "Download aus der Cloud abgeschlossen",
         "forceDownloadFailed": "Download aus der Cloud fehlgeschlagen",
+        "forceDownloadNoData": "Keine Cloud-Daten für aktivierte Elemente gefunden",
         "forceSyncNoDomains": "Aktivieren Sie zuerst mindestens ein Auto-Sync-Element",
         "confirmForceUpload": "In die Cloud hochladen?",
         "confirmForceUploadDesc": "Die Cloud-Daten werden mit den aktuellen Daten dieses Geräts für jedes aktivierte Auto-Sync-Element überschrieben.",

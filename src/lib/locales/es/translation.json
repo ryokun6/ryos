@@ -1069,6 +1069,7 @@
         "forceUploadFailed": "Error al subir a la nube",
         "forceDownloadSuccess": "Descarga desde la nube completada",
         "forceDownloadFailed": "Error al descargar desde la nube",
+        "forceDownloadNoData": "No se encontraron datos en la nube para los elementos habilitados",
         "forceSyncNoDomains": "Habilita al menos un elemento de Sincronización Automática primero",
         "confirmForceUpload": "¿Subir a la nube?",
         "confirmForceUploadDesc": "Esto sobrescribirá los datos en la nube con los datos actuales de este dispositivo para cada elemento de Sincronización Automática habilitado.",

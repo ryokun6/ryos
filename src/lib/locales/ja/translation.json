@@ -1069,6 +1069,7 @@
         "forceUploadFailed": "クラウドへのアップロードに失敗しました",
         "forceDownloadSuccess": "クラウドからのダウンロードが完了しました",
         "forceDownloadFailed": "クラウドからのダウンロードに失敗しました",
+        "forceDownloadNoData": "有効な項目のクラウドデータが見つかりませんでした",
         "forceSyncNoDomains": "まず自動同期項目を1つ以上有効にしてください",
         "confirmForceUpload": "クラウドにアップロードしますか？",
         "confirmForceUploadDesc": "有効な自動同期項目について、クラウドのデータがこのデバイスの現在のデータで上書きされます。",

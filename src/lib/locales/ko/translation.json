@@ -1069,6 +1069,7 @@
         "forceUploadFailed": "클라우드 업로드에 실패했습니다",
         "forceDownloadSuccess": "클라우드 다운로드가 완료되었습니다",
         "forceDownloadFailed": "클라우드 다운로드에 실패했습니다",
+        "forceDownloadNoData": "활성화된 항목에 대한 클라우드 데이터가 없습니다",
         "forceSyncNoDomains": "먼저 자동 동기화 항목을 하나 이상 활성화하십시오",
         "confirmForceUpload": "클라우드에 업로드하시겠습니까?",
         "confirmForceUploadDesc": "활성화된 자동 동기화 항목에 대해 클라우드 데이터가 이 기기의 현재 데이터로 덮어쓰여집니다.",

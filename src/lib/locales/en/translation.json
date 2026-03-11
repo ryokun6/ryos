@@ -2355,6 +2355,7 @@
         "forceUploadFailed": "Failed to upload to cloud",
         "forceDownloadSuccess": "Download from cloud completed",
         "forceDownloadFailed": "Failed to download from cloud",
+        "forceDownloadNoData": "No cloud data found for enabled items",
         "forceSyncNoDomains": "Enable at least one Auto Sync item first",
         "confirmForceUpload": "Upload to Cloud?",
         "confirmForceUploadDesc": "This will overwrite cloud data with this device's current data for each enabled Auto Sync item.",

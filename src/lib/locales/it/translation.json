@@ -1069,6 +1069,7 @@
         "forceUploadFailed": "Caricamento sul cloud non riuscito",
         "forceDownloadSuccess": "Scaricamento dal cloud completato",
         "forceDownloadFailed": "Scaricamento dal cloud non riuscito",
+        "forceDownloadNoData": "Nessun dato cloud trovato per gli elementi abilitati",
         "forceSyncNoDomains": "Abilita prima almeno un elemento di Sincronizzazione Automatica",
         "confirmForceUpload": "Caricare sul cloud?",
         "confirmForceUploadDesc": "I dati nel cloud verranno sovrascritti con i dati attuali di questo dispositivo per ogni elemento di Sincronizzazione Automatica abilitato.",

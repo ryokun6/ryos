@@ -862,6 +862,12 @@ export function useControlPanelsLogic({
     setIsCloudForceDownloading(true);
 
     const failures: string[] = [];
+    let appliedCount = 0;
+
+    const isNoDataError = (msg: string) =>
+      /no \w+ state found/i.test(msg) ||
+      msg === "Sync download response was invalid." ||
+      msg === "State download response was invalid.";
 
     try {
       for (const domain of enabledDomains) {
@@ -872,12 +878,15 @@ export function useControlPanelsLogic({
           });
           syncStore.markRemoteApplied(domain, metadata.updatedAt);
           syncStore.updateRemoteMetadataForDomain(domain, metadata);
+          appliedCount++;
         } catch (error) {
           const message =
             error instanceof Error
               ? error.message
               : t("apps.control-panels.cloudSync.forceDownloadFailed");
-          failures.push(message);
+          if (!isNoDataError(message)) {
+            failures.push(message);
+          }
         }
       }
 
@@ -885,6 +894,11 @@ export function useControlPanelsLogic({
         toast.error(t("apps.control-panels.cloudSync.forceDownloadFailed"), {
           description: failures[0],
         });
+        return;
+      }
+
+      if (appliedCount === 0) {
+        toast.info(t("apps.control-panels.cloudSync.forceDownloadNoData"));
         return;
       }
 

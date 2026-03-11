@@ -1069,6 +1069,7 @@
         "forceUploadFailed": "Échec du téléversement vers le cloud",
         "forceDownloadSuccess": "Téléchargement depuis le cloud terminé",
         "forceDownloadFailed": "Échec du téléchargement depuis le cloud",
+        "forceDownloadNoData": "Aucune donnée cloud trouvée pour les éléments activés",
         "forceSyncNoDomains": "Activez d'abord au moins un élément de synchronisation automatique",
         "confirmForceUpload": "Téléverser vers le cloud ?",
         "confirmForceUploadDesc": "Les données du cloud seront remplacées par les données actuelles de cet appareil pour chaque élément de synchronisation automatique activé.",

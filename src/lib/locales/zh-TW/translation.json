@@ -1069,6 +1069,7 @@
         "forceUploadFailed": "上傳至雲端失敗",
         "forceDownloadSuccess": "從雲端下載已完成",
         "forceDownloadFailed": "從雲端下載失敗",
+        "forceDownloadNoData": "未找到已啟用項目的雲端資料",
         "forceSyncNoDomains": "請先啟用至少一個自動同步項目",
         "confirmForceUpload": "上傳至雲端？",
         "confirmForceUploadDesc": "每個已啟用的自動同步項目的雲端資料將被此裝置的目前資料覆蓋。",

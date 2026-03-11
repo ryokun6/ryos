@@ -1069,6 +1069,7 @@
         "forceUploadFailed": "Falha ao enviar para a nuvem",
         "forceDownloadSuccess": "Download da nuvem concluído",
         "forceDownloadFailed": "Falha ao baixar da nuvem",
+        "forceDownloadNoData": "Nenhum dado na nuvem encontrado para os itens ativados",
         "forceSyncNoDomains": "Ative pelo menos um item de Sincronização Automática primeiro",
         "confirmForceUpload": "Enviar para a nuvem?",
         "confirmForceUploadDesc": "Os dados na nuvem serão substituídos pelos dados atuais deste dispositivo para cada item de Sincronização Automática ativado.",
