@@ -27,14 +27,14 @@ interface ServerPanelProps {
 
 export function ServerPanel({ onRefresh }: ServerPanelProps) {
   const { t } = useTranslation();
-  const { username, authToken } = useAuth();
+  const { username, isAuthenticated } = useAuth();
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
 
     setIsLoading(true);
     setError(null);
@@ -47,7 +47,7 @@ export function ServerPanel({ onRefresh }: ServerPanelProps) {
           throwOnHttpError: false,
           retry: { maxAttempts: 1, initialDelayMs: 100 },
         }),
-        getAdminServerInfo<ServerInfo>({ username, token: authToken }),
+        getAdminServerInfo<ServerInfo>(),
       ]);
 
       if (versionRes.ok) {
@@ -70,7 +70,7 @@ export function ServerPanel({ onRefresh }: ServerPanelProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [username, authToken]);
+  }, [username, isAuthenticated]);
 
   useEffect(() => {
     fetchData();

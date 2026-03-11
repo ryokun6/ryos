@@ -11,8 +11,6 @@ import {
   reactListenSession,
   syncListenSession,
 } from "@/api/listen";
-import type { ApiAuthContext } from "@/api/core";
-
 export interface ListenTrackMeta {
   title: string;
   artist?: string;
@@ -133,15 +131,10 @@ function generateAnonymousId(): string {
   return `anon-${Math.random().toString(36).substring(2, 10)}`;
 }
 
-function buildSessionAuthContext(username: string): ApiAuthContext | null {
-  const { username: authUsername, authToken } = useChatsStore.getState();
-  if (!authUsername || !authToken) return null;
-  if (authUsername.toLowerCase() !== username.toLowerCase()) return null;
-
-  return {
-    username: authUsername,
-    token: authToken,
-  };
+function hasMatchingAuth(username: string): boolean {
+  const { username: authUsername, isAuthenticated } = useChatsStore.getState();
+  if (!authUsername || !isAuthenticated) return false;
+  return authUsername.toLowerCase() === username.toLowerCase();
 }
 
 let pusherClient: ReturnType<typeof getPusherClient> | null = null;
@@ -315,13 +308,12 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     createSession: async (username: string) => {
-      const auth = buildSessionAuthContext(username);
-      if (!auth) {
+      if (!hasMatchingAuth(username)) {
         return { ok: false, error: "Authentication required" };
       }
 
       try {
-        const data = await createListenSession(auth, username);
+        const data = await createListenSession(username);
         const session = data.session as ListenSession;
         const identity = updateIdentityFlags(session, username);
 
@@ -349,18 +341,14 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         // If no username, join as anonymous
         const isAnonymous = !username;
         const anonymousId = isAnonymous ? generateAnonymousId() : null;
-        const auth = !isAnonymous && username
-          ? buildSessionAuthContext(username)
-          : null;
 
-        if (!isAnonymous && !auth) {
+        if (!isAnonymous && username && !hasMatchingAuth(username)) {
           return { ok: false, error: "Authentication required" };
         }
 
         const data = await joinListenSession(
           sessionId,
-          isAnonymous ? { anonymousId: anonymousId || undefined } : { username },
-          auth || undefined
+          isAnonymous ? { anonymousId: anonymousId || undefined } : { username }
         );
         const session = data.session as ListenSession;
         const identity = isAnonymous
@@ -407,18 +395,13 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
 
       try {
-        const auth = !isAnonymous && username
-          ? buildSessionAuthContext(username)
-          : null;
-
-        if (!isAnonymous && !auth) {
+        if (!isAnonymous && username && !hasMatchingAuth(username)) {
           return { ok: false, error: "Authentication required" };
         }
 
         await leaveListenSession(
           currentSession.id,
-          isAnonymous ? { anonymousId: anonymousId || undefined } : { username: username || undefined },
-          auth || undefined
+          isAnonymous ? { anonymousId: anonymousId || undefined } : { username: username || undefined }
         );
 
         unsubscribeFromSession();
@@ -437,8 +420,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         return { ok: false, error: "No active session" };
       }
 
-      const auth = buildSessionAuthContext(username);
-      if (!auth) {
+      if (!hasMatchingAuth(username)) {
         return { ok: false, error: "Authentication required" };
       }
 
@@ -448,8 +430,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           {
             username,
             state: payload,
-          },
-          auth
+          }
         );
 
         return { ok: true };
@@ -471,16 +452,14 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         return { ok: false, error: "Sign in to send reactions" };
       }
 
-      const auth = buildSessionAuthContext(username);
-      if (!auth) {
+      if (!hasMatchingAuth(username)) {
         return { ok: false, error: "Authentication required" };
       }
 
       try {
         await reactListenSession(
           currentSession.id,
-          { username, emoji },
-          auth
+          { username, emoji }
         );
 
         return { ok: true };

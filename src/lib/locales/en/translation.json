@@ -1081,6 +1081,7 @@
         }
       },
       "tokenStatus": {
+        "authenticated": "Logged in",
         "clickToRefresh": "Click to manually refresh token",
         "refreshing": "Refreshing...",
         "refresh": "Refresh",

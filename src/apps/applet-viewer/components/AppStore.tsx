@@ -29,8 +29,8 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const feedRef = useRef<AppStoreFeedRef>(null);
   const username = useChatsStore((state) => state.username);
-  const authToken = useChatsStore((state) => state.authToken);
-  const isAdmin = username?.toLowerCase() === "ryo" && !!authToken;
+  const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
+  const isAdmin = username?.toLowerCase() === "ryo" && !!isAuthenticated;
   const isMacTheme = theme === "macosx";
   const isSystem7Theme = theme === "system7";
   const currentTheme = useThemeStore((state) => state.current);
@@ -370,10 +370,6 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "X-Username": username!,
-          },
           timeout: 15000,
           retry: { maxAttempts: 1 },
         }
@@ -397,11 +393,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-            "X-Username": username!,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ featured: !currentFeatured }),
           timeout: 15000,
           retry: { maxAttempts: 1 },

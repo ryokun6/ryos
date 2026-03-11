@@ -372,11 +372,11 @@ async function saveLyricOffsetToServer(
   trackId: string,
   lyricOffset: number
 ): Promise<boolean> {
-  // Get auth credentials from chats store
-  const { username, authToken } = useChatsStore.getState();
+  // Get auth state from chats store
+  const { username, isAuthenticated } = useChatsStore.getState();
   
   // Skip if not authenticated
-  if (!username || !authToken) {
+  if (!username || !isAuthenticated) {
     console.log(`[iPod Store] Skipping lyric offset save for ${trackId} - user not logged in`);
     return false;
   }
@@ -390,8 +390,6 @@ async function saveLyricOffsetToServer(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${authToken}`,
-          "X-Username": username,
         },
         body: JSON.stringify({
           lyricOffset,
@@ -490,11 +488,11 @@ async function saveLyricsSourceToServer(
   trackId: string,
   lyricsSource: LyricsSource | null
 ): Promise<void> {
-  // Get auth credentials from chats store
-  const { username, authToken } = useChatsStore.getState();
+  // Get auth state from chats store
+  const { username, isAuthenticated } = useChatsStore.getState();
   
   // Skip if not authenticated
-  if (!username || !authToken) {
+  if (!username || !isAuthenticated) {
     console.log(`[iPod Store] Skipping lyrics source save for ${trackId} - user not logged in`);
     return;
   }
@@ -506,8 +504,6 @@ async function saveLyricsSourceToServer(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${authToken}`,
-          "X-Username": username,
         },
         body: JSON.stringify({
           lyricsSource: lyricsSource || undefined,

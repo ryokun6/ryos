@@ -130,7 +130,7 @@ export default apiHandler(
             const token = generateAuthToken();
             await storeToken(redis, username, token);
             res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
-            res.status(200).json({ token, user: { username } });
+            res.status(200).json({ user: { username } });
             return;
           }
         }
@@ -159,6 +159,6 @@ export default apiHandler(
     await storeToken(redis, username, token);
 
     res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
-    res.status(201).json({ token, user: { username } });
+    res.status(201).json({ user: { username } });
   }
 );

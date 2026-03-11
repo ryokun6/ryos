@@ -2,15 +2,14 @@
  * Auth extraction utilities - Extract auth credentials from requests (Node.js runtime)
  *
  * Checks (in order):
- *   1. Authorization header + X-Username header  (explicit)
- *   2. httpOnly `ryos_auth` cookie               (implicit / after page reload)
+ *   1. httpOnly `ryos_auth` cookie                (primary — all browser clients)
+ *   2. Authorization header + X-Username header   (legacy migration & programmatic)
  */
 
 import type { VercelRequest } from "@vercel/node";
 import type { ExtractedAuth } from "./_types.js";
 import { parseAuthCookie } from "../_cookie.js";
 
-// Helper to get header value from Node.js IncomingMessage headers
 function getHeader(req: VercelRequest, name: string): string | null {
   const value = req.headers[name.toLowerCase()];
   if (Array.isArray(value)) {
@@ -22,25 +21,23 @@ function getHeader(req: VercelRequest, name: string): string | null {
 /**
  * Extract authentication credentials from request.
  *
- * Prefers explicit Authorization + X-Username headers. Falls back to the
- * httpOnly auth cookie when headers are absent.
+ * Primary: httpOnly `ryos_auth` cookie (all browser clients).
+ * Fallback: Authorization header (legacy token-to-cookie migration &
+ * programmatic API clients).
  */
 export function extractAuth(request: VercelRequest): ExtractedAuth {
-  const authHeader = getHeader(request, "authorization");
+  const cookieAuth = parseAuthCookie(request.headers.cookie);
+  if (cookieAuth) {
+    return { username: cookieAuth.username, token: cookieAuth.token };
+  }
 
+  const authHeader = getHeader(request, "authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
-    // Ignore placeholder / sentinel values — fall through to cookie auth instead.
-    // "__cookie_session__" is the client-side marker indicating cookie-only auth.
     if (token && token !== "null" && token !== "undefined" && token !== "__cookie_session__") {
       const username = getHeader(request, "x-username");
       return { username, token };
     }
-  }
-
-  const cookieAuth = parseAuthCookie(request.headers.cookie);
-  if (cookieAuth) {
-    return { username: cookieAuth.username, token: cookieAuth.token };
   }
 
   return { username: null, token: null };

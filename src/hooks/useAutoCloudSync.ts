@@ -72,7 +72,7 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
 
 export function useAutoCloudSync() {
   const username = useChatsStore((state) => state.username);
-  const authToken = useChatsStore((state) => state.authToken);
+  const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
   const autoSyncEnabled = useCloudSyncStore((state) => state.autoSyncEnabled);
   const syncFiles = useCloudSyncStore((state) => state.syncFiles);
   const syncSettings = useCloudSyncStore((state) => state.syncSettings);
@@ -105,7 +105,7 @@ export function useAutoCloudSync() {
   const wallpaperSeedDoneRef = useRef(false);
   const contactsSeedDoneRef = useRef(false);
 
-  const isSyncActive = Boolean(username && authToken && autoSyncEnabled);
+  const isSyncActive = Boolean(username && isAuthenticated && autoSyncEnabled);
 
   const enabledDomainsKey = useMemo(
     () =>
@@ -154,7 +154,7 @@ export function useAutoCloudSync() {
     async (domain: CloudSyncDomain) => {
       clearUploadTimer(domain);
 
-      if (!username || !authToken || !isDomainEnabled(domain)) {
+      if (!username || !isAuthenticated || !isDomainEnabled(domain)) {
         return;
       }
 
@@ -165,7 +165,7 @@ export function useAutoCloudSync() {
         console.log(`[CloudSync] Uploading ${domain}...`);
         const metadata = await uploadCloudSyncDomain(domain, {
           username,
-          authToken,
+          isAuthenticated,
         });
 
         console.log(`[CloudSync] Upload ${domain} succeeded`, metadata.updatedAt);
@@ -186,7 +186,7 @@ export function useAutoCloudSync() {
         useCloudSyncStore.getState().markUploadFailure(domain, message);
       }
     },
-    [authToken, clearUploadTimer, isDomainEnabled, username]
+    [isAuthenticated, clearUploadTimer, isDomainEnabled, username]
   );
 
   const queueUpload = useCallback(
@@ -218,7 +218,7 @@ export function useAutoCloudSync() {
 
   const handleRealtimeDomainUpdate = useCallback(
     async (domain: CloudSyncDomain, remoteUpdatedAt: string) => {
-      if (!username || !authToken || !isDomainEnabled(domain)) return;
+      if (!username || !isAuthenticated || !isDomainEnabled(domain)) return;
       if (realtimeInFlightRef.current.has(domain)) return;
 
       const syncState = useCloudSyncStore.getState();
@@ -242,7 +242,7 @@ export function useAutoCloudSync() {
         console.log(`[CloudSync] Realtime download: ${domain}`);
         const appliedMetadata = await downloadAndApplyCloudSyncDomain(domain, {
           username,
-          authToken,
+          isAuthenticated,
         });
 
         useCloudSyncStore
@@ -258,11 +258,11 @@ export function useAutoCloudSync() {
         realtimeInFlightRef.current.delete(domain);
       }
     },
-    [authToken, isDomainEnabled, username]
+    [isAuthenticated, isDomainEnabled, username]
   );
 
   const checkRemoteUpdates = useCallback(async () => {
-    if (!username || !authToken || !isSyncActive || checkInFlightRef.current) {
+    if (!username || !isAuthenticated || !isSyncActive || checkInFlightRef.current) {
       return;
     }
 
@@ -270,7 +270,7 @@ export function useAutoCloudSync() {
     useCloudSyncStore.getState().setCheckingRemote(true);
 
     try {
-      const metadataMap = await fetchCloudSyncMetadata({ username, authToken });
+      const metadataMap = await fetchCloudSyncMetadata({ username, isAuthenticated });
       useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
       useCloudSyncStore.getState().setLastError(null);
 
@@ -310,7 +310,7 @@ export function useAutoCloudSync() {
 
         const appliedMetadata = await downloadAndApplyCloudSyncDomain(domain, {
           username,
-          authToken,
+          isAuthenticated,
         });
 
         useCloudSyncStore
@@ -369,7 +369,7 @@ export function useAutoCloudSync() {
       useCloudSyncStore.getState().setCheckingRemote(false);
       checkInFlightRef.current = false;
     }
-  }, [authToken, isDomainEnabled, isSyncActive, queueUpload, username]);
+  }, [isAuthenticated, isDomainEnabled, isSyncActive, queueUpload, username]);
 
   const handleRealtimeDomainUpdateRef = useRef(handleRealtimeDomainUpdate);
   handleRealtimeDomainUpdateRef.current = handleRealtimeDomainUpdate;

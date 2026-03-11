@@ -151,21 +151,20 @@ function StatCard({
 }
 
 export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
-  const { username, authToken } = useAuth();
+  const { username, isAuthenticated } = useAuth();
   const [data, setData] = useState<AnalyticsDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rangeDays, setRangeDays] = useState(7);
 
   const fetchData = useCallback(async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
       const result = await getAdminAnalytics<AnalyticsDetail>(
-        { username, token: authToken },
         rangeDays,
         true
       );
@@ -176,7 +175,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [username, authToken, rangeDays]);
+  }, [username, isAuthenticated, rangeDays]);
 
   useEffect(() => {
     fetchData();

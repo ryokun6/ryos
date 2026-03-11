@@ -47,7 +47,7 @@ interface ChatsMenuBarProps {
   onDecreaseFontSize: () => void;
   onResetFontSize: () => void;
   username?: string | null;
-  authToken?: string | null;
+  isAuthenticated?: boolean;
   onVerifyToken: () => void;
   isVerifyDialogOpen: boolean;
   setVerifyDialogOpen: (open: boolean) => void;
@@ -91,7 +91,7 @@ export function ChatsMenuBar({
   onDecreaseFontSize,
   onResetFontSize,
   username,
-  authToken,
+  isAuthenticated,
   onVerifyToken,
   isVerifyDialogOpen,
   setVerifyDialogOpen,
@@ -184,7 +184,7 @@ export function ChatsMenuBar({
             <MenubarSeparator className="h-[2px] bg-black my-1" />
 
             {/* Account Section */}
-            {username && authToken ? (
+            {username && isAuthenticated ? (
               <>
                 <MenubarItem
                   onSelect={openTelegramDialog}

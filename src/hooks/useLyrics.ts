@@ -41,7 +41,7 @@ interface UseLyricsParams {
   /** Auth credentials (required for force refresh / changing lyrics source) */
   auth?: {
     username: string;
-    authToken: string;
+    isAuthenticated: boolean;
   };
 }
 
@@ -121,10 +121,10 @@ export function useLyrics({
   const translationInfoRef = useRef<{ info: TranslationStreamInfo; language: string } | undefined>(undefined);
   const authCredentials = useMemo(
     () =>
-      auth?.username && auth?.authToken
-        ? { username: auth.username, authToken: auth.authToken }
+      auth?.username && auth?.isAuthenticated
+        ? { username: auth.username, isAuthenticated: auth.isAuthenticated }
         : undefined,
-    [auth?.username, auth?.authToken]
+    [auth?.username, auth?.isAuthenticated]
   );
 
   // Clear cached translation/furigana/soramimi info when cache bust trigger changes (force refresh)
@@ -215,12 +215,7 @@ export function useLyrics({
       };
     }
 
-    // Build headers with optional auth
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (authCredentials) {
-      headers["Authorization"] = `Bearer ${authCredentials.authToken}`;
-      headers["X-Username"] = authCredentials.username;
-    }
 
     abortableFetch(getApiUrl(`/api/songs/${effectSongId}`), {
       method: "POST",

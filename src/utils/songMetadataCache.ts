@@ -79,7 +79,7 @@ interface UnifiedSongDocument {
  */
 export interface SongMetadataAuthCredentials {
   username: string;
-  authToken: string;
+  isAuthenticated: boolean;
 }
 
 type BulkImportSong = {
@@ -257,7 +257,7 @@ export async function deleteSongMetadata(
   try {
     await deleteSongById(youtubeId, {
       username: auth.username,
-      token: auth.authToken,
+      isAuthenticated: auth.isAuthenticated,
     });
     console.log(`[SongMetadataCache] Deleted metadata for ${youtubeId}`);
     return true;
@@ -296,7 +296,7 @@ export async function deleteAllSongMetadata(
     console.log(`[SongMetadataCache] Deleting all songs...`);
     const data = await deleteAllSongs({
       username: auth.username,
-      token: auth.authToken,
+      isAuthenticated: auth.isAuthenticated,
     });
     console.log(`[SongMetadataCache] Deleted ${data.deleted} songs`);
     return { success: data.deleted, total: data.deleted };
@@ -351,7 +351,7 @@ export async function saveSongMetadata(
       },
       {
         username: auth.username,
-        token: auth.authToken,
+        isAuthenticated: auth.isAuthenticated,
       }
     );
     console.log(
@@ -465,7 +465,7 @@ export async function bulkImportSongMetadata(
           songs: batch as Record<string, unknown>[],
           auth: {
             username: auth.username,
-            token: auth.authToken,
+            isAuthenticated: auth.isAuthenticated,
           },
           timeout: 30000,
         });
@@ -707,7 +707,7 @@ export async function saveSongMetadataFromTrack(
   options?: { isShare?: boolean }
 ): Promise<boolean> {
   // Skip if not authenticated
-  if (!auth || !auth.username || !auth.authToken) {
+  if (!auth || !auth.isAuthenticated) {
     console.log(`[SongMetadataCache] Skipping save for ${track.id} - user not logged in`);
     return false;
   }

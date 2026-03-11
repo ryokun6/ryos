@@ -165,12 +165,12 @@ export function useKaraokeLogic({
   );
 
   // Auth for protected operations (force refresh, change lyrics source)
-  const { username, authToken } = useChatsStore(
-    useShallow((s) => ({ username: s.username, authToken: s.authToken }))
+  const { username, isAuthenticated } = useChatsStore(
+    useShallow((s) => ({ username: s.username, isAuthenticated: s.isAuthenticated }))
   );
   const auth = useMemo(
-    () => (username && authToken ? { username, authToken } : undefined),
-    [username, authToken]
+    () => (username && isAuthenticated ? { username, isAuthenticated } : undefined),
+    [username, isAuthenticated]
   );
 
   const {
@@ -864,8 +864,8 @@ export function useKaraokeLogic({
       // Save song metadata to cache when sharing (requires auth)
       // Pass isShare: true to update createdBy (if allowed)
       if (track) {
-        const { username, authToken } = useChatsStore.getState();
-        const auth = username && authToken ? { username, authToken } : null;
+        const { username, isAuthenticated } = useChatsStore.getState();
+        const auth = username && isAuthenticated ? { username, isAuthenticated } : null;
         saveSongMetadataFromTrack(track, auth, { isShare: true }).catch((error) => {
           console.error("[Karaoke] Error saving song metadata to cache:", error);
         });

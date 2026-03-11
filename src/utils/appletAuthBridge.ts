@@ -1,5 +1,10 @@
 export const APPLET_AUTH_MESSAGE_TYPE = "ryos-applet-auth";
 
+/**
+ * Injected into applet iframes. Requests the parent's username for
+ * display/attribution, and patches fetch to include credentials on
+ * same-origin /api/applet-ai requests so the httpOnly auth cookie is sent.
+ */
 export const APPLET_AUTH_BRIDGE_SCRIPT = `
 <script>
   (function () {
@@ -87,19 +92,6 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
 
       window.fetch = function (input, init) {
         return authReady.then(function () {
-          var payload = currentAuthPayload;
-          if (!payload || (!payload.username && !payload.authToken)) {
-            return originalFetch(input, init);
-          }
-
-          var extraHeaders = {};
-          if (payload.username) {
-            extraHeaders["X-Username"] = payload.username;
-          }
-          if (payload.authToken && payload.authToken !== "__cookie_session__") {
-            extraHeaders["Authorization"] = "Bearer " + payload.authToken;
-          }
-
           var shouldAugment = function (url) {
             try {
               var resolved = new URL(url, document.baseURI || window.location.origin);
@@ -107,22 +99,6 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
             } catch (err) {
               return false;
             }
-          };
-
-          var mergeHeaders = function (primary, secondary) {
-            var headers = new Headers(primary || undefined);
-            if (secondary) {
-              new Headers(secondary).forEach(function (value, key) {
-                headers.set(key, value);
-              });
-            }
-            Object.keys(extraHeaders).forEach(function (key) {
-              var value = extraHeaders[key];
-              if (value) {
-                headers.set(key, value);
-              }
-            });
-            return headers;
           };
 
           var url;
@@ -136,15 +112,8 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
             return originalFetch(input, init);
           }
 
-          if (input instanceof Request) {
-            var headers = mergeHeaders(input.headers, init && init.headers);
-            var augmentedRequest = new Request(input, { headers: headers });
-            return originalFetch(augmentedRequest);
-          }
-
-          var headersForInit = mergeHeaders(init && init.headers);
           var augmentedInit = init ? Object.assign({}, init) : {};
-          augmentedInit.headers = headersForInit;
+          augmentedInit.credentials = "include";
           return originalFetch(input, augmentedInit);
         });
       };

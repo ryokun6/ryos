@@ -1,6 +1,12 @@
-import { apiRequest, type ApiAuthContext } from "@/api/core";
+import { apiRequest } from "@/api/core";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
+
+/** Auth context for cookie-based auth (credentials sent automatically via credentials: "include") */
+export interface SongsAuthContext {
+  username: string;
+  isAuthenticated: boolean;
+}
 
 export interface SongListQuery {
   include?: string;
@@ -58,52 +64,43 @@ export async function getSongById<TSong = Record<string, unknown>>(
 export async function updateSongById<TPayload extends Record<string, unknown>>(
   songId: string,
   payload: TPayload,
-  auth: ApiAuthContext
+  _auth: SongsAuthContext
 ): Promise<SongSaveResponse> {
   return apiRequest<SongSaveResponse, TPayload>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "POST",
-    auth,
     body: payload,
   });
 }
 
 export async function deleteSongById(
   songId: string,
-  auth: ApiAuthContext
+  _auth: SongsAuthContext
 ): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "DELETE",
-    auth,
   });
 }
 
 export async function deleteAllSongs(
-  auth: ApiAuthContext
+  _auth: SongsAuthContext
 ): Promise<SongDeleteAllResponse> {
   return apiRequest<SongDeleteAllResponse>({
     path: "/api/songs",
     method: "DELETE",
-    auth,
   });
 }
 
 export async function importSongsBatch(params: {
   songs: Record<string, unknown>[];
-  auth: ApiAuthContext;
+  auth: SongsAuthContext;
   timeout?: number;
 }): Promise<SongImportBatchResult> {
   const response = await abortableFetch(getApiUrl("/api/songs"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(params.auth.token && params.auth.username
-        ? {
-            Authorization: `Bearer ${params.auth.token}`,
-            "X-Username": params.auth.username,
-          }
-        : {}),
     },
     body: JSON.stringify({ action: "import", songs: params.songs }),
     timeout: params.timeout ?? 30000,

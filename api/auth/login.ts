@@ -108,6 +108,6 @@ export default apiHandler(
     await storeToken(redis, username, token);
 
     res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
-    res.status(200).json({ token, username });
+    res.status(200).json({ username });
   }
 );

@@ -7,10 +7,8 @@ import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { isRealToken } from "@/api/core";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
-import { useChatsStoreShallow } from "@/stores/helpers";
 import { abortableFetch } from "@/utils/abortableFetch";
 
 // Helper function to get system state for AI chat
@@ -111,17 +109,6 @@ export function useRyoChat({
   roomMessages = [],
 }: UseRyoChatProps) {
   const { t } = useTranslation();
-  // Pull current auth credentials from store (reactive)
-  const { authToken, username } = useChatsStoreShallow((state) => ({
-    authToken: state.authToken,
-    username: state.username,
-  }));
-
-  const authHeaders: Record<string, string> = {};
-  if (isRealToken(authToken) && username) {
-    authHeaders["Authorization"] = `Bearer ${authToken}`;
-    authHeaders["X-Username"] = username;
-  }
 
   // Create a separate AI chat hook for @ryo mentions in chat rooms
   const {
@@ -134,7 +121,6 @@ export function useRyoChat({
       body: {
         systemState: getSystemState(),
       },
-      headers: authHeaders,
     }),
     // We no longer stream client-side AI to avoid spoofing. onFinish unused.
   });
@@ -159,17 +145,11 @@ export function useRyoChat({
         },
       };
 
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (isRealToken(authToken) && username) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-        headers["X-Username"] = username;
-      }
-
       if (!currentRoomId) return;
       try {
         await abortableFetch(getApiUrl("/api/ai/ryo-reply"), {
           method: "POST",
-          headers,
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             roomId: currentRoomId,
             prompt: messageContent,
@@ -184,7 +164,7 @@ export function useRyoChat({
 
       onScrollToBottom();
     },
-    [roomMessages, currentRoomId, authToken, username, onScrollToBottom]
+    [roomMessages, currentRoomId, onScrollToBottom]
   );
 
   const detectAndProcessMention = useCallback(

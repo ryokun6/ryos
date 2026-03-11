@@ -87,7 +87,6 @@ export default function HtmlPreview({
   const { saveFile } = useFileSystem("/", { skipLoad: true });
   const launchApp = useLaunchApp();
   const username = useChatsStore((state) => state.username);
-  const authToken = useChatsStore((state) => state.authToken);
   const previewRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
@@ -117,10 +116,7 @@ export default function HtmlPreview({
           {
             type: APPLET_AUTH_MESSAGE_TYPE,
             action: "response",
-            payload: {
-              username: username ?? null,
-              authToken: authToken ?? null,
-            },
+            payload: { username: username ?? null },
           },
           window.location.origin
         );
@@ -128,7 +124,7 @@ export default function HtmlPreview({
         console.warn("[applet-html-preview] Failed to post auth payload:", error);
       }
     },
-    [username, authToken]
+    [username]
   );
 
   // Ensure base URL has a protocol

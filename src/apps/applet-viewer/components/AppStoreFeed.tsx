@@ -42,9 +42,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const hasFetchedRef = useRef(false);
   const sessionSeedRef = useRef(Math.floor(Math.random() * 1000000));
   const currentTheme = useThemeStore((state) => state.current);
-  const { username, authToken } = useChatsStoreShallow((state) => ({
+  const { username, isAuthenticated } = useChatsStoreShallow((state) => ({
     username: state.username,
-    authToken: state.authToken,
+    isAuthenticated: state.isAuthenticated,
   }));
 
   // Stacking constants (similar to TimeMachineView)
@@ -113,10 +113,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
           {
             type: APPLET_AUTH_MESSAGE_TYPE,
             action: "response",
-            payload: {
-              username: username ?? null,
-              authToken: authToken ?? null,
-            },
+            payload: { username: username ?? null },
           },
           window.location.origin
         );
@@ -124,7 +121,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         console.warn("[AppStoreFeed] Failed to post auth payload:", error);
       }
     },
-    [username, authToken]
+    [username]
   );
 
   // Listen for auth requests from iframes
@@ -176,7 +173,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     iframes?.forEach((iframe) => {
       sendAuthPayload(iframe.contentWindow || undefined);
     });
-  }, [username, authToken, sendAuthPayload, appletContents]);
+  }, [username, isAuthenticated, sendAuthPayload, appletContents]);
 
   const fetchApplets = useCallback(async () => {
     // Check if offline

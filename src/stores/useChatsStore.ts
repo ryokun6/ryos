@@ -10,7 +10,6 @@ import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { COOKIE_SESSION_MARKER, isRealToken } from "@/api/core";
 import {
   getBulkMessages as getBulkMessagesApi,
   getRoomMessages as getRoomMessagesApi,
@@ -23,9 +22,6 @@ const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
 // Legacy key kept only so we can clean it up during migration
 const LEGACY_AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 
-// Token constants
-const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000; // 83 days in ms (refresh 7 days before 90-day expiry)
-const TOKEN_LAST_REFRESH_KEY = "_token_refresh_time_";
 const MESSAGE_HISTORY_CAP = 500;
 
 const capRoomMessages = (messages: ChatMessage[]): ChatMessage[] =>
@@ -89,22 +85,6 @@ const consumeLegacyAuthToken = (): string | null => {
   }
 };
 
-/**
- * Build auth headers when an in-memory token is available.
- * When token is null or the cookie-session marker, the caller relies
- * on the httpOnly cookie (sent automatically via `credentials: "include"`).
- */
-const buildOptionalAuthHeaders = (
-  username: string | null,
-  token: string | null
-): Record<string, string> => {
-  const headers: Record<string, string> = {};
-  if (isRealToken(token) && username) {
-    headers["Authorization"] = `Bearer ${token}`;
-    headers["X-Username"] = username;
-  }
-  return headers;
-};
 
 // Basic HTML entity decoder to normalize server-escaped message content
 const decodeHtmlEntities = (str: string): string =>
@@ -130,66 +110,28 @@ const clearApiUnavailable = (key: string): void => {
   delete apiUnavailableUntil[key];
 };
 
-// Save token refresh time
-const saveTokenRefreshTime = (username: string) => {
-  const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
-  localStorage.setItem(key, Date.now().toString());
-};
 
-// Get token refresh time
-const getTokenRefreshTime = (username: string): number | null => {
-  const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
-  const time = localStorage.getItem(key);
-  return time ? parseInt(time, 10) : null;
-};
-
-// API request wrapper with automatic token refresh.
-// Works with Authorization header (in-memory token) or httpOnly cookie.
+/**
+ * Send an authenticated request (auth via httpOnly cookie).
+ * If the server responds 401, the session is dead — force logout.
+ */
 const makeAuthenticatedRequest = async (
   url: string,
   options: RequestInit,
-  refreshToken: () => Promise<{ ok: boolean; error?: string; token?: string }>
 ): Promise<Response> => {
-  const initialResponse = await abortableFetch(url, {
+  const response = await abortableFetch(url, {
     ...options,
     timeout: 15000,
     throwOnHttpError: false,
     retry: { maxAttempts: 1, initialDelayMs: 250 },
   });
 
-  if (initialResponse.status !== 401) {
-    return initialResponse;
-  }
-
-  console.log("[ChatsStore] Received 401, attempting token refresh...");
-
-  const refreshResult = await refreshToken();
-
-  if (!refreshResult.ok) {
-    console.log(
-      "[ChatsStore] Token refresh failed — forcing logout"
-    );
+  if (response.status === 401) {
+    console.log("[ChatsStore] Received 401 — forcing logout");
     forceLogoutOnUnauthorized();
-    return initialResponse;
   }
 
-  // Build new headers — if we got a token back, send it explicitly;
-  // otherwise rely on the updated httpOnly cookie set by the refresh endpoint.
-  const newHeaders: Record<string, string> = {
-    ...(options.headers as Record<string, string>),
-  };
-  if (refreshResult.token) {
-    newHeaders["Authorization"] = `Bearer ${refreshResult.token}`;
-  }
-
-  console.log("[ChatsStore] Retrying request with refreshed token");
-  return abortableFetch(url, {
-    ...options,
-    headers: newHeaders,
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+  return response;
 };
 
 /**
@@ -205,7 +147,7 @@ function forceLogoutOnUnauthorized() {
   clearLegacyTokenRecovery();
   useChatsStore.setState({
     username: null,
-    authToken: null,
+    isAuthenticated: false,
     hasPassword: null,
     currentRoomId: null,
   });
@@ -231,7 +173,7 @@ export interface ChatsStoreState {
   aiMessages: AIChatMessage[];
   // Room State
   username: string | null;
-  authToken: string | null; // Authentication token
+  isAuthenticated: boolean;
   hasPassword: boolean | null; // Whether user has password set (null = unknown/not checked)
   rooms: ChatRoom[];
   currentRoomId: string | null; // ID of the currently selected room, null for AI chat (@ryo)
@@ -249,7 +191,7 @@ export interface ChatsStoreState {
   // Actions
   setAiMessages: (messages: AIChatMessage[]) => void;
   setUsername: (username: string | null) => void;
-  setAuthToken: (token: string | null) => void; // Set auth token
+  setAuthenticated: (authenticated: boolean) => void;
   setHasPassword: (hasPassword: boolean | null) => void; // Set password status
   checkHasPassword: () => Promise<{ ok: boolean; error?: string }>; // Check if user has password
   setPassword: (password: string) => Promise<{ ok: boolean; error?: string }>; // Set password for user
@@ -264,14 +206,6 @@ export interface ChatsStoreState {
   togglePrivateOpen: () => void; // Toggle Private collapsed state
   setFontSize: (size: number | ((prevSize: number) => number)) => void; // Add font size action
   setMessageRenderLimit: (limit: number) => void; // Set render limit
-  ensureAuthToken: () => Promise<{ ok: boolean; error?: string }>; // Add auth token generation
-  refreshAuthToken: () => Promise<{
-    ok: boolean;
-    error?: string;
-    token?: string;
-  }>; // Add token refresh
-  checkAndRefreshTokenIfNeeded: () => Promise<{ refreshed: boolean }>; // Proactive token refresh
-
   // Room Management Actions
   fetchRooms: () => Promise<{ ok: boolean; error?: string }>;
   fetchMessagesForRoom: (
@@ -326,7 +260,7 @@ const getInitialState = (): Omit<
   | "logout"
   | "setAiMessages"
   | "setUsername"
-  | "setAuthToken"
+  | "setAuthenticated"
   | "setHasPassword"
   | "checkHasPassword"
   | "setPassword"
@@ -341,9 +275,6 @@ const getInitialState = (): Omit<
   | "togglePrivateOpen"
   | "setFontSize"
   | "setMessageRenderLimit"
-  | "ensureAuthToken"
-  | "refreshAuthToken"
-  | "checkAndRefreshTokenIfNeeded"
   | "fetchRooms"
   | "fetchMessagesForRoom"
   | "fetchBulkMessages"
@@ -362,8 +293,8 @@ const getInitialState = (): Omit<
   return {
     aiMessages: [getInitialAiMessage()],
     username: recoveredUsername,
-    authToken: null,
-    hasPassword: null, // Unknown until checked
+    isAuthenticated: false,
+    hasPassword: null,
     rooms: [],
     currentRoomId: null,
     roomMessages: {},
@@ -397,7 +328,6 @@ export const useChatsStore = create<ChatsStoreState>()(
           saveUsernameToRecovery(username);
           set({ username });
 
-          // Check password status when username changes (if we have auth — either token or cookie)
           if (username) {
             setTimeout(() => {
               get().checkHasPassword();
@@ -406,55 +336,36 @@ export const useChatsStore = create<ChatsStoreState>()(
             set({ hasPassword: null });
           }
         },
-        setAuthToken: (token) => {
-          // Token is kept in memory only (httpOnly cookie handles persistence)
-          set({ authToken: token });
+        setAuthenticated: (authenticated) => {
+          set({ isAuthenticated: authenticated });
         },
         setHasPassword: (hasPassword) => {
           set({ hasPassword });
         },
         checkHasPassword: async () => {
           const currentUsername = get().username;
-          const currentToken = get().authToken;
 
           if (!currentUsername) {
-            console.log(
-              "[ChatsStore] checkHasPassword: No username, setting null"
-            );
             set({ hasPassword: null });
             return { ok: false, error: "Authentication required" };
           }
 
-          console.log(
-            "[ChatsStore] checkHasPassword: Checking for user",
-            currentUsername
-          );
           try {
             const response = await abortableFetch(
               "/api/auth/password/check",
               {
                 method: "GET",
-                headers: buildOptionalAuthHeaders(currentUsername, currentToken),
                 timeout: 15000,
                 throwOnHttpError: false,
                 retry: { maxAttempts: 1, initialDelayMs: 250 },
               }
             );
 
-            console.log(
-              "[ChatsStore] checkHasPassword: Response status",
-              response.status
-            );
             if (response.ok) {
               const data = await response.json();
-              console.log("[ChatsStore] checkHasPassword: Result", data);
               set({ hasPassword: data.hasPassword });
               return { ok: true };
             } else {
-              console.log(
-                "[ChatsStore] checkHasPassword: Failed with status",
-                response.status
-              );
               set({ hasPassword: null });
               return { ok: false, error: "Failed to check password status" };
             }
@@ -472,7 +383,6 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         setPassword: async (password) => {
           const currentUsername = get().username;
-          const currentToken = get().authToken;
 
           if (!currentUsername) {
             return { ok: false, error: "Authentication required" };
@@ -485,7 +395,6 @@ export const useChatsStore = create<ChatsStoreState>()(
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  ...buildOptionalAuthHeaders(currentUsername, currentToken),
                 },
                 body: JSON.stringify({ password }),
                 timeout: 15000,
@@ -729,162 +638,6 @@ export const useChatsStore = create<ChatsStoreState>()(
           })),
         setMessageRenderLimit: (limit: number) =>
           set(() => ({ messageRenderLimit: Math.max(20, Math.floor(limit)) })),
-        ensureAuthToken: async () => {
-          const currentUsername = get().username;
-          const currentToken = get().authToken;
-
-          if (!currentUsername) {
-            console.log(
-              "[ChatsStore] No username set, skipping token generation"
-            );
-            return { ok: true };
-          }
-
-          if (currentToken) {
-            return { ok: true };
-          }
-
-          // No in-memory token but we have a username — the httpOnly cookie
-          // may be providing auth. Allow the request to proceed; the server
-          // will read the cookie via `credentials: "include"`.
-          console.log(
-            "[ChatsStore] No in-memory token; relying on httpOnly cookie for user:",
-            currentUsername
-          );
-          return { ok: true };
-        },
-        refreshAuthToken: async () => {
-          const currentUsername = get().username;
-          const currentToken = get().authToken;
-
-          if (!currentUsername) {
-            console.log("[ChatsStore] No username set, skipping token refresh");
-            return { ok: false, error: "Username required" };
-          }
-
-          console.log(
-            "[ChatsStore] Refreshing auth token for existing user:",
-            currentUsername
-          );
-
-          try {
-            // When we have a real in-memory token, send it in the body.
-            // Otherwise, the httpOnly cookie provides the old token.
-            const body: Record<string, string> = { username: currentUsername };
-            if (isRealToken(currentToken)) {
-              body.oldToken = currentToken;
-            }
-
-            const response = await abortableFetch(
-              "/api/auth/token/refresh",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(body),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
-              console.error("[ChatsStore] Error refreshing token:", errorData);
-              return {
-                ok: false,
-                error: errorData.error || "Failed to refresh token",
-              };
-            }
-
-            const data = await response.json();
-            if (data.token) {
-              console.log("[ChatsStore] Auth token refreshed successfully");
-              set({ authToken: data.token });
-              saveTokenRefreshTime(currentUsername);
-              return { ok: true, token: data.token };
-            } else {
-              console.error(
-                "[ChatsStore] Invalid response format for token refresh"
-              );
-              return {
-                ok: false,
-                error: "Invalid response format for token refresh",
-              };
-            }
-          } catch (error) {
-            console.error("[ChatsStore] Error refreshing token:", error);
-            return { ok: false, error: "Network error while refreshing token" };
-          }
-        },
-        checkAndRefreshTokenIfNeeded: async () => {
-          const currentUsername = get().username;
-          const currentToken = get().authToken;
-
-          if (!currentUsername || !currentToken) {
-            console.log(
-              "[ChatsStore] No username or auth state, skipping token check"
-            );
-            return { refreshed: false };
-          }
-
-          // Cookie-only sessions rely on the server refreshing the cookie
-          // during /api/auth/session. No client-side refresh needed.
-          if (!isRealToken(currentToken)) {
-            return { refreshed: false };
-          }
-
-          // Get last refresh time
-          const lastRefreshTime = getTokenRefreshTime(currentUsername);
-
-          if (!lastRefreshTime) {
-            // No refresh time recorded, save current time (assume token is fresh)
-            console.log(
-              "[ChatsStore] No refresh time found, recording current time"
-            );
-            saveTokenRefreshTime(currentUsername);
-            return { refreshed: false };
-          }
-
-          const tokenAge = Date.now() - lastRefreshTime;
-          const tokenAgeDays = Math.floor(tokenAge / (24 * 60 * 60 * 1000));
-
-          console.log(`[ChatsStore] Token age: ${tokenAgeDays} days`);
-
-          // If token is older than threshold, refresh it
-          if (tokenAge > TOKEN_REFRESH_THRESHOLD) {
-            console.log(
-              `[ChatsStore] Token is ${tokenAgeDays} days old (refresh due - 7 days before 90-day expiry), refreshing...`
-            );
-
-            const refreshResult = await get().refreshAuthToken();
-
-            if (refreshResult.ok) {
-              // Update refresh time on successful refresh
-              saveTokenRefreshTime(currentUsername);
-              console.log(
-                "[ChatsStore] Token refreshed automatically (7 days before expiry)"
-              );
-              return { refreshed: true };
-            } else {
-              console.error(
-                "[ChatsStore] Failed to refresh token (will retry next hour):",
-                refreshResult.error
-              );
-              return { refreshed: false };
-            }
-          } else {
-            console.log(
-              `[ChatsStore] Token is ${tokenAgeDays} days old, next refresh in ${
-                83 - tokenAgeDays
-              } days`
-            );
-            return { refreshed: false };
-          }
-        },
         reset: () => {
           const currentUsername = get().username;
           if (currentUsername) {
@@ -896,18 +649,12 @@ export const useChatsStore = create<ChatsStoreState>()(
           console.log("[ChatsStore] Logging out user...");
 
           const currentUsername = get().username;
-          const currentToken = get().authToken;
 
-          // Inform server to invalidate token (and clear httpOnly cookie).
-          // Works via Authorization header or cookie.
           if (currentUsername) {
             try {
               await abortableFetch(getApiUrl("/api/auth/logout"), {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...buildOptionalAuthHeaders(currentUsername, currentToken),
-                },
+                headers: { "Content-Type": "application/json" },
                 timeout: 15000,
                 throwOnHttpError: false,
                 retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -924,20 +671,14 @@ export const useChatsStore = create<ChatsStoreState>()(
             track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
           }
 
-          // Clear recovery keys from localStorage
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           clearLegacyTokenRecovery();
-
-          if (currentUsername) {
-            const tokenRefreshKey = `${TOKEN_LAST_REFRESH_KEY}${currentUsername}`;
-            localStorage.removeItem(tokenRefreshKey);
-          }
 
           set((state) => ({
             ...state,
             aiMessages: [getInitialAiMessage()],
             username: null,
-            authToken: null,
+            isAuthenticated: false,
             hasPassword: null,
             currentRoomId: null,
           }));
@@ -958,18 +699,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (isApiTemporarilyUnavailable("rooms")) {
             return { ok: false, error: "Rooms API temporarily unavailable" };
           }
-          const currentUsername = get().username;
-          const currentToken = get().authToken;
 
           try {
-            const data = await listRoomsApi(
-              currentUsername && currentToken
-                ? {
-                    username: currentUsername,
-                    token: currentToken,
-                  }
-                : undefined
-            );
+            const data = await listRoomsApi();
             if (data.rooms && Array.isArray(data.rooms)) {
               clearApiUnavailable("rooms");
               // Normalize ordering via setRooms to enforce alphabetical sections
@@ -999,17 +731,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const username = get().username;
-            const authToken = get().authToken;
-            const data = await getRoomMessagesApi(
-              roomId,
-              username && authToken
-                ? {
-                    username,
-                    token: authToken,
-                  }
-                : undefined
-            );
+            const data = await getRoomMessagesApi(roomId);
             if (data.messages) {
               clearApiUnavailable("room-messages");
               const fetchedMessages: ChatMessage[] = (data.messages || [])
@@ -1135,17 +857,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const username = get().username;
-            const authToken = get().authToken;
-            const data = await getBulkMessagesApi(
-              roomIds,
-              username && authToken
-                ? {
-                    username,
-                    token: authToken,
-                  }
-                : undefined
-            );
+            const data = await getBulkMessagesApi(roomIds);
             const messagesMap = data.messagesMap;
             if (messagesMap) {
               clearApiUnavailable("bulk-messages");
@@ -1259,52 +971,33 @@ export const useChatsStore = create<ChatsStoreState>()(
         switchRoom: async (newRoomId: string | null) => {
           const currentRoomId = get().currentRoomId;
           const username = get().username;
-          const authToken = get().authToken;
 
           console.log(
             `[ChatsStore] Switching from ${currentRoomId} to ${newRoomId}`
           );
 
-          // Update current room immediately
           set({ currentRoomId: newRoomId });
 
-          // Clear unread count for the room we're entering
           if (newRoomId) {
             get().clearUnread(newRoomId);
           }
 
-          // If switching to a real room and we have a username, handle the API call
-          if (username && authToken) {
+          if (username && get().isAuthenticated) {
             try {
-              await switchPresenceApi(
-                {
-                  previousRoomId: currentRoomId,
-                  nextRoomId: newRoomId,
-                },
-                {
-                  username,
-                  token: authToken,
-                }
-              );
+              await switchPresenceApi({
+                previousRoomId: currentRoomId,
+                nextRoomId: newRoomId,
+              });
 
-              console.log("[ChatsStore] Room switch API call successful");
-              // Immediately refresh rooms to show updated presence counts
-              // This ensures the UI reflects the change immediately rather than waiting for Pusher
               setTimeout(() => {
-                console.log("[ChatsStore] Refreshing rooms after switch");
                 get().fetchRooms();
-              }, 50); // Small delay to let the server finish processing
+              }, 50);
             } catch (error) {
               console.error(
                 "[ChatsStore] Error switching rooms:",
                 error
               );
-              // Don't revert the room change on network error, just log it
             }
-          } else if (username && !authToken) {
-            console.warn(
-              "[ChatsStore] Skipping presence switch API call due to missing auth token"
-            );
           }
 
           // Always fetch messages for the new room to ensure latest content
@@ -1336,19 +1029,13 @@ export const useChatsStore = create<ChatsStoreState>()(
               payload.members = members;
             }
 
-            const headers: HeadersInit = {
-              "Content-Type": "application/json",
-              ...buildOptionalAuthHeaders(username, get().authToken),
-            };
-
             const response = await makeAuthenticatedRequest(
               "/api/rooms",
               {
                 method: "POST",
-                headers,
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
               },
-              get().refreshAuthToken
             );
 
             if (!response.ok) {
@@ -1381,18 +1068,12 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const headers: HeadersInit = {
-              "Content-Type": "application/json",
-              ...buildOptionalAuthHeaders(username, get().authToken),
-            };
-
             const response = await makeAuthenticatedRequest(
               `/api/rooms/${encodeURIComponent(roomId)}`,
               {
                 method: "DELETE",
-                headers,
+                headers: { "Content-Type": "application/json" },
               },
-              get().refreshAuthToken
             );
 
             if (!response.ok) {
@@ -1420,7 +1101,6 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         sendMessage: async (roomId: string, content: string) => {
           const username = get().username;
-          const authToken = get().authToken;
 
           if (!username || !content.trim()) {
             return { ok: false, error: "Username and content required" };
@@ -1441,11 +1121,6 @@ export const useChatsStore = create<ChatsStoreState>()(
           get().addMessageToRoom(roomId, optimisticMessage);
 
           try {
-            const headers: HeadersInit = {
-              "Content-Type": "application/json",
-              ...buildOptionalAuthHeaders(username, authToken),
-            };
-
             const messageUrl = `/api/rooms/${encodeURIComponent(roomId)}/messages`;
             const messageBody = JSON.stringify({
               content: content.trim(),
@@ -1455,10 +1130,9 @@ export const useChatsStore = create<ChatsStoreState>()(
               messageUrl,
               {
                 method: "POST",
-                headers,
+                headers: { "Content-Type": "application/json" },
                 body: messageBody,
               },
-              get().refreshAuthToken
             );
 
             if (!response.ok) {
@@ -1537,13 +1211,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             const data = await response.json();
             if (data.user) {
-              set({ username: data.user.username });
-
-              if (data.token) {
-                // Keep token in memory only; httpOnly cookie handles persistence
-                set({ authToken: data.token });
-                saveTokenRefreshTime(data.user.username);
-              }
+              set({ username: data.user.username, isAuthenticated: true });
 
               setTimeout(() => {
                 get().checkHasPassword();
@@ -1586,9 +1254,6 @@ export const useChatsStore = create<ChatsStoreState>()(
       partialize: (state) => ({
         aiMessages: state.aiMessages,
         username: state.username,
-        // NOTE: authToken is intentionally NOT persisted to localStorage.
-        // Auth tokens are stored exclusively in httpOnly cookies to
-        // prevent exposure via XSS. See: cookie-based auth flow.
         hasPassword: state.hasPassword,
         currentRoomId: state.currentRoomId,
         isSidebarVisible: state.isSidebarVisible,
@@ -1735,10 +1400,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           const state = persistedState as ChatsStoreState;
           const finalState = { ...state };
 
-          // Keep any old authToken in memory so that onRehydrateStorage can
-          // use it one last time to call the session endpoint and set the
-          // httpOnly cookie. partialize no longer includes authToken, so it
-          // will NOT be re-persisted to localStorage.
+          // Auth lives in httpOnly cookies — no token in persisted state.
 
           ensureUsernameRecovery(finalState.username);
 
@@ -1787,11 +1449,9 @@ export const useChatsStore = create<ChatsStoreState>()(
               }
             }
 
-            // Collect any legacy token that survived in state (from v2 persist)
-            // or in the recovery key, so we can migrate it to a httpOnly cookie.
-            const legacyToken =
-              state.authToken || consumeLegacyAuthToken() || null;
-            state.authToken = null;
+            // Consume any legacy token from localStorage for one-time migration
+            // to httpOnly cookie. Self-cleaning: key is removed after read.
+            const legacyToken = consumeLegacyAuthToken() || null;
             clearLegacyTokenRecovery();
             ensureUsernameRecovery(state.username);
 
@@ -1858,10 +1518,8 @@ async function restoreSessionFromCookie(
       const store = useChatsStore.getState();
 
       if (store.username === expectedUsername) {
-        // Mark as authenticated — the httpOnly cookie provides the actual token.
-        store.setAuthToken(COOKIE_SESSION_MARKER);
+        store.setAuthenticated(true);
         store.checkHasPassword();
-        store.checkAndRefreshTokenIfNeeded();
       }
     } else {
       console.log("[ChatsStore] No valid session — logging out.");

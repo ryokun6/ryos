@@ -287,7 +287,7 @@ export function useControlPanelsLogic({
   // Use auth hook
   const {
     username,
-    authToken,
+    isAuthenticated,
     promptSetUsername,
     isUsernameDialogOpen,
     setIsUsernameDialogOpen,
@@ -425,9 +425,9 @@ export function useControlPanelsLogic({
 
     try {
       // Ensure we have auth info from the auth hook
-      if (!authToken || !username) {
+      if (!isAuthenticated || !username) {
         toast.error("Authentication Error", {
-          description: "No authentication token found",
+          description: "Not authenticated",
         });
         return;
       }
@@ -436,8 +436,6 @@ export function useControlPanelsLogic({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username,
         },
         timeout: 15000,
         throwOnHttpError: false,
@@ -481,7 +479,7 @@ export function useControlPanelsLogic({
     handleOpenTelegramLink,
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
-  } = useTelegramLink({ username, authToken });
+  } = useTelegramLink({ username, isAuthenticated });
 
   // ====================================================================
   // Cloud Sync state
@@ -516,16 +514,13 @@ export function useControlPanelsLogic({
 
   /** Fetch cloud backup status */
   const fetchCloudSyncStatus = useCallback(async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
 
     setIsCloudStatusLoading(true);
     try {
       const response = await abortableFetch(getApiUrl("/api/sync/status"), {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username,
-        },
+        headers: {},
         timeout: 15000,
         throwOnHttpError: false,
         retry: { maxAttempts: 2, initialDelayMs: 500 },
@@ -540,20 +535,20 @@ export function useControlPanelsLogic({
     } finally {
       setIsCloudStatusLoading(false);
     }
-  }, [username, authToken]);
+  }, [username, isAuthenticated]);
 
   // Fetch cloud sync status when user is logged in
   useEffect(() => {
-    if (username && authToken) {
+    if (username && isAuthenticated) {
       fetchCloudSyncStatus();
     } else {
       setCloudSyncStatus(null);
     }
-  }, [username, authToken, fetchCloudSyncStatus]);
+  }, [username, isAuthenticated, fetchCloudSyncStatus]);
 
   /** Upload current state to cloud */
   const handleCloudBackup = useCallback(async () => {
-    if (!username || !authToken) {
+    if (!username || !isAuthenticated) {
       toast.error(t("apps.control-panels.cloudSync.loginRequired"));
       return;
     }
@@ -719,8 +714,7 @@ export function useControlPanelsLogic({
       const tokenRes = await fetch(tokenUrl, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${authToken}`,
-          "X-Username": username,
+          "Content-Type": "application/json",
         },
       });
 
@@ -753,8 +747,6 @@ export function useControlPanelsLogic({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${authToken}`,
-          "X-Username": username,
         },
         body: JSON.stringify({
           storageUrl: uploadResult.storageUrl,
@@ -785,11 +777,11 @@ export function useControlPanelsLogic({
       // Clear progress after a short delay so user can see completion
       setTimeout(() => setCloudProgress(null), 1500);
     }
-  }, [username, authToken, t, fetchCloudSyncStatus]);
+  }, [username, isAuthenticated, t, fetchCloudSyncStatus]);
 
   /** Force-upload enabled auto sync domains so local state wins. */
   const handleCloudForceUpload = useCallback(async () => {
-    if (!username || !authToken) {
+    if (!username || !isAuthenticated) {
       toast.error(t("apps.control-panels.cloudSync.loginRequired"));
       return;
     }
@@ -815,7 +807,7 @@ export function useControlPanelsLogic({
         try {
           const metadata = await uploadCloudSyncDomain(domain, {
             username,
-            authToken,
+            isAuthenticated,
           });
           syncStore.markUploadSuccess(domain, metadata.updatedAt);
           syncStore.updateRemoteMetadataForDomain(domain, metadata);
@@ -840,11 +832,11 @@ export function useControlPanelsLogic({
     } finally {
       setIsCloudForceUploading(false);
     }
-  }, [authToken, t, username]);
+  }, [isAuthenticated, t, username]);
 
   /** Force-download enabled auto sync domains so cloud state wins. */
   const handleCloudForceDownload = useCallback(async () => {
-    if (!username || !authToken) {
+    if (!username || !isAuthenticated) {
       toast.error(t("apps.control-panels.cloudSync.loginRequired"));
       return;
     }
@@ -876,7 +868,7 @@ export function useControlPanelsLogic({
         try {
           const metadata = await downloadAndApplyCloudSyncDomain(domain, {
             username,
-            authToken,
+            isAuthenticated,
           });
           syncStore.markDownloadSuccess(domain, metadata.updatedAt);
           syncStore.updateRemoteMetadataForDomain(domain, metadata);
@@ -911,11 +903,11 @@ export function useControlPanelsLogic({
     } finally {
       setIsCloudForceDownloading(false);
     }
-  }, [authToken, t, username]);
+  }, [isAuthenticated, t, username]);
 
   /** Download and restore backup from cloud */
   const handleCloudRestore = useCallback(async () => {
-    if (!username || !authToken) {
+    if (!username || !isAuthenticated) {
       toast.error(t("apps.control-panels.cloudSync.loginRequired"));
       return;
     }
@@ -929,8 +921,7 @@ export function useControlPanelsLogic({
         const xhr = new XMLHttpRequest();
         const url = getApiUrl("/api/sync/backup");
         xhr.open("GET", url, true);
-        xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
-        xhr.setRequestHeader("X-Username", username);
+        xhr.withCredentials = true;
         xhr.timeout = 120000;
 
         xhr.onprogress = (event) => {
@@ -1001,10 +992,6 @@ export function useControlPanelsLogic({
         throw new Error("Invalid backup format");
       }
 
-      // Store auth credentials before clearing (to preserve login)
-      const savedAuthToken = authToken;
-      const savedUsername = username;
-
       // Clear current state
       clearAllAppStates();
       clearPrefetchFlag();
@@ -1017,22 +1004,6 @@ export function useControlPanelsLogic({
           localStorage.setItem(key, value as string);
         }
       });
-
-      // Re-set auth credentials so user stays logged in
-      const chatsStoreKey = "ryos:chats";
-      const chatsStore = localStorage.getItem(chatsStoreKey);
-      if (chatsStore) {
-        try {
-          const parsed = JSON.parse(chatsStore);
-          if (parsed?.state) {
-            parsed.state.username = savedUsername;
-            parsed.state.authToken = savedAuthToken;
-            localStorage.setItem(chatsStoreKey, JSON.stringify(parsed));
-          }
-        } catch {
-          // Ignore parse errors
-        }
-      }
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 75 });
 
@@ -1184,7 +1155,7 @@ export function useControlPanelsLogic({
       setIsCloudRestoring(false);
       setCloudProgress(null);
     }
-  }, [username, authToken, t, setCurrentWallpaper]);
+  }, [username, isAuthenticated, t, setCurrentWallpaper]);
 
   // States for previous volume levels for mute/unmute functionality
   const [prevMasterVolume, setPrevMasterVolume] = useState(
@@ -1279,7 +1250,6 @@ export function useControlPanelsLogic({
     // Preserve critical recovery keys while clearing everything else
     const fileMetadataStore = localStorage.getItem("ryos:files");
     const usernameRecovery = localStorage.getItem("_usr_recovery_key_");
-    const authTokenRecovery = localStorage.getItem("_auth_recovery_key_");
 
     clearAllAppStates();
     clearPrefetchFlag(); // Force re-prefetch on next boot
@@ -1289,9 +1259,6 @@ export function useControlPanelsLogic({
     }
     if (usernameRecovery) {
       localStorage.setItem("_usr_recovery_key_", usernameRecovery);
-    }
-    if (authTokenRecovery) {
-      localStorage.setItem("_auth_recovery_key_", authTokenRecovery);
     }
 
     window.location.reload();

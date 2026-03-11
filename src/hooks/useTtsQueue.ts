@@ -3,7 +3,6 @@ import { useLatestRef } from "@/hooks/useLatestRef";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { useChatsStore } from "@/stores/useChatsStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { abortableFetch } from "@/utils/abortableFetch";
 
@@ -144,15 +143,9 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           }
           // If ttsModel is null, don't add voice settings - let server decide
 
-          // Get auth credentials for rate limit bypass
-          const { authToken, username } = useChatsStore.getState();
           const headers: Record<string, string> = {
             "Content-Type": "application/json",
           };
-          if (authToken && username) {
-            headers["Authorization"] = `Bearer ${authToken}`;
-            headers["X-Username"] = username;
-          }
 
           const res = await abortableFetch(endpoint, {
             method: "POST",
