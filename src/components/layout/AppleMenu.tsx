@@ -80,7 +80,7 @@ export function AppleMenu() {
   // Auth state and handlers from useAuth
   const {
     username,
-    authToken,
+    isAuthenticated,
     hasPassword,
     // Username/signup dialog
     promptSetUsername,
@@ -111,7 +111,7 @@ export function AppleMenu() {
     setIsLogoutConfirmDialogOpen,
   } = useAuth();
 
-  const isLoggedIn = !!(username && authToken);
+  const isLoggedIn = !!(username && isAuthenticated);
 
   const handleAppClick = (appId: string) => {
     launchApp(appId as AppId);

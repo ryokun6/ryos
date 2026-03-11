@@ -77,8 +77,8 @@ export function AppletViewerMenuBar({
     [instances]
   );
   const username = useChatsStore((s) => s.username);
-  const authToken = useChatsStore((s) => s.authToken);
-  const isLoggedIn = !!(username && authToken);
+  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const isLoggedIn = !!(username && isAuthenticated);
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -178,7 +178,7 @@ export function AppletViewerMenuBar({
               : t("apps.applet-viewer.menu.checkForUpdates")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          {username && authToken ? (
+          {username && isAuthenticated ? (
             <MenubarItem
               onClick={() => onLogout?.()}
               className="text-md h-6 px-3"

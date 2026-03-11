@@ -1093,13 +1093,11 @@ export const useTerminalLogic = ({
 
                 if (authResp.ok) {
                   const data = await authResp.json();
-                  if (data.token) {
-                    const uname = data.username || targetUsername;
-                    store.setUsername(uname);
-                    store.setAuthToken(data.token);
-                    this.updateOutput(`logged in as ${uname}`);
-                    return;
-                  }
+                  const uname = data.username || targetUsername;
+                  store.setUsername(uname);
+                  store.setAuthenticated(true);
+                  this.updateOutput(`logged in as ${uname}`);
+                  return;
                 }
                 // fallthrough if auth failed -> will attempt create
               }

@@ -1,4 +1,4 @@
-import { apiRequest, type ApiAuthContext } from "@/api/core";
+import { apiRequest } from "@/api/core";
 
 export interface ListenTrackMeta {
   title: string;
@@ -53,39 +53,33 @@ export async function fetchListenSessions(): Promise<{ sessions: ListenSessionSu
 }
 
 export async function createListenSession(
-  auth: ApiAuthContext,
   username?: string
 ): Promise<{ session: ListenSession }> {
   return apiRequest<{ session: ListenSession }, { username?: string }>({
     path: "/api/listen/sessions",
     method: "POST",
-    auth,
     body: username ? { username } : {},
   });
 }
 
 export async function joinListenSession(
   sessionId: string,
-  payload: { username?: string; anonymousId?: string },
-  auth?: ApiAuthContext
+  payload: { username?: string; anonymousId?: string }
 ): Promise<{ session: ListenSession }> {
   return apiRequest<{ session: ListenSession }, typeof payload>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/join`,
     method: "POST",
-    auth,
     body: payload,
   });
 }
 
 export async function leaveListenSession(
   sessionId: string,
-  payload: { username?: string; anonymousId?: string },
-  auth?: ApiAuthContext
+  payload: { username?: string; anonymousId?: string }
 ): Promise<{ success: boolean; session?: ListenSession }> {
   return apiRequest<{ success: boolean; session?: ListenSession }, typeof payload>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/leave`,
     method: "POST",
-    auth,
     body: payload,
   });
 }
@@ -101,26 +95,22 @@ export async function syncListenSession(
       positionMs: number;
       djUsername?: string;
     };
-  },
-  auth: ApiAuthContext
+  }
 ): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }, typeof payload>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/sync`,
     method: "POST",
-    auth,
     body: payload,
   });
 }
 
 export async function reactListenSession(
   sessionId: string,
-  payload: { username?: string; emoji: string },
-  auth: ApiAuthContext
+  payload: { username?: string; emoji: string }
 ): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }, typeof payload>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/reaction`,
     method: "POST",
-    auth,
     body: payload,
   });
 }

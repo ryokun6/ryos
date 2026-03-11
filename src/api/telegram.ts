@@ -1,4 +1,4 @@
-import { apiRequest, type ApiAuthContext } from "@/api/core";
+import { apiRequest } from "@/api/core";
 
 export interface TelegramLinkedAccount {
   telegramUserId: string;
@@ -25,31 +25,22 @@ export interface TelegramLinkStatusResponse {
   pendingLink: TelegramLinkSession | null;
 }
 
-export async function createTelegramLink(
-  auth: ApiAuthContext
-): Promise<TelegramLinkCreateResponse> {
+export async function createTelegramLink(): Promise<TelegramLinkCreateResponse> {
   return apiRequest<TelegramLinkCreateResponse>({
     path: "/api/telegram/link/create",
     method: "POST",
-    auth,
   });
 }
 
-export async function getTelegramLinkStatus(
-  auth: ApiAuthContext
-): Promise<TelegramLinkStatusResponse> {
+export async function getTelegramLinkStatus(): Promise<TelegramLinkStatusResponse> {
   return apiRequest<TelegramLinkStatusResponse>({
     path: "/api/telegram/link/status",
-    auth,
   });
 }
 
-export async function disconnectTelegramLink(
-  auth: ApiAuthContext
-): Promise<{ success: boolean }> {
+export async function disconnectTelegramLink(): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>({
     path: "/api/telegram/link/disconnect",
     method: "POST",
-    auth,
   });
 }

@@ -1,5 +1,4 @@
 import { abortableFetch } from "@/utils/abortableFetch";
-import { isRealToken } from "@/api/core";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import { getApiUrl } from "@/utils/platform";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -51,7 +50,7 @@ import {
 } from "@/utils/cloudSyncShared";
 type AuthContext = {
   username: string;
-  authToken: string;
+  isAuthenticated: boolean;
 };
 
 let _syncSessionId: string | null = null;
@@ -942,31 +941,26 @@ export async function applyCloudSyncEnvelope(
   }
 }
 
-function authHeaders(auth: AuthContext): Record<string, string> {
-  const h: Record<string, string> = {
+function authHeaders(): Record<string, string> {
+  return {
     "X-Sync-Session-Id": getSyncSessionId(),
   };
-  if (isRealToken(auth.authToken)) {
-    h["Authorization"] = `Bearer ${auth.authToken}`;
-    h["X-Username"] = auth.username;
-  }
-  return h;
 }
 
 export async function fetchCloudSyncMetadata(
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncMetadataMap> {
   const [blobRes, redisRes] = await Promise.all([
     abortableFetch(getApiUrl("/api/sync/auto"), {
       method: "GET",
-      headers: authHeaders(auth),
+      headers: authHeaders(),
       timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
     }),
     abortableFetch(getApiUrl("/api/sync/state"), {
       method: "GET",
-      headers: authHeaders(auth),
+      headers: authHeaders(),
       timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -1004,7 +998,7 @@ export async function fetchCloudSyncMetadata(
 
 async function uploadRedisStateDomain(
   domain: RedisSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
 
@@ -1012,7 +1006,7 @@ async function uploadRedisStateDomain(
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders(auth),
+      ...authHeaders(),
     },
     body: JSON.stringify({
       domain,
@@ -1042,7 +1036,7 @@ async function uploadRedisStateDomain(
 
 async function fetchBlobDomainInfo(
   domain: BlobSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<
   | (IndividualBlobDomainResponse & {
       downloadUrl?: string;
@@ -1054,7 +1048,7 @@ async function fetchBlobDomainInfo(
     getApiUrl(`/api/sync/auto?domain=${encodeURIComponent(domain)}`),
     {
       method: "GET",
-      headers: authHeaders(auth),
+      headers: authHeaders(),
       timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -1081,14 +1075,14 @@ async function fetchBlobDomainInfo(
 
 async function requestBlobUploadInstruction(
   domain: BlobSyncDomain,
-  auth: AuthContext,
+  _auth: AuthContext,
   itemKey?: string
 ): Promise<StorageUploadInstruction> {
   const tokenResponse = await abortableFetch(getApiUrl("/api/sync/auto-token"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders(auth),
+      ...authHeaders(),
     },
     body: JSON.stringify({
       domain,
@@ -1111,13 +1105,13 @@ async function requestBlobUploadInstruction(
 
 async function saveBlobDomainMetadata(
   payload: Record<string, unknown>,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const metadataResponse = await abortableFetch(getApiUrl("/api/sync/auto"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders(auth),
+      ...authHeaders(),
     },
     body: JSON.stringify(payload),
     timeout: 15000,
@@ -1160,7 +1154,7 @@ async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
 
 async function uploadLegacyBlobDomain(
   domain: BlobSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
   const dataItems = Array.isArray(envelope.data) ? envelope.data.length : "N/A";
@@ -1168,7 +1162,7 @@ async function uploadLegacyBlobDomain(
   const compressed = await gzipJson(envelope);
   console.log(`[CloudSync:blob] ${domain}: compressed to ${compressed.length} bytes`);
 
-  const uploadInstruction = await requestBlobUploadInstruction(domain, auth);
+  const uploadInstruction = await requestBlobUploadInstruction(domain, _auth);
   const uploadResult = await uploadBlobWithStorageInstruction(
     new Blob([compressed], { type: "application/gzip" }),
     uploadInstruction
@@ -1182,17 +1176,17 @@ async function uploadLegacyBlobDomain(
       version: envelope.version,
       totalSize: compressed.length,
     },
-    auth
+    _auth
   );
 }
 
 async function uploadIndividualBlobDomain(
   domain: IndividualBlobSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const updatedAt = new Date().toISOString();
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
-  const remoteInfo = await fetchBlobDomainInfo(domain, auth);
+  const remoteInfo = await fetchBlobDomainInfo(domain, _auth);
   const remoteItems =
     remoteInfo?.mode === "individual" ? remoteInfo.items || {} : {};
   const nextItems: Record<
@@ -1224,7 +1218,7 @@ async function uploadIndividualBlobDomain(
 
     const uploadInstruction = await requestBlobUploadInstruction(
       domain,
-      auth,
+      _auth,
       record.item.key
     );
     const itemEnvelope: BlobSyncItemEnvelope = {
@@ -1261,43 +1255,43 @@ async function uploadIndividualBlobDomain(
       totalSize: Object.values(nextItems).reduce((sum, item) => sum + item.size, 0),
       items: nextItems,
     },
-    auth
+    _auth
   );
 }
 
 async function uploadBlobDomain(
   domain: BlobSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   if (isIndividualBlobSyncDomain(domain)) {
-    return uploadIndividualBlobDomain(domain, auth);
+    return uploadIndividualBlobDomain(domain, _auth);
   }
 
-  return uploadLegacyBlobDomain(domain, auth);
+  return uploadLegacyBlobDomain(domain, _auth);
 }
 
 export async function uploadCloudSyncDomain(
   domain: CloudSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   if (isRedisSyncDomain(domain)) {
-    return uploadRedisStateDomain(domain, auth);
+    return uploadRedisStateDomain(domain, _auth);
   }
   if (isBlobSyncDomain(domain)) {
-    return uploadBlobDomain(domain, auth);
+    return uploadBlobDomain(domain, _auth);
   }
   throw new Error(`Unknown sync domain: ${domain}`);
 }
 
 async function downloadRedisStateDomain(
   domain: RedisSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const response = await abortableFetch(
     getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
     {
       method: "GET",
-      headers: authHeaders(auth),
+      headers: authHeaders(),
       timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -1334,9 +1328,9 @@ async function downloadRedisStateDomain(
 
 async function downloadBlobDomain(
   domain: BlobSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  const data = await fetchBlobDomainInfo(domain, auth);
+  const data = await fetchBlobDomainInfo(domain, _auth);
   if (!data?.metadata) {
     throw new Error("Sync download response was invalid.");
   }
@@ -1377,13 +1371,13 @@ async function downloadBlobDomain(
 
 export async function downloadAndApplyCloudSyncDomain(
   domain: CloudSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   if (isRedisSyncDomain(domain)) {
-    return downloadRedisStateDomain(domain, auth);
+    return downloadRedisStateDomain(domain, _auth);
   }
   if (isBlobSyncDomain(domain)) {
-    return downloadBlobDomain(domain, auth);
+    return downloadBlobDomain(domain, _auth);
   }
   throw new Error(`Unknown sync domain: ${domain}`);
 }

@@ -1,23 +1,6 @@
 import { abortableFetch, type AbortableFetchOptions } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 
-/**
- * Sentinel value stored in `authToken` when the user is authenticated
- * via an httpOnly cookie rather than an in-memory token.  Auth gates
- * treat it as truthy, but it must never be sent as a real Bearer token.
- */
-export const COOKIE_SESSION_MARKER = "__cookie_session__";
-
-/** Returns true when the token is a real server-issued token (not null / marker). */
-export function isRealToken(token: string | null | undefined): token is string {
-  return !!token && token !== COOKIE_SESSION_MARKER;
-}
-
-export interface ApiAuthContext {
-  username?: string | null;
-  token?: string | null;
-}
-
 export interface ApiErrorPayload {
   error?: string;
   message?: string;
@@ -44,7 +27,6 @@ export interface ApiRequestOptions<TBody = unknown> {
   method?: string;
   query?: Record<string, string | number | boolean | null | undefined>;
   body?: TBody;
-  auth?: ApiAuthContext;
   headers?: HeadersInit;
   timeout?: number;
   retry?: AbortableFetchOptions["retry"];
@@ -69,19 +51,12 @@ function buildUrl(
 
 function buildHeaders(
   headers: HeadersInit | undefined,
-  auth: ApiAuthContext | undefined,
   hasBody: boolean
 ): Headers {
   const merged = new Headers(headers);
   if (hasBody && !merged.has("Content-Type")) {
     merged.set("Content-Type", "application/json");
   }
-
-  if (isRealToken(auth?.token) && auth?.username) {
-    merged.set("Authorization", `Bearer ${auth.token}`);
-    merged.set("X-Username", auth.username);
-  }
-
   return merged;
 }
 
@@ -102,7 +77,6 @@ export async function apiRequest<TResponse, TBody = unknown>(
     method = "GET",
     query,
     body,
-    auth,
     headers,
     timeout = 15000,
     retry = { maxAttempts: 1, initialDelayMs: 250 },
@@ -111,7 +85,7 @@ export async function apiRequest<TResponse, TBody = unknown>(
   const hasBody = body !== undefined;
   const response = await abortableFetch(buildUrl(path, query), {
     method,
-    headers: buildHeaders(headers, auth, hasBody),
+    headers: buildHeaders(headers, hasBody),
     body: hasBody ? JSON.stringify(body) : undefined,
     timeout,
     throwOnHttpError: false,
@@ -133,4 +107,3 @@ export async function apiRequest<TResponse, TBody = unknown>(
 
   return (await response.json()) as TResponse;
 }
-

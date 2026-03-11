@@ -16,7 +16,6 @@ import {
   ToolInvocationMessage,
   type ToolInvocationPart,
 } from "@/components/shared/ToolInvocationMessage";
-import { useChatsStore } from "@/stores/useChatsStore";
 import { getTranslatedAppName, type AppId } from "@/utils/i18n";
 import {
   Tooltip,
@@ -1241,22 +1240,10 @@ function ChatMessagesContent({
     // Use DELETE method with proper authentication headers (matching deleteRoom pattern)
     const url = `/api/rooms/${encodeURIComponent(roomId)}/messages/${encodeURIComponent(serverMessageId)}`;
 
-    // Build headers with authentication
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-
-    // Add authentication headers - get from store
-    const authToken = useChatsStore.getState().authToken;
-    if (username && authToken) {
-      headers["Authorization"] = `Bearer ${authToken}`;
-      headers["X-Username"] = username;
-    }
-
     try {
       const res = await abortableFetch(url, {
         method: "DELETE",
-        headers,
+        headers: { "Content-Type": "application/json" },
         timeout: 10000,
         throwOnHttpError: false,
         retry: { maxAttempts: 1, initialDelayMs: 250 },

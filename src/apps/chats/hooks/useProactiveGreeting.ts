@@ -50,7 +50,7 @@ export function useProactiveGreeting() {
       state.aiMessages.length === 1 &&
       state.aiMessages[0].id === "1" &&
       state.aiMessages[0].role === "assistant";
-    const eligible = !!state.username && !!state.authToken;
+    const eligible = !!state.username && !!state.isAuthenticated;
     return fresh && eligible;
   });
   const hasTriggeredFreshRef = useRef(false);
@@ -59,7 +59,7 @@ export function useProactiveGreeting() {
   const fetchInFlightRef = useRef(false);
 
   const username = useChatsStore((s) => s.username);
-  const authToken = useChatsStore((s) => s.authToken);
+  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
   const aiMessages = useChatsStore((s) => s.aiMessages);
   const setAiMessages = useChatsStore((s) => s.setAiMessages);
 
@@ -68,7 +68,7 @@ export function useProactiveGreeting() {
     aiMessages[0].id === "1" &&
     aiMessages[0].role === "assistant";
 
-  const isEligible = !!username && !!authToken;
+  const isEligible = !!username && !!isAuthenticated;
 
   const isStaleChat = (() => {
     if (isFreshChat) return false;
@@ -87,7 +87,7 @@ export function useProactiveGreeting() {
    */
   const fetchGreeting = useCallback(
     async (mode: "fresh" | "stale" = "fresh") => {
-      if (!username || !authToken) return;
+      if (!username || !isAuthenticated) return;
 
       // Prevent duplicate concurrent requests
       if (fetchInFlightRef.current) return;
@@ -103,11 +103,7 @@ export function useProactiveGreeting() {
       try {
         const response = await abortableFetch(getApiUrl("/api/chat"), {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-            "X-Username": username,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             messages: [],
             proactiveGreeting: true,
@@ -164,7 +160,7 @@ export function useProactiveGreeting() {
         fetchInFlightRef.current = false;
       }
     },
-    [username, authToken, setAiMessages]
+    [username, isAuthenticated, setAiMessages]
   );
 
   // Trigger proactive greeting for fresh chats
@@ -211,7 +207,7 @@ export function useProactiveGreeting() {
         (state.aiMessages[0].id === "1" ||
           state.aiMessages[0].id === "proactive-1") &&
         state.aiMessages[0].role === "assistant";
-      const stillEligible = !!state.username && !!state.authToken;
+      const stillEligible = !!state.username && !!state.isAuthenticated;
 
       if (stillFresh && stillEligible && !fetchInFlightRef.current) {
         hasTriggeredFreshRef.current = true;

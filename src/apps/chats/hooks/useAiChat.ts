@@ -40,7 +40,6 @@ import { AnyExtension } from "@tiptap/core";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { isRealToken } from "@/api/core";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
   emitAppletUpdated,
@@ -537,13 +536,12 @@ const showBackgroundedMessageNotification = (message: UIMessage) => {
 };
 
 export function useAiChat(onPromptSetUsername?: () => void) {
-  const { aiMessages, setAiMessages, username, authToken, ensureAuthToken } =
+  const { aiMessages, setAiMessages, username, isAuthenticated } =
     useChatsStoreShallow((state) => ({
       aiMessages: state.aiMessages,
       setAiMessages: state.setAiMessages,
       username: state.username,
-      authToken: state.authToken,
-      ensureAuthToken: state.ensureAuthToken,
+      isAuthenticated: state.isAuthenticated,
     }));
   const launchApp = useLaunchApp();
   const aiModel = useAppStore((state) => state.aiModel);
@@ -597,14 +595,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     });
   }, [aiMessages]);
 
-  // Note: We no longer auto-call ensureAuthToken here.
-  // Tokens are obtained via:
-  // 1. createUser (new account registration)
-  // 2. authenticateWithPassword (password login)
-  // 3. Token login (user provides existing token)
-  // The ensureAuthToken function is only called explicitly before sending
-  // messages as a fallback for legacy users without tokens.
-
   // Queue-based TTS – speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
 
@@ -634,24 +624,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const chatTransport = useMemo(() => {
     return new DefaultChatTransport({
       api: getApiUrl("/api/chat"),
-      headers: async () => {
-        const { username: currentUsername, authToken: currentToken } =
-          useChatsStore.getState();
-
-        if (!currentUsername) {
-          return {} as Record<string, string>;
-        }
-
-        const headers: Record<string, string> = {
-          "X-Username": currentUsername,
-        };
-
-        if (isRealToken(currentToken)) {
-          headers.Authorization = `Bearer ${currentToken}`;
-        }
-
-        return headers;
-      },
       body: async () => ({
         systemState: getSystemState(),
         model: useAppStore.getState().aiModel,
@@ -1930,11 +1902,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Helper function to handle authentication errors consistently
       const handleAuthError = (message?: string) => {
-        console.error("Authentication error - clearing invalid token");
+        console.error("Authentication error - clearing invalid session");
 
-        // Clear the invalid auth token
-        const setAuthToken = useChatsStore.getState().setAuthToken;
-        setAuthToken(null);
+        // Clear auth state (cookie will be cleared server-side on next request)
+        useChatsStore.getState().setAuthenticated(false);
 
         // Show user-friendly error message with action button
         toast.error("Login Required", {
@@ -2171,20 +2142,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         return;
       }
 
-      // Ensure auth token exists before submitting (wait for it if needed)
-      if (username && !authToken) {
-        console.log(
-          "[useAiChat] Waiting for auth token generation before sending message...",
-        );
-        const tokenResult = await ensureAuthToken();
-        if (!tokenResult.ok) {
-          toast.error("Authentication Error", {
-            description:
-              "Failed to generate authentication token. Please try logging in again.",
-            duration: 3000,
-          });
-          return;
-        }
+      // Check if user is authenticated (cookies handle auth automatically)
+      if (username && !isAuthenticated) {
+        toast.error("Login Required", {
+          description: "Please login to continue chatting.",
+          duration: 3000,
+        });
+        return;
       }
 
       // Clear any previous rate limit errors on new submission attempt
@@ -2248,11 +2212,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       selectedImage,
       needsUsername,
       username,
-      authToken,
-      ensureAuthToken,
+      isAuthenticated,
       aiModel,
       setInput,
-    ], // Updated deps
+    ],
   );
 
   const handleDirectMessageSubmit = useCallback(
@@ -2268,20 +2231,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         return;
       }
 
-      // Ensure auth token exists before submitting (wait for it if needed)
-      if (username && !authToken) {
-        console.log(
-          "[useAiChat] Waiting for auth token generation before sending message...",
-        );
-        const tokenResult = await ensureAuthToken();
-        if (!tokenResult.ok) {
-          toast.error("Authentication Error", {
-            description:
-              "Failed to generate authentication token. Please try logging in again.",
-            duration: 3000,
-          });
-          return;
-        }
+      // Check if user is authenticated (cookies handle auth automatically)
+      if (username && !isAuthenticated) {
+        toast.error("Login Required", {
+          description: "Please login to continue chatting.",
+          duration: 3000,
+        });
+        return;
       }
 
       // Clear any previous rate limit errors on new submission attempt
@@ -2304,7 +2260,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         },
       );
     },
-    [sendMessage, needsUsername, username, authToken, ensureAuthToken, aiModel], // Updated deps
+    [sendMessage, needsUsername, username, isAuthenticated, aiModel],
   );
 
   const handleNudge = useCallback(() => {
@@ -2319,26 +2275,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Capture current messages before we clear them
     const messagesToAnalyze = [...aiMessages];
     const currentUsername = username;
-    const currentToken = authToken;
     const currentTimeZone =
       Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
     // Only extract if user is logged in and there are messages worth analyzing
-    if (currentUsername && messagesToAnalyze.length > 2) {
+    if (currentUsername && isAuthenticated && messagesToAnalyze.length > 2) {
       console.log("[clearChats] Triggering async memory extraction...");
-
-      const memHeaders: Record<string, string> = {
-        "Content-Type": "application/json",
-        "X-User-Timezone": currentTimeZone,
-      };
-      if (isRealToken(currentToken)) {
-        memHeaders["Authorization"] = `Bearer ${currentToken}`;
-        memHeaders["X-Username"] = currentUsername;
-      }
 
       abortableFetch(getApiUrl("/api/ai/extract-memories"), {
         method: "POST",
-        headers: memHeaders,
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Timezone": currentTimeZone,
+        },
         body: JSON.stringify({
           timeZone: currentTimeZone,
           messages: messagesToAnalyze.map(msg => ({
@@ -2397,7 +2346,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Update both the Zustand store and the SDK state directly
     setAiMessages([initialMessage]);
     setSdkMessages([initialMessage]);
-  }, [setAiMessages, setSdkMessages, stopTts, aiMessages, username, authToken]);
+  }, [setAiMessages, setSdkMessages, stopTts, aiMessages, username, isAuthenticated]);
 
   // --- Dialog States & Handlers ---
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);

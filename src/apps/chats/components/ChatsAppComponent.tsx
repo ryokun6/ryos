@@ -90,7 +90,7 @@ export function ChatsAppComponent({
   // Destructure auth properties from authResult
   const {
     username,
-    authToken,
+    isAuthenticated,
     isUsernameDialogOpen,
     setIsUsernameDialogOpen,
     newUsername,
@@ -428,7 +428,7 @@ export function ChatsAppComponent({
     handleOpenTelegramLink,
     handleCopyTelegramCode,
     handleDisconnectTelegramLink,
-  } = useTelegramLink({ username, authToken });
+  } = useTelegramLink({ username, isAuthenticated });
 
   const menuBar = (
     <ChatsMenuBar
@@ -448,7 +448,7 @@ export function ChatsAppComponent({
       onDecreaseFontSize={handleDecreaseFontSize}
       onResetFontSize={handleResetFontSize}
       username={username}
-      authToken={authToken} // Pass authToken to ChatsMenuBar
+      isAuthenticated={isAuthenticated}
       onVerifyToken={promptVerifyToken}
       isVerifyDialogOpen={isVerifyDialogOpen}
       setVerifyDialogOpen={setVerifyDialogOpen}

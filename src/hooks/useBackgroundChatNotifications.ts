@@ -60,7 +60,7 @@ interface RoomHandlers {
 export function useBackgroundChatNotifications() {
   const {
     username,
-    authToken,
+    isAuthenticated,
     rooms,
     fetchRooms,
     setRooms,
@@ -69,7 +69,7 @@ export function useBackgroundChatNotifications() {
     incrementUnread,
   } = useChatsStoreShallow((state) => ({
     username: state.username,
-    authToken: state.authToken,
+    isAuthenticated: state.isAuthenticated,
     rooms: state.rooms,
     fetchRooms: state.fetchRooms,
     setRooms: state.setRooms,
@@ -84,7 +84,7 @@ export function useBackgroundChatNotifications() {
     )
   );
 
-  const isBackgroundMode = Boolean(username && authToken && !hasOpenChatsInstance);
+  const isBackgroundMode = Boolean(username && isAuthenticated && !hasOpenChatsInstance);
 
   const pusherRef = useRef<ReturnType<typeof getPusherClient> | null>(null);
   const globalChannelRef = useRef<PusherChannel | null>(null);

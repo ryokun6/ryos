@@ -36,7 +36,7 @@ interface UseFuriganaParams {
   /** Pre-fetched soramimi info from initial lyrics request (skips extra API call) */
   prefetchedSoramimiInfo?: SoramimiStreamInfo;
   /** Auth credentials (required for force refresh) */
-  auth?: { username: string; authToken: string };
+  auth?: { username: string; isAuthenticated: boolean };
 }
 
 interface UseFuriganaReturn {

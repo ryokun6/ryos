@@ -70,7 +70,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   onSongDeleted,
 }) => {
   const { t } = useTranslation();
-  const { username, authToken } = useAuth();
+  const { username, isAuthenticated } = useAuth();
   const launchApp = useLaunchApp();
   const [song, setSong] = useState<SongDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,7 +125,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
   // Force refresh lyrics from Kugou
   const handleForceRefresh = useCallback(async () => {
-    if (!username || !authToken || !song?.lyricsSource) {
+    if (!username || !isAuthenticated || !song?.lyricsSource) {
       toast.error(t("apps.admin.errors.cannotForceRefresh", "Cannot force refresh - no lyrics source or not authenticated"));
       return;
     }
@@ -138,8 +138,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-            "X-Username": username,
           },
           body: JSON.stringify({
             action: "fetch-lyrics",
@@ -166,11 +164,11 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     } finally {
       setIsForceRefreshing(false);
     }
-  }, [youtubeId, username, authToken, song?.lyricsSource, fetchSong, t]);
+  }, [youtubeId, username, isAuthenticated, song?.lyricsSource, fetchSong, t]);
 
   // Handle lyrics search selection - fetch new lyrics with selected source and update metadata
   const handleLyricsSearchSelect = useCallback(async (result: LyricsSearchResult) => {
-    if (!username || !authToken) {
+    if (!username || !isAuthenticated) {
       toast.error(t("apps.admin.errors.notAuthenticated", "Not authenticated"));
       return;
     }
@@ -184,8 +182,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-            "X-Username": username,
           },
           body: JSON.stringify({
             action: "fetch-lyrics",
@@ -217,8 +213,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-            "X-Username": username,
           },
           body: JSON.stringify({
             title: result.title,
@@ -247,11 +241,11 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     } finally {
       setIsForceRefreshing(false);
     }
-  }, [youtubeId, username, authToken, fetchSong, t]);
+  }, [youtubeId, username, isAuthenticated, fetchSong, t]);
 
   // Handle lyrics search reset - clear lyrics source
   const handleLyricsSearchReset = useCallback(async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
 
     try {
       const response = await abortableFetch(
@@ -260,8 +254,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-            "X-Username": username,
           },
           body: JSON.stringify({
             clearLyrics: true,
@@ -281,7 +273,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     } catch (error) {
       console.error("Failed to reset lyrics:", error);
     }
-  }, [youtubeId, username, authToken, fetchSong, t]);
+  }, [youtubeId, username, isAuthenticated, fetchSong, t]);
 
   // Play song in iPod
   const handlePlayInIpod = useCallback(async () => {
@@ -379,10 +371,10 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   }, [youtubeId]);
 
   const handleDelete = async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
 
     try {
-      const success = await deleteSongMetadata(youtubeId, { username, authToken });
+      const success = await deleteSongMetadata(youtubeId, { username, isAuthenticated });
 
       if (success) {
         toast.success(t("apps.admin.messages.songDeleted", "Song deleted"));
@@ -399,7 +391,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   };
 
   const handleUnshare = async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
 
     setIsUnsharing(true);
     try {
@@ -409,8 +401,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-            "X-Username": username,
           },
           body: JSON.stringify({ action: "unshare" }),
           timeout: 15000,
@@ -436,7 +426,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   };
 
   const saveField = async (field: "title" | "artist" | "album" | "lyricOffset", value: string) => {
-    if (!song || !username || !authToken) return;
+    if (!song || !username || !isAuthenticated) return;
 
     setIsSaving(true);
     try {
@@ -449,7 +439,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
         lyricsSource: song.lyricsSource,
       };
 
-      const success = await saveSongMetadata(updatedMetadata, { username, authToken });
+      const success = await saveSongMetadata(updatedMetadata, { username, isAuthenticated });
 
       if (success) {
         toast.success(t("apps.admin.messages.songUpdated", "Song updated"));

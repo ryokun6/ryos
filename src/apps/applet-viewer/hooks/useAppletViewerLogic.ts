@@ -57,7 +57,7 @@ export function useAppletViewerLogic({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
   const username = useChatsStore((state) => state.username);
-  const authToken = useChatsStore((state) => state.authToken);
+  const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
   const { t } = useTranslation();
 
   const authResult = useAuth();
@@ -222,10 +222,7 @@ export function useAppletViewerLogic({
           {
             type: APPLET_AUTH_MESSAGE_TYPE,
             action: "response",
-            payload: {
-              username: username ?? null,
-              authToken: authToken ?? null,
-            },
+            payload: { username: username ?? null },
           },
           window.location.origin
         );
@@ -233,7 +230,7 @@ export function useAppletViewerLogic({
         console.warn("[applet-viewer] Failed to post auth payload:", error);
       }
     },
-    [username, authToken]
+    [username]
   );
 
   const focusWindow = useCallback(() => {
@@ -1114,7 +1111,7 @@ export function useAppletViewerLogic({
       return;
     }
 
-    if (!username || !authToken) {
+    if (!username || !isAuthenticated) {
       toast.error("Login required", {
         description: "You must be logged in to share applets.",
       });
@@ -1151,11 +1148,7 @@ export function useAppletViewerLogic({
 
       const response = await abortableFetch(getApiUrl("/api/share-applet"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: htmlContent,
           title: appletTitle || undefined,

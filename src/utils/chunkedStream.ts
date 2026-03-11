@@ -5,7 +5,6 @@
 
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { isRealToken } from "@/api/core";
 
 // =============================================================================
 // Constants
@@ -75,7 +74,7 @@ export interface ProcessTranslationOptions {
   /** Pre-fetched info from initial lyrics request */
   prefetchedInfo?: TranslationStreamInfo;
   /** Auth credentials (required for force refresh) */
-  auth?: { username: string; authToken: string };
+  auth?: { username: string; isAuthenticated: boolean };
 }
 
 /** Result of translation processing */
@@ -95,7 +94,7 @@ export async function processTranslationSSE(
   language: string,
   options: ProcessTranslationOptions = {}
 ): Promise<TranslationResult> {
-  const { force, signal, onProgress, onLine, prefetchedInfo, auth } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo } = options;
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.lrc) {
@@ -120,10 +119,6 @@ export async function processTranslationSSE(
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (auth?.username && isRealToken(auth?.authToken)) {
-        headers["Authorization"] = `Bearer ${auth.authToken}`;
-        headers["X-Username"] = auth.username;
-      }
 
       const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
@@ -314,7 +309,7 @@ export interface ProcessFuriganaOptions {
   /** Pre-fetched info from initial lyrics request */
   prefetchedInfo?: FuriganaStreamInfo;
   /** Auth credentials (required for force refresh) */
-  auth?: { username: string; authToken: string };
+  auth?: { username: string; isAuthenticated: boolean };
 }
 
 /** Result of furigana processing */
@@ -333,7 +328,7 @@ export async function processFuriganaSSE(
   songId: string,
   options: ProcessFuriganaOptions = {}
 ): Promise<FuriganaResult> {
-  const { force, signal, onProgress, onLine, prefetchedInfo, auth } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo } = options;
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
@@ -358,10 +353,6 @@ export async function processFuriganaSSE(
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const furiganaHeaders: Record<string, string> = { "Content-Type": "application/json" };
-      if (auth?.username && isRealToken(auth?.authToken)) {
-        furiganaHeaders["Authorization"] = `Bearer ${auth.authToken}`;
-        furiganaHeaders["X-Username"] = auth.username;
-      }
 
       const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
@@ -559,7 +550,7 @@ export interface ProcessSoramimiOptions {
    */
   targetLanguage?: "zh-TW" | "en";
   /** Auth credentials (required for force refresh) */
-  auth?: { username: string; authToken: string };
+  auth?: { username: string; isAuthenticated: boolean };
 }
 
 /** Result of soramimi processing */
@@ -578,7 +569,7 @@ export async function processSoramimiSSE(
   songId: string,
   options: ProcessSoramimiOptions = {}
 ): Promise<SoramimiResult> {
-  const { force, signal, onProgress, onLine, prefetchedInfo, furigana, targetLanguage = "zh-TW", auth } = options;
+  const { force, signal, onProgress, onLine, prefetchedInfo, furigana, targetLanguage = "zh-TW" } = options;
 
   // If we have complete cached data from prefetch and not forcing, use it
   if (!force && prefetchedInfo?.cached && prefetchedInfo.data) {
@@ -626,10 +617,6 @@ export async function processSoramimiSSE(
       }
       
       const soramimiHeaders: Record<string, string> = { "Content-Type": "application/json" };
-      if (auth?.username && isRealToken(auth?.authToken)) {
-        soramimiHeaders["Authorization"] = `Bearer ${auth.authToken}`;
-        soramimiHeaders["X-Username"] = auth.username;
-      }
 
       const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",

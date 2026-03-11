@@ -110,7 +110,7 @@ export default apiHandler<RefreshRequest>(
 
     res.setHeader("Set-Cookie", buildSetAuthCookie(username, newToken));
     logger.info("Token refreshed successfully", { username });
-    logger.response(201, Date.now() - startTime);
-    res.status(201).json({ token: newToken });
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({ refreshed: true });
   }
 );

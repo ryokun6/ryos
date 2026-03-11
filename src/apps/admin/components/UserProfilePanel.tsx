@@ -96,7 +96,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   onUserDeleted,
 }) => {
   const { t } = useTranslation();
-  const { username: currentUser, authToken } = useAuth();
+  const { username: currentUser, isAuthenticated } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [memories, setMemories] = useState<UserMemory[]>([]);
@@ -126,30 +126,20 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [isProcessingNotes, setIsProcessingNotes] = useState(false);
 
   const fetchProfile = useCallback(async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     try {
-      const data = await getAdminUserProfile<UserProfile>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
-        username
-      );
+      const data = await getAdminUserProfile<UserProfile>(username);
       setProfile(data);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
       toast.error(t("apps.admin.errors.failedToFetchProfile"));
     }
-  }, [username, authToken, currentUser, t]);
+  }, [username, isAuthenticated, currentUser, t]);
 
   const fetchMessages = useCallback(async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     try {
       const data = await getAdminUserMessages<{ messages?: UserMessage[] }>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
         username,
         RECENT_MESSAGES_LIMIT
       );
@@ -159,21 +149,15 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
       console.error("Failed to fetch messages:", error);
       return false;
     }
-  }, [username, authToken, currentUser]);
+  }, [username, isAuthenticated, currentUser]);
 
   const fetchMemories = useCallback(async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     try {
       const data = await getAdminUserMemories<{
         memories?: UserMemory[];
         dailyNotes?: DailyNote[];
-      }>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
-        username
-      );
+      }>(username);
       setMemories(data.memories || []);
       setDailyNotes(data.dailyNotes || []);
       return true;
@@ -181,28 +165,21 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
       console.error("Failed to fetch memories:", error);
       return false;
     }
-  }, [username, authToken, currentUser]);
+  }, [username, isAuthenticated, currentUser]);
 
   const fetchHeartbeats = useCallback(async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     try {
       const data = await getAdminUserHeartbeats<{
         heartbeats?: HeartbeatRecord[];
-      }>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
-        username,
-        HEARTBEAT_LOOKBACK_DAYS
-      );
+      }>(username, HEARTBEAT_LOOKBACK_DAYS);
       setHeartbeats(data.heartbeats || []);
       return true;
     } catch (error) {
       console.error("Failed to fetch heartbeats:", error);
       return false;
     }
-  }, [username, authToken, currentUser]);
+  }, [username, isAuthenticated, currentUser]);
 
   const toggleMemory = useCallback((key: string) => {
     setExpandedMemories((prev) => {
@@ -331,16 +308,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   }, [hasLoadedHeartbeats, isHeartbeatsLoading, isHeartbeatsOpen, loadHeartbeats]);
 
   const handleBan = async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     try {
-      await banAdminUser<{ success: boolean }>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
-        username,
-        banReason || undefined
-      );
+      await banAdminUser<{ success: boolean }>(username, banReason || undefined);
       toast.success(t("apps.admin.messages.userBanned", { username }));
       setShowBanInput(false);
       setBanReason("");
@@ -357,15 +327,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   };
 
   const handleUnban = async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     try {
-      await unbanAdminUser<{ success: boolean }>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
-        username
-      );
+      await unbanAdminUser<{ success: boolean }>(username);
       toast.success(t("apps.admin.messages.userUnbanned", { username }));
       fetchProfile();
     } catch (error) {
@@ -379,15 +343,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     try {
-      await deleteAdminUser<{ success: boolean }>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
-        username
-      );
+      await deleteAdminUser<{ success: boolean }>(username);
       toast.success(t("apps.admin.messages.userDeleted", { username }));
       onUserDeleted();
       onBack();
@@ -403,16 +361,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   };
 
   const handleClearMemory = async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     setIsClearingMemory(true);
     try {
-      const data = await clearAdminUserMemories<{ message?: string }>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
-        username
-      );
+      const data = await clearAdminUserMemories<{ message?: string }>(username);
       toast.success(data.message || t("apps.admin.profile.memoriesCleared"));
       fetchMemories();
     } catch (error) {
@@ -429,16 +381,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   };
 
   const handleForceProcessDailyNotes = async () => {
-    if (!currentUser || !authToken) return;
+    if (!currentUser || !isAuthenticated) return;
     setIsProcessingNotes(true);
     try {
-      const data = await forceAdminDailyNotes<{ message?: string }>(
-        {
-          username: currentUser,
-          token: authToken,
-        },
-        username
-      );
+      const data = await forceAdminDailyNotes<{ message?: string }>(username);
       toast.success(data.message || t("apps.admin.profile.dailyNotesProcessed"));
       fetchMemories();
     } catch (error) {

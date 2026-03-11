@@ -170,7 +170,7 @@ export interface UseAdminLogicProps {
 export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("admin", helpItems);
-  const { username, authToken } = useAuth();
+  const { username, isAuthenticated } = useAuth();
   const isOffline = useOffline();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -243,33 +243,27 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
     if (isOffline) return; // Skip API calls when offline
 
     try {
-      const data = await getAdminStats<Partial<Stats>>({
-        username,
-        token: authToken,
-      });
+      const data = await getAdminStats<Partial<Stats>>();
       // Merge with existing stats to preserve totalSongs (which comes from fetchSongs)
       setStats((prev) => ({ ...prev, ...data }));
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }
-  }, [username, authToken, isOffline]);
+  }, [username, isAuthenticated, isOffline]);
 
   // Fetch users (uses admin API to get all users)
   const fetchUsers = useCallback(
     async (search: string = "") => {
-      if (!username || !authToken) return;
+      if (!username || !isAuthenticated) return;
       if (isOffline) return; // Skip API calls when offline
 
       setIsLoading(true);
       try {
-        const data = await getAdminUsers<{ users?: User[] }>({
-          username,
-          token: authToken,
-        });
+        const data = await getAdminUsers<{ users?: User[] }>();
         // Sort users: banned first, then by most recently active
         let sortedUsers = (data.users || []).sort((a: User, b: User) => {
           // Banned users first
@@ -294,20 +288,17 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         setIsLoading(false);
       }
     },
-    [username, authToken, t, isOffline]
+    [username, isAuthenticated, t, isOffline]
   );
 
   // Fetch rooms
   const fetchRooms = useCallback(async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
     if (isOffline) return; // Skip API calls when offline
 
     setIsLoading(true);
     try {
-      const data = await listRoomsApi({
-        username,
-        token: authToken,
-      });
+      const data = await listRoomsApi();
       const normalizedRooms = data.rooms.map((room) => ({
         ...room,
         type: room.type ?? "public",
@@ -319,20 +310,17 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [username, authToken, t, isOffline]);
+  }, [username, isAuthenticated, t, isOffline]);
 
   // Fetch messages for a room
   const fetchRoomMessages = useCallback(
     async (roomId: string) => {
-      if (!username || !authToken) return;
+      if (!username || !isAuthenticated) return;
       if (isOffline) return; // Skip API calls when offline
 
       setIsLoading(true);
       try {
-        const data = await getRoomMessagesApi(roomId, {
-          username,
-          token: authToken,
-        });
+        const data = await getRoomMessagesApi(roomId);
         setRoomMessages(data.messages || []);
       } catch (error) {
         console.error("Failed to fetch messages:", error);
@@ -341,7 +329,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         setIsLoading(false);
       }
     },
-    [username, authToken, t, isOffline]
+    [username, isAuthenticated, t, isOffline]
   );
 
   // Fetch songs from Redis cache
@@ -367,13 +355,10 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   // Delete user
   const deleteUser = useCallback(
     async (targetUsername: string) => {
-      if (!username || !authToken) return;
+      if (!username || !isAuthenticated) return;
 
       try {
-        await deleteAdminUser<{ success: boolean }>({
-          username,
-          token: authToken,
-        }, targetUsername);
+        await deleteAdminUser<{ success: boolean }>(targetUsername);
         toast.success(
           t("apps.admin.messages.userDeleted", { username: targetUsername })
         );
@@ -388,19 +373,16 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         toast.error(t("apps.admin.errors.failedToDeleteUser"));
       }
     },
-    [username, authToken, userSearch, fetchUsers, fetchStats, t]
+    [username, isAuthenticated, userSearch, fetchUsers, fetchStats, t]
   );
 
   // Delete room
   const deleteRoom = useCallback(
     async (roomId: string) => {
-      if (!username || !authToken) return;
+      if (!username || !isAuthenticated) return;
 
       try {
-        await deleteRoomApi(roomId, {
-          username,
-          token: authToken,
-        });
+        await deleteRoomApi(roomId);
         toast.success(t("apps.admin.messages.roomDeleted"));
         fetchRooms();
         fetchStats();
@@ -415,19 +397,16 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         toast.error(t("apps.admin.errors.failedToDeleteRoom"));
       }
     },
-    [username, authToken, fetchRooms, fetchStats, t]
+    [username, isAuthenticated, fetchRooms, fetchStats, t]
   );
 
   // Delete message
   const deleteMessage = useCallback(
     async (roomId: string, messageId: string) => {
-      if (!username || !authToken) return;
+      if (!username || !isAuthenticated) return;
 
       try {
-        await deleteRoomMessageApi(roomId, messageId, {
-          username,
-          token: authToken,
-        });
+        await deleteRoomMessageApi(roomId, messageId);
         toast.success(t("apps.admin.messages.messageDeleted"));
         fetchRoomMessages(roomId);
       } catch (error) {
@@ -439,18 +418,18 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         toast.error(t("apps.admin.errors.failedToDeleteMessage"));
       }
     },
-    [username, authToken, fetchRoomMessages, t]
+    [username, isAuthenticated, fetchRoomMessages, t]
   );
 
   // Delete song
   const deleteSong = useCallback(
     async (youtubeId: string) => {
-      if (!username || !authToken) return;
+      if (!username || !isAuthenticated) return;
 
       try {
         const success = await deleteSongMetadata(youtubeId, {
           username,
-          authToken,
+          isAuthenticated,
         });
 
         if (success) {
@@ -468,14 +447,14 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         );
       }
     },
-    [username, authToken, fetchSongs, t]
+    [username, isAuthenticated, fetchSongs, t]
   );
 
   // Handle import file selection
   const handleImportFile = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (!file || !username || !authToken) return;
+      if (!file || !username || !isAuthenticated) return;
 
       clearImportStatusResetTimer();
       setIsImporting(true);
@@ -590,7 +569,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
         const result = await bulkImportSongMetadata(songsToImport, {
           username,
-          authToken,
+          isAuthenticated,
         }, {
           onProgress: (progress: BulkImportProgress) => {
             const nextPhase =
@@ -701,7 +680,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     },
     [
       username,
-      authToken,
+      isAuthenticated,
       fetchSongs,
       t,
       clearImportStatusResetTimer,
@@ -881,12 +860,12 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
   // Execute delete all songs (called from confirm dialog)
   const executeDeleteAllSongs = useCallback(async () => {
-    if (!username || !authToken) return;
+    if (!username || !isAuthenticated) return;
 
     setIsDeletingAll(true);
 
     try {
-      const result = await deleteAllSongMetadata({ username, authToken });
+      const result = await deleteAllSongMetadata({ username, isAuthenticated });
 
       if (result.success > 0) {
         toast.success(
@@ -914,7 +893,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     } finally {
       setIsDeletingAll(false);
     }
-  }, [username, authToken, fetchSongs, t]);
+  }, [username, isAuthenticated, fetchSongs, t]);
 
   // Handle delete confirmation
   const handleDeleteConfirm = useCallback(() => {

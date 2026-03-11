@@ -4,14 +4,13 @@ import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { loginWithPassword, verifyAuthToken } from "@/api/auth";
-import { isRealToken } from "@/api/core";
 
 export function useAuth() {
   const {
     username,
-    authToken,
+    isAuthenticated,
     hasPassword,
-    setAuthToken,
+    setAuthenticated,
     setUsername,
     createUser,
     logout,
@@ -19,9 +18,9 @@ export function useAuth() {
     setPassword: storeSetPassword,
   } = useChatsStoreShallow((state) => ({
     username: state.username,
-    authToken: state.authToken,
+    isAuthenticated: state.isAuthenticated,
     hasPassword: state.hasPassword,
-    setAuthToken: state.setAuthToken,
+    setAuthenticated: state.setAuthenticated,
     setUsername: state.setUsername,
     createUser: state.createUser,
     logout: state.logout,
@@ -29,14 +28,12 @@ export function useAuth() {
     setPassword: state.setPassword,
   }));
 
-  // Set username dialog states
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isSettingUsername, setIsSettingUsername] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
 
-  // Token verification dialog states
   const [isVerifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [verifyTokenInput, setVerifyTokenInput] = useState("");
   const [verifyPasswordInput, setVerifyPasswordInput] = useState("");
@@ -44,13 +41,9 @@ export function useAuth() {
   const [isVerifyingToken, setIsVerifyingToken] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
-  // Password state is now managed by the store
-
-  // Logout confirmation dialog state
   const [isLogoutConfirmDialogOpen, setIsLogoutConfirmDialogOpen] =
     useState(false);
 
-  // Username management
   const promptSetUsername = useCallback(() => {
     setNewUsername("");
     setNewPassword("");
@@ -69,14 +62,7 @@ export function useAuth() {
       return;
     }
 
-    // If we have a different user already logged in, clear their data first
     if (username && username !== trimmedUsername) {
-      console.log(
-        "[useAuth] Clearing old user data for different user:",
-        username,
-        "->",
-        trimmedUsername
-      );
       await logout();
     }
 
@@ -108,7 +94,6 @@ export function useAuth() {
     setIsSettingUsername(false);
   }, [newUsername, newPassword, createUser, username, logout]);
 
-  // Token verification management
   const promptVerifyToken = useCallback(() => {
     setVerifyTokenInput("");
     setVerifyPasswordInput("");
@@ -131,77 +116,50 @@ export function useAuth() {
         if (isPassword) {
           const targetUsername = verifyUsernameInput.trim() || username || "";
 
-          // If we have a different user already logged in, clear their data first
           if (username && username !== targetUsername) {
-            console.log(
-              "[useAuth] Clearing old user data for different user login:",
-              username,
-              "->",
-              targetUsername
-            );
             await logout();
           }
 
-          // Authenticate with password
           const result = await loginWithPassword({
             username: targetUsername,
             password: input.trim(),
-            oldToken: isRealToken(authToken) ? authToken : undefined,
           });
-          if (result.token) {
-            setAuthToken(result.token);
-            // Set username from the response to ensure it's properly stored
-            if (result.username) {
-              setUsername(result.username);
-            }
-            // Track password login analytics
+          if (result.username) {
+            setUsername(result.username);
+            setAuthenticated(true);
             track(APP_ANALYTICS.USER_LOGIN_PASSWORD, {
-              username: result.username || targetUsername,
+              username: result.username,
             });
             toast.success("Success", {
               description: "Logged in successfully with password",
             });
             setVerifyDialogOpen(false);
             setVerifyPasswordInput("");
-            // Also close the sign-up/username dialog if it happens to be open
             setIsUsernameDialogOpen(false);
           }
         } else {
-          // For token login, clear any existing user data to prevent token mixing
-          if (username || authToken) {
-            console.log(
-              "[useAuth] Clearing existing user data before token login to prevent mixing"
-            );
+          if (username || isAuthenticated) {
             await logout();
           }
 
-          // Test the token using the dedicated verification endpoint
           const result = await verifyAuthToken({
             username: verifyUsernameInput.trim() || "",
             token: input.trim(),
           });
-          console.log("[useAuth] Token validation successful:", result);
 
-          // Token is valid, set it in the store
-          setAuthToken(input.trim());
-
-          // Set username from the response to ensure it's properly stored
-          if (result.username) {
+          if (result.valid && result.username) {
             setUsername(result.username);
+            setAuthenticated(true);
+            track(APP_ANALYTICS.USER_LOGIN_TOKEN, {
+              username: result.username,
+            });
+            toast.success("Success", {
+              description: "Token verified and set successfully",
+            });
+            setVerifyDialogOpen(false);
+            setVerifyTokenInput("");
+            setIsUsernameDialogOpen(false);
           }
-
-          // Track token login analytics
-          track(APP_ANALYTICS.USER_LOGIN_TOKEN, {
-            username: result.username || "",
-          });
-
-          toast.success("Success", {
-            description: "Token verified and set successfully",
-          });
-          setVerifyDialogOpen(false);
-          setVerifyTokenInput("");
-          // Also close the sign-up/username dialog if it happens to be open
-          setIsUsernameDialogOpen(false);
         }
       } catch (err) {
         console.error("[useAuth] Error verifying:", err);
@@ -212,15 +170,13 @@ export function useAuth() {
         setIsVerifyingToken(false);
       }
     },
-    [setAuthToken, setUsername, username, verifyUsernameInput, authToken, logout]
+    [setAuthenticated, setUsername, username, verifyUsernameInput, isAuthenticated, logout]
   );
 
-  // Check if user has a password set (now uses store)
   const checkHasPassword = useCallback(async () => {
     return storeCheckHasPassword();
   }, [storeCheckHasPassword]);
 
-  // Set password for existing user (now uses store)
   const setPassword = useCallback(
     async (password: string) => {
       return storeSetPassword(password);
@@ -228,11 +184,7 @@ export function useAuth() {
     [storeSetPassword]
   );
 
-  // Logout functionality
   const handleLogout = useCallback(async () => {
-    console.log("[useAuth] Logging out user...");
-
-    // Clear local dialog states
     setIsUsernameDialogOpen(false);
     setVerifyDialogOpen(false);
     setIsLogoutConfirmDialogOpen(false);
@@ -243,9 +195,7 @@ export function useAuth() {
     setVerifyUsernameInput("");
     setUsernameError(null);
     setVerifyError(null);
-    // hasPassword is now managed by the store and reset automatically on logout
 
-    // Call store logout to clear all user data and refresh rooms
     await logout();
 
     toast.success("Logged Out", {
@@ -253,24 +203,20 @@ export function useAuth() {
     });
   }, [logout]);
 
-  // Show logout confirmation dialog
   const promptLogout = useCallback(async () => {
     setIsLogoutConfirmDialogOpen(true);
   }, []);
 
-  // Handle logout confirmation
   const confirmLogout = useCallback(() => {
     setIsLogoutConfirmDialogOpen(false);
     handleLogout();
   }, [handleLogout]);
 
   return {
-    // State
     username,
-    authToken,
+    isAuthenticated,
     hasPassword,
 
-    // Username management
     promptSetUsername,
     isUsernameDialogOpen,
     setIsUsernameDialogOpen,
@@ -283,7 +229,6 @@ export function useAuth() {
     submitUsernameDialog,
     setUsernameError,
 
-    // Token verification
     promptVerifyToken,
     isVerifyDialogOpen,
     setVerifyDialogOpen,
@@ -297,11 +242,9 @@ export function useAuth() {
     verifyError,
     handleVerifyTokenSubmit,
 
-    // Password management
     checkHasPassword,
     setPassword,
 
-    // Logout
     logout: promptLogout,
     confirmLogout,
     isLogoutConfirmDialogOpen,

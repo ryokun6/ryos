@@ -13,7 +13,7 @@ import {
 
 interface UseTelegramLinkOptions {
   username?: string | null;
-  authToken?: string | null;
+  isAuthenticated?: boolean;
 }
 
 export function getTelegramLinkedAccountLabel(
@@ -33,7 +33,7 @@ export function getTelegramLinkedAccountLabel(
 
 export function useTelegramLink({
   username,
-  authToken,
+  isAuthenticated,
 }: UseTelegramLinkOptions) {
   const { t } = useTranslation();
   const [telegramLinkedAccount, setTelegramLinkedAccount] =
@@ -47,7 +47,7 @@ export function useTelegramLink({
 
   const refreshTelegramLinkStatus = useCallback(
     async (): Promise<TelegramLinkStatusResponse | null> => {
-    if (!username || !authToken) {
+    if (!username || !isAuthenticated) {
       setTelegramLinkedAccount(null);
       setTelegramLinkSession(null);
       setIsTelegramStatusLoading(false);
@@ -56,10 +56,7 @@ export function useTelegramLink({
 
     setIsTelegramStatusLoading(true);
     try {
-      const result = await getTelegramLinkStatus({
-        username,
-        token: authToken,
-      });
+      const result = await getTelegramLinkStatus();
       setTelegramLinkedAccount(result.account);
       setTelegramLinkSession(result.account ? null : result.pendingLink);
       return result;
@@ -70,7 +67,7 @@ export function useTelegramLink({
       setIsTelegramStatusLoading(false);
     }
     },
-    [username, authToken]
+    [username, isAuthenticated]
   );
 
   useEffect(() => {
@@ -79,17 +76,14 @@ export function useTelegramLink({
 
   const handleCreateTelegramLink = useCallback(
     async (): Promise<TelegramLinkCreateResponse | null> => {
-      if (!username || !authToken) {
+      if (!username || !isAuthenticated) {
         toast.error(t("apps.control-panels.telegram.loginRequired"));
         return null;
       }
 
       setIsCreatingTelegramLink(true);
       try {
-        const result = await createTelegramLink({
-          username,
-          token: authToken,
-        });
+        const result = await createTelegramLink();
 
         if (result.linkedAccount) {
           setTelegramLinkedAccount(result.linkedAccount);
@@ -108,7 +102,7 @@ export function useTelegramLink({
         setIsCreatingTelegramLink(false);
       }
     },
-    [username, authToken, t]
+    [username, isAuthenticated, t]
   );
 
   const handleOpenTelegramLink = useCallback(() => {
@@ -135,17 +129,14 @@ export function useTelegramLink({
   }, [telegramLinkSession, t]);
 
   const handleDisconnectTelegramLink = useCallback(async () => {
-    if (!username || !authToken) {
+    if (!username || !isAuthenticated) {
       toast.error(t("apps.control-panels.telegram.loginRequired"));
       return;
     }
 
     setIsDisconnectingTelegramLink(true);
     try {
-      await disconnectTelegramLink({
-        username,
-        token: authToken,
-      });
+      await disconnectTelegramLink();
       setTelegramLinkedAccount(null);
       setTelegramLinkSession(null);
       toast.success(t("apps.control-panels.telegram.disconnected"));
@@ -155,7 +146,7 @@ export function useTelegramLink({
     } finally {
       setIsDisconnectingTelegramLink(false);
     }
-  }, [username, authToken, t]);
+  }, [username, isAuthenticated, t]);
 
   return {
     telegramLinkedAccount,
