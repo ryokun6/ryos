@@ -332,7 +332,7 @@ export function FinderMenuBar({
             className="text-md h-6 px-3 flex items-center gap-2"
           >
             <ThemedIcon
-              name="/icons/default/airdrop.png"
+              name="/icons/default/cloud-sync.png"
               alt=""
               className="w-4 h-4 [image-rendering:pixelated]"
             />

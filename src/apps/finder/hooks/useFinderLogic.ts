@@ -1299,8 +1299,8 @@ export function useFinderLogic({
       {
         name: t("apps.finder.airdrop.title"),
         path: "__airdrop__",
-        icon: "/icons/default/airdrop.png",
-        divider: true,
+        icon: "/icons/default/cloud-sync.png",
+        divider: false,
         isAirDrop: true,
       },
       { name: t("apps.finder.window.macintoshHd"), path: "/", icon: "/icons/default/disk.png", divider: true, isAirDrop: false },
