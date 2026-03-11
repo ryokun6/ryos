@@ -287,7 +287,7 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
       })}
 
       {/* Status text pinned to bottom of container */}
-      <div className="absolute bottom-4 left-0 right-0 text-center z-0">
+      <div className="absolute bottom-4 left-0 right-0 text-center z-0 px-2">
         {otherUsers.length === 0 && (
           isDiscovering ? (
             <p className="text-[11px] text-neutral-400 animate-pulse">
