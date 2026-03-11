@@ -13,6 +13,36 @@ export const TELEGRAM_HEARTBEAT_LOG_PREFIX = "[telegram heartbeat]";
 export const TELEGRAM_HEARTBEAT_SKIP_TOKEN = "NO_HEARTBEAT";
 export const TELEGRAM_HEARTBEAT_HISTORY_LOOKBACK_DAYS = 7;
 
+export const TELEGRAM_BRIEFING_MORNING_HOUR = 8;
+export const TELEGRAM_BRIEFING_EVENING_HOUR = 19;
+
+export type TelegramBriefingType = "morning" | "evening" | null;
+
+export function getCurrentBriefingType(
+  date: Date = new Date(),
+  timeZone: string = TELEGRAM_HEARTBEAT_TIME_ZONE
+): TelegramBriefingType {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(date);
+  const hour = parseInt(
+    parts.find((p) => p.type === "hour")?.value ?? "-1",
+    10
+  );
+  const minute = parseInt(
+    parts.find((p) => p.type === "minute")?.value ?? "-1",
+    10
+  );
+
+  if (hour === TELEGRAM_BRIEFING_MORNING_HOUR && minute < 30) return "morning";
+  if (hour === TELEGRAM_BRIEFING_EVENING_HOUR && minute < 30) return "evening";
+  return null;
+}
+
 export function getTelegramHeartbeatAuthSecret(
   env: NodeJS.ProcessEnv = process.env
 ): string | null {
@@ -48,13 +78,15 @@ export interface TelegramHeartbeatGateDecision {
   code:
     | "no-current-signals"
     | "no-new-signals"
-    | "send";
+    | "send"
+    | "briefing";
 }
 
 export interface TelegramHeartbeatPromptOptions {
   dailyNoteSnapshot: string;
   heartbeatLogSnapshot: string;
   recentTelegramSnapshot: string;
+  briefingType?: TelegramBriefingType;
 }
 
 export interface TelegramHeartbeatResult {
@@ -206,8 +238,17 @@ function getLatestSignalTimestamp(
 export function shouldSendTelegramHeartbeat(
   noteContext: TelegramHeartbeatNoteContext,
   historyContext: TelegramHeartbeatHistoryContext,
-  conversationContext?: TelegramHeartbeatConversationContext
+  conversationContext?: TelegramHeartbeatConversationContext,
+  briefingType?: TelegramBriefingType
 ): TelegramHeartbeatGateDecision {
+  if (briefingType) {
+    return {
+      shouldSend: true,
+      reason: `scheduled ${briefingType} briefing`,
+      code: "briefing",
+    };
+  }
+
   const latestSignalTimestamp = getLatestSignalTimestamp(
     noteContext,
     conversationContext
@@ -311,28 +352,62 @@ export function buildTelegramHeartbeatStateSummary(args: {
   ].join("; ");
 }
 
+function buildBriefingInstructions(briefingType: "morning" | "evening"): string[] {
+  if (briefingType === "morning") {
+    return [
+      "This is a MORNING BRIEFING. You must always send a message — never skip.",
+      "Summarize today's open tasks, upcoming calendar events, and any pending items from recent conversations.",
+      "Help the user plan their day ahead with a concise overview of what needs attention.",
+      "If there are no specific tasks or updates, send a warm good-morning message and ask about their plans for the day.",
+      "Use memoryRead and calendarControl proactively to gather context for the briefing.",
+      "Keep the tone warm, energetic, and forward-looking.",
+    ];
+  }
+
+  return [
+    "This is an EVENING BRIEFING. You must always send a message — never skip.",
+    "Reflect on today's activities: summarize what was accomplished, note what's still open, and highlight anything that needs follow-up tomorrow.",
+    "If there are no specific tasks or updates, send a warm evening check-in — acknowledge the day and wish them a good evening.",
+    "Use memoryRead proactively to recall what happened today.",
+    "Keep the tone warm, reflective, and supportive.",
+  ];
+}
+
 export function buildTelegramHeartbeatPrompt({
   dailyNoteSnapshot,
   heartbeatLogSnapshot,
   recentTelegramSnapshot,
+  briefingType,
 }: TelegramHeartbeatPromptOptions): string {
-  return [
-    "Read today's daily-note snapshot and the recent Telegram chat snapshot first.",
-    "Use those two snapshots together to infer the user's current open tasks, blockers, and likely next actions.",
+  const isBriefing = briefingType === "morning" || briefingType === "evening";
+
+  const baseInstructions = isBriefing
+    ? buildBriefingInstructions(briefingType)
+    : [
+        "Read today's daily-note snapshot and the recent Telegram chat snapshot first.",
+        "Use those two snapshots together to infer the user's current open tasks, blockers, and likely next actions.",
+        "Only continue the conversation naturally if you can add net-new value grounded in today's notes or recent Telegram chats.",
+        "Before replying, internally extract: (1) open tasks that still need attention, (2) tasks already done or already acknowledged, and (3) ideas the assistant already suggested.",
+        "If a task is already complete, already answered, or you do not have a fresh angle, skip the message.",
+        "Pay special attention to the latest proactive heartbeat or check-in already sent by the assistant.",
+        "If that earlier heartbeat did not get a user response, do not send another similar nudge unless you have materially new information, a clearly better angle, or a concrete next step the user has not already seen.",
+        "If a full note or memory would help, use memoryRead before deciding.",
+        "You may also use calendarControl, stickiesControl, and web_search when one of those tools would help with a concrete, current need from today's notes or recent Telegram chats.",
+        `If nothing currently needs attention, reply exactly ${TELEGRAM_HEARTBEAT_SKIP_TOKEN} or ${TELEGRAM_HEARTBEAT_SKIP_TOKEN}: <brief reason>.`,
+      ];
+
+  const sharedInstructions = [
     "Treat the recent Telegram chat snapshot as the record of what has already been said, suggested, answered, or completed.",
     "Do not infer, resurrect, or repeat stale tasks when the recent chat or today's notes suggest they were already handled.",
-    "Only continue the conversation naturally if you can add net-new value grounded in today's notes or recent Telegram chats.",
-    "Before replying, internally extract: (1) open tasks that still need attention, (2) tasks already done or already acknowledged, and (3) ideas the assistant already suggested.",
-    "If a task is already complete, already answered, or you do not have a fresh angle, skip the message.",
-    "Pay special attention to the latest proactive heartbeat or check-in already sent by the assistant.",
-    "If that earlier heartbeat did not get a user response, do not send another similar nudge unless you have materially new information, a clearly better angle, or a concrete next step the user has not already seen.",
-    "If a full note or memory would help, use memoryRead before deciding.",
-    "You may also use calendarControl, stickiesControl, and web_search when one of those tools would help with a concrete, current need from today's notes or recent Telegram chats.",
-    `If nothing currently needs attention, reply exactly ${TELEGRAM_HEARTBEAT_SKIP_TOKEN} or ${TELEGRAM_HEARTBEAT_SKIP_TOKEN}: <brief reason>.`,
     "If you do send a message, keep it concise, personal, and focused on one timely point.",
     "Every sent message must contribute at least one fresh insight, synthesis, next step, dependency reminder, or concise new fact.",
     "Do not paraphrase or lightly rewrite something already present in the recent Telegram chat snapshot or heartbeat log.",
     "Do not mention that this message is automated, scheduled, or a heartbeat.",
+  ];
+
+  return [
+    ...baseInstructions,
+    ...sharedInstructions,
     "",
     "TODAY'S DAILY NOTES:",
     dailyNoteSnapshot || "(none)",

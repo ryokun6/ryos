@@ -15,12 +15,15 @@ import {
   formatTelegramConversationEntries,
   formatTelegramHeartbeatDailyNoteEntries,
   formatTelegramHeartbeatHistoryEntries,
+  getCurrentBriefingType,
   getTelegramConversationSinceLastHeartbeat,
   getTelegramHeartbeatAuthSecret,
   getTelegramHeartbeatSlot,
   isTelegramHeartbeatLegacyNoteEntry,
   parseTelegramHeartbeatResult,
   shouldSendTelegramHeartbeat,
+  TELEGRAM_BRIEFING_MORNING_HOUR,
+  TELEGRAM_BRIEFING_EVENING_HOUR,
   TELEGRAM_HEARTBEAT_CRON_PATH,
   TELEGRAM_HEARTBEAT_CRON_SCHEDULE,
   TELEGRAM_HEARTBEAT_SKIP_TOKEN,
@@ -425,6 +428,146 @@ describe("telegram heartbeat helpers", () => {
     expect("calendarControl" in prepared.tools).toBe(true);
     expect("stickiesControl" in prepared.tools).toBe(true);
     expect("web_search" in prepared.tools).toBe(true);
+  });
+
+  test("detects morning briefing window in the configured timezone", () => {
+    const morningStart = new Date("2026-03-11T15:00:00.000Z"); // 8:00 AM PT
+    const morningMid = new Date("2026-03-11T15:15:00.000Z"); // 8:15 AM PT
+    const morningEnd = new Date("2026-03-11T15:30:00.000Z"); // 8:30 AM PT
+    const afternoon = new Date("2026-03-11T21:00:00.000Z"); // 2:00 PM PT
+
+    expect(getCurrentBriefingType(morningStart, "America/Los_Angeles")).toBe("morning");
+    expect(getCurrentBriefingType(morningMid, "America/Los_Angeles")).toBe("morning");
+    expect(getCurrentBriefingType(morningEnd, "America/Los_Angeles")).toBeNull();
+    expect(getCurrentBriefingType(afternoon, "America/Los_Angeles")).toBeNull();
+  });
+
+  test("detects evening briefing window in the configured timezone", () => {
+    const eveningStart = new Date("2026-03-12T02:00:00.000Z"); // 7:00 PM PT
+    const eveningMid = new Date("2026-03-12T02:20:00.000Z"); // 7:20 PM PT
+    const eveningEnd = new Date("2026-03-12T02:30:00.000Z"); // 7:30 PM PT
+    const night = new Date("2026-03-12T05:00:00.000Z"); // 10:00 PM PT
+
+    expect(getCurrentBriefingType(eveningStart, "America/Los_Angeles")).toBe("evening");
+    expect(getCurrentBriefingType(eveningMid, "America/Los_Angeles")).toBe("evening");
+    expect(getCurrentBriefingType(eveningEnd, "America/Los_Angeles")).toBeNull();
+    expect(getCurrentBriefingType(night, "America/Los_Angeles")).toBeNull();
+  });
+
+  test("returns null for non-briefing hours", () => {
+    const noon = new Date("2026-03-11T19:00:00.000Z"); // 12:00 PM PT
+    const earlyMorning = new Date("2026-03-11T13:00:00.000Z"); // 6:00 AM PT
+
+    expect(getCurrentBriefingType(noon, "America/Los_Angeles")).toBeNull();
+    expect(getCurrentBriefingType(earlyMorning, "America/Los_Angeles")).toBeNull();
+  });
+
+  test("briefing type constants match expected hours", () => {
+    expect(TELEGRAM_BRIEFING_MORNING_HOUR).toBe(8);
+    expect(TELEGRAM_BRIEFING_EVENING_HOUR).toBe(19);
+  });
+
+  test("always sends during a briefing window even with no signals", () => {
+    const emptyHistory = buildTelegramHeartbeatHistoryContext([]);
+    const emptyNoteContext = buildTelegramHeartbeatNoteContext(null);
+    const emptyConversation = buildTelegramHeartbeatConversationContext([]);
+
+    expect(
+      shouldSendTelegramHeartbeat(emptyNoteContext, emptyHistory, emptyConversation, "morning")
+    ).toEqual({
+      shouldSend: true,
+      reason: "scheduled morning briefing",
+      code: "briefing",
+    });
+
+    expect(
+      shouldSendTelegramHeartbeat(emptyNoteContext, emptyHistory, emptyConversation, "evening")
+    ).toEqual({
+      shouldSend: true,
+      reason: "scheduled evening briefing",
+      code: "briefing",
+    });
+  });
+
+  test("briefing bypasses no-new-signals gate", () => {
+    const noteContext = buildTelegramHeartbeatNoteContext({
+      ...sampleDailyNote,
+      entries: [
+        {
+          timestamp: 100,
+          localTime: "09:00:00",
+          content: "follow up on the onboarding doc edits",
+        },
+      ],
+    });
+    const historyContext = buildTelegramHeartbeatHistoryContext([
+      {
+        id: "hb-1",
+        timestamp: 200,
+        shouldSend: false,
+        topic: TELEGRAM_HEARTBEAT_TOPIC,
+        message: null,
+        skipReason: "no new daily-note items since the last heartbeat check",
+        stateSummary: "decision=no-new-signals",
+      },
+    ]);
+
+    expect(
+      shouldSendTelegramHeartbeat(noteContext, historyContext, undefined, null)
+    ).toEqual({
+      shouldSend: false,
+      reason: "no new daily-note items or telegram task signals since the last heartbeat check",
+      code: "no-new-signals",
+    });
+
+    expect(
+      shouldSendTelegramHeartbeat(noteContext, historyContext, undefined, "morning")
+    ).toEqual({
+      shouldSend: true,
+      reason: "scheduled morning briefing",
+      code: "briefing",
+    });
+  });
+
+  test("morning briefing prompt includes day-planning instructions", () => {
+    const prompt = buildTelegramHeartbeatPrompt({
+      dailyNoteSnapshot: "- 08:00:00: team standup at 10am",
+      recentTelegramSnapshot: "(none)",
+      heartbeatLogSnapshot: "(none)",
+      briefingType: "morning",
+    });
+
+    expect(prompt).toContain("MORNING BRIEFING");
+    expect(prompt).toContain("plan their day");
+    expect(prompt).toContain("must always send a message");
+    expect(prompt).not.toContain(TELEGRAM_HEARTBEAT_SKIP_TOKEN);
+  });
+
+  test("evening briefing prompt includes reflection instructions", () => {
+    const prompt = buildTelegramHeartbeatPrompt({
+      dailyNoteSnapshot: "- 10:00:00: finished code review",
+      recentTelegramSnapshot: "(none)",
+      heartbeatLogSnapshot: "(none)",
+      briefingType: "evening",
+    });
+
+    expect(prompt).toContain("EVENING BRIEFING");
+    expect(prompt).toContain("Reflect on today");
+    expect(prompt).toContain("must always send a message");
+    expect(prompt).not.toContain(TELEGRAM_HEARTBEAT_SKIP_TOKEN);
+  });
+
+  test("regular heartbeat prompt still contains skip token when no briefing", () => {
+    const prompt = buildTelegramHeartbeatPrompt({
+      dailyNoteSnapshot: "(none)",
+      recentTelegramSnapshot: "(none)",
+      heartbeatLogSnapshot: "(none)",
+      briefingType: null,
+    });
+
+    expect(prompt).toContain(TELEGRAM_HEARTBEAT_SKIP_TOKEN);
+    expect(prompt).not.toContain("MORNING BRIEFING");
+    expect(prompt).not.toContain("EVENING BRIEFING");
   });
 
   test("heartbeat can keep long-term memories without duplicating shared daily notes", async () => {
