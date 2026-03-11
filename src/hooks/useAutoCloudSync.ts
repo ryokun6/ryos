@@ -10,6 +10,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useDockStore } from "@/stores/useDockStore";
+import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useStickiesStore } from "@/stores/useStickiesStore";
 
 import { useCalendarStore } from "@/stores/useCalendarStore";
@@ -562,6 +563,14 @@ export function useAutoCloudSync() {
       }
     });
 
+    const dashboardUnsubscribe = useDashboardStore.subscribe(
+      (state, prevState) => {
+        if (state.widgets !== prevState.widgets) {
+          queueUpload("settings");
+        }
+      }
+    );
+
     const stickiesUnsubscribe = useStickiesStore.subscribe(
       (state, prevState) => {
         if (state.notes !== prevState.notes) {
@@ -614,6 +623,7 @@ export function useAutoCloudSync() {
       songsUnsubscribe();
       videosUnsubscribe();
       dockUnsubscribe();
+      dashboardUnsubscribe();
       stickiesUnsubscribe();
       calendarUnsubscribe();
       contactsUnsubscribe();

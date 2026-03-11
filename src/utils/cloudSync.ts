@@ -10,6 +10,10 @@ import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useDockStore, type DockItem } from "@/stores/useDockStore";
+import {
+  useDashboardStore,
+  type DashboardWidget,
+} from "@/stores/useDashboardStore";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import {
   useCalendarStore,
@@ -121,6 +125,9 @@ interface SettingsSnapshotData {
     scale: number;
     hiding: boolean;
     magnification: boolean;
+  };
+  dashboard?: {
+    widgets: DashboardWidget[];
   };
   /** @deprecated Wallpapers moved to custom-wallpapers domain. Kept for backward compat on restore. */
   customWallpapers?: StoreItemWithKey[];
@@ -441,6 +448,7 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
   const audioState = useAudioSettingsStore.getState();
   const ipodState = useIpodStore.getState();
   const dockState = useDockStore.getState();
+  const dashboardState = useDashboardStore.getState();
 
   return {
     theme: useThemeStore.getState().current,
@@ -489,6 +497,9 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
       scale: dockState.scale,
       hiding: dockState.hiding,
       magnification: dockState.magnification,
+    },
+    dashboard: {
+      widgets: dashboardState.widgets,
     },
   };
 }
@@ -762,6 +773,12 @@ async function applySettingsSnapshot(data: SettingsSnapshotData): Promise<void> 
       scale: data.dock.scale,
       hiding: data.dock.hiding,
       magnification: data.dock.magnification,
+    });
+  }
+
+  if (data.dashboard?.widgets && Array.isArray(data.dashboard.widgets)) {
+    useDashboardStore.setState({
+      widgets: data.dashboard.widgets,
     });
   }
 }
