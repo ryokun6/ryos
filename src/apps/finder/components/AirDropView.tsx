@@ -224,80 +224,69 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
   }
 
   const ringRadii = [90, 155, 220];
-  const radarSize = ringRadii[2] * 2 + 60;
-  const centerYOffset = 40;
 
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full select-none overflow-hidden"
+      className="relative h-full w-full select-none overflow-hidden"
     >
-      {/* Radar area with self at center */}
-      <div className="flex-1 flex items-center justify-center relative min-h-0">
-        <div className="relative" style={{ width: radarSize, height: radarSize }}>
-          {/* Concentric circles, shifted down */}
-          {ringRadii.map((r, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full border pointer-events-none"
-              style={{
-                width: r * 2,
-                height: r * 2,
-                top: `calc(50% + ${centerYOffset}px)`,
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                borderColor: `rgba(0, 0, 0, ${0.12 - i * 0.03})`,
-              }}
-            />
-          ))}
+      {/* Concentric circles — centered horizontally, bottom-aligned to container */}
+      {ringRadii.map((r, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full border pointer-events-none"
+          style={{
+            width: r * 2,
+            height: r * 2,
+            bottom: -r + 30,
+            left: "50%",
+            transform: "translateX(-50%)",
+            borderColor: `rgba(0, 0, 0, ${0.12 - i * 0.03})`,
+          }}
+        />
+      ))}
 
-          {/* Self at center of rings */}
-          <div
-            className="absolute z-20"
-            style={{
-              top: `calc(50% + ${centerYOffset}px)`,
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            <UserAvatar
-              username={username}
-              picture={selfPicture}
-              initials={selfInitials}
-              label={selfLabel}
-              onDrop={onSendFile}
-            />
-          </div>
-
-          {/* Users placed on rings (upper half only) */}
-          {otherUsers.map((user, idx) => {
-            const pos = userPositions[idx];
-            if (!pos) return null;
-            const r = ringRadii[pos.ring - 1];
-            const rad = (pos.angle * Math.PI) / 180;
-            const x = Math.cos(rad) * r;
-            const y = Math.sin(rad) * r;
-            return (
-              <UserAvatar
-                key={user}
-                username={user}
-                initials={getUsernameInitials(user)}
-                label={`@${user}`}
-                onDrop={onSendFile}
-                className="absolute z-10"
-                style={{
-                  top: `calc(50% + ${centerYOffset}px)`,
-                  left: "50%",
-                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-                }}
-              />
-            );
-          })}
-        </div>
+      {/* Self at center of rings (bottom of container) */}
+      <div
+        className="absolute z-20"
+        style={{ bottom: 30 - 32, left: "50%", transform: "translateX(-50%)" }}
+      >
+        <UserAvatar
+          username={username}
+          picture={selfPicture}
+          initials={selfInitials}
+          label={selfLabel}
+          onDrop={onSendFile}
+        />
       </div>
 
-      {/* Status text at bottom */}
-      <div className="shrink-0 pb-3 pt-1 text-center">
+      {/* Users placed on rings (upper half only) */}
+      {otherUsers.map((user, idx) => {
+        const pos = userPositions[idx];
+        if (!pos) return null;
+        const r = ringRadii[pos.ring - 1];
+        const rad = (pos.angle * Math.PI) / 180;
+        const x = Math.cos(rad) * r;
+        const y = Math.sin(rad) * r;
+        return (
+          <UserAvatar
+            key={user}
+            username={user}
+            initials={getUsernameInitials(user)}
+            label={`@${user}`}
+            onDrop={onSendFile}
+            className="absolute z-10"
+            style={{
+              bottom: 30 + -y - 32,
+              left: "50%",
+              transform: `translateX(calc(-50% + ${x}px))`,
+            }}
+          />
+        );
+      })}
+
+      {/* Status text pinned to bottom of container */}
+      <div className="absolute bottom-2 left-0 right-0 text-center z-0">
         {otherUsers.length === 0 && (
           isDiscovering ? (
             <p className="text-[11px] text-neutral-400 animate-pulse">
