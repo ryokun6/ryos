@@ -1152,7 +1152,6 @@ export function useFinderLogic({
     if (file.isDirectory) return false;
     if (file.path.startsWith("/Applications")) return false;
     if (!isAuthenticated || !chatUsername) return false;
-    if (nearbyUsers.length === 0) return false;
     return true;
   };
 
@@ -1222,7 +1221,6 @@ export function useFinderLogic({
   const [isAirDropView, setIsAirDropView] = useState(false);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
   const chatUsername = useChatsStore((s) => s.username);
-  const nearbyUsers = useAirDropStore((s) => s.nearbyUsers);
   const sendFileToUser = useAirDropStore((s) => s.sendFile);
 
   const navigateToAirDrop = useCallback(() => {
