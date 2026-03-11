@@ -1216,7 +1216,7 @@ export function useFinderLogic({
   const isMacOSXTheme = currentTheme === "macosx";
 
   // Sidebar state
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(() => window.innerWidth >= 500);
 
   // AirDrop state
   const [isAirDropView, setIsAirDropView] = useState(false);

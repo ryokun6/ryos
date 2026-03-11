@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode, useRef } from "react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { FinderMenuBar } from "./FinderMenuBar";
 import { AppProps } from "@/apps/base/types";
@@ -37,7 +37,6 @@ import {
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
-import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { AirDropView } from "./AirDropView";
 
 function FinderPanel({
@@ -243,11 +242,7 @@ export function FinderAppComponent({
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(700);
-  useResizeObserverWithRef(containerRef, (entry) => {
-    setContainerWidth(entry.contentRect.width);
-  });
-  const effectiveShowSidebar = showSidebar && containerWidth >= 500;
+  const effectiveShowSidebar = showSidebar;
 
   const menuBar = (
     <FinderMenuBar
