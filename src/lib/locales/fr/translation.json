@@ -2932,6 +2932,7 @@
     "aboutThisMac": {
       "builtInMemory": "Mémoire intégrée",
       "clickToToggle": "Cliquer pour basculer",
+      "latestCommit": "Dernier commit",
       "description": "Informations sur ryOS sur cet ordinateur",
       "largestUnusedBlock": "Plus grand bloc inutilisé",
       "mb": "Mo",

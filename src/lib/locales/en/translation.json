@@ -210,7 +210,8 @@
       "largestUnusedBlock": "Largest Unused Block",
       "system": "System",
       "mb": "MB",
-      "clickToToggle": "Click to toggle"
+      "clickToToggle": "Click to toggle",
+      "latestCommit": "Latest Commit"
     },
     "toast": {
       "updatingIcons": "Updating icons",

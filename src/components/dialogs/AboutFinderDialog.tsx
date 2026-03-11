@@ -212,6 +212,18 @@ export function AboutFinderDialog({
                   }}
                 >
                   <p>© Ryo Lu. 1992-{new Date().getFullYear()}</p>
+                  {buildNumber && (
+                    <p>
+                      <a
+                        href={`https://github.com/ryokun6/ryos/commit/${buildNumber}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {t("common.aboutThisMac.latestCommit")}
+                      </a>
+                    </p>
+                  )}
                   {isMac && desktopVersion && (
                     <p>
                       <a 

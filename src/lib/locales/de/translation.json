@@ -2932,6 +2932,7 @@
     "aboutThisMac": {
       "builtInMemory": "Arbeitsspeicher",
       "clickToToggle": "Klicken zum Umschalten",
+      "latestCommit": "Letzter Commit",
       "description": "Informationen über ryOS auf diesem Computer",
       "largestUnusedBlock": "Größter ungenutzter Block",
       "mb": "MB",

@@ -2932,6 +2932,7 @@
     "aboutThisMac": {
       "builtInMemory": "内蔵メモリ",
       "clickToToggle": "クリックで切り替え",
+      "latestCommit": "最新のコミット",
       "description": "このコンピュータのryOSについて",
       "largestUnusedBlock": "最大の未使用ブロック",
       "mb": "MB",
