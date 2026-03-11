@@ -882,9 +882,9 @@ function BottomToolbar({
     >
       {isMacOSTheme ? (
         <>
-          <div className="shrink-0">
-            <div className="metal-inset-btn-group">
-              {!isNarrow && (
+          {!isNarrow && (
+            <div className="shrink-0">
+              <div className="metal-inset-btn-group">
                 <button
                   type="button"
                   className="metal-inset-btn metal-inset-icon"
@@ -894,17 +894,17 @@ function BottomToolbar({
                 >
                   <SidebarSimple size={14} />
                 </button>
-              )}
-              <button
-                type="button"
-                className="metal-inset-btn metal-inset-icon"
-                onClick={onToggleMiniCalendar}
-                data-state={showMiniCalendar ? "on" : "off"}
-              >
-                <CalendarBlank size={14} />
-              </button>
+                <button
+                  type="button"
+                  className="metal-inset-btn metal-inset-icon"
+                  onClick={onToggleMiniCalendar}
+                  data-state={showMiniCalendar ? "on" : "off"}
+                >
+                  <CalendarBlank size={14} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           <div className="shrink-0">
             <div className="metal-inset-btn-group">
               <button
@@ -959,8 +959,8 @@ function BottomToolbar({
       ) : (
         <>
           <div className="flex items-center gap-1.5 shrink-0">
-            <div className="flex items-center gap-0">
-              {!isNarrow && (
+            {!isNarrow && (
+              <div className="flex items-center gap-0">
                 <Button
                   variant={isSystem7Theme ? "player" : "ghost"}
                   onClick={onToggleCalendarSidebar}
@@ -970,16 +970,16 @@ function BottomToolbar({
                 >
                   <SidebarSimple size={14} />
                 </Button>
-              )}
-              <Button
-                variant={isSystem7Theme ? "player" : "ghost"}
-                onClick={onToggleMiniCalendar}
-                data-state={showMiniCalendar ? "on" : "off"}
-                className={cn("h-6 w-6", isXpTheme && "text-black")}
-              >
-                <CalendarBlank size={14} />
-              </Button>
-            </div>
+                <Button
+                  variant={isSystem7Theme ? "player" : "ghost"}
+                  onClick={onToggleMiniCalendar}
+                  data-state={showMiniCalendar ? "on" : "off"}
+                  className={cn("h-6 w-6", isXpTheme && "text-black")}
+                >
+                  <CalendarBlank size={14} />
+                </Button>
+              </div>
+            )}
             <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onGoToToday}
               className={cn("h-6 w-[48px] text-[11px] px-0", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
               {t("apps.calendar.today")}

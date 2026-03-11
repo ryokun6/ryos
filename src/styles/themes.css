@@ -18,6 +18,7 @@
   --os-color-button-active-face: #cccccc;
   --os-color-selection-bg: #000000;
   --os-color-selection-text: #ffffff;
+  --os-color-selection-text-shadow: none;
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #666666;
   --os-color-text-disabled: #999999;
@@ -154,6 +155,7 @@
   --os-color-traffic-light-maximize: #10541a;
   --os-color-selection-bg: rgba(39, 101, 202, 0.88);
   --os-color-selection-text: #ffffff;
+  --os-color-selection-text-shadow: none;
   /* Derived selection glow (used for focus rings). Keep alpha in a separate var */
   --os-color-selection-glow: rgba(48, 103, 218, 0.5);
   --os-color-text-primary: #000000;
@@ -272,6 +274,12 @@
     0 4px 15px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Brushed metal list selection: Spotlight-style gradient */
+:root[data-os-theme="macosx"] .window-material-brushedmetal.is-foreground {
+  --os-color-selection-bg: linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%);
+  --os-color-selection-text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
 }
 
 /* Metal inset buttons for brushed metal toolbars */

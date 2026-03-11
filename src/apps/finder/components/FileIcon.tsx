@@ -324,6 +324,7 @@ export function FileIcon({
               ? {
                   background: "var(--os-color-selection-bg)",
                   color: "var(--os-color-selection-text)",
+                  textShadow: "var(--os-color-selection-text-shadow)",
                 }
               : {}),
             ...(!isSelected && (isXpTheme || isMacOSXTheme) && !isFinderContext

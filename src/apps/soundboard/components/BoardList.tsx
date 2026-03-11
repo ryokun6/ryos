@@ -79,6 +79,7 @@ export function BoardList({
                     ? {
                         background: "var(--os-color-selection-bg)",
                         color: "var(--os-color-selection-text)",
+                        textShadow: "var(--os-color-selection-text-shadow)",
                       }
                     : undefined
                 }

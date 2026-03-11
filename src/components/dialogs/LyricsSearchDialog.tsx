@@ -264,6 +264,7 @@ export function LyricsSearchDialog({
                 fontSize: isXpTheme ? "11px" : undefined,
                 background: "var(--os-color-selection-bg)",
                 color: "var(--os-color-selection-text)",
+                textShadow: "var(--os-color-selection-text-shadow)",
               }}
             >
               <div className="font-semibold">{currentSelection.title}</div>
@@ -347,6 +348,7 @@ export function LyricsSearchDialog({
                       ? {
                           background: "var(--os-color-selection-bg)",
                           color: "var(--os-color-selection-text)",
+                          textShadow: "var(--os-color-selection-text-shadow)",
                         }
                       : {}),
                   }}

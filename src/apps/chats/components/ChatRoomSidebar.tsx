@@ -78,6 +78,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
             ? {
                 background: "var(--os-color-selection-bg)",
                 color: "var(--os-color-selection-text)",
+                textShadow: "var(--os-color-selection-text-shadow)",
               }
             : undefined
         }
@@ -211,6 +212,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                 ? {
                     background: "var(--os-color-selection-bg)",
                     color: "var(--os-color-selection-text)",
+                    textShadow: "var(--os-color-selection-text-shadow)",
                   }
                 : undefined
             }

@@ -245,6 +245,7 @@ export function SongSearchDialog({
                       ? "#f3f4f6"
                       : "white",
                   color: selectedIndex === index ? "var(--os-color-selection-text)" : undefined,
+                  textShadow: selectedIndex === index ? "var(--os-color-selection-text-shadow)" : undefined,
                 }}
               >
                 {result.thumbnail && (

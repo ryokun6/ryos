@@ -142,16 +142,17 @@ const ListRowItem = memo(function ListRowItem({
 
   return (
     <TableRow
-      className={`border-none hover:bg-gray-100/50 transition-colors cursor-default ${
+      className={`border-none cursor-default ${
         selectedFile?.path === file.path || dropTargetPath === file.path
           ? ""
-          : "odd:bg-gray-200/50"
+          : "odd:bg-gray-200/50 hover:bg-gray-100/50 transition-colors"
       }`}
       style={
         selectedFile?.path === file.path || dropTargetPath === file.path
           ? {
               background: "var(--os-color-selection-bg)",
               color: "var(--os-color-selection-text)",
+              textShadow: "var(--os-color-selection-text-shadow)",
             }
           : undefined
       }
