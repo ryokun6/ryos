@@ -5,6 +5,7 @@
 
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { isRealToken } from "@/api/core";
 
 // =============================================================================
 // Constants
@@ -119,7 +120,7 @@ export async function processTranslationSSE(
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (auth?.username && auth?.authToken) {
+      if (auth?.username && isRealToken(auth?.authToken)) {
         headers["Authorization"] = `Bearer ${auth.authToken}`;
         headers["X-Username"] = auth.username;
       }
@@ -357,7 +358,7 @@ export async function processFuriganaSSE(
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const furiganaHeaders: Record<string, string> = { "Content-Type": "application/json" };
-      if (auth?.username && auth?.authToken) {
+      if (auth?.username && isRealToken(auth?.authToken)) {
         furiganaHeaders["Authorization"] = `Bearer ${auth.authToken}`;
         furiganaHeaders["X-Username"] = auth.username;
       }
@@ -625,7 +626,7 @@ export async function processSoramimiSSE(
       }
       
       const soramimiHeaders: Record<string, string> = { "Content-Type": "application/json" };
-      if (auth?.username && auth?.authToken) {
+      if (auth?.username && isRealToken(auth?.authToken)) {
         soramimiHeaders["Authorization"] = `Bearer ${auth.authToken}`;
         soramimiHeaders["X-Username"] = auth.username;
       }

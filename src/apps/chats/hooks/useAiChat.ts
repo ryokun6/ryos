@@ -40,6 +40,7 @@ import { AnyExtension } from "@tiptap/core";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { isRealToken } from "@/api/core";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
   emitAppletUpdated,
@@ -645,7 +646,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           "X-Username": currentUsername,
         };
 
-        if (currentToken) {
+        if (isRealToken(currentToken)) {
           headers.Authorization = `Bearer ${currentToken}`;
         }
 
@@ -2330,7 +2331,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         "Content-Type": "application/json",
         "X-User-Timezone": currentTimeZone,
       };
-      if (currentToken) {
+      if (isRealToken(currentToken)) {
         memHeaders["Authorization"] = `Bearer ${currentToken}`;
         memHeaders["X-Username"] = currentUsername;
       }

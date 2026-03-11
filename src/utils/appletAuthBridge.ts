@@ -96,7 +96,7 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
           if (payload.username) {
             extraHeaders["X-Username"] = payload.username;
           }
-          if (payload.authToken) {
+          if (payload.authToken && payload.authToken !== "__cookie_session__") {
             extraHeaders["Authorization"] = "Bearer " + payload.authToken;
           }
 

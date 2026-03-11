@@ -10,6 +10,7 @@ import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { COOKIE_SESSION_MARKER, isRealToken } from "@/api/core";
 import {
   getBulkMessages as getBulkMessagesApi,
   getRoomMessages as getRoomMessagesApi,
@@ -90,15 +91,15 @@ const consumeLegacyAuthToken = (): string | null => {
 
 /**
  * Build auth headers when an in-memory token is available.
- * When token is null the caller should rely on the httpOnly cookie
- * (sent automatically by the browser with `credentials: "include"`).
+ * When token is null or the cookie-session marker, the caller relies
+ * on the httpOnly cookie (sent automatically via `credentials: "include"`).
  */
 const buildOptionalAuthHeaders = (
   username: string | null,
   token: string | null
 ): Record<string, string> => {
   const headers: Record<string, string> = {};
-  if (token && username) {
+  if (isRealToken(token) && username) {
     headers["Authorization"] = `Bearer ${token}`;
     headers["X-Username"] = username;
   }
@@ -166,8 +167,9 @@ const makeAuthenticatedRequest = async (
 
   if (!refreshResult.ok) {
     console.log(
-      "[ChatsStore] Token refresh failed, returning original 401 response"
+      "[ChatsStore] Token refresh failed — forcing logout"
     );
+    forceLogoutOnUnauthorized();
     return initialResponse;
   }
 
@@ -190,7 +192,29 @@ const makeAuthenticatedRequest = async (
   });
 };
 
-// Ensure username recovery key is set if username exists but recovery key doesn't
+/**
+ * Clear auth state without making API calls (which could 401 again).
+ * Used when an authenticated request + refresh both fail with 401,
+ * indicating the session is definitively invalid.
+ */
+function forceLogoutOnUnauthorized() {
+  const store = useChatsStore.getState();
+  if (!store.username) return;
+  console.log("[ChatsStore] Unauthorized — clearing auth state for", store.username);
+  localStorage.removeItem(USERNAME_RECOVERY_KEY);
+  clearLegacyTokenRecovery();
+  useChatsStore.setState({
+    username: null,
+    authToken: null,
+    hasPassword: null,
+    currentRoomId: null,
+  });
+}
+
+// Ensure username recovery key is set if username exists but recovery key doesn't.
+// NOTE: Do NOT call clearLegacyTokenRecovery() here — this runs during store
+// initialization (before rehydration) and would destroy the legacy token before
+// onRehydrateStorage can consume it for migration.
 const ensureUsernameRecovery = (username: string | null) => {
   if (username && !localStorage.getItem(USERNAME_RECOVERY_KEY)) {
     console.log(
@@ -199,8 +223,6 @@ const ensureUsernameRecovery = (username: string | null) => {
     );
     saveUsernameToRecovery(username);
   }
-  // Always clean up legacy auth token from localStorage
-  clearLegacyTokenRecovery();
 };
 
 // Define the state structure
@@ -746,10 +768,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
 
           try {
-            // When we have an in-memory token, send it in the body.
+            // When we have a real in-memory token, send it in the body.
             // Otherwise, the httpOnly cookie provides the old token.
             const body: Record<string, string> = { username: currentUsername };
-            if (currentToken) {
+            if (isRealToken(currentToken)) {
               body.oldToken = currentToken;
             }
 
@@ -804,8 +826,14 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           if (!currentUsername || !currentToken) {
             console.log(
-              "[ChatsStore] No username or auth token set, skipping token check"
+              "[ChatsStore] No username or auth state, skipping token check"
             );
+            return { refreshed: false };
+          }
+
+          // Cookie-only sessions rely on the server refreshing the cookie
+          // during /api/auth/session. No client-side refresh needed.
+          if (!isRealToken(currentToken)) {
             return { refreshed: false };
           }
 
@@ -1809,11 +1837,14 @@ async function restoreSessionFromCookie(
       headers,
       timeout: 10000,
       throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 500 },
+      retry: { maxAttempts: 2, initialDelayMs: 500 },
     });
 
     if (!response.ok) {
       console.log("[ChatsStore] Session restore failed:", response.status);
+      if (response.status === 401 || response.status === 403) {
+        forceLogoutOnUnauthorized();
+      }
       return;
     }
 
@@ -1827,13 +1858,18 @@ async function restoreSessionFromCookie(
       const store = useChatsStore.getState();
 
       if (store.username === expectedUsername) {
+        // Mark as authenticated — the httpOnly cookie provides the actual token.
+        store.setAuthToken(COOKIE_SESSION_MARKER);
         store.checkHasPassword();
         store.checkAndRefreshTokenIfNeeded();
       }
     } else {
-      console.log("[ChatsStore] No valid session found.");
+      console.log("[ChatsStore] No valid session — logging out.");
+      forceLogoutOnUnauthorized();
     }
   } catch (err) {
+    // Network error — keep state, don't force-logout.
+    // The user may come back online and the cookie will still be valid.
     console.warn("[ChatsStore] Session restore request failed:", err);
   }
 }

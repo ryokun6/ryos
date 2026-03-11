@@ -7,6 +7,7 @@ import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { isRealToken } from "@/api/core";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
 import { useChatsStoreShallow } from "@/stores/helpers";
@@ -116,9 +117,8 @@ export function useRyoChat({
     username: state.username,
   }));
 
-  // Build auth headers once per render (updates when authToken/username change)
   const authHeaders: Record<string, string> = {};
-  if (authToken && username) {
+  if (isRealToken(authToken) && username) {
     authHeaders["Authorization"] = `Bearer ${authToken}`;
     authHeaders["X-Username"] = username;
   }
@@ -159,9 +159,8 @@ export function useRyoChat({
         },
       };
 
-      // Call server to generate and insert a @ryo reply using authenticated request
       const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (authToken && username) {
+      if (isRealToken(authToken) && username) {
         headers["Authorization"] = `Bearer ${authToken}`;
         headers["X-Username"] = username;
       }
