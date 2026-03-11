@@ -929,8 +929,8 @@ export function FileList({
                 renderedSelectionRect.right - renderedSelectionRect.left,
               height:
                 renderedSelectionRect.bottom - renderedSelectionRect.top,
-              borderColor: "var(--os-color-selection-bg)",
-              backgroundColor: "rgb(from var(--os-color-selection-bg) r g b / 0.15)",
+              borderColor: "rgba(128, 128, 128, 0.6)",
+              backgroundColor: "rgba(128, 128, 128, 0.15)",
             }}
           />
         ) : null}
@@ -982,8 +982,8 @@ export function FileList({
             width: renderedSelectionRect.right - renderedSelectionRect.left,
             height:
               renderedSelectionRect.bottom - renderedSelectionRect.top,
-            borderColor: "var(--os-color-selection-bg)",
-            backgroundColor: "rgb(from var(--os-color-selection-bg) r g b / 0.15)",
+            borderColor: "rgba(128, 128, 128, 0.6)",
+            backgroundColor: "rgba(128, 128, 128, 0.15)",
           }}
         />
       ) : null}
