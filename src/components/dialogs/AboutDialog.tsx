@@ -10,6 +10,12 @@ import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName, AppId } from "@/utils/i18n";
+import { useAppStore } from "@/stores/useAppStore";
+
+const APP_DOC_NAMES: Partial<Record<AppId, string>> = {
+  pc: "virtual-pc",
+  "applet-viewer": "applet-store",
+};
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -36,9 +42,16 @@ export function AboutDialog({
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const launchApp = useAppStore((state) => state.launchApp);
   
   // Use translated app name if appId is provided, otherwise fall back to metadata.name
   const displayName = appId ? getTranslatedAppName(appId) : metadata.name;
+
+  const handleViewDocs = () => {
+    const docName = appId ? (APP_DOC_NAMES[appId] || appId) : "";
+    launchApp("internet-explorer", { url: `os.ryo.lu/docs/${docName}`, year: "current" });
+    onOpenChange(false);
+  };
 
   const dialogContent = (
     <div className="flex flex-col items-center justify-center space-y-2 py-8 px-6">
@@ -93,6 +106,18 @@ export function AboutDialog({
             className="text-blue-500 hover:underline"
           >
             {t("common.dialog.openInGitHub")}
+          </a>
+        </p>
+        <p>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleViewDocs();
+            }}
+            className="text-blue-500 hover:underline"
+          >
+            {t("common.dialog.viewDocs")}
           </a>
         </p>
       </div>

@@ -82,6 +82,7 @@
       "version": "Version",
       "madeBy": "Made by",
       "openInGitHub": "Open in GitHub",
+      "viewChangelog": "View Changelog",
       "informationAboutApp": "Information about the application",
       "viewDocs": "View Docs",
       "emoji": {

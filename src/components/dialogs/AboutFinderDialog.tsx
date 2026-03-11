@@ -34,6 +34,7 @@ export function AboutFinderDialog({
 }: AboutFinderDialogProps) {
   const { t } = useTranslation();
   const instances = useAppStore((state) => state.instances);
+  const launchApp = useAppStore((state) => state.launchApp);
   const currentTheme = useThemeStore((state) => state.current);
   const version = useAppStore((state) => state.ryOSVersion);
   const buildNumber = useAppStore((state) => state.ryOSBuildNumber);
@@ -226,9 +227,12 @@ export function AboutFinderDialog({
                   )}
                   <p>
                     <a
-                      href="https://os.ryo.lu/docs/changelog"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        launchApp("internet-explorer", { url: "os.ryo.lu/docs/changelog", year: "current" });
+                        onOpenChange(false);
+                      }}
                       className="text-blue-600 hover:underline"
                     >
                       {t("common.aboutThisMac.viewChangelog")}
