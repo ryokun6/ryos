@@ -177,6 +177,25 @@ describe("telegram helpers", () => {
       startPayload: "link_abc",
       photoFileId: null,
     });
+
+    expect(
+      parseTelegramTextUpdate({
+        update_id: 12,
+        message: {
+          message_id: 10,
+          from: {
+            id: 99,
+            is_bot: true,
+            first_name: "ryobot",
+          },
+          chat: {
+            id: 42,
+            type: "private",
+          },
+          text: "hello from the bot",
+        },
+      })
+    ).toBeNull();
   });
 
   test("builds telegram deep links", () => {

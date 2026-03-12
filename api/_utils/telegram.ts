@@ -207,6 +207,11 @@ export function parseTelegramTextUpdate(
     return null;
   }
 
+  // Ignore bot-authored messages so the webhook never replies to its own output.
+  if (message.from.is_bot === true) {
+    return null;
+  }
+
   const hasPhoto = Array.isArray(message.photo) && message.photo.length > 0;
   const hasText = typeof message.text === "string" && message.text.trim().length > 0;
   const hasCaption = typeof message.caption === "string" && message.caption.trim().length > 0;
