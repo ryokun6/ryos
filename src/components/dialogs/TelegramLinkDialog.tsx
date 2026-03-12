@@ -55,6 +55,7 @@ export function TelegramLinkDialog({
     : null;
   const shouldShowLinkSession = !linkedAccount && !!linkSession;
   const hasDeepLink = shouldShowLinkSession && !!linkSession?.deepLink;
+  const stackedActionButtonClass = "h-7 w-full shrink-0 sm:w-auto sm:flex-1";
 
   const descriptionText = linkedAccount
     ? t("apps.control-panels.telegram.linkedAs", {
@@ -155,7 +156,7 @@ export function TelegramLinkDialog({
                 onClick={onOpenTelegramLink}
                 variant="retro"
                 className={cn(
-                  "h-7 flex-1",
+                  stackedActionButtonClass,
                   isXpTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-[12px]"
@@ -174,7 +175,7 @@ export function TelegramLinkDialog({
               onClick={onCopyTelegramCode}
               variant="retro"
               className={cn(
-                hasDeepLink ? "h-7 flex-1" : "h-7 w-full",
+                hasDeepLink ? stackedActionButtonClass : "h-7 w-full",
                 isXpTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
