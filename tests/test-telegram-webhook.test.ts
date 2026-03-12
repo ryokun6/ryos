@@ -1,9 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import * as RateLimit from "../api/_utils/_rate-limit";
+import { parseAuthCookie } from "../api/_utils/_cookie";
 import { createRedis } from "../api/_utils/redis";
 import {
+  appendTelegramConversationMessage,
   createTelegramLinkCode,
   linkTelegramAccount,
+  loadTelegramConversationHistory,
 } from "../api/_utils/telegram-link";
 import {
   BASE_URL,
@@ -27,6 +30,10 @@ const mockRequests: Array<{
   body: unknown;
 }> = [];
 
+function getAuthTokenFromResponse(response: Response): string | null {
+  return parseAuthCookie(response.headers.get("set-cookie"))?.token ?? null;
+}
+
 beforeAll(async () => {
   username = `tuser${Date.now()}`;
   const password = "telegram-test-password";
@@ -39,7 +46,7 @@ beforeAll(async () => {
 
   if (registerRes.status === 200 || registerRes.status === 201) {
     const data = await registerRes.json();
-    token = data.token ?? null;
+    token = data.token ?? getAuthTokenFromResponse(registerRes);
   } else if (registerRes.status === 409) {
     const loginRes = await fetchWithOrigin(`${TEST_BASE_URL}/api/auth/login`, {
       method: "POST",
@@ -48,7 +55,7 @@ beforeAll(async () => {
     });
     if (loginRes.status === 200) {
       const data = await loginRes.json();
-      token = data.token ?? null;
+      token = data.token ?? getAuthTokenFromResponse(loginRes);
     }
   }
 
@@ -324,6 +331,132 @@ describe("telegram webhook", () => {
     const statusData = await statusRes.json();
     expect(statusData.linked).toBe(false);
     expect(statusData.account).toBeNull();
+  });
+
+  test("stop command skips AI processing and acknowledges the stop", async () => {
+    const redis = createRedis();
+    const stopUsername = `tg_stop_${Date.now()}`;
+    const telegramUserId = String(RUN_ID + 7005);
+    const chatId = telegramUserId;
+    const updateId = UPDATE_ID_BASE + 5;
+
+    const linkSession = await createTelegramLinkCode(redis, stopUsername, 60);
+    const linkedAccount = await linkTelegramAccount(redis, {
+      code: linkSession.code,
+      telegramUserId,
+      chatId,
+      firstName: "Stop",
+    });
+    expect(linkedAccount?.username).toBe(stopUsername);
+
+    mockRequests.length = 0;
+
+    const stopRes = await fetch(`${TEST_BASE_URL}/api/webhooks/telegram`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": WEBHOOK_SECRET,
+      },
+      body: JSON.stringify({
+        update_id: updateId,
+        message: {
+          message_id: 15,
+          from: {
+            id: Number(telegramUserId),
+            first_name: "Stop",
+          },
+          chat: {
+            id: Number(chatId),
+            type: "private",
+          },
+          text: "/stop",
+        },
+      }),
+    });
+
+    expect(stopRes.status).toBe(200);
+    const stopData = await stopRes.json();
+    expect(stopData.command).toBe("stop");
+    expect(stopData.stopped).toBe(true);
+
+    const sendMessageRequest = mockRequests.find((request) =>
+      request.path.endsWith("/sendMessage")
+    );
+    expect(sendMessageRequest).toBeTruthy();
+    expect((sendMessageRequest?.body as { text?: string }).text).toContain(
+      "stopped. i skipped this Telegram message"
+    );
+
+    expect(await loadTelegramConversationHistory(redis, chatId, 10)).toEqual([]);
+  });
+
+  test("clear command wipes Telegram conversation history", async () => {
+    const redis = createRedis();
+    const clearUsername = `tg_clear_${Date.now()}`;
+    const telegramUserId = String(RUN_ID + 7006);
+    const chatId = telegramUserId;
+    const updateId = UPDATE_ID_BASE + 6;
+
+    const linkSession = await createTelegramLinkCode(redis, clearUsername, 60);
+    const linkedAccount = await linkTelegramAccount(redis, {
+      code: linkSession.code,
+      telegramUserId,
+      chatId,
+      firstName: "Clear",
+    });
+    expect(linkedAccount?.username).toBe(clearUsername);
+
+    await appendTelegramConversationMessage(redis, chatId, {
+      role: "user",
+      content: "old question",
+      createdAt: Date.now(),
+    });
+    await appendTelegramConversationMessage(redis, chatId, {
+      role: "assistant",
+      content: "old answer",
+      createdAt: Date.now() + 1,
+    });
+    expect(await loadTelegramConversationHistory(redis, chatId, 10)).toHaveLength(2);
+
+    mockRequests.length = 0;
+
+    const clearRes = await fetch(`${TEST_BASE_URL}/api/webhooks/telegram`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": WEBHOOK_SECRET,
+      },
+      body: JSON.stringify({
+        update_id: updateId,
+        message: {
+          message_id: 16,
+          from: {
+            id: Number(telegramUserId),
+            first_name: "Clear",
+          },
+          chat: {
+            id: Number(chatId),
+            type: "private",
+          },
+          text: "/clear",
+        },
+      }),
+    });
+
+    expect(clearRes.status).toBe(200);
+    const clearData = await clearRes.json();
+    expect(clearData.command).toBe("clear");
+    expect(clearData.clearedHistory).toBe(true);
+
+    const sendMessageRequest = mockRequests.find((request) =>
+      request.path.endsWith("/sendMessage")
+    );
+    expect(sendMessageRequest).toBeTruthy();
+    expect((sendMessageRequest?.body as { text?: string }).text).toContain(
+      "cleared our Telegram chat history"
+    );
+
+    expect(await loadTelegramConversationHistory(redis, chatId, 10)).toEqual([]);
   });
 
   test("sends a Telegram rate limit message when the burst limit is reached", async () => {

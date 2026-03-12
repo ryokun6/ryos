@@ -148,12 +148,45 @@ export function buildTelegramDeepLink(
   )}`;
 }
 
-export function extractTelegramStartPayload(text: string): string | null {
+export function extractTelegramCommand(
+  text: string
+): { command: string; args: string | null } | null {
   const match = text
     .trim()
-    .match(/^\/start(?:@[A-Za-z0-9_]+)?(?:\s+(.+))?$/);
-  const payload = match?.[1]?.trim();
-  return payload && payload.length > 0 ? payload : null;
+    .match(/^\/([A-Za-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s+([\s\S]+))?$/);
+  const command = match?.[1]?.trim().toLowerCase();
+  if (!command) {
+    return null;
+  }
+
+  const args = match?.[2]?.trim();
+  return {
+    command,
+    args: args && args.length > 0 ? args : null,
+  };
+}
+
+export function extractTelegramStartPayload(text: string): string | null {
+  const extractedCommand = extractTelegramCommand(text);
+  if (extractedCommand?.command !== "start") {
+    return null;
+  }
+
+  return extractedCommand.args;
+}
+
+export function matchesTelegramCommand(
+  text: string,
+  commands: string[]
+): boolean {
+  const extractedCommand = extractTelegramCommand(text);
+  if (!extractedCommand) {
+    return false;
+  }
+
+  return commands.some(
+    (command) => extractedCommand.command === command.trim().toLowerCase()
+  );
 }
 
 export function parseTelegramTextUpdate(

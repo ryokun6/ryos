@@ -5,6 +5,7 @@ import createRedis from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import {
   appendTelegramConversationMessage,
+  clearTelegramConversationHistory,
   getLinkedTelegramAccountByTelegramUserId,
   hasProcessedTelegramUpdate,
   linkTelegramAccount,
@@ -13,12 +14,16 @@ import {
 } from "../_utils/telegram-link.js";
 import {
   downloadTelegramFile,
+  matchesTelegramCommand,
   parseTelegramTextUpdate,
   sendTelegramMessage,
   type TelegramUpdate,
 } from "../_utils/telegram.js";
 import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
-import { streamTelegramReply } from "../_utils/telegram-streaming.js";
+import {
+  TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
+  streamTelegramReply,
+} from "../_utils/telegram-streaming.js";
 import {
   createTelegramStatusReporter,
   getTelegramToolStatusText,
@@ -35,6 +40,13 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
+const TELEGRAM_STOP_COMMANDS = ["stop", "cancel"];
+const TELEGRAM_CLEAR_COMMANDS = [
+  "clear",
+  "clearhistory",
+  "clear_history",
+  "clear-history",
+];
 
 function setResponseHeaders(res: VercelResponse): void {
   res.setHeader("Content-Type", "application/json");
@@ -140,6 +152,29 @@ async function handleTelegramRateLimitedUpdate(args: {
     count: args.rateLimit.count,
     retryAfter: args.rateLimit.resetSeconds,
   });
+}
+
+async function handleTelegramCommandUpdate(args: {
+  botToken: string;
+  chatId: string;
+  replyToMessageId: number;
+  updateId: number;
+  redis: ReturnType<typeof createRedis>;
+  res: VercelResponse;
+  startTime: number;
+  logger: ReturnType<typeof initLogger>["logger"];
+  text: string;
+  payload: Record<string, unknown>;
+}): Promise<void> {
+  await sendTelegramInfoMessage(
+    args.botToken,
+    args.chatId,
+    args.text,
+    args.replyToMessageId
+  );
+  await markTelegramUpdateProcessed(args.redis, args.updateId);
+  args.logger.response(200, Date.now() - args.startTime);
+  sendJson(args.res, 200, args.payload);
 }
 
 function injectImageIntoLastUserMessage(
@@ -383,6 +418,47 @@ export default async function handler(
     return;
   }
 
+  if (matchesTelegramCommand(parsedUpdate.text, TELEGRAM_STOP_COMMANDS)) {
+    await handleTelegramCommandUpdate({
+      botToken,
+      chatId: parsedUpdate.chatId,
+      replyToMessageId: parsedUpdate.messageId,
+      updateId: parsedUpdate.updateId,
+      redis,
+      res,
+      startTime,
+      logger,
+      text: "stopped. i skipped this Telegram message. send a new one whenever you're ready.",
+      payload: {
+        success: true,
+        command: "stop",
+        stopped: true,
+      },
+    });
+    return;
+  }
+
+  if (matchesTelegramCommand(parsedUpdate.text, TELEGRAM_CLEAR_COMMANDS)) {
+    await clearTelegramConversationHistory(redis, parsedUpdate.chatId);
+    await handleTelegramCommandUpdate({
+      botToken,
+      chatId: parsedUpdate.chatId,
+      replyToMessageId: parsedUpdate.messageId,
+      updateId: parsedUpdate.updateId,
+      redis,
+      res,
+      startTime,
+      logger,
+      text: "cleared our Telegram chat history. start a new message whenever you want.",
+      payload: {
+        success: true,
+        command: "clear",
+        clearedHistory: true,
+      },
+    });
+    return;
+  }
+
   const isExemptUser = linkedAccount.username === "ryo";
 
   if (!isExemptUser) {
@@ -588,6 +664,7 @@ export default async function handler(
       draftId: parsedUpdate.updateId,
       textStream: result.textStream,
       replyToMessageId: parsedUpdate.messageId,
+      maxReplyLength: TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
       formatText: simplifyTelegramCitationDisplay,
       onBeforePreview: async () => {
         await statusReporter.dispose();
