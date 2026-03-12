@@ -1,4 +1,5 @@
 import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import type { Redis } from "./redis.js";
 import {
   convertToModelMessages,
@@ -220,6 +221,18 @@ function shouldEnableOpenAIWebSearch({
   return model === "gpt-5.4" && !!username;
 }
 
+function shouldEnableGoogleSearch({
+  channel,
+  model,
+  username,
+}: {
+  channel: RyoConversationChannel;
+  model: SupportedModel;
+  username?: string | null;
+}): boolean {
+  return channel === "telegram" && model === "gemini-3-flash" && !!username;
+}
+
 function createOpenAIWebSearchTool(
   systemState?: RyoConversationSystemState
 ): ReturnType<typeof openai.tools.webSearch> {
@@ -244,6 +257,10 @@ function createOpenAIWebSearchTool(
         }
       : {}
   );
+}
+
+function createGoogleSearchTool(): ReturnType<typeof google.tools.googleSearch> {
+  return google.tools.googleSearch({});
 }
 
 export function ensureUIMessageFormat(
@@ -677,12 +694,19 @@ export async function prepareRyoConversationModelInput(
     },
     { profile: toolProfile }
   );
-  const tools: ToolSet = shouldEnableOpenAIWebSearch({ model, username })
-    ? {
-        ...baseTools,
-        web_search: createOpenAIWebSearchTool(systemState),
-      }
-    : baseTools;
+  const tools: ToolSet = {
+    ...baseTools,
+    ...(shouldEnableOpenAIWebSearch({ model, username })
+      ? {
+          web_search: createOpenAIWebSearchTool(systemState),
+        }
+      : {}),
+    ...(shouldEnableGoogleSearch({ channel, model, username })
+      ? {
+          google_search: createGoogleSearchTool(),
+        }
+      : {}),
+  };
 
   const uiMessages = ensureUIMessageFormat(messages);
   const modelMessages = await convertToModelMessages(uiMessages, {
