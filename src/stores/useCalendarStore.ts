@@ -65,6 +65,10 @@ interface CalendarStoreState {
   // Todo actions
   addTodo: (title: string, calendarId: string, dueDate?: string) => string;
   toggleTodo: (id: string) => void;
+  updateTodo: (
+    id: string,
+    updates: Partial<Pick<TodoItem, "title" | "calendarId" | "dueDate" | "completed">>
+  ) => void;
   deleteTodo: (id: string) => void;
   setShowTodoSidebar: (show: boolean) => void;
 
@@ -197,6 +201,14 @@ export const useCalendarStore = create<CalendarStoreState>()(
           set((state) => ({
             todos: state.todos.map((t) =>
               t.id === id ? { ...t, completed: !t.completed } : t
+            ),
+          }));
+        },
+
+        updateTodo: (id, updates) => {
+          set((state) => ({
+            todos: state.todos.map((todo) =>
+              todo.id === id ? { ...todo, ...updates } : todo
             ),
           }));
         },

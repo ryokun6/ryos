@@ -61,6 +61,25 @@ function getEventOpacity(event: CalendarEvent, normalizedQuery: string) {
   return matchesSearchQuery(getEventSearchText(event), normalizedQuery) ? 1 : SEARCH_DIM_OPACITY;
 }
 
+function formatTodoDueDate(dueDate: string, locale: string) {
+  const [year, month, day] = dueDate.split("-").map(Number);
+  if (!year || !month || !day) return dueDate;
+
+  const today = new Date();
+  const formatOptions: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+  };
+
+  if (year !== today.getFullYear()) {
+    formatOptions.year = "numeric";
+  }
+
+  return new Intl.DateTimeFormat(locale, formatOptions).format(
+    new Date(year, month - 1, day)
+  );
+}
+
 
 // ============================================================================
 // CALENDAR LIST (left sidebar, top)
@@ -125,6 +144,7 @@ function TodoSidebar({
   calendars,
   onToggle,
   onAdd,
+  onUpdate,
   onDelete,
   isMacOSTheme,
   isSystem7Theme,
@@ -134,14 +154,22 @@ function TodoSidebar({
   calendars: CalendarGroup[];
   onToggle: (id: string) => void;
   onAdd: (title: string, calendarId: string) => void;
+  onUpdate: (
+    id: string,
+    updates: Partial<Pick<TodoItem, "title" | "dueDate">>
+  ) => void;
   onDelete: (id: string) => void;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   fullWidth?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const [newTitle, setNewTitle] = useState("");
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [dueDateTodoId, setDueDateTodoId] = useState<string | null>(null);
+  const dueDateInputRef = useRef<HTMLInputElement>(null);
   const defaultCalId = calendars[0]?.id || "home";
 
   const handleAdd = () => {
@@ -149,6 +177,56 @@ function TodoSidebar({
     onAdd(newTitle.trim(), defaultCalId);
     setNewTitle("");
   };
+
+  const startEditingTodo = useCallback((todo: TodoItem) => {
+    setEditingTodoId(todo.id);
+    setEditingTitle(todo.title);
+  }, []);
+
+  const stopEditingTodo = useCallback(() => {
+    setEditingTodoId(null);
+    setEditingTitle("");
+  }, []);
+
+  const commitTodoEdit = useCallback((todo: TodoItem) => {
+    const nextTitle = editingTitle.trim();
+    if (nextTitle && nextTitle !== todo.title) {
+      onUpdate(todo.id, { title: nextTitle });
+    }
+    stopEditingTodo();
+  }, [editingTitle, onUpdate, stopEditingTodo]);
+
+  const openDueDatePicker = useCallback((todo: TodoItem) => {
+    const input = dueDateInputRef.current;
+    if (!input) return;
+
+    setDueDateTodoId(todo.id);
+    input.value = todo.dueDate || "";
+
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+    } else {
+      input.click();
+    }
+  }, []);
+
+  const handleDueDateChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    if (dueDateTodoId) {
+      onUpdate(dueDateTodoId, {
+        dueDate: event.target.value || null,
+      });
+    }
+    setDueDateTodoId(null);
+  }, [dueDateTodoId, onUpdate]);
+
+  const actionButtonVisibilityClass = fullWidth
+    ? "opacity-40"
+    : "opacity-0 group-hover:opacity-40";
+  const trailingContentWidth = fullWidth ? "w-[82px]" : "w-[76px]";
+  const todoTitleFieldClass = cn(
+    "text-[11px] leading-tight flex-1 min-w-0 rounded border px-1 py-0.5 min-h-[22px]",
+    useGeneva ? "font-geneva-12 border-black/20" : "border-black/10"
+  );
 
   return (
     <div className="flex flex-col h-full select-none calendar-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
@@ -178,31 +256,91 @@ function TodoSidebar({
         )}
         {todos.map((todo) => {
           const cal = calendars.find((c) => c.id === todo.calendarId);
+          const isEditing = editingTodoId === todo.id;
           return (
-            <div key={todo.id} className="flex items-center gap-1.5 px-0.5 py-1 group">
-              <button type="button" onClick={() => onToggle(todo.id)} className="shrink-0">
+            <div key={todo.id} className="flex items-start gap-1.5 px-0.5 py-1 group min-h-[30px]">
+              <button type="button" onClick={() => onToggle(todo.id)} className="shrink-0 mt-[3px]">
                 <AquaCheckbox checked={todo.completed} color={EVENT_COLOR_MAP[cal?.color || "blue"]} />
               </button>
-              <span
-                className={cn(
-                  "text-[11px] leading-tight flex-1 min-w-0",
-                  todo.completed && "line-through opacity-40",
-                  useGeneva && "font-geneva-12"
-                )}
-              >
-                {todo.title}
-              </span>
-              <button
-                type="button"
-                onClick={() => onDelete(todo.id)}
-                className="opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity shrink-0"
-              >
-                <Trash size={10} weight="bold" />
-              </button>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editingTitle}
+                  autoFocus
+                  onFocus={(event) => event.currentTarget.select()}
+                  onChange={(event) => setEditingTitle(event.target.value)}
+                  onBlur={() => commitTodoEdit(todo)}
+                  onKeyDown={(event) => {
+                    event.stopPropagation();
+                    if (event.key === "Enter") commitTodoEdit(todo);
+                    if (event.key === "Escape") stopEditingTodo();
+                  }}
+                  className={cn(
+                    todoTitleFieldClass,
+                    "bg-white/90 outline-none"
+                  )}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startEditingTodo(todo)}
+                  className={cn(
+                    todoTitleFieldClass,
+                    "text-left border-transparent bg-transparent",
+                    todo.completed && "line-through opacity-40",
+                    "hover:bg-black/[0.02]"
+                  )}
+                >
+                  <span className="block truncate">{todo.title}</span>
+                </button>
+              )}
+              <div className={cn("flex items-center justify-end gap-1 shrink-0 mt-[3px]", trailingContentWidth)}>
+                <span
+                  className={cn(
+                    "min-w-0 flex-1 truncate text-right text-[9px] leading-none opacity-55",
+                    todo.completed && "opacity-30",
+                    !todo.dueDate && "invisible",
+                    useGeneva && "font-geneva-12"
+                  )}
+                  title={todo.dueDate || undefined}
+                >
+                  {todo.dueDate ? formatTodoDueDate(todo.dueDate, i18n.language) : "\u00a0"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openDueDatePicker(todo)}
+                  className={cn(
+                    "transition-opacity shrink-0 hover:!opacity-100",
+                    actionButtonVisibilityClass
+                  )}
+                  aria-label={t("apps.calendar.event.date")}
+                  title={t("apps.calendar.event.date")}
+                >
+                  <CalendarBlank size={10} weight="bold" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(todo.id)}
+                  className={cn(
+                    "transition-opacity shrink-0 hover:!opacity-100",
+                    actionButtonVisibilityClass
+                  )}
+                >
+                  <Trash size={10} weight="bold" />
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
+      <input
+        ref={dueDateInputRef}
+        type="date"
+        tabIndex={-1}
+        className="absolute pointer-events-none h-0 w-0 opacity-0"
+        onChange={handleDueDateChange}
+        onBlur={() => setDueDateTodoId(null)}
+      />
       <div className="px-2 pb-1.5 pt-1">
         <input
           type="text"
@@ -1046,7 +1184,7 @@ export function CalendarAppComponent({
     narrowDayNames, hourLabels, weekDates, weekLabel,
     editingEvent, selectedEventId, setSelectedEventId, prefillTime,
     calendars, toggleCalendarVisibility,
-    todos, addTodo, toggleTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
+    todos, addTodo, toggleTodo, updateTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
     handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
     fileInputRef, handleImport, handleFileSelected, handleExport,
@@ -1261,6 +1399,7 @@ export function CalendarAppComponent({
                   calendars={calendars}
                   onToggle={toggleTodo}
                   onAdd={addTodo}
+                  onUpdate={updateTodo}
                   onDelete={deleteTodo}
                   isMacOSTheme={isMacOSTheme}
                   isSystem7Theme={isSystem7Theme}
@@ -1281,6 +1420,7 @@ export function CalendarAppComponent({
                   calendars={calendars}
                   onToggle={toggleTodo}
                   onAdd={addTodo}
+                  onUpdate={updateTodo}
                   onDelete={deleteTodo}
                   isMacOSTheme={isMacOSTheme}
                   isSystem7Theme={isSystem7Theme}
