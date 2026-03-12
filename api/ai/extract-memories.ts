@@ -318,7 +318,7 @@ export async function extractMemoriesFromConversation({
   });
 
   const { object: result } = await generateObject({
-    model: google("gemini-2.0-flash"),
+    model: google("gemini-3-flash-preview"),
     schema: extractionSchema,
     prompt:
       `${EXTRACTION_PROMPT}${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\n` +
@@ -398,7 +398,7 @@ export async function extractMemoriesFromConversation({
           .join("\n\n");
 
         const { object: consolidated } = await generateObject({
-          model: google("gemini-2.0-flash"),
+          model: google("gemini-3-flash-preview"),
           schema: consolidationSchema,
           prompt:
             `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\n` +

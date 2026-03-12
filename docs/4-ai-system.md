@@ -13,9 +13,8 @@ Multi-provider AI with streaming responses, tool-loop orchestration, and a two-t
 Default model: `gpt-5.4`
 
 Specialized models used by specific flows:
-- `gemini-3-flash-preview` (proactive greeting, applet text mode, chat-room auto replies)
+- `gemini-3-flash-preview` (proactive greeting, applet text mode, chat-room auto replies, memory extraction, and daily-notes processing)
 - `gemini-3.1-flash-image-preview` (applet image generation)
-- `gemini-2.0-flash` (memory extraction and daily-notes processing)
 
 ```mermaid
 graph TD
