@@ -32,7 +32,9 @@ import {
 import {
   CLOUD_SYNC_DOMAINS,
   CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
+  getLatestCloudSyncTimestamp,
   getSyncChannelName,
+  hasUnsyncedLocalChanges,
   isCloudSyncDomain,
   parseCloudSyncTimestamp,
   shouldApplyRemoteUpdate,
@@ -76,6 +78,29 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
     contacts: initialValue,
     "custom-wallpapers": initialValue,
   };
+}
+
+function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
+
+  switch (domain) {
+    case "calendar":
+      return getLatestCloudSyncTimestamp([
+        ...Object.values(deletionMarkers.calendarTodoIds),
+        ...Object.values(deletionMarkers.calendarEventIds),
+        ...Object.values(deletionMarkers.calendarIds),
+      ]);
+    case "files-metadata":
+      return getLatestCloudSyncTimestamp(
+        Object.values(deletionMarkers.fileMetadataPaths)
+      );
+    case "custom-wallpapers":
+      return getLatestCloudSyncTimestamp(
+        Object.values(deletionMarkers.customWallpaperKeys)
+      );
+    default:
+      return null;
+  }
 }
 
 export function useAutoCloudSync() {
@@ -615,10 +640,28 @@ export function useAutoCloudSync() {
     // "has pending upload" guards (e.g. initializeLibrary on new devices).
     clearAllUploadTimers();
     for (const d of CLOUD_SYNC_DOMAINS) {
-      lastLocalChangeAtRef.current[d] = null;
+      lastLocalChangeAtRef.current[d] = getPersistedDeletionChangeAt(d);
     }
 
-    void checkRemoteUpdates();
+    void (async () => {
+      await checkRemoteUpdates();
+
+      const syncState = useCloudSyncStore.getState();
+      for (const domain of CLOUD_SYNC_DOMAINS) {
+        if (
+          isDomainEnabled(domain) &&
+          hasUnsyncedLocalChanges(
+            lastLocalChangeAtRef.current[domain],
+            syncState.domainStatus[domain].lastUploadedAt
+          )
+        ) {
+          setTimeout(
+            () => queueUpload(domain),
+            REMOTE_APPLY_SUPPRESSION_MS + 1000
+          );
+        }
+      }
+    })();
     const intervalId = setInterval(() => {
       void checkRemoteUpdates();
     }, POLL_INTERVAL_MS);

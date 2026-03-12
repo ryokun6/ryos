@@ -6,6 +6,7 @@ import { checkShaderPerformance } from "@/utils/performanceCheck";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.
@@ -141,6 +142,11 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         } else {
           wall = path;
         }
+        if (wall.startsWith(INDEXEDDB_PREFIX)) {
+          useCloudSyncStore.getState().clearDeletedKeys("customWallpaperKeys", [
+            wall.substring(INDEXEDDB_PREFIX.length),
+          ]);
+        }
         set({ currentWallpaper: wall, wallpaperSource: wall });
         if (wall.startsWith(INDEXEDDB_PREFIX)) {
           const data = await get().getWallpaperData(wall);
@@ -173,6 +179,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         const id = reference.startsWith(INDEXEDDB_PREFIX)
           ? reference.substring(INDEXEDDB_PREFIX.length)
           : reference;
+        useCloudSyncStore.getState().markDeletedKeys("customWallpaperKeys", [id]);
         try {
           const db = await ensureIndexedDBInitialized();
           const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readwrite");

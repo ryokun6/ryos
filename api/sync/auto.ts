@@ -17,6 +17,10 @@ import {
   isIndividualBlobSyncDomain,
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
+import {
+  normalizeDeletionMarkerMap,
+  type DeletionMarkerMap,
+} from "../../src/utils/cloudSyncDeletionMarkers.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import {
@@ -36,6 +40,7 @@ interface PersistedAutoSyncDomainMetadata {
   blobUrl?: string;
   createdAt: string;
   items?: Record<string, PersistedAutoSyncItemMetadata>;
+  deletedItems?: DeletionMarkerMap;
 }
 
 type PersistedAutoSyncItemMetadata = CloudSyncBlobItemMetadata;
@@ -53,6 +58,7 @@ interface SaveAutoSyncMetadataBody {
   version?: number;
   totalSize?: number;
   items?: Record<string, PersistedAutoSyncItemMetadata>;
+  deletedItems?: DeletionMarkerMap;
 }
 
 function metaKey(username: string) {
@@ -115,6 +121,7 @@ async function readPersistedMetadata(
 
     const candidate = value as Partial<PersistedAutoSyncDomainMetadata>;
     const normalizedItems: Record<string, PersistedAutoSyncItemMetadata> = {};
+    const normalizedDeletedItems = normalizeDeletionMarkerMap(candidate.deletedItems);
     if (candidate.items && typeof candidate.items === "object") {
       for (const [itemKey, itemValue] of Object.entries(candidate.items)) {
         const normalizedItem = normalizePersistedItemMetadata(itemValue);
@@ -148,7 +155,9 @@ async function readPersistedMetadata(
         Number.isFinite(candidate.totalSize)
           ? candidate.totalSize
           : Object.values(normalizedItems).reduce((sum, item) => sum + item.size, 0),
-      ...(isIndividualBlobSyncDomain(domain) ? { items: normalizedItems } : {}),
+      ...(isIndividualBlobSyncDomain(domain)
+        ? { items: normalizedItems, deletedItems: normalizedDeletedItems }
+        : {}),
     };
   }
 
@@ -224,6 +233,13 @@ async function handleSaveMetadata(
     return;
   }
 
+  if (body.deletedItems && !isIndividualBlobSyncDomain(body.domain)) {
+    res.status(400).json({
+      error: "This sync domain does not support individual deletion markers.",
+    });
+    return;
+  }
+
   try {
     const existing = await readPersistedMetadata(redis, username);
     const previous = existing[body.domain];
@@ -232,6 +248,7 @@ async function handleSaveMetadata(
 
     if (body.items) {
       const previousItems = previous?.items ?? {};
+      const deletedItems = normalizeDeletionMarkerMap(body.deletedItems);
       const nextItems: Record<string, PersistedAutoSyncItemMetadata> = {};
 
       for (const [itemKey, itemValue] of Object.entries(body.items)) {
@@ -316,6 +333,7 @@ async function handleSaveMetadata(
           Object.values(nextItems).reduce((sum, item) => sum + item.size, 0),
         createdAt,
         items: nextItems,
+        deletedItems,
       };
     } else {
       if (!legacyStorageUrl) {
@@ -411,6 +429,7 @@ async function handleDomainDownload(
     if (isIndividualBlobSyncDomain(domain) && itemEntries) {
       const items: Record<string, CloudSyncBlobItemDownloadMetadata> = {};
       let didPruneMissingItems = false;
+      const deletedItems = normalizeDeletionMarkerMap(entry?.deletedItems);
 
       for (const [itemKey, itemValue] of Object.entries(itemEntries)) {
         const storageUrl = getStoredLocation(itemValue);
@@ -460,6 +479,7 @@ async function handleDomainDownload(
         domain,
         mode: "individual",
         items,
+        deletedItems,
         metadata: {
           updatedAt: entry?.updatedAt || new Date(0).toISOString(),
           version: entry?.version || AUTO_SYNC_SNAPSHOT_VERSION,

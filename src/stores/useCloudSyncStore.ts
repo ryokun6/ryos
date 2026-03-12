@@ -8,6 +8,7 @@ import {
   createEmptyCloudSyncMetadataMap,
   getCloudSyncCategory,
 } from "@/utils/cloudSyncShared";
+import type { DeletionMarkerMap } from "@/utils/cloudSyncDeletionMarkers";
 
 interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
@@ -17,6 +18,32 @@ interface CloudSyncDomainStatus {
 }
 
 type CloudSyncDomainStatusMap = Record<CloudSyncDomain, CloudSyncDomainStatus>;
+
+export const CLOUD_SYNC_DELETION_BUCKETS = [
+  "calendarTodoIds",
+  "calendarEventIds",
+  "calendarIds",
+  "fileMetadataPaths",
+  "customWallpaperKeys",
+] as const;
+
+export type CloudSyncDeletionBucket =
+  (typeof CLOUD_SYNC_DELETION_BUCKETS)[number];
+
+export type CloudSyncDeletionMarkerState = Record<
+  CloudSyncDeletionBucket,
+  DeletionMarkerMap
+>;
+
+function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
+  return {
+    calendarTodoIds: {},
+    calendarEventIds: {},
+    calendarIds: {},
+    fileMetadataPaths: {},
+    customWallpaperKeys: {},
+  };
+}
 
 interface CloudSyncStoreState {
   autoSyncEnabled: boolean;
@@ -32,6 +59,7 @@ interface CloudSyncStoreState {
   lastError: string | null;
   remoteMetadata: CloudSyncMetadataMap;
   domainStatus: CloudSyncDomainStatusMap;
+  deletionMarkers: CloudSyncDeletionMarkerState;
   setAutoSyncEnabled: (enabled: boolean) => void;
   setDomainEnabled: (domain: CloudSyncDomain, enabled: boolean) => void;
   isDomainEnabled: (domain: CloudSyncDomain) => boolean;
@@ -49,6 +77,19 @@ interface CloudSyncStoreState {
   markDownloadSuccess: (domain: CloudSyncDomain, appliedAt: string) => void;
   markDownloadFailure: (domain: CloudSyncDomain, error: string) => void;
   markRemoteApplied: (domain: CloudSyncDomain, appliedAt: string) => void;
+  markDeletedKeys: (
+    bucket: CloudSyncDeletionBucket,
+    keys: Iterable<string>,
+    deletedAt?: string
+  ) => void;
+  clearDeletedKeys: (
+    bucket: CloudSyncDeletionBucket,
+    keys: Iterable<string>
+  ) => void;
+  mergeDeletedKeys: (
+    bucket: CloudSyncDeletionBucket,
+    markers: DeletionMarkerMap
+  ) => void;
 }
 
 function createInitialDomainStatus(): CloudSyncDomainStatusMap {
@@ -75,7 +116,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 5;
+const STORE_VERSION = 6;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -93,6 +134,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       lastError: null,
       remoteMetadata: createEmptyCloudSyncMetadataMap(),
       domainStatus: createInitialDomainStatus(),
+      deletionMarkers: createEmptyDeletionMarkers(),
 
       setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
 
@@ -243,6 +285,86 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           },
           lastError: null,
         })),
+
+      markDeletedKeys: (bucket, keys, deletedAt = new Date().toISOString()) =>
+        set((state) => {
+          const nextBucket = { ...state.deletionMarkers[bucket] };
+          let changed = false;
+
+          for (const key of keys) {
+            if (!key) {
+              continue;
+            }
+
+            if (nextBucket[key] !== deletedAt) {
+              nextBucket[key] = deletedAt;
+              changed = true;
+            }
+          }
+
+          if (!changed) {
+            return state;
+          }
+
+          return {
+            deletionMarkers: {
+              ...state.deletionMarkers,
+              [bucket]: nextBucket,
+            },
+          };
+        }),
+
+      clearDeletedKeys: (bucket, keys) =>
+        set((state) => {
+          const nextBucket = { ...state.deletionMarkers[bucket] };
+          let changed = false;
+
+          for (const key of keys) {
+            if (key && key in nextBucket) {
+              delete nextBucket[key];
+              changed = true;
+            }
+          }
+
+          if (!changed) {
+            return state;
+          }
+
+          return {
+            deletionMarkers: {
+              ...state.deletionMarkers,
+              [bucket]: nextBucket,
+            },
+          };
+        }),
+
+      mergeDeletedKeys: (bucket, markers) =>
+        set((state) => {
+          const nextBucket = { ...state.deletionMarkers[bucket] };
+          let changed = false;
+
+          for (const [key, value] of Object.entries(markers)) {
+            if (typeof key !== "string" || key.length === 0 || typeof value !== "string") {
+              continue;
+            }
+
+            if (nextBucket[key] !== value) {
+              nextBucket[key] = value;
+              changed = true;
+            }
+          }
+
+          if (!changed) {
+            return state;
+          }
+
+          return {
+            deletionMarkers: {
+              ...state.deletionMarkers,
+              [bucket]: nextBucket,
+            },
+          };
+        }),
     }),
     {
       name: STORE_NAME,
@@ -258,6 +380,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncCalendar: state.syncCalendar,
         syncContacts: state.syncContacts,
         lastCheckedAt: state.lastCheckedAt,
+        deletionMarkers: state.deletionMarkers,
         domainStatus: Object.fromEntries(
           Object.entries(state.domainStatus).map(([domain, status]) => [
             domain,
@@ -273,6 +396,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       migrate: (persistedState) => {
         const candidate = persistedState as Partial<CloudSyncStoreState>;
         const domainStatus = createInitialDomainStatus();
+        const deletionMarkers = createEmptyDeletionMarkers();
 
         if (candidate?.domainStatus) {
           for (const domain of Object.keys(domainStatus) as CloudSyncDomain[]) {
@@ -310,6 +434,24 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           }
         }
 
+        const candidateDeletionMarkers = (
+          candidate as Partial<{ deletionMarkers: Partial<CloudSyncDeletionMarkerState> }>
+        )?.deletionMarkers;
+        if (candidateDeletionMarkers) {
+          for (const bucket of CLOUD_SYNC_DELETION_BUCKETS) {
+            const persistedBucket = candidateDeletionMarkers[bucket];
+            if (!persistedBucket || typeof persistedBucket !== "object") {
+              continue;
+            }
+
+            deletionMarkers[bucket] = Object.fromEntries(
+              Object.entries(persistedBucket).filter(
+                ([key, value]) => typeof key === "string" && key.length > 0 && typeof value === "string"
+              )
+            );
+          }
+        }
+
         return {
           autoSyncEnabled: candidate.autoSyncEnabled ?? false,
           syncFiles: candidate.syncFiles ?? true,
@@ -320,6 +462,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncCalendar: candidate.syncCalendar ?? true,
           syncContacts: (candidate as Record<string, unknown>).syncContacts as boolean ?? true,
           lastCheckedAt: candidate.lastCheckedAt ?? null,
+          deletionMarkers,
           domainStatus,
         };
       },

@@ -14,6 +14,11 @@ import {
   normalizeCloudSyncMetadataMap,
   shouldApplyRemoteUpdate,
 } from "../src/utils/cloudSyncShared";
+import {
+  filterDeletedFilePaths,
+  filterDeletedIds,
+  mergeDeletionMarkerMaps,
+} from "../src/utils/cloudSyncDeletionMarkers";
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
@@ -196,5 +201,45 @@ describe("cloud sync shared helpers", () => {
     ).toBe("2026-03-04T12:03:00.000Z");
 
     expect(getLatestCloudSyncTimestamp([null, undefined])).toBeNull();
+  });
+
+  test("merges deletion markers by newest timestamp", () => {
+    expect(
+      mergeDeletionMarkerMaps(
+        { "todo-1": "2026-03-04T12:00:00.000Z" },
+        { "todo-1": "2026-03-04T12:05:00.000Z", "todo-2": "2026-03-04T12:03:00.000Z" }
+      )
+    ).toEqual({
+      "todo-1": "2026-03-04T12:05:00.000Z",
+      "todo-2": "2026-03-04T12:03:00.000Z",
+    });
+  });
+
+  test("filters deleted ids from synced collections", () => {
+    expect(
+      filterDeletedIds(
+        [
+          { id: "todo-1", title: "Keep" },
+          { id: "todo-2", title: "Delete" },
+        ],
+        { "todo-2": "2026-03-04T12:05:00.000Z" },
+        (item) => item.id
+      )
+    ).toEqual([{ id: "todo-1", title: "Keep" }]);
+  });
+
+  test("filters deleted file paths and descendants", () => {
+    expect(
+      filterDeletedFilePaths(
+        {
+          "/Photos": { type: "directory" },
+          "/Photos/cat.png": { type: "image" },
+          "/Notes/todo.txt": { type: "text" },
+        },
+        { "/Photos": "2026-03-04T12:05:00.000Z" }
+      )
+    ).toEqual({
+      "/Notes/todo.txt": { type: "text" },
+    });
   });
 });
