@@ -39,7 +39,7 @@ import {
   type SimpleConversationMessage,
 } from "../_utils/ryo-conversation.js";
 import {
-  DEFAULT_MODEL,
+  TELEGRAM_DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
   type SupportedModel,
 } from "../_utils/_aiModels.js";
@@ -67,17 +67,20 @@ function getHeader(req: VercelRequest, name: string): string | null {
   return typeof value === "string" ? value : null;
 }
 
-function getTelegramModel(
-  log: (...args: unknown[]) => void
+export function getTelegramModel(
+  log: (...args: unknown[]) => void,
+  env: NodeJS.ProcessEnv = process.env
 ): SupportedModel {
-  const raw = process.env.TELEGRAM_BOT_MODEL as SupportedModel | undefined;
+  const raw = env.TELEGRAM_BOT_MODEL as SupportedModel | undefined;
   if (raw && SUPPORTED_AI_MODELS.includes(raw)) {
     return raw;
   }
   if (raw) {
-    log(`Unsupported TELEGRAM_BOT_MODEL "${raw}", falling back to ${DEFAULT_MODEL}`);
+    log(
+      `Unsupported TELEGRAM_BOT_MODEL "${raw}", falling back to ${TELEGRAM_DEFAULT_MODEL}`
+    );
   }
-  return DEFAULT_MODEL;
+  return TELEGRAM_DEFAULT_MODEL;
 }
 
 async function markHeartbeatSlot(

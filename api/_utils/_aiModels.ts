@@ -24,6 +24,7 @@ export const SUPPORTED_AI_MODELS = Object.keys(AI_MODELS) as SupportedModel[];
 
 // Default model
 export const DEFAULT_MODEL: SupportedModel = "gpt-5.4";
+export const TELEGRAM_DEFAULT_MODEL: SupportedModel = "gemini-3-flash";
 
 // Factory that returns a LanguageModel instance for the requested model
 export const getModelInstance = (model: SupportedModel): LanguageModel => {
