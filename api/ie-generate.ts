@@ -11,6 +11,7 @@ import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
+  getOpenAIProviderOptions,
 } from "./_utils/_aiModels.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import {
@@ -307,11 +308,7 @@ export default apiHandler<IEGenerateRequestBody>(
       temperature: 0.7,
       maxOutputTokens: 4000,
       experimental_transform: smoothStream(),
-      providerOptions: {
-        openai: {
-          reasoningEffort: "none", // Turn off reasoning for GPT-5 and other reasoning models
-        },
-      },
+      providerOptions: getOpenAIProviderOptions(model),
       onFinish: async ({ text }) => {
         if (!cacheKey) {
           logger.info("No cacheKey available, skipping cache save");

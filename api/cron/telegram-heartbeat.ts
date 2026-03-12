@@ -41,6 +41,7 @@ import {
 import {
   TELEGRAM_DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
+  getOpenAIProviderOptions,
   type SupportedModel,
 } from "../_utils/_aiModels.js";
 
@@ -419,11 +420,7 @@ export default async function handler(
     temperature: 0.7,
     maxOutputTokens: 4000,
     stopWhen: stepCountIs(6),
-    providerOptions: {
-      openai: {
-        reasoningEffort: "none",
-      },
-    },
+    providerOptions: getOpenAIProviderOptions(telegramModel),
     onStepFinish: async (stepResult) => {
       if (stepResult.toolResults.length > 0) {
         logger.info("Telegram heartbeat completed tool step", {

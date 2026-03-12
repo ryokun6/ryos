@@ -218,10 +218,7 @@ function shouldEnableOpenAIWebSearch({
   model: SupportedModel;
   username?: string | null;
 }): boolean {
-  return (
-    (model === "gpt-5.3-chat-latest" || model === "gpt-5.4") &&
-    !!username
-  );
+  return model === "gpt-5.4" && !!username;
 }
 
 function shouldEnableGoogleSearch({
