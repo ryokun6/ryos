@@ -217,6 +217,41 @@ describe("telegram webhook", () => {
     expect(data.reason).toBe("non-private-chat");
   });
 
+  test("ignores bot-authored messages to avoid self-reply loops", async () => {
+    mockRequests.length = 0;
+
+    const res = await fetch(`${TEST_BASE_URL}/api/webhooks/telegram`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": WEBHOOK_SECRET,
+      },
+      body: JSON.stringify({
+        update_id: UPDATE_ID_BASE + 21,
+        message: {
+          message_id: 21,
+          from: {
+            id: RUN_ID + 7021,
+            is_bot: true,
+            first_name: "ryobot",
+            username: "ryos_devbot",
+          },
+          chat: {
+            id: RUN_ID + 7021,
+            type: "private",
+          },
+          text: "assistant preview text",
+        },
+      }),
+    });
+
+    expect(res.status).toBe(202);
+    const data = await res.json();
+    expect(data.ignored).toBe(true);
+    expect(data.reason).toBe("unsupported-update");
+    expect(mockRequests).toHaveLength(0);
+  });
+
   test("consumes link code and sends Telegram confirmation", async () => {
     expect(token).toBeTruthy();
     mockRequests.length = 0;
