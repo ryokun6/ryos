@@ -551,7 +551,6 @@ export function FinderAppComponent({
                       <AirDropView
                         onSendFile={handleAirDropSendFile}
                         onRequestLogin={promptVerifyToken}
-                        onRequestCreateAccount={promptSetUsername}
                       />
                     </div>
                   ) : (
@@ -617,7 +616,6 @@ export function FinderAppComponent({
                   <AirDropView
                     onSendFile={handleAirDropSendFile}
                     onRequestLogin={promptVerifyToken}
-                    onRequestCreateAccount={promptSetUsername}
                   />
                 </div>
               ) : (

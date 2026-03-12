@@ -154,7 +154,6 @@ function positionsOnRings(count: number): Array<{ ring: number; angle: number }>
 interface AirDropViewProps {
   onSendFile: (recipient: string, fileName: string, content: string, fileType: string) => void;
   onRequestLogin?: () => void;
-  onRequestCreateAccount?: () => void;
 }
 
 export function AirDropView({
