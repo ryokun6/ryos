@@ -97,9 +97,7 @@ const sampleConversationHistory = [
 ];
 
 describe("telegram heartbeat helpers", () => {
-  test(
-    "defaults heartbeat conversations to gpt-5.3-chat-latest when TELEGRAM_BOT_MODEL is unset",
-    () => {
+  test("defaults heartbeat conversations to gpt-5.3-chat-latest when TELEGRAM_BOT_MODEL is unset", () => {
     const logMessages: string[] = [];
 
     const model = getTelegramModel(
@@ -110,25 +108,21 @@ describe("telegram heartbeat helpers", () => {
     expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
     expect(model).toBe("gpt-5.3-chat-latest");
     expect(logMessages).toHaveLength(0);
-    }
-  );
+  });
 
-  test(
-    "falls back heartbeat conversations to gpt-5.3-chat-latest for unsupported TELEGRAM_BOT_MODEL",
-    () => {
-      const logMessages: string[] = [];
+  test("falls back heartbeat conversations to gpt-5.3-chat-latest for unsupported TELEGRAM_BOT_MODEL", () => {
+    const logMessages: string[] = [];
 
-      const model = getTelegramModel(
-        (message) => logMessages.push(String(message)),
-        { TELEGRAM_BOT_MODEL: "not-a-real-model" }
-      );
+    const model = getTelegramModel(
+      (message) => logMessages.push(String(message)),
+      { TELEGRAM_BOT_MODEL: "not-a-real-model" }
+    );
 
-      expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
-      expect(logMessages).toEqual([
-        'Unsupported TELEGRAM_BOT_MODEL "not-a-real-model", falling back to gpt-5.3-chat-latest',
-      ]);
-    }
-  );
+    expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
+    expect(logMessages).toEqual([
+      'Unsupported TELEGRAM_BOT_MODEL "not-a-real-model", falling back to gpt-5.3-chat-latest',
+    ]);
+  });
 
   test("builds stable slot keys for 30-minute windows", () => {
     const firstWindow = new Date("2026-03-07T18:00:00.000Z");
