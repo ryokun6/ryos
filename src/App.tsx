@@ -20,6 +20,7 @@ import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotific
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { useAutoCloudSync } from "@/hooks/useAutoCloudSync";
 import { AirDropListener } from "@/components/AirDropListener";
+import { useFilesStore } from "@/stores/useFilesStore";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -81,6 +82,14 @@ export function App() {
   useEffect(() => {
     applyDisplayMode(displayMode);
   }, [displayMode]);
+
+  useEffect(() => {
+    Promise.resolve(
+      useFilesStore.getState().syncRootDirectoriesFromDefaults()
+    ).catch((err) => {
+      console.error("Root directory sync failed on app mount", err);
+    });
+  }, []);
 
   useEffect(() => {
     // Only show boot screen for system operations (reset/restore/format/debug)

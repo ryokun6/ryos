@@ -325,7 +325,10 @@ function TextEditContent({
       if (pendingFileOpen) {
         try {
           const { path, content } = JSON.parse(pendingFileOpen);
-          if (path.startsWith("/Documents/")) {
+          if (
+            path.startsWith("/Documents/") ||
+            path.startsWith("/Downloads/")
+          ) {
             const processedContent = path.endsWith(".md")
               ? markdownToHtml(content)
               : content;

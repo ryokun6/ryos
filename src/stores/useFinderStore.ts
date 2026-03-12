@@ -15,6 +15,8 @@ export interface FinderInstance {
   viewType: ViewType;
   sortType: SortType;
   selectedFile: string | null;
+  selectedFiles: string[];
+  selectionAnchorPath: string | null;
 }
 
 interface FinderStoreState {
@@ -88,6 +90,8 @@ export const useFinderStore = create<FinderStoreState>()(
                 viewType: state.getViewTypeForPath(initialPath),
                 sortType: "name",
                 selectedFile: null,
+                selectedFiles: [],
+                selectionAnchorPath: null,
               },
             },
           };
@@ -153,6 +157,11 @@ export const useFinderStore = create<FinderStoreState>()(
                     "list",
                   sortType: instance.sortType || "name",
                   selectedFile: instance.selectedFile || null,
+                  selectedFiles:
+                    instance.selectedFiles ||
+                    (instance.selectedFile ? [instance.selectedFile] : []),
+                  selectionAnchorPath:
+                    instance.selectionAnchorPath || instance.selectedFile || null,
                 };
               }
             });

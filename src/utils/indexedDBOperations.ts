@@ -13,6 +13,35 @@ export interface StoredContent {
   content: string | Blob;
 }
 
+const IMAGE_FILE_EXTENSIONS = new Set([
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "bmp",
+]);
+
+const APPLET_FILE_EXTENSIONS = new Set(["app", "html", "htm"]);
+
+const IMAGE_FILE_TYPES = new Set([
+  "image",
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "bmp",
+]);
+
+const APPLET_FILE_TYPES = new Set(["html", "htm", "app", "applet"]);
+
+const getExtension = (value?: string): string => {
+  if (!value) return "";
+  const normalized = value.split("?")[0];
+  return normalized.split(".").pop()?.toLowerCase() || "";
+};
+
 /**
  * Save file content to IndexedDB.
  * @param uuid - Unique identifier for the content
@@ -183,10 +212,36 @@ export async function batchDeleteFileContent(
  * @returns The store name or null if path doesn't match known patterns
  */
 export function getStoreForPath(filePath: string): string | null {
+  return getStoreForFile(filePath);
+}
+
+export function getStoreForFile(
+  filePath: string,
+  options: { name?: string; type?: string } = {}
+): string | null {
   if (filePath.startsWith("/Documents/")) return STORES.DOCUMENTS;
   if (filePath.startsWith("/Images/")) return STORES.IMAGES;
   if (filePath.startsWith("/Applets/")) return STORES.APPLETS;
-  return null;
+  if (!filePath.startsWith("/Downloads/")) return null;
+
+  const extension = getExtension(options.name || filePath);
+  const normalizedType = options.type?.toLowerCase() || "";
+
+  if (
+    IMAGE_FILE_TYPES.has(normalizedType) ||
+    IMAGE_FILE_EXTENSIONS.has(extension)
+  ) {
+    return STORES.IMAGES;
+  }
+
+  if (
+    APPLET_FILE_TYPES.has(normalizedType) ||
+    APPLET_FILE_EXTENSIONS.has(extension)
+  ) {
+    return STORES.APPLETS;
+  }
+
+  return STORES.DOCUMENTS;
 }
 
 /**

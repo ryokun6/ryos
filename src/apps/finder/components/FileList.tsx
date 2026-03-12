@@ -10,13 +10,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
-import { useState, useRef, useEffect, memo } from "react";
+import { useState, useRef, useEffect, memo, useCallback } from "react";
 import { useLongPress } from "@/hooks/useLongPress";
 import { isTouchDevice } from "@/utils/device";
 import { getFinderDisplayName } from "@/utils/finderDisplay";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
+import {
+  createSelectionRect,
+  getIntersectingSelectionIds,
+  hasToggleModifier,
+  mergeSelectionIds,
+  resolveMultiSelection,
+  type SelectionPoint,
+} from "@/utils/selection";
 
 export interface FileItem {
   name: string;
@@ -36,8 +44,16 @@ export interface FileItem {
 interface FileListProps {
   files: FileItem[];
   onFileOpen: (file: FileItem, launchOrigin?: LaunchOriginRect) => void;
-  onFileSelect: (file: FileItem) => void;
+  onFileSelect: (
+    file: FileItem | undefined,
+    options?: {
+      selectedPaths?: string[];
+      anchorPath?: string | null;
+    }
+  ) => void;
   selectedFile?: FileItem;
+  selectedFiles?: string[];
+  selectionAnchorPath?: string | null;
   viewType?: ViewType;
   getFileType: (file: FileItem) => string;
   onFileDrop?: (sourceFile: FileItem, targetFolder: FileItem) => void;
@@ -51,11 +67,15 @@ interface FileListProps {
 // Memoized list row item for table view
 interface ListRowItemProps {
   file: FileItem;
-  selectedFile?: FileItem;
+  selectedFiles: string[];
   dropTargetPath: string | null;
   onItemContextMenu?: (file: FileItem, e: React.MouseEvent) => void;
   onFileOpen: (file: FileItem, launchOrigin?: LaunchOriginRect) => void;
-  onFileSelect: (file: FileItem) => void;
+  onFileSelect: (
+    file: FileItem,
+    event: React.MouseEvent<HTMLElement>,
+    options?: { allowRename?: boolean }
+  ) => void;
   onDragStart: (e: React.DragEvent<HTMLElement>, file: FileItem) => void;
   onDragOver: (e: React.DragEvent<HTMLElement>, file: FileItem) => void;
   onDragLeave: () => void;
@@ -70,7 +90,7 @@ interface ListRowItemProps {
 
 const ListRowItem = memo(function ListRowItem({
   file,
-  selectedFile,
+  selectedFiles,
   dropTargetPath,
   onItemContextMenu,
   onFileOpen,
@@ -118,9 +138,11 @@ const ListRowItem = memo(function ListRowItem({
       };
       onFileOpen(file, launchOrigin);
     } else {
-      onFileSelect(file);
+      onFileSelect(file, e);
     }
   };
+
+  const isSelected = selectedFiles.includes(file.path);
 
   const handleDoubleClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
     const now = Date.now();
@@ -143,12 +165,12 @@ const ListRowItem = memo(function ListRowItem({
   return (
     <TableRow
       className={`border-none cursor-default ${
-        selectedFile?.path === file.path || dropTargetPath === file.path
+        isSelected || dropTargetPath === file.path
           ? ""
           : "odd:bg-gray-200/50 hover:bg-gray-100/50 transition-colors"
       }`}
       style={
-        selectedFile?.path === file.path || dropTargetPath === file.path
+        isSelected || dropTargetPath === file.path
           ? {
               background: "var(--os-color-selection-bg)",
               color: "var(--os-color-selection-text)",
@@ -157,9 +179,13 @@ const ListRowItem = memo(function ListRowItem({
           : undefined
       }
       onClick={handleClick}
-      onMouseDown={() => {
-        if (!file.isDirectory && selectedFile?.path !== file.path) {
-          onFileSelect(file);
+      onMouseDown={(e) => {
+        if (
+          e.button === 0 &&
+          !file.isDirectory &&
+          (!isSelected || e.shiftKey || hasToggleModifier(e))
+        ) {
+          onFileSelect(file, e, { allowRename: false });
         }
       }}
       onContextMenu={(e: React.MouseEvent) => {
@@ -175,6 +201,7 @@ const ListRowItem = memo(function ListRowItem({
       onDrop={(e) => onDrop(e, file)}
       onDragEnd={onDragEnd}
       data-file-item="true"
+      data-file-path={file.path}
       {...(isTouchDevice() ? longPressHandlers : {})}
     >
       <TableCell className="flex items-center gap-2">
@@ -231,12 +258,16 @@ const ListRowItem = memo(function ListRowItem({
 // Memoized grid item for icon view
 interface GridItemProps {
   file: FileItem;
-  selectedFile?: FileItem;
+  selectedFiles: string[];
   dropTargetPath: string | null;
   viewType: ViewType;
   onItemContextMenu?: (file: FileItem, e: React.MouseEvent) => void;
   onFileOpen: (file: FileItem, launchOrigin?: LaunchOriginRect) => void;
-  onFileSelect: (file: FileItem) => void;
+  onFileSelect: (
+    file: FileItem,
+    event: React.MouseEvent<HTMLElement>,
+    options?: { allowRename?: boolean }
+  ) => void;
   onDragStart: (e: React.DragEvent<HTMLElement>, file: FileItem) => void;
   onDragOver: (e: React.DragEvent<HTMLElement>, file: FileItem) => void;
   onDragLeave: () => void;
@@ -249,7 +280,7 @@ interface GridItemProps {
 
 const GridItem = memo(function GridItem({
   file,
-  selectedFile,
+  selectedFiles,
   dropTargetPath,
   viewType,
   onItemContextMenu,
@@ -264,6 +295,8 @@ const GridItem = memo(function GridItem({
   shouldShowThumbnail,
   isImageFile,
 }: GridItemProps) {
+  const isSelected = selectedFiles.includes(file.path);
+
   const longPressHandlers = useLongPress((touchEvent) => {
     if (onItemContextMenu) {
       const touch = touchEvent.touches[0];
@@ -278,9 +311,13 @@ const GridItem = memo(function GridItem({
 
   return (
     <div
-      onMouseDown={() => {
-        if (!file.isDirectory && selectedFile?.path !== file.path) {
-          onFileSelect(file);
+      onMouseDown={(e) => {
+        if (
+          e.button === 0 &&
+          !file.isDirectory &&
+          (!isSelected || e.shiftKey || hasToggleModifier(e))
+        ) {
+          onFileSelect(file, e, { allowRename: false });
         }
       }}
       draggable={!file.isDirectory}
@@ -296,6 +333,7 @@ const GridItem = memo(function GridItem({
         }
       }}
       data-file-item="true"
+      data-file-path={file.path}
       {...(isTouchDevice() ? longPressHandlers : {})}
     >
       <FileIcon
@@ -314,8 +352,8 @@ const GridItem = memo(function GridItem({
           };
           onFileOpen(file, launchOrigin);
         }}
-        onClick={() => onFileSelect(file)}
-        isSelected={selectedFile?.path === file.path}
+        onClick={(e) => onFileSelect(file, e)}
+        isSelected={isSelected}
         isDropTarget={dropTargetPath === file.path}
         size={viewType === "large" ? "large" : "small"}
         context="finder"
@@ -329,6 +367,8 @@ export function FileList({
   onFileOpen,
   onFileSelect,
   selectedFile,
+  selectedFiles = [],
+  selectionAnchorPath,
   viewType = "small",
   getFileType,
   onFileDrop,
@@ -341,6 +381,14 @@ export function FileList({
   const { t } = useTranslation();
   const [dropTargetPath, setDropTargetPath] = useState<string | null>(null);
   const draggedFileRef = useRef<FileItem | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const marqueeStartRef = useRef<SelectionPoint | null>(null);
+  const marqueeBaseSelectionRef = useRef<string[]>([]);
+  const marqueeAdditiveRef = useRef(false);
+  const [selectionRect, setSelectionRect] = useState<{
+    start: SelectionPoint;
+    end: SelectionPoint;
+  } | null>(null);
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOSXTheme = currentTheme === "macosx";
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -366,12 +414,131 @@ export function FileList({
     }
 
     onFileOpen(file, launchOrigin);
-    onFileSelect(null as unknown as FileItem); // Clear selection with proper typing
+    onFileSelect(undefined, { selectedPaths: [], anchorPath: null });
   };
 
-  const handleFileSelect = (file: FileItem) => {
-    // If user clicks on already selected file
-    if (selectedFile && selectedFile.path === file.path) {
+  const orderedPaths = files.map((file) => file.path);
+
+  const applySelection = useCallback(
+    (
+      nextSelectedPaths: string[],
+      primaryPath: string | null,
+      anchorPath: string | null
+    ) => {
+      const nextPrimaryFile = primaryPath
+        ? files.find((candidate) => candidate.path === primaryPath)
+        : undefined;
+      onFileSelect(nextPrimaryFile, {
+        selectedPaths: nextSelectedPaths,
+        anchorPath,
+      });
+    },
+    [files, onFileSelect]
+  );
+
+  const updateSelectionFromMarquee = useCallback(
+    (start: SelectionPoint, end: SelectionPoint) => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const intersectingPaths = getIntersectingSelectionIds(
+        createSelectionRect(start, end),
+        Array.from(
+          container.querySelectorAll<HTMLElement>("[data-file-path]")
+        ).map((element) => ({
+          id: element.dataset.filePath || "",
+          rect: {
+            left: element.getBoundingClientRect().left,
+            top: element.getBoundingClientRect().top,
+            right: element.getBoundingClientRect().right,
+            bottom: element.getBoundingClientRect().bottom,
+          },
+        }))
+      ).filter(Boolean);
+
+      const nextSelectedPaths = marqueeAdditiveRef.current
+        ? mergeSelectionIds(
+            orderedPaths,
+            marqueeBaseSelectionRef.current,
+            intersectingPaths
+          )
+        : intersectingPaths;
+      const primaryPath = nextSelectedPaths[nextSelectedPaths.length - 1] ?? null;
+      const anchorPath = primaryPath;
+
+      applySelection(nextSelectedPaths, primaryPath, anchorPath);
+    },
+    [applySelection, orderedPaths]
+  );
+
+  const handleBlankMouseDown = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (event.button !== 0 || isTouchDevice()) return;
+      const target = event.target as HTMLElement;
+      if (target.closest("[data-file-item]")) return;
+
+      const start = { x: event.clientX, y: event.clientY };
+      marqueeStartRef.current = start;
+      marqueeBaseSelectionRef.current = selectedFiles;
+      marqueeAdditiveRef.current = event.shiftKey || hasToggleModifier(event);
+      setSelectionRect({ start, end: start });
+    },
+    [selectedFiles]
+  );
+
+  useEffect(() => {
+    if (!selectionRect || !marqueeStartRef.current) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const start = marqueeStartRef.current;
+      if (!start) return;
+
+      const end = { x: event.clientX, y: event.clientY };
+      setSelectionRect({ start, end });
+      updateSelectionFromMarquee(start, end);
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      const start = marqueeStartRef.current;
+      const end = { x: event.clientX, y: event.clientY };
+      const movedEnough =
+        Math.abs(end.x - start!.x) > 3 || Math.abs(end.y - start!.y) > 3;
+
+      if (movedEnough) {
+        updateSelectionFromMarquee(start!, end);
+      } else if (!marqueeAdditiveRef.current) {
+        applySelection([], null, null);
+      }
+
+      marqueeStartRef.current = null;
+      setSelectionRect(null);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp, { once: true });
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [applySelection, selectionRect, updateSelectionFromMarquee]);
+
+  const handleFileSelect = (
+    file: FileItem,
+    event: React.MouseEvent<HTMLElement>,
+    options?: { allowRename?: boolean }
+  ) => {
+    const allowRename = options?.allowRename !== false;
+    const toggleKey = hasToggleModifier(event);
+    const shiftKey = event.shiftKey;
+    const isSinglePrimarySelection =
+      selectedFile?.path === file.path &&
+      selectedFiles.length === 1 &&
+      selectedFiles[0] === file.path;
+
+    // If user clicks on the already selected primary file without modifiers,
+    // treat a delayed second click as a rename request.
+    if (allowRename && !toggleKey && !shiftKey && isSinglePrimarySelection) {
       // If rename is already pending, don't set another timeout
       if (clickTimeoutRef.current) {
         return;
@@ -397,7 +564,23 @@ export function FileList({
     }
 
     lastClickedPathRef.current = file.path;
-    onFileSelect(file);
+    const nextSelection = resolveMultiSelection({
+      orderedIds: orderedPaths,
+      currentSelectedIds: selectedFiles,
+      clickedId: file.path,
+      anchorId:
+        selectionAnchorPath || selectedFile?.path || selectedFiles[0] || null,
+      modifiers: {
+        shiftKey,
+        toggleKey,
+      },
+    });
+
+    applySelection(
+      nextSelection.selectedIds,
+      nextSelection.primaryId,
+      nextSelection.anchorId
+    );
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLElement>, file: FileItem) => {
@@ -677,16 +860,23 @@ export function FileList({
   // Also hide extensions for desktop shortcuts
   // For folders, use translated names
   const getDisplayName = (file: FileItem): string => getFinderDisplayName(file);
+  const renderedSelectionRect =
+    selectionRect &&
+    containerRef.current &&
+    createSelectionRect(selectionRect.start, selectionRect.end);
+  const containerRect = containerRef.current?.getBoundingClientRect();
 
   // ------------------- Render -------------------
 
   if (viewType === "list") {
     return (
       <div
-        className="font-geneva-12"
+        ref={containerRef}
+        className="relative font-geneva-12"
         onDragOver={handleContainerDragOver}
         onDragLeave={handleContainerDragLeave}
         onDrop={handleContainerDrop}
+        onMouseDown={handleBlankMouseDown}
       >
         <Table className="min-w-[480px]">
           <TableHeader>
@@ -710,7 +900,7 @@ export function FileList({
               <ListRowItem
                 key={file.path}
                 file={file}
-                selectedFile={selectedFile}
+                selectedFiles={selectedFiles}
                 dropTargetPath={dropTargetPath}
                 onItemContextMenu={onItemContextMenu}
                 onFileOpen={handleFileOpen}
@@ -729,28 +919,45 @@ export function FileList({
             ))}
           </TableBody>
         </Table>
+        {renderedSelectionRect && containerRect ? (
+          <div
+            className="pointer-events-none absolute z-10 border"
+            style={{
+              left: renderedSelectionRect.left - containerRect.left,
+              top: renderedSelectionRect.top - containerRect.top,
+              width:
+                renderedSelectionRect.right - renderedSelectionRect.left,
+              height:
+                renderedSelectionRect.bottom - renderedSelectionRect.top,
+              borderColor: "rgba(128, 128, 128, 0.6)",
+              backgroundColor: "rgba(128, 128, 128, 0.15)",
+            }}
+          />
+        ) : null}
       </div>
     );
   }
 
   return (
     <div
+      ref={containerRef}
       className={`grid ${
         viewType === "large"
           ? "grid-cols-[repeat(auto-fit,minmax(96px,1fr))]"
           : "grid-cols-[repeat(auto-fit,minmax(80px,1fr))]"
       } gap-x-3 gap-y-3 p-3 min-h-[150px] ${
         files.length <= 1 ? "justify-items-start" : "justify-items-center"
-      }`}
+      } relative`}
       onDragOver={handleContainerDragOver}
       onDragLeave={handleContainerDragLeave}
       onDrop={handleContainerDrop}
+      onMouseDown={handleBlankMouseDown}
     >
       {files.map((file) => (
         <GridItem
           key={file.path}
           file={file}
-          selectedFile={selectedFile}
+          selectedFiles={selectedFiles}
           dropTargetPath={dropTargetPath}
           viewType={viewType}
           onItemContextMenu={onItemContextMenu}
@@ -766,6 +973,20 @@ export function FileList({
           isImageFile={isImageFile}
         />
       ))}
+      {renderedSelectionRect && containerRect ? (
+        <div
+          className="pointer-events-none absolute z-10 border"
+          style={{
+            left: renderedSelectionRect.left - containerRect.left,
+            top: renderedSelectionRect.top - containerRect.top,
+            width: renderedSelectionRect.right - renderedSelectionRect.left,
+            height:
+              renderedSelectionRect.bottom - renderedSelectionRect.top,
+            borderColor: "rgba(128, 128, 128, 0.6)",
+            backgroundColor: "rgba(128, 128, 128, 0.15)",
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -4,11 +4,37 @@ import {
   useAirDropStore,
   type AirDropTransfer,
 } from "@/stores/useAirDropStore";
-import { useFilesStore } from "@/stores/useFilesStore";
-import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
-import { STORES } from "@/utils/indexedDB";
+import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+
+const getImageMimeType = (fileName: string): string => {
+  const extension = fileName.split(".").pop()?.toLowerCase();
+  switch (extension) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    case "bmp":
+      return "image/bmp";
+    default:
+      return "image/png";
+  }
+};
+
+const decodeBase64ToBlob = (base64: string, fileName: string): Blob => {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new Blob([bytes], { type: getImageMimeType(fileName) });
+};
 
 export function AirDropListener() {
   const { t } = useTranslation();
@@ -21,7 +47,7 @@ export function AirDropListener() {
   const unsubscribeFromChannel = useAirDropStore(
     (s) => s.unsubscribeFromChannel
   );
-  const addItem = useFilesStore((s) => s.addItem);
+  const { saveFile } = useFileSystem("/", { skipLoad: true });
   const shownToasts = useRef(new Set<string>());
 
   useEffect(() => {
@@ -32,28 +58,19 @@ export function AirDropListener() {
   }, [isAuthenticated, username, subscribeToChannel, unsubscribeFromChannel]);
 
   const saveReceivedFile = useCallback(
-    async (fileName: string, content: string) => {
-      const uuid = crypto.randomUUID();
-      const filePath = `/Documents/${fileName}`;
-      const now = Date.now();
+    async (fileName: string, content: string, fileType?: string) => {
+      const filePath = `/Downloads/${fileName}`;
+      const fileContent =
+        fileType === "image" ? decodeBase64ToBlob(content, fileName) : content;
 
-      await dbOperations.put(STORES.DOCUMENTS, {
-        name: uuid,
-        content,
-      });
-
-      addItem({
+      await saveFile({
         path: filePath,
         name: fileName,
-        isDirectory: false,
-        type: "text",
-        uuid,
-        createdAt: now,
-        modifiedAt: now,
-        size: new Blob([content]).size,
+        content: fileContent,
+        type: fileType === "html" ? "html" : undefined,
       });
     },
-    [addItem]
+    [saveFile]
   );
 
   const handleAccept = useCallback(
@@ -61,7 +78,11 @@ export function AirDropListener() {
       const result = await respondToTransfer(transfer.transferId, true);
       if (result.success && result.content && result.fileName) {
         try {
-          await saveReceivedFile(result.fileName, result.content);
+          await saveReceivedFile(
+            result.fileName,
+            result.content,
+            result.fileType
+          );
           toast.success(
             t("apps.finder.airdrop.fileReceived", {
               fileName: result.fileName,

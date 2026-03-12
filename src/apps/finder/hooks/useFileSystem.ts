@@ -22,6 +22,7 @@ import {
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { getStoreForFile } from "@/utils/indexedDBOperations";
 import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
@@ -54,6 +55,10 @@ const getParentPath = (path: string): string => {
   if (parts.length <= 1) return "/";
   return `/${parts.slice(0, -1).join("/")}`;
 };
+
+const arePathArraysEqual = (first: readonly string[], second: readonly string[]) =>
+  first.length === second.length &&
+  first.every((path, index) => path === second[index]);
 
 const getCloudSyncDomainForContentStore = (
   storeName: string
@@ -229,6 +234,9 @@ function getFileTypeFromExtension(fileName: string): string {
       return ext;
     case "bmp":
       return ext;
+    case "html":
+    case "htm":
+      return "html";
     default:
       return "unknown";
   }
@@ -364,14 +372,26 @@ export function useFileSystem(
   const [localHistoryIndex, setLocalHistoryIndex] = useState(
     finderInstance?.navigationIndex || 0
   );
-  const [, setLocalSelectedFile] = useState<string | null>(
-    finderInstance?.selectedFile || null
+  const [localSelectedFiles, setLocalSelectedFiles] = useState<string[]>(
+    finderInstance?.selectedFiles ||
+      (finderInstance?.selectedFile ? [finderInstance.selectedFile] : [])
   );
+  const [localSelectionAnchorPath, setLocalSelectionAnchorPath] = useState<
+    string | null
+  >(finderInstance?.selectionAnchorPath || finderInstance?.selectedFile || null);
+  const [localSelectedFilePath, setLocalSelectedFilePath] = useState<
+    string | null
+  >(finderInstance?.selectedFile || null);
+  const [selectedFile, setSelectedFile] = useState<ExtendedDisplayFileItem>();
 
   // Determine which state to use
   const currentPath = finderInstance?.currentPath || localCurrentPath;
   const history = finderInstance?.navigationHistory || localHistory;
   const historyIndex = finderInstance?.navigationIndex || localHistoryIndex;
+  const selectedFilePath = finderInstance?.selectedFile || localSelectedFilePath;
+  const selectedFiles = finderInstance?.selectedFiles || localSelectedFiles;
+  const selectionAnchorPath =
+    finderInstance?.selectionAnchorPath || localSelectionAnchorPath;
 
   // State setters that work with both instance and local mode
   const setCurrentPath = useCallback(
@@ -419,12 +439,22 @@ export function useFileSystem(
     [instanceId, finderInstance, updateFinderInstance]
   );
 
-  const setSelectedFilePath = useCallback(
-    (path: string | null) => {
+  const syncSelectionState = useCallback(
+    (
+      primaryPath: string | null,
+      paths: string[],
+      anchorPath: string | null
+    ) => {
       if (instanceId && finderInstance) {
-        updateFinderInstance(instanceId, { selectedFile: path });
+        updateFinderInstance(instanceId, {
+          selectedFile: primaryPath,
+          selectedFiles: paths,
+          selectionAnchorPath: anchorPath,
+        });
       } else {
-        setLocalSelectedFile(path);
+        setLocalSelectedFilePath(primaryPath);
+        setLocalSelectedFiles(paths);
+        setLocalSelectionAnchorPath(anchorPath);
       }
     },
     [instanceId, finderInstance, updateFinderInstance]
@@ -432,7 +462,6 @@ export function useFileSystem(
 
   // Local UI state (not persisted to store)
   const [files, setFiles] = useState<ExtendedDisplayFileItem[]>([]);
-  const [selectedFile, setSelectedFile] = useState<ExtendedDisplayFileItem>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
   const objectUrlsRef = useRef<Set<string>>(new Set());
@@ -581,7 +610,7 @@ export function useFileSystem(
     (path: string) => {
       const normalizedPath = path.startsWith("/") ? path : `/${path}`;
       setSelectedFile(undefined);
-      setSelectedFilePath(null);
+      syncSelectionState(null, [], null);
       if (normalizedPath !== currentPath) {
         setHistory((prev) => {
           const newHistory = prev.slice(0, historyIndex + 1);
@@ -595,7 +624,7 @@ export function useFileSystem(
     [
       currentPath,
       historyIndex,
-      setSelectedFilePath,
+      syncSelectionState,
       setHistory,
       setHistoryIndex,
       setCurrentPath,
@@ -1010,19 +1039,14 @@ export function useFileSystem(
 
       try {
         // Fetch content from IndexedDB (Documents, Images, or Applets)
-        if (
-          file.path.startsWith("/Documents/") ||
-          file.path.startsWith("/Images/") ||
-          file.path.startsWith("/Applets/")
-        ) {
+        const storeName = getStoreForFile(file.path, {
+          name: file.name,
+          type: file.type,
+        });
+        if (storeName) {
           // Get the file metadata to get the UUID
           const fileMetadata = getFileItem(file.path);
           if (fileMetadata?.uuid) {
-            const storeName = file.path.startsWith("/Documents/")
-              ? STORES.DOCUMENTS
-              : file.path.startsWith("/Images/")
-              ? STORES.IMAGES
-              : STORES.APPLETS;
             const contentData = await dbOperations.get<DocumentContent>(
               storeName,
               fileMetadata.uuid // Use UUID instead of name
@@ -1081,14 +1105,14 @@ export function useFileSystem(
         // Process content: Read blob to string for TextEdit and Applets, create URL for Paint
         if (contentToUse instanceof Blob) {
           if (
-            file.path.startsWith("/Documents/") ||
-            file.path.startsWith("/Applets/")
+            storeName === STORES.DOCUMENTS ||
+            storeName === STORES.APPLETS
           ) {
             contentAsString = await contentToUse.text();
             console.log(
               `[useFileSystem] Read Blob as text for ${file.name}, length: ${contentAsString?.length}`
             );
-          } else if (file.path.startsWith("/Images/")) {
+          } else if (storeName === STORES.IMAGES) {
             // Don't create URL here, pass the Blob itself
             // contentUrlToUse = URL.createObjectURL(contentToUse);
             // console.log(`[useFileSystem] Created Blob URL for ${file.name}: ${contentUrlToUse}`);
@@ -1107,7 +1131,7 @@ export function useFileSystem(
         });
         if (file.path.startsWith("/Applications/") && file.appId) {
           launchApp(file.appId as AppId, { launchOrigin });
-        } else if (file.path.startsWith("/Documents/")) {
+        } else if (storeName === STORES.DOCUMENTS) {
           // Check if this file is already open in a TextEdit instance
           const textEditStore = useTextEditStore.getState();
           const existingInstanceId = textEditStore.getInstanceIdByPath(
@@ -1143,14 +1167,14 @@ export function useFileSystem(
               launchOrigin,
             });
           }
-        } else if (file.path.startsWith("/Images/")) {
+        } else if (storeName === STORES.IMAGES) {
           // Pass the Blob object itself to Paint via initialData
           launchApp("paint", {
             initialData: { path: file.path, content: contentToUse },
             launchOrigin,
           }); // Pass contentToUse (Blob)
         } else if (
-          file.path.startsWith("/Applets/") &&
+          storeName === STORES.APPLETS &&
           (file.path.endsWith(".app") || file.path.endsWith(".html"))
         ) {
           // Open HTML applets with applet-viewer
@@ -1260,13 +1284,64 @@ export function useFileSystem(
     return unsubscribe;
   }, [currentPath, loadFiles, options.skipLoad]);
 
+  useEffect(() => {
+    const filesByPath = new Map(files.map((file) => [file.path, file]));
+    const nextSelectedFiles = selectedFiles.filter((path) => filesByPath.has(path));
+    const nextPrimaryPath =
+      selectedFilePath && filesByPath.has(selectedFilePath)
+        ? selectedFilePath
+        : nextSelectedFiles[0] ?? null;
+    const nextAnchorPath =
+      selectionAnchorPath && filesByPath.has(selectionAnchorPath)
+        ? selectionAnchorPath
+        : nextPrimaryPath;
+    const nextSelectedFile = nextPrimaryPath
+      ? filesByPath.get(nextPrimaryPath)
+      : undefined;
+
+    if (selectedFile?.path !== nextSelectedFile?.path) {
+      setSelectedFile(nextSelectedFile);
+    } else if (selectedFile !== nextSelectedFile) {
+      setSelectedFile(nextSelectedFile);
+    }
+
+    if (
+      !arePathArraysEqual(nextSelectedFiles, selectedFiles) ||
+      nextPrimaryPath !== selectedFilePath ||
+      nextAnchorPath !== selectionAnchorPath
+    ) {
+      syncSelectionState(nextPrimaryPath, nextSelectedFiles, nextAnchorPath);
+    }
+  }, [
+    files,
+    selectedFile,
+    selectedFilePath,
+    selectedFiles,
+    selectionAnchorPath,
+    syncSelectionState,
+  ]);
+
   // --- handleFileSelect, Navigation Functions --- //
   const handleFileSelect = useCallback(
-    (file: ExtendedDisplayFileItem | undefined) => {
+    (
+      file: ExtendedDisplayFileItem | undefined,
+      options?: {
+        selectedPaths?: string[];
+        anchorPath?: string | null;
+      }
+    ) => {
+      const primaryPath = file?.path || null;
+      const nextSelectedFiles =
+        options?.selectedPaths || (primaryPath ? [primaryPath] : []);
+      const nextAnchorPath =
+        options?.anchorPath !== undefined
+          ? options.anchorPath
+          : primaryPath;
+
       setSelectedFile(file);
-      setSelectedFilePath(file?.path || null);
+      syncSelectionState(primaryPath, nextSelectedFiles, nextAnchorPath);
     },
-    [setSelectedFilePath]
+    [syncSelectionState]
   );
   const navigateUp = useCallback(() => {
     if (currentPath === "/") return;
@@ -1377,18 +1452,7 @@ export function useFileSystem(
         console.log(
           `[useFileSystem:saveFile] Determining store for path: ${path}`
         );
-        console.log(`[useFileSystem:saveFile] Path checks:`, {
-          startsWithDocuments: path.startsWith("/Documents/"),
-          startsWithImages: path.startsWith("/Images/"),
-          startsWithApplets: path.startsWith("/Applets/"),
-        });
-        const storeName = path.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : path.startsWith("/Images/")
-          ? STORES.IMAGES
-          : path.startsWith("/Applets/")
-          ? STORES.APPLETS
-          : null;
+        const storeName = getStoreForFile(path, { name, type: fileType });
         console.log(`[useFileSystem:saveFile] Selected store: ${storeName}`);
         if (storeName) {
           try {
@@ -1471,16 +1535,14 @@ export function useFileSystem(
       try {
         // Determine source and target stores for content
         const sourcePath = sourceFile.path;
-        const sourceStoreName = sourcePath.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : sourcePath.startsWith("/Images/")
-          ? STORES.IMAGES
-          : null;
-        const targetStoreName = targetFolderPath.startsWith("/Documents")
-          ? STORES.DOCUMENTS
-          : targetFolderPath.startsWith("/Images")
-          ? STORES.IMAGES
-          : null;
+        const sourceStoreName = getStoreForFile(sourcePath, {
+          name: sourceFile.name,
+          type: sourceFile.type,
+        });
+        const targetStoreName = getStoreForFile(newPath, {
+          name: sourceFile.name,
+          type: sourceFile.type,
+        });
 
         // If content needs to move between different stores
         if (
@@ -1552,11 +1614,10 @@ export function useFileSystem(
 
       // 2. Update content metadata (name field) in IndexedDB if it's a file with content
       if (!itemToRename.isDirectory && itemToRename.uuid) {
-        const storeName = oldPath.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : oldPath.startsWith("/Images/")
-          ? STORES.IMAGES
-          : null;
+        const storeName = getStoreForFile(oldPath, {
+          name: itemToRename.name,
+          type: itemToRename.type,
+        });
         if (storeName) {
           try {
             const content = await dbOperations.get<DocumentContent>(
@@ -1628,11 +1689,10 @@ export function useFileSystem(
       removeFileItem(fileMetadata.path);
 
       // 2. Move Content to TRASH DB store
-      const storeName = fileMetadata.path.startsWith("/Documents/")
-        ? STORES.DOCUMENTS
-        : fileMetadata.path.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const storeName = getStoreForFile(fileMetadata.path, {
+        name: fileMetadata.name,
+        type: fileMetadata.type,
+      });
       if (storeName && !fileMetadata.isDirectory && fileMetadata.uuid) {
         try {
           const content = await dbOperations.get<DocumentContent>(
@@ -1691,13 +1751,10 @@ export function useFileSystem(
       restoreFileItem(fileMetadata.path);
 
       // 2. Move Content from TRASH DB store back
-      const targetStoreName = fileMetadata.originalPath.startsWith(
-        "/Documents/"
-      )
-        ? STORES.DOCUMENTS
-        : fileMetadata.originalPath.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const targetStoreName = getStoreForFile(fileMetadata.originalPath, {
+        name: fileMetadata.name,
+        type: fileMetadata.type,
+      });
       if (targetStoreName && !fileMetadata.isDirectory && fileMetadata.uuid) {
         try {
           const content = await dbOperations.get<DocumentContent>(
@@ -1786,12 +1843,19 @@ export function useFileSystem(
       setHistory(["/"]);
       setHistoryIndex(0);
       setSelectedFile(undefined);
+      syncSelectionState(null, [], null);
       setError(undefined);
     } catch (err) {
       console.error("Error formatting file system:", err);
       setError("Failed to format file system");
     }
-  }, [resetFilesStore, setCurrentPath, setHistory, setHistoryIndex]);
+  }, [
+    resetFilesStore,
+    setCurrentPath,
+    setHistory,
+    setHistoryIndex,
+    syncSelectionState,
+  ]);
 
   // Calculate trash count based on store data
   const trashItemsCount = getItemsInPath("/Trash").length;
@@ -1821,11 +1885,10 @@ export function useFileSystem(
 
             // Calculate size if missing
             if (item.size === undefined || item.size === null) {
-              const storeName = item.path.startsWith("/Documents/")
-                ? STORES.DOCUMENTS
-                : item.path.startsWith("/Images/")
-                ? STORES.IMAGES
-                : null;
+              const storeName = getStoreForFile(item.path, {
+                name: item.name,
+                type: item.type,
+              });
 
               if (storeName) {
                 try {
@@ -1961,6 +2024,8 @@ export function useFileSystem(
     currentPath,
     files,
     selectedFile,
+    selectedFiles,
+    selectionAnchorPath,
     isLoading,
     error,
     handleFileOpen,

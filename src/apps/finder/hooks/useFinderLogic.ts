@@ -276,6 +276,8 @@ export function useFinderLogic({
     currentPath,
     files,
     selectedFile,
+    selectedFiles,
+    selectionAnchorPath,
     isLoading,
     error,
     handleFileOpen: originalHandleFileOpen,
@@ -981,7 +983,9 @@ export function useFinderLogic({
     e.stopPropagation();
     setContextMenuPos({ x: e.clientX, y: e.clientY });
     setContextMenuFile(file);
-    handleFileSelect(file); // ensure selected
+    if (!selectedFiles.includes(file.path)) {
+      handleFileSelect(file);
+    }
   };
 
   const handleBlankContextMenu = (e: MouseEvent) => {
@@ -1453,6 +1457,8 @@ export function useFinderLogic({
     currentPath,
     files,
     selectedFile,
+    selectedFiles,
+    selectionAnchorPath,
     isLoading,
     error,
     sortedFiles: filteredFiles,

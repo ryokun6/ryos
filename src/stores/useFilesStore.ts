@@ -57,6 +57,16 @@ interface FileSystemData {
   files: FileSystemItemData[];
 }
 
+const REQUIRED_ROOT_DIRECTORIES: FileSystemItemData[] = [
+  {
+    path: "/Downloads",
+    name: "Downloads",
+    isDirectory: true,
+    type: "directory",
+    icon: "/icons/default/downloads.png",
+  },
+];
+
 type LibraryState = "uninitialized" | "loaded" | "cleared";
 
 // Define the state structure
@@ -102,6 +112,22 @@ let appletsDataPromise: Promise<{ applets: FileSystemItemData[] }> | null = null
 
 // Preload status tracking
 let preloadStarted = false;
+
+function withRequiredRootDirectories(data: FileSystemData): FileSystemData {
+  const directories = [...data.directories];
+
+  for (const requiredDir of REQUIRED_ROOT_DIRECTORIES) {
+    const alreadyExists = directories.some((dir) => dir.path === requiredDir.path);
+    if (!alreadyExists) {
+      directories.push(requiredDir);
+    }
+  }
+
+  return {
+    ...data,
+    directories,
+  };
+}
 
 /**
  * Preload filesystem data early (can be called before React mounts).
@@ -968,7 +994,7 @@ export const useFilesStore = create<FilesStoreState>()(
         }),
 
       resetLibrary: async () => {
-        const data = await loadDefaultFiles();
+        const data = withRequiredRootDirectories(await loadDefaultFiles());
         const newItems: Record<string, FileSystemItem> = {};
         const now = Date.now();
 
@@ -1007,12 +1033,13 @@ export const useFilesStore = create<FilesStoreState>()(
         // Only initialize if the library is in uninitialized state
         if (current.libraryState === "uninitialized") {
           const data = await loadDefaultFiles();
+          const normalizedData = withRequiredRootDirectories(data);
           const appletsData = await loadDefaultApplets();
           const newItems: Record<string, FileSystemItem> = {};
           const now = Date.now();
 
           // Add directories
-          data.directories.forEach((dir) => {
+          normalizedData.directories.forEach((dir) => {
             newItems[dir.path] = {
               ...dir,
               status: "active",
@@ -1022,7 +1049,7 @@ export const useFilesStore = create<FilesStoreState>()(
           });
 
           // Add files
-          data.files.forEach((file) => {
+          normalizedData.files.forEach((file) => {
             newItems[file.path] = {
               ...file,
               status: "active",
@@ -1051,7 +1078,7 @@ export const useFilesStore = create<FilesStoreState>()(
           });
 
           // Save default contents for both files and applets
-          await saveDefaultContents(data.files, newItems);
+          await saveDefaultContents(normalizedData.files, newItems);
           await saveDefaultContents(appletsData.applets, newItems);
 
           // Create default desktop shortcuts after directories are set up
@@ -1061,7 +1088,7 @@ export const useFilesStore = create<FilesStoreState>()(
 
       syncRootDirectoriesFromDefaults: async () => {
         try {
-          const data = await loadDefaultFiles();
+          const data = withRequiredRootDirectories(await loadDefaultFiles());
           const now = Date.now();
           set((state) => {
             const newItems = { ...state.items };
