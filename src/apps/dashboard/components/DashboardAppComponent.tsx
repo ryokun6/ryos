@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useRef } from "react";
+import { useEffect, useCallback, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppProps } from "@/apps/base/types";
@@ -245,6 +245,16 @@ export function DashboardAppComponent({
     resetToDefaults,
   } = useDashboardLogic();
 
+  const widgetTranslateY = useMemo(() => {
+    if (!isPickerOpen || stripHeight <= 0 || widgets.length === 0) return 0;
+
+    const topMargin = 16;
+    const topMostWidget = Math.min(...widgets.map((widget) => widget.position.y));
+    const availableShift = Math.max(0, topMostWidget - topMargin);
+
+    return -Math.min(stripHeight, availableShift);
+  }, [isPickerOpen, stripHeight, widgets]);
+
   const handleClose = useCallback(() => {
     if (isClosing) return;
     setIsClosing(true);
@@ -373,7 +383,7 @@ export function DashboardAppComponent({
                 data-dashboard-widget
                 className="absolute inset-0"
                 style={{ pointerEvents: "none" }}
-                animate={{ y: isPickerOpen ? -stripHeight : 0 }}
+                animate={{ y: widgetTranslateY }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               >
                 <AnimatePresence>
