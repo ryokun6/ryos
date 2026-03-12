@@ -222,3 +222,78 @@ describe("sync state API contacts validation", () => {
     expect(json.domain).toBe("contacts");
   });
 });
+
+describe("sync state API deletion markers", () => {
+  test("round-trips calendar and file tombstones", async () => {
+    const authToken = await getAuthToken();
+
+    const filesRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "files-metadata",
+          updatedAt: "2026-03-12T16:35:00.000Z",
+          version: 1,
+          data: {
+            items: {},
+            libraryState: "loaded",
+            deletedPaths: {
+              "/Photos/cat.png": "2026-03-12T16:34:00.000Z",
+            },
+          },
+        }),
+      }
+    );
+    expect(filesRes.status).toBe(200);
+
+    const calendarRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "calendar",
+          updatedAt: "2026-03-12T16:36:00.000Z",
+          version: 1,
+          data: {
+            events: [],
+            calendars: [],
+            todos: [],
+            deletedTodoIds: {
+              "todo-1": "2026-03-12T16:33:00.000Z",
+            },
+          },
+        }),
+      }
+    );
+    expect(calendarRes.status).toBe(200);
+
+    const downloadFiles = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state?domain=files-metadata`,
+      TEST_USERNAME,
+      authToken
+    );
+    expect(downloadFiles.status).toBe(200);
+    const filesJson = await downloadFiles.json();
+    expect(filesJson.data.deletedPaths).toEqual({
+      "/Photos/cat.png": "2026-03-12T16:34:00.000Z",
+    });
+
+    const downloadCalendar = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state?domain=calendar`,
+      TEST_USERNAME,
+      authToken
+    );
+    expect(downloadCalendar.status).toBe(200);
+    const calendarJson = await downloadCalendar.json();
+    expect(calendarJson.data.deletedTodoIds).toEqual({
+      "todo-1": "2026-03-12T16:33:00.000Z",
+    });
+  });
+});

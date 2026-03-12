@@ -22,6 +22,7 @@ import {
   type TodoItem,
 } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import type { Contact } from "@/utils/contacts";
 import { normalizeContacts } from "@/utils/contacts";
 import {
@@ -52,6 +53,13 @@ import {
   type IndividualBlobSyncDomain,
   createEmptyCloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
+import {
+  filterDeletedFilePaths,
+  filterDeletedIds,
+  mergeDeletionMarkerMaps,
+  normalizeDeletionMarkerMap,
+  type DeletionMarkerMap,
+} from "@/utils/cloudSyncDeletionMarkers";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
@@ -139,6 +147,7 @@ interface FilesMetadataSnapshotData {
   items: Record<string, FileSystemItem>;
   libraryState: "uninitialized" | "loaded" | "cleared";
   documents?: FilesStoreSnapshotData;
+  deletedPaths?: DeletionMarkerMap;
 }
 
 type FilesStoreSnapshotData = StoreItemWithKey[];
@@ -155,17 +164,22 @@ interface VideosSnapshotData {
 
 interface StickiesSnapshotData {
   notes: StickyNote[];
+  deletedNoteIds?: DeletionMarkerMap;
 }
 
 interface CalendarSnapshotData {
   events: CalendarEvent[];
   calendars: CalendarGroup[];
   todos: TodoItem[];
+  deletedEventIds?: DeletionMarkerMap;
+  deletedCalendarIds?: DeletionMarkerMap;
+  deletedTodoIds?: DeletionMarkerMap;
 }
 
 interface ContactsSnapshotData {
   contacts: Contact[];
   myContactId: string | null;
+  deletedContactIds?: DeletionMarkerMap;
 }
 
 type AnySnapshotData =
@@ -196,6 +210,7 @@ interface IndividualBlobDomainResponse {
   mode?: "individual";
   items?: Record<string, CloudSyncBlobItemDownloadMetadata>;
   metadata?: CloudSyncDomainMetadata;
+  deletedItems?: DeletionMarkerMap;
 }
 
 function assertCompressionSupport(): void {
@@ -560,6 +575,19 @@ function getIndividualBlobStoreName(domain: IndividualBlobSyncDomain): string {
   }
 }
 
+function getIndividualBlobDeletedKeys(
+  domain: IndividualBlobSyncDomain
+): DeletionMarkerMap {
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
+
+  switch (domain) {
+    case "custom-wallpapers":
+      return deletionMarkers.customWallpaperKeys;
+    case "files-images":
+      return {};
+  }
+}
+
 async function serializeIndividualBlobDomainRecords(
   domain: IndividualBlobSyncDomain
 ): Promise<SerializedStoreItemRecord[]> {
@@ -573,11 +601,13 @@ async function serializeIndividualBlobDomainRecords(
 
 async function serializeFilesMetadataSnapshot(): Promise<FilesMetadataSnapshotData> {
   const filesState = useFilesStore.getState();
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
   return {
     items: filesState.items,
     libraryState: filesState.libraryState,
     documents: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS),
+    deletedPaths: deletionMarkers.fileMetadataPaths,
   };
 }
 
@@ -598,25 +628,33 @@ function serializeVideosSnapshot(): VideosSnapshotData {
 }
 
 function serializeStickiesSnapshot(): StickiesSnapshotData {
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
   return {
     notes: useStickiesStore.getState().notes,
+    deletedNoteIds: deletionMarkers.stickyNoteIds,
   };
 }
 
 function serializeCalendarSnapshot(): CalendarSnapshotData {
   const calendarState = useCalendarStore.getState();
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
   return {
     events: calendarState.events,
     calendars: calendarState.calendars,
     todos: calendarState.todos,
+    deletedEventIds: deletionMarkers.calendarEventIds,
+    deletedCalendarIds: deletionMarkers.calendarIds,
+    deletedTodoIds: deletionMarkers.calendarTodoIds,
   };
 }
 
 function serializeContactsSnapshot(): ContactsSnapshotData {
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
   return {
     contacts: useContactsStore.getState().contacts,
     myContactId: useContactsStore.getState().myContactId,
+    deletedContactIds: deletionMarkers.contactIds,
   };
 }
 
@@ -799,8 +837,20 @@ async function applyIndexedDbStoreSnapshot(
 async function applyFilesMetadataSnapshot(
   data: FilesMetadataSnapshotData
 ): Promise<void> {
+  const remoteDeletedPaths = normalizeDeletionMarkerMap(data.deletedPaths);
+  const localDeletedPaths =
+    useCloudSyncStore.getState().deletionMarkers.fileMetadataPaths;
+  const effectiveDeletedPaths = mergeDeletionMarkerMaps(
+    localDeletedPaths,
+    remoteDeletedPaths
+  );
+
+  useCloudSyncStore
+    .getState()
+    .mergeDeletedKeys("fileMetadataPaths", remoteDeletedPaths);
+
   useFilesStore.setState({
-    items: data.items,
+    items: filterDeletedFilePaths(data.items, effectiveDeletedPaths),
     libraryState: data.libraryState,
   });
 
@@ -824,24 +874,83 @@ function applyVideosSnapshot(data: VideosSnapshotData): void {
 }
 
 function applyStickiesSnapshot(data: StickiesSnapshotData): void {
+  const remoteDeletedNoteIds = normalizeDeletionMarkerMap(data.deletedNoteIds);
+  const cloudSyncState = useCloudSyncStore.getState();
+  const effectiveDeletedNoteIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.stickyNoteIds,
+    remoteDeletedNoteIds
+  );
+
+  cloudSyncState.mergeDeletedKeys("stickyNoteIds", remoteDeletedNoteIds);
+
   useStickiesStore.setState({
-    notes: data.notes,
+    notes: filterDeletedIds(data.notes, effectiveDeletedNoteIds, (note) => note.id),
   });
 }
 
 function applyCalendarSnapshot(data: CalendarSnapshotData): void {
+  const remoteDeletedTodoIds = normalizeDeletionMarkerMap(data.deletedTodoIds);
+  const remoteDeletedEventIds = normalizeDeletionMarkerMap(data.deletedEventIds);
+  const remoteDeletedCalendarIds = normalizeDeletionMarkerMap(
+    data.deletedCalendarIds
+  );
+  const cloudSyncState = useCloudSyncStore.getState();
+  const effectiveDeletedTodoIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.calendarTodoIds,
+    remoteDeletedTodoIds
+  );
+  const effectiveDeletedEventIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.calendarEventIds,
+    remoteDeletedEventIds
+  );
+  const effectiveDeletedCalendarIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.calendarIds,
+    remoteDeletedCalendarIds
+  );
+
+  cloudSyncState.mergeDeletedKeys("calendarTodoIds", remoteDeletedTodoIds);
+  cloudSyncState.mergeDeletedKeys("calendarEventIds", remoteDeletedEventIds);
+  cloudSyncState.mergeDeletedKeys("calendarIds", remoteDeletedCalendarIds);
+
   useCalendarStore.setState({
-    events: data.events,
-    calendars: data.calendars,
-    todos: data.todos,
+    events: filterDeletedIds(
+      data.events,
+      effectiveDeletedEventIds,
+      (event) => event.id
+    ),
+    calendars: filterDeletedIds(
+      data.calendars,
+      effectiveDeletedCalendarIds,
+      (calendar) => calendar.id
+    ),
+    todos: filterDeletedIds(
+      data.todos,
+      effectiveDeletedTodoIds,
+      (todo) => todo.id
+    ),
   });
 }
 
 function applyContactsSnapshot(data: ContactsSnapshotData): void {
+  const remoteDeletedContactIds = normalizeDeletionMarkerMap(
+    data.deletedContactIds
+  );
+  const cloudSyncState = useCloudSyncStore.getState();
+  const effectiveDeletedContactIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.contactIds,
+    remoteDeletedContactIds
+  );
+
+  cloudSyncState.mergeDeletedKeys("contactIds", remoteDeletedContactIds);
+
   useContactsStore
     .getState()
     .replaceContactsFromSync(
-      normalizeContacts(data?.contacts),
+      filterDeletedIds(
+        normalizeContacts(data?.contacts),
+        effectiveDeletedContactIds,
+        (contact) => contact.id
+      ),
       data?.myContactId ?? null
     );
 }
@@ -849,15 +958,19 @@ function applyContactsSnapshot(data: ContactsSnapshotData): void {
 async function applyCustomWallpapersSnapshot(
   data: CustomWallpapersSnapshotData
 ): Promise<void> {
-  console.log(`[CloudSync] applyCustomWallpapersSnapshot: replacing with ${data.length} items`);
+  const deletedKeys = useCloudSyncStore.getState().deletionMarkers.customWallpaperKeys;
+  const filteredData = data.filter((item) => !deletedKeys[item.key]);
+  console.log(
+    `[CloudSync] applyCustomWallpapersSnapshot: replacing with ${filteredData.length} items`
+  );
   const db = await ensureIndexedDBInitialized();
   try {
-    await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, data);
+    await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, filteredData);
   } finally {
     db.close();
   }
 
-  await finalizeCustomWallpaperSync(data.map((item) => item.key));
+  await finalizeCustomWallpaperSync(filteredData.map((item) => item.key));
 }
 
 async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promise<void> {
@@ -883,25 +996,31 @@ async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promis
 async function applyIndividualBlobDomain(
   domain: IndividualBlobSyncDomain,
   remoteKeys: string[],
-  changedItems: Record<string, StoreItemWithKey>
+  changedItems: Record<string, StoreItemWithKey>,
+  deletedKeys: DeletionMarkerMap = {}
 ): Promise<void> {
   const storeName = getIndividualBlobStoreName(domain);
   const db = await ensureIndexedDBInitialized();
+  const effectiveRemoteKeys = remoteKeys.filter((key) => !deletedKeys[key]);
 
   try {
     const existingItems = await readStoreItems(db, storeName);
     const existingKeys = new Set(existingItems.map((item) => item.key));
-    const remoteKeySet = new Set(remoteKeys);
+    const remoteKeySet = new Set(effectiveRemoteKeys);
     const keysToDelete = Array.from(existingKeys).filter((key) => !remoteKeySet.has(key));
 
     await deleteStoreItemsByKey(db, storeName, keysToDelete);
-    await upsertStoreItems(db, storeName, Object.values(changedItems));
+    await upsertStoreItems(
+      db,
+      storeName,
+      Object.values(changedItems).filter((item) => !deletedKeys[item.key])
+    );
   } finally {
     db.close();
   }
 
   if (domain === "custom-wallpapers") {
-    await finalizeCustomWallpaperSync(remoteKeys);
+    await finalizeCustomWallpaperSync(effectiveRemoteKeys);
   }
 }
 
@@ -1203,6 +1322,7 @@ async function uploadIndividualBlobDomain(
 ): Promise<CloudSyncDomainMetadata> {
   const updatedAt = new Date().toISOString();
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
+  const deletedItems = getIndividualBlobDeletedKeys(domain);
   const remoteInfo = await fetchBlobDomainInfo(domain, _auth);
   const remoteItems =
     remoteInfo?.mode === "individual" ? remoteInfo.items || {} : {};
@@ -1271,6 +1391,7 @@ async function uploadIndividualBlobDomain(
       version: AUTO_SYNC_SNAPSHOT_VERSION,
       totalSize: Object.values(nextItems).reduce((sum, item) => sum + item.size, 0),
       items: nextItems,
+      deletedItems,
     },
     _auth
   );
@@ -1354,13 +1475,29 @@ async function downloadBlobDomain(
 
   if (isIndividualBlobSyncDomain(domain) && data.mode === "individual") {
     const remoteItems = data.items || {};
+    const remoteDeletedItems = normalizeDeletionMarkerMap(data.deletedItems);
+    const localDeletedItems = getIndividualBlobDeletedKeys(domain);
+    const effectiveDeletedItems = mergeDeletionMarkerMaps(
+      localDeletedItems,
+      remoteDeletedItems
+    );
     const localRecords = await serializeIndividualBlobDomainRecords(domain);
     const localRecordMap = new Map(
       localRecords.map((record) => [record.item.key, record])
     );
     const changedItems: Record<string, StoreItemWithKey> = {};
 
+    if (domain === "custom-wallpapers") {
+      useCloudSyncStore
+        .getState()
+        .mergeDeletedKeys("customWallpaperKeys", remoteDeletedItems);
+    }
+
     for (const [itemKey, itemMetadata] of Object.entries(remoteItems)) {
+      if (effectiveDeletedItems[itemKey]) {
+        continue;
+      }
+
       const localRecord = localRecordMap.get(itemKey);
       if (localRecord && localRecord.signature === itemMetadata.signature) {
         continue;
@@ -1372,7 +1509,12 @@ async function downloadBlobDomain(
       changedItems[itemKey] = itemEnvelope.data;
     }
 
-    await applyIndividualBlobDomain(domain, Object.keys(remoteItems), changedItems);
+    await applyIndividualBlobDomain(
+      domain,
+      Object.keys(remoteItems),
+      changedItems,
+      effectiveDeletedItems
+    );
     return data.metadata;
   }
 

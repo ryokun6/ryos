@@ -13,6 +13,7 @@ import {
   sortContacts,
   updateContactFromDraft,
 } from "@/utils/contacts";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
 export interface ImportContactsResult extends ContactImportResult {
   importedCount: number;
@@ -93,6 +94,7 @@ export const useContactsStore = create<ContactsStoreState>()(
               : state.selectedContactId,
           myContactId: state.myContactId === id ? null : state.myContactId,
         }));
+        useCloudSyncStore.getState().markDeletedKeys("contactIds", [id]);
       },
 
       importContacts: (parsed) => {

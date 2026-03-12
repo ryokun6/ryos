@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
 export type EventColor = "blue" | "red" | "green" | "orange" | "purple";
 
@@ -118,11 +119,27 @@ export const useCalendarStore = create<CalendarStoreState>()(
         },
 
         removeCalendar: (id) => {
+          const state = get();
+          const deletedEventIds = state.events
+            .filter((event) => event.calendarId === id)
+            .map((event) => event.id);
+          const deletedTodoIds = state.todos
+            .filter((todo) => todo.calendarId === id)
+            .map((todo) => todo.id);
+
           set((state) => ({
             calendars: state.calendars.filter((c) => c.id !== id),
             events: state.events.filter((e) => e.calendarId !== id),
             todos: state.todos.filter((t) => t.calendarId !== id),
           }));
+
+          useCloudSyncStore.getState().markDeletedKeys("calendarIds", [id]);
+          useCloudSyncStore
+            .getState()
+            .markDeletedKeys("calendarEventIds", deletedEventIds);
+          useCloudSyncStore
+            .getState()
+            .markDeletedKeys("calendarTodoIds", deletedTodoIds);
         },
 
         addEvent: (eventData) => {
@@ -158,6 +175,7 @@ export const useCalendarStore = create<CalendarStoreState>()(
           set((state) => ({
             events: state.events.filter((ev) => ev.id !== id),
           }));
+          useCloudSyncStore.getState().markDeletedKeys("calendarEventIds", [id]);
         },
 
         addTodo: (title, calendarId, dueDate) => {
@@ -187,6 +205,7 @@ export const useCalendarStore = create<CalendarStoreState>()(
           set((state) => ({
             todos: state.todos.filter((t) => t.id !== id),
           }));
+          useCloudSyncStore.getState().markDeletedKeys("calendarTodoIds", [id]);
         },
 
         setShowTodoSidebar: (show) => set({ showTodoSidebar: show }),

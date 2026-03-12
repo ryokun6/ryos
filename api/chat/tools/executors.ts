@@ -512,6 +512,7 @@ interface FilesMetadataSnapshotData {
   items: Record<string, SyncedFileSystemItem>;
   libraryState: "uninitialized" | "loaded" | "cleared";
   documents?: SyncedStoreItem[];
+  deletedPaths?: Record<string, string>;
 }
 
 function filesMetadataStateKey(username: string): string {
@@ -586,6 +587,49 @@ function createDocumentSize(content: string): number {
 
 function createMissingFilesSyncMessage(): string {
   return "No file data synced yet. Enable cloud sync in ryOS first.";
+}
+
+function addDeletionMarkers(
+  existing: Record<string, string> | undefined,
+  keys: Iterable<string>,
+  deletedAt: string
+): Record<string, string> | undefined {
+  const next = { ...(existing || {}) };
+  let changed = false;
+
+  for (const key of keys) {
+    if (!key) {
+      continue;
+    }
+
+    if (next[key] !== deletedAt) {
+      next[key] = deletedAt;
+      changed = true;
+    }
+  }
+
+  return changed ? next : existing;
+}
+
+function clearDeletionMarkers(
+  existing: Record<string, string> | undefined,
+  keys: Iterable<string>
+): Record<string, string> | undefined {
+  if (!existing) {
+    return existing;
+  }
+
+  const next = { ...existing };
+  let changed = false;
+
+  for (const key of keys) {
+    if (key && key in next) {
+      delete next[key];
+      changed = true;
+    }
+  }
+
+  return changed ? next : existing;
 }
 
 export async function executeDocumentsControl(
@@ -760,6 +804,7 @@ export async function executeDocumentsControl(
         },
         libraryState: state.libraryState === "uninitialized" ? "loaded" : state.libraryState,
         documents: nextDocuments,
+        deletedPaths: clearDeletionMarkers(state.deletedPaths, [path]),
       };
 
       await writeFilesMetadataState(context.redis, context.username, nextState);
@@ -849,6 +894,7 @@ export async function executeDocumentsControl(
           [path]: updatedItem,
         },
         documents: nextDocuments,
+        deletedPaths: clearDeletionMarkers(state.deletedPaths, [path]),
       };
 
       await writeFilesMetadataState(context.redis, context.username, nextState);
@@ -1042,6 +1088,11 @@ export async function executeCalendarControl(
         return { success: false, message: `Event with id '${input.id}' not found.` };
       }
       const deleted = state.events.splice(delIdx, 1)[0];
+      state.deletedEventIds = addDeletionMarkers(
+        state.deletedEventIds,
+        [deleted.id],
+        new Date().toISOString()
+      );
       await writeCalendarState(context.redis, context.username, state);
       return { success: true, message: `Deleted event "${deleted.title}".` };
     }
@@ -1125,6 +1176,11 @@ export async function executeCalendarControl(
         return { success: false, message: `Todo with id '${input.id}' not found.` };
       }
       const deletedTodo = state.todos.splice(todoIdx, 1)[0];
+      state.deletedTodoIds = addDeletionMarkers(
+        state.deletedTodoIds,
+        [deletedTodo.id],
+        new Date().toISOString()
+      );
       await writeCalendarState(context.redis, context.username, state);
       return { success: true, message: `Deleted todo "${deletedTodo.title}".` };
     }
@@ -1187,7 +1243,10 @@ export async function executeStickiesControl(
         updatedAt: now,
       };
       const updatedNotes = [...notes, newNote];
-      await writeStickiesState(context.redis, context.username!, { notes: updatedNotes });
+      await writeStickiesState(context.redis, context.username!, {
+        ...(state || {}),
+        notes: updatedNotes,
+      });
       context.log(`[stickiesControl] Created sticky note (${input.color || "yellow"})`);
       return {
         success: true,
@@ -1218,7 +1277,10 @@ export async function executeStickiesControl(
       note.updatedAt = Date.now();
       const updatedList = [...notes];
       updatedList[noteIdx] = note;
-      await writeStickiesState(context.redis, context.username!, { notes: updatedList });
+      await writeStickiesState(context.redis, context.username!, {
+        ...state,
+        notes: updatedList,
+      });
       return { success: true, message: "Updated sticky note." };
     }
 
@@ -1231,7 +1293,15 @@ export async function executeStickiesControl(
         return { success: false, message: `Sticky with id '${input.id}' not found.` };
       }
       const filtered = notes.filter((n) => n.id !== input.id);
-      await writeStickiesState(context.redis, context.username!, { notes: filtered });
+      await writeStickiesState(context.redis, context.username!, {
+        ...state,
+        notes: filtered,
+        deletedNoteIds: addDeletionMarkers(
+          state?.deletedNoteIds,
+          [input.id],
+          new Date().toISOString()
+        ),
+      });
       return { success: true, message: "Deleted sticky note." };
     }
 
@@ -1240,7 +1310,15 @@ export async function executeStickiesControl(
         return { success: true, message: "No stickies to clear." };
       }
       const count = notes.length;
-      await writeStickiesState(context.redis, context.username!, { notes: [] });
+      await writeStickiesState(context.redis, context.username!, {
+        ...state,
+        notes: [],
+        deletedNoteIds: addDeletionMarkers(
+          state?.deletedNoteIds,
+          notes.map((note) => note.id),
+          new Date().toISOString()
+        ),
+      });
       return { success: true, message: `Cleared ${count} ${count === 1 ? "sticky note" : "sticky notes"}.` };
     }
 
@@ -1324,6 +1402,7 @@ export async function executeContactsControl(
     case "create": {
       const contact = createContactFromDraft(toContactsDraft(input));
       await writeContactsState(context.redis, context.username, {
+        ...state,
         contacts: sortContacts([...state.contacts, contact]),
       });
       context.log(
@@ -1353,6 +1432,7 @@ export async function executeContactsControl(
       nextContacts[index] = updated;
 
       await writeContactsState(context.redis, context.username, {
+        ...state,
         contacts: sortContacts(nextContacts),
       });
 
@@ -1373,7 +1453,14 @@ export async function executeContactsControl(
       }
 
       await writeContactsState(context.redis, context.username, {
+        ...state,
         contacts: state.contacts.filter((item) => item.id !== input.id),
+        myContactId: state.myContactId === input.id ? null : state.myContactId,
+        deletedContactIds: addDeletionMarkers(
+          state.deletedContactIds,
+          [input.id],
+          new Date().toISOString()
+        ),
       });
 
       return {

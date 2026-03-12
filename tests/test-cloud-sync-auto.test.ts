@@ -185,6 +185,45 @@ describe("auto cloud sync API", () => {
     expect(downloadData.metadata?.totalSize).toBe(0);
   });
 
+  test("POST /api/sync/auto preserves individual deletion markers", async () => {
+    const authToken = await getAuthToken();
+    expect(authToken).toBeTruthy();
+
+    const saveRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto`,
+      TEST_USERNAME,
+      authToken as string,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "custom-wallpapers",
+          updatedAt: "2026-03-12T16:30:00.000Z",
+          version: 1,
+          totalSize: 0,
+          items: {},
+          deletedItems: {
+            "wallpaper-1": "2026-03-12T16:29:00.000Z",
+          },
+        }),
+      }
+    );
+
+    expect(saveRes.status).toBe(200);
+
+    const downloadRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto?domain=custom-wallpapers`,
+      TEST_USERNAME,
+      authToken as string
+    );
+
+    expect(downloadRes.status).toBe(200);
+    const downloadData = await downloadRes.json();
+    expect(downloadData.deletedItems).toEqual({
+      "wallpaper-1": "2026-03-12T16:29:00.000Z",
+    });
+  });
+
   test("POST /api/sync/auto-token rejects redis-only domains", async () => {
     const authToken = await getAuthToken();
     expect(authToken).toBeTruthy();
