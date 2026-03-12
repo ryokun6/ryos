@@ -31,6 +31,7 @@ import {
 } from "@/utils/cloudSync";
 import {
   CLOUD_SYNC_DOMAINS,
+  CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
   getSyncChannelName,
   isCloudSyncDomain,
   parseCloudSyncTimestamp,
@@ -301,7 +302,7 @@ export function useAutoCloudSync() {
 
       const appliedDomains: CloudSyncDomain[] = [];
 
-      for (const domain of CLOUD_SYNC_DOMAINS) {
+      for (const domain of CLOUD_SYNC_REMOTE_APPLY_DOMAINS) {
         if (!isDomainEnabled(domain)) {
           continue;
         }

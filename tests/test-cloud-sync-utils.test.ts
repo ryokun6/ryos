@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
+  CLOUD_SYNC_DOMAINS,
+  CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
   createEmptyCloudSyncMetadataMap,
   getCloudSyncCategory,
+  getCloudSyncRemoteApplyDomains,
   getLatestCloudSyncTimestamp,
   hasUnsyncedLocalChanges,
   isCloudSyncDomain,
@@ -102,6 +105,21 @@ describe("cloud sync shared helpers", () => {
     expect(getCloudSyncCategory("custom-wallpapers")).toBe("settings");
     expect(getCloudSyncCategory("songs")).toBe("songs");
     expect(getCloudSyncCategory("calendar")).toBe("calendar");
+  });
+
+  test("prioritizes custom wallpapers before settings during remote apply", () => {
+    const orderedDomains = getCloudSyncRemoteApplyDomains();
+
+    expect(orderedDomains).toEqual(CLOUD_SYNC_REMOTE_APPLY_DOMAINS);
+    expect(orderedDomains).toHaveLength(CLOUD_SYNC_DOMAINS.length);
+    expect(new Set(orderedDomains)).toEqual(new Set(CLOUD_SYNC_DOMAINS));
+    expect(orderedDomains.indexOf("custom-wallpapers")).toBeLessThan(
+      orderedDomains.indexOf("settings")
+    );
+    expect(
+      orderedDomains.filter((domain) => domain === "custom-wallpapers")
+    ).toHaveLength(1);
+    expect(orderedDomains.filter((domain) => domain === "settings")).toHaveLength(1);
   });
 
   test("detects unsynced local changes", () => {
