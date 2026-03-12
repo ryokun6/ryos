@@ -5,6 +5,7 @@ import {
 } from "./telegram.js";
 
 export const TELEGRAM_MAX_MESSAGE_LENGTH = 4096;
+export const TELEGRAM_DEFAULT_REPLY_MAX_LENGTH = 1200;
 const DEFAULT_STREAM_UPDATE_INTERVAL_MS = 900;
 const DEFAULT_STREAM_MIN_CHAR_DELTA = 80;
 
@@ -23,6 +24,7 @@ type StreamTelegramReplyOptions = {
   replyToMessageId?: number;
   updateIntervalMs?: number;
   minCharDelta?: number;
+  maxReplyLength?: number;
   formatText?: (text: string) => string;
   onBeforePreview?: () => Promise<void>;
   logWarn?: (message: string, details?: unknown) => void;
@@ -69,6 +71,19 @@ export function splitTelegramMessageText(
   return parts;
 }
 
+function truncateTelegramReplyText(text: string, maxLength: number): string {
+  const normalized = text.trim();
+  if (!normalized || maxLength <= 0 || normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  if (maxLength <= 3) {
+    return normalized.slice(0, maxLength);
+  }
+
+  return `${normalized.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
 function isDraftMethodUnsupported(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   if (/sendMessageDraft failed \((404|405|501)\)/.test(message)) {
@@ -89,6 +104,7 @@ export async function streamTelegramReply({
   replyToMessageId,
   updateIntervalMs = DEFAULT_STREAM_UPDATE_INTERVAL_MS,
   minCharDelta = DEFAULT_STREAM_MIN_CHAR_DELTA,
+  maxReplyLength,
   formatText,
   onBeforePreview,
   logWarn,
@@ -106,6 +122,13 @@ export async function streamTelegramReply({
   let previewStarted = false;
   let lastFlushAt = 0;
   let lastFlushedLength = 0;
+
+  const normalizeReplyText = (text: string) => {
+    const formatted = formatText ? formatText(text.trim()) : text.trim();
+    return typeof maxReplyLength === "number" && maxReplyLength > 0
+      ? truncateTelegramReplyText(formatted, maxReplyLength)
+      : formatted;
+  };
 
   const ensurePreviewStarted = async () => {
     if (previewStarted) {
@@ -170,7 +193,7 @@ export async function streamTelegramReply({
 
   for await (const chunk of textStream) {
     fullText += chunk;
-    const normalized = formatText ? formatText(fullText.trim()) : fullText.trim();
+    const normalized = normalizeReplyText(fullText);
     if (!normalized) {
       continue;
     }
@@ -189,7 +212,7 @@ export async function streamTelegramReply({
     lastFlushedLength = normalized.length;
   }
 
-  const replyText = formatText ? formatText(fullText.trim()) : fullText.trim();
+  const replyText = normalizeReplyText(fullText);
   if (!replyText) {
     return {
       text: "",

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   appendTelegramConversationMessage,
+  clearTelegramConversationHistory,
   createTelegramLinkCode,
   getLinkedTelegramAccountByTelegramUserId,
   getLinkedTelegramAccountByUsername,
@@ -10,7 +11,9 @@ import {
 } from "../api/_utils/telegram-link";
 import {
   buildTelegramDeepLink,
+  extractTelegramCommand,
   extractTelegramStartPayload,
+  matchesTelegramCommand,
   parseTelegramTextUpdate,
 } from "../api/_utils/telegram";
 
@@ -125,7 +128,18 @@ class MemoryRedis {
 }
 
 describe("telegram helpers", () => {
-  test("parses telegram start payloads and update structure", () => {
+  test("parses telegram commands, start payloads, and update structure", () => {
+    expect(extractTelegramCommand("hello there")).toBeNull();
+    expect(extractTelegramCommand("/stop")).toEqual({
+      command: "stop",
+      args: null,
+    });
+    expect(extractTelegramCommand("/clear@ryos_bot now")).toEqual({
+      command: "clear",
+      args: "now",
+    });
+    expect(matchesTelegramCommand("/stop@ryos_bot", ["stop"])).toBe(true);
+    expect(matchesTelegramCommand("/clear-history", ["clear"])).toBe(false);
     expect(extractTelegramStartPayload("/start")).toBeNull();
     expect(extractTelegramStartPayload("/start link_123")).toBe("link_123");
     expect(extractTelegramStartPayload("/start@ryos_bot link_abc")).toBe(
@@ -266,5 +280,26 @@ describe("telegram helpers", () => {
 
     const history = await loadTelegramConversationHistory(redis, "chat-1", 10);
     expect(history).toEqual(messages);
+  });
+
+  test("clears telegram conversation history", async () => {
+    const redis = new MemoryRedis();
+
+    await appendTelegramConversationMessage(redis, "chat-2", {
+      role: "user",
+      content: "hello",
+      createdAt: 1,
+    });
+    await appendTelegramConversationMessage(redis, "chat-2", {
+      role: "assistant",
+      content: "hi",
+      createdAt: 2,
+    });
+
+    expect(await loadTelegramConversationHistory(redis, "chat-2", 10)).toHaveLength(2);
+
+    await clearTelegramConversationHistory(redis, "chat-2");
+
+    expect(await loadTelegramConversationHistory(redis, "chat-2", 10)).toEqual([]);
   });
 });

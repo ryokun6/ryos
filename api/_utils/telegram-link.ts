@@ -356,3 +356,10 @@ export async function appendTelegramConversationMessage(
   await redis.ltrim(key, 0, limit - 1);
   await redis.expire(key, ttlSeconds);
 }
+
+export async function clearTelegramConversationHistory(
+  redis: RedisLike,
+  chatId: string
+): Promise<void> {
+  await redis.del(buildTelegramHistoryKey(chatId));
+}

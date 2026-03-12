@@ -169,4 +169,38 @@ describe("telegram streaming helpers", () => {
       { type: "send", text: ` ${"b".repeat(12)}`, replyToMessageId: undefined },
     ]);
   });
+
+  test("truncates replies before previewing and sending", async () => {
+    const calls: Array<{ type: string; text: string; replyToMessageId?: number }> = [];
+
+    const result = await streamTelegramReply({
+      botToken: "bot-token",
+      chatId: "chat-1",
+      draftId: 80,
+      replyToMessageId: 58,
+      textStream: makeTextStream(["abcdefghijklmno"]),
+      updateIntervalMs: 0,
+      minCharDelta: 1,
+      maxReplyLength: 10,
+      deps: {
+        sendDraft: async ({ text }) => {
+          calls.push({ type: "draft", text });
+        },
+        sendMessage: async ({ text, replyToMessageId }) => {
+          calls.push({ type: "send", text, replyToMessageId });
+          return 801;
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      text: "abcdefg...",
+      previewMode: "draft",
+      messageIds: [801],
+    });
+    expect(calls).toEqual([
+      { type: "draft", text: "abcdefg..." },
+      { type: "send", text: "abcdefg...", replyToMessageId: 58 },
+    ]);
+  });
 });
