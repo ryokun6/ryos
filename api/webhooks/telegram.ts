@@ -35,6 +35,7 @@ import {
 import {
   TELEGRAM_DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
+  getOpenAIProviderOptions,
   type SupportedModel,
 } from "../_utils/_aiModels.js";
 
@@ -281,12 +282,11 @@ export function getTelegramProviderStatusToolCall(
   return null;
 }
 
-export const TELEGRAM_OPENAI_PROVIDER_OPTIONS = {
-  openai: {
-    reasoningEffort: "none",
+export function getTelegramOpenAIProviderOptions(model: SupportedModel) {
+  return getOpenAIProviderOptions(model, {
     textVerbosity: "low",
-  },
-} as const;
+  });
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -624,7 +624,7 @@ export default async function handler(
       temperature: 0.7,
       maxOutputTokens: 4000,
       stopWhen: stepCountIs(6),
-      providerOptions: TELEGRAM_OPENAI_PROVIDER_OPTIONS,
+      providerOptions: getTelegramOpenAIProviderOptions(telegramModel),
       onChunk: async ({ chunk }) => {
         if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
           return;

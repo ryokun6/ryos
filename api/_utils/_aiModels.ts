@@ -30,6 +30,15 @@ export const SUPPORTED_AI_MODELS = Object.keys(AI_MODELS) as SupportedModel[];
 export const DEFAULT_MODEL: SupportedModel = "gpt-5.4";
 export const TELEGRAM_DEFAULT_MODEL: SupportedModel = "gpt-5.3-chat-latest";
 
+type OpenAIReasoningEffort = "none" | "medium";
+type OpenAITextVerbosity = "low" | "medium" | "high";
+
+const OPENAI_REASONING_EFFORT_BY_MODEL: Partial<
+  Record<SupportedModel, OpenAIReasoningEffort>
+> = {
+  "gpt-5.4": "none",
+};
+
 // Factory that returns a LanguageModel instance for the requested model
 export const getModelInstance = (model: SupportedModel): LanguageModel => {
   const modelToUse: SupportedModel = model ?? DEFAULT_MODEL;
@@ -49,3 +58,34 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
       return openai("gpt-5.4");
   }
 };
+
+export function getOpenAIProviderOptions(
+  model: SupportedModel,
+  overrides: {
+    textVerbosity?: OpenAITextVerbosity;
+  } = {}
+): { openai: { reasoningEffort?: OpenAIReasoningEffort; textVerbosity?: OpenAITextVerbosity } } | undefined {
+  if (AI_MODELS[model].provider !== "OpenAI") {
+    return undefined;
+  }
+
+  const openaiOptions: {
+    reasoningEffort?: OpenAIReasoningEffort;
+    textVerbosity?: OpenAITextVerbosity;
+  } = {
+    ...overrides,
+  };
+
+  const reasoningEffort = OPENAI_REASONING_EFFORT_BY_MODEL[model];
+  if (reasoningEffort) {
+    openaiOptions.reasoningEffort = reasoningEffort;
+  }
+
+  if (Object.keys(openaiOptions).length === 0) {
+    return undefined;
+  }
+
+  return {
+    openai: openaiOptions,
+  };
+}

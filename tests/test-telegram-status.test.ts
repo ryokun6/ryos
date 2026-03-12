@@ -12,7 +12,7 @@ import {
 } from "../api/_utils/telegram-status";
 import {
   getTelegramProviderStatusToolCall,
-  TELEGRAM_OPENAI_PROVIDER_OPTIONS,
+  getTelegramOpenAIProviderOptions,
 } from "../api/webhooks/telegram";
 
 describe("telegram status helpers", () => {
@@ -117,8 +117,16 @@ describe("telegram status helpers", () => {
     ).toBeNull();
   });
 
-  test("uses low OpenAI text verbosity for Telegram replies", () => {
-    expect(TELEGRAM_OPENAI_PROVIDER_OPTIONS).toEqual({
+  test("uses low OpenAI text verbosity for gpt-5.3 telegram replies without unsupported reasoning settings", () => {
+    expect(getTelegramOpenAIProviderOptions("gpt-5.3-chat-latest")).toEqual({
+      openai: {
+        textVerbosity: "low",
+      },
+    });
+  });
+
+  test("keeps explicit reasoning settings for gpt-5.4 telegram replies", () => {
+    expect(getTelegramOpenAIProviderOptions("gpt-5.4")).toEqual({
       openai: {
         reasoningEffort: "none",
         textVerbosity: "low",

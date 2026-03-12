@@ -10,6 +10,7 @@ import { google } from "@ai-sdk/google";
 import {
   DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
+  getOpenAIProviderOptions,
   type SupportedModel,
 } from "./_utils/_aiModels.js";
 import {
@@ -345,11 +346,7 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
           ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
           : {}),
       },
-      providerOptions: {
-        openai: {
-          reasoningEffort: "none", // Turn off reasoning for GPT-5 and other reasoning models
-        },
-      },
+      providerOptions: getOpenAIProviderOptions(model as SupportedModel),
     });
 
     // Set CORS headers
