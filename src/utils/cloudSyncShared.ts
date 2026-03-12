@@ -12,6 +12,29 @@ export const CLOUD_SYNC_DOMAINS = [
   "custom-wallpapers",
 ] as const;
 
+export function getCloudSyncRemoteApplyDomains(
+  domains: readonly CloudSyncDomain[] = CLOUD_SYNC_DOMAINS
+): CloudSyncDomain[] {
+  const orderedDomains = [...domains];
+  const settingsIndex = orderedDomains.indexOf("settings");
+  const customWallpapersIndex = orderedDomains.indexOf("custom-wallpapers");
+
+  // Apply wallpaper blobs before settings so indexeddb:// wallpaper references
+  // can resolve during the same first-sync batch.
+  if (settingsIndex === -1 || customWallpapersIndex === -1) {
+    return orderedDomains;
+  }
+
+  if (customWallpapersIndex > settingsIndex) {
+    const [customWallpapersDomain] = orderedDomains.splice(customWallpapersIndex, 1);
+    orderedDomains.splice(settingsIndex, 0, customWallpapersDomain);
+  }
+
+  return orderedDomains;
+}
+
+export const CLOUD_SYNC_REMOTE_APPLY_DOMAINS = getCloudSyncRemoteApplyDomains();
+
 export type CloudSyncDomain = (typeof CLOUD_SYNC_DOMAINS)[number];
 export type CloudSyncCategory =
   | "files"
