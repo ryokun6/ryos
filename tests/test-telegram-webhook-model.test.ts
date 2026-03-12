@@ -3,7 +3,7 @@ import { TELEGRAM_DEFAULT_MODEL } from "../api/_utils/_aiModels.js";
 import { getTelegramModel } from "../api/webhooks/telegram.js";
 
 describe("telegram webhook model selection", () => {
-  test("defaults to gpt-5.3 when TELEGRAM_BOT_MODEL is unset", () => {
+  test("defaults to gpt-5.3-chat-latest when TELEGRAM_BOT_MODEL is unset", () => {
     const logMessages: string[] = [];
 
     const model = getTelegramModel(
@@ -12,7 +12,7 @@ describe("telegram webhook model selection", () => {
     );
 
     expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
-    expect(model).toBe("gpt-5.3");
+    expect(model).toBe("gpt-5.3-chat-latest");
     expect(logMessages).toHaveLength(0);
   });
 
@@ -24,7 +24,7 @@ describe("telegram webhook model selection", () => {
     expect(model).toBe("gpt-5.4");
   });
 
-  test("falls back to gpt-5.3 for unsupported TELEGRAM_BOT_MODEL", () => {
+  test("falls back to gpt-5.3-chat-latest for unsupported TELEGRAM_BOT_MODEL", () => {
     const logMessages: string[] = [];
 
     const model = getTelegramModel(
@@ -34,7 +34,7 @@ describe("telegram webhook model selection", () => {
 
     expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
     expect(logMessages).toEqual([
-      'Unsupported TELEGRAM_BOT_MODEL "not-a-real-model", falling back to gpt-5.3',
+      'Unsupported TELEGRAM_BOT_MODEL "not-a-real-model", falling back to gpt-5.3-chat-latest',
     ]);
   });
 });
