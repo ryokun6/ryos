@@ -174,7 +174,7 @@ const initialIpodData: IpodData = {
   lcdFilterOn: true,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
-  lyricsFont: LyricsFont.Serif,
+  lyricsFont: LyricsFont.SerifRed,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
   romanization: {
@@ -282,7 +282,7 @@ export interface IpodState extends IpodData {
   setTotalTime: (time: number) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 30; // Replace Liquid display mode with Water
+const CURRENT_IPOD_STORE_VERSION = 31; // Default lyrics font to red serif
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -1481,6 +1481,10 @@ export const useIpodStore = create<IpodState>()(
             state.romanization.pronunciationOnly = false;
           }
 
+          const shouldUpgradeLegacyDefaultLyricsFont =
+            version < 31 &&
+            (state.lyricsFont === undefined || state.lyricsFont === LyricsFont.Serif);
+
           // Migrate currentIndex to currentSongId (will be null, library will re-initialize)
           state = {
             ...state,
@@ -1490,7 +1494,9 @@ export const useIpodStore = create<IpodState>()(
             isShuffled: state.isShuffled,
             showLyrics: state.showLyrics ?? true,
             lyricsAlignment: state.lyricsAlignment ?? LyricsAlignment.Alternating,
-            lyricsFont: state.lyricsFont ?? LyricsFont.Serif,
+            lyricsFont: shouldUpgradeLegacyDefaultLyricsFont
+              ? LyricsFont.SerifRed
+              : state.lyricsFont ?? LyricsFont.SerifRed,
             displayMode: state.displayMode ?? DisplayMode.Video,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,

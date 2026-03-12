@@ -129,7 +129,7 @@ export function KaraokeMenuBar({
     exportLibrary,
   } = useIpodStoreShallow((s) => ({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
-    lyricsFont: s.lyricsFont ?? LyricsFont.Serif,
+    lyricsFont: s.lyricsFont ?? LyricsFont.SerifRed,
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     displayMode: s.displayMode ?? DisplayMode.Video,
