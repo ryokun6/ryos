@@ -253,7 +253,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
   const [selectedSymbol, setSelectedSymbol] = useState<string>(symbols[0]);
   const [selectedRange, setSelectedRange] = useState<TimeRange>("6m");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [, setError] = useState(false);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadQuotes = useCallback(async () => {
@@ -321,7 +321,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
     );
   }
 
-  if (error && stocks.length === 0) {
+  if (!loading && stocks.length === 0) {
     return (
       <div
         className="flex flex-col items-center justify-center gap-2 p-4"
@@ -435,18 +435,18 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
 
   return (
     <div
-      className="flex flex-col flex-1"
+      className="flex min-h-0 flex-1 flex-col"
       style={{ fontFamily: font, borderRadius: "inherit", overflow: "hidden", minHeight: "inherit" }}
     >
       <div
-        className="flex flex-col flex-1"
+        className="flex min-h-0 flex-1 flex-col"
         style={{
           background: "linear-gradient(180deg, #1B3A5C 0%, #0F2844 40%, #0A1E36 100%)",
           borderRadius: "inherit",
           minHeight: "inherit",
         }}
       >
-        <div className="px-1 pt-1.5">
+        <div className="shrink-0 px-1 pt-1.5">
           {stocks.map((stock, i) => {
             const isFirst = i === 0;
             const isSelected = selectedSymbol === stock.symbol;
@@ -506,7 +506,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
           })}
         </div>
 
-        <div className="flex flex-col flex-1 px-2 pt-1.5 pb-1.5 justify-end">
+        <div className="flex min-h-0 flex-1 flex-col justify-end px-2 pt-1.5 pb-1.5">
           <div className="flex items-center gap-1 mb-1 justify-center">
             {TIME_RANGES.map((r) => (
               <button
