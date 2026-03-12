@@ -282,12 +282,6 @@ export function getTelegramProviderStatusToolCall(
   return null;
 }
 
-export function getTelegramOpenAIProviderOptions(model: SupportedModel) {
-  return getOpenAIProviderOptions(model, {
-    textVerbosity: "low",
-  });
-}
-
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -624,7 +618,7 @@ export default async function handler(
       temperature: 0.7,
       maxOutputTokens: 4000,
       stopWhen: stepCountIs(6),
-      providerOptions: getTelegramOpenAIProviderOptions(telegramModel),
+      providerOptions: getOpenAIProviderOptions(telegramModel),
       onChunk: async ({ chunk }) => {
         if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
           return;
