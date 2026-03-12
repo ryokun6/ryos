@@ -29,12 +29,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { appMetadata } from "../index";
 import { InputDialog } from "@/components/dialogs/InputDialog";
+import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import {
   useFinderLogic,
   type FinderInitialData,
 } from "../hooks/useFinderLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { AirDropView } from "./AirDropView";
@@ -114,6 +116,29 @@ export function FinderAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps<FinderInitialData>) {
+  const {
+    promptSetUsername,
+    isUsernameDialogOpen,
+    setIsUsernameDialogOpen,
+    newUsername,
+    setNewUsername,
+    newPassword,
+    setNewPassword,
+    isSettingUsername,
+    usernameError,
+    submitUsernameDialog,
+    promptVerifyToken,
+    isVerifyDialogOpen,
+    setVerifyDialogOpen,
+    verifyPasswordInput,
+    setVerifyPasswordInput,
+    verifyUsernameInput,
+    setVerifyUsernameInput,
+    isVerifyingToken,
+    verifyError,
+    handleVerifyTokenSubmit,
+  } = useAuth();
+
   const {
     // Translations
     t,
@@ -523,7 +548,11 @@ export function FinderAppComponent({
                 <FinderPanel bordered className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
                   {isAirDropView ? (
                     <div className="flex-1 bg-gradient-to-b from-[#e8ecf0] to-[#d1d5db]">
-                      <AirDropView onSendFile={handleAirDropSendFile} />
+                      <AirDropView
+                        onSendFile={handleAirDropSendFile}
+                        onRequestLogin={promptVerifyToken}
+                        onRequestCreateAccount={promptSetUsername}
+                      />
                     </div>
                   ) : (
                     <div
@@ -585,7 +614,11 @@ export function FinderAppComponent({
             <>
               {isAirDropView ? (
                 <div className="flex-1 bg-gradient-to-b from-gray-100 to-gray-200">
-                  <AirDropView onSendFile={handleAirDropSendFile} />
+                  <AirDropView
+                    onSendFile={handleAirDropSendFile}
+                    onRequestLogin={promptVerifyToken}
+                    onRequestCreateAccount={promptSetUsername}
+                  />
                 </div>
               ) : (
                 <div
@@ -678,6 +711,50 @@ export function FinderAppComponent({
         description={t("apps.finder.dialogs.newFolder.description")}
         value={newFolderName}
         onChange={setNewFolderName}
+      />
+      <LoginDialog
+        initialTab="signup"
+        isOpen={isUsernameDialogOpen}
+        onOpenChange={setIsUsernameDialogOpen}
+        usernameInput={verifyUsernameInput}
+        onUsernameInputChange={setVerifyUsernameInput}
+        passwordInput={verifyPasswordInput}
+        onPasswordInputChange={setVerifyPasswordInput}
+        onLoginSubmit={async () => {
+          await handleVerifyTokenSubmit(verifyPasswordInput, true);
+        }}
+        isLoginLoading={isVerifyingToken}
+        loginError={verifyError}
+        newUsername={newUsername}
+        onNewUsernameChange={setNewUsername}
+        newPassword={newPassword}
+        onNewPasswordChange={setNewPassword}
+        onSignUpSubmit={submitUsernameDialog}
+        isSignUpLoading={isSettingUsername}
+        signUpError={usernameError}
+      />
+      <LoginDialog
+        isOpen={isVerifyDialogOpen}
+        onOpenChange={setVerifyDialogOpen}
+        usernameInput={verifyUsernameInput}
+        onUsernameInputChange={setVerifyUsernameInput}
+        passwordInput={verifyPasswordInput}
+        onPasswordInputChange={setVerifyPasswordInput}
+        onLoginSubmit={async () => {
+          await handleVerifyTokenSubmit(verifyPasswordInput, true);
+        }}
+        isLoginLoading={isVerifyingToken}
+        loginError={verifyError}
+        newUsername={newUsername}
+        onNewUsernameChange={setNewUsername}
+        newPassword={newPassword}
+        onNewPasswordChange={setNewPassword}
+        onSignUpSubmit={async () => {
+          setVerifyDialogOpen(false);
+          promptSetUsername();
+        }}
+        isSignUpLoading={false}
+        signUpError={null}
       />
       <RightClickMenu
         position={contextMenuPos}
