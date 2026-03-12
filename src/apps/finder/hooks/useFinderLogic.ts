@@ -39,6 +39,8 @@ type FinderUndoAction =
   | { type: "moveToTrash"; fileName: string; originalPath: string }
   | { type: "rename"; basePath: string; oldName: string; newName: string };
 
+const SIDEBAR_HIDDEN_FOLDERS = new Set(["/Trash", "/Sites"]);
+
 // Type for Finder initial data
 export interface FinderInitialData {
   path?: string;
@@ -46,7 +48,14 @@ export interface FinderInitialData {
 }
 
 // Helper function to determine file type from FileItem
-const getFileType = (file: FileItem, t: (key: string) => string): string => {
+const getFileType = (
+  file: FileItem,
+  t: (key: string, options?: { defaultValue?: string }) => string
+): string => {
+  if (file.path === "/") {
+    return t("apps.finder.fileTypes.volume", { defaultValue: "Volume" });
+  }
+
   // Check for directory first
   if (file.isDirectory) {
     return t("apps.finder.fileTypes.folder");
@@ -474,7 +483,7 @@ export function useFinderLogic({
           return 0;
       }
     });
-  }, [files, sortType, i18n.language, i18n.resolvedLanguage, currentTheme]);
+  }, [files, sortType, i18n.language, i18n.resolvedLanguage]);
 
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return sortedFiles;
@@ -1286,8 +1295,6 @@ export function useFinderLogic({
     },
     [getFileItem, sendFileToUser, t]
   );
-
-  const SIDEBAR_HIDDEN_FOLDERS = new Set(["/Trash", "/Sites"]);
 
   const sidebarItems = useMemo(() => {
     const visibleRootFolders = rootFolders.filter(

@@ -18,7 +18,7 @@ export default apiHandler(
     auth: "optional",
     allowExpiredAuth: true,
   },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req: _req, res, logger, startTime, user }) => {
     if (!user) {
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ authenticated: false });

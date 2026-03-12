@@ -38,7 +38,7 @@ interface PersistedAutoSyncDomainMetadata {
   items?: Record<string, PersistedAutoSyncItemMetadata>;
 }
 
-interface PersistedAutoSyncItemMetadata extends CloudSyncBlobItemMetadata {}
+type PersistedAutoSyncItemMetadata = CloudSyncBlobItemMetadata;
 
 type PersistedAutoSyncMetadataMap = Record<
   BlobSyncDomain,

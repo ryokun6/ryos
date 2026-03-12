@@ -28,6 +28,7 @@ import {
   emitCloudSyncDomainChanges,
 } from "@/utils/cloudSyncEvents";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
 
@@ -359,6 +360,7 @@ export function useFileSystem(
   // Get current username for admin check
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";
+  const currentTheme = useThemeStore((state) => state.current);
   const finderInstance = instanceId ? finderInstances[instanceId] : null;
 
   // Use instance-based state if available, otherwise use local state
@@ -828,9 +830,30 @@ export function useFileSystem(
       }
       // 3. Handle Real Directories (Uses useFilesStore)
       else {
-        const itemsMetadata = getItemsInPath(currentPath);
+        const itemsMetadata = getItemsInPath(currentPath).filter(
+          (item) =>
+            currentPath !== "/Desktop" ||
+            !item.hiddenOnThemes?.includes(currentTheme)
+        );
+        const visibleItemsMetadata =
+          currentPath === "/Desktop"
+            ? [
+                {
+                  path: "/",
+                  name: "Macintosh HD",
+                  isDirectory: true,
+                  icon:
+                    currentTheme === "xp" || currentTheme === "win98"
+                      ? "/icons/default/pc.png"
+                      : "/icons/default/disk.png",
+                  type: "directory",
+                  status: "active" as const,
+                },
+                ...itemsMetadata,
+              ]
+            : itemsMetadata;
         // Map metadata to display items. Content fetching happens on open.
-        displayFiles = itemsMetadata.map((item) => ({
+        displayFiles = visibleItemsMetadata.map((item) => ({
           ...item,
           icon: getFileIcon(item),
           appId: item.appId,
@@ -958,6 +981,7 @@ export function useFileSystem(
     // Add fileStore dependency to re-run if items change
   }, [
     currentPath,
+    currentTheme,
     getItemsInPath,
     ipodTracks,
     videoTracks,
