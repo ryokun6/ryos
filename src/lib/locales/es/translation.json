@@ -624,7 +624,7 @@
         "usingModel": "Usando {{model}}"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "Sesión iniciada",
         "clickToRefresh": "Clic para actualizar el token manualmente",
         "daysAgo": "hace {{days}} días",
         "daysOld": "{{days}} días de antigüedad",
@@ -1095,9 +1095,9 @@
       },
       "color": "Color",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "Conectado",
+        "connecting": "Conectando…",
+        "disconnected": "Desconectado"
       },
       "crashApp": "Bloquear app",
       "crashDesktop": "Bloquear escritorio",
@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "Aceptar",
+        "decline": "Rechazar",
+        "fileNotFound": "Archivo no encontrado",
+        "fileReceived": "Recibido \"{{fileName}}\" de @{{sender}}",
+        "hint": "Arrastra archivos a un usuario para compartir, o usa el menú contextual en cualquier archivo.",
+        "incomingFile": "@{{sender}} quiere enviarte \"{{fileName}}\"",
+        "loginRequired": "Inicia sesión en Chats para usar AirDrop y compartir archivos con usuarios cercanos.",
+        "looking": "Buscando usuarios cercanos…",
+        "noContent": "No se pudo leer el contenido del archivo",
+        "noUsers": "No hay nadie más cerca. Pide a alguien que abra AirDrop.",
+        "saveFailed": "Error al guardar el archivo recibido",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "Añadir al Escritorio",
         "date": "Fecha",
@@ -1420,6 +1434,7 @@
         "newFolder": "Nueva Carpeta…",
         "open": "Abrir",
         "rename": "Cambiar nombre…",
+        "shareViaAirDrop": "Compartir por AirDrop",
         "size": "Tamaño",
         "sortBy": "Ordenar por"
       },
@@ -1464,6 +1479,7 @@
         "applications": "Aplicaciones",
         "desktop": "Escritorio",
         "documents": "Documentos",
+        "downloads": "Descargas",
         "images": "Imágenes",
         "music": "Música",
         "sites": "Sitios",

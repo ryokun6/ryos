@@ -455,13 +455,14 @@
       "folders": {
         "applications": "Applications",
         "documents": "Documents",
+        "desktop": "Desktop",
+        "downloads": "Downloads",
         "images": "Images",
         "music": "Music",
         "videos": "Videos",
         "sites": "Sites",
         "applets": "Applets",
-        "trash": "Trash",
-        "desktop": "Desktop"
+        "trash": "Trash"
       }
     },
     "soundboard": {

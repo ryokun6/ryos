@@ -624,7 +624,7 @@
         "usingModel": "Verwende {{model}}"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "Angemeldet",
         "clickToRefresh": "Klicken Sie, um das Token manuell zu aktualisieren",
         "daysAgo": "vor {{days}} Tagen",
         "daysOld": "{{days}} Tage alt",
@@ -1095,9 +1095,9 @@
       },
       "color": "Farbe",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "Verbunden",
+        "connecting": "Verbinden…",
+        "disconnected": "Getrennt"
       },
       "crashApp": "App abstürzen",
       "crashDesktop": "Desktop abstürzen",
@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "Akzeptieren",
+        "decline": "Ablehnen",
+        "fileNotFound": "Datei nicht gefunden",
+        "fileReceived": "„{{fileName}}“ von @{{sender}} empfangen",
+        "hint": "Ziehen Sie Dateien auf einen Benutzer, um sie zu teilen, oder verwenden Sie das Kontextmenü einer Datei.",
+        "incomingFile": "@{{sender}} möchte Ihnen „{{fileName}}“ senden",
+        "loginRequired": "Melden Sie sich bei Chats an, um AirDrop zu verwenden und Dateien mit Benutzern in der Nähe zu teilen.",
+        "looking": "Sucht nach Benutzern in der Nähe…",
+        "noContent": "Inhalt der Datei konnte nicht gelesen werden",
+        "noUsers": "Niemand sonst ist in der Nähe. Bitten Sie jemanden, AirDrop zu öffnen.",
+        "saveFailed": "Empfangene Datei konnte nicht gespeichert werden",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "Zum Schreibtisch hinzufügen",
         "date": "Datum",
@@ -1420,6 +1434,7 @@
         "newFolder": "Neuer Ordner…",
         "open": "Öffnen",
         "rename": "Umbenennen…",
+        "shareViaAirDrop": "Über AirDrop teilen",
         "size": "Größe",
         "sortBy": "Sortieren nach"
       },
@@ -1464,6 +1479,7 @@
         "applications": "Anwendungen",
         "desktop": "Schreibtisch",
         "documents": "Dokumente",
+        "downloads": "Downloads",
         "images": "Bilder",
         "music": "Musik",
         "sites": "Websites",

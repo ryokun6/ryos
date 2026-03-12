@@ -624,7 +624,7 @@
         "usingModel": "Utilisation de {{model}}"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "Connecté",
         "clickToRefresh": "Cliquez pour actualiser manuellement le jeton",
         "daysAgo": "il y a {{days}}j",
         "daysOld": "{{days}} jours",
@@ -1095,9 +1095,9 @@
       },
       "color": "Couleur",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "Connecté",
+        "connecting": "Connexion…",
+        "disconnected": "Déconnecté"
       },
       "crashApp": "Planter l'appli",
       "crashDesktop": "Planter le bureau",
@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "Accepter",
+        "decline": "Refuser",
+        "fileNotFound": "Fichier introuvable",
+        "fileReceived": "Reçu « {{fileName}} » de @{{sender}}",
+        "hint": "Faites glisser des fichiers sur un utilisateur pour les partager, ou utilisez le menu contextuel sur n'importe quel fichier.",
+        "incomingFile": "@{{sender}} souhaite vous envoyer « {{fileName}} »",
+        "loginRequired": "Connectez-vous à Chats pour utiliser AirDrop et partager des fichiers avec les utilisateurs à proximité.",
+        "looking": "Recherche d'utilisateurs à proximité…",
+        "noContent": "Impossible de lire le contenu du fichier",
+        "noUsers": "Personne d'autre n'est à proximité. Demandez à quelqu'un d'ouvrir AirDrop.",
+        "saveFailed": "Échec de l'enregistrement du fichier reçu",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "Ajouter au Bureau",
         "date": "Date",
@@ -1420,6 +1434,7 @@
         "newFolder": "Nouveau dossier…",
         "open": "Ouvrir",
         "rename": "Renommer…",
+        "shareViaAirDrop": "Partager via AirDrop",
         "size": "Taille",
         "sortBy": "Trier par"
       },
@@ -1464,6 +1479,7 @@
         "applications": "Applications",
         "desktop": "Bureau",
         "documents": "Documents",
+        "downloads": "Téléchargements",
         "images": "Images",
         "music": "Musique",
         "sites": "Sites",

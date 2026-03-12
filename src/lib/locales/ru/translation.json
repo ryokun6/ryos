@@ -624,7 +624,7 @@
         "usingModel": "Используется {{model}}"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "Выполнен вход",
         "clickToRefresh": "Нажмите, чтобы вручную обновить токен",
         "daysAgo": "{{days}} дн. назад",
         "daysOld": "{{days}} дней",
@@ -1095,9 +1095,9 @@
       },
       "color": "Цвет",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "Подключено",
+        "connecting": "Подключение…",
+        "disconnected": "Отключено"
       },
       "crashApp": "Сбой приложения",
       "crashDesktop": "Сбой рабочего стола",
@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "Принять",
+        "decline": "Отклонить",
+        "fileNotFound": "Файл не найден",
+        "fileReceived": "Получен \"{{fileName}}\" от @{{sender}}",
+        "hint": "Перетащите файлы на пользователя, чтобы поделиться, или используйте контекстное меню любого файла.",
+        "incomingFile": "@{{sender}} хочет отправить вам \"{{fileName}}\"",
+        "loginRequired": "Войдите в Чаты, чтобы использовать AirDrop и обмениваться файлами с ближайшими пользователями.",
+        "looking": "Поиск ближайших пользователей…",
+        "noContent": "Не удалось прочитать содержимое файла",
+        "noUsers": "Рядом никого нет. Попросите кого-нибудь открыть AirDrop.",
+        "saveFailed": "Не удалось сохранить полученный файл",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "Добавить на Рабочий стол",
         "date": "Дата",
@@ -1420,6 +1434,7 @@
         "newFolder": "Новая папка…",
         "open": "Открыть",
         "rename": "Переименовать…",
+        "shareViaAirDrop": "Поделиться через AirDrop",
         "size": "Размер",
         "sortBy": "Сортировать по"
       },
@@ -1464,6 +1479,7 @@
         "applications": "Приложения",
         "desktop": "Рабочий стол",
         "documents": "Документы",
+        "downloads": "Загрузки",
         "images": "Изображения",
         "music": "Музыка",
         "sites": "Сайты",

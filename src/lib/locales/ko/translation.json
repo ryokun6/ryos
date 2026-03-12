@@ -624,7 +624,7 @@
         "usingModel": "{{model}} 사용 중"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "로그인됨",
         "clickToRefresh": "토큰을 수동으로 갱신하려면 클릭하세요.",
         "daysAgo": "{{days}}일 전",
         "daysOld": "{{days}}일 됨",
@@ -1095,9 +1095,9 @@
       },
       "color": "색상",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "연결됨",
+        "connecting": "연결 중…",
+        "disconnected": "연결 끊김"
       },
       "crashApp": "앱 충돌",
       "crashDesktop": "데스크톱 충돌",
@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "수락",
+        "decline": "거절",
+        "fileNotFound": "파일을 찾을 수 없음",
+        "fileReceived": "@{{sender}}님으로부터 \"{{fileName}}\"을(를) 받았습니다",
+        "hint": "파일을 사용자에게 드래그하여 공유하거나, 파일의 상황별 메뉴를 사용하세요.",
+        "incomingFile": "@{{sender}}님이 \"{{fileName}}\"을(를) 보내려고 합니다",
+        "loginRequired": "AirDrop을 사용하고 근처 사용자와 파일을 공유하려면 채팅에 로그인하세요.",
+        "looking": "근처 사용자 찾는 중…",
+        "noContent": "파일 내용을 읽을 수 없음",
+        "noUsers": "주변에 아무도 없습니다. 다른 사람에게 AirDrop을 열어달라고 요청하세요.",
+        "saveFailed": "받은 파일 저장 실패",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "바탕 화면에 추가",
         "date": "날짜",
@@ -1420,6 +1434,7 @@
         "newFolder": "새 폴더…",
         "open": "열기",
         "rename": "이름 변경…",
+        "shareViaAirDrop": "AirDrop으로 공유",
         "size": "크기",
         "sortBy": "정렬 기준"
       },
@@ -1464,6 +1479,7 @@
         "applications": "응용 프로그램",
         "desktop": "바탕 화면",
         "documents": "문서",
+        "downloads": "다운로드",
         "images": "이미지",
         "music": "음악",
         "sites": "사이트",

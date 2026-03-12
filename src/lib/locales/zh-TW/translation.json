@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "接受",
+        "decline": "拒絕",
+        "fileNotFound": "找不到檔案",
+        "fileReceived": "已從 @{{sender}} 收到「{{fileName}}」",
+        "hint": "將檔案拖曳到使用者以分享，或對任一檔案按右鍵使用操作選單。",
+        "incomingFile": "@{{sender}} 想傳送「{{fileName}}」給您",
+        "loginRequired": "請先登入 Chats，才能使用 AirDrop 並與附近使用者分享檔案。",
+        "looking": "正在尋找附近的使用者…",
+        "noContent": "無法讀取檔案內容",
+        "noUsers": "附近沒有其他人。請對方開啟 AirDrop。",
+        "saveFailed": "無法儲存收到的檔案",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "加入桌面",
         "date": "日期",
@@ -1420,6 +1434,7 @@
         "newFolder": "新增檔案夾…",
         "open": "開啟",
         "rename": "重新命名…",
+        "shareViaAirDrop": "透過 AirDrop 分享",
         "size": "大小",
         "sortBy": "排序方式"
       },
@@ -1464,6 +1479,7 @@
         "applications": "應用程式",
         "desktop": "桌面",
         "documents": "文件",
+        "downloads": "下載",
         "images": "圖片",
         "music": "音樂",
         "sites": "網站",

@@ -71,13 +71,14 @@ export function getTranslatedFolderName(folderPath: string): string {
   const folderKeyMap: Record<string, string> = {
     "/Applications": "applications",
     "/Documents": "documents",
+    "/Desktop": "desktop",
+    "/Downloads": "downloads",
     "/Images": "images",
     "/Music": "music",
     "/Videos": "videos",
     "/Sites": "sites",
     "/Applets": "applets",
     "/Trash": "trash",
-    "/Desktop": "desktop",
   };
 
   const key = folderKeyMap[folderPath];
@@ -100,13 +101,14 @@ export function getTranslatedFolderNameFromName(folderName: string): string {
   const folderNameMap: Record<string, string> = {
     "Applications": "applications",
     "Documents": "documents",
+    "Desktop": "desktop",
+    "Downloads": "downloads",
     "Images": "images",
     "Music": "music",
     "Videos": "videos",
     "Sites": "sites",
     "Applets": "applets",
     "Trash": "trash",
-    "Desktop": "desktop",
   };
 
   const key = folderNameMap[folderName];

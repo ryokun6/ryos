@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-10T07:03:50.960Z",
+  "generatedAt": "2026-03-12T01:07:14.852Z",
   "themes": {
     "default": [
       "account-login.png",
@@ -42,6 +42,7 @@
       "directory.png",
       "disk.png",
       "documents.png",
+      "downloads.png",
       "error.png",
       "file-text.png",
       "file.png",
@@ -164,6 +165,7 @@
       "directory.png",
       "disk.png",
       "documents.png",
+      "downloads.png",
       "error.png",
       "file-text.png",
       "file.png",
@@ -214,6 +216,7 @@
       "directory.png",
       "disk.png",
       "documents.png",
+      "downloads.png",
       "error.png",
       "file-text.png",
       "file.png",
@@ -256,6 +259,7 @@
       "directory.png",
       "disk.png",
       "documents.png",
+      "downloads.png",
       "error.png",
       "file-text.png",
       "file.png",

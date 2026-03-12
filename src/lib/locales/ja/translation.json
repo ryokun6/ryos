@@ -624,7 +624,7 @@
         "usingModel": "{{model}}を使用中"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "ログイン済み",
         "clickToRefresh": "トークンを手動で更新するにはクリックしてください",
         "daysAgo": "{{days}}日前",
         "daysOld": "{{days}}日経過",
@@ -1095,9 +1095,9 @@
       },
       "color": "カラー",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "接続済み",
+        "connecting": "接続中…",
+        "disconnected": "切断済み"
       },
       "crashApp": "アプリをクラッシュ",
       "crashDesktop": "デスクトップをクラッシュ",
@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "承認",
+        "decline": "拒否",
+        "fileNotFound": "ファイルが見つかりません",
+        "fileReceived": "@{{sender}} から「{{fileName}}」を受信しました",
+        "hint": "ファイルをユーザーにドラッグして共有するか、任意のファイルを右クリックしてコンテキストメニューを使用してください。",
+        "incomingFile": "@{{sender}} が「{{fileName}}」を送信しようとしています",
+        "loginRequired": "AirDrop を使用して近くのユーザーとファイルを共有するには、チャットにサインインしてください。",
+        "looking": "近くのユーザーを検索中…",
+        "noContent": "ファイルの内容を読み取れませんでした",
+        "noUsers": "周囲に誰もいません。誰かに AirDrop を開くよう依頼してください。",
+        "saveFailed": "受信したファイルの保存に失敗しました",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "デスクトップに追加",
         "date": "日付",
@@ -1420,6 +1434,7 @@
         "newFolder": "新規フォルダ…",
         "open": "開く",
         "rename": "名前の変更…",
+        "shareViaAirDrop": "AirDrop で共有",
         "size": "サイズ",
         "sortBy": "並び替え"
       },
@@ -1464,6 +1479,7 @@
         "applications": "アプリケーション",
         "desktop": "デスクトップ",
         "documents": "書類",
+        "downloads": "ダウンロード",
         "images": "画像",
         "music": "ミュージック",
         "sites": "サイト",

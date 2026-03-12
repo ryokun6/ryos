@@ -963,6 +963,8 @@ export function useFinderLogic({
     if (
       file.type?.includes("virtual") ||
       file.path === "/Documents" ||
+      file.path === "/Desktop" ||
+      file.path === "/Downloads" ||
       file.path === "/Images" ||
       file.path === "/Applications" ||
       file.path === "/Trash" ||

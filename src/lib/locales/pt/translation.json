@@ -624,7 +624,7 @@
         "usingModel": "Usando {{model}}"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "Sessão iniciada",
         "clickToRefresh": "Clique para atualizar o token manualmente",
         "daysAgo": "há {{days}}d",
         "daysOld": "{{days}}d de idade",
@@ -1095,9 +1095,9 @@
       },
       "color": "Cor",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "Conectado",
+        "connecting": "Conectando…",
+        "disconnected": "Desconectado"
       },
       "crashApp": "Travar App",
       "crashDesktop": "Travar Desktop",
@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "Aceitar",
+        "decline": "Recusar",
+        "fileNotFound": "Arquivo não encontrado",
+        "fileReceived": "Recebido \"{{fileName}}\" de @{{sender}}",
+        "hint": "Arraste arquivos para um usuário para compartilhar, ou use o menu de contexto em qualquer arquivo.",
+        "incomingFile": "@{{sender}} quer enviar para você \"{{fileName}}\"",
+        "loginRequired": "Faça login no Chats para usar o AirDrop e compartilhar arquivos com usuários próximos.",
+        "looking": "Procurando usuários próximos…",
+        "noContent": "Não foi possível ler o conteúdo do arquivo.",
+        "noUsers": "Não há mais ninguém por perto. Peça a alguém para abrir o AirDrop.",
+        "saveFailed": "Falha ao salvar o arquivo recebido",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "Adicionar à Área de Trabalho",
         "date": "Data",
@@ -1420,6 +1434,7 @@
         "newFolder": "Nova Pasta…",
         "open": "Abrir",
         "rename": "Renomear…",
+        "shareViaAirDrop": "Compartilhar via AirDrop",
         "size": "Tamanho",
         "sortBy": "Ordenar por"
       },
@@ -1464,6 +1479,7 @@
         "applications": "Aplicativos",
         "desktop": "Ambiente de Trabalho",
         "documents": "Documentos",
+        "downloads": "Downloads",
         "images": "Imagens",
         "music": "Música",
         "sites": "Sites",

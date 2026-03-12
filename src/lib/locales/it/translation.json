@@ -624,7 +624,7 @@
         "usingModel": "Utilizzo di {{model}}"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "Accesso effettuato",
         "clickToRefresh": "Fai clic per aggiornare manualmente il token",
         "daysAgo": "{{days}} giorni fa",
         "daysOld": "vecchio di {{days}} giorni",
@@ -1095,9 +1095,9 @@
       },
       "color": "Colore",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "Connesso",
+        "connecting": "Connessione in corso…",
+        "disconnected": "Disconnesso"
       },
       "crashApp": "Arresta app",
       "crashDesktop": "Arresta desktop",
@@ -1409,6 +1409,20 @@
       }
     },
     "finder": {
+      "airdrop": {
+        "accept": "Accetta",
+        "decline": "Rifiuta",
+        "fileNotFound": "File non trovato",
+        "fileReceived": "Ricevuto \"{{fileName}}\" da @{{sender}}",
+        "hint": "Trascina i file su un utente per condividerli, oppure usa il menu contestuale su qualsiasi file.",
+        "incomingFile": "@{{sender}} vuole inviarti \"{{fileName}}\"",
+        "loginRequired": "Accedi a Chat per usare AirDrop e condividere file con gli utenti nelle vicinanze.",
+        "looking": "Ricerca utenti nelle vicinanze…",
+        "noContent": "Impossibile leggere il contenuto del file",
+        "noUsers": "Nessun altro è nelle vicinanze. Chiedi a qualcuno di aprire AirDrop.",
+        "saveFailed": "Salvataggio del file ricevuto non riuscito",
+        "title": "AirDrop"
+      },
       "contextMenu": {
         "addToDesktop": "Aggiungi alla Scrivania",
         "date": "Data",
@@ -1420,6 +1434,7 @@
         "newFolder": "Nuova Cartella…",
         "open": "Apri",
         "rename": "Rinomina…",
+        "shareViaAirDrop": "Condividi tramite AirDrop",
         "size": "Dimensione",
         "sortBy": "Ordina per"
       },
@@ -1464,6 +1479,7 @@
         "applications": "Applicazioni",
         "desktop": "Desktop",
         "documents": "Documenti",
+        "downloads": "Download",
         "images": "Immagini",
         "music": "Musica",
         "sites": "Siti",
