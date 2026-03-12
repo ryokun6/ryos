@@ -30,6 +30,8 @@ import {
   TELEGRAM_HEARTBEAT_TOPIC,
   TELEGRAM_HEARTBEAT_TARGET_USERNAME,
 } from "../api/_utils/telegram-heartbeat";
+import { TELEGRAM_DEFAULT_MODEL } from "../api/_utils/_aiModels.js";
+import { getTelegramModel } from "../api/cron/telegram-heartbeat.js";
 import { prepareRyoConversationModelInput } from "../api/_utils/ryo-conversation";
 
 class FakeRedis {
@@ -95,6 +97,33 @@ const sampleConversationHistory = [
 ];
 
 describe("telegram heartbeat helpers", () => {
+  test("defaults heartbeat conversations to gemini 3 flash when TELEGRAM_BOT_MODEL is unset", () => {
+    const logMessages: string[] = [];
+
+    const model = getTelegramModel(
+      (message) => logMessages.push(String(message)),
+      {}
+    );
+
+    expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
+    expect(model).toBe("gemini-3-flash");
+    expect(logMessages).toHaveLength(0);
+  });
+
+  test("falls back heartbeat conversations to gemini 3 flash for unsupported TELEGRAM_BOT_MODEL", () => {
+    const logMessages: string[] = [];
+
+    const model = getTelegramModel(
+      (message) => logMessages.push(String(message)),
+      { TELEGRAM_BOT_MODEL: "not-a-real-model" }
+    );
+
+    expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
+    expect(logMessages).toEqual([
+      'Unsupported TELEGRAM_BOT_MODEL "not-a-real-model", falling back to gemini-3-flash',
+    ]);
+  });
+
   test("builds stable slot keys for 30-minute windows", () => {
     const firstWindow = new Date("2026-03-07T18:00:00.000Z");
     const sameWindow = new Date("2026-03-07T18:29:59.999Z");
