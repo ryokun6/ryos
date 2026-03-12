@@ -125,6 +125,7 @@ function TodoSidebar({
   calendars,
   onToggle,
   onAdd,
+  onUpdate,
   onDelete,
   isMacOSTheme,
   isSystem7Theme,
@@ -134,6 +135,7 @@ function TodoSidebar({
   calendars: CalendarGroup[];
   onToggle: (id: string) => void;
   onAdd: (title: string, calendarId: string) => void;
+  onUpdate: (id: string, title: string) => void;
   onDelete: (id: string) => void;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
@@ -142,6 +144,8 @@ function TodoSidebar({
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const [newTitle, setNewTitle] = useState("");
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
   const defaultCalId = calendars[0]?.id || "home";
 
   const handleAdd = () => {
@@ -149,6 +153,24 @@ function TodoSidebar({
     onAdd(newTitle.trim(), defaultCalId);
     setNewTitle("");
   };
+
+  const startEditingTodo = useCallback((todo: TodoItem) => {
+    setEditingTodoId(todo.id);
+    setEditingTitle(todo.title);
+  }, []);
+
+  const stopEditingTodo = useCallback(() => {
+    setEditingTodoId(null);
+    setEditingTitle("");
+  }, []);
+
+  const commitTodoEdit = useCallback((todo: TodoItem) => {
+    const nextTitle = editingTitle.trim();
+    if (nextTitle && nextTitle !== todo.title) {
+      onUpdate(todo.id, nextTitle);
+    }
+    stopEditingTodo();
+  }, [editingTitle, onUpdate, stopEditingTodo]);
 
   return (
     <div className="flex flex-col h-full select-none calendar-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
@@ -178,24 +200,50 @@ function TodoSidebar({
         )}
         {todos.map((todo) => {
           const cal = calendars.find((c) => c.id === todo.calendarId);
+          const isEditing = editingTodoId === todo.id;
           return (
             <div key={todo.id} className="flex items-center gap-1.5 px-0.5 py-1 group">
               <button type="button" onClick={() => onToggle(todo.id)} className="shrink-0">
                 <AquaCheckbox checked={todo.completed} color={EVENT_COLOR_MAP[cal?.color || "blue"]} />
               </button>
-              <span
-                className={cn(
-                  "text-[11px] leading-tight flex-1 min-w-0",
-                  todo.completed && "line-through opacity-40",
-                  useGeneva && "font-geneva-12"
-                )}
-              >
-                {todo.title}
-              </span>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editingTitle}
+                  autoFocus
+                  onFocus={(event) => event.currentTarget.select()}
+                  onChange={(event) => setEditingTitle(event.target.value)}
+                  onBlur={() => commitTodoEdit(todo)}
+                  onKeyDown={(event) => {
+                    event.stopPropagation();
+                    if (event.key === "Enter") commitTodoEdit(todo);
+                    if (event.key === "Escape") stopEditingTodo();
+                  }}
+                  className={cn(
+                    "text-[11px] leading-tight flex-1 min-w-0 rounded border bg-white/90 px-1 py-0.5 outline-none",
+                    useGeneva ? "border-black/20 font-geneva-12" : "border-black/10"
+                  )}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startEditingTodo(todo)}
+                  className={cn(
+                    "text-[11px] leading-tight flex-1 min-w-0 text-left",
+                    todo.completed && "line-through opacity-40",
+                    useGeneva && "font-geneva-12"
+                  )}
+                >
+                  <span className="block truncate">{todo.title}</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => onDelete(todo.id)}
-                className="opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity shrink-0"
+                className={cn(
+                  "transition-opacity shrink-0 hover:!opacity-100",
+                  fullWidth ? "opacity-40" : "opacity-0 group-hover:opacity-40"
+                )}
               >
                 <Trash size={10} weight="bold" />
               </button>
@@ -1046,7 +1094,7 @@ export function CalendarAppComponent({
     narrowDayNames, hourLabels, weekDates, weekLabel,
     editingEvent, selectedEventId, setSelectedEventId, prefillTime,
     calendars, toggleCalendarVisibility,
-    todos, addTodo, toggleTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
+    todos, addTodo, toggleTodo, updateTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
     handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
     fileInputRef, handleImport, handleFileSelected, handleExport,
@@ -1261,6 +1309,7 @@ export function CalendarAppComponent({
                   calendars={calendars}
                   onToggle={toggleTodo}
                   onAdd={addTodo}
+                  onUpdate={(id, title) => updateTodo(id, { title })}
                   onDelete={deleteTodo}
                   isMacOSTheme={isMacOSTheme}
                   isSystem7Theme={isSystem7Theme}
@@ -1281,6 +1330,7 @@ export function CalendarAppComponent({
                   calendars={calendars}
                   onToggle={toggleTodo}
                   onAdd={addTodo}
+                  onUpdate={(id, title) => updateTodo(id, { title })}
                   onDelete={deleteTodo}
                   isMacOSTheme={isMacOSTheme}
                   isSystem7Theme={isSystem7Theme}
