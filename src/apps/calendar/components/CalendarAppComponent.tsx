@@ -222,6 +222,11 @@ function TodoSidebar({
   const actionButtonVisibilityClass = fullWidth
     ? "opacity-40"
     : "opacity-0 group-hover:opacity-40";
+  const trailingContentWidth = fullWidth ? "w-[82px]" : "w-[76px]";
+  const todoTitleFieldClass = cn(
+    "text-[11px] leading-tight flex-1 min-w-0 rounded border px-1 py-0.5 min-h-[22px]",
+    useGeneva ? "font-geneva-12 border-black/20" : "border-black/10"
+  );
 
   return (
     <div className="flex flex-col h-full select-none calendar-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
@@ -253,8 +258,8 @@ function TodoSidebar({
           const cal = calendars.find((c) => c.id === todo.calendarId);
           const isEditing = editingTodoId === todo.id;
           return (
-            <div key={todo.id} className="flex items-center gap-1.5 px-0.5 py-1 group">
-              <button type="button" onClick={() => onToggle(todo.id)} className="shrink-0">
+            <div key={todo.id} className="flex items-start gap-1.5 px-0.5 py-1 group min-h-[30px]">
+              <button type="button" onClick={() => onToggle(todo.id)} className="shrink-0 mt-[3px]">
                 <AquaCheckbox checked={todo.completed} color={EVENT_COLOR_MAP[cal?.color || "blue"]} />
               </button>
               {isEditing ? (
@@ -271,8 +276,8 @@ function TodoSidebar({
                     if (event.key === "Escape") stopEditingTodo();
                   }}
                   className={cn(
-                    "text-[11px] leading-tight flex-1 min-w-0 rounded border bg-white/90 px-1 py-0.5 outline-none",
-                    useGeneva ? "border-black/20 font-geneva-12" : "border-black/10"
+                    todoTitleFieldClass,
+                    "bg-white/90 outline-none"
                   )}
                 />
               ) : (
@@ -280,27 +285,27 @@ function TodoSidebar({
                   type="button"
                   onClick={() => startEditingTodo(todo)}
                   className={cn(
-                    "text-[11px] leading-tight flex-1 min-w-0 text-left",
+                    todoTitleFieldClass,
+                    "text-left border-transparent bg-transparent",
                     todo.completed && "line-through opacity-40",
-                    useGeneva && "font-geneva-12"
+                    "hover:bg-black/[0.02]"
                   )}
                 >
                   <span className="block truncate">{todo.title}</span>
                 </button>
               )}
-              <div className="flex items-center gap-1 shrink-0">
-                {todo.dueDate && (
-                  <span
-                    className={cn(
-                      "max-w-[72px] truncate text-[9px] leading-none opacity-55",
-                      todo.completed && "opacity-30",
-                      useGeneva && "font-geneva-12"
-                    )}
-                    title={todo.dueDate}
-                  >
-                    {formatTodoDueDate(todo.dueDate, i18n.language)}
-                  </span>
-                )}
+              <div className={cn("flex items-center justify-end gap-1 shrink-0 mt-[3px]", trailingContentWidth)}>
+                <span
+                  className={cn(
+                    "min-w-0 flex-1 truncate text-right text-[9px] leading-none opacity-55",
+                    todo.completed && "opacity-30",
+                    !todo.dueDate && "invisible",
+                    useGeneva && "font-geneva-12"
+                  )}
+                  title={todo.dueDate || undefined}
+                >
+                  {todo.dueDate ? formatTodoDueDate(todo.dueDate, i18n.language) : "\u00a0"}
+                </span>
                 <button
                   type="button"
                   onClick={() => openDueDatePicker(todo)}
