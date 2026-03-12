@@ -1290,8 +1290,22 @@ export function useFinderLogic({
   const SIDEBAR_HIDDEN_FOLDERS = new Set(["/Trash", "/Sites"]);
 
   const sidebarItems = useMemo(() => {
-    const places = rootFolders
-      .filter((f) => !SIDEBAR_HIDDEN_FOLDERS.has(f.path))
+    const visibleRootFolders = rootFolders.filter(
+      (f) => !SIDEBAR_HIDDEN_FOLDERS.has(f.path)
+    );
+    const desktopIndex = visibleRootFolders.findIndex(
+      (folder) => folder.path === "/Desktop"
+    );
+    const applicationsIndex = visibleRootFolders.findIndex(
+      (folder) => folder.path === "/Applications"
+    );
+
+    if (desktopIndex > applicationsIndex && applicationsIndex !== -1) {
+      const [desktopFolder] = visibleRootFolders.splice(desktopIndex, 1);
+      visibleRootFolders.splice(applicationsIndex, 0, desktopFolder);
+    }
+
+    const places = visibleRootFolders
       .map((f) => ({
         name: getTranslatedFolderNameFromName(f.name) || f.name,
         path: f.path,
