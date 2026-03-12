@@ -7,6 +7,7 @@ import { getContactInitials } from "@/utils/contacts";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { Button } from "@/components/ui/button";
 
 function getUsernameInitials(username: string): string {
   const base = username.replace(/^@+/, "").trim();
@@ -152,9 +153,13 @@ function positionsOnRings(count: number): Array<{ ring: number; angle: number }>
 
 interface AirDropViewProps {
   onSendFile: (recipient: string, fileName: string, content: string, fileType: string) => void;
+  onRequestLogin?: () => void;
 }
 
-export function AirDropView({ onSendFile }: AirDropViewProps) {
+export function AirDropView({
+  onSendFile,
+  onRequestLogin,
+}: AirDropViewProps) {
   const { t } = useTranslation();
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
@@ -210,7 +215,11 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
   if (!isAuthenticated || !username) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
-        <ThemedIcon name="/icons/default/cloud-sync.png" alt="AirDrop" className="w-20 h-20" />
+        <ThemedIcon
+          name="/icons/default/cloud-sync.png"
+          alt="AirDrop"
+          className="w-20 h-20"
+        />
         <div>
           <p className="text-[13px] font-semibold mb-1">
             {t("apps.finder.airdrop.title")}
@@ -218,6 +227,15 @@ export function AirDropView({ onSendFile }: AirDropViewProps) {
           <p className="text-[11px] text-neutral-500">
             {t("apps.finder.airdrop.loginRequired")}
           </p>
+          <Button
+            type="button"
+            variant="aqua"
+            size="sm"
+            className="mt-3 min-w-[112px]"
+            onClick={onRequestLogin}
+          >
+            {t("common.auth.logIn")}
+          </Button>
         </div>
       </div>
     );
