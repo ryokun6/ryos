@@ -1325,6 +1325,7 @@ export async function executeContactsControl(
       const contact = createContactFromDraft(toContactsDraft(input));
       await writeContactsState(context.redis, context.username, {
         contacts: sortContacts([...state.contacts, contact]),
+        myContactId: state.myContactId,
       });
       context.log(
         `[contactsControl] Created contact "${contact.displayName}" (${getContactSummary(contact)})`
@@ -1354,6 +1355,7 @@ export async function executeContactsControl(
 
       await writeContactsState(context.redis, context.username, {
         contacts: sortContacts(nextContacts),
+        myContactId: state.myContactId,
       });
 
       return {
@@ -1372,8 +1374,10 @@ export async function executeContactsControl(
         };
       }
 
+      const deletedId = contact.id;
       await writeContactsState(context.redis, context.username, {
         contacts: state.contacts.filter((item) => item.id !== input.id),
+        myContactId: state.myContactId === deletedId ? null : state.myContactId,
       });
 
       return {
