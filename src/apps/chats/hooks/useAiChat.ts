@@ -536,13 +536,27 @@ const showBackgroundedMessageNotification = (message: UIMessage) => {
 };
 
 export function useAiChat(onPromptSetUsername?: () => void) {
-  const { aiMessages, setAiMessages, username, isAuthenticated } =
+  const isRenderableMessage = (message: unknown): boolean =>
+    !!message &&
+    typeof message === "object" &&
+    typeof (message as { id?: unknown }).id === "string" &&
+    typeof (message as { role?: unknown }).role === "string";
+
+  const {
+    aiMessages: storedAiMessages,
+    setAiMessages,
+    username,
+    isAuthenticated,
+  } =
     useChatsStoreShallow((state) => ({
       aiMessages: state.aiMessages,
       setAiMessages: state.setAiMessages,
       username: state.username,
       isAuthenticated: state.isAuthenticated,
     }));
+  const aiMessages = Array.isArray(storedAiMessages)
+    ? (storedAiMessages.filter(isRenderableMessage) as AIChatMessage[])
+    : [];
   const launchApp = useLaunchApp();
   const aiModel = useAppStore((state) => state.aiModel);
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
@@ -637,7 +651,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   setHighlightSegmentRef.current = setHighlightSegment;
 
   const {
-    messages: currentSdkMessages,
+    messages: sdkMessages,
     status,
     error,
     stop: sdkStop,
@@ -2004,6 +2018,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       });
     },
   });
+  const currentSdkMessages = Array.isArray(sdkMessages)
+    ? (sdkMessages.filter(isRenderableMessage) as UIMessage[])
+    : [];
 
   // Ensure all messages have metadata with timestamps (runs synchronously during render)
   const messagesWithTimestamps = useMemo<AIChatMessage[]>(() => {

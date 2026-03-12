@@ -15,6 +15,7 @@ import { ChatInput } from "./ChatInput";
 import { ChatRoomSidebar } from "./ChatRoomSidebar";
 import { useChatsStore } from "@/stores/useChatsStore";
 import {
+  type AIChatMessage,
   type ChatMessage as AppChatMessage,
   type ChatRoom,
 } from "@/types/chat";
@@ -49,8 +50,17 @@ export function ChatsAppComponent({
   const initialData = rawInitialData as ChatsInitialData | undefined;
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
-  const aiMessageCount = useChatsStore((state) => state.aiMessages.length);
-  const aiMessages = useChatsStore((state) => state.aiMessages);
+  const storedAiMessages = useChatsStore((state) => state.aiMessages);
+  const aiMessages = Array.isArray(storedAiMessages)
+    ? storedAiMessages.filter(
+        (message): message is AIChatMessage =>
+          !!message &&
+          typeof message === "object" &&
+          typeof message.id === "string" &&
+          typeof message.role === "string"
+      )
+    : [];
+  const aiMessageCount = aiMessages.length;
 
   // Use auth hook for authentication functionality
   const authResult = useAuth();

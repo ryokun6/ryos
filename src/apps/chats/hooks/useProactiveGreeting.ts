@@ -30,6 +30,17 @@ function getLastMessageTimestamp(messages: AIChatMessage[]): number {
   return 0;
 }
 
+const sanitizeAiMessages = (messages: unknown): AIChatMessage[] =>
+  Array.isArray(messages)
+    ? messages.filter(
+        (message): message is AIChatMessage =>
+          !!message &&
+          typeof message === "object" &&
+          typeof message.id === "string" &&
+          typeof message.role === "string"
+      )
+    : [];
+
 /**
  * Hook that manages proactive AI greetings for logged-in users with memories.
  *
@@ -46,10 +57,12 @@ function getLastMessageTimestamp(messages: AIChatMessage[]): number {
 export function useProactiveGreeting() {
   const [isLoadingGreeting, setIsLoadingGreeting] = useState(() => {
     const state = useChatsStore.getState();
+    const messages = sanitizeAiMessages(state.aiMessages);
+    const firstMessage = messages[0];
     const fresh =
-      state.aiMessages.length === 1 &&
-      state.aiMessages[0].id === "1" &&
-      state.aiMessages[0].role === "assistant";
+      messages.length === 1 &&
+      firstMessage?.id === "1" &&
+      firstMessage.role === "assistant";
     const eligible = !!state.username && !!state.isAuthenticated;
     return fresh && eligible;
   });
@@ -60,13 +73,15 @@ export function useProactiveGreeting() {
 
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
-  const aiMessages = useChatsStore((s) => s.aiMessages);
+  const storedAiMessages = useChatsStore((s) => s.aiMessages);
   const setAiMessages = useChatsStore((s) => s.setAiMessages);
+  const aiMessages = sanitizeAiMessages(storedAiMessages);
+  const firstMessage = aiMessages[0];
 
   const isFreshChat =
     aiMessages.length === 1 &&
-    aiMessages[0].id === "1" &&
-    aiMessages[0].role === "assistant";
+    firstMessage?.id === "1" &&
+    firstMessage?.role === "assistant";
 
   const isEligible = !!username && !!isAuthenticated;
 
@@ -202,11 +217,13 @@ export function useProactiveGreeting() {
     hasTriggeredStaleRef.current = false;
     setTimeout(() => {
       const state = useChatsStore.getState();
+      const messages = sanitizeAiMessages(state.aiMessages);
+      const firstMessage = messages[0];
       const stillFresh =
-        state.aiMessages.length === 1 &&
-        (state.aiMessages[0].id === "1" ||
-          state.aiMessages[0].id === "proactive-1") &&
-        state.aiMessages[0].role === "assistant";
+        messages.length === 1 &&
+        (!!firstMessage &&
+          (firstMessage.id === "1" || firstMessage.id === "proactive-1") &&
+          firstMessage.role === "assistant");
       const stillEligible = !!state.username && !!state.isAuthenticated;
 
       if (stillFresh && stillEligible && !fetchInFlightRef.current) {

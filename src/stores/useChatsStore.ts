@@ -16,6 +16,12 @@ import {
   listRooms as listRoomsApi,
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
+import {
+  normalizePersistedAiMessages,
+  normalizePersistedRoomMessages,
+  normalizePersistedRooms,
+  sanitizePersistedChatsState,
+} from "./chatsStateSanitizers";
 
 // Username recovery - plain text, username is public info
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -323,7 +329,11 @@ export const useChatsStore = create<ChatsStoreState>()(
         ...initialState,
 
         // --- Actions ---
-        setAiMessages: (messages) => set({ aiMessages: messages }),
+        setAiMessages: (messages) =>
+          set({
+            aiMessages:
+              normalizePersistedAiMessages(messages) ?? [getInitialAiMessage()],
+          }),
         setUsername: (username) => {
           saveUsernameToRecovery(username);
           set({ username });
@@ -420,6 +430,8 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
         },
         setRooms: (newRooms) => {
+          const normalizedRooms = normalizePersistedRooms(newRooms);
+
           // Ensure incoming data is an array
           if (!Array.isArray(newRooms)) {
             console.warn(
@@ -432,7 +444,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Deep comparison to prevent unnecessary updates
           const currentRooms = get().rooms;
           // Apply stable sort to keep UI order consistent (public first, then name, then id)
-          const sortedNewRooms = [...newRooms].sort((a, b) => {
+          const sortedNewRooms = [...normalizedRooms].sort((a, b) => {
             const ao = a.type === "private" ? 1 : 0;
             const bo = b.type === "private" ? 1 : 0;
             if (ao !== bo) return ao - bo;
@@ -456,7 +468,10 @@ export const useChatsStore = create<ChatsStoreState>()(
         setRoomMessagesForCurrentRoom: (messages) => {
           const currentRoomId = get().currentRoomId;
           if (currentRoomId) {
-            const sorted = [...messages].sort(
+            const normalizedMessages = normalizePersistedRoomMessages({
+              [currentRoomId]: messages,
+            })[currentRoomId];
+            const sorted = [...normalizedMessages].sort(
               (a, b) => a.timestamp - b.timestamp
             );
             set((state) => ({
@@ -1378,7 +1393,9 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             const finalMigratedState = {
               ...getInitialState(),
-              ...migratedState,
+              ...sanitizePersistedChatsState(migratedState, [
+                getInitialAiMessage(),
+              ]),
             } as ChatsStoreState;
             console.log(
               "[ChatsStore] Final migrated state:",
@@ -1397,8 +1414,12 @@ export const useChatsStore = create<ChatsStoreState>()(
         }
         if (persistedState) {
           console.log("[ChatsStore] Using persisted state.");
-          const state = persistedState as ChatsStoreState;
-          const finalState = { ...state };
+          const finalState = {
+            ...getInitialState(),
+            ...sanitizePersistedChatsState(persistedState, [
+              getInitialAiMessage(),
+            ]),
+          } as ChatsStoreState;
 
           // Auth lives in httpOnly cookies — no token in persisted state.
 

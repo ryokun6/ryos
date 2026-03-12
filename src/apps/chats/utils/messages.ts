@@ -21,8 +21,13 @@ export const buildDisplayMessages = ({
   messageRenderLimit,
   username,
 }: BuildDisplayMessagesParams): DisplayMessage[] => {
+  const safeRoomMessages = Array.isArray(currentRoomMessagesLimited)
+    ? currentRoomMessagesLimited
+    : [];
+  const safeAiMessages = Array.isArray(aiMessages) ? aiMessages : [];
+
   if (currentRoomId) {
-    return currentRoomMessagesLimited.map((msg) => ({
+    return safeRoomMessages.map((msg) => ({
       // For room messages, use clientId (if present) for stable rendering key
       id: msg.clientId || msg.id,
       serverId: msg.id,
@@ -35,7 +40,7 @@ export const buildDisplayMessages = ({
     }));
   }
 
-  return aiMessages.slice(-messageRenderLimit).map((msg) => ({
+  return safeAiMessages.slice(-messageRenderLimit).map((msg) => ({
     ...msg,
     username: msg.role === "user" ? username || "You" : "Ryo",
   }));
@@ -44,6 +49,10 @@ export const buildDisplayMessages = ({
 export const extractPreviousUserMessages = (
   aiMessages: AIChatMessage[]
 ): string[] => {
+  if (!Array.isArray(aiMessages)) {
+    return [];
+  }
+
   const userMessages = aiMessages.filter((msg) => msg.role === "user");
 
   return Array.from(
