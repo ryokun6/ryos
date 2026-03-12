@@ -61,6 +61,25 @@ function getEventOpacity(event: CalendarEvent, normalizedQuery: string) {
   return matchesSearchQuery(getEventSearchText(event), normalizedQuery) ? 1 : SEARCH_DIM_OPACITY;
 }
 
+function formatTodoDueDate(dueDate: string, locale: string) {
+  const [year, month, day] = dueDate.split("-").map(Number);
+  if (!year || !month || !day) return dueDate;
+
+  const today = new Date();
+  const formatOptions: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+  };
+
+  if (year !== today.getFullYear()) {
+    formatOptions.year = "numeric";
+  }
+
+  return new Intl.DateTimeFormat(locale, formatOptions).format(
+    new Date(year, month - 1, day)
+  );
+}
+
 
 // ============================================================================
 // CALENDAR LIST (left sidebar, top)
@@ -135,17 +154,22 @@ function TodoSidebar({
   calendars: CalendarGroup[];
   onToggle: (id: string) => void;
   onAdd: (title: string, calendarId: string) => void;
-  onUpdate: (id: string, title: string) => void;
+  onUpdate: (
+    id: string,
+    updates: Partial<Pick<TodoItem, "title" | "dueDate">>
+  ) => void;
   onDelete: (id: string) => void;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   fullWidth?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const [newTitle, setNewTitle] = useState("");
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [dueDateTodoId, setDueDateTodoId] = useState<string | null>(null);
+  const dueDateInputRef = useRef<HTMLInputElement>(null);
   const defaultCalId = calendars[0]?.id || "home";
 
   const handleAdd = () => {
@@ -167,10 +191,37 @@ function TodoSidebar({
   const commitTodoEdit = useCallback((todo: TodoItem) => {
     const nextTitle = editingTitle.trim();
     if (nextTitle && nextTitle !== todo.title) {
-      onUpdate(todo.id, nextTitle);
+      onUpdate(todo.id, { title: nextTitle });
     }
     stopEditingTodo();
   }, [editingTitle, onUpdate, stopEditingTodo]);
+
+  const openDueDatePicker = useCallback((todo: TodoItem) => {
+    const input = dueDateInputRef.current;
+    if (!input) return;
+
+    setDueDateTodoId(todo.id);
+    input.value = todo.dueDate || "";
+
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+    } else {
+      input.click();
+    }
+  }, []);
+
+  const handleDueDateChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    if (dueDateTodoId) {
+      onUpdate(dueDateTodoId, {
+        dueDate: event.target.value || null,
+      });
+    }
+    setDueDateTodoId(null);
+  }, [dueDateTodoId, onUpdate]);
+
+  const actionButtonVisibilityClass = fullWidth
+    ? "opacity-40"
+    : "opacity-0 group-hover:opacity-40";
 
   return (
     <div className="flex flex-col h-full select-none calendar-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
@@ -237,20 +288,54 @@ function TodoSidebar({
                   <span className="block truncate">{todo.title}</span>
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => onDelete(todo.id)}
-                className={cn(
-                  "transition-opacity shrink-0 hover:!opacity-100",
-                  fullWidth ? "opacity-40" : "opacity-0 group-hover:opacity-40"
+              <div className="flex items-center gap-1 shrink-0">
+                {todo.dueDate && (
+                  <span
+                    className={cn(
+                      "max-w-[72px] truncate text-[9px] leading-none opacity-55",
+                      todo.completed && "opacity-30",
+                      useGeneva && "font-geneva-12"
+                    )}
+                    title={todo.dueDate}
+                  >
+                    {formatTodoDueDate(todo.dueDate, i18n.language)}
+                  </span>
                 )}
-              >
-                <Trash size={10} weight="bold" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => openDueDatePicker(todo)}
+                  className={cn(
+                    "transition-opacity shrink-0 hover:!opacity-100",
+                    actionButtonVisibilityClass
+                  )}
+                  aria-label={t("apps.calendar.event.date")}
+                  title={t("apps.calendar.event.date")}
+                >
+                  <CalendarBlank size={10} weight="bold" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(todo.id)}
+                  className={cn(
+                    "transition-opacity shrink-0 hover:!opacity-100",
+                    actionButtonVisibilityClass
+                  )}
+                >
+                  <Trash size={10} weight="bold" />
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
+      <input
+        ref={dueDateInputRef}
+        type="date"
+        tabIndex={-1}
+        className="absolute pointer-events-none h-0 w-0 opacity-0"
+        onChange={handleDueDateChange}
+        onBlur={() => setDueDateTodoId(null)}
+      />
       <div className="px-2 pb-1.5 pt-1">
         <input
           type="text"
@@ -1309,7 +1394,7 @@ export function CalendarAppComponent({
                   calendars={calendars}
                   onToggle={toggleTodo}
                   onAdd={addTodo}
-                  onUpdate={(id, title) => updateTodo(id, { title })}
+                  onUpdate={updateTodo}
                   onDelete={deleteTodo}
                   isMacOSTheme={isMacOSTheme}
                   isSystem7Theme={isSystem7Theme}
@@ -1330,7 +1415,7 @@ export function CalendarAppComponent({
                   calendars={calendars}
                   onToggle={toggleTodo}
                   onAdd={addTodo}
-                  onUpdate={(id, title) => updateTodo(id, { title })}
+                  onUpdate={updateTodo}
                   onDelete={deleteTodo}
                   isMacOSTheme={isMacOSTheme}
                   isSystem7Theme={isSystem7Theme}
