@@ -90,6 +90,14 @@ function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
         ...Object.values(deletionMarkers.calendarEventIds),
         ...Object.values(deletionMarkers.calendarIds),
       ]);
+    case "stickies":
+      return getLatestCloudSyncTimestamp(
+        Object.values(deletionMarkers.stickyNoteIds)
+      );
+    case "contacts":
+      return getLatestCloudSyncTimestamp(
+        Object.values(deletionMarkers.contactIds)
+      );
     case "files-metadata":
       return getLatestCloudSyncTimestamp(
         Object.values(deletionMarkers.fileMetadataPaths)

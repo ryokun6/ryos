@@ -1,6 +1,7 @@
 import type { Redis } from "./redis.js";
 import type { Contact } from "../../src/utils/contacts.js";
 import { getContactSummary, normalizeContacts } from "../../src/utils/contacts.js";
+import { normalizeDeletionMarkerMap } from "../../src/utils/cloudSyncDeletionMarkers.js";
 import type { ContactsSnapshotData } from "../chat/tools/types.js";
 import { stateKey } from "../sync/state.js";
 
@@ -23,6 +24,9 @@ export async function readContactsState(
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
   return {
     contacts: normalizeContacts(parsed?.data?.contacts),
+    myContactId:
+      typeof parsed?.data?.myContactId === "string" ? parsed.data.myContactId : null,
+    deletedContactIds: normalizeDeletionMarkerMap(parsed?.data?.deletedContactIds),
   };
 }
 

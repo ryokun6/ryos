@@ -534,6 +534,9 @@ export interface CalendarSnapshotData {
     calendarId: string;
     createdAt: number;
   }>;
+  deletedEventIds?: Record<string, string>;
+  deletedCalendarIds?: Record<string, string>;
+  deletedTodoIds?: Record<string, string>;
 }
 
 export interface StickiesSnapshotData {
@@ -546,8 +549,11 @@ export interface StickiesSnapshotData {
     createdAt: number;
     updatedAt: number;
   }>;
+  deletedNoteIds?: Record<string, string>;
 }
 
 export interface ContactsSnapshotData {
   contacts: Contact[];
+  myContactId?: string | null;
+  deletedContactIds?: Record<string, string>;
 }

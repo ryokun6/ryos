@@ -236,6 +236,36 @@ describe("Server-side Documents Executor", () => {
     expect(redis.set).toHaveBeenCalled();
   });
 
+  test("write clears deleted path tombstones when recreating a document", async () => {
+    const tombstonedRedis = createMockRedis({
+      "sync:state:testuser:files-metadata": {
+        ...filesMetadataData,
+        data: {
+          ...filesMetadataData.data,
+          deletedPaths: {
+            "/Documents/todo.md": "2026-03-12T16:40:00.000Z",
+          },
+        },
+      },
+    });
+    const tombstonedContext = createMockContext(tombstonedRedis);
+
+    const result = await executeDocumentsControl(
+      {
+        action: "write",
+        path: "/Documents/todo.md",
+        content: "- buy milk",
+      },
+      tombstonedContext
+    );
+
+    expect(result.success).toBe(true);
+    const persisted = JSON.parse(
+      tombstonedRedis._store["sync:state:testuser:files-metadata"]
+    );
+    expect(persisted.data.deletedPaths || {}).not.toHaveProperty("/Documents/todo.md");
+  });
+
   test("write appends to an existing document", async () => {
     const result = await executeDocumentsControl(
       {
@@ -428,6 +458,10 @@ describe("Server-side Calendar Executor", () => {
       context
     );
     expect(result.success).toBe(true);
+    const persisted = JSON.parse(redis._store["sync:state:testuser:calendar"]);
+    expect(persisted.data.deletedTodoIds).toEqual({
+      "todo-1": expect.any(String),
+    });
   });
 
   test("returns error when no sync data exists", async () => {
@@ -499,12 +533,20 @@ describe("Server-side Stickies Executor", () => {
       context
     );
     expect(result.success).toBe(true);
+    const persisted = JSON.parse(redis._store["sync:state:testuser:stickies"]);
+    expect(persisted.data.deletedNoteIds).toEqual({
+      "note-1": expect.any(String),
+    });
   });
 
   test("clear removes all notes", async () => {
     const result = await executeStickiesControl({ action: "clear" }, context);
     expect(result.success).toBe(true);
     expect(result.message).toContain("1");
+    const persisted = JSON.parse(redis._store["sync:state:testuser:stickies"]);
+    expect(persisted.data.deletedNoteIds).toEqual({
+      "note-1": expect.any(String),
+    });
   });
 
   test("returns error without authentication", async () => {
@@ -584,5 +626,9 @@ describe("Server-side Contacts Executor", () => {
     );
     expect(result.success).toBe(true);
     expect(result.message).toContain("Deleted");
+    const persisted = JSON.parse(redis._store["sync:state:testuser:contacts"]);
+    expect(persisted.data.deletedContactIds).toEqual({
+      "contact-1": expect.any(String),
+    });
   });
 });

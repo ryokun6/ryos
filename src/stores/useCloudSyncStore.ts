@@ -23,6 +23,8 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "calendarTodoIds",
   "calendarEventIds",
   "calendarIds",
+  "stickyNoteIds",
+  "contactIds",
   "fileMetadataPaths",
   "customWallpaperKeys",
 ] as const;
@@ -40,6 +42,8 @@ function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     calendarTodoIds: {},
     calendarEventIds: {},
     calendarIds: {},
+    stickyNoteIds: {},
+    contactIds: {},
     fileMetadataPaths: {},
     customWallpaperKeys: {},
   };

@@ -164,6 +164,7 @@ interface VideosSnapshotData {
 
 interface StickiesSnapshotData {
   notes: StickyNote[];
+  deletedNoteIds?: DeletionMarkerMap;
 }
 
 interface CalendarSnapshotData {
@@ -178,6 +179,7 @@ interface CalendarSnapshotData {
 interface ContactsSnapshotData {
   contacts: Contact[];
   myContactId: string | null;
+  deletedContactIds?: DeletionMarkerMap;
 }
 
 type AnySnapshotData =
@@ -626,8 +628,10 @@ function serializeVideosSnapshot(): VideosSnapshotData {
 }
 
 function serializeStickiesSnapshot(): StickiesSnapshotData {
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
   return {
     notes: useStickiesStore.getState().notes,
+    deletedNoteIds: deletionMarkers.stickyNoteIds,
   };
 }
 
@@ -646,9 +650,11 @@ function serializeCalendarSnapshot(): CalendarSnapshotData {
 }
 
 function serializeContactsSnapshot(): ContactsSnapshotData {
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
   return {
     contacts: useContactsStore.getState().contacts,
     myContactId: useContactsStore.getState().myContactId,
+    deletedContactIds: deletionMarkers.contactIds,
   };
 }
 
@@ -868,8 +874,17 @@ function applyVideosSnapshot(data: VideosSnapshotData): void {
 }
 
 function applyStickiesSnapshot(data: StickiesSnapshotData): void {
+  const remoteDeletedNoteIds = normalizeDeletionMarkerMap(data.deletedNoteIds);
+  const cloudSyncState = useCloudSyncStore.getState();
+  const effectiveDeletedNoteIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.stickyNoteIds,
+    remoteDeletedNoteIds
+  );
+
+  cloudSyncState.mergeDeletedKeys("stickyNoteIds", remoteDeletedNoteIds);
+
   useStickiesStore.setState({
-    notes: data.notes,
+    notes: filterDeletedIds(data.notes, effectiveDeletedNoteIds, (note) => note.id),
   });
 }
 
@@ -917,10 +932,25 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
 }
 
 function applyContactsSnapshot(data: ContactsSnapshotData): void {
+  const remoteDeletedContactIds = normalizeDeletionMarkerMap(
+    data.deletedContactIds
+  );
+  const cloudSyncState = useCloudSyncStore.getState();
+  const effectiveDeletedContactIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.contactIds,
+    remoteDeletedContactIds
+  );
+
+  cloudSyncState.mergeDeletedKeys("contactIds", remoteDeletedContactIds);
+
   useContactsStore
     .getState()
     .replaceContactsFromSync(
-      normalizeContacts(data?.contacts),
+      filterDeletedIds(
+        normalizeContacts(data?.contacts),
+        effectiveDeletedContactIds,
+        (contact) => contact.id
+      ),
       data?.myContactId ?? null
     );
 }
