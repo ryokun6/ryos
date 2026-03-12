@@ -251,7 +251,7 @@ export default apiHandler<{
 
       try {
         const { text, finishReason } = await generateText({
-          model: google("gemini-2.5-flash"),
+          model: google("gemini-3-flash-preview"),
           temperature: 1,
           maxOutputTokens: 2000,
           system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.

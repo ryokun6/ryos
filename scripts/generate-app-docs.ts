@@ -477,7 +477,7 @@ Write the documentation in a clear, professional tone. Use markdown formatting p
 
   try {
     const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-3-flash-preview"),
       messages: [
         {
           role: "user",
