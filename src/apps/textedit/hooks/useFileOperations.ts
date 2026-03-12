@@ -20,6 +20,7 @@ import {
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { getStoreForFile } from "@/utils/indexedDBOperations";
 
 interface UseFileOperationsProps {
   editor: Editor | null;
@@ -227,7 +228,12 @@ export function useFileOperations({
 
   const handleLoadFromDatabase = useCallback(
     async (filePath: string): Promise<boolean> => {
-      if (!editor || !filePath.startsWith("/Documents/")) return false;
+      if (!editor) return false;
+
+      const storeName = getStoreForFile(filePath, {
+        name: filePath.split("/").pop(),
+      });
+      if (storeName !== STORES.DOCUMENTS) return false;
 
       try {
         const { useFilesStore } = await import("@/stores/useFilesStore");
@@ -236,7 +242,7 @@ export function useFileOperations({
 
         if (fileMetadata && fileMetadata.uuid) {
           const doc = await dbOperations.get<DocumentContent>(
-            STORES.DOCUMENTS,
+            storeName,
             fileMetadata.uuid
           );
 

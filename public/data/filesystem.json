@@ -24,6 +24,14 @@
       "status": "active"
     },
     {
+      "path": "/Downloads",
+      "name": "Downloads",
+      "isDirectory": true,
+      "type": "directory",
+      "icon": "/icons/default/downloads.png",
+      "status": "active"
+    },
+    {
       "path": "/Images",
       "name": "Images",
       "isDirectory": true,

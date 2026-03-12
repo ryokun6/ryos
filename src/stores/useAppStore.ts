@@ -296,6 +296,7 @@ const createUseAppStore = () =>
             dataWithPath?.path === "/" ||
             dataWithPath?.path === "/Applications" ||
             dataWithPath?.path === "/Documents" ||
+            dataWithPath?.path === "/Downloads" ||
             dataWithPath?.path === "/Desktop" ||
             dataWithPath?.path === "/Applets" ||
             dataWithPath?.path === "/Trash";

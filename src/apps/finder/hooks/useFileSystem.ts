@@ -22,6 +22,7 @@ import {
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { getStoreForFile } from "@/utils/indexedDBOperations";
 import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
@@ -233,6 +234,9 @@ function getFileTypeFromExtension(fileName: string): string {
       return ext;
     case "bmp":
       return ext;
+    case "html":
+    case "htm":
+      return "html";
     default:
       return "unknown";
   }
@@ -1035,19 +1039,14 @@ export function useFileSystem(
 
       try {
         // Fetch content from IndexedDB (Documents, Images, or Applets)
-        if (
-          file.path.startsWith("/Documents/") ||
-          file.path.startsWith("/Images/") ||
-          file.path.startsWith("/Applets/")
-        ) {
+        const storeName = getStoreForFile(file.path, {
+          name: file.name,
+          type: file.type,
+        });
+        if (storeName) {
           // Get the file metadata to get the UUID
           const fileMetadata = getFileItem(file.path);
           if (fileMetadata?.uuid) {
-            const storeName = file.path.startsWith("/Documents/")
-              ? STORES.DOCUMENTS
-              : file.path.startsWith("/Images/")
-              ? STORES.IMAGES
-              : STORES.APPLETS;
             const contentData = await dbOperations.get<DocumentContent>(
               storeName,
               fileMetadata.uuid // Use UUID instead of name
@@ -1106,14 +1105,14 @@ export function useFileSystem(
         // Process content: Read blob to string for TextEdit and Applets, create URL for Paint
         if (contentToUse instanceof Blob) {
           if (
-            file.path.startsWith("/Documents/") ||
-            file.path.startsWith("/Applets/")
+            storeName === STORES.DOCUMENTS ||
+            storeName === STORES.APPLETS
           ) {
             contentAsString = await contentToUse.text();
             console.log(
               `[useFileSystem] Read Blob as text for ${file.name}, length: ${contentAsString?.length}`
             );
-          } else if (file.path.startsWith("/Images/")) {
+          } else if (storeName === STORES.IMAGES) {
             // Don't create URL here, pass the Blob itself
             // contentUrlToUse = URL.createObjectURL(contentToUse);
             // console.log(`[useFileSystem] Created Blob URL for ${file.name}: ${contentUrlToUse}`);
@@ -1132,7 +1131,7 @@ export function useFileSystem(
         });
         if (file.path.startsWith("/Applications/") && file.appId) {
           launchApp(file.appId as AppId, { launchOrigin });
-        } else if (file.path.startsWith("/Documents/")) {
+        } else if (storeName === STORES.DOCUMENTS) {
           // Check if this file is already open in a TextEdit instance
           const textEditStore = useTextEditStore.getState();
           const existingInstanceId = textEditStore.getInstanceIdByPath(
@@ -1168,14 +1167,14 @@ export function useFileSystem(
               launchOrigin,
             });
           }
-        } else if (file.path.startsWith("/Images/")) {
+        } else if (storeName === STORES.IMAGES) {
           // Pass the Blob object itself to Paint via initialData
           launchApp("paint", {
             initialData: { path: file.path, content: contentToUse },
             launchOrigin,
           }); // Pass contentToUse (Blob)
         } else if (
-          file.path.startsWith("/Applets/") &&
+          storeName === STORES.APPLETS &&
           (file.path.endsWith(".app") || file.path.endsWith(".html"))
         ) {
           // Open HTML applets with applet-viewer
@@ -1453,18 +1452,7 @@ export function useFileSystem(
         console.log(
           `[useFileSystem:saveFile] Determining store for path: ${path}`
         );
-        console.log(`[useFileSystem:saveFile] Path checks:`, {
-          startsWithDocuments: path.startsWith("/Documents/"),
-          startsWithImages: path.startsWith("/Images/"),
-          startsWithApplets: path.startsWith("/Applets/"),
-        });
-        const storeName = path.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : path.startsWith("/Images/")
-          ? STORES.IMAGES
-          : path.startsWith("/Applets/")
-          ? STORES.APPLETS
-          : null;
+        const storeName = getStoreForFile(path, { name, type: fileType });
         console.log(`[useFileSystem:saveFile] Selected store: ${storeName}`);
         if (storeName) {
           try {
@@ -1547,16 +1535,14 @@ export function useFileSystem(
       try {
         // Determine source and target stores for content
         const sourcePath = sourceFile.path;
-        const sourceStoreName = sourcePath.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : sourcePath.startsWith("/Images/")
-          ? STORES.IMAGES
-          : null;
-        const targetStoreName = targetFolderPath.startsWith("/Documents")
-          ? STORES.DOCUMENTS
-          : targetFolderPath.startsWith("/Images")
-          ? STORES.IMAGES
-          : null;
+        const sourceStoreName = getStoreForFile(sourcePath, {
+          name: sourceFile.name,
+          type: sourceFile.type,
+        });
+        const targetStoreName = getStoreForFile(newPath, {
+          name: sourceFile.name,
+          type: sourceFile.type,
+        });
 
         // If content needs to move between different stores
         if (
@@ -1628,11 +1614,10 @@ export function useFileSystem(
 
       // 2. Update content metadata (name field) in IndexedDB if it's a file with content
       if (!itemToRename.isDirectory && itemToRename.uuid) {
-        const storeName = oldPath.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : oldPath.startsWith("/Images/")
-          ? STORES.IMAGES
-          : null;
+        const storeName = getStoreForFile(oldPath, {
+          name: itemToRename.name,
+          type: itemToRename.type,
+        });
         if (storeName) {
           try {
             const content = await dbOperations.get<DocumentContent>(
@@ -1704,11 +1689,10 @@ export function useFileSystem(
       removeFileItem(fileMetadata.path);
 
       // 2. Move Content to TRASH DB store
-      const storeName = fileMetadata.path.startsWith("/Documents/")
-        ? STORES.DOCUMENTS
-        : fileMetadata.path.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const storeName = getStoreForFile(fileMetadata.path, {
+        name: fileMetadata.name,
+        type: fileMetadata.type,
+      });
       if (storeName && !fileMetadata.isDirectory && fileMetadata.uuid) {
         try {
           const content = await dbOperations.get<DocumentContent>(
@@ -1767,13 +1751,10 @@ export function useFileSystem(
       restoreFileItem(fileMetadata.path);
 
       // 2. Move Content from TRASH DB store back
-      const targetStoreName = fileMetadata.originalPath.startsWith(
-        "/Documents/"
-      )
-        ? STORES.DOCUMENTS
-        : fileMetadata.originalPath.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const targetStoreName = getStoreForFile(fileMetadata.originalPath, {
+        name: fileMetadata.name,
+        type: fileMetadata.type,
+      });
       if (targetStoreName && !fileMetadata.isDirectory && fileMetadata.uuid) {
         try {
           const content = await dbOperations.get<DocumentContent>(
@@ -1904,11 +1885,10 @@ export function useFileSystem(
 
             // Calculate size if missing
             if (item.size === undefined || item.size === null) {
-              const storeName = item.path.startsWith("/Documents/")
-                ? STORES.DOCUMENTS
-                : item.path.startsWith("/Images/")
-                ? STORES.IMAGES
-                : null;
+              const storeName = getStoreForFile(item.path, {
+                name: item.name,
+                type: item.type,
+              });
 
               if (storeName) {
                 try {
