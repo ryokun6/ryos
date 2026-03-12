@@ -401,7 +401,7 @@ async function _processSingleDayBatch(
   }
 
   const { object: result } = await generateObject({
-    model: google("gemini-2.0-flash"),
+    model: google("gemini-3-flash-preview"),
     schema: dailyNotesExtractionSchema,
     prompt: `${DAILY_NOTES_EXTRACTION_PROMPT}${existingStateSection}\n\n--- DAILY NOTES ---\n${dailyNotesText}\n--- END DAILY NOTES ---\n\nExtract up to ${Math.max(maxExtract, 3)} long-term memories. For existing keys, you may suggest updates via relatedKeys. Return empty array if nothing qualifies.`,
     temperature: 0.3,
@@ -455,7 +455,7 @@ async function _processSingleDayBatch(
         .join("\n\n");
 
       const { object: consolidated } = await generateObject({
-        model: google("gemini-2.0-flash"),
+        model: google("gemini-3-flash-preview"),
         schema: consolidationSchema,
         prompt: `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
         temperature: 0.3,

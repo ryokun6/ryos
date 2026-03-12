@@ -487,7 +487,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     try {
       logger.info("Starting image generation (Gemini)", { promptPartsCount: promptParts.length });
       const imageResult = await generateText({
-        model: google("gemini-2.5-flash-image"),
+        model: google("gemini-3.1-flash-image-preview"),
         messages: [
           {
             role: "user",
@@ -562,7 +562,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
   try {
     logger.info("Starting text generation", { messageCount: finalMessages.length });
     const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-3-flash-preview"),
       messages: finalMessages,
       temperature: temperature ?? 0.6,
       maxOutputTokens: 4000,

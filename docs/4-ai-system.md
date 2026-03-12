@@ -13,9 +13,8 @@ Multi-provider AI with streaming responses, tool-loop orchestration, and a two-t
 Default model: `gpt-5.4`
 
 Specialized models used by specific flows:
-- `gemini-2.5-flash` (proactive greeting, applet text mode, chat-room auto replies)
-- `gemini-2.5-flash-image` (applet image generation)
-- `gemini-2.0-flash` (memory extraction and daily-notes processing)
+- `gemini-3-flash-preview` (proactive greeting, applet text mode, chat-room auto replies, memory extraction, and daily-notes processing)
+- `gemini-3.1-flash-image-preview` (applet image generation)
 
 ```mermaid
 graph TD
@@ -235,7 +234,7 @@ Common endpoint configurations in this AI stack:
 
 ## Additional AI Capabilities
 
-- **Proactive greetings**: `/api/chat` supports a proactive greeting mode for logged-in users with memories. Uses `gemini-2.5-flash` to generate a short, context-aware greeting referencing recent activity or memories. Triggers background daily-note processing on each greeting.
+- **Proactive greetings**: `/api/chat` supports a proactive greeting mode for logged-in users with memories. Uses `gemini-3-flash-preview` to generate a short, context-aware greeting referencing recent activity or memories. Triggers background daily-note processing on each greeting.
 - **Telegram bot DM chat**: `/api/webhooks/telegram` enables private Telegram DM conversations with Ryo. Supports image attachments (downloaded and injected as multimodal content), web search, and server-side tool execution (memory, calendar, stickies, contacts, documents). Users link accounts via `/api/telegram/link/*` endpoints. Includes per-user burst and account-window rate limiting.
 - **Telegram heartbeat insights**: `/api/cron/telegram-heartbeat` runs on a 30-minute cron schedule. Analyzes today's daily notes, recent Telegram conversation, and heartbeat history to decide whether to proactively message the user. Processes daily notes and extracts memories from new chat messages before each decision. Uses gating logic to avoid redundant or stale nudges.
 - **Web search**: OpenAI provider `web_search` tool is automatically enabled for authenticated users on the `gpt-5.4` model. Includes geolocation context (country, city, region, timezone) when available.

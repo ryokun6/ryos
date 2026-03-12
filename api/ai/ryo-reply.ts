@@ -129,7 +129,7 @@ export default apiHandler<RyoReplyRequest>(
     try {
       logger.info("Generating AI reply", { roomId, promptLength: prompt.length });
       const { text } = await generateText({
-        model: google("gemini-2.5-flash"),
+        model: google("gemini-3-flash-preview"),
         messages,
         temperature: 0.6,
       });

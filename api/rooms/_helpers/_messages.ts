@@ -469,7 +469,7 @@ when user asks for an aquarium, fish tank, fishes, or sam's aquarium, include th
   let replyText = "";
   try {
     const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-3-flash-preview"),
       messages,
       temperature: 0.6,
     });
