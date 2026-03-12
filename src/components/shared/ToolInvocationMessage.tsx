@@ -164,6 +164,7 @@ export function ToolInvocationMessage({
         break;
       }
       case "web_search":
+      case "google_search":
         displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
         break;
       case "calendarControl": {
@@ -453,7 +454,7 @@ export function ToolInvocationMessage({
         }
       }
       displayResultMessage = t("apps.chats.toolCalls.foundVideos", { count });
-    } else if (toolName === "web_search") {
+    } else if (toolName === "web_search" || toolName === "google_search") {
       const summary = getWebSearchSummary(output);
       displayResultMessage = summary?.query
         ? t("apps.chats.toolCalls.searchedWebFor", { query: summary.query })

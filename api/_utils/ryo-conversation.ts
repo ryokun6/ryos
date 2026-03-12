@@ -222,15 +222,13 @@ function shouldEnableOpenAIWebSearch({
 }
 
 function shouldEnableGoogleSearch({
-  channel,
   model,
   username,
 }: {
-  channel: RyoConversationChannel;
   model: SupportedModel;
   username?: string | null;
 }): boolean {
-  return channel === "telegram" && model === "gemini-3-flash" && !!username;
+  return model === "gemini-3-flash" && !!username;
 }
 
 function createOpenAIWebSearchTool(
@@ -701,7 +699,7 @@ export async function prepareRyoConversationModelInput(
           web_search: createOpenAIWebSearchTool(systemState),
         }
       : {}),
-    ...(shouldEnableGoogleSearch({ channel, model, username })
+    ...(shouldEnableGoogleSearch({ model, username })
       ? {
           google_search: createGoogleSearchTool(),
         }

@@ -93,6 +93,19 @@ describe("prepareRyoConversationModelInput web search gating", () => {
     expect(prepared.tools.web_search.id).toBe("openai.web_search");
   });
 
+  test("adds google_search for authenticated chat on gemini 3 flash", async () => {
+    const prepared = await prepareConversation({
+      channel: "chat",
+      model: "gemini-3-flash",
+      username: "ryo",
+      systemState: baseSystemState,
+    });
+
+    expect("web_search" in prepared.tools).toBe(false);
+    expect(hasGoogleSearchTool(prepared.tools)).toBe(true);
+    expect(prepared.tools.google_search.id).toBe("google.google_search");
+  });
+
   test("adds google_search for telegram on gemini 3 flash", async () => {
     const prepared = await prepareConversation({
       channel: "telegram",
@@ -105,11 +118,11 @@ describe("prepareRyoConversationModelInput web search gating", () => {
     expect(prepared.tools.google_search.id).toBe("google.google_search");
   });
 
-  test("does not add google_search for non-telegram gemini conversations", async () => {
+  test("does not add google_search for anonymous gemini conversations", async () => {
     const prepared = await prepareConversation({
       channel: "chat",
       model: "gemini-3-flash",
-      username: "ryo",
+      username: null,
       systemState: baseSystemState,
     });
 
