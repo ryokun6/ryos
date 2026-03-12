@@ -459,6 +459,29 @@ describe("telegram heartbeat helpers", () => {
     expect("web_search" in prepared.tools).toBe(true);
   });
 
+  test("heartbeat conversations enable Google search grounding on gemini flash", async () => {
+    const prepared = await prepareRyoConversationModelInput({
+      channel: "telegram",
+      username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
+      model: "gemini-3-flash",
+      messages: [
+        {
+          id: "heartbeat-2",
+          role: "user",
+          content: buildTelegramHeartbeatPrompt({
+            dailyNoteSnapshot: "- 10:15:00: check the latest release notes",
+            recentTelegramSnapshot:
+              "- 2026-03-07T18:00:00.000Z user: what changed in the new release?",
+            heartbeatLogSnapshot: "",
+          }),
+        },
+      ],
+    });
+
+    expect("google_search" in prepared.tools).toBe(true);
+    expect("web_search" in prepared.tools).toBe(false);
+  });
+
   test("detects morning briefing window in the configured timezone", () => {
     const morningStart = new Date("2026-03-11T15:00:00.000Z"); // 8:00 AM PT
     const morningMid = new Date("2026-03-11T15:15:00.000Z"); // 8:15 AM PT

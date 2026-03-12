@@ -5,7 +5,10 @@ import {
   type TextPart,
   type UserContent,
 } from "ai";
-import { google } from "@ai-sdk/google";
+import {
+  google,
+  type GoogleGenerativeAIProviderOptions,
+} from "@ai-sdk/google";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
@@ -117,6 +120,16 @@ const ANON_IMAGE_LIMIT_PER_HOUR = 1;
 const AUTH_TEXT_LIMIT_PER_HOUR = 50;
 const AUTH_IMAGE_LIMIT_PER_HOUR = 12;
 const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
+
+export const APPLET_IMAGE_PROVIDER_OPTIONS = {
+  google: {
+    responseModalities: ["IMAGE", "TEXT"],
+    // Keep generated applet imagery bounded so shared applets do not embed oversized assets.
+    imageConfig: {
+      imageSize: "1K",
+    },
+  } satisfies GoogleGenerativeAIProviderOptions,
+} as const;
 
 type ParsedMessage = z.infer<typeof MessageSchema>;
 
@@ -495,11 +508,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
           },
         ],
         ...(typeof temperature === "number" ? { temperature } : {}),
-        providerOptions: {
-          google: {
-            responseModalities: ["IMAGE", "TEXT"],
-          },
-        },
+        providerOptions: APPLET_IMAGE_PROVIDER_OPTIONS,
       });
 
       const imageFile = imageResult.files?.find((file) =>
