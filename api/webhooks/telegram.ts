@@ -17,6 +17,8 @@ import {
   matchesTelegramCommand,
   parseTelegramTextUpdate,
   sendTelegramMessage,
+  sendTelegramChatAction,
+  sendTelegramVoice,
   type TelegramUpdate,
 } from "../_utils/telegram.js";
 import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
@@ -38,6 +40,10 @@ import {
   getOpenAIProviderOptions,
   type SupportedModel,
 } from "../_utils/_aiModels.js";
+import {
+  generateElevenLabsSpeech,
+  transcribeAudioBuffer,
+} from "../_utils/voice.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
@@ -214,6 +220,23 @@ function injectImageIntoLastUserMessage(
   } as ModelMessage;
 
   return updated;
+}
+
+function getTelegramAudioFilename(mimeType: string): string {
+  const normalizedMimeType = mimeType.toLowerCase();
+  if (normalizedMimeType.includes("ogg")) {
+    return "telegram-voice.ogg";
+  }
+  if (normalizedMimeType.includes("mpeg") || normalizedMimeType.includes("mp3")) {
+    return "telegram-voice.mp3";
+  }
+  if (normalizedMimeType.includes("m4a") || normalizedMimeType.includes("mp4")) {
+    return "telegram-voice.m4a";
+  }
+  if (normalizedMimeType.includes("wav")) {
+    return "telegram-voice.wav";
+  }
+  return "telegram-voice.webm";
 }
 
 function wrapTelegramToolsWithStatus<T extends ToolSet>(
@@ -537,10 +560,53 @@ export default async function handler(
     }
   }
 
+  let voiceTranscript: string | null = null;
+  if (parsedUpdate.voiceFileId) {
+    try {
+      const voiceData = await downloadTelegramFile({
+        botToken,
+        fileId: parsedUpdate.voiceFileId,
+      });
+      voiceTranscript = (await transcribeAudioBuffer({
+        buffer: voiceData.data,
+        fileName: getTelegramAudioFilename(voiceData.mimeType),
+        mimeType: voiceData.mimeType || "audio/ogg",
+      })).trim();
+      logger.info("Transcribed Telegram voice note", {
+        mimeType: voiceData.mimeType,
+        sizeBytes: voiceData.data.length,
+        textLength: voiceTranscript.length,
+      });
+    } catch (err) {
+      logger.warn("Failed to transcribe Telegram voice note", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    if (!voiceTranscript) {
+      await sendTelegramInfoMessage(
+        botToken,
+        parsedUpdate.chatId,
+        "i couldn't transcribe that voice message. try another one or send text instead.",
+        parsedUpdate.messageId
+      );
+      await markTelegramUpdateProcessed(redis, parsedUpdate.updateId);
+      logger.response(200, Date.now() - startTime);
+      sendJson(res, 200, {
+        success: true,
+        transcribed: false,
+        reason: "voice-transcription-failed",
+      });
+      return;
+    }
+  }
+
   const history = await loadTelegramConversationHistory(redis, parsedUpdate.chatId);
-  const userMessageText = imageData && !parsedUpdate.text
-    ? "[sent an image]"
-    : parsedUpdate.text;
+  const userMessageText = voiceTranscript
+    ? voiceTranscript
+    : imageData && !parsedUpdate.text
+      ? "[sent an image]"
+      : parsedUpdate.text;
 
   const conversationMessages: SimpleConversationMessage[] = [
     ...history.map((message, index) => ({
@@ -679,6 +745,31 @@ export default async function handler(
       return;
     }
 
+    let voiceReplyMessageId: number | null = null;
+    try {
+      await sendTelegramChatAction({
+        botToken,
+        chatId: parsedUpdate.chatId,
+        action: "upload_voice",
+      });
+      const voiceReplyAudio = await generateElevenLabsSpeech({
+        text: replyText,
+      });
+      voiceReplyMessageId = await sendTelegramVoice({
+        botToken,
+        chatId: parsedUpdate.chatId,
+        voice: voiceReplyAudio,
+        replyToMessageId: parsedUpdate.messageId,
+        mimeType: "audio/mpeg",
+      });
+    } catch (error) {
+      logger.warn("Failed to send Telegram voice reply, keeping text reply only", {
+        username: linkedAccount.username,
+        updateId: parsedUpdate.updateId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     const timestamp = Date.now();
     await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
       role: "user",
@@ -698,11 +789,17 @@ export default async function handler(
       telegramUserId: parsedUpdate.telegramUserId,
       updateId: parsedUpdate.updateId,
       hasImage: !!imageData,
+      hasVoiceInput: !!parsedUpdate.voiceFileId,
       replyLength: replyText.length,
       previewMode,
+      voiceReplyMessageId,
     });
     logger.response(200, Date.now() - startTime);
-    sendJson(res, 200, { success: true, reply: replyText });
+    sendJson(res, 200, {
+      success: true,
+      reply: replyText,
+      voiceReplySent: voiceReplyMessageId !== null,
+    });
   } finally {
     await statusReporter.dispose();
   }

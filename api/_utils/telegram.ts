@@ -24,6 +24,14 @@ export interface TelegramPhotoSize {
   file_size?: number;
 }
 
+export interface TelegramVoice {
+  file_id: string;
+  file_unique_id?: string;
+  duration?: number;
+  mime_type?: string;
+  file_size?: number;
+}
+
 export interface TelegramMessage {
   message_id: number;
   from?: TelegramUser;
@@ -32,6 +40,7 @@ export interface TelegramMessage {
   text?: string;
   caption?: string;
   photo?: TelegramPhotoSize[];
+  voice?: TelegramVoice;
 }
 
 export interface TelegramUpdate {
@@ -52,6 +61,7 @@ export interface ParsedTelegramTextUpdate {
   isPrivateChat: boolean;
   startPayload: string | null;
   photoFileId: string | null;
+  voiceFileId: string | null;
 }
 
 export interface TelegramSendMessageOptions {
@@ -68,6 +78,21 @@ export interface TelegramSendMessageDraftOptions {
   chatId: string;
   draftId: number;
   text: string;
+  fetchImpl?: typeof fetch;
+}
+
+export interface TelegramSendVoiceOptions {
+  botToken: string;
+  chatId: string;
+  voice:
+    | Uint8Array
+    | Buffer
+    | ArrayBuffer
+    | Blob;
+  replyToMessageId?: number;
+  durationSeconds?: number;
+  mimeType?: string;
+  filename?: string;
   fetchImpl?: typeof fetch;
 }
 
@@ -89,7 +114,7 @@ export interface TelegramDeleteMessageOptions {
 export interface TelegramChatActionOptions {
   botToken: string;
   chatId: string;
-  action: "typing";
+  action: "typing" | "record_voice" | "upload_voice";
   fetchImpl?: typeof fetch;
 }
 
@@ -213,10 +238,13 @@ export function parseTelegramTextUpdate(
   }
 
   const hasPhoto = Array.isArray(message.photo) && message.photo.length > 0;
+  const hasVoice =
+    typeof message.voice?.file_id === "string" &&
+    message.voice.file_id.trim().length > 0;
   const hasText = typeof message.text === "string" && message.text.trim().length > 0;
   const hasCaption = typeof message.caption === "string" && message.caption.trim().length > 0;
 
-  if (!hasText && !hasPhoto) {
+  if (!hasText && !hasPhoto && !hasVoice) {
     return null;
   }
 
@@ -229,6 +257,7 @@ export function parseTelegramTextUpdate(
   const photoFileId = hasPhoto
     ? message.photo![message.photo!.length - 1].file_id
     : null;
+  const voiceFileId = hasVoice ? message.voice!.file_id.trim() : null;
 
   return {
     updateId: update.update_id,
@@ -252,6 +281,7 @@ export function parseTelegramTextUpdate(
     isPrivateChat: message.chat.type === "private",
     startPayload: text ? extractTelegramStartPayload(text) : null,
     photoFileId,
+    voiceFileId,
   };
 }
 
@@ -324,6 +354,56 @@ export async function sendTelegramMessageDraft({
   const body = await response.text();
   throw new Error(
     `Telegram sendMessageDraft failed (${response.status})${
+      body ? `: ${body}` : ""
+    }`
+  );
+}
+
+export async function sendTelegramVoice({
+  botToken,
+  chatId,
+  voice,
+  replyToMessageId,
+  durationSeconds,
+  mimeType = "audio/mpeg",
+  filename = "ryo-voice.mp3",
+  fetchImpl = fetch,
+}: TelegramSendVoiceOptions): Promise<number | null> {
+  const formData = new FormData();
+  const voiceBlob =
+    voice instanceof Blob
+      ? voice
+      : new Blob([voice], { type: mimeType });
+
+  formData.append("chat_id", chatId);
+  formData.append("voice", voiceBlob, filename);
+  if (replyToMessageId) {
+    formData.append("reply_to_message_id", String(replyToMessageId));
+  }
+  if (typeof durationSeconds === "number" && durationSeconds > 0) {
+    formData.append("duration", String(Math.round(durationSeconds)));
+  }
+
+  const response = await fetchImpl(buildTelegramApiUrl(botToken, "sendVoice"), {
+    method: "POST",
+    body: formData,
+  });
+
+  if (response.ok) {
+    try {
+      const data = (await response.json()) as {
+        ok?: boolean;
+        result?: { message_id?: number };
+      };
+      return typeof data.result?.message_id === "number" ? data.result.message_id : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const body = await response.text();
+  throw new Error(
+    `Telegram sendVoice failed (${response.status})${
       body ? `: ${body}` : ""
     }`
   );

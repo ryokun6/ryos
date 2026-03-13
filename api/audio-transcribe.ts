@@ -1,10 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import OpenAI from "openai";
-import { toFile } from "openai/uploads";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import { initLogger } from "./_utils/_logging.js";
+import { transcribeAudioBuffer } from "./_utils/voice.js";
 import formidable from "formidable";
 import fs from "fs";
 
@@ -25,10 +24,6 @@ interface OpenAIError {
     message: string;
   };
 }
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB limit imposed by OpenAI
 
@@ -171,20 +166,15 @@ export default async function handler(
     // (temp path from formidable may lack extension, causing 400 "Invalid file format")
     const buffer = await fs.promises.readFile(audioFile.filepath);
     fs.unlink(audioFile.filepath, () => {});
-    const file = await toFile(
+    const transcriptionText = await transcribeAudioBuffer({
       buffer,
-      audioFile.originalFilename || "recording.webm",
-      { type: audioFile.mimetype || "audio/webm" }
-    );
-
-    const transcription = await openai.audio.transcriptions.create({
-      file,
-      model: "whisper-1",
+      fileName: audioFile.originalFilename || "recording.webm",
+      mimeType: audioFile.mimetype || "audio/webm",
     });
 
-    logger.info("Transcription completed", { textLength: transcription.text.length });
+    logger.info("Transcription completed", { textLength: transcriptionText.length });
     logger.response(200, Date.now() - startTime);
-    res.status(200).json({ text: transcription.text });
+    res.status(200).json({ text: transcriptionText });
 
   } catch (error: unknown) {
     logger.error("Error processing audio", error);

@@ -252,6 +252,50 @@ describe("telegram webhook", () => {
     expect(mockRequests).toHaveLength(0);
   });
 
+  test("treats unlinked voice notes as valid telegram messages", async () => {
+    mockRequests.length = 0;
+
+    const res = await fetch(`${TEST_BASE_URL}/api/webhooks/telegram`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": WEBHOOK_SECRET,
+      },
+      body: JSON.stringify({
+        update_id: UPDATE_ID_BASE + 22,
+        message: {
+          message_id: 22,
+          from: {
+            id: RUN_ID + 7022,
+            first_name: "Voice",
+          },
+          chat: {
+            id: RUN_ID + 7022,
+            type: "private",
+          },
+          voice: {
+            file_id: "voice-file-22",
+            duration: 3,
+            mime_type: "audio/ogg",
+          },
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.linked).toBe(false);
+    expect(data.reason).toBe("not-linked");
+
+    const sendMessageRequest = mockRequests.find((request) =>
+      request.path.endsWith("/sendMessage")
+    );
+    expect(sendMessageRequest).toBeTruthy();
+    expect((sendMessageRequest?.body as { text?: string }).text).toContain(
+      "link your Telegram account from ryOS first"
+    );
+  });
+
   test("consumes link code and sends Telegram confirmation", async () => {
     expect(token).toBeTruthy();
     mockRequests.length = 0;

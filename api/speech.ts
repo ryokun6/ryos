@@ -3,31 +3,21 @@ import { openai } from "@ai-sdk/openai";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import {
+  DEFAULT_ELEVENLABS_MODEL_ID,
+  DEFAULT_ELEVENLABS_OUTPUT_FORMAT,
+  DEFAULT_ELEVENLABS_VOICE_ID,
+  DEFAULT_ELEVENLABS_VOICE_SETTINGS,
+  DEFAULT_OPENAI_TTS_SPEED,
+  DEFAULT_OPENAI_TTS_VOICE,
+  DEFAULT_TTS_MODEL,
+  generateElevenLabsSpeech,
+  type ElevenLabsOutputFormat,
+  type ElevenLabsVoiceSettings,
+} from "./_utils/voice.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-// --- Default Configuration -----------------------------------------------
-
-// Default model selection ("openai" or "elevenlabs")
-const DEFAULT_MODEL = "elevenlabs";
-
-// OpenAI defaults
-const DEFAULT_OPENAI_VOICE = "alloy";
-const DEFAULT_OPENAI_SPEED = 1.1;
-
-// ElevenLabs defaults
-const DEFAULT_ELEVENLABS_VOICE_ID = "kAyjEabBEu68HYYYRAHR"; // Ryo v3
-const DEFAULT_ELEVENLABS_MODEL_ID = "eleven_turbo_v2_5"; // 2.5 turbo
-const DEFAULT_ELEVENLABS_OUTPUT_FORMAT = "mp3_44100_128";
-const DEFAULT_ELEVENLABS_VOICE_SETTINGS = {
-  stability: 0.3,
-  similarity_boost: 0.8,
-  use_speaker_boost: true,
-  speed: 1.1,
-};
-
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
 interface SpeechRequest {
   text: string;
@@ -37,65 +27,9 @@ interface SpeechRequest {
   model?: "openai" | "elevenlabs" | null;
   voice_id?: string | null;
   model_id?: string;
-  output_format?:
-    | "mp3_44100_128"
-    | "mp3_22050_32"
-    | "pcm_16000"
-    | "pcm_22050"
-    | "pcm_24000"
-    | "pcm_44100"
-    | "ulaw_8000";
-  voice_settings?: {
-    stability?: number;
-    similarity_boost?: number;
-    use_speaker_boost?: boolean;
-    speed?: number;
-  };
+  output_format?: ElevenLabsOutputFormat;
+  voice_settings?: ElevenLabsVoiceSettings;
 }
-
-// ElevenLabs API function
-const generateElevenLabsSpeech = async (
-  text: string,
-  voice_id: string = DEFAULT_ELEVENLABS_VOICE_ID,
-  model_id: string = DEFAULT_ELEVENLABS_MODEL_ID,
-  output_format:
-    | "mp3_44100_128"
-    | "mp3_22050_32"
-    | "pcm_16000"
-    | "pcm_22050"
-    | "pcm_24000"
-    | "pcm_44100"
-    | "ulaw_8000" = DEFAULT_ELEVENLABS_OUTPUT_FORMAT as "mp3_44100_128",
-  voice_settings: SpeechRequest["voice_settings"] = DEFAULT_ELEVENLABS_VOICE_SETTINGS
-): Promise<ArrayBuffer> => {
-  if (!ELEVENLABS_API_KEY) {
-    throw new Error("ElevenLabs API key not configured");
-  }
-
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${voice_id}/stream`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "audio/mpeg",
-      "Content-Type": "application/json",
-      "xi-api-key": ELEVENLABS_API_KEY,
-    },
-    body: JSON.stringify({
-      text,
-      model_id,
-      output_format,
-      voice_settings,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`);
-  }
-
-  return await response.arrayBuffer();
-};
 
 export default apiHandler<SpeechRequest>(
   {
@@ -226,35 +160,35 @@ export default apiHandler<SpeechRequest>(
       let audioData: ArrayBuffer;
       let mimeType = "audio/mpeg";
 
-      const selectedModel = model || DEFAULT_MODEL;
+      const selectedModel = model || DEFAULT_TTS_MODEL;
 
       if (selectedModel === "elevenlabs") {
-        if (!ELEVENLABS_API_KEY) {
+        if (!process.env.ELEVENLABS_API_KEY) {
           logger.response(503, Date.now() - startTime);
           res.status(503).json({ error: "ElevenLabs API key not configured" });
           return;
         }
 
         const elevenlabsVoiceId = voice_id || DEFAULT_ELEVENLABS_VOICE_ID;
-        audioData = await generateElevenLabsSpeech(
-          text.trim(),
-          elevenlabsVoiceId,
-          model_id || DEFAULT_ELEVENLABS_MODEL_ID,
-          output_format,
-          voice_settings
-        );
+        audioData = await generateElevenLabsSpeech({
+          text: text.trim(),
+          voiceId: elevenlabsVoiceId,
+          modelId: model_id || DEFAULT_ELEVENLABS_MODEL_ID,
+          outputFormat: output_format,
+          voiceSettings: voice_settings,
+        });
         logger.info("ElevenLabs speech generated", {
           bytes: audioData.byteLength,
           voice_id: elevenlabsVoiceId,
         });
       } else {
-        const openaiVoice = voice || DEFAULT_OPENAI_VOICE;
+        const openaiVoice = voice || DEFAULT_OPENAI_TTS_VOICE;
         const { audio } = await generateSpeech({
           model: openai.speech("tts-1"),
           text: text.trim(),
           voice: openaiVoice,
           outputFormat: "mp3",
-          speed: speed ?? DEFAULT_OPENAI_SPEED,
+          speed: speed ?? DEFAULT_OPENAI_TTS_SPEED,
         });
 
         audioData = audio.uint8Array.slice().buffer;
