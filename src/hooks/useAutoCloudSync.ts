@@ -327,7 +327,7 @@ export function useAutoCloudSync() {
       // Pre-suppress ALL domains before applying any. Applying one domain
       // can trigger side-effect uploads on another (e.g. settings apply
       // changes currentWallpaper → subscriber queues custom-wallpapers
-      // upload while IndexedDB is still empty). A generous window ensures
+      // upload while browser storage is still empty). A generous window ensures
       // the entire batch completes before any upload can fire.
       const batchSuppressUntil = Date.now() + BATCH_INFLIGHT_SUPPRESSION_MS;
       for (const d of CLOUD_SYNC_DOMAINS) {

@@ -1388,7 +1388,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 throw new Error("Failed to save document metadata");
               }
 
-              // Save content to IndexedDB
+              // Save content to persisted browser storage
               await dbOperations.put<DocumentContent>(
                 STORES.DOCUMENTS,
                 { name: fileName, content: finalContent },
@@ -1499,7 +1499,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`);
                 }
 
-                // Read existing content from IndexedDB
+                // Read existing content from persisted browser storage
                 const contentData = await dbOperations.get<DocumentContent>(STORES.DOCUMENTS, fileItem.uuid);
                 if (!contentData?.content) {
                   throw new Error(`Failed to read document content: ${path}`);
@@ -1540,7 +1540,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Replace exactly one occurrence
                 const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
 
-                // Save updated content to IndexedDB
+                // Save updated content to persisted browser storage
                 await dbOperations.put<DocumentContent>(
                   STORES.DOCUMENTS,
                   { name: fileItem.name, content: updatedContent },
@@ -1629,7 +1629,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Replace exactly one occurrence
                 const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
 
-                // Save to IndexedDB
+                // Save to persisted browser storage
                 await dbOperations.put<DocumentContent>(
                   STORES.APPLETS,
                   { name: fileItem.uuid, content: updatedContent },

@@ -636,12 +636,12 @@ export function useControlPanelsLogic({
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.collecting"), percent: 10 });
 
-      // Backup IndexedDB data
+      // Backup persisted browser-content data
       try {
         setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.serializing"), percent: 20 });
         backup.indexedDB = await backupIndexedDbStores();
       } catch (error) {
-        console.error("[CloudSync] Error backing up IndexedDB:", error);
+        console.error("[CloudSync] Error backing up browser content storage:", error);
       }
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.compressing"), percent: 35 });
@@ -991,12 +991,12 @@ export function useControlPanelsLogic({
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 75 });
 
-      // Restore IndexedDB data if available
+      // Restore persisted browser-content data if available
       if (backup.indexedDB) {
         try {
           await restoreIndexedDbStores(backup.indexedDB);
         } catch (error) {
-          console.error("[CloudSync] Error restoring IndexedDB:", error);
+          console.error("[CloudSync] Error restoring browser content storage:", error);
         }
       }
 
@@ -1189,11 +1189,11 @@ export function useControlPanelsLogic({
       }
     }
 
-    // Backup IndexedDB data
+    // Backup persisted browser-content data
     try {
       backup.indexedDB = await backupIndexedDbStores();
     } catch (error) {
-      console.error("Error backing up IndexedDB:", error);
+      console.error("Error backing up browser content storage:", error);
       alert(t("apps.control-panels.alerts.failedToBackupFileSystem"));
     }
 
@@ -1341,12 +1341,12 @@ export function useControlPanelsLogic({
           }
         });
 
-        // Restore IndexedDB data if available
+        // Restore persisted browser-content data if available
         if (backup.indexedDB) {
           try {
             await restoreIndexedDbStores(backup.indexedDB);
           } catch (error) {
-            console.error("Error restoring IndexedDB:", error);
+            console.error("Error restoring browser content storage:", error);
             alert(t("apps.control-panels.alerts.failedToRestoreFileSystem"));
           }
         }

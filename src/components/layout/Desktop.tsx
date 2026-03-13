@@ -512,15 +512,15 @@ export function Desktop({
     // 1. Permanently delete metadata from FileStore and get UUIDs of files whose content needs deletion
     const contentUUIDsToDelete = emptyTrash();
 
-    // 2. Clear corresponding content from TRASH IndexedDB store
+    // 2. Clear corresponding content from the TRASH browser-content store
     try {
       // Delete content based on UUIDs collected from emptyTrash()
       for (const uuid of contentUUIDsToDelete) {
         await dbOperations.delete(STORES.TRASH, uuid);
       }
-      console.log("[Desktop] Cleared trash content from IndexedDB.");
+      console.log("[Desktop] Cleared trash content from browser storage.");
     } catch (err) {
-      console.error("Error clearing trash content from IndexedDB:", err);
+      console.error("Error clearing trash content from browser storage:", err);
     }
     
     setIsEmptyTrashDialogOpen(false);

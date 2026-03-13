@@ -698,7 +698,7 @@ const createUseAppStore = () =>
                   ...instWithoutLaunchOrigin,
                   initialData: {
                     ...appletData,
-                    content: "", // Exclude content - it should be loaded from IndexedDB
+                    content: "", // Exclude content - it should be loaded from persisted storage
                   },
                 }];
               }

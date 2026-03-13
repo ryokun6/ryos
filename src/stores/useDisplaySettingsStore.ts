@@ -108,7 +108,7 @@ interface DisplaySettingsState {
   htmlPreviewSplit: boolean;
   setHtmlPreviewSplit: (v: boolean) => void;
 
-  // Non-persisted revision counter — incremented when IndexedDB custom wallpapers change
+  // Non-persisted revision counter — incremented when custom wallpapers change
   customWallpapersRevision: number;
   bumpCustomWallpapersRevision: () => void;
 }

@@ -5,7 +5,7 @@ Browser-based hierarchical virtual file system with two-layer architecture for m
 ## Two-Layer Architecture
 
 - **Metadata Layer** (Zustand + localStorage): File paths, names, types, UUIDs, timestamps, and status
-- **Content Layer** (IndexedDB): Actual file content indexed by UUID for efficient storage
+- **Content Layer** (OPFS): Actual file content indexed by UUID for efficient storage
 
 ```mermaid
 graph TB
@@ -21,7 +21,7 @@ graph TB
     end
     
     subgraph Content["Content Layer"]
-        IDB[(IndexedDB)]
+        OPFS[(OPFS)]
         subgraph Stores["Object Stores"]
             Docs[documents]
             Imgs[images]
@@ -36,8 +36,8 @@ graph TB
     Hook --> FinderStore
     FilesStore <--> LocalStorage
     FinderStore <--> LocalStorage
-    Hook -->|"UUID lookup"| IDB
-    IDB --> Stores
+    Hook -->|"UUID lookup"| OPFS
+    OPFS --> Stores
 ```
 
 ## Key Stores
@@ -46,7 +46,7 @@ graph TB
 |-------|---------|-------------|
 | `useFilesStore` | File/folder metadata, paths, UUIDs, status | localStorage |
 | `useFinderStore` | Finder window instances, navigation history, view preferences | localStorage |
-| IndexedDB | File content (text, images, applets) | Browser storage |
+| OPFS | File content (text, images, applets, wallpapers) | Browser storage |
 
 ## Directory Structure
 
@@ -80,9 +80,9 @@ graph TD
     Videos -.->|"from useVideoStore"| VidLib[(Video Library)]
     Sites -.->|"from useInternetExplorerStore"| IEFav[(IE Favorites)]
     
-    Docs -->|"stored in"| IDB[(IndexedDB)]
-    Imgs -->|"stored in"| IDB
-    Applets -->|"stored in"| IDB
+    Docs -->|"stored in"| OPFS[(OPFS)]
+    Imgs -->|"stored in"| OPFS
+    Applets -->|"stored in"| OPFS
 ```
 
 ## File Metadata
@@ -98,7 +98,7 @@ interface FileSystemItem {
   appId?: string;         // Associated application ID
   
   // Content reference
-  uuid?: string;          // UUID for IndexedDB content lookup (files only)
+  uuid?: string;          // UUID for OPFS content lookup (files only)
   
   // File properties
   size?: number;          // File size in bytes
@@ -126,7 +126,7 @@ interface FileSystemItem {
 }
 ```
 
-## IndexedDB Storage
+## OPFS Storage
 
 Database: `ryOS` (version 7)
 
@@ -138,7 +138,7 @@ Database: `ryOS` (version 7)
 | `trash` | Deleted file content | UUID |
 | `custom_wallpapers` | User wallpapers | UUID |
 
-Content structure stored in IndexedDB:
+Content structure stored in OPFS:
 ```typescript
 interface StoredContent {
   name: string;               // Original filename
@@ -201,7 +201,7 @@ await saveFile({
 ### Move to Trash Flow
 1. Mark item as `status: "trashed"` in metadata
 2. Store `originalPath` and `deletedAt` timestamp
-3. For Documents/Images files, move content from original store to `trash` store in IndexedDB
+3. For Documents/Images files, move content from the original store to the `trash` store in OPFS
 4. Update Trash folder icon (`trash-full.png`)
 
 ### Restore from Trash Flow
@@ -305,10 +305,10 @@ function getFileTypeFromExtension(fileName: string): string {
 
 | Extension | Type | Opens With | Storage |
 |-----------|------|------------|---------|
-| `.md` | Markdown | TextEdit | IndexedDB (documents) |
-| `.txt` | Plain text | TextEdit | IndexedDB (documents) |
-| `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp` | Image | Paint | IndexedDB (images) |
-| `.app`, `.html` | HTML Applet | Applet Viewer | IndexedDB (applets) |
+| `.md` | Markdown | TextEdit | OPFS (documents) |
+| `.txt` | Plain text | TextEdit | OPFS (documents) |
+| `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp` | Image | Paint | OPFS (images) |
+| `.app`, `.html` | HTML Applet | Applet Viewer | OPFS (applets) |
 | `.mp3` | Audio | iPod | Virtual (iPod store) |
 | `.mov` | Video | Videos | Virtual (Video store) |
 | `.webloc` | Web link | Internet Explorer | Virtual (IE store) |

@@ -24,7 +24,7 @@ interface WallpaperItemProps {
   onClick: () => void;
   isTile?: boolean;
   isVideo?: boolean;
-  previewUrl?: string; // For IndexedDB references
+  previewUrl?: string; // For persisted-storage references
 }
 
 function WallpaperItem({
@@ -215,7 +215,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return "tiles";
   });
 
-  // Load custom wallpapers from IndexedDB (just the references)
+  // Load custom wallpapers from persisted browser storage (just the references)
   useEffect(() => {
     let isActive = true;
 

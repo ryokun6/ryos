@@ -13,7 +13,7 @@ import {
   storageItemExists,
 } from "./opfsStorage";
 
-// Structure for content stored in IndexedDB
+// Structure for content stored in persisted browser content storage
 export interface StoredContent {
   name: string;
   content: string | Blob;
@@ -49,7 +49,7 @@ const getExtension = (value?: string): string => {
 };
 
 /**
- * Save file content to IndexedDB.
+ * Save file content to persisted browser storage.
  * @param uuid - Unique identifier for the content
  * @param name - Filename
  * @param content - Content to store (string or Blob)
@@ -65,7 +65,7 @@ export async function saveFileContent(
 }
 
 /**
- * Load file content from IndexedDB.
+ * Load file content from persisted browser storage.
  * @param uuid - Unique identifier for the content
  * @param storeName - Which store to load from
  * @returns The stored content or null if not found
@@ -78,7 +78,7 @@ export async function loadFileContent(
 }
 
 /**
- * Delete file content from IndexedDB.
+ * Delete file content from persisted browser storage.
  * @param uuid - Unique identifier for the content to delete
  * @param storeName - Which store to delete from
  */
@@ -90,7 +90,7 @@ export async function deleteFileContent(
 }
 
 /**
- * Check if content exists in IndexedDB.
+ * Check if content exists in persisted browser storage.
  * @param uuid - Unique identifier for the content
  * @param storeName - Which store to check
  */
@@ -102,7 +102,7 @@ export async function contentExists(
 }
 
 /**
- * Batch save multiple files to IndexedDB.
+ * Batch save multiple files to persisted browser storage.
  * More efficient than individual saves for multiple files.
  * @param files - Array of files to save
  * @param storeName - Which store to save to
@@ -123,7 +123,7 @@ export async function batchSaveFileContent(
 }
 
 /**
- * Batch delete multiple files from IndexedDB.
+ * Batch delete multiple files from persisted browser storage.
  * @param uuids - Array of UUIDs to delete
  * @param storeName - Which store to delete from
  */

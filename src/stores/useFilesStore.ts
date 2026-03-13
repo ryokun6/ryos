@@ -297,7 +297,8 @@ function registerFilesForLazyLoad(
 
 /**
  * Load content for a specific file on-demand (lazy loading).
- * Call this when a file is opened to ensure its content is in IndexedDB.
+ * Call this when a file is opened to ensure its content is available in
+ * persisted browser storage.
  * Returns true if content was loaded (or already exists), false on error.
  */
 export async function ensureFileContentLoaded(
@@ -327,7 +328,7 @@ export async function ensureFileContentLoaded(
       checkComplete();
     });
     
-    // Bug fix: After waiting, verify content was actually loaded by checking IndexedDB
+    // Bug fix: After waiting, verify content was actually loaded by checking storage
     // The first request might have failed, so we need to verify
     try {
       return await storageItemExists(storeName, uuid);
@@ -382,7 +383,7 @@ export async function ensureFileContentLoaded(
   }
 }
 
-// Save default file contents into IndexedDB using generated UUIDs
+// Save default file contents into persisted browser storage using generated UUIDs
 // Optimized: Only saves text content immediately, defers binary assets for lazy loading
 async function saveDefaultContents(
   files: FileSystemItemData[],

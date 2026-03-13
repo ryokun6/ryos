@@ -991,7 +991,7 @@ export function useFileSystem(
       let contentAsString: string | undefined = undefined;
 
       try {
-        // Fetch content from IndexedDB (Documents, Images, or Applets)
+        // Fetch content from persisted browser storage (Documents, Images, or Applets)
         const storeName = getStoreForFile(file.path, {
           name: file.name,
           type: file.type,
@@ -1018,7 +1018,7 @@ export function useFileSystem(
               contentToUse = contentData.content;
             } else {
               console.warn(
-                `[useFileSystem] Content not found in IndexedDB for ${file.path} (UUID: ${fileMetadata.uuid})`
+                `[useFileSystem] Content not found in browser storage for ${file.path} (UUID: ${fileMetadata.uuid})`
               );
               // For applets, fetch content from the share service on first load
               if (storeName === STORES.APPLETS) {
@@ -1401,7 +1401,7 @@ export function useFileSystem(
           `[useFileSystem:saveFile] Metadata store updated for: ${path} with UUID: ${savedItem.uuid}`
         );
 
-        // 3. Save Content to IndexedDB using UUID
+        // 3. Save content to browser storage using UUID
         console.log(
           `[useFileSystem:saveFile] Determining store for path: ${path}`
         );
@@ -1414,7 +1414,7 @@ export function useFileSystem(
               content: content,
             };
             console.log(
-              `[useFileSystem:saveFile] Saving content to IndexedDB (${storeName}) with UUID: ${savedItem.uuid}`
+              `[useFileSystem:saveFile] Saving content to browser storage (${storeName}) with UUID: ${savedItem.uuid}`
             );
             await dbOperations.put<DocumentContent>(
               storeName,
@@ -1426,11 +1426,11 @@ export function useFileSystem(
               emitCloudSyncDomainChange(syncDomain);
             }
             console.log(
-              `[useFileSystem:saveFile] Content saved to IndexedDB with UUID: ${savedItem.uuid}`
+              `[useFileSystem:saveFile] Content saved to browser storage with UUID: ${savedItem.uuid}`
             );
           } catch (err) {
             console.error(
-              `[useFileSystem:saveFile] Error saving content to IndexedDB for ${path}:`,
+              `[useFileSystem:saveFile] Error saving content to browser storage for ${path}:`,
               err
             );
             setError(`Failed to save file content for ${name}`);
@@ -1565,7 +1565,7 @@ export function useFileSystem(
       // 1. Rename Metadata in FileStore (preserves UUID)
       renameFileItem(oldPath, newPath, newName);
 
-      // 2. Update content metadata (name field) in IndexedDB if it's a file with content
+      // 2. Update stored content metadata (name field) if it's a file with content
       if (!itemToRename.isDirectory && itemToRename.uuid) {
         const storeName = getStoreForFile(oldPath, {
           name: itemToRename.name,
@@ -1593,7 +1593,7 @@ export function useFileSystem(
               }
             } else {
               console.warn(
-                "Warning: Content not found in IndexedDB for renaming"
+                "Warning: Content not found in browser storage for renaming"
               );
             }
           } catch (err) {
@@ -1750,7 +1750,7 @@ export function useFileSystem(
     // 1. Permanently delete metadata from FileStore and get UUIDs of files whose content needs deletion
     const contentUUIDsToDelete = emptyTrashMetadata();
 
-    // 2. Clear corresponding content from TRASH IndexedDB store
+    // 2. Clear corresponding content from the TRASH browser-content store
     try {
       // Delete content based on UUIDs collected from fileStore.emptyTrash()
       for (const uuid of contentUUIDsToDelete) {
@@ -1759,9 +1759,9 @@ export function useFileSystem(
       if (contentUUIDsToDelete.length > 0) {
         emitCloudSyncDomainChange("files-trash");
       }
-      console.log("[useFileSystem] Cleared trash content from IndexedDB.");
+      console.log("[useFileSystem] Cleared trash content from browser storage.");
     } catch (err) {
-      console.error("Error clearing trash content from IndexedDB:", err);
+      console.error("Error clearing trash content from browser storage:", err);
       setError("Failed to empty trash storage.");
     }
   }, [emptyTrashMetadata]);

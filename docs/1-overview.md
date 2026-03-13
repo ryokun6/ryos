@@ -17,7 +17,7 @@ graph TB
     end
     
     subgraph Data["Data Layer"]
-        IndexedDB[(IndexedDB)]
+        OPFS[(OPFS)]
         LocalStorage[(LocalStorage)]
         API[Vercel + Bun API]
     end
@@ -31,7 +31,7 @@ graph TB
     
     Apps --> Zustand
     UI --> Zustand
-    Zustand --> IndexedDB
+    Zustand --> OPFS
     Zustand --> LocalStorage
     Zustand --> API
     API --> AI
@@ -56,7 +56,7 @@ graph TB
 - **[Multi-Theme Support](/docs/theme-system):** System 7, Mac OS X (Aqua), Windows XP, Windows 98
 - **[23 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
-- **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading and cloud sync
+- **[Virtual File System](/docs/file-system):** OPFS-backed with lazy loading and cloud sync
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
 - **[Audio System](/docs/audio-system):** Synthesizer, soundboard, TTS, and UI sounds
 - **[Component Library](/docs/component-library):** shadcn/ui + custom components with i18n
@@ -70,11 +70,11 @@ graph TB
 | Category | Technologies |
 |----------|-------------|
 | Frontend | React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion |
-| State | Zustand with localStorage/IndexedDB persistence |
+| State | Zustand with localStorage/OPFS-backed persistence |
 | Audio | Tone.js, WaveSurfer.js, Web Audio API |
 | 3D | Three.js (shaders) |
 | Text Editor | TipTap |
-| Storage | IndexedDB, LocalStorage, Redis (Upstash REST / standard), Vercel Blob / S3-compatible |
+| Storage | OPFS, LocalStorage, Redis (Upstash REST / standard), Vercel Blob / S3-compatible |
 | API Runtime | Vercel Node.js handlers + standalone Bun server |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher or local WebSocket (with Redis pub/sub fanout) |
