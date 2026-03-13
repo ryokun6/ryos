@@ -47,11 +47,13 @@ export function WidgetChrome({
   const [isFlipAnimating, setIsFlipAnimating] = useState(false);
   const flipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragStartRef = useRef<{ px: number; py: number; startX: number; startY: number } | null>(null);
+  const stackedTapStartRef = useRef<{ px: number; py: number } | null>(null);
+  const stackedTapMovedRef = useRef(false);
   const didDragRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const isStacked = layoutMode === "stacked";
 
-  const showControls = isStacked || isHovered || isTouchActive;
+  const showControls = isHovered || isTouchActive;
 
   useEffect(() => {
     if (!isTouchActive) return;
@@ -119,6 +121,52 @@ export function WidgetChrome({
     setIsDragging(false);
   }, []);
 
+  const handleStackedPointerDown = useCallback((e: React.PointerEvent) => {
+    if (!isStacked || e.pointerType !== "touch") return;
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-close-btn], [data-flip-btn], button, input, select, textarea, a")) {
+      return;
+    }
+    stackedTapStartRef.current = { px: e.clientX, py: e.clientY };
+    stackedTapMovedRef.current = false;
+  }, [isStacked]);
+
+  const handleStackedPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!stackedTapStartRef.current) return;
+    if (
+      Math.abs(e.clientX - stackedTapStartRef.current.px) > 6 ||
+      Math.abs(e.clientY - stackedTapStartRef.current.py) > 6
+    ) {
+      stackedTapMovedRef.current = true;
+    }
+  }, []);
+
+  const handleStackedPointerUp = useCallback((e: React.PointerEvent) => {
+    if (!stackedTapStartRef.current) return;
+
+    const moved =
+      stackedTapMovedRef.current ||
+      Math.abs(e.clientX - stackedTapStartRef.current.px) > 6 ||
+      Math.abs(e.clientY - stackedTapStartRef.current.py) > 6;
+
+    stackedTapStartRef.current = null;
+    stackedTapMovedRef.current = false;
+
+    if (moved || e.pointerType !== "touch" || isFlipped) return;
+
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-close-btn], [data-flip-btn], button, input, select, textarea, a")) {
+      return;
+    }
+
+    setIsTouchActive((prev) => !prev);
+  }, [isFlipped]);
+
+  const handleStackedPointerCancel = useCallback(() => {
+    stackedTapStartRef.current = null;
+    stackedTapMovedRef.current = false;
+  }, []);
+
   const doFlip = useCallback((value: boolean) => {
     setIsFlipped(value);
     setIsFlipAnimating(true);
@@ -177,10 +225,10 @@ export function WidgetChrome({
         cursor: isStacked ? "default" : isDragging ? "grabbing" : isFlipped ? "default" : "grab",
         zIndex: isDragging ? 9999 : zIndex,
       }}
-      onPointerDown={isStacked ? undefined : handlePointerDown}
-      onPointerMove={isStacked ? undefined : handlePointerMove}
-      onPointerUp={isStacked ? undefined : handlePointerUp}
-      onPointerCancel={isStacked ? undefined : handlePointerCancel}
+      onPointerDown={isStacked ? handleStackedPointerDown : handlePointerDown}
+      onPointerMove={isStacked ? handleStackedPointerMove : handlePointerMove}
+      onPointerUp={isStacked ? handleStackedPointerUp : handlePointerUp}
+      onPointerCancel={isStacked ? handleStackedPointerCancel : handlePointerCancel}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
@@ -198,10 +246,10 @@ export function WidgetChrome({
           }}
           transition={{ duration: 0.15 }}
           style={{
-            top: isStacked ? 8 : -6,
-            left: isStacked ? 8 : -6,
-            width: isStacked ? 22 : 20,
-            height: isStacked ? 22 : 20,
+            top: -6,
+            left: -6,
+            width: 20,
+            height: 20,
             borderRadius: "50%", zIndex: 20,
             pointerEvents: showControls ? "auto" : "none",
             background: isXpTheme ? "#CC0000" : "linear-gradient(180deg, #5a5a5a 0%, #333333 100%)",
@@ -226,9 +274,9 @@ export function WidgetChrome({
           }}
           transition={{ duration: 0.15 }}
           style={{
-            bottom: isStacked ? 8 : 4,
-            right: isStacked ? 8 : 4,
-            padding: isStacked ? 5 : 4,
+            bottom: 4,
+            right: 4,
+            padding: 4,
             zIndex: 20,
             pointerEvents: showControls && !isFlipAnimating ? "auto" : "none",
             color: "#FFF",

@@ -240,11 +240,13 @@ function MobileDashboardWidgets({
   isPickerOpen,
   stripHeight,
   removeWidget,
+  onBackgroundTap,
 }: {
   widgets: DashboardWidget[];
   isPickerOpen: boolean;
   stripHeight: number;
   removeWidget: (id: string) => void;
+  onBackgroundTap: () => void;
 }) {
   const { t } = useTranslation();
   const viewportWidth = useViewportWidth();
@@ -258,105 +260,118 @@ function MobileDashboardWidgets({
   const bottomPadding = isPickerOpen ? stripHeight + 120 : 96;
 
   return (
-    <div
-      className="absolute inset-0 overflow-y-auto overscroll-contain px-4 pt-14"
-      style={{
-        pointerEvents: "auto",
-        touchAction: "pan-y",
-        WebkitOverflowScrolling: "touch",
-        paddingBottom: `calc(${bottomPadding}px + env(safe-area-inset-bottom, 0px))`,
-      }}
-    >
+    <div className="absolute inset-0 pointer-events-none px-4 pt-14">
       <div
-        data-dashboard-widget
-        className="mx-auto flex w-full max-w-[420px] flex-col items-center gap-7"
+        className="mx-auto h-full w-full max-w-[420px] overflow-y-auto overscroll-contain"
+        style={{
+          pointerEvents: "auto",
+          touchAction: "pan-y",
+          WebkitOverflowScrolling: "touch",
+          paddingBottom: `calc(${bottomPadding}px + env(safe-area-inset-bottom, 0px))`,
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onBackgroundTap();
+          }
+        }}
       >
-        {widgets.length === 0 && (
-          <div
-            className="w-full rounded-[24px] px-5 py-6 text-center"
-            style={{
-              background: "linear-gradient(to bottom, rgba(50,50,50,0.8), rgba(25,25,25,0.85))",
-              border: "1px solid rgba(255,255,255,0.1)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
-              color: "rgba(255,255,255,0.82)",
-            }}
-          >
-            <p className="text-sm font-semibold">
-              {t("apps.dashboard.widgets.addWidget")}
-            </p>
-            <p className="mt-1 text-xs opacity-75">
-              {t("apps.dashboard.mobile.emptyState", "Use the + button to add widgets to this stack.")}
-            </p>
-          </div>
-        )}
-
-        {widgets.map((widget) => {
-          const scale = Math.max(
-            MOBILE_WIDGET_MIN_SCALE,
-            Math.min(1, cardWidth / widget.size.width)
-          );
-          const scaledWidth = Math.round(widget.size.width * scale);
-          const scaledHeight = Math.round(widget.size.height * scale);
-
-          return (
-            <motion.div
-              key={widget.id}
-              initial={{ opacity: 0, y: 20, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.96 }}
-              transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
-              className="flex w-full justify-center"
-              style={{ minHeight: scaledHeight }}
+        <div
+          data-dashboard-widget
+          className="flex w-full flex-col items-center gap-7 pb-1"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              onBackgroundTap();
+            }
+          }}
+        >
+          {widgets.length === 0 && (
+            <div
+              className="w-full rounded-[24px] px-5 py-6 text-center"
+              style={{
+                background: "linear-gradient(to bottom, rgba(50,50,50,0.8), rgba(25,25,25,0.85))",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+                color: "rgba(255,255,255,0.82)",
+              }}
             >
-              <div
-                style={{
-                  width: scaledWidth,
-                  height: scaledHeight,
-                  position: "relative",
-                }}
+              <p className="text-sm font-semibold">
+                {t("apps.dashboard.widgets.addWidget")}
+              </p>
+              <p className="mt-1 text-xs opacity-75">
+                {t("apps.dashboard.mobile.emptyState", "Use the + button to add widgets to this stack.")}
+              </p>
+            </div>
+          )}
+
+          {widgets.map((widget) => {
+            const scale = Math.max(
+              MOBILE_WIDGET_MIN_SCALE,
+              Math.min(1, cardWidth / widget.size.width)
+            );
+            const scaledWidth = Math.round(widget.size.width * scale);
+            const scaledHeight = Math.round(widget.size.height * scale);
+
+            return (
+              <motion.div
+                key={widget.id}
+                initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
+                className="flex w-full justify-center"
+                style={{ minHeight: scaledHeight, pointerEvents: "none" }}
               >
                 <div
                   style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: widget.size.width,
-                    height: widget.size.height,
-                    transform: `scale(${scale})`,
-                    transformOrigin: "top left",
+                    width: scaledWidth,
+                    height: scaledHeight,
+                    position: "relative",
+                    pointerEvents: "auto",
                   }}
                 >
-                  <WidgetChrome
-                    layoutMode="stacked"
-                    width={widget.size.width}
-                    height={widget.size.height}
-                    x={0}
-                    y={0}
-                    zIndex={widget.zIndex ?? 1}
-                    borderRadius={widget.type === "ipod" ? "9999px" : undefined}
-                    hideDoneButton={widget.type === "ipod"}
-                    onRemove={() => removeWidget(widget.id)}
-                    overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
-                    backContent={(onFlipBack) => (
-                      <WidgetBackContent
-                        type={widget.type}
-                        widgetId={widget.id}
-                        onDone={onFlipBack}
-                      />
-                    )}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: widget.size.width,
+                      height: widget.size.height,
+                      transform: `scale(${scale})`,
+                      transformOrigin: "top left",
+                    }}
                   >
-                    {(isFlipped) => (
-                      <WidgetContent
-                        type={widget.type}
-                        widgetId={widget.id}
-                        isFlipped={isFlipped}
-                      />
-                    )}
-                  </WidgetChrome>
+                    <WidgetChrome
+                      layoutMode="stacked"
+                      width={widget.size.width}
+                      height={widget.size.height}
+                      x={0}
+                      y={0}
+                      zIndex={widget.zIndex ?? 1}
+                      borderRadius={widget.type === "ipod" ? "9999px" : undefined}
+                      hideDoneButton={widget.type === "ipod"}
+                      onRemove={() => removeWidget(widget.id)}
+                      overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
+                      backContent={(onFlipBack) => (
+                        <WidgetBackContent
+                          type={widget.type}
+                          widgetId={widget.id}
+                          onDone={onFlipBack}
+                        />
+                      )}
+                    >
+                      {(isFlipped) => (
+                        <WidgetContent
+                          type={widget.type}
+                          widgetId={widget.id}
+                          isFlipped={isFlipped}
+                        />
+                      )}
+                    </WidgetChrome>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          );
-        })}
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -522,6 +537,10 @@ export function DashboardAppComponent({
                     isPickerOpen={isPickerOpen}
                     stripHeight={stripHeight}
                     removeWidget={removeWidget}
+                    onBackgroundTap={() => {
+                      if (isPickerOpen) setIsPickerOpen(false);
+                      else handleClose();
+                    }}
                   />
                 </AnimatePresence>
               ) : (
