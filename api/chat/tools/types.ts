@@ -157,7 +157,13 @@ export interface SearchSongsOutput {
 }
 
 // Song library control
-export const SONG_LIBRARY_ACTIONS = ["list", "search", "get"] as const;
+export const SONG_LIBRARY_ACTIONS = [
+  "list",
+  "search",
+  "get",
+  "searchYoutube",
+  "add",
+] as const;
 export type SongLibraryAction = typeof SONG_LIBRARY_ACTIONS[number];
 
 export const SONG_LIBRARY_SCOPES = ["user", "global", "any"] as const;
@@ -197,15 +203,21 @@ export interface SongLibraryControlInput {
   scope?: SongLibraryScope;
   query?: string;
   id?: string;
+  videoId?: string;
+  url?: string;
+  title?: string;
+  artist?: string;
+  album?: string;
   limit?: number;
 }
 
 export interface SongLibraryControlOutput {
   success: boolean;
   message: string;
-  scope: SongLibraryScope;
+  scope?: SongLibraryScope;
   songs?: SongLibraryToolRecord[];
   song?: SongLibraryToolRecord | null;
+  youtubeResults?: SearchSongsResult[];
 }
 
 // Settings input

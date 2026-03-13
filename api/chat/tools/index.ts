@@ -167,9 +167,9 @@ export const TOOL_DESCRIPTIONS = {
 
   songLibraryControl:
     "Search ryOS song libraries and cached song metadata from server-side contexts like Telegram. " +
-    "Actions: 'list' returns recent songs, 'search' finds songs by id/title/artist/album, and 'get' returns metadata for one song id. " +
+    "Actions: 'list' returns recent songs, 'search' finds songs by id/title/artist/album, 'get' returns metadata for one song id, 'searchYoutube' searches YouTube for songs to add, and 'add' saves a YouTube song into the shared cache plus the signed-in user's library. " +
     "Scopes: 'user' searches the signed-in user's synced song library, 'global' searches the server song/lyrics cache, and 'any' searches both with user-library matches preferred. " +
-    "Results include canonical ryOS links for iPod and Karaoke share URLs.",
+    "For 'add', pass the chosen YouTube result's videoId and title/channel when available. Results include canonical ryOS links for iPod and Karaoke share URLs.",
   
   settings:
     "Change system settings in ryOS. Use this tool when the user asks to change language, theme, volume, enable/disable speech, or check for updates. Multiple settings can be changed in a single call.",

@@ -1,8 +1,11 @@
 import { describe, expect, mock, test } from "bun:test";
 import type { Redis } from "@upstash/redis";
 import { createChatTools } from "../api/chat/tools/index.js";
-import { writeSongsState } from "../api/_utils/song-library-state.js";
-import { saveSong } from "../api/_utils/_song-service.js";
+import {
+  readSongsState,
+  writeSongsState,
+} from "../api/_utils/song-library-state.js";
+import { getSong, saveSong } from "../api/_utils/_song-service.js";
 
 class FakeRedisPipeline {
   private operations: Array<() => void> = [];
@@ -109,15 +112,32 @@ class FakeRedis {
   }
 }
 
-function createContext(redis: FakeRedis, username: string | null = "alice") {
+function createContext(
+  redis: FakeRedis,
+  username: string | null = "alice",
+  envOverrides: Record<string, string | undefined> = {}
+) {
   return {
     log: mock(() => {}),
     logError: mock(() => {}),
-    env: {},
+    env: envOverrides,
     username,
     redis: redis as unknown as Redis,
     timeZone: "UTC",
   };
+}
+
+async function withMockedFetch(
+  mockFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+  callback: () => Promise<void>
+) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch as typeof fetch;
+  try {
+    await callback();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 }
 
 async function seedSongs(redis: FakeRedis): Promise<void> {
@@ -244,5 +264,96 @@ describe("song library chat tools", () => {
     expect(result?.success).toBe(false);
     expect((result?.message || "").toLowerCase()).toContain("authentication");
     expect(result?.scope).toBe("user");
+  });
+
+  test("searches YouTube through songLibraryControl", async () => {
+    const redis = new FakeRedis();
+    const tools = createChatTools(
+      createContext(redis, "alice", { YOUTUBE_API_KEY: "test-key" }),
+      { profile: "telegram" }
+    );
+
+    await withMockedFetch(async (input) => {
+      const url = String(input);
+      expect(url).toContain("googleapis.com/youtube/v3/search");
+      expect(url).toContain("q=plastic+love");
+      return new Response(
+        JSON.stringify({
+          items: [
+            {
+              id: { videoId: "yt_1" },
+              snippet: {
+                title: "Mariya Takeuchi - Plastic Love",
+                channelTitle: "Mariya Takeuchi - Topic",
+                publishedAt: "2024-01-01T00:00:00Z",
+              },
+            },
+            {
+              id: { videoId: "yt_2" },
+              snippet: {
+                title: "Plastic Love (Live)",
+                channelTitle: "City Pop Live",
+                publishedAt: "2023-05-01T00:00:00Z",
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }, async () => {
+      const result = await tools.songLibraryControl.execute?.({
+        action: "searchYoutube",
+        query: "plastic love",
+        limit: 2,
+      });
+
+      expect(result?.success).toBe(true);
+      expect(result?.youtubeResults).toHaveLength(2);
+      expect(result?.youtubeResults?.[0]?.videoId).toBe("yt_1");
+      expect(result?.message).toContain("Found 2 songs");
+    });
+  });
+
+  test("adds a searched YouTube song into the user's library and cache", async () => {
+    const redis = new FakeRedis();
+    await seedSongs(redis);
+    const tools = createChatTools(createContext(redis), { profile: "telegram" });
+
+    const result = await tools.songLibraryControl.execute?.({
+      action: "add",
+      videoId: "yt_new_1",
+      title: "Plastic Love",
+      artist: "Mariya Takeuchi - Topic",
+    });
+
+    expect(result?.success).toBe(true);
+    expect(result?.scope).toBe("user");
+    expect(result?.song?.id).toBe("yt_new_1");
+    expect(result?.song?.inUserLibrary).toBe(true);
+    expect(result?.song?.ipodUrl).toBe("https://os.ryo.lu/ipod/yt_new_1");
+
+    const state = await readSongsState(redis as unknown as Redis, "alice");
+    expect(state?.data.tracks[0]?.id).toBe("yt_new_1");
+    expect(state?.data.tracks.some((track) => track.id === "yt_new_1")).toBe(true);
+
+    const cachedSong = await getSong(redis as unknown as Redis, "yt_new_1", {
+      includeMetadata: true,
+    });
+    expect(cachedSong?.title).toBe("Plastic Love");
+    expect(cachedSong?.createdBy).toBe("alice");
+  });
+
+  test("requires auth to add songs into the synced library", async () => {
+    const redis = new FakeRedis();
+    const tools = createChatTools(createContext(redis, null), { profile: "telegram" });
+
+    const result = await tools.songLibraryControl.execute?.({
+      action: "add",
+      videoId: "yt_new_2",
+      title: "Stay With Me",
+    });
+
+    expect(result?.success).toBe(false);
+    expect((result?.message || "").toLowerCase()).toContain("authentication");
   });
 });

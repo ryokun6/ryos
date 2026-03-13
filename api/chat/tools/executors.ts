@@ -42,13 +42,15 @@ import type {
 } from "./types.js";
 import { stateKey } from "../../sync/state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
-import { readSongsState } from "../../_utils/song-library-state.js";
+import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";
 import {
   getSong,
   listSongs as listCachedSongs,
+  saveSong,
   type LyricsSource,
   type SongDocument,
 } from "../../_utils/_song-service.js";
+import { parseYouTubeTitleSimple } from "../../songs/_utils.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
@@ -495,6 +497,76 @@ function combineSongCollections(
   return combined;
 }
 
+function extractYouTubeVideoId(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (!trimmed.includes("://") && !trimmed.includes("/")) {
+    return trimmed;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname === "youtu.be") {
+      return url.pathname.split("/").filter(Boolean)[0] ?? null;
+    }
+    if (url.searchParams.get("v")) {
+      return url.searchParams.get("v");
+    }
+    const parts = url.pathname.split("/").filter(Boolean);
+    const embedIndex = parts.findIndex((part) => part === "embed" || part === "shorts");
+    if (embedIndex >= 0) {
+      return parts[embedIndex + 1] ?? null;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+async function fetchYouTubeOEmbed(
+  videoId: string,
+  context: ServerToolContext
+): Promise<{ title?: string; authorName?: string; thumbnailUrl?: string } | null> {
+  const oembedUrl = `https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=${encodeURIComponent(videoId)}&format=json`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(oembedUrl, { signal: controller.signal });
+    if (!response.ok) {
+      context.log(
+        `[songLibraryControl] oEmbed failed for ${videoId}: ${response.status}`
+      );
+      return null;
+    }
+
+    const data = (await response.json()) as {
+      title?: string;
+      author_name?: string;
+      thumbnail_url?: string;
+    };
+
+    return {
+      title: data.title,
+      authorName: data.author_name,
+      thumbnailUrl: data.thumbnail_url,
+    };
+  } catch (error) {
+    context.logError(`[songLibraryControl] Failed to fetch oEmbed for ${videoId}`, error);
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export async function executeSongLibraryControl(
   input: SongLibraryControlInput,
   context: MemoryToolContext
@@ -502,6 +574,33 @@ export async function executeSongLibraryControl(
   const requestedScope = input.scope || "any";
   const scope = resolveSongScope(requestedScope, context.username);
   const limit = input.limit ?? 5;
+
+  context.log(
+    `[songLibraryControl] action=${input.action} scope=${scope} query=${input.query || ""} id=${input.id || ""} videoId=${input.videoId || ""} url=${input.url || ""}`
+  );
+
+  if (input.action === "searchYoutube") {
+    try {
+      const result = await executeSearchSongs(
+        {
+          query: input.query || "",
+          maxResults: limit,
+        },
+        context
+      );
+
+      return {
+        success: true,
+        message: result.message,
+        youtubeResults: result.results,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to search YouTube.",
+      };
+    }
+  }
 
   if (!context.redis) {
     return {
@@ -519,9 +618,151 @@ export async function executeSongLibraryControl(
     };
   }
 
-  context.log(
-    `[songLibraryControl] action=${input.action} scope=${scope} query=${input.query || ""} id=${input.id || ""}`
-  );
+  if (input.action === "add" && !context.username) {
+    return {
+      success: false,
+      message: "Authentication required to add songs to your synced library.",
+      scope: "user",
+    };
+  }
+
+  if (input.action === "add") {
+    const videoId =
+      input.videoId?.trim() ||
+      extractYouTubeVideoId(input.url) ||
+      input.id?.trim() ||
+      "";
+
+    if (!videoId) {
+      return {
+        success: false,
+        message: "A valid YouTube video ID or URL is required to add a song.",
+        scope: "user",
+      };
+    }
+
+    const userState = await readSongsState(context.redis, context.username!);
+    const existingTrack = userState?.data.tracks.find((track) => track.id === videoId);
+    const existingSong = await getSong(context.redis, videoId, {
+      includeMetadata: true,
+      includeLyrics: true,
+      includeTranslations: true,
+      includeFurigana: true,
+      includeSoramimi: true,
+    });
+
+    let title =
+      input.title?.trim() ||
+      existingTrack?.title ||
+      existingSong?.title ||
+      "";
+    let artist =
+      input.artist?.trim() ||
+      existingTrack?.artist ||
+      existingSong?.artist ||
+      "";
+    const album =
+      input.album?.trim() ||
+      existingTrack?.album ||
+      existingSong?.album;
+
+    let cover = existingTrack?.cover || existingSong?.cover;
+
+    if (!title || !artist || !cover) {
+      const oembed = await fetchYouTubeOEmbed(videoId, context);
+      const parsed = oembed?.title
+        ? parseYouTubeTitleSimple(oembed.title, oembed.authorName)
+        : null;
+
+      if (!title) {
+        title = parsed?.title || oembed?.title || videoId;
+      }
+      if (!artist) {
+        artist = parsed?.artist || oembed?.authorName || "";
+      }
+      if (!cover && oembed?.thumbnailUrl) {
+        cover = oembed.thumbnailUrl;
+      }
+    }
+
+    if (!title) {
+      title = videoId;
+    }
+
+    const savedSong = await saveSong(
+      context.redis,
+      {
+        id: videoId,
+        title,
+        ...(artist ? { artist } : {}),
+        ...(album ? { album } : {}),
+        ...(cover ? { cover } : {}),
+        ...(existingSong?.lyricOffset !== undefined
+          ? { lyricOffset: existingSong.lyricOffset }
+          : {}),
+        ...(existingSong?.lyricsSource
+          ? { lyricsSource: existingSong.lyricsSource }
+          : {}),
+        createdBy: existingSong?.createdBy || context.username || undefined,
+      },
+      {
+        preserveLyrics: true,
+        preserveTranslations: true,
+        preserveFurigana: true,
+        preserveSoramimi: true,
+      },
+      existingSong
+    );
+
+    const nextTrack = {
+      id: savedSong.id,
+      url: `https://www.youtube.com/watch?v=${savedSong.id}`,
+      title: savedSong.title,
+      ...(savedSong.artist ? { artist: savedSong.artist } : {}),
+      ...(savedSong.album ? { album: savedSong.album } : {}),
+      ...(savedSong.cover ? { cover: savedSong.cover } : {}),
+      ...(savedSong.lyricOffset !== undefined
+        ? { lyricOffset: savedSong.lyricOffset }
+        : {}),
+      ...(savedSong.lyricsSource
+        ? { lyricsSource: savedSong.lyricsSource }
+        : {}),
+    };
+
+    const existingTracks = userState?.data.tracks ?? [];
+    const alreadyInLibrary = existingTracks.some((track) => track.id === savedSong.id);
+
+    await writeSongsState(context.redis, context.username!, {
+      tracks: [nextTrack, ...existingTracks.filter((track) => track.id !== savedSong.id)],
+      libraryState: "loaded",
+      lastKnownVersion: (userState?.data.lastKnownVersion ?? 0) + 1,
+    });
+
+    const userRecord = toUserLibrarySongRecord(
+      {
+        id: savedSong.id,
+        title: savedSong.title,
+        artist: savedSong.artist,
+        album: savedSong.album,
+        cover: savedSong.cover,
+        lyricOffset: savedSong.lyricOffset,
+        lyricsSource: toSongLibraryLyricsSource(savedSong.lyricsSource),
+      },
+      context
+    );
+    const globalRecord = toGlobalSongRecord(savedSong, context, {
+      includeAvailability: true,
+    });
+
+    return {
+      success: true,
+      scope: "user",
+      message: alreadyInLibrary
+        ? `Updated "${savedSong.title}" in your library.`
+        : `Added "${savedSong.title}" to your library.`,
+      song: combineSongRecords(userRecord, globalRecord),
+    };
+  }
 
   const userSongs =
     scope === "user" || scope === "any" ? await loadUserLibrarySongs(context) : [];
@@ -602,6 +843,7 @@ export async function executeSongLibraryControl(
         song,
       };
     }
+
   }
 }
 
