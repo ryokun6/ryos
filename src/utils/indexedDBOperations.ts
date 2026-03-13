@@ -1,11 +1,17 @@
 /**
- * IndexedDB Operations Utility Module
- * 
- * Centralized helpers for IndexedDB operations used throughout ryOS.
- * Extracts common patterns from useFilesStore and other stores.
+ * Browser content storage operations utility module.
+ *
+ * Centralized helpers for persisted file-content operations used throughout ryOS.
+ * The primary backend is OPFS, with legacy IndexedDB fallback/compatibility.
  */
 
-import { ensureIndexedDBInitialized, STORES } from "./indexedDB";
+import { STORES } from "./indexedDB";
+import {
+  deleteStorageItem,
+  getStorageItem,
+  putStorageItem,
+  storageItemExists,
+} from "./opfsStorage";
 
 // Structure for content stored in IndexedDB
 export interface StoredContent {
@@ -55,19 +61,7 @@ export async function saveFileContent(
   content: string | Blob,
   storeName: string
 ): Promise<void> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      const putReq = store.put({ name, content } as StoredContent, uuid);
-      putReq.onsuccess = () => resolve();
-      putReq.onerror = () => reject(putReq.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+  await putStorageItem(storeName, { name, content } as StoredContent, uuid);
 }
 
 /**
@@ -80,20 +74,7 @@ export async function loadFileContent(
   uuid: string,
   storeName: string
 ): Promise<StoredContent | null> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    const result = await new Promise<StoredContent | null>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(req.result as StoredContent | null);
-      req.onerror = () => reject(req.error);
-    });
-    return result;
-  } finally {
-    if (db) db.close();
-  }
+  return (await getStorageItem<StoredContent>(storeName, uuid)) ?? null;
 }
 
 /**
@@ -105,19 +86,7 @@ export async function deleteFileContent(
   uuid: string,
   storeName: string
 ): Promise<void> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      const deleteReq = store.delete(uuid);
-      deleteReq.onsuccess = () => resolve();
-      deleteReq.onerror = () => reject(deleteReq.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+  await deleteStorageItem(storeName, uuid);
 }
 
 /**
@@ -129,20 +98,7 @@ export async function contentExists(
   uuid: string,
   storeName: string
 ): Promise<boolean> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    const exists = await new Promise<boolean>((resolve) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(!!req.result);
-      req.onerror = () => resolve(false);
-    });
-    return exists;
-  } finally {
-    if (db) db.close();
-  }
+  return storageItemExists(storeName, uuid);
 }
 
 /**
@@ -156,23 +112,13 @@ export async function batchSaveFileContent(
   storeName: string
 ): Promise<void> {
   if (files.length === 0) return;
-  
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      
-      for (const file of files) {
-        store.put({ name: file.name, content: file.content } as StoredContent, file.uuid);
-      }
-      
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } finally {
-    if (db) db.close();
+
+  for (const file of files) {
+    await putStorageItem(
+      storeName,
+      { name: file.name, content: file.content } as StoredContent,
+      file.uuid
+    );
   }
 }
 
@@ -186,23 +132,9 @@ export async function batchDeleteFileContent(
   storeName: string
 ): Promise<void> {
   if (uuids.length === 0) return;
-  
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      
-      for (const uuid of uuids) {
-        store.delete(uuid);
-      }
-      
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } finally {
-    if (db) db.close();
+
+  for (const uuid of uuids) {
+    await deleteStorageItem(storeName, uuid);
   }
 }
 
