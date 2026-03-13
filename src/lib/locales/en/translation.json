@@ -392,7 +392,10 @@
         "rename": "Rename…",
         "duplicate": "Duplicate",
         "moveToTrash": "Move to Trash",
-        "shareViaAirDrop": "Share via AirDrop"
+        "shareViaAirDrop": "Share via AirDrop",
+        "searchingForAirDropUsers": "Searching for nearby users…",
+        "noAirDropUsersAvailable": "No nearby users",
+        "openAirDrop": "Open AirDrop"
       },
       "dialogs": {
         "emptyTrash": {

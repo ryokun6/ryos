@@ -1435,6 +1435,9 @@
         "open": "Abrir",
         "rename": "Cambiar nombre…",
         "shareViaAirDrop": "Compartir por AirDrop",
+        "searchingForAirDropUsers": "Buscando usuarios cercanos…",
+        "noAirDropUsersAvailable": "No hay usuarios cercanos",
+        "openAirDrop": "Abrir AirDrop",
         "size": "Tamaño",
         "sortBy": "Ordenar por"
       },

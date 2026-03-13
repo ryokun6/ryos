@@ -1435,6 +1435,9 @@
         "open": "Открыть",
         "rename": "Переименовать…",
         "shareViaAirDrop": "Поделиться через AirDrop",
+        "searchingForAirDropUsers": "Поиск пользователей поблизости…",
+        "noAirDropUsersAvailable": "Пользователей поблизости нет",
+        "openAirDrop": "Открыть AirDrop",
         "size": "Размер",
         "sortBy": "Сортировать по"
       },

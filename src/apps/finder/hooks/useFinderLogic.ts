@@ -994,6 +994,9 @@ export function useFinderLogic({
     e.stopPropagation();
     setContextMenuPos({ x: e.clientX, y: e.clientY });
     setContextMenuFile(file);
+    if (canShareViaAirDrop(file)) {
+      void fetchNearbyUsers();
+    }
     if (!selectedFiles.includes(file.path)) {
       handleFileSelect(file);
     }
@@ -1163,6 +1166,23 @@ export function useFinderLogic({
     return false;
   };
 
+  // AirDrop state
+  const [isAirDropView, setIsAirDropView] = useState(false);
+  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const chatUsername = useChatsStore((s) => s.username);
+  const nearbyUsers = useAirDropStore((s) => s.nearbyUsers);
+  const isDiscovering = useAirDropStore((s) => s.isDiscovering);
+  const fetchNearbyUsers = useAirDropStore((s) => s.fetchNearbyUsers);
+  const sendFileToUser = useAirDropStore((s) => s.sendFile);
+
+  const navigateToAirDrop = useCallback(() => {
+    setIsAirDropView(true);
+  }, []);
+
+  const navigateAwayFromAirDrop = useCallback(() => {
+    setIsAirDropView(false);
+  }, []);
+
   const canShareViaAirDrop = (file: FileItem): boolean => {
     if (file.isDirectory) return false;
     if (file.path.startsWith("/Applications")) return false;
@@ -1170,8 +1190,51 @@ export function useFinderLogic({
     return true;
   };
 
-  const handleShareViaAirDrop = () => {
+  const handleShareViaAirDrop = useCallback(() => {
     navigateToAirDrop();
+  }, [navigateToAirDrop]);
+
+  const availableAirDropUsers = useMemo(() => {
+    if (!chatUsername) {
+      return nearbyUsers;
+    }
+
+    return [chatUsername, ...nearbyUsers.filter((user) => user !== chatUsername)];
+  }, [nearbyUsers, chatUsername]);
+
+  const getAirDropMenuItems = (file: FileItem): MenuItem[] => {
+    const recipientItems: MenuItem[] =
+      availableAirDropUsers.length > 0
+        ? availableAirDropUsers.map((recipient) => ({
+            type: "item" as const,
+            label: `@${recipient}`,
+            onSelect: () =>
+              void handleAirDropSendFile(
+                recipient,
+                file.name,
+                file.path,
+                getFileType(file, t)
+              ),
+          }))
+        : [
+            {
+              type: "item",
+              label: isDiscovering
+                ? t("apps.finder.contextMenu.searchingForAirDropUsers")
+                : t("apps.finder.contextMenu.noAirDropUsersAvailable"),
+              disabled: true,
+            },
+          ];
+
+    return [
+      ...recipientItems,
+      { type: "separator" },
+      {
+        type: "item",
+        label: t("apps.finder.contextMenu.openAirDrop"),
+        onSelect: handleShareViaAirDrop,
+      },
+    ];
   };
 
   const fileMenuItems = (file: FileItem): MenuItem[] => [
@@ -1182,9 +1245,9 @@ export function useFinderLogic({
     },
     { type: "separator" },
     {
-      type: "item",
+      type: "submenu",
       label: t("apps.finder.contextMenu.shareViaAirDrop"),
-      onSelect: () => handleShareViaAirDrop(),
+      items: getAirDropMenuItems(file),
       disabled: !canShareViaAirDrop(file),
     },
     { type: "separator" },
@@ -1231,20 +1294,6 @@ export function useFinderLogic({
 
   // Sidebar state
   const [showSidebar, setShowSidebar] = useState(() => window.innerWidth >= 500);
-
-  // AirDrop state
-  const [isAirDropView, setIsAirDropView] = useState(false);
-  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
-  const chatUsername = useChatsStore((s) => s.username);
-  const sendFileToUser = useAirDropStore((s) => s.sendFile);
-
-  const navigateToAirDrop = useCallback(() => {
-    setIsAirDropView(true);
-  }, []);
-
-  const navigateAwayFromAirDrop = useCallback(() => {
-    setIsAirDropView(false);
-  }, []);
 
   const handleAirDropSendFile = useCallback(
     async (

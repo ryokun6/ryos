@@ -30,6 +30,7 @@ export type MenuItem =
       label: string;
       items: MenuItem[];
       icon?: string; // Icon path or emoji
+      disabled?: boolean;
     }
   | {
       type: "checkbox";
@@ -91,7 +92,10 @@ function renderItems(items: MenuItem[]): ReactNode {
       case "submenu":
         return (
           <DropdownMenuSub key={idx}>
-            <DropdownMenuSubTrigger className={menuItemClass}>
+            <DropdownMenuSubTrigger
+              disabled={item.disabled}
+              className={menuItemClass}
+            >
               {item.icon && (
                 <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
                   {item.icon.startsWith("/") || item.icon.startsWith("http") ? (
