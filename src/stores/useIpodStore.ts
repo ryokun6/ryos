@@ -6,6 +6,7 @@ import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
+import { runWithCloudSyncMutationSource } from "@/utils/cloudSyncMutationSource";
 import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -1533,7 +1534,11 @@ export const useIpodStore = create<IpodState>()(
             console.error("Error rehydrating iPod store:", error);
           } else if (state && state.libraryState === "uninitialized") {
             // Only auto-initialize if library state is uninitialized
-            Promise.resolve(state.initializeLibrary()).catch((err) =>
+            void runWithCloudSyncMutationSource(
+              "system-bootstrap",
+              () => state.initializeLibrary(),
+              "ipod-store:initializeLibrary"
+            ).catch((err) =>
               console.error("Initialization failed on rehydrate", err)
             );
           }

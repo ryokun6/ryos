@@ -869,6 +869,8 @@ export function useControlPanelsLogic({
           const metadata = await downloadAndApplyCloudSyncDomain(domain, {
             username,
             isAuthenticated,
+          }, {
+            applyMode: "replace",
           });
           syncStore.markDownloadSuccess(domain, metadata.updatedAt);
           syncStore.updateRemoteMetadataForDomain(domain, metadata);

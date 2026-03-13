@@ -60,10 +60,21 @@ import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import {
+  planIndividualBlobDomainApply,
+  resolveIndividualBlobApplyMode,
+  type IndividualBlobApplyMode,
+  type IndividualBlobDownloadApplyMode,
+} from "@/utils/cloudSyncIndividualBlobApply";
+import { runWithCloudSyncMutationSource } from "@/utils/cloudSyncMutationSource";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
 };
+
+export interface DownloadCloudSyncDomainOptions {
+  applyMode?: IndividualBlobDownloadApplyMode;
+}
 
 let _syncSessionId: string | null = null;
 
@@ -997,30 +1008,38 @@ async function applyIndividualBlobDomain(
   domain: IndividualBlobSyncDomain,
   remoteKeys: string[],
   changedItems: Record<string, StoreItemWithKey>,
-  deletedKeys: DeletionMarkerMap = {}
+  deletedKeys: DeletionMarkerMap = {},
+  mode: IndividualBlobApplyMode = "incremental"
 ): Promise<void> {
   const storeName = getIndividualBlobStoreName(domain);
   const db = await ensureIndexedDBInitialized();
-  const effectiveRemoteKeys = remoteKeys.filter((key) => !deletedKeys[key]);
+  let finalKeys: string[] = [];
 
   try {
     const existingItems = await readStoreItems(db, storeName);
-    const existingKeys = new Set(existingItems.map((item) => item.key));
-    const remoteKeySet = new Set(effectiveRemoteKeys);
-    const keysToDelete = Array.from(existingKeys).filter((key) => !remoteKeySet.has(key));
+    const plan = planIndividualBlobDomainApply({
+      mode,
+      existingKeys: existingItems.map((item) => item.key),
+      remoteKeys,
+      changedItemKeys: Object.keys(changedItems),
+      deletedKeys,
+    });
 
-    await deleteStoreItemsByKey(db, storeName, keysToDelete);
+    await deleteStoreItemsByKey(db, storeName, plan.keysToDelete);
     await upsertStoreItems(
       db,
       storeName,
-      Object.values(changedItems).filter((item) => !deletedKeys[item.key])
+      plan.keysToUpsert
+        .map((key) => changedItems[key])
+        .filter((item): item is StoreItemWithKey => Boolean(item))
     );
+    finalKeys = plan.finalKeys;
   } finally {
     db.close();
   }
 
   if (domain === "custom-wallpapers") {
-    await finalizeCustomWallpaperSync(effectiveRemoteKeys);
+    await finalizeCustomWallpaperSync(finalKeys);
   }
 }
 
@@ -1466,7 +1485,8 @@ async function downloadRedisStateDomain(
 
 async function downloadBlobDomain(
   domain: BlobSyncDomain,
-  _auth: AuthContext
+  _auth: AuthContext,
+  options: DownloadCloudSyncDomainOptions = {}
 ): Promise<CloudSyncDomainMetadata> {
   const data = await fetchBlobDomainInfo(domain, _auth);
   if (!data?.metadata) {
@@ -1482,6 +1502,14 @@ async function downloadBlobDomain(
       remoteDeletedItems
     );
     const localRecords = await serializeIndividualBlobDomainRecords(domain);
+    const domainStatus = useCloudSyncStore.getState().domainStatus[domain];
+    const applyMode = resolveIndividualBlobApplyMode({
+      requestedMode: options.applyMode,
+      localItemCount: localRecords.length,
+      hasSyncHistory: Boolean(
+        domainStatus.lastAppliedRemoteAt || domainStatus.lastUploadedAt
+      ),
+    });
     const localRecordMap = new Map(
       localRecords.map((record) => [record.item.key, record])
     );
@@ -1499,7 +1527,11 @@ async function downloadBlobDomain(
       }
 
       const localRecord = localRecordMap.get(itemKey);
-      if (localRecord && localRecord.signature === itemMetadata.signature) {
+      if (
+        applyMode !== "replace" &&
+        localRecord &&
+        localRecord.signature === itemMetadata.signature
+      ) {
         continue;
       }
 
@@ -1513,7 +1545,8 @@ async function downloadBlobDomain(
       domain,
       Object.keys(remoteItems),
       changedItems,
-      effectiveDeletedItems
+      effectiveDeletedItems,
+      applyMode
     );
     return data.metadata;
   }
@@ -1530,13 +1563,20 @@ async function downloadBlobDomain(
 
 export async function downloadAndApplyCloudSyncDomain(
   domain: CloudSyncDomain,
-  _auth: AuthContext
+  _auth: AuthContext,
+  options: DownloadCloudSyncDomainOptions = {}
 ): Promise<CloudSyncDomainMetadata> {
-  if (isRedisSyncDomain(domain)) {
-    return downloadRedisStateDomain(domain, _auth);
-  }
-  if (isBlobSyncDomain(domain)) {
-    return downloadBlobDomain(domain, _auth);
-  }
-  throw new Error(`Unknown sync domain: ${domain}`);
+  return runWithCloudSyncMutationSource(
+    "remote-sync",
+    async () => {
+      if (isRedisSyncDomain(domain)) {
+        return downloadRedisStateDomain(domain, _auth);
+      }
+      if (isBlobSyncDomain(domain)) {
+        return downloadBlobDomain(domain, _auth, options);
+      }
+      throw new Error(`Unknown sync domain: ${domain}`);
+    },
+    domain
+  );
 }

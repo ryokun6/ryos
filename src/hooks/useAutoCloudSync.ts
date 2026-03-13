@@ -30,6 +30,10 @@ import {
   uploadCloudSyncDomain,
 } from "@/utils/cloudSync";
 import {
+  describeActiveCloudSyncMutationSources,
+  shouldSkipAutoCloudSyncUpload,
+} from "@/utils/cloudSyncMutationSource";
+import {
   CLOUD_SYNC_DOMAINS,
   CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
   getLatestCloudSyncTimestamp,
@@ -234,6 +238,13 @@ export function useAutoCloudSync() {
     (domain: CloudSyncDomain) => {
       if (!isSyncActive || !isDomainEnabled(domain)) {
         console.log(`[CloudSync] queueUpload(${domain}) skipped: syncActive=${isSyncActive}, enabled=${isDomainEnabled(domain)}`);
+        return;
+      }
+
+      if (shouldSkipAutoCloudSyncUpload()) {
+        console.log(
+          `[CloudSync] queueUpload(${domain}) ignored: non-user mutation (${describeActiveCloudSyncMutationSources()})`
+        );
         return;
       }
 
