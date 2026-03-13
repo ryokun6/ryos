@@ -240,7 +240,7 @@ function getFileIcon(item: FileSystemItem): string {
 
 // --- Global flags for cross-instance coordination --- //
 // Use localStorage to persist initialization state across page refreshes
-const UUID_MIGRATION_KEY = "ryos:indexeddb-uuid-migration-v1";
+const UUID_MIGRATION_KEY = "ryos:opfs-storage-migration-v1";
 
 // Check localStorage for completion status
 const isUUIDMigrationDone = () =>
@@ -1783,6 +1783,7 @@ export function useFileSystem(
 
       // Clear the migration flag so UUID migration will run again after reset
       localStorage.removeItem(UUID_MIGRATION_KEY);
+      localStorage.removeItem("ryos:indexeddb-uuid-migration-v1");
       // Clear the size/timestamp sync flag so it will run again after reset
       localStorage.removeItem("ryos:file-size-timestamp-sync-v1");
 
@@ -1927,7 +1928,7 @@ export function useFileSystem(
     return () => clearTimeout(timer);
   }, []); // Run once on mount
 
-  // --- UUID Migration Effect (Runs ONLY ONCE globally) --- //
+  // --- Legacy IndexedDB -> OPFS Migration Effect (Runs only once globally) --- //
   useEffect(() => {
     if (isUUIDMigrationDone()) {
       return;
@@ -1945,18 +1946,15 @@ export function useFileSystem(
         return;
       }
 
-      // Mark as done to prevent multiple runs
-      localStorage.setItem(UUID_MIGRATION_KEY, "completed");
-
       console.log(
-        "[useFileSystem] File store is ready, running UUID migration..."
+        "[useFileSystem] File store is ready, running legacy storage migration..."
       );
 
       // Run migration asynchronously
       try {
         await migrateIndexedDBToUUIDs();
       } catch (err) {
-        console.error("[useFileSystem] UUID migration failed:", err);
+        console.error("[useFileSystem] Legacy storage migration failed:", err);
       }
     };
 

@@ -19,7 +19,7 @@ export function getCloudSyncRemoteApplyDomains(
   const settingsIndex = orderedDomains.indexOf("settings");
   const customWallpapersIndex = orderedDomains.indexOf("custom-wallpapers");
 
-  // Apply wallpaper blobs before settings so indexeddb:// wallpaper references
+  // Apply wallpaper blobs before settings so stored wallpaper references
   // can resolve during the same first-sync batch.
   if (settingsIndex === -1 || customWallpapersIndex === -1) {
     return orderedDomains;
