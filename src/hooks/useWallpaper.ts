@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useRef } from "react";
-import { useDisplaySettingsStore, INDEXEDDB_PREFIX } from "@/stores/useDisplaySettingsStore";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { isStoredWallpaperReference } from "@/utils/wallpaperStorage";
 
 /**
  * Hook exposing wallpaper state & helpers.
@@ -33,7 +34,7 @@ export function useWallpaper() {
   useEffect(() => {
     if (hasAttemptedRefresh.current) return;
 
-    const isCustom = currentWallpaper.startsWith(INDEXEDDB_PREFIX);
+    const isCustom = isStoredWallpaperReference(currentWallpaper);
     const sourceLooksStale =
       wallpaperSource === currentWallpaper || // Not resolved yet
       wallpaperSource.startsWith("blob:"); // Could be an invalid Object URL after reload
@@ -51,6 +52,5 @@ export function useWallpaper() {
     isVideoWallpaper,
     loadCustomWallpapers,
     getWallpaperData,
-    INDEXEDDB_PREFIX,
   } as const;
 }

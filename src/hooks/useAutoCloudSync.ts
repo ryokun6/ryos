@@ -40,6 +40,7 @@ import {
   shouldApplyRemoteUpdate,
   type CloudSyncDomain,
 } from "@/utils/cloudSyncShared";
+import { isStoredWallpaperReference } from "@/utils/wallpaperStorage";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000;
 const REMOTE_APPLY_SUPPRESSION_MS = 2000;
@@ -531,7 +532,7 @@ export function useAutoCloudSync() {
         }
         if (
           state.currentWallpaper !== prevState.currentWallpaper &&
-          state.currentWallpaper.startsWith("indexeddb://")
+          isStoredWallpaperReference(state.currentWallpaper)
         ) {
           console.log(`[CloudSync] display subscriber: currentWallpaper changed from "${prevState.currentWallpaper}" to "${state.currentWallpaper}"`);
           queueUpload("custom-wallpapers");

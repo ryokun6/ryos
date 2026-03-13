@@ -8,6 +8,7 @@ import {
   SelectSeparator,
 } from "@/components/ui/select";
 import { useWallpaper } from "@/hooks/useWallpaper";
+import { isStoredWallpaperReference } from "@/utils/wallpaperStorage";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { DisplayMode } from "@/utils/displayMode";
 import { Plus, Trash } from "@phosphor-icons/react";
@@ -151,7 +152,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const {
     currentWallpaper,
     setWallpaper,
-    INDEXEDDB_PREFIX,
     loadCustomWallpapers,
     getWallpaperData,
   } = useWallpaper();
@@ -208,7 +208,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     "tiles" | PhotoCategory
   >(() => {
     if (currentWallpaper.includes("/wallpapers/tiles/")) return "tiles";
-    if (currentWallpaper.startsWith(INDEXEDDB_PREFIX)) return "custom";
+    if (isStoredWallpaperReference(currentWallpaper)) return "custom";
     if (currentWallpaper.includes("/wallpapers/videos/")) return "videos";
     const match = currentWallpaper.match(/\/wallpapers\/photos\/([^/]+)\//);
     if (match) return match[1];
@@ -256,7 +256,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return () => {
       isActive = false;
     };
-  }, [loadCustomWallpapers, getWallpaperData, INDEXEDDB_PREFIX, customWallpapersRevision]);
+  }, [loadCustomWallpapers, getWallpaperData, customWallpapersRevision]);
 
   const handleWallpaperSelect = (path: string) => {
     setWallpaper(path);
@@ -334,7 +334,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   useEffect(() => {
     if (currentWallpaper.includes("/wallpapers/tiles/")) {
       setSelectedCategory("tiles");
-    } else if (currentWallpaper.startsWith(INDEXEDDB_PREFIX)) {
+    } else if (isStoredWallpaperReference(currentWallpaper)) {
       setSelectedCategory("custom");
     } else if (currentWallpaper.includes("/wallpapers/videos/")) {
       setSelectedCategory("videos");
@@ -342,7 +342,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
       const match = currentWallpaper.match(/\/wallpapers\/photos\/([^/]+)\//);
       if (match) setSelectedCategory(match[1]);
     }
-  }, [currentWallpaper, INDEXEDDB_PREFIX]);
+  }, [currentWallpaper]);
 
   const formatCategoryLabel = (category: string) => {
     const key = `apps.control-panels.wallpaperCategories.${category}`;

@@ -1,5 +1,5 @@
 import { abortableFetch } from "@/utils/abortableFetch";
-import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
+import { STORES } from "@/utils/indexedDB";
 import { getApiUrl } from "@/utils/platform";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLanguageStore, type LanguageCode } from "@/stores/useLanguageStore";
@@ -29,6 +29,17 @@ import {
   uploadBlobWithStorageInstruction,
   type StorageUploadInstruction,
 } from "@/utils/storageUpload";
+import {
+  deleteStorageItem,
+  listStorageItems,
+  putStorageItem,
+} from "@/utils/opfsStorage";
+import {
+  deserializeStorageItem,
+  readSerializedStorageStoreItems,
+  restoreSerializedStorageStoreItems,
+  serializeStorageItem,
+} from "@/utils/storageSerialization";
 import type { AIModel } from "@/types/aiModels";
 import type {
   DisplayMode,
@@ -60,6 +71,10 @@ import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import {
+  extractStoredWallpaperId,
+  isStoredWallpaperReference,
+} from "@/utils/wallpaperStorage";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
@@ -222,24 +237,6 @@ function assertCompressionSupport(): void {
   }
 }
 
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = () =>
-      reject(reader.error || new Error("Failed to serialize blob"));
-    reader.readAsDataURL(blob);
-  });
-
-const base64ToBlob = (dataUrl: string): Blob => {
-  const [meta, base64] = dataUrl.split(",");
-  const mimeMatch = meta.match(/data:(.*);base64/);
-  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new Blob([array], { type: mime });
-};
-
 async function computeSyncSignature(value: unknown): Promise<string> {
   const payload = new TextEncoder().encode(JSON.stringify(value));
   const digest = await crypto.subtle.digest("SHA-256", payload);
@@ -248,68 +245,12 @@ async function computeSyncSignature(value: unknown): Promise<string> {
   ).join("");
 }
 
-async function readStoreItems(
-  db: IDBDatabase,
-  storeName: string
-): Promise<StoreItemWithKey[]> {
-  return new Promise((resolve, reject) => {
-    try {
-      const transaction = db.transaction(storeName, "readonly");
-      const store = transaction.objectStore(storeName);
-      const items: StoreItemWithKey[] = [];
-      const request = store.openCursor();
-
-      request.onsuccess = (event) => {
-        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-        if (cursor) {
-          items.push({
-            key: cursor.key as string,
-            value: cursor.value as StoreItem,
-          });
-          cursor.continue();
-          return;
-        }
-
-        resolve(items);
-      };
-
-      request.onerror = () => reject(request.error);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-async function serializeStoreItem(item: StoreItemWithKey): Promise<StoreItemWithKey> {
-  const serializedValue: Record<string, unknown> = {
-    ...item.value,
-  };
-
-  for (const key of Object.keys(item.value)) {
-    if (item.value[key] instanceof Blob) {
-      serializedValue[key] = await blobToBase64(item.value[key] as Blob);
-      serializedValue[`_isBlob_${key}`] = true;
-    }
-  }
-
-  return {
-    key: item.key,
-    value: serializedValue,
-  };
-}
-
-async function serializeStoreItems(
-  items: StoreItemWithKey[]
-): Promise<StoreItemWithKey[]> {
-  return Promise.all(items.map((item) => serializeStoreItem(item)));
-}
-
 async function serializeStoreItemRecords(
   items: StoreItemWithKey[]
 ): Promise<SerializedStoreItemRecord[]> {
   return Promise.all(
     items.map(async (item) => {
-      const serializedItem = await serializeStoreItem(item);
+      const serializedItem = (await serializeStorageItem(item)) as StoreItemWithKey;
       return {
         item: serializedItem,
         signature: await computeSyncSignature(serializedItem),
@@ -318,80 +259,16 @@ async function serializeStoreItemRecords(
   );
 }
 
-function deserializeStoreItem(item: StoreItemWithKey): Record<string, unknown> {
-  const restoredValue: Record<string, unknown> = {
-    ...item.value,
-  };
-
-  for (const key of Object.keys(item.value)) {
-    const isBlobKey = `_isBlob_${key}`;
-    if (item.value[isBlobKey] === true && typeof item.value[key] === "string") {
-      restoredValue[key] = base64ToBlob(item.value[key] as string);
-      delete restoredValue[isBlobKey];
-    }
-  }
-
-  return restoredValue;
-}
-
-async function restoreStoreItems(
-  db: IDBDatabase,
-  storeName: string,
-  items: StoreItemWithKey[]
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    const clearRequest = store.clear();
-
-    clearRequest.onsuccess = () => {
-      try {
-        for (const item of items) {
-          store.put(deserializeStoreItem(item), item.key);
-        }
-      } catch (error) {
-        transaction.abort();
-        reject(error);
-      }
-    };
-
-    clearRequest.onerror = () => reject(clearRequest.error);
-  });
-}
-
 async function upsertStoreItems(
-  db: IDBDatabase,
   storeName: string,
   items: StoreItemWithKey[]
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    try {
-      for (const item of items) {
-        store.put(deserializeStoreItem(item), item.key);
-      }
-    } catch (error) {
-      transaction.abort();
-      reject(error);
-    }
-  });
+  for (const item of items) {
+    await putStorageItem(storeName, deserializeStorageItem(item), item.key);
+  }
 }
 
 async function deleteStoreItemsByKey(
-  db: IDBDatabase,
   storeName: string,
   keys: string[]
 ): Promise<void> {
@@ -399,24 +276,9 @@ async function deleteStoreItemsByKey(
     return;
   }
 
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    try {
-      for (const key of keys) {
-        store.delete(key);
-      }
-    } catch (error) {
-      transaction.abort();
-      reject(error);
-    }
-  });
+  for (const key of keys) {
+    await deleteStorageItem(storeName, key);
+  }
 }
 
 async function gzipJson(value: unknown): Promise<Uint8Array> {
@@ -520,50 +382,31 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
 }
 
 async function serializeCustomWallpapersSnapshot(): Promise<CustomWallpapersSnapshotData> {
-  const db = await ensureIndexedDBInitialized();
-  try {
-    return await serializeStoreItems(
-      await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
-    );
-  } finally {
-    db.close();
-  }
+  return (await readSerializedStorageStoreItems(
+    STORES.CUSTOM_WALLPAPERS
+  )) as CustomWallpapersSnapshotData;
 }
 
 async function serializeCustomWallpapersRecords(): Promise<SerializedStoreItemRecord[]> {
-  const db = await ensureIndexedDBInitialized();
-  try {
-    return await serializeStoreItemRecords(
-      await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
-    );
-  } finally {
-    db.close();
-  }
+  return serializeStoreItemRecords(
+    (await listStorageItems(STORES.CUSTOM_WALLPAPERS)) as StoreItemWithKey[]
+  );
 }
 
 async function serializeIndexedDbStoreSnapshot(
   storeName: string
 ): Promise<FilesStoreSnapshotData> {
-  const db = await ensureIndexedDBInitialized();
-
-  try {
-    const items = await readStoreItems(db, storeName);
-    return await serializeStoreItems(items);
-  } finally {
-    db.close();
-  }
+  return (await readSerializedStorageStoreItems(
+    storeName
+  )) as FilesStoreSnapshotData;
 }
 
 async function serializeIndexedDbStoreRecords(
   storeName: string
 ): Promise<SerializedStoreItemRecord[]> {
-  const db = await ensureIndexedDBInitialized();
-
-  try {
-    return await serializeStoreItemRecords(await readStoreItems(db, storeName));
-  } finally {
-    db.close();
-  }
+  return serializeStoreItemRecords(
+    (await listStorageItems(storeName)) as StoreItemWithKey[]
+  );
 }
 
 function getIndividualBlobStoreName(domain: IndividualBlobSyncDomain): string {
@@ -751,12 +594,10 @@ async function applySettingsSnapshot(data: SettingsSnapshotData): Promise<void> 
 
   // Legacy: if the old settings envelope contained customWallpapers, restore them
   if (data.customWallpapers && data.customWallpapers.length > 0) {
-    const db = await ensureIndexedDBInitialized();
-    try {
-      await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, data.customWallpapers);
-    } finally {
-      db.close();
-    }
+    await restoreSerializedStorageStoreItems(
+      STORES.CUSTOM_WALLPAPERS,
+      data.customWallpapers
+    );
   }
 
   useDisplaySettingsStore.setState({
@@ -825,13 +666,7 @@ async function applyIndexedDbStoreSnapshot(
   storeName: string,
   data: FilesStoreSnapshotData
 ): Promise<void> {
-  const db = await ensureIndexedDBInitialized();
-
-  try {
-    await restoreStoreItems(db, storeName, data);
-  } finally {
-    db.close();
-  }
+  await restoreSerializedStorageStoreItems(storeName, data);
 }
 
 async function applyFilesMetadataSnapshot(
@@ -963,12 +798,10 @@ async function applyCustomWallpapersSnapshot(
   console.log(
     `[CloudSync] applyCustomWallpapersSnapshot: replacing with ${filteredData.length} items`
   );
-  const db = await ensureIndexedDBInitialized();
-  try {
-    await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, filteredData);
-  } finally {
-    db.close();
-  }
+  await restoreSerializedStorageStoreItems(
+    STORES.CUSTOM_WALLPAPERS,
+    filteredData
+  );
 
   await finalizeCustomWallpaperSync(filteredData.map((item) => item.key));
 }
@@ -978,9 +811,9 @@ async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promis
   const displayStore = useDisplaySettingsStore.getState();
   const current = displayStore.currentWallpaper;
 
-  if (current?.startsWith("indexeddb://")) {
-    const id = current.substring("indexeddb://".length);
-    if (remoteKeySet.has(id)) {
+  if (isStoredWallpaperReference(current)) {
+    const id = extractStoredWallpaperId(current);
+    if (id && remoteKeySet.has(id)) {
       await displayStore.setWallpaper(current);
     } else {
       useDisplaySettingsStore.setState({
@@ -1000,24 +833,18 @@ async function applyIndividualBlobDomain(
   deletedKeys: DeletionMarkerMap = {}
 ): Promise<void> {
   const storeName = getIndividualBlobStoreName(domain);
-  const db = await ensureIndexedDBInitialized();
   const effectiveRemoteKeys = remoteKeys.filter((key) => !deletedKeys[key]);
 
-  try {
-    const existingItems = await readStoreItems(db, storeName);
-    const existingKeys = new Set(existingItems.map((item) => item.key));
-    const remoteKeySet = new Set(effectiveRemoteKeys);
-    const keysToDelete = Array.from(existingKeys).filter((key) => !remoteKeySet.has(key));
+  const existingItems = (await listStorageItems(storeName)) as StoreItemWithKey[];
+  const existingKeys = new Set(existingItems.map((item) => item.key));
+  const remoteKeySet = new Set(effectiveRemoteKeys);
+  const keysToDelete = Array.from(existingKeys).filter((key) => !remoteKeySet.has(key));
 
-    await deleteStoreItemsByKey(db, storeName, keysToDelete);
-    await upsertStoreItems(
-      db,
-      storeName,
-      Object.values(changedItems).filter((item) => !deletedKeys[item.key])
-    );
-  } finally {
-    db.close();
-  }
+  await deleteStoreItemsByKey(storeName, keysToDelete);
+  await upsertStoreItems(
+    storeName,
+    Object.values(changedItems).filter((item) => !deletedKeys[item.key])
+  );
 
   if (domain === "custom-wallpapers") {
     await finalizeCustomWallpaperSync(effectiveRemoteKeys);
