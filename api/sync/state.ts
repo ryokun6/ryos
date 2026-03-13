@@ -18,6 +18,12 @@ import {
 import { isSerializedContact } from "../../src/utils/contacts.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
+import {
+  isSongsSnapshotData,
+  readSongsState,
+  writeSongsState,
+  type SongsSnapshotData,
+} from "../_utils/song-library-state.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -294,6 +300,27 @@ async function handleDomainDownload(
   username: string,
   domain: RedisSyncDomain
 ): Promise<void> {
+  if (domain === "songs") {
+    const songsState = await readSongsState(redis, username);
+    if (!songsState) {
+      res.status(404).json({ error: `No ${domain} state found` });
+      return;
+    }
+
+    res.status(200).json({
+      ok: true,
+      domain,
+      data: songsState.data,
+      metadata: {
+        updatedAt: songsState.metadata.updatedAt,
+        version: songsState.metadata.version,
+        totalSize: 0,
+        createdAt: songsState.metadata.createdAt,
+      },
+    });
+    return;
+  }
+
   const raw = await redis.get<string | PersistedRedisStateDomain>(
     stateKey(username, domain)
   );
@@ -378,6 +405,12 @@ async function handlePutState(
     });
     return;
   }
+  if (domain === "songs" && !isSongsSnapshotData(body.data)) {
+    res.status(400).json({
+      error: "Invalid songs snapshot payload",
+    });
+    return;
+  }
 
   const now = new Date().toISOString();
 
@@ -389,7 +422,33 @@ async function handlePutState(
   };
 
   try {
-    await persistStateEntry(redis, username, domain, entry);
+    let metadata: CloudSyncDomainMetadata;
+    if (domain === "songs") {
+      const songsMetadata = await writeSongsState(
+        redis,
+        username,
+        body.data as SongsSnapshotData,
+        {
+          updatedAt: entry.updatedAt,
+          version: entry.version,
+          createdAt: entry.createdAt,
+        }
+      );
+      metadata = {
+        updatedAt: songsMetadata.updatedAt,
+        version: songsMetadata.version,
+        totalSize: 0,
+        createdAt: songsMetadata.createdAt,
+      };
+    } else {
+      await persistStateEntry(redis, username, domain, entry);
+      metadata = {
+        updatedAt: entry.updatedAt,
+        version: entry.version,
+        totalSize: 0,
+        createdAt: entry.createdAt,
+      };
+    }
 
     try {
       const channel = getSyncChannelName(username);
@@ -406,12 +465,7 @@ async function handlePutState(
     res.status(200).json({
       ok: true,
       domain,
-      metadata: {
-        updatedAt: entry.updatedAt,
-        version: entry.version,
-        totalSize: 0,
-        createdAt: entry.createdAt,
-      },
+      metadata,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
