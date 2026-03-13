@@ -15,6 +15,7 @@ import {
   extractTelegramStartPayload,
   matchesTelegramCommand,
   parseTelegramTextUpdate,
+  sendTelegramVoice,
 } from "../api/_utils/telegram";
 
 class MemoryRedis {
@@ -176,6 +177,7 @@ describe("telegram helpers", () => {
       isPrivateChat: true,
       startPayload: "link_abc",
       photoFileId: null,
+      voiceFileId: null,
     });
 
     expect(
@@ -198,11 +200,83 @@ describe("telegram helpers", () => {
     ).toBeNull();
   });
 
+  test("parses telegram voice-note updates", () => {
+    const parsed = parseTelegramTextUpdate({
+      update_id: 12,
+      message: {
+        message_id: 10,
+        from: {
+          id: 99,
+          first_name: "Voice",
+        },
+        chat: {
+          id: 99,
+          type: "private",
+        },
+        voice: {
+          file_id: "voice-file-123",
+          duration: 4,
+          mime_type: "audio/ogg",
+        },
+      },
+    });
+
+    expect(parsed).toEqual({
+      updateId: 12,
+      messageId: 10,
+      chatId: "99",
+      chatType: "private",
+      text: "",
+      telegramUserId: "99",
+      telegramUsername: null,
+      firstName: "Voice",
+      lastName: null,
+      isPrivateChat: true,
+      startPayload: null,
+      photoFileId: null,
+      voiceFileId: "voice-file-123",
+    });
+  });
+
   test("builds telegram deep links", () => {
     expect(buildTelegramDeepLink("@ryos_bot", "link_deadbeef")).toBe(
       "https://t.me/ryos_bot?start=link_deadbeef"
     );
     expect(buildTelegramDeepLink(undefined, "link_deadbeef")).toBeNull();
+  });
+
+  test("sends telegram voice replies as multipart form data", async () => {
+    const result = await sendTelegramVoice({
+      botToken: "bot-token",
+      chatId: "chat-123",
+      voice: new Uint8Array([1, 2, 3, 4]),
+      replyToMessageId: 55,
+      durationSeconds: 7,
+      fetchImpl: async (input, init) => {
+        expect(String(input)).toContain("/sendVoice");
+        expect(init?.method).toBe("POST");
+        expect(init?.body).toBeInstanceOf(FormData);
+
+        const body = init?.body as FormData;
+        expect(body.get("chat_id")).toBe("chat-123");
+        expect(body.get("reply_to_message_id")).toBe("55");
+        expect(body.get("duration")).toBe("7");
+
+        const voice = body.get("voice");
+        expect(voice).toBeInstanceOf(File);
+        expect((voice as File).name).toBe("ryo-voice.mp3");
+        expect((voice as File).type).toBe("audio/mpeg");
+
+        return Response.json({
+          ok: true,
+          result: {
+            message_id: 456,
+          },
+        });
+      },
+    });
+
+    expect(result).toBe(456);
   });
 
   test("creates and consumes a one-time link code", async () => {
