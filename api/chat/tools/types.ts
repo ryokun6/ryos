@@ -156,6 +156,58 @@ export interface SearchSongsOutput {
   hint?: string;
 }
 
+// Song library control
+export const SONG_LIBRARY_ACTIONS = ["list", "search", "get"] as const;
+export type SongLibraryAction = typeof SONG_LIBRARY_ACTIONS[number];
+
+export const SONG_LIBRARY_SCOPES = ["user", "global", "any"] as const;
+export type SongLibraryScope = typeof SONG_LIBRARY_SCOPES[number];
+
+export interface SongLibraryLyricsSource {
+  hash: string;
+  albumId: string | number;
+  title: string;
+  artist: string;
+  album?: string;
+}
+
+export interface SongLibraryToolRecord {
+  id: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  cover?: string;
+  lyricOffset?: number;
+  lyricsSource?: SongLibraryLyricsSource;
+  createdBy?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  source: "user_library" | "global_cache" | "combined";
+  inUserLibrary: boolean;
+  hasLyrics?: boolean;
+  hasTranslations?: boolean;
+  hasFurigana?: boolean;
+  hasSoramimi?: boolean;
+  ipodUrl: string;
+  karaokeUrl: string;
+}
+
+export interface SongLibraryControlInput {
+  action: SongLibraryAction;
+  scope?: SongLibraryScope;
+  query?: string;
+  id?: string;
+  limit?: number;
+}
+
+export interface SongLibraryControlOutput {
+  success: boolean;
+  message: string;
+  scope: SongLibraryScope;
+  songs?: SongLibraryToolRecord[];
+  song?: SongLibraryToolRecord | null;
+}
+
 // Settings input
 export interface SettingsInput {
   language?: LanguageCode;

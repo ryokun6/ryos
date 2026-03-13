@@ -34,8 +34,21 @@ import type {
   StickiesSnapshotData,
   ContactsSnapshotData,
   type StickyColor,
+  SongLibraryControlInput,
+  SongLibraryControlOutput,
+  SongLibraryToolRecord,
+  SongLibraryScope,
+  SongLibraryLyricsSource,
 } from "./types.js";
 import { stateKey } from "../../sync/state.js";
+import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
+import { readSongsState } from "../../_utils/song-library-state.js";
+import {
+  getSong,
+  listSongs as listCachedSongs,
+  type LyricsSource,
+  type SongDocument,
+} from "../../_utils/_song-service.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
@@ -209,6 +222,387 @@ export async function executeSearchSongs(
 
   // All keys exhausted
   throw new Error(`All YouTube API keys exhausted. Last error: ${lastError || 'Unknown'}`);
+}
+
+function buildSongLinks(context: ServerToolContext, id: string): Pick<
+  SongLibraryToolRecord,
+  "ipodUrl" | "karaokeUrl"
+> {
+  const baseOrigin = getAppPublicOrigin(context.apiBaseUrl);
+  return {
+    ipodUrl: `${baseOrigin}/ipod/${encodeURIComponent(id)}`,
+    karaokeUrl: `${baseOrigin}/karaoke/${encodeURIComponent(id)}`,
+  };
+}
+
+function toSongLibraryLyricsSource(
+  source: LyricsSource | SongLibraryLyricsSource | undefined
+): SongLibraryLyricsSource | undefined {
+  if (!source) {
+    return undefined;
+  }
+
+  return {
+    hash: source.hash,
+    albumId: source.albumId,
+    title: source.title,
+    artist: source.artist,
+    ...(source.album ? { album: source.album } : {}),
+  };
+}
+
+function toUserLibrarySongRecord(
+  track: {
+    id: string;
+    title: string;
+    artist?: string;
+    album?: string;
+    cover?: string;
+    lyricOffset?: number;
+    lyricsSource?: SongLibraryLyricsSource;
+  },
+  context: ServerToolContext
+): SongLibraryToolRecord {
+  return {
+    id: track.id,
+    title: track.title,
+    ...(track.artist ? { artist: track.artist } : {}),
+    ...(track.album ? { album: track.album } : {}),
+    ...(track.cover ? { cover: track.cover } : {}),
+    ...(track.lyricOffset !== undefined ? { lyricOffset: track.lyricOffset } : {}),
+    ...(track.lyricsSource ? { lyricsSource: track.lyricsSource } : {}),
+    source: "user_library",
+    inUserLibrary: true,
+    ...buildSongLinks(context, track.id),
+  };
+}
+
+function toGlobalSongRecord(
+  song: SongDocument,
+  context: ServerToolContext,
+  options: { includeAvailability?: boolean } = {}
+): SongLibraryToolRecord {
+  return {
+    id: song.id,
+    title: song.title,
+    ...(song.artist ? { artist: song.artist } : {}),
+    ...(song.album ? { album: song.album } : {}),
+    ...(song.cover ? { cover: song.cover } : {}),
+    ...(song.lyricOffset !== undefined ? { lyricOffset: song.lyricOffset } : {}),
+    ...(song.lyricsSource
+      ? { lyricsSource: toSongLibraryLyricsSource(song.lyricsSource) }
+      : {}),
+    ...(song.createdBy ? { createdBy: song.createdBy } : {}),
+    ...(song.createdAt ? { createdAt: song.createdAt } : {}),
+    ...(song.updatedAt ? { updatedAt: song.updatedAt } : {}),
+    ...(options.includeAvailability
+      ? {
+          hasLyrics: !!song.lyrics?.lrc,
+          hasTranslations: !!(song.translations && Object.keys(song.translations).length > 0),
+          hasFurigana: !!(song.furigana && song.furigana.length > 0),
+          hasSoramimi: !!(
+            (song.soramimi && song.soramimi.length > 0) ||
+            (song.soramimiByLang && Object.keys(song.soramimiByLang).length > 0)
+          ),
+        }
+      : {}),
+    source: "global_cache",
+    inUserLibrary: false,
+    ...buildSongLinks(context, song.id),
+  };
+}
+
+function combineSongRecords(
+  userRecord: SongLibraryToolRecord,
+  globalRecord: SongLibraryToolRecord
+): SongLibraryToolRecord {
+  return {
+    ...globalRecord,
+    ...userRecord,
+    title: userRecord.title || globalRecord.title,
+    artist: userRecord.artist ?? globalRecord.artist,
+    album: userRecord.album ?? globalRecord.album,
+    cover: userRecord.cover ?? globalRecord.cover,
+    lyricOffset: userRecord.lyricOffset ?? globalRecord.lyricOffset,
+    lyricsSource: userRecord.lyricsSource ?? globalRecord.lyricsSource,
+    createdBy: globalRecord.createdBy,
+    createdAt: globalRecord.createdAt,
+    updatedAt: globalRecord.updatedAt,
+    hasLyrics: globalRecord.hasLyrics,
+    hasTranslations: globalRecord.hasTranslations,
+    hasFurigana: globalRecord.hasFurigana,
+    hasSoramimi: globalRecord.hasSoramimi,
+    source: "combined",
+    inUserLibrary: true,
+  };
+}
+
+function normalizeSongQuery(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function scoreSongMatch(record: SongLibraryToolRecord, query: string): number {
+  const normalizedQuery = normalizeSongQuery(query);
+  if (!normalizedQuery) {
+    return 1;
+  }
+
+  const fields = [
+    record.id,
+    record.title,
+    record.artist,
+    record.album,
+    record.createdBy,
+  ]
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .map((value) => normalizeSongQuery(value));
+
+  let score = 0;
+
+  if (record.id.toLowerCase() === normalizedQuery) {
+    score += 2000;
+  }
+
+  for (const field of fields) {
+    if (field === normalizedQuery) {
+      score += 1200;
+    } else if (field.startsWith(normalizedQuery)) {
+      score += 700;
+    } else if (field.includes(normalizedQuery)) {
+      score += 350;
+    }
+  }
+
+  const queryTokens = normalizedQuery.split(" ").filter(Boolean);
+  if (queryTokens.length > 1) {
+    const combined = fields.join(" ");
+    const matchingTokens = queryTokens.filter((token) => combined.includes(token)).length;
+    score += matchingTokens * 120;
+  }
+
+  if (score <= 0) {
+    return 0;
+  }
+
+  if (record.source === "combined") {
+    score += 80;
+  } else if (record.inUserLibrary) {
+    score += 40;
+  }
+
+  return score;
+}
+
+function filterAndLimitSongs(
+  songs: SongLibraryToolRecord[],
+  query: string | undefined,
+  limit: number
+): SongLibraryToolRecord[] {
+  if (!query) {
+    return songs.slice(0, limit);
+  }
+
+  return songs
+    .map((song, index) => ({ song, score: scoreSongMatch(song, query), index }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      const createdAtA = a.song.createdAt ?? 0;
+      const createdAtB = b.song.createdAt ?? 0;
+      if (createdAtB !== createdAtA) {
+        return createdAtB - createdAtA;
+      }
+      return a.index - b.index;
+    })
+    .slice(0, limit)
+    .map((entry) => entry.song);
+}
+
+function resolveSongScope(
+  requestedScope: SongLibraryScope,
+  username?: string | null
+): SongLibraryScope {
+  if (requestedScope === "user" && !username) {
+    return "user";
+  }
+
+  if (requestedScope === "any" && !username) {
+    return "global";
+  }
+
+  return requestedScope;
+}
+
+async function loadUserLibrarySongs(
+  context: MemoryToolContext
+): Promise<SongLibraryToolRecord[]> {
+  if (!context.redis || !context.username) {
+    return [];
+  }
+
+  const state = await readSongsState(context.redis, context.username);
+  return (state?.data.tracks ?? []).map((track) =>
+    toUserLibrarySongRecord(
+      {
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+        album: track.album,
+        cover: track.cover,
+        lyricOffset: track.lyricOffset,
+        lyricsSource: toSongLibraryLyricsSource(track.lyricsSource),
+      },
+      context
+    )
+  );
+}
+
+async function loadGlobalLibrarySongs(
+  context: MemoryToolContext
+): Promise<SongLibraryToolRecord[]> {
+  if (!context.redis) {
+    return [];
+  }
+
+  const songs = await listCachedSongs(context.redis, {
+    getOptions: { includeMetadata: true },
+  });
+  return songs.map((song) => toGlobalSongRecord(song, context));
+}
+
+function combineSongCollections(
+  userSongs: SongLibraryToolRecord[],
+  globalSongs: SongLibraryToolRecord[]
+): SongLibraryToolRecord[] {
+  const globalMap = new Map(globalSongs.map((song) => [song.id, song]));
+  const combined: SongLibraryToolRecord[] = [];
+  const seen = new Set<string>();
+
+  for (const userSong of userSongs) {
+    const globalSong = globalMap.get(userSong.id);
+    combined.push(globalSong ? combineSongRecords(userSong, globalSong) : userSong);
+    seen.add(userSong.id);
+  }
+
+  for (const globalSong of globalSongs) {
+    if (!seen.has(globalSong.id)) {
+      combined.push(globalSong);
+    }
+  }
+
+  return combined;
+}
+
+export async function executeSongLibraryControl(
+  input: SongLibraryControlInput,
+  context: MemoryToolContext
+): Promise<SongLibraryControlOutput> {
+  const requestedScope = input.scope || "any";
+  const scope = resolveSongScope(requestedScope, context.username);
+  const limit = input.limit ?? 5;
+
+  if (!context.redis) {
+    return {
+      success: false,
+      message: "Song storage is not available.",
+      scope,
+    };
+  }
+
+  if (requestedScope === "user" && !context.username) {
+    return {
+      success: false,
+      message: "Authentication required to search the user's synced song library.",
+      scope: requestedScope,
+    };
+  }
+
+  context.log(
+    `[songLibraryControl] action=${input.action} scope=${scope} query=${input.query || ""} id=${input.id || ""}`
+  );
+
+  const userSongs =
+    scope === "user" || scope === "any" ? await loadUserLibrarySongs(context) : [];
+  const globalSongs =
+    scope === "global" || scope === "any" ? await loadGlobalLibrarySongs(context) : [];
+  const searchableSongs =
+    scope === "any"
+      ? combineSongCollections(userSongs, globalSongs)
+      : scope === "user"
+        ? userSongs
+        : globalSongs;
+
+  switch (input.action) {
+    case "list": {
+      const songs = searchableSongs.slice(0, limit);
+      return {
+        success: true,
+        message:
+          songs.length === 0
+            ? `No songs found in the ${scope === "user" ? "user" : scope === "global" ? "global" : "available"} library.`
+            : `Found ${songs.length} ${songs.length === 1 ? "song" : "songs"} in ${scope} scope.`,
+        scope,
+        songs,
+      };
+    }
+
+    case "search": {
+      const songs = filterAndLimitSongs(searchableSongs, input.query, limit);
+      return {
+        success: true,
+        message:
+          songs.length === 0
+            ? `No songs matched "${input.query}" in ${scope} scope.`
+            : `Found ${songs.length} ${songs.length === 1 ? "song" : "songs"} matching "${input.query}" in ${scope} scope.`,
+        scope,
+        songs,
+      };
+    }
+
+    case "get": {
+      const id = input.id?.trim() || "";
+      const userSong = userSongs.find((song) => song.id === id);
+
+      let globalSong: SongLibraryToolRecord | null = null;
+      if (scope !== "user") {
+        const globalDetail = await getSong(context.redis, id, {
+          includeMetadata: true,
+          includeLyrics: true,
+          includeTranslations: true,
+          includeFurigana: true,
+          includeSoramimi: true,
+        });
+        if (globalDetail) {
+          globalSong = toGlobalSongRecord(globalDetail, context, {
+            includeAvailability: true,
+          });
+        }
+      }
+
+      const song =
+        userSong && globalSong
+          ? combineSongRecords(userSong, globalSong)
+          : userSong || globalSong;
+
+      if (!song) {
+        return {
+          success: false,
+          message: `Song '${id}' was not found in ${scope} scope.`,
+          scope,
+          song: null,
+        };
+      }
+
+      return {
+        success: true,
+        message: `Loaded metadata for "${song.title}".`,
+        scope,
+        song,
+      };
+    }
+  }
 }
 
 // ============================================================================

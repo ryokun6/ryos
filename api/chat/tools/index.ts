@@ -44,10 +44,12 @@ import type {
   DocumentsControlInput,
   StickiesControlInput,
   ContactsControlInput,
+  SongLibraryControlInput,
 } from "./types.js";
 import {
   executeGenerateHtml,
   executeSearchSongs,
+  executeSongLibraryControl,
   executeMemoryWrite,
   executeMemoryRead,
   executeMemoryDelete,
@@ -64,6 +66,7 @@ export * from "./schemas.js";
 export {
   executeGenerateHtml,
   executeSearchSongs,
+  executeSongLibraryControl,
   executeMemoryWrite,
   executeMemoryRead,
   executeMemoryDelete,
@@ -88,6 +91,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "calendarControl",
   "stickiesControl",
   "contactsControl",
+  "songLibraryControl",
 ] as const;
 
 export type ChatToolProfile = "all" | "memory" | "telegram";
@@ -160,6 +164,12 @@ export const TOOL_DESCRIPTIONS = {
   
   searchSongs:
     "Search for songs/videos on YouTube. Returns a list of results with video IDs, titles, and channel names. Use this to help users find music to add to their iPod. PREFER official music videos from verified artist channels (look for 'VEVO' or the artist's official channel). AVOID karaoke versions, instrumental versions, playlists, compilations, 'best of' collections, lyric videos, and covers unless specifically requested. After getting results, you can use ipodControl with action 'addAndPlay' to add a song using its videoId.",
+
+  songLibraryControl:
+    "Search ryOS song libraries and cached song metadata from server-side contexts like Telegram. " +
+    "Actions: 'list' returns recent songs, 'search' finds songs by id/title/artist/album, and 'get' returns metadata for one song id. " +
+    "Scopes: 'user' searches the signed-in user's synced song library, 'global' searches the server song/lyrics cache, and 'any' searches both with user-library matches preferred. " +
+    "Results include canonical ryOS links for iPod and Karaoke share URLs.",
   
   settings:
     "Change system settings in ryOS. Use this tool when the user asks to change language, theme, volume, enable/disable speech, or check for updates. Multiple settings can be changed in a single call.",
@@ -336,7 +346,6 @@ export function createChatTools(
         return executeSearchSongs(input, context);
       },
     },
-
     // ============================================================================
     // System Settings Tools (Client-side execution)
     // ============================================================================
@@ -472,6 +481,13 @@ export function createChatTools(
         inputSchema: schemas.contactsControlSchema,
         execute: async (input: ContactsControlInput) => {
           return executeContactsControl(input, context);
+        },
+      },
+      songLibraryControl: {
+        description: TOOL_DESCRIPTIONS.songLibraryControl,
+        inputSchema: schemas.songLibraryControlSchema,
+        execute: async (input: SongLibraryControlInput) => {
+          return executeSongLibraryControl(input, context);
         },
       },
     } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;

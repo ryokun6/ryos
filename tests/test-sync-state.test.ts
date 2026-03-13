@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { gzipSync } from "node:zlib";
 import { createRedis } from "../api/_utils/redis";
 import { generateAuthToken, storeToken } from "../api/_utils/auth";
+import { readSongsState } from "../api/_utils/song-library-state";
 import { stateKey } from "../api/sync/state";
 import { BASE_URL, fetchWithAuth } from "./test-utils";
 
@@ -295,5 +296,134 @@ describe("sync state API deletion markers", () => {
     expect(calendarJson.data.deletedTodoIds).toEqual({
       "todo-1": "2026-03-12T16:33:00.000Z",
     });
+  });
+});
+
+describe("sync state API songs library storage", () => {
+  test("writes and downloads songs through the item-based user store", async () => {
+    const authToken = await getAuthToken();
+    const redis = createRedis();
+    const updatedAt = "2026-03-13T03:15:00.000Z";
+    const payload = {
+      tracks: [
+        {
+          id: "song_track_1",
+          url: "https://www.youtube.com/watch?v=song_track_1",
+          title: "First Song",
+          artist: "Artist One",
+          lyricOffset: 250,
+          lyricsSource: {
+            hash: "hash-1",
+            albumId: "album-1",
+            title: "First Song",
+            artist: "Artist One",
+          },
+        },
+        {
+          id: "song_track_2",
+          url: "https://www.youtube.com/watch?v=song_track_2",
+          title: "Second Song",
+          album: "Album Two",
+        },
+      ],
+      libraryState: "loaded",
+      lastKnownVersion: 42,
+    };
+
+    const saveRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "songs",
+          updatedAt,
+          version: 1,
+          data: payload,
+        }),
+      }
+    );
+    expect(saveRes.status).toBe(200);
+
+    const stored = await readSongsState(redis, TEST_USERNAME);
+    expect(stored?.metadata.updatedAt).toBe(updatedAt);
+    expect(stored?.data.libraryState).toBe("loaded");
+    expect(stored?.data.lastKnownVersion).toBe(42);
+    expect(stored?.data.tracks.map((track) => track.id)).toEqual([
+      "song_track_1",
+      "song_track_2",
+    ]);
+
+    const legacyRaw = await redis.get(stateKey(TEST_USERNAME, "songs"));
+    expect(legacyRaw).toBeNull();
+
+    const downloadRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state?domain=songs`,
+      TEST_USERNAME,
+      authToken
+    );
+    expect(downloadRes.status).toBe(200);
+    const downloadJson = await downloadRes.json();
+    expect(downloadJson.data).toEqual(payload);
+    expect(downloadJson.metadata.updatedAt).toBe(updatedAt);
+  });
+
+  test("migrates legacy songs snapshots on first download", async () => {
+    const redis = createRedis();
+    const username = `sync_songs_legacy_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const authToken = generateAuthToken();
+    const updatedAt = "2026-03-13T03:25:00.000Z";
+
+    await storeToken(redis, username, authToken);
+    await redis.set(
+      stateKey(username, "songs"),
+      JSON.stringify({
+        data: {
+          tracks: [
+            {
+              id: "legacy_song_1",
+              url: "https://www.youtube.com/watch?v=legacy_song_1",
+              title: "Legacy Song",
+              cover: "https://example.com/legacy.png",
+            },
+          ],
+          libraryState: "loaded",
+          lastKnownVersion: 7,
+        },
+        updatedAt,
+        version: 1,
+        createdAt: updatedAt,
+      })
+    );
+    await redis.set(
+      `sync:state:meta:${username}`,
+      JSON.stringify({
+        songs: {
+          updatedAt,
+          version: 1,
+          createdAt: updatedAt,
+        },
+      })
+    );
+
+    const downloadRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state?domain=songs`,
+      username,
+      authToken
+    );
+    expect(downloadRes.status).toBe(200);
+    const downloadJson = await downloadRes.json();
+    expect(downloadJson.data.tracks).toHaveLength(1);
+    expect(downloadJson.data.tracks[0].id).toBe("legacy_song_1");
+    expect(downloadJson.metadata.updatedAt).toBe(updatedAt);
+
+    const migrated = await readSongsState(redis, username);
+    expect(migrated?.data.lastKnownVersion).toBe(7);
+    expect(migrated?.data.tracks[0]?.title).toBe("Legacy Song");
+
+    const legacyRaw = await redis.get(stateKey(username, "songs"));
+    expect(legacyRaw).toBeNull();
   });
 });
