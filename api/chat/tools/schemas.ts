@@ -18,6 +18,8 @@ import {
   CONTACT_ACTIONS,
   DOCUMENTS_ACTIONS,
   DOCUMENT_WRITE_MODES,
+  SONG_LIBRARY_ACTIONS,
+  SONG_LIBRARY_SCOPES,
 } from "./types.js";
 import {
   MAX_KEY_LENGTH,
@@ -361,6 +363,56 @@ export const searchSongsSchema = z.object({
     .default(5)
     .describe("Maximum number of results to return (1-10, default 5)"),
 });
+
+/**
+ * Song library control schema
+ */
+export const songLibraryControlSchema = z
+  .object({
+    action: z
+      .enum(SONG_LIBRARY_ACTIONS)
+      .describe(
+        "Action to perform: 'list' returns recent songs from the selected scope, 'search' finds songs by id/title/artist/album, and 'get' returns detailed metadata for one song id."
+      ),
+    scope: z
+      .enum(SONG_LIBRARY_SCOPES)
+      .optional()
+      .default("any")
+      .describe(
+        "Where to search: 'user' = the signed-in user's synced library, 'global' = the server song/lyrics cache, 'any' = both with user-library songs preferred."
+      ),
+    query: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'search': query text matched against id, title, artist, album, and creator."),
+    id: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'get': exact song id / YouTube id."),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(25)
+      .optional()
+      .default(5)
+      .describe("Maximum number of songs to return for 'list' or 'search' (1-25, default 5)."),
+  })
+  .superRefine((data, ctx) => {
+    if (data.action === "search" && !data.query) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'search' action requires the 'query' parameter.",
+        path: ["query"],
+      });
+    }
+
+    if (data.action === "get" && !data.id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'get' action requires the 'id' parameter.",
+        path: ["id"],
+      });
+    }
+  });
 
 /**
  * Settings schema
