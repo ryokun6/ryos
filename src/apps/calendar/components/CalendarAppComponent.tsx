@@ -200,7 +200,7 @@ function TodoSidebar({
   }, [dueDateTodoId, onUpdate]);
 
   const actionButtonVisibilityClass = fullWidth
-    ? "opacity-40"
+    ? "opacity-60"
     : "pointer-events-none translate-x-1 opacity-0 group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-40";
   const todoTitleFieldClass = cn(
     "text-[11px] leading-tight flex-1 min-w-0 rounded border px-1 py-0.5 min-h-[22px]",
