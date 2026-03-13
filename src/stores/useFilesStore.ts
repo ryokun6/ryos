@@ -5,6 +5,7 @@ import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { OsThemeId } from "@/themes/types";
 import { getAppBasicInfoList } from "@/config/appRegistryData";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { runWithCloudSyncMutationSource } from "@/utils/cloudSyncMutationSource";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
 // Define the structure for a file system item (metadata)
@@ -1374,26 +1375,35 @@ export const useFilesStore = create<FilesStoreState>()(
           if (state.libraryState === "uninitialized") {
             // For new users: initializeLibrary handles everything including
             // creating directories and desktop shortcuts in proper order
-            Promise.resolve(state.initializeLibrary()).catch((err) =>
+            void runWithCloudSyncMutationSource(
+              "system-bootstrap",
+              () => state.initializeLibrary(),
+              "files-store:initializeLibrary"
+            ).catch((err) =>
               console.error("Files initialization failed on rehydrate", err)
             );
           } else {
             // For existing users: sync root directories and ensure desktop shortcuts
             // This handles cases where new apps are added in updates
             // Also register default files for lazy loading (uses cached JSON)
-            Promise.all([
-              loadDefaultFiles().then((data) => {
-                registerFilesForLazyLoad(data.files, state.items);
-              }),
-              loadDefaultApplets().then((data) => {
-                registerFilesForLazyLoad(data.applets, state.items);
-              }),
-              state.syncRootDirectoriesFromDefaults().then(() => {
-                if (state.ensureDefaultDesktopShortcuts) {
-                  return state.ensureDefaultDesktopShortcuts();
-                }
-              }),
-            ]).catch(
+            void runWithCloudSyncMutationSource(
+              "system-bootstrap",
+              () =>
+                Promise.all([
+                  loadDefaultFiles().then((data) => {
+                    registerFilesForLazyLoad(data.files, state.items);
+                  }),
+                  loadDefaultApplets().then((data) => {
+                    registerFilesForLazyLoad(data.applets, state.items);
+                  }),
+                  state.syncRootDirectoriesFromDefaults().then(() => {
+                    if (state.ensureDefaultDesktopShortcuts) {
+                      return state.ensureDefaultDesktopShortcuts();
+                    }
+                  }),
+                ]),
+              "files-store:rehydrate"
+            ).catch(
               (err) =>
                 console.error(
                   "Files root directory sync failed on rehydrate",

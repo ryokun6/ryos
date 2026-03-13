@@ -60,6 +60,7 @@ import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import { runWithCloudSyncMutationSource } from "@/utils/cloudSyncMutationSource";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
@@ -1532,11 +1533,17 @@ export async function downloadAndApplyCloudSyncDomain(
   domain: CloudSyncDomain,
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  if (isRedisSyncDomain(domain)) {
-    return downloadRedisStateDomain(domain, _auth);
-  }
-  if (isBlobSyncDomain(domain)) {
-    return downloadBlobDomain(domain, _auth);
-  }
-  throw new Error(`Unknown sync domain: ${domain}`);
+  return runWithCloudSyncMutationSource(
+    "remote-sync",
+    async () => {
+      if (isRedisSyncDomain(domain)) {
+        return downloadRedisStateDomain(domain, _auth);
+      }
+      if (isBlobSyncDomain(domain)) {
+        return downloadBlobDomain(domain, _auth);
+      }
+      throw new Error(`Unknown sync domain: ${domain}`);
+    },
+    domain
+  );
 }
