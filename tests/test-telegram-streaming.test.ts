@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { simplifyTelegramCitationDisplay } from "../api/_utils/telegram-format";
 import {
+  collectTelegramReplyText,
   splitTelegramMessageText,
   streamTelegramReply,
   TELEGRAM_MAX_MESSAGE_LENGTH,
@@ -55,6 +56,18 @@ describe("telegram streaming helpers", () => {
       { type: "draft", text: "hello there" },
       { type: "send", text: "hello there", replyToMessageId: 55 },
     ]);
+  });
+
+  test("collects a formatted reply without publishing previews", async () => {
+    const result = await collectTelegramReplyText({
+      textStream: makeTextStream([
+        "# Update\n- **it shipped yesterday** ([example.com](https://example.com/news)).",
+      ]),
+      maxReplyLength: 24,
+      formatText: simplifyTelegramCitationDisplay,
+    });
+
+    expect(result).toBe("Update\n• it shipped...");
   });
 
   test("formats streamed Telegram text before previewing and sending", async () => {
