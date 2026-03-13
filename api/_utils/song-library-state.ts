@@ -222,7 +222,8 @@ async function readStoredSongsState(
 
   const trackMap = new Map<string, Track>();
   for (let index = 0; index < trackOrder.length; index += 1) {
-    const track = normalizeTrack(rawTracks[index]);
+    const parsedTrack = parseJson<Track>(rawTracks[index]);
+    const track = normalizeTrack(parsedTrack);
     if (track) {
       trackMap.set(track.id, track);
     }
