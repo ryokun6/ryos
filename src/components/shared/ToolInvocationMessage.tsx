@@ -2,7 +2,11 @@ import { Check } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
-import { getWebSearchSummary } from "@/lib/toolInvocationDisplay";
+import {
+  getSongLibraryCallSummary,
+  getSongLibraryResultSummary,
+  getWebSearchSummary,
+} from "@/lib/toolInvocationDisplay";
 import { useTranslation } from "react-i18next";
 
 // AI SDK v5 tool invocation structure
@@ -163,6 +167,13 @@ export function ToolInvocationMessage({
         displayCallMessage = t("apps.chats.toolCalls.searchingSongs", { query });
         break;
       }
+      case "songLibraryControl":
+        displayCallMessage =
+          getSongLibraryCallSummary(input) ??
+          t("apps.chats.toolCalls.running", {
+            toolName: formatToolName(toolName),
+          });
+        break;
       case "web_search":
       case "google_search":
         displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
@@ -454,6 +465,8 @@ export function ToolInvocationMessage({
         }
       }
       displayResultMessage = t("apps.chats.toolCalls.foundVideos", { count });
+    } else if (toolName === "songLibraryControl") {
+      displayResultMessage = getSongLibraryResultSummary(output, input);
     } else if (toolName === "web_search" || toolName === "google_search") {
       const summary = getWebSearchSummary(output);
       displayResultMessage = summary?.query
