@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type DashboardWidget, type WidgetType } from "@/stores/useDashboardStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { debugLog } from "@/lib/debugLog";
 
 function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
   switch (type) {
@@ -87,6 +88,7 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
 const MOBILE_WIDGET_STACK_SIDE_PADDING = 16;
 const MOBILE_WIDGET_STACK_MAX_WIDTH = 420;
 const MOBILE_WIDGET_MIN_SCALE = 0.72;
+const DASHBOARD_MOBILE_PROBE_VERSION = "dashboard-mobile-probe-v1";
 
 function useViewportWidth() {
   const subscribe = useCallback((callback: () => void) => {
@@ -256,6 +258,24 @@ function MobileDashboardWidgets({
     )
   );
   const bottomPadding = isPickerOpen ? stripHeight + 120 : 96;
+
+  useEffect(() => {
+    // #region agent log
+    debugLog({
+      hypothesisId: "D",
+      location: "src/apps/dashboard/components/DashboardAppComponent.tsx:MobileDashboardWidgets",
+      message: "mobile dashboard stack rendered",
+      data: {
+        probeVersion: DASHBOARD_MOBILE_PROBE_VERSION,
+        viewportWidth,
+        cardWidth,
+        widgetCount: widgets.length,
+        isPickerOpen,
+        stripHeight,
+      },
+    });
+    // #endregion
+  }, [cardWidth, isPickerOpen, stripHeight, viewportWidth, widgets.length]);
 
   return (
     <div
@@ -445,6 +465,43 @@ export function DashboardAppComponent({
 
   const showOverlay = isWindowOpen && !isClosing;
   const toggleButtonBottom = isPickerOpen ? Math.max(stripHeight + 16, 110) : 16;
+
+  useEffect(() => {
+    // #region agent log
+    debugLog({
+      hypothesisId: "B",
+      location: "src/apps/dashboard/components/DashboardAppComponent.tsx:DashboardAppComponent",
+      message: "dashboard render state",
+      data: {
+        probeVersion: DASHBOARD_MOBILE_PROBE_VERSION,
+        instanceId: instanceId ?? null,
+        isWindowOpen,
+        showOverlay,
+        isPhone,
+        activeBranch: showOverlay ? (isPhone ? "mobile" : "desktop") : "hidden",
+        widgetCount: widgets.length,
+        isPickerOpen,
+      },
+    });
+    // #endregion
+  }, [instanceId, isPhone, isPickerOpen, isWindowOpen, showOverlay, widgets.length]);
+
+  useEffect(() => {
+    if (!showOverlay || isPhone) return;
+    // #region agent log
+    debugLog({
+      hypothesisId: "C",
+      location: "src/apps/dashboard/components/DashboardAppComponent.tsx:desktopBranch",
+      message: "desktop dashboard branch active",
+      data: {
+        probeVersion: DASHBOARD_MOBILE_PROBE_VERSION,
+        innerWidth: window.innerWidth,
+        widgetCount: widgets.length,
+        stripHeight,
+      },
+    });
+    // #endregion
+  }, [isPhone, showOverlay, stripHeight, widgets.length]);
 
   useEffect(() => {
     if (!showOverlay || isPhone) return;
