@@ -380,6 +380,10 @@ function scoreSongMatch(record: SongLibraryToolRecord, query: string): number {
     score += matchingTokens * 120;
   }
 
+  if (score <= 0) {
+    return 0;
+  }
+
   if (record.source === "combined") {
     score += 80;
   } else if (record.inUserLibrary) {
