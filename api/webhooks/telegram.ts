@@ -23,6 +23,7 @@ import {
 } from "../_utils/telegram.js";
 import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
 import {
+  collectTelegramReplyText,
   TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
   streamTelegramReply,
 } from "../_utils/telegram-streaming.js";
@@ -660,6 +661,7 @@ export default async function handler(
     logWarn: (message, details) => logger.warn(message, details),
   });
   const reportedProviderToolCalls = new Set<string>();
+  const shouldSendVoiceOnlyReply = Boolean(parsedUpdate.voiceFileId);
 
   try {
     await statusReporter.start();
@@ -721,19 +723,28 @@ export default async function handler(
       },
     });
 
-    const { text: replyText, previewMode } = await streamTelegramReply({
-      botToken,
-      chatId: parsedUpdate.chatId,
-      draftId: parsedUpdate.updateId,
-      textStream: result.textStream,
-      replyToMessageId: parsedUpdate.messageId,
-      maxReplyLength: TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
-      formatText: simplifyTelegramCitationDisplay,
-      onBeforePreview: async () => {
-        await statusReporter.dispose();
-      },
-      logWarn: (message, details) => logger.warn(message, details),
-    });
+    const { text: replyText, previewMode } = shouldSendVoiceOnlyReply
+      ? {
+          text: await collectTelegramReplyText({
+            textStream: result.textStream,
+            maxReplyLength: TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
+            formatText: simplifyTelegramCitationDisplay,
+          }),
+          previewMode: "none" as const,
+        }
+      : await streamTelegramReply({
+          botToken,
+          chatId: parsedUpdate.chatId,
+          draftId: parsedUpdate.updateId,
+          textStream: result.textStream,
+          replyToMessageId: parsedUpdate.messageId,
+          maxReplyLength: TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
+          formatText: simplifyTelegramCitationDisplay,
+          onBeforePreview: async () => {
+            await statusReporter.dispose();
+          },
+          logWarn: (message, details) => logger.warn(message, details),
+        });
 
     if (!replyText) {
       logger.warn("Generated empty Telegram reply", {
@@ -746,28 +757,37 @@ export default async function handler(
     }
 
     let voiceReplyMessageId: number | null = null;
-    try {
-      await sendTelegramChatAction({
-        botToken,
-        chatId: parsedUpdate.chatId,
-        action: "upload_voice",
-      });
-      const voiceReplyAudio = await generateElevenLabsSpeech({
-        text: replyText,
-      });
-      voiceReplyMessageId = await sendTelegramVoice({
-        botToken,
-        chatId: parsedUpdate.chatId,
-        voice: voiceReplyAudio,
-        replyToMessageId: parsedUpdate.messageId,
-        mimeType: "audio/mpeg",
-      });
-    } catch (error) {
-      logger.warn("Failed to send Telegram voice reply, keeping text reply only", {
-        username: linkedAccount.username,
-        updateId: parsedUpdate.updateId,
-        error: error instanceof Error ? error.message : String(error),
-      });
+    if (shouldSendVoiceOnlyReply) {
+      try {
+        await statusReporter.dispose();
+        await sendTelegramChatAction({
+          botToken,
+          chatId: parsedUpdate.chatId,
+          action: "upload_voice",
+        });
+        const voiceReplyAudio = await generateElevenLabsSpeech({
+          text: replyText,
+        });
+        voiceReplyMessageId = await sendTelegramVoice({
+          botToken,
+          chatId: parsedUpdate.chatId,
+          voice: voiceReplyAudio,
+          replyToMessageId: parsedUpdate.messageId,
+          mimeType: "audio/mpeg",
+        });
+      } catch (error) {
+        logger.warn("Failed to send Telegram voice-only reply", {
+          username: linkedAccount.username,
+          updateId: parsedUpdate.updateId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        await sendTelegramInfoMessage(
+          botToken,
+          parsedUpdate.chatId,
+          "i couldn't send a voice reply just now. try again in a moment or send text instead.",
+          parsedUpdate.messageId
+        );
+      }
     }
 
     const timestamp = Date.now();
