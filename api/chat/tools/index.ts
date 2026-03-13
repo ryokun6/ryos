@@ -346,14 +346,6 @@ export function createChatTools(
         return executeSearchSongs(input, context);
       },
     },
-    songLibraryControl: {
-      description: TOOL_DESCRIPTIONS.songLibraryControl,
-      inputSchema: schemas.songLibraryControlSchema,
-      execute: async (input: SongLibraryControlInput) => {
-        return executeSongLibraryControl(input, context);
-      },
-    },
-
     // ============================================================================
     // System Settings Tools (Client-side execution)
     // ============================================================================

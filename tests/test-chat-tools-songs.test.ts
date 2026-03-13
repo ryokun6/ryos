@@ -175,10 +175,9 @@ async function seedSongs(redis: FakeRedis): Promise<void> {
 }
 
 describe("song library chat tools", () => {
-  test("all profile exposes server-executed songLibraryControl", () => {
+  test("all profile does not expose songLibraryControl", () => {
     const tools = createChatTools(createContext(new FakeRedis()), { profile: "all" });
-    expect("songLibraryControl" in tools).toBe(true);
-    expect(typeof tools.songLibraryControl.execute).toBe("function");
+    expect("songLibraryControl" in tools).toBe(false);
   });
 
   test("telegram profile exposes server-executed songLibraryControl", () => {
