@@ -1435,6 +1435,9 @@
         "open": "開く",
         "rename": "名前の変更…",
         "shareViaAirDrop": "AirDrop で共有",
+        "searchingForAirDropUsers": "近くのユーザーを検索中…",
+        "noAirDropUsersAvailable": "近くのユーザーはいません",
+        "openAirDrop": "AirDropを開く",
         "size": "サイズ",
         "sortBy": "並び替え"
       },

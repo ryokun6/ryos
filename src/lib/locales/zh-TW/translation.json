@@ -1435,6 +1435,9 @@
         "open": "開啟",
         "rename": "重新命名…",
         "shareViaAirDrop": "透過 AirDrop 分享",
+        "searchingForAirDropUsers": "正在尋找附近的使用者…",
+        "noAirDropUsersAvailable": "附近沒有使用者",
+        "openAirDrop": "開啟 AirDrop",
         "size": "大小",
         "sortBy": "排序方式"
       },
