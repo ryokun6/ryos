@@ -1194,10 +1194,13 @@ export function useFinderLogic({
     navigateToAirDrop();
   }, [navigateToAirDrop]);
 
-  const availableAirDropUsers = useMemo(
-    () => nearbyUsers.filter((user) => user !== chatUsername),
-    [nearbyUsers, chatUsername]
-  );
+  const availableAirDropUsers = useMemo(() => {
+    if (!chatUsername) {
+      return nearbyUsers;
+    }
+
+    return [chatUsername, ...nearbyUsers.filter((user) => user !== chatUsername)];
+  }, [nearbyUsers, chatUsername]);
 
   const getAirDropMenuItems = (file: FileItem): MenuItem[] => {
     const recipientItems: MenuItem[] =
