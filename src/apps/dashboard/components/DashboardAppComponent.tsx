@@ -269,7 +269,7 @@ function MobileDashboardWidgets({
     >
       <div
         data-dashboard-widget
-        className="mx-auto flex w-full max-w-[420px] flex-col items-center gap-5"
+        className="mx-auto flex w-full max-w-[420px] flex-col items-center gap-7"
       >
         {widgets.length === 0 && (
           <div
