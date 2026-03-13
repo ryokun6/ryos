@@ -13,6 +13,7 @@ interface WidgetChromeProps {
   x: number;
   y: number;
   zIndex?: number;
+  layoutMode?: "floating" | "stacked";
   borderRadius?: string;
   hideDoneButton?: boolean;
   onRemove?: () => void;
@@ -29,6 +30,7 @@ export function WidgetChrome({
   x,
   y,
   zIndex = 1,
+  layoutMode = "floating",
   borderRadius: borderRadiusProp,
   hideDoneButton,
   onRemove,
@@ -47,8 +49,9 @@ export function WidgetChrome({
   const dragStartRef = useRef<{ px: number; py: number; startX: number; startY: number } | null>(null);
   const didDragRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isStacked = layoutMode === "stacked";
 
-  const showControls = isHovered || isTouchActive;
+  const showControls = isStacked || isHovered || isTouchActive;
 
   useEffect(() => {
     if (!isTouchActive) return;
@@ -166,19 +169,18 @@ export function WidgetChrome({
   return (
     <div
       ref={containerRef}
-      className="absolute select-none touch-none"
+      className={isStacked ? "relative select-none" : "absolute select-none touch-none"}
       style={{
-        left: x,
-        top: y,
+        ...(isStacked ? {} : { left: x, top: y }),
         width,
         height: "auto",
-        cursor: isDragging ? "grabbing" : isFlipped ? "default" : "grab",
+        cursor: isStacked ? "default" : isDragging ? "grabbing" : isFlipped ? "default" : "grab",
         zIndex: isDragging ? 9999 : zIndex,
       }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
+      onPointerDown={isStacked ? undefined : handlePointerDown}
+      onPointerMove={isStacked ? undefined : handlePointerMove}
+      onPointerUp={isStacked ? undefined : handlePointerUp}
+      onPointerCancel={isStacked ? undefined : handlePointerCancel}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
@@ -196,7 +198,10 @@ export function WidgetChrome({
           }}
           transition={{ duration: 0.15 }}
           style={{
-            top: -6, left: -6, width: 20, height: 20,
+            top: isStacked ? 8 : -6,
+            left: isStacked ? 8 : -6,
+            width: isStacked ? 22 : 20,
+            height: isStacked ? 22 : 20,
             borderRadius: "50%", zIndex: 20,
             pointerEvents: showControls ? "auto" : "none",
             background: isXpTheme ? "#CC0000" : "linear-gradient(180deg, #5a5a5a 0%, #333333 100%)",
@@ -221,7 +226,10 @@ export function WidgetChrome({
           }}
           transition={{ duration: 0.15 }}
           style={{
-            bottom: 4, right: 4, padding: 4, zIndex: 20,
+            bottom: isStacked ? 8 : 4,
+            right: isStacked ? 8 : 4,
+            padding: isStacked ? 5 : 4,
+            zIndex: 20,
             pointerEvents: showControls && !isFlipAnimating ? "auto" : "none",
             color: "#FFF",
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
