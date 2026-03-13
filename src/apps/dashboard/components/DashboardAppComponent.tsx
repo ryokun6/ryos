@@ -20,7 +20,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type DashboardWidget, type WidgetType } from "@/stores/useDashboardStore";
-import { useIsPhone } from "@/hooks/useIsPhone";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
   switch (type) {
@@ -370,7 +370,7 @@ export function DashboardAppComponent({
 }: AppProps) {
   const { t } = useTranslation();
   const closeAppInstance = useAppStore((state) => state.closeAppInstance);
-  const isPhone = useIsPhone();
+  const isPhone = useMediaQuery("(max-width: 639px)");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [stripHeight, setStripHeight] = useState(0);
