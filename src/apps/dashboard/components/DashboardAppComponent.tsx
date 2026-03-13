@@ -15,6 +15,8 @@ import { IpodWidget, IpodBackPanel } from "@/components/layout/dashboard/IpodWid
 import { TranslationWidget, TranslationBackPanel } from "@/components/layout/dashboard/TranslationWidget";
 import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
 import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
+import { CalculatorWidget, CalculatorBackPanel } from "@/components/layout/dashboard/CalculatorWidget";
+import { ConverterWidget, ConverterBackPanel } from "@/components/layout/dashboard/ConverterWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -39,6 +41,10 @@ function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: 
       return <StickyNoteWidget widgetId={widgetId} />;
     case "dictionary":
       return <DictionaryWidget widgetId={widgetId} />;
+    case "calculator":
+      return <CalculatorWidget widgetId={widgetId} />;
+    case "converter":
+      return <ConverterWidget widgetId={widgetId} />;
     default:
       return null;
   }
@@ -62,6 +68,10 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
       return <StickyNoteBackPanel widgetId={widgetId} onDone={onDone} />;
     case "dictionary":
       return <DictionaryBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "calculator":
+      return <CalculatorBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "converter":
+      return <ConverterBackPanel widgetId={widgetId} onDone={onDone} />;
     default:
       return null;
   }
@@ -81,6 +91,8 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
   translation: "🌐",
   stickynote: "📝",
   dictionary: "📖",
+  calculator: "🧮",
+  converter: "📐",
 };
 
 function WidgetStrip({
@@ -118,6 +130,8 @@ function WidgetStrip({
     { type: "translation", label: t("apps.dashboard.widgets.translation", "Translation") },
     { type: "stickynote", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
     { type: "dictionary", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
+    { type: "calculator", label: t("apps.dashboard.widgets.calculator", "Calculator") },
+    { type: "converter", label: t("apps.dashboard.widgets.converter", "Unit Converter") },
   ];
 
   return (
@@ -294,6 +308,8 @@ export function DashboardAppComponent({
       onAddTranslation={() => handleAddWidget("translation")}
       onAddStickyNote={() => handleAddWidget("stickynote")}
       onAddDictionary={() => handleAddWidget("dictionary")}
+      onAddCalculator={() => handleAddWidget("calculator")}
+      onAddConverter={() => handleAddWidget("converter")}
       onResetWidgets={resetToDefaults}
     />
   );

@@ -1405,7 +1405,59 @@
         "stickyNote": "스티커 메모",
         "stocks": "주식",
         "translation": "번역",
-        "weather": "날씨"
+        "weather": "날씨",
+        "calculator": "[TODO] Calculator",
+        "converter": "[TODO] Unit Converter"
+      },
+      "calculator": {
+        "memory": "[TODO] Memory",
+        "reset": "[TODO] Reset display",
+        "rounding": "[TODO] Rounding"
+      },
+      "converter": {
+        "convert": "[TODO] Convert",
+        "swap": "[TODO] Swap units",
+        "precision": "[TODO] Decimal places",
+        "reset": "[TODO] Reset defaults",
+        "categories": {
+          "speed": "[TODO] Speed",
+          "length": "[TODO] Length",
+          "weight": "[TODO] Weight",
+          "temperature": "[TODO] Temperature",
+          "volume": "[TODO] Volume",
+          "data": "[TODO] Data"
+        },
+        "units": {
+          "mph": "[TODO] Miles/Hour",
+          "kmh": "[TODO] Kilometers/Hour",
+          "ms": "[TODO] Meters/Second",
+          "knot": "[TODO] Knots",
+          "mm": "[TODO] Millimeters",
+          "cm": "[TODO] Centimeters",
+          "m": "[TODO] Meters",
+          "km": "[TODO] Kilometers",
+          "in": "[TODO] Inches",
+          "ft": "[TODO] Feet",
+          "yd": "[TODO] Yards",
+          "mi": "[TODO] Miles",
+          "g": "[TODO] Grams",
+          "kg": "[TODO] Kilograms",
+          "lb": "[TODO] Pounds",
+          "oz": "[TODO] Ounces",
+          "c": "[TODO] Celsius",
+          "f": "[TODO] Fahrenheit",
+          "k": "[TODO] Kelvin",
+          "ml": "[TODO] Milliliters",
+          "l": "[TODO] Liters",
+          "cup": "[TODO] Cups",
+          "floz": "[TODO] Fluid Ounces",
+          "gal": "[TODO] Gallons",
+          "b": "[TODO] Bytes",
+          "kb": "[TODO] Kilobytes",
+          "mb": "[TODO] Megabytes",
+          "gb": "[TODO] Gigabytes",
+          "tb": "[TODO] Terabytes"
+        }
       }
     },
     "finder": {
