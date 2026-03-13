@@ -34,6 +34,18 @@ describe("telegram status helpers", () => {
     expect(getTelegramToolStatusText("contactsControl", { action: "update" })).toBe(
       "Updating contact..."
     );
+    expect(
+      getTelegramToolStatusText("songLibraryControl", {
+        action: "searchYoutube",
+        query: "plastic love",
+      })
+    ).toBe('Searching YouTube for "plastic love"...');
+    expect(
+      getTelegramToolStatusText("songLibraryControl", {
+        action: "add",
+        title: "Plastic Love",
+      })
+    ).toBe('Adding "Plastic Love" to your library...');
     expect(getTelegramToolStatusText("unknownTool", {})).toBe("Using a tool...");
   });
 

@@ -28,6 +28,8 @@ export function getTelegramToolStatusText(
       return getTelegramStickiesStatusText(input);
     case "contactsControl":
       return getTelegramContactsStatusText(input);
+    case "songLibraryControl":
+      return getTelegramSongLibraryStatusText(input);
     default:
       return "Using a tool...";
   }
@@ -118,6 +120,44 @@ function getTelegramContactsStatusText(input: unknown): string {
       return "Deleting contact...";
     default:
       return "Using contacts...";
+  }
+}
+
+function getTelegramSongLibraryStatusText(input: unknown): string {
+  if (!input || typeof input !== "object") {
+    return "Using song library...";
+  }
+
+  const songInput = input as {
+    action?: unknown;
+    query?: unknown;
+    id?: unknown;
+    videoId?: unknown;
+    title?: unknown;
+  };
+  const action = String(songInput.action || "");
+  const query = typeof songInput.query === "string" ? songInput.query.trim() : "";
+  const id = typeof songInput.id === "string" ? songInput.id.trim() : "";
+
+  switch (action) {
+    case "list":
+      return "Checking song library...";
+    case "search":
+      return query ? `Searching songs for "${query}"...` : "Searching songs...";
+    case "searchYoutube":
+      return query ? `Searching YouTube for "${query}"...` : "Searching YouTube...";
+    case "get":
+      return id ? `Loading song ${id}...` : "Loading song...";
+    case "add": {
+      const label =
+        (typeof songInput.title === "string" && songInput.title.trim()) ||
+        (typeof songInput.videoId === "string" && songInput.videoId.trim()) ||
+        id ||
+        "song";
+      return `Adding "${label}" to your library...`;
+    }
+    default:
+      return "Using song library...";
   }
 }
 
