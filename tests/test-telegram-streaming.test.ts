@@ -63,11 +63,10 @@ describe("telegram streaming helpers", () => {
       textStream: makeTextStream([
         "# Update\n- **it shipped yesterday** ([example.com](https://example.com/news)).",
       ]),
-      maxReplyLength: 24,
       formatText: simplifyTelegramCitationDisplay,
     });
 
-    expect(result).toBe("Update\n• it shipped...");
+    expect(result).toBe("Update\n• it shipped yesterday.");
   });
 
   test("formats streamed Telegram text before previewing and sending", async () => {
