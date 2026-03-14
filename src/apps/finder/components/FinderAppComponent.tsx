@@ -416,6 +416,9 @@ export function FinderAppComponent({
                       {t("apps.finder.menu.import")}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-md h-6 px-3" onClick={navigateUp} disabled={currentPath === "/"}>
+                      {t("apps.finder.menu.goUp")}
+                    </DropdownMenuItem>
                     <DropdownMenuItem className="text-md h-6 px-3" onClick={handleNewWindow}>
                       {t("apps.finder.menu.newWindow")}
                     </DropdownMenuItem>
