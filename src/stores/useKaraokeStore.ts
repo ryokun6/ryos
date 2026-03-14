@@ -67,7 +67,7 @@ const initialKaraokeData: KaraokeData = {
   totalTime: 0,
 };
 
-const CURRENT_KARAOKE_STORE_VERSION = 2; // currentSongId
+const CURRENT_KARAOKE_STORE_VERSION = 2; // Updated for currentSongId
 
 export const useKaraokeStore = create<KaraokeState>()(
   persist(
@@ -198,7 +198,6 @@ export const useKaraokeStore = create<KaraokeState>()(
 
       setElapsedTime: (time) => set({ elapsedTime: time }),
       setTotalTime: (time) => set({ totalTime: time }),
-
     }),
     {
       name: "ryos:karaoke",
@@ -209,6 +208,7 @@ export const useKaraokeStore = create<KaraokeState>()(
         loopAll: state.loopAll,
         isShuffled: state.isShuffled,
         isFullScreen: state.isFullScreen,
+        // Don't persist isPlaying or playbackHistory
       }),
       migrate: (persistedState, version) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -219,7 +219,7 @@ export const useKaraokeStore = create<KaraokeState>()(
           );
           return {
             ...state,
-            currentSongId: null,
+            currentSongId: null, // Reset - will pick first track
             isPlaying: false,
             playbackHistory: [],
           };

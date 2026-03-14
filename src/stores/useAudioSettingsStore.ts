@@ -26,13 +26,6 @@ interface AudioSettingsState {
   ttsVoice: string | null;
   synthPreset: string;
 
-  // Voice ducking: auto-reduce music volume when mic detects singing
-  voiceDuckingEnabled: boolean;
-  /** 0–100; higher = triggers on quieter voice. Default 50 */
-  voiceDuckingSensitivity: number;
-  /** 0–100; how much to reduce music volume when voice detected. Default 70 */
-  voiceDuckingAmount: number;
-
   // Actions
   setMasterVolume: (v: number) => void;
   setUiVolume: (v: number) => void;
@@ -47,13 +40,9 @@ interface AudioSettingsState {
   setTtsModel: (m: "openai" | "elevenlabs" | null) => void;
   setTtsVoice: (v: string | null) => void;
   setSynthPreset: (v: string) => void;
-  toggleVoiceDucking: () => void;
-  setVoiceDuckingEnabled: (v: boolean) => void;
-  setVoiceDuckingSensitivity: (v: number) => void;
-  setVoiceDuckingAmount: (v: number) => void;
 }
 
-const STORE_VERSION = 2;
+const STORE_VERSION = 1;
 
 export const useAudioSettingsStore = create<AudioSettingsState>()(
   persist(
@@ -75,10 +64,6 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       ttsVoice: null,
       synthPreset: "classic",
 
-      voiceDuckingEnabled: false,
-      voiceDuckingSensitivity: 50,
-      voiceDuckingAmount: 70,
-
       // Actions
       setMasterVolume: (v) => set({ masterVolume: v }),
       setUiVolume: (v) => set({ uiVolume: v }),
@@ -93,10 +78,6 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       setTtsModel: (m) => set({ ttsModel: m }),
       setTtsVoice: (v) => set({ ttsVoice: v }),
       setSynthPreset: (v) => set({ synthPreset: v }),
-      toggleVoiceDucking: () => set((s) => ({ voiceDuckingEnabled: !s.voiceDuckingEnabled })),
-      setVoiceDuckingEnabled: (v) => set({ voiceDuckingEnabled: v }),
-      setVoiceDuckingSensitivity: (v) => set({ voiceDuckingSensitivity: Math.max(0, Math.min(100, v)) }),
-      setVoiceDuckingAmount: (v) => set({ voiceDuckingAmount: Math.max(0, Math.min(100, v)) }),
     }),
     {
       name: "ryos:audio-settings",
@@ -115,23 +96,7 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
         ttsModel: state.ttsModel,
         ttsVoice: state.ttsVoice,
         synthPreset: state.synthPreset,
-        voiceDuckingEnabled: state.voiceDuckingEnabled,
-        voiceDuckingSensitivity: state.voiceDuckingSensitivity,
-        voiceDuckingAmount: state.voiceDuckingAmount,
       }),
-      migrate: (persistedState, version) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const state = persistedState as any;
-        if (version < 2) {
-          return {
-            ...state,
-            voiceDuckingEnabled: false,
-            voiceDuckingSensitivity: 50,
-            voiceDuckingAmount: 70,
-          };
-        }
-        return state;
-      },
     }
   )
 );

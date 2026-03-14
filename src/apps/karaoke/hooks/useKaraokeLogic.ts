@@ -34,7 +34,6 @@ import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
-import { useVoiceDucking } from "@/hooks/useVoiceDucking";
 
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;
@@ -254,35 +253,8 @@ export function useKaraokeLogic({
   const isTrackSwitchingRef = useRef(false);
   const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Volume and voice ducking from shared audio settings store
-  const {
-    ipodVolume,
-    voiceDuckingEnabled,
-    voiceDuckingSensitivity,
-    voiceDuckingAmount,
-    toggleVoiceDucking,
-    setVoiceDuckingSensitivity,
-    setVoiceDuckingAmount,
-  } = useAudioSettingsStoreShallow((state) => ({
-    ipodVolume: state.ipodVolume,
-    voiceDuckingEnabled: state.voiceDuckingEnabled,
-    voiceDuckingSensitivity: state.voiceDuckingSensitivity,
-    voiceDuckingAmount: state.voiceDuckingAmount,
-    toggleVoiceDucking: state.toggleVoiceDucking,
-    setVoiceDuckingSensitivity: state.setVoiceDuckingSensitivity,
-    setVoiceDuckingAmount: state.setVoiceDuckingAmount,
-  }));
-
-  // Voice ducking: auto-reduce playback volume when microphone detects singing
-  const {
-    duckingMultiplier,
-    isVoiceDetected,
-    isListening: isVoiceDuckingListening,
-  } = useVoiceDucking({
-    enabled: voiceDuckingEnabled,
-    sensitivity: voiceDuckingSensitivity,
-    amount: voiceDuckingAmount,
-  });
+  // Volume from audio settings store
+  const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
 
   // iOS/Safari detection for autoplay restrictions
   const ua = navigator.userAgent;
@@ -1111,9 +1083,6 @@ export function useKaraokeLogic({
         e.preventDefault();
         nextTrack();
         showStatus("⏭");
-      } else if (e.key === "d" || e.key === "D") {
-        toggleVoiceDucking();
-        showStatus(voiceDuckingEnabled ? "🎤 Off" : "🎤 On");
       } else if (e.key === "[" || e.key === "]") {
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
@@ -1127,7 +1096,7 @@ export function useKaraokeLogic({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isForeground, isPlaying, isOffline, togglePlay, nextTrack, previousTrack, seekTime, showStatus, showOfflineStatus, currentIndex, currentTrack, elapsedTime, lyricsControls, t, toggleVoiceDucking, voiceDuckingEnabled]);
+  }, [isForeground, isPlaying, isOffline, togglePlay, nextTrack, previousTrack, seekTime, showStatus, showOfflineStatus, currentIndex, currentTrack, elapsedTime, lyricsControls, t]);
 
   // Handle initial data (shared track) - process video ID to add/play
   useEffect(() => {
@@ -1314,15 +1283,6 @@ export function useKaraokeLogic({
     statusMessage,
     showControls,
     ipodVolume,
-    duckingMultiplier,
-    isVoiceDetected,
-    isVoiceDuckingListening,
-    voiceDuckingEnabled,
-    voiceDuckingSensitivity,
-    voiceDuckingAmount,
-    toggleVoiceDucking,
-    setVoiceDuckingSensitivity,
-    setVoiceDuckingAmount,
     userHasInteractedRef,
     currentTrack,
     lyricsSourceOverride,

@@ -102,7 +102,6 @@ export function IpodAppComponent({
     furiganaMap,
     soramimiMap,
     ipodVolume,
-    duckingMultiplier,
     handleTrackEnd,
     handleProgress,
     handleDuration,
@@ -344,7 +343,7 @@ export function IpodAppComponent({
                 statusMessage={statusMessage}
                 onToggleVideo={toggleVideo}
                 lcdFilterOn={lcdFilterOn}
-                ipodVolume={ipodVolume * duckingMultiplier}
+                ipodVolume={ipodVolume}
                 showStatusCallback={showStatus}
                 showLyrics={showLyrics}
                 lyricsAlignment={lyricsAlignment}
@@ -505,7 +504,7 @@ export function IpodAppComponent({
                             controls
                             width="100%"
                             height="100%"
-                            volume={ipodVolume * useAudioSettingsStore.getState().masterVolume * duckingMultiplier}
+                            volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
                             loop={loopCurrent}
                             onEnded={handleTrackEnd}
                             onProgress={handleProgress}
