@@ -922,7 +922,7 @@ export const useTerminalLogic = ({
             try {
               // Get the content if it's a real file
               if (fileToEditObj && fileToEditObj.path.startsWith("/Images/")) {
-                // For image files, we need to get the content from IndexedDB
+                // For image files, we need to get the content from browser storage
                 // Get file metadata from the store to find UUID
                 const fileStore = useFilesStore.getState();
                 const fileMetadata = fileStore.getItem(fileToEditObj.path);

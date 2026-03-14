@@ -17,6 +17,7 @@ import {
   isIndividualBlobSyncDomain,
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
+import { normalizeCloudSyncRevision } from "../../src/utils/cloudSyncRevision.js";
 import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
@@ -56,6 +57,7 @@ interface SaveAutoSyncMetadataBody {
   blobUrl?: string;
   updatedAt?: string;
   version?: number;
+  baseVersion?: number;
   totalSize?: number;
   items?: Record<string, PersistedAutoSyncItemMetadata>;
   deletedItems?: DeletionMarkerMap;
@@ -95,6 +97,9 @@ function normalizePersistedItemMetadata(
     updatedAt: candidate.updatedAt,
     signature: candidate.signature,
     size: candidate.size,
+    ...(normalizeCloudSyncRevision(candidate.revision)
+      ? { revision: normalizeCloudSyncRevision(candidate.revision) }
+      : {}),
     storageUrl,
     blobUrl: storageUrl,
   };
@@ -243,7 +248,30 @@ async function handleSaveMetadata(
   try {
     const existing = await readPersistedMetadata(redis, username);
     const previous = existing[body.domain];
+    const currentVersion = previous?.version ?? 0;
+    const requestedBaseVersion =
+      typeof body.baseVersion === "number" && Number.isFinite(body.baseVersion)
+        ? body.baseVersion
+        : null;
+
+    if (requestedBaseVersion === null) {
+      if (currentVersion > 0) {
+        res.status(409).json({
+          error: "sync_conflict: stale baseVersion",
+          currentVersion,
+        });
+        return;
+      }
+    } else if (requestedBaseVersion !== currentVersion) {
+      res.status(409).json({
+        error: "sync_conflict: stale baseVersion",
+        currentVersion,
+      });
+      return;
+    }
+
     const createdAt = previous?.createdAt || new Date().toISOString();
+    const nextVersion = Math.max(currentVersion + 1, AUTO_SYNC_SNAPSHOT_VERSION);
     const legacyStorageUrl = getStoredLocation(body);
 
     if (body.items) {
@@ -327,7 +355,7 @@ async function handleSaveMetadata(
 
       existing[body.domain] = {
         updatedAt: body.updatedAt,
-        version: body.version || AUTO_SYNC_SNAPSHOT_VERSION,
+        version: nextVersion,
         totalSize:
           body.totalSize ||
           Object.values(nextItems).reduce((sum, item) => sum + item.size, 0),
@@ -373,7 +401,7 @@ async function handleSaveMetadata(
 
       existing[body.domain] = {
         updatedAt: body.updatedAt,
-        version: body.version || AUTO_SYNC_SNAPSHOT_VERSION,
+        version: nextVersion,
         totalSize: body.totalSize || objectInfo.size,
         storageUrl: legacyStorageUrl,
         blobUrl: legacyStorageUrl,
@@ -448,6 +476,7 @@ async function handleDomainDownload(
           updatedAt: itemValue.updatedAt,
           signature: itemValue.signature,
           size: itemValue.size || objectInfo.size,
+          ...(itemValue.revision ? { revision: itemValue.revision } : {}),
           storageUrl,
           downloadUrl: await createSignedDownloadUrl(storageUrl),
         };
@@ -465,6 +494,7 @@ async function handleDomainDownload(
                 updatedAt: item.updatedAt,
                 signature: item.signature,
                 size: item.size,
+                ...(item.revision ? { revision: item.revision } : {}),
                 storageUrl: item.storageUrl,
                 blobUrl: item.storageUrl,
               },

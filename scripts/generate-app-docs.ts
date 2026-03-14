@@ -532,7 +532,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
 
   // Get description from app registry or use a default
   const descriptions: Record<string, string> = {
-    finder: "Browse and manage files in a virtual file system backed by IndexedDB",
+    finder: "Browse and manage files in a virtual file system backed by OPFS",
     soundboard: "Record and play sound effects with keyboard shortcuts and waveform visualization",
     "internet-explorer": "Browse the web with AI-powered content generation and time machine view",
     chats: "Chat with Ryo AI assistant, join chat rooms, and control ryOS apps through natural language",

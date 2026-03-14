@@ -3,19 +3,31 @@ import { persist } from "zustand/middleware";
 import { ShaderType } from "@/types/shader";
 import { DisplayMode } from "@/utils/displayMode";
 import { checkShaderPerformance } from "@/utils/performanceCheck";
-import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import { STORES } from "@/utils/indexedDB";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  deleteStorageItem,
+  getStorageItem,
+  listStorageKeys,
+  putStorageItem,
+} from "@/utils/opfsStorage";
+import {
+  extractStoredWallpaperId,
+  isStoredWallpaperReference,
+  OPFS_WALLPAPER_PREFIX,
+  toStoredWallpaperReference,
+} from "@/utils/wallpaperStorage";
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.
  * Extracted from useAppStore to reduce complexity and improve separation of concerns.
  */
 
-// IndexedDB helpers for custom wallpapers
-export const INDEXEDDB_PREFIX = "indexeddb://";
-const CUSTOM_WALLPAPERS_STORE = "custom_wallpapers";
+// Browser content storage helpers for custom wallpapers
+export const INDEXEDDB_PREFIX = OPFS_WALLPAPER_PREFIX;
+const CUSTOM_WALLPAPERS_STORE = STORES.CUSTOM_WALLPAPERS;
 const objectURLs: Record<string, string> = {};
 
 type StoredWallpaper = { blob?: Blob; content?: string; [k: string]: unknown };
@@ -36,14 +48,36 @@ const dataURLToBlob = (dataURL: string): Blob | null => {
   }
 };
 
+function revokeCachedWallpaperObjectUrl(id: string): void {
+  if (!objectURLs[id]) {
+    return;
+  }
+
+  URL.revokeObjectURL(objectURLs[id]);
+  delete objectURLs[id];
+}
+
+export function clearCachedWallpaperObjectUrls(
+  references?: Iterable<string>
+): void {
+  if (!references) {
+    for (const id of Object.keys(objectURLs)) {
+      revokeCachedWallpaperObjectUrl(id);
+    }
+    return;
+  }
+
+  for (const reference of references) {
+    const id = extractStoredWallpaperId(reference) ?? reference;
+    revokeCachedWallpaperObjectUrl(id);
+  }
+}
+
 const saveCustomWallpaper = async (file: File): Promise<string> => {
   if (!file.type.startsWith("image/"))
     throw new Error("Only image files allowed");
   try {
     const processedFile = await convertImageFileToWallpaperJpeg(file);
-    const db = await ensureIndexedDBInitialized();
-    const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readwrite");
-    const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
     const name = `custom_${Date.now()}_${processedFile.name.replace(
       /[^a-zA-Z0-9._-]/g,
       "_"
@@ -55,13 +89,8 @@ const saveCustomWallpaper = async (file: File): Promise<string> => {
       type: processedFile.type,
       dateAdded: new Date().toISOString(),
     };
-    await new Promise<void>((res, rej) => {
-      const r = store.put(rec, name);
-      r.onsuccess = () => res();
-      r.onerror = () => rej(r.error);
-    });
-    db.close();
-    return `${INDEXEDDB_PREFIX}${name}`;
+    await putStorageItem(CUSTOM_WALLPAPERS_STORE, rec, name);
+    return toStoredWallpaperReference(name);
   } catch (e) {
     console.error("saveCustomWallpaper", e);
     throw e;
@@ -104,7 +133,7 @@ interface DisplaySettingsState {
   htmlPreviewSplit: boolean;
   setHtmlPreviewSplit: (v: boolean) => void;
 
-  // Non-persisted revision counter — incremented when IndexedDB custom wallpapers change
+  // Non-persisted revision counter — incremented when custom wallpapers change
   customWallpapersRevision: number;
   bumpCustomWallpapersRevision: () => void;
 }
@@ -142,15 +171,22 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         } else {
           wall = path;
         }
-        if (wall.startsWith(INDEXEDDB_PREFIX)) {
+        if (isStoredWallpaperReference(wall)) {
+          const wallpaperId = extractStoredWallpaperId(wall);
+          if (wallpaperId) {
           useCloudSyncStore.getState().clearDeletedKeys("customWallpaperKeys", [
-            wall.substring(INDEXEDDB_PREFIX.length),
+              wallpaperId,
           ]);
+          }
         }
         set({ currentWallpaper: wall, wallpaperSource: wall });
-        if (wall.startsWith(INDEXEDDB_PREFIX)) {
+        if (isStoredWallpaperReference(wall)) {
           const data = await get().getWallpaperData(wall);
           if (data) set({ wallpaperSource: data });
+        }
+        if (path instanceof File) {
+          get().bumpCustomWallpapersRevision();
+          emitCloudSyncDomainChange("custom-wallpapers");
         }
         window.dispatchEvent(
           new CustomEvent("wallpaperChange", { detail: wall })
@@ -159,16 +195,8 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
 
       loadCustomWallpapers: async () => {
         try {
-          const db = await ensureIndexedDBInitialized();
-          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readonly");
-          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-          const keysReq = store.getAllKeys();
-          const keys: string[] = await new Promise((res, rej) => {
-            keysReq.onsuccess = () => res(keysReq.result as string[]);
-            keysReq.onerror = () => rej(keysReq.error);
-          });
-          db.close();
-          return keys.map((k) => `${INDEXEDDB_PREFIX}${k}`);
+          const keys = await listStorageKeys(CUSTOM_WALLPAPERS_STORE);
+          return keys.map((key) => toStoredWallpaperReference(key));
         } catch (e) {
           console.error("loadCustomWallpapers", e);
           return [];
@@ -176,24 +204,11 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       },
 
       deleteCustomWallpaper: async (reference) => {
-        const id = reference.startsWith(INDEXEDDB_PREFIX)
-          ? reference.substring(INDEXEDDB_PREFIX.length)
-          : reference;
+        const id = extractStoredWallpaperId(reference) ?? reference;
         useCloudSyncStore.getState().markDeletedKeys("customWallpaperKeys", [id]);
         try {
-          const db = await ensureIndexedDBInitialized();
-          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readwrite");
-          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-          await new Promise<void>((res, rej) => {
-            const r = store.delete(id);
-            r.onsuccess = () => res();
-            r.onerror = () => rej(r.error);
-          });
-          db.close();
-          if (objectURLs[id]) {
-            URL.revokeObjectURL(objectURLs[id]);
-            delete objectURLs[id];
-          }
+          await deleteStorageItem(CUSTOM_WALLPAPERS_STORE, id);
+          revokeCachedWallpaperObjectUrl(id);
           if (get().currentWallpaper === reference) {
             set({
               currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
@@ -208,21 +223,14 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       },
 
       getWallpaperData: async (reference) => {
-        if (!reference.startsWith(INDEXEDDB_PREFIX)) return reference;
-        const id = reference.substring(INDEXEDDB_PREFIX.length);
+        if (!isStoredWallpaperReference(reference)) return reference;
+        const id = extractStoredWallpaperId(reference);
+        if (!id) return null;
         if (objectURLs[id]) return objectURLs[id];
         try {
-          const db = await ensureIndexedDBInitialized();
-          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readonly");
-          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
-          const req = store.get(id);
-          const result = await new Promise<StoredWallpaper | null>(
-            (res, rej) => {
-              req.onsuccess = () => res(req.result as StoredWallpaper);
-              req.onerror = () => rej(req.error);
-            }
-          );
-          db.close();
+          const result =
+            (await getStorageItem<StoredWallpaper>(CUSTOM_WALLPAPERS_STORE, id)) ??
+            null;
           if (!result) return null;
           let objectURL: string | null = null;
           if (result.blob) objectURL = URL.createObjectURL(result.blob);

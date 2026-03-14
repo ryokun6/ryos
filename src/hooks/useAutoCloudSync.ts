@@ -40,6 +40,7 @@ import {
   shouldApplyRemoteUpdate,
   type CloudSyncDomain,
 } from "@/utils/cloudSyncShared";
+import { isStoredWallpaperReference } from "@/utils/wallpaperStorage";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000;
 const REMOTE_APPLY_SUPPRESSION_MS = 2000;
@@ -224,6 +225,29 @@ export function useAutoCloudSync() {
         const message =
           error instanceof Error ? error.message : `Failed to sync ${domain}.`;
         console.error(`[CloudSync] Upload ${domain} FAILED:`, message, error);
+        if (message.includes("sync_conflict")) {
+          try {
+            const appliedMetadata = await downloadAndApplyCloudSyncDomain(domain, {
+              username,
+              isAuthenticated,
+            });
+            useCloudSyncStore
+              .getState()
+              .markRemoteApplied(domain, appliedMetadata.updatedAt);
+            useCloudSyncStore
+              .getState()
+              .updateRemoteMetadataForDomain(domain, appliedMetadata);
+            lastLocalChangeAtRef.current[domain] = appliedMetadata.updatedAt;
+            remoteApplySuppressUntilRef.current[domain] =
+              Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
+            return;
+          } catch (downloadError) {
+            console.error(
+              `[CloudSync] Conflict recovery download for ${domain} failed:`,
+              downloadError
+            );
+          }
+        }
         useCloudSyncStore.getState().markUploadFailure(domain, message);
       }
     },
@@ -326,7 +350,7 @@ export function useAutoCloudSync() {
       // Pre-suppress ALL domains before applying any. Applying one domain
       // can trigger side-effect uploads on another (e.g. settings apply
       // changes currentWallpaper → subscriber queues custom-wallpapers
-      // upload while IndexedDB is still empty). A generous window ensures
+      // upload while browser storage is still empty). A generous window ensures
       // the entire batch completes before any upload can fire.
       const batchSuppressUntil = Date.now() + BATCH_INFLIGHT_SUPPRESSION_MS;
       for (const d of CLOUD_SYNC_DOMAINS) {
@@ -531,7 +555,7 @@ export function useAutoCloudSync() {
         }
         if (
           state.currentWallpaper !== prevState.currentWallpaper &&
-          state.currentWallpaper.startsWith("indexeddb://")
+          isStoredWallpaperReference(state.currentWallpaper)
         ) {
           console.log(`[CloudSync] display subscriber: currentWallpaper changed from "${prevState.currentWallpaper}" to "${state.currentWallpaper}"`);
           queueUpload("custom-wallpapers");

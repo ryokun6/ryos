@@ -4,6 +4,7 @@ import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import { compareCloudSyncRevisions } from "@/utils/cloudSyncRevision";
 import { parseCloudSyncTimestamp } from "@/utils/cloudSyncShared";
 
 export interface CloudSyncStoreItem {
@@ -54,6 +55,31 @@ function chooseWinningItem(
   remoteItem: FileSystemItem | undefined,
   deletedPaths: DeletionMarkerMap
 ): { item: FileSystemItem; source: ItemSource } | null {
+  const revisionComparison = compareCloudSyncRevisions(
+    localItem?.syncRevision,
+    remoteItem?.syncRevision
+  );
+
+  if (revisionComparison === 1 && survivesDeletionMarker(path, localItem, deletedPaths)) {
+    return { item: localItem, source: "local" };
+  }
+
+  if (revisionComparison === -1 && survivesDeletionMarker(path, remoteItem, deletedPaths)) {
+    return { item: remoteItem, source: "remote" };
+  }
+
+  if (localItem?.syncRevision && !remoteItem?.syncRevision) {
+    if (survivesDeletionMarker(path, localItem, deletedPaths)) {
+      return { item: localItem, source: "local" };
+    }
+  }
+
+  if (remoteItem?.syncRevision && !localItem?.syncRevision) {
+    if (survivesDeletionMarker(path, remoteItem, deletedPaths)) {
+      return { item: remoteItem, source: "remote" };
+    }
+  }
+
   const candidates: Array<{ item: FileSystemItem; source: ItemSource; ts: number }> = [];
 
   if (survivesDeletionMarker(path, localItem, deletedPaths)) {
@@ -79,6 +105,10 @@ function chooseWinningItem(
   candidates.sort((left, right) => {
     if (right.ts !== left.ts) {
       return right.ts - left.ts;
+    }
+
+    if (localItem?.syncRevision && remoteItem?.syncRevision) {
+      return left.source === "remote" ? -1 : 1;
     }
 
     return left.source === "local" ? -1 : 1;

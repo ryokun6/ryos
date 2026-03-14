@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FileItem as DisplayFileItem } from "../components/FileList";
-import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
+import { STORES } from "@/utils/indexedDB";
 // Re-export STORES for backward compatibility (other modules import from here)
 export { STORES };
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
@@ -24,6 +24,13 @@ import { formatKugouImageUrl } from "@/apps/ipod/constants";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
 import {
+  clearStorageStore,
+  deleteStorageItem,
+  getStorageItem,
+  getStorageValues,
+  putStorageItem,
+} from "@/utils/opfsStorage";
+import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
 } from "@/utils/cloudSyncEvents";
@@ -32,9 +39,9 @@ import { useThemeStore } from "@/stores/useThemeStore";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
 
-// Interface for content stored in IndexedDB
+// Interface for content stored in browser content storage
 export interface DocumentContent {
-  name: string; // Used as the key in IndexedDB
+  name: string;
   content: string | Blob;
   contentUrl?: string; // URL for Blob content (managed temporarily)
 }
@@ -81,134 +88,56 @@ const getCloudSyncDomainForContentStore = (
 // Generic CRUD operations
 export const dbOperations = {
   async getAll<T>(storeName: string): Promise<T[]> {
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readonly");
-        const store = transaction.objectStore(storeName);
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-          db.close();
-          resolve(request.result);
-        };
-        request.onerror = () => {
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        db.close();
-        console.error(`Error getting all items from ${storeName}:`, error);
-        resolve([]);
-      }
-    });
+    try {
+      return await getStorageValues<T>(storeName);
+    } catch (error) {
+      console.error(`Error getting all items from ${storeName}:`, error);
+      return [];
+    }
   },
 
   async get<T>(storeName: string, key: string): Promise<T | undefined> {
     console.log(
       `[dbOperations] Getting key "${key}" from store "${storeName}"`
     );
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readonly");
-        const store = transaction.objectStore(storeName);
-        const request = store.get(key);
-
-        request.onsuccess = () => {
-          console.log(
-            `[dbOperations] Get success for key "${key}". Result:`,
-            request.result
-          );
-          db.close();
-          resolve(request.result);
-        };
-        request.onerror = () => {
-          console.error(
-            `[dbOperations] Get error for key "${key}":`,
-            request.error
-          );
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        console.error(`[dbOperations] Get exception for key "${key}":`, error);
-        db.close();
-        resolve(undefined);
-      }
-    });
+    try {
+      const result = await getStorageItem<T>(storeName, key);
+      console.log(
+        `[dbOperations] Get success for key "${key}". Result:`,
+        result
+      );
+      return result;
+    } catch (error) {
+      console.error(`[dbOperations] Get exception for key "${key}":`, error);
+      return undefined;
+    }
   },
 
   async put<T>(storeName: string, item: T, key?: IDBValidKey): Promise<void> {
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readwrite");
-        const store = transaction.objectStore(storeName);
-        const request = store.put(item, key);
-
-        request.onsuccess = () => {
-          db.close();
-          resolve();
-        };
-        request.onerror = () => {
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        db.close();
-        console.error(`Error putting item in ${storeName}:`, error);
-        reject(error);
-      }
-    });
+    try {
+      await putStorageItem(storeName, item as Record<string, unknown>, key);
+    } catch (error) {
+      console.error(`Error putting item in ${storeName}:`, error);
+      throw error;
+    }
   },
 
   async delete(storeName: string, key: string): Promise<void> {
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readwrite");
-        const store = transaction.objectStore(storeName);
-        const request = store.delete(key);
-
-        request.onsuccess = () => {
-          db.close();
-          resolve();
-        };
-        request.onerror = () => {
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        db.close();
-        console.error(`Error deleting item from ${storeName}:`, error);
-        reject(error);
-      }
-    });
+    try {
+      await deleteStorageItem(storeName, key);
+    } catch (error) {
+      console.error(`Error deleting item from ${storeName}:`, error);
+      throw error;
+    }
   },
 
   async clear(storeName: string): Promise<void> {
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readwrite");
-        const store = transaction.objectStore(storeName);
-        const request = store.clear();
-
-        request.onsuccess = () => {
-          db.close();
-          resolve();
-        };
-        request.onerror = () => {
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        db.close();
-        console.error(`Error clearing ${storeName}:`, error);
-        reject(error);
-      }
-    });
+    try {
+      await clearStorageStore(storeName);
+    } catch (error) {
+      console.error(`Error clearing ${storeName}:`, error);
+      throw error;
+    }
   },
 };
 
@@ -311,7 +240,7 @@ function getFileIcon(item: FileSystemItem): string {
 
 // --- Global flags for cross-instance coordination --- //
 // Use localStorage to persist initialization state across page refreshes
-const UUID_MIGRATION_KEY = "ryos:indexeddb-uuid-migration-v1";
+const UUID_MIGRATION_KEY = "ryos:opfs-storage-migration-v1";
 
 // Check localStorage for completion status
 const isUUIDMigrationDone = () =>
@@ -1062,7 +991,7 @@ export function useFileSystem(
       let contentAsString: string | undefined = undefined;
 
       try {
-        // Fetch content from IndexedDB (Documents, Images, or Applets)
+        // Fetch content from persisted browser storage (Documents, Images, or Applets)
         const storeName = getStoreForFile(file.path, {
           name: file.name,
           type: file.type,
@@ -1089,7 +1018,7 @@ export function useFileSystem(
               contentToUse = contentData.content;
             } else {
               console.warn(
-                `[useFileSystem] Content not found in IndexedDB for ${file.path} (UUID: ${fileMetadata.uuid})`
+                `[useFileSystem] Content not found in browser storage for ${file.path} (UUID: ${fileMetadata.uuid})`
               );
               // For applets, fetch content from the share service on first load
               if (storeName === STORES.APPLETS) {
@@ -1472,7 +1401,7 @@ export function useFileSystem(
           `[useFileSystem:saveFile] Metadata store updated for: ${path} with UUID: ${savedItem.uuid}`
         );
 
-        // 3. Save Content to IndexedDB using UUID
+        // 3. Save content to browser storage using UUID
         console.log(
           `[useFileSystem:saveFile] Determining store for path: ${path}`
         );
@@ -1485,7 +1414,7 @@ export function useFileSystem(
               content: content,
             };
             console.log(
-              `[useFileSystem:saveFile] Saving content to IndexedDB (${storeName}) with UUID: ${savedItem.uuid}`
+              `[useFileSystem:saveFile] Saving content to browser storage (${storeName}) with UUID: ${savedItem.uuid}`
             );
             await dbOperations.put<DocumentContent>(
               storeName,
@@ -1497,11 +1426,11 @@ export function useFileSystem(
               emitCloudSyncDomainChange(syncDomain);
             }
             console.log(
-              `[useFileSystem:saveFile] Content saved to IndexedDB with UUID: ${savedItem.uuid}`
+              `[useFileSystem:saveFile] Content saved to browser storage with UUID: ${savedItem.uuid}`
             );
           } catch (err) {
             console.error(
-              `[useFileSystem:saveFile] Error saving content to IndexedDB for ${path}:`,
+              `[useFileSystem:saveFile] Error saving content to browser storage for ${path}:`,
               err
             );
             setError(`Failed to save file content for ${name}`);
@@ -1636,7 +1565,7 @@ export function useFileSystem(
       // 1. Rename Metadata in FileStore (preserves UUID)
       renameFileItem(oldPath, newPath, newName);
 
-      // 2. Update content metadata (name field) in IndexedDB if it's a file with content
+      // 2. Update stored content metadata (name field) if it's a file with content
       if (!itemToRename.isDirectory && itemToRename.uuid) {
         const storeName = getStoreForFile(oldPath, {
           name: itemToRename.name,
@@ -1664,7 +1593,7 @@ export function useFileSystem(
               }
             } else {
               console.warn(
-                "Warning: Content not found in IndexedDB for renaming"
+                "Warning: Content not found in browser storage for renaming"
               );
             }
           } catch (err) {
@@ -1821,7 +1750,7 @@ export function useFileSystem(
     // 1. Permanently delete metadata from FileStore and get UUIDs of files whose content needs deletion
     const contentUUIDsToDelete = emptyTrashMetadata();
 
-    // 2. Clear corresponding content from TRASH IndexedDB store
+    // 2. Clear corresponding content from the TRASH browser-content store
     try {
       // Delete content based on UUIDs collected from fileStore.emptyTrash()
       for (const uuid of contentUUIDsToDelete) {
@@ -1830,9 +1759,9 @@ export function useFileSystem(
       if (contentUUIDsToDelete.length > 0) {
         emitCloudSyncDomainChange("files-trash");
       }
-      console.log("[useFileSystem] Cleared trash content from IndexedDB.");
+      console.log("[useFileSystem] Cleared trash content from browser storage.");
     } catch (err) {
-      console.error("Error clearing trash content from IndexedDB:", err);
+      console.error("Error clearing trash content from browser storage:", err);
       setError("Failed to empty trash storage.");
     }
   }, [emptyTrashMetadata]);
@@ -1854,6 +1783,7 @@ export function useFileSystem(
 
       // Clear the migration flag so UUID migration will run again after reset
       localStorage.removeItem(UUID_MIGRATION_KEY);
+      localStorage.removeItem("ryos:indexeddb-uuid-migration-v1");
       // Clear the size/timestamp sync flag so it will run again after reset
       localStorage.removeItem("ryos:file-size-timestamp-sync-v1");
 
@@ -1998,7 +1928,7 @@ export function useFileSystem(
     return () => clearTimeout(timer);
   }, []); // Run once on mount
 
-  // --- UUID Migration Effect (Runs ONLY ONCE globally) --- //
+  // --- Legacy IndexedDB -> OPFS Migration Effect (Runs only once globally) --- //
   useEffect(() => {
     if (isUUIDMigrationDone()) {
       return;
@@ -2016,18 +1946,15 @@ export function useFileSystem(
         return;
       }
 
-      // Mark as done to prevent multiple runs
-      localStorage.setItem(UUID_MIGRATION_KEY, "completed");
-
       console.log(
-        "[useFileSystem] File store is ready, running UUID migration..."
+        "[useFileSystem] File store is ready, running legacy storage migration..."
       );
 
       // Run migration asynchronously
       try {
         await migrateIndexedDBToUUIDs();
       } catch (err) {
-        console.error("[useFileSystem] UUID migration failed:", err);
+        console.error("[useFileSystem] Legacy storage migration failed:", err);
       }
     };
 

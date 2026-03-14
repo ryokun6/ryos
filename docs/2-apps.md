@@ -42,7 +42,7 @@ All apps follow a consistent architecture pattern:
 ### State Management
 - Apps use **Zustand stores** for global state (e.g., `useIpodStore`, `useSoundboardStore`)
 - Local component state for UI-specific concerns
-- IndexedDB persistence for user data (songs, soundboards, etc.)
+- Browser-storage persistence for user data (including OPFS-backed file content)
 
 ### Window Configuration
 Each app defines window constraints:
@@ -60,7 +60,7 @@ Most apps are lazy-loaded for performance:
 ## Key Features by Category
 
 ### File Management
-- **Virtual File System**: IndexedDB-backed with lazy loading
+- **Virtual File System**: OPFS-backed with lazy loading
 - **File Operations**: Create, rename, move, delete files and folders
 - **Quick Access**: Jump to Documents, Applications, Trash
 

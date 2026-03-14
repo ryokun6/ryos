@@ -5,7 +5,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { clearAllAppStates } from "@/stores/useAppStore";
-import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import { STORES } from "@/utils/indexedDB";
 import {
   useAppStoreShallow,
   useAudioSettingsStoreShallow,
@@ -14,7 +14,6 @@ import {
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
 import { AI_MODEL_METADATA } from "@/types/aiModels";
-import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -28,6 +27,10 @@ import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  readSerializedStorageStoreItems,
+  restoreSerializedStorageStoreItems,
+} from "@/utils/storageSerialization";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
@@ -162,30 +165,71 @@ const AI_MODELS = AI_MODEL_METADATA;
 /** Maximum cloud backup size in bytes (must match server-side MAX_BACKUP_SIZE) */
 const CLOUD_BACKUP_MAX_SIZE = 50 * 1024 * 1024;
 
-// Utility to convert Blob to base64 string for JSON serialization
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string; // data:<mime>;base64,xxxx
-      resolve(dataUrl);
-    };
-    reader.onerror = (error) => {
-      console.error("Error converting blob to base64:", error);
-      reject(error);
-    };
-    reader.readAsDataURL(blob);
-  });
+async function backupIndexedDbStores(): Promise<{
+  documents: StoreItemWithKey[];
+  images: StoreItemWithKey[];
+  trash: StoreItemWithKey[];
+  custom_wallpapers: StoreItemWithKey[];
+  applets: StoreItemWithKey[];
+}> {
+  const [documents, images, trash, customWallpapers, applets] =
+    await Promise.all([
+      readSerializedStorageStoreItems(STORES.DOCUMENTS),
+      readSerializedStorageStoreItems(STORES.IMAGES),
+      readSerializedStorageStoreItems(STORES.TRASH),
+      readSerializedStorageStoreItems(STORES.CUSTOM_WALLPAPERS),
+      readSerializedStorageStoreItems(STORES.APPLETS),
+    ]);
 
-// Utility to convert base64 data URL back to Blob
-const base64ToBlob = (dataUrl: string): Blob => {
-  const [meta, base64] = dataUrl.split(",");
-  const mimeMatch = meta.match(/data:(.*);base64/);
-  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  return new Blob([array], { type: mime });
-};
+  return {
+    documents: documents as StoreItemWithKey[],
+    images: images as StoreItemWithKey[],
+    trash: trash as StoreItemWithKey[],
+    custom_wallpapers: customWallpapers as StoreItemWithKey[],
+    applets: applets as StoreItemWithKey[],
+  };
+}
+
+async function restoreIndexedDbStores(backup: {
+  documents?: StoreItemWithKey[];
+  images?: StoreItemWithKey[];
+  trash?: StoreItemWithKey[];
+  custom_wallpapers?: StoreItemWithKey[];
+  applets?: StoreItemWithKey[];
+}): Promise<void> {
+  const restorePromises: Promise<void>[] = [];
+
+  if (backup.documents) {
+    restorePromises.push(
+      restoreSerializedStorageStoreItems(STORES.DOCUMENTS, backup.documents)
+    );
+  }
+  if (backup.images) {
+    restorePromises.push(
+      restoreSerializedStorageStoreItems(STORES.IMAGES, backup.images)
+    );
+  }
+  if (backup.trash) {
+    restorePromises.push(
+      restoreSerializedStorageStoreItems(STORES.TRASH, backup.trash)
+    );
+  }
+  if (backup.custom_wallpapers) {
+    restorePromises.push(
+      restoreSerializedStorageStoreItems(
+        STORES.CUSTOM_WALLPAPERS,
+        backup.custom_wallpapers
+      )
+    );
+  }
+  if (backup.applets) {
+    restorePromises.push(
+      restoreSerializedStorageStoreItems(STORES.APPLETS, backup.applets)
+    );
+  }
+
+  await Promise.all(restorePromises);
+}
 
 export interface UseControlPanelsLogicProps {
   initialData?: ControlPanelsInitialData;
@@ -592,72 +636,12 @@ export function useControlPanelsLogic({
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.collecting"), percent: 10 });
 
-      // Backup IndexedDB data
+      // Backup persisted browser-content data
       try {
-        const db = await ensureIndexedDBInitialized();
-        const getStoreData = async (
-          storeName: string
-        ): Promise<StoreItemWithKey[]> => {
-          return new Promise((resolve, reject) => {
-            try {
-              const transaction = db.transaction(storeName, "readonly");
-              const store = transaction.objectStore(storeName);
-              const items: StoreItemWithKey[] = [];
-              const request = store.openCursor();
-              request.onsuccess = (event) => {
-                const cursor = (
-                  event.target as IDBRequest<IDBCursorWithValue>
-                ).result;
-                if (cursor) {
-                  items.push({ key: cursor.key as string, value: cursor.value });
-                  cursor.continue();
-                } else {
-                  resolve(items);
-                }
-              };
-              request.onerror = () => reject(request.error);
-            } catch (error) {
-              console.error(`Error accessing store ${storeName}:`, error);
-              resolve([]);
-            }
-          });
-        };
-
-        const [docs, imgs, trash, walls, apps] = await Promise.all([
-          getStoreData("documents"),
-          getStoreData("images"),
-          getStoreData("trash"),
-          getStoreData("custom_wallpapers"),
-          getStoreData("applets"),
-        ]);
-
         setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.serializing"), percent: 20 });
-
-        const serializeStore = async (items: StoreItemWithKey[]) =>
-          Promise.all(
-            items.map(async (item) => {
-              const serializedValue: Record<string, unknown> = {
-                ...item.value,
-              };
-              for (const key of Object.keys(item.value)) {
-                if (item.value[key] instanceof Blob) {
-                  const base64 = await blobToBase64(item.value[key] as Blob);
-                  serializedValue[key] = base64;
-                  serializedValue[`_isBlob_${key}`] = true;
-                }
-              }
-              return { key: item.key, value: serializedValue as StoreItem };
-            })
-          );
-
-        backup.indexedDB.documents = await serializeStore(docs);
-        backup.indexedDB.images = await serializeStore(imgs);
-        backup.indexedDB.trash = await serializeStore(trash);
-        backup.indexedDB.custom_wallpapers = await serializeStore(walls);
-        backup.indexedDB.applets = await serializeStore(apps);
-        db.close();
+        backup.indexedDB = await backupIndexedDbStores();
       } catch (error) {
-        console.error("[CloudSync] Error backing up IndexedDB:", error);
+        console.error("[CloudSync] Error backing up browser content storage:", error);
       }
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.compressing"), percent: 35 });
@@ -1007,104 +991,12 @@ export function useControlPanelsLogic({
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 75 });
 
-      // Restore IndexedDB data if available
+      // Restore persisted browser-content data if available
       if (backup.indexedDB) {
         try {
-          const db = await ensureIndexedDBInitialized();
-
-          const restoreStore = async (
-            storeName: string,
-            items: StoreItemWithKey[]
-          ) => {
-            return new Promise<void>((resolve, reject) => {
-              const transaction = db.transaction(storeName, "readwrite");
-              const store = transaction.objectStore(storeName);
-
-              transaction.oncomplete = () => resolve();
-              transaction.onerror = () => reject(transaction.error);
-              transaction.onabort = () =>
-                reject(
-                  transaction.error ||
-                    new Error(`Transaction aborted for ${storeName}`)
-                );
-
-              const clearRequest = store.clear();
-
-              clearRequest.onsuccess = () => {
-                try {
-                  for (const item of items) {
-                    const itemValue: Record<string, unknown> = {
-                      ...item.value,
-                    };
-                    for (const key of Object.keys(item.value)) {
-                      const isBlobKey = `_isBlob_${key}`;
-                      if (item.value[isBlobKey] === true) {
-                        itemValue[key] = base64ToBlob(
-                          item.value[key] as string
-                        );
-                        delete itemValue[isBlobKey];
-                      }
-                    }
-                    if (backup.version < 2) {
-                      if (
-                        storeName === "documents" ||
-                        storeName === "images"
-                      ) {
-                        if (!itemValue.uuid) {
-                          itemValue.uuid = uuidv4();
-                        }
-                        if (!itemValue.contentUrl && itemValue.content) {
-                          itemValue.contentUrl = URL.createObjectURL(
-                            itemValue.content as Blob
-                          );
-                        }
-                      }
-                    }
-                    store.put(itemValue, item.key);
-                  }
-                } catch (error) {
-                  transaction.abort();
-                  reject(error);
-                }
-              };
-              clearRequest.onerror = () => reject(clearRequest.error);
-            });
-          };
-
-          const restorePromises: Promise<void>[] = [];
-          if (backup.indexedDB.documents) {
-            restorePromises.push(
-              restoreStore("documents", backup.indexedDB.documents)
-            );
-          }
-          if (backup.indexedDB.images) {
-            restorePromises.push(
-              restoreStore("images", backup.indexedDB.images)
-            );
-          }
-          if (backup.indexedDB.trash) {
-            restorePromises.push(
-              restoreStore("trash", backup.indexedDB.trash)
-            );
-          }
-          if (backup.indexedDB.custom_wallpapers) {
-            restorePromises.push(
-              restoreStore(
-                "custom_wallpapers",
-                backup.indexedDB.custom_wallpapers
-              )
-            );
-          }
-          if (backup.indexedDB.applets) {
-            restorePromises.push(
-              restoreStore("applets", backup.indexedDB.applets)
-            );
-          }
-
-          await Promise.all(restorePromises);
-          db.close();
+          await restoreIndexedDbStores(backup.indexedDB);
         } catch (error) {
-          console.error("[CloudSync] Error restoring IndexedDB:", error);
+          console.error("[CloudSync] Error restoring browser content storage:", error);
         }
       }
 
@@ -1297,81 +1189,11 @@ export function useControlPanelsLogic({
       }
     }
 
-    // Backup IndexedDB data
+    // Backup persisted browser-content data
     try {
-      const db = await ensureIndexedDBInitialized();
-      const getStoreData = async (
-        storeName: string
-      ): Promise<StoreItemWithKey[]> => {
-        return new Promise((resolve, reject) => {
-          try {
-            const transaction = db.transaction(storeName, "readonly");
-            const store = transaction.objectStore(storeName);
-            const items: StoreItemWithKey[] = [];
-
-            // Use openCursor to get both keys and values
-            const request = store.openCursor();
-
-            request.onsuccess = (event) => {
-              const cursor = (event.target as IDBRequest<IDBCursorWithValue>)
-                .result;
-              if (cursor) {
-                items.push({
-                  key: cursor.key as string,
-                  value: cursor.value,
-                });
-                cursor.continue();
-              } else {
-                // No more entries
-                resolve(items);
-              }
-            };
-
-            request.onerror = () => reject(request.error);
-          } catch (error) {
-            console.error(`Error accessing store ${storeName}:`, error);
-            resolve([]);
-          }
-        });
-      };
-
-      const [docs, imgs, trash, walls, apps] = await Promise.all([
-        getStoreData("documents"),
-        getStoreData("images"),
-        getStoreData("trash"),
-        getStoreData("custom_wallpapers"),
-        getStoreData("applets"),
-      ]);
-
-      const serializeStore = async (items: StoreItemWithKey[]) =>
-        Promise.all(
-          items.map(async (item) => {
-            const serializedValue: Record<string, unknown> = { ...item.value };
-
-            // Check all fields for Blob instances
-            for (const key of Object.keys(item.value)) {
-              if (item.value[key] instanceof Blob) {
-                const base64 = await blobToBase64(item.value[key] as Blob);
-                serializedValue[key] = base64;
-                serializedValue[`_isBlob_${key}`] = true;
-              }
-            }
-
-            return {
-              key: item.key,
-              value: serializedValue as StoreItem,
-            };
-          })
-        );
-
-      backup.indexedDB.documents = await serializeStore(docs);
-      backup.indexedDB.images = await serializeStore(imgs);
-      backup.indexedDB.trash = await serializeStore(trash);
-      backup.indexedDB.custom_wallpapers = await serializeStore(walls);
-      backup.indexedDB.applets = await serializeStore(apps);
-      db.close();
+      backup.indexedDB = await backupIndexedDbStores();
     } catch (error) {
-      console.error("Error backing up IndexedDB:", error);
+      console.error("Error backing up browser content storage:", error);
       alert(t("apps.control-panels.alerts.failedToBackupFileSystem"));
     }
 
@@ -1519,111 +1341,12 @@ export function useControlPanelsLogic({
           }
         });
 
-        // Restore IndexedDB data if available
+        // Restore persisted browser-content data if available
         if (backup.indexedDB) {
           try {
-            const db = await ensureIndexedDBInitialized();
-
-            const restoreStore = async (
-              storeName: string,
-              items: StoreItemWithKey[]
-            ) => {
-              return new Promise<void>((resolve, reject) => {
-                const transaction = db.transaction(storeName, "readwrite");
-                const store = transaction.objectStore(storeName);
-
-                transaction.oncomplete = () => resolve();
-                transaction.onerror = () => reject(transaction.error);
-                transaction.onabort = () =>
-                  reject(
-                    transaction.error ||
-                      new Error(`Transaction aborted for ${storeName}`)
-                  );
-
-                const clearRequest = store.clear();
-
-                clearRequest.onsuccess = () => {
-                  try {
-                    for (const item of items) {
-                      const itemValue: Record<string, unknown> = {
-                        ...item.value,
-                      };
-
-                      for (const key of Object.keys(item.value)) {
-                        const isBlobKey = `_isBlob_${key}`;
-
-                        if (item.value[isBlobKey] === true) {
-                          itemValue[key] = base64ToBlob(
-                            item.value[key] as string
-                          );
-                          delete itemValue[isBlobKey];
-                        }
-                      }
-
-                      if (backup.version < 2) {
-                        if (
-                          storeName === "documents" ||
-                          storeName === "images"
-                        ) {
-                          if (!itemValue.uuid) {
-                            itemValue.uuid = uuidv4();
-                          }
-                          if (!itemValue.contentUrl && itemValue.content) {
-                            itemValue.contentUrl = URL.createObjectURL(
-                              itemValue.content as Blob
-                            );
-                          }
-                        }
-                      }
-
-                      store.put(itemValue, item.key);
-                    }
-                  } catch (error) {
-                    transaction.abort();
-                    reject(error);
-                  }
-                };
-
-                clearRequest.onerror = () => reject(clearRequest.error);
-              });
-            };
-
-            // Restore each store
-            const restorePromises: Promise<void>[] = [];
-
-            if (backup.indexedDB.documents) {
-              restorePromises.push(
-                restoreStore("documents", backup.indexedDB.documents)
-              );
-            }
-            if (backup.indexedDB.images) {
-              restorePromises.push(
-                restoreStore("images", backup.indexedDB.images)
-              );
-            }
-            if (backup.indexedDB.trash) {
-              restorePromises.push(
-                restoreStore("trash", backup.indexedDB.trash)
-              );
-            }
-            if (backup.indexedDB.custom_wallpapers) {
-              restorePromises.push(
-                restoreStore(
-                  "custom_wallpapers",
-                  backup.indexedDB.custom_wallpapers
-                )
-              );
-            }
-            if (backup.indexedDB.applets) {
-              restorePromises.push(
-                restoreStore("applets", backup.indexedDB.applets)
-              );
-            }
-
-            await Promise.all(restorePromises);
-            db.close();
+            await restoreIndexedDbStores(backup.indexedDB);
           } catch (error) {
-            console.error("Error restoring IndexedDB:", error);
+            console.error("Error restoring browser content storage:", error);
             alert(t("apps.control-panels.alerts.failedToRestoreFileSystem"));
           }
         }

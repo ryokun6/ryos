@@ -1,11 +1,20 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
-import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
+import { STORES } from "@/utils/indexedDB";
 import type { OsThemeId } from "@/themes/types";
 import { getAppBasicInfoList } from "@/config/appRegistryData";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  getStorageItem,
+  putStorageItem,
+  storageItemExists,
+} from "@/utils/opfsStorage";
+import {
+  getNextSyncRevision,
+  type CloudSyncRevision,
+} from "@/utils/cloudSyncRevision";
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {
@@ -32,6 +41,8 @@ export interface FileSystemItem {
     // Window dimensions
     windowWidth?: number; // Window width when last opened
     windowHeight?: number; // Window height when last opened
+    // Sync revision metadata
+    syncRevision?: CloudSyncRevision;
     // Alias/shortcut properties
     aliasTarget?: string; // Path or appId that the alias points to
     aliasType?: "file" | "app"; // Type of alias - file/app/applet or application
@@ -46,7 +57,7 @@ interface FileSystemItemData extends Omit<FileSystemItem, "status"> {
   assetPath?: string; // For images
 }
 
-// Structure for content stored in IndexedDB
+// Structure for content stored in browser content storage
 interface StoredContent {
   name: string;
   content: string | Blob;
@@ -292,7 +303,8 @@ function registerFilesForLazyLoad(
 
 /**
  * Load content for a specific file on-demand (lazy loading).
- * Call this when a file is opened to ensure its content is in IndexedDB.
+ * Call this when a file is opened to ensure its content is available in
+ * persisted browser storage.
  * Returns true if content was loaded (or already exists), false on error.
  */
 export async function ensureFileContentLoaded(
@@ -322,40 +334,18 @@ export async function ensureFileContentLoaded(
       checkComplete();
     });
     
-    // Bug fix: After waiting, verify content was actually loaded by checking IndexedDB
+    // Bug fix: After waiting, verify content was actually loaded by checking storage
     // The first request might have failed, so we need to verify
     try {
-      const db = await ensureIndexedDBInitialized();
-      try {
-        const exists = await new Promise<boolean>((resolve) => {
-          const tx = db.transaction(storeName, "readonly");
-          const store = tx.objectStore(storeName);
-          const req = store.get(uuid);
-          req.onsuccess = () => resolve(!!req.result);
-          req.onerror = () => resolve(false);
-        });
-        return exists;
-      } finally {
-        db.close();
-      }
+      return await storageItemExists(storeName, uuid);
     } catch {
       return false;
     }
   }
-
-  let db: IDBDatabase | null = null;
   
   try {
-    db = await ensureIndexedDBInitialized();
-    
-    // Check if content already exists in IndexedDB
-    const existing = await new Promise<StoredContent | undefined>((resolve) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(req.result as StoredContent | undefined);
-      req.onerror = () => resolve(undefined);
-    });
+    // Check if content already exists in browser storage
+    const existing = await getStorageItem<StoredContent>(storeName, uuid);
     
     if (existing) {
       return true;
@@ -378,18 +368,12 @@ export async function ensureFileContentLoaded(
       });
       
       const content = await resp.blob();
-      
-      // Save to IndexedDB
-      await new Promise<void>((resolve, reject) => {
-        const tx = db!.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-        const putReq = store.put(
-          { name: pendingFile.name, content } as StoredContent,
-          uuid
-        );
-        putReq.onsuccess = () => resolve();
-        putReq.onerror = () => reject(putReq.error);
-      });
+
+      await putStorageItem(
+        storeName,
+        { name: pendingFile.name, content } as StoredContent,
+        uuid
+      );
 
       // Remove from pending once successfully loaded
       pendingLazyLoadFiles.delete(filePath);
@@ -402,15 +386,10 @@ export async function ensureFileContentLoaded(
     console.error(`[FilesStore] Error loading content for ${filePath}:`, err);
     loadingAssets.delete(uuid);
     return false;
-  } finally {
-    // Bug fix: Ensure db is always closed, even on errors
-    if (db) {
-      db.close();
-    }
   }
 }
 
-// Save default file contents into IndexedDB using generated UUIDs
+// Save default file contents into persisted browser storage using generated UUIDs
 // Optimized: Only saves text content immediately, defers binary assets for lazy loading
 async function saveDefaultContents(
   files: FileSystemItemData[],
@@ -437,14 +416,7 @@ async function saveDefaultContents(
   // Only process text files immediately (they're small and already in JSON)
   if (textFiles.length === 0) return;
   
-  let db: IDBDatabase | null = null;
-  
   try {
-    db = await ensureIndexedDBInitialized();
-    
-    // Group files by store for batch operations
-    const filesByStore = new Map<string, { file: FileSystemItemData; uuid: string }[]>();
-    
     for (const file of textFiles) {
       const meta = items[file.path];
       const uuid = meta?.uuid;
@@ -459,70 +431,24 @@ async function saveDefaultContents(
         : null;
       if (!storeName) continue;
 
-      if (!filesByStore.has(storeName)) {
-        filesByStore.set(storeName, []);
-      }
-      filesByStore.get(storeName)!.push({ file, uuid });
-    }
-    
-    // Process each store with batched operations
-    for (const [storeName, storeFiles] of filesByStore) {
-      // First, check which UUIDs already exist (batch read)
-      const existingUUIDs = new Set<string>();
-      await new Promise<void>((resolve) => {
-        const tx = db!.transaction(storeName, "readonly");
-        const store = tx.objectStore(storeName);
-        let completed = 0;
-        
-        for (const { uuid } of storeFiles) {
-          const req = store.get(uuid);
-          req.onsuccess = () => {
-            if (req.result) existingUUIDs.add(uuid);
-            completed++;
-            if (completed === storeFiles.length) resolve();
-          };
-          req.onerror = () => {
-            completed++;
-            if (completed === storeFiles.length) resolve();
-          };
-        }
-        
-        if (storeFiles.length === 0) resolve();
-      });
-      
-      // Filter out existing files and batch write new ones
-      const newFiles = storeFiles.filter(({ uuid }) => !existingUUIDs.has(uuid));
-      if (newFiles.length === 0) continue;
-      
-      // Batch write in a single transaction
-      await new Promise<void>((resolve, reject) => {
-        const tx = db!.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-        
-        for (const { file, uuid } of newFiles) {
-          if (file.content) {
-            store.put({ name: file.name, content: file.content } as StoredContent, uuid);
-          }
-        }
-        
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
+      const alreadyExists = await storageItemExists(storeName, uuid);
+      if (alreadyExists || !file.content) continue;
+
+      await putStorageItem(
+        storeName,
+        { name: file.name, content: file.content } as StoredContent,
+        uuid
+      );
     }
   } catch (err) {
     console.error("[FilesStore] Error saving default contents:", err);
-  } finally {
-    // Bug fix: Ensure db is always closed, even on errors
-    if (db) {
-      db.close();
-    }
   }
 }
 
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 10; // Update Applets folder icon
+const STORE_VERSION = 11; // Add sync revision metadata support
 const STORE_NAME = "ryos:files";
 
 const initialFilesData: FilesStoreState = {
@@ -547,6 +473,8 @@ export const useFilesStore = create<FilesStoreState>()(
           // Set timestamps
           createdAt: itemData.createdAt || now,
           modifiedAt: itemData.modifiedAt || now,
+          syncRevision:
+            itemData.syncRevision || getNextSyncRevision("files-metadata"),
         };
         useCloudSyncStore
           .getState()
@@ -625,6 +553,7 @@ export const useFilesStore = create<FilesStoreState>()(
           const newItems = { ...state.items };
           const itemsToDelete = [path];
           const deletedContentPaths: string[] = []; // Track paths of deleted file content
+          const syncRevision = getNextSyncRevision("files-metadata");
 
           // If it's a directory, find all children
           if (itemToRemove.isDirectory) {
@@ -656,6 +585,7 @@ export const useFilesStore = create<FilesStoreState>()(
                 status: "trashed",
                 originalPath: p,
                 deletedAt: Date.now(),
+                syncRevision,
               };
             }
           });
@@ -691,6 +621,7 @@ export const useFilesStore = create<FilesStoreState>()(
 
           const newItems = { ...state.items };
           const itemsToRestore = [path];
+          const syncRevision = getNextSyncRevision("files-metadata");
 
           // If it's a directory, find all children marked as trashed *within this original path*
           if (itemToRestore.isDirectory) {
@@ -712,6 +643,7 @@ export const useFilesStore = create<FilesStoreState>()(
                 status: "active",
                 originalPath: undefined,
                 deletedAt: undefined,
+                syncRevision,
               };
             }
           });
@@ -770,9 +702,15 @@ export const useFilesStore = create<FilesStoreState>()(
           }
 
           const newItems = { ...state.items };
+          const syncRevision = getNextSyncRevision("files-metadata");
           delete newItems[oldPath]; // Remove old entry
 
-          const updatedItem = { ...itemToRename, path: newPath, name: newName };
+          const updatedItem = {
+            ...itemToRename,
+            path: newPath,
+            name: newName,
+            syncRevision,
+          };
           newItems[newPath] = updatedItem;
 
           // If it's a directory, rename all children paths (including trashed ones within)
@@ -790,6 +728,7 @@ export const useFilesStore = create<FilesStoreState>()(
                   ...childItem,
                   path: childNewPath,
                   originalPath: updatedOriginalPath,
+                  syncRevision,
                 };
               }
             });
@@ -843,12 +782,17 @@ export const useFilesStore = create<FilesStoreState>()(
           }
 
           const newItems = { ...state.items };
+          const syncRevision = getNextSyncRevision("files-metadata");
 
           // Remove source entry
           delete newItems[sourcePath];
 
           // Add destination entry
-          const movedItem = { ...sourceItem, path: destinationPath };
+          const movedItem = {
+            ...sourceItem,
+            path: destinationPath,
+            syncRevision,
+          };
           newItems[destinationPath] = movedItem;
 
           // If it's a directory, move all its children
@@ -864,6 +808,7 @@ export const useFilesStore = create<FilesStoreState>()(
                 newItems[childNewPath] = {
                   ...childItem,
                   path: childNewPath,
+                  syncRevision,
                 };
               }
             });
@@ -905,6 +850,8 @@ export const useFilesStore = create<FilesStoreState>()(
                 ...existingItem,
                 ...updates,
                 modifiedAt: Date.now(),
+                syncRevision:
+                  updates.syncRevision || getNextSyncRevision("files-metadata"),
               },
             },
           };
@@ -991,6 +938,7 @@ export const useFilesStore = create<FilesStoreState>()(
             status: "active",
             createdAt: now,
             modifiedAt: now,
+            syncRevision: getNextSyncRevision("files-metadata"),
           };
 
           return {
@@ -1236,6 +1184,7 @@ export const useFilesStore = create<FilesStoreState>()(
                   status: "active",
                   createdAt: now,
                   modifiedAt: now,
+                  syncRevision: getNextSyncRevision("files-metadata"),
                   hiddenOnThemes: shortcut.hiddenOnThemes.length > 0 ? shortcut.hiddenOnThemes as OsThemeId[] : undefined,
                 };
 
@@ -1357,6 +1306,10 @@ export const useFilesStore = create<FilesStoreState>()(
           // Version 8 doesn't change the data structure,
           // but we bump it to trigger the one-time sync in useFileSystem
           // which will calculate actual file sizes and set proper timestamps
+          return persistedState;
+        }
+
+        if (version < 11) {
           return persistedState;
         }
 

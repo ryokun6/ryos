@@ -1,3 +1,5 @@
+import type { CloudSyncRevision } from "@/utils/cloudSyncRevision";
+
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
   "files-metadata",
@@ -19,7 +21,7 @@ export function getCloudSyncRemoteApplyDomains(
   const settingsIndex = orderedDomains.indexOf("settings");
   const customWallpapersIndex = orderedDomains.indexOf("custom-wallpapers");
 
-  // Apply wallpaper blobs before settings so indexeddb:// wallpaper references
+  // Apply wallpaper blobs before settings so stored wallpaper references
   // can resolve during the same first-sync batch.
   if (settingsIndex === -1 || customWallpapersIndex === -1) {
     return orderedDomains;
@@ -108,6 +110,7 @@ export interface CloudSyncBlobItemMetadata {
   updatedAt: string;
   signature: string;
   size: number;
+  revision?: CloudSyncRevision;
   storageUrl?: string;
   blobUrl?: string;
 }
@@ -116,6 +119,7 @@ export interface CloudSyncBlobItemDownloadMetadata {
   updatedAt: string;
   signature: string;
   size: number;
+  revision?: CloudSyncRevision;
   storageUrl: string;
   downloadUrl: string;
 }

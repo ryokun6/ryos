@@ -363,6 +363,126 @@ describe("cloud sync shared helpers", () => {
     ]);
   });
 
+  test("prefers higher sync revisions over timestamps", () => {
+    const merged = mergeFilesMetadataSnapshots(
+      {
+        items: {
+          "/Documents/shared.md": {
+            path: "/Documents/shared.md",
+            name: "shared.md",
+            isDirectory: false,
+            uuid: "local-doc",
+            modifiedAt: 500,
+            createdAt: 100,
+            status: "active",
+            type: "markdown",
+            syncRevision: {
+              clientId: "client-a",
+              counter: 1,
+            },
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "local-doc",
+            value: { name: "shared.md", content: "local content" },
+          },
+        ],
+        deletedPaths: {},
+      },
+      {
+        items: {
+          "/Documents/shared.md": {
+            path: "/Documents/shared.md",
+            name: "shared.md",
+            isDirectory: false,
+            uuid: "remote-doc",
+            modifiedAt: 100,
+            createdAt: 100,
+            status: "active",
+            type: "markdown",
+            syncRevision: {
+              clientId: "client-a",
+              counter: 2,
+            },
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "remote-doc",
+            value: { name: "shared.md", content: "remote content" },
+          },
+        ],
+        deletedPaths: {},
+      }
+    );
+
+    expect(merged.items["/Documents/shared.md"]?.uuid).toBe("remote-doc");
+    expect(merged.documents?.[0]?.key).toBe("remote-doc");
+  });
+
+  test("prefers remote on concurrent revision ties with equal timestamps", () => {
+    const merged = mergeFilesMetadataSnapshots(
+      {
+        items: {
+          "/Documents/shared.md": {
+            path: "/Documents/shared.md",
+            name: "shared.md",
+            isDirectory: false,
+            uuid: "local-doc",
+            modifiedAt: 200,
+            createdAt: 100,
+            status: "active",
+            type: "markdown",
+            syncRevision: {
+              clientId: "client-a",
+              counter: 2,
+            },
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "local-doc",
+            value: { name: "shared.md", content: "local content" },
+          },
+        ],
+        deletedPaths: {},
+      },
+      {
+        items: {
+          "/Documents/shared.md": {
+            path: "/Documents/shared.md",
+            name: "shared.md",
+            isDirectory: false,
+            uuid: "remote-doc",
+            modifiedAt: 200,
+            createdAt: 100,
+            status: "active",
+            type: "markdown",
+            syncRevision: {
+              clientId: "client-b",
+              counter: 1,
+            },
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "remote-doc",
+            value: { name: "shared.md", content: "remote content" },
+          },
+        ],
+        deletedPaths: {},
+      }
+    );
+
+    expect(merged.items["/Documents/shared.md"]?.uuid).toBe("remote-doc");
+    expect(merged.documents?.[0]?.key).toBe("remote-doc");
+  });
+
   test("keeps recreated files when deletion markers are older", () => {
     const merged = mergeFilesMetadataSnapshots(
       {

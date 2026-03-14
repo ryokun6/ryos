@@ -23,6 +23,17 @@ async function getAuthToken(): Promise<string | null> {
   return authTokenPromise;
 }
 
+async function createAuthCredentials(prefix: string): Promise<{
+  username: string;
+  authToken: string;
+}> {
+  const username = `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const redis = createRedis();
+  const authToken = generateAuthToken();
+  await storeToken(redis, username, authToken);
+  return { username, authToken };
+}
+
 describe("auto cloud sync API", () => {
 
   test("GET /api/sync/auto requires authentication", async () => {
@@ -161,7 +172,7 @@ describe("auto cloud sync API", () => {
         body: JSON.stringify({
           domain: "custom-wallpapers",
           updatedAt: "2026-03-09T15:45:00.000Z",
-          version: 1,
+          baseVersion: 0,
           totalSize: 0,
           items: {},
         }),
@@ -186,20 +197,21 @@ describe("auto cloud sync API", () => {
   });
 
   test("POST /api/sync/auto preserves individual deletion markers", async () => {
-    const authToken = await getAuthToken();
-    expect(authToken).toBeTruthy();
+    const { username, authToken } = await createAuthCredentials(
+      "sync_auto_wallpaper_delete"
+    );
 
     const saveRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/auto`,
-      TEST_USERNAME,
-      authToken as string,
+      username,
+      authToken,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           domain: "custom-wallpapers",
           updatedAt: "2026-03-12T16:30:00.000Z",
-          version: 1,
+          baseVersion: 0,
           totalSize: 0,
           items: {},
           deletedItems: {
@@ -213,8 +225,8 @@ describe("auto cloud sync API", () => {
 
     const downloadRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/auto?domain=custom-wallpapers`,
-      TEST_USERNAME,
-      authToken as string
+      username,
+      authToken
     );
 
     expect(downloadRes.status).toBe(200);
@@ -262,5 +274,53 @@ describe("auto cloud sync API", () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect((data.error || "").toLowerCase()).toContain("individual");
+  });
+
+  test("POST /api/sync/auto rejects stale baseVersion uploads", async () => {
+    const { username, authToken } = await createAuthCredentials(
+      "sync_auto_baseversion"
+    );
+
+    const firstRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto`,
+      username,
+      authToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "custom-wallpapers",
+          updatedAt: "2026-03-14T11:00:00.000Z",
+          baseVersion: 0,
+          totalSize: 0,
+          items: {},
+        }),
+      }
+    );
+    expect(firstRes.status).toBe(200);
+    const firstJson = await firstRes.json();
+    expect(firstJson.metadata.version).toBe(1);
+
+    const staleRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto`,
+      username,
+      authToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "custom-wallpapers",
+          updatedAt: "2026-03-14T11:05:00.000Z",
+          baseVersion: 0,
+          totalSize: 0,
+          items: {},
+        }),
+      }
+    );
+
+    expect(staleRes.status).toBe(409);
+    const staleJson = await staleRes.json();
+    expect(staleJson.error).toContain("sync_conflict");
+    expect(staleJson.currentVersion).toBe(1);
   });
 });

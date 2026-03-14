@@ -8,6 +8,7 @@ import {
   SelectSeparator,
 } from "@/components/ui/select";
 import { useWallpaper } from "@/hooks/useWallpaper";
+import { isStoredWallpaperReference } from "@/utils/wallpaperStorage";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { DisplayMode } from "@/utils/displayMode";
 import { Plus, Trash } from "@phosphor-icons/react";
@@ -23,7 +24,7 @@ interface WallpaperItemProps {
   onClick: () => void;
   isTile?: boolean;
   isVideo?: boolean;
-  previewUrl?: string; // For IndexedDB references
+  previewUrl?: string; // For persisted-storage references
 }
 
 function WallpaperItem({
@@ -151,7 +152,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const {
     currentWallpaper,
     setWallpaper,
-    INDEXEDDB_PREFIX,
     loadCustomWallpapers,
     getWallpaperData,
   } = useWallpaper();
@@ -208,14 +208,14 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     "tiles" | PhotoCategory
   >(() => {
     if (currentWallpaper.includes("/wallpapers/tiles/")) return "tiles";
-    if (currentWallpaper.startsWith(INDEXEDDB_PREFIX)) return "custom";
+    if (isStoredWallpaperReference(currentWallpaper)) return "custom";
     if (currentWallpaper.includes("/wallpapers/videos/")) return "videos";
     const match = currentWallpaper.match(/\/wallpapers\/photos\/([^/]+)\//);
     if (match) return match[1];
     return "tiles";
   });
 
-  // Load custom wallpapers from IndexedDB (just the references)
+  // Load custom wallpapers from persisted browser storage (just the references)
   useEffect(() => {
     let isActive = true;
 
@@ -226,9 +226,28 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
         setCustomWallpaperRefs(refs);
 
-        // Load preview data in parallel
+        const refsNeedingPreview = refs.filter(
+          (ref) => !customWallpaperPreviews[ref]
+        );
+
+        if (refsNeedingPreview.length === 0) {
+          setCustomWallpaperPreviews((prev) => {
+            const filtered = Object.fromEntries(
+              Object.entries(prev).filter(([ref]) => refs.includes(ref))
+            ) as Record<string, string>;
+            const prevKeys = Object.keys(prev);
+            const nextKeys = Object.keys(filtered);
+            const unchanged =
+              prevKeys.length === nextKeys.length &&
+              nextKeys.every((key) => prev[key] === filtered[key]);
+            return unchanged ? prev : filtered;
+          });
+          return;
+        }
+
+        // Load only missing preview data in parallel
         const previewEntries = await Promise.all(
-          refs.map(async (ref) => {
+          refsNeedingPreview.map(async (ref) => {
             const data = await getWallpaperData(ref);
             return data ? ([ref, data] as const) : null;
           })
@@ -236,7 +255,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
         if (!isActive) return;
 
-        const previews = Object.fromEntries(
+        const nextPreviewEntries = Object.fromEntries(
           previewEntries.filter(
             (
               entry
@@ -244,7 +263,12 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
           )
         ) as Record<string, string>;
 
-        setCustomWallpaperPreviews(previews);
+        setCustomWallpaperPreviews((prev) => ({
+          ...Object.fromEntries(
+            Object.entries(prev).filter(([ref]) => refs.includes(ref))
+          ),
+          ...nextPreviewEntries,
+        }));
       } catch (error) {
         if (!isActive) return;
         console.error("Error fetching custom wallpapers:", error);
@@ -256,7 +280,12 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return () => {
       isActive = false;
     };
-  }, [loadCustomWallpapers, getWallpaperData, INDEXEDDB_PREFIX, customWallpapersRevision]);
+  }, [
+    loadCustomWallpapers,
+    getWallpaperData,
+    customWallpapersRevision,
+    customWallpaperPreviews,
+  ]);
 
   const handleWallpaperSelect = (path: string) => {
     setWallpaper(path);
@@ -305,7 +334,8 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
       // Refresh previews in one batch to avoid sequential requests and rerenders
       const previewEntries = await Promise.all(
         refs.map(async (ref) => {
-          const data = await getWallpaperData(ref);
+          const data =
+            customWallpaperPreviews[ref] || (await getWallpaperData(ref));
           return data ? ([ref, data] as const) : null;
         })
       );
@@ -334,7 +364,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   useEffect(() => {
     if (currentWallpaper.includes("/wallpapers/tiles/")) {
       setSelectedCategory("tiles");
-    } else if (currentWallpaper.startsWith(INDEXEDDB_PREFIX)) {
+    } else if (isStoredWallpaperReference(currentWallpaper)) {
       setSelectedCategory("custom");
     } else if (currentWallpaper.includes("/wallpapers/videos/")) {
       setSelectedCategory("videos");
@@ -342,7 +372,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
       const match = currentWallpaper.match(/\/wallpapers\/photos\/([^/]+)\//);
       if (match) setSelectedCategory(match[1]);
     }
-  }, [currentWallpaper, INDEXEDDB_PREFIX]);
+  }, [currentWallpaper]);
 
   const formatCategoryLabel = (category: string) => {
     const key = `apps.control-panels.wallpaperCategories.${category}`;

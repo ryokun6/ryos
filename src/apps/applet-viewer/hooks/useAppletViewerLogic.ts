@@ -440,7 +440,7 @@ export function useAppletViewerLogic({
   }, [appletPath, getFileItem]);
 
   useEffect(() => {
-    const loadContentFromIndexedDB = async () => {
+    const loadStoredContent = async () => {
       if (!appletPath || appletPath.startsWith("/Applets/") === false) {
         setLoadedContent("");
         return;
@@ -507,11 +507,11 @@ export function useAppletViewerLogic({
           setLoadedContent("");
         }
       } catch (error) {
-        console.error("[AppletViewer] Error loading content from IndexedDB:", error);
+        console.error("[AppletViewer] Error loading stored applet content:", error);
         setLoadedContent("");
       }
     };
-    loadContentFromIndexedDB();
+    loadStoredContent();
   }, [
     appletPath,
     instanceId,
@@ -525,7 +525,7 @@ export function useAppletViewerLogic({
       path: appletPath,
       contentLength: htmlContent.length,
       hasContent: !!htmlContent,
-      loadedFromIndexedDB: !!loadedContent,
+      loadedFromStorage: !!loadedContent,
     });
   }, [appletPath, htmlContent, loadedContent]);
 

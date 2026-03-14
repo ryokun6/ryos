@@ -1383,7 +1383,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 content: finalContent,
                 icon: existingItem?.icon || "📄",
               });
-
               // Find existing TextEdit instance for this file
               let targetInstanceId: string | null = null;
               for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
@@ -1488,7 +1487,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`);
                 }
 
-                // Read existing content from IndexedDB
+                // Read existing content from persisted browser storage
                 const contentData = await dbOperations.get<DocumentContent>(STORES.DOCUMENTS, fileItem.uuid);
                 if (!contentData?.content) {
                   throw new Error(`Failed to read document content: ${path}`);
@@ -1528,7 +1527,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 // Replace exactly one occurrence
                 const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
-
                 await persistChatDocument({
                   saveFile,
                   path,
@@ -1612,7 +1610,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 // Replace exactly one occurrence
                 const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
-
                 await persistChatApplet({
                   saveFile,
                   fileItem,
