@@ -3,6 +3,7 @@ import { useLatestRef } from "@/hooks/useLatestRef";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { abortableFetch } from "@/utils/abortableFetch";
 
@@ -64,8 +65,10 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const originalIpodVolumeRef = useRef<number | null>(null);
   const originalChatSynthVolumeRef = useRef<number | null>(null);
 
-  // Subscribe to iPod playing state so our effect reacts when playback starts/stops
+  // Subscribe to iPod/Karaoke playing state so ducking reacts when playback starts/stops
   const ipodIsPlaying = useIpodStore((s) => s.isPlaying);
+  const karaokeIsPlaying = useKaraokeStore((s) => s.isPlaying);
+  const musicIsPlaying = ipodIsPlaying || karaokeIsPlaying;
 
   // Detect iOS (Safari) environment where programmatic volume control is restricted
   const isIOS =
@@ -350,7 +353,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   useEffect(() => {
     if (isSpeaking) {
       // Activate ducking only once at the start of speech
-      if (originalIpodVolumeRef.current === null && ipodIsPlaying && !isIOS) {
+      if (originalIpodVolumeRef.current === null && musicIsPlaying && !isIOS) {
         originalIpodVolumeRef.current = useAudioSettingsStore.getState().ipodVolume;
         const duckedIpod = Math.max(0, originalIpodVolumeRef.current * 0.35);
         setIpodVolumeGlobal(duckedIpod);
@@ -381,7 +384,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     }
   }, [
     isSpeaking,
-    ipodIsPlaying,
+    musicIsPlaying,
     setIpodVolumeGlobal,
     setChatSynthVolumeGlobal,
     isIOS,
