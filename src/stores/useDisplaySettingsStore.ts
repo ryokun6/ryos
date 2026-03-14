@@ -48,6 +48,31 @@ const dataURLToBlob = (dataURL: string): Blob | null => {
   }
 };
 
+function revokeCachedWallpaperObjectUrl(id: string): void {
+  if (!objectURLs[id]) {
+    return;
+  }
+
+  URL.revokeObjectURL(objectURLs[id]);
+  delete objectURLs[id];
+}
+
+export function clearCachedWallpaperObjectUrls(
+  references?: Iterable<string>
+): void {
+  if (!references) {
+    for (const id of Object.keys(objectURLs)) {
+      revokeCachedWallpaperObjectUrl(id);
+    }
+    return;
+  }
+
+  for (const reference of references) {
+    const id = extractStoredWallpaperId(reference) ?? reference;
+    revokeCachedWallpaperObjectUrl(id);
+  }
+}
+
 const saveCustomWallpaper = async (file: File): Promise<string> => {
   if (!file.type.startsWith("image/"))
     throw new Error("Only image files allowed");
@@ -159,6 +184,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           const data = await get().getWallpaperData(wall);
           if (data) set({ wallpaperSource: data });
         }
+        if (path instanceof File) {
+          get().bumpCustomWallpapersRevision();
+          emitCloudSyncDomainChange("custom-wallpapers");
+        }
         window.dispatchEvent(
           new CustomEvent("wallpaperChange", { detail: wall })
         );
@@ -179,10 +208,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         useCloudSyncStore.getState().markDeletedKeys("customWallpaperKeys", [id]);
         try {
           await deleteStorageItem(CUSTOM_WALLPAPERS_STORE, id);
-          if (objectURLs[id]) {
-            URL.revokeObjectURL(objectURLs[id]);
-            delete objectURLs[id];
-          }
+          revokeCachedWallpaperObjectUrl(id);
           if (get().currentWallpaper === reference) {
             set({
               currentWallpaper: "/wallpapers/photos/aqua/water.jpg",

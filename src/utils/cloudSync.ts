@@ -86,6 +86,7 @@ import {
   extractStoredWallpaperId,
   isStoredWallpaperReference,
 } from "@/utils/wallpaperStorage";
+import { clearCachedWallpaperObjectUrls } from "@/stores/useDisplaySettingsStore";
 import { getNextSyncRevision } from "@/utils/cloudSyncRevision";
 type AuthContext = {
   username: string;
@@ -823,6 +824,7 @@ async function applyCustomWallpapersSnapshot(
   console.log(
     `[CloudSync] applyCustomWallpapersSnapshot: replacing with ${filteredData.length} items`
   );
+  clearCachedWallpaperObjectUrls();
   await restoreSerializedStorageStoreItems(
     STORES.CUSTOM_WALLPAPERS,
     filteredData
@@ -839,6 +841,7 @@ async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promis
   if (isStoredWallpaperReference(current)) {
     const id = extractStoredWallpaperId(current);
     if (id && remoteKeySet.has(id)) {
+      clearCachedWallpaperObjectUrls([current]);
       await displayStore.setWallpaper(current);
     } else {
       useDisplaySettingsStore.setState({

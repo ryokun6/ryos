@@ -226,9 +226,28 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
         setCustomWallpaperRefs(refs);
 
-        // Load preview data in parallel
+        const refsNeedingPreview = refs.filter(
+          (ref) => !customWallpaperPreviews[ref]
+        );
+
+        if (refsNeedingPreview.length === 0) {
+          setCustomWallpaperPreviews((prev) => {
+            const filtered = Object.fromEntries(
+              Object.entries(prev).filter(([ref]) => refs.includes(ref))
+            ) as Record<string, string>;
+            const prevKeys = Object.keys(prev);
+            const nextKeys = Object.keys(filtered);
+            const unchanged =
+              prevKeys.length === nextKeys.length &&
+              nextKeys.every((key) => prev[key] === filtered[key]);
+            return unchanged ? prev : filtered;
+          });
+          return;
+        }
+
+        // Load only missing preview data in parallel
         const previewEntries = await Promise.all(
-          refs.map(async (ref) => {
+          refsNeedingPreview.map(async (ref) => {
             const data = await getWallpaperData(ref);
             return data ? ([ref, data] as const) : null;
           })
@@ -236,7 +255,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
         if (!isActive) return;
 
-        const previews = Object.fromEntries(
+        const nextPreviewEntries = Object.fromEntries(
           previewEntries.filter(
             (
               entry
@@ -244,7 +263,12 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
           )
         ) as Record<string, string>;
 
-        setCustomWallpaperPreviews(previews);
+        setCustomWallpaperPreviews((prev) => ({
+          ...Object.fromEntries(
+            Object.entries(prev).filter(([ref]) => refs.includes(ref))
+          ),
+          ...nextPreviewEntries,
+        }));
       } catch (error) {
         if (!isActive) return;
         console.error("Error fetching custom wallpapers:", error);
@@ -256,7 +280,12 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return () => {
       isActive = false;
     };
-  }, [loadCustomWallpapers, getWallpaperData, customWallpapersRevision]);
+  }, [
+    loadCustomWallpapers,
+    getWallpaperData,
+    customWallpapersRevision,
+    customWallpaperPreviews,
+  ]);
 
   const handleWallpaperSelect = (path: string) => {
     setWallpaper(path);
@@ -305,7 +334,8 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
       // Refresh previews in one batch to avoid sequential requests and rerenders
       const previewEntries = await Promise.all(
         refs.map(async (ref) => {
-          const data = await getWallpaperData(ref);
+          const data =
+            customWallpaperPreviews[ref] || (await getWallpaperData(ref));
           return data ? ([ref, data] as const) : null;
         })
       );
