@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useRef } from "react";
+import { useEffect, useCallback, useState, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppProps } from "@/apps/base/types";
@@ -19,7 +19,8 @@ import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
-import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
+import { useDashboardStore, type DashboardWidget, type WidgetType } from "@/stores/useDashboardStore";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
   switch (type) {
@@ -82,6 +83,23 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
   stickynote: "📝",
   dictionary: "📖",
 };
+
+const MOBILE_WIDGET_STACK_SIDE_PADDING = 16;
+const MOBILE_WIDGET_STACK_MAX_WIDTH = 420;
+const MOBILE_WIDGET_MIN_SCALE = 0.72;
+const MOBILE_WEATHER_STACK_TOP_OFFSET = 20;
+
+function useViewportWidth() {
+  const subscribe = useCallback((callback: () => void) => {
+    window.addEventListener("resize", callback);
+    return () => window.removeEventListener("resize", callback);
+  }, []);
+
+  const getSnapshot = useCallback(() => window.innerWidth, []);
+  const getServerSnapshot = useCallback(() => 1024, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
 
 function WidgetStrip({
   onAdd,
@@ -218,6 +236,156 @@ function WidgetStrip({
   );
 }
 
+function MobileDashboardWidgets({
+  widgets,
+  isPickerOpen,
+  stripHeight,
+  removeWidget,
+  onBackgroundTap,
+}: {
+  widgets: DashboardWidget[];
+  isPickerOpen: boolean;
+  stripHeight: number;
+  removeWidget: (id: string) => void;
+  onBackgroundTap: () => void;
+}) {
+  const { t } = useTranslation();
+  const viewportWidth = useViewportWidth();
+  const cardWidth = Math.max(
+    260,
+    Math.min(
+      MOBILE_WIDGET_STACK_MAX_WIDTH,
+      viewportWidth - MOBILE_WIDGET_STACK_SIDE_PADDING * 2
+    )
+  );
+  const bottomPadding = isPickerOpen ? stripHeight + 120 : 96;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none px-4 pt-14">
+      <div
+        className="mx-auto h-full w-full max-w-[420px] overflow-y-auto overscroll-contain"
+        style={{
+          pointerEvents: "auto",
+          touchAction: "pan-y",
+          WebkitOverflowScrolling: "touch",
+          paddingBottom: `calc(${bottomPadding}px + env(safe-area-inset-bottom, 0px))`,
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onBackgroundTap();
+          }
+        }}
+      >
+        <div
+          data-dashboard-widget
+          className="flex w-full flex-col items-center gap-7 pb-1"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              onBackgroundTap();
+            }
+          }}
+        >
+          {widgets.length === 0 && (
+            <div
+              className="w-full rounded-[24px] px-5 py-6 text-center"
+              style={{
+                background: "linear-gradient(to bottom, rgba(50,50,50,0.8), rgba(25,25,25,0.85))",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+                color: "rgba(255,255,255,0.82)",
+              }}
+            >
+              <p className="text-sm font-semibold">
+                {t("apps.dashboard.widgets.addWidget")}
+              </p>
+              <p className="mt-1 text-xs opacity-75">
+                {t("apps.dashboard.mobile.emptyState", "Use the + button to add widgets to this stack.")}
+              </p>
+            </div>
+          )}
+
+          {widgets.map((widget) => {
+            const scale = Math.max(
+              MOBILE_WIDGET_MIN_SCALE,
+              Math.min(1, cardWidth / widget.size.width)
+            );
+            const scaledWidth = Math.round(widget.size.width * scale);
+            const scaledHeight = Math.round(widget.size.height * scale);
+            const stackTopOffset =
+              widget.type === "weather"
+                ? Math.round(MOBILE_WEATHER_STACK_TOP_OFFSET * scale)
+                : 0;
+
+            return (
+              <motion.div
+                key={widget.id}
+                initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
+                className="flex w-full justify-center"
+                style={{
+                  minHeight: scaledHeight,
+                  marginTop: stackTopOffset,
+                  pointerEvents: "none",
+                }}
+              >
+                <div
+                  style={{
+                    width: scaledWidth,
+                    height: scaledHeight,
+                    position: "relative",
+                    pointerEvents: "auto",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: widget.size.width,
+                      height: widget.size.height,
+                      transform: `scale(${scale})`,
+                      transformOrigin: "top left",
+                    }}
+                  >
+                    <WidgetChrome
+                      layoutMode="stacked"
+                      width={widget.size.width}
+                      height={widget.size.height}
+                      x={0}
+                      y={0}
+                      zIndex={widget.zIndex ?? 1}
+                      borderRadius={widget.type === "ipod" ? "9999px" : undefined}
+                      hideDoneButton={widget.type === "ipod"}
+                      onRemove={() => removeWidget(widget.id)}
+                      overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
+                      backContent={(onFlipBack) => (
+                        <WidgetBackContent
+                          type={widget.type}
+                          widgetId={widget.id}
+                          onDone={onFlipBack}
+                        />
+                      )}
+                    >
+                      {(isFlipped) => (
+                        <WidgetContent
+                          type={widget.type}
+                          widgetId={widget.id}
+                          isFlipped={isFlipped}
+                        />
+                      )}
+                    </WidgetChrome>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DashboardAppComponent({
   isWindowOpen,
   onClose: _onClose,
@@ -226,6 +394,7 @@ export function DashboardAppComponent({
 }: AppProps) {
   const { t } = useTranslation();
   const closeAppInstance = useAppStore((state) => state.closeAppInstance);
+  const isPhone = useMediaQuery("(max-width: 639px)");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [stripHeight, setStripHeight] = useState(0);
@@ -299,9 +468,10 @@ export function DashboardAppComponent({
   );
 
   const showOverlay = isWindowOpen && !isClosing;
+  const toggleButtonBottom = isPickerOpen ? Math.max(stripHeight + 16, 110) : 16;
 
   useEffect(() => {
-    if (!showOverlay) return;
+    if (!showOverlay || isPhone) return;
     const reposition = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
@@ -322,7 +492,7 @@ export function DashboardAppComponent({
     reposition();
     window.addEventListener("resize", reposition);
     return () => window.removeEventListener("resize", reposition);
-  }, [showOverlay]);
+  }, [showOverlay, isPhone]);
 
   return (
     <>
@@ -369,51 +539,78 @@ export function DashboardAppComponent({
                 }}
               />
               {/* Widgets - pointer-events-none so scrim receives backdrop clicks */}
-              <motion.div
-                data-dashboard-widget
-                className="absolute inset-0"
-                style={{ pointerEvents: "none" }}
-                animate={{ y: isPickerOpen ? -stripHeight : 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              >
+              {isPhone ? (
                 <AnimatePresence>
-                  {widgets.map((widget) => (
-                    <motion.div
-                    key={widget.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{
-                      duration: 0.3,
-                      ease: [0.4, 0, 0.2, 1],
+                  <MobileDashboardWidgets
+                    widgets={widgets}
+                    isPickerOpen={isPickerOpen}
+                    stripHeight={stripHeight}
+                    removeWidget={removeWidget}
+                    onBackgroundTap={() => {
+                      if (isPickerOpen) setIsPickerOpen(false);
+                      else handleClose();
                     }}
-                    style={{
-                      position: "relative",
-                      pointerEvents: "auto",
-                      zIndex: widget.zIndex ?? 1,
-                      transformOrigin: `${widget.position.x + widget.size.width / 2}px ${widget.position.y + widget.size.height / 2}px`,
-                    }}
-                  >
-                    <WidgetChrome
-                      width={widget.size.width}
-                      height={widget.size.height}
-                      x={widget.position.x}
-                      y={widget.position.y}
-                      zIndex={widget.zIndex ?? 1}
-                      borderRadius={widget.type === "ipod" ? "9999px" : undefined}
-                      hideDoneButton={widget.type === "ipod"}
-                      onRemove={() => removeWidget(widget.id)}
-                      onMove={(pos) => moveWidget(widget.id, pos)}
-                      onBringToFront={() => bringToFront(widget.id)}
-                      overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
-                      backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
-                    >
-                      {(isFlipped) => <WidgetContent type={widget.type} widgetId={widget.id} isFlipped={isFlipped} />}
-                    </WidgetChrome>
-                  </motion.div>
-                  ))}
+                  />
                 </AnimatePresence>
-              </motion.div>
+              ) : (
+                <motion.div
+                  data-dashboard-widget
+                  className="absolute inset-0"
+                  style={{ pointerEvents: "none" }}
+                  animate={{ y: isPickerOpen ? -stripHeight : 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
+                  <AnimatePresence>
+                    {widgets.map((widget) => (
+                      <motion.div
+                        key={widget.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{
+                          duration: 0.3,
+                          ease: [0.4, 0, 0.2, 1],
+                        }}
+                        style={{
+                          position: "relative",
+                          pointerEvents: "auto",
+                          zIndex: widget.zIndex ?? 1,
+                          transformOrigin: `${widget.position.x + widget.size.width / 2}px ${widget.position.y + widget.size.height / 2}px`,
+                        }}
+                      >
+                        <WidgetChrome
+                          width={widget.size.width}
+                          height={widget.size.height}
+                          x={widget.position.x}
+                          y={widget.position.y}
+                          zIndex={widget.zIndex ?? 1}
+                          borderRadius={widget.type === "ipod" ? "9999px" : undefined}
+                          hideDoneButton={widget.type === "ipod"}
+                          onRemove={() => removeWidget(widget.id)}
+                          onMove={(pos) => moveWidget(widget.id, pos)}
+                          onBringToFront={() => bringToFront(widget.id)}
+                          overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
+                          backContent={(onFlipBack) => (
+                            <WidgetBackContent
+                              type={widget.type}
+                              widgetId={widget.id}
+                              onDone={onFlipBack}
+                            />
+                          )}
+                        >
+                          {(isFlipped) => (
+                            <WidgetContent
+                              type={widget.type}
+                              widgetId={widget.id}
+                              isFlipped={isFlipped}
+                            />
+                          )}
+                        </WidgetChrome>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              )}
 
               {/* Widget strip */}
               <AnimatePresence>
@@ -444,9 +641,7 @@ export function DashboardAppComponent({
                 }}
                 className="absolute flex items-center justify-center"
                 style={{
-                  bottom: isPickerOpen
-                    ? "calc(110px + env(safe-area-inset-bottom, 0px))"
-                    : "calc(16px + env(safe-area-inset-bottom, 0px))",
+                  bottom: `calc(${toggleButtonBottom}px + env(safe-area-inset-bottom, 0px))`,
                   left: 16,
                   width: 36,
                   height: 36,

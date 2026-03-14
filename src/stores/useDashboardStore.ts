@@ -3,6 +3,18 @@ import { persist } from "zustand/middleware";
 import type { EventColor } from "./useCalendarStore";
 
 export type WidgetType = "clock" | "weather" | "calendar" | "stocks" | "ipod" | "dictionary" | "stickynote" | "translation";
+export const LEGACY_CALENDAR_WIDGET_HEIGHT = 350;
+export const SHORT_CALENDAR_WIDGET_HEIGHT = 330;
+export const DASHBOARD_WIDGET_DEFAULT_SIZES: Record<WidgetType, { width: number; height: number }> = {
+  clock: { width: 170, height: 170 },
+  calendar: { width: 240, height: 340 },
+  weather: { width: 340, height: 180 },
+  stocks: { width: 240, height: 340 },
+  ipod: { width: 320, height: 125 },
+  dictionary: { width: 240, height: 220 },
+  stickynote: { width: 200, height: 200 },
+  translation: { width: 300, height: 170 },
+};
 
 export interface WeatherWidgetConfig {
   cityName?: string;
@@ -73,19 +85,19 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
     id: "default-clock",
     type: "clock",
     position: { x: 80, y: 120 },
-    size: { width: 170, height: 170 },
+    size: { ...DASHBOARD_WIDGET_DEFAULT_SIZES.clock },
   },
   {
     id: "default-calendar",
     type: "calendar",
     position: { x: 300, y: 100 },
-    size: { width: 240, height: 350 },
+    size: { ...DASHBOARD_WIDGET_DEFAULT_SIZES.calendar },
   },
   {
     id: "default-weather",
     type: "weather",
     position: { x: 580, y: 120 },
-    size: { width: 340, height: 180 },
+    size: { ...DASHBOARD_WIDGET_DEFAULT_SIZES.weather },
   },
 ];
 
