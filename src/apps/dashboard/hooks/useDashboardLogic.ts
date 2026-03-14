@@ -5,6 +5,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import {
   DASHBOARD_WIDGET_DEFAULT_SIZES,
   LEGACY_CALENDAR_WIDGET_HEIGHT,
+  SHORT_CALENDAR_WIDGET_HEIGHT,
   useDashboardStore,
   type WidgetType,
 } from "@/stores/useDashboardStore";
@@ -47,7 +48,10 @@ export function useDashboardLogic() {
       .filter(
         (widget) =>
           widget.type === "calendar" &&
-          widget.size.height === LEGACY_CALENDAR_WIDGET_HEIGHT
+          (
+            widget.size.height === LEGACY_CALENDAR_WIDGET_HEIGHT ||
+            widget.size.height === SHORT_CALENDAR_WIDGET_HEIGHT
+          )
       )
       .forEach((widget) => {
         updateWidget(widget.id, {

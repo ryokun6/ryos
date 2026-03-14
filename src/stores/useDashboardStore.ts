@@ -4,9 +4,10 @@ import type { EventColor } from "./useCalendarStore";
 
 export type WidgetType = "clock" | "weather" | "calendar" | "stocks" | "ipod" | "dictionary" | "stickynote" | "translation";
 export const LEGACY_CALENDAR_WIDGET_HEIGHT = 350;
+export const SHORT_CALENDAR_WIDGET_HEIGHT = 330;
 export const DASHBOARD_WIDGET_DEFAULT_SIZES: Record<WidgetType, { width: number; height: number }> = {
   clock: { width: 170, height: 170 },
-  calendar: { width: 240, height: 330 },
+  calendar: { width: 240, height: 340 },
   weather: { width: 340, height: 180 },
   stocks: { width: 240, height: 340 },
   ipod: { width: 320, height: 125 },
