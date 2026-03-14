@@ -155,7 +155,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
   const [data, setData] = useState<AnalyticsDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rangeDays, setRangeDays] = useState(7);
+  const [rangeDays, setRangeDays] = useState(1);
 
   const fetchData = useCallback(async () => {
     if (!username || !isAuthenticated) return;
@@ -257,7 +257,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                 rangeDays === d && "bg-neutral-200"
               )}
             >
-              {d}d
+              {d === 1 ? "Today" : `${d}d`}
             </Button>
           ))}
           <Button
