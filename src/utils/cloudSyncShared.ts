@@ -1,3 +1,5 @@
+import type { CloudSyncRevision } from "@/utils/cloudSyncRevision";
+
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
   "files-metadata",
@@ -108,6 +110,7 @@ export interface CloudSyncBlobItemMetadata {
   updatedAt: string;
   signature: string;
   size: number;
+  revision?: CloudSyncRevision;
   storageUrl?: string;
   blobUrl?: string;
 }
@@ -116,6 +119,7 @@ export interface CloudSyncBlobItemDownloadMetadata {
   updatedAt: string;
   signature: string;
   size: number;
+  revision?: CloudSyncRevision;
   storageUrl: string;
   downloadUrl: string;
 }

@@ -86,6 +86,7 @@ import {
   extractStoredWallpaperId,
   isStoredWallpaperReference,
 } from "@/utils/wallpaperStorage";
+import { getNextSyncRevision } from "@/utils/cloudSyncRevision";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
@@ -1261,6 +1262,7 @@ async function uploadIndividualBlobDomain(
       updatedAt: string;
       signature: string;
       size: number;
+      revision?: import("@/utils/cloudSyncRevision").CloudSyncRevision;
       storageUrl: string;
     }
   > = {};
@@ -1274,11 +1276,13 @@ async function uploadIndividualBlobDomain(
       updatedAt: item.updatedAt,
       signature: item.signature,
       size: item.size,
+      ...(item.revision ? { revision: item.revision } : {}),
       storageUrl: item.storageUrl,
     };
   }
 
   for (const record of uploadPlan.itemsToUpload) {
+    const revision = getNextSyncRevision(domain);
     const uploadInstruction = await requestBlobUploadInstruction(
       domain,
       _auth,
@@ -1301,11 +1305,13 @@ async function uploadIndividualBlobDomain(
       updatedAt,
       signature: record.signature,
       size: compressed.length,
+      revision,
       storageUrl: uploadResult.storageUrl,
     };
     nextKnownItems[record.item.key] = {
       signature: record.signature,
       updatedAt,
+      revision,
     };
     uploadedCount += 1;
   }
@@ -1421,6 +1427,9 @@ async function downloadBlobDomain(
       nextKnownItems[itemKey] = {
         signature: remoteItems[itemKey].signature,
         updatedAt: remoteItems[itemKey].updatedAt,
+        ...(remoteItems[itemKey].revision
+          ? { revision: remoteItems[itemKey].revision }
+          : {}),
       };
     }
 

@@ -17,6 +17,7 @@ import {
   isIndividualBlobSyncDomain,
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
+import { normalizeCloudSyncRevision } from "../../src/utils/cloudSyncRevision.js";
 import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
@@ -96,6 +97,9 @@ function normalizePersistedItemMetadata(
     updatedAt: candidate.updatedAt,
     signature: candidate.signature,
     size: candidate.size,
+    ...(normalizeCloudSyncRevision(candidate.revision)
+      ? { revision: normalizeCloudSyncRevision(candidate.revision) }
+      : {}),
     storageUrl,
     blobUrl: storageUrl,
   };
@@ -472,6 +476,7 @@ async function handleDomainDownload(
           updatedAt: itemValue.updatedAt,
           signature: itemValue.signature,
           size: itemValue.size || objectInfo.size,
+          ...(itemValue.revision ? { revision: itemValue.revision } : {}),
           storageUrl,
           downloadUrl: await createSignedDownloadUrl(storageUrl),
         };
@@ -489,6 +494,7 @@ async function handleDomainDownload(
                 updatedAt: item.updatedAt,
                 signature: item.signature,
                 size: item.size,
+                ...(item.revision ? { revision: item.revision } : {}),
                 storageUrl: item.storageUrl,
                 blobUrl: item.storageUrl,
               },

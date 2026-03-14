@@ -1,8 +1,13 @@
 import type { IndividualBlobSyncDomain } from "@/utils/cloudSyncShared";
+import {
+  normalizeCloudSyncRevision,
+  type CloudSyncRevision,
+} from "@/utils/cloudSyncRevision";
 
 export interface IndividualBlobKnownItem {
   signature: string;
   updatedAt: string;
+  revision?: CloudSyncRevision;
 }
 
 export type IndividualBlobKnownItemMap = Record<string, IndividualBlobKnownItem>;
@@ -27,7 +32,8 @@ function normalizeKnownItemMap(value: unknown): IndividualBlobKnownItemMap {
   }
 
   return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
+    Object.entries(value as Record<string, unknown>)
+      .filter(
       ([key, item]) =>
         typeof key === "string" &&
         key.length > 0 &&
@@ -35,7 +41,21 @@ function normalizeKnownItemMap(value: unknown): IndividualBlobKnownItemMap {
         item !== null &&
         typeof (item as IndividualBlobKnownItem).signature === "string" &&
         typeof (item as IndividualBlobKnownItem).updatedAt === "string"
-    )
+      )
+      .map(([key, item]) => {
+        const revision = normalizeCloudSyncRevision(
+          (item as IndividualBlobKnownItem).revision
+        );
+
+        return [
+          key,
+          {
+            signature: (item as IndividualBlobKnownItem).signature,
+            updatedAt: (item as IndividualBlobKnownItem).updatedAt,
+            ...(revision ? { revision } : {}),
+          },
+        ] as const;
+      })
   ) as IndividualBlobKnownItemMap;
 }
 

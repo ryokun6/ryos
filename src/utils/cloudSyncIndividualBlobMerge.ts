@@ -1,3 +1,4 @@
+import type { CloudSyncRevision } from "@/utils/cloudSyncRevision";
 import type { DeletionMarkerMap } from "@/utils/cloudSyncDeletionMarkers";
 import type { IndividualBlobKnownItemMap } from "@/utils/cloudSyncIndividualBlobState";
 
@@ -13,6 +14,7 @@ export interface IndividualBlobRemoteItem {
   updatedAt: string;
   signature: string;
   size: number;
+  revision?: CloudSyncRevision;
   storageUrl: string;
   downloadUrl?: string;
 }
@@ -69,6 +71,7 @@ export function planIndividualBlobUpload(
       nextKnownItems[key] = {
         signature: record.signature,
         updatedAt: remoteItem.updatedAt,
+        ...(remoteItem.revision ? { revision: remoteItem.revision } : {}),
       };
       continue;
     }
@@ -140,6 +143,7 @@ export function planIndividualBlobDownload(
       nextKnownItems[key] = {
         signature: remoteItem.signature,
         updatedAt: remoteItem.updatedAt,
+        ...(remoteItem.revision ? { revision: remoteItem.revision } : {}),
       };
       continue;
     }
