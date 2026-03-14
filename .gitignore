@@ -18,6 +18,8 @@ version.json
 
 # Editor directories and files
 .cursor/nal-trace
+.cursor/chats.json
+.cursor/settings.json
 .vscode/*
 !.vscode/extensions.json
 .idea

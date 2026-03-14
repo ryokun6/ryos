@@ -36,7 +36,6 @@ import { useTranslation } from "react-i18next";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { AIModel } from "@/types/aiModels";
 import { useControlPanelsLogic } from "../hooks/useControlPanelsLogic";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { TelegramLinkDialog } from "@/components/dialogs/TelegramLinkDialog";
 import { getTelegramLinkedAccountLabel } from "@/hooks/useTelegramLink";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -51,58 +50,11 @@ import { useRealtimeConnectionStatus } from "@/hooks/useRealtimeConnectionStatus
 // Version display component that reads from app store
 function VersionDisplay() {
   const { t } = useTranslation();
-  const { ryOSVersion, ryOSBuildNumber } = useAppStoreShallow((state) => ({
+  const { ryOSVersion, ryOSBuildNumber, launchApp } = useAppStoreShallow((state) => ({
     ryOSVersion: state.ryOSVersion,
     ryOSBuildNumber: state.ryOSBuildNumber,
+    launchApp: state.launchApp,
   }));
-  const [desktopVersion, setDesktopVersion] = React.useState<string | null>(
-    null
-  );
-  const isMac = React.useMemo(
-    () =>
-      typeof navigator !== "undefined" &&
-      navigator.platform.toLowerCase().includes("mac"),
-    []
-  );
-
-  // Fetch desktop version for download link
-  React.useEffect(() => {
-    if (!isMac) return;
-
-    const abortController = new AbortController();
-    let isActive = true;
-
-    const loadDesktopVersion = async () => {
-      try {
-        const response = await abortableFetch("/version.json", {
-          cache: "no-store",
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-          signal: abortController.signal,
-        });
-        const data = await response.json();
-
-        if (!isActive || abortController.signal.aborted) return;
-        setDesktopVersion(
-          typeof data?.desktopVersion === "string" ? data.desktopVersion : "1.0.1"
-        );
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          return;
-        }
-        if (!isActive || abortController.signal.aborted) return;
-        setDesktopVersion("1.0.1"); // fallback
-      }
-    };
-
-    void loadDesktopVersion();
-
-    return () => {
-      isActive = false;
-      abortController.abort();
-    };
-  }, [isMac]);
 
   const displayVersion = ryOSVersion || "...";
   const displayBuild = ryOSBuildNumber ? ` (Build ${ryOSBuildNumber})` : "";
@@ -111,19 +63,17 @@ function VersionDisplay() {
     <p className="text-[11px] text-neutral-600 font-geneva-12">
       ryOS {displayVersion}
       {displayBuild}
-      {isMac && desktopVersion && (
-        <>
-          {" · "}
-          <a
-            href={`https://github.com/ryokun6/ryos/releases/download/v${desktopVersion}/ryOS_${desktopVersion}_aarch64.dmg`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            {t("apps.control-panels.downloadMacApp")}
-          </a>
-        </>
-      )}
+      {" · "}
+      <a
+        href="#"
+        onClick={(e) => {
+          e.preventDefault();
+          launchApp("internet-explorer", { url: "os.ryo.lu/docs/changelog", year: "current" });
+        }}
+        className="text-blue-600 hover:underline"
+      >
+        {t("common.aboutThisMac.viewChangelog")}
+      </a>
     </p>
   );
 }
