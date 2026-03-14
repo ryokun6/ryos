@@ -314,11 +314,14 @@ describe("sync state API contacts validation", () => {
 
 describe("sync state API deletion markers", () => {
   test("round-trips calendar and file tombstones", async () => {
-    const authToken = await getAuthToken();
+    const redis = createRedis();
+    const username = `sync_state_delete_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const authToken = generateAuthToken();
+    await storeToken(redis, username, authToken);
 
     const filesRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/state`,
-      TEST_USERNAME,
+      username,
       authToken,
       {
         method: "PUT",
@@ -342,7 +345,7 @@ describe("sync state API deletion markers", () => {
 
     const calendarRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/state`,
-      TEST_USERNAME,
+      username,
       authToken,
       {
         method: "PUT",
@@ -367,7 +370,7 @@ describe("sync state API deletion markers", () => {
 
     const downloadFiles = await fetchWithAuth(
       `${BASE_URL}/api/sync/state?domain=files-metadata`,
-      TEST_USERNAME,
+      username,
       authToken
     );
     expect(downloadFiles.status).toBe(200);
@@ -378,7 +381,7 @@ describe("sync state API deletion markers", () => {
 
     const downloadCalendar = await fetchWithAuth(
       `${BASE_URL}/api/sync/state?domain=calendar`,
-      TEST_USERNAME,
+      username,
       authToken
     );
     expect(downloadCalendar.status).toBe(200);
