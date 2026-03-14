@@ -87,6 +87,7 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
 const MOBILE_WIDGET_STACK_SIDE_PADDING = 16;
 const MOBILE_WIDGET_STACK_MAX_WIDTH = 420;
 const MOBILE_WIDGET_MIN_SCALE = 0.72;
+const MOBILE_WEATHER_STACK_TOP_OFFSET = 20;
 
 function useViewportWidth() {
   const subscribe = useCallback((callback: () => void) => {
@@ -310,6 +311,10 @@ function MobileDashboardWidgets({
             );
             const scaledWidth = Math.round(widget.size.width * scale);
             const scaledHeight = Math.round(widget.size.height * scale);
+            const stackTopOffset =
+              widget.type === "weather"
+                ? Math.round(MOBILE_WEATHER_STACK_TOP_OFFSET * scale)
+                : 0;
 
             return (
               <motion.div
@@ -319,7 +324,11 @@ function MobileDashboardWidgets({
                 exit={{ opacity: 0, y: 12, scale: 0.96 }}
                 transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
                 className="flex w-full justify-center"
-                style={{ minHeight: scaledHeight, pointerEvents: "none" }}
+                style={{
+                  minHeight: scaledHeight,
+                  marginTop: stackTopOffset,
+                  pointerEvents: "none",
+                }}
               >
                 <div
                   style={{
