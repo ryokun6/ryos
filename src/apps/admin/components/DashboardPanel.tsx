@@ -67,11 +67,11 @@ function formatNumber(n: number): string {
 }
 
 function formatDateLabel(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  return d.toLocaleDateString(undefined, {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const local = new Date(y, m - 1, d);
+  return local.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    timeZone: "UTC",
   });
 }
 
@@ -155,7 +155,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
   const [data, setData] = useState<AnalyticsDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rangeDays, setRangeDays] = useState(7);
+  const [rangeDays, setRangeDays] = useState(1);
 
   const fetchData = useCallback(async () => {
     if (!username || !isAuthenticated) return;
@@ -233,6 +233,11 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
       ? `${((totals.errors / totals.calls) * 100).toFixed(1)}%`
       : "0%";
 
+  const todayErrorRate =
+    todayData && todayData.calls > 0
+      ? `${((todayData.errors / todayData.calls) * 100).toFixed(1)}%`
+      : "0%";
+
   const topEndpointMax = topEndpoints.length > 0 ? topEndpoints[0].count : 1;
 
   return (
@@ -241,7 +246,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
         <span className="text-[12px] font-medium">Dashboard</span>
         <div className="flex items-center gap-1">
-          {[7, 14, 30].map((d) => (
+          {[1, 7, 14, 30].map((d) => (
             <Button
               key={d}
               variant="ghost"
@@ -252,7 +257,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                 rangeDays === d && "bg-neutral-200"
               )}
             >
-              {d}d
+              {d === 1 ? "Today" : `${d}d`}
             </Button>
           ))}
           <Button
@@ -277,37 +282,46 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-3">
           <StatCard
-            label="Visitors"
-            value={formatNumber(todayData?.uniqueVisitors ?? 0)}
-            trend={calcTrend(
+            label={rangeDays === 1 ? "Visitors (today)" : `Visitors (${rangeDays}d)`}
+            value={formatNumber(totals.uniqueVisitors)}
+            trend={yesterdayData ? calcTrend(
               todayData?.uniqueVisitors,
               yesterdayData?.uniqueVisitors
-            )}
+            ) : undefined}
           />
           <StatCard
-            label="API Calls"
-            value={formatNumber(todayData?.calls ?? 0)}
-            trend={calcTrend(todayData?.calls, yesterdayData?.calls)}
+            label={rangeDays === 1 ? "API Calls (today)" : `API Calls (${rangeDays}d)`}
+            value={formatNumber(totals.calls)}
+            trend={yesterdayData ? calcTrend(todayData?.calls, yesterdayData?.calls) : undefined}
           />
           <StatCard
-            label="AI Requests"
-            value={formatNumber(todayData?.ai ?? 0)}
-            trend={calcTrend(todayData?.ai, yesterdayData?.ai)}
+            label={rangeDays === 1 ? "AI Requests (today)" : `AI Requests (${rangeDays}d)`}
+            value={formatNumber(totals.ai)}
+            trend={yesterdayData ? calcTrend(todayData?.ai, yesterdayData?.ai) : undefined}
           />
           <StatCard
             label="Error Rate"
             value={errorRate}
-            trend={calcTrend(todayData?.errors, yesterdayData?.errors)}
+            trend={yesterdayData ? calcTrend(todayData?.errors, yesterdayData?.errors) : undefined}
           />
         </div>
 
-        {/* Totals strip */}
+        {/* Context strip */}
         <div className="flex items-center gap-4 px-4 pb-2 text-[10px] text-neutral-400">
-          <span>
-            {rangeDays}d totals: {formatNumber(totals.calls)} calls
-          </span>
-          <span>{formatNumber(totals.uniqueVisitors)} visitors</span>
-          <span>{formatNumber(totals.ai)} AI</span>
+          {rangeDays > 1 ? (
+            <>
+              <span>
+                today: {formatNumber(todayData?.calls ?? 0)} calls
+              </span>
+              <span>{formatNumber(todayData?.uniqueVisitors ?? 0)} visitors</span>
+              <span>{formatNumber(todayData?.ai ?? 0)} AI</span>
+              <span>{todayErrorRate} err</span>
+            </>
+          ) : (
+            <span>
+              {formatNumber(totals.errors)} errors
+            </span>
+          )}
           <span>{totals.avgLatencyMs}ms avg</span>
         </div>
 
@@ -387,7 +401,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           <div className="border border-gray-200 rounded bg-white overflow-hidden">
             <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
               <span className="text-[10px] uppercase tracking-wide text-neutral-400">
-                Top Endpoints ({rangeDays}d)
+                Top Endpoints ({rangeDays === 1 ? "today" : `${rangeDays}d`})
               </span>
             </div>
             {topEndpoints.length === 0 ? (

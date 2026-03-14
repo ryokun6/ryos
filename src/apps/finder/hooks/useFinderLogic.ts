@@ -24,6 +24,8 @@ import {
   compareFinderItemsByDisplayName,
   compareFinderSortText,
 } from "@/utils/finderDisplay";
+import { track } from "@vercel/analytics";
+import { FINDER_ANALYTICS } from "@/utils/analytics";
 import { helpItems } from "../index";
 import { useFilesStoreShallow } from "@/stores/helpers";
 import { useDockStore } from "@/stores/useDockStore";
@@ -415,15 +417,14 @@ export function useFinderLogic({
         originalPath: file.path,
       });
       moveToTrash(file);
+      track(FINDER_ANALYTICS.FILE_DELETE, { name: file.name });
     },
     [moveToTrash, pushUndoAction]
   );
 
-  // Wrap the original handleFileOpen - now only calls the original without TextEditStore updates
   const handleFileOpen = async (file: FileItem, launchOrigin?: LaunchOriginRect) => {
-    // Call original file open handler from useFileSystem
     originalHandleFileOpen(file, launchOrigin);
-    // TextEditStore updates removed - TextEdit instances now manage their own state
+    track(FINDER_ANALYTICS.FILE_OPEN, { name: file.name, isDirectory: file.isDirectory });
   };
 
   // Use the original saveFile directly without TextEditStore updates
@@ -498,6 +499,7 @@ export function useFinderLogic({
   const confirmEmptyTrash = () => {
     emptyTrash();
     setIsEmptyTrashDialogOpen(false);
+    track(FINDER_ANALYTICS.TRASH_EMPTY);
   };
 
   const handleNewWindow = () => {
@@ -827,6 +829,7 @@ export function useFinderLogic({
       oldName: selectedFile.name,
       newName: trimmedNewName,
     });
+    track(FINDER_ANALYTICS.FILE_RENAME);
 
     emitFileRenamed({
       oldPath: oldPathForRename,
@@ -935,8 +938,8 @@ export function useFinderLogic({
     const basePath = currentPath === "/" ? "" : currentPath;
     const newPath = `${basePath}/${trimmedName}`;
 
-    // Use the createFolder function from the hook
     createFolder({ path: newPath, name: trimmedName });
+    track(FINDER_ANALYTICS.FOLDER_CREATE);
 
     setIsNewFolderDialogOpen(false);
   };

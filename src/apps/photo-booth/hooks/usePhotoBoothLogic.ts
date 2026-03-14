@@ -10,6 +10,8 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTimeout } from "@/hooks/useTimeout";
+import { track } from "@vercel/analytics";
+import { PHOTO_BOOTH_ANALYTICS } from "@/utils/analytics";
 import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
 
@@ -294,6 +296,7 @@ export function usePhotoBoothLogic({
       console.log("No photos to export");
       return;
     }
+    track(PHOTO_BOOTH_ANALYTICS.EXPORT, { count: photos.length });
 
     // If there's only one photo, download it directly
     if (photos.length === 1) {
@@ -1004,6 +1007,7 @@ export function usePhotoBoothLogic({
   const triggerCapture = useCallback(() => {
     const event = new CustomEvent("webcam-capture");
     window.dispatchEvent(event);
+    track(PHOTO_BOOTH_ANALYTICS.CAPTURE);
   }, []);
 
   return {

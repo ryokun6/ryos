@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { track } from "@vercel/analytics";
+import { CALENDAR_ANALYTICS } from "@/utils/analytics";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import {
@@ -453,6 +455,7 @@ export function useCalendarLogic() {
         const created = events.find((e) => e.id === id) ??
           ({ ...eventData, id, createdAt: Date.now(), updatedAt: Date.now() } as CalendarEvent);
         pushUndo({ type: "addEvent", event: created });
+        track(CALENDAR_ANALYTICS.EVENT_CREATE);
       }
       setIsEventDialogOpen(false);
       setEditingEvent(null);
@@ -478,6 +481,7 @@ export function useCalendarLogic() {
       if (ev) pushUndo({ type: "deleteEvent", event: { ...ev } });
       deleteEvent(selectedEventId);
       setSelectedEventId(null);
+      track(CALENDAR_ANALYTICS.EVENT_DELETE);
     }
   }, [selectedEventId, events, deleteEvent, pushUndo]);
 
@@ -488,6 +492,7 @@ export function useCalendarLogic() {
       setIsEventDialogOpen(false);
       setEditingEvent(null);
       setPrefillTime(null);
+      track(CALENDAR_ANALYTICS.EVENT_DELETE);
     }
   }, [editingEvent, deleteEvent, pushUndo]);
 

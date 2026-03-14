@@ -1,4 +1,6 @@
 import { useRef, useCallback } from "react";
+import { track } from "@vercel/analytics";
+import { SOUNDBOARD_ANALYTICS } from "@/utils/analytics";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { createAudioFromBase64 } from "@/utils/audio";
 // WaveSurfer import will be removed as it's moving to SoundGrid
@@ -81,8 +83,8 @@ export const useSoundboard = () => {
       if (!activeBoard) return;
       const slot = activeBoard.slots[index];
       if (!slot || !slot.audioData) return;
+      track(SOUNDBOARD_ANALYTICS.SOUND_PLAY, { slot: index });
 
-      // Stop any currently playing sound in the same slot or other slots if needed
       if (audioRefs.current[index]) {
         audioRefs.current[index]?.pause();
         audioRefs.current[index] = null;

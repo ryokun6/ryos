@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { track } from "@vercel/analytics";
+import { STICKIES_ANALYTICS } from "@/utils/analytics";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useStickiesStore, StickyColor } from "@/stores/useStickiesStore";
@@ -43,10 +45,12 @@ export function useStickiesLogic() {
   const handleCreateNote = useCallback((color?: StickyColor) => {
     const newId = addNote(color);
     setSelectedNoteId(newId);
+    track(STICKIES_ANALYTICS.NOTE_CREATE);
   }, [addNote]);
 
   const handleDeleteNote = useCallback((id: string) => {
     deleteNote(id);
+    track(STICKIES_ANALYTICS.NOTE_DELETE);
     if (selectedNoteId === id) {
       setSelectedNoteId(null);
     }

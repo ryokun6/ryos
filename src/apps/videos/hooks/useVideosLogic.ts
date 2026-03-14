@@ -14,6 +14,8 @@ import { helpItems } from "..";
 import type { VideosInitialData } from "../../base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
+import { track } from "@vercel/analytics";
+import { VIDEOS_ANALYTICS } from "@/utils/analytics";
 
 interface Video {
   id: string;
@@ -500,6 +502,9 @@ export function useVideosLogic({
 
   const togglePlay = useCallback(() => {
     togglePlayStore();
+    if (!isPlaying) {
+      track(VIDEOS_ANALYTICS.VIDEO_PLAY);
+    }
     showStatus(
       !isPlaying ? t("apps.videos.status.play") : t("apps.videos.status.paused")
     );
