@@ -6,6 +6,47 @@
         "loginPrompt": "管理者アカウントでログインしてください。",
         "title": "アクセス拒否"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "AIリクエスト",
+          "apiCalls": "APIコール",
+          "avgResponseTime": "平均レスポンス時間 (ms)",
+          "errors": "エラー",
+          "uniqueVisitors": "ユニークビジター"
+        },
+        "empty": {
+          "noAiUsage": "AIの使用はまだありません",
+          "noData": "データはまだありません"
+        },
+        "failedToLoad": "読み込みに失敗しました",
+        "kpi": {
+          "aiRequests": "AIリクエスト",
+          "apiCalls": "APIコール",
+          "errorRate": "エラー率",
+          "visitors": "ビジター"
+        },
+        "loading": "分析データを読み込み中...",
+        "range": {
+          "today": "今日"
+        },
+        "retry": "再試行",
+        "sections": {
+          "aiUsageByUser": "ユーザー別のAI使用状況",
+          "statusCodes": "ステータスコード",
+          "topEndpoints": "トップエンドポイント"
+        },
+        "title": "ダッシュボード",
+        "totals": {
+          "ai": "AI",
+          "calls": "呼び出し数",
+          "msAvg": "平均 ms",
+          "totals": "合計",
+          "visitors": "訪問者数"
+        },
+        "trend": {
+          "vsPrevDay": "前日比"
+        }
+      },
       "description": "システム管理画面",
       "dialogs": {
         "banDescription": "{{username}}をBANしてもよろしいですか？彼らはログアウトされ、サービスにアクセスできなくなります。",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "ダッシュボード",
         "messagesCount": "メッセージ{{count}}件",
         "online": "オンライン",
         "private": "プライベート",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "ゴミ箱に入れる",
         "name": "名前",
         "newFolder": "新規フォルダ…",
-        "open": "開く",
-        "rename": "名前の変更…",
-        "shareViaAirDrop": "AirDrop で共有",
-        "searchingForAirDropUsers": "近くのユーザーを検索中…",
         "noAirDropUsersAvailable": "近くのユーザーはいません",
+        "open": "開く",
         "openAirDrop": "AirDropを開く",
+        "rename": "名前の変更…",
+        "searchingForAirDropUsers": "近くのユーザーを検索中…",
+        "shareViaAirDrop": "AirDrop で共有",
         "size": "サイズ",
         "sortBy": "並び替え"
       },

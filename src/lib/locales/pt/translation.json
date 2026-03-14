@@ -6,6 +6,47 @@
         "loginPrompt": "Faça login com uma conta de administrador.",
         "title": "Acesso Negado"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "Solicitações de IA",
+          "apiCalls": "Chamadas de API",
+          "avgResponseTime": "Tempo Médio de Resposta (ms)",
+          "errors": "Erros",
+          "uniqueVisitors": "Visitantes Únicos"
+        },
+        "empty": {
+          "noAiUsage": "Nenhum uso de IA ainda",
+          "noData": "Sem dados ainda"
+        },
+        "failedToLoad": "Falha ao carregar",
+        "kpi": {
+          "aiRequests": "Solicitações de IA",
+          "apiCalls": "Chamadas de API",
+          "errorRate": "Taxa de Erro",
+          "visitors": "Visitantes"
+        },
+        "loading": "Carregando estatísticas...",
+        "range": {
+          "today": "Hoje"
+        },
+        "retry": "Tentar novamente",
+        "sections": {
+          "aiUsageByUser": "Uso de IA por Usuário",
+          "statusCodes": "Códigos de Status",
+          "topEndpoints": "Principais Endpoints"
+        },
+        "title": "Dashboard",
+        "totals": {
+          "ai": "IA",
+          "calls": "chamadas",
+          "msAvg": "ms méd.",
+          "totals": "totais",
+          "visitors": "visitantes"
+        },
+        "trend": {
+          "vsPrevDay": "vs dia anterior"
+        }
+      },
       "description": "Painel de administração do sistema",
       "dialogs": {
         "banDescription": "Tem certeza de que deseja banir {{username}}? Ele(a) será desconectado(a) e não poderá acessar o serviço.",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "Painel",
         "messagesCount": "{{count}} mensagens",
         "online": "online",
         "private": "Privado",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "Mover para a Lixeira",
         "name": "Nome",
         "newFolder": "Nova Pasta…",
-        "open": "Abrir",
-        "rename": "Renomear…",
-        "shareViaAirDrop": "Compartilhar via AirDrop",
-        "searchingForAirDropUsers": "Buscando usuários próximos…",
         "noAirDropUsersAvailable": "Nenhum usuário próximo",
+        "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
+        "rename": "Renomear…",
+        "searchingForAirDropUsers": "Buscando usuários próximos…",
+        "shareViaAirDrop": "Compartilhar via AirDrop",
         "size": "Tamanho",
         "sortBy": "Ordenar por"
       },

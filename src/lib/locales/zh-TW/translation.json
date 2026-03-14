@@ -6,6 +6,47 @@
         "loginPrompt": "請使用管理員帳戶登入。",
         "title": "存取遭拒"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "AI 請求",
+          "apiCalls": "API 呼叫",
+          "avgResponseTime": "平均回應時間 (ms)",
+          "errors": "錯誤",
+          "uniqueVisitors": "不重複訪客"
+        },
+        "empty": {
+          "noAiUsage": "尚無 AI 使用紀錄",
+          "noData": "尚無資料"
+        },
+        "failedToLoad": "載入失敗",
+        "kpi": {
+          "aiRequests": "AI 請求",
+          "apiCalls": "API 呼叫",
+          "errorRate": "錯誤率",
+          "visitors": "訪客"
+        },
+        "loading": "正在載入分析數據...",
+        "range": {
+          "today": "今日"
+        },
+        "retry": "重試",
+        "sections": {
+          "aiUsageByUser": "使用者 AI 使用量",
+          "statusCodes": "狀態碼",
+          "topEndpoints": "熱門端點"
+        },
+        "title": "儀表板",
+        "totals": {
+          "ai": "AI",
+          "calls": "呼叫",
+          "msAvg": "平均 ms",
+          "totals": "總計",
+          "visitors": "訪客"
+        },
+        "trend": {
+          "vsPrevDay": "較前一日"
+        }
+      },
       "description": "系統管理面板",
       "dialogs": {
         "banDescription": "您確定要封鎖 {{username}} 嗎？他們將會登出且無法存取服務。",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "儀表板",
         "messagesCount": "{{count}} 則訊息",
         "online": "線上",
         "private": "私人",
@@ -624,7 +666,7 @@
         "usingModel": "使用 {{model}}"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "已登入",
         "clickToRefresh": "點擊以手動重新整理權杖",
         "daysAgo": "{{days}} 天前",
         "daysOld": "{{days}} 天",
@@ -1095,9 +1137,9 @@
       },
       "color": "全彩",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "已連線",
+        "connecting": "連線中…",
+        "disconnected": "已斷線"
       },
       "crashApp": "App 崩潰",
       "crashDesktop": "桌面崩潰",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "丟到垃圾桶",
         "name": "名稱",
         "newFolder": "新增檔案夾…",
-        "open": "開啟",
-        "rename": "重新命名…",
-        "shareViaAirDrop": "透過 AirDrop 分享",
-        "searchingForAirDropUsers": "正在尋找附近的使用者…",
         "noAirDropUsersAvailable": "附近沒有使用者",
+        "open": "開啟",
         "openAirDrop": "開啟 AirDrop",
+        "rename": "重新命名…",
+        "searchingForAirDropUsers": "正在尋找附近的使用者…",
+        "shareViaAirDrop": "透過 AirDrop 分享",
         "size": "大小",
         "sortBy": "排序方式"
       },

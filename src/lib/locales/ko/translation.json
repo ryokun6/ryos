@@ -6,6 +6,47 @@
         "loginPrompt": "관리자 계정으로 로그인해 주세요.",
         "title": "접근 거부됨"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "AI 요청",
+          "apiCalls": "API 호출",
+          "avgResponseTime": "평균 응답 시간 (ms)",
+          "errors": "오류",
+          "uniqueVisitors": "순 방문자 수"
+        },
+        "empty": {
+          "noAiUsage": "아직 AI 사용 내역이 없습니다",
+          "noData": "아직 데이터가 없습니다"
+        },
+        "failedToLoad": "로드 실패",
+        "kpi": {
+          "aiRequests": "AI 요청",
+          "apiCalls": "API 호출",
+          "errorRate": "오류율",
+          "visitors": "방문자"
+        },
+        "loading": "분석 데이터 로드 중...",
+        "range": {
+          "today": "오늘"
+        },
+        "retry": "재시도",
+        "sections": {
+          "aiUsageByUser": "사용자별 AI 사용량",
+          "statusCodes": "상태 코드",
+          "topEndpoints": "주요 엔드포인트"
+        },
+        "title": "대시보드",
+        "totals": {
+          "ai": "AI",
+          "calls": "호출",
+          "msAvg": "ms 평균",
+          "totals": "합계",
+          "visitors": "방문자"
+        },
+        "trend": {
+          "vsPrevDay": "전일 대비"
+        }
+      },
       "description": "시스템 관리 패널",
       "dialogs": {
         "banDescription": "{{username}}님을 차단하시겠습니까? 해당 사용자는 로그아웃되며 서비스에 접속할 수 없게 됩니다.",
@@ -197,6 +238,7 @@
         "websocket": "웹소켓 (푸셔)"
       },
       "sidebar": {
+        "dashboard": "대시보드",
         "messagesCount": "{{count}}개 메시지",
         "online": "온라인",
         "private": "비공개",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "휴지통으로 이동",
         "name": "이름",
         "newFolder": "새 폴더…",
-        "open": "열기",
-        "rename": "이름 변경…",
-        "shareViaAirDrop": "AirDrop으로 공유",
-        "searchingForAirDropUsers": "근처 사용자를 찾는 중…",
         "noAirDropUsersAvailable": "근처 사용자가 없습니다",
+        "open": "열기",
         "openAirDrop": "AirDrop 열기",
+        "rename": "이름 변경…",
+        "searchingForAirDropUsers": "근처 사용자를 찾는 중…",
+        "shareViaAirDrop": "AirDrop으로 공유",
         "size": "크기",
         "sortBy": "정렬 기준"
       },

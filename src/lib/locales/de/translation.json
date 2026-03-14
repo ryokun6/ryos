@@ -6,6 +6,47 @@
         "loginPrompt": "Bitte melden Sie sich mit einem Administratorkonto an.",
         "title": "Zugriff verweigert"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "KI-Anfragen",
+          "apiCalls": "API-Aufrufe",
+          "avgResponseTime": "Durchschn. Antwortzeit (ms)",
+          "errors": "Fehler",
+          "uniqueVisitors": "Eindeutige Besucher"
+        },
+        "empty": {
+          "noAiUsage": "Noch keine KI-Nutzung",
+          "noData": "Noch keine Daten"
+        },
+        "failedToLoad": "Laden fehlgeschlagen",
+        "kpi": {
+          "aiRequests": "KI-Anfragen",
+          "apiCalls": "API-Aufrufe",
+          "errorRate": "Fehlerrate",
+          "visitors": "Besucher"
+        },
+        "loading": "Analysen werden geladen...",
+        "range": {
+          "today": "Heute"
+        },
+        "retry": "Wiederholen",
+        "sections": {
+          "aiUsageByUser": "KI-Nutzung nach Benutzer",
+          "statusCodes": "Statuscodes",
+          "topEndpoints": "Top-Endpunkte"
+        },
+        "title": "Dashboard",
+        "totals": {
+          "ai": "KI",
+          "calls": "Aufrufe",
+          "msAvg": "ms Durchschn.",
+          "totals": "Gesamt",
+          "visitors": "Besucher"
+        },
+        "trend": {
+          "vsPrevDay": "vs. Vortag"
+        }
+      },
       "description": "Systemadministrationspanel",
       "dialogs": {
         "banDescription": "Möchten Sie {{username}} wirklich sperren? Die Person wird abgemeldet und kann den Dienst nicht mehr nutzen.",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "Dashboard",
         "messagesCount": "{{count}} Nachrichten",
         "online": "online",
         "private": "Privat",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "In den Papierkorb legen",
         "name": "Name",
         "newFolder": "Neuer Ordner…",
-        "open": "Öffnen",
-        "rename": "Umbenennen…",
-        "shareViaAirDrop": "Über AirDrop teilen",
-        "searchingForAirDropUsers": "Suche nach Nutzern in der Nähe…",
         "noAirDropUsersAvailable": "Keine Nutzer in der Nähe",
+        "open": "Öffnen",
         "openAirDrop": "AirDrop öffnen",
+        "rename": "Umbenennen…",
+        "searchingForAirDropUsers": "Suche nach Nutzern in der Nähe…",
+        "shareViaAirDrop": "Über AirDrop teilen",
         "size": "Größe",
         "sortBy": "Sortieren nach"
       },

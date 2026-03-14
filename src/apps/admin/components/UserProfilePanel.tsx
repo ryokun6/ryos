@@ -778,7 +778,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                           <div className="space-y-1">
                             {dailyNotes.map((note) => {
                               const isExpanded = expandedDailyNotes.has(note.date);
-                              const today = new Date().toISOString().split("T")[0];
+                              const now = new Date();
+                              const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
                               const dateLabel = note.date === today ? `${note.date} (${t("apps.admin.profile.today")})` : note.date;
                               return (
                                 <div key={note.date}>

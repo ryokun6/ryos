@@ -6,6 +6,47 @@
         "loginPrompt": "Пожалуйста, войдите с учетной записью администратора.",
         "title": "Доступ запрещен"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "Запросы ИИ",
+          "apiCalls": "Вызовы API",
+          "avgResponseTime": "Ср. время отклика (мс)",
+          "errors": "Ошибки",
+          "uniqueVisitors": "Уникальные посетители"
+        },
+        "empty": {
+          "noAiUsage": "Использование ИИ пока отсутствует",
+          "noData": "Данных пока нет"
+        },
+        "failedToLoad": "Не удалось загрузить",
+        "kpi": {
+          "aiRequests": "Запросы ИИ",
+          "apiCalls": "Вызовы API",
+          "errorRate": "Доля ошибок",
+          "visitors": "Посетители"
+        },
+        "loading": "Загрузка аналитики...",
+        "range": {
+          "today": "Сегодня"
+        },
+        "retry": "Повторить",
+        "sections": {
+          "aiUsageByUser": "Использование ИИ пользователями",
+          "statusCodes": "Коды состояния",
+          "topEndpoints": "Топ эндпоинтов"
+        },
+        "title": "Панель управления",
+        "totals": {
+          "ai": "ИИ",
+          "calls": "вызовы",
+          "msAvg": "ср. мс",
+          "totals": "итого",
+          "visitors": "посетители"
+        },
+        "trend": {
+          "vsPrevDay": "к пред. дню"
+        }
+      },
       "description": "Панель администрирования системы",
       "dialogs": {
         "banDescription": "Вы уверены, что хотите заблокировать {{username}}? Они будут выведены из системы и не смогут получить доступ к сервису.",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "Дашборд",
         "messagesCount": "{{count}} сообщений",
         "online": "онлайн",
         "private": "Приватный",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "Переместить в Корзину",
         "name": "Имя",
         "newFolder": "Новая папка…",
-        "open": "Открыть",
-        "rename": "Переименовать…",
-        "shareViaAirDrop": "Поделиться через AirDrop",
-        "searchingForAirDropUsers": "Поиск пользователей поблизости…",
         "noAirDropUsersAvailable": "Пользователей поблизости нет",
+        "open": "Открыть",
         "openAirDrop": "Открыть AirDrop",
+        "rename": "Переименовать…",
+        "searchingForAirDropUsers": "Поиск пользователей поблизости…",
+        "shareViaAirDrop": "Поделиться через AirDrop",
         "size": "Размер",
         "sortBy": "Сортировать по"
       },
