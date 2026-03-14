@@ -761,6 +761,7 @@ function WordTimingHighlight({
 }): ReactNode {
   // Refs for direct DOM manipulation (bypasses React reconciliation)
   const overlayRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const lastProgressRef = useRef<number[]>([]);
   
   // Time tracking for smooth interpolation
   const timeRef = useRef({
@@ -898,6 +899,15 @@ function WordTimingHighlight({
     });
   }, [wordTimings, furiganaSegments, processText, koreanRomanized, japaneseRomaji, chinesePinyin, pronunciationOnly, soramimiTargetLanguage]);
 
+  const timingWindows = useMemo(
+    () =>
+      renderItems.map(({ word, extraDurationMs }) => ({
+        startTimeMs: word.startTimeMs,
+        durationMs: word.durationMs + extraDurationMs,
+      })),
+    [renderItems]
+  );
+
   // Sync time ref when prop changes
   useEffect(() => {
     timeRef.current.propTime = currentTimeMs;
@@ -924,24 +934,33 @@ function WordTimingHighlight({
       
       const timeIntoLine = interpolatedTime - lineStartTimeMs;
       
-      // Update each word's mask progress via CSS custom property (single property update per word)
-      renderItems.forEach((item, idx) => {
+      // Only update words whose progress actually changed to avoid
+      // forcing redundant style recalculations for already-filled words.
+      timingWindows.forEach(({ startTimeMs, durationMs }, idx) => {
         const overlayEl = overlayRefs.current[idx];
         if (!overlayEl) return;
-        
-        const { word, extraDurationMs } = item;
-        const durationMs = word.durationMs + extraDurationMs;
-        
+
         // Calculate progress (0 to 1)
         let progress = 0;
-        if (timeIntoLine >= word.startTimeMs) {
+        if (timeIntoLine >= startTimeMs) {
           progress = durationMs > 0
-            ? Math.min(1, (timeIntoLine - word.startTimeMs) / durationMs)
+            ? Math.min(1, (timeIntoLine - startTimeMs) / durationMs)
             : 1;
         }
-        
-        // Set CSS custom property - CSS gradient calc handles the rest
-        overlayEl.style.setProperty('--mask-progress', String(progress));
+
+        const normalizedProgress =
+          progress <= 0 ? 0 : progress >= 1 ? 1 : progress;
+        const previousProgress = lastProgressRef.current[idx];
+        if (
+          previousProgress === normalizedProgress ||
+          (Number.isFinite(previousProgress) &&
+            Math.abs(previousProgress - normalizedProgress) < 0.001)
+        ) {
+          return;
+        }
+
+        lastProgressRef.current[idx] = normalizedProgress;
+        overlayEl.style.setProperty("--mask-progress", normalizedProgress.toString());
       });
       
       animationFrameId = requestAnimationFrame(updateMasks);
@@ -949,12 +968,16 @@ function WordTimingHighlight({
     
     animationFrameId = requestAnimationFrame(updateMasks);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [lineStartTimeMs, renderItems]);
+  }, [lineStartTimeMs, timingWindows]);
 
   // Initialize refs array length
   useEffect(() => {
     overlayRefs.current = overlayRefs.current.slice(0, renderItems.length);
   }, [renderItems.length]);
+
+  useEffect(() => {
+    lastProgressRef.current = Array.from({ length: renderItems.length }, () => Number.NaN);
+  }, [lineStartTimeMs, timingWindows, renderItems.length]);
 
   const handleWordClick = (wordStartTimeMs: number) => {
     if (onSeekToTime) {
