@@ -52,7 +52,7 @@ const THEME_KEY = "ryos:theme";
 const LEGACY_THEME_KEY = "os_theme";
 
 const createThemeStore = () => create<ThemeState>((set) => ({
-  current: "macosx",
+  current: "system7",
   setTheme: (theme) => {
     set({ current: theme });
     localStorage.setItem(THEME_KEY, theme);
@@ -75,7 +75,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
         localStorage.removeItem(LEGACY_THEME_KEY);
       }
     }
-    const theme = saved || "macosx";
+    const theme = saved || "system7";
     set({ current: theme });
     document.documentElement.dataset.osTheme = theme;
     ensureLegacyCss(theme);
