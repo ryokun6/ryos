@@ -54,12 +54,23 @@ import {
   createEmptyCloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
 import {
-  filterDeletedFilePaths,
   filterDeletedIds,
   mergeDeletionMarkerMaps,
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import {
+  mergeFilesMetadataSnapshots,
+  type FilesMetadataSyncSnapshot,
+} from "@/utils/cloudSyncFileMerge";
+import {
+  getIndividualBlobKnownItems,
+  setIndividualBlobKnownItems,
+} from "@/utils/cloudSyncIndividualBlobState";
+import {
+  planIndividualBlobDownload,
+  planIndividualBlobUpload,
+} from "@/utils/cloudSyncIndividualBlobMerge";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
@@ -838,25 +849,38 @@ async function applyFilesMetadataSnapshot(
   data: FilesMetadataSnapshotData
 ): Promise<void> {
   const remoteDeletedPaths = normalizeDeletionMarkerMap(data.deletedPaths);
-  const localDeletedPaths =
-    useCloudSyncStore.getState().deletionMarkers.fileMetadataPaths;
+  const cloudSyncState = useCloudSyncStore.getState();
+  const localDeletedPaths = cloudSyncState.deletionMarkers.fileMetadataPaths;
+  const localSnapshot: FilesMetadataSyncSnapshot = {
+    items: useFilesStore.getState().items,
+    libraryState: useFilesStore.getState().libraryState,
+    documents: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS),
+    deletedPaths: localDeletedPaths,
+  };
+  const mergedSnapshot = mergeFilesMetadataSnapshots(localSnapshot, {
+    ...data,
+    deletedPaths: remoteDeletedPaths,
+  });
   const effectiveDeletedPaths = mergeDeletionMarkerMaps(
     localDeletedPaths,
     remoteDeletedPaths
   );
+  const prunedDeletedPaths = Object.keys(effectiveDeletedPaths).filter(
+    (path) => !mergedSnapshot.deletedPaths?.[path]
+  );
 
-  useCloudSyncStore
-    .getState()
-    .mergeDeletedKeys("fileMetadataPaths", remoteDeletedPaths);
+  cloudSyncState.mergeDeletedKeys("fileMetadataPaths", remoteDeletedPaths);
+  cloudSyncState.clearDeletedKeys("fileMetadataPaths", prunedDeletedPaths);
 
   useFilesStore.setState({
-    items: filterDeletedFilePaths(data.items, effectiveDeletedPaths),
-    libraryState: data.libraryState,
+    items: mergedSnapshot.items,
+    libraryState: mergedSnapshot.libraryState,
   });
 
-  if (data.documents) {
-    await applyIndexedDbStoreSnapshot(STORES.DOCUMENTS, data.documents);
-  }
+  await applyIndexedDbStoreSnapshot(
+    STORES.DOCUMENTS,
+    mergedSnapshot.documents || []
+  );
 }
 
 function applySongsSnapshot(data: SongsSnapshotData): void {
@@ -995,19 +1019,17 @@ async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promis
 
 async function applyIndividualBlobDomain(
   domain: IndividualBlobSyncDomain,
-  remoteKeys: string[],
+  keysToDelete: string[],
   changedItems: Record<string, StoreItemWithKey>,
   deletedKeys: DeletionMarkerMap = {}
 ): Promise<void> {
   const storeName = getIndividualBlobStoreName(domain);
   const db = await ensureIndexedDBInitialized();
-  const effectiveRemoteKeys = remoteKeys.filter((key) => !deletedKeys[key]);
+  let existingKeys = new Set<string>();
 
   try {
     const existingItems = await readStoreItems(db, storeName);
-    const existingKeys = new Set(existingItems.map((item) => item.key));
-    const remoteKeySet = new Set(effectiveRemoteKeys);
-    const keysToDelete = Array.from(existingKeys).filter((key) => !remoteKeySet.has(key));
+    existingKeys = new Set(existingItems.map((item) => item.key));
 
     await deleteStoreItemsByKey(db, storeName, keysToDelete);
     await upsertStoreItems(
@@ -1020,7 +1042,15 @@ async function applyIndividualBlobDomain(
   }
 
   if (domain === "custom-wallpapers") {
-    await finalizeCustomWallpaperSync(effectiveRemoteKeys);
+    const finalKeySet = new Set(
+      Array.from(existingKeys).filter((key) => !keysToDelete.includes(key))
+    );
+    for (const item of Object.values(changedItems)) {
+      if (!deletedKeys[item.key]) {
+        finalKeySet.add(item.key);
+      }
+    }
+    await finalizeCustomWallpaperSync(finalKeySet);
   }
 }
 
@@ -1137,6 +1167,17 @@ async function uploadRedisStateDomain(
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
+  let data = envelope.data;
+
+  if (domain === "files-metadata") {
+    const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
+    if (remoteSnapshot?.data) {
+      data = mergeFilesMetadataSnapshots(
+        envelope.data as FilesMetadataSnapshotData,
+        remoteSnapshot.data as FilesMetadataSnapshotData
+      );
+    }
+  }
 
   const response = await abortableFetch(getApiUrl("/api/sync/state"), {
     method: "PUT",
@@ -1146,7 +1187,7 @@ async function uploadRedisStateDomain(
     },
     body: JSON.stringify({
       domain,
-      data: envelope.data,
+      data,
       updatedAt: envelope.updatedAt,
       version: envelope.version,
     }),
@@ -1168,6 +1209,54 @@ async function uploadRedisStateDomain(
   }
 
   return result.metadata;
+}
+
+async function fetchRedisStateDomainSnapshot(
+  domain: RedisSyncDomain,
+  _auth: AuthContext
+): Promise<
+  | {
+      data: AnySnapshotData;
+      metadata: CloudSyncDomainMetadata;
+    }
+  | null
+> {
+  const response = await abortableFetch(
+    getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
+    {
+      method: "GET",
+      headers: authHeaders(),
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    }
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      (errorData as { error?: string }).error ||
+        `Failed to download ${domain} state`
+    );
+  }
+
+  const result = (await response.json()) as {
+    data?: unknown;
+    metadata?: CloudSyncDomainMetadata;
+  };
+
+  if (result.data === undefined || !result.metadata) {
+    throw new Error("State download response was invalid.");
+  }
+
+  return {
+    data: result.data as AnySnapshotData,
+    metadata: result.metadata,
+  };
 }
 
 async function fetchBlobDomainInfo(
@@ -1323,9 +1412,16 @@ async function uploadIndividualBlobDomain(
   const updatedAt = new Date().toISOString();
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
   const deletedItems = getIndividualBlobDeletedKeys(domain);
+  const knownItems = getIndividualBlobKnownItems(domain);
   const remoteInfo = await fetchBlobDomainInfo(domain, _auth);
   const remoteItems =
     remoteInfo?.mode === "individual" ? remoteInfo.items || {} : {};
+  const uploadPlan = planIndividualBlobUpload(
+    localRecords,
+    remoteItems,
+    knownItems,
+    deletedItems
+  );
   const nextItems: Record<
     string,
     {
@@ -1336,23 +1432,20 @@ async function uploadIndividualBlobDomain(
     }
   > = {};
   let uploadedCount = 0;
+  const nextKnownItems = {
+    ...uploadPlan.nextKnownItems,
+  };
 
-  for (const record of localRecords) {
-    const existingRemoteItem = remoteItems[record.item.key];
-    if (
-      existingRemoteItem &&
-      existingRemoteItem.signature === record.signature &&
-      existingRemoteItem.storageUrl
-    ) {
-      nextItems[record.item.key] = {
-        updatedAt: existingRemoteItem.updatedAt,
-        signature: existingRemoteItem.signature,
-        size: existingRemoteItem.size,
-        storageUrl: existingRemoteItem.storageUrl,
-      };
-      continue;
-    }
+  for (const [key, item] of Object.entries(uploadPlan.preservedRemoteItems)) {
+    nextItems[key] = {
+      updatedAt: item.updatedAt,
+      signature: item.signature,
+      size: item.size,
+      storageUrl: item.storageUrl,
+    };
+  }
 
+  for (const record of uploadPlan.itemsToUpload) {
     const uploadInstruction = await requestBlobUploadInstruction(
       domain,
       _auth,
@@ -1377,14 +1470,17 @@ async function uploadIndividualBlobDomain(
       size: compressed.length,
       storageUrl: uploadResult.storageUrl,
     };
+    nextKnownItems[record.item.key] = {
+      signature: record.signature,
+      updatedAt,
+    };
     uploadedCount += 1;
   }
 
   console.log(
-    `[CloudSync:blob] ${domain}: uploaded ${uploadedCount}/${localRecords.length} individual items`
+    `[CloudSync:blob] ${domain}: uploaded ${uploadedCount}/${uploadPlan.itemsToUpload.length} individual items`
   );
-
-  return saveBlobDomainMetadata(
+  const metadata = await saveBlobDomainMetadata(
     {
       domain,
       updatedAt,
@@ -1395,6 +1491,8 @@ async function uploadIndividualBlobDomain(
     },
     _auth
   );
+  setIndividualBlobKnownItems(domain, nextKnownItems);
+  return metadata;
 }
 
 async function uploadBlobDomain(
@@ -1425,32 +1523,9 @@ async function downloadRedisStateDomain(
   domain: RedisSyncDomain,
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  const response = await abortableFetch(
-    getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
-    {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to download ${domain} state`
-    );
-  }
-
-  const result = (await response.json()) as {
-    data?: unknown;
-    metadata?: CloudSyncDomainMetadata;
-  };
-
-  if (result.data === undefined || !result.metadata) {
-    throw new Error("State download response was invalid.");
+  const result = await fetchRedisStateDomainSnapshot(domain, _auth);
+  if (!result) {
+    throw new Error(`No ${domain} state found`);
   }
 
   const envelope: CloudSyncEnvelope<AnySnapshotData> = {
@@ -1482,10 +1557,14 @@ async function downloadBlobDomain(
       remoteDeletedItems
     );
     const localRecords = await serializeIndividualBlobDomainRecords(domain);
-    const localRecordMap = new Map(
-      localRecords.map((record) => [record.item.key, record])
-    );
+    const knownItems = getIndividualBlobKnownItems(domain);
     const changedItems: Record<string, StoreItemWithKey> = {};
+    const downloadPlan = planIndividualBlobDownload(
+      localRecords,
+      remoteItems,
+      knownItems,
+      effectiveDeletedItems
+    );
 
     if (domain === "custom-wallpapers") {
       useCloudSyncStore
@@ -1493,28 +1572,31 @@ async function downloadBlobDomain(
         .mergeDeletedKeys("customWallpaperKeys", remoteDeletedItems);
     }
 
-    for (const [itemKey, itemMetadata] of Object.entries(remoteItems)) {
-      if (effectiveDeletedItems[itemKey]) {
-        continue;
-      }
-
-      const localRecord = localRecordMap.get(itemKey);
-      if (localRecord && localRecord.signature === itemMetadata.signature) {
-        continue;
-      }
-
+    for (const itemKey of downloadPlan.itemKeysToDownload) {
+      const itemMetadata = remoteItems[itemKey];
       const itemEnvelope = await downloadGzipJson<BlobSyncItemEnvelope>(
         itemMetadata.downloadUrl
       );
       changedItems[itemKey] = itemEnvelope.data;
     }
 
+    const nextKnownItems = {
+      ...downloadPlan.nextKnownItems,
+    };
+    for (const itemKey of downloadPlan.itemKeysToDownload) {
+      nextKnownItems[itemKey] = {
+        signature: remoteItems[itemKey].signature,
+        updatedAt: remoteItems[itemKey].updatedAt,
+      };
+    }
+
     await applyIndividualBlobDomain(
       domain,
-      Object.keys(remoteItems),
+      downloadPlan.keysToDelete,
       changedItems,
       effectiveDeletedItems
     );
+    setIndividualBlobKnownItems(domain, nextKnownItems);
     return data.metadata;
   }
 
