@@ -1,5 +1,10 @@
 import type { Redis } from "./redis.js";
 import type { Track } from "../../src/stores/useIpodStore.js";
+import {
+  createSyntheticLegacySyncVersion,
+  normalizeCloudSyncVersionState,
+  type CloudSyncVersionState,
+} from "../../src/utils/cloudSyncVersion.js";
 
 export interface SongsSnapshotData {
   tracks: Track[];
@@ -11,6 +16,7 @@ export interface SongsStateMetadata {
   updatedAt: string;
   version: number;
   createdAt: string;
+  syncVersion?: CloudSyncVersionState | null;
 }
 
 interface PersistedSongsLibraryMeta extends SongsStateMetadata {
@@ -179,6 +185,9 @@ function normalizeSongsStateMetadata(
       typeof value?.createdAt === "string" && value.createdAt.length > 0
         ? value.createdAt
         : fallbackTimestamp,
+    syncVersion:
+      normalizeCloudSyncVersionState(value?.syncVersion) ||
+      createSyntheticLegacySyncVersion(),
   };
 }
 
@@ -305,6 +314,7 @@ export async function writeSongsState(
       updatedAt: options.updatedAt,
       version: options.version,
       createdAt: options.createdAt ?? existingState?.metadata.createdAt,
+      syncVersion: options.syncVersion ?? existingState?.metadata.syncVersion,
     },
     now
   );

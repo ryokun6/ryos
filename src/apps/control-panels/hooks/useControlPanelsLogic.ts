@@ -809,7 +809,7 @@ export function useControlPanelsLogic({
             username,
             isAuthenticated,
           });
-          syncStore.markUploadSuccess(domain, metadata.updatedAt);
+          syncStore.markUploadSuccess(domain, metadata);
           syncStore.updateRemoteMetadataForDomain(domain, metadata);
         } catch (error) {
           const message =
@@ -866,13 +866,17 @@ export function useControlPanelsLogic({
         syncStore.markDownloadStart(domain);
 
         try {
-          const metadata = await downloadAndApplyCloudSyncDomain(domain, {
+          const result = await downloadAndApplyCloudSyncDomain(domain, {
             username,
             isAuthenticated,
           });
-          syncStore.markDownloadSuccess(domain, metadata.updatedAt);
-          syncStore.updateRemoteMetadataForDomain(domain, metadata);
-          appliedCount++;
+          syncStore.updateRemoteMetadataForDomain(domain, result.metadata);
+          if (result.applied) {
+            syncStore.markDownloadSuccess(domain, result.metadata);
+            appliedCount++;
+          } else {
+            syncStore.markDownloadSuccess(domain, result.metadata.updatedAt);
+          }
         } catch (error) {
           const message =
             error instanceof Error

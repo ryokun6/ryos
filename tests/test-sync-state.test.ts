@@ -24,6 +24,20 @@ async function getAuthToken(): Promise<string> {
   return authTokenPromise;
 }
 
+function makeSyncVersion(
+  clientId: string,
+  clientVersion: number,
+  baseServerVersion: number | null = null,
+  knownClientVersions: Record<string, number> = {}
+) {
+  return {
+    clientId,
+    clientVersion,
+    baseServerVersion,
+    knownClientVersions,
+  };
+}
+
 function createLegacyDocumentsBlobUrl() {
   const envelope = {
     domain: "files-documents",
@@ -163,6 +177,7 @@ describe("sync state API contacts validation", () => {
           domain: "contacts",
           updatedAt: "2026-03-08T02:30:00.000Z",
           version: 1,
+          syncVersion: makeSyncVersion("contacts-invalid-client", 1),
           data: {
             contacts: [{ id: "bad-1", displayName: "Bad Contact" }],
           },
@@ -189,6 +204,7 @@ describe("sync state API contacts validation", () => {
           domain: "contacts",
           updatedAt: "2026-03-08T02:31:00.000Z",
           version: 1,
+          syncVersion: makeSyncVersion("contacts-good-client", 1),
           data: {
             contacts: [
               {
@@ -221,16 +237,91 @@ describe("sync state API contacts validation", () => {
     const json = await res.json();
     expect(json.ok).toBe(true);
     expect(json.domain).toBe("contacts");
+    expect(json.metadata.syncVersion.serverVersion).toBe(1);
+  });
+
+  test("rejects stale full-domain replacements when another client already advanced the domain", async () => {
+    const redis = createRedis();
+    const username = `sync_state_conflict_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const authToken = generateAuthToken();
+    await storeToken(redis, username, authToken);
+
+    const firstRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      username,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "contacts",
+          updatedAt: "2026-03-08T02:40:00.000Z",
+          version: 1,
+          syncVersion: makeSyncVersion("client-a", 1),
+          data: {
+            contacts: [],
+          },
+        }),
+      }
+    );
+    expect(firstRes.status).toBe(200);
+
+    const secondRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      username,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "contacts",
+          updatedAt: "2026-03-08T02:41:00.000Z",
+          version: 1,
+          syncVersion: makeSyncVersion("client-b", 1, 1, { "client-a": 1 }),
+          data: {
+            contacts: [],
+          },
+        }),
+      }
+    );
+    expect(secondRes.status).toBe(200);
+
+    const staleRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      username,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "contacts",
+          updatedAt: "2026-03-08T02:42:00.000Z",
+          version: 1,
+          syncVersion: makeSyncVersion("client-a", 2, 1, { "client-a": 1 }),
+          data: {
+            contacts: [],
+          },
+        }),
+      }
+    );
+
+    expect(staleRes.status).toBe(409);
+    const staleJson = await staleRes.json();
+    expect(staleJson.code).toBe("sync_conflict");
+    expect(staleJson.metadata.syncVersion.serverVersion).toBe(2);
   });
 });
 
 describe("sync state API deletion markers", () => {
   test("round-trips calendar and file tombstones", async () => {
-    const authToken = await getAuthToken();
+    const redis = createRedis();
+    const username = `sync_state_delete_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const authToken = generateAuthToken();
+    await storeToken(redis, username, authToken);
 
     const filesRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/state`,
-      TEST_USERNAME,
+      username,
       authToken,
       {
         method: "PUT",
@@ -239,6 +330,7 @@ describe("sync state API deletion markers", () => {
           domain: "files-metadata",
           updatedAt: "2026-03-12T16:35:00.000Z",
           version: 1,
+          syncVersion: makeSyncVersion("files-metadata-client", 1),
           data: {
             items: {},
             libraryState: "loaded",
@@ -253,7 +345,7 @@ describe("sync state API deletion markers", () => {
 
     const calendarRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/state`,
-      TEST_USERNAME,
+      username,
       authToken,
       {
         method: "PUT",
@@ -262,6 +354,7 @@ describe("sync state API deletion markers", () => {
           domain: "calendar",
           updatedAt: "2026-03-12T16:36:00.000Z",
           version: 1,
+          syncVersion: makeSyncVersion("calendar-client", 1),
           data: {
             events: [],
             calendars: [],
@@ -277,7 +370,7 @@ describe("sync state API deletion markers", () => {
 
     const downloadFiles = await fetchWithAuth(
       `${BASE_URL}/api/sync/state?domain=files-metadata`,
-      TEST_USERNAME,
+      username,
       authToken
     );
     expect(downloadFiles.status).toBe(200);
@@ -288,7 +381,7 @@ describe("sync state API deletion markers", () => {
 
     const downloadCalendar = await fetchWithAuth(
       `${BASE_URL}/api/sync/state?domain=calendar`,
-      TEST_USERNAME,
+      username,
       authToken
     );
     expect(downloadCalendar.status).toBe(200);
@@ -341,6 +434,7 @@ describe("sync state API songs library storage", () => {
           domain: "songs",
           updatedAt,
           version: 1,
+          syncVersion: makeSyncVersion("songs-client", 1),
           data: payload,
         }),
       }
@@ -349,6 +443,7 @@ describe("sync state API songs library storage", () => {
 
     const stored = await readSongsState(redis, TEST_USERNAME);
     expect(stored?.metadata.updatedAt).toBe(updatedAt);
+    expect(stored?.metadata.syncVersion?.serverVersion).toBe(1);
     expect(stored?.data.libraryState).toBe("loaded");
     expect(stored?.data.lastKnownVersion).toBe(42);
     expect(stored?.data.tracks.map((track) => track.id)).toEqual([

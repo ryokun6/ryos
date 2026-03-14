@@ -13,6 +13,7 @@ import type { DeletionMarkerMap } from "@/utils/cloudSyncDeletionMarkers";
 interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
   lastAppliedRemoteAt: string | null;
+  lastKnownServerVersion: number | null;
   isUploading: boolean;
   isDownloading: boolean;
 }
@@ -75,12 +76,21 @@ interface CloudSyncStoreState {
     metadata: CloudSyncMetadataMap[CloudSyncDomain]
   ) => void;
   markUploadStart: (domain: CloudSyncDomain) => void;
-  markUploadSuccess: (domain: CloudSyncDomain, uploadedAt: string) => void;
+  markUploadSuccess: (
+    domain: CloudSyncDomain,
+    metadata: NonNullable<CloudSyncMetadataMap[CloudSyncDomain]> | string
+  ) => void;
   markUploadFailure: (domain: CloudSyncDomain, error: string) => void;
   markDownloadStart: (domain: CloudSyncDomain) => void;
-  markDownloadSuccess: (domain: CloudSyncDomain, appliedAt: string) => void;
+  markDownloadSuccess: (
+    domain: CloudSyncDomain,
+    metadata: NonNullable<CloudSyncMetadataMap[CloudSyncDomain]> | string
+  ) => void;
   markDownloadFailure: (domain: CloudSyncDomain, error: string) => void;
-  markRemoteApplied: (domain: CloudSyncDomain, appliedAt: string) => void;
+  markRemoteApplied: (
+    domain: CloudSyncDomain,
+    metadata: NonNullable<CloudSyncMetadataMap[CloudSyncDomain]> | string
+  ) => void;
   markDeletedKeys: (
     bucket: CloudSyncDeletionBucket,
     keys: Iterable<string>,
@@ -100,6 +110,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
   const empty = (): CloudSyncDomainStatus => ({
     lastUploadedAt: null,
     lastAppliedRemoteAt: null,
+    lastKnownServerVersion: null,
     isUploading: false,
     isDownloading: false,
   });
@@ -217,14 +228,20 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           },
         })),
 
-      markUploadSuccess: (domain, uploadedAt) =>
+      markUploadSuccess: (domain, metadata) =>
         set((state) => ({
           domainStatus: {
             ...state.domainStatus,
             [domain]: {
               ...state.domainStatus[domain],
               isUploading: false,
-              lastUploadedAt: uploadedAt,
+              lastUploadedAt:
+                typeof metadata === "string" ? metadata : metadata.updatedAt,
+              lastKnownServerVersion:
+                (typeof metadata === "string"
+                  ? null
+                  : metadata.syncVersion?.serverVersion) ||
+                state.domainStatus[domain].lastKnownServerVersion,
             },
           },
           lastError: null,
@@ -253,14 +270,20 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           },
         })),
 
-      markDownloadSuccess: (domain, appliedAt) =>
+      markDownloadSuccess: (domain, metadata) =>
         set((state) => ({
           domainStatus: {
             ...state.domainStatus,
             [domain]: {
               ...state.domainStatus[domain],
               isDownloading: false,
-              lastAppliedRemoteAt: appliedAt,
+              lastAppliedRemoteAt:
+                typeof metadata === "string" ? metadata : metadata.updatedAt,
+              lastKnownServerVersion:
+                (typeof metadata === "string"
+                  ? null
+                  : metadata.syncVersion?.serverVersion) ||
+                state.domainStatus[domain].lastKnownServerVersion,
             },
           },
           lastError: null,
@@ -278,13 +301,19 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           lastError: error,
         })),
 
-      markRemoteApplied: (domain, appliedAt) =>
+      markRemoteApplied: (domain, metadata) =>
         set((state) => ({
           domainStatus: {
             ...state.domainStatus,
             [domain]: {
               ...state.domainStatus[domain],
-              lastAppliedRemoteAt: appliedAt,
+              lastAppliedRemoteAt:
+                typeof metadata === "string" ? metadata : metadata.updatedAt,
+              lastKnownServerVersion:
+                (typeof metadata === "string"
+                  ? null
+                  : metadata.syncVersion?.serverVersion) ||
+                state.domainStatus[domain].lastKnownServerVersion,
             },
           },
           lastError: null,
@@ -391,6 +420,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             {
               lastUploadedAt: status.lastUploadedAt,
               lastAppliedRemoteAt: status.lastAppliedRemoteAt,
+              lastKnownServerVersion: status.lastKnownServerVersion,
               isUploading: false,
               isDownloading: false,
             },
@@ -409,6 +439,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               domainStatus[domain] = {
                 lastUploadedAt: saved.lastUploadedAt ?? null,
                 lastAppliedRemoteAt: saved.lastAppliedRemoteAt ?? null,
+                lastKnownServerVersion: saved.lastKnownServerVersion ?? null,
                 isUploading: false,
                 isDownloading: false,
               };
@@ -430,6 +461,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
                   lastUploadedAt: legacyFilesStatus.lastUploadedAt ?? null,
                   lastAppliedRemoteAt:
                     legacyFilesStatus.lastAppliedRemoteAt ?? null,
+                  lastKnownServerVersion:
+                    legacyFilesStatus.lastKnownServerVersion ?? null,
                   isUploading: false,
                   isDownloading: false,
                 };

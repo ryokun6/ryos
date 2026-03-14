@@ -1,3 +1,9 @@
+import {
+  getCloudSyncServerVersion,
+  normalizeCloudSyncVersionState,
+  type CloudSyncVersionState,
+} from "./cloudSyncVersion";
+
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
   "files-metadata",
@@ -102,6 +108,7 @@ export interface CloudSyncDomainMetadata {
   version: number;
   totalSize: number;
   createdAt: string;
+  syncVersion?: CloudSyncVersionState | null;
 }
 
 export interface CloudSyncBlobItemMetadata {
@@ -110,6 +117,7 @@ export interface CloudSyncBlobItemMetadata {
   size: number;
   storageUrl?: string;
   blobUrl?: string;
+  syncVersion?: CloudSyncVersionState | null;
 }
 
 export interface CloudSyncBlobItemDownloadMetadata {
@@ -134,10 +142,12 @@ export interface CloudSyncEnvelope<TData> {
 
 export interface ShouldApplyRemoteUpdateParams {
   remoteUpdatedAt: string | null | undefined;
+  remoteSyncVersion?: CloudSyncVersionState | null;
   lastAppliedRemoteAt?: string | null;
   lastUploadedAt?: string | null;
   lastLocalChangeAt?: string | null;
   hasPendingUpload?: boolean;
+  lastKnownServerVersion?: number | null;
 }
 
 export const AUTO_SYNC_SNAPSHOT_VERSION = 1;
@@ -228,14 +238,17 @@ export function hasUnsyncedLocalChanges(
 
 export function shouldApplyRemoteUpdate({
   remoteUpdatedAt,
+  remoteSyncVersion,
   lastAppliedRemoteAt,
   lastUploadedAt,
   lastLocalChangeAt,
   hasPendingUpload = false,
+  lastKnownServerVersion,
 }: ShouldApplyRemoteUpdateParams): boolean {
+  const remoteServerVersion = getCloudSyncServerVersion(remoteSyncVersion);
   const remoteTime = parseCloudSyncTimestamp(remoteUpdatedAt);
 
-  if (remoteTime === 0) {
+  if (remoteServerVersion === 0 && remoteTime === 0) {
     return false;
   }
 
@@ -243,6 +256,10 @@ export function shouldApplyRemoteUpdate({
     hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
   ) {
     return false;
+  }
+
+  if (remoteServerVersion > 0) {
+    return remoteServerVersion > (lastKnownServerVersion || 0);
   }
 
   const newestKnownLocalTime = Math.max(
@@ -298,6 +315,7 @@ function normalizeMetadataEntry(
       Number.isFinite(candidate.totalSize)
         ? candidate.totalSize
         : 0,
+    syncVersion: normalizeCloudSyncVersionState(candidate.syncVersion),
   };
 }
 
