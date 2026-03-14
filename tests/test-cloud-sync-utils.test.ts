@@ -20,6 +20,10 @@ import {
   mergeDeletionMarkerMaps,
 } from "../src/utils/cloudSyncDeletionMarkers";
 import { mergeFilesMetadataSnapshots } from "../src/utils/cloudSyncFileMerge";
+import {
+  planIndividualBlobDownload,
+  planIndividualBlobUpload,
+} from "../src/utils/cloudSyncIndividualBlobMerge";
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
@@ -395,5 +399,129 @@ describe("cloud sync shared helpers", () => {
 
     expect(merged.items["/Documents/recreated.md"]?.uuid).toBe("recreated-doc");
     expect(merged.deletedPaths).toEqual({});
+  });
+
+  test("preserves remote-only individual blob items on upload", () => {
+    const plan = planIndividualBlobUpload(
+      [
+        {
+          item: { key: "local-image" },
+          signature: "local-signature",
+        },
+      ],
+      {
+        "remote-image": {
+          signature: "remote-signature",
+          updatedAt: "2026-03-14T04:00:00.000Z",
+          size: 10,
+          storageUrl: "remote://image",
+        },
+      },
+      {},
+      {}
+    );
+
+    expect(plan.itemsToUpload.map((record) => record.item.key)).toEqual([
+      "local-image",
+    ]);
+    expect(Object.keys(plan.preservedRemoteItems)).toEqual(["remote-image"]);
+  });
+
+  test("treats missing known individual blob items as local deletions on upload", () => {
+    const plan = planIndividualBlobUpload(
+      [],
+      {
+        "remote-image": {
+          signature: "remote-signature",
+          updatedAt: "2026-03-14T04:00:00.000Z",
+          size: 10,
+          storageUrl: "remote://image",
+        },
+      },
+      {
+        "remote-image": {
+          signature: "old-signature",
+          updatedAt: "2026-03-14T03:00:00.000Z",
+        },
+      },
+      {}
+    );
+
+    expect(plan.itemsToUpload).toEqual([]);
+    expect(plan.preservedRemoteItems).toEqual({});
+  });
+
+  test("preserves local-only individual blob items on download", () => {
+    const plan = planIndividualBlobDownload(
+      [
+        {
+          item: { key: "local-image" },
+          signature: "local-signature",
+        },
+      ],
+      {},
+      {},
+      {}
+    );
+
+    expect(plan.keysToDelete).toEqual([]);
+    expect(plan.itemKeysToDownload).toEqual([]);
+  });
+
+  test("deletes unchanged synced individual blob items when remote removes them", () => {
+    const plan = planIndividualBlobDownload(
+      [
+        {
+          item: { key: "old-image" },
+          signature: "same-signature",
+        },
+      ],
+      {},
+      {
+        "old-image": {
+          signature: "same-signature",
+          updatedAt: "2026-03-14T03:00:00.000Z",
+        },
+      },
+      {}
+    );
+
+    expect(plan.keysToDelete).toEqual(["old-image"]);
+    expect(plan.itemKeysToDownload).toEqual([]);
+  });
+
+  test("preserves local individual blob edits when remote changed the same key", () => {
+    const plan = planIndividualBlobDownload(
+      [
+        {
+          item: { key: "shared-image" },
+          signature: "local-signature",
+        },
+      ],
+      {
+        "shared-image": {
+          signature: "remote-signature",
+          updatedAt: "2026-03-14T04:00:00.000Z",
+          size: 10,
+          storageUrl: "remote://image",
+        },
+      },
+      {
+        "shared-image": {
+          signature: "base-signature",
+          updatedAt: "2026-03-14T03:00:00.000Z",
+        },
+      },
+      {}
+    );
+
+    expect(plan.itemKeysToDownload).toEqual([]);
+    expect(plan.keysToDelete).toEqual([]);
+    expect(plan.nextKnownItems).toEqual({
+      "shared-image": {
+        signature: "base-signature",
+        updatedAt: "2026-03-14T03:00:00.000Z",
+      },
+    });
   });
 });

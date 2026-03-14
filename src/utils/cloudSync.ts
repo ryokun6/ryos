@@ -63,6 +63,14 @@ import {
   mergeFilesMetadataSnapshots,
   type FilesMetadataSyncSnapshot,
 } from "@/utils/cloudSyncFileMerge";
+import {
+  getIndividualBlobKnownItems,
+  setIndividualBlobKnownItems,
+} from "@/utils/cloudSyncIndividualBlobState";
+import {
+  planIndividualBlobDownload,
+  planIndividualBlobUpload,
+} from "@/utils/cloudSyncIndividualBlobMerge";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
@@ -1011,19 +1019,17 @@ async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promis
 
 async function applyIndividualBlobDomain(
   domain: IndividualBlobSyncDomain,
-  remoteKeys: string[],
+  keysToDelete: string[],
   changedItems: Record<string, StoreItemWithKey>,
   deletedKeys: DeletionMarkerMap = {}
 ): Promise<void> {
   const storeName = getIndividualBlobStoreName(domain);
   const db = await ensureIndexedDBInitialized();
-  const effectiveRemoteKeys = remoteKeys.filter((key) => !deletedKeys[key]);
+  let existingKeys = new Set<string>();
 
   try {
     const existingItems = await readStoreItems(db, storeName);
-    const existingKeys = new Set(existingItems.map((item) => item.key));
-    const remoteKeySet = new Set(effectiveRemoteKeys);
-    const keysToDelete = Array.from(existingKeys).filter((key) => !remoteKeySet.has(key));
+    existingKeys = new Set(existingItems.map((item) => item.key));
 
     await deleteStoreItemsByKey(db, storeName, keysToDelete);
     await upsertStoreItems(
@@ -1036,7 +1042,15 @@ async function applyIndividualBlobDomain(
   }
 
   if (domain === "custom-wallpapers") {
-    await finalizeCustomWallpaperSync(effectiveRemoteKeys);
+    const finalKeySet = new Set(
+      Array.from(existingKeys).filter((key) => !keysToDelete.includes(key))
+    );
+    for (const item of Object.values(changedItems)) {
+      if (!deletedKeys[item.key]) {
+        finalKeySet.add(item.key);
+      }
+    }
+    await finalizeCustomWallpaperSync(finalKeySet);
   }
 }
 
@@ -1398,9 +1412,16 @@ async function uploadIndividualBlobDomain(
   const updatedAt = new Date().toISOString();
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
   const deletedItems = getIndividualBlobDeletedKeys(domain);
+  const knownItems = getIndividualBlobKnownItems(domain);
   const remoteInfo = await fetchBlobDomainInfo(domain, _auth);
   const remoteItems =
     remoteInfo?.mode === "individual" ? remoteInfo.items || {} : {};
+  const uploadPlan = planIndividualBlobUpload(
+    localRecords,
+    remoteItems,
+    knownItems,
+    deletedItems
+  );
   const nextItems: Record<
     string,
     {
@@ -1411,23 +1432,20 @@ async function uploadIndividualBlobDomain(
     }
   > = {};
   let uploadedCount = 0;
+  const nextKnownItems = {
+    ...uploadPlan.nextKnownItems,
+  };
 
-  for (const record of localRecords) {
-    const existingRemoteItem = remoteItems[record.item.key];
-    if (
-      existingRemoteItem &&
-      existingRemoteItem.signature === record.signature &&
-      existingRemoteItem.storageUrl
-    ) {
-      nextItems[record.item.key] = {
-        updatedAt: existingRemoteItem.updatedAt,
-        signature: existingRemoteItem.signature,
-        size: existingRemoteItem.size,
-        storageUrl: existingRemoteItem.storageUrl,
-      };
-      continue;
-    }
+  for (const [key, item] of Object.entries(uploadPlan.preservedRemoteItems)) {
+    nextItems[key] = {
+      updatedAt: item.updatedAt,
+      signature: item.signature,
+      size: item.size,
+      storageUrl: item.storageUrl,
+    };
+  }
 
+  for (const record of uploadPlan.itemsToUpload) {
     const uploadInstruction = await requestBlobUploadInstruction(
       domain,
       _auth,
@@ -1452,14 +1470,17 @@ async function uploadIndividualBlobDomain(
       size: compressed.length,
       storageUrl: uploadResult.storageUrl,
     };
+    nextKnownItems[record.item.key] = {
+      signature: record.signature,
+      updatedAt,
+    };
     uploadedCount += 1;
   }
 
   console.log(
-    `[CloudSync:blob] ${domain}: uploaded ${uploadedCount}/${localRecords.length} individual items`
+    `[CloudSync:blob] ${domain}: uploaded ${uploadedCount}/${uploadPlan.itemsToUpload.length} individual items`
   );
-
-  return saveBlobDomainMetadata(
+  const metadata = await saveBlobDomainMetadata(
     {
       domain,
       updatedAt,
@@ -1470,6 +1491,8 @@ async function uploadIndividualBlobDomain(
     },
     _auth
   );
+  setIndividualBlobKnownItems(domain, nextKnownItems);
+  return metadata;
 }
 
 async function uploadBlobDomain(
@@ -1534,10 +1557,14 @@ async function downloadBlobDomain(
       remoteDeletedItems
     );
     const localRecords = await serializeIndividualBlobDomainRecords(domain);
-    const localRecordMap = new Map(
-      localRecords.map((record) => [record.item.key, record])
-    );
+    const knownItems = getIndividualBlobKnownItems(domain);
     const changedItems: Record<string, StoreItemWithKey> = {};
+    const downloadPlan = planIndividualBlobDownload(
+      localRecords,
+      remoteItems,
+      knownItems,
+      effectiveDeletedItems
+    );
 
     if (domain === "custom-wallpapers") {
       useCloudSyncStore
@@ -1545,28 +1572,31 @@ async function downloadBlobDomain(
         .mergeDeletedKeys("customWallpaperKeys", remoteDeletedItems);
     }
 
-    for (const [itemKey, itemMetadata] of Object.entries(remoteItems)) {
-      if (effectiveDeletedItems[itemKey]) {
-        continue;
-      }
-
-      const localRecord = localRecordMap.get(itemKey);
-      if (localRecord && localRecord.signature === itemMetadata.signature) {
-        continue;
-      }
-
+    for (const itemKey of downloadPlan.itemKeysToDownload) {
+      const itemMetadata = remoteItems[itemKey];
       const itemEnvelope = await downloadGzipJson<BlobSyncItemEnvelope>(
         itemMetadata.downloadUrl
       );
       changedItems[itemKey] = itemEnvelope.data;
     }
 
+    const nextKnownItems = {
+      ...downloadPlan.nextKnownItems,
+    };
+    for (const itemKey of downloadPlan.itemKeysToDownload) {
+      nextKnownItems[itemKey] = {
+        signature: remoteItems[itemKey].signature,
+        updatedAt: remoteItems[itemKey].updatedAt,
+      };
+    }
+
     await applyIndividualBlobDomain(
       domain,
-      Object.keys(remoteItems),
+      downloadPlan.keysToDelete,
       changedItems,
       effectiveDeletedItems
     );
+    setIndividualBlobKnownItems(domain, nextKnownItems);
     return data.metadata;
   }
 
