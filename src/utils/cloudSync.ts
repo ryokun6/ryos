@@ -2,18 +2,15 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import { getApiUrl } from "@/utils/platform";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { useLanguageStore, type LanguageCode } from "@/stores/useLanguageStore";
+import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
-import { useDockStore, type DockItem } from "@/stores/useDockStore";
-import {
-  useDashboardStore,
-  type DashboardWidget,
-} from "@/stores/useDashboardStore";
+import { useDockStore } from "@/stores/useDockStore";
+import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import {
   useCalendarStore,
@@ -29,13 +26,6 @@ import {
   uploadBlobWithStorageInstruction,
   type StorageUploadInstruction,
 } from "@/utils/storageUpload";
-import type { AIModel } from "@/types/aiModels";
-import type {
-  DisplayMode,
-  LyricsAlignment,
-  LyricsFont,
-  RomanizationSettings,
-} from "@/types/lyrics";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
   isRedisSyncDomain,
@@ -69,6 +59,18 @@ import {
   type FilesMetadataSyncSnapshot,
 } from "@/utils/cloudSyncFileMerge";
 import {
+  beginApplyingRemoteSettingsSections,
+  endApplyingRemoteSettingsSections,
+  getSettingsSectionTimestampMap,
+  setSettingsSectionTimestamps,
+} from "@/utils/cloudSyncSettingsState";
+import {
+  getRemoteSettingsSectionsToApply,
+  mergeSettingsSnapshotData,
+  normalizeSettingsSnapshotData,
+  type SettingsSnapshotData,
+} from "@/utils/cloudSyncSettingsMerge";
+import {
   getIndividualBlobKnownItems,
   setIndividualBlobKnownItems,
 } from "@/utils/cloudSyncIndividualBlobState";
@@ -101,60 +103,6 @@ interface StoreItem {
 interface StoreItemWithKey {
   key: string;
   value: StoreItem;
-}
-
-interface SettingsSnapshotData {
-  theme: string;
-  language: LanguageCode;
-  languageInitialized: boolean;
-  aiModel: AIModel | null;
-  display: {
-    displayMode: string;
-    shaderEffectEnabled: boolean;
-    selectedShaderType: string;
-    currentWallpaper: string;
-    screenSaverEnabled: boolean;
-    screenSaverType: string;
-    screenSaverIdleTime: number;
-    debugMode: boolean;
-    htmlPreviewSplit: boolean;
-  };
-  audio: {
-    masterVolume: number;
-    uiVolume: number;
-    chatSynthVolume: number;
-    speechVolume: number;
-    ipodVolume: number;
-    uiSoundsEnabled: boolean;
-    terminalSoundsEnabled: boolean;
-    typingSynthEnabled: boolean;
-    speechEnabled: boolean;
-    keepTalkingEnabled: boolean;
-    ttsModel: "openai" | "elevenlabs" | null;
-    ttsVoice: string | null;
-    synthPreset: string;
-  };
-  ipod?: {
-    displayMode: DisplayMode;
-    showLyrics: boolean;
-    lyricsAlignment: LyricsAlignment;
-    lyricsFont: LyricsFont;
-    romanization: RomanizationSettings;
-    lyricsTranslationLanguage: string | null;
-    theme: "classic" | "black" | "u2";
-    lcdFilterOn: boolean;
-  };
-  dock?: {
-    pinnedItems: DockItem[];
-    scale: number;
-    hiding: boolean;
-    magnification: boolean;
-  };
-  dashboard?: {
-    widgets: DashboardWidget[];
-  };
-  /** @deprecated Wallpapers moved to custom-wallpapers domain. Kept for backward compat on restore. */
-  customWallpapers?: StoreItemWithKey[];
 }
 
 type CustomWallpapersSnapshotData = StoreItemWithKey[];
@@ -227,6 +175,15 @@ interface IndividualBlobDomainResponse {
   items?: Record<string, CloudSyncBlobItemDownloadMetadata>;
   metadata?: CloudSyncDomainMetadata;
   deletedItems?: DeletionMarkerMap;
+}
+
+export interface DownloadCloudSyncResult {
+  metadata: CloudSyncDomainMetadata;
+  applied: boolean;
+}
+
+interface DownloadCloudSyncOptions {
+  shouldApply?: (metadata: CloudSyncDomainMetadata) => boolean;
 }
 
 function assertCompressionSupport(): void {
@@ -480,6 +437,7 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
   const ipodState = useIpodStore.getState();
   const dockState = useDockStore.getState();
   const dashboardState = useDashboardStore.getState();
+  const sectionUpdatedAt = getSettingsSectionTimestampMap();
 
   return {
     theme: useThemeStore.getState().current,
@@ -532,6 +490,7 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
     dashboard: {
       widgets: dashboardState.widgets,
     },
+    sectionUpdatedAt,
   };
 }
 
@@ -760,81 +719,121 @@ export async function createCloudSyncEnvelope(
   }
 }
 
-async function applySettingsSnapshot(data: SettingsSnapshotData): Promise<void> {
-  useThemeStore.getState().setTheme(data.theme as never);
-  localStorage.setItem("ryos:language-initialized", data.languageInitialized ? "true" : "false");
-  await useLanguageStore.getState().setLanguage(data.language);
+async function applySettingsSnapshot(
+  data: SettingsSnapshotData,
+  fallbackUpdatedAt: string
+): Promise<void> {
+  const normalizedData = normalizeSettingsSnapshotData(data, fallbackUpdatedAt);
+  const remoteSectionUpdatedAt = normalizedData.sectionUpdatedAt || {};
+  const localSectionUpdatedAt = getSettingsSectionTimestampMap();
+  const sectionsToApply = getRemoteSettingsSectionsToApply(
+    localSectionUpdatedAt,
+    remoteSectionUpdatedAt
+  );
 
   // Legacy: if the old settings envelope contained customWallpapers, restore them
-  if (data.customWallpapers && data.customWallpapers.length > 0) {
+  if (normalizedData.customWallpapers && normalizedData.customWallpapers.length > 0) {
     const db = await ensureIndexedDBInitialized();
     try {
-      await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, data.customWallpapers);
+      await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, normalizedData.customWallpapers);
     } finally {
       db.close();
     }
   }
 
-  useDisplaySettingsStore.setState({
-    displayMode: data.display.displayMode as never,
-    shaderEffectEnabled: data.display.shaderEffectEnabled,
-    selectedShaderType: data.display.selectedShaderType as never,
-    screenSaverEnabled: data.display.screenSaverEnabled,
-    screenSaverType: data.display.screenSaverType,
-    screenSaverIdleTime: data.display.screenSaverIdleTime,
-    debugMode: data.display.debugMode,
-    htmlPreviewSplit: data.display.htmlPreviewSplit,
-  });
+  beginApplyingRemoteSettingsSections(sectionsToApply);
+  try {
+    if (sectionsToApply.includes("theme")) {
+      useThemeStore.getState().setTheme(normalizedData.theme as never);
+    }
 
-  await useDisplaySettingsStore
-    .getState()
-    .setWallpaper(data.display.currentWallpaper);
+    if (sectionsToApply.includes("language")) {
+      localStorage.setItem(
+        "ryos:language-initialized",
+        normalizedData.languageInitialized ? "true" : "false"
+      );
+      await useLanguageStore.getState().setLanguage(normalizedData.language);
+    }
 
-  useAudioSettingsStore.setState({
-    masterVolume: data.audio.masterVolume,
-    uiVolume: data.audio.uiVolume,
-    chatSynthVolume: data.audio.chatSynthVolume,
-    speechVolume: data.audio.speechVolume,
-    ipodVolume: data.audio.ipodVolume,
-    uiSoundsEnabled: data.audio.uiSoundsEnabled,
-    terminalSoundsEnabled: data.audio.terminalSoundsEnabled,
-    typingSynthEnabled: data.audio.typingSynthEnabled,
-    speechEnabled: data.audio.speechEnabled,
-    keepTalkingEnabled: data.audio.keepTalkingEnabled,
-    ttsModel: data.audio.ttsModel,
-    ttsVoice: data.audio.ttsVoice,
-    synthPreset: data.audio.synthPreset,
-  });
+    if (sectionsToApply.includes("display")) {
+      useDisplaySettingsStore.setState({
+        displayMode: normalizedData.display.displayMode as never,
+        shaderEffectEnabled: normalizedData.display.shaderEffectEnabled,
+        selectedShaderType: normalizedData.display.selectedShaderType as never,
+        screenSaverEnabled: normalizedData.display.screenSaverEnabled,
+        screenSaverType: normalizedData.display.screenSaverType,
+        screenSaverIdleTime: normalizedData.display.screenSaverIdleTime,
+        debugMode: normalizedData.display.debugMode,
+        htmlPreviewSplit: normalizedData.display.htmlPreviewSplit,
+      });
 
-  useAppStore.getState().setAiModel(data.aiModel);
+      await useDisplaySettingsStore
+        .getState()
+        .setWallpaper(normalizedData.display.currentWallpaper);
+    }
 
-  if (data.ipod) {
-    useIpodStore.setState({
-      displayMode: data.ipod.displayMode,
-      showLyrics: data.ipod.showLyrics,
-      lyricsAlignment: data.ipod.lyricsAlignment,
-      lyricsFont: data.ipod.lyricsFont,
-      romanization: data.ipod.romanization,
-      lyricsTranslationLanguage: data.ipod.lyricsTranslationLanguage,
-      theme: data.ipod.theme,
-      lcdFilterOn: data.ipod.lcdFilterOn,
-    });
+    if (sectionsToApply.includes("audio")) {
+      useAudioSettingsStore.setState({
+        masterVolume: normalizedData.audio.masterVolume,
+        uiVolume: normalizedData.audio.uiVolume,
+        chatSynthVolume: normalizedData.audio.chatSynthVolume,
+        speechVolume: normalizedData.audio.speechVolume,
+        ipodVolume: normalizedData.audio.ipodVolume,
+        uiSoundsEnabled: normalizedData.audio.uiSoundsEnabled,
+        terminalSoundsEnabled: normalizedData.audio.terminalSoundsEnabled,
+        typingSynthEnabled: normalizedData.audio.typingSynthEnabled,
+        speechEnabled: normalizedData.audio.speechEnabled,
+        keepTalkingEnabled: normalizedData.audio.keepTalkingEnabled,
+        ttsModel: normalizedData.audio.ttsModel,
+        ttsVoice: normalizedData.audio.ttsVoice,
+        synthPreset: normalizedData.audio.synthPreset,
+      });
+    }
+
+    if (sectionsToApply.includes("aiModel")) {
+      useAppStore.getState().setAiModel(normalizedData.aiModel);
+    }
+
+    if (normalizedData.ipod && sectionsToApply.includes("ipod")) {
+      useIpodStore.setState({
+        displayMode: normalizedData.ipod.displayMode,
+        showLyrics: normalizedData.ipod.showLyrics,
+        lyricsAlignment: normalizedData.ipod.lyricsAlignment,
+        lyricsFont: normalizedData.ipod.lyricsFont,
+        romanization: normalizedData.ipod.romanization,
+        lyricsTranslationLanguage: normalizedData.ipod.lyricsTranslationLanguage,
+        theme: normalizedData.ipod.theme,
+        lcdFilterOn: normalizedData.ipod.lcdFilterOn,
+      });
+    }
+
+    if (normalizedData.dock && sectionsToApply.includes("dock")) {
+      useDockStore.setState({
+        pinnedItems: normalizedData.dock.pinnedItems,
+        scale: normalizedData.dock.scale,
+        hiding: normalizedData.dock.hiding,
+        magnification: normalizedData.dock.magnification,
+      });
+    }
+
+    if (
+      normalizedData.dashboard?.widgets &&
+      Array.isArray(normalizedData.dashboard.widgets) &&
+      sectionsToApply.includes("dashboard")
+    ) {
+      useDashboardStore.setState({
+        widgets: normalizedData.dashboard.widgets,
+      });
+    }
+  } finally {
+    endApplyingRemoteSettingsSections(sectionsToApply);
   }
 
-  if (data.dock) {
-    useDockStore.setState({
-      pinnedItems: data.dock.pinnedItems,
-      scale: data.dock.scale,
-      hiding: data.dock.hiding,
-      magnification: data.dock.magnification,
-    });
-  }
-
-  if (data.dashboard?.widgets && Array.isArray(data.dashboard.widgets)) {
-    useDashboardStore.setState({
-      widgets: data.dashboard.widgets,
-    });
-  }
+  setSettingsSectionTimestamps(
+    Object.fromEntries(
+      sectionsToApply.map((section) => [section, remoteSectionUpdatedAt[section] || fallbackUpdatedAt])
+    )
+  );
 }
 
 async function applyIndexedDbStoreSnapshot(
@@ -1064,7 +1063,10 @@ export async function applyCloudSyncEnvelope(
 ): Promise<void> {
   switch (envelope.domain) {
     case "settings":
-      await applySettingsSnapshot(envelope.data as SettingsSnapshotData);
+      await applySettingsSnapshot(
+        envelope.data as SettingsSnapshotData,
+        envelope.updatedAt
+      );
       return;
     case "files-metadata":
       await applyFilesMetadataSnapshot(
@@ -1196,6 +1198,17 @@ async function uploadRedisStateDomain(
       );
       baseMetadata = remoteSnapshot.metadata;
     }
+  } else if (domain === "settings") {
+    const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
+    if (remoteSnapshot?.data) {
+      data = mergeSettingsSnapshotData(
+        envelope.data as SettingsSnapshotData,
+        remoteSnapshot.data as SettingsSnapshotData,
+        envelope.updatedAt,
+        remoteSnapshot.metadata.updatedAt
+      );
+      baseMetadata = remoteSnapshot.metadata;
+    }
   }
 
   const sendStateUpload = async (
@@ -1223,14 +1236,24 @@ async function uploadRedisStateDomain(
 
   let response = await sendStateUpload(data, envelope.updatedAt, baseMetadata);
 
-  if (response.status === 409 && domain === "files-metadata") {
+  if (
+    response.status === 409 &&
+    (domain === "files-metadata" || domain === "settings")
+  ) {
     const latestRemote = await fetchRedisStateDomainSnapshot(domain, _auth);
     if (latestRemote?.data) {
       response = await sendStateUpload(
-        mergeFilesMetadataSnapshots(
-          envelope.data as FilesMetadataSnapshotData,
-          latestRemote.data as FilesMetadataSnapshotData
-        ),
+        domain === "files-metadata"
+          ? mergeFilesMetadataSnapshots(
+              envelope.data as FilesMetadataSnapshotData,
+              latestRemote.data as FilesMetadataSnapshotData
+            )
+          : mergeSettingsSnapshotData(
+              envelope.data as SettingsSnapshotData,
+              latestRemote.data as SettingsSnapshotData,
+              envelope.updatedAt,
+              latestRemote.metadata.updatedAt
+            ),
         new Date().toISOString(),
         latestRemote.metadata
       );
@@ -1571,11 +1594,19 @@ export async function uploadCloudSyncDomain(
 
 async function downloadRedisStateDomain(
   domain: RedisSyncDomain,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+  _auth: AuthContext,
+  options?: DownloadCloudSyncOptions
+): Promise<DownloadCloudSyncResult> {
   const result = await fetchRedisStateDomainSnapshot(domain, _auth);
   if (!result) {
     throw new Error(`No ${domain} state found`);
+  }
+
+  if (options?.shouldApply && !options.shouldApply(result.metadata)) {
+    return {
+      metadata: result.metadata,
+      applied: false,
+    };
   }
 
   const envelope: CloudSyncEnvelope<AnySnapshotData> = {
@@ -1586,16 +1617,27 @@ async function downloadRedisStateDomain(
   };
 
   await applyCloudSyncEnvelope(envelope);
-  return result.metadata;
+  return {
+    metadata: result.metadata,
+    applied: true,
+  };
 }
 
 async function downloadBlobDomain(
   domain: BlobSyncDomain,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+  _auth: AuthContext,
+  options?: DownloadCloudSyncOptions
+): Promise<DownloadCloudSyncResult> {
   const data = await fetchBlobDomainInfo(domain, _auth);
   if (!data?.metadata) {
     throw new Error("Sync download response was invalid.");
+  }
+
+  if (options?.shouldApply && !options.shouldApply(data.metadata)) {
+    return {
+      metadata: data.metadata,
+      applied: false,
+    };
   }
 
   if (isIndividualBlobSyncDomain(domain) && data.mode === "individual") {
@@ -1647,7 +1689,10 @@ async function downloadBlobDomain(
       effectiveDeletedItems
     );
     setIndividualBlobKnownItems(domain, nextKnownItems);
-    return data.metadata;
+    return {
+      metadata: data.metadata,
+      applied: true,
+    };
   }
 
   const downloadUrl = data.downloadUrl || data.blobUrl;
@@ -1657,18 +1702,22 @@ async function downloadBlobDomain(
 
   const envelope = await downloadGzipJson<CloudSyncEnvelope<AnySnapshotData>>(downloadUrl);
   await applyCloudSyncEnvelope(envelope);
-  return data.metadata;
+  return {
+    metadata: data.metadata,
+    applied: true,
+  };
 }
 
 export async function downloadAndApplyCloudSyncDomain(
   domain: CloudSyncDomain,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+  _auth: AuthContext,
+  options?: DownloadCloudSyncOptions
+): Promise<DownloadCloudSyncResult> {
   if (isRedisSyncDomain(domain)) {
-    return downloadRedisStateDomain(domain, _auth);
+    return downloadRedisStateDomain(domain, _auth, options);
   }
   if (isBlobSyncDomain(domain)) {
-    return downloadBlobDomain(domain, _auth);
+    return downloadBlobDomain(domain, _auth, options);
   }
   throw new Error(`Unknown sync domain: ${domain}`);
 }

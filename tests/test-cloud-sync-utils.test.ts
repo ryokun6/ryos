@@ -24,6 +24,7 @@ import {
   planIndividualBlobDownload,
   planIndividualBlobUpload,
 } from "../src/utils/cloudSyncIndividualBlobMerge";
+import { mergeSettingsSnapshotData } from "../src/utils/cloudSyncSettingsMerge";
 import {
   advanceCloudSyncVersion,
   assessCloudSyncWrite,
@@ -424,6 +425,160 @@ describe("cloud sync shared helpers", () => {
 
     expect(merged.items["/Documents/recreated.md"]?.uuid).toBe("recreated-doc");
     expect(merged.deletedPaths).toEqual({});
+  });
+
+  test("merges settings per store so newer local and remote sections both survive", () => {
+    const merged = mergeSettingsSnapshotData(
+      {
+        theme: "xp",
+        language: "en",
+        languageInitialized: true,
+        aiModel: "gpt-4o-mini",
+        display: {
+          displayMode: "color",
+          shaderEffectEnabled: false,
+          selectedShaderType: "aurora",
+          currentWallpaper: "/wallpapers/local.jpg",
+          screenSaverEnabled: false,
+          screenSaverType: "starfield",
+          screenSaverIdleTime: 5,
+          debugMode: false,
+          htmlPreviewSplit: true,
+        },
+        audio: {
+          masterVolume: 0.5,
+          uiVolume: 0.4,
+          chatSynthVolume: 0.3,
+          speechVolume: 0.2,
+          ipodVolume: 0.1,
+          uiSoundsEnabled: true,
+          terminalSoundsEnabled: true,
+          typingSynthEnabled: false,
+          speechEnabled: false,
+          keepTalkingEnabled: true,
+          ttsModel: null,
+          ttsVoice: null,
+          synthPreset: "classic",
+        },
+        ipod: {
+          displayMode: "video",
+          showLyrics: true,
+          lyricsAlignment: "alternating",
+          lyricsFont: "serif-red",
+          romanization: {
+            enabled: true,
+            japaneseFurigana: true,
+            japaneseRomaji: false,
+            korean: false,
+            chinese: false,
+            soramimi: false,
+            soramamiTargetLanguage: "zh-TW",
+            pronunciationOnly: false,
+          },
+          lyricsTranslationLanguage: "ja",
+          theme: "classic",
+          lcdFilterOn: true,
+        },
+        dock: {
+          pinnedItems: [{ type: "app", id: "finder" }],
+          scale: 1,
+          hiding: false,
+          magnification: true,
+        },
+        dashboard: {
+          widgets: [],
+        },
+        sectionUpdatedAt: {
+          theme: "2026-03-14T16:00:02.000Z",
+          language: "2026-03-14T16:00:00.000Z",
+          display: "2026-03-14T16:00:05.000Z",
+          audio: "2026-03-14T16:00:00.000Z",
+          aiModel: "2026-03-14T16:00:00.000Z",
+          ipod: "2026-03-14T16:00:00.000Z",
+          dock: "2026-03-14T16:00:00.000Z",
+          dashboard: "2026-03-14T16:00:00.000Z",
+        },
+      },
+      {
+        theme: "macosx",
+        language: "ko",
+        languageInitialized: true,
+        aiModel: "claude-3-5-sonnet-latest",
+        display: {
+          displayMode: "grayscale",
+          shaderEffectEnabled: true,
+          selectedShaderType: "matrix",
+          currentWallpaper: "/wallpapers/remote.jpg",
+          screenSaverEnabled: true,
+          screenSaverType: "matrix",
+          screenSaverIdleTime: 15,
+          debugMode: true,
+          htmlPreviewSplit: false,
+        },
+        audio: {
+          masterVolume: 0.9,
+          uiVolume: 0.8,
+          chatSynthVolume: 0.7,
+          speechVolume: 0.6,
+          ipodVolume: 0.5,
+          uiSoundsEnabled: false,
+          terminalSoundsEnabled: false,
+          typingSynthEnabled: true,
+          speechEnabled: true,
+          keepTalkingEnabled: false,
+          ttsModel: "openai",
+          ttsVoice: "alloy",
+          synthPreset: "modern",
+        },
+        ipod: {
+          displayMode: "cover",
+          showLyrics: false,
+          lyricsAlignment: "left",
+          lyricsFont: "serif-red",
+          romanization: {
+            enabled: false,
+            japaneseFurigana: false,
+            japaneseRomaji: false,
+            korean: false,
+            chinese: false,
+            soramimi: false,
+            soramamiTargetLanguage: "zh-TW",
+            pronunciationOnly: false,
+          },
+          lyricsTranslationLanguage: "en",
+          theme: "u2",
+          lcdFilterOn: false,
+        },
+        dock: {
+          pinnedItems: [{ type: "app", id: "finder" }, { type: "app", id: "dashboard" }],
+          scale: 1.2,
+          hiding: true,
+          magnification: false,
+        },
+        dashboard: {
+          widgets: [{ id: "clock", type: "clock", position: { x: 0, y: 0 }, size: { width: 1, height: 1 } }],
+        },
+        sectionUpdatedAt: {
+          theme: "2026-03-14T16:00:01.000Z",
+          language: "2026-03-14T16:00:03.000Z",
+          display: "2026-03-14T16:00:04.000Z",
+          audio: "2026-03-14T16:00:06.000Z",
+          aiModel: "2026-03-14T16:00:03.000Z",
+          ipod: "2026-03-14T16:00:03.000Z",
+          dock: "2026-03-14T16:00:03.000Z",
+          dashboard: "2026-03-14T16:00:03.000Z",
+        },
+      }
+    );
+
+    expect(merged.theme).toBe("xp");
+    expect(merged.display.currentWallpaper).toBe("/wallpapers/local.jpg");
+    expect(merged.language).toBe("ko");
+    expect(merged.audio.masterVolume).toBe(0.9);
+    expect(merged.aiModel).toBe("claude-3-5-sonnet-latest");
+    expect(merged.dock?.scale).toBe(1.2);
+    expect(merged.sectionUpdatedAt?.theme).toBe("2026-03-14T16:00:02.000Z");
+    expect(merged.sectionUpdatedAt?.audio).toBe("2026-03-14T16:00:06.000Z");
   });
 
   test("preserves remote-only individual blob items on upload", () => {
