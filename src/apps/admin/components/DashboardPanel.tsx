@@ -67,11 +67,11 @@ function formatNumber(n: number): string {
 }
 
 function formatDateLabel(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const d = new Date(year, month - 1, day);
   return d.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    timeZone: "UTC",
   });
 }
 
@@ -150,12 +150,22 @@ function StatCard({
   );
 }
 
+const RANGE_OPTIONS = [
+  { days: 1, label: "Today" },
+  { days: 7, label: "7d" },
+  { days: 14, label: "14d" },
+  { days: 30, label: "30d" },
+] as const;
+
 export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
   const { username, isAuthenticated } = useAuth();
   const [data, setData] = useState<AnalyticsDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rangeDays, setRangeDays] = useState(7);
+  const [rangeDays, setRangeDays] = useState(1);
+
+  const isToday = rangeDays === 1;
+  const rangeLabel = isToday ? "Today" : `${rangeDays}d`;
 
   const fetchData = useCallback(async () => {
     if (!username || !isAuthenticated) return;
@@ -209,29 +219,37 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
   const { summary, topEndpoints, statusCodes, aiByUser, aiRateLimits } = data;
   const { totals, days } = summary;
 
-  const todayData = days.length > 0 ? days[days.length - 1] : null;
-  const yesterdayData = days.length > 1 ? days[days.length - 2] : null;
+  const latestDay = days.length > 0 ? days[days.length - 1] : null;
+  const prevDay = days.length > 1 ? days[days.length - 2] : null;
 
   function calcTrend(
-    todayVal: number | undefined,
-    yesterdayVal: number | undefined
+    currentVal: number | undefined,
+    previousVal: number | undefined,
+    label: string = "vs prev day"
   ) {
-    const tv = todayVal ?? 0;
-    const yv = yesterdayVal ?? 0;
-    if (yv === 0)
-      return tv > 0
-        ? { value: 100, label: "vs yesterday" }
-        : { value: 0, label: "vs yesterday" };
+    const cv = currentVal ?? 0;
+    const pv = previousVal ?? 0;
+    if (pv === 0)
+      return cv > 0
+        ? { value: 100, label }
+        : { value: 0, label };
     return {
-      value: Math.round(((tv - yv) / yv) * 100),
-      label: "vs yesterday",
+      value: Math.round(((cv - pv) / pv) * 100),
+      label,
     };
   }
 
+  const kpiVisitors = isToday ? (latestDay?.uniqueVisitors ?? 0) : totals.uniqueVisitors;
+  const kpiCalls = isToday ? (latestDay?.calls ?? 0) : totals.calls;
+  const kpiAI = isToday ? (latestDay?.ai ?? 0) : totals.ai;
+  const kpiErrorDenom = isToday ? (latestDay?.calls ?? 0) : totals.calls;
+  const kpiErrorNum = isToday ? (latestDay?.errors ?? 0) : totals.errors;
   const errorRate =
-    totals.calls > 0
-      ? `${((totals.errors / totals.calls) * 100).toFixed(1)}%`
+    kpiErrorDenom > 0
+      ? `${((kpiErrorNum / kpiErrorDenom) * 100).toFixed(1)}%`
       : "0%";
+
+  const showTrend = !isToday && prevDay != null;
 
   const topEndpointMax = topEndpoints.length > 0 ? topEndpoints[0].count : 1;
 
@@ -241,7 +259,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
         <span className="text-[12px] font-medium">Dashboard</span>
         <div className="flex items-center gap-1">
-          {[7, 14, 30].map((d) => (
+          {RANGE_OPTIONS.map(({ days: d, label }) => (
             <Button
               key={d}
               variant="ghost"
@@ -252,7 +270,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                 rangeDays === d && "bg-neutral-200"
               )}
             >
-              {d}d
+              {label}
             </Button>
           ))}
           <Button
@@ -278,37 +296,34 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-3">
           <StatCard
             label="Visitors"
-            value={formatNumber(todayData?.uniqueVisitors ?? 0)}
-            trend={calcTrend(
-              todayData?.uniqueVisitors,
-              yesterdayData?.uniqueVisitors
-            )}
+            value={formatNumber(kpiVisitors)}
+            trend={showTrend ? calcTrend(latestDay?.uniqueVisitors, prevDay?.uniqueVisitors) : undefined}
           />
           <StatCard
             label="API Calls"
-            value={formatNumber(todayData?.calls ?? 0)}
-            trend={calcTrend(todayData?.calls, yesterdayData?.calls)}
+            value={formatNumber(kpiCalls)}
+            trend={showTrend ? calcTrend(latestDay?.calls, prevDay?.calls) : undefined}
           />
           <StatCard
             label="AI Requests"
-            value={formatNumber(todayData?.ai ?? 0)}
-            trend={calcTrend(todayData?.ai, yesterdayData?.ai)}
+            value={formatNumber(kpiAI)}
+            trend={showTrend ? calcTrend(latestDay?.ai, prevDay?.ai) : undefined}
           />
           <StatCard
             label="Error Rate"
             value={errorRate}
-            trend={calcTrend(todayData?.errors, yesterdayData?.errors)}
+            trend={showTrend ? calcTrend(latestDay?.errors, prevDay?.errors) : undefined}
           />
         </div>
 
         {/* Totals strip */}
         <div className="flex items-center gap-4 px-4 pb-2 text-[10px] text-neutral-400">
           <span>
-            {rangeDays}d totals: {formatNumber(totals.calls)} calls
+            {rangeLabel}{!isToday ? " totals" : ""}: {formatNumber(isToday ? (latestDay?.calls ?? 0) : totals.calls)} calls
           </span>
-          <span>{formatNumber(totals.uniqueVisitors)} visitors</span>
-          <span>{formatNumber(totals.ai)} AI</span>
-          <span>{totals.avgLatencyMs}ms avg</span>
+          <span>{formatNumber(isToday ? (latestDay?.uniqueVisitors ?? 0) : totals.uniqueVisitors)} visitors</span>
+          <span>{formatNumber(isToday ? (latestDay?.ai ?? 0) : totals.ai)} AI</span>
+          <span>{isToday ? (latestDay?.avgLatencyMs ?? 0) : totals.avgLatencyMs}ms avg</span>
         </div>
 
         {/* Charts */}
@@ -387,7 +402,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           <div className="border border-gray-200 rounded bg-white overflow-hidden">
             <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
               <span className="text-[10px] uppercase tracking-wide text-neutral-400">
-                Top Endpoints ({rangeDays}d)
+                Top Endpoints ({rangeLabel})
               </span>
             </div>
             {topEndpoints.length === 0 ? (
