@@ -1181,6 +1181,180 @@ export async function fetchCloudSyncMetadata(
   return merged;
 }
 
+function mergeItemsByIdPreferNewer<T extends { id: string; updatedAt?: number }>(
+  localItems: T[],
+  remoteItems: T[],
+  deletedIds: DeletionMarkerMap
+): T[] {
+  const merged = new Map<string, T>();
+  for (const item of remoteItems) {
+    if (!deletedIds[item.id]) merged.set(item.id, item);
+  }
+  for (const item of localItems) {
+    if (deletedIds[item.id]) continue;
+    const existing = merged.get(item.id);
+    if (
+      !existing ||
+      (item.updatedAt ?? 0) >= (existing.updatedAt ?? 0)
+    ) {
+      merged.set(item.id, item);
+    }
+  }
+  return Array.from(merged.values());
+}
+
+function mergeItemsById<T extends { id: string }>(
+  localItems: T[],
+  remoteItems: T[]
+): T[] {
+  const merged = new Map<string, T>();
+  for (const item of remoteItems) {
+    merged.set(item.id, item);
+  }
+  for (const item of localItems) {
+    merged.set(item.id, item);
+  }
+  return Array.from(merged.values());
+}
+
+function mergeStickiesSnapshots(
+  local: StickiesSnapshotData,
+  remote: StickiesSnapshotData
+): StickiesSnapshotData {
+  const mergedDeleted = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(local.deletedNoteIds),
+    normalizeDeletionMarkerMap(remote.deletedNoteIds)
+  );
+  return {
+    notes: mergeItemsByIdPreferNewer(local.notes, remote.notes, mergedDeleted),
+    deletedNoteIds: mergedDeleted,
+  };
+}
+
+function mergeCalendarSnapshots(
+  local: CalendarSnapshotData,
+  remote: CalendarSnapshotData
+): CalendarSnapshotData {
+  const mergedDeletedEvents = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(local.deletedEventIds),
+    normalizeDeletionMarkerMap(remote.deletedEventIds)
+  );
+  const mergedDeletedCalendars = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(local.deletedCalendarIds),
+    normalizeDeletionMarkerMap(remote.deletedCalendarIds)
+  );
+  const mergedDeletedTodos = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(local.deletedTodoIds),
+    normalizeDeletionMarkerMap(remote.deletedTodoIds)
+  );
+  return {
+    events: mergeItemsByIdPreferNewer(local.events, remote.events, mergedDeletedEvents),
+    calendars: mergeItemsByIdPreferNewer(
+      local.calendars as (CalendarGroup & { updatedAt?: number })[],
+      remote.calendars as (CalendarGroup & { updatedAt?: number })[],
+      mergedDeletedCalendars
+    ) as CalendarGroup[],
+    todos: mergeItemsById(
+      filterDeletedIds(local.todos, mergedDeletedTodos, (t) => t.id),
+      filterDeletedIds(remote.todos, mergedDeletedTodos, (t) => t.id)
+    ),
+    deletedEventIds: mergedDeletedEvents,
+    deletedCalendarIds: mergedDeletedCalendars,
+    deletedTodoIds: mergedDeletedTodos,
+  };
+}
+
+function mergeContactsSnapshots(
+  local: ContactsSnapshotData,
+  remote: ContactsSnapshotData
+): ContactsSnapshotData {
+  const mergedDeleted = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(local.deletedContactIds),
+    normalizeDeletionMarkerMap(remote.deletedContactIds)
+  );
+  return {
+    contacts: mergeItemsByIdPreferNewer(
+      local.contacts,
+      normalizeContacts(remote.contacts),
+      mergedDeleted
+    ),
+    myContactId: local.myContactId ?? remote.myContactId,
+    deletedContactIds: mergedDeleted,
+  };
+}
+
+function mergeSongsSnapshots(
+  local: SongsSnapshotData,
+  remote: SongsSnapshotData
+): SongsSnapshotData {
+  return {
+    tracks: mergeItemsById(local.tracks, remote.tracks),
+    libraryState: local.libraryState === "loaded" || remote.libraryState === "loaded"
+      ? "loaded"
+      : local.libraryState,
+    lastKnownVersion: Math.max(local.lastKnownVersion, remote.lastKnownVersion),
+  };
+}
+
+function mergeVideosSnapshots(
+  local: VideosSnapshotData,
+  remote: VideosSnapshotData
+): VideosSnapshotData {
+  return {
+    videos: mergeItemsById(local.videos, remote.videos),
+  };
+}
+
+function mergeRedisStateConflict(
+  domain: RedisSyncDomain,
+  localData: AnySnapshotData,
+  remoteData: AnySnapshotData,
+  localUpdatedAt: string,
+  remoteUpdatedAt: string
+): AnySnapshotData | null {
+  switch (domain) {
+    case "settings":
+      return mergeSettingsSnapshotData(
+        localData as SettingsSnapshotData,
+        remoteData as SettingsSnapshotData,
+        localUpdatedAt,
+        remoteUpdatedAt
+      );
+    case "files-metadata":
+      return mergeFilesMetadataSnapshots(
+        localData as FilesMetadataSnapshotData,
+        remoteData as FilesMetadataSnapshotData
+      );
+    case "stickies":
+      return mergeStickiesSnapshots(
+        localData as StickiesSnapshotData,
+        remoteData as StickiesSnapshotData
+      );
+    case "calendar":
+      return mergeCalendarSnapshots(
+        localData as CalendarSnapshotData,
+        remoteData as CalendarSnapshotData
+      );
+    case "contacts":
+      return mergeContactsSnapshots(
+        localData as ContactsSnapshotData,
+        remoteData as ContactsSnapshotData
+      );
+    case "songs":
+      return mergeSongsSnapshots(
+        localData as SongsSnapshotData,
+        remoteData as SongsSnapshotData
+      );
+    case "videos":
+      return mergeVideosSnapshots(
+        localData as VideosSnapshotData,
+        remoteData as VideosSnapshotData
+      );
+    default:
+      return null;
+  }
+}
+
 async function uploadRedisStateDomain(
   domain: RedisSyncDomain,
   _auth: AuthContext
@@ -1189,24 +1363,17 @@ async function uploadRedisStateDomain(
   let data = envelope.data;
   let baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
 
-  if (domain === "files-metadata") {
-    const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
-    if (remoteSnapshot?.data) {
-      data = mergeFilesMetadataSnapshots(
-        envelope.data as FilesMetadataSnapshotData,
-        remoteSnapshot.data as FilesMetadataSnapshotData
-      );
-      baseMetadata = remoteSnapshot.metadata;
-    }
-  } else if (domain === "settings") {
-    const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
-    if (remoteSnapshot?.data) {
-      data = mergeSettingsSnapshotData(
-        envelope.data as SettingsSnapshotData,
-        remoteSnapshot.data as SettingsSnapshotData,
-        envelope.updatedAt,
-        remoteSnapshot.metadata.updatedAt
-      );
+  const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
+  if (remoteSnapshot?.data) {
+    const merged = mergeRedisStateConflict(
+      domain,
+      envelope.data,
+      remoteSnapshot.data,
+      envelope.updatedAt,
+      remoteSnapshot.metadata.updatedAt
+    );
+    if (merged) {
+      data = merged;
       baseMetadata = remoteSnapshot.metadata;
     }
   }
@@ -1236,27 +1403,23 @@ async function uploadRedisStateDomain(
 
   let response = await sendStateUpload(data, envelope.updatedAt, baseMetadata);
 
-  if (
-    response.status === 409 &&
-    (domain === "files-metadata" || domain === "settings")
-  ) {
+  if (response.status === 409) {
     const latestRemote = await fetchRedisStateDomainSnapshot(domain, _auth);
     if (latestRemote?.data) {
-      response = await sendStateUpload(
-        domain === "files-metadata"
-          ? mergeFilesMetadataSnapshots(
-              envelope.data as FilesMetadataSnapshotData,
-              latestRemote.data as FilesMetadataSnapshotData
-            )
-          : mergeSettingsSnapshotData(
-              envelope.data as SettingsSnapshotData,
-              latestRemote.data as SettingsSnapshotData,
-              envelope.updatedAt,
-              latestRemote.metadata.updatedAt
-            ),
-        new Date().toISOString(),
-        latestRemote.metadata
+      const merged = mergeRedisStateConflict(
+        domain,
+        envelope.data,
+        latestRemote.data,
+        envelope.updatedAt,
+        latestRemote.metadata.updatedAt
       );
+      if (merged) {
+        response = await sendStateUpload(
+          merged,
+          new Date().toISOString(),
+          latestRemote.metadata
+        );
+      }
     }
   }
 
