@@ -11,6 +11,10 @@ import {
   putStorageItem,
   storageItemExists,
 } from "@/utils/opfsStorage";
+import {
+  getNextSyncRevision,
+  type CloudSyncRevision,
+} from "@/utils/cloudSyncRevision";
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {
@@ -37,6 +41,8 @@ export interface FileSystemItem {
     // Window dimensions
     windowWidth?: number; // Window width when last opened
     windowHeight?: number; // Window height when last opened
+    // Sync revision metadata
+    syncRevision?: CloudSyncRevision;
     // Alias/shortcut properties
     aliasTarget?: string; // Path or appId that the alias points to
     aliasType?: "file" | "app"; // Type of alias - file/app/applet or application
@@ -442,7 +448,7 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 10; // Update Applets folder icon
+const STORE_VERSION = 11; // Add sync revision metadata support
 const STORE_NAME = "ryos:files";
 
 const initialFilesData: FilesStoreState = {
@@ -467,6 +473,8 @@ export const useFilesStore = create<FilesStoreState>()(
           // Set timestamps
           createdAt: itemData.createdAt || now,
           modifiedAt: itemData.modifiedAt || now,
+          syncRevision:
+            itemData.syncRevision || getNextSyncRevision("files-metadata"),
         };
         useCloudSyncStore
           .getState()
@@ -545,6 +553,7 @@ export const useFilesStore = create<FilesStoreState>()(
           const newItems = { ...state.items };
           const itemsToDelete = [path];
           const deletedContentPaths: string[] = []; // Track paths of deleted file content
+          const syncRevision = getNextSyncRevision("files-metadata");
 
           // If it's a directory, find all children
           if (itemToRemove.isDirectory) {
@@ -576,6 +585,7 @@ export const useFilesStore = create<FilesStoreState>()(
                 status: "trashed",
                 originalPath: p,
                 deletedAt: Date.now(),
+                syncRevision,
               };
             }
           });
@@ -611,6 +621,7 @@ export const useFilesStore = create<FilesStoreState>()(
 
           const newItems = { ...state.items };
           const itemsToRestore = [path];
+          const syncRevision = getNextSyncRevision("files-metadata");
 
           // If it's a directory, find all children marked as trashed *within this original path*
           if (itemToRestore.isDirectory) {
@@ -632,6 +643,7 @@ export const useFilesStore = create<FilesStoreState>()(
                 status: "active",
                 originalPath: undefined,
                 deletedAt: undefined,
+                syncRevision,
               };
             }
           });
@@ -690,9 +702,15 @@ export const useFilesStore = create<FilesStoreState>()(
           }
 
           const newItems = { ...state.items };
+          const syncRevision = getNextSyncRevision("files-metadata");
           delete newItems[oldPath]; // Remove old entry
 
-          const updatedItem = { ...itemToRename, path: newPath, name: newName };
+          const updatedItem = {
+            ...itemToRename,
+            path: newPath,
+            name: newName,
+            syncRevision,
+          };
           newItems[newPath] = updatedItem;
 
           // If it's a directory, rename all children paths (including trashed ones within)
@@ -710,6 +728,7 @@ export const useFilesStore = create<FilesStoreState>()(
                   ...childItem,
                   path: childNewPath,
                   originalPath: updatedOriginalPath,
+                  syncRevision,
                 };
               }
             });
@@ -763,12 +782,17 @@ export const useFilesStore = create<FilesStoreState>()(
           }
 
           const newItems = { ...state.items };
+          const syncRevision = getNextSyncRevision("files-metadata");
 
           // Remove source entry
           delete newItems[sourcePath];
 
           // Add destination entry
-          const movedItem = { ...sourceItem, path: destinationPath };
+          const movedItem = {
+            ...sourceItem,
+            path: destinationPath,
+            syncRevision,
+          };
           newItems[destinationPath] = movedItem;
 
           // If it's a directory, move all its children
@@ -784,6 +808,7 @@ export const useFilesStore = create<FilesStoreState>()(
                 newItems[childNewPath] = {
                   ...childItem,
                   path: childNewPath,
+                  syncRevision,
                 };
               }
             });
@@ -825,6 +850,8 @@ export const useFilesStore = create<FilesStoreState>()(
                 ...existingItem,
                 ...updates,
                 modifiedAt: Date.now(),
+                syncRevision:
+                  updates.syncRevision || getNextSyncRevision("files-metadata"),
               },
             },
           };
@@ -911,6 +938,7 @@ export const useFilesStore = create<FilesStoreState>()(
             status: "active",
             createdAt: now,
             modifiedAt: now,
+            syncRevision: getNextSyncRevision("files-metadata"),
           };
 
           return {
@@ -1156,6 +1184,7 @@ export const useFilesStore = create<FilesStoreState>()(
                   status: "active",
                   createdAt: now,
                   modifiedAt: now,
+                  syncRevision: getNextSyncRevision("files-metadata"),
                   hiddenOnThemes: shortcut.hiddenOnThemes.length > 0 ? shortcut.hiddenOnThemes as OsThemeId[] : undefined,
                 };
 
@@ -1277,6 +1306,10 @@ export const useFilesStore = create<FilesStoreState>()(
           // Version 8 doesn't change the data structure,
           // but we bump it to trigger the one-time sync in useFileSystem
           // which will calculate actual file sizes and set proper timestamps
+          return persistedState;
+        }
+
+        if (version < 11) {
           return persistedState;
         }
 
