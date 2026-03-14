@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics";
+import { CONTACTS_ANALYTICS } from "@/utils/analytics";
 import { useShallow } from "zustand/react/shallow";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -137,6 +139,7 @@ export function useContactsLogic() {
     setSelectedGroupId("all");
     const id = addContact({ source: "manual" });
     setSelectedContactId(id);
+    track(CONTACTS_ANALYTICS.CONTACT_CREATE);
   };
 
   const handleDeleteSelectedContact = () => {
@@ -144,6 +147,7 @@ export function useContactsLogic() {
       return;
     }
     deleteContact(selectedContact.id);
+    track(CONTACTS_ANALYTICS.CONTACT_DELETE);
     toast.success(
       t("apps.contacts.messages.deleted", {
         name: selectedContact.displayName,

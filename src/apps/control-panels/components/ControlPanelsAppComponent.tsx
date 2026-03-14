@@ -47,6 +47,8 @@ import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useRealtimeConnectionStatus } from "@/hooks/useRealtimeConnectionStatus";
+import { track } from "@vercel/analytics";
+import { SETTINGS_ANALYTICS } from "@/utils/analytics";
 
 // Version display component that reads from app store
 function VersionDisplay() {
@@ -516,7 +518,10 @@ export function ControlPanelsAppComponent({
                   </div>
                   <Select
                     value={currentTheme}
-                    onValueChange={(value) => setTheme(value as OsThemeId)}
+                    onValueChange={(value) => {
+                      setTheme(value as OsThemeId);
+                      track(SETTINGS_ANALYTICS.THEME_CHANGE, { theme: value });
+                    }}
                   >
                     <SelectTrigger className="w-[120px] flex-shrink-0">
                       <SelectValue placeholder={t("apps.control-panels.select")}>

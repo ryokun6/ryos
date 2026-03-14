@@ -8,6 +8,8 @@ import { usePaintStore } from "@/stores/usePaintStore";
 import type { Filter } from "../components/PaintFiltersMenu";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics";
+import { PAINT_ANALYTICS } from "@/utils/analytics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { helpItems } from "..";
@@ -270,6 +272,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
       setLastFilePath(filePath);
       setHasUnsavedChanges(false);
       setIsSaveDialogOpen(false);
+      track(PAINT_ANALYTICS.FILE_SAVE);
       toast.success("Image saved successfully");
     } catch (err) {
       console.error("Error saving file:", err);
@@ -298,6 +301,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
       document.body.removeChild(link);
 
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      track(PAINT_ANALYTICS.FILE_EXPORT);
     } catch (err) {
       console.error("Error exporting file:", err);
     }

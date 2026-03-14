@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { track } from "@vercel/analytics";
+import { MINESWEEPER_ANALYTICS } from "@/utils/analytics";
 import { helpItems } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -170,6 +172,7 @@ export function useMinesweeperLogic() {
       if (allNonMinesRevealed) {
         playGameWin();
         setGameWon(true);
+        track(MINESWEEPER_ANALYTICS.GAME_WIN);
       }
     },
     [playGameWin]
@@ -230,6 +233,7 @@ export function useMinesweeperLogic() {
             playMineHit();
             revealAllMines(newBoard);
             setGameOver(true);
+            track(MINESWEEPER_ANALYTICS.GAME_LOSE);
             return;
           }
         }
@@ -242,6 +246,7 @@ export function useMinesweeperLogic() {
         playMineHit();
         revealAllMines(newBoard);
         setGameOver(true);
+        track(MINESWEEPER_ANALYTICS.GAME_LOSE);
         return;
       }
 
@@ -286,6 +291,7 @@ export function useMinesweeperLogic() {
     setGameWon(false);
     setIsNewGameDialogOpen(false);
     setRemainingMines(MINES_COUNT);
+    track(MINESWEEPER_ANALYTICS.GAME_START);
   }, [initializeBoard]);
 
   const currentTheme = useThemeStore((state) => state.current);

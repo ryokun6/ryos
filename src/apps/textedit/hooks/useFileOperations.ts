@@ -1,5 +1,7 @@
 import { useCallback } from "react";
 import { Editor } from "@tiptap/core";
+import { track } from "@vercel/analytics";
+import { TEXTEDIT_ANALYTICS } from "@/utils/analytics";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import {
   htmlToMarkdown,
@@ -61,7 +63,7 @@ export function useFileOperations({
       });
 
       onSaveSuccess?.(currentFilePath);
-      console.log("[TextEdit] File saved successfully:", currentFilePath);
+      track(TEXTEDIT_ANALYTICS.FILE_SAVE);
     } catch (error) {
       console.error("[TextEdit] Failed to save file:", error);
       throw error;
@@ -91,7 +93,7 @@ export function useFileOperations({
         });
 
         onSaveSuccess?.(filePath);
-        console.log("[TextEdit] File saved successfully:", filePath);
+        track(TEXTEDIT_ANALYTICS.FILE_SAVE);
         return filePath;
       } catch (error) {
         console.error("[TextEdit] Failed to save file:", error);
@@ -222,6 +224,7 @@ export function useFileOperations({
 
       editor.commands.setContent(editorContent, false);
       onLoadSuccess?.(path);
+      track(TEXTEDIT_ANALYTICS.FILE_OPEN);
     },
     [editor, onLoadSuccess]
   );

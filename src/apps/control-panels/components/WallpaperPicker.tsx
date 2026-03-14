@@ -12,6 +12,8 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import type { DisplayMode } from "@/utils/displayMode";
 import { Plus, Trash } from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import { track } from "@vercel/analytics";
+import { SETTINGS_ANALYTICS } from "@/utils/analytics";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
 import { useTranslation } from "react-i18next";
@@ -261,6 +263,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const handleWallpaperSelect = (path: string) => {
     setWallpaper(path);
     playClick();
+    track(SETTINGS_ANALYTICS.WALLPAPER_CHANGE, { wallpaper: path });
     if (onSelect) {
       onSelect(path);
     }
