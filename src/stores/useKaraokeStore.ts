@@ -33,6 +33,12 @@ interface KaraokeData {
   elapsedTime: number;
   /** Total duration of current track in seconds (not persisted, synced from ReactPlayer) */
   totalTime: number;
+  /** Voice ducking: auto-reduce volume when microphone detects singing */
+  voiceDuckingEnabled: boolean;
+  /** 0–100; higher = more sensitive (triggers on quieter voice). Default 50 */
+  voiceDuckingSensitivity: number;
+  /** 0–100; how much to reduce playback volume when voice detected. Default 70 */
+  voiceDuckingAmount: number;
 }
 
 export interface KaraokeState extends KaraokeData {
@@ -53,6 +59,10 @@ export interface KaraokeState extends KaraokeData {
   setFullScreen: (fullScreen: boolean) => void;
   setElapsedTime: (time: number) => void;
   setTotalTime: (time: number) => void;
+  toggleVoiceDucking: () => void;
+  setVoiceDuckingEnabled: (enabled: boolean) => void;
+  setVoiceDuckingSensitivity: (sensitivity: number) => void;
+  setVoiceDuckingAmount: (amount: number) => void;
 }
 
 const initialKaraokeData: KaraokeData = {
@@ -65,9 +75,12 @@ const initialKaraokeData: KaraokeData = {
   isFullScreen: false,
   elapsedTime: 0,
   totalTime: 0,
+  voiceDuckingEnabled: false,
+  voiceDuckingSensitivity: 50,
+  voiceDuckingAmount: 70,
 };
 
-const CURRENT_KARAOKE_STORE_VERSION = 2; // Updated for currentSongId
+const CURRENT_KARAOKE_STORE_VERSION = 3; // Updated for voice ducking
 
 export const useKaraokeStore = create<KaraokeState>()(
   persist(
@@ -198,6 +211,14 @@ export const useKaraokeStore = create<KaraokeState>()(
 
       setElapsedTime: (time) => set({ elapsedTime: time }),
       setTotalTime: (time) => set({ totalTime: time }),
+
+      toggleVoiceDucking: () =>
+        set((state) => ({ voiceDuckingEnabled: !state.voiceDuckingEnabled })),
+      setVoiceDuckingEnabled: (enabled) => set({ voiceDuckingEnabled: enabled }),
+      setVoiceDuckingSensitivity: (sensitivity) =>
+        set({ voiceDuckingSensitivity: Math.max(0, Math.min(100, sensitivity)) }),
+      setVoiceDuckingAmount: (amount) =>
+        set({ voiceDuckingAmount: Math.max(0, Math.min(100, amount)) }),
     }),
     {
       name: "ryos:karaoke",
@@ -208,20 +229,33 @@ export const useKaraokeStore = create<KaraokeState>()(
         loopAll: state.loopAll,
         isShuffled: state.isShuffled,
         isFullScreen: state.isFullScreen,
-        // Don't persist isPlaying or playbackHistory
+        voiceDuckingEnabled: state.voiceDuckingEnabled,
+        voiceDuckingSensitivity: state.voiceDuckingSensitivity,
+        voiceDuckingAmount: state.voiceDuckingAmount,
       }),
       migrate: (persistedState, version) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const state = persistedState as any;
-        if (version < CURRENT_KARAOKE_STORE_VERSION) {
+        if (version < 2) {
           console.log(
             `Migrating Karaoke store from version ${version} to ${CURRENT_KARAOKE_STORE_VERSION}`
           );
           return {
             ...state,
-            currentSongId: null, // Reset - will pick first track
+            currentSongId: null,
             isPlaying: false,
             playbackHistory: [],
+            voiceDuckingEnabled: false,
+            voiceDuckingSensitivity: 50,
+            voiceDuckingAmount: 70,
+          };
+        }
+        if (version < 3) {
+          return {
+            ...state,
+            voiceDuckingEnabled: state.voiceDuckingEnabled ?? false,
+            voiceDuckingSensitivity: state.voiceDuckingSensitivity ?? 50,
+            voiceDuckingAmount: state.voiceDuckingAmount ?? 70,
           };
         }
         return state;

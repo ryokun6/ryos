@@ -1845,9 +1845,21 @@
         "repeatAll": "Repeat All",
         "repeatOne": "Repeat One",
         "showLyrics": "Show Lyrics",
+        "voiceDucking": "Voice Ducking",
+        "voiceDuckingEnabled": "Enable",
+        "sensitivity": "Sensitivity",
+        "sensitivityDecrease": "Less Sensitive",
+        "sensitivityIncrease": "More Sensitive",
+        "duckAmount": "Duck Amount",
+        "duckLess": "Duck Less",
+        "duckMore": "Duck More",
         "karaokeHelp": "Karaoke Help",
         "shareApp": "Share App...",
         "aboutKaraoke": "About Karaoke"
+      },
+      "voiceDucking": {
+        "active": "Ducking",
+        "listening": "Listening"
       },
       "help": {
         "addSearchSongs": {
@@ -1870,9 +1882,13 @@
           "title": "Works with Chats",
           "description": "Ask Ryo to play songs, control playback, or adjust settings via chat."
         },
+        "voiceDuckingHelp": {
+          "title": "Voice Ducking",
+          "description": "Auto-lowers music when you sing. Toggle with D key or Controls menu."
+        },
         "keyboardShortcuts": {
           "title": "Keyboard Shortcuts",
-          "description": "Space to play/pause, arrow keys to seek and change tracks."
+          "description": "Space to play/pause, arrow keys to seek and change tracks, D for voice ducking."
         }
       },
       "lyrics": {

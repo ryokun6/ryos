@@ -25,9 +25,14 @@ export const helpItems = [
     description: "Ask Ryo to play songs, control playback, or adjust settings via chat.",
   },
   {
+    icon: "🎤",
+    title: "Voice Ducking",
+    description: "Auto-lowers music when you sing. Toggle with D key or Controls menu.",
+  },
+  {
     icon: "⌨️",
     title: "Keyboard Shortcuts",
-    description: "Space to play/pause, arrow keys to seek and change tracks.",
+    description: "Space to play/pause, arrow keys to seek and change tracks, D for voice ducking.",
   },
 ];
 

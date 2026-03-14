@@ -111,6 +111,15 @@ export function KaraokeAppComponent({
     statusMessage,
     showControls,
     ipodVolume,
+    duckingMultiplier,
+    isVoiceDetected,
+    isVoiceDuckingListening,
+    voiceDuckingEnabled,
+    voiceDuckingSensitivity,
+    voiceDuckingAmount,
+    toggleVoiceDucking,
+    setVoiceDuckingSensitivity,
+    setVoiceDuckingAmount,
     userHasInteractedRef,
     currentTrack,
     lyricsSourceOverride,
@@ -230,6 +239,14 @@ export function KaraokeAppComponent({
       onLeaveListenSession={handleLeaveListenSession}
       isInListenSession={!!listenSession}
       isListenSessionHost={isListenSessionHost}
+      voiceDuckingEnabled={voiceDuckingEnabled}
+      onToggleVoiceDucking={toggleVoiceDucking}
+      voiceDuckingSensitivity={voiceDuckingSensitivity}
+      onSensitivityChange={setVoiceDuckingSensitivity}
+      voiceDuckingAmount={voiceDuckingAmount}
+      onAmountChange={setVoiceDuckingAmount}
+      isVoiceDetected={isVoiceDetected}
+      isVoiceDuckingListening={isVoiceDuckingListening}
     />
   );
   const shouldAnimateVisuals = isPlaying && (isForeground ?? true);
@@ -355,7 +372,7 @@ export function KaraokeAppComponent({
                   playing={isPlaying && !isFullScreen}
                   width="100%"
                   height="100%"
-                  volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                  volume={ipodVolume * useAudioSettingsStore.getState().masterVolume * duckingMultiplier}
                   loop={loopCurrent}
                   onEnded={handleTrackEnd}
                   onProgress={handleProgress}
@@ -555,6 +572,32 @@ export function KaraokeAppComponent({
                     style={{ WebkitTextStroke: "5px black", textShadow: "none" }}
                   >
                     {statusMessage}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Voice ducking indicator */}
+          <AnimatePresence>
+            {isVoiceDuckingListening && (
+              <motion.div
+                className="absolute top-8 left-6 z-40 pointer-events-none"
+                style={{ marginTop: statusMessage ? "2rem" : 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="relative">
+                  <div className={`font-chicago text-sm relative z-10 transition-colors duration-150 ${isVoiceDetected ? "text-green-400" : "text-white/50"}`}>
+                    🎤 {isVoiceDetected ? t("apps.karaoke.voiceDucking.active", "Ducking") : t("apps.karaoke.voiceDucking.listening", "Listening")}
+                  </div>
+                  <div
+                    className="font-chicago text-sm text-black absolute inset-0"
+                    style={{ WebkitTextStroke: "3px black", textShadow: "none" }}
+                  >
+                    🎤 {isVoiceDetected ? t("apps.karaoke.voiceDucking.active", "Ducking") : t("apps.karaoke.voiceDucking.listening", "Listening")}
                   </div>
                 </div>
               </motion.div>
@@ -849,7 +892,7 @@ export function KaraokeAppComponent({
                           controls
                           width="100%"
                           height="100%"
-                          volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                          volume={ipodVolume * useAudioSettingsStore.getState().masterVolume * duckingMultiplier}
                           loop={loopCurrent}
                           onEnded={handleTrackEnd}
                           onProgress={handleProgress}

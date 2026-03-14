@@ -63,6 +63,15 @@ interface KaraokeMenuBarProps {
   // Tracks
   tracks: Track[];
   currentIndex: number;
+  // Voice ducking
+  voiceDuckingEnabled: boolean;
+  onToggleVoiceDucking: () => void;
+  voiceDuckingSensitivity: number;
+  onSensitivityChange: (value: number) => void;
+  voiceDuckingAmount: number;
+  onAmountChange: (value: number) => void;
+  isVoiceDetected: boolean;
+  isVoiceDuckingListening: boolean;
 }
 
 export function KaraokeMenuBar({
@@ -98,6 +107,14 @@ export function KaraokeMenuBar({
   onToggleCoverFlow,
   tracks,
   currentIndex,
+  voiceDuckingEnabled,
+  onToggleVoiceDucking,
+  voiceDuckingSensitivity,
+  onSensitivityChange,
+  voiceDuckingAmount,
+  onAmountChange,
+  isVoiceDetected,
+  isVoiceDuckingListening,
 }: KaraokeMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -334,6 +351,58 @@ export function KaraokeMenuBar({
           >
             {t("apps.karaoke.menu.repeatOne")}
           </MenubarCheckboxItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("apps.karaoke.menu.voiceDucking", "Voice Ducking")}
+              {isVoiceDuckingListening && isVoiceDetected && " 🎤"}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0 min-w-[180px]">
+              <MenubarCheckboxItem
+                checked={voiceDuckingEnabled}
+                onCheckedChange={onToggleVoiceDucking}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.karaoke.menu.voiceDuckingEnabled", "Enable")}
+              </MenubarCheckboxItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <div className="px-3 py-1 text-xs text-muted-foreground">
+                {t("apps.karaoke.menu.sensitivity", "Sensitivity")}: {voiceDuckingSensitivity}%
+              </div>
+              <MenubarItem
+                className="text-md h-6 px-3"
+                disabled={!voiceDuckingEnabled}
+                onClick={() => onSensitivityChange(Math.max(0, voiceDuckingSensitivity - 10))}
+              >
+                {t("apps.karaoke.menu.sensitivityDecrease", "Less Sensitive")}
+              </MenubarItem>
+              <MenubarItem
+                className="text-md h-6 px-3"
+                disabled={!voiceDuckingEnabled}
+                onClick={() => onSensitivityChange(Math.min(100, voiceDuckingSensitivity + 10))}
+              >
+                {t("apps.karaoke.menu.sensitivityIncrease", "More Sensitive")}
+              </MenubarItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <div className="px-3 py-1 text-xs text-muted-foreground">
+                {t("apps.karaoke.menu.duckAmount", "Duck Amount")}: {voiceDuckingAmount}%
+              </div>
+              <MenubarItem
+                className="text-md h-6 px-3"
+                disabled={!voiceDuckingEnabled}
+                onClick={() => onAmountChange(Math.max(0, voiceDuckingAmount - 10))}
+              >
+                {t("apps.karaoke.menu.duckLess", "Duck Less")}
+              </MenubarItem>
+              <MenubarItem
+                className="text-md h-6 px-3"
+                disabled={!voiceDuckingEnabled}
+                onClick={() => onAmountChange(Math.min(100, voiceDuckingAmount + 10))}
+              >
+                {t("apps.karaoke.menu.duckMore", "Duck More")}
+              </MenubarItem>
+            </MenubarSubContent>
+          </MenubarSub>
         </MenubarContent>
       </MenubarMenu>
 
