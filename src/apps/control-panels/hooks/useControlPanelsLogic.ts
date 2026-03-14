@@ -809,7 +809,7 @@ export function useControlPanelsLogic({
             username,
             isAuthenticated,
           });
-          syncStore.markUploadSuccess(domain, metadata.updatedAt);
+          syncStore.markUploadSuccess(domain, metadata);
           syncStore.updateRemoteMetadataForDomain(domain, metadata);
         } catch (error) {
           const message =
@@ -870,7 +870,7 @@ export function useControlPanelsLogic({
             username,
             isAuthenticated,
           });
-          syncStore.markDownloadSuccess(domain, metadata.updatedAt);
+          syncStore.markDownloadSuccess(domain, metadata);
           syncStore.updateRemoteMetadataForDomain(domain, metadata);
           appliedCount++;
         } catch (error) {

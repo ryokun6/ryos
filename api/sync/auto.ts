@@ -18,6 +18,15 @@ import {
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import {
+  advanceCloudSyncVersion,
+  assessCloudSyncWrite,
+  createSyntheticLegacySyncVersion,
+  normalizeCloudSyncVersionState,
+  normalizeCloudSyncWriteVersion,
+  type CloudSyncVersionState,
+  type CloudSyncWriteVersion,
+} from "../../src/utils/cloudSyncVersion.js";
+import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "../../src/utils/cloudSyncDeletionMarkers.js";
@@ -41,6 +50,7 @@ interface PersistedAutoSyncDomainMetadata {
   createdAt: string;
   items?: Record<string, PersistedAutoSyncItemMetadata>;
   deletedItems?: DeletionMarkerMap;
+  syncVersion?: CloudSyncVersionState | null;
 }
 
 type PersistedAutoSyncItemMetadata = CloudSyncBlobItemMetadata;
@@ -59,6 +69,7 @@ interface SaveAutoSyncMetadataBody {
   totalSize?: number;
   items?: Record<string, PersistedAutoSyncItemMetadata>;
   deletedItems?: DeletionMarkerMap;
+  syncVersion?: CloudSyncWriteVersion;
 }
 
 function metaKey(username: string) {
@@ -97,6 +108,7 @@ function normalizePersistedItemMetadata(
     size: candidate.size,
     storageUrl,
     blobUrl: storageUrl,
+    syncVersion: normalizeCloudSyncVersionState(candidate.syncVersion),
   };
 }
 
@@ -155,6 +167,9 @@ async function readPersistedMetadata(
         Number.isFinite(candidate.totalSize)
           ? candidate.totalSize
           : Object.values(normalizedItems).reduce((sum, item) => sum + item.size, 0),
+      syncVersion:
+        normalizeCloudSyncVersionState(candidate.syncVersion) ||
+        createSyntheticLegacySyncVersion(),
       ...(isIndividualBlobSyncDomain(domain)
         ? { items: normalizedItems, deletedItems: normalizedDeletedItems }
         : {}),
@@ -240,16 +255,54 @@ async function handleSaveMetadata(
     return;
   }
 
+  const writeSyncVersion = normalizeCloudSyncWriteVersion(body.syncVersion);
+  if (!writeSyncVersion) {
+    res.status(400).json({
+      error: "Missing or invalid syncVersion payload",
+    });
+    return;
+  }
+
   try {
     const existing = await readPersistedMetadata(redis, username);
     const previous = existing[body.domain];
+    const previousSyncVersion =
+      previous?.syncVersion || (previous ? createSyntheticLegacySyncVersion() : null);
+    const writeAssessment = assessCloudSyncWrite(
+      previousSyncVersion,
+      writeSyncVersion
+    );
+    if (writeAssessment.duplicate) {
+      res.status(200).json({
+        ok: true,
+        domain: body.domain,
+        metadata: previous
+          ? {
+              updatedAt: previous.updatedAt,
+              version: previous.version,
+              totalSize: previous.totalSize,
+              createdAt: previous.createdAt,
+              syncVersion: previous.syncVersion,
+            }
+          : null,
+        duplicate: true,
+      });
+      return;
+    }
+
     const createdAt = previous?.createdAt || new Date().toISOString();
     const legacyStorageUrl = getStoredLocation(body);
+    const nextSyncVersion = advanceCloudSyncVersion(
+      previousSyncVersion,
+      writeSyncVersion
+    );
 
     if (body.items) {
       const previousItems = previous?.items ?? {};
       const deletedItems = normalizeDeletionMarkerMap(body.deletedItems);
-      const nextItems: Record<string, PersistedAutoSyncItemMetadata> = {};
+      const nextItems: Record<string, PersistedAutoSyncItemMetadata> =
+        writeAssessment.canFastForward ? {} : { ...previousItems };
+      const conflictingKeys = new Set<string>();
 
       for (const [itemKey, itemValue] of Object.entries(body.items)) {
         const storageUrl = getStoredLocation(itemValue);
@@ -280,6 +333,11 @@ async function handleSaveMetadata(
           continue;
         }
 
+        if (previousItem && writeAssessment.hasConflict) {
+          conflictingKeys.add(itemKey);
+          continue;
+        }
+
         const objectInfo = await headStoredObject(storageUrl).catch(() => null);
         if (!objectInfo) {
           res.status(400).json({
@@ -294,7 +352,36 @@ async function handleSaveMetadata(
           size: itemValue.size || objectInfo.size,
           storageUrl,
           blobUrl: storageUrl,
+          syncVersion: normalizeCloudSyncVersionState(itemValue.syncVersion),
         };
+      }
+
+      if (writeAssessment.hasConflict) {
+        for (const [itemKey] of Object.entries(previousItems)) {
+          if (itemKey in body.items || deletedItems[itemKey]) {
+            if (!(itemKey in body.items)) {
+              conflictingKeys.add(itemKey);
+            }
+            continue;
+          }
+          nextItems[itemKey] = previousItems[itemKey];
+        }
+      }
+
+      if (conflictingKeys.size > 0 && previous) {
+        res.status(409).json({
+          error: `Cloud sync conflict for ${body.domain}. Download remote changes before replacing ${Array.from(conflictingKeys).join(", ")}.`,
+          code: "sync_conflict",
+          conflictKeys: Array.from(conflictingKeys),
+          metadata: {
+            updatedAt: previous.updatedAt,
+            version: previous.version,
+            totalSize: previous.totalSize,
+            createdAt: previous.createdAt,
+            syncVersion: previous.syncVersion,
+          },
+        });
+        return;
       }
 
       const nextStorageUrls = new Set(
@@ -334,8 +421,24 @@ async function handleSaveMetadata(
         createdAt,
         items: nextItems,
         deletedItems,
+        syncVersion: nextSyncVersion,
       };
     } else {
+      if (writeAssessment.hasConflict && previous) {
+        res.status(409).json({
+          error: `Cloud sync conflict for ${body.domain}. Download remote changes before replacing this blob.`,
+          code: "sync_conflict",
+          metadata: {
+            updatedAt: previous.updatedAt,
+            version: previous.version,
+            totalSize: previous.totalSize,
+            createdAt: previous.createdAt,
+            syncVersion: previous.syncVersion,
+          },
+        });
+        return;
+      }
+
       if (!legacyStorageUrl) {
         res.status(400).json({
           error: "Missing required fields: domain, storageUrl, updatedAt",
@@ -378,6 +481,7 @@ async function handleSaveMetadata(
         storageUrl: legacyStorageUrl,
         blobUrl: legacyStorageUrl,
         createdAt,
+        syncVersion: nextSyncVersion,
       };
     }
 
@@ -388,6 +492,7 @@ async function handleSaveMetadata(
       const payload = {
         domain: body.domain,
         updatedAt: existing[body.domain]!.updatedAt,
+        syncVersion: existing[body.domain]!.syncVersion,
         ...(sourceSessionId && { sourceSessionId }),
       };
       await triggerRealtimeEvent(channel, "domain-updated", payload);
@@ -404,6 +509,7 @@ async function handleSaveMetadata(
         version: saved.version,
         totalSize: saved.totalSize,
         createdAt: saved.createdAt,
+        syncVersion: saved.syncVersion,
       },
     });
   } catch (error) {
@@ -486,6 +592,8 @@ async function handleDomainDownload(
           totalSize:
             entry?.totalSize || Object.values(items).reduce((sum, item) => sum + item.size, 0),
           createdAt: entry?.createdAt || new Date(0).toISOString(),
+          syncVersion:
+            entry?.syncVersion || createSyntheticLegacySyncVersion(),
         },
       });
       return;
@@ -519,6 +627,7 @@ async function handleDomainDownload(
         version: entry.version,
         totalSize: entry.totalSize || objectInfo.size,
         createdAt: entry.createdAt,
+        syncVersion: entry.syncVersion,
       },
     });
   } catch (error) {

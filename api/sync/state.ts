@@ -15,6 +15,15 @@ import {
   type CloudSyncDomainMetadata,
   type RedisSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
+import {
+  advanceCloudSyncVersion,
+  assessCloudSyncWrite,
+  createSyntheticLegacySyncVersion,
+  normalizeCloudSyncVersionState,
+  normalizeCloudSyncWriteVersion,
+  type CloudSyncVersionState,
+  type CloudSyncWriteVersion,
+} from "../../src/utils/cloudSyncVersion.js";
 import { isSerializedContact } from "../../src/utils/contacts.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
@@ -33,6 +42,7 @@ interface PersistedRedisStateDomain {
   updatedAt: string;
   version: number;
   createdAt: string;
+  syncVersion?: CloudSyncVersionState | null;
 }
 
 interface PutStateBody {
@@ -40,6 +50,7 @@ interface PutStateBody {
   data?: unknown;
   updatedAt?: string;
   version?: number;
+  syncVersion?: CloudSyncWriteVersion;
 }
 
 function isContactsSnapshotData(value: unknown): value is { contacts: unknown[] } {
@@ -63,6 +74,7 @@ interface PersistedMetaEntry {
   updatedAt: string;
   version: number;
   createdAt: string;
+  syncVersion?: CloudSyncVersionState | null;
 }
 
 interface PersistedAutoSyncDomainMetadata extends PersistedMetaEntry {
@@ -82,6 +94,32 @@ function createEmptyMetaMap(): PersistedMetaMap {
   return map;
 }
 
+function normalizePersistedMetaEntry(value: unknown): PersistedMetaEntry | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<PersistedMetaEntry>;
+  if (
+    typeof candidate.updatedAt !== "string" ||
+    typeof candidate.createdAt !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    updatedAt: candidate.updatedAt,
+    createdAt: candidate.createdAt,
+    version:
+      typeof candidate.version === "number" && Number.isFinite(candidate.version)
+        ? candidate.version
+        : AUTO_SYNC_SNAPSHOT_VERSION,
+    syncVersion:
+      normalizeCloudSyncVersionState(candidate.syncVersion) ||
+      createSyntheticLegacySyncVersion(),
+  };
+}
+
 async function readMetaMap(
   redis: Redis,
   username: string
@@ -95,14 +133,11 @@ async function readMetaMap(
   }
 
   for (const domain of REDIS_SYNC_DOMAINS) {
-    const entry = (parsed as Record<string, unknown>)[domain];
-    if (
-      entry &&
-      typeof entry === "object" &&
-      typeof (entry as PersistedMetaEntry).updatedAt === "string" &&
-      typeof (entry as PersistedMetaEntry).createdAt === "string"
-    ) {
-      normalized[domain] = entry as PersistedMetaEntry;
+    const entry = normalizePersistedMetaEntry(
+      (parsed as Record<string, unknown>)[domain]
+    );
+    if (entry) {
+      normalized[domain] = entry;
     }
   }
 
@@ -150,6 +185,9 @@ async function readLegacyFilesDocumentsMeta(
       typeof candidate.totalSize === "number" && Number.isFinite(candidate.totalSize)
         ? candidate.totalSize
         : 0,
+    syncVersion:
+      normalizeCloudSyncVersionState(candidate.syncVersion) ||
+      createSyntheticLegacySyncVersion(),
   };
 }
 
@@ -199,6 +237,7 @@ function getCombinedFilesMetadataEntry(
       version: legacyEntry.version,
       totalSize: legacyEntry.totalSize,
       createdAt: legacyEntry.createdAt,
+      syncVersion: legacyEntry.syncVersion,
     };
   }
 
@@ -211,6 +250,7 @@ function getCombinedFilesMetadataEntry(
     version: stateEntry.version,
     totalSize: 0,
     createdAt: stateEntry.createdAt,
+    syncVersion: stateEntry.syncVersion,
   };
 }
 
@@ -227,6 +267,7 @@ async function persistStateEntry(
     updatedAt: entry.updatedAt,
     version: entry.version,
     createdAt: entry.createdAt,
+    syncVersion: entry.syncVersion,
   };
   await redis.set(metaKey(username), JSON.stringify(meta));
 }
@@ -273,6 +314,7 @@ export default apiHandler<PutStateBody>(
                   version: entry.version,
                   totalSize: 0,
                   createdAt: entry.createdAt,
+                  syncVersion: entry.syncVersion,
                 }
               : null;
       }
@@ -316,6 +358,8 @@ async function handleDomainDownload(
         version: songsState.metadata.version,
         totalSize: 0,
         createdAt: songsState.metadata.createdAt,
+        syncVersion:
+          songsState.metadata.syncVersion || createSyntheticLegacySyncVersion(),
       },
     });
     return;
@@ -354,6 +398,11 @@ async function handleDomainDownload(
                 ? legacyMeta.updatedAt
                 : entry.updatedAt,
             version: Math.max(entry.version, legacyMeta.version),
+            syncVersion:
+              new Date(legacyMeta.updatedAt).getTime() >
+              new Date(entry.updatedAt).getTime()
+                ? legacyMeta.syncVersion
+                : entry.syncVersion,
             data: {
               ...(entryData || {}),
               documents: legacyDocuments,
@@ -375,6 +424,8 @@ async function handleDomainDownload(
       version: responseEntry.version,
       totalSize: 0,
       createdAt: responseEntry.createdAt,
+      syncVersion:
+        responseEntry.syncVersion || createSyntheticLegacySyncVersion(),
     },
   });
 }
@@ -412,13 +463,82 @@ async function handlePutState(
     return;
   }
 
+  const writeSyncVersion = normalizeCloudSyncWriteVersion(body.syncVersion);
+  if (!writeSyncVersion) {
+    res.status(400).json({
+      error: "Missing or invalid syncVersion payload",
+    });
+    return;
+  }
+
+  let existingMetadata: CloudSyncDomainMetadata | null = null;
+  let existingVersionState: CloudSyncVersionState | null = null;
+
+  if (domain === "songs") {
+    const existingSongsState = await readSongsState(redis, username);
+    if (existingSongsState) {
+      existingVersionState =
+        existingSongsState.metadata.syncVersion || createSyntheticLegacySyncVersion();
+      existingMetadata = {
+        updatedAt: existingSongsState.metadata.updatedAt,
+        version: existingSongsState.metadata.version,
+        totalSize: 0,
+        createdAt: existingSongsState.metadata.createdAt,
+        syncVersion: existingVersionState,
+      };
+    }
+  } else {
+    const existingRaw = await redis.get<string | PersistedRedisStateDomain>(
+      stateKey(username, domain)
+    );
+    const existingEntry =
+      typeof existingRaw === "string" ? JSON.parse(existingRaw) : existingRaw;
+    if (existingEntry) {
+      existingVersionState =
+        normalizeCloudSyncVersionState(existingEntry.syncVersion) ||
+        createSyntheticLegacySyncVersion();
+      existingMetadata = {
+        updatedAt: existingEntry.updatedAt,
+        version: existingEntry.version,
+        totalSize: 0,
+        createdAt: existingEntry.createdAt,
+        syncVersion: existingVersionState,
+      };
+    }
+  }
+
+  const writeAssessment = assessCloudSyncWrite(existingVersionState, writeSyncVersion);
+  if (writeAssessment.duplicate) {
+    res.status(200).json({
+      ok: true,
+      domain,
+      metadata: existingMetadata,
+      duplicate: true,
+    });
+    return;
+  }
+
+  if (writeAssessment.hasConflict && existingMetadata) {
+    res.status(409).json({
+      error: `Cloud sync conflict for ${domain}. Download remote changes before replacing this domain.`,
+      code: "sync_conflict",
+      metadata: existingMetadata,
+    });
+    return;
+  }
+
   const now = new Date().toISOString();
+  const nextSyncVersion = advanceCloudSyncVersion(
+    existingVersionState,
+    writeSyncVersion
+  );
 
   const entry: PersistedRedisStateDomain = {
     data: body.data,
     updatedAt: body.updatedAt,
     version: body.version || AUTO_SYNC_SNAPSHOT_VERSION,
     createdAt: now,
+    syncVersion: nextSyncVersion,
   };
 
   try {
@@ -432,6 +552,7 @@ async function handlePutState(
           updatedAt: entry.updatedAt,
           version: entry.version,
           createdAt: entry.createdAt,
+          syncVersion: entry.syncVersion,
         }
       );
       metadata = {
@@ -439,6 +560,8 @@ async function handlePutState(
         version: songsMetadata.version,
         totalSize: 0,
         createdAt: songsMetadata.createdAt,
+        syncVersion:
+          songsMetadata.syncVersion || createSyntheticLegacySyncVersion(),
       };
     } else {
       await persistStateEntry(redis, username, domain, entry);
@@ -447,6 +570,7 @@ async function handlePutState(
         version: entry.version,
         totalSize: 0,
         createdAt: entry.createdAt,
+        syncVersion: entry.syncVersion,
       };
     }
 
@@ -455,6 +579,7 @@ async function handlePutState(
       const payload = {
         domain,
         updatedAt: entry.updatedAt,
+        syncVersion: metadata.syncVersion,
         ...(sourceSessionId && { sourceSessionId }),
       };
       await triggerRealtimeEvent(channel, "domain-updated", payload);

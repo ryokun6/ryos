@@ -40,6 +40,7 @@ import {
   shouldApplyRemoteUpdate,
   type CloudSyncDomain,
 } from "@/utils/cloudSyncShared";
+import type { CloudSyncVersionState } from "@/utils/cloudSyncVersion";
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000;
 const REMOTE_APPLY_SUPPRESSION_MS = 2000;
@@ -210,7 +211,7 @@ export function useAutoCloudSync() {
         });
 
         console.log(`[CloudSync] Upload ${domain} succeeded`, metadata.updatedAt);
-        syncState.markUploadSuccess(domain, metadata.updatedAt);
+        syncState.markUploadSuccess(domain, metadata);
         syncState.updateRemoteMetadataForDomain(domain, metadata);
 
         const currentLastChange = lastLocalChangeAtRef.current[domain];
@@ -266,7 +267,11 @@ export function useAutoCloudSync() {
   const realtimeInFlightRef = useRef(new Set<CloudSyncDomain>());
 
   const handleRealtimeDomainUpdate = useCallback(
-    async (domain: CloudSyncDomain, remoteUpdatedAt: string) => {
+    async (
+      domain: CloudSyncDomain,
+      remoteUpdatedAt: string,
+      remoteSyncVersion?: CloudSyncVersionState | null
+    ) => {
       if (!username || !isAuthenticated || !isDomainEnabled(domain)) return;
       if (realtimeInFlightRef.current.has(domain)) return;
 
@@ -275,11 +280,13 @@ export function useAutoCloudSync() {
 
       const shouldApply = shouldApplyRemoteUpdate({
         remoteUpdatedAt,
+        remoteSyncVersion: remoteSyncVersion || syncState.remoteMetadata[domain]?.syncVersion,
         lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
         lastUploadedAt: domainStatus.lastUploadedAt,
         lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
         hasPendingUpload:
           Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
+        lastKnownServerVersion: domainStatus.lastKnownServerVersion,
       });
 
       if (!shouldApply) return;
@@ -296,7 +303,7 @@ export function useAutoCloudSync() {
 
         useCloudSyncStore
           .getState()
-          .markRemoteApplied(domain, appliedMetadata.updatedAt);
+          .markRemoteApplied(domain, appliedMetadata);
         lastLocalChangeAtRef.current[domain] = appliedMetadata.updatedAt;
         remoteApplySuppressUntilRef.current[domain] =
           Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
@@ -346,11 +353,13 @@ export function useAutoCloudSync() {
 
         const shouldApply = shouldApplyRemoteUpdate({
           remoteUpdatedAt: remoteMetadata?.updatedAt,
+          remoteSyncVersion: remoteMetadata?.syncVersion,
           lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
           lastUploadedAt: domainStatus.lastUploadedAt,
           lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
           hasPendingUpload:
             Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
+          lastKnownServerVersion: domainStatus.lastKnownServerVersion,
         });
 
         if (!shouldApply || !remoteMetadata) {
@@ -364,7 +373,7 @@ export function useAutoCloudSync() {
 
         useCloudSyncStore
           .getState()
-          .markRemoteApplied(domain, appliedMetadata.updatedAt);
+          .markRemoteApplied(domain, appliedMetadata);
         lastLocalChangeAtRef.current[domain] = appliedMetadata.updatedAt;
         appliedDomains.push(domain);
       }
@@ -442,6 +451,7 @@ export function useAutoCloudSync() {
         domain?: string;
         updatedAt?: string;
         sourceSessionId?: string;
+        syncVersion?: CloudSyncVersionState | null;
       };
 
       if (payload.sourceSessionId === sessionId) return;
@@ -457,7 +467,8 @@ export function useAutoCloudSync() {
 
       void handleRealtimeDomainUpdateRef.current(
         payload.domain,
-        payload.updatedAt
+        payload.updatedAt,
+        payload.syncVersion
       );
     };
 

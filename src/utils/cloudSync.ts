@@ -54,6 +54,11 @@ import {
   createEmptyCloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
 import {
+  getNextSyncClientVersion,
+  getSyncClientId,
+} from "@/utils/cloudSyncClientState";
+import type { CloudSyncWriteVersion } from "@/utils/cloudSyncVersion";
+import {
   filterDeletedIds,
   mergeDeletionMarkerMaps,
   normalizeDeletionMarkerMap,
@@ -1113,6 +1118,18 @@ function authHeaders(): Record<string, string> {
   };
 }
 
+function createWriteSyncVersion(
+  domain: CloudSyncDomain,
+  baseMetadata: CloudSyncDomainMetadata | null | undefined
+): CloudSyncWriteVersion {
+  return {
+    clientId: getSyncClientId(),
+    clientVersion: getNextSyncClientVersion(domain),
+    baseServerVersion: baseMetadata?.syncVersion?.serverVersion ?? null,
+    knownClientVersions: baseMetadata?.syncVersion?.clientVersions || {},
+  };
+}
+
 export async function fetchCloudSyncMetadata(
   _auth: AuthContext
 ): Promise<CloudSyncMetadataMap> {
@@ -1168,6 +1185,7 @@ async function uploadRedisStateDomain(
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
   let data = envelope.data;
+  let baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
 
   if (domain === "files-metadata") {
     const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
@@ -1176,25 +1194,48 @@ async function uploadRedisStateDomain(
         envelope.data as FilesMetadataSnapshotData,
         remoteSnapshot.data as FilesMetadataSnapshotData
       );
+      baseMetadata = remoteSnapshot.metadata;
     }
   }
 
-  const response = await abortableFetch(getApiUrl("/api/sync/state"), {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
-    body: JSON.stringify({
-      domain,
-      data,
-      updatedAt: envelope.updatedAt,
-      version: envelope.version,
-    }),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+  const sendStateUpload = async (
+    nextData: AnySnapshotData,
+    nextUpdatedAt: string,
+    nextBaseMetadata: CloudSyncDomainMetadata | null | undefined
+  ) =>
+    abortableFetch(getApiUrl("/api/sync/state"), {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify({
+        domain,
+        data: nextData,
+        updatedAt: nextUpdatedAt,
+        version: envelope.version,
+        syncVersion: createWriteSyncVersion(domain, nextBaseMetadata),
+      }),
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    });
+
+  let response = await sendStateUpload(data, envelope.updatedAt, baseMetadata);
+
+  if (response.status === 409 && domain === "files-metadata") {
+    const latestRemote = await fetchRedisStateDomainSnapshot(domain, _auth);
+    if (latestRemote?.data) {
+      response = await sendStateUpload(
+        mergeFilesMetadataSnapshots(
+          envelope.data as FilesMetadataSnapshotData,
+          latestRemote.data as FilesMetadataSnapshotData
+        ),
+        new Date().toISOString(),
+        latestRemote.metadata
+      );
+    }
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -1382,6 +1423,7 @@ async function uploadLegacyBlobDomain(
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
+  const remoteInfo = await fetchBlobDomainInfo(domain, _auth).catch(() => null);
   const dataItems = Array.isArray(envelope.data) ? envelope.data.length : "N/A";
   console.log(`[CloudSync:blob] ${domain}: serialized ${dataItems} items`);
   const compressed = await gzipJson(envelope);
@@ -1400,6 +1442,10 @@ async function uploadLegacyBlobDomain(
       updatedAt: envelope.updatedAt,
       version: envelope.version,
       totalSize: compressed.length,
+      syncVersion: createWriteSyncVersion(
+        domain,
+        remoteInfo?.metadata || useCloudSyncStore.getState().remoteMetadata[domain]
+      ),
     },
     _auth
   );
@@ -1488,6 +1534,10 @@ async function uploadIndividualBlobDomain(
       totalSize: Object.values(nextItems).reduce((sum, item) => sum + item.size, 0),
       items: nextItems,
       deletedItems,
+      syncVersion: createWriteSyncVersion(
+        domain,
+        remoteInfo?.metadata || useCloudSyncStore.getState().remoteMetadata[domain]
+      ),
     },
     _auth
   );

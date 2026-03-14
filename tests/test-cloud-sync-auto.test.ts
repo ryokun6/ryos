@@ -23,6 +23,20 @@ async function getAuthToken(): Promise<string | null> {
   return authTokenPromise;
 }
 
+function makeSyncVersion(
+  clientId: string,
+  clientVersion: number,
+  baseServerVersion: number | null = null,
+  knownClientVersions: Record<string, number> = {}
+) {
+  return {
+    clientId,
+    clientVersion,
+    baseServerVersion,
+    knownClientVersions,
+  };
+}
+
 describe("auto cloud sync API", () => {
 
   test("GET /api/sync/auto requires authentication", async () => {
@@ -162,6 +176,7 @@ describe("auto cloud sync API", () => {
           domain: "custom-wallpapers",
           updatedAt: "2026-03-09T15:45:00.000Z",
           version: 1,
+          syncVersion: makeSyncVersion("wallpapers-client-a", 1),
           totalSize: 0,
           items: {},
         }),
@@ -171,6 +186,7 @@ describe("auto cloud sync API", () => {
     expect(saveRes.status).toBe(200);
     const saveData = await saveRes.json();
     expect(saveData.metadata?.totalSize).toBe(0);
+    expect(saveData.metadata?.syncVersion?.serverVersion).toBe(1);
 
     const downloadRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/auto?domain=custom-wallpapers`,
@@ -200,6 +216,7 @@ describe("auto cloud sync API", () => {
           domain: "custom-wallpapers",
           updatedAt: "2026-03-12T16:30:00.000Z",
           version: 1,
+          syncVersion: makeSyncVersion("wallpapers-client-b", 1),
           totalSize: 0,
           items: {},
           deletedItems: {
@@ -222,6 +239,56 @@ describe("auto cloud sync API", () => {
     expect(downloadData.deletedItems).toEqual({
       "wallpaper-1": "2026-03-12T16:29:00.000Z",
     });
+  });
+
+  test("POST /api/sync/auto treats duplicate client versions as idempotent no-ops", async () => {
+    const redis = createRedis();
+    const username = `sync_auto_duplicate_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const authToken = generateAuthToken();
+    await storeToken(redis, username, authToken);
+
+    const firstRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto`,
+      username,
+      authToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "custom-wallpapers",
+          updatedAt: "2026-03-12T17:00:00.000Z",
+          version: 1,
+          syncVersion: makeSyncVersion("client-a", 1),
+          totalSize: 0,
+          items: {},
+        }),
+      }
+    );
+    expect(firstRes.status).toBe(200);
+    const firstJson = await firstRes.json();
+    expect(firstJson.metadata.syncVersion.serverVersion).toBe(1);
+
+    const duplicateRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto`,
+      username,
+      authToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "custom-wallpapers",
+          updatedAt: "2026-03-12T17:00:01.000Z",
+          version: 1,
+          syncVersion: makeSyncVersion("client-a", 1),
+          totalSize: 0,
+          items: {},
+        }),
+      }
+    );
+    expect(duplicateRes.status).toBe(200);
+    const duplicateJson = await duplicateRes.json();
+    expect(duplicateJson.duplicate).toBe(true);
+    expect(duplicateJson.metadata.syncVersion.serverVersion).toBe(1);
   });
 
   test("POST /api/sync/auto-token rejects redis-only domains", async () => {

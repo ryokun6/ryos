@@ -24,6 +24,10 @@ import {
   planIndividualBlobDownload,
   planIndividualBlobUpload,
 } from "../src/utils/cloudSyncIndividualBlobMerge";
+import {
+  advanceCloudSyncVersion,
+  assessCloudSyncWrite,
+} from "../src/utils/cloudSyncVersion";
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
@@ -194,6 +198,27 @@ describe("cloud sync shared helpers", () => {
         hasPendingUpload: false,
       })
     ).toBe(false);
+  });
+
+  test("prefers server revision numbers over timestamps when available", () => {
+    expect(
+      shouldApplyRemoteUpdate({
+        remoteUpdatedAt: "2026-03-04T11:59:00.000Z",
+        remoteSyncVersion: {
+          serverVersion: 3,
+          latestClientId: "client-b",
+          latestClientVersion: 1,
+          clientVersions: {
+            "client-a": 1,
+            "client-b": 1,
+          },
+        },
+        lastAppliedRemoteAt: "2026-03-04T12:04:00.000Z",
+        lastUploadedAt: "2026-03-04T12:04:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:04:00.000Z",
+        lastKnownServerVersion: 2,
+      })
+    ).toBe(true);
   });
 
   test("returns the newest timestamp in a group", () => {
@@ -522,6 +547,39 @@ describe("cloud sync shared helpers", () => {
         signature: "base-signature",
         updatedAt: "2026-03-14T03:00:00.000Z",
       },
+    });
+  });
+
+  test("rejects stale client writes that have not seen another client revision", () => {
+    const firstWrite = advanceCloudSyncVersion(null, {
+      clientId: "client-a",
+      clientVersion: 1,
+      baseServerVersion: null,
+      knownClientVersions: {},
+    });
+
+    const secondWrite = advanceCloudSyncVersion(firstWrite, {
+      clientId: "client-b",
+      clientVersion: 1,
+      baseServerVersion: 1,
+      knownClientVersions: {
+        "client-a": 1,
+      },
+    });
+
+    expect(
+      assessCloudSyncWrite(secondWrite, {
+        clientId: "client-a",
+        clientVersion: 2,
+        baseServerVersion: 1,
+        knownClientVersions: {
+          "client-a": 1,
+        },
+      })
+    ).toEqual({
+      duplicate: false,
+      canFastForward: false,
+      hasConflict: true,
     });
   });
 });
