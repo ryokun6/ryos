@@ -557,9 +557,27 @@ export function useAutoCloudSync() {
     };
   }, [isSyncActive, username]);
 
-  // Trigger a remote check when the user switches back to this tab, focuses
-  // the window, or comes back online — all situations where remote data may
-  // have changed while the tab was inactive.
+  const flushPendingUploads = useCallback(() => {
+    const syncState = useCloudSyncStore.getState();
+    for (const domain of CLOUD_SYNC_DOMAINS) {
+      if (
+        isDomainEnabled(domain) &&
+        hasUnsyncedLocalChanges(
+          lastLocalChangeAtRef.current[domain],
+          syncState.domainStatus[domain].lastUploadedAt
+        )
+      ) {
+        setTimeout(
+          () => queueUpload(domain),
+          REMOTE_APPLY_SUPPRESSION_MS + 1000
+        );
+      }
+    }
+  }, [isDomainEnabled, queueUpload]);
+
+  // Trigger a bidirectional sync when the user switches back to this tab,
+  // focuses the window, or comes back online — pull remote changes and push
+  // any pending local changes so other clients see them.
   useEffect(() => {
     if (!isSyncActive) return;
 
@@ -569,8 +587,8 @@ export function useAutoCloudSync() {
         return;
       }
       lastVisibilityCheckRef.current = now;
-      console.log("[CloudSync] Triggered remote check (visibility/focus/online)");
-      void checkRemoteUpdates();
+      console.log("[CloudSync] Triggered bidirectional sync (visibility/focus/online)");
+      void checkRemoteUpdates().then(flushPendingUploads);
     };
 
     const handleVisibilityChange = () => {
@@ -588,7 +606,7 @@ export function useAutoCloudSync() {
       window.removeEventListener("focus", triggerCheck);
       window.removeEventListener("online", triggerCheck);
     };
-  }, [checkRemoteUpdates, isSyncActive]);
+  }, [checkRemoteUpdates, flushPendingUploads, isSyncActive]);
 
   useEffect(() => {
     if (!isSyncActive) {
@@ -779,27 +797,10 @@ export function useAutoCloudSync() {
         lastLocalChangeAtRef.current[d] = getLatestLocalChangeAt(d);
     }
 
-    void (async () => {
-      await checkRemoteUpdates();
+    void checkRemoteUpdates().then(flushPendingUploads);
 
-      const syncState = useCloudSyncStore.getState();
-      for (const domain of CLOUD_SYNC_DOMAINS) {
-        if (
-          isDomainEnabled(domain) &&
-          hasUnsyncedLocalChanges(
-            lastLocalChangeAtRef.current[domain],
-            syncState.domainStatus[domain].lastUploadedAt
-          )
-        ) {
-          setTimeout(
-            () => queueUpload(domain),
-            REMOTE_APPLY_SUPPRESSION_MS + 1000
-          );
-        }
-      }
-    })();
     const intervalId = setInterval(() => {
-      void checkRemoteUpdates();
+      void checkRemoteUpdates().then(flushPendingUploads);
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -826,6 +827,7 @@ export function useAutoCloudSync() {
     checkRemoteUpdates,
     clearAllUploadTimers,
     enabledDomainsKey,
+    flushPendingUploads,
     isSyncActive,
     queueUpload,
   ]);
