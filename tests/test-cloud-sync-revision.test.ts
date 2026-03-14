@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import {
   compareCloudSyncRevisions,
   getNextSyncRevision,
@@ -7,6 +7,8 @@ import {
 } from "../src/utils/cloudSyncRevision";
 
 const localStorageState = new Map<string, string>();
+const originalCrypto = globalThis.crypto;
+const originalLocalStorage = (globalThis as { localStorage?: Storage }).localStorage;
 
 const localStorageMock = {
   getItem(key: string) {
@@ -31,6 +33,20 @@ beforeEach(() => {
     value: {
       randomUUID: mock(() => "client-123"),
     },
+    configurable: true,
+    writable: true,
+  });
+});
+
+afterEach(() => {
+  Object.defineProperty(globalThis, "crypto", {
+    value: originalCrypto,
+    configurable: true,
+    writable: true,
+  });
+
+  Object.defineProperty(globalThis, "localStorage", {
+    value: originalLocalStorage,
     configurable: true,
     writable: true,
   });

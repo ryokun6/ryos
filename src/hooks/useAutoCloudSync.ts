@@ -225,6 +225,29 @@ export function useAutoCloudSync() {
         const message =
           error instanceof Error ? error.message : `Failed to sync ${domain}.`;
         console.error(`[CloudSync] Upload ${domain} FAILED:`, message, error);
+        if (message.includes("sync_conflict")) {
+          try {
+            const appliedMetadata = await downloadAndApplyCloudSyncDomain(domain, {
+              username,
+              isAuthenticated,
+            });
+            useCloudSyncStore
+              .getState()
+              .markRemoteApplied(domain, appliedMetadata.updatedAt);
+            useCloudSyncStore
+              .getState()
+              .updateRemoteMetadataForDomain(domain, appliedMetadata);
+            lastLocalChangeAtRef.current[domain] = appliedMetadata.updatedAt;
+            remoteApplySuppressUntilRef.current[domain] =
+              Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
+            return;
+          } catch (downloadError) {
+            console.error(
+              `[CloudSync] Conflict recovery download for ${domain} failed:`,
+              downloadError
+            );
+          }
+        }
         useCloudSyncStore.getState().markUploadFailure(domain, message);
       }
     },

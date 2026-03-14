@@ -40,6 +40,7 @@ interface PutStateBody {
   data?: unknown;
   updatedAt?: string;
   version?: number;
+  baseVersion?: number;
 }
 
 function isContactsSnapshotData(value: unknown): value is { contacts: unknown[] } {
@@ -399,6 +400,29 @@ async function handlePutState(
   }
 
   const domain = body.domain as RedisSyncDomain;
+  const currentMeta = await readMetaMap(redis, username);
+  const currentVersion = currentMeta[domain]?.version ?? 0;
+  const requestedBaseVersion =
+    typeof body.baseVersion === "number" && Number.isFinite(body.baseVersion)
+      ? body.baseVersion
+      : null;
+
+  if (requestedBaseVersion === null) {
+    if (currentVersion > 0) {
+      res.status(409).json({
+        error: "sync_conflict: stale baseVersion",
+        currentVersion,
+      });
+      return;
+    }
+  } else if (requestedBaseVersion !== currentVersion) {
+    res.status(409).json({
+      error: "sync_conflict: stale baseVersion",
+      currentVersion,
+    });
+    return;
+  }
+
   if (domain === "contacts" && !isContactsSnapshotData(body.data)) {
     res.status(400).json({
       error: "Invalid contacts snapshot payload",
@@ -413,11 +437,12 @@ async function handlePutState(
   }
 
   const now = new Date().toISOString();
+  const nextVersion = Math.max(currentVersion + 1, AUTO_SYNC_SNAPSHOT_VERSION);
 
   const entry: PersistedRedisStateDomain = {
     data: body.data,
     updatedAt: body.updatedAt,
-    version: body.version || AUTO_SYNC_SNAPSHOT_VERSION,
+    version: nextVersion,
     createdAt: now,
   };
 
@@ -430,7 +455,7 @@ async function handlePutState(
         body.data as SongsSnapshotData,
         {
           updatedAt: entry.updatedAt,
-          version: entry.version,
+          version: nextVersion,
           createdAt: entry.createdAt,
         }
       );

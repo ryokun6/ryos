@@ -56,6 +56,7 @@ interface SaveAutoSyncMetadataBody {
   blobUrl?: string;
   updatedAt?: string;
   version?: number;
+  baseVersion?: number;
   totalSize?: number;
   items?: Record<string, PersistedAutoSyncItemMetadata>;
   deletedItems?: DeletionMarkerMap;
@@ -243,7 +244,30 @@ async function handleSaveMetadata(
   try {
     const existing = await readPersistedMetadata(redis, username);
     const previous = existing[body.domain];
+    const currentVersion = previous?.version ?? 0;
+    const requestedBaseVersion =
+      typeof body.baseVersion === "number" && Number.isFinite(body.baseVersion)
+        ? body.baseVersion
+        : null;
+
+    if (requestedBaseVersion === null) {
+      if (currentVersion > 0) {
+        res.status(409).json({
+          error: "sync_conflict: stale baseVersion",
+          currentVersion,
+        });
+        return;
+      }
+    } else if (requestedBaseVersion !== currentVersion) {
+      res.status(409).json({
+        error: "sync_conflict: stale baseVersion",
+        currentVersion,
+      });
+      return;
+    }
+
     const createdAt = previous?.createdAt || new Date().toISOString();
+    const nextVersion = Math.max(currentVersion + 1, AUTO_SYNC_SNAPSHOT_VERSION);
     const legacyStorageUrl = getStoredLocation(body);
 
     if (body.items) {
@@ -327,7 +351,7 @@ async function handleSaveMetadata(
 
       existing[body.domain] = {
         updatedAt: body.updatedAt,
-        version: body.version || AUTO_SYNC_SNAPSHOT_VERSION,
+        version: nextVersion,
         totalSize:
           body.totalSize ||
           Object.values(nextItems).reduce((sum, item) => sum + item.size, 0),
@@ -373,7 +397,7 @@ async function handleSaveMetadata(
 
       existing[body.domain] = {
         updatedAt: body.updatedAt,
-        version: body.version || AUTO_SYNC_SNAPSHOT_VERSION,
+        version: nextVersion,
         totalSize: body.totalSize || objectInfo.size,
         storageUrl: legacyStorageUrl,
         blobUrl: legacyStorageUrl,

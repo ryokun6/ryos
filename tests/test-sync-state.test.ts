@@ -24,6 +24,17 @@ async function getAuthToken(): Promise<string> {
   return authTokenPromise;
 }
 
+async function createAuthCredentials(prefix: string): Promise<{
+  username: string;
+  authToken: string;
+}> {
+  const username = `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const redis = createRedis();
+  const authToken = generateAuthToken();
+  await storeToken(redis, username, authToken);
+  return { username, authToken };
+}
+
 function createLegacyDocumentsBlobUrl() {
   const envelope = {
     domain: "files-documents",
@@ -226,11 +237,13 @@ describe("sync state API contacts validation", () => {
 
 describe("sync state API deletion markers", () => {
   test("round-trips calendar and file tombstones", async () => {
-    const authToken = await getAuthToken();
+    const { username, authToken } = await createAuthCredentials(
+      "sync_state_tombstones"
+    );
 
     const filesRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/state`,
-      TEST_USERNAME,
+      username,
       authToken,
       {
         method: "PUT",
@@ -238,7 +251,7 @@ describe("sync state API deletion markers", () => {
         body: JSON.stringify({
           domain: "files-metadata",
           updatedAt: "2026-03-12T16:35:00.000Z",
-          version: 1,
+          baseVersion: 0,
           data: {
             items: {},
             libraryState: "loaded",
@@ -253,7 +266,7 @@ describe("sync state API deletion markers", () => {
 
     const calendarRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/state`,
-      TEST_USERNAME,
+      username,
       authToken,
       {
         method: "PUT",
@@ -261,7 +274,7 @@ describe("sync state API deletion markers", () => {
         body: JSON.stringify({
           domain: "calendar",
           updatedAt: "2026-03-12T16:36:00.000Z",
-          version: 1,
+          baseVersion: 0,
           data: {
             events: [],
             calendars: [],
@@ -277,7 +290,7 @@ describe("sync state API deletion markers", () => {
 
     const downloadFiles = await fetchWithAuth(
       `${BASE_URL}/api/sync/state?domain=files-metadata`,
-      TEST_USERNAME,
+      username,
       authToken
     );
     expect(downloadFiles.status).toBe(200);
@@ -288,7 +301,7 @@ describe("sync state API deletion markers", () => {
 
     const downloadCalendar = await fetchWithAuth(
       `${BASE_URL}/api/sync/state?domain=calendar`,
-      TEST_USERNAME,
+      username,
       authToken
     );
     expect(downloadCalendar.status).toBe(200);
@@ -296,6 +309,60 @@ describe("sync state API deletion markers", () => {
     expect(calendarJson.data.deletedTodoIds).toEqual({
       "todo-1": "2026-03-12T16:33:00.000Z",
     });
+  });
+});
+
+describe("sync state API baseVersion protection", () => {
+  test("rejects stale files-metadata uploads", async () => {
+    const { username, authToken } = await createAuthCredentials(
+      "sync_state_baseversion"
+    );
+
+    const firstRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      username,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "files-metadata",
+          updatedAt: "2026-03-14T10:00:00.000Z",
+          baseVersion: 0,
+          data: {
+            items: {},
+            libraryState: "loaded",
+          },
+        }),
+      }
+    );
+    expect(firstRes.status).toBe(200);
+    const firstJson = await firstRes.json();
+    expect(firstJson.metadata.version).toBe(1);
+
+    const staleRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/state`,
+      username,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "files-metadata",
+          updatedAt: "2026-03-14T10:05:00.000Z",
+          baseVersion: 0,
+          data: {
+            items: {},
+            libraryState: "loaded",
+          },
+        }),
+      }
+    );
+
+    expect(staleRes.status).toBe(409);
+    const staleJson = await staleRes.json();
+    expect(staleJson.error).toContain("sync_conflict");
+    expect(staleJson.currentVersion).toBe(1);
   });
 });
 

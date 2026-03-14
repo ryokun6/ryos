@@ -992,6 +992,8 @@ async function uploadRedisStateDomain(
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
+  const baseVersion =
+    useCloudSyncStore.getState().remoteMetadata[domain]?.version ?? 0;
   let data = envelope.data;
 
   if (domain === "files-metadata") {
@@ -1015,6 +1017,7 @@ async function uploadRedisStateDomain(
       data,
       updatedAt: envelope.updatedAt,
       version: envelope.version,
+      baseVersion,
     }),
     timeout: 15000,
     throwOnHttpError: false,
@@ -1207,6 +1210,8 @@ async function uploadLegacyBlobDomain(
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
+  const baseVersion =
+    useCloudSyncStore.getState().remoteMetadata[domain]?.version ?? 0;
   const dataItems = Array.isArray(envelope.data) ? envelope.data.length : "N/A";
   console.log(`[CloudSync:blob] ${domain}: serialized ${dataItems} items`);
   const compressed = await gzipJson(envelope);
@@ -1224,6 +1229,7 @@ async function uploadLegacyBlobDomain(
       storageUrl: uploadResult.storageUrl,
       updatedAt: envelope.updatedAt,
       version: envelope.version,
+      baseVersion,
       totalSize: compressed.length,
     },
     _auth
@@ -1235,6 +1241,8 @@ async function uploadIndividualBlobDomain(
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const updatedAt = new Date().toISOString();
+  const baseVersion =
+    useCloudSyncStore.getState().remoteMetadata[domain]?.version ?? 0;
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
   const deletedItems = getIndividualBlobDeletedKeys(domain);
   const knownItems = getIndividualBlobKnownItems(domain);
@@ -1310,6 +1318,7 @@ async function uploadIndividualBlobDomain(
       domain,
       updatedAt,
       version: AUTO_SYNC_SNAPSHOT_VERSION,
+      baseVersion,
       totalSize: Object.values(nextItems).reduce((sum, item) => sum + item.size, 0),
       items: nextItems,
       deletedItems,
