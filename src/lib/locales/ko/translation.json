@@ -6,6 +6,47 @@
         "loginPrompt": "관리자 계정으로 로그인해 주세요.",
         "title": "접근 거부됨"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "avgResponseTime": "[TODO] Avg Response Time (ms)",
+          "errors": "[TODO] Errors",
+          "uniqueVisitors": "[TODO] Unique Visitors"
+        },
+        "empty": {
+          "noAiUsage": "[TODO] No AI usage yet",
+          "noData": "[TODO] No data yet"
+        },
+        "failedToLoad": "[TODO] Failed to load",
+        "kpi": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "errorRate": "[TODO] Error Rate",
+          "visitors": "[TODO] Visitors"
+        },
+        "loading": "[TODO] Loading analytics...",
+        "range": {
+          "today": "[TODO] Today"
+        },
+        "retry": "[TODO] Retry",
+        "sections": {
+          "aiUsageByUser": "[TODO] AI Usage by User",
+          "statusCodes": "[TODO] Status Codes",
+          "topEndpoints": "[TODO] Top Endpoints"
+        },
+        "title": "[TODO] Dashboard",
+        "totals": {
+          "ai": "[TODO] AI",
+          "calls": "[TODO] calls",
+          "msAvg": "[TODO] ms avg",
+          "totals": "[TODO] totals",
+          "visitors": "[TODO] visitors"
+        },
+        "trend": {
+          "vsPrevDay": "[TODO] vs prev day"
+        }
+      },
       "description": "시스템 관리 패널",
       "dialogs": {
         "banDescription": "{{username}}님을 차단하시겠습니까? 해당 사용자는 로그아웃되며 서비스에 접속할 수 없게 됩니다.",
@@ -197,6 +238,7 @@
         "websocket": "웹소켓 (푸셔)"
       },
       "sidebar": {
+        "dashboard": "[TODO] Dashboard",
         "messagesCount": "{{count}}개 메시지",
         "online": "온라인",
         "private": "비공개",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "휴지통으로 이동",
         "name": "이름",
         "newFolder": "새 폴더…",
-        "open": "열기",
-        "rename": "이름 변경…",
-        "shareViaAirDrop": "AirDrop으로 공유",
-        "searchingForAirDropUsers": "근처 사용자를 찾는 중…",
         "noAirDropUsersAvailable": "근처 사용자가 없습니다",
+        "open": "열기",
         "openAirDrop": "AirDrop 열기",
+        "rename": "이름 변경…",
+        "searchingForAirDropUsers": "근처 사용자를 찾는 중…",
+        "shareViaAirDrop": "AirDrop으로 공유",
         "size": "크기",
         "sortBy": "정렬 기준"
       },

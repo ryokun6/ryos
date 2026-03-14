@@ -6,6 +6,47 @@
         "loginPrompt": "Пожалуйста, войдите с учетной записью администратора.",
         "title": "Доступ запрещен"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "avgResponseTime": "[TODO] Avg Response Time (ms)",
+          "errors": "[TODO] Errors",
+          "uniqueVisitors": "[TODO] Unique Visitors"
+        },
+        "empty": {
+          "noAiUsage": "[TODO] No AI usage yet",
+          "noData": "[TODO] No data yet"
+        },
+        "failedToLoad": "[TODO] Failed to load",
+        "kpi": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "errorRate": "[TODO] Error Rate",
+          "visitors": "[TODO] Visitors"
+        },
+        "loading": "[TODO] Loading analytics...",
+        "range": {
+          "today": "[TODO] Today"
+        },
+        "retry": "[TODO] Retry",
+        "sections": {
+          "aiUsageByUser": "[TODO] AI Usage by User",
+          "statusCodes": "[TODO] Status Codes",
+          "topEndpoints": "[TODO] Top Endpoints"
+        },
+        "title": "[TODO] Dashboard",
+        "totals": {
+          "ai": "[TODO] AI",
+          "calls": "[TODO] calls",
+          "msAvg": "[TODO] ms avg",
+          "totals": "[TODO] totals",
+          "visitors": "[TODO] visitors"
+        },
+        "trend": {
+          "vsPrevDay": "[TODO] vs prev day"
+        }
+      },
       "description": "Панель администрирования системы",
       "dialogs": {
         "banDescription": "Вы уверены, что хотите заблокировать {{username}}? Они будут выведены из системы и не смогут получить доступ к сервису.",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "[TODO] Dashboard",
         "messagesCount": "{{count}} сообщений",
         "online": "онлайн",
         "private": "Приватный",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "Переместить в Корзину",
         "name": "Имя",
         "newFolder": "Новая папка…",
-        "open": "Открыть",
-        "rename": "Переименовать…",
-        "shareViaAirDrop": "Поделиться через AirDrop",
-        "searchingForAirDropUsers": "Поиск пользователей поблизости…",
         "noAirDropUsersAvailable": "Пользователей поблизости нет",
+        "open": "Открыть",
         "openAirDrop": "Открыть AirDrop",
+        "rename": "Переименовать…",
+        "searchingForAirDropUsers": "Поиск пользователей поблизости…",
+        "shareViaAirDrop": "Поделиться через AirDrop",
         "size": "Размер",
         "sortBy": "Сортировать по"
       },

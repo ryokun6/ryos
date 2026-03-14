@@ -6,6 +6,47 @@
         "loginPrompt": "Faça login com uma conta de administrador.",
         "title": "Acesso Negado"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "avgResponseTime": "[TODO] Avg Response Time (ms)",
+          "errors": "[TODO] Errors",
+          "uniqueVisitors": "[TODO] Unique Visitors"
+        },
+        "empty": {
+          "noAiUsage": "[TODO] No AI usage yet",
+          "noData": "[TODO] No data yet"
+        },
+        "failedToLoad": "[TODO] Failed to load",
+        "kpi": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "errorRate": "[TODO] Error Rate",
+          "visitors": "[TODO] Visitors"
+        },
+        "loading": "[TODO] Loading analytics...",
+        "range": {
+          "today": "[TODO] Today"
+        },
+        "retry": "[TODO] Retry",
+        "sections": {
+          "aiUsageByUser": "[TODO] AI Usage by User",
+          "statusCodes": "[TODO] Status Codes",
+          "topEndpoints": "[TODO] Top Endpoints"
+        },
+        "title": "[TODO] Dashboard",
+        "totals": {
+          "ai": "[TODO] AI",
+          "calls": "[TODO] calls",
+          "msAvg": "[TODO] ms avg",
+          "totals": "[TODO] totals",
+          "visitors": "[TODO] visitors"
+        },
+        "trend": {
+          "vsPrevDay": "[TODO] vs prev day"
+        }
+      },
       "description": "Painel de administração do sistema",
       "dialogs": {
         "banDescription": "Tem certeza de que deseja banir {{username}}? Ele(a) será desconectado(a) e não poderá acessar o serviço.",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "[TODO] Dashboard",
         "messagesCount": "{{count}} mensagens",
         "online": "online",
         "private": "Privado",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "Mover para a Lixeira",
         "name": "Nome",
         "newFolder": "Nova Pasta…",
-        "open": "Abrir",
-        "rename": "Renomear…",
-        "shareViaAirDrop": "Compartilhar via AirDrop",
-        "searchingForAirDropUsers": "Buscando usuários próximos…",
         "noAirDropUsersAvailable": "Nenhum usuário próximo",
+        "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
+        "rename": "Renomear…",
+        "searchingForAirDropUsers": "Buscando usuários próximos…",
+        "shareViaAirDrop": "Compartilhar via AirDrop",
         "size": "Tamanho",
         "sortBy": "Ordenar por"
       },

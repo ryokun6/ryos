@@ -6,6 +6,47 @@
         "loginPrompt": "管理者アカウントでログインしてください。",
         "title": "アクセス拒否"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "avgResponseTime": "[TODO] Avg Response Time (ms)",
+          "errors": "[TODO] Errors",
+          "uniqueVisitors": "[TODO] Unique Visitors"
+        },
+        "empty": {
+          "noAiUsage": "[TODO] No AI usage yet",
+          "noData": "[TODO] No data yet"
+        },
+        "failedToLoad": "[TODO] Failed to load",
+        "kpi": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "errorRate": "[TODO] Error Rate",
+          "visitors": "[TODO] Visitors"
+        },
+        "loading": "[TODO] Loading analytics...",
+        "range": {
+          "today": "[TODO] Today"
+        },
+        "retry": "[TODO] Retry",
+        "sections": {
+          "aiUsageByUser": "[TODO] AI Usage by User",
+          "statusCodes": "[TODO] Status Codes",
+          "topEndpoints": "[TODO] Top Endpoints"
+        },
+        "title": "[TODO] Dashboard",
+        "totals": {
+          "ai": "[TODO] AI",
+          "calls": "[TODO] calls",
+          "msAvg": "[TODO] ms avg",
+          "totals": "[TODO] totals",
+          "visitors": "[TODO] visitors"
+        },
+        "trend": {
+          "vsPrevDay": "[TODO] vs prev day"
+        }
+      },
       "description": "システム管理画面",
       "dialogs": {
         "banDescription": "{{username}}をBANしてもよろしいですか？彼らはログアウトされ、サービスにアクセスできなくなります。",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "[TODO] Dashboard",
         "messagesCount": "メッセージ{{count}}件",
         "online": "オンライン",
         "private": "プライベート",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "ゴミ箱に入れる",
         "name": "名前",
         "newFolder": "新規フォルダ…",
-        "open": "開く",
-        "rename": "名前の変更…",
-        "shareViaAirDrop": "AirDrop で共有",
-        "searchingForAirDropUsers": "近くのユーザーを検索中…",
         "noAirDropUsersAvailable": "近くのユーザーはいません",
+        "open": "開く",
         "openAirDrop": "AirDropを開く",
+        "rename": "名前の変更…",
+        "searchingForAirDropUsers": "近くのユーザーを検索中…",
+        "shareViaAirDrop": "AirDrop で共有",
         "size": "サイズ",
         "sortBy": "並び替え"
       },

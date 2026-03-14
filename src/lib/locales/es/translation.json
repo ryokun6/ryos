@@ -6,6 +6,47 @@
         "loginPrompt": "Inicia sesión con una cuenta de administrador.",
         "title": "Acceso denegado"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "avgResponseTime": "[TODO] Avg Response Time (ms)",
+          "errors": "[TODO] Errors",
+          "uniqueVisitors": "[TODO] Unique Visitors"
+        },
+        "empty": {
+          "noAiUsage": "[TODO] No AI usage yet",
+          "noData": "[TODO] No data yet"
+        },
+        "failedToLoad": "[TODO] Failed to load",
+        "kpi": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "errorRate": "[TODO] Error Rate",
+          "visitors": "[TODO] Visitors"
+        },
+        "loading": "[TODO] Loading analytics...",
+        "range": {
+          "today": "[TODO] Today"
+        },
+        "retry": "[TODO] Retry",
+        "sections": {
+          "aiUsageByUser": "[TODO] AI Usage by User",
+          "statusCodes": "[TODO] Status Codes",
+          "topEndpoints": "[TODO] Top Endpoints"
+        },
+        "title": "[TODO] Dashboard",
+        "totals": {
+          "ai": "[TODO] AI",
+          "calls": "[TODO] calls",
+          "msAvg": "[TODO] ms avg",
+          "totals": "[TODO] totals",
+          "visitors": "[TODO] visitors"
+        },
+        "trend": {
+          "vsPrevDay": "[TODO] vs prev day"
+        }
+      },
       "description": "Panel de administración del sistema",
       "dialogs": {
         "banDescription": "¿Está seguro de que desea banear a {{username}}? Se cerrará su sesión y no podrán acceder al servicio.",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "[TODO] Dashboard",
         "messagesCount": "{{count}} mensajes",
         "online": "en línea",
         "private": "Privada",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "Mover a la Papelera",
         "name": "Nombre",
         "newFolder": "Nueva Carpeta…",
-        "open": "Abrir",
-        "rename": "Cambiar nombre…",
-        "shareViaAirDrop": "Compartir por AirDrop",
-        "searchingForAirDropUsers": "Buscando usuarios cercanos…",
         "noAirDropUsersAvailable": "No hay usuarios cercanos",
+        "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
+        "rename": "Cambiar nombre…",
+        "searchingForAirDropUsers": "Buscando usuarios cercanos…",
+        "shareViaAirDrop": "Compartir por AirDrop",
         "size": "Tamaño",
         "sortBy": "Ordenar por"
       },

@@ -2994,6 +2994,47 @@
       "name": "Admin",
       "description": "System administration panel",
       "title": "Admin",
+      "dashboard": {
+        "title": "Dashboard",
+        "loading": "Loading analytics...",
+        "failedToLoad": "Failed to load",
+        "retry": "Retry",
+        "range": {
+          "today": "Today"
+        },
+        "trend": {
+          "vsPrevDay": "vs prev day"
+        },
+        "kpi": {
+          "visitors": "Visitors",
+          "apiCalls": "API Calls",
+          "aiRequests": "AI Requests",
+          "errorRate": "Error Rate"
+        },
+        "totals": {
+          "totals": "totals",
+          "calls": "calls",
+          "visitors": "visitors",
+          "ai": "AI",
+          "msAvg": "ms avg"
+        },
+        "charts": {
+          "apiCalls": "API Calls",
+          "uniqueVisitors": "Unique Visitors",
+          "aiRequests": "AI Requests",
+          "errors": "Errors",
+          "avgResponseTime": "Avg Response Time (ms)"
+        },
+        "sections": {
+          "topEndpoints": "Top Endpoints",
+          "statusCodes": "Status Codes",
+          "aiUsageByUser": "AI Usage by User"
+        },
+        "empty": {
+          "noData": "No data yet",
+          "noAiUsage": "No AI usage yet"
+        }
+      },
       "menu": {
         "refreshData": "Refresh Data",
         "showSidebar": "Show Sidebar",
@@ -3001,6 +3042,7 @@
         "aboutAdmin": "About Admin"
       },
       "sidebar": {
+        "dashboard": "Dashboard",
         "users": "Users",
         "rooms": "Rooms",
         "songs": "Songs",

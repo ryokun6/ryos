@@ -6,6 +6,47 @@
         "loginPrompt": "Effettua l'accesso con un account amministratore.",
         "title": "Accesso Negato"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "avgResponseTime": "[TODO] Avg Response Time (ms)",
+          "errors": "[TODO] Errors",
+          "uniqueVisitors": "[TODO] Unique Visitors"
+        },
+        "empty": {
+          "noAiUsage": "[TODO] No AI usage yet",
+          "noData": "[TODO] No data yet"
+        },
+        "failedToLoad": "[TODO] Failed to load",
+        "kpi": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "errorRate": "[TODO] Error Rate",
+          "visitors": "[TODO] Visitors"
+        },
+        "loading": "[TODO] Loading analytics...",
+        "range": {
+          "today": "[TODO] Today"
+        },
+        "retry": "[TODO] Retry",
+        "sections": {
+          "aiUsageByUser": "[TODO] AI Usage by User",
+          "statusCodes": "[TODO] Status Codes",
+          "topEndpoints": "[TODO] Top Endpoints"
+        },
+        "title": "[TODO] Dashboard",
+        "totals": {
+          "ai": "[TODO] AI",
+          "calls": "[TODO] calls",
+          "msAvg": "[TODO] ms avg",
+          "totals": "[TODO] totals",
+          "visitors": "[TODO] visitors"
+        },
+        "trend": {
+          "vsPrevDay": "[TODO] vs prev day"
+        }
+      },
       "description": "Pannello di amministrazione del sistema",
       "dialogs": {
         "banDescription": "Sei sicuro di voler bannare {{username}}? Verrà disconnesso e non potrà più accedere al servizio.",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "[TODO] Dashboard",
         "messagesCount": "{{count}} messaggi",
         "online": "online",
         "private": "Privato",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "Sposta nel Cestino",
         "name": "Nome",
         "newFolder": "Nuova Cartella…",
-        "open": "Apri",
-        "rename": "Rinomina…",
-        "shareViaAirDrop": "Condividi tramite AirDrop",
-        "searchingForAirDropUsers": "Ricerca utenti vicini…",
         "noAirDropUsersAvailable": "Nessun utente nelle vicinanze",
+        "open": "Apri",
         "openAirDrop": "Apri AirDrop",
+        "rename": "Rinomina…",
+        "searchingForAirDropUsers": "Ricerca utenti vicini…",
+        "shareViaAirDrop": "Condividi tramite AirDrop",
         "size": "Dimensione",
         "sortBy": "Ordina per"
       },

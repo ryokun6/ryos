@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowsClockwise, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -150,14 +151,10 @@ function StatCard({
   );
 }
 
-const RANGE_OPTIONS = [
-  { days: 1, label: "Today" },
-  { days: 7, label: "7d" },
-  { days: 14, label: "14d" },
-  { days: 30, label: "30d" },
-] as const;
+const RANGE_DAYS = [1, 7, 14, 30] as const;
 
 export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
+  const { t } = useTranslation();
   const { username, isAuthenticated } = useAuth();
   const [data, setData] = useState<AnalyticsDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -165,7 +162,9 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
   const [rangeDays, setRangeDays] = useState(1);
 
   const isToday = rangeDays === 1;
-  const rangeLabel = isToday ? "Today" : `${rangeDays}d`;
+  const rangeLabel = isToday ? t("apps.admin.dashboard.range.today") : `${rangeDays}d`;
+  const getRangeLabel = (d: number) =>
+    d === 1 ? t("apps.admin.dashboard.range.today") : `${d}d`;
 
   const fetchData = useCallback(async () => {
     if (!username || !isAuthenticated) return;
@@ -181,7 +180,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
       setData(result);
     } catch (err) {
       console.error("Failed to fetch analytics:", err);
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("apps.admin.dashboard.failedToLoad"));
     } finally {
       setIsLoading(false);
     }
@@ -196,7 +195,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
       <div className="flex flex-col items-center justify-center py-16 gap-3">
         <ActivityIndicator size={24} />
         <span className="text-[11px] text-neutral-500">
-          Loading analytics...
+          {t("apps.admin.dashboard.loading")}
         </span>
       </div>
     );
@@ -208,7 +207,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
         <Warning className="h-8 w-8 text-neutral-400" weight="bold" />
         <span className="text-[12px] text-neutral-600">{error}</span>
         <Button variant="outline" size="sm" onClick={fetchData}>
-          Retry
+          {t("apps.admin.dashboard.retry")}
         </Button>
       </div>
     );
@@ -225,7 +224,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
   function calcTrend(
     currentVal: number | undefined,
     previousVal: number | undefined,
-    label: string = "vs prev day"
+    label: string = t("apps.admin.dashboard.trend.vsPrevDay")
   ) {
     const cv = currentVal ?? 0;
     const pv = previousVal ?? 0;
@@ -257,9 +256,9 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
     <div className="flex flex-col h-full font-geneva-12">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-        <span className="text-[12px] font-medium">Dashboard</span>
+        <span className="text-[12px] font-medium">{t("apps.admin.dashboard.title")}</span>
         <div className="flex items-center gap-1">
-          {RANGE_OPTIONS.map(({ days: d, label }) => (
+          {RANGE_DAYS.map((d) => (
             <Button
               key={d}
               variant="ghost"
@@ -270,7 +269,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                 rangeDays === d && "bg-neutral-200"
               )}
             >
-              {label}
+              {getRangeLabel(d)}
             </Button>
           ))}
           <Button
@@ -295,22 +294,22 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-3">
           <StatCard
-            label="Visitors"
+            label={t("apps.admin.dashboard.kpi.visitors")}
             value={formatNumber(kpiVisitors)}
             trend={showTrend ? calcTrend(latestDay?.uniqueVisitors, prevDay?.uniqueVisitors) : undefined}
           />
           <StatCard
-            label="API Calls"
+            label={t("apps.admin.dashboard.kpi.apiCalls")}
             value={formatNumber(kpiCalls)}
             trend={showTrend ? calcTrend(latestDay?.calls, prevDay?.calls) : undefined}
           />
           <StatCard
-            label="AI Requests"
+            label={t("apps.admin.dashboard.kpi.aiRequests")}
             value={formatNumber(kpiAI)}
             trend={showTrend ? calcTrend(latestDay?.ai, prevDay?.ai) : undefined}
           />
           <StatCard
-            label="Error Rate"
+            label={t("apps.admin.dashboard.kpi.errorRate")}
             value={errorRate}
             trend={showTrend ? calcTrend(latestDay?.errors, prevDay?.errors) : undefined}
           />
@@ -319,18 +318,18 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
         {/* Totals strip */}
         <div className="flex items-center gap-4 px-4 pb-2 text-[10px] text-neutral-400">
           <span>
-            {rangeLabel}{!isToday ? " totals" : ""}: {formatNumber(isToday ? (latestDay?.calls ?? 0) : totals.calls)} calls
+            {rangeLabel}{!isToday ? ` ${t("apps.admin.dashboard.totals.totals")}` : ""}: {formatNumber(isToday ? (latestDay?.calls ?? 0) : totals.calls)} {t("apps.admin.dashboard.totals.calls")}
           </span>
-          <span>{formatNumber(isToday ? (latestDay?.uniqueVisitors ?? 0) : totals.uniqueVisitors)} visitors</span>
-          <span>{formatNumber(isToday ? (latestDay?.ai ?? 0) : totals.ai)} AI</span>
-          <span>{isToday ? (latestDay?.avgLatencyMs ?? 0) : totals.avgLatencyMs}ms avg</span>
+          <span>{formatNumber(isToday ? (latestDay?.uniqueVisitors ?? 0) : totals.uniqueVisitors)} {t("apps.admin.dashboard.totals.visitors")}</span>
+          <span>{formatNumber(isToday ? (latestDay?.ai ?? 0) : totals.ai)} {t("apps.admin.dashboard.totals.ai")}</span>
+          <span>{isToday ? (latestDay?.avgLatencyMs ?? 0) : totals.avgLatencyMs}{t("apps.admin.dashboard.totals.msAvg")}</span>
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
           <div className="border border-gray-200 rounded p-3 bg-white">
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              API Calls
+              {t("apps.admin.dashboard.charts.apiCalls")}
             </div>
             <MiniBarChart data={days} valueKey="calls" color="bg-neutral-400" height={56} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
@@ -347,7 +346,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
 
           <div className="border border-gray-200 rounded p-3 bg-white">
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              Unique Visitors
+              {t("apps.admin.dashboard.charts.uniqueVisitors")}
             </div>
             <MiniBarChart data={days} valueKey="uniqueVisitors" color="bg-green-400" height={56} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
@@ -364,7 +363,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
 
           <div className="border border-gray-200 rounded p-3 bg-white">
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              AI Requests
+              {t("apps.admin.dashboard.charts.aiRequests")}
             </div>
             <MiniBarChart data={days} valueKey="ai" color="bg-yellow-400" height={56} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
@@ -381,7 +380,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
 
           <div className="border border-gray-200 rounded p-3 bg-white">
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              Errors
+              {t("apps.admin.dashboard.charts.errors")}
             </div>
             <MiniBarChart data={days} valueKey="errors" color="bg-red-400" height={56} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
@@ -402,12 +401,12 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           <div className="border border-gray-200 rounded bg-white overflow-hidden">
             <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
               <span className="text-[10px] uppercase tracking-wide text-neutral-400">
-                Top Endpoints ({rangeLabel})
+                {t("apps.admin.dashboard.sections.topEndpoints")} ({rangeLabel})
               </span>
             </div>
             {topEndpoints.length === 0 ? (
               <div className="text-[11px] text-neutral-400 text-center py-4">
-                No data yet
+                {t("apps.admin.dashboard.empty.noData")}
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -444,12 +443,12 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           <div className="border border-gray-200 rounded bg-white overflow-hidden">
             <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
               <span className="text-[10px] uppercase tracking-wide text-neutral-400">
-                Status Codes
+                {t("apps.admin.dashboard.sections.statusCodes")}
               </span>
             </div>
             {statusCodes.length === 0 ? (
               <div className="text-[11px] text-neutral-400 text-center py-4">
-                No data yet
+                {t("apps.admin.dashboard.empty.noData")}
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -481,12 +480,12 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           <div className="border border-gray-200 rounded bg-white overflow-hidden">
             <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
               <span className="text-[10px] uppercase tracking-wide text-neutral-400">
-                AI Usage by User
+                {t("apps.admin.dashboard.sections.aiUsageByUser")}
               </span>
             </div>
             {aiByUser.length === 0 ? (
               <div className="text-[11px] text-neutral-400 text-center py-4">
-                No AI usage yet
+                {t("apps.admin.dashboard.empty.noAiUsage")}
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -538,7 +537,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
         <div className="px-3 pb-3">
           <div className="border border-gray-200 rounded p-3 bg-white">
             <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              Avg Response Time (ms)
+              {t("apps.admin.dashboard.charts.avgResponseTime")}
             </div>
             <MiniBarChart data={days} valueKey="avgLatencyMs" color="bg-neutral-300" height={48} />
             <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">

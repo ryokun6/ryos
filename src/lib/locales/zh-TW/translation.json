@@ -6,6 +6,47 @@
         "loginPrompt": "請使用管理員帳戶登入。",
         "title": "存取遭拒"
       },
+      "dashboard": {
+        "charts": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "avgResponseTime": "[TODO] Avg Response Time (ms)",
+          "errors": "[TODO] Errors",
+          "uniqueVisitors": "[TODO] Unique Visitors"
+        },
+        "empty": {
+          "noAiUsage": "[TODO] No AI usage yet",
+          "noData": "[TODO] No data yet"
+        },
+        "failedToLoad": "[TODO] Failed to load",
+        "kpi": {
+          "aiRequests": "[TODO] AI Requests",
+          "apiCalls": "[TODO] API Calls",
+          "errorRate": "[TODO] Error Rate",
+          "visitors": "[TODO] Visitors"
+        },
+        "loading": "[TODO] Loading analytics...",
+        "range": {
+          "today": "[TODO] Today"
+        },
+        "retry": "[TODO] Retry",
+        "sections": {
+          "aiUsageByUser": "[TODO] AI Usage by User",
+          "statusCodes": "[TODO] Status Codes",
+          "topEndpoints": "[TODO] Top Endpoints"
+        },
+        "title": "[TODO] Dashboard",
+        "totals": {
+          "ai": "[TODO] AI",
+          "calls": "[TODO] calls",
+          "msAvg": "[TODO] ms avg",
+          "totals": "[TODO] totals",
+          "visitors": "[TODO] visitors"
+        },
+        "trend": {
+          "vsPrevDay": "[TODO] vs prev day"
+        }
+      },
       "description": "系統管理面板",
       "dialogs": {
         "banDescription": "您確定要封鎖 {{username}} 嗎？他們將會登出且無法存取服務。",
@@ -197,6 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "dashboard": "[TODO] Dashboard",
         "messagesCount": "{{count}} 則訊息",
         "online": "線上",
         "private": "私人",
@@ -1432,12 +1474,12 @@
         "moveToTrash": "丟到垃圾桶",
         "name": "名稱",
         "newFolder": "新增檔案夾…",
-        "open": "開啟",
-        "rename": "重新命名…",
-        "shareViaAirDrop": "透過 AirDrop 分享",
-        "searchingForAirDropUsers": "正在尋找附近的使用者…",
         "noAirDropUsersAvailable": "附近沒有使用者",
+        "open": "開啟",
         "openAirDrop": "開啟 AirDrop",
+        "rename": "重新命名…",
+        "searchingForAirDropUsers": "正在尋找附近的使用者…",
+        "shareViaAirDrop": "透過 AirDrop 分享",
         "size": "大小",
         "sortBy": "排序方式"
       },
