@@ -74,17 +74,17 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
 };
 
 const MAX_UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
-  settings: 10_000,
-  "files-metadata": 30_000,
-  "files-images": 30_000,
-  "files-trash": 20_000,
-  "files-applets": 30_000,
-  songs: 15_000,
-  videos: 15_000,
-  stickies: 12_000,
-  calendar: 15_000,
-  contacts: 12_000,
-  "custom-wallpapers": 30_000,
+  settings: 8_000,
+  "files-metadata": 15_000,
+  "files-images": 15_000,
+  "files-trash": 10_000,
+  "files-applets": 15_000,
+  songs: 10_000,
+  videos: 10_000,
+  stickies: 8_000,
+  calendar: 10_000,
+  contacts: 8_000,
+  "custom-wallpapers": 15_000,
 };
 
 const UPLOAD_RETRY_DELAYS = [3_000, 8_000, 20_000];
