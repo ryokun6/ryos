@@ -34,7 +34,7 @@ import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
-import { useVoiceDucking } from "./useVoiceDucking";
+import { useVoiceDucking } from "@/hooks/useVoiceDucking";
 
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;
@@ -142,13 +142,6 @@ export function useKaraokeLogic({
     setFullScreen,
     setStoreElapsedTime,
     setStoreTotalTime,
-    voiceDuckingEnabled,
-    voiceDuckingSensitivity,
-    voiceDuckingAmount,
-    toggleVoiceDucking,
-    setVoiceDuckingEnabled,
-    setVoiceDuckingSensitivity,
-    setVoiceDuckingAmount,
   } = useKaraokeStore(
     useShallow((s) => ({
       currentSongId: s.currentSongId,
@@ -169,13 +162,6 @@ export function useKaraokeLogic({
       setFullScreen: s.setFullScreen,
       setStoreElapsedTime: s.setElapsedTime,
       setStoreTotalTime: s.setTotalTime,
-      voiceDuckingEnabled: s.voiceDuckingEnabled,
-      voiceDuckingSensitivity: s.voiceDuckingSensitivity,
-      voiceDuckingAmount: s.voiceDuckingAmount,
-      toggleVoiceDucking: s.toggleVoiceDucking,
-      setVoiceDuckingEnabled: s.setVoiceDuckingEnabled,
-      setVoiceDuckingSensitivity: s.setVoiceDuckingSensitivity,
-      setVoiceDuckingAmount: s.setVoiceDuckingAmount,
     }))
   );
 
@@ -268,15 +254,30 @@ export function useKaraokeLogic({
   const isTrackSwitchingRef = useRef(false);
   const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Volume from audio settings store
-  const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
+  // Volume and voice ducking from shared audio settings store
+  const {
+    ipodVolume,
+    voiceDuckingEnabled,
+    voiceDuckingSensitivity,
+    voiceDuckingAmount,
+    toggleVoiceDucking,
+    setVoiceDuckingSensitivity,
+    setVoiceDuckingAmount,
+  } = useAudioSettingsStoreShallow((state) => ({
+    ipodVolume: state.ipodVolume,
+    voiceDuckingEnabled: state.voiceDuckingEnabled,
+    voiceDuckingSensitivity: state.voiceDuckingSensitivity,
+    voiceDuckingAmount: state.voiceDuckingAmount,
+    toggleVoiceDucking: state.toggleVoiceDucking,
+    setVoiceDuckingSensitivity: state.setVoiceDuckingSensitivity,
+    setVoiceDuckingAmount: state.setVoiceDuckingAmount,
+  }));
 
   // Voice ducking: auto-reduce playback volume when microphone detects singing
   const {
     duckingMultiplier,
     isVoiceDetected,
     isListening: isVoiceDuckingListening,
-    error: voiceDuckingError,
   } = useVoiceDucking({
     enabled: voiceDuckingEnabled,
     sensitivity: voiceDuckingSensitivity,
@@ -1316,12 +1317,10 @@ export function useKaraokeLogic({
     duckingMultiplier,
     isVoiceDetected,
     isVoiceDuckingListening,
-    voiceDuckingError,
     voiceDuckingEnabled,
     voiceDuckingSensitivity,
     voiceDuckingAmount,
     toggleVoiceDucking,
-    setVoiceDuckingEnabled,
     setVoiceDuckingSensitivity,
     setVoiceDuckingAmount,
     userHasInteractedRef,

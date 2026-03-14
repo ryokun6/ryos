@@ -42,6 +42,7 @@ import type { IpodInitialData } from "../../base/types";
 import type { CoverFlowRef } from "../components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
+import { useVoiceDucking } from "@/hooks/useVoiceDucking";
 
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
@@ -1433,8 +1434,24 @@ export function useIpodLogic({
     return useIpodStore.getState().getCurrentTrack();
   }, []);
 
-  // Volume from audio settings store
-  const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
+  // Volume and voice ducking from shared audio settings store
+  const {
+    ipodVolume,
+    voiceDuckingEnabled,
+    voiceDuckingSensitivity,
+    voiceDuckingAmount,
+  } = useAudioSettingsStoreShallow((state) => ({
+    ipodVolume: state.ipodVolume,
+    voiceDuckingEnabled: state.voiceDuckingEnabled,
+    voiceDuckingSensitivity: state.voiceDuckingSensitivity,
+    voiceDuckingAmount: state.voiceDuckingAmount,
+  }));
+
+  const { duckingMultiplier } = useVoiceDucking({
+    enabled: voiceDuckingEnabled,
+    sensitivity: voiceDuckingSensitivity,
+    amount: voiceDuckingAmount,
+  });
 
   // Lyrics hook
   const selectedMatchForLyrics = useMemo(() => {
@@ -1807,6 +1824,7 @@ export function useIpodLogic({
 
     // Audio
     ipodVolume,
+    duckingMultiplier,
 
     // Handlers
     handleTrackEnd,
