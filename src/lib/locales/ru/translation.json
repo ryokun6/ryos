@@ -8,43 +8,43 @@
       },
       "dashboard": {
         "charts": {
-          "aiRequests": "[TODO] AI Requests",
-          "apiCalls": "[TODO] API Calls",
-          "avgResponseTime": "[TODO] Avg Response Time (ms)",
-          "errors": "[TODO] Errors",
-          "uniqueVisitors": "[TODO] Unique Visitors"
+          "aiRequests": "Запросы ИИ",
+          "apiCalls": "Вызовы API",
+          "avgResponseTime": "Ср. время отклика (мс)",
+          "errors": "Ошибки",
+          "uniqueVisitors": "Уникальные посетители"
         },
         "empty": {
-          "noAiUsage": "[TODO] No AI usage yet",
-          "noData": "[TODO] No data yet"
+          "noAiUsage": "Использование ИИ пока отсутствует",
+          "noData": "Данных пока нет"
         },
-        "failedToLoad": "[TODO] Failed to load",
+        "failedToLoad": "Не удалось загрузить",
         "kpi": {
-          "aiRequests": "[TODO] AI Requests",
-          "apiCalls": "[TODO] API Calls",
-          "errorRate": "[TODO] Error Rate",
-          "visitors": "[TODO] Visitors"
+          "aiRequests": "Запросы ИИ",
+          "apiCalls": "Вызовы API",
+          "errorRate": "Доля ошибок",
+          "visitors": "Посетители"
         },
-        "loading": "[TODO] Loading analytics...",
+        "loading": "Загрузка аналитики...",
         "range": {
-          "today": "[TODO] Today"
+          "today": "Сегодня"
         },
-        "retry": "[TODO] Retry",
+        "retry": "Повторить",
         "sections": {
-          "aiUsageByUser": "[TODO] AI Usage by User",
-          "statusCodes": "[TODO] Status Codes",
-          "topEndpoints": "[TODO] Top Endpoints"
+          "aiUsageByUser": "Использование ИИ пользователями",
+          "statusCodes": "Коды состояния",
+          "topEndpoints": "Топ эндпоинтов"
         },
-        "title": "[TODO] Dashboard",
+        "title": "Панель управления",
         "totals": {
-          "ai": "[TODO] AI",
-          "calls": "[TODO] calls",
-          "msAvg": "[TODO] ms avg",
-          "totals": "[TODO] totals",
-          "visitors": "[TODO] visitors"
+          "ai": "ИИ",
+          "calls": "вызовы",
+          "msAvg": "ср. мс",
+          "totals": "итого",
+          "visitors": "посетители"
         },
         "trend": {
-          "vsPrevDay": "[TODO] vs prev day"
+          "vsPrevDay": "к пред. дню"
         }
       },
       "description": "Панель администрирования системы",
@@ -238,7 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
-        "dashboard": "[TODO] Dashboard",
+        "dashboard": "Дашборд",
         "messagesCount": "{{count}} сообщений",
         "online": "онлайн",
         "private": "Приватный",

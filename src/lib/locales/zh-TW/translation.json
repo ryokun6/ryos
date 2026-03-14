@@ -8,43 +8,43 @@
       },
       "dashboard": {
         "charts": {
-          "aiRequests": "[TODO] AI Requests",
-          "apiCalls": "[TODO] API Calls",
-          "avgResponseTime": "[TODO] Avg Response Time (ms)",
-          "errors": "[TODO] Errors",
-          "uniqueVisitors": "[TODO] Unique Visitors"
+          "aiRequests": "AI 請求",
+          "apiCalls": "API 呼叫",
+          "avgResponseTime": "平均回應時間 (ms)",
+          "errors": "錯誤",
+          "uniqueVisitors": "不重複訪客"
         },
         "empty": {
-          "noAiUsage": "[TODO] No AI usage yet",
-          "noData": "[TODO] No data yet"
+          "noAiUsage": "尚無 AI 使用紀錄",
+          "noData": "尚無資料"
         },
-        "failedToLoad": "[TODO] Failed to load",
+        "failedToLoad": "載入失敗",
         "kpi": {
-          "aiRequests": "[TODO] AI Requests",
-          "apiCalls": "[TODO] API Calls",
-          "errorRate": "[TODO] Error Rate",
-          "visitors": "[TODO] Visitors"
+          "aiRequests": "AI 請求",
+          "apiCalls": "API 呼叫",
+          "errorRate": "錯誤率",
+          "visitors": "訪客"
         },
-        "loading": "[TODO] Loading analytics...",
+        "loading": "正在載入分析數據...",
         "range": {
-          "today": "[TODO] Today"
+          "today": "今日"
         },
-        "retry": "[TODO] Retry",
+        "retry": "重試",
         "sections": {
-          "aiUsageByUser": "[TODO] AI Usage by User",
-          "statusCodes": "[TODO] Status Codes",
-          "topEndpoints": "[TODO] Top Endpoints"
+          "aiUsageByUser": "使用者 AI 使用量",
+          "statusCodes": "狀態碼",
+          "topEndpoints": "熱門端點"
         },
-        "title": "[TODO] Dashboard",
+        "title": "儀表板",
         "totals": {
-          "ai": "[TODO] AI",
-          "calls": "[TODO] calls",
-          "msAvg": "[TODO] ms avg",
-          "totals": "[TODO] totals",
-          "visitors": "[TODO] visitors"
+          "ai": "AI",
+          "calls": "呼叫",
+          "msAvg": "平均 ms",
+          "totals": "總計",
+          "visitors": "訪客"
         },
         "trend": {
-          "vsPrevDay": "[TODO] vs prev day"
+          "vsPrevDay": "較前一日"
         }
       },
       "description": "系統管理面板",
@@ -238,7 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
-        "dashboard": "[TODO] Dashboard",
+        "dashboard": "儀表板",
         "messagesCount": "{{count}} 則訊息",
         "online": "線上",
         "private": "私人",
@@ -666,7 +666,7 @@
         "usingModel": "使用 {{model}}"
       },
       "tokenStatus": {
-        "authenticated": "[TODO] Logged in",
+        "authenticated": "已登入",
         "clickToRefresh": "點擊以手動重新整理權杖",
         "daysAgo": "{{days}} 天前",
         "daysOld": "{{days}} 天",
@@ -1137,9 +1137,9 @@
       },
       "color": "全彩",
       "connectionStatus": {
-        "connected": "[TODO] Connected",
-        "connecting": "[TODO] Connecting…",
-        "disconnected": "[TODO] Disconnected"
+        "connected": "已連線",
+        "connecting": "連線中…",
+        "disconnected": "已斷線"
       },
       "crashApp": "App 崩潰",
       "crashDesktop": "桌面崩潰",

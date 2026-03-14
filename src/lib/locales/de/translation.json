@@ -8,43 +8,43 @@
       },
       "dashboard": {
         "charts": {
-          "aiRequests": "[TODO] AI Requests",
-          "apiCalls": "[TODO] API Calls",
-          "avgResponseTime": "[TODO] Avg Response Time (ms)",
-          "errors": "[TODO] Errors",
-          "uniqueVisitors": "[TODO] Unique Visitors"
+          "aiRequests": "KI-Anfragen",
+          "apiCalls": "API-Aufrufe",
+          "avgResponseTime": "Durchschn. Antwortzeit (ms)",
+          "errors": "Fehler",
+          "uniqueVisitors": "Eindeutige Besucher"
         },
         "empty": {
-          "noAiUsage": "[TODO] No AI usage yet",
-          "noData": "[TODO] No data yet"
+          "noAiUsage": "Noch keine KI-Nutzung",
+          "noData": "Noch keine Daten"
         },
-        "failedToLoad": "[TODO] Failed to load",
+        "failedToLoad": "Laden fehlgeschlagen",
         "kpi": {
-          "aiRequests": "[TODO] AI Requests",
-          "apiCalls": "[TODO] API Calls",
-          "errorRate": "[TODO] Error Rate",
-          "visitors": "[TODO] Visitors"
+          "aiRequests": "KI-Anfragen",
+          "apiCalls": "API-Aufrufe",
+          "errorRate": "Fehlerrate",
+          "visitors": "Besucher"
         },
-        "loading": "[TODO] Loading analytics...",
+        "loading": "Analysen werden geladen...",
         "range": {
-          "today": "[TODO] Today"
+          "today": "Heute"
         },
-        "retry": "[TODO] Retry",
+        "retry": "Wiederholen",
         "sections": {
-          "aiUsageByUser": "[TODO] AI Usage by User",
-          "statusCodes": "[TODO] Status Codes",
-          "topEndpoints": "[TODO] Top Endpoints"
+          "aiUsageByUser": "KI-Nutzung nach Benutzer",
+          "statusCodes": "Statuscodes",
+          "topEndpoints": "Top-Endpunkte"
         },
-        "title": "[TODO] Dashboard",
+        "title": "Dashboard",
         "totals": {
-          "ai": "[TODO] AI",
-          "calls": "[TODO] calls",
-          "msAvg": "[TODO] ms avg",
-          "totals": "[TODO] totals",
-          "visitors": "[TODO] visitors"
+          "ai": "KI",
+          "calls": "Aufrufe",
+          "msAvg": "ms Durchschn.",
+          "totals": "Gesamt",
+          "visitors": "Besucher"
         },
         "trend": {
-          "vsPrevDay": "[TODO] vs prev day"
+          "vsPrevDay": "vs. Vortag"
         }
       },
       "description": "Systemadministrationspanel",
@@ -238,7 +238,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
-        "dashboard": "[TODO] Dashboard",
+        "dashboard": "Dashboard",
         "messagesCount": "{{count}} Nachrichten",
         "online": "online",
         "private": "Privat",

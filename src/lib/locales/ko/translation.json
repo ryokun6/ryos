@@ -8,43 +8,43 @@
       },
       "dashboard": {
         "charts": {
-          "aiRequests": "[TODO] AI Requests",
-          "apiCalls": "[TODO] API Calls",
-          "avgResponseTime": "[TODO] Avg Response Time (ms)",
-          "errors": "[TODO] Errors",
-          "uniqueVisitors": "[TODO] Unique Visitors"
+          "aiRequests": "AI 요청",
+          "apiCalls": "API 호출",
+          "avgResponseTime": "평균 응답 시간 (ms)",
+          "errors": "오류",
+          "uniqueVisitors": "순 방문자 수"
         },
         "empty": {
-          "noAiUsage": "[TODO] No AI usage yet",
-          "noData": "[TODO] No data yet"
+          "noAiUsage": "아직 AI 사용 내역이 없습니다",
+          "noData": "아직 데이터가 없습니다"
         },
-        "failedToLoad": "[TODO] Failed to load",
+        "failedToLoad": "로드 실패",
         "kpi": {
-          "aiRequests": "[TODO] AI Requests",
-          "apiCalls": "[TODO] API Calls",
-          "errorRate": "[TODO] Error Rate",
-          "visitors": "[TODO] Visitors"
+          "aiRequests": "AI 요청",
+          "apiCalls": "API 호출",
+          "errorRate": "오류율",
+          "visitors": "방문자"
         },
-        "loading": "[TODO] Loading analytics...",
+        "loading": "분석 데이터 로드 중...",
         "range": {
-          "today": "[TODO] Today"
+          "today": "오늘"
         },
-        "retry": "[TODO] Retry",
+        "retry": "재시도",
         "sections": {
-          "aiUsageByUser": "[TODO] AI Usage by User",
-          "statusCodes": "[TODO] Status Codes",
-          "topEndpoints": "[TODO] Top Endpoints"
+          "aiUsageByUser": "사용자별 AI 사용량",
+          "statusCodes": "상태 코드",
+          "topEndpoints": "주요 엔드포인트"
         },
-        "title": "[TODO] Dashboard",
+        "title": "대시보드",
         "totals": {
-          "ai": "[TODO] AI",
-          "calls": "[TODO] calls",
-          "msAvg": "[TODO] ms avg",
-          "totals": "[TODO] totals",
-          "visitors": "[TODO] visitors"
+          "ai": "AI",
+          "calls": "호출",
+          "msAvg": "ms 평균",
+          "totals": "합계",
+          "visitors": "방문자"
         },
         "trend": {
-          "vsPrevDay": "[TODO] vs prev day"
+          "vsPrevDay": "전일 대비"
         }
       },
       "description": "시스템 관리 패널",
@@ -238,7 +238,7 @@
         "websocket": "웹소켓 (푸셔)"
       },
       "sidebar": {
-        "dashboard": "[TODO] Dashboard",
+        "dashboard": "대시보드",
         "messagesCount": "{{count}}개 메시지",
         "online": "온라인",
         "private": "비공개",
