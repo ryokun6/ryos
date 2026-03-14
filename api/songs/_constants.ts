@@ -35,8 +35,9 @@ export const SKIP_PREFIXES = [
   "Chorus by", "Percussion by", "String by", "Harp by", "Piano by",
   "Piano Arranged by", "Written by", "Additional Production by",
   "Synthesizer", "Programming", "Background Vocals", "Recording Engineer",
-  "Digital Editing", "Sessions", "Original publisher", "All Instruments by",
-  "Additional Drums", "Digital editing by"
+  "Digital Editing", "Digital Edited", "Sessions", "Original publisher",
+  "Original Lyrics", "Korean Lyrics", "All Instruments by", "Additional Drums",
+  "Digital editing by"
 ] as const;
 
 // =============================================================================
