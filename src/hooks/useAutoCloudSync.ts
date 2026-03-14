@@ -47,7 +47,11 @@ import {
 } from "@/utils/cloudSyncShared";
 import type { CloudSyncVersionState } from "@/utils/cloudSyncVersion";
 
-const POLL_INTERVAL_MS = 15 * 60 * 1000;
+const POLL_INTERVAL_MS = 2 * 60 * 1000;
+
+// Minimum gap between visibility/focus-triggered checks to avoid rapid-fire
+// requests when the user alt-tabs repeatedly.
+const VISIBILITY_CHECK_COOLDOWN_MS = 30_000;
 const REMOTE_APPLY_SUPPRESSION_MS = 2000;
 
 // Safety windows used while a download is in-flight. These are narrowed to
@@ -155,6 +159,7 @@ export function useAutoCloudSync() {
     "custom-wallpapers": 0,
   });
   const checkInFlightRef = useRef(false);
+  const lastVisibilityCheckRef = useRef(0);
   const wallpaperSeedDoneRef = useRef(false);
   const contactsSeedDoneRef = useRef(false);
 
@@ -552,6 +557,57 @@ export function useAutoCloudSync() {
     };
   }, [isSyncActive, username]);
 
+  const flushPendingUploads = useCallback(() => {
+    const syncState = useCloudSyncStore.getState();
+    for (const domain of CLOUD_SYNC_DOMAINS) {
+      if (
+        isDomainEnabled(domain) &&
+        hasUnsyncedLocalChanges(
+          lastLocalChangeAtRef.current[domain],
+          syncState.domainStatus[domain].lastUploadedAt
+        )
+      ) {
+        setTimeout(
+          () => queueUpload(domain),
+          REMOTE_APPLY_SUPPRESSION_MS + 1000
+        );
+      }
+    }
+  }, [isDomainEnabled, queueUpload]);
+
+  // Trigger a bidirectional sync when the user switches back to this tab,
+  // focuses the window, or comes back online — pull remote changes and push
+  // any pending local changes so other clients see them.
+  useEffect(() => {
+    if (!isSyncActive) return;
+
+    const triggerCheck = () => {
+      const now = Date.now();
+      if (now - lastVisibilityCheckRef.current < VISIBILITY_CHECK_COOLDOWN_MS) {
+        return;
+      }
+      lastVisibilityCheckRef.current = now;
+      console.log("[CloudSync] Triggered bidirectional sync (visibility/focus/online)");
+      void checkRemoteUpdates().then(flushPendingUploads);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        triggerCheck();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", triggerCheck);
+    window.addEventListener("online", triggerCheck);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", triggerCheck);
+      window.removeEventListener("online", triggerCheck);
+    };
+  }, [checkRemoteUpdates, flushPendingUploads, isSyncActive]);
+
   useEffect(() => {
     if (!isSyncActive) {
       clearAllUploadTimers();
@@ -741,27 +797,10 @@ export function useAutoCloudSync() {
         lastLocalChangeAtRef.current[d] = getLatestLocalChangeAt(d);
     }
 
-    void (async () => {
-      await checkRemoteUpdates();
+    void checkRemoteUpdates().then(flushPendingUploads);
 
-      const syncState = useCloudSyncStore.getState();
-      for (const domain of CLOUD_SYNC_DOMAINS) {
-        if (
-          isDomainEnabled(domain) &&
-          hasUnsyncedLocalChanges(
-            lastLocalChangeAtRef.current[domain],
-            syncState.domainStatus[domain].lastUploadedAt
-          )
-        ) {
-          setTimeout(
-            () => queueUpload(domain),
-            REMOTE_APPLY_SUPPRESSION_MS + 1000
-          );
-        }
-      }
-    })();
     const intervalId = setInterval(() => {
-      void checkRemoteUpdates();
+      void checkRemoteUpdates().then(flushPendingUploads);
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -788,6 +827,7 @@ export function useAutoCloudSync() {
     checkRemoteUpdates,
     clearAllUploadTimers,
     enabledDomainsKey,
+    flushPendingUploads,
     isSyncActive,
     queueUpload,
   ]);
