@@ -328,6 +328,7 @@
         "forward": "Forward",
         "sidebar": "Sidebar",
         "import": "Import File…",
+        "goUp": "Go Up",
         "newWindow": "New Window",
         "finderHelp": "Finder Help",
         "aboutFinder": "About Finder"

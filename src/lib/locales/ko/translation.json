@@ -1529,6 +1529,7 @@
         "emptyTrash": "휴지통 비우기...",
         "finderHelp": "Finder 도움말",
         "forward": "앞으로",
+        "goUp": "상위 폴더로 이동",
         "import": "파일 가져오기…",
         "importFromDevice": "기기에서 가져오기...",
         "moveToTrash": "휴지통으로 이동",

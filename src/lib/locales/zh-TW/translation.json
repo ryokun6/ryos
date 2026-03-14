@@ -1529,6 +1529,7 @@
         "emptyTrash": "清空垃圾桶...",
         "finderHelp": "Finder 輔助說明",
         "forward": "往前",
+        "goUp": "前往上層",
         "import": "輸入檔案…",
         "importFromDevice": "從裝置匯入...",
         "moveToTrash": "移至垃圾桶",

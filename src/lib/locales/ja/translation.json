@@ -1529,6 +1529,7 @@
         "emptyTrash": "ゴミ箱を空にする...",
         "finderHelp": "Finder ヘルプ",
         "forward": "進む",
+        "goUp": "上の階層へ",
         "import": "ファイルを読み込む…",
         "importFromDevice": "デバイスから読み込む...",
         "moveToTrash": "ゴミ箱に入れる",

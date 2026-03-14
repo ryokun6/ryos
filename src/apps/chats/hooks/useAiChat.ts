@@ -46,6 +46,10 @@ import {
   emitDocumentUpdated,
 } from "@/utils/appEventBus";
 import {
+  persistChatApplet,
+  persistChatDocument,
+} from "../utils/chatFilePersistence";
+import {
   handleLaunchApp,
   handleCloseApp,
   handleSettings,
@@ -1372,29 +1376,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 }
               }
 
-              // Save metadata to file store (addItem generates UUID for new files, preserves for existing)
-              useFilesStore.getState().addItem({
+              await persistChatDocument({
+                saveFile,
                 path,
-                name: fileName,
-                isDirectory: false,
-                type: "markdown",
-                size: new Blob([finalContent]).size,
-                icon: "📄",
+                fileName,
+                content: finalContent,
+                icon: existingItem?.icon || "📄",
               });
-
-              // Get the saved item with UUID
-              const savedItem = useFilesStore.getState().items[path];
-              if (!savedItem?.uuid) {
-                throw new Error("Failed to save document metadata");
-              }
-
-              // Save content to persisted browser storage
-              await dbOperations.put<DocumentContent>(
-                STORES.DOCUMENTS,
-                { name: fileName, content: finalContent },
-                savedItem.uuid,
-              );
-
               // Find existing TextEdit instance for this file
               let targetInstanceId: string | null = null;
               for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
@@ -1539,18 +1527,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 // Replace exactly one occurrence
                 const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
-
-                // Save updated content to persisted browser storage
-                await dbOperations.put<DocumentContent>(
-                  STORES.DOCUMENTS,
-                  { name: fileItem.name, content: updatedContent },
-                  fileItem.uuid,
-                );
-
-                // Update file size in metadata
-                filesStore.addItem({
-                  ...fileItem,
-                  size: new Blob([updatedContent]).size,
+                await persistChatDocument({
+                  saveFile,
+                  path,
+                  fileName: fileItem.name,
+                  content: updatedContent,
+                  icon: fileItem.icon || "📄",
                 });
 
                 // Also update any open TextEdit instance showing this file
@@ -1628,18 +1610,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 // Replace exactly one occurrence
                 const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
-
-                // Save to persisted browser storage
-                await dbOperations.put<DocumentContent>(
-                  STORES.APPLETS,
-                  { name: fileItem.uuid, content: updatedContent },
-                  fileItem.uuid,
-                );
-
-                // Update file size in metadata
-                filesStore.addItem({
-                  ...fileItem,
-                  size: new Blob([updatedContent]).size,
+                await persistChatApplet({
+                  saveFile,
+                  fileItem,
+                  content: updatedContent,
                 });
 
                 // Let any open applet viewers hot-reload this edited applet.
