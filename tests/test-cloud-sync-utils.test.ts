@@ -581,6 +581,66 @@ describe("cloud sync shared helpers", () => {
     expect(merged.sectionUpdatedAt?.audio).toBe("2026-03-14T16:00:06.000Z");
   });
 
+  test("preserves local settings when remote snapshot has undefined sections", () => {
+    const localSnapshot = {
+      theme: "xp",
+      language: "en" as const,
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini" as const,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null as "openai" | "elevenlabs" | null,
+        ttsVoice: null as string | null,
+        synthPreset: "classic",
+      },
+      sectionUpdatedAt: {
+        theme: "2026-03-14T16:00:00.000Z",
+        language: "2026-03-14T16:00:00.000Z",
+        display: "2026-03-14T16:00:00.000Z",
+        audio: "2026-03-14T16:00:00.000Z",
+        aiModel: "2026-03-14T16:00:00.000Z",
+      },
+    };
+
+    const malformedRemote = {
+      sectionUpdatedAt: {
+        theme: "2026-03-14T16:00:05.000Z",
+        language: "2026-03-14T16:00:05.000Z",
+        display: "2026-03-14T16:00:05.000Z",
+        audio: "2026-03-14T16:00:05.000Z",
+        aiModel: "2026-03-14T16:00:05.000Z",
+      },
+    } as unknown as Parameters<typeof mergeSettingsSnapshotData>[1];
+
+    const merged = mergeSettingsSnapshotData(localSnapshot, malformedRemote);
+
+    expect(merged.theme).toBe("xp");
+    expect(merged.language).toBe("en");
+    expect(merged.display.currentWallpaper).toBe("/wallpapers/local.jpg");
+    expect(merged.audio.masterVolume).toBe(0.5);
+    expect(merged.aiModel).toBe("gpt-4o-mini");
+  });
+
   test("preserves remote-only individual blob items on upload", () => {
     const plan = planIndividualBlobUpload(
       [
