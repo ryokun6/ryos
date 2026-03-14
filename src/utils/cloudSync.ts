@@ -54,12 +54,15 @@ import {
   createEmptyCloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
 import {
-  filterDeletedFilePaths,
   filterDeletedIds,
   mergeDeletionMarkerMaps,
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import {
+  mergeFilesMetadataSnapshots,
+  type FilesMetadataSyncSnapshot,
+} from "@/utils/cloudSyncFileMerge";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
@@ -838,25 +841,38 @@ async function applyFilesMetadataSnapshot(
   data: FilesMetadataSnapshotData
 ): Promise<void> {
   const remoteDeletedPaths = normalizeDeletionMarkerMap(data.deletedPaths);
-  const localDeletedPaths =
-    useCloudSyncStore.getState().deletionMarkers.fileMetadataPaths;
+  const cloudSyncState = useCloudSyncStore.getState();
+  const localDeletedPaths = cloudSyncState.deletionMarkers.fileMetadataPaths;
+  const localSnapshot: FilesMetadataSyncSnapshot = {
+    items: useFilesStore.getState().items,
+    libraryState: useFilesStore.getState().libraryState,
+    documents: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS),
+    deletedPaths: localDeletedPaths,
+  };
+  const mergedSnapshot = mergeFilesMetadataSnapshots(localSnapshot, {
+    ...data,
+    deletedPaths: remoteDeletedPaths,
+  });
   const effectiveDeletedPaths = mergeDeletionMarkerMaps(
     localDeletedPaths,
     remoteDeletedPaths
   );
+  const prunedDeletedPaths = Object.keys(effectiveDeletedPaths).filter(
+    (path) => !mergedSnapshot.deletedPaths?.[path]
+  );
 
-  useCloudSyncStore
-    .getState()
-    .mergeDeletedKeys("fileMetadataPaths", remoteDeletedPaths);
+  cloudSyncState.mergeDeletedKeys("fileMetadataPaths", remoteDeletedPaths);
+  cloudSyncState.clearDeletedKeys("fileMetadataPaths", prunedDeletedPaths);
 
   useFilesStore.setState({
-    items: filterDeletedFilePaths(data.items, effectiveDeletedPaths),
-    libraryState: data.libraryState,
+    items: mergedSnapshot.items,
+    libraryState: mergedSnapshot.libraryState,
   });
 
-  if (data.documents) {
-    await applyIndexedDbStoreSnapshot(STORES.DOCUMENTS, data.documents);
-  }
+  await applyIndexedDbStoreSnapshot(
+    STORES.DOCUMENTS,
+    mergedSnapshot.documents || []
+  );
 }
 
 function applySongsSnapshot(data: SongsSnapshotData): void {
@@ -1137,6 +1153,17 @@ async function uploadRedisStateDomain(
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
+  let data = envelope.data;
+
+  if (domain === "files-metadata") {
+    const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
+    if (remoteSnapshot?.data) {
+      data = mergeFilesMetadataSnapshots(
+        envelope.data as FilesMetadataSnapshotData,
+        remoteSnapshot.data as FilesMetadataSnapshotData
+      );
+    }
+  }
 
   const response = await abortableFetch(getApiUrl("/api/sync/state"), {
     method: "PUT",
@@ -1146,7 +1173,7 @@ async function uploadRedisStateDomain(
     },
     body: JSON.stringify({
       domain,
-      data: envelope.data,
+      data,
       updatedAt: envelope.updatedAt,
       version: envelope.version,
     }),
@@ -1168,6 +1195,54 @@ async function uploadRedisStateDomain(
   }
 
   return result.metadata;
+}
+
+async function fetchRedisStateDomainSnapshot(
+  domain: RedisSyncDomain,
+  _auth: AuthContext
+): Promise<
+  | {
+      data: AnySnapshotData;
+      metadata: CloudSyncDomainMetadata;
+    }
+  | null
+> {
+  const response = await abortableFetch(
+    getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
+    {
+      method: "GET",
+      headers: authHeaders(),
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    }
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      (errorData as { error?: string }).error ||
+        `Failed to download ${domain} state`
+    );
+  }
+
+  const result = (await response.json()) as {
+    data?: unknown;
+    metadata?: CloudSyncDomainMetadata;
+  };
+
+  if (result.data === undefined || !result.metadata) {
+    throw new Error("State download response was invalid.");
+  }
+
+  return {
+    data: result.data as AnySnapshotData,
+    metadata: result.metadata,
+  };
 }
 
 async function fetchBlobDomainInfo(
@@ -1425,32 +1500,9 @@ async function downloadRedisStateDomain(
   domain: RedisSyncDomain,
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  const response = await abortableFetch(
-    getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
-    {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to download ${domain} state`
-    );
-  }
-
-  const result = (await response.json()) as {
-    data?: unknown;
-    metadata?: CloudSyncDomainMetadata;
-  };
-
-  if (result.data === undefined || !result.metadata) {
-    throw new Error("State download response was invalid.");
+  const result = await fetchRedisStateDomainSnapshot(domain, _auth);
+  if (!result) {
+    throw new Error(`No ${domain} state found`);
   }
 
   const envelope: CloudSyncEnvelope<AnySnapshotData> = {

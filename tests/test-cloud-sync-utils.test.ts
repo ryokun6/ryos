@@ -19,6 +19,7 @@ import {
   filterDeletedIds,
   mergeDeletionMarkerMaps,
 } from "../src/utils/cloudSyncDeletionMarkers";
+import { mergeFilesMetadataSnapshots } from "../src/utils/cloudSyncFileMerge";
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
@@ -241,5 +242,158 @@ describe("cloud sync shared helpers", () => {
     ).toEqual({
       "/Notes/todo.txt": { type: "text" },
     });
+  });
+
+  test("merges file metadata snapshots per path", () => {
+    const merged = mergeFilesMetadataSnapshots(
+      {
+        items: {
+          "/Documents/local.md": {
+            path: "/Documents/local.md",
+            name: "local.md",
+            isDirectory: false,
+            uuid: "local-doc",
+            modifiedAt: 200,
+            createdAt: 100,
+            status: "active",
+            type: "markdown",
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "local-doc",
+            value: { name: "local.md", content: "local content" },
+          },
+        ],
+        deletedPaths: {},
+      },
+      {
+        items: {
+          "/Documents/remote.md": {
+            path: "/Documents/remote.md",
+            name: "remote.md",
+            isDirectory: false,
+            uuid: "remote-doc",
+            modifiedAt: 250,
+            createdAt: 150,
+            status: "active",
+            type: "markdown",
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "remote-doc",
+            value: { name: "remote.md", content: "remote content" },
+          },
+        ],
+        deletedPaths: {},
+      }
+    );
+
+    expect(Object.keys(merged.items).sort()).toEqual([
+      "/Documents/local.md",
+      "/Documents/remote.md",
+    ]);
+    expect(merged.documents?.map((item) => item.key).sort()).toEqual([
+      "local-doc",
+      "remote-doc",
+    ]);
+  });
+
+  test("prefers the newer file version and matching document payload", () => {
+    const merged = mergeFilesMetadataSnapshots(
+      {
+        items: {
+          "/Documents/shared.md": {
+            path: "/Documents/shared.md",
+            name: "shared.md",
+            isDirectory: false,
+            uuid: "local-doc",
+            modifiedAt: 100,
+            createdAt: 50,
+            status: "active",
+            type: "markdown",
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "local-doc",
+            value: { name: "shared.md", content: "local content" },
+          },
+        ],
+        deletedPaths: {},
+      },
+      {
+        items: {
+          "/Documents/shared.md": {
+            path: "/Documents/shared.md",
+            name: "shared.md",
+            isDirectory: false,
+            uuid: "remote-doc",
+            modifiedAt: 300,
+            createdAt: 50,
+            status: "active",
+            type: "markdown",
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "remote-doc",
+            value: { name: "shared.md", content: "remote content" },
+          },
+        ],
+        deletedPaths: {},
+      }
+    );
+
+    expect(merged.items["/Documents/shared.md"]?.uuid).toBe("remote-doc");
+    expect(merged.documents).toEqual([
+      {
+        key: "remote-doc",
+        value: { name: "shared.md", content: "remote content" },
+      },
+    ]);
+  });
+
+  test("keeps recreated files when deletion markers are older", () => {
+    const merged = mergeFilesMetadataSnapshots(
+      {
+        items: {
+          "/Documents/recreated.md": {
+            path: "/Documents/recreated.md",
+            name: "recreated.md",
+            isDirectory: false,
+            uuid: "recreated-doc",
+            modifiedAt: 500,
+            createdAt: 400,
+            status: "active",
+            type: "markdown",
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "recreated-doc",
+            value: { name: "recreated.md", content: "restored content" },
+          },
+        ],
+        deletedPaths: {},
+      },
+      {
+        items: {},
+        libraryState: "loaded",
+        documents: [],
+        deletedPaths: {
+          "/Documents/recreated.md": "1970-01-01T00:00:00.450Z",
+        },
+      }
+    );
+
+    expect(merged.items["/Documents/recreated.md"]?.uuid).toBe("recreated-doc");
+    expect(merged.deletedPaths).toEqual({});
   });
 });
