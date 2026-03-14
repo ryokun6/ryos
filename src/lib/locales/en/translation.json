@@ -2345,6 +2345,7 @@
       },
       "checkForUpdates": "Check for Updates",
       "downloadMacApp": "Download Mac App",
+      "viewChangelog": "View Changelog",
       "backup": "Backup",
       "restore": "Restore",
       "backupRestoreDescription": "Backup or restore all app settings and files to a local file",

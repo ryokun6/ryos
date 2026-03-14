@@ -1151,6 +1151,7 @@
       "description": "Configurações do sistema",
       "displayMode": "Modo de Exibição",
       "downloadMacApp": "Baixar App para Mac",
+      "viewChangelog": "Ver registro de alterações",
       "dream": "Sonho",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID de Voz ElevenLabs",

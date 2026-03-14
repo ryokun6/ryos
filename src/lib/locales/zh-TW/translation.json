@@ -1151,6 +1151,7 @@
       "description": "系統設定",
       "displayMode": "顯示模式",
       "downloadMacApp": "下載 Mac 應用程式",
+      "viewChangelog": "查看更新日誌",
       "dream": "夢幻",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",

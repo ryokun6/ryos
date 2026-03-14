@@ -1151,6 +1151,7 @@
       "description": "Системные настройки",
       "displayMode": "Режим отображения",
       "downloadMacApp": "Скачать приложение Mac",
+      "viewChangelog": "Просмотреть журнал изменений",
       "dream": "Мечта",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID голоса ElevenLabs",

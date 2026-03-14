@@ -90,9 +90,12 @@ function UserAvatar({ username, picture, initials, label, size = "sm", onDrop, c
     >
       <div
         className={cn(
-          "rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center font-semibold text-white overflow-hidden transition-all",
+          "rounded-full flex items-center justify-center font-semibold text-white overflow-hidden transition-all",
           avatarSize,
           isLarge ? "text-xl" : "text-[13px]",
+          picture
+            ? "shadow-[inset_0_0_0_1.5px_rgba(0,0,0,0.2),0_0.5px_2px_rgba(0,0,0,0.15)]"
+            : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)]",
           isDragOver && "ring-4 ring-blue-400 scale-110",
           "hover:scale-105"
         )}

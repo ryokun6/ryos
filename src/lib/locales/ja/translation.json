@@ -1151,6 +1151,7 @@
       "description": "システム設定",
       "displayMode": "表示モード",
       "downloadMacApp": "Macアプリをダウンロード",
+      "viewChangelog": "変更履歴を見る",
       "dream": "ドリーム",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 音声ID",

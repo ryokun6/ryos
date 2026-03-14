@@ -1151,6 +1151,7 @@
       "description": "Paramètres système",
       "displayMode": "Mode d'affichage",
       "downloadMacApp": "Télécharger l'app Mac",
+      "viewChangelog": "Voir les changements",
       "dream": "Rêve",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "Identifiant vocal ElevenLabs",
