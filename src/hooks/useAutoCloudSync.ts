@@ -39,7 +39,6 @@ import {
   CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
   getLatestCloudSyncTimestamp,
   getSyncChannelName,
-  hasUnsyncedLocalChanges,
   isCloudSyncDomain,
   parseCloudSyncTimestamp,
   shouldApplyRemoteUpdate,
@@ -627,13 +626,21 @@ export function useAutoCloudSync() {
   const flushPendingUploads = useCallback(() => {
     const syncState = useCloudSyncStore.getState();
     for (const domain of CLOUD_SYNC_DOMAINS) {
-      if (
-        isDomainEnabled(domain) &&
-        hasUnsyncedLocalChanges(
-          lastLocalChangeAtRef.current[domain],
-          syncState.domainStatus[domain].lastUploadedAt
-        )
-      ) {
+      if (!isDomainEnabled(domain)) continue;
+
+      const domainStatus = syncState.domainStatus[domain];
+      const localChangeTs = parseCloudSyncTimestamp(
+        lastLocalChangeAtRef.current[domain]
+      );
+
+      if (localChangeTs === 0) continue;
+
+      const lastSyncedTs = Math.max(
+        parseCloudSyncTimestamp(domainStatus.lastUploadedAt),
+        parseCloudSyncTimestamp(domainStatus.lastAppliedRemoteAt)
+      );
+
+      if (localChangeTs > lastSyncedTs) {
         setTimeout(
           () => queueUpload(domain),
           REMOTE_APPLY_SUPPRESSION_MS + 1000
@@ -859,20 +866,29 @@ export function useAutoCloudSync() {
     // Clear any uploads queued by store hydration/initialization so the
     // first remote check can pull down data without being blocked by
     // "has pending upload" guards (e.g. initializeLibrary on new devices).
-    // Preserve the later of persisted vs in-memory timestamps so domains
-    // without persisted change tracking (songs, videos, etc.) don't lose
-    // their pending-upload state when the effect re-runs.
+    // For domains that had a pending upload timer (genuine local change not
+    // yet synced), keep the ref so shouldApplyRemoteUpdate won't overwrite
+    // it. For all others, reset from persisted state.
+    const hadPendingTimer = new Set<CloudSyncDomain>();
+    for (const d of CLOUD_SYNC_DOMAINS) {
+      if (uploadTimersRef.current[d]) {
+        hadPendingTimer.add(d);
+      }
+    }
     clearAllUploadTimers();
     for (const d of CLOUD_SYNC_DOMAINS) {
-      const persisted = getLatestLocalChangeAt(d);
-      const current = lastLocalChangeAtRef.current[d];
-      if (
-        persisted &&
-        (!current ||
+      if (hadPendingTimer.has(d)) {
+        const persisted = getLatestLocalChangeAt(d);
+        const current = lastLocalChangeAtRef.current[d];
+        if (
+          persisted &&
           parseCloudSyncTimestamp(persisted) >
-            parseCloudSyncTimestamp(current))
-      ) {
-        lastLocalChangeAtRef.current[d] = persisted;
+            parseCloudSyncTimestamp(current)
+        ) {
+          lastLocalChangeAtRef.current[d] = persisted;
+        }
+      } else {
+        lastLocalChangeAtRef.current[d] = getLatestLocalChangeAt(d);
       }
     }
 
