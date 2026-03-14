@@ -405,7 +405,7 @@ describe("cloud sync shared helpers", () => {
     const plan = planIndividualBlobUpload(
       [
         {
-          item: { key: "local-image" },
+          item: { key: "local-image", value: {} },
           signature: "local-signature",
         },
       ],
@@ -455,7 +455,7 @@ describe("cloud sync shared helpers", () => {
     const plan = planIndividualBlobDownload(
       [
         {
-          item: { key: "local-image" },
+          item: { key: "local-image", value: {} },
           signature: "local-signature",
         },
       ],
@@ -472,7 +472,7 @@ describe("cloud sync shared helpers", () => {
     const plan = planIndividualBlobDownload(
       [
         {
-          item: { key: "old-image" },
+          item: { key: "old-image", value: {} },
           signature: "same-signature",
         },
       ],
@@ -494,7 +494,7 @@ describe("cloud sync shared helpers", () => {
     const plan = planIndividualBlobDownload(
       [
         {
-          item: { key: "shared-image" },
+          item: { key: "shared-image", value: {} },
           signature: "local-signature",
         },
       ],

@@ -4,6 +4,7 @@ import type { IndividualBlobKnownItemMap } from "@/utils/cloudSyncIndividualBlob
 export interface IndividualBlobLocalRecord {
   item: {
     key: string;
+    value: Record<string, unknown>;
   };
   signature: string;
 }
