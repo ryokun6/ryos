@@ -1529,6 +1529,7 @@
         "emptyTrash": "Papierkorb leeren...",
         "finderHelp": "Finder-Hilfe",
         "forward": "Vorwärts",
+        "goUp": "Übergeordneter Ordner",
         "import": "Datei importieren…",
         "importFromDevice": "Von Gerät importieren...",
         "moveToTrash": "In den Papierkorb legen",
