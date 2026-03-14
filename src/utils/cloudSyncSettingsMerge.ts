@@ -130,14 +130,16 @@ export function mergeSettingsSnapshotData(
   };
 
   if (
-    shouldUseRemoteSection("theme", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("theme", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.theme !== undefined
   ) {
     merged.theme = normalizedRemote.theme;
     merged.sectionUpdatedAt!.theme = remoteSectionUpdatedAt.theme;
   }
 
   if (
-    shouldUseRemoteSection("language", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("language", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.language !== undefined
   ) {
     merged.language = normalizedRemote.language;
     merged.languageInitialized = normalizedRemote.languageInitialized;
@@ -145,21 +147,24 @@ export function mergeSettingsSnapshotData(
   }
 
   if (
-    shouldUseRemoteSection("display", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("display", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.display !== undefined
   ) {
     merged.display = normalizedRemote.display;
     merged.sectionUpdatedAt!.display = remoteSectionUpdatedAt.display;
   }
 
   if (
-    shouldUseRemoteSection("audio", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("audio", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.audio !== undefined
   ) {
     merged.audio = normalizedRemote.audio;
     merged.sectionUpdatedAt!.audio = remoteSectionUpdatedAt.audio;
   }
 
   if (
-    shouldUseRemoteSection("aiModel", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("aiModel", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.aiModel !== undefined
   ) {
     merged.aiModel = normalizedRemote.aiModel;
     merged.sectionUpdatedAt!.aiModel = remoteSectionUpdatedAt.aiModel;
