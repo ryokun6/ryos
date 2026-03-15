@@ -1451,51 +1451,7 @@ export async function fetchCloudSyncMetadata(
       return merged;
     }
   }
-
-  const [blobRes, redisRes] = await Promise.all([
-    abortableFetch(getApiUrl("/api/sync/auto"), {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }),
-    abortableFetch(getApiUrl("/api/sync/state"), {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }),
-  ]);
-
-  const merged = createEmptyCloudSyncMetadataMap();
-
-  if (blobRes.ok) {
-    const blobData = (await blobRes.json()) as { metadata?: Partial<CloudSyncMetadataMap> };
-    if (blobData.metadata) {
-      for (const domain of BLOB_SYNC_DOMAINS) {
-        const entry = blobData.metadata[domain as keyof typeof blobData.metadata];
-        if (entry) merged[domain] = entry as CloudSyncDomainMetadata;
-      }
-    }
-  }
-
-  if (redisRes.ok) {
-    const redisData = (await redisRes.json()) as { metadata?: Partial<CloudSyncMetadataMap> };
-    if (redisData.metadata) {
-      for (const domain of REDIS_SYNC_DOMAINS) {
-        const entry = redisData.metadata[domain as keyof typeof redisData.metadata];
-        if (entry) merged[domain] = entry as CloudSyncDomainMetadata;
-      }
-    }
-  }
-
-  if (!blobRes.ok && !redisRes.ok) {
-    throw new Error("Failed to fetch sync metadata from both endpoints");
-  }
-
-  return merged;
+  throw new Error("Failed to fetch consolidated sync metadata");
 }
 
 function mergeItemsByIdPreferNewer<T extends { id: string; updatedAt?: number }>(
