@@ -6,11 +6,10 @@
 
 import type { VercelResponse } from "@vercel/node";
 import type { Redis } from "../_utils/redis.js";
-import { gunzipSync } from "node:zlib";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
-  getSyncChannelName,
   REDIS_SYNC_DOMAINS,
+  getSyncChannelName,
   isRedisSyncDomain,
   type CloudSyncDomainMetadata,
   type RedisSyncDomain,
@@ -77,13 +76,6 @@ interface PersistedMetaEntry {
   syncVersion?: CloudSyncVersionState | null;
 }
 
-interface PersistedAutoSyncDomainMetadata extends PersistedMetaEntry {
-  totalSize: number;
-  blobUrl: string;
-}
-
-const LEGACY_FILES_DOCUMENTS_DOMAIN = "files-documents";
-
 type PersistedMetaMap = Record<RedisSyncDomain, PersistedMetaEntry | null>;
 
 function createEmptyMetaMap(): PersistedMetaMap {
@@ -144,116 +136,6 @@ async function readMetaMap(
   return normalized;
 }
 
-function autoMetaKey(username: string): string {
-  return `sync:auto:meta:${username}`;
-}
-
-async function readLegacyFilesDocumentsMeta(
-  redis: Redis,
-  username: string
-): Promise<PersistedAutoSyncDomainMetadata | null> {
-  const raw = await redis.get<string | Record<string, unknown>>(autoMetaKey(username));
-  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-
-  if (!parsed || typeof parsed !== "object") {
-    return null;
-  }
-
-  const entry = (parsed as Record<string, unknown>)[LEGACY_FILES_DOCUMENTS_DOMAIN];
-  if (!entry || typeof entry !== "object") {
-    return null;
-  }
-
-  const candidate = entry as Partial<PersistedAutoSyncDomainMetadata>;
-  if (
-    typeof candidate.updatedAt !== "string" ||
-    typeof candidate.createdAt !== "string" ||
-    typeof candidate.blobUrl !== "string"
-  ) {
-    return null;
-  }
-
-  return {
-    updatedAt: candidate.updatedAt,
-    createdAt: candidate.createdAt,
-    blobUrl: candidate.blobUrl,
-    version:
-      typeof candidate.version === "number" && Number.isFinite(candidate.version)
-        ? candidate.version
-        : AUTO_SYNC_SNAPSHOT_VERSION,
-    totalSize:
-      typeof candidate.totalSize === "number" && Number.isFinite(candidate.totalSize)
-        ? candidate.totalSize
-        : 0,
-    syncVersion:
-      normalizeCloudSyncVersionState(candidate.syncVersion) ||
-      createSyntheticLegacySyncVersion(),
-  };
-}
-
-async function readLegacyFilesDocumentsData(
-  blobUrl: string
-): Promise<unknown[] | null> {
-  const response = await fetch(blobUrl);
-  if (!response.ok) {
-    return null;
-  }
-
-  const compressedBuffer = Buffer.from(await response.arrayBuffer());
-  const jsonString = gunzipSync(compressedBuffer).toString("utf-8");
-  const parsed = JSON.parse(jsonString) as { data?: unknown } | unknown;
-
-  if (Array.isArray(parsed)) {
-    return parsed;
-  }
-
-  if (
-    parsed &&
-    typeof parsed === "object" &&
-    Array.isArray((parsed as { data?: unknown[] }).data)
-  ) {
-    return (parsed as { data: unknown[] }).data;
-  }
-
-  return null;
-}
-
-function getCombinedFilesMetadataEntry(
-  stateEntry: PersistedMetaEntry | null,
-  legacyEntry: PersistedAutoSyncDomainMetadata | null
-): CloudSyncDomainMetadata | null {
-  if (!stateEntry && !legacyEntry) {
-    return null;
-  }
-
-  if (
-    legacyEntry &&
-    (!stateEntry ||
-      new Date(legacyEntry.updatedAt).getTime() >
-        new Date(stateEntry.updatedAt).getTime())
-  ) {
-    return {
-      updatedAt: legacyEntry.updatedAt,
-      version: legacyEntry.version,
-      totalSize: legacyEntry.totalSize,
-      createdAt: legacyEntry.createdAt,
-      syncVersion: legacyEntry.syncVersion,
-    };
-  }
-
-  if (!stateEntry) {
-    return null;
-  }
-
-  return {
-    updatedAt: stateEntry.updatedAt,
-    version: stateEntry.version,
-    totalSize: 0,
-    createdAt: stateEntry.createdAt,
-    syncVersion: stateEntry.syncVersion,
-  };
-}
-
 async function persistStateEntry(
   redis: Redis,
   username: string,
@@ -298,25 +180,18 @@ export default apiHandler<PutStateBody>(
       }
 
       const meta = await readMetaMap(redis, username);
-      const legacyFilesDocumentsMeta = await readLegacyFilesDocumentsMeta(
-        redis,
-        username
-      );
       const metadata: Record<string, CloudSyncDomainMetadata | null> = {};
       for (const domain of REDIS_SYNC_DOMAINS) {
         const entry = meta[domain];
-        metadata[domain] =
-          domain === "files-metadata"
-            ? getCombinedFilesMetadataEntry(entry, legacyFilesDocumentsMeta)
-            : entry
-              ? {
-                  updatedAt: entry.updatedAt,
-                  version: entry.version,
-                  totalSize: 0,
-                  createdAt: entry.createdAt,
-                  syncVersion: entry.syncVersion,
-                }
-              : null;
+        metadata[domain] = entry
+          ? {
+              updatedAt: entry.updatedAt,
+              version: entry.version,
+              totalSize: 0,
+              createdAt: entry.createdAt,
+              syncVersion: entry.syncVersion,
+            }
+          : null;
       }
 
       res.status(200).json({ ok: true, metadata });
@@ -376,56 +251,17 @@ async function handleDomainDownload(
     return;
   }
 
-  let responseEntry = entry;
-
-  if (domain === "files-metadata") {
-    const entryData =
-      entry.data && typeof entry.data === "object"
-        ? (entry.data as Record<string, unknown>)
-        : null;
-    const documentsMissing = !Array.isArray(entryData?.documents);
-
-    if (documentsMissing) {
-      const legacyMeta = await readLegacyFilesDocumentsMeta(redis, username);
-      if (legacyMeta) {
-        const legacyDocuments = await readLegacyFilesDocumentsData(legacyMeta.blobUrl);
-        if (legacyDocuments) {
-          responseEntry = {
-            ...entry,
-            updatedAt:
-              new Date(legacyMeta.updatedAt).getTime() >
-              new Date(entry.updatedAt).getTime()
-                ? legacyMeta.updatedAt
-                : entry.updatedAt,
-            version: Math.max(entry.version, legacyMeta.version),
-            syncVersion:
-              new Date(legacyMeta.updatedAt).getTime() >
-              new Date(entry.updatedAt).getTime()
-                ? legacyMeta.syncVersion
-                : entry.syncVersion,
-            data: {
-              ...(entryData || {}),
-              documents: legacyDocuments,
-            },
-          };
-
-          await persistStateEntry(redis, username, domain, responseEntry);
-        }
-      }
-    }
-  }
-
   res.status(200).json({
     ok: true,
     domain,
-    data: responseEntry.data,
+    data: entry.data,
     metadata: {
-      updatedAt: responseEntry.updatedAt,
-      version: responseEntry.version,
+      updatedAt: entry.updatedAt,
+      version: entry.version,
       totalSize: 0,
-      createdAt: responseEntry.createdAt,
+      createdAt: entry.createdAt,
       syncVersion:
-        responseEntry.syncVersion || createSyntheticLegacySyncVersion(),
+        entry.syncVersion || createSyntheticLegacySyncVersion(),
     },
   });
 }

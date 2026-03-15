@@ -20,7 +20,8 @@ export const maxDuration = 10;
 
 const MAX_SYNC_SIZE = 50 * 1024 * 1024;
 const RATE_LIMIT_WINDOW = 60;
-const RATE_LIMIT_MAX = 20;
+const MANIFEST_RATE_LIMIT_MAX = 20;
+const ITEM_RATE_LIMIT_MAX = 500;
 
 interface AutoTokenBody {
   domain?: BlobSyncDomain;
@@ -68,13 +69,17 @@ export default apiHandler<AutoTokenBody>(
       }
     }
 
-    const rateLimitKey = `rl:sync:auto:${username}:${domain}`;
+    const isItemUpload = itemKey !== undefined;
+    const rateLimitKey = `rl:sync:auto:${isItemUpload ? "item" : "manifest"}:${username}:${domain}`;
+    const rateLimitMax = isItemUpload
+      ? ITEM_RATE_LIMIT_MAX
+      : MANIFEST_RATE_LIMIT_MAX;
     const current = await redis.incr(rateLimitKey);
     if (current === 1) {
       await redis.expire(rateLimitKey, RATE_LIMIT_WINDOW);
     }
 
-    if (current > RATE_LIMIT_MAX) {
+    if (current > rateLimitMax) {
       res.status(429).json({
         error: "Too many sync requests. Please try again shortly.",
       });

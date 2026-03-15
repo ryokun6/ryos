@@ -58,13 +58,12 @@ describe("auto cloud sync API", () => {
     const data = await res.json();
     expect(data.ok).toBe(true);
     expect(data.metadata).toBeTruthy();
-    expect("settings" in data.metadata).toBe(true);
-    expect("files-metadata" in data.metadata).toBe(true);
-    expect("files-images" in data.metadata).toBe(true);
-    expect("files-trash" in data.metadata).toBe(true);
-    expect("files-applets" in data.metadata).toBe(true);
-    expect("songs" in data.metadata).toBe(true);
-    expect("calendar" in data.metadata).toBe(true);
+    expect(Object.keys(data.metadata).sort()).toEqual([
+      "custom-wallpapers",
+      "files-applets",
+      "files-images",
+      "files-trash",
+    ]);
   });
 
   test("POST /api/sync/auto-token rejects invalid domains", async () => {
@@ -139,6 +138,33 @@ describe("auto cloud sync API", () => {
     const data = await res.json();
     expect(typeof data.pathname).toBe("string");
     expect(data.pathname).toContain("files-images/items/asset-123.gz");
+  });
+
+  test("POST /api/sync/auto-token allows large individual-item sync batches", async () => {
+    const redis = createRedis();
+    const username = `sync_auto_item_batch_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const authToken = generateAuthToken();
+    await storeToken(redis, username, authToken);
+
+    const statuses: number[] = [];
+    for (let i = 0; i < 25; i += 1) {
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/sync/auto-token`,
+        username,
+        authToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: "files-images",
+            itemKey: `asset-${i}`,
+          }),
+        }
+      );
+      statuses.push(res.status);
+    }
+
+    expect(statuses.every((status) => status === 200)).toBe(true);
   });
 
   test("POST /api/sync/auto rejects missing metadata fields", async () => {
@@ -241,6 +267,65 @@ describe("auto cloud sync API", () => {
     });
   });
 
+  test("POST /api/sync/auto merges individual deletion markers across writers", async () => {
+    const redis = createRedis();
+    const username = `sync_auto_tombstones_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const authToken = generateAuthToken();
+    await storeToken(redis, username, authToken);
+
+    const firstRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto`,
+      username,
+      authToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "custom-wallpapers",
+          updatedAt: "2026-03-12T16:40:00.000Z",
+          version: 1,
+          syncVersion: makeSyncVersion("client-a", 1),
+          totalSize: 0,
+          items: {},
+          deletedItems: {
+            "wallpaper-1": "2026-03-12T16:39:00.000Z",
+          },
+        }),
+      }
+    );
+    expect(firstRes.status).toBe(200);
+
+    const secondRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto`,
+      username,
+      authToken,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: "custom-wallpapers",
+          updatedAt: "2026-03-12T16:41:00.000Z",
+          version: 1,
+          syncVersion: makeSyncVersion("client-b", 1, 1, { "client-a": 1 }),
+          totalSize: 0,
+          items: {},
+        }),
+      }
+    );
+    expect(secondRes.status).toBe(200);
+
+    const downloadRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto?domain=custom-wallpapers`,
+      username,
+      authToken
+    );
+    expect(downloadRes.status).toBe(200);
+    const downloadData = await downloadRes.json();
+    expect(downloadData.deletedItems).toEqual({
+      "wallpaper-1": "2026-03-12T16:39:00.000Z",
+    });
+  });
+
   test("POST /api/sync/auto treats duplicate client versions as idempotent no-ops", async () => {
     const redis = createRedis();
     const username = `sync_auto_duplicate_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -311,7 +396,7 @@ describe("auto cloud sync API", () => {
     expect((data.error || "").toLowerCase()).toContain("domain");
   });
 
-  test("POST /api/sync/auto-token rejects item keys for legacy blob domains", async () => {
+  test("POST /api/sync/auto-token accepts item keys for files-trash", async () => {
     const authToken = await getAuthToken();
     expect(authToken).toBeTruthy();
 
@@ -326,8 +411,9 @@ describe("auto cloud sync API", () => {
       }
     );
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
     const data = await res.json();
-    expect((data.error || "").toLowerCase()).toContain("individual");
+    expect(typeof data.pathname).toBe("string");
+    expect(data.pathname).toContain("files-trash/items/asset-123.gz");
   });
 });

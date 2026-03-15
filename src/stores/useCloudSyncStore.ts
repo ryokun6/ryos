@@ -8,7 +8,10 @@ import {
   createEmptyCloudSyncMetadataMap,
   getCloudSyncCategory,
 } from "@/utils/cloudSyncShared";
-import type { DeletionMarkerMap } from "@/utils/cloudSyncDeletionMarkers";
+import {
+  mergeDeletionMarkerMaps,
+  type DeletionMarkerMap,
+} from "@/utils/cloudSyncDeletionMarkers";
 
 interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
@@ -381,19 +384,16 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
 
       mergeDeletedKeys: (bucket, markers) =>
         set((state) => {
-          const nextBucket = { ...state.deletionMarkers[bucket] };
-          let changed = false;
-
-          for (const [key, value] of Object.entries(markers)) {
-            if (typeof key !== "string" || key.length === 0 || typeof value !== "string") {
-              continue;
-            }
-
-            if (nextBucket[key] !== value) {
-              nextBucket[key] = value;
-              changed = true;
-            }
-          }
+          const nextBucket = mergeDeletionMarkerMaps(
+            state.deletionMarkers[bucket],
+            markers
+          );
+          const currentBucket = state.deletionMarkers[bucket];
+          const changed =
+            Object.keys(nextBucket).length !== Object.keys(currentBucket).length ||
+            Object.entries(nextBucket).some(
+              ([key, value]) => currentBucket[key] !== value
+            );
 
           if (!changed) {
             return state;

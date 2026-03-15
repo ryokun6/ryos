@@ -9,12 +9,11 @@ import type { Redis } from "../_utils/redis.js";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
   BLOB_SYNC_DOMAINS,
-  type CloudSyncBlobItemDownloadMetadata,
-  type CloudSyncBlobItemMetadata,
-  createEmptyCloudSyncMetadataMap,
   getSyncChannelName,
   isBlobSyncDomain,
   isIndividualBlobSyncDomain,
+  type CloudSyncBlobItemDownloadMetadata,
+  type CloudSyncBlobItemMetadata,
   type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import {
@@ -27,6 +26,7 @@ import {
   type CloudSyncWriteVersion,
 } from "../../src/utils/cloudSyncVersion.js";
 import {
+  mergeDeletionMarkerMaps,
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "../../src/utils/cloudSyncDeletionMarkers.js";
@@ -59,6 +59,15 @@ type PersistedAutoSyncMetadataMap = Record<
   BlobSyncDomain,
   PersistedAutoSyncDomainMetadata | null
 >;
+
+function createEmptyAutoSyncMetadataMap(): PersistedAutoSyncMetadataMap {
+  return {
+    "files-images": null,
+    "files-trash": null,
+    "files-applets": null,
+    "custom-wallpapers": null,
+  };
+}
 
 interface SaveAutoSyncMetadataBody {
   domain?: BlobSyncDomain;
@@ -118,7 +127,7 @@ async function readPersistedMetadata(
 ): Promise<PersistedAutoSyncMetadataMap> {
   const raw = await redis.get<string | PersistedAutoSyncMetadataMap>(metaKey(username));
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-  const normalized = createEmptyCloudSyncMetadataMap() as PersistedAutoSyncMetadataMap;
+  const normalized = createEmptyAutoSyncMetadataMap();
 
   if (!parsed || typeof parsed !== "object") {
     return normalized;
@@ -299,7 +308,10 @@ async function handleSaveMetadata(
 
     if (body.items) {
       const previousItems = previous?.items ?? {};
-      const deletedItems = normalizeDeletionMarkerMap(body.deletedItems);
+      const deletedItems = mergeDeletionMarkerMaps(
+        previous?.deletedItems,
+        normalizeDeletionMarkerMap(body.deletedItems)
+      );
       const nextItems: Record<string, PersistedAutoSyncItemMetadata> =
         writeAssessment.canFastForward ? {} : { ...previousItems };
       const conflictingKeys = new Set<string>();
@@ -354,6 +366,10 @@ async function handleSaveMetadata(
           blobUrl: storageUrl,
           syncVersion: normalizeCloudSyncVersionState(itemValue.syncVersion),
         };
+      }
+
+      for (const itemKey of Object.keys(nextItems)) {
+        delete deletedItems[itemKey];
       }
 
       if (writeAssessment.hasConflict) {
