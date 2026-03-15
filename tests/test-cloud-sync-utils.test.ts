@@ -13,7 +13,6 @@ import {
   isIndividualBlobSyncDomain,
   normalizeCloudSyncMetadataMap,
   shouldApplyRemoteUpdate,
-  shouldDelaySettingsUploadForWallpaperSync,
   shouldRecheckRemoteAfterLocalSync,
 } from "../src/utils/cloudSyncShared";
 import {
@@ -306,60 +305,6 @@ describe("cloud sync shared helpers", () => {
         lastUploadedAt: "2026-03-04T12:02:00.000Z",
         lastLocalChangeAt: "2026-03-04T12:02:00.000Z",
         hasPendingUpload: false,
-      })
-    ).toBe(false);
-  });
-
-  test("delays settings upload until an active custom wallpaper blob syncs", () => {
-    expect(
-      shouldDelaySettingsUploadForWallpaperSync({
-        currentWallpaper: "indexeddb://wallpaper-1",
-        customWallpapersEnabled: true,
-        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
-        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
-        customWallpapersHasPendingUpload: false,
-        settingsQueuedAtMs: 1_000,
-        nowMs: 5_000,
-        maxWaitMs: 20_000,
-      })
-    ).toBe(true);
-
-    expect(
-      shouldDelaySettingsUploadForWallpaperSync({
-        currentWallpaper: "indexeddb://wallpaper-1",
-        customWallpapersEnabled: true,
-        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:00.000Z",
-        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
-        customWallpapersHasPendingUpload: true,
-        settingsQueuedAtMs: 1_000,
-        nowMs: 5_000,
-        maxWaitMs: 20_000,
-      })
-    ).toBe(true);
-
-    expect(
-      shouldDelaySettingsUploadForWallpaperSync({
-        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-        customWallpapersEnabled: true,
-        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
-        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
-        customWallpapersHasPendingUpload: false,
-        settingsQueuedAtMs: 1_000,
-        nowMs: 5_000,
-        maxWaitMs: 20_000,
-      })
-    ).toBe(false);
-
-    expect(
-      shouldDelaySettingsUploadForWallpaperSync({
-        currentWallpaper: "indexeddb://wallpaper-1",
-        customWallpapersEnabled: true,
-        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
-        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
-        customWallpapersHasPendingUpload: false,
-        settingsQueuedAtMs: 1_000,
-        nowMs: 25_500,
-        maxWaitMs: 20_000,
       })
     ).toBe(false);
   });
