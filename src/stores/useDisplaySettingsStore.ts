@@ -10,6 +10,7 @@ import {
 } from "@/utils/cloudSyncEvents";
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { writeDebugLog } from "@/utils/debugLog";
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.
@@ -160,6 +161,18 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
             wallpaperSource: data || fallbackSource,
           });
           if (!data) {
+            // #region agent log
+            writeDebugLog({
+              hypothesisId: "B",
+              location: "src/stores/useDisplaySettingsStore.ts:setWallpaper",
+              message: "Missing local indexeddb wallpaper requested sync check",
+              data: {
+                wallpaperRef: wall,
+                fallbackSource,
+              },
+              timestamp: Date.now(),
+            });
+            // #endregion
             requestCloudSyncCheck();
           }
         }

@@ -1,5 +1,6 @@
 import type { DeletionMarkerMap } from "@/utils/cloudSyncDeletionMarkers";
 import type { IndividualBlobKnownItemMap } from "@/utils/cloudSyncIndividualBlobState";
+import { writeDebugLog } from "@/utils/debugLog";
 
 export interface IndividualBlobLocalRecord {
   item: {
@@ -167,6 +168,23 @@ export function planIndividualBlobDownload(
       nextKnownItems[key] = knownItem;
     }
   }
+
+  // #region agent log
+  writeDebugLog({
+    hypothesisId: "C",
+    location: "src/utils/cloudSyncIndividualBlobMerge.ts:planIndividualBlobDownload",
+    message: "Planned individual blob download",
+    data: {
+      localRecordCount: localRecords.length,
+      remoteItemCount: Object.keys(remoteItems).length,
+      knownItemCount: Object.keys(knownItems).length,
+      deletedItemCount: Object.keys(deletedItems).length,
+      itemKeysToDownload,
+      keysToDelete,
+    },
+    timestamp: Date.now(),
+  });
+  // #endregion
 
   return {
     itemKeysToDownload,

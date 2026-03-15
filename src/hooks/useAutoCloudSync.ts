@@ -12,6 +12,7 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useStickiesStore } from "@/stores/useStickiesStore";
+import { areRomanizationSettingsEqual } from "@/types/lyrics";
 
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
@@ -48,6 +49,7 @@ import {
   isCloudSyncDomain,
   parseCloudSyncTimestamp,
   shouldApplyRemoteUpdate,
+  shouldDelaySettingsUploadForWallpaperSync,
   type CloudSyncDomain,
 } from "@/utils/cloudSyncShared";
 import type { CloudSyncVersionState } from "@/utils/cloudSyncVersion";
@@ -63,6 +65,8 @@ const REMOTE_APPLY_SUPPRESSION_MS = 2000;
 // they only need to cover the worst-case download duration.
 const REALTIME_INFLIGHT_SUPPRESSION_MS = 30_000;
 const BATCH_INFLIGHT_SUPPRESSION_MS = 60_000;
+const SETTINGS_WALLPAPER_SYNC_RETRY_MS = 1_000;
+const SETTINGS_WALLPAPER_SYNC_MAX_WAIT_MS = 20_000;
 
 const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   settings: 2500,
@@ -256,13 +260,52 @@ export function useAutoCloudSync() {
   const uploadDomain = useCallback(
     async (domain: CloudSyncDomain) => {
       clearUploadTimer(domain);
-      firstQueuedAtRef.current[domain] = 0;
 
       if (!username || !isAuthenticated || !isDomainEnabled(domain)) {
+        firstQueuedAtRef.current[domain] = 0;
         return;
       }
 
       const syncState = useCloudSyncStore.getState();
+
+      if (domain === "settings") {
+        const now = Date.now();
+        const queuedAt = firstQueuedAtRef.current.settings || now;
+        if (!firstQueuedAtRef.current.settings) {
+          firstQueuedAtRef.current.settings = queuedAt;
+        }
+
+        const customWallpaperStatus = syncState.domainStatus["custom-wallpapers"];
+        const customWallpapersLastLocalChangeAt =
+          getLatestLocalChangeAt("custom-wallpapers") ||
+          lastLocalChangeAtRef.current["custom-wallpapers"];
+        const shouldDelayForWallpaperSync =
+          shouldDelaySettingsUploadForWallpaperSync({
+            currentWallpaper: useDisplaySettingsStore.getState().currentWallpaper,
+            customWallpapersEnabled: isDomainEnabled("custom-wallpapers"),
+            customWallpapersLastLocalChangeAt,
+            customWallpapersLastUploadedAt:
+              customWallpaperStatus.lastUploadedAt,
+            customWallpapersHasPendingUpload:
+              Boolean(uploadTimersRef.current["custom-wallpapers"]) ||
+              customWallpaperStatus.isUploading,
+            settingsQueuedAtMs: queuedAt,
+            nowMs: now,
+            maxWaitMs: SETTINGS_WALLPAPER_SYNC_MAX_WAIT_MS,
+          });
+
+        if (shouldDelayForWallpaperSync) {
+          console.log(
+            "[CloudSync] Delaying settings upload until custom-wallpapers syncs the active wallpaper"
+          );
+          uploadTimersRef.current[domain] = setTimeout(() => {
+            void uploadDomain(domain);
+          }, SETTINGS_WALLPAPER_SYNC_RETRY_MS);
+          return;
+        }
+      }
+
+      firstQueuedAtRef.current[domain] = 0;
       syncState.markUploadStart(domain);
 
       try {
@@ -798,7 +841,10 @@ export function useAutoCloudSync() {
           state.showLyrics !== prevState.showLyrics ||
           state.lyricsAlignment !== prevState.lyricsAlignment ||
           state.lyricsFont !== prevState.lyricsFont ||
-          state.romanization !== prevState.romanization ||
+          !areRomanizationSettingsEqual(
+            state.romanization,
+            prevState.romanization
+          ) ||
           state.lyricsTranslationLanguage !== prevState.lyricsTranslationLanguage ||
           state.theme !== prevState.theme ||
           state.lcdFilterOn !== prevState.lcdFilterOn

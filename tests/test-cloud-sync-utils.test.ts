@@ -13,6 +13,7 @@ import {
   isIndividualBlobSyncDomain,
   normalizeCloudSyncMetadataMap,
   shouldApplyRemoteUpdate,
+  shouldDelaySettingsUploadForWallpaperSync,
 } from "../src/utils/cloudSyncShared";
 import {
   filterDeletedFilePaths,
@@ -32,6 +33,7 @@ import {
   advanceCloudSyncVersion,
   assessCloudSyncWrite,
 } from "../src/utils/cloudSyncVersion";
+import { areRomanizationSettingsEqual } from "../src/types/lyrics";
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
@@ -224,6 +226,60 @@ describe("cloud sync shared helpers", () => {
         lastKnownServerVersion: 2,
       })
     ).toBe(true);
+  });
+
+  test("delays settings upload until an active custom wallpaper blob syncs", () => {
+    expect(
+      shouldDelaySettingsUploadForWallpaperSync({
+        currentWallpaper: "indexeddb://wallpaper-1",
+        customWallpapersEnabled: true,
+        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
+        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersHasPendingUpload: false,
+        settingsQueuedAtMs: 1_000,
+        nowMs: 5_000,
+        maxWaitMs: 20_000,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldDelaySettingsUploadForWallpaperSync({
+        currentWallpaper: "indexeddb://wallpaper-1",
+        customWallpapersEnabled: true,
+        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersHasPendingUpload: true,
+        settingsQueuedAtMs: 1_000,
+        nowMs: 5_000,
+        maxWaitMs: 20_000,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldDelaySettingsUploadForWallpaperSync({
+        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
+        customWallpapersEnabled: true,
+        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
+        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersHasPendingUpload: false,
+        settingsQueuedAtMs: 1_000,
+        nowMs: 5_000,
+        maxWaitMs: 20_000,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldDelaySettingsUploadForWallpaperSync({
+        currentWallpaper: "indexeddb://wallpaper-1",
+        customWallpapersEnabled: true,
+        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
+        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersHasPendingUpload: false,
+        settingsQueuedAtMs: 1_000,
+        nowMs: 25_500,
+        maxWaitMs: 20_000,
+      })
+    ).toBe(false);
   });
 
   test("returns the newest timestamp in a group", () => {
@@ -643,6 +699,57 @@ describe("cloud sync shared helpers", () => {
     expect(merged.display.currentWallpaper).toBe("/wallpapers/local.jpg");
     expect(merged.audio.masterVolume).toBe(0.5);
     expect(merged.aiModel).toBe("gpt-4o-mini");
+  });
+
+  test("treats structurally equal romanization settings as unchanged", () => {
+    expect(
+      areRomanizationSettingsEqual(
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+        }
+      )
+    ).toBe(true);
+
+    expect(
+      areRomanizationSettingsEqual(
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: true,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        }
+      )
+    ).toBe(false);
   });
 
   test("restores legacy custom wallpapers only for first-time migration", () => {

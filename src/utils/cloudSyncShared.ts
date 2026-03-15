@@ -3,6 +3,7 @@ import {
   normalizeCloudSyncVersionState,
   type CloudSyncVersionState,
 } from "./cloudSyncVersion";
+import { writeDebugLog } from "./debugLog";
 
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
@@ -152,6 +153,17 @@ export interface ShouldApplyRemoteUpdateParams {
   lastKnownServerVersion?: number | null;
 }
 
+export interface ShouldDelaySettingsUploadForWallpaperSyncParams {
+  currentWallpaper: string | null | undefined;
+  customWallpapersEnabled?: boolean;
+  customWallpapersLastLocalChangeAt?: string | null;
+  customWallpapersLastUploadedAt?: string | null;
+  customWallpapersHasPendingUpload?: boolean;
+  settingsQueuedAtMs?: number;
+  nowMs?: number;
+  maxWaitMs?: number;
+}
+
 export const AUTO_SYNC_SNAPSHOT_VERSION = 1;
 
 /** Channel name for realtime sync notifications (Pusher/local). */
@@ -250,6 +262,24 @@ export function shouldApplyRemoteUpdate({
   const remoteServerVersion = getCloudSyncServerVersion(remoteSyncVersion);
   const remoteTime = parseCloudSyncTimestamp(remoteUpdatedAt);
 
+  // #region agent log
+  writeDebugLog({
+    hypothesisId: "A",
+    location: "src/utils/cloudSyncShared.ts:shouldApplyRemoteUpdate",
+    message: "Evaluating remote apply gate",
+    data: {
+      remoteUpdatedAt: remoteUpdatedAt ?? null,
+      remoteServerVersion,
+      lastAppliedRemoteAt: lastAppliedRemoteAt ?? null,
+      lastUploadedAt: lastUploadedAt ?? null,
+      lastLocalChangeAt: lastLocalChangeAt ?? null,
+      hasPendingUpload,
+      lastKnownServerVersion: lastKnownServerVersion ?? null,
+    },
+    timestamp: Date.now(),
+  });
+  // #endregion
+
   if (remoteServerVersion === 0 && remoteTime === 0) {
     return false;
   }
@@ -257,11 +287,42 @@ export function shouldApplyRemoteUpdate({
   if (
     hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
   ) {
+    // #region agent log
+    writeDebugLog({
+      hypothesisId: "D",
+      location: "src/utils/cloudSyncShared.ts:shouldApplyRemoteUpdate",
+      message: "Rejected remote apply due to unsynced local changes",
+      data: {
+        remoteUpdatedAt: remoteUpdatedAt ?? null,
+        lastUploadedAt: lastUploadedAt ?? null,
+        lastLocalChangeAt: lastLocalChangeAt ?? null,
+        hasPendingUpload,
+      },
+      timestamp: Date.now(),
+    });
+    // #endregion
     return false;
   }
 
   if (remoteServerVersion > 0) {
-    return remoteServerVersion > (lastKnownServerVersion || 0);
+    const shouldApplyByVersion =
+      remoteServerVersion > (lastKnownServerVersion || 0);
+
+    // #region agent log
+    writeDebugLog({
+      hypothesisId: "A",
+      location: "src/utils/cloudSyncShared.ts:shouldApplyRemoteUpdate",
+      message: "Version-based remote apply decision",
+      data: {
+        remoteServerVersion,
+        lastKnownServerVersion: lastKnownServerVersion || 0,
+        shouldApply: shouldApplyByVersion,
+      },
+      timestamp: Date.now(),
+    });
+    // #endregion
+
+    return shouldApplyByVersion;
   }
 
   const newestKnownLocalTime = Math.max(
@@ -269,7 +330,58 @@ export function shouldApplyRemoteUpdate({
     parseCloudSyncTimestamp(lastUploadedAt)
   );
 
-  return remoteTime > newestKnownLocalTime;
+  const shouldApplyByTime = remoteTime > newestKnownLocalTime;
+
+  // #region agent log
+  writeDebugLog({
+    hypothesisId: "A",
+    location: "src/utils/cloudSyncShared.ts:shouldApplyRemoteUpdate",
+    message: "Timestamp-based remote apply decision",
+    data: {
+      remoteUpdatedAt: remoteUpdatedAt ?? null,
+      newestKnownLocalTime,
+      shouldApply: shouldApplyByTime,
+    },
+    timestamp: Date.now(),
+  });
+  // #endregion
+
+  return shouldApplyByTime;
+}
+
+export function shouldDelaySettingsUploadForWallpaperSync({
+  currentWallpaper,
+  customWallpapersEnabled = false,
+  customWallpapersLastLocalChangeAt,
+  customWallpapersLastUploadedAt,
+  customWallpapersHasPendingUpload = false,
+  settingsQueuedAtMs,
+  nowMs = Date.now(),
+  maxWaitMs = 20_000,
+}: ShouldDelaySettingsUploadForWallpaperSyncParams): boolean {
+  if (
+    !customWallpapersEnabled ||
+    !currentWallpaper ||
+    !currentWallpaper.startsWith("indexeddb://")
+  ) {
+    return false;
+  }
+
+  if (
+    !hasUnsyncedLocalChanges(
+      customWallpapersLastLocalChangeAt,
+      customWallpapersLastUploadedAt,
+      customWallpapersHasPendingUpload
+    )
+  ) {
+    return false;
+  }
+
+  if (!settingsQueuedAtMs || settingsQueuedAtMs <= 0) {
+    return true;
+  }
+
+  return nowMs - settingsQueuedAtMs < maxWaitMs;
 }
 
 export function getLatestCloudSyncTimestamp(
