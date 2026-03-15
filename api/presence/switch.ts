@@ -8,7 +8,7 @@ import { isProfaneUsername, assertValidRoomId } from "../_utils/_validation.js";
 import { getRoom, setRoom } from "../rooms/_helpers/_redis.js";
 import { getRoomWriteAccessError } from "../rooms/_helpers/_access.js";
 import { setRoomPresence, removeRoomPresence, refreshRoomUserCount } from "../rooms/_helpers/_presence.js";
-import { broadcastRoomUpdated } from "../rooms/_helpers/_pusher.js";
+import { broadcastRoomUpdated, broadcastPresenceUpdate } from "../rooms/_helpers/_pusher.js";
 import { ensureUserExists } from "../rooms/_helpers/_users.js";
 
 export const runtime = "nodejs";
@@ -66,8 +66,11 @@ export default apiHandler(
         const roomData = await getRoom(previousRoomId);
         if (roomData && roomData.type !== "private") {
           await removeRoomPresence(previousRoomId, username);
-          await refreshRoomUserCount(previousRoomId);
-          await broadcastRoomUpdated(previousRoomId);
+          const prevCount = await refreshRoomUserCount(previousRoomId);
+          await Promise.all([
+            broadcastRoomUpdated(previousRoomId),
+            broadcastPresenceUpdate(previousRoomId, { username, action: "left", userCount: prevCount }),
+          ]);
         }
       }
 
@@ -89,7 +92,10 @@ export default apiHandler(
         await setRoomPresence(nextRoomId, username);
         const userCount = await refreshRoomUserCount(nextRoomId);
         await setRoom(nextRoomId, { ...roomData, userCount });
-        await broadcastRoomUpdated(nextRoomId);
+        await Promise.all([
+          broadcastRoomUpdated(nextRoomId),
+          broadcastPresenceUpdate(nextRoomId, { username, action: "joined", userCount }),
+        ]);
       }
 
       logger.info("Room switched", { username, previousRoomId, nextRoomId });

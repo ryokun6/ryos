@@ -242,6 +242,37 @@ export async function fanOutToPrivateMembers(
 }
 
 /**
+ * Broadcast presence update (join/leave) to a room channel.
+ * Clients can bind to "presence-update" on `room-{roomId}` to get live
+ * user-count and join/leave events without refetching the room list.
+ */
+export async function broadcastPresenceUpdate(
+  roomId: string,
+  payload: { username: string; action: "joined" | "left"; userCount: number }
+): Promise<void> {
+  try {
+    await triggerRealtimeEvent(`room-${roomId}`, "presence-update", payload);
+  } catch (err) {
+    console.error("[broadcastPresenceUpdate] Failed:", err);
+  }
+}
+
+/**
+ * Broadcast a typing indicator event to a room channel.
+ * Clients bind to "user-typing" on `room-{roomId}`.
+ */
+export async function broadcastTypingIndicator(
+  roomId: string,
+  payload: { username: string; isTyping: boolean }
+): Promise<void> {
+  try {
+    await triggerRealtimeEvent(`room-${roomId}`, "user-typing", payload);
+  } catch (err) {
+    console.error("[broadcastTypingIndicator] Failed:", err);
+  }
+}
+
+/**
  * Broadcast rooms update to specific users only
  * Uses batch triggers for efficiency
  */

@@ -188,6 +188,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.unbind("user-joined");
     channelRef.unbind("user-left");
     channelRef.unbind("dj-changed");
+    channelRef.unbind("dj-disconnected");
     channelRef.unbind("reaction");
     channelRef.unbind("session-ended");
 
@@ -291,6 +292,18 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       unsubscribeFromSession();
       set({ ...initialState });
     });
+
+    channelRef.bind(
+      "dj-disconnected",
+      ({ djUsername }: { djUsername: string }) => {
+        const state = get();
+        if (!state.currentSession || state.isDj) return;
+        toast.warning("DJ disconnected", {
+          description: `@${djUsername} appears to have disconnected.`,
+          duration: 8000,
+        });
+      }
+    );
   };
 
   return {

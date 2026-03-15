@@ -16,6 +16,8 @@ import { useStickiesStore } from "@/stores/useStickiesStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import {
+  getPusherClient,
+  getRealtimeConnectionState,
   subscribePusherChannel,
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
@@ -46,10 +48,9 @@ import {
 } from "@/utils/cloudSyncShared";
 import type { CloudSyncVersionState } from "@/utils/cloudSyncVersion";
 
-const POLL_INTERVAL_MS = 2 * 60 * 1000;
+const POLL_INTERVAL_CONNECTED_MS = 10 * 60 * 1000;
+const POLL_INTERVAL_DISCONNECTED_MS = 2 * 60 * 1000;
 
-// Minimum gap between visibility/focus-triggered checks to avoid rapid-fire
-// requests when the user alt-tabs repeatedly.
 const VISIBILITY_CHECK_COOLDOWN_MS = 30_000;
 const REMOTE_APPLY_SUPPRESSION_MS = 2000;
 
@@ -911,12 +912,37 @@ export function useAutoCloudSync() {
 
     void checkRemoteUpdates().then(flushPendingUploads);
 
-    const intervalId = setInterval(() => {
+    // Adaptive polling: use a longer interval when realtime connection is up
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = () => {
+      if (intervalId) clearInterval(intervalId);
+      const isConnected = getRealtimeConnectionState() === "connected";
+      const pollMs = isConnected ? POLL_INTERVAL_CONNECTED_MS : POLL_INTERVAL_DISCONNECTED_MS;
+      intervalId = setInterval(() => {
+        void checkRemoteUpdates().then(flushPendingUploads);
+      }, pollMs);
+    };
+
+    startPolling();
+
+    // Re-sync and adjust poll interval when realtime connection state changes
+    const client = getPusherClient();
+    const onConnected = () => {
+      console.log("[CloudSync] Realtime connected — running catch-up sync");
       void checkRemoteUpdates().then(flushPendingUploads);
-    }, POLL_INTERVAL_MS);
+      startPolling();
+    };
+    const onDisconnected = () => {
+      startPolling();
+    };
+    client.connection.bind("connected", onConnected);
+    client.connection.bind("disconnected", onDisconnected);
 
     return () => {
-      clearInterval(intervalId);
+      if (intervalId) clearInterval(intervalId);
+      client.connection.unbind("connected", onConnected);
+      client.connection.unbind("disconnected", onDisconnected);
       clearAllUploadTimers();
       filesUnsubscribe();
       syncEventsUnsubscribe();

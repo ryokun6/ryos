@@ -17,7 +17,7 @@ import {
   removeRoomPresence,
   refreshRoomUserCount,
 } from "../_helpers/_presence.js";
-import { broadcastRoomDeleted, broadcastRoomUpdated } from "../_helpers/_pusher.js";
+import { broadcastRoomDeleted, broadcastRoomUpdated, broadcastPresenceUpdate } from "../_helpers/_pusher.js";
 import type { Room } from "../_helpers/_types.js";
 
 export const runtime = "nodejs";
@@ -103,8 +103,11 @@ export default apiHandler(
           } else {
             const updatedRoom: Room = { ...roomData, members: updatedMembers, userCount };
             await setRoom(roomId, updatedRoom);
-            await broadcastRoomUpdated(roomId);
-            await broadcastRoomDeleted(roomId, roomData.type, [username]);
+            await Promise.all([
+              broadcastRoomUpdated(roomId),
+              broadcastRoomDeleted(roomId, roomData.type, [username]),
+              broadcastPresenceUpdate(roomId, { username, action: "left", userCount }),
+            ]);
             logger.info("Pusher private leave broadcasts sent", {
               roomId,
               remainingMembers: updatedMembers.length,
@@ -112,7 +115,10 @@ export default apiHandler(
             });
           }
         } else {
-          await broadcastRoomUpdated(roomId);
+          await Promise.all([
+            broadcastRoomUpdated(roomId),
+            broadcastPresenceUpdate(roomId, { username, action: "left", userCount }),
+          ]);
         }
       }
 
