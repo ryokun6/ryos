@@ -1,9 +1,11 @@
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import {
-  downloadAndApplyCloudSyncDomain,
+  applyDownloadedCloudSyncDomainPayload,
   uploadCloudSyncDomain,
-  type DownloadCloudSyncResult,
+  type BlobIndividualDomainDownloadPayload,
+  type BlobLegacyDomainDownloadPayload,
+  type RedisStateDomainDownloadPayload,
 } from "@/utils/cloudSync";
 import {
   aggregateLogicalCloudSyncMetadata,
@@ -92,15 +94,59 @@ export async function uploadLogicalCloudSyncDomain(
 
 export async function downloadAndApplyLogicalCloudSyncDomain(
   domain: LogicalCloudSyncDomain,
-  auth: AuthContext
+  _auth: AuthContext
 ): Promise<LogicalCloudSyncTransferResult> {
+  const response = await abortableFetch(
+    getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
+    {
+      method: "GET",
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    }
+  );
+
+  if (response.status === 404) {
+    throw new Error(`No ${domain} sync data found`);
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      (errorData as { error?: string }).error ||
+        `Failed to download logical sync domain ${domain}`
+    );
+  }
+
+  const payload = (await response.json()) as {
+    parts?: Partial<
+      Record<
+        CloudSyncDomain,
+        | RedisStateDomainDownloadPayload
+        | BlobLegacyDomainDownloadPayload
+        | BlobIndividualDomainDownloadPayload
+      >
+    >;
+  };
+
+  if (!payload.parts) {
+    throw new Error("Logical sync domain response was invalid.");
+  }
+
   const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
   let applied = false;
 
-  for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
-    const result: DownloadCloudSyncResult = await downloadAndApplyCloudSyncDomain(
+  for (const [partDomain, partPayload] of Object.entries(payload.parts) as Array<
+    [
+      CloudSyncDomain,
+      | RedisStateDomainDownloadPayload
+      | BlobLegacyDomainDownloadPayload
+      | BlobIndividualDomainDownloadPayload
+    ]
+  >) {
+    const result = await applyDownloadedCloudSyncDomainPayload(
       partDomain,
-      auth
+      partPayload
     );
     partMetadata[partDomain] = result.metadata;
     applied = applied || result.applied;

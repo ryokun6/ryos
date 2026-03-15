@@ -196,6 +196,29 @@ interface DownloadCloudSyncOptions {
   shouldApply?: (metadata: CloudSyncDomainMetadata) => boolean;
 }
 
+export interface RedisStateDomainDownloadPayload {
+  data: unknown;
+  metadata: CloudSyncDomainMetadata;
+}
+
+export interface BlobLegacyDomainDownloadPayload {
+  metadata: CloudSyncDomainMetadata;
+  downloadUrl?: string;
+  blobUrl?: string;
+}
+
+export interface BlobIndividualDomainDownloadPayload {
+  mode: "individual";
+  items?: Record<string, CloudSyncBlobItemDownloadMetadata>;
+  metadata: CloudSyncDomainMetadata;
+  deletedItems?: DeletionMarkerMap;
+}
+
+export type CloudSyncDomainDownloadPayload =
+  | RedisStateDomainDownloadPayload
+  | BlobLegacyDomainDownloadPayload
+  | BlobIndividualDomainDownloadPayload;
+
 type RedisStateDomainSnapshot = {
   data: AnySnapshotData;
   metadata: CloudSyncDomainMetadata;
@@ -2084,38 +2107,52 @@ async function downloadRedisStateDomain(
     };
   }
 
-  const envelope: CloudSyncEnvelope<AnySnapshotData> = {
+  return applyDownloadedCloudSyncDomainPayload(
     domain,
-    version: result.metadata.version,
-    updatedAt: result.metadata.updatedAt,
-    data: result.data as AnySnapshotData,
-  };
-
-  await applyCloudSyncEnvelope(envelope);
-  return {
-    metadata: result.metadata,
-    applied: true,
-  };
+    {
+      data: result.data,
+      metadata: result.metadata,
+    },
+    options
+  );
 }
 
-async function downloadBlobDomain(
-  domain: BlobSyncDomain,
-  _auth: AuthContext,
+export async function applyDownloadedCloudSyncDomainPayload(
+  domain: CloudSyncDomain,
+  payload: CloudSyncDomainDownloadPayload,
   options?: DownloadCloudSyncOptions
 ): Promise<DownloadCloudSyncResult> {
-  const data = await fetchBlobDomainInfo(domain, _auth);
-  if (!data?.metadata) {
-    throw new Error("Sync download response was invalid.");
-  }
-
-  if (options?.shouldApply && !options.shouldApply(data.metadata)) {
+  if (options?.shouldApply && !options.shouldApply(payload.metadata)) {
     return {
-      metadata: data.metadata,
+      metadata: payload.metadata,
       applied: false,
     };
   }
 
-  if (isIndividualBlobSyncDomain(domain) && data.mode === "individual") {
+  if (isRedisSyncDomain(domain)) {
+    const redisPayload = payload as RedisStateDomainDownloadPayload;
+    const envelope: CloudSyncEnvelope<AnySnapshotData> = {
+      domain,
+      version: redisPayload.metadata.version,
+      updatedAt: redisPayload.metadata.updatedAt,
+      data: redisPayload.data as AnySnapshotData,
+    };
+
+    await applyCloudSyncEnvelope(envelope);
+    return {
+      metadata: redisPayload.metadata,
+      applied: true,
+    };
+  }
+
+  if (!isBlobSyncDomain(domain)) {
+    throw new Error(`Unknown sync domain: ${domain}`);
+  }
+
+  const data =
+    payload as BlobLegacyDomainDownloadPayload | BlobIndividualDomainDownloadPayload;
+
+  if (isIndividualBlobSyncDomain(domain) && "mode" in data && data.mode === "individual") {
     const remoteItems = data.items || {};
     const remoteDeletedItems = normalizeDeletionMarkerMap(data.deletedItems);
     const localDeletedItems = getIndividualBlobDeletedKeys(domain);
@@ -2173,7 +2210,8 @@ async function downloadBlobDomain(
     };
   }
 
-  const downloadUrl = data.downloadUrl || data.blobUrl;
+  const legacyData = data as BlobLegacyDomainDownloadPayload;
+  const downloadUrl = legacyData.downloadUrl || legacyData.blobUrl;
   if (!downloadUrl) {
     throw new Error("Sync download response was invalid.");
   }
@@ -2184,6 +2222,25 @@ async function downloadBlobDomain(
     metadata: data.metadata,
     applied: true,
   };
+}
+
+async function downloadBlobDomain(
+  domain: BlobSyncDomain,
+  _auth: AuthContext,
+  options?: DownloadCloudSyncOptions
+): Promise<DownloadCloudSyncResult> {
+  const data = await fetchBlobDomainInfo(domain, _auth);
+  if (!data?.metadata) {
+    throw new Error("Sync download response was invalid.");
+  }
+
+  return applyDownloadedCloudSyncDomainPayload(
+    domain,
+    data.mode === "individual"
+      ? (data as BlobIndividualDomainDownloadPayload)
+      : (data as BlobLegacyDomainDownloadPayload),
+    options
+  );
 }
 
 /**
