@@ -26,9 +26,10 @@ export interface InternetExplorerInitialData {
   shareCode?: string;
 }
 
-/** iPod initial data - for playing specific videos */
+/** iPod initial data - for playing specific videos or joining listen sessions */
 export interface IpodInitialData {
   videoId?: string;
+  listenSessionId?: string;
 }
 
 /** Videos initial data - for playing specific videos */

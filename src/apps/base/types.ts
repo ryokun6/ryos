@@ -92,6 +92,7 @@ export interface InternetExplorerInitialData {
 
 export interface IpodInitialData {
   videoId?: string;
+  listenSessionId?: string;
 }
 
 export interface KaraokeInitialData {

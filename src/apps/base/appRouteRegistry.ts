@@ -125,9 +125,14 @@ export function resolveInitialRoute(pathname: string): RouteAction | null {
 
   const listenMatch = pathname.match(/^\/listen\/(.+)$/);
   if (listenMatch) {
+    const searchParams = typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams();
+    const appParam = searchParams.get("app");
+    const targetApp = appParam === "ipod" ? "ipod" as const : "karaoke" as const;
     return createLaunchAction(
       {
-        appId: "karaoke",
+        appId: targetApp,
         initialData: {
           listenSessionId: listenMatch[1],
         },
