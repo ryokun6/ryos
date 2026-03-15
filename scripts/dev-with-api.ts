@@ -8,7 +8,10 @@
  */
 
 const API_PORT = process.env.API_PORT ?? "3000";
-const PORT = process.env.PORT ?? "5173";
+// Bun auto-loads .env.local which may set PORT=3000 (used by the API).
+// The Vite dev server needs a separate port to avoid conflicts.
+const VITE_PORT = process.env.VITE_PORT ?? "5173";
+const PORT = VITE_PORT === API_PORT ? "5173" : VITE_PORT;
 
 const api = Bun.spawn(
   ["bun", "run", "dev:api"],
