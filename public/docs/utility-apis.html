@@ -588,14 +588,6 @@ const { quotes, chart } = await response.json();</code></pre>
   "totalSize": 1234567
 }</code></pre>
 <code>blobUrl</code> is also accepted for backward compatibility; the server resolves either field.
-<h3>GET /api/sync/domains</h3>
-<p>Returns two metadata maps for the authenticated user: <ul><li><code>metadata</code>: logical domains such as <code>settings</code>, <code>files</code>, and <code>contacts</code></li></ul><ul><li><code>physicalMetadata</code>: physical sync parts such as <code>settings</code>, <code>custom-wallpapers</code>, and <code>files-images</code></li></ul></p>
-<h3>GET /api/sync/domains/[domain]</h3>
-<p>Downloads a logical sync domain. The response includes aggregated logical metadata plus a <code>parts</code> object keyed by physical domain so Redis-backed and blob-backed data travel together.</p>
-<h3>PUT /api/sync/domains/[domain]</h3>
-<p>Applies grouped writes for a single logical sync domain. The request body contains a <code>writes</code> object keyed by physical domain, and clients may include <code>X-Sync-Session-Id</code> to help suppress self-triggered realtime updates.</p>
-<h3>POST /api/sync/domains/[domain]/attachments/prepare</h3>
-<p>Generates upload instructions for blob-backed logical sync parts. The request body includes a required <code>partDomain</code> and an optional <code>itemKey</code> for per-item blob domains such as <code>custom-wallpapers</code> or <code>files-images</code>.</p>
 <h4>POST response</h4>
 <pre><code>{
   "ok": true,
@@ -621,6 +613,14 @@ const { quotes, chart } = await response.json();</code></pre>
 <pre><code>{
   "ok": true
 }</code></pre>
+<h3>GET /api/sync/domains</h3>
+<p>Returns two metadata maps for the authenticated user: <ul><li><code>metadata</code>: logical domains such as <code>settings</code>, <code>files</code>, and <code>contacts</code></li></ul><ul><li><code>physicalMetadata</code>: physical sync parts such as <code>settings</code>, <code>custom-wallpapers</code>, and <code>files-images</code></li></ul></p>
+<h3>GET /api/sync/domains/[domain]</h3>
+<p>Downloads a logical sync domain. The response includes aggregated logical metadata plus a <code>parts</code> object keyed by physical domain so Redis-backed and blob-backed data travel together.</p>
+<h3>PUT /api/sync/domains/[domain]</h3>
+<p>Applies grouped writes for a single logical sync domain. The request body contains a <code>writes</code> object keyed by physical domain, and clients may include <code>X-Sync-Session-Id</code> to help suppress self-triggered realtime updates.</p>
+<h3>POST /api/sync/domains/[domain]/attachments/prepare</h3>
+<p>Generates upload instructions for blob-backed logical sync parts. The request body includes a required <code>partDomain</code> and an optional <code>itemKey</code> for per-item blob domains such as <code>custom-wallpapers</code> or <code>files-images</code>.</p>
 <hr>
 <h2>Admin API</h2>
 <p>Administrative endpoints for user and memory management in the chat system. All operations require admin authentication (user <code>ryo</code> with valid token).</p>
