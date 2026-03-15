@@ -19,7 +19,6 @@ import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay
 import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotifications";
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { useAutoCloudSync } from "@/hooks/useAutoCloudSync";
-import { useUnifiedNotifications } from "@/hooks/useUnifiedNotifications";
 import { AirDropListener } from "@/components/AirDropListener";
 import { useFilesStore } from "@/stores/useFilesStore";
 
@@ -42,7 +41,6 @@ export function App() {
   useOffline();
   useBackgroundChatNotifications();
   useAutoCloudSync();
-  useUnifiedNotifications();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
