@@ -50,6 +50,13 @@ import {
   getNextSyncClientVersion,
   getSyncClientId,
 } from "@/utils/cloudSyncClientState";
+import { getSyncSessionId } from "@/utils/syncSession";
+import {
+  fetchLegacyBlobDomainPayload,
+  fetchLegacyRedisDomainSnapshot,
+  requestLegacyBlobUploadInstruction,
+  saveLegacyBlobDomainMetadata,
+} from "@/utils/syncTransportClient";
 import type { CloudSyncWriteVersion } from "@/utils/cloudSyncVersion";
 import {
   filterDeletedIds,
@@ -91,19 +98,6 @@ type AuthContext = {
   username: string;
   isAuthenticated: boolean;
 };
-
-let _syncSessionId: string | null = null;
-
-/** Stable per-tab identifier used to skip self-originated realtime events. */
-export function getSyncSessionId(): string {
-  if (!_syncSessionId) {
-    _syncSessionId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-  return _syncSessionId;
-}
 
 interface StoreItem {
   [key: string]: unknown;
@@ -195,6 +189,35 @@ export interface DownloadCloudSyncResult {
 interface DownloadCloudSyncOptions {
   shouldApply?: (metadata: CloudSyncDomainMetadata) => boolean;
 }
+
+export interface PreparedCloudSyncDomainWrite {
+  domain: CloudSyncDomain;
+  payload: Record<string, unknown>;
+  onCommitted?: (metadata: CloudSyncDomainMetadata) => Promise<void> | void;
+}
+
+export interface RedisStateDomainDownloadPayload {
+  data: unknown;
+  metadata: CloudSyncDomainMetadata;
+}
+
+export interface BlobLegacyDomainDownloadPayload {
+  metadata: CloudSyncDomainMetadata;
+  downloadUrl?: string;
+  blobUrl?: string;
+}
+
+export interface BlobIndividualDomainDownloadPayload {
+  mode: "individual";
+  items?: Record<string, CloudSyncBlobItemDownloadMetadata>;
+  metadata: CloudSyncDomainMetadata;
+  deletedItems?: DeletionMarkerMap;
+}
+
+export type CloudSyncDomainDownloadPayload =
+  | RedisStateDomainDownloadPayload
+  | BlobLegacyDomainDownloadPayload
+  | BlobIndividualDomainDownloadPayload;
 
 type RedisStateDomainSnapshot = {
   data: AnySnapshotData;
@@ -1396,50 +1419,33 @@ function createWriteSyncVersion(
 export async function fetchCloudSyncMetadata(
   _auth: AuthContext
 ): Promise<CloudSyncMetadataMap> {
-  const [blobRes, redisRes] = await Promise.all([
-    abortableFetch(getApiUrl("/api/sync/auto"), {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }),
-    abortableFetch(getApiUrl("/api/sync/state"), {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }),
-  ]);
+  const consolidatedRes = await abortableFetch(getApiUrl("/api/sync/domains"), {
+    method: "GET",
+    headers: authHeaders(),
+    timeout: 15000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
 
-  const merged = createEmptyCloudSyncMetadataMap();
-
-  if (blobRes.ok) {
-    const blobData = (await blobRes.json()) as { metadata?: Partial<CloudSyncMetadataMap> };
-    if (blobData.metadata) {
-      for (const domain of BLOB_SYNC_DOMAINS) {
-        const entry = blobData.metadata[domain as keyof typeof blobData.metadata];
-        if (entry) merged[domain] = entry as CloudSyncDomainMetadata;
+  if (consolidatedRes.ok) {
+    const consolidatedData = (await consolidatedRes.json()) as {
+      physicalMetadata?: Partial<CloudSyncMetadataMap>;
+    };
+    if (consolidatedData.physicalMetadata) {
+      const merged = createEmptyCloudSyncMetadataMap();
+      for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
+        const entry =
+          consolidatedData.physicalMetadata[
+            domain as keyof typeof consolidatedData.physicalMetadata
+          ];
+        if (entry) {
+          merged[domain] = entry as CloudSyncDomainMetadata;
+        }
       }
+      return merged;
     }
   }
-
-  if (redisRes.ok) {
-    const redisData = (await redisRes.json()) as { metadata?: Partial<CloudSyncMetadataMap> };
-    if (redisData.metadata) {
-      for (const domain of REDIS_SYNC_DOMAINS) {
-        const entry = redisData.metadata[domain as keyof typeof redisData.metadata];
-        if (entry) merged[domain] = entry as CloudSyncDomainMetadata;
-      }
-    }
-  }
-
-  if (!blobRes.ok && !redisRes.ok) {
-    throw new Error("Failed to fetch sync metadata from both endpoints");
-  }
-
-  return merged;
+  throw new Error("Failed to fetch consolidated sync metadata");
 }
 
 function mergeItemsByIdPreferNewer<T extends { id: string; updatedAt?: number }>(
@@ -1624,10 +1630,10 @@ function mergeRedisStateConflict(
   }
 }
 
-async function uploadRedisStateDomain(
+async function prepareRedisStateDomainWrite(
   domain: RedisSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const envelope = await createCloudSyncEnvelope(domain);
   let data = envelope.data;
   let baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
@@ -1647,10 +1653,39 @@ async function uploadRedisStateDomain(
     }
   }
 
+  return {
+    domain,
+    payload: {
+      domain,
+      data,
+      updatedAt: envelope.updatedAt,
+      version: envelope.version,
+      syncVersion: createWriteSyncVersion(domain, baseMetadata),
+    },
+    onCommitted: async (metadata) => {
+      cacheRedisStateDomainSnapshot(domain, _auth, {
+        data,
+        metadata,
+      });
+      await applyResolvedRedisUploadLocally(domain, data, metadata.updatedAt);
+    },
+  };
+}
+
+async function uploadRedisStateDomain(
+  domain: RedisSyncDomain,
+  _auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  const preparedWrite = await prepareRedisStateDomainWrite(domain, _auth);
+  let data = preparedWrite.payload.data as AnySnapshotData;
+  let syncVersion = preparedWrite.payload.syncVersion as CloudSyncWriteVersion;
+  let updatedAt = preparedWrite.payload.updatedAt as string;
+  const version = preparedWrite.payload.version as number;
+
   const sendStateUpload = async (
     nextData: AnySnapshotData,
     nextUpdatedAt: string,
-    nextBaseMetadata: CloudSyncDomainMetadata | null | undefined
+    nextSyncVersion: CloudSyncWriteVersion
   ) =>
     abortableFetch(getApiUrl("/api/sync/state"), {
       method: "PUT",
@@ -1662,15 +1697,19 @@ async function uploadRedisStateDomain(
         domain,
         data: nextData,
         updatedAt: nextUpdatedAt,
-        version: envelope.version,
-        syncVersion: createWriteSyncVersion(domain, nextBaseMetadata),
+        version,
+        syncVersion: nextSyncVersion,
       }),
       timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
 
-  let response = await sendStateUpload(data, envelope.updatedAt, baseMetadata);
+  let response = await sendStateUpload(
+    data,
+    updatedAt,
+    syncVersion as CloudSyncWriteVersion
+  );
 
   if (response.status === 409) {
     invalidateRedisStateDomainSnapshotCache(domain, _auth);
@@ -1678,17 +1717,19 @@ async function uploadRedisStateDomain(
     if (latestRemote?.data) {
       const merged = mergeRedisStateConflict(
         domain,
-        envelope.data,
+        (await createCloudSyncEnvelope(domain)).data,
         latestRemote.data,
-        envelope.updatedAt,
+        updatedAt,
         latestRemote.metadata.updatedAt
       );
       if (merged) {
         data = merged;
+        updatedAt = new Date().toISOString();
+        syncVersion = createWriteSyncVersion(domain, latestRemote.metadata);
         response = await sendStateUpload(
           merged,
-          new Date().toISOString(),
-          latestRemote.metadata
+          updatedAt,
+          syncVersion
         );
       }
     }
@@ -1706,11 +1747,7 @@ async function uploadRedisStateDomain(
     throw new Error("State sync response was invalid.");
   }
 
-  cacheRedisStateDomainSnapshot(domain, _auth, {
-    data,
-    metadata: result.metadata,
-  });
-  await applyResolvedRedisUploadLocally(domain, data, result.metadata.updatedAt);
+  await preparedWrite.onCommitted?.(result.metadata);
   return result.metadata;
 }
 
@@ -1731,36 +1768,9 @@ async function fetchRedisStateDomainSnapshot(
   return redisStateDomainSnapshotCache.get(
     getDomainFetchCacheKey(_auth, domain),
     async () => {
-      const response = await abortableFetch(
-        getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
-        {
-          method: "GET",
-          headers: authHeaders(),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (response.status === 404) {
+      const result = await fetchLegacyRedisDomainSnapshot(domain);
+      if (!result) {
         return null;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          (errorData as { error?: string }).error ||
-            `Failed to download ${domain} state`
-        );
-      }
-
-      const result = (await response.json()) as {
-        data?: unknown;
-        metadata?: CloudSyncDomainMetadata;
-      };
-
-      if (result.data === undefined || !result.metadata) {
-        throw new Error("State download response was invalid.");
       }
 
       return {
@@ -1777,32 +1787,8 @@ async function fetchBlobDomainInfo(
 ): Promise<BlobDomainInfoResponse | null> {
   return blobDomainInfoCache.get(
     getDomainFetchCacheKey(_auth, domain),
-    async () => {
-      const response = await abortableFetch(
-        getApiUrl(`/api/sync/auto?domain=${encodeURIComponent(domain)}`),
-        {
-          method: "GET",
-          headers: authHeaders(),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (response.status === 404) {
-        return null;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          (errorData as { error?: string }).error ||
-            `Failed to fetch ${domain} sync data`
-        );
-      }
-
-      return (await response.json()) as BlobDomainInfoResponse;
-    }
+    async () =>
+      (await fetchLegacyBlobDomainPayload(domain)) as BlobDomainInfoResponse | null
   );
 }
 
@@ -1811,29 +1797,7 @@ async function requestBlobUploadInstruction(
   _auth: AuthContext,
   itemKey?: string
 ): Promise<StorageUploadInstruction> {
-  const tokenResponse = await abortableFetch(getApiUrl("/api/sync/auto-token"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
-    body: JSON.stringify({
-      domain,
-      ...(itemKey ? { itemKey } : {}),
-    }),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!tokenResponse.ok) {
-    const errorData = await tokenResponse.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to get sync upload token"
-    );
-  }
-
-  return (await tokenResponse.json()) as StorageUploadInstruction;
+  return requestLegacyBlobUploadInstruction(domain, itemKey);
 }
 
 async function saveBlobDomainMetadata(
@@ -1841,35 +1805,9 @@ async function saveBlobDomainMetadata(
   payload: Record<string, unknown>,
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  const metadataResponse = await abortableFetch(getApiUrl("/api/sync/auto"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
-    body: JSON.stringify(payload),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!metadataResponse.ok) {
-    const errorData = await metadataResponse.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to save sync metadata"
-    );
-  }
-
-  const metadataData = (await metadataResponse.json()) as {
-    metadata?: CloudSyncDomainMetadata;
-  };
-
-  if (!metadataData.metadata) {
-    throw new Error("Sync metadata save response was invalid.");
-  }
-
+  const metadata = await saveLegacyBlobDomainMetadata(payload);
   invalidateBlobDomainInfoCache(domain, _auth);
-  return metadataData.metadata;
+  return metadata;
 }
 
 async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
@@ -1890,7 +1828,7 @@ async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
 async function uploadLegacyBlobDomain(
   domain: BlobSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const envelope = await createCloudSyncEnvelope(domain);
   const remoteInfo = await fetchBlobDomainInfo(domain, _auth).catch(() => null);
   const dataItems = Array.isArray(envelope.data) ? envelope.data.length : "N/A";
@@ -1904,9 +1842,9 @@ async function uploadLegacyBlobDomain(
     uploadInstruction
   );
 
-  return saveBlobDomainMetadata(
+  return {
     domain,
-    {
+    payload: {
       domain,
       storageUrl: uploadResult.storageUrl,
       updatedAt: envelope.updatedAt,
@@ -1917,14 +1855,13 @@ async function uploadLegacyBlobDomain(
         remoteInfo?.metadata || useCloudSyncStore.getState().remoteMetadata[domain]
       ),
     },
-    _auth
-  );
+  };
 }
 
 async function uploadIndividualBlobDomain(
   domain: IndividualBlobSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const updatedAt = new Date().toISOString();
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
   const deletedItems = pruneDeletedKeysForExistingRecords(domain, localRecords);
@@ -1996,9 +1933,9 @@ async function uploadIndividualBlobDomain(
   console.log(
     `[CloudSync:blob] ${domain}: uploaded ${uploadedCount}/${uploadPlan.itemsToUpload.length} individual items`
   );
-  const metadata = await saveBlobDomainMetadata(
+  return {
     domain,
-    {
+    payload: {
       domain,
       updatedAt,
       version: AUTO_SYNC_SNAPSHOT_VERSION,
@@ -2010,21 +1947,22 @@ async function uploadIndividualBlobDomain(
         remoteInfo?.metadata || useCloudSyncStore.getState().remoteMetadata[domain]
       ),
     },
-    _auth
-  );
-  setIndividualBlobKnownItems(domain, nextKnownItems);
-  return metadata;
+    onCommitted: async () => {
+      setIndividualBlobKnownItems(domain, nextKnownItems);
+    },
+  };
 }
 
 async function uploadBlobDomain(
   domain: BlobSyncDomain,
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  if (isIndividualBlobSyncDomain(domain)) {
-    return uploadIndividualBlobDomain(domain, _auth);
-  }
-
-  return uploadLegacyBlobDomain(domain, _auth);
+  const preparedWrite = isIndividualBlobSyncDomain(domain)
+    ? await uploadIndividualBlobDomain(domain, _auth)
+    : await uploadLegacyBlobDomain(domain, _auth);
+  const metadata = await saveBlobDomainMetadata(domain, preparedWrite.payload, _auth);
+  await preparedWrite.onCommitted?.(metadata);
+  return metadata;
 }
 
 export async function uploadCloudSyncDomain(
@@ -2036,6 +1974,21 @@ export async function uploadCloudSyncDomain(
   }
   if (isBlobSyncDomain(domain)) {
     return uploadBlobDomain(domain, _auth);
+  }
+  throw new Error(`Unknown sync domain: ${domain}`);
+}
+
+export async function prepareCloudSyncDomainWrite(
+  domain: CloudSyncDomain,
+  _auth: AuthContext
+): Promise<PreparedCloudSyncDomainWrite> {
+  if (isRedisSyncDomain(domain)) {
+    return prepareRedisStateDomainWrite(domain, _auth);
+  }
+  if (isBlobSyncDomain(domain)) {
+    return isIndividualBlobSyncDomain(domain)
+      ? uploadIndividualBlobDomain(domain, _auth)
+      : uploadLegacyBlobDomain(domain, _auth);
   }
   throw new Error(`Unknown sync domain: ${domain}`);
 }
@@ -2057,38 +2010,52 @@ async function downloadRedisStateDomain(
     };
   }
 
-  const envelope: CloudSyncEnvelope<AnySnapshotData> = {
+  return applyDownloadedCloudSyncDomainPayload(
     domain,
-    version: result.metadata.version,
-    updatedAt: result.metadata.updatedAt,
-    data: result.data as AnySnapshotData,
-  };
-
-  await applyCloudSyncEnvelope(envelope);
-  return {
-    metadata: result.metadata,
-    applied: true,
-  };
+    {
+      data: result.data,
+      metadata: result.metadata,
+    },
+    options
+  );
 }
 
-async function downloadBlobDomain(
-  domain: BlobSyncDomain,
-  _auth: AuthContext,
+export async function applyDownloadedCloudSyncDomainPayload(
+  domain: CloudSyncDomain,
+  payload: CloudSyncDomainDownloadPayload,
   options?: DownloadCloudSyncOptions
 ): Promise<DownloadCloudSyncResult> {
-  const data = await fetchBlobDomainInfo(domain, _auth);
-  if (!data?.metadata) {
-    throw new Error("Sync download response was invalid.");
-  }
-
-  if (options?.shouldApply && !options.shouldApply(data.metadata)) {
+  if (options?.shouldApply && !options.shouldApply(payload.metadata)) {
     return {
-      metadata: data.metadata,
+      metadata: payload.metadata,
       applied: false,
     };
   }
 
-  if (isIndividualBlobSyncDomain(domain) && data.mode === "individual") {
+  if (isRedisSyncDomain(domain)) {
+    const redisPayload = payload as RedisStateDomainDownloadPayload;
+    const envelope: CloudSyncEnvelope<AnySnapshotData> = {
+      domain,
+      version: redisPayload.metadata.version,
+      updatedAt: redisPayload.metadata.updatedAt,
+      data: redisPayload.data as AnySnapshotData,
+    };
+
+    await applyCloudSyncEnvelope(envelope);
+    return {
+      metadata: redisPayload.metadata,
+      applied: true,
+    };
+  }
+
+  if (!isBlobSyncDomain(domain)) {
+    throw new Error(`Unknown sync domain: ${domain}`);
+  }
+
+  const data =
+    payload as BlobLegacyDomainDownloadPayload | BlobIndividualDomainDownloadPayload;
+
+  if (isIndividualBlobSyncDomain(domain) && "mode" in data && data.mode === "individual") {
     const remoteItems = data.items || {};
     const remoteDeletedItems = normalizeDeletionMarkerMap(data.deletedItems);
     const localDeletedItems = getIndividualBlobDeletedKeys(domain);
@@ -2146,7 +2113,8 @@ async function downloadBlobDomain(
     };
   }
 
-  const downloadUrl = data.downloadUrl || data.blobUrl;
+  const legacyData = data as BlobLegacyDomainDownloadPayload;
+  const downloadUrl = legacyData.downloadUrl || legacyData.blobUrl;
   if (!downloadUrl) {
     throw new Error("Sync download response was invalid.");
   }
@@ -2157,6 +2125,25 @@ async function downloadBlobDomain(
     metadata: data.metadata,
     applied: true,
   };
+}
+
+async function downloadBlobDomain(
+  domain: BlobSyncDomain,
+  _auth: AuthContext,
+  options?: DownloadCloudSyncOptions
+): Promise<DownloadCloudSyncResult> {
+  const data = await fetchBlobDomainInfo(domain, _auth);
+  if (!data?.metadata) {
+    throw new Error("Sync download response was invalid.");
+  }
+
+  return applyDownloadedCloudSyncDomainPayload(
+    domain,
+    data.mode === "individual"
+      ? (data as BlobIndividualDomainDownloadPayload)
+      : (data as BlobLegacyDomainDownloadPayload),
+    options
+  );
 }
 
 /**

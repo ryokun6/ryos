@@ -32,16 +32,21 @@ import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   FILE_SYNC_DOMAINS,
-  CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
+  type CloudSyncDomain,
   getLatestCloudSyncTimestamp,
 } from "@/utils/cloudSyncShared";
 import { useShallow } from "zustand/react/shallow";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
 import {
-  uploadCloudSyncDomain,
-  downloadAndApplyCloudSyncDomain,
-} from "@/utils/cloudSync";
-import { CLOUD_SYNC_DOMAINS } from "@/utils/cloudSyncShared";
+  downloadAndApplyLogicalCloudSyncDomain,
+  uploadLogicalCloudSyncDomain,
+} from "@/utils/syncLogicalClient";
+import {
+  LOGICAL_CLOUD_SYNC_DOMAINS,
+  getLogicalCloudSyncDomainPhysicalParts,
+  isLogicalCloudSyncDomainEnabled,
+  type LogicalCloudSyncDomain,
+} from "@/utils/syncLogicalDomains";
 
 interface StoreItem {
   name: string;
@@ -798,8 +803,8 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = CLOUD_SYNC_DOMAINS.filter((domain) =>
-      syncStore.isDomainEnabled(domain)
+    const enabledDomains = LOGICAL_CLOUD_SYNC_DOMAINS.filter((domain) =>
+      isLogicalCloudSyncDomainEnabled(syncStore.isDomainEnabled, domain)
     );
 
     if (enabledDomains.length === 0) {
@@ -810,25 +815,40 @@ export function useControlPanelsLogic({
     setIsCloudForceUploading(true);
 
     const failures: string[] = [];
+    const markLogicalUploadFailure = (
+      domain: LogicalCloudSyncDomain,
+      message: string
+    ) => {
+      for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+        syncStore.markUploadFailure(partDomain, message);
+      }
+    };
 
     try {
       for (const domain of enabledDomains) {
-        syncStore.markUploadStart(domain);
+        for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+          syncStore.markUploadStart(partDomain);
+        }
 
         try {
-          const metadata = await uploadCloudSyncDomain(domain, {
+          const result = await uploadLogicalCloudSyncDomain(domain, {
             username,
             isAuthenticated,
           });
-          syncStore.markUploadSuccess(domain, metadata);
-          syncStore.updateRemoteMetadataForDomain(domain, metadata);
+
+          for (const [partDomain, metadata] of Object.entries(
+            result.partMetadata
+          ) as Array<[CloudSyncDomain, NonNullable<(typeof result.partMetadata)[CloudSyncDomain]>]>) {
+            syncStore.markUploadSuccess(partDomain, metadata);
+            syncStore.updateRemoteMetadataForDomain(partDomain, metadata);
+          }
         } catch (error) {
           const message =
             error instanceof Error
               ? error.message
               : t("apps.control-panels.cloudSync.forceUploadFailed");
           failures.push(message);
-          syncStore.markUploadFailure(domain, message);
+          markLogicalUploadFailure(domain, message);
         }
       }
 
@@ -853,8 +873,8 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = CLOUD_SYNC_REMOTE_APPLY_DOMAINS.filter((domain) =>
-      syncStore.isDomainEnabled(domain)
+    const enabledDomains = LOGICAL_CLOUD_SYNC_DOMAINS.filter((domain) =>
+      isLogicalCloudSyncDomainEnabled(syncStore.isDomainEnabled, domain)
     );
 
     if (enabledDomains.length === 0) {
@@ -866,6 +886,14 @@ export function useControlPanelsLogic({
 
     const failures: string[] = [];
     let appliedCount = 0;
+    const markLogicalDownloadFailure = (
+      domain: LogicalCloudSyncDomain,
+      message: string
+    ) => {
+      for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+        syncStore.markDownloadFailure(partDomain, message);
+      }
+    };
 
     const isNoDataError = (msg: string) =>
       /no \w+ state found/i.test(msg) ||
@@ -874,17 +902,27 @@ export function useControlPanelsLogic({
 
     try {
       for (const domain of enabledDomains) {
-        syncStore.markDownloadStart(domain);
+        for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+          syncStore.markDownloadStart(partDomain);
+        }
 
         try {
-          const result = await downloadAndApplyCloudSyncDomain(domain, {
+          const result = await downloadAndApplyLogicalCloudSyncDomain(domain, {
             username,
             isAuthenticated,
           });
-          syncStore.updateRemoteMetadataForDomain(domain, result.metadata);
-          syncStore.markDownloadSuccess(domain, result.metadata);
+
+          for (const [partDomain, metadata] of Object.entries(
+            result.partMetadata
+          ) as Array<[CloudSyncDomain, NonNullable<(typeof result.partMetadata)[CloudSyncDomain]>]>) {
+            syncStore.updateRemoteMetadataForDomain(partDomain, metadata);
+            syncStore.markDownloadSuccess(partDomain, metadata);
+            if (result.applied) {
+              syncStore.markRemoteApplied(partDomain, metadata);
+            }
+          }
+
           if (result.applied) {
-            syncStore.markRemoteApplied(domain, result.metadata);
             appliedCount++;
           }
         } catch (error) {
@@ -893,9 +931,14 @@ export function useControlPanelsLogic({
               ? error.message
               : t("apps.control-panels.cloudSync.forceDownloadFailed");
           if (isNoDataError(message)) {
-            syncStore.markDownloadSuccess(domain, new Date().toISOString());
+            for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+              syncStore.markDownloadSuccess(
+                partDomain,
+                new Date().toISOString()
+              );
+            }
           } else {
-            syncStore.markDownloadFailure(domain, message);
+            markLogicalDownloadFailure(domain, message);
             failures.push(message);
           }
         }
