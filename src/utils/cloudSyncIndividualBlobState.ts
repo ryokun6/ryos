@@ -9,6 +9,8 @@ export type IndividualBlobKnownItemMap = Record<string, IndividualBlobKnownItem>
 
 interface IndividualBlobSyncState {
   "files-images": IndividualBlobKnownItemMap;
+  "files-trash": IndividualBlobKnownItemMap;
+  "files-applets": IndividualBlobKnownItemMap;
   "custom-wallpapers": IndividualBlobKnownItemMap;
 }
 
@@ -17,6 +19,8 @@ const STORAGE_KEY = "ryos:cloud-sync:individual-blob-state";
 function createEmptyIndividualBlobSyncState(): IndividualBlobSyncState {
   return {
     "files-images": {},
+    "files-trash": {},
+    "files-applets": {},
     "custom-wallpapers": {},
   };
 }
@@ -53,6 +57,8 @@ function readIndividualBlobSyncState(): IndividualBlobSyncState {
     const parsed = JSON.parse(raw) as Partial<Record<IndividualBlobSyncDomain, unknown>>;
     return {
       "files-images": normalizeKnownItemMap(parsed["files-images"]),
+      "files-trash": normalizeKnownItemMap(parsed["files-trash"]),
+      "files-applets": normalizeKnownItemMap(parsed["files-applets"]),
       "custom-wallpapers": normalizeKnownItemMap(parsed["custom-wallpapers"]),
     };
   } catch {

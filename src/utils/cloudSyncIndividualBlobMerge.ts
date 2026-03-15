@@ -94,10 +94,6 @@ export function planIndividualBlobUpload(
       continue;
     }
 
-    if (knownItems[key]) {
-      continue;
-    }
-
     preservedRemoteItems[key] = remoteItem;
   }
 
@@ -128,11 +124,7 @@ export function planIndividualBlobDownload(
     const knownItem = knownItems[key];
 
     if (!localRecord) {
-      if (knownItem) {
-        nextKnownItems[key] = knownItem;
-      } else {
-        itemKeysToDownload.push(key);
-      }
+      itemKeysToDownload.push(key);
       continue;
     }
 

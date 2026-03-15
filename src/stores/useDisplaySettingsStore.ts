@@ -4,7 +4,10 @@ import { ShaderType } from "@/types/shader";
 import { DisplayMode } from "@/utils/displayMode";
 import { checkShaderPerformance } from "@/utils/performanceCheck";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
-import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
+import {
+  emitCloudSyncDomainChange,
+  requestCloudSyncCheck,
+} from "@/utils/cloudSyncEvents";
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
@@ -147,10 +150,18 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
             wall.substring(INDEXEDDB_PREFIX.length),
           ]);
         }
-        set({ currentWallpaper: wall, wallpaperSource: wall });
-        if (wall.startsWith(INDEXEDDB_PREFIX)) {
+        if (!wall.startsWith(INDEXEDDB_PREFIX)) {
+          set({ currentWallpaper: wall, wallpaperSource: wall });
+        } else {
+          const fallbackSource = get().wallpaperSource;
           const data = await get().getWallpaperData(wall);
-          if (data) set({ wallpaperSource: data });
+          set({
+            currentWallpaper: wall,
+            wallpaperSource: data || fallbackSource,
+          });
+          if (!data) {
+            requestCloudSyncCheck();
+          }
         }
         window.dispatchEvent(
           new CustomEvent("wallpaperChange", { detail: wall })

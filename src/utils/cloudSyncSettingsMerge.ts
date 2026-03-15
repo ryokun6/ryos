@@ -205,3 +205,15 @@ export function getRemoteSettingsSectionsToApply(
     shouldUseRemoteSection(section, localSectionUpdatedAt, remoteSectionUpdatedAt)
   );
 }
+
+export function shouldRestoreLegacyCustomWallpapers(params: {
+  legacyWallpaperCount: number;
+  localWallpaperCount: number;
+  hasDedicatedCustomWallpaperSync: boolean;
+}): boolean {
+  return (
+    params.legacyWallpaperCount > 0 &&
+    params.localWallpaperCount === 0 &&
+    !params.hasDedicatedCustomWallpaperSync
+  );
+}

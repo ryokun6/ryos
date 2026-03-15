@@ -26,6 +26,10 @@ import {
   subscribeToCloudSyncCheckRequests,
 } from "@/utils/cloudSyncEvents";
 import {
+  getPersistedLocalChangeAt,
+  setPersistedLocalChangeAt,
+} from "@/utils/cloudSyncLocalChangeState";
+import {
   downloadAndApplyCloudSyncDomain,
   fetchCloudSyncMetadata,
   getSyncSessionId,
@@ -156,7 +160,10 @@ function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
 }
 
 function getLatestLocalChangeAt(domain: CloudSyncDomain): string | null {
-  return getPersistedDeletionChangeAt(domain);
+  return getLatestCloudSyncTimestamp([
+    getPersistedLocalChangeAt(domain),
+    getPersistedDeletionChangeAt(domain),
+  ]);
 }
 
 export function useAutoCloudSync() {
@@ -276,6 +283,7 @@ export function useAutoCloudSync() {
           parseCloudSyncTimestamp(metadata.updatedAt)
         ) {
           lastLocalChangeAtRef.current[domain] = metadata.updatedAt;
+          setPersistedLocalChangeAt(domain, metadata.updatedAt);
         }
       } catch (error) {
         const message =
@@ -305,7 +313,9 @@ export function useAutoCloudSync() {
       }
 
       const now = Date.now();
-      lastLocalChangeAtRef.current[domain] = new Date().toISOString();
+      const timestamp = new Date(now).toISOString();
+      lastLocalChangeAtRef.current[domain] = timestamp;
+      setPersistedLocalChangeAt(domain, timestamp);
       uploadRetryCountRef.current[domain] = 0;
 
       if (!firstQueuedAtRef.current[domain]) {
@@ -410,8 +420,7 @@ export function useAutoCloudSync() {
           useCloudSyncStore
             .getState()
             .markRemoteApplied(domain, downloadResult.metadata);
-          lastLocalChangeAtRef.current[domain] =
-            getLatestLocalChangeAt(domain) || downloadResult.metadata.updatedAt;
+          lastLocalChangeAtRef.current[domain] = getLatestLocalChangeAt(domain);
           remoteApplySuppressUntilRef.current[domain] =
             Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
         } else {
@@ -507,8 +516,7 @@ export function useAutoCloudSync() {
           useCloudSyncStore
             .getState()
             .markRemoteApplied(domain, downloadResult.metadata);
-          lastLocalChangeAtRef.current[domain] =
-            getLatestLocalChangeAt(domain) || downloadResult.metadata.updatedAt;
+          lastLocalChangeAtRef.current[domain] = getLatestLocalChangeAt(domain);
           appliedDomains.push(domain);
         }
       }
@@ -744,6 +752,7 @@ export function useAutoCloudSync() {
           state.currentWallpaper !== prevState.currentWallpaper &&
           state.currentWallpaper.startsWith("indexeddb://")
         ) {
+          if (isApplyingRemoteSettingsSection("display")) return;
           console.log(`[CloudSync] display subscriber: currentWallpaper changed from "${prevState.currentWallpaper}" to "${state.currentWallpaper}"`);
           queueUpload("custom-wallpapers");
         }

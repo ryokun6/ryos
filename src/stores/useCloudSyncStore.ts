@@ -27,6 +27,9 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "stickyNoteIds",
   "contactIds",
   "fileMetadataPaths",
+  "fileImageKeys",
+  "fileTrashKeys",
+  "fileAppletKeys",
   "customWallpaperKeys",
   "songTrackIds",
 ] as const;
@@ -47,6 +50,9 @@ function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     stickyNoteIds: {},
     contactIds: {},
     fileMetadataPaths: {},
+    fileImageKeys: {},
+    fileTrashKeys: {},
+    fileAppletKeys: {},
     customWallpaperKeys: {},
     songTrackIds: {},
   };
@@ -133,7 +139,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 6;
+const STORE_VERSION = 7;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(

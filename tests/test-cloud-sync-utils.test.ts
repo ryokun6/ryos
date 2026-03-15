@@ -24,7 +24,10 @@ import {
   planIndividualBlobDownload,
   planIndividualBlobUpload,
 } from "../src/utils/cloudSyncIndividualBlobMerge";
-import { mergeSettingsSnapshotData } from "../src/utils/cloudSyncSettingsMerge";
+import {
+  mergeSettingsSnapshotData,
+  shouldRestoreLegacyCustomWallpapers,
+} from "../src/utils/cloudSyncSettingsMerge";
 import {
   advanceCloudSyncVersion,
   assessCloudSyncWrite,
@@ -70,8 +73,9 @@ describe("cloud sync shared helpers", () => {
     expect(isBlobSyncDomain(invalidCalendarDomain)).toBe(false);
 
     expect(isIndividualBlobSyncDomain("files-images")).toBe(true);
+    expect(isIndividualBlobSyncDomain("files-trash")).toBe(true);
+    expect(isIndividualBlobSyncDomain("files-applets")).toBe(true);
     expect(isIndividualBlobSyncDomain("custom-wallpapers")).toBe(true);
-    expect(isIndividualBlobSyncDomain("files-trash")).toBe(false);
     expect(isIndividualBlobSyncDomain("settings" as never)).toBe(false);
   });
 
@@ -641,6 +645,32 @@ describe("cloud sync shared helpers", () => {
     expect(merged.aiModel).toBe("gpt-4o-mini");
   });
 
+  test("restores legacy custom wallpapers only for first-time migration", () => {
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 0,
+        hasDedicatedCustomWallpaperSync: false,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 1,
+        hasDedicatedCustomWallpaperSync: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 0,
+        hasDedicatedCustomWallpaperSync: true,
+      })
+    ).toBe(false);
+  });
+
   test("preserves remote-only individual blob items on upload", () => {
     const plan = planIndividualBlobUpload(
       [
@@ -667,7 +697,7 @@ describe("cloud sync shared helpers", () => {
     expect(Object.keys(plan.preservedRemoteItems)).toEqual(["remote-image"]);
   });
 
-  test("treats missing known individual blob items as local deletions on upload", () => {
+  test("preserves missing known individual blob items on upload", () => {
     const plan = planIndividualBlobUpload(
       [],
       {
@@ -688,7 +718,14 @@ describe("cloud sync shared helpers", () => {
     );
 
     expect(plan.itemsToUpload).toEqual([]);
-    expect(plan.preservedRemoteItems).toEqual({});
+    expect(plan.preservedRemoteItems).toEqual({
+      "remote-image": {
+        signature: "remote-signature",
+        updatedAt: "2026-03-14T04:00:00.000Z",
+        size: 10,
+        storageUrl: "remote://image",
+      },
+    });
   });
 
   test("preserves local-only individual blob items on download", () => {
@@ -728,6 +765,31 @@ describe("cloud sync shared helpers", () => {
 
     expect(plan.keysToDelete).toEqual(["old-image"]);
     expect(plan.itemKeysToDownload).toEqual([]);
+  });
+
+  test("re-downloads missing known individual blob items when local storage is empty", () => {
+    const plan = planIndividualBlobDownload(
+      [],
+      {
+        "remote-image": {
+          signature: "remote-signature",
+          updatedAt: "2026-03-14T04:00:00.000Z",
+          size: 10,
+          storageUrl: "remote://image",
+        },
+      },
+      {
+        "remote-image": {
+          signature: "remote-signature",
+          updatedAt: "2026-03-14T03:00:00.000Z",
+        },
+      },
+      {}
+    );
+
+    expect(plan.itemKeysToDownload).toEqual(["remote-image"]);
+    expect(plan.keysToDelete).toEqual([]);
+    expect(plan.nextKnownItems).toEqual({});
   });
 
   test("preserves local individual blob edits when remote changed the same key", () => {
