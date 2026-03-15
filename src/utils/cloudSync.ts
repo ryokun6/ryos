@@ -1701,7 +1701,18 @@ async function uploadRedisStateDomain(
     data,
     metadata: result.metadata,
   });
+  await applyResolvedRedisUploadLocally(domain, data, result.metadata.updatedAt);
   return result.metadata;
+}
+
+export async function applyResolvedRedisUploadLocally(
+  domain: RedisSyncDomain,
+  data: AnySnapshotData,
+  updatedAt: string
+): Promise<void> {
+  if (domain === "settings") {
+    await applySettingsSnapshot(data as SettingsSnapshotData, updatedAt);
+  }
 }
 
 async function fetchRedisStateDomainSnapshot(
@@ -2132,6 +2143,39 @@ async function downloadBlobDomain(
     metadata: data.metadata,
     applied: true,
   };
+}
+
+/**
+ * True when local IndexedDB is out of sync with the remote per-item manifest:
+ * missing blob downloads or local orphans to remove, even if domain
+ * `updatedAt` / server version already match (so {@link shouldApplyRemoteUpdate}
+ * would be false). Covers partial storage clears and settings applied before
+ * wallpaper blobs finished downloading.
+ */
+export async function individualBlobDomainNeedsLocalReconcile(
+  domain: IndividualBlobSyncDomain,
+  auth: AuthContext
+): Promise<boolean> {
+  const data = await fetchBlobDomainInfo(domain, auth);
+  if (!data?.metadata || data.mode !== "individual") {
+    return false;
+  }
+  const remoteItems = data.items || {};
+  const remoteDeletedItems = normalizeDeletionMarkerMap(data.deletedItems);
+  const localDeletedItems = getIndividualBlobDeletedKeys(domain);
+  const effectiveDeletedItems = mergeDeletionMarkerMaps(
+    localDeletedItems,
+    remoteDeletedItems
+  );
+  const localRecords = await serializeIndividualBlobDomainRecords(domain);
+  const knownItems = getIndividualBlobKnownItems(domain);
+  const plan = planIndividualBlobDownload(
+    localRecords,
+    remoteItems,
+    knownItems,
+    effectiveDeletedItems
+  );
+  return plan.itemKeysToDownload.length > 0 || plan.keysToDelete.length > 0;
 }
 
 export async function downloadAndApplyCloudSyncDomain(

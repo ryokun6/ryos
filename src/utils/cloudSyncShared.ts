@@ -286,6 +286,44 @@ export function shouldApplyRemoteUpdate({
   return remoteTime > newestKnownLocalTime;
 }
 
+export function shouldRecheckRemoteAfterLocalSync(
+  params: ShouldApplyRemoteUpdateParams
+): boolean {
+  const {
+    remoteUpdatedAt,
+    remoteSyncVersion,
+    lastAppliedRemoteAt,
+    lastUploadedAt,
+    lastLocalChangeAt,
+    hasPendingUpload = false,
+    lastKnownServerVersion,
+  } = params;
+
+  if (
+    !hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
+  ) {
+    return false;
+  }
+
+  const remoteServerVersion = getCloudSyncServerVersion(remoteSyncVersion);
+  const remoteTime = parseCloudSyncTimestamp(remoteUpdatedAt);
+
+  if (remoteServerVersion === 0 && remoteTime === 0) {
+    return false;
+  }
+
+  if (remoteServerVersion > 0) {
+    return remoteServerVersion > (lastKnownServerVersion || 0);
+  }
+
+  const newestKnownLocalTime = Math.max(
+    parseCloudSyncTimestamp(lastAppliedRemoteAt),
+    parseCloudSyncTimestamp(lastUploadedAt)
+  );
+
+  return remoteTime > newestKnownLocalTime;
+}
+
 export function shouldDelaySettingsUploadForWallpaperSync({
   currentWallpaper,
   customWallpapersEnabled = false,
