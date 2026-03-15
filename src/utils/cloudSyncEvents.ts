@@ -34,14 +34,25 @@ export function subscribeToCloudSyncDomainChanges(
   };
 }
 
+let _syncCheckTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Request a cloud sync check. Multiple calls within the same event-loop tick
+ * are coalesced into a single listener notification (e.g. several components
+ * mounting simultaneously each call this).
+ */
 export function requestCloudSyncCheck(): void {
-  syncCheckListeners.forEach((listener) => {
-    try {
-      listener();
-    } catch (error) {
-      console.error("[CloudSyncEvents] Sync check listener failed:", error);
-    }
-  });
+  if (_syncCheckTimer !== null) return;
+  _syncCheckTimer = setTimeout(() => {
+    _syncCheckTimer = null;
+    syncCheckListeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[CloudSyncEvents] Sync check listener failed:", error);
+      }
+    });
+  }, 0);
 }
 
 export function subscribeToCloudSyncCheckRequests(
