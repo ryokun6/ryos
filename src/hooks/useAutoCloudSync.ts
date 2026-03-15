@@ -859,11 +859,16 @@ export function useAutoCloudSync() {
         }
 
         try {
+          const candidatePartDomainSet = new Set(candidatePartDomains);
           const downloadResult = await downloadAndApplyLogicalCloudSyncDomain(
             logicalDomain,
             {
               username,
               isAuthenticated,
+            },
+            {
+              shouldApplyPart: (partDomain) =>
+                candidatePartDomainSet.has(partDomain),
             }
           );
 

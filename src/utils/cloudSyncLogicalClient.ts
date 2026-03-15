@@ -31,6 +31,13 @@ export interface LogicalCloudSyncTransferResult {
   applied: boolean;
 }
 
+export interface LogicalCloudSyncDownloadOptions {
+  shouldApplyPart?: (
+    domain: CloudSyncDomain,
+    metadata: CloudSyncDomainMetadata
+  ) => boolean;
+}
+
 function aggregatePartMetadata(
   domain: LogicalCloudSyncDomain,
   partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>>
@@ -94,7 +101,8 @@ export async function uploadLogicalCloudSyncDomain(
 
 export async function downloadAndApplyLogicalCloudSyncDomain(
   domain: LogicalCloudSyncDomain,
-  _auth: AuthContext
+  _auth: AuthContext,
+  options?: LogicalCloudSyncDownloadOptions
 ): Promise<LogicalCloudSyncTransferResult> {
   const response = await abortableFetch(
     getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
@@ -144,11 +152,15 @@ export async function downloadAndApplyLogicalCloudSyncDomain(
       | BlobIndividualDomainDownloadPayload
     ]
   >) {
+    partMetadata[partDomain] = partPayload.metadata;
+    if (options?.shouldApplyPart && !options.shouldApplyPart(partDomain, partPayload.metadata)) {
+      continue;
+    }
+
     const result = await applyDownloadedCloudSyncDomainPayload(
       partDomain,
       partPayload
     );
-    partMetadata[partDomain] = result.metadata;
     applied = applied || result.applied;
   }
 
