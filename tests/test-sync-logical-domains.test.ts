@@ -5,7 +5,7 @@ import {
   getLogicalCloudSyncDomainForPhysical,
   getLogicalCloudSyncDomainPhysicalParts,
   isLogicalCloudSyncDomain,
-} from "../src/utils/cloudSyncLogical";
+} from "../src/utils/syncLogicalDomains";
 import { createEmptyCloudSyncMetadataMap } from "../src/utils/cloudSyncShared";
 
 describe("logical cloud sync helpers", () => {

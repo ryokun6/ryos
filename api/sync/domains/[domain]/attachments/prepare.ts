@@ -1,8 +1,8 @@
 import {
   parseLogicalDomainQuery,
-} from "../../../_logical.js";
+} from "../../../_domains.js";
 import { apiHandler } from "../../../../_utils/api-handler.js";
-import { getLogicalCloudSyncDomainPhysicalParts } from "../../../../../src/utils/cloudSyncLogical.js";
+import { getLogicalCloudSyncDomainPhysicalParts } from "../../../../../src/utils/syncLogicalDomains.js";
 import {
   isBlobSyncDomain,
   isIndividualBlobSyncDomain,

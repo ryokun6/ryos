@@ -34,23 +34,23 @@ import {
   fetchCloudSyncMetadata,
   individualBlobDomainNeedsLocalReconcile,
 } from "@/utils/cloudSync";
-import { getSyncSessionId } from "@/utils/cloudSyncSession";
+import { getSyncSessionId } from "@/utils/syncSession";
 import {
   downloadAndApplyLogicalCloudSyncDomain,
   uploadLogicalCloudSyncDomain,
-} from "@/utils/cloudSyncLogicalClient";
+} from "@/utils/syncLogicalClient";
 import {
   getLogicalCloudSyncDomainForPhysical,
   getLogicalCloudSyncDomainPhysicalParts,
   isLogicalCloudSyncDomainEnabled,
   LOGICAL_CLOUD_SYNC_DOMAINS,
   type LogicalCloudSyncDomain,
-} from "@/utils/cloudSyncLogical";
+} from "@/utils/syncLogicalDomains";
 import {
   clearPersistedLogicalDirtyParts,
   getPersistedLogicalDirtyParts,
   markLogicalDirtyPart,
-} from "@/utils/cloudSyncLogicalDirtyState";
+} from "@/utils/syncLogicalDirtyState";
 import {
   getLatestSettingsSectionTimestamp,
   isApplyingRemoteSettingsSection,

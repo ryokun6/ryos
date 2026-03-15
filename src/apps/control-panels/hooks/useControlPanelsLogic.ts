@@ -40,13 +40,13 @@ import { useTelegramLink } from "@/hooks/useTelegramLink";
 import {
   downloadAndApplyLogicalCloudSyncDomain,
   uploadLogicalCloudSyncDomain,
-} from "@/utils/cloudSyncLogicalClient";
+} from "@/utils/syncLogicalClient";
 import {
   LOGICAL_CLOUD_SYNC_DOMAINS,
   getLogicalCloudSyncDomainPhysicalParts,
   isLogicalCloudSyncDomainEnabled,
   type LogicalCloudSyncDomain,
-} from "@/utils/cloudSyncLogical";
+} from "@/utils/syncLogicalDomains";
 
 interface StoreItem {
   name: string;

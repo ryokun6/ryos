@@ -4,7 +4,7 @@ import {
   parseLogicalDomainQuery,
   putLogicalCloudSyncDomain,
   type PutLogicalDomainBody,
-} from "../_logical.js";
+} from "../_domains.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;

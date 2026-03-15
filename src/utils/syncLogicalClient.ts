@@ -8,14 +8,14 @@ import {
   type PreparedCloudSyncDomainWrite,
   type RedisStateDomainDownloadPayload,
 } from "@/utils/cloudSync";
-import { getSyncSessionId } from "@/utils/cloudSyncSession";
+import { getSyncSessionId } from "@/utils/syncSession";
 import {
   aggregateLogicalCloudSyncMetadata,
   getLogicalCloudSyncDomainPhysicalParts,
   type LogicalCloudSyncDomain,
   type LogicalCloudSyncDomainMetadata,
   type LogicalCloudSyncMetadataMap,
-} from "@/utils/cloudSyncLogical";
+} from "@/utils/syncLogicalDomains";
 import {
   createEmptyCloudSyncMetadataMap,
   type CloudSyncDomain,

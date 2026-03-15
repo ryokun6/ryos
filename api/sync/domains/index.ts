@@ -1,5 +1,5 @@
 import { apiHandler } from "../../_utils/api-handler.js";
-import { readLogicalAndPhysicalCloudSyncMetadata } from "../_logical.js";
+import { readLogicalAndPhysicalCloudSyncMetadata } from "../_domains.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;

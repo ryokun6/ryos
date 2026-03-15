@@ -1,10 +1,10 @@
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
-import { getSyncSessionId } from "@/utils/cloudSyncSession";
+import { getSyncSessionId } from "@/utils/syncSession";
 import {
   getLogicalCloudSyncDomainForPhysical,
   type LogicalCloudSyncDomain,
-} from "@/utils/cloudSyncLogical";
+} from "@/utils/syncLogicalDomains";
 import type {
   BlobSyncDomain,
   CloudSyncDomain,

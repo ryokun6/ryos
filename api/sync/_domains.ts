@@ -5,7 +5,7 @@ import {
   isLogicalCloudSyncDomain,
   type LogicalCloudSyncDomain,
   type LogicalCloudSyncMetadataMap,
-} from "../../src/utils/cloudSyncLogical.js";
+} from "../../src/utils/syncLogicalDomains.js";
 import {
   createEmptyCloudSyncMetadataMap,
   isBlobSyncDomain,

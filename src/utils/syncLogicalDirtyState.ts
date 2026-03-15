@@ -3,7 +3,7 @@ import {
   getLogicalCloudSyncDomainPhysicalParts,
   LOGICAL_CLOUD_SYNC_DOMAINS,
   type LogicalCloudSyncDomain,
-} from "@/utils/cloudSyncLogical";
+} from "@/utils/syncLogicalDomains";
 import { type CloudSyncDomain } from "@/utils/cloudSyncShared";
 
 const STORAGE_KEY = "ryos:cloud-sync:logical-dirty-parts";

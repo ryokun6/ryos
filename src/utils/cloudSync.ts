@@ -50,7 +50,7 @@ import {
   getNextSyncClientVersion,
   getSyncClientId,
 } from "@/utils/cloudSyncClientState";
-import { getSyncSessionId } from "@/utils/cloudSyncSession";
+import { getSyncSessionId } from "@/utils/syncSession";
 import {
   fetchLegacyBlobDomainPayload,
   fetchLegacyRedisDomainSnapshot,
