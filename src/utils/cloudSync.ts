@@ -1568,7 +1568,6 @@ function mergeRedisStateConflict(
   domain: RedisSyncDomain,
   localData: AnySnapshotData,
   remoteData: AnySnapshotData,
-  localUpdatedAt: string,
   remoteUpdatedAt: string
 ): AnySnapshotData | null {
   switch (domain) {
@@ -1576,7 +1575,7 @@ function mergeRedisStateConflict(
       return mergeSettingsSnapshotData(
         localData as SettingsSnapshotData,
         remoteData as SettingsSnapshotData,
-        localUpdatedAt,
+        null,
         remoteUpdatedAt
       );
     case "files-metadata":
@@ -1628,7 +1627,6 @@ async function prepareRedisStateDomainWrite(
       domain,
       envelope.data,
       remoteSnapshot.data,
-      envelope.updatedAt,
       remoteSnapshot.metadata.updatedAt
     );
     if (merged) {

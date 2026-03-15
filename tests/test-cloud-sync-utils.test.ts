@@ -668,6 +668,297 @@ describe("cloud sync shared helpers", () => {
     expect(merged.sectionUpdatedAt?.audio).toBe("2026-03-14T16:00:06.000Z");
   });
 
+  test("remote ipod/dock/dashboard win when local has no section timestamp", () => {
+    const localSnapshot: SettingsSnapshotData = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video",
+        showLyrics: false,
+        lyricsAlignment: "center",
+        lyricsFont: "sans",
+        romanization: {
+          enabled: false,
+          japaneseFurigana: false,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: null,
+        theme: "classic",
+        lcdFilterOn: false,
+      },
+      dock: {
+        pinnedItems: [],
+        scale: 1,
+        hiding: false,
+        magnification: false,
+      },
+      sectionUpdatedAt: {
+        theme: "2026-03-15T10:00:00.000Z",
+      },
+    };
+
+    const remoteSnapshot: SettingsSnapshotData = {
+      theme: "system7",
+      language: "ja",
+      languageInitialized: true,
+      aiModel: "claude-3-5-sonnet-latest",
+      display: {
+        displayMode: "grayscale",
+        shaderEffectEnabled: true,
+        selectedShaderType: "matrix",
+        currentWallpaper: "/wallpapers/remote.jpg",
+        screenSaverEnabled: true,
+        screenSaverType: "matrix",
+        screenSaverIdleTime: 15,
+        debugMode: false,
+        htmlPreviewSplit: false,
+      },
+      audio: {
+        masterVolume: 0.9,
+        uiVolume: 0.8,
+        chatSynthVolume: 0.7,
+        speechVolume: 0.6,
+        ipodVolume: 0.5,
+        uiSoundsEnabled: false,
+        terminalSoundsEnabled: false,
+        typingSynthEnabled: true,
+        speechEnabled: true,
+        keepTalkingEnabled: false,
+        ttsModel: "openai",
+        ttsVoice: "alloy",
+        synthPreset: "modern",
+      },
+      ipod: {
+        displayMode: "cover",
+        showLyrics: true,
+        lyricsAlignment: "alternating",
+        lyricsFont: "serif-red",
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "ja",
+        theme: "u2",
+        lcdFilterOn: true,
+      },
+      dock: {
+        pinnedItems: [{ type: "app", id: "finder" }],
+        scale: 1.2,
+        hiding: true,
+        magnification: true,
+      },
+      dashboard: {
+        widgets: [{ id: "clock", type: "clock", position: { x: 0, y: 0 }, size: { width: 1, height: 1 } }],
+      },
+      sectionUpdatedAt: {
+        theme: "2026-03-15T09:00:00.000Z",
+        language: "2026-03-15T09:30:00.000Z",
+        display: "2026-03-15T09:30:00.000Z",
+        audio: "2026-03-15T09:30:00.000Z",
+        aiModel: "2026-03-15T09:30:00.000Z",
+        ipod: "2026-03-15T09:30:00.000Z",
+        dock: "2026-03-15T09:30:00.000Z",
+        dashboard: "2026-03-15T09:30:00.000Z",
+      },
+    };
+
+    const merged = mergeSettingsSnapshotData(
+      localSnapshot,
+      remoteSnapshot,
+      null,
+      "2026-03-15T09:30:00.000Z"
+    );
+
+    expect(merged.theme).toBe("xp");
+    expect(merged.sectionUpdatedAt?.theme).toBe("2026-03-15T10:00:00.000Z");
+
+    expect(merged.ipod?.displayMode).toBe("cover");
+    expect(merged.ipod?.showLyrics).toBe(true);
+    expect(merged.ipod?.theme).toBe("u2");
+    expect(merged.ipod?.lcdFilterOn).toBe(true);
+    expect(merged.sectionUpdatedAt?.ipod).toBe("2026-03-15T09:30:00.000Z");
+
+    expect(merged.dock?.scale).toBe(1.2);
+    expect(merged.dock?.hiding).toBe(true);
+    expect(merged.sectionUpdatedAt?.dock).toBe("2026-03-15T09:30:00.000Z");
+
+    expect(merged.dashboard?.widgets).toHaveLength(1);
+    expect(merged.sectionUpdatedAt?.dashboard).toBe("2026-03-15T09:30:00.000Z");
+
+    expect(merged.language).toBe("ja");
+    expect(merged.audio.masterVolume).toBe(0.9);
+    expect(merged.aiModel).toBe("claude-3-5-sonnet-latest");
+  });
+
+  test("local fallback timestamp does not inflate missing section timestamps", () => {
+    const localSnapshot: SettingsSnapshotData = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video",
+        showLyrics: false,
+        lyricsAlignment: "center",
+        lyricsFont: "sans",
+        romanization: {
+          enabled: false,
+          japaneseFurigana: false,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: null,
+        theme: "classic",
+        lcdFilterOn: false,
+      },
+      sectionUpdatedAt: {
+        theme: "2026-03-15T10:00:00.000Z",
+      },
+    };
+
+    const remoteSnapshot: SettingsSnapshotData = {
+      theme: "system7",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "cover",
+        showLyrics: true,
+        lyricsAlignment: "alternating",
+        lyricsFont: "serif-red",
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "ja",
+        theme: "u2",
+        lcdFilterOn: true,
+      },
+      sectionUpdatedAt: {
+        ipod: "2026-03-15T09:30:00.000Z",
+      },
+    };
+
+    const mergedWithInflation = mergeSettingsSnapshotData(
+      localSnapshot,
+      remoteSnapshot,
+      "2026-03-15T11:00:00.000Z",
+      "2026-03-15T09:30:00.000Z"
+    );
+    expect(mergedWithInflation.ipod?.displayMode).toBe("video");
+
+    const mergedWithoutInflation = mergeSettingsSnapshotData(
+      localSnapshot,
+      remoteSnapshot,
+      null,
+      "2026-03-15T09:30:00.000Z"
+    );
+    expect(mergedWithoutInflation.ipod?.displayMode).toBe("cover");
+    expect(mergedWithoutInflation.ipod?.showLyrics).toBe(true);
+    expect(mergedWithoutInflation.ipod?.theme).toBe("u2");
+  });
+
   test("preserves local settings when remote snapshot has undefined sections", () => {
     const localSnapshot = {
       theme: "xp",
