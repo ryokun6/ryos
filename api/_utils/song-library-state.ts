@@ -5,6 +5,7 @@ import {
   normalizeCloudSyncVersionState,
   type CloudSyncVersionState,
 } from "../../src/utils/cloudSyncVersion.js";
+import { redisStateMetaKey } from "../sync/_keys.js";
 
 export interface SongsSnapshotData {
   tracks: Track[];
@@ -32,7 +33,7 @@ interface PersistedSongsLegacyState extends SongsStateMetadata {
 interface WriteSongsStateOptions extends Partial<SongsStateMetadata> {}
 
 function syncMetaKey(username: string): string {
-  return `sync:state:meta:${username}`;
+  return redisStateMetaKey(username);
 }
 
 function legacySongsStateKey(username: string): string {

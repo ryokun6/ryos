@@ -16,8 +16,8 @@ import {
   type RedisSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import {
-  readAutoSyncMetadata,
-  type SaveAutoSyncMetadataBody,
+  readBlobSyncMetadata,
+  type SaveBlobSyncMetadataBody,
 } from "./_blob.js";
 import {
   readStateMetaMap,
@@ -41,7 +41,7 @@ export interface LogicalDomainDownloadPayload {
 }
 
 export interface PutLogicalDomainBody {
-  writes?: Partial<Record<CloudSyncDomain, PutStateBody | SaveAutoSyncMetadataBody>>;
+  writes?: Partial<Record<CloudSyncDomain, PutStateBody | SaveBlobSyncMetadataBody>>;
 }
 
 export type PutLogicalDomainResult =
@@ -75,7 +75,7 @@ export async function readPhysicalCloudSyncMetadata(
 ): Promise<CloudSyncMetadataMap> {
   const [redisMeta, blobMeta] = await Promise.all([
     readStateMetaMap(redis, username),
-    readAutoSyncMetadata(redis, username),
+    readBlobSyncMetadata(redis, username),
   ]);
 
   const physicalMetadata: CloudSyncMetadataMap = createEmptyCloudSyncMetadataMap();

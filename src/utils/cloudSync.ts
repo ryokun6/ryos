@@ -27,7 +27,6 @@ import type { Contact } from "@/utils/contacts";
 import { normalizeContacts } from "@/utils/contacts";
 import {
   uploadBlobWithStorageInstruction,
-  type StorageUploadInstruction,
 } from "@/utils/storageUpload";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
@@ -200,7 +199,7 @@ export interface RedisStateDomainDownloadPayload {
   metadata: CloudSyncDomainMetadata;
 }
 
-export interface BlobLegacyDomainDownloadPayload {
+export interface BlobMonolithicDomainDownloadPayload {
   metadata: CloudSyncDomainMetadata;
   downloadUrl?: string;
   blobUrl?: string;
@@ -215,7 +214,7 @@ export interface BlobIndividualDomainDownloadPayload {
 
 export type CloudSyncDomainDownloadPayload =
   | RedisStateDomainDownloadPayload
-  | BlobLegacyDomainDownloadPayload
+  | BlobMonolithicDomainDownloadPayload
   | BlobIndividualDomainDownloadPayload;
 
 type RedisStateDomainSnapshot = {
@@ -1236,7 +1235,7 @@ function applyContactsSnapshot(data: ContactsSnapshotData): void {
     );
 }
 
-async function applyLegacyIndividualBlobSnapshot(
+async function applyMonolithicBlobSnapshotToIndividualDomain(
   domain: IndividualBlobSyncDomain,
   data: FilesStoreSnapshotData
 ): Promise<void> {
@@ -1327,19 +1326,19 @@ export async function applyCloudSyncEnvelope(
         );
         return;
       case "files-images":
-        await applyLegacyIndividualBlobSnapshot(
+        await applyMonolithicBlobSnapshotToIndividualDomain(
           "files-images",
           envelope.data as FilesStoreSnapshotData
         );
         return;
       case "files-trash":
-        await applyLegacyIndividualBlobSnapshot(
+        await applyMonolithicBlobSnapshotToIndividualDomain(
           "files-trash",
           envelope.data as FilesStoreSnapshotData
         );
         return;
       case "files-applets":
-        await applyLegacyIndividualBlobSnapshot(
+        await applyMonolithicBlobSnapshotToIndividualDomain(
           "files-applets",
           envelope.data as FilesStoreSnapshotData
         );
@@ -1360,7 +1359,7 @@ export async function applyCloudSyncEnvelope(
         applyContactsSnapshot(envelope.data as ContactsSnapshotData);
         return;
       case "custom-wallpapers":
-        await applyLegacyIndividualBlobSnapshot(
+        await applyMonolithicBlobSnapshotToIndividualDomain(
           "custom-wallpapers",
           envelope.data as CustomWallpapersSnapshotData
         );
@@ -1401,7 +1400,7 @@ function createWriteSyncVersion(
   };
 }
 
-export async function fetchCloudSyncMetadata(
+export async function fetchPhysicalCloudSyncMetadata(
   _auth: AuthContext
 ): Promise<CloudSyncMetadataMap> {
   const consolidatedRes = await abortableFetch(getApiUrl("/api/sync/domains"), {
@@ -1697,14 +1696,6 @@ async function fetchBlobDomainInfo(
   );
 }
 
-async function requestBlobUploadInstruction(
-  domain: BlobSyncDomain,
-  _auth: AuthContext,
-  itemKey?: string
-): Promise<StorageUploadInstruction> {
-  return requestBlobUploadInstructionFromTransport(domain, itemKey);
-}
-
 async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
   const blobResponse = await fetch(downloadUrl);
   if (!blobResponse.ok) {
@@ -1720,7 +1711,7 @@ async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
   return JSON.parse(jsonString) as T;
 }
 
-async function uploadLegacyBlobDomain(
+async function uploadMonolithicBlobDomain(
   domain: BlobSyncDomain,
   _auth: AuthContext
 ): Promise<PreparedCloudSyncDomainWrite> {
@@ -1731,7 +1722,7 @@ async function uploadLegacyBlobDomain(
   const compressed = await gzipJson(envelope);
   console.log(`[CloudSync:blob] ${domain}: compressed to ${compressed.length} bytes`);
 
-  const uploadInstruction = await requestBlobUploadInstruction(domain, _auth);
+  const uploadInstruction = await requestBlobUploadInstructionFromTransport(domain);
   const uploadResult = await uploadBlobWithStorageInstruction(
     new Blob([compressed], { type: "application/gzip" }),
     uploadInstruction
@@ -1794,9 +1785,8 @@ async function uploadIndividualBlobDomain(
   }
 
   for (const record of uploadPlan.itemsToUpload) {
-    const uploadInstruction = await requestBlobUploadInstruction(
+    const uploadInstruction = await requestBlobUploadInstructionFromTransport(
       domain,
-      _auth,
       record.item.key
     );
     const itemEnvelope: BlobSyncItemEnvelope = {
@@ -1858,7 +1848,7 @@ export async function prepareCloudSyncDomainWrite(
   if (isBlobSyncDomain(domain)) {
     return isIndividualBlobSyncDomain(domain)
       ? uploadIndividualBlobDomain(domain, _auth)
-      : uploadLegacyBlobDomain(domain, _auth);
+      : uploadMonolithicBlobDomain(domain, _auth);
   }
   throw new Error(`Unknown sync domain: ${domain}`);
 }
@@ -1896,7 +1886,7 @@ export async function applyDownloadedCloudSyncDomainPayload(
   }
 
   const data =
-    payload as BlobLegacyDomainDownloadPayload | BlobIndividualDomainDownloadPayload;
+    payload as BlobMonolithicDomainDownloadPayload | BlobIndividualDomainDownloadPayload;
 
   if (isIndividualBlobSyncDomain(domain) && "mode" in data && data.mode === "individual") {
     const remoteItems = data.items || {};
@@ -1956,8 +1946,8 @@ export async function applyDownloadedCloudSyncDomainPayload(
     };
   }
 
-  const legacyData = data as BlobLegacyDomainDownloadPayload;
-  const downloadUrl = legacyData.downloadUrl || legacyData.blobUrl;
+  const monolithicData = data as BlobMonolithicDomainDownloadPayload;
+  const downloadUrl = monolithicData.downloadUrl || monolithicData.blobUrl;
   if (!downloadUrl) {
     throw new Error("Sync download response was invalid.");
   }
@@ -2025,7 +2015,7 @@ export async function downloadAndApplyCloudSyncDomain(
         }
       : ((result as BlobDomainInfoResponse).mode === "individual"
           ? (result as BlobIndividualDomainDownloadPayload)
-          : (result as BlobLegacyDomainDownloadPayload))) as CloudSyncDomainDownloadPayload,
+          : (result as BlobMonolithicDomainDownloadPayload))) as CloudSyncDomainDownloadPayload,
     options
   );
 }

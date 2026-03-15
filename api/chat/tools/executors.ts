@@ -9,6 +9,7 @@
  */
 
 import type { Redis } from "../../_utils/redis.js";
+import { redisStateMetaKey } from "../../sync/_keys.js";
 import type {
   ServerToolContext,
   GenerateHtmlInput,
@@ -1156,7 +1157,7 @@ function filesMetadataStateKey(username: string): string {
 }
 
 function stateMetaKey(username: string): string {
-  return `sync:state:meta:${username}`;
+  return redisStateMetaKey(username);
 }
 
 async function readFilesMetadataState(
@@ -1575,7 +1576,7 @@ async function writeCalendarState(
     stateKey(username, "calendar"),
     JSON.stringify({ data, updatedAt: now, version: 1, createdAt: now })
   );
-  const metaKey = `sync:state:meta:${username}`;
+  const metaKey = redisStateMetaKey(username);
   const rawMeta = await redis.get<string | Record<string, unknown>>(metaKey);
   const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
   meta.calendar = { updatedAt: now, version: 1, createdAt: now };
@@ -1604,7 +1605,7 @@ async function writeStickiesState(
     stateKey(username, "stickies"),
     JSON.stringify({ data, updatedAt: now, version: 1, createdAt: now })
   );
-  const metaKey = `sync:state:meta:${username}`;
+  const metaKey = redisStateMetaKey(username);
   const rawMeta = await redis.get<string | Record<string, unknown>>(metaKey);
   const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
   meta.stickies = { updatedAt: now, version: 1, createdAt: now };

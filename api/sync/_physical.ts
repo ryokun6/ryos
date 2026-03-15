@@ -9,7 +9,7 @@ import {
   getBlobDomainDownloadPayload,
   saveBlobDomainMetadata,
   type BlobDomainDownloadPayload,
-  type SaveAutoSyncMetadataBody,
+  type SaveBlobSyncMetadataBody,
   type SaveBlobDomainResult,
 } from "./_blob.js";
 import {
@@ -50,7 +50,7 @@ export async function putPhysicalSyncDomain(
   redis: Redis,
   username: string,
   domain: CloudSyncDomain,
-  body: PutStateBody | SaveAutoSyncMetadataBody | null,
+  body: PutStateBody | SaveBlobSyncMetadataBody | null,
   sourceSessionId: string | undefined
 ): Promise<PutPhysicalSyncDomainResult> {
   if (domain === "settings" ||
@@ -71,7 +71,7 @@ export async function putPhysicalSyncDomain(
   return saveBlobDomainMetadata(
     redis,
     username,
-    body as SaveAutoSyncMetadataBody,
+    body as SaveBlobSyncMetadataBody,
     sourceSessionId
   );
 }
