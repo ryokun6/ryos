@@ -37,6 +37,12 @@ import {
   individualBlobDomainNeedsLocalReconcile,
   uploadCloudSyncDomain,
 } from "@/utils/cloudSync";
+import { downloadAndApplyLogicalCloudSyncDomain } from "@/utils/cloudSyncLogicalClient";
+import {
+  getLogicalCloudSyncDomainPhysicalParts,
+  isLogicalCloudSyncDomainEnabled,
+  LOGICAL_CLOUD_SYNC_DOMAINS,
+} from "@/utils/cloudSyncLogical";
 import {
   getLatestSettingsSectionTimestamp,
   isApplyingRemoteSettingsSection,
@@ -45,7 +51,6 @@ import {
 import { isApplyingRemoteDomain } from "@/utils/cloudSyncRemoteApplyState";
 import {
   CLOUD_SYNC_DOMAINS,
-  CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
   getLatestCloudSyncTimestamp,
   getSyncChannelName,
   hasUnsyncedLocalChanges,
@@ -734,37 +739,38 @@ export function useAutoCloudSync() {
 
       const appliedDomains: CloudSyncDomain[] = [];
 
-      for (const domain of CLOUD_SYNC_REMOTE_APPLY_DOMAINS) {
-        if (!isDomainEnabled(domain)) {
-          continue;
-        }
-
-        const remoteMetadata = metadataMap[domain];
-        const syncState = useCloudSyncStore.getState();
-        const domainStatus = syncState.domainStatus[domain];
-
-        if (!remoteMetadata) {
-          continue;
-        }
-
-        const hasUnsynced = hasUnsyncedLocalChanges(
-          lastLocalChangeAtRef.current[domain],
-          domainStatus.lastUploadedAt,
-          Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading
-        );
-        const shouldApplyMetadata = shouldApplyRemoteUpdate({
-          remoteUpdatedAt: remoteMetadata.updatedAt,
-          remoteSyncVersion: remoteMetadata.syncVersion,
-          lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
-          lastUploadedAt: domainStatus.lastUploadedAt,
-          lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
-          hasPendingUpload:
-            Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
-          lastKnownServerVersion: domainStatus.lastKnownServerVersion,
-        });
+      for (const logicalDomain of LOGICAL_CLOUD_SYNC_DOMAINS) {
         if (
-          !shouldApplyMetadata &&
-          shouldRecheckRemoteAfterLocalSync({
+          !isLogicalCloudSyncDomainEnabled(
+            useCloudSyncStore.getState().isDomainEnabled,
+            logicalDomain
+          )
+        ) {
+          continue;
+        }
+
+        const partDomains = getLogicalCloudSyncDomainPhysicalParts(logicalDomain).filter(
+          (domain) => isDomainEnabled(domain)
+        );
+
+        let shouldDownloadLogicalDomain = false;
+        const candidatePartDomains: CloudSyncDomain[] = [];
+
+        for (const domain of partDomains) {
+          const remoteMetadata = metadataMap[domain];
+          const syncState = useCloudSyncStore.getState();
+          const domainStatus = syncState.domainStatus[domain];
+
+          if (!remoteMetadata) {
+            continue;
+          }
+
+          const hasUnsynced = hasUnsyncedLocalChanges(
+            lastLocalChangeAtRef.current[domain],
+            domainStatus.lastUploadedAt,
+            Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading
+          );
+          const shouldApplyMetadata = shouldApplyRemoteUpdate({
             remoteUpdatedAt: remoteMetadata.updatedAt,
             remoteSyncVersion: remoteMetadata.syncVersion,
             lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
@@ -773,77 +779,94 @@ export function useAutoCloudSync() {
             hasPendingUpload:
               Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
             lastKnownServerVersion: domainStatus.lastKnownServerVersion,
-          })
-        ) {
-          pendingRemoteCatchUpRef.current[domain] = {
-            updatedAt: remoteMetadata.updatedAt,
-            syncVersion: remoteMetadata.syncVersion,
-          };
+          });
+          if (
+            !shouldApplyMetadata &&
+            shouldRecheckRemoteAfterLocalSync({
+              remoteUpdatedAt: remoteMetadata.updatedAt,
+              remoteSyncVersion: remoteMetadata.syncVersion,
+              lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
+              lastUploadedAt: domainStatus.lastUploadedAt,
+              lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
+              hasPendingUpload:
+                Boolean(uploadTimersRef.current[domain]) ||
+                domainStatus.isUploading,
+              lastKnownServerVersion: domainStatus.lastKnownServerVersion,
+            })
+          ) {
+            pendingRemoteCatchUpRef.current[domain] = {
+              updatedAt: remoteMetadata.updatedAt,
+              syncVersion: remoteMetadata.syncVersion,
+            };
+          }
+          let reconcileIndividualBlobs = false;
+          if (
+            !shouldApplyMetadata &&
+            !hasUnsynced &&
+            isIndividualBlobSyncDomain(domain)
+          ) {
+            reconcileIndividualBlobs =
+              await individualBlobDomainNeedsLocalReconcile(domain, {
+                username,
+                isAuthenticated,
+              });
+          }
+          if (!shouldApplyMetadata && !reconcileIndividualBlobs) {
+            continue;
+          }
+
+          shouldDownloadLogicalDomain = true;
+          candidatePartDomains.push(domain);
         }
-        let reconcileIndividualBlobs = false;
-        if (
-          !shouldApplyMetadata &&
-          !hasUnsynced &&
-          isIndividualBlobSyncDomain(domain)
-        ) {
-          reconcileIndividualBlobs =
-            await individualBlobDomainNeedsLocalReconcile(domain, {
-              username,
-              isAuthenticated,
-            });
-        }
-        if (!shouldApplyMetadata && !reconcileIndividualBlobs) {
+
+        if (!shouldDownloadLogicalDomain || candidatePartDomains.length === 0) {
           continue;
         }
 
-        syncState.markDownloadStart(domain);
+        for (const domain of candidatePartDomains) {
+          useCloudSyncStore.getState().markDownloadStart(domain);
+        }
+
         try {
-          const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
-            username,
-            isAuthenticated,
-          }, {
-            shouldApply: (metadata) => {
-              if (reconcileIndividualBlobs) return true;
-              const latestLocalChangeAt =
-                getLatestLocalChangeAt(domain) || lastLocalChangeAtRef.current[domain];
-              const currentSyncState = useCloudSyncStore.getState();
-              const currentDomainStatus = currentSyncState.domainStatus[domain];
+          const downloadResult = await downloadAndApplyLogicalCloudSyncDomain(
+            logicalDomain,
+            {
+              username,
+              isAuthenticated,
+            }
+          );
 
-              return shouldApplyRemoteUpdate({
-                remoteUpdatedAt: metadata.updatedAt,
-                remoteSyncVersion: metadata.syncVersion,
-                lastAppliedRemoteAt: currentDomainStatus.lastAppliedRemoteAt,
-                lastUploadedAt: currentDomainStatus.lastUploadedAt,
-                lastLocalChangeAt: latestLocalChangeAt,
-                hasPendingUpload:
-                  Boolean(uploadTimersRef.current[domain]) ||
-                  currentDomainStatus.isUploading,
-                lastKnownServerVersion: currentDomainStatus.lastKnownServerVersion,
-              });
-            },
-          });
-          useCloudSyncStore
-            .getState()
-            .updateRemoteMetadataForDomain(domain, downloadResult.metadata);
-          useCloudSyncStore
-            .getState()
-            .markDownloadSuccess(domain, downloadResult.metadata);
-
-          if (downloadResult.applied) {
+          for (const [domain, metadata] of Object.entries(
+            downloadResult.partMetadata
+          ) as Array<
+            [
+              CloudSyncDomain,
+              NonNullable<(typeof downloadResult.partMetadata)[CloudSyncDomain]>
+            ]
+          >) {
             useCloudSyncStore
               .getState()
-              .markRemoteApplied(domain, downloadResult.metadata);
-            alignLocalChangeWithRemoteApply(
-              domain,
-              downloadResult.metadata.updatedAt,
-              lastLocalChangeAtRef
-            );
-            appliedDomains.push(domain);
+              .updateRemoteMetadataForDomain(domain, metadata);
+            useCloudSyncStore.getState().markDownloadSuccess(domain, metadata);
+
+            if (downloadResult.applied) {
+              useCloudSyncStore.getState().markRemoteApplied(domain, metadata);
+              alignLocalChangeWithRemoteApply(
+                domain,
+                metadata.updatedAt,
+                lastLocalChangeAtRef
+              );
+              appliedDomains.push(domain);
+            }
           }
         } catch (error) {
           const message =
-            error instanceof Error ? error.message : `Failed to download ${domain}.`;
-          useCloudSyncStore.getState().markDownloadFailure(domain, message);
+            error instanceof Error
+              ? error.message
+              : `Failed to download ${logicalDomain}.`;
+          for (const domain of candidatePartDomains) {
+            useCloudSyncStore.getState().markDownloadFailure(domain, message);
+          }
           throw error;
         }
       }
