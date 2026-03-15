@@ -152,6 +152,25 @@ function createDomainBooleanMap(
   };
 }
 
+function createDomainPendingRemoteUpdateMap(): Record<
+  CloudSyncDomain,
+  { updatedAt: string; syncVersion?: CloudSyncVersionState | null } | null
+> {
+  return {
+    settings: null,
+    "files-metadata": null,
+    "files-images": null,
+    "files-trash": null,
+    "files-applets": null,
+    songs: null,
+    videos: null,
+    stickies: null,
+    calendar: null,
+    contacts: null,
+    "custom-wallpapers": null,
+  };
+}
+
 function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
   const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
@@ -229,9 +248,12 @@ export function useAutoCloudSync() {
   const uploadRetryCountRef = useRef<Record<CloudSyncDomain, number>>(
     createDomainNumberMap(0)
   );
-  const pendingRemoteCatchUpRef = useRef<Record<CloudSyncDomain, boolean>>(
-    createDomainBooleanMap(false)
-  );
+  const pendingRemoteCatchUpRef = useRef<
+    Record<
+      CloudSyncDomain,
+      { updatedAt: string; syncVersion?: CloudSyncVersionState | null } | null
+    >
+  >(createDomainPendingRemoteUpdateMap());
   const uploadInFlightRef = useRef<Record<CloudSyncDomain, boolean>>(
     createDomainBooleanMap(false)
   );
@@ -239,7 +261,6 @@ export function useAutoCloudSync() {
     createDomainBooleanMap(false)
   );
   const checkInFlightRef = useRef(false);
-  const checkRemoteUpdatesRef = useRef<(() => Promise<void>) | null>(null);
   const lastVisibilityCheckRef = useRef(0);
   const wallpaperSeedDoneRef = useRef(false);
   const contactsSeedDoneRef = useRef(false);
@@ -407,12 +428,17 @@ export function useAutoCloudSync() {
           void uploadDomain(domain);
         } else {
           pendingUploadAfterCurrentRef.current[domain] = false;
-          if (uploadSucceeded && pendingRemoteCatchUpRef.current[domain]) {
-            pendingRemoteCatchUpRef.current[domain] = false;
+          const pendingRemoteUpdate = pendingRemoteCatchUpRef.current[domain];
+          if (uploadSucceeded && pendingRemoteUpdate) {
+            pendingRemoteCatchUpRef.current[domain] = null;
             console.log(
-              `[CloudSync] Rechecking remote ${domain} after local upload settled`
+              `[CloudSync] Rechecking deferred remote update for ${domain}`
             );
-            void checkRemoteUpdatesRef.current?.();
+            void handleRealtimeDomainUpdateRef.current(
+              domain,
+              pendingRemoteUpdate.updatedAt,
+              pendingRemoteUpdate.syncVersion
+            );
           }
         }
       }
@@ -528,7 +554,11 @@ export function useAutoCloudSync() {
           lastKnownServerVersion: domainStatus.lastKnownServerVersion,
         })
       ) {
-        pendingRemoteCatchUpRef.current[domain] = true;
+        pendingRemoteCatchUpRef.current[domain] = {
+          updatedAt: remoteUpdatedAt,
+          syncVersion:
+            remoteSyncVersion || syncState.remoteMetadata[domain]?.syncVersion,
+        };
       }
       let reconcileIndividualBlobs = false;
       if (
@@ -666,7 +696,10 @@ export function useAutoCloudSync() {
             lastKnownServerVersion: domainStatus.lastKnownServerVersion,
           })
         ) {
-          pendingRemoteCatchUpRef.current[domain] = true;
+          pendingRemoteCatchUpRef.current[domain] = {
+            updatedAt: remoteMetadata.updatedAt,
+            syncVersion: remoteMetadata.syncVersion,
+          };
         }
         let reconcileIndividualBlobs = false;
         if (
@@ -771,7 +804,6 @@ export function useAutoCloudSync() {
       checkInFlightRef.current = false;
     }
   }, [isAuthenticated, isDomainEnabled, isSyncActive, queueUpload, username]);
-  checkRemoteUpdatesRef.current = checkRemoteUpdates;
 
   const handleRealtimeDomainUpdateRef = useRef(handleRealtimeDomainUpdate);
   handleRealtimeDomainUpdateRef.current = handleRealtimeDomainUpdate;
