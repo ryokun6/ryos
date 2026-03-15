@@ -44,7 +44,7 @@ interface PersistedRedisStateDomain {
   syncVersion?: CloudSyncVersionState | null;
 }
 
-interface PutStateBody {
+export interface PutStateBody {
   domain?: string;
   data?: unknown;
   updatedAt?: string;
@@ -77,6 +77,28 @@ interface PersistedMetaEntry {
 }
 
 type PersistedMetaMap = Record<RedisSyncDomain, PersistedMetaEntry | null>;
+
+export interface RedisStateDomainPayload {
+  ok: true;
+  domain: RedisSyncDomain;
+  data: unknown;
+  metadata: CloudSyncDomainMetadata;
+}
+
+export type PutRedisStateDomainResult =
+  | {
+      ok: true;
+      domain: RedisSyncDomain;
+      metadata: CloudSyncDomainMetadata | null;
+      duplicate?: boolean;
+    }
+  | {
+      ok: false;
+      status: 400 | 409 | 500;
+      error: string;
+      code?: string;
+      metadata?: CloudSyncDomainMetadata | null;
+    };
 
 function createEmptyMetaMap(): PersistedMetaMap {
   const map = {} as PersistedMetaMap;
@@ -112,7 +134,7 @@ function normalizePersistedMetaEntry(value: unknown): PersistedMetaEntry | null 
   };
 }
 
-async function readMetaMap(
+export async function readStateMetaMap(
   redis: Redis,
   username: string
 ): Promise<PersistedMetaMap> {
@@ -144,7 +166,7 @@ async function persistStateEntry(
 ): Promise<void> {
   await redis.set(stateKey(username, domain), JSON.stringify(entry));
 
-  const meta = await readMetaMap(redis, username);
+  const meta = await readStateMetaMap(redis, username);
   meta[domain] = {
     updatedAt: entry.updatedAt,
     version: entry.version,
@@ -175,11 +197,20 @@ export default apiHandler<PutStateBody>(
       }
 
       if (rawDomain && isRedisSyncDomain(rawDomain as never)) {
-        await handleDomainDownload(res, redis, username, rawDomain as RedisSyncDomain);
+        const payload = await getRedisStateDomainPayload(
+          redis,
+          username,
+          rawDomain as RedisSyncDomain
+        );
+        if (!payload) {
+          res.status(404).json({ error: `No ${rawDomain} state found` });
+          return;
+        }
+        res.status(200).json(payload);
         return;
       }
 
-      const meta = await readMetaMap(redis, username);
+      const meta = await readStateMetaMap(redis, username);
       const metadata: Record<string, CloudSyncDomainMetadata | null> = {};
       for (const domain of REDIS_SYNC_DOMAINS) {
         const entry = meta[domain];
@@ -203,7 +234,21 @@ export default apiHandler<PutStateBody>(
         typeof req.headers["x-sync-session-id"] === "string"
           ? req.headers["x-sync-session-id"]
           : undefined;
-      await handlePutState(res, redis, username, body, sourceSessionId);
+      const result = await putRedisStateDomain(
+        redis,
+        username,
+        body,
+        sourceSessionId
+      );
+      if (!result.ok) {
+        res.status(result.status).json({
+          error: result.error,
+          ...(result.code ? { code: result.code } : {}),
+          ...(result.metadata ? { metadata: result.metadata } : {}),
+        });
+        return;
+      }
+      res.status(200).json(result);
       return;
     }
 
@@ -211,20 +256,18 @@ export default apiHandler<PutStateBody>(
   }
 );
 
-async function handleDomainDownload(
-  res: VercelResponse,
+export async function getRedisStateDomainPayload(
   redis: Redis,
   username: string,
   domain: RedisSyncDomain
-): Promise<void> {
+): Promise<RedisStateDomainPayload | null> {
   if (domain === "songs") {
     const songsState = await readSongsState(redis, username);
     if (!songsState) {
-      res.status(404).json({ error: `No ${domain} state found` });
-      return;
+      return null;
     }
 
-    res.status(200).json({
+    return {
       ok: true,
       domain,
       data: songsState.data,
@@ -236,8 +279,7 @@ async function handleDomainDownload(
         syncVersion:
           songsState.metadata.syncVersion || createSyntheticLegacySyncVersion(),
       },
-    });
-    return;
+    };
   }
 
   const raw = await redis.get<string | PersistedRedisStateDomain>(
@@ -247,11 +289,10 @@ async function handleDomainDownload(
     typeof raw === "string" ? JSON.parse(raw) : raw;
 
   if (!entry) {
-    res.status(404).json({ error: `No ${domain} state found` });
-    return;
+    return null;
   }
 
-  res.status(200).json({
+  return {
     ok: true,
     domain,
     data: entry.data,
@@ -263,48 +304,54 @@ async function handleDomainDownload(
       syncVersion:
         entry.syncVersion || createSyntheticLegacySyncVersion(),
     },
-  });
+  };
 }
 
-async function handlePutState(
-  res: VercelResponse,
+export async function putRedisStateDomain(
   redis: Redis,
   username: string,
   body: PutStateBody | null,
   sourceSessionId: string | undefined
-): Promise<void> {
+): Promise<PutRedisStateDomainResult> {
   if (!body || !body.domain || body.data === undefined || !body.updatedAt) {
-    res.status(400).json({
+    return {
+      ok: false,
+      status: 400,
       error: "Missing required fields: domain, data, updatedAt",
-    });
-    return;
+    };
   }
 
   if (!isRedisSyncDomain(body.domain as never)) {
-    res.status(400).json({ error: "Invalid or non-Redis sync domain" });
-    return;
+    return {
+      ok: false,
+      status: 400,
+      error: "Invalid or non-Redis sync domain",
+    };
   }
 
   const domain = body.domain as RedisSyncDomain;
   if (domain === "contacts" && !isContactsSnapshotData(body.data)) {
-    res.status(400).json({
+    return {
+      ok: false,
+      status: 400,
       error: "Invalid contacts snapshot payload",
-    });
-    return;
+    };
   }
   if (domain === "songs" && !isSongsSnapshotData(body.data)) {
-    res.status(400).json({
+    return {
+      ok: false,
+      status: 400,
       error: "Invalid songs snapshot payload",
-    });
-    return;
+    };
   }
 
   const writeSyncVersion = normalizeCloudSyncWriteVersion(body.syncVersion);
   if (!writeSyncVersion) {
-    res.status(400).json({
+    return {
+      ok: false,
+      status: 400,
       error: "Missing or invalid syncVersion payload",
-    });
-    return;
+    };
   }
 
   let existingMetadata: CloudSyncDomainMetadata | null = null;
@@ -345,22 +392,22 @@ async function handlePutState(
 
   const writeAssessment = assessCloudSyncWrite(existingVersionState, writeSyncVersion);
   if (writeAssessment.duplicate) {
-    res.status(200).json({
+    return {
       ok: true,
       domain,
       metadata: existingMetadata,
       duplicate: true,
-    });
-    return;
+    };
   }
 
   if (writeAssessment.hasConflict && existingMetadata) {
-    res.status(409).json({
+    return {
+      ok: false,
+      status: 409,
       error: `Cloud sync conflict for ${domain}. Download remote changes before replacing this domain.`,
       code: "sync_conflict",
       metadata: existingMetadata,
-    });
-    return;
+    };
   }
 
   const now = new Date().toISOString();
@@ -423,14 +470,18 @@ async function handlePutState(
       console.warn("[sync/state] Failed to broadcast domain-updated:", realtimeErr);
     }
 
-    res.status(200).json({
+    return {
       ok: true,
       domain,
       metadata,
-    });
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Error saving Redis state:", message, error);
-    res.status(500).json({ error: `Failed to save state: ${message}` });
+    return {
+      ok: false,
+      status: 500,
+      error: `Failed to save state: ${message}`,
+    };
   }
 }
