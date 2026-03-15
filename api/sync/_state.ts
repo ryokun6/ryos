@@ -24,6 +24,7 @@ import {
   writeSongsState,
   type SongsSnapshotData,
 } from "../_utils/song-library-state.js";
+import { redisStateKey, redisStateMetaKey } from "./_keys.js";
 
 interface PersistedRedisStateDomain {
   data: unknown;
@@ -51,11 +52,11 @@ function isContactsSnapshotData(value: unknown): value is { contacts: unknown[] 
 }
 
 export function stateKey(username: string, domain: RedisSyncDomain): string {
-  return `sync:state:${username}:${domain}`;
+  return redisStateKey(username, domain);
 }
 
 function metaKey(username: string): string {
-  return `sync:state:meta:${username}`;
+  return redisStateMetaKey(username);
 }
 
 interface PersistedMetaEntry {

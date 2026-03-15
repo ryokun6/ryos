@@ -31,7 +31,7 @@ import {
   setPersistedLocalChangeAt,
 } from "@/utils/cloudSyncLocalChangeState";
 import {
-  fetchCloudSyncMetadata,
+  fetchPhysicalCloudSyncMetadata,
   individualBlobDomainNeedsLocalReconcile,
 } from "@/utils/cloudSync";
 import { getSyncSessionId } from "@/utils/syncSession";
@@ -665,7 +665,7 @@ export function useAutoCloudSync() {
 
       let metadataMap = useCloudSyncStore.getState().remoteMetadata;
       try {
-        metadataMap = await fetchCloudSyncMetadata({ username, isAuthenticated });
+        metadataMap = await fetchPhysicalCloudSyncMetadata({ username, isAuthenticated });
         useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
       } catch (error) {
         console.warn(
@@ -867,7 +867,10 @@ export function useAutoCloudSync() {
     useCloudSyncStore.getState().setCheckingRemote(true);
 
     try {
-      const metadataMap = await fetchCloudSyncMetadata({ username, isAuthenticated });
+      const metadataMap = await fetchPhysicalCloudSyncMetadata({
+        username,
+        isAuthenticated,
+      });
       useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
       useCloudSyncStore.getState().setLastError(null);
 

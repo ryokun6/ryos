@@ -4,7 +4,7 @@ import {
   applyDownloadedCloudSyncDomainPayload,
   prepareCloudSyncDomainWrite,
   type BlobIndividualDomainDownloadPayload,
-  type BlobLegacyDomainDownloadPayload,
+  type BlobMonolithicDomainDownloadPayload,
   type PreparedCloudSyncDomainWrite,
   type RedisStateDomainDownloadPayload,
 } from "@/utils/cloudSync";
@@ -14,13 +14,8 @@ import {
   getLogicalCloudSyncDomainPhysicalParts,
   type LogicalCloudSyncDomain,
   type LogicalCloudSyncDomainMetadata,
-  type LogicalCloudSyncMetadataMap,
 } from "@/utils/syncLogicalDomains";
-import {
-  createEmptyCloudSyncMetadataMap,
-  type CloudSyncDomain,
-  type CloudSyncDomainMetadata,
-} from "@/utils/cloudSyncShared";
+import { createEmptyCloudSyncMetadataMap, type CloudSyncDomain, type CloudSyncDomainMetadata } from "@/utils/cloudSyncShared";
 
 type AuthContext = {
   username: string;
@@ -52,35 +47,6 @@ function aggregatePartMetadata(
   }
 
   return aggregateLogicalCloudSyncMetadata(metadataMap)[domain];
-}
-
-export async function fetchLogicalCloudSyncMetadata(
-  _auth: AuthContext
-): Promise<LogicalCloudSyncMetadataMap> {
-  const response = await abortableFetch(getApiUrl("/api/sync/domains"), {
-    method: "GET",
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        "Failed to fetch logical cloud sync metadata"
-    );
-  }
-
-  const result = (await response.json()) as {
-    metadata?: LogicalCloudSyncMetadataMap;
-  };
-
-  if (!result.metadata) {
-    throw new Error("Logical sync metadata response was invalid.");
-  }
-
-  return result.metadata;
 }
 
 export async function uploadLogicalCloudSyncDomain(
@@ -125,7 +91,7 @@ export async function uploadLogicalCloudSyncDomain(
   }
 
   const result = (await response.json()) as {
-    metadata?: LogicalCloudSyncMetadataMap[LogicalCloudSyncDomain];
+    metadata?: LogicalCloudSyncDomainMetadata | null;
     writes?: Partial<
       Record<
         CloudSyncDomain,
@@ -183,7 +149,7 @@ export async function downloadAndApplyLogicalCloudSyncDomain(
       Record<
         CloudSyncDomain,
         | RedisStateDomainDownloadPayload
-        | BlobLegacyDomainDownloadPayload
+        | BlobMonolithicDomainDownloadPayload
         | BlobIndividualDomainDownloadPayload
       >
     >;
@@ -200,7 +166,7 @@ export async function downloadAndApplyLogicalCloudSyncDomain(
     [
       CloudSyncDomain,
       | RedisStateDomainDownloadPayload
-      | BlobLegacyDomainDownloadPayload
+      | BlobMonolithicDomainDownloadPayload
       | BlobIndividualDomainDownloadPayload
     ]
   >) {

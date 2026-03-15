@@ -17,17 +17,14 @@ import {
   downloadStoredObject,
   headStoredObject,
 } from "../_utils/storage.js";
+import { backupMetaKey } from "./_keys.js";
+import { getStoredLocation } from "./_storage-location.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /** Backup metadata TTL: 90 days (same as user TTL) */
 const META_TTL = USER_TTL_SECONDS;
-
-// Redis key for backup metadata
-function metaKey(username: string) {
-  return `sync:meta:${username}`;
-}
 
 interface BackupMeta {
   timestamp: string;
@@ -44,13 +41,6 @@ interface SaveBackupMetadataBody {
   timestamp: string;
   version: number;
   totalSize: number;
-}
-
-function getStoredLocation(value: {
-  storageUrl?: string | null;
-  blobUrl?: string | null;
-}): string | null {
-  return value.storageUrl || value.blobUrl || null;
 }
 
 export default apiHandler<SaveBackupMetadataBody>(
@@ -104,7 +94,9 @@ async function handleSaveMetadata(
 
   try {
     // Delete old blob if it exists and differs from the new one
-    const existingMeta = await redis.get<string | BackupMeta>(metaKey(username));
+    const existingMeta = await redis.get<string | BackupMeta>(
+      backupMetaKey(username)
+    );
     if (existingMeta) {
       const parsed: BackupMeta =
         typeof existingMeta === "string"
@@ -130,7 +122,7 @@ async function handleSaveMetadata(
       createdAt: new Date().toISOString(),
     };
 
-    await redis.set(metaKey(username), JSON.stringify(meta), {
+    await redis.set(backupMetaKey(username), JSON.stringify(meta), {
       ex: META_TTL,
     });
 
@@ -158,7 +150,7 @@ async function handleDownload(
 ): Promise<void> {
   try {
     // Get metadata from Redis
-    const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
+    const rawMeta = await redis.get<string | BackupMeta>(backupMetaKey(username));
     if (!rawMeta) {
       res.status(404).json({ error: "No backup found" });
       return;
@@ -175,7 +167,7 @@ async function handleDownload(
 
     const objectInfo = await headStoredObject(storageUrl).catch(() => null);
     if (!objectInfo) {
-      await redis.del(metaKey(username));
+      await redis.del(backupMetaKey(username));
       res.status(404).json({ error: "Backup data not found. It may have expired." });
       return;
     }
@@ -205,7 +197,7 @@ async function handleDelete(
   username: string
 ): Promise<void> {
   try {
-    const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
+    const rawMeta = await redis.get<string | BackupMeta>(backupMetaKey(username));
     if (!rawMeta) {
       res.status(404).json({ error: "No backup found" });
       return;
@@ -224,7 +216,7 @@ async function handleDelete(
     }
 
     // Delete metadata
-    await redis.del(metaKey(username));
+    await redis.del(backupMetaKey(username));
 
     res.status(200).json({ ok: true });
   } catch (error) {

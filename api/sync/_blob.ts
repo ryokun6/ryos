@@ -29,6 +29,8 @@ import {
   deleteStoredObject,
   headStoredObject,
 } from "../_utils/storage.js";
+import { blobSyncMetaKey } from "./_keys.js";
+import { getStoredLocation } from "./_storage-location.js";
 
 interface PersistedAutoSyncDomainMetadata {
   updatedAt: string;
@@ -106,7 +108,7 @@ export type SaveBlobDomainResult =
       } | null;
     };
 
-export interface SaveAutoSyncMetadataBody {
+export interface SaveBlobSyncMetadataBody {
   domain?: BlobSyncDomain;
   storageUrl?: string;
   blobUrl?: string;
@@ -118,24 +120,13 @@ export interface SaveAutoSyncMetadataBody {
   syncVersion?: CloudSyncWriteVersion;
 }
 
-function createEmptyAutoSyncMetadataMap(): PersistedAutoSyncMetadataMap {
+function createEmptyBlobSyncMetadataMap(): PersistedAutoSyncMetadataMap {
   return {
     "files-images": null,
     "files-trash": null,
     "files-applets": null,
     "custom-wallpapers": null,
   };
-}
-
-function metaKey(username: string) {
-  return `sync:auto:meta:${username}`;
-}
-
-function getStoredLocation(value: {
-  storageUrl?: string | null;
-  blobUrl?: string | null;
-}): string | null {
-  return value.storageUrl || value.blobUrl || null;
 }
 
 function normalizePersistedItemMetadata(
@@ -167,13 +158,15 @@ function normalizePersistedItemMetadata(
   };
 }
 
-export async function readAutoSyncMetadata(
+export async function readBlobSyncMetadata(
   redis: Redis,
   username: string
 ): Promise<PersistedAutoSyncMetadataMap> {
-  const raw = await redis.get<string | PersistedAutoSyncMetadataMap>(metaKey(username));
+  const raw = await redis.get<string | PersistedAutoSyncMetadataMap>(
+    blobSyncMetaKey(username)
+  );
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-  const normalized = createEmptyAutoSyncMetadataMap();
+  const normalized = createEmptyBlobSyncMetadataMap();
 
   if (!parsed || typeof parsed !== "object") {
     return normalized;
@@ -237,7 +230,7 @@ export async function readAutoSyncMetadata(
 export async function saveBlobDomainMetadata(
   redis: Redis,
   username: string,
-  body: SaveAutoSyncMetadataBody | null,
+  body: SaveBlobSyncMetadataBody | null,
   sourceSessionId: string | undefined
 ): Promise<SaveBlobDomainResult> {
   if (!body || !isBlobSyncDomain(body.domain as never) || !body.updatedAt) {
@@ -274,7 +267,7 @@ export async function saveBlobDomainMetadata(
   }
 
   try {
-    const existing = await readAutoSyncMetadata(redis, username);
+    const existing = await readBlobSyncMetadata(redis, username);
     const previous = existing[body.domain];
     const previousSyncVersion =
       previous?.syncVersion || (previous ? createSyntheticLegacySyncVersion() : null);
@@ -501,7 +494,7 @@ export async function saveBlobDomainMetadata(
       };
     }
 
-    await redis.set(metaKey(username), JSON.stringify(existing));
+    await redis.set(blobSyncMetaKey(username), JSON.stringify(existing));
 
     try {
       const channel = getSyncChannelName(username);
@@ -513,7 +506,7 @@ export async function saveBlobDomainMetadata(
       };
       await triggerRealtimeEvent(channel, "domain-updated", payload);
     } catch (realtimeErr) {
-      console.warn("[sync/auto] Failed to broadcast domain-updated:", realtimeErr);
+      console.warn("[sync/blob] Failed to broadcast domain-updated:", realtimeErr);
     }
 
     const saved = existing[body.domain]!;
@@ -530,11 +523,11 @@ export async function saveBlobDomainMetadata(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error saving auto-sync metadata:", message, error);
+    console.error("Error saving blob sync metadata:", message, error);
     return {
       ok: false,
       status: 500,
-      error: `Failed to save auto-sync metadata: ${message}`,
+      error: `Failed to save blob sync metadata: ${message}`,
     };
   }
 }
@@ -545,7 +538,7 @@ export async function getBlobDomainDownloadPayload(
   domain: BlobSyncDomain
 ): Promise<BlobDomainDownloadPayload | null> {
   try {
-    const metadata = await readAutoSyncMetadata(redis, username);
+    const metadata = await readBlobSyncMetadata(redis, username);
     const entry = metadata[domain];
     const itemEntries = entry?.items ?? null;
 
@@ -594,7 +587,7 @@ export async function getBlobDomainDownloadPayload(
             ])
           ),
         };
-        await redis.set(metaKey(username), JSON.stringify(metadata));
+        await redis.set(blobSyncMetaKey(username), JSON.stringify(metadata));
       }
 
       return {
@@ -624,7 +617,7 @@ export async function getBlobDomainDownloadPayload(
     const objectInfo = await headStoredObject(storageUrl).catch(() => null);
     if (!objectInfo) {
       metadata[domain] = null;
-      await redis.set(metaKey(username), JSON.stringify(metadata));
+      await redis.set(blobSyncMetaKey(username), JSON.stringify(metadata));
       return null;
     }
 
@@ -643,7 +636,7 @@ export async function getBlobDomainDownloadPayload(
       },
     };
   } catch (error) {
-    console.error(`Error downloading ${domain} auto-sync data:`, error);
+    console.error(`Error downloading ${domain} blob sync data:`, error);
     throw error;
   }
 }

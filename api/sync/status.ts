@@ -6,13 +6,10 @@
  */
 
 import { apiHandler } from "../_utils/api-handler.js";
+import { backupMetaKey } from "./_keys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
-
-function metaKey(username: string) {
-  return `sync:meta:${username}`;
-}
 
 interface BackupMeta {
   timestamp: string;
@@ -30,7 +27,7 @@ export default apiHandler(
   async ({ res, redis, user }): Promise<void> => {
     try {
       const username = user?.username || "";
-      const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
+      const rawMeta = await redis.get<string | BackupMeta>(backupMetaKey(username));
 
       if (!rawMeta) {
         res.status(200).json({

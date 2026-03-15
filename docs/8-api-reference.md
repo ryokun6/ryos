@@ -106,12 +106,12 @@ graph LR
 | `/api/iframe-check` | Embeddability checking |
 | `/api/share-applet` | Applet sharing |
 | `/api/stocks` | Real-time stock quotes |
-| `/api/sync/backup-token` | Generate cloud backup upload token |
+| `/api/sync/backup-token` | Generate cloud backup upload descriptor |
 | `/api/sync/backup` | Save/list/delete cloud backup metadata |
 | `/api/sync/status` | Cloud backup status summary |
-| `/api/sync/auto` | Automatic sync operations |
-| `/api/sync/auto-token` | Generate domain-specific auto-sync upload token |
-| `/api/sync/state` | Sync state management |
+| `/api/sync/domains` | Read logical and physical cloud sync metadata |
+| `/api/sync/domains/[domain]` | Download or update one logical sync domain |
+| `/api/sync/domains/[domain]/attachments/prepare` | Generate blob upload instructions for logical sync parts |
 | `/api/admin` | Admin operations |
 | `/api/airdrop/heartbeat` | AirDrop presence heartbeat |
 | `/api/airdrop/discover` | Discover nearby AirDrop users |
