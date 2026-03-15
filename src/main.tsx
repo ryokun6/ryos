@@ -58,6 +58,27 @@ const handlePreloadError = (event: Event) => {
     return;
   }
 
+  // Counter-based loop guard (shared with index.html and prefetch.ts)
+  const countKey = "ryos:reload-count";
+  const windowKey = "ryos:reload-window-start";
+  try {
+    const now = Date.now();
+    const count = parseInt(sessionStorage.getItem(countKey) || "0", 10);
+    const wStart = parseInt(sessionStorage.getItem(windowKey) || "0", 10);
+    if (wStart && now - wStart <= 60000 && count >= 3) {
+      console.warn("[ryOS] Too many reloads (" + count + "), stopping to prevent loop");
+      return;
+    }
+    if (!wStart || now - wStart > 60000) {
+      sessionStorage.setItem(windowKey, String(now));
+      sessionStorage.setItem(countKey, "1");
+    } else {
+      sessionStorage.setItem(countKey, String(count + 1));
+    }
+  } catch {
+    // sessionStorage may throw
+  }
+
   const reloadKey = "ryos-stale-reload";
   const lastReload = sessionStorage.getItem(reloadKey);
   const now = Date.now();

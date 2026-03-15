@@ -43,6 +43,42 @@ if (import.meta.hot) {
 // Flag to prevent concurrent operations
 let isUpdateInProgress = false;
 
+// Reload loop detection — shared keys with index.html and main.tsx
+const RELOAD_COUNT_KEY = 'ryos:reload-count';
+const RELOAD_WINDOW_KEY = 'ryos:reload-window-start';
+const MAX_RELOADS_PER_WINDOW = 3;
+const RELOAD_WINDOW_MS = 60_000; // 1 minute
+
+function isInReloadLoop(): boolean {
+  try {
+    const count = parseInt(sessionStorage.getItem(RELOAD_COUNT_KEY) || '0', 10);
+    const windowStart = parseInt(sessionStorage.getItem(RELOAD_WINDOW_KEY) || '0', 10);
+    if (!windowStart || Date.now() - windowStart > RELOAD_WINDOW_MS) {
+      sessionStorage.removeItem(RELOAD_COUNT_KEY);
+      sessionStorage.removeItem(RELOAD_WINDOW_KEY);
+      return false;
+    }
+    return count >= MAX_RELOADS_PER_WINDOW;
+  } catch {
+    return false;
+  }
+}
+
+function trackReload(): void {
+  try {
+    const windowStart = parseInt(sessionStorage.getItem(RELOAD_WINDOW_KEY) || '0', 10);
+    const count = parseInt(sessionStorage.getItem(RELOAD_COUNT_KEY) || '0', 10);
+    if (!windowStart || Date.now() - windowStart > RELOAD_WINDOW_MS) {
+      sessionStorage.setItem(RELOAD_WINDOW_KEY, String(Date.now()));
+      sessionStorage.setItem(RELOAD_COUNT_KEY, '1');
+    } else {
+      sessionStorage.setItem(RELOAD_COUNT_KEY, String(count + 1));
+    }
+  } catch {
+    // sessionStorage might not be available
+  }
+}
+
 /**
  * Get the currently stored version from the app store
  */
@@ -69,6 +105,12 @@ function storeVersion(version: string, buildNumber: string, buildTime?: string):
  * @param buildNumber - Optional build number to show in boot screen
  */
 async function reloadPage(version?: string, buildNumber?: string): Promise<void> {
+  if (isInReloadLoop()) {
+    console.warn('[Prefetch] Reload loop detected, aborting reload');
+    return;
+  }
+  trackReload();
+
   // Set boot message to show boot screen after reload
   if (version && buildNumber) {
     setNextBootMessage(i18n.t("common.system.updatingToRyOSWithBuild", { version, buildNumber }));
@@ -287,6 +329,13 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
   try {
     // For updates (not first-time), clear caches first
     if (result.action === 'update') {
+      // Store version IMMEDIATELY to prevent re-detection if the page reloads
+      // mid-flow (e.g. VitePWA's auto-update triggers a controllerchange reload
+      // during clearAllCaches → registration.update()).  Without this, the
+      // stored version would still be old after reload, causing an infinite
+      // detect-update → clear-caches → reload cycle.
+      storeVersion(result.server.version, result.server.buildNumber, result.server.buildTime);
+
       toast.dismiss('prefetch-progress');
       clearPrefetchFlag();
       await clearAllCaches();
@@ -338,6 +387,9 @@ export async function forceRefreshCache(): Promise<void> {
   isUpdateInProgress = true;
   
   try {
+    // Store version immediately (same early-store rationale as checkAndUpdate)
+    storeVersion(serverVersion.version, serverVersion.buildNumber, serverVersion.buildTime);
+
     // Clear caches and refetch for new version
     toast.dismiss('prefetch-progress');
     clearPrefetchFlag();
@@ -820,6 +872,13 @@ export function initPrefetch(): void {
   }
   
   const runPrefetchFlow = async () => {
+    // Safety net: bail out if we're stuck in a reload loop
+    if (isInReloadLoop()) {
+      console.warn('[Prefetch] Reload loop detected, skipping update check');
+      startPeriodicUpdateCheck();
+      return;
+    }
+
     // Single unified check handles first-time, updates, and no-op
     await checkAndUpdate(false);
     
