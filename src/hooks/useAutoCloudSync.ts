@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -42,6 +42,7 @@ import {
   isApplyingRemoteSettingsSection,
   markSettingsSectionChanged,
 } from "@/utils/cloudSyncSettingsState";
+import { isApplyingRemoteDomain } from "@/utils/cloudSyncRemoteApplyState";
 import {
   CLOUD_SYNC_DOMAINS,
   CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
@@ -232,6 +233,15 @@ function getLatestLocalChangeAt(domain: CloudSyncDomain): string | null {
     getPersistedLocalChangeAt(domain),
     getPersistedDeletionChangeAt(domain),
   ]);
+}
+
+function alignLocalChangeWithRemoteApply(
+  domain: CloudSyncDomain,
+  timestamp: string,
+  lastLocalChangeAtRef: MutableRefObject<Record<CloudSyncDomain, string | null>>
+): void {
+  lastLocalChangeAtRef.current[domain] = timestamp;
+  setPersistedLocalChangeAt(domain, timestamp);
 }
 
 export function useAutoCloudSync() {
@@ -626,6 +636,7 @@ export function useAutoCloudSync() {
             ? `[CloudSync] Realtime reconcile individual blobs: ${domain}`
             : `[CloudSync] Realtime download: ${domain}`
         );
+        syncState.markDownloadStart(domain);
         const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
           username,
           isAuthenticated,
@@ -653,12 +664,19 @@ export function useAutoCloudSync() {
         useCloudSyncStore
           .getState()
           .updateRemoteMetadataForDomain(domain, downloadResult.metadata);
+        useCloudSyncStore
+          .getState()
+          .markDownloadSuccess(domain, downloadResult.metadata);
 
         if (downloadResult.applied) {
           useCloudSyncStore
             .getState()
             .markRemoteApplied(domain, downloadResult.metadata);
-          lastLocalChangeAtRef.current[domain] = getLatestLocalChangeAt(domain);
+          alignLocalChangeWithRemoteApply(
+            domain,
+            downloadResult.metadata.updatedAt,
+            lastLocalChangeAtRef
+          );
           remoteApplySuppressUntilRef.current[domain] =
             Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
         } else {
@@ -666,6 +684,9 @@ export function useAutoCloudSync() {
         }
       } catch (error) {
         console.error(`[CloudSync] Targeted download ${domain} failed:`, error);
+        const message =
+          error instanceof Error ? error.message : `Failed to download ${domain}.`;
+        useCloudSyncStore.getState().markDownloadFailure(domain, message);
         remoteApplySuppressUntilRef.current[domain] = 0;
       } finally {
         realtimeInFlightRef.current.delete(domain);
@@ -775,40 +796,55 @@ export function useAutoCloudSync() {
           continue;
         }
 
-        const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
-          username,
-          isAuthenticated,
-        }, {
-          shouldApply: (metadata) => {
-            if (reconcileIndividualBlobs) return true;
-            const latestLocalChangeAt =
-              getLatestLocalChangeAt(domain) || lastLocalChangeAtRef.current[domain];
-            const currentSyncState = useCloudSyncStore.getState();
-            const currentDomainStatus = currentSyncState.domainStatus[domain];
+        syncState.markDownloadStart(domain);
+        try {
+          const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
+            username,
+            isAuthenticated,
+          }, {
+            shouldApply: (metadata) => {
+              if (reconcileIndividualBlobs) return true;
+              const latestLocalChangeAt =
+                getLatestLocalChangeAt(domain) || lastLocalChangeAtRef.current[domain];
+              const currentSyncState = useCloudSyncStore.getState();
+              const currentDomainStatus = currentSyncState.domainStatus[domain];
 
-            return shouldApplyRemoteUpdate({
-              remoteUpdatedAt: metadata.updatedAt,
-              remoteSyncVersion: metadata.syncVersion,
-              lastAppliedRemoteAt: currentDomainStatus.lastAppliedRemoteAt,
-              lastUploadedAt: currentDomainStatus.lastUploadedAt,
-              lastLocalChangeAt: latestLocalChangeAt,
-              hasPendingUpload:
-                Boolean(uploadTimersRef.current[domain]) ||
-                currentDomainStatus.isUploading,
-              lastKnownServerVersion: currentDomainStatus.lastKnownServerVersion,
-            });
-          },
-        });
-        useCloudSyncStore
-          .getState()
-          .updateRemoteMetadataForDomain(domain, downloadResult.metadata);
-
-        if (downloadResult.applied) {
+              return shouldApplyRemoteUpdate({
+                remoteUpdatedAt: metadata.updatedAt,
+                remoteSyncVersion: metadata.syncVersion,
+                lastAppliedRemoteAt: currentDomainStatus.lastAppliedRemoteAt,
+                lastUploadedAt: currentDomainStatus.lastUploadedAt,
+                lastLocalChangeAt: latestLocalChangeAt,
+                hasPendingUpload:
+                  Boolean(uploadTimersRef.current[domain]) ||
+                  currentDomainStatus.isUploading,
+                lastKnownServerVersion: currentDomainStatus.lastKnownServerVersion,
+              });
+            },
+          });
           useCloudSyncStore
             .getState()
-            .markRemoteApplied(domain, downloadResult.metadata);
-          lastLocalChangeAtRef.current[domain] = getLatestLocalChangeAt(domain);
-          appliedDomains.push(domain);
+            .updateRemoteMetadataForDomain(domain, downloadResult.metadata);
+          useCloudSyncStore
+            .getState()
+            .markDownloadSuccess(domain, downloadResult.metadata);
+
+          if (downloadResult.applied) {
+            useCloudSyncStore
+              .getState()
+              .markRemoteApplied(domain, downloadResult.metadata);
+            alignLocalChangeWithRemoteApply(
+              domain,
+              downloadResult.metadata.updatedAt,
+              lastLocalChangeAtRef
+            );
+            appliedDomains.push(domain);
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : `Failed to download ${domain}.`;
+          useCloudSyncStore.getState().markDownloadFailure(domain, message);
+          throw error;
         }
       }
 
@@ -997,6 +1033,7 @@ export function useAutoCloudSync() {
         state.items !== prevState.items ||
         state.libraryState !== prevState.libraryState
       ) {
+        if (isApplyingRemoteDomain("files-metadata")) return;
         queueUpload("files-metadata");
       }
     });
@@ -1039,7 +1076,12 @@ export function useAutoCloudSync() {
           state.debugMode !== prevState.debugMode ||
           state.htmlPreviewSplit !== prevState.htmlPreviewSplit
         ) {
-          if (isApplyingRemoteSettingsSection("display")) return;
+          if (
+            isApplyingRemoteSettingsSection("display") ||
+            isApplyingRemoteDomain("custom-wallpapers")
+          ) {
+            return;
+          }
           markSettingsSectionChanged("display");
           queueUpload("settings");
         }
@@ -1047,7 +1089,12 @@ export function useAutoCloudSync() {
           state.currentWallpaper !== prevState.currentWallpaper &&
           state.currentWallpaper.startsWith("indexeddb://")
         ) {
-          if (isApplyingRemoteSettingsSection("display")) return;
+          if (
+            isApplyingRemoteSettingsSection("display") ||
+            isApplyingRemoteDomain("custom-wallpapers")
+          ) {
+            return;
+          }
           console.log(`[CloudSync] display subscriber: currentWallpaper changed from "${prevState.currentWallpaper}" to "${state.currentWallpaper}"`);
           queueUpload("custom-wallpapers");
         }
@@ -1114,6 +1161,7 @@ export function useAutoCloudSync() {
         state.libraryState !== prevState.libraryState ||
         state.lastKnownVersion !== prevState.lastKnownVersion
       ) {
+        if (isApplyingRemoteDomain("songs")) return;
         if (state.tracks !== prevState.tracks) {
           const currentIds = new Set(state.tracks.map((t) => t.id));
           const prevIds = new Set(prevState.tracks.map((t) => t.id));
@@ -1137,6 +1185,7 @@ export function useAutoCloudSync() {
 
     const videosUnsubscribe = useVideoStore.subscribe((state, prevState) => {
       if (state.videos !== prevState.videos) {
+        if (isApplyingRemoteDomain("videos")) return;
         queueUpload("videos");
       }
     });
@@ -1167,6 +1216,7 @@ export function useAutoCloudSync() {
     const stickiesUnsubscribe = useStickiesStore.subscribe(
       (state, prevState) => {
         if (state.notes !== prevState.notes) {
+          if (isApplyingRemoteDomain("stickies")) return;
           queueUpload("stickies");
         }
       }
@@ -1178,12 +1228,14 @@ export function useAutoCloudSync() {
         state.calendars !== prevState.calendars ||
         state.todos !== prevState.todos
       ) {
+        if (isApplyingRemoteDomain("calendar")) return;
         queueUpload("calendar");
       }
     });
 
     const contactsUnsubscribe = useContactsStore.subscribe((state, prevState) => {
       if (state.contacts !== prevState.contacts) {
+        if (isApplyingRemoteDomain("contacts")) return;
         queueUpload("contacts");
       }
     });

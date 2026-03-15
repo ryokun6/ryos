@@ -358,6 +358,13 @@ export function useControlPanelsLogic({
           (domain) => internalAutoSyncDomainStatus[domain].lastUploadedAt
         )
       ),
+      lastFetchedAt: getLatestCloudSyncTimestamp(
+        FILE_SYNC_DOMAINS.map(
+          (domain) =>
+            internalAutoSyncDomainStatus[domain].lastFetchedAt ||
+            internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
+        )
+      ),
       lastAppliedRemoteAt: getLatestCloudSyncTimestamp(
         FILE_SYNC_DOMAINS.map(
           (domain) => internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
@@ -365,6 +372,9 @@ export function useControlPanelsLogic({
       ),
       isUploading: FILE_SYNC_DOMAINS.some(
         (domain) => internalAutoSyncDomainStatus[domain].isUploading
+      ),
+      isDownloading: FILE_SYNC_DOMAINS.some(
+        (domain) => internalAutoSyncDomainStatus[domain].isDownloading
       ),
     },
     settings: internalAutoSyncDomainStatus.settings,
@@ -872,11 +882,10 @@ export function useControlPanelsLogic({
             isAuthenticated,
           });
           syncStore.updateRemoteMetadataForDomain(domain, result.metadata);
+          syncStore.markDownloadSuccess(domain, result.metadata);
           if (result.applied) {
-            syncStore.markDownloadSuccess(domain, result.metadata);
+            syncStore.markRemoteApplied(domain, result.metadata);
             appliedCount++;
-          } else {
-            syncStore.markDownloadSuccess(domain, result.metadata.updatedAt);
           }
         } catch (error) {
           const message =

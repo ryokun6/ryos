@@ -95,24 +95,57 @@ function formatRelativeTime(
   return t("apps.control-panels.autoSync.daysAgo", { count: days });
 }
 
-function getLatestSyncTime(
-  status: { lastUploadedAt: string | null; lastAppliedRemoteAt: string | null }
-): string | null {
-  const a = status.lastUploadedAt ? new Date(status.lastUploadedAt).getTime() : 0;
-  const b = status.lastAppliedRemoteAt ? new Date(status.lastAppliedRemoteAt).getTime() : 0;
-  if (a === 0 && b === 0) return null;
-  return a >= b ? status.lastUploadedAt : status.lastAppliedRemoteAt;
+type SyncAuditStatus = {
+  lastUploadedAt: string | null;
+  lastFetchedAt?: string | null;
+  lastAppliedRemoteAt: string | null;
+  isUploading?: boolean;
+  isDownloading?: boolean;
+};
+
+function getFetchedSyncTime(status: SyncAuditStatus): string | null {
+  return status.lastFetchedAt || status.lastAppliedRemoteAt;
 }
 
 function formatSyncStatus(
-  status: { lastUploadedAt: string | null; lastAppliedRemoteAt: string | null },
+  status: SyncAuditStatus,
   t: (key: string, opts?: Record<string, unknown>) => string
 ): string {
-  const latest = getLatestSyncTime(status);
-  const relative = formatRelativeTime(latest, t);
-  return relative
-    ? t("apps.control-panels.autoSync.lastSynced", { date: relative })
-    : t("apps.control-panels.autoSync.neverSynced");
+  const uploadedRelative = formatRelativeTime(status.lastUploadedAt, t);
+  const fetchedRelative = formatRelativeTime(getFetchedSyncTime(status), t);
+  const parts: string[] = [];
+
+  if (status.isUploading) {
+    parts.push(t("apps.control-panels.autoSync.uploading", { defaultValue: "Uploading" }));
+  } else {
+    parts.push(
+      uploadedRelative
+        ? t("apps.control-panels.autoSync.lastUploaded", {
+            date: uploadedRelative,
+            defaultValue: `Uploaded ${uploadedRelative}`,
+          })
+        : t("apps.control-panels.autoSync.neverUploaded", {
+            defaultValue: "Never uploaded",
+          })
+    );
+  }
+
+  if (status.isDownloading) {
+    parts.push(t("apps.control-panels.autoSync.fetching", { defaultValue: "Fetching" }));
+  } else {
+    parts.push(
+      fetchedRelative
+        ? t("apps.control-panels.autoSync.lastFetched", {
+            date: fetchedRelative,
+            defaultValue: `Fetched ${fetchedRelative}`,
+          })
+        : t("apps.control-panels.autoSync.neverFetched", {
+            defaultValue: "Never fetched",
+          })
+    );
+  }
+
+  return parts.join(" · ");
 }
 
 function getUsernameInitials(username: string): string {
