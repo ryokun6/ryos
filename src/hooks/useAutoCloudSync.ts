@@ -31,7 +31,6 @@ import {
   setPersistedLocalChangeAt,
 } from "@/utils/cloudSyncLocalChangeState";
 import {
-  downloadAndApplyCloudSyncDomain,
   fetchCloudSyncMetadata,
   getSyncSessionId,
   individualBlobDomainNeedsLocalReconcile,
@@ -172,6 +171,25 @@ function createDomainPendingRemoteUpdateMap(): Record<
   };
 }
 
+function createLogicalPendingRemoteUpdateMap(): Record<
+  LogicalCloudSyncDomain,
+  {
+    triggerDomain: CloudSyncDomain;
+    updatedAt: string;
+    syncVersion?: CloudSyncVersionState | null;
+  } | null
+> {
+  return {
+    settings: null,
+    files: null,
+    songs: null,
+    videos: null,
+    stickies: null,
+    calendar: null,
+    contacts: null,
+  };
+}
+
 function shouldReplacePendingRemoteUpdate(
   current:
     | { updatedAt: string; syncVersion?: CloudSyncVersionState | null }
@@ -289,10 +307,14 @@ export function useAutoCloudSync() {
   >(createDomainPendingRemoteUpdateMap());
   const pendingRealtimeUpdateRef = useRef<
     Record<
-      CloudSyncDomain,
-      { updatedAt: string; syncVersion?: CloudSyncVersionState | null } | null
+      LogicalCloudSyncDomain,
+      {
+        triggerDomain: CloudSyncDomain;
+        updatedAt: string;
+        syncVersion?: CloudSyncVersionState | null;
+      } | null
     >
-  >(createDomainPendingRemoteUpdateMap());
+  >(createLogicalPendingRemoteUpdateMap());
   const uploadInFlightRef = useRef<Record<LogicalCloudSyncDomain, boolean>>(
     createLogicalDomainBooleanMap(false)
   );
@@ -587,7 +609,7 @@ export function useAutoCloudSync() {
   const syncChannelRef = useRef<{ name: string; unbind: () => void } | null>(
     null
   );
-  const realtimeInFlightRef = useRef(new Set<CloudSyncDomain>());
+  const realtimeInFlightRef = useRef(new Set<LogicalCloudSyncDomain>());
 
   const handleRealtimeDomainUpdate = useCallback(
     async (
@@ -596,148 +618,212 @@ export function useAutoCloudSync() {
       remoteSyncVersion?: CloudSyncVersionState | null
     ) => {
       if (!username || !isAuthenticated || !isDomainEnabled(domain)) return;
-      if (realtimeInFlightRef.current.has(domain)) {
+      const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
+      if (realtimeInFlightRef.current.has(logicalDomain)) {
         const pendingUpdate = {
+          triggerDomain: domain,
           updatedAt: remoteUpdatedAt,
           syncVersion: remoteSyncVersion,
         };
         if (
           shouldReplacePendingRemoteUpdate(
-            pendingRealtimeUpdateRef.current[domain],
+            pendingRealtimeUpdateRef.current[logicalDomain],
             pendingUpdate
           )
         ) {
-          pendingRealtimeUpdateRef.current[domain] = pendingUpdate;
+          pendingRealtimeUpdateRef.current[logicalDomain] = pendingUpdate;
         }
         return;
       }
 
-      const syncState = useCloudSyncStore.getState();
-      const domainStatus = syncState.domainStatus[domain];
-
-      const hasUnsynced = hasUnsyncedLocalChanges(
-        lastLocalChangeAtRef.current[domain],
-        domainStatus.lastUploadedAt,
-        hasPendingUploadForDomain(domain) || domainStatus.isUploading
-      );
-      const shouldApplyMetadata = shouldApplyRemoteUpdate({
-        remoteUpdatedAt,
-        remoteSyncVersion: remoteSyncVersion || syncState.remoteMetadata[domain]?.syncVersion,
-        lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
-        lastUploadedAt: domainStatus.lastUploadedAt,
-        lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
-        hasPendingUpload:
-          hasPendingUploadForDomain(domain) || domainStatus.isUploading,
-        lastKnownServerVersion: domainStatus.lastKnownServerVersion,
-      });
-      if (
-        !shouldApplyMetadata &&
-        shouldRecheckRemoteAfterLocalSync({
-          remoteUpdatedAt,
-          remoteSyncVersion:
-            remoteSyncVersion || syncState.remoteMetadata[domain]?.syncVersion,
-          lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
-          lastUploadedAt: domainStatus.lastUploadedAt,
-          lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
-          hasPendingUpload:
-            hasPendingUploadForDomain(domain) || domainStatus.isUploading,
-          lastKnownServerVersion: domainStatus.lastKnownServerVersion,
-        })
-      ) {
-        pendingRemoteCatchUpRef.current[domain] = {
-          updatedAt: remoteUpdatedAt,
-          syncVersion:
-            remoteSyncVersion || syncState.remoteMetadata[domain]?.syncVersion,
-        };
-      }
-      let reconcileIndividualBlobs = false;
-      if (
-        !shouldApplyMetadata &&
-        !hasUnsynced &&
-        isIndividualBlobSyncDomain(domain)
-      ) {
-        reconcileIndividualBlobs = await individualBlobDomainNeedsLocalReconcile(
-          domain,
-          { username, isAuthenticated }
+      let metadataMap = useCloudSyncStore.getState().remoteMetadata;
+      try {
+        metadataMap = await fetchCloudSyncMetadata({ username, isAuthenticated });
+        useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
+      } catch (error) {
+        console.warn(
+          `[CloudSync] Failed to refresh metadata for realtime logical update ${logicalDomain}:`,
+          error
         );
       }
-      if (!shouldApplyMetadata && !reconcileIndividualBlobs) return;
 
-      remoteApplySuppressUntilRef.current[domain] = Date.now() + REALTIME_INFLIGHT_SUPPRESSION_MS;
-      realtimeInFlightRef.current.add(domain);
+      const enabledPartDomains = getEnabledPartDomains(logicalDomain);
+      const candidatePartDomains: CloudSyncDomain[] = [];
+
+      for (const partDomain of enabledPartDomains) {
+        const syncState = useCloudSyncStore.getState();
+        const domainStatus = syncState.domainStatus[partDomain];
+        const fetchedRemoteMetadata = metadataMap[partDomain];
+        const remoteMetadata =
+          partDomain === domain
+            ? {
+                updatedAt:
+                  parseCloudSyncTimestamp(remoteUpdatedAt) >
+                  parseCloudSyncTimestamp(fetchedRemoteMetadata?.updatedAt)
+                    ? remoteUpdatedAt
+                    : fetchedRemoteMetadata?.updatedAt || remoteUpdatedAt,
+                version: fetchedRemoteMetadata?.version || 1,
+                totalSize: fetchedRemoteMetadata?.totalSize || 0,
+                createdAt: fetchedRemoteMetadata?.createdAt || remoteUpdatedAt,
+                syncVersion:
+                  remoteSyncVersion || fetchedRemoteMetadata?.syncVersion || null,
+              }
+            : fetchedRemoteMetadata;
+
+        if (!remoteMetadata) {
+          continue;
+        }
+
+        const hasUnsynced = hasUnsyncedLocalChanges(
+          lastLocalChangeAtRef.current[partDomain],
+          domainStatus.lastUploadedAt,
+          hasPendingUploadForDomain(partDomain) || domainStatus.isUploading
+        );
+        const shouldApplyMetadata = shouldApplyRemoteUpdate({
+          remoteUpdatedAt: remoteMetadata.updatedAt,
+          remoteSyncVersion: remoteMetadata.syncVersion,
+          lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
+          lastUploadedAt: domainStatus.lastUploadedAt,
+          lastLocalChangeAt: lastLocalChangeAtRef.current[partDomain],
+          hasPendingUpload:
+            hasPendingUploadForDomain(partDomain) || domainStatus.isUploading,
+          lastKnownServerVersion: domainStatus.lastKnownServerVersion,
+        });
+        if (
+          !shouldApplyMetadata &&
+          shouldRecheckRemoteAfterLocalSync({
+            remoteUpdatedAt: remoteMetadata.updatedAt,
+            remoteSyncVersion: remoteMetadata.syncVersion,
+            lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
+            lastUploadedAt: domainStatus.lastUploadedAt,
+            lastLocalChangeAt: lastLocalChangeAtRef.current[partDomain],
+            hasPendingUpload:
+              hasPendingUploadForDomain(partDomain) || domainStatus.isUploading,
+            lastKnownServerVersion: domainStatus.lastKnownServerVersion,
+          })
+        ) {
+          pendingRemoteCatchUpRef.current[partDomain] = {
+            updatedAt: remoteMetadata.updatedAt,
+            syncVersion: remoteMetadata.syncVersion,
+          };
+        }
+        let reconcileIndividualBlobs = false;
+        if (
+          !shouldApplyMetadata &&
+          !hasUnsynced &&
+          isIndividualBlobSyncDomain(partDomain)
+        ) {
+          reconcileIndividualBlobs =
+            await individualBlobDomainNeedsLocalReconcile(partDomain, {
+              username,
+              isAuthenticated,
+            });
+        }
+        if (!shouldApplyMetadata && !reconcileIndividualBlobs) {
+          continue;
+        }
+
+        candidatePartDomains.push(partDomain);
+      }
+
+      if (candidatePartDomains.length === 0) {
+        return;
+      }
+
+      for (const partDomain of candidatePartDomains) {
+        remoteApplySuppressUntilRef.current[partDomain] =
+          Date.now() + REALTIME_INFLIGHT_SUPPRESSION_MS;
+      }
+      realtimeInFlightRef.current.add(logicalDomain);
 
       try {
         console.log(
-          reconcileIndividualBlobs
-            ? `[CloudSync] Realtime reconcile individual blobs: ${domain}`
-            : `[CloudSync] Realtime download: ${domain}`
+          `[CloudSync] Realtime logical download: ${logicalDomain} (${candidatePartDomains.join(", ")})`
         );
-        syncState.markDownloadStart(domain);
-        const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
-          username,
-          isAuthenticated,
-        }, {
-          shouldApply: (metadata) => {
-            if (reconcileIndividualBlobs) return true;
-            const latestLocalChangeAt =
-              getLatestLocalChangeAt(domain) || lastLocalChangeAtRef.current[domain];
-            const currentSyncState = useCloudSyncStore.getState();
-            const currentDomainStatus = currentSyncState.domainStatus[domain];
-
-            return shouldApplyRemoteUpdate({
-              remoteUpdatedAt: metadata.updatedAt,
-              remoteSyncVersion: metadata.syncVersion,
-              lastAppliedRemoteAt: currentDomainStatus.lastAppliedRemoteAt,
-              lastUploadedAt: currentDomainStatus.lastUploadedAt,
-              lastLocalChangeAt: latestLocalChangeAt,
-              hasPendingUpload:
-                hasPendingUploadForDomain(domain) ||
-                currentDomainStatus.isUploading,
-              lastKnownServerVersion: currentDomainStatus.lastKnownServerVersion,
-            });
+        for (const partDomain of candidatePartDomains) {
+          useCloudSyncStore.getState().markDownloadStart(partDomain);
+        }
+        const candidatePartDomainSet = new Set(candidatePartDomains);
+        const downloadResult = await downloadAndApplyLogicalCloudSyncDomain(
+          logicalDomain,
+          {
+            username,
+            isAuthenticated,
           },
-        });
-        useCloudSyncStore
-          .getState()
-          .updateRemoteMetadataForDomain(domain, downloadResult.metadata);
-        useCloudSyncStore
-          .getState()
-          .markDownloadSuccess(domain, downloadResult.metadata);
+          {
+            shouldApplyPart: (partDomain) =>
+              candidatePartDomainSet.has(partDomain),
+          }
+        );
 
-        if (downloadResult.applied) {
+        for (const [partDomain, metadata] of Object.entries(
+          downloadResult.partMetadata
+        ) as Array<
+          [
+            CloudSyncDomain,
+            NonNullable<(typeof downloadResult.partMetadata)[CloudSyncDomain]>
+          ]
+        >) {
           useCloudSyncStore
             .getState()
-            .markRemoteApplied(domain, downloadResult.metadata);
-          alignLocalChangeWithRemoteApply(
-            domain,
-            downloadResult.metadata.updatedAt,
-            lastLocalChangeAtRef
-          );
-          remoteApplySuppressUntilRef.current[domain] =
-            Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
-        } else {
-          remoteApplySuppressUntilRef.current[domain] = 0;
+            .updateRemoteMetadataForDomain(partDomain, metadata);
+
+          if (!candidatePartDomainSet.has(partDomain)) {
+            continue;
+          }
+
+          useCloudSyncStore
+            .getState()
+            .markDownloadSuccess(partDomain, metadata);
+
+          if (downloadResult.applied) {
+            useCloudSyncStore
+              .getState()
+              .markRemoteApplied(partDomain, metadata);
+            alignLocalChangeWithRemoteApply(
+              partDomain,
+              metadata.updatedAt,
+              lastLocalChangeAtRef
+            );
+            remoteApplySuppressUntilRef.current[partDomain] =
+              Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
+          } else {
+            remoteApplySuppressUntilRef.current[partDomain] = 0;
+          }
         }
       } catch (error) {
-        console.error(`[CloudSync] Targeted download ${domain} failed:`, error);
+        console.error(
+          `[CloudSync] Targeted logical download ${logicalDomain} failed:`,
+          error
+        );
         const message =
-          error instanceof Error ? error.message : `Failed to download ${domain}.`;
-        useCloudSyncStore.getState().markDownloadFailure(domain, message);
-        remoteApplySuppressUntilRef.current[domain] = 0;
+          error instanceof Error
+            ? error.message
+            : `Failed to download ${logicalDomain}.`;
+        for (const partDomain of candidatePartDomains) {
+          useCloudSyncStore.getState().markDownloadFailure(partDomain, message);
+          remoteApplySuppressUntilRef.current[partDomain] = 0;
+        }
       } finally {
-        realtimeInFlightRef.current.delete(domain);
-        const pendingUpdate = pendingRealtimeUpdateRef.current[domain];
+        realtimeInFlightRef.current.delete(logicalDomain);
+        const pendingUpdate = pendingRealtimeUpdateRef.current[logicalDomain];
         if (pendingUpdate) {
-          pendingRealtimeUpdateRef.current[domain] = null;
+          pendingRealtimeUpdateRef.current[logicalDomain] = null;
           void handleRealtimeDomainUpdateRef.current(
-            domain,
+            pendingUpdate.triggerDomain,
             pendingUpdate.updatedAt,
             pendingUpdate.syncVersion
           );
         }
       }
     },
-    [isAuthenticated, isDomainEnabled, username]
+    [
+      getEnabledPartDomains,
+      hasPendingUploadForDomain,
+      isAuthenticated,
+      isDomainEnabled,
+      username,
+    ]
   );
 
   const checkRemoteUpdates = useCallback(async () => {
