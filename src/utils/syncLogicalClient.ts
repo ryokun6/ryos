@@ -91,7 +91,7 @@ export async function uploadLogicalCloudSyncDomain(
   }
 
   const result = (await response.json()) as {
-    metadata?: LogicalCloudSyncMetadataMap[LogicalCloudSyncDomain];
+    metadata?: LogicalCloudSyncDomainMetadata | null;
     writes?: Partial<
       Record<
         CloudSyncDomain,
