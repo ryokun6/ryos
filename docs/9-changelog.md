@@ -7,24 +7,33 @@ A summary of changes and updates to ryOS, organized by month.
 ## March 2026
 
 - Add Calendar app with iCal support, Dashboard widget overlay, and AI integration.
-- Implement cloud sync for dock icons, iPod/karaoke settings, stickies, wallpapers, images, contacts, and videos library.
+- Implement cloud sync for dock icons, iPod/karaoke settings, stickies, wallpapers, images, contacts, videos library, dashboard widgets, and songs.
+- Add AirDrop-like file sharing to Finder with nearby user discovery, send/receive flows, and Downloads folder.
+- Add multi-select for Desktop and Finder with Ctrl/Cmd+click, Shift+click range, and marquee selection.
 - Introduce a universal undo/redo mechanism for Finder, Paint, and TextEdit.
 - Redesign the Dashboard with a widget strip, improved placement, and new widgets like Stocks, Dictionary, and Translator.
 - Enhance Contacts app with vCard import, refined UI, and cloud sync.
-- Add Telegram bot linking, DM chat support, web search, and heartbeat insights.
+- Add Telegram bot linking, DM chat, voice notes, song library tool, Gemini web search, and morning/evening heartbeat briefings.
+- Migrate auth tokens to httpOnly cookies with Force Upload/Download sync controls.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>Minor changes (16)</summary>
 
 - Improve iPod and karaoke playback performance and add iPod widget control for karaoke.
+- Add voice ducking for TTS and karaoke playback with shared infrastructure.
+- Harden cloud sync with deletion markers, merge-on-conflict, and race-condition fixes.
+- Enable Gemini search in chat for authenticated users on the gemini-3-flash model.
+- Add brushed metal window material for Finder on macOS Aqua theme with Spotlight-style selection gradient.
+- Enhance admin dashboard with date range selector (Today/7d/14d/30d) and localized keys.
+- Add calendar todos with due dates, mobile editing, and hover-to-show actions.
+- Add Finder "Go Up" toolbar item, sidebar reordering, and narrow-width sidebar hiding.
 - Refactor API endpoints to use apiHandler for improved security and consistency.
+- Improve real-time SSE streaming in Bun standalone server.
+- Upgrade Gemini flash and image models and consolidate GPT defaults on gpt-5.4.
 - Fix smart widget placement to avoid overlap and default weather to San Francisco.
-- Update documentation for file system, audio system, AI system, apps index, and API reference.
-- Enhance admin app with usage analytics dashboard, server page, and improved user details.
-- Improve crash dialog recovery UX and add a quit option.
-- Refine the UI with a semantic color palette and clean up the dashboard.
-- Optimize analytics write and read paths for better performance.
 - Add switchable Vercel Blob and S3-compatible storage.
+- Refactor dialog traffic lights to use shared TrafficLightButton component.
+- Improve stale cache recovery by clearing caches and unregistering SW before reload.
 - Support subdomain wildcard patterns in CORS and host allowlists.
 
 </details>
@@ -323,4 +332,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is automatically generated and summarized from git history. Last updated: 2026-03-10*
+*This changelog is automatically generated and summarized from git history. Last updated: 2026-03-15*

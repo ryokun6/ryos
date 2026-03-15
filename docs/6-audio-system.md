@@ -115,7 +115,7 @@ Uses ReactPlayer for YouTube video/audio playback with:
 - Volume control via `ipodVolume` setting
 - Seeking and playback state management
 - Fullscreen playback with synchronized lyrics display
-- Volume ducking when TTS is speaking (35% of original on non-iOS)
+- Volume ducking when TTS is speaking (iPod and Karaoke volume at 35% of original on non-iOS)
 - Track switching guard to prevent race conditions between YouTube load events and play/pause state
 - iOS Safari autoplay watchdog that detects blocked playback and reverts to paused state
 - CoverFlow album art browser with 3D perspective, triggered via long-press or menu
@@ -269,7 +269,7 @@ Provides gap-free TTS playback with intelligent queuing:
 ### Volume Ducking
 
 When TTS is speaking:
-- iPod volume reduced to 35% (non-iOS only)
+- iPod and Karaoke music playback volume reduced to 35% (non-iOS only)
 - Chat synth volume reduced to 60%
 - Original volumes restored when speech ends
 
