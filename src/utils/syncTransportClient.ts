@@ -66,7 +66,7 @@ function extractPhysicalPartPayload(
   return logicalPayload?.parts?.[domain] || null;
 }
 
-export async function fetchLegacyRedisDomainSnapshot(
+export async function fetchRedisDomainSnapshot(
   domain: RedisSyncDomain
 ): Promise<{ data: unknown; metadata: CloudSyncDomainMetadata } | null> {
   const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
@@ -87,38 +87,7 @@ export async function fetchLegacyRedisDomainSnapshot(
   };
 }
 
-export async function putLegacyRedisDomainSnapshot(
-  domain: RedisSyncDomain,
-  payload: Record<string, unknown>
-): Promise<CloudSyncDomainMetadata> {
-  const response = await abortableFetch(getApiUrl("/api/sync/state"), {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Sync-Session-Id": getSyncSessionId(),
-    },
-    body: JSON.stringify(payload),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || `Failed to sync ${domain} state`
-    );
-  }
-
-  const result = (await response.json()) as { metadata?: CloudSyncDomainMetadata };
-  if (!result.metadata) {
-    throw new Error("State sync response was invalid.");
-  }
-
-  return result.metadata;
-}
-
-export async function fetchLegacyBlobDomainPayload(
+export async function fetchBlobDomainPayload(
   domain: BlobSyncDomain
 ): Promise<DomainPayload | null> {
   const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
@@ -128,7 +97,7 @@ export async function fetchLegacyBlobDomainPayload(
   );
 }
 
-export async function requestLegacyBlobUploadInstruction(
+export async function requestBlobUploadInstruction(
   domain: BlobSyncDomain,
   itemKey?: string
 ): Promise<StorageUploadInstruction> {
@@ -138,12 +107,12 @@ export async function requestLegacyBlobUploadInstruction(
       `/api/sync/domains/${encodeURIComponent(logicalDomain)}/attachments/prepare`
     ),
     {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Sync-Session-Id": getSyncSessionId(),
-    },
-    body: JSON.stringify({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Sync-Session-Id": getSyncSessionId(),
+      },
+      body: JSON.stringify({
         partDomain: domain,
         ...(itemKey ? { itemKey } : {}),
       }),
@@ -162,44 +131,4 @@ export async function requestLegacyBlobUploadInstruction(
 
   return (await response.json()) as StorageUploadInstruction;
 }
-
-export async function saveLegacyBlobDomainMetadata(
-  payload: Record<string, unknown>
-): Promise<CloudSyncDomainMetadata> {
-  const response = await abortableFetch(getApiUrl("/api/sync/auto"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Sync-Session-Id": getSyncSessionId(),
-    },
-    body: JSON.stringify(payload),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to save sync metadata"
-    );
-  }
-
-  const result = (await response.json()) as { metadata?: CloudSyncDomainMetadata };
-  if (!result.metadata) {
-    throw new Error("Sync metadata save response was invalid.");
-  }
-
-  return result.metadata;
-}
-
-export function isLegacyBlobIndividualPayload(
-  payload: DomainPayload | null
-): payload is DomainPayload & { mode: "individual"; items?: Record<string, unknown> } {
-  return Boolean(payload && payload.mode === "individual");
-}
-
-export type LegacyBlobDomainPayload = DomainPayload;
-export type LegacySyncDomainPayload = DomainPayload;
-export type LegacyPhysicalDomain = CloudSyncDomain;
 

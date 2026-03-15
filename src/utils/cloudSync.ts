@@ -52,10 +52,9 @@ import {
 } from "@/utils/cloudSyncClientState";
 import { getSyncSessionId } from "@/utils/syncSession";
 import {
-  fetchLegacyBlobDomainPayload,
-  fetchLegacyRedisDomainSnapshot,
-  requestLegacyBlobUploadInstruction,
-  saveLegacyBlobDomainMetadata,
+  fetchBlobDomainPayload,
+  fetchRedisDomainSnapshot,
+  requestBlobUploadInstruction as requestBlobUploadInstructionFromTransport,
 } from "@/utils/syncTransportClient";
 import type { CloudSyncWriteVersion } from "@/utils/cloudSyncVersion";
 import {
@@ -1390,20 +1389,6 @@ function cacheRedisStateDomainSnapshot(
   redisStateDomainSnapshotCache.set(getDomainFetchCacheKey(auth, domain), value);
 }
 
-function invalidateRedisStateDomainSnapshotCache(
-  domain: RedisSyncDomain,
-  auth: AuthContext
-): void {
-  redisStateDomainSnapshotCache.invalidate(getDomainFetchCacheKey(auth, domain));
-}
-
-function invalidateBlobDomainInfoCache(
-  domain: BlobSyncDomain,
-  auth: AuthContext
-): void {
-  blobDomainInfoCache.invalidate(getDomainFetchCacheKey(auth, domain));
-}
-
 function createWriteSyncVersion(
   domain: CloudSyncDomain,
   baseMetadata: CloudSyncDomainMetadata | null | undefined
@@ -1672,85 +1657,6 @@ async function prepareRedisStateDomainWrite(
   };
 }
 
-async function uploadRedisStateDomain(
-  domain: RedisSyncDomain,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
-  const preparedWrite = await prepareRedisStateDomainWrite(domain, _auth);
-  let data = preparedWrite.payload.data as AnySnapshotData;
-  let syncVersion = preparedWrite.payload.syncVersion as CloudSyncWriteVersion;
-  let updatedAt = preparedWrite.payload.updatedAt as string;
-  const version = preparedWrite.payload.version as number;
-
-  const sendStateUpload = async (
-    nextData: AnySnapshotData,
-    nextUpdatedAt: string,
-    nextSyncVersion: CloudSyncWriteVersion
-  ) =>
-    abortableFetch(getApiUrl("/api/sync/state"), {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeaders(),
-      },
-      body: JSON.stringify({
-        domain,
-        data: nextData,
-        updatedAt: nextUpdatedAt,
-        version,
-        syncVersion: nextSyncVersion,
-      }),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-
-  let response = await sendStateUpload(
-    data,
-    updatedAt,
-    syncVersion as CloudSyncWriteVersion
-  );
-
-  if (response.status === 409) {
-    invalidateRedisStateDomainSnapshotCache(domain, _auth);
-    const latestRemote = await fetchRedisStateDomainSnapshot(domain, _auth);
-    if (latestRemote?.data) {
-      const merged = mergeRedisStateConflict(
-        domain,
-        (await createCloudSyncEnvelope(domain)).data,
-        latestRemote.data,
-        updatedAt,
-        latestRemote.metadata.updatedAt
-      );
-      if (merged) {
-        data = merged;
-        updatedAt = new Date().toISOString();
-        syncVersion = createWriteSyncVersion(domain, latestRemote.metadata);
-        response = await sendStateUpload(
-          merged,
-          updatedAt,
-          syncVersion
-        );
-      }
-    }
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || `Failed to sync ${domain} state`
-    );
-  }
-
-  const result = (await response.json()) as { metadata?: CloudSyncDomainMetadata };
-  if (!result.metadata) {
-    throw new Error("State sync response was invalid.");
-  }
-
-  await preparedWrite.onCommitted?.(result.metadata);
-  return result.metadata;
-}
-
 export async function applyResolvedRedisUploadLocally(
   domain: RedisSyncDomain,
   data: AnySnapshotData,
@@ -1768,7 +1674,7 @@ async function fetchRedisStateDomainSnapshot(
   return redisStateDomainSnapshotCache.get(
     getDomainFetchCacheKey(_auth, domain),
     async () => {
-      const result = await fetchLegacyRedisDomainSnapshot(domain);
+      const result = await fetchRedisDomainSnapshot(domain);
       if (!result) {
         return null;
       }
@@ -1787,8 +1693,7 @@ async function fetchBlobDomainInfo(
 ): Promise<BlobDomainInfoResponse | null> {
   return blobDomainInfoCache.get(
     getDomainFetchCacheKey(_auth, domain),
-    async () =>
-      (await fetchLegacyBlobDomainPayload(domain)) as BlobDomainInfoResponse | null
+    async () => (await fetchBlobDomainPayload(domain)) as BlobDomainInfoResponse | null
   );
 }
 
@@ -1797,17 +1702,7 @@ async function requestBlobUploadInstruction(
   _auth: AuthContext,
   itemKey?: string
 ): Promise<StorageUploadInstruction> {
-  return requestLegacyBlobUploadInstruction(domain, itemKey);
-}
-
-async function saveBlobDomainMetadata(
-  domain: BlobSyncDomain,
-  payload: Record<string, unknown>,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
-  const metadata = await saveLegacyBlobDomainMetadata(payload);
-  invalidateBlobDomainInfoCache(domain, _auth);
-  return metadata;
+  return requestBlobUploadInstructionFromTransport(domain, itemKey);
 }
 
 async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
@@ -1953,31 +1848,6 @@ async function uploadIndividualBlobDomain(
   };
 }
 
-async function uploadBlobDomain(
-  domain: BlobSyncDomain,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
-  const preparedWrite = isIndividualBlobSyncDomain(domain)
-    ? await uploadIndividualBlobDomain(domain, _auth)
-    : await uploadLegacyBlobDomain(domain, _auth);
-  const metadata = await saveBlobDomainMetadata(domain, preparedWrite.payload, _auth);
-  await preparedWrite.onCommitted?.(metadata);
-  return metadata;
-}
-
-export async function uploadCloudSyncDomain(
-  domain: CloudSyncDomain,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
-  if (isRedisSyncDomain(domain)) {
-    return uploadRedisStateDomain(domain, _auth);
-  }
-  if (isBlobSyncDomain(domain)) {
-    return uploadBlobDomain(domain, _auth);
-  }
-  throw new Error(`Unknown sync domain: ${domain}`);
-}
-
 export async function prepareCloudSyncDomainWrite(
   domain: CloudSyncDomain,
   _auth: AuthContext
@@ -1991,33 +1861,6 @@ export async function prepareCloudSyncDomainWrite(
       : uploadLegacyBlobDomain(domain, _auth);
   }
   throw new Error(`Unknown sync domain: ${domain}`);
-}
-
-async function downloadRedisStateDomain(
-  domain: RedisSyncDomain,
-  _auth: AuthContext,
-  options?: DownloadCloudSyncOptions
-): Promise<DownloadCloudSyncResult> {
-  const result = await fetchRedisStateDomainSnapshot(domain, _auth);
-  if (!result) {
-    throw new Error(`No ${domain} state found`);
-  }
-
-  if (options?.shouldApply && !options.shouldApply(result.metadata)) {
-    return {
-      metadata: result.metadata,
-      applied: false,
-    };
-  }
-
-  return applyDownloadedCloudSyncDomainPayload(
-    domain,
-    {
-      data: result.data,
-      metadata: result.metadata,
-    },
-    options
-  );
 }
 
 export async function applyDownloadedCloudSyncDomainPayload(
@@ -2127,25 +1970,6 @@ export async function applyDownloadedCloudSyncDomainPayload(
   };
 }
 
-async function downloadBlobDomain(
-  domain: BlobSyncDomain,
-  _auth: AuthContext,
-  options?: DownloadCloudSyncOptions
-): Promise<DownloadCloudSyncResult> {
-  const data = await fetchBlobDomainInfo(domain, _auth);
-  if (!data?.metadata) {
-    throw new Error("Sync download response was invalid.");
-  }
-
-  return applyDownloadedCloudSyncDomainPayload(
-    domain,
-    data.mode === "individual"
-      ? (data as BlobIndividualDomainDownloadPayload)
-      : (data as BlobLegacyDomainDownloadPayload),
-    options
-  );
-}
-
 /**
  * True when local IndexedDB is out of sync with the remote per-item manifest:
  * missing blob downloads or local orphans to remove, even if domain
@@ -2184,11 +2008,24 @@ export async function downloadAndApplyCloudSyncDomain(
   _auth: AuthContext,
   options?: DownloadCloudSyncOptions
 ): Promise<DownloadCloudSyncResult> {
-  if (isRedisSyncDomain(domain)) {
-    return downloadRedisStateDomain(domain, _auth, options);
+  const result = isRedisSyncDomain(domain)
+    ? await fetchRedisStateDomainSnapshot(domain, _auth)
+    : await fetchBlobDomainInfo(domain as BlobSyncDomain, _auth);
+
+  if (!result?.metadata) {
+    throw new Error(`No ${domain} sync data found`);
   }
-  if (isBlobSyncDomain(domain)) {
-    return downloadBlobDomain(domain, _auth, options);
-  }
-  throw new Error(`Unknown sync domain: ${domain}`);
+
+  return applyDownloadedCloudSyncDomainPayload(
+    domain,
+    (isRedisSyncDomain(domain)
+      ? {
+          data: (result as RedisStateDomainSnapshot).data,
+          metadata: result.metadata,
+        }
+      : ((result as BlobDomainInfoResponse).mode === "individual"
+          ? (result as BlobIndividualDomainDownloadPayload)
+          : (result as BlobLegacyDomainDownloadPayload))) as CloudSyncDomainDownloadPayload,
+    options
+  );
 }
