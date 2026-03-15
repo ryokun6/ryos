@@ -35,12 +35,14 @@ class MemoryStorage implements Storage {
 }
 
 type StoreModule = typeof import("../src/stores/useCloudSyncStore");
+type IpodStoreModule = typeof import("../src/stores/useIpodStore");
 
 const browserGlobals = globalThis as typeof globalThis & {
   localStorage?: Storage;
 };
 
 let storeModulePromise: Promise<StoreModule> | null = null;
+let ipodStoreModulePromise: Promise<IpodStoreModule> | null = null;
 
 async function getStoreModule(): Promise<StoreModule> {
   if (!storeModulePromise) {
@@ -48,6 +50,14 @@ async function getStoreModule(): Promise<StoreModule> {
   }
 
   return storeModulePromise;
+}
+
+async function getIpodStoreModule(): Promise<IpodStoreModule> {
+  if (!ipodStoreModulePromise) {
+    ipodStoreModulePromise = import("../src/stores/useIpodStore");
+  }
+
+  return ipodStoreModulePromise;
 }
 
 beforeAll(() => {
@@ -99,6 +109,67 @@ describe("cloud sync remote apply guard", () => {
 
     endApplyingRemoteDomain("songs");
     expect(isApplyingRemoteDomain("songs")).toBe(false);
+  });
+
+  test("suppresses song subscriber churn during remote apply", async () => {
+    const { useIpodStore } = await getIpodStoreModule();
+    let localUploadSignals = 0;
+
+    useIpodStore.setState({
+      tracks: [],
+      libraryState: "loaded",
+      lastKnownVersion: 1,
+    });
+
+    const unsubscribe = useIpodStore.subscribe((state, prevState) => {
+      if (
+        state.tracks !== prevState.tracks ||
+        state.libraryState !== prevState.libraryState ||
+        state.lastKnownVersion !== prevState.lastKnownVersion
+      ) {
+        if (isApplyingRemoteDomain("songs")) return;
+        localUploadSignals += 1;
+      }
+    });
+
+    try {
+      beginApplyingRemoteDomain("songs");
+      useIpodStore.setState({
+        tracks: [
+          {
+            id: "remote-song-1",
+            url: "https://www.youtube.com/watch?v=remote-song-1",
+            title: "Remote Song",
+          },
+        ],
+        libraryState: "loaded",
+        lastKnownVersion: 2,
+      });
+      endApplyingRemoteDomain("songs");
+
+      expect(localUploadSignals).toBe(0);
+
+      useIpodStore.setState({
+        tracks: [
+          {
+            id: "remote-song-1",
+            url: "https://www.youtube.com/watch?v=remote-song-1",
+            title: "Remote Song",
+          },
+          {
+            id: "local-song-2",
+            url: "https://www.youtube.com/watch?v=local-song-2",
+            title: "Local Song",
+          },
+        ],
+        lastKnownVersion: 3,
+      });
+
+      expect(localUploadSignals).toBe(1);
+    } finally {
+      unsubscribe();
+      endApplyingRemoteDomain("songs");
+    }
   });
 });
 
