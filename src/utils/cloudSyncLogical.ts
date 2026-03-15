@@ -70,6 +70,15 @@ export function getLogicalCloudSyncDomainPhysicalParts(
   return LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS[domain];
 }
 
+export function isLogicalCloudSyncDomainEnabled(
+  isPhysicalDomainEnabled: (domain: CloudSyncDomain) => boolean,
+  domain: LogicalCloudSyncDomain
+): boolean {
+  return getLogicalCloudSyncDomainPhysicalParts(domain).some((partDomain) =>
+    isPhysicalDomainEnabled(partDomain)
+  );
+}
+
 export function getLogicalCloudSyncDomainForPhysical(
   domain: CloudSyncDomain
 ): LogicalCloudSyncDomain {
