@@ -2,9 +2,11 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import {
   applyDownloadedCloudSyncDomainPayload,
-  uploadCloudSyncDomain,
+  getSyncSessionId,
+  prepareCloudSyncDomainWrite,
   type BlobIndividualDomainDownloadPayload,
   type BlobLegacyDomainDownloadPayload,
+  type PreparedCloudSyncDomainWrite,
   type RedisStateDomainDownloadPayload,
 } from "@/utils/cloudSync";
 import {
@@ -86,19 +88,64 @@ export async function uploadLogicalCloudSyncDomain(
   auth: AuthContext,
   partDomains: CloudSyncDomain[] = getLogicalCloudSyncDomainPhysicalParts(domain)
 ): Promise<LogicalCloudSyncTransferResult> {
-  const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
   const requestedPartDomains = new Set(partDomains);
+  const preparedWrites: Partial<Record<CloudSyncDomain, PreparedCloudSyncDomainWrite>> = {};
+  const writes: Partial<Record<CloudSyncDomain, Record<string, unknown>>> = {};
 
   for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
     if (!requestedPartDomains.has(partDomain)) {
       continue;
     }
-    const metadata = await uploadCloudSyncDomain(partDomain, auth);
+    const preparedWrite = await prepareCloudSyncDomainWrite(partDomain, auth);
+    preparedWrites[partDomain] = preparedWrite;
+    writes[partDomain] = preparedWrite.payload;
+  }
+
+  const response = await abortableFetch(
+    getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Sync-Session-Id": getSyncSessionId(),
+      },
+      body: JSON.stringify({ writes }),
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      (errorData as { error?: string }).error ||
+        `Failed to upload logical sync domain ${domain}`
+    );
+  }
+
+  const result = (await response.json()) as {
+    metadata?: LogicalCloudSyncMetadataMap[LogicalCloudSyncDomain];
+    writes?: Partial<
+      Record<
+        CloudSyncDomain,
+        { metadata?: CloudSyncDomainMetadata | null }
+      >
+    >;
+  };
+
+  const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
+  for (const partDomain of partDomains) {
+    const metadata = result.writes?.[partDomain]?.metadata;
+    if (!metadata) {
+      continue;
+    }
     partMetadata[partDomain] = metadata;
+    await preparedWrites[partDomain]?.onCommitted?.(metadata);
   }
 
   return {
-    metadata: aggregatePartMetadata(domain, partMetadata),
+    metadata: result.metadata || aggregatePartMetadata(domain, partMetadata),
     partMetadata,
     applied: false,
   };

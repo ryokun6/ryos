@@ -196,6 +196,12 @@ interface DownloadCloudSyncOptions {
   shouldApply?: (metadata: CloudSyncDomainMetadata) => boolean;
 }
 
+export interface PreparedCloudSyncDomainWrite {
+  domain: CloudSyncDomain;
+  payload: Record<string, unknown>;
+  onCommitted?: (metadata: CloudSyncDomainMetadata) => Promise<void> | void;
+}
+
 export interface RedisStateDomainDownloadPayload {
   data: unknown;
   metadata: CloudSyncDomainMetadata;
@@ -1674,10 +1680,10 @@ function mergeRedisStateConflict(
   }
 }
 
-async function uploadRedisStateDomain(
+async function prepareRedisStateDomainWrite(
   domain: RedisSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const envelope = await createCloudSyncEnvelope(domain);
   let data = envelope.data;
   let baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
@@ -1697,10 +1703,39 @@ async function uploadRedisStateDomain(
     }
   }
 
+  return {
+    domain,
+    payload: {
+      domain,
+      data,
+      updatedAt: envelope.updatedAt,
+      version: envelope.version,
+      syncVersion: createWriteSyncVersion(domain, baseMetadata),
+    },
+    onCommitted: async (metadata) => {
+      cacheRedisStateDomainSnapshot(domain, _auth, {
+        data,
+        metadata,
+      });
+      await applyResolvedRedisUploadLocally(domain, data, metadata.updatedAt);
+    },
+  };
+}
+
+async function uploadRedisStateDomain(
+  domain: RedisSyncDomain,
+  _auth: AuthContext
+): Promise<CloudSyncDomainMetadata> {
+  const preparedWrite = await prepareRedisStateDomainWrite(domain, _auth);
+  let data = preparedWrite.payload.data as AnySnapshotData;
+  let syncVersion = preparedWrite.payload.syncVersion as CloudSyncWriteVersion;
+  let updatedAt = preparedWrite.payload.updatedAt as string;
+  const version = preparedWrite.payload.version as number;
+
   const sendStateUpload = async (
     nextData: AnySnapshotData,
     nextUpdatedAt: string,
-    nextBaseMetadata: CloudSyncDomainMetadata | null | undefined
+    nextSyncVersion: CloudSyncWriteVersion
   ) =>
     abortableFetch(getApiUrl("/api/sync/state"), {
       method: "PUT",
@@ -1712,15 +1747,19 @@ async function uploadRedisStateDomain(
         domain,
         data: nextData,
         updatedAt: nextUpdatedAt,
-        version: envelope.version,
-        syncVersion: createWriteSyncVersion(domain, nextBaseMetadata),
+        version,
+        syncVersion: nextSyncVersion,
       }),
       timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
 
-  let response = await sendStateUpload(data, envelope.updatedAt, baseMetadata);
+  let response = await sendStateUpload(
+    data,
+    updatedAt,
+    syncVersion as CloudSyncWriteVersion
+  );
 
   if (response.status === 409) {
     invalidateRedisStateDomainSnapshotCache(domain, _auth);
@@ -1728,17 +1767,19 @@ async function uploadRedisStateDomain(
     if (latestRemote?.data) {
       const merged = mergeRedisStateConflict(
         domain,
-        envelope.data,
+        (await createCloudSyncEnvelope(domain)).data,
         latestRemote.data,
-        envelope.updatedAt,
+        updatedAt,
         latestRemote.metadata.updatedAt
       );
       if (merged) {
         data = merged;
+        updatedAt = new Date().toISOString();
+        syncVersion = createWriteSyncVersion(domain, latestRemote.metadata);
         response = await sendStateUpload(
           merged,
-          new Date().toISOString(),
-          latestRemote.metadata
+          updatedAt,
+          syncVersion
         );
       }
     }
@@ -1756,11 +1797,7 @@ async function uploadRedisStateDomain(
     throw new Error("State sync response was invalid.");
   }
 
-  cacheRedisStateDomainSnapshot(domain, _auth, {
-    data,
-    metadata: result.metadata,
-  });
-  await applyResolvedRedisUploadLocally(domain, data, result.metadata.updatedAt);
+  await preparedWrite.onCommitted?.(result.metadata);
   return result.metadata;
 }
 
@@ -1940,7 +1977,7 @@ async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
 async function uploadLegacyBlobDomain(
   domain: BlobSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const envelope = await createCloudSyncEnvelope(domain);
   const remoteInfo = await fetchBlobDomainInfo(domain, _auth).catch(() => null);
   const dataItems = Array.isArray(envelope.data) ? envelope.data.length : "N/A";
@@ -1954,9 +1991,9 @@ async function uploadLegacyBlobDomain(
     uploadInstruction
   );
 
-  return saveBlobDomainMetadata(
+  return {
     domain,
-    {
+    payload: {
       domain,
       storageUrl: uploadResult.storageUrl,
       updatedAt: envelope.updatedAt,
@@ -1967,14 +2004,13 @@ async function uploadLegacyBlobDomain(
         remoteInfo?.metadata || useCloudSyncStore.getState().remoteMetadata[domain]
       ),
     },
-    _auth
-  );
+  };
 }
 
 async function uploadIndividualBlobDomain(
   domain: IndividualBlobSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const updatedAt = new Date().toISOString();
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
   const deletedItems = pruneDeletedKeysForExistingRecords(domain, localRecords);
@@ -2046,9 +2082,9 @@ async function uploadIndividualBlobDomain(
   console.log(
     `[CloudSync:blob] ${domain}: uploaded ${uploadedCount}/${uploadPlan.itemsToUpload.length} individual items`
   );
-  const metadata = await saveBlobDomainMetadata(
+  return {
     domain,
-    {
+    payload: {
       domain,
       updatedAt,
       version: AUTO_SYNC_SNAPSHOT_VERSION,
@@ -2060,21 +2096,22 @@ async function uploadIndividualBlobDomain(
         remoteInfo?.metadata || useCloudSyncStore.getState().remoteMetadata[domain]
       ),
     },
-    _auth
-  );
-  setIndividualBlobKnownItems(domain, nextKnownItems);
-  return metadata;
+    onCommitted: async () => {
+      setIndividualBlobKnownItems(domain, nextKnownItems);
+    },
+  };
 }
 
 async function uploadBlobDomain(
   domain: BlobSyncDomain,
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  if (isIndividualBlobSyncDomain(domain)) {
-    return uploadIndividualBlobDomain(domain, _auth);
-  }
-
-  return uploadLegacyBlobDomain(domain, _auth);
+  const preparedWrite = isIndividualBlobSyncDomain(domain)
+    ? await uploadIndividualBlobDomain(domain, _auth)
+    : await uploadLegacyBlobDomain(domain, _auth);
+  const metadata = await saveBlobDomainMetadata(domain, preparedWrite.payload, _auth);
+  await preparedWrite.onCommitted?.(metadata);
+  return metadata;
 }
 
 export async function uploadCloudSyncDomain(
@@ -2086,6 +2123,21 @@ export async function uploadCloudSyncDomain(
   }
   if (isBlobSyncDomain(domain)) {
     return uploadBlobDomain(domain, _auth);
+  }
+  throw new Error(`Unknown sync domain: ${domain}`);
+}
+
+export async function prepareCloudSyncDomainWrite(
+  domain: CloudSyncDomain,
+  _auth: AuthContext
+): Promise<PreparedCloudSyncDomainWrite> {
+  if (isRedisSyncDomain(domain)) {
+    return prepareRedisStateDomainWrite(domain, _auth);
+  }
+  if (isBlobSyncDomain(domain)) {
+    return isIndividualBlobSyncDomain(domain)
+      ? uploadIndividualBlobDomain(domain, _auth)
+      : uploadLegacyBlobDomain(domain, _auth);
   }
   throw new Error(`Unknown sync domain: ${domain}`);
 }
