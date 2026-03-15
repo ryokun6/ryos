@@ -15,6 +15,7 @@ import {
 
 interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
+  lastFetchedAt: string | null;
   lastAppliedRemoteAt: string | null;
   lastKnownServerVersion: number | null;
   isUploading: boolean;
@@ -120,6 +121,7 @@ interface CloudSyncStoreState {
 function createInitialDomainStatus(): CloudSyncDomainStatusMap {
   const empty = (): CloudSyncDomainStatus => ({
     lastUploadedAt: null,
+    lastFetchedAt: null,
     lastAppliedRemoteAt: null,
     lastKnownServerVersion: null,
     isUploading: false,
@@ -142,7 +144,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 7;
+const STORE_VERSION = 8;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -288,7 +290,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             [domain]: {
               ...state.domainStatus[domain],
               isDownloading: false,
-              lastAppliedRemoteAt:
+              lastFetchedAt:
                 typeof metadata === "string" ? metadata : metadata.updatedAt,
               lastKnownServerVersion:
                 (typeof metadata === "string"
@@ -427,6 +429,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             domain,
             {
               lastUploadedAt: status.lastUploadedAt,
+              lastFetchedAt: status.lastFetchedAt,
               lastAppliedRemoteAt: status.lastAppliedRemoteAt,
               lastKnownServerVersion: status.lastKnownServerVersion,
               isUploading: false,
@@ -446,6 +449,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             if (saved) {
               domainStatus[domain] = {
                 lastUploadedAt: saved.lastUploadedAt ?? null,
+                lastFetchedAt: saved.lastFetchedAt ?? null,
                 lastAppliedRemoteAt: saved.lastAppliedRemoteAt ?? null,
                 lastKnownServerVersion: saved.lastKnownServerVersion ?? null,
                 isUploading: false,
@@ -467,6 +471,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               if (!domainStatus[domain].lastUploadedAt) {
                 domainStatus[domain] = {
                   lastUploadedAt: legacyFilesStatus.lastUploadedAt ?? null,
+                  lastFetchedAt: null,
                   lastAppliedRemoteAt:
                     legacyFilesStatus.lastAppliedRemoteAt ?? null,
                   lastKnownServerVersion:

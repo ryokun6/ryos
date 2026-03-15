@@ -626,6 +626,7 @@ export function useAutoCloudSync() {
             ? `[CloudSync] Realtime reconcile individual blobs: ${domain}`
             : `[CloudSync] Realtime download: ${domain}`
         );
+        syncState.markDownloadStart(domain);
         const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
           username,
           isAuthenticated,
@@ -653,6 +654,9 @@ export function useAutoCloudSync() {
         useCloudSyncStore
           .getState()
           .updateRemoteMetadataForDomain(domain, downloadResult.metadata);
+        useCloudSyncStore
+          .getState()
+          .markDownloadSuccess(domain, downloadResult.metadata);
 
         if (downloadResult.applied) {
           useCloudSyncStore
@@ -666,6 +670,9 @@ export function useAutoCloudSync() {
         }
       } catch (error) {
         console.error(`[CloudSync] Targeted download ${domain} failed:`, error);
+        const message =
+          error instanceof Error ? error.message : `Failed to download ${domain}.`;
+        useCloudSyncStore.getState().markDownloadFailure(domain, message);
         remoteApplySuppressUntilRef.current[domain] = 0;
       } finally {
         realtimeInFlightRef.current.delete(domain);
@@ -775,40 +782,51 @@ export function useAutoCloudSync() {
           continue;
         }
 
-        const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
-          username,
-          isAuthenticated,
-        }, {
-          shouldApply: (metadata) => {
-            if (reconcileIndividualBlobs) return true;
-            const latestLocalChangeAt =
-              getLatestLocalChangeAt(domain) || lastLocalChangeAtRef.current[domain];
-            const currentSyncState = useCloudSyncStore.getState();
-            const currentDomainStatus = currentSyncState.domainStatus[domain];
+        syncState.markDownloadStart(domain);
+        try {
+          const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
+            username,
+            isAuthenticated,
+          }, {
+            shouldApply: (metadata) => {
+              if (reconcileIndividualBlobs) return true;
+              const latestLocalChangeAt =
+                getLatestLocalChangeAt(domain) || lastLocalChangeAtRef.current[domain];
+              const currentSyncState = useCloudSyncStore.getState();
+              const currentDomainStatus = currentSyncState.domainStatus[domain];
 
-            return shouldApplyRemoteUpdate({
-              remoteUpdatedAt: metadata.updatedAt,
-              remoteSyncVersion: metadata.syncVersion,
-              lastAppliedRemoteAt: currentDomainStatus.lastAppliedRemoteAt,
-              lastUploadedAt: currentDomainStatus.lastUploadedAt,
-              lastLocalChangeAt: latestLocalChangeAt,
-              hasPendingUpload:
-                Boolean(uploadTimersRef.current[domain]) ||
-                currentDomainStatus.isUploading,
-              lastKnownServerVersion: currentDomainStatus.lastKnownServerVersion,
-            });
-          },
-        });
-        useCloudSyncStore
-          .getState()
-          .updateRemoteMetadataForDomain(domain, downloadResult.metadata);
-
-        if (downloadResult.applied) {
+              return shouldApplyRemoteUpdate({
+                remoteUpdatedAt: metadata.updatedAt,
+                remoteSyncVersion: metadata.syncVersion,
+                lastAppliedRemoteAt: currentDomainStatus.lastAppliedRemoteAt,
+                lastUploadedAt: currentDomainStatus.lastUploadedAt,
+                lastLocalChangeAt: latestLocalChangeAt,
+                hasPendingUpload:
+                  Boolean(uploadTimersRef.current[domain]) ||
+                  currentDomainStatus.isUploading,
+                lastKnownServerVersion: currentDomainStatus.lastKnownServerVersion,
+              });
+            },
+          });
           useCloudSyncStore
             .getState()
-            .markRemoteApplied(domain, downloadResult.metadata);
-          lastLocalChangeAtRef.current[domain] = getLatestLocalChangeAt(domain);
-          appliedDomains.push(domain);
+            .updateRemoteMetadataForDomain(domain, downloadResult.metadata);
+          useCloudSyncStore
+            .getState()
+            .markDownloadSuccess(domain, downloadResult.metadata);
+
+          if (downloadResult.applied) {
+            useCloudSyncStore
+              .getState()
+              .markRemoteApplied(domain, downloadResult.metadata);
+            lastLocalChangeAtRef.current[domain] = getLatestLocalChangeAt(domain);
+            appliedDomains.push(domain);
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : `Failed to download ${domain}.`;
+          useCloudSyncStore.getState().markDownloadFailure(domain, message);
+          throw error;
         }
       }
 
