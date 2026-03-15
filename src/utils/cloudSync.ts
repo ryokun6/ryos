@@ -1389,13 +1389,6 @@ function cacheRedisStateDomainSnapshot(
   redisStateDomainSnapshotCache.set(getDomainFetchCacheKey(auth, domain), value);
 }
 
-function invalidateRedisStateDomainSnapshotCache(
-  domain: RedisSyncDomain,
-  auth: AuthContext
-): void {
-  redisStateDomainSnapshotCache.invalidate(getDomainFetchCacheKey(auth, domain));
-}
-
 function createWriteSyncVersion(
   domain: CloudSyncDomain,
   baseMetadata: CloudSyncDomainMetadata | null | undefined
