@@ -16,25 +16,22 @@ import {
   type RedisSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import {
-  getBlobDomainDownloadPayload,
   readAutoSyncMetadata,
-  saveBlobDomainMetadata,
-  type BlobDomainDownloadPayload,
   type SaveAutoSyncMetadataBody,
-  type SaveBlobDomainResult,
 } from "./auto.js";
 import {
-  getRedisStateDomainPayload,
-  putRedisStateDomain,
   readStateMetaMap,
-  type PutRedisStateDomainResult,
   type PutStateBody,
-  type RedisStateDomainPayload,
 } from "./state.js";
+import {
+  extractPhysicalSyncDomainMetadata,
+  getPhysicalSyncDomainPayload,
+  putPhysicalSyncDomain,
+  type PhysicalSyncDomainPayload,
+  type PutPhysicalSyncDomainResult,
+} from "./_physical.js";
 
-export type LogicalSyncPartPayload =
-  | RedisStateDomainPayload
-  | BlobDomainDownloadPayload;
+export type LogicalSyncPartPayload = PhysicalSyncDomainPayload;
 
 export interface LogicalDomainDownloadPayload {
   ok: true;
@@ -55,7 +52,7 @@ export type PutLogicalDomainResult =
       writes: Partial<
         Record<
           CloudSyncDomain,
-          PutRedisStateDomainResult | SaveBlobDomainResult
+          PutPhysicalSyncDomainResult
         >
       >;
     }
@@ -146,11 +143,7 @@ export async function getLogicalCloudSyncDomainPayload(
 
   for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
     if (isRedisSyncDomain(partDomain)) {
-      const payload = await getRedisStateDomainPayload(
-        redis,
-        username,
-        partDomain
-      );
+      const payload = await getPhysicalSyncDomainPayload(redis, username, partDomain);
       if (payload) {
         parts[partDomain] = payload;
       }
@@ -158,11 +151,7 @@ export async function getLogicalCloudSyncDomainPayload(
     }
 
     if (isBlobSyncDomain(partDomain)) {
-      const payload = await getBlobDomainDownloadPayload(
-        redis,
-        username,
-        partDomain
-      );
+      const payload = await getPhysicalSyncDomainPayload(redis, username, partDomain);
       if (payload) {
         parts[partDomain] = payload;
       }
@@ -221,7 +210,7 @@ export async function putLogicalCloudSyncDomain(
   }
 
   const results: Partial<
-    Record<CloudSyncDomain, PutRedisStateDomainResult | SaveBlobDomainResult>
+    Record<CloudSyncDomain, PutPhysicalSyncDomainResult>
   > = {};
 
   for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(logicalDomain)) {
@@ -230,19 +219,13 @@ export async function putLogicalCloudSyncDomain(
       continue;
     }
 
-    const result = isRedisSyncDomain(partDomain)
-      ? await putRedisStateDomain(
-          redis,
-          username,
-          write as PutStateBody,
-          sourceSessionId
-        )
-      : await saveBlobDomainMetadata(
-          redis,
-          username,
-          write as SaveAutoSyncMetadataBody,
-          sourceSessionId
-        );
+    const result = await putPhysicalSyncDomain(
+      redis,
+      username,
+      partDomain,
+      write,
+      sourceSessionId
+    );
 
     results[partDomain] = result;
 
