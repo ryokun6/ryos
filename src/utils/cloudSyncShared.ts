@@ -3,7 +3,6 @@ import {
   normalizeCloudSyncVersionState,
   type CloudSyncVersionState,
 } from "./cloudSyncVersion";
-import { writeDebugLog } from "./debugLog";
 
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
@@ -262,24 +261,6 @@ export function shouldApplyRemoteUpdate({
   const remoteServerVersion = getCloudSyncServerVersion(remoteSyncVersion);
   const remoteTime = parseCloudSyncTimestamp(remoteUpdatedAt);
 
-  // #region agent log
-  writeDebugLog({
-    hypothesisId: "A",
-    location: "src/utils/cloudSyncShared.ts:shouldApplyRemoteUpdate",
-    message: "Evaluating remote apply gate",
-    data: {
-      remoteUpdatedAt: remoteUpdatedAt ?? null,
-      remoteServerVersion,
-      lastAppliedRemoteAt: lastAppliedRemoteAt ?? null,
-      lastUploadedAt: lastUploadedAt ?? null,
-      lastLocalChangeAt: lastLocalChangeAt ?? null,
-      hasPendingUpload,
-      lastKnownServerVersion: lastKnownServerVersion ?? null,
-    },
-    timestamp: Date.now(),
-  });
-  // #endregion
-
   if (remoteServerVersion === 0 && remoteTime === 0) {
     return false;
   }
@@ -287,40 +268,12 @@ export function shouldApplyRemoteUpdate({
   if (
     hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
   ) {
-    // #region agent log
-    writeDebugLog({
-      hypothesisId: "D",
-      location: "src/utils/cloudSyncShared.ts:shouldApplyRemoteUpdate",
-      message: "Rejected remote apply due to unsynced local changes",
-      data: {
-        remoteUpdatedAt: remoteUpdatedAt ?? null,
-        lastUploadedAt: lastUploadedAt ?? null,
-        lastLocalChangeAt: lastLocalChangeAt ?? null,
-        hasPendingUpload,
-      },
-      timestamp: Date.now(),
-    });
-    // #endregion
     return false;
   }
 
   if (remoteServerVersion > 0) {
     const shouldApplyByVersion =
       remoteServerVersion > (lastKnownServerVersion || 0);
-
-    // #region agent log
-    writeDebugLog({
-      hypothesisId: "A",
-      location: "src/utils/cloudSyncShared.ts:shouldApplyRemoteUpdate",
-      message: "Version-based remote apply decision",
-      data: {
-        remoteServerVersion,
-        lastKnownServerVersion: lastKnownServerVersion || 0,
-        shouldApply: shouldApplyByVersion,
-      },
-      timestamp: Date.now(),
-    });
-    // #endregion
 
     return shouldApplyByVersion;
   }
@@ -330,23 +283,7 @@ export function shouldApplyRemoteUpdate({
     parseCloudSyncTimestamp(lastUploadedAt)
   );
 
-  const shouldApplyByTime = remoteTime > newestKnownLocalTime;
-
-  // #region agent log
-  writeDebugLog({
-    hypothesisId: "A",
-    location: "src/utils/cloudSyncShared.ts:shouldApplyRemoteUpdate",
-    message: "Timestamp-based remote apply decision",
-    data: {
-      remoteUpdatedAt: remoteUpdatedAt ?? null,
-      newestKnownLocalTime,
-      shouldApply: shouldApplyByTime,
-    },
-    timestamp: Date.now(),
-  });
-  // #endregion
-
-  return shouldApplyByTime;
+  return remoteTime > newestKnownLocalTime;
 }
 
 export function shouldDelaySettingsUploadForWallpaperSync({
