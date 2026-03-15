@@ -12,6 +12,7 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useStickiesStore } from "@/stores/useStickiesStore";
+import { areRomanizationSettingsEqual } from "@/types/lyrics";
 
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
@@ -840,7 +841,10 @@ export function useAutoCloudSync() {
           state.showLyrics !== prevState.showLyrics ||
           state.lyricsAlignment !== prevState.lyricsAlignment ||
           state.lyricsFont !== prevState.lyricsFont ||
-          state.romanization !== prevState.romanization ||
+          !areRomanizationSettingsEqual(
+            state.romanization,
+            prevState.romanization
+          ) ||
           state.lyricsTranslationLanguage !== prevState.lyricsTranslationLanguage ||
           state.theme !== prevState.theme ||
           state.lcdFilterOn !== prevState.lcdFilterOn

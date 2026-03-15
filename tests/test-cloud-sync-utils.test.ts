@@ -33,6 +33,7 @@ import {
   advanceCloudSyncVersion,
   assessCloudSyncWrite,
 } from "../src/utils/cloudSyncVersion";
+import { areRomanizationSettingsEqual } from "../src/types/lyrics";
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
@@ -698,6 +699,57 @@ describe("cloud sync shared helpers", () => {
     expect(merged.display.currentWallpaper).toBe("/wallpapers/local.jpg");
     expect(merged.audio.masterVolume).toBe(0.5);
     expect(merged.aiModel).toBe("gpt-4o-mini");
+  });
+
+  test("treats structurally equal romanization settings as unchanged", () => {
+    expect(
+      areRomanizationSettingsEqual(
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+        }
+      )
+    ).toBe(true);
+
+    expect(
+      areRomanizationSettingsEqual(
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: true,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        }
+      )
+    ).toBe(false);
   });
 
   test("restores legacy custom wallpapers only for first-time migration", () => {
