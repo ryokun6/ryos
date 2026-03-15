@@ -13,6 +13,7 @@ import {
   isIndividualBlobSyncDomain,
   normalizeCloudSyncMetadataMap,
   shouldApplyRemoteUpdate,
+  shouldDelaySettingsUploadForWallpaperSync,
 } from "../src/utils/cloudSyncShared";
 import {
   filterDeletedFilePaths,
@@ -224,6 +225,60 @@ describe("cloud sync shared helpers", () => {
         lastKnownServerVersion: 2,
       })
     ).toBe(true);
+  });
+
+  test("delays settings upload until an active custom wallpaper blob syncs", () => {
+    expect(
+      shouldDelaySettingsUploadForWallpaperSync({
+        currentWallpaper: "indexeddb://wallpaper-1",
+        customWallpapersEnabled: true,
+        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
+        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersHasPendingUpload: false,
+        settingsQueuedAtMs: 1_000,
+        nowMs: 5_000,
+        maxWaitMs: 20_000,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldDelaySettingsUploadForWallpaperSync({
+        currentWallpaper: "indexeddb://wallpaper-1",
+        customWallpapersEnabled: true,
+        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersHasPendingUpload: true,
+        settingsQueuedAtMs: 1_000,
+        nowMs: 5_000,
+        maxWaitMs: 20_000,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldDelaySettingsUploadForWallpaperSync({
+        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
+        customWallpapersEnabled: true,
+        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
+        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersHasPendingUpload: false,
+        settingsQueuedAtMs: 1_000,
+        nowMs: 5_000,
+        maxWaitMs: 20_000,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldDelaySettingsUploadForWallpaperSync({
+        currentWallpaper: "indexeddb://wallpaper-1",
+        customWallpapersEnabled: true,
+        customWallpapersLastLocalChangeAt: "2026-03-15T04:00:10.000Z",
+        customWallpapersLastUploadedAt: "2026-03-15T04:00:00.000Z",
+        customWallpapersHasPendingUpload: false,
+        settingsQueuedAtMs: 1_000,
+        nowMs: 25_500,
+        maxWaitMs: 20_000,
+      })
+    ).toBe(false);
   });
 
   test("returns the newest timestamp in a group", () => {

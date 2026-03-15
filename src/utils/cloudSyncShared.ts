@@ -153,6 +153,17 @@ export interface ShouldApplyRemoteUpdateParams {
   lastKnownServerVersion?: number | null;
 }
 
+export interface ShouldDelaySettingsUploadForWallpaperSyncParams {
+  currentWallpaper: string | null | undefined;
+  customWallpapersEnabled?: boolean;
+  customWallpapersLastLocalChangeAt?: string | null;
+  customWallpapersLastUploadedAt?: string | null;
+  customWallpapersHasPendingUpload?: boolean;
+  settingsQueuedAtMs?: number;
+  nowMs?: number;
+  maxWaitMs?: number;
+}
+
 export const AUTO_SYNC_SNAPSHOT_VERSION = 1;
 
 /** Channel name for realtime sync notifications (Pusher/local). */
@@ -336,6 +347,41 @@ export function shouldApplyRemoteUpdate({
   // #endregion
 
   return shouldApplyByTime;
+}
+
+export function shouldDelaySettingsUploadForWallpaperSync({
+  currentWallpaper,
+  customWallpapersEnabled = false,
+  customWallpapersLastLocalChangeAt,
+  customWallpapersLastUploadedAt,
+  customWallpapersHasPendingUpload = false,
+  settingsQueuedAtMs,
+  nowMs = Date.now(),
+  maxWaitMs = 20_000,
+}: ShouldDelaySettingsUploadForWallpaperSyncParams): boolean {
+  if (
+    !customWallpapersEnabled ||
+    !currentWallpaper ||
+    !currentWallpaper.startsWith("indexeddb://")
+  ) {
+    return false;
+  }
+
+  if (
+    !hasUnsyncedLocalChanges(
+      customWallpapersLastLocalChangeAt,
+      customWallpapersLastUploadedAt,
+      customWallpapersHasPendingUpload
+    )
+  ) {
+    return false;
+  }
+
+  if (!settingsQueuedAtMs || settingsQueuedAtMs <= 0) {
+    return true;
+  }
+
+  return nowMs - settingsQueuedAtMs < maxWaitMs;
 }
 
 export function getLatestCloudSyncTimestamp(

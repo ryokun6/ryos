@@ -32,6 +32,7 @@ import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   FILE_SYNC_DOMAINS,
+  CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
   getLatestCloudSyncTimestamp,
 } from "@/utils/cloudSyncShared";
 import { useShallow } from "zustand/react/shallow";
@@ -787,7 +788,7 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = CLOUD_SYNC_DOMAINS.filter((domain) =>
+    const enabledDomains = CLOUD_SYNC_REMOTE_APPLY_DOMAINS.filter((domain) =>
       syncStore.isDomainEnabled(domain)
     );
 
