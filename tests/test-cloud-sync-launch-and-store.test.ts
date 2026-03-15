@@ -5,6 +5,8 @@ import {
   endApplyingRemoteDomain,
   isApplyingRemoteDomain,
 } from "../src/utils/cloudSyncRemoteApplyState";
+import { subscribeToCloudSyncDomainChanges } from "../src/utils/cloudSyncEvents";
+import { LyricsFont } from "../src/types/lyrics";
 
 class MemoryStorage implements Storage {
   private readonly map = new Map<string, string>();
@@ -169,6 +171,43 @@ describe("cloud sync remote apply guard", () => {
     } finally {
       unsubscribe();
       endApplyingRemoteDomain("songs");
+    }
+  });
+});
+
+describe("ipod lyrics settings sync events", () => {
+  test("emits settings domain change when lyrics font changes", async () => {
+    const { useIpodStore } = await getIpodStoreModule();
+    const domains: string[] = [];
+    const unsubscribe = subscribeToCloudSyncDomainChanges((domain) => {
+      domains.push(domain);
+    });
+
+    try {
+      useIpodStore.setState({ lyricsFont: LyricsFont.SerifRed });
+      useIpodStore.getState().setLyricsFont(LyricsFont.Gradient);
+
+      expect(domains).toEqual(["settings"]);
+      expect(useIpodStore.getState().lyricsFont).toBe(LyricsFont.Gradient);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  test("does not emit settings domain change when lyrics font stays the same", async () => {
+    const { useIpodStore } = await getIpodStoreModule();
+    let eventCount = 0;
+    const unsubscribe = subscribeToCloudSyncDomainChanges(() => {
+      eventCount += 1;
+    });
+
+    try {
+      useIpodStore.setState({ lyricsFont: LyricsFont.SerifRed });
+      useIpodStore.getState().setLyricsFont(LyricsFont.SerifRed);
+
+      expect(eventCount).toBe(0);
+    } finally {
+      unsubscribe();
     }
   });
 });
