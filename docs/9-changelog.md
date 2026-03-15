@@ -330,6 +330,56 @@ A summary of changes and updates to ryOS, organized by month.
 
 </details>
 
+## February 2025
+
+- Add Paint app with MacPaint-inspired UI, pattern-based drawing, selection tools, undo/redo, clipboard operations, and touch support.
+- Add Videos app with React Player, retro CD player UI, animated digit display, and fullscreen playback.
+- Add PC Emulator (Virtual PC) with classic games and DOSBox integration.
+- Migrate file system to IndexedDB with dedicated image storage for improved persistence and capacity.
+- Enhance TextEdit with document editing commands, markdown support, and file drag-and-drop.
+- Implement backup and restore functionality in Control Panels.
+
+<details>
+<summary>Minor changes (10)</summary>
+
+- Add advanced image filters and improved import scaling to Paint app.
+- Add CRT display mode with scanline effect to Videos app.
+- Enhance chat with nudge feature, urgent message highlighting, and markdown parsing.
+- Improve file management with restore and rename functionality in Finder.
+- Add MSN nudge sound effect and tooltip to audio input button.
+- Update AI assistant system prompt with expanded persona and app details.
+- Add chat typing synthesis preset selection to Control Panels.
+- Improve canvas touch and pointer event handling across Paint and other apps.
+- Add storage space tracking and UI improvements to Finder.
+- Enhance window management with improved resize delta calculations.
+
+</details>
+
+## January 2025
+
+- Launch ryOS with Soundboard app featuring audio recording, waveform visualization, and board management.
+- Add Internet Explorer app with Wayback Machine integration, favorites, and history navigation.
+- Add Chats app with AI assistant (Ryo), persistent message storage, and animated typing display.
+- Add TextEdit with Tiptap rich text editor, slash commands, and typography formatting.
+- Implement desktop environment with window management, drag/resize, minimize, and sound effects.
+- Add Minesweeper, Finder, and Control Panels apps with multi-app architecture and desktop icons.
+
+<details>
+<summary>Minor changes (10)</summary>
+
+- Add sound effects for window operations, buttons, menus, and chat interactions.
+- Implement chat typing synthesis with Tone.js and pentatonic scale.
+- Add audio transcription support for voice input in Chats and TextEdit.
+- Improve mobile responsiveness with touch support, swipe navigation, and adaptive window sizing.
+- Add SEO meta tags, favicon, and Geneva font for classic Mac aesthetics.
+- Implement localStorage persistence for app state across sessions.
+- Add About This Computer dialog with dynamic memory usage visualization.
+- Add help and about dialogs with grid layout to all apps.
+- Enhance Internet Explorer with loading states, error handling, and favicon support.
+- Add emoji picker, wallpaper selection, and UI interaction sound effects.
+
+</details>
+
 ---
 
 *This changelog is automatically generated and summarized from git history. Last updated: 2026-03-15*
