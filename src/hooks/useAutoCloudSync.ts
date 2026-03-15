@@ -806,6 +806,23 @@ export function useAutoCloudSync() {
         state.libraryState !== prevState.libraryState ||
         state.lastKnownVersion !== prevState.lastKnownVersion
       ) {
+        if (state.tracks !== prevState.tracks) {
+          const currentIds = new Set(state.tracks.map((t) => t.id));
+          const prevIds = new Set(prevState.tracks.map((t) => t.id));
+          const removedIds = prevState.tracks
+            .map((t) => t.id)
+            .filter((id) => !currentIds.has(id));
+          const addedIds = state.tracks
+            .map((t) => t.id)
+            .filter((id) => !prevIds.has(id));
+          const syncStore = useCloudSyncStore.getState();
+          if (removedIds.length > 0) {
+            syncStore.markDeletedKeys("songTrackIds", removedIds);
+          }
+          if (addedIds.length > 0) {
+            syncStore.clearDeletedKeys("songTrackIds", addedIds);
+          }
+        }
         queueUpload("songs");
       }
     });

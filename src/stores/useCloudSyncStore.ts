@@ -28,6 +28,7 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "contactIds",
   "fileMetadataPaths",
   "customWallpaperKeys",
+  "songTrackIds",
 ] as const;
 
 export type CloudSyncDeletionBucket =
@@ -47,6 +48,7 @@ function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     contactIds: {},
     fileMetadataPaths: {},
     customWallpaperKeys: {},
+    songTrackIds: {},
   };
 }
 
