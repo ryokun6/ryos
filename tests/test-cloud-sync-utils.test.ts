@@ -30,11 +30,40 @@ import {
   mergeSettingsSnapshotData,
   shouldRestoreLegacyCustomWallpapers,
 } from "../src/utils/cloudSyncSettingsMerge";
+import type { SettingsSnapshotData } from "../src/utils/cloudSyncSettingsMerge";
 import {
   advanceCloudSyncVersion,
   assessCloudSyncWrite,
 } from "../src/utils/cloudSyncVersion";
 import { areRomanizationSettingsEqual } from "../src/types/lyrics";
+
+class MemoryStorage implements Storage {
+  private readonly map = new Map<string, string>();
+
+  get length(): number {
+    return this.map.size;
+  }
+
+  clear(): void {
+    this.map.clear();
+  }
+
+  getItem(key: string): string | null {
+    return this.map.get(key) ?? null;
+  }
+
+  key(index: number): string | null {
+    return Array.from(this.map.keys())[index] ?? null;
+  }
+
+  removeItem(key: string): void {
+    this.map.delete(key);
+  }
+
+  setItem(key: string, value: string): void {
+    this.map.set(key, value);
+  }
+}
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
@@ -752,6 +781,165 @@ describe("cloud sync shared helpers", () => {
     expect(merged.display.currentWallpaper).toBe("/wallpapers/local.jpg");
     expect(merged.audio.masterVolume).toBe(0.5);
     expect(merged.aiModel).toBe("gpt-4o-mini");
+  });
+
+  test("hydrates remote-winning settings sections locally after upload resolution", async () => {
+    const browserGlobals = globalThis as typeof globalThis & {
+      localStorage?: Storage;
+      document?: Document;
+      window?: Window & typeof globalThis;
+      fetch?: typeof fetch;
+    };
+    const originalLocalStorage = browserGlobals.localStorage;
+    const originalDocument = browserGlobals.document;
+    const originalWindow = browserGlobals.window;
+    const originalFetch = browserGlobals.fetch;
+
+    browserGlobals.localStorage = new MemoryStorage();
+    browserGlobals.document = {
+      documentElement: {
+        dataset: {},
+      },
+      visibilityState: "visible",
+      head: {
+        appendChild: () => undefined,
+      },
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      createTextNode: () => ({}),
+      createElement: () => ({
+        dataset: {},
+        styleSheet: null,
+        appendChild: () => undefined,
+        remove: () => undefined,
+        replaceWith: () => undefined,
+      }),
+    } as unknown as Document;
+    browserGlobals.window = {
+      AudioContext: class {} as typeof AudioContext,
+      document: browserGlobals.document,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    } as unknown as Window & typeof globalThis;
+    browserGlobals.fetch = (async () =>
+      new Response(JSON.stringify({ songs: [] }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })) as typeof fetch;
+
+    const { useThemeStore } = await import("../src/stores/useThemeStore");
+    const {
+      getSettingsSectionTimestampMap,
+      setSettingsSectionTimestamps,
+    } = await import("../src/utils/cloudSyncSettingsState");
+    const { applyResolvedRedisUploadLocally } = await import(
+      "../src/utils/cloudSync"
+    );
+
+    const localTimestamp = "2026-03-15T10:00:00.000Z";
+    const remoteThemeTimestamp = "2026-03-15T10:05:00.000Z";
+    const resolvedSnapshot: SettingsSnapshotData = {
+      theme: "macosx",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video",
+        showLyrics: true,
+        lyricsAlignment: "alternating",
+        lyricsFont: "serif-red",
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "ja",
+        theme: "classic",
+        lcdFilterOn: true,
+      },
+      dock: {
+        pinnedItems: [{ type: "app", id: "finder" }],
+        scale: 1,
+        hiding: false,
+        magnification: true,
+      },
+      dashboard: {
+        widgets: [],
+      },
+      sectionUpdatedAt: {
+        theme: remoteThemeTimestamp,
+        language: localTimestamp,
+        display: localTimestamp,
+        audio: localTimestamp,
+        aiModel: localTimestamp,
+        ipod: localTimestamp,
+        dock: localTimestamp,
+        dashboard: localTimestamp,
+      },
+    };
+
+    try {
+      useThemeStore.setState({ current: "system7" });
+      setSettingsSectionTimestamps({
+        theme: localTimestamp,
+        language: localTimestamp,
+        display: localTimestamp,
+        audio: localTimestamp,
+        aiModel: localTimestamp,
+        ipod: localTimestamp,
+        dock: localTimestamp,
+        dashboard: localTimestamp,
+      });
+
+      await applyResolvedRedisUploadLocally(
+        "settings",
+        resolvedSnapshot,
+        "2026-03-15T10:06:00.000Z"
+      );
+
+      expect(useThemeStore.getState().current).toBe("macosx");
+      expect(getSettingsSectionTimestampMap().theme).toBe(remoteThemeTimestamp);
+      expect(getSettingsSectionTimestampMap().language).toBe(localTimestamp);
+    } finally {
+      useThemeStore.setState({ current: "system7" });
+      browserGlobals.localStorage = originalLocalStorage;
+      browserGlobals.document = originalDocument;
+      browserGlobals.window = originalWindow;
+      browserGlobals.fetch = originalFetch;
+    }
   });
 
   test("treats structurally equal romanization settings as unchanged", () => {

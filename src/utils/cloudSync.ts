@@ -1701,7 +1701,18 @@ async function uploadRedisStateDomain(
     data,
     metadata: result.metadata,
   });
+  await applyResolvedRedisUploadLocally(domain, data, result.metadata.updatedAt);
   return result.metadata;
+}
+
+export async function applyResolvedRedisUploadLocally(
+  domain: RedisSyncDomain,
+  data: AnySnapshotData,
+  updatedAt: string
+): Promise<void> {
+  if (domain === "settings") {
+    await applySettingsSnapshot(data as SettingsSnapshotData, updatedAt);
+  }
 }
 
 async function fetchRedisStateDomainSnapshot(
