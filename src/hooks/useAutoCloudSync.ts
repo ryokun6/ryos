@@ -130,6 +130,24 @@ function createDomainNumberMap(initialValue: number): Record<CloudSyncDomain, nu
   };
 }
 
+function createDomainBooleanMap(
+  initialValue: boolean
+): Record<CloudSyncDomain, boolean> {
+  return {
+    settings: initialValue,
+    "files-metadata": initialValue,
+    "files-images": initialValue,
+    "files-trash": initialValue,
+    "files-applets": initialValue,
+    songs: initialValue,
+    videos: initialValue,
+    stickies: initialValue,
+    calendar: initialValue,
+    contacts: initialValue,
+    "custom-wallpapers": initialValue,
+  };
+}
+
 function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
   const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
@@ -207,6 +225,12 @@ export function useAutoCloudSync() {
   const uploadRetryCountRef = useRef<Record<CloudSyncDomain, number>>(
     createDomainNumberMap(0)
   );
+  const uploadInFlightRef = useRef<Record<CloudSyncDomain, boolean>>(
+    createDomainBooleanMap(false)
+  );
+  const pendingUploadAfterCurrentRef = useRef<Record<CloudSyncDomain, boolean>>(
+    createDomainBooleanMap(false)
+  );
   const checkInFlightRef = useRef(false);
   const lastVisibilityCheckRef = useRef(0);
   const wallpaperSeedDoneRef = useRef(false);
@@ -261,8 +285,20 @@ export function useAutoCloudSync() {
     async (domain: CloudSyncDomain) => {
       clearUploadTimer(domain);
 
+      if (uploadInFlightRef.current[domain]) {
+        if (!firstQueuedAtRef.current[domain]) {
+          firstQueuedAtRef.current[domain] = Date.now();
+        }
+        pendingUploadAfterCurrentRef.current[domain] = true;
+        console.log(
+          `[CloudSync] Upload ${domain} already in flight — coalescing follow-up sync`
+        );
+        return;
+      }
+
       if (!username || !isAuthenticated || !isDomainEnabled(domain)) {
         firstQueuedAtRef.current[domain] = 0;
+        pendingUploadAfterCurrentRef.current[domain] = false;
         return;
       }
 
@@ -306,6 +342,8 @@ export function useAutoCloudSync() {
       }
 
       firstQueuedAtRef.current[domain] = 0;
+      pendingUploadAfterCurrentRef.current[domain] = false;
+      uploadInFlightRef.current[domain] = true;
       syncState.markUploadStart(domain);
 
       try {
@@ -343,6 +381,23 @@ export function useAutoCloudSync() {
             void uploadDomain(domain);
           }, retryDelay);
         }
+      } finally {
+        uploadInFlightRef.current[domain] = false;
+
+        if (
+          pendingUploadAfterCurrentRef.current[domain] &&
+          username &&
+          isAuthenticated &&
+          isDomainEnabled(domain)
+        ) {
+          pendingUploadAfterCurrentRef.current[domain] = false;
+          console.log(
+            `[CloudSync] Re-running coalesced upload for ${domain}`
+          );
+          void uploadDomain(domain);
+        } else {
+          pendingUploadAfterCurrentRef.current[domain] = false;
+        }
       }
     },
     [isAuthenticated, clearUploadTimer, isDomainEnabled, username]
@@ -363,6 +418,19 @@ export function useAutoCloudSync() {
 
       if (!firstQueuedAtRef.current[domain]) {
         firstQueuedAtRef.current[domain] = now;
+      }
+
+      const syncState = useCloudSyncStore.getState();
+      if (
+        uploadInFlightRef.current[domain] ||
+        syncState.domainStatus[domain].isUploading
+      ) {
+        pendingUploadAfterCurrentRef.current[domain] = true;
+        clearUploadTimer(domain);
+        console.log(
+          `[CloudSync] queueUpload(${domain}) deferred: upload already in flight`
+        );
+        return;
       }
 
       const suppressUntil = remoteApplySuppressUntilRef.current[domain];
