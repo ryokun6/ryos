@@ -2,13 +2,13 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import {
   applyDownloadedCloudSyncDomainPayload,
-  getSyncSessionId,
   prepareCloudSyncDomainWrite,
   type BlobIndividualDomainDownloadPayload,
   type BlobLegacyDomainDownloadPayload,
   type PreparedCloudSyncDomainWrite,
   type RedisStateDomainDownloadPayload,
 } from "@/utils/cloudSync";
+import { getSyncSessionId } from "@/utils/cloudSyncSession";
 import {
   aggregateLogicalCloudSyncMetadata,
   getLogicalCloudSyncDomainPhysicalParts,

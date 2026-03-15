@@ -32,9 +32,9 @@ import {
 } from "@/utils/cloudSyncLocalChangeState";
 import {
   fetchCloudSyncMetadata,
-  getSyncSessionId,
   individualBlobDomainNeedsLocalReconcile,
 } from "@/utils/cloudSync";
+import { getSyncSessionId } from "@/utils/cloudSyncSession";
 import {
   downloadAndApplyLogicalCloudSyncDomain,
   uploadLogicalCloudSyncDomain,

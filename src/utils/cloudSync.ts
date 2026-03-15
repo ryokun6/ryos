@@ -50,6 +50,13 @@ import {
   getNextSyncClientVersion,
   getSyncClientId,
 } from "@/utils/cloudSyncClientState";
+import { getSyncSessionId } from "@/utils/cloudSyncSession";
+import {
+  fetchLegacyBlobDomainPayload,
+  fetchLegacyRedisDomainSnapshot,
+  requestLegacyBlobUploadInstruction,
+  saveLegacyBlobDomainMetadata,
+} from "@/utils/syncTransportClient";
 import type { CloudSyncWriteVersion } from "@/utils/cloudSyncVersion";
 import {
   filterDeletedIds,
@@ -91,19 +98,6 @@ type AuthContext = {
   username: string;
   isAuthenticated: boolean;
 };
-
-let _syncSessionId: string | null = null;
-
-/** Stable per-tab identifier used to skip self-originated realtime events. */
-export function getSyncSessionId(): string {
-  if (!_syncSessionId) {
-    _syncSessionId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-  return _syncSessionId;
-}
 
 interface StoreItem {
   [key: string]: unknown;
@@ -1774,36 +1768,9 @@ async function fetchRedisStateDomainSnapshot(
   return redisStateDomainSnapshotCache.get(
     getDomainFetchCacheKey(_auth, domain),
     async () => {
-      const response = await abortableFetch(
-        getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
-        {
-          method: "GET",
-          headers: authHeaders(),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (response.status === 404) {
+      const result = await fetchLegacyRedisDomainSnapshot(domain);
+      if (!result) {
         return null;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          (errorData as { error?: string }).error ||
-            `Failed to download ${domain} state`
-        );
-      }
-
-      const result = (await response.json()) as {
-        data?: unknown;
-        metadata?: CloudSyncDomainMetadata;
-      };
-
-      if (result.data === undefined || !result.metadata) {
-        throw new Error("State download response was invalid.");
       }
 
       return {
@@ -1820,32 +1787,8 @@ async function fetchBlobDomainInfo(
 ): Promise<BlobDomainInfoResponse | null> {
   return blobDomainInfoCache.get(
     getDomainFetchCacheKey(_auth, domain),
-    async () => {
-      const response = await abortableFetch(
-        getApiUrl(`/api/sync/auto?domain=${encodeURIComponent(domain)}`),
-        {
-          method: "GET",
-          headers: authHeaders(),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (response.status === 404) {
-        return null;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          (errorData as { error?: string }).error ||
-            `Failed to fetch ${domain} sync data`
-        );
-      }
-
-      return (await response.json()) as BlobDomainInfoResponse;
-    }
+    async () =>
+      (await fetchLegacyBlobDomainPayload(domain)) as BlobDomainInfoResponse | null
   );
 }
 
@@ -1854,29 +1797,7 @@ async function requestBlobUploadInstruction(
   _auth: AuthContext,
   itemKey?: string
 ): Promise<StorageUploadInstruction> {
-  const tokenResponse = await abortableFetch(getApiUrl("/api/sync/auto-token"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
-    body: JSON.stringify({
-      domain,
-      ...(itemKey ? { itemKey } : {}),
-    }),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!tokenResponse.ok) {
-    const errorData = await tokenResponse.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to get sync upload token"
-    );
-  }
-
-  return (await tokenResponse.json()) as StorageUploadInstruction;
+  return requestLegacyBlobUploadInstruction(domain, itemKey);
 }
 
 async function saveBlobDomainMetadata(
@@ -1884,35 +1805,9 @@ async function saveBlobDomainMetadata(
   payload: Record<string, unknown>,
   _auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
-  const metadataResponse = await abortableFetch(getApiUrl("/api/sync/auto"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
-    body: JSON.stringify(payload),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!metadataResponse.ok) {
-    const errorData = await metadataResponse.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to save sync metadata"
-    );
-  }
-
-  const metadataData = (await metadataResponse.json()) as {
-    metadata?: CloudSyncDomainMetadata;
-  };
-
-  if (!metadataData.metadata) {
-    throw new Error("Sync metadata save response was invalid.");
-  }
-
+  const metadata = await saveLegacyBlobDomainMetadata(payload);
   invalidateBlobDomainInfoCache(domain, _auth);
-  return metadataData.metadata;
+  return metadata;
 }
 
 async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
