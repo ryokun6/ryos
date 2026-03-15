@@ -1396,6 +1396,33 @@ function createWriteSyncVersion(
 export async function fetchCloudSyncMetadata(
   _auth: AuthContext
 ): Promise<CloudSyncMetadataMap> {
+  const consolidatedRes = await abortableFetch(getApiUrl("/api/sync/domains"), {
+    method: "GET",
+    headers: authHeaders(),
+    timeout: 15000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
+
+  if (consolidatedRes.ok) {
+    const consolidatedData = (await consolidatedRes.json()) as {
+      physicalMetadata?: Partial<CloudSyncMetadataMap>;
+    };
+    if (consolidatedData.physicalMetadata) {
+      const merged = createEmptyCloudSyncMetadataMap();
+      for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
+        const entry =
+          consolidatedData.physicalMetadata[
+            domain as keyof typeof consolidatedData.physicalMetadata
+          ];
+        if (entry) {
+          merged[domain] = entry as CloudSyncDomainMetadata;
+        }
+      }
+      return merged;
+    }
+  }
+
   const [blobRes, redisRes] = await Promise.all([
     abortableFetch(getApiUrl("/api/sync/auto"), {
       method: "GET",

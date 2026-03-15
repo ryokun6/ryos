@@ -1,5 +1,5 @@
 import { apiHandler } from "../../_utils/api-handler.js";
-import { readLogicalCloudSyncMetadata } from "../_logical.js";
+import { readLogicalAndPhysicalCloudSyncMetadata } from "../_logical.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -11,10 +11,12 @@ export default apiHandler(
   },
   async ({ res, redis, user }): Promise<void> => {
     const username = user?.username || "";
-    const metadata = await readLogicalCloudSyncMetadata(redis, username);
+    const { logicalMetadata, physicalMetadata } =
+      await readLogicalAndPhysicalCloudSyncMetadata(redis, username);
     res.status(200).json({
       ok: true,
-      metadata,
+      metadata: logicalMetadata,
+      physicalMetadata,
     });
   }
 );

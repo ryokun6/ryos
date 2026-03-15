@@ -72,10 +72,10 @@ export function parseLogicalDomainQuery(value: unknown): LogicalCloudSyncDomain 
   return isLogicalCloudSyncDomain(value) ? value : null;
 }
 
-export async function readLogicalCloudSyncMetadata(
+export async function readPhysicalCloudSyncMetadata(
   redis: Redis,
   username: string
-): Promise<LogicalCloudSyncMetadataMap> {
+): Promise<CloudSyncMetadataMap> {
   const [redisMeta, blobMeta] = await Promise.all([
     readStateMetaMap(redis, username),
     readAutoSyncMetadata(redis, username),
@@ -111,7 +111,30 @@ export async function readLogicalCloudSyncMetadata(
       : null;
   }
 
+  return physicalMetadata;
+}
+
+export async function readLogicalCloudSyncMetadata(
+  redis: Redis,
+  username: string
+): Promise<LogicalCloudSyncMetadataMap> {
+  const physicalMetadata = await readPhysicalCloudSyncMetadata(redis, username);
+
   return aggregateLogicalCloudSyncMetadata(physicalMetadata);
+}
+
+export async function readLogicalAndPhysicalCloudSyncMetadata(
+  redis: Redis,
+  username: string
+): Promise<{
+  logicalMetadata: LogicalCloudSyncMetadataMap;
+  physicalMetadata: CloudSyncMetadataMap;
+}> {
+  const physicalMetadata = await readPhysicalCloudSyncMetadata(redis, username);
+  return {
+    logicalMetadata: aggregateLogicalCloudSyncMetadata(physicalMetadata),
+    physicalMetadata,
+  };
 }
 
 export async function getLogicalCloudSyncDomainPayload(

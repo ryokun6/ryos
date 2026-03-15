@@ -57,6 +57,19 @@ describe("logical cloud sync domain API", () => {
       "stickies",
       "videos",
     ]);
+    expect(Object.keys(data.physicalMetadata).sort()).toEqual([
+      "calendar",
+      "contacts",
+      "custom-wallpapers",
+      "files-applets",
+      "files-images",
+      "files-metadata",
+      "files-trash",
+      "settings",
+      "songs",
+      "stickies",
+      "videos",
+    ]);
   });
 
   test("PUT /api/sync/domains/settings stores grouped settings writes and GET returns grouped parts", async () => {
