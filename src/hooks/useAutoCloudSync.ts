@@ -253,6 +253,20 @@ function getLatestLocalChangeAt(domain: CloudSyncDomain): string | null {
   ]);
 }
 
+function getLatestLogicalLocalChangeAt(
+  parts: CloudSyncDomain[],
+  lastLocalChangeAtRef: MutableRefObject<Record<CloudSyncDomain, string | null>>
+): string | null {
+  return getLatestCloudSyncTimestamp(
+    parts.map((domain) =>
+      getLatestCloudSyncTimestamp([
+        getLatestLocalChangeAt(domain),
+        lastLocalChangeAtRef.current[domain],
+      ])
+    )
+  );
+}
+
 function alignLocalChangeWithRemoteApply(
   domain: CloudSyncDomain,
   timestamp: string,
@@ -1110,29 +1124,39 @@ export function useAutoCloudSync() {
 
   const flushPendingUploads = useCallback(() => {
     const syncState = useCloudSyncStore.getState();
-    for (const domain of CLOUD_SYNC_DOMAINS) {
-      if (!isDomainEnabled(domain)) continue;
+    for (const logicalDomain of LOGICAL_CLOUD_SYNC_DOMAINS) {
+      const enabledPartDomains = getEnabledPartDomains(logicalDomain);
+      if (enabledPartDomains.length === 0) continue;
 
-      const domainStatus = syncState.domainStatus[domain];
       const localChangeTs = parseCloudSyncTimestamp(
-        lastLocalChangeAtRef.current[domain]
+        getLatestLogicalLocalChangeAt(
+          enabledPartDomains,
+          lastLocalChangeAtRef
+        )
       );
 
       if (localChangeTs === 0) continue;
 
       const lastSyncedTs = Math.max(
-        parseCloudSyncTimestamp(domainStatus.lastUploadedAt),
-        parseCloudSyncTimestamp(domainStatus.lastAppliedRemoteAt)
+        ...enabledPartDomains.map((domain) =>
+          Math.max(
+            parseCloudSyncTimestamp(syncState.domainStatus[domain].lastUploadedAt),
+            parseCloudSyncTimestamp(
+              syncState.domainStatus[domain].lastAppliedRemoteAt
+            )
+          )
+        )
       );
 
       if (localChangeTs > lastSyncedTs) {
+        const representativeDomain = enabledPartDomains[0];
         setTimeout(
-          () => queueUpload(domain),
+          () => queueUpload(representativeDomain),
           REMOTE_APPLY_SUPPRESSION_MS + 1000
         );
       }
     }
-  }, [isDomainEnabled, queueUpload]);
+  }, [getEnabledPartDomains, queueUpload]);
 
   // Trigger a bidirectional sync when the user switches back to this tab,
   // focuses the window, or comes back online — pull remote changes and push
