@@ -1585,16 +1585,34 @@ async function uploadRedisStateDomain(
   return result.metadata;
 }
 
+type RedisSnapshotResult = {
+  data: AnySnapshotData;
+  metadata: CloudSyncDomainMetadata;
+} | null;
+
+const _redisFetchInFlight = new Map<RedisSyncDomain, Promise<RedisSnapshotResult>>();
+
 async function fetchRedisStateDomainSnapshot(
   domain: RedisSyncDomain,
   _auth: AuthContext
-): Promise<
-  | {
-      data: AnySnapshotData;
-      metadata: CloudSyncDomainMetadata;
+): Promise<RedisSnapshotResult> {
+  const inflight = _redisFetchInFlight.get(domain);
+  if (inflight) return inflight;
+
+  const promise = fetchRedisStateDomainSnapshotUncached(domain, _auth).finally(
+    () => {
+      _redisFetchInFlight.delete(domain);
     }
-  | null
-> {
+  );
+
+  _redisFetchInFlight.set(domain, promise);
+  return promise;
+}
+
+async function fetchRedisStateDomainSnapshotUncached(
+  domain: RedisSyncDomain,
+  _auth: AuthContext
+): Promise<RedisSnapshotResult> {
   const response = await abortableFetch(
     getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
     {
