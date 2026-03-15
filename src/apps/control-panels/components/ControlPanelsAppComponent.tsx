@@ -116,32 +116,26 @@ function formatSyncStatus(
   const parts: string[] = [];
 
   if (status.isUploading) {
-    parts.push(t("apps.control-panels.autoSync.uploading", { defaultValue: "Uploading" }));
+    parts.push(t("apps.control-panels.autoSync.uploading"));
   } else {
     parts.push(
       uploadedRelative
         ? t("apps.control-panels.autoSync.lastUploaded", {
             date: uploadedRelative,
-            defaultValue: `Uploaded ${uploadedRelative}`,
           })
-        : t("apps.control-panels.autoSync.neverUploaded", {
-            defaultValue: "Never uploaded",
-          })
+        : t("apps.control-panels.autoSync.neverUploaded")
     );
   }
 
   if (status.isDownloading) {
-    parts.push(t("apps.control-panels.autoSync.fetching", { defaultValue: "Fetching" }));
+    parts.push(t("apps.control-panels.autoSync.fetching"));
   } else {
     parts.push(
       fetchedRelative
         ? t("apps.control-panels.autoSync.lastFetched", {
             date: fetchedRelative,
-            defaultValue: `Fetched ${fetchedRelative}`,
           })
-        : t("apps.control-panels.autoSync.neverFetched", {
-            defaultValue: "Never fetched",
-          })
+        : t("apps.control-panels.autoSync.neverFetched")
     );
   }
 
