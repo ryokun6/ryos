@@ -134,6 +134,80 @@ describe("logical cloud sync domain API", () => {
     expect(getJson.parts["custom-wallpapers"].mode).toBe("individual");
   });
 
+  test("PUT /api/sync/domains/contacts rejects malformed contacts snapshots", async () => {
+    const authToken = await getAuthToken();
+
+    const res = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/contacts`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writes: {
+            contacts: {
+              domain: "contacts",
+              updatedAt: "2026-03-18T10:00:00.000Z",
+              version: 1,
+              syncVersion: makeSyncVersion("contacts-invalid", 1),
+              data: {
+                contacts: [{ id: "bad-1", displayName: "Bad Contact" }],
+              },
+            },
+          },
+        }),
+      }
+    );
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect((json.error || "").toLowerCase()).toContain("contacts");
+  });
+
+  test("PUT /api/sync/domains/files preserves tombstones through grouped files writes", async () => {
+    const authToken = await getAuthToken();
+
+    const putRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/files`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writes: {
+            "files-metadata": {
+              domain: "files-metadata",
+              updatedAt: "2026-03-18T11:00:00.000Z",
+              version: 1,
+              syncVersion: makeSyncVersion("files-client", 1),
+              data: {
+                items: {},
+                libraryState: "loaded",
+                deletedPaths: {
+                  "/Photos/cat.png": "2026-03-18T10:59:00.000Z",
+                },
+              },
+            },
+          },
+        }),
+      }
+    );
+    expect(putRes.status).toBe(200);
+
+    const getRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/files`,
+      TEST_USERNAME,
+      authToken
+    );
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json();
+    expect(getJson.parts["files-metadata"].data.deletedPaths).toEqual({
+      "/Photos/cat.png": "2026-03-18T10:59:00.000Z",
+    });
+  });
+
   test("POST /api/sync/domains/settings/attachments/prepare validates partDomain ownership", async () => {
     const authToken = await getAuthToken();
 

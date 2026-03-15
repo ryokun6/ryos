@@ -1,10 +1,3 @@
-/**
- * GET /api/sync/state          - Get metadata for all Redis-direct sync domains
- * GET /api/sync/state?domain=X - Download one Redis-direct domain's JSON data
- * PUT /api/sync/state          - Write a JSON snapshot for one Redis-direct domain
- */
-
-import type { VercelResponse } from "@vercel/node";
 import type { Redis } from "../_utils/redis.js";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
@@ -24,7 +17,6 @@ import {
   type CloudSyncWriteVersion,
 } from "../../src/utils/cloudSyncVersion.js";
 import { isSerializedContact } from "../../src/utils/contacts.js";
-import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import {
   isSongsSnapshotData,
@@ -32,9 +24,6 @@ import {
   writeSongsState,
   type SongsSnapshotData,
 } from "../_utils/song-library-state.js";
-
-export const runtime = "nodejs";
-export const maxDuration = 30;
 
 interface PersistedRedisStateDomain {
   data: unknown;
@@ -175,86 +164,6 @@ async function persistStateEntry(
   };
   await redis.set(metaKey(username), JSON.stringify(meta));
 }
-
-export default apiHandler<PutStateBody>(
-  {
-    methods: ["GET", "PUT"],
-    auth: "required",
-    parseJsonBody: true,
-  },
-  async ({ req, res, redis, user, body }): Promise<void> => {
-    const username = user?.username || "";
-    const method = (req.method || "GET").toUpperCase();
-
-    if (method === "GET") {
-      const rawDomain = Array.isArray(req.query.domain)
-        ? req.query.domain[0]
-        : req.query.domain;
-
-      if (rawDomain && !isRedisSyncDomain(rawDomain as never)) {
-        res.status(400).json({ error: "Invalid or non-Redis sync domain" });
-        return;
-      }
-
-      if (rawDomain && isRedisSyncDomain(rawDomain as never)) {
-        const payload = await getRedisStateDomainPayload(
-          redis,
-          username,
-          rawDomain as RedisSyncDomain
-        );
-        if (!payload) {
-          res.status(404).json({ error: `No ${rawDomain} state found` });
-          return;
-        }
-        res.status(200).json(payload);
-        return;
-      }
-
-      const meta = await readStateMetaMap(redis, username);
-      const metadata: Record<string, CloudSyncDomainMetadata | null> = {};
-      for (const domain of REDIS_SYNC_DOMAINS) {
-        const entry = meta[domain];
-        metadata[domain] = entry
-          ? {
-              updatedAt: entry.updatedAt,
-              version: entry.version,
-              totalSize: 0,
-              createdAt: entry.createdAt,
-              syncVersion: entry.syncVersion,
-            }
-          : null;
-      }
-
-      res.status(200).json({ ok: true, metadata });
-      return;
-    }
-
-    if (method === "PUT") {
-      const sourceSessionId =
-        typeof req.headers["x-sync-session-id"] === "string"
-          ? req.headers["x-sync-session-id"]
-          : undefined;
-      const result = await putRedisStateDomain(
-        redis,
-        username,
-        body,
-        sourceSessionId
-      );
-      if (!result.ok) {
-        res.status(result.status).json({
-          error: result.error,
-          ...(result.code ? { code: result.code } : {}),
-          ...(result.metadata ? { metadata: result.metadata } : {}),
-        });
-        return;
-      }
-      res.status(200).json(result);
-      return;
-    }
-
-    res.status(405).json({ error: "Method not allowed" });
-  }
-);
 
 export async function getRedisStateDomainPayload(
   redis: Redis,
@@ -485,3 +394,4 @@ export async function putRedisStateDomain(
     };
   }
 }
+

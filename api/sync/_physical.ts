@@ -11,14 +11,14 @@ import {
   type BlobDomainDownloadPayload,
   type SaveAutoSyncMetadataBody,
   type SaveBlobDomainResult,
-} from "./auto.js";
+} from "./_blob.js";
 import {
   getRedisStateDomainPayload,
   putRedisStateDomain,
   type PutRedisStateDomainResult,
   type PutStateBody,
   type RedisStateDomainPayload,
-} from "./state.js";
+} from "./_state.js";
 
 export type PhysicalSyncDomainPayload =
   | RedisStateDomainPayload

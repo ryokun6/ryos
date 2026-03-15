@@ -18,11 +18,11 @@ import {
 import {
   readAutoSyncMetadata,
   type SaveAutoSyncMetadataBody,
-} from "./auto.js";
+} from "./_blob.js";
 import {
   readStateMetaMap,
   type PutStateBody,
-} from "./state.js";
+} from "./_state.js";
 import {
   extractPhysicalSyncDomainMetadata,
   getPhysicalSyncDomainPayload,

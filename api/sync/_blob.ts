@@ -1,10 +1,3 @@
-/**
- * GET /api/sync/auto - Get auto-sync metadata for all domains
- * GET /api/sync/auto?domain=<domain> - Download one auto-sync domain blob
- * POST /api/sync/auto - Save auto-sync metadata for one domain
- */
-
-import type { VercelRequest } from "@vercel/node";
 import type { Redis } from "../_utils/redis.js";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
@@ -30,16 +23,12 @@ import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "../../src/utils/cloudSyncDeletionMarkers.js";
-import { apiHandler } from "../_utils/api-handler.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import {
   createSignedDownloadUrl,
   deleteStoredObject,
   headStoredObject,
 } from "../_utils/storage.js";
-
-export const runtime = "nodejs";
-export const maxDuration = 60;
 
 interface PersistedAutoSyncDomainMetadata {
   updatedAt: string;
@@ -117,15 +106,6 @@ export type SaveBlobDomainResult =
       } | null;
     };
 
-function createEmptyAutoSyncMetadataMap(): PersistedAutoSyncMetadataMap {
-  return {
-    "files-images": null,
-    "files-trash": null,
-    "files-applets": null,
-    "custom-wallpapers": null,
-  };
-}
-
 export interface SaveAutoSyncMetadataBody {
   domain?: BlobSyncDomain;
   storageUrl?: string;
@@ -136,6 +116,15 @@ export interface SaveAutoSyncMetadataBody {
   items?: Record<string, PersistedAutoSyncItemMetadata>;
   deletedItems?: DeletionMarkerMap;
   syncVersion?: CloudSyncWriteVersion;
+}
+
+function createEmptyAutoSyncMetadataMap(): PersistedAutoSyncMetadataMap {
+  return {
+    "files-images": null,
+    "files-trash": null,
+    "files-applets": null,
+    "custom-wallpapers": null,
+  };
 }
 
 function metaKey(username: string) {
@@ -244,78 +233,6 @@ export async function readAutoSyncMetadata(
 
   return normalized;
 }
-
-function getRequestedDomain(req: VercelRequest): BlobSyncDomain | null {
-  const raw = Array.isArray(req.query.domain)
-    ? req.query.domain[0]
-    : req.query.domain;
-
-  return isBlobSyncDomain(raw as never) ? (raw as BlobSyncDomain) : null;
-}
-
-export default apiHandler<SaveAutoSyncMetadataBody>(
-  {
-    methods: ["GET", "POST"],
-    auth: "required",
-    parseJsonBody: true,
-  },
-  async ({ req, res, redis, user, body }): Promise<void> => {
-    const username = user?.username || "";
-    const method = (req.method || "GET").toUpperCase();
-
-    if (method === "GET") {
-      const domain = getRequestedDomain(req);
-      if (req.query.domain && !domain) {
-        res.status(400).json({ error: "Invalid sync domain" });
-        return;
-      }
-
-      if (domain) {
-        const payload = await getBlobDomainDownloadPayload(
-          redis,
-          username,
-          domain
-        );
-        if (!payload) {
-          res.status(404).json({ error: `No ${domain} sync data found` });
-          return;
-        }
-        res.status(200).json(payload);
-        return;
-      }
-
-      const metadata = await readAutoSyncMetadata(redis, username);
-      res.status(200).json({ ok: true, metadata });
-      return;
-    }
-
-    if (method === "POST") {
-      const sourceSessionId =
-        typeof req.headers["x-sync-session-id"] === "string"
-          ? req.headers["x-sync-session-id"]
-          : undefined;
-      const result = await saveBlobDomainMetadata(
-        redis,
-        username,
-        body,
-        sourceSessionId
-      );
-      if (!result.ok) {
-        res.status(result.status).json({
-          error: result.error,
-          ...(result.code ? { code: result.code } : {}),
-          ...(result.conflictKeys ? { conflictKeys: result.conflictKeys } : {}),
-          ...(result.metadata ? { metadata: result.metadata } : {}),
-        });
-        return;
-      }
-      res.status(200).json(result);
-      return;
-    }
-
-    res.status(405).json({ error: "Method not allowed" });
-  }
-);
 
 export async function saveBlobDomainMetadata(
   redis: Redis,
@@ -496,9 +413,7 @@ export async function saveBlobDomainMetadata(
       if (previousStorageUrl && !nextStorageUrls.has(previousStorageUrl)) {
         try {
           await deleteStoredObject(previousStorageUrl);
-        } catch {
-          // Ignore stale object cleanup failures.
-        }
+        } catch {}
       }
 
       for (const item of Object.values(previousItems)) {
@@ -509,9 +424,7 @@ export async function saveBlobDomainMetadata(
 
         try {
           await deleteStoredObject(previousItemStorageUrl);
-        } catch {
-          // Ignore stale object cleanup failures.
-        }
+        } catch {}
       }
 
       existing[body.domain] = {
@@ -563,9 +476,7 @@ export async function saveBlobDomainMetadata(
       if (previousStorageUrl && previousStorageUrl !== legacyStorageUrl) {
         try {
           await deleteStoredObject(previousStorageUrl);
-        } catch {
-          // Ignore stale object cleanup failures.
-        }
+        } catch {}
       }
 
       for (const item of Object.values(previous?.items ?? {})) {
@@ -576,9 +487,7 @@ export async function saveBlobDomainMetadata(
 
         try {
           await deleteStoredObject(previousItemStorageUrl);
-        } catch {
-          // Ignore stale object cleanup failures.
-        }
+        } catch {}
       }
 
       existing[body.domain] = {
@@ -738,3 +647,4 @@ export async function getBlobDomainDownloadPayload(
     throw error;
   }
 }
+

@@ -40,7 +40,7 @@ import type {
   SongLibraryScope,
   SongLibraryLyricsSource,
 } from "./types.js";
-import { stateKey } from "../../sync/state.js";
+import { stateKey } from "../../sync/_state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
 import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";
 import {
