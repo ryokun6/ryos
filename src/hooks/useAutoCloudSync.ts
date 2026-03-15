@@ -171,6 +171,29 @@ function createDomainPendingRemoteUpdateMap(): Record<
   };
 }
 
+function shouldReplacePendingRemoteUpdate(
+  current:
+    | { updatedAt: string; syncVersion?: CloudSyncVersionState | null }
+    | null,
+  incoming: { updatedAt: string; syncVersion?: CloudSyncVersionState | null }
+): boolean {
+  if (!current) {
+    return true;
+  }
+
+  const currentVersion = current.syncVersion?.serverVersion || 0;
+  const incomingVersion = incoming.syncVersion?.serverVersion || 0;
+
+  if (incomingVersion !== currentVersion) {
+    return incomingVersion > currentVersion;
+  }
+
+  return (
+    parseCloudSyncTimestamp(incoming.updatedAt) >=
+    parseCloudSyncTimestamp(current.updatedAt)
+  );
+}
+
 function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
   const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
@@ -254,6 +277,12 @@ export function useAutoCloudSync() {
       { updatedAt: string; syncVersion?: CloudSyncVersionState | null } | null
     >
   >(createDomainPendingRemoteUpdateMap());
+  const pendingRealtimeUpdateRef = useRef<
+    Record<
+      CloudSyncDomain,
+      { updatedAt: string; syncVersion?: CloudSyncVersionState | null } | null
+    >
+  >(createDomainPendingRemoteUpdateMap());
   const uploadInFlightRef = useRef<Record<CloudSyncDomain, boolean>>(
     createDomainBooleanMap(false)
   );
@@ -261,6 +290,7 @@ export function useAutoCloudSync() {
     createDomainBooleanMap(false)
   );
   const checkInFlightRef = useRef(false);
+  const pendingRemoteCheckRef = useRef(false);
   const lastVisibilityCheckRef = useRef(0);
   const wallpaperSeedDoneRef = useRef(false);
   const contactsSeedDoneRef = useRef(false);
@@ -520,7 +550,21 @@ export function useAutoCloudSync() {
       remoteSyncVersion?: CloudSyncVersionState | null
     ) => {
       if (!username || !isAuthenticated || !isDomainEnabled(domain)) return;
-      if (realtimeInFlightRef.current.has(domain)) return;
+      if (realtimeInFlightRef.current.has(domain)) {
+        const pendingUpdate = {
+          updatedAt: remoteUpdatedAt,
+          syncVersion: remoteSyncVersion,
+        };
+        if (
+          shouldReplacePendingRemoteUpdate(
+            pendingRealtimeUpdateRef.current[domain],
+            pendingUpdate
+          )
+        ) {
+          pendingRealtimeUpdateRef.current[domain] = pendingUpdate;
+        }
+        return;
+      }
 
       const syncState = useCloudSyncStore.getState();
       const domainStatus = syncState.domainStatus[domain];
@@ -625,13 +669,27 @@ export function useAutoCloudSync() {
         remoteApplySuppressUntilRef.current[domain] = 0;
       } finally {
         realtimeInFlightRef.current.delete(domain);
+        const pendingUpdate = pendingRealtimeUpdateRef.current[domain];
+        if (pendingUpdate) {
+          pendingRealtimeUpdateRef.current[domain] = null;
+          void handleRealtimeDomainUpdateRef.current(
+            domain,
+            pendingUpdate.updatedAt,
+            pendingUpdate.syncVersion
+          );
+        }
       }
     },
     [isAuthenticated, isDomainEnabled, username]
   );
 
   const checkRemoteUpdates = useCallback(async () => {
-    if (!username || !isAuthenticated || !isSyncActive || checkInFlightRef.current) {
+    if (!username || !isAuthenticated || !isSyncActive) {
+      return;
+    }
+
+    if (checkInFlightRef.current) {
+      pendingRemoteCheckRef.current = true;
       return;
     }
 
@@ -802,6 +860,10 @@ export function useAutoCloudSync() {
     } finally {
       useCloudSyncStore.getState().setCheckingRemote(false);
       checkInFlightRef.current = false;
+      if (pendingRemoteCheckRef.current) {
+        pendingRemoteCheckRef.current = false;
+        void checkRemoteUpdates();
+      }
     }
   }, [isAuthenticated, isDomainEnabled, isSyncActive, queueUpload, username]);
 
