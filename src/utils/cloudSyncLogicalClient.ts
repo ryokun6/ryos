@@ -83,11 +83,16 @@ export async function fetchLogicalCloudSyncMetadata(
 
 export async function uploadLogicalCloudSyncDomain(
   domain: LogicalCloudSyncDomain,
-  auth: AuthContext
+  auth: AuthContext,
+  partDomains: CloudSyncDomain[] = getLogicalCloudSyncDomainPhysicalParts(domain)
 ): Promise<LogicalCloudSyncTransferResult> {
   const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
+  const requestedPartDomains = new Set(partDomains);
 
   for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+    if (!requestedPartDomains.has(partDomain)) {
+      continue;
+    }
     const metadata = await uploadCloudSyncDomain(partDomain, auth);
     partMetadata[partDomain] = metadata;
   }

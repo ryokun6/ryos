@@ -47,6 +47,11 @@ import {
   type LogicalCloudSyncDomain,
 } from "@/utils/cloudSyncLogical";
 import {
+  clearPersistedLogicalDirtyParts,
+  getPersistedLogicalDirtyParts,
+  markLogicalDirtyPart,
+} from "@/utils/cloudSyncLogicalDirtyState";
+import {
   getLatestSettingsSectionTimestamp,
   isApplyingRemoteSettingsSection,
   markSettingsSectionChanged,
@@ -436,7 +441,13 @@ export function useAutoCloudSync() {
       firstQueuedAtRef.current[logicalDomain] = 0;
       pendingUploadAfterCurrentRef.current[logicalDomain] = false;
       uploadInFlightRef.current[logicalDomain] = true;
-      for (const partDomain of enabledPartDomains) {
+      const dirtyPartDomains = getPersistedLogicalDirtyParts(logicalDomain).filter(
+        (partDomain) => enabledPartDomains.includes(partDomain)
+      );
+      const targetPartDomains =
+        dirtyPartDomains.length > 0 ? dirtyPartDomains : enabledPartDomains;
+
+      for (const partDomain of targetPartDomains) {
         syncState.markUploadStart(partDomain);
       }
       let uploadSucceeded = false;
@@ -446,7 +457,7 @@ export function useAutoCloudSync() {
         const result = await uploadLogicalCloudSyncDomain(logicalDomain, {
           username,
           isAuthenticated,
-        });
+        }, targetPartDomains);
 
         for (const [partDomain, metadata] of Object.entries(
           result.partMetadata
@@ -474,6 +485,7 @@ export function useAutoCloudSync() {
         }
 
         uploadRetryCountRef.current[logicalDomain] = 0;
+        clearPersistedLogicalDirtyParts(logicalDomain, targetPartDomains);
         uploadSucceeded = true;
       } catch (error) {
         const message =
@@ -485,7 +497,7 @@ export function useAutoCloudSync() {
           message,
           error
         );
-        for (const partDomain of enabledPartDomains) {
+        for (const partDomain of targetPartDomains) {
           useCloudSyncStore.getState().markUploadFailure(partDomain, message);
         }
 
@@ -557,6 +569,7 @@ export function useAutoCloudSync() {
       const timestamp = new Date(now).toISOString();
       lastLocalChangeAtRef.current[domain] = timestamp;
       setPersistedLocalChangeAt(domain, timestamp);
+      markLogicalDirtyPart(domain);
       uploadRetryCountRef.current[logicalDomain] = 0;
 
       if (!firstQueuedAtRef.current[logicalDomain]) {
