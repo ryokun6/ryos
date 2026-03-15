@@ -788,7 +788,7 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = CLOUD_SYNC_REMOTE_APPLY_DOMAINS.filter((domain) =>
+    const enabledDomains = CLOUD_SYNC_DOMAINS.filter((domain) =>
       syncStore.isDomainEnabled(domain)
     );
 
@@ -843,7 +843,7 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = CLOUD_SYNC_DOMAINS.filter((domain) =>
+    const enabledDomains = CLOUD_SYNC_REMOTE_APPLY_DOMAINS.filter((domain) =>
       syncStore.isDomainEnabled(domain)
     );
 
