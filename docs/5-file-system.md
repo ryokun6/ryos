@@ -61,6 +61,7 @@ graph TB
 | `/Sites` | Virtual | Internet Explorer favorites |
 | `/Applets` | Physical | HTML applets (.app, .html files) |
 | `/Trash` | Special | Deleted items (restorable) |
+| `/Downloads` | Physical | User downloads (AirDrop and similar) |
 | `/Desktop` | Physical | Shortcuts and aliases |
 
 ```mermaid
@@ -73,6 +74,7 @@ graph TD
     Root --> Sites["/Sites<br/>Virtual"]
     Root --> Applets["/Applets<br/>Physical"]
     Root --> Trash["/Trash<br/>Special"]
+    Root --> Downloads["/Downloads<br/>Physical"]
     Root --> Desktop["/Desktop<br/>Physical"]
     
     Apps -.->|"from appRegistry"| AppReg[(App Registry)]
@@ -165,8 +167,9 @@ const {
   isLoading,
   error,
   
-  // Selection
-  selectedFile,
+  // Selection (supports multi-select with Ctrl/Cmd+click and Shift+click)
+  selectedFiles,
+  selectionAnchorPath,
   handleFileSelect,
   handleFileOpen,
   
@@ -239,7 +242,8 @@ interface FinderInstance {
   navigationIndex: number;
   viewType: ViewType;        // "small" | "large" | "list"
   sortType: SortType;        // "name" | "date" | "size" | "kind"
-  selectedFile: string | null;
+  selectedFiles: string[];   // Multi-select support
+  selectionAnchorPath: string | null;  // Anchor for range selection
 }
 ```
 
@@ -334,7 +338,15 @@ Desktop shortcuts support:
 
 ## Cloud Sync
 
-The cloud sync system (`/api/sync/*`) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs **calendar** events, **contacts**, and **stickies** from their respective stores (`useCalendarStore`, `useContactsStore`, `useStickiesStore`), enabling backup and real-time sync via Pusher or local WebSocket.
+The cloud sync system (`/api/sync/*`) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs **calendar** events, **contacts**, **stickies**, **songs**, **videos**, **custom wallpapers**, and **settings** from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.
+
+### Deletion Markers
+
+When items are deleted (trash, empty trash, etc.), deletion markers (path/id → timestamp) are stored and synced. This enables correct handling of deletes across devices and safe recreation of items after deletion, using marker timestamps to resolve conflicts.
+
+### Merge-on-Conflict
+
+Redis sync domains use merge-on-conflict instead of last-write-wins. On upload or 409 Conflict, `mergeRedisStateConflict()` merges local and remote snapshots per domain, reducing destructive overwrites. Domain-specific mergers handle files-metadata, stickies, calendar, contacts, songs, and videos.
 
 ### Domain-Based Change Tracking
 

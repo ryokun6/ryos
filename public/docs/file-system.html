@@ -340,7 +340,7 @@
 <h2>Key Stores</h2>
 <table><thead><tr><th>Store</th><th>Purpose</th><th>Persistence</th></tr></thead><tbody><tr><td><code>useFilesStore</code></td><td>File/folder metadata, paths, UUIDs, status</td><td>localStorage</td></tr><tr><td><code>useFinderStore</code></td><td>Finder window instances, navigation history, view preferences</td><td>localStorage</td></tr><tr><td>IndexedDB</td><td>File content (text, images, applets)</td><td>Browser storage</td></tr></tbody></table>
 <h2>Directory Structure</h2>
-<table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry (non-Finder apps)</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User text documents (.txt, .md)</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images (PNG, JPG, GIF, WebP, BMP)</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library (organized by artist)</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library (organized by artist)</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>Internet Explorer favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets (.app, .html files)</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items (restorable)</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts and aliases</td></tr></tbody></table>
+<table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry (non-Finder apps)</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User text documents (.txt, .md)</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images (PNG, JPG, GIF, WebP, BMP)</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library (organized by artist)</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library (organized by artist)</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>Internet Explorer favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets (.app, .html files)</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items (restorable)</td></tr><tr><td><code>/Downloads</code></td><td>Physical</td><td>User downloads (AirDrop and similar)</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts and aliases</td></tr></tbody></table>
 <pre class="mermaid">graph TD
     Root["/"] --> Apps["/Applications<br/>Virtual"]
     Root --> Docs["/Documents<br/>Physical"]
@@ -350,6 +350,7 @@
     Root --> Sites["/Sites<br/>Virtual"]
     Root --> Applets["/Applets<br/>Physical"]
     Root --> Trash["/Trash<br/>Special"]
+    Root --> Downloads["/Downloads<br/>Physical"]
     Root --> Desktop["/Desktop<br/>Physical"]
     
     Apps -.->|"from appRegistry"| AppReg[(App Registry)]
@@ -420,8 +421,9 @@ const {
   isLoading,
   error,
   
-  // Selection
-  selectedFile,
+  // Selection (supports multi-select with Ctrl/Cmd+click and Shift+click)
+  selectedFiles,
+  selectionAnchorPath,
   handleFileSelect,
   handleFileOpen,
   
@@ -471,7 +473,8 @@ await ensureFileContentLoaded(filePath, uuid);</code></pre>
   navigationIndex: number;
   viewType: ViewType;        // "small" | "large" | "list"
   sortType: SortType;        // "name" | "date" | "size" | "kind"
-  selectedFile: string | null;
+  selectedFiles: string[];   // Multi-select support
+  selectionAnchorPath: string | null;  // Anchor for range selection
 }</code></pre>
 <h3>Undo/Redo for File Operations</h3>
 <p>Finder maintains a per-instance undo/redo stack for file operations:</p>
@@ -522,7 +525,11 @@ fileStore.createAlias(
 );</code></pre>
 <p>Desktop shortcuts support: <ul><li>App shortcuts (launches the app)</li><li>File shortcuts (opens the target file)</li><li>Theme-specific visibility (<code>hiddenOnThemes</code>)</li></ul></p>
 <h2>Cloud Sync</h2>
-<p>The cloud sync system (<code>/api/sync/*</code>) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs <strong>calendar</strong> events, <strong>contacts</strong>, and <strong>stickies</strong> from their respective stores (<code>useCalendarStore</code>, <code>useContactsStore</code>, <code>useStickiesStore</code>), enabling backup and real-time sync via Pusher or local WebSocket.</p>
+<p>The cloud sync system (<code>/api/sync/*</code>) persists file metadata and content (documents, images, applets, trash) across devices. It also syncs <strong>calendar</strong> events, <strong>contacts</strong>, <strong>stickies</strong>, <strong>songs</strong>, <strong>videos</strong>, <strong>custom wallpapers</strong>, and <strong>settings</strong> from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.</p>
+<h3>Deletion Markers</h3>
+<p>When items are deleted (trash, empty trash, etc.), deletion markers (path/id → timestamp) are stored and synced. This enables correct handling of deletes across devices and safe recreation of items after deletion, using marker timestamps to resolve conflicts.</p>
+<h3>Merge-on-Conflict</h3>
+<p>Redis sync domains use merge-on-conflict instead of last-write-wins. On upload or 409 Conflict, <code>mergeRedisStateConflict()</code> merges local and remote snapshots per domain, reducing destructive overwrites. Domain-specific mergers handle files-metadata, stickies, calendar, contacts, songs, and videos.</p>
 <h3>Domain-Based Change Tracking</h3>
 <p>File operations emit domain-specific change events via <code>emitCloudSyncDomainChange()</code> and <code>emitCloudSyncDomainChanges()</code> so the sync system knows which data stores have been modified:</p>
 <table><thead><tr><th>Domain</th><th>Triggers</th></tr></thead><tbody><tr><td><code>files-metadata</code></td><td>Document save, format filesystem</td></tr><tr><td><code>files-images</code></td><td>Image save, move, trash/restore</td></tr><tr><td><code>files-trash</code></td><td>Move to trash, restore, empty trash</td></tr><tr><td><code>files-applets</code></td><td>Applet save, fetch from share</td></tr></tbody></table>

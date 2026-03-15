@@ -27,7 +27,7 @@ ryOS includes 23 built-in applications, each designed to replicate classic deskt
 | [Stickies](/docs/stickies) | Sticky notes for quick reminders | Productivity |
 | [Calendar](/docs/calendar) | iCal-style calendar with month, week, and day views, todos, and cloud sync | Productivity |
 | [Contacts](/docs/contacts) | Address book with vCard import and cloud sync | Productivity |
-| [Dashboard](/docs/dashboard) | Tiger-style widget overlay with clock, calendar, weather, stocks, iPod, translator, sticky notes, and dictionary | Utilities |
+| [Dashboard](/docs/dashboard) | Tiger-style widget overlay with clock, calendar, weather, stocks, iPod, translation, sticky notes, and dictionary | Utilities |
 | [Admin](/docs/admin) | Usage analytics dashboard with server info and user management (admin only) | System |
 
 ## App Architecture

@@ -7,24 +7,33 @@ A summary of changes and updates to ryOS, organized by month.
 ## March 2026
 
 - Add Calendar app with iCal support, Dashboard widget overlay, and AI integration.
-- Implement cloud sync for dock icons, iPod/karaoke settings, stickies, wallpapers, images, contacts, and videos library.
+- Implement cloud sync for dock icons, iPod/karaoke settings, stickies, wallpapers, images, contacts, videos library, dashboard widgets, and songs.
+- Add AirDrop-like file sharing to Finder with nearby user discovery, send/receive flows, and Downloads folder.
+- Add multi-select for Desktop and Finder with Ctrl/Cmd+click, Shift+click range, and marquee selection.
 - Introduce a universal undo/redo mechanism for Finder, Paint, and TextEdit.
 - Redesign the Dashboard with a widget strip, improved placement, and new widgets like Stocks, Dictionary, and Translator.
 - Enhance Contacts app with vCard import, refined UI, and cloud sync.
-- Add Telegram bot linking, DM chat support, web search, and heartbeat insights.
+- Add Telegram bot linking, DM chat, voice notes, song library tool, Gemini web search, and morning/evening heartbeat briefings.
+- Migrate auth tokens to httpOnly cookies with Force Upload/Download sync controls.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>Minor changes (16)</summary>
 
 - Improve iPod and karaoke playback performance and add iPod widget control for karaoke.
+- Add voice ducking for TTS and karaoke playback with shared infrastructure.
+- Harden cloud sync with deletion markers, merge-on-conflict, and race-condition fixes.
+- Enable Gemini search in chat for authenticated users on the gemini-3-flash model.
+- Add brushed metal window material for Finder on macOS Aqua theme with Spotlight-style selection gradient.
+- Enhance admin dashboard with date range selector (Today/7d/14d/30d) and localized keys.
+- Add calendar todos with due dates, mobile editing, and hover-to-show actions.
+- Add Finder "Go Up" toolbar item, sidebar reordering, and narrow-width sidebar hiding.
 - Refactor API endpoints to use apiHandler for improved security and consistency.
+- Improve real-time SSE streaming in Bun standalone server.
+- Upgrade Gemini flash and image models and consolidate GPT defaults on gpt-5.4.
 - Fix smart widget placement to avoid overlap and default weather to San Francisco.
-- Update documentation for file system, audio system, AI system, apps index, and API reference.
-- Enhance admin app with usage analytics dashboard, server page, and improved user details.
-- Improve crash dialog recovery UX and add a quit option.
-- Refine the UI with a semantic color palette and clean up the dashboard.
-- Optimize analytics write and read paths for better performance.
 - Add switchable Vercel Blob and S3-compatible storage.
+- Refactor dialog traffic lights to use shared TrafficLightButton component.
+- Improve stale cache recovery by clearing caches and unregistering SW before reload.
 - Support subdomain wildcard patterns in CORS and host allowlists.
 
 </details>
@@ -321,6 +330,56 @@ A summary of changes and updates to ryOS, organized by month.
 
 </details>
 
+## February 2025
+
+- Add Paint app with MacPaint-inspired UI, pattern-based drawing, selection tools, undo/redo, clipboard operations, and touch support.
+- Add Videos app with React Player, retro CD player UI, animated digit display, and fullscreen playback.
+- Add PC Emulator (Virtual PC) with classic games and DOSBox integration.
+- Migrate file system to IndexedDB with dedicated image storage for improved persistence and capacity.
+- Enhance TextEdit with document editing commands, markdown support, and file drag-and-drop.
+- Implement backup and restore functionality in Control Panels.
+
+<details>
+<summary>Minor changes (10)</summary>
+
+- Add advanced image filters and improved import scaling to Paint app.
+- Add CRT display mode with scanline effect to Videos app.
+- Enhance chat with nudge feature, urgent message highlighting, and markdown parsing.
+- Improve file management with restore and rename functionality in Finder.
+- Add MSN nudge sound effect and tooltip to audio input button.
+- Update AI assistant system prompt with expanded persona and app details.
+- Add chat typing synthesis preset selection to Control Panels.
+- Improve canvas touch and pointer event handling across Paint and other apps.
+- Add storage space tracking and UI improvements to Finder.
+- Enhance window management with improved resize delta calculations.
+
+</details>
+
+## January 2025
+
+- Launch ryOS with Soundboard app featuring audio recording, waveform visualization, and board management.
+- Add Internet Explorer app with Wayback Machine integration, favorites, and history navigation.
+- Add Chats app with AI assistant (Ryo), persistent message storage, and animated typing display.
+- Add TextEdit with Tiptap rich text editor, slash commands, and typography formatting.
+- Implement desktop environment with window management, drag/resize, minimize, and sound effects.
+- Add Minesweeper, Finder, and Control Panels apps with multi-app architecture and desktop icons.
+
+<details>
+<summary>Minor changes (10)</summary>
+
+- Add sound effects for window operations, buttons, menus, and chat interactions.
+- Implement chat typing synthesis with Tone.js and pentatonic scale.
+- Add audio transcription support for voice input in Chats and TextEdit.
+- Improve mobile responsiveness with touch support, swipe navigation, and adaptive window sizing.
+- Add SEO meta tags, favicon, and Geneva font for classic Mac aesthetics.
+- Implement localStorage persistence for app state across sessions.
+- Add About This Computer dialog with dynamic memory usage visualization.
+- Add help and about dialogs with grid layout to all apps.
+- Enhance Internet Explorer with loading states, error handling, and favicon support.
+- Add emoji picker, wallpaper selection, and UI interaction sound effects.
+
+</details>
+
 ---
 
-*This changelog is automatically generated and summarized from git history. Last updated: 2026-03-10*
+*This changelog is automatically generated and summarized from git history. Last updated: 2026-03-15*
