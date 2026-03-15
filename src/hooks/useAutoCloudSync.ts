@@ -35,13 +35,17 @@ import {
   fetchCloudSyncMetadata,
   getSyncSessionId,
   individualBlobDomainNeedsLocalReconcile,
-  uploadCloudSyncDomain,
 } from "@/utils/cloudSync";
-import { downloadAndApplyLogicalCloudSyncDomain } from "@/utils/cloudSyncLogicalClient";
 import {
+  downloadAndApplyLogicalCloudSyncDomain,
+  uploadLogicalCloudSyncDomain,
+} from "@/utils/cloudSyncLogicalClient";
+import {
+  getLogicalCloudSyncDomainForPhysical,
   getLogicalCloudSyncDomainPhysicalParts,
   isLogicalCloudSyncDomainEnabled,
   LOGICAL_CLOUD_SYNC_DOMAINS,
+  type LogicalCloudSyncDomain,
 } from "@/utils/cloudSyncLogical";
 import {
   getLatestSettingsSectionTimestamp,
@@ -58,7 +62,6 @@ import {
   isIndividualBlobSyncDomain,
   parseCloudSyncTimestamp,
   shouldApplyRemoteUpdate,
-  shouldDelaySettingsUploadForWallpaperSync,
   shouldRecheckRemoteAfterLocalSync,
   type CloudSyncDomain,
 } from "@/utils/cloudSyncShared";
@@ -75,8 +78,6 @@ const REMOTE_APPLY_SUPPRESSION_MS = 2000;
 // they only need to cover the worst-case download duration.
 const REALTIME_INFLIGHT_SUPPRESSION_MS = 30_000;
 const BATCH_INFLIGHT_SUPPRESSION_MS = 60_000;
-const SETTINGS_WALLPAPER_SYNC_RETRY_MS = 1_000;
-const SETTINGS_WALLPAPER_SYNC_MAX_WAIT_MS = 20_000;
 
 const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   settings: 2500,
@@ -124,37 +125,31 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
   };
 }
 
-function createDomainNumberMap(initialValue: number): Record<CloudSyncDomain, number> {
+function createLogicalDomainNumberMap(
+  initialValue: number
+): Record<LogicalCloudSyncDomain, number> {
   return {
     settings: initialValue,
-    "files-metadata": initialValue,
-    "files-images": initialValue,
-    "files-trash": initialValue,
-    "files-applets": initialValue,
+    files: initialValue,
     songs: initialValue,
     videos: initialValue,
     stickies: initialValue,
     calendar: initialValue,
     contacts: initialValue,
-    "custom-wallpapers": initialValue,
   };
 }
 
-function createDomainBooleanMap(
+function createLogicalDomainBooleanMap(
   initialValue: boolean
-): Record<CloudSyncDomain, boolean> {
+): Record<LogicalCloudSyncDomain, boolean> {
   return {
     settings: initialValue,
-    "files-metadata": initialValue,
-    "files-images": initialValue,
-    "files-trash": initialValue,
-    "files-applets": initialValue,
+    files: initialValue,
     songs: initialValue,
     videos: initialValue,
     stickies: initialValue,
     calendar: initialValue,
     contacts: initialValue,
-    "custom-wallpapers": initialValue,
   };
 }
 
@@ -262,7 +257,7 @@ export function useAutoCloudSync() {
   const syncContacts = useCloudSyncStore((state) => state.syncContacts);
 
   const uploadTimersRef = useRef<
-    Partial<Record<CloudSyncDomain, ReturnType<typeof setTimeout>>>
+    Partial<Record<LogicalCloudSyncDomain, ReturnType<typeof setTimeout>>>
   >({});
   const lastLocalChangeAtRef = useRef<Record<CloudSyncDomain, string | null>>(
     createDomainStringMap(null)
@@ -280,11 +275,11 @@ export function useAutoCloudSync() {
     contacts: 0,
     "custom-wallpapers": 0,
   });
-  const firstQueuedAtRef = useRef<Record<CloudSyncDomain, number>>(
-    createDomainNumberMap(0)
+  const firstQueuedAtRef = useRef<Record<LogicalCloudSyncDomain, number>>(
+    createLogicalDomainNumberMap(0)
   );
-  const uploadRetryCountRef = useRef<Record<CloudSyncDomain, number>>(
-    createDomainNumberMap(0)
+  const uploadRetryCountRef = useRef<Record<LogicalCloudSyncDomain, number>>(
+    createLogicalDomainNumberMap(0)
   );
   const pendingRemoteCatchUpRef = useRef<
     Record<
@@ -298,11 +293,11 @@ export function useAutoCloudSync() {
       { updatedAt: string; syncVersion?: CloudSyncVersionState | null } | null
     >
   >(createDomainPendingRemoteUpdateMap());
-  const uploadInFlightRef = useRef<Record<CloudSyncDomain, boolean>>(
-    createDomainBooleanMap(false)
+  const uploadInFlightRef = useRef<Record<LogicalCloudSyncDomain, boolean>>(
+    createLogicalDomainBooleanMap(false)
   );
-  const pendingUploadAfterCurrentRef = useRef<Record<CloudSyncDomain, boolean>>(
-    createDomainBooleanMap(false)
+  const pendingUploadAfterCurrentRef = useRef<Record<LogicalCloudSyncDomain, boolean>>(
+    createLogicalDomainBooleanMap(false)
   );
   const checkInFlightRef = useRef(false);
   const pendingRemoteCheckRef = useRef(false);
@@ -334,7 +329,7 @@ export function useAutoCloudSync() {
     ]
   );
 
-  const clearUploadTimer = useCallback((domain: CloudSyncDomain) => {
+  const clearUploadTimer = useCallback((domain: LogicalCloudSyncDomain) => {
     const timer = uploadTimersRef.current[domain];
     if (!timer) {
       return;
@@ -345,7 +340,7 @@ export function useAutoCloudSync() {
   }, []);
 
   const clearAllUploadTimers = useCallback(() => {
-    for (const domain of CLOUD_SYNC_DOMAINS) {
+    for (const domain of LOGICAL_CLOUD_SYNC_DOMAINS) {
       clearUploadTimer(domain);
     }
   }, [clearUploadTimer]);
@@ -355,140 +350,163 @@ export function useAutoCloudSync() {
     return syncState.autoSyncEnabled && syncState.isDomainEnabled(domain);
   }, []);
 
+  const getEnabledPartDomains = useCallback(
+    (logicalDomain: LogicalCloudSyncDomain): CloudSyncDomain[] =>
+      getLogicalCloudSyncDomainPhysicalParts(logicalDomain).filter((domain) =>
+        isDomainEnabled(domain)
+      ),
+    [isDomainEnabled]
+  );
+
+  const hasPendingUploadForDomain = useCallback(
+    (domain: CloudSyncDomain): boolean => {
+      const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
+      const syncState = useCloudSyncStore.getState();
+      return (
+        Boolean(uploadTimersRef.current[logicalDomain]) ||
+        uploadInFlightRef.current[logicalDomain] ||
+        getEnabledPartDomains(logicalDomain).some(
+          (partDomain) => syncState.domainStatus[partDomain].isUploading
+        )
+      );
+    },
+    [getEnabledPartDomains]
+  );
+
   const uploadDomain = useCallback(
     async (domain: CloudSyncDomain) => {
-      clearUploadTimer(domain);
+      const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
+      clearUploadTimer(logicalDomain);
 
-      if (uploadInFlightRef.current[domain]) {
-        if (!firstQueuedAtRef.current[domain]) {
-          firstQueuedAtRef.current[domain] = Date.now();
+      if (uploadInFlightRef.current[logicalDomain]) {
+        if (!firstQueuedAtRef.current[logicalDomain]) {
+          firstQueuedAtRef.current[logicalDomain] = Date.now();
         }
-        pendingUploadAfterCurrentRef.current[domain] = true;
+        pendingUploadAfterCurrentRef.current[logicalDomain] = true;
         console.log(
-          `[CloudSync] Upload ${domain} already in flight — coalescing follow-up sync`
+          `[CloudSync] Upload ${logicalDomain} already in flight — coalescing follow-up sync`
         );
         return;
       }
 
-      if (!username || !isAuthenticated || !isDomainEnabled(domain)) {
-        firstQueuedAtRef.current[domain] = 0;
-        pendingUploadAfterCurrentRef.current[domain] = false;
+      const enabledPartDomains = getEnabledPartDomains(logicalDomain);
+      if (!username || !isAuthenticated || enabledPartDomains.length === 0) {
+        firstQueuedAtRef.current[logicalDomain] = 0;
+        pendingUploadAfterCurrentRef.current[logicalDomain] = false;
         return;
       }
 
       const syncState = useCloudSyncStore.getState();
-
-      if (domain === "settings") {
-        const now = Date.now();
-        const queuedAt = firstQueuedAtRef.current.settings || now;
-        if (!firstQueuedAtRef.current.settings) {
-          firstQueuedAtRef.current.settings = queuedAt;
-        }
-
-        const customWallpaperStatus = syncState.domainStatus["custom-wallpapers"];
-        const customWallpapersLastLocalChangeAt =
-          getLatestLocalChangeAt("custom-wallpapers") ||
-          lastLocalChangeAtRef.current["custom-wallpapers"];
-        const shouldDelayForWallpaperSync =
-          shouldDelaySettingsUploadForWallpaperSync({
-            currentWallpaper: useDisplaySettingsStore.getState().currentWallpaper,
-            customWallpapersEnabled: isDomainEnabled("custom-wallpapers"),
-            customWallpapersLastLocalChangeAt,
-            customWallpapersLastUploadedAt:
-              customWallpaperStatus.lastUploadedAt,
-            customWallpapersHasPendingUpload:
-              Boolean(uploadTimersRef.current["custom-wallpapers"]) ||
-              customWallpaperStatus.isUploading,
-            settingsQueuedAtMs: queuedAt,
-            nowMs: now,
-            maxWaitMs: SETTINGS_WALLPAPER_SYNC_MAX_WAIT_MS,
-          });
-
-        if (shouldDelayForWallpaperSync) {
-          console.log(
-            "[CloudSync] Delaying settings upload until custom-wallpapers syncs the active wallpaper"
-          );
-          uploadTimersRef.current[domain] = setTimeout(() => {
-            void uploadDomain(domain);
-          }, SETTINGS_WALLPAPER_SYNC_RETRY_MS);
-          return;
-        }
+      firstQueuedAtRef.current[logicalDomain] = 0;
+      pendingUploadAfterCurrentRef.current[logicalDomain] = false;
+      uploadInFlightRef.current[logicalDomain] = true;
+      for (const partDomain of enabledPartDomains) {
+        syncState.markUploadStart(partDomain);
       }
-
-      firstQueuedAtRef.current[domain] = 0;
-      pendingUploadAfterCurrentRef.current[domain] = false;
-      uploadInFlightRef.current[domain] = true;
-      syncState.markUploadStart(domain);
       let uploadSucceeded = false;
 
       try {
-        console.log(`[CloudSync] Uploading ${domain}...`);
-        const metadata = await uploadCloudSyncDomain(domain, {
+        console.log(`[CloudSync] Uploading logical domain ${logicalDomain}...`);
+        const result = await uploadLogicalCloudSyncDomain(logicalDomain, {
           username,
           isAuthenticated,
         });
 
-        console.log(`[CloudSync] Upload ${domain} succeeded`, metadata.updatedAt);
-        syncState.markUploadSuccess(domain, metadata);
-        syncState.updateRemoteMetadataForDomain(domain, metadata);
-        uploadRetryCountRef.current[domain] = 0;
+        for (const [partDomain, metadata] of Object.entries(
+          result.partMetadata
+        ) as Array<
+          [
+            CloudSyncDomain,
+            NonNullable<(typeof result.partMetadata)[CloudSyncDomain]>
+          ]
+        >) {
+          console.log(
+            `[CloudSync] Upload ${partDomain} succeeded`,
+            metadata.updatedAt
+          );
+          syncState.markUploadSuccess(partDomain, metadata);
+          syncState.updateRemoteMetadataForDomain(partDomain, metadata);
 
-        const currentLastChange = lastLocalChangeAtRef.current[domain];
-        if (
-          parseCloudSyncTimestamp(currentLastChange) <=
-          parseCloudSyncTimestamp(metadata.updatedAt)
-        ) {
-          lastLocalChangeAtRef.current[domain] = metadata.updatedAt;
-          setPersistedLocalChangeAt(domain, metadata.updatedAt);
+          const currentLastChange = lastLocalChangeAtRef.current[partDomain];
+          if (
+            parseCloudSyncTimestamp(currentLastChange) <=
+            parseCloudSyncTimestamp(metadata.updatedAt)
+          ) {
+            lastLocalChangeAtRef.current[partDomain] = metadata.updatedAt;
+            setPersistedLocalChangeAt(partDomain, metadata.updatedAt);
+          }
         }
+
+        uploadRetryCountRef.current[logicalDomain] = 0;
         uploadSucceeded = true;
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : `Failed to sync ${domain}.`;
-        console.error(`[CloudSync] Upload ${domain} FAILED:`, message, error);
-        useCloudSyncStore.getState().markUploadFailure(domain, message);
+          error instanceof Error
+            ? error.message
+            : `Failed to sync ${logicalDomain}.`;
+        console.error(
+          `[CloudSync] Upload ${logicalDomain} FAILED:`,
+          message,
+          error
+        );
+        for (const partDomain of enabledPartDomains) {
+          useCloudSyncStore.getState().markUploadFailure(partDomain, message);
+        }
 
-        const retryCount = uploadRetryCountRef.current[domain] || 0;
+        const retryCount = uploadRetryCountRef.current[logicalDomain] || 0;
         if (retryCount < UPLOAD_RETRY_DELAYS.length) {
           const retryDelay = UPLOAD_RETRY_DELAYS[retryCount];
-          uploadRetryCountRef.current[domain] = retryCount + 1;
-          console.log(`[CloudSync] Scheduling retry #${retryCount + 1} for ${domain} in ${retryDelay}ms`);
-          uploadTimersRef.current[domain] = setTimeout(() => {
+          uploadRetryCountRef.current[logicalDomain] = retryCount + 1;
+          console.log(
+            `[CloudSync] Scheduling retry #${retryCount + 1} for ${logicalDomain} in ${retryDelay}ms`
+          );
+          uploadTimersRef.current[logicalDomain] = setTimeout(() => {
             void uploadDomain(domain);
           }, retryDelay);
         }
       } finally {
-        uploadInFlightRef.current[domain] = false;
+        uploadInFlightRef.current[logicalDomain] = false;
 
         if (
-          pendingUploadAfterCurrentRef.current[domain] &&
+          pendingUploadAfterCurrentRef.current[logicalDomain] &&
           username &&
           isAuthenticated &&
-          isDomainEnabled(domain)
+          getEnabledPartDomains(logicalDomain).length > 0
         ) {
-          pendingUploadAfterCurrentRef.current[domain] = false;
+          pendingUploadAfterCurrentRef.current[logicalDomain] = false;
           console.log(
-            `[CloudSync] Re-running coalesced upload for ${domain}`
+            `[CloudSync] Re-running coalesced upload for ${logicalDomain}`
           );
           void uploadDomain(domain);
         } else {
-          pendingUploadAfterCurrentRef.current[domain] = false;
-          const pendingRemoteUpdate = pendingRemoteCatchUpRef.current[domain];
-          if (uploadSucceeded && pendingRemoteUpdate) {
-            pendingRemoteCatchUpRef.current[domain] = null;
-            console.log(
-              `[CloudSync] Rechecking deferred remote update for ${domain}`
-            );
-            void handleRealtimeDomainUpdateRef.current(
-              domain,
-              pendingRemoteUpdate.updatedAt,
-              pendingRemoteUpdate.syncVersion
-            );
+          pendingUploadAfterCurrentRef.current[logicalDomain] = false;
+          if (uploadSucceeded) {
+            for (const partDomain of enabledPartDomains) {
+              const pendingRemoteUpdate = pendingRemoteCatchUpRef.current[partDomain];
+              if (!pendingRemoteUpdate) {
+                continue;
+              }
+              pendingRemoteCatchUpRef.current[partDomain] = null;
+              console.log(
+                `[CloudSync] Rechecking deferred remote update for ${partDomain}`
+              );
+              void handleRealtimeDomainUpdateRef.current(
+                partDomain,
+                pendingRemoteUpdate.updatedAt,
+                pendingRemoteUpdate.syncVersion
+              );
+            }
           }
         }
       }
     },
-    [isAuthenticated, clearUploadTimer, isDomainEnabled, username]
+    [
+      clearUploadTimer,
+      getEnabledPartDomains,
+      isAuthenticated,
+      username,
+      uploadLogicalCloudSyncDomain,
+    ]
   );
 
   const queueUpload = useCallback(
@@ -498,59 +516,72 @@ export function useAutoCloudSync() {
         return;
       }
 
+      const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
       const now = Date.now();
       const timestamp = new Date(now).toISOString();
       lastLocalChangeAtRef.current[domain] = timestamp;
       setPersistedLocalChangeAt(domain, timestamp);
-      uploadRetryCountRef.current[domain] = 0;
+      uploadRetryCountRef.current[logicalDomain] = 0;
 
-      if (!firstQueuedAtRef.current[domain]) {
-        firstQueuedAtRef.current[domain] = now;
+      if (!firstQueuedAtRef.current[logicalDomain]) {
+        firstQueuedAtRef.current[logicalDomain] = now;
       }
 
       const syncState = useCloudSyncStore.getState();
       if (
-        uploadInFlightRef.current[domain] ||
-        syncState.domainStatus[domain].isUploading
+        uploadInFlightRef.current[logicalDomain] ||
+        getEnabledPartDomains(logicalDomain).some(
+          (partDomain) => syncState.domainStatus[partDomain].isUploading
+        )
       ) {
-        pendingUploadAfterCurrentRef.current[domain] = true;
-        clearUploadTimer(domain);
+        pendingUploadAfterCurrentRef.current[logicalDomain] = true;
+        clearUploadTimer(logicalDomain);
         console.log(
-          `[CloudSync] queueUpload(${domain}) deferred: upload already in flight`
+          `[CloudSync] queueUpload(${logicalDomain}) deferred: upload already in flight`
         );
         return;
       }
 
-      const suppressUntil = remoteApplySuppressUntilRef.current[domain];
+      const suppressUntil = Math.max(
+        ...getLogicalCloudSyncDomainPhysicalParts(logicalDomain).map(
+          (partDomain) => remoteApplySuppressUntilRef.current[partDomain]
+        )
+      );
       if (now < suppressUntil) {
         const remainingMs = suppressUntil - now;
         const deferMs = remainingMs + UPLOAD_DEBOUNCE_MS[domain];
-        console.log(`[CloudSync] queueUpload(${domain}) deferred: suppressed for ${remainingMs}ms, will fire in ${deferMs}ms`);
-        clearUploadTimer(domain);
-        uploadTimersRef.current[domain] = setTimeout(() => {
+        console.log(`[CloudSync] queueUpload(${logicalDomain}) deferred: suppressed for ${remainingMs}ms, will fire in ${deferMs}ms`);
+        clearUploadTimer(logicalDomain);
+        uploadTimersRef.current[logicalDomain] = setTimeout(() => {
           void uploadDomain(domain);
         }, deferMs);
         return;
       }
 
       const maxDebounce = MAX_UPLOAD_DEBOUNCE_MS[domain];
-      const elapsed = now - firstQueuedAtRef.current[domain];
+      const elapsed = now - firstQueuedAtRef.current[logicalDomain];
 
-      clearUploadTimer(domain);
+      clearUploadTimer(logicalDomain);
 
       if (elapsed >= maxDebounce) {
-        console.log(`[CloudSync] queueUpload(${domain}) — max debounce reached (${elapsed}ms), uploading now`);
+        console.log(`[CloudSync] queueUpload(${logicalDomain}) — max debounce reached (${elapsed}ms), uploading now`);
         void uploadDomain(domain);
       } else {
         const remainingMax = maxDebounce - elapsed;
         const delay = Math.min(UPLOAD_DEBOUNCE_MS[domain], remainingMax);
-        console.log(`[CloudSync] queueUpload(${domain}) — debounce ${delay}ms (cap in ${remainingMax}ms)`);
-        uploadTimersRef.current[domain] = setTimeout(() => {
+        console.log(`[CloudSync] queueUpload(${logicalDomain}) — debounce ${delay}ms (cap in ${remainingMax}ms)`);
+        uploadTimersRef.current[logicalDomain] = setTimeout(() => {
           void uploadDomain(domain);
         }, delay);
       }
     },
-    [clearUploadTimer, isDomainEnabled, isSyncActive, uploadDomain]
+    [
+      clearUploadTimer,
+      getEnabledPartDomains,
+      isDomainEnabled,
+      isSyncActive,
+      uploadDomain,
+    ]
   );
 
   const syncChannelRef = useRef<{ name: string; unbind: () => void } | null>(
@@ -587,7 +618,7 @@ export function useAutoCloudSync() {
       const hasUnsynced = hasUnsyncedLocalChanges(
         lastLocalChangeAtRef.current[domain],
         domainStatus.lastUploadedAt,
-        Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading
+        hasPendingUploadForDomain(domain) || domainStatus.isUploading
       );
       const shouldApplyMetadata = shouldApplyRemoteUpdate({
         remoteUpdatedAt,
@@ -596,7 +627,7 @@ export function useAutoCloudSync() {
         lastUploadedAt: domainStatus.lastUploadedAt,
         lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
         hasPendingUpload:
-          Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
+          hasPendingUploadForDomain(domain) || domainStatus.isUploading,
         lastKnownServerVersion: domainStatus.lastKnownServerVersion,
       });
       if (
@@ -609,7 +640,7 @@ export function useAutoCloudSync() {
           lastUploadedAt: domainStatus.lastUploadedAt,
           lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
           hasPendingUpload:
-            Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
+            hasPendingUploadForDomain(domain) || domainStatus.isUploading,
           lastKnownServerVersion: domainStatus.lastKnownServerVersion,
         })
       ) {
@@ -660,7 +691,7 @@ export function useAutoCloudSync() {
               lastUploadedAt: currentDomainStatus.lastUploadedAt,
               lastLocalChangeAt: latestLocalChangeAt,
               hasPendingUpload:
-                Boolean(uploadTimersRef.current[domain]) ||
+                hasPendingUploadForDomain(domain) ||
                 currentDomainStatus.isUploading,
               lastKnownServerVersion: currentDomainStatus.lastKnownServerVersion,
             });
@@ -768,7 +799,7 @@ export function useAutoCloudSync() {
           const hasUnsynced = hasUnsyncedLocalChanges(
             lastLocalChangeAtRef.current[domain],
             domainStatus.lastUploadedAt,
-            Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading
+            hasPendingUploadForDomain(domain) || domainStatus.isUploading
           );
           const shouldApplyMetadata = shouldApplyRemoteUpdate({
             remoteUpdatedAt: remoteMetadata.updatedAt,
@@ -777,7 +808,7 @@ export function useAutoCloudSync() {
             lastUploadedAt: domainStatus.lastUploadedAt,
             lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
             hasPendingUpload:
-              Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
+              hasPendingUploadForDomain(domain) || domainStatus.isUploading,
             lastKnownServerVersion: domainStatus.lastKnownServerVersion,
           });
           if (
@@ -789,7 +820,7 @@ export function useAutoCloudSync() {
               lastUploadedAt: domainStatus.lastUploadedAt,
               lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
               hasPendingUpload:
-                Boolean(uploadTimersRef.current[domain]) ||
+                hasPendingUploadForDomain(domain) ||
                 domainStatus.isUploading,
               lastKnownServerVersion: domainStatus.lastKnownServerVersion,
             })
@@ -1271,7 +1302,8 @@ export function useAutoCloudSync() {
     // it. For all others, reset from persisted state.
     const hadPendingTimer = new Set<CloudSyncDomain>();
     for (const d of CLOUD_SYNC_DOMAINS) {
-      if (uploadTimersRef.current[d]) {
+      const logicalDomain = getLogicalCloudSyncDomainForPhysical(d);
+      if (uploadTimersRef.current[logicalDomain]) {
         hadPendingTimer.add(d);
       }
     }
