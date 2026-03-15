@@ -403,7 +403,7 @@ export function FinderAppComponent({
                   <DropdownMenuTrigger asChild>
                     <div className="metal-inset-btn-group">
                       <button type="button" className="metal-inset-btn metal-inset-icon gap-0.5">
-                        <GearSix size={14} weight="fill" />
+                        <GearSix size={14} weight="fill" style={{ transform: "rotate(30deg)" }} />
                         <CaretDown size={8} weight="bold" />
                       </button>
                     </div>
