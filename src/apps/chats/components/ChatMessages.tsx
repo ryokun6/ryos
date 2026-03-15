@@ -209,6 +209,7 @@ interface ChatMessagesProps {
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
+  typingUsers?: string[];
 }
 
 // Component to render the scroll-to-bottom button using the library's context
@@ -1089,6 +1090,7 @@ interface ChatMessagesContentProps {
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
+  typingUsers?: string[];
 }
 
 function ChatMessagesContent({
@@ -1108,6 +1110,7 @@ function ChatMessagesContent({
   isSpeaking,
   onSendMessage,
   isLoadingGreeting,
+  typingUsers,
 }: ChatMessagesContentProps) {
   const { t } = useTranslation();
   const { playNote } = useChatSynth();
@@ -1351,6 +1354,35 @@ function ChatMessagesContent({
           />
         );
       })}
+      {/* Typing indicators for room view */}
+      <AnimatePresence>
+        {isRoomView && typingUsers && typingUsers.length > 0 && (
+          <motion.div
+            key="typing-indicator"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-start gap-1"
+          >
+            <div
+              className="p-1.5 px-2 chat-bubble bg-neutral-200 text-neutral-400 w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words"
+              style={{ fontSize: `${fontSize}px` }}
+            >
+              <div className="flex items-center gap-1.5">
+                <TypingDots />
+                <span className="text-neutral-400 text-[11px]">
+                  {typingUsers.length === 1
+                    ? typingUsers[0]
+                    : typingUsers.length === 2
+                    ? `${typingUsers[0]} & ${typingUsers[1]}`
+                    : `${typingUsers[0]} & ${typingUsers.length - 1} others`}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {error &&
         (() => {
           const errorMessage = getErrorMessage(error);
@@ -1422,12 +1454,13 @@ export function ChatMessages({
   isAdmin = false,
   username,
   onMessageDeleted,
-  fontSize, // Destructure font size prop
-  scrollToBottomTrigger, // Destructure scroll trigger prop
+  fontSize,
+  scrollToBottomTrigger,
   highlightSegment,
   isSpeaking,
   onSendMessage,
   isLoadingGreeting,
+  typingUsers,
 }: ChatMessagesProps) {
   return (
     // Use StickToBottom component as the main container
@@ -1457,6 +1490,7 @@ export function ChatMessages({
           isSpeaking={isSpeaking}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
+          typingUsers={typingUsers}
         />
       </StickToBottom.Content>
 

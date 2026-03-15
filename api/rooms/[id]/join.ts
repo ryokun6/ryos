@@ -8,7 +8,7 @@ import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../..
 import { getRoom, setRoom } from "../_helpers/_redis.js";
 import { getRoomWriteAccessError } from "../_helpers/_access.js";
 import { setRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
-import { broadcastRoomUpdated } from "../_helpers/_pusher.js";
+import { broadcastRoomUpdated, broadcastPresenceUpdate } from "../_helpers/_pusher.js";
 import type { Room } from "../_helpers/_types.js";
 
 export const runtime = "nodejs";
@@ -83,7 +83,10 @@ export default apiHandler(
       const userCount = await refreshRoomUserCount(roomId);
       const updatedRoom: Room = { ...roomData, userCount };
       await setRoom(roomId, updatedRoom);
-      await broadcastRoomUpdated(roomId);
+      await Promise.all([
+        broadcastRoomUpdated(roomId),
+        broadcastPresenceUpdate(roomId, { username, action: "joined", userCount }),
+      ]);
 
       logger.info("User joined room", { roomId, username, userCount });
       logger.response(200, Date.now() - startTime);

@@ -14,6 +14,8 @@ import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -27,9 +29,22 @@ interface GlobalHandlers {
   onRoomsUpdated: (data: { rooms: ChatRoom[] }) => void;
 }
 
+interface PresenceUpdatePayload {
+  username: string;
+  action: "joined" | "left";
+  userCount: number;
+}
+
+interface TypingPayload {
+  username: string;
+  isTyping: boolean;
+}
+
 interface RoomHandlers {
   onRoomMessage: (data: { message: ChatMessage }) => void;
   onMessageDeleted: (data: { messageId: string; roomId: string }) => void;
+  onPresenceUpdate: (data: PresenceUpdatePayload) => void;
+  onUserTyping: (data: TypingPayload) => void;
 }
 
 export function useChatRoom(
@@ -88,6 +103,11 @@ export function useChatRoom(
   const roomChannelsRef = useRef<Record<string, PusherChannel>>({});
   const roomHandlersRef = useRef<Record<string, RoomHandlers>>({});
   const hasInitialized = useRef(false);
+
+  // Typing indicator state: map of roomId → Set<username> currently typing
+  const [typingUsers, setTypingUsers] = useState<Record<string, Set<string>>>({});
+  const typingTimersRef = useRef<Record<string, Record<string, ReturnType<typeof setTimeout>>>>({});
+  const lastTypingEmitRef = useRef<number>(0);
 
   // Dialog states (only room-related)
   const [isNewRoomDialogOpen, setIsNewRoomDialogOpen] = useState(false);
@@ -227,7 +247,6 @@ export function useChatRoom(
       console.log(`[Pusher Hook] Subscribing to room channel: room-${roomId}`);
       const roomChannel = subscribePusherChannel(`room-${roomId}`);
 
-      // Create event handlers with unique names to prevent duplicate binding
       const handlers: RoomHandlers = {
         onRoomMessage: (data) => {
           if (!data?.message?.roomId || !data.message.id) {
@@ -236,7 +255,6 @@ export function useChatRoom(
 
           console.log("[Pusher Hook] Received room-message:", data.message);
 
-          // Ignore duplicate realtime deliveries for the same server message.
           const { roomMessages: roomMessagesMap } = useChatsStore.getState();
           const existingMessages = roomMessagesMap[data.message.roomId] || [];
           if (
@@ -251,7 +269,6 @@ export function useChatRoom(
               ? new Date(data.message.timestamp).getTime()
               : Date.now();
 
-          // Add message with proper timestamp
           const messageWithTimestamp = {
             ...data.message,
             timestamp: Number.isFinite(parsedTimestamp)
@@ -261,7 +278,15 @@ export function useChatRoom(
 
           addMessageToRoom(data.message.roomId, messageWithTimestamp);
 
-          // Show toast if the message is for a room that is not currently open
+          // Clear typing indicator for the sender since they just sent a message
+          setTypingUsers((prev) => {
+            const roomTyping = prev[data.message.roomId];
+            if (!roomTyping?.has(data.message.username)) return prev;
+            const next = new Set(roomTyping);
+            next.delete(data.message.username);
+            return { ...prev, [data.message.roomId]: next };
+          });
+
           const { currentRoomId: activeRoomId } = useChatsStore.getState();
           if (
             !shouldNotifyForRoomMessage({
@@ -284,19 +309,72 @@ export function useChatRoom(
         },
         onMessageDeleted: (data) => {
           console.log("[Pusher Hook] Message deleted:", data.messageId);
-          // Remove the message locally so UI reflects deletion
           removeMessageFromRoom(data.roomId, data.messageId);
+        },
+        onPresenceUpdate: (data) => {
+          if (!data?.username || !data.action) return;
+          const { rooms: currentRooms } = useChatsStore.getState();
+          const room = currentRooms.find((r) => r.id === roomId);
+          if (room) {
+            setRooms(upsertChatRoom(currentRooms, { ...room, userCount: data.userCount }));
+          }
+        },
+        onUserTyping: (data) => {
+          if (!data?.username) return;
+          const selfUsername = useChatsStore.getState().username;
+          if (data.username === selfUsername) return;
+
+          if (data.isTyping) {
+            setTypingUsers((prev) => {
+              const current = prev[roomId] || new Set<string>();
+              if (current.has(data.username)) return prev;
+              const next = new Set(current);
+              next.add(data.username);
+              return { ...prev, [roomId]: next };
+            });
+
+            // Auto-expire after 4s if no further event
+            if (!typingTimersRef.current[roomId]) {
+              typingTimersRef.current[roomId] = {};
+            }
+            const existing = typingTimersRef.current[roomId][data.username];
+            if (existing) clearTimeout(existing);
+            typingTimersRef.current[roomId][data.username] = setTimeout(() => {
+              setTypingUsers((prev) => {
+                const current = prev[roomId];
+                if (!current?.has(data.username)) return prev;
+                const next = new Set(current);
+                next.delete(data.username);
+                return { ...prev, [roomId]: next };
+              });
+              delete typingTimersRef.current[roomId]?.[data.username];
+            }, 4000);
+          } else {
+            setTypingUsers((prev) => {
+              const current = prev[roomId];
+              if (!current?.has(data.username)) return prev;
+              const next = new Set(current);
+              next.delete(data.username);
+              return { ...prev, [roomId]: next };
+            });
+            const existing = typingTimersRef.current[roomId]?.[data.username];
+            if (existing) {
+              clearTimeout(existing);
+              delete typingTimersRef.current[roomId][data.username];
+            }
+          }
         },
       };
 
-      // Bind the handlers
       roomChannel.bind("room-message", handlers.onRoomMessage);
       roomChannel.bind("message-deleted", handlers.onMessageDeleted);
+      roomChannel.bind("presence-update", handlers.onPresenceUpdate);
+      roomChannel.bind("user-typing", handlers.onUserTyping);
 
       roomChannelsRef.current[roomId] = roomChannel;
       roomHandlersRef.current[roomId] = handlers;
     },
-    [addMessageToRoom, removeMessageFromRoom, incrementUnread]
+    [addMessageToRoom, removeMessageFromRoom, incrementUnread, setRooms]
   );
 
   const unsubscribeFromRoomChannel = useCallback((roomId: string) => {
@@ -313,6 +391,15 @@ export function useChatRoom(
     if (handlers) {
       channel.unbind("room-message", handlers.onRoomMessage);
       channel.unbind("message-deleted", handlers.onMessageDeleted);
+      channel.unbind("presence-update", handlers.onPresenceUpdate);
+      channel.unbind("user-typing", handlers.onUserTyping);
+    }
+
+    // Clean up typing timers for this room
+    const roomTimers = typingTimersRef.current[roomId];
+    if (roomTimers) {
+      Object.values(roomTimers).forEach(clearTimeout);
+      delete typingTimersRef.current[roomId];
     }
 
     unsubscribePusherChannel(channel.name);
@@ -326,6 +413,33 @@ export function useChatRoom(
       unsubscribeFromRoomChannel(roomId);
     });
   }, [unsubscribeFromRoomChannel]);
+
+  // --- Typing Indicator Emission ---
+  const TYPING_THROTTLE_MS = 2000;
+
+  const emitTyping = useCallback(
+    (roomId: string) => {
+      if (!username || !isAuthenticated || !roomId) return;
+      const now = Date.now();
+      if (now - lastTypingEmitRef.current < TYPING_THROTTLE_MS) return;
+      lastTypingEmitRef.current = now;
+
+      abortableFetch(getApiUrl(`/api/rooms/${roomId}/typing`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isTyping: true }),
+        timeout: 5000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 100 },
+      }).catch(() => {});
+    },
+    [username, isAuthenticated]
+  );
+
+  // Helper to get typing users for the current room
+  const currentRoomTypingUsers = currentRoomId
+    ? Array.from(typingUsers[currentRoomId] || [])
+    : [];
 
   // --- Room Management ---
   const handleRoomSelect = useCallback(
@@ -582,6 +696,10 @@ export function useChatRoom(
     currentRoomMessagesLimited,
     isSidebarVisible,
     isAdmin,
+
+    // Typing indicators
+    currentRoomTypingUsers,
+    emitTyping,
 
     // Actions
     handleRoomSelect,

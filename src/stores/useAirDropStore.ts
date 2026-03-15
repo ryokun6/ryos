@@ -8,6 +8,9 @@ import {
 import type { PusherChannel } from "@/lib/pusherClient";
 import { toast } from "sonner";
 
+const AIRDROP_PRESENCE_TTL_MS = 60_000;
+const AIRDROP_LOBBY_CHANNEL = "airdrop-lobby";
+
 export interface AirDropTransfer {
   transferId: string;
   sender: string;
@@ -24,7 +27,9 @@ interface AirDropState {
   heartbeatInterval: ReturnType<typeof setInterval> | null;
   discoverInterval: ReturnType<typeof setInterval> | null;
   pusherChannel: PusherChannel | null;
+  lobbyChannel: PusherChannel | null;
   subscribedUsername: string | null;
+  presenceMap: Record<string, number>;
 
   startAirDrop: (username: string) => void;
   stopAirDrop: () => void;
@@ -71,7 +76,9 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
   heartbeatInterval: null,
   discoverInterval: null,
   pusherChannel: null,
+  lobbyChannel: null,
   subscribedUsername: null,
+  presenceMap: {},
 
   startAirDrop: (username: string) => {
     const state = get();
@@ -91,9 +98,41 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
     heartbeat();
 
     const hbInterval = setInterval(heartbeat, 30000);
-    const discInterval = setInterval(() => get().fetchNearbyUsers(), 10000);
 
-    set({ heartbeatInterval: hbInterval, discoverInterval: discInterval });
+    // Prune stale presence entries periodically and derive nearbyUsers
+    const pruneInterval = setInterval(() => {
+      const now = Date.now();
+      const map = { ...get().presenceMap };
+      let changed = false;
+      for (const [u, ts] of Object.entries(map)) {
+        if (now - ts > AIRDROP_PRESENCE_TTL_MS) {
+          delete map[u];
+          changed = true;
+        }
+      }
+      if (changed) {
+        const nearby = Object.keys(map).filter((u) => u !== username);
+        set({ presenceMap: map, nearbyUsers: nearby });
+      }
+    }, 15000);
+
+    set({ heartbeatInterval: hbInterval, discoverInterval: pruneInterval });
+
+    // Subscribe to the lobby channel for push-based discovery
+    if (!state.lobbyChannel) {
+      const lobby = subscribePusherChannel(AIRDROP_LOBBY_CHANNEL);
+      lobby.bind("airdrop-presence", (data: unknown) => {
+        const payload = data as { username?: string; timestamp?: number };
+        if (!payload?.username || payload.username === username) return;
+
+        const map = { ...get().presenceMap, [payload.username]: payload.timestamp || Date.now() };
+        const nearby = Object.keys(map).filter((u) => u !== username);
+        set({ presenceMap: map, nearbyUsers: nearby });
+      });
+      set({ lobbyChannel: lobby });
+    }
+
+    // Do one initial fetch to seed the list
     get().fetchNearbyUsers();
     get().subscribeToChannel(username);
   },
@@ -102,10 +141,16 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
     const state = get();
     if (state.heartbeatInterval) clearInterval(state.heartbeatInterval);
     if (state.discoverInterval) clearInterval(state.discoverInterval);
+    if (state.lobbyChannel) {
+      state.lobbyChannel.unbind("airdrop-presence");
+      unsubscribePusherChannel(AIRDROP_LOBBY_CHANNEL);
+    }
     set({
       heartbeatInterval: null,
       discoverInterval: null,
+      lobbyChannel: null,
       nearbyUsers: [],
+      presenceMap: {},
       isDiscovering: false,
     });
   },
@@ -118,7 +163,13 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ nearbyUsers: data.users || [] });
+        const users: string[] = data.users || [];
+        const now = Date.now();
+        const map: Record<string, number> = {};
+        for (const u of users) {
+          map[u] = now;
+        }
+        set({ nearbyUsers: users, presenceMap: map });
       }
     } catch {
       // Silently fail

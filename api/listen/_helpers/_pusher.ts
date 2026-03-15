@@ -56,3 +56,10 @@ export async function broadcastReaction(
 export async function broadcastSessionEnded(sessionId: string): Promise<void> {
   await triggerRealtimeEvent(getChannelName(sessionId), "session-ended", {});
 }
+
+export async function broadcastDjDisconnected(
+  sessionId: string,
+  payload: { djUsername: string; lastSyncAt: number }
+): Promise<void> {
+  await triggerRealtimeEvent(getChannelName(sessionId), "dj-disconnected", payload);
+}

@@ -24,9 +24,9 @@ interface ChatRoomSidebarProps {
   onDeleteRoom?: (room: ChatRoom) => void;
   isVisible: boolean;
   isAdmin: boolean;
-  /** When rendered inside mobile/overlay mode, occupies full width and hides right border */
   isOverlay?: boolean;
   username?: string | null;
+  onlineUsers?: string[];
 }
 
 export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
@@ -39,6 +39,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
   isAdmin,
   isOverlay = false,
   username,
+  onlineUsers = [],
 }) => {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
@@ -61,10 +62,19 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
     return null;
   }
 
+  const onlineUsersSet = new Set(onlineUsers);
+
   const renderRoomItem = (room: ChatRoom) => {
     const unreadCount = unreadCounts[room.id] || 0;
     const hasUnread = unreadCount > 0;
     const isSelected = currentRoom?.id === room.id;
+
+    // For private rooms, check if the other member(s) are online
+    const isPrivateOnline =
+      room.type === "private" &&
+      room.members?.some(
+        (m) => m !== username?.toLowerCase() && onlineUsersSet.has(m)
+      );
 
     return (
       <div
@@ -88,6 +98,12 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
         }}
       >
         <div className="flex items-center">
+          {isPrivateOnline && (
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 flex-shrink-0"
+              title="Online"
+            />
+          )}
           <span>
             {room.type === "private"
               ? getPrivateRoomDisplayName(room, username ?? null)
