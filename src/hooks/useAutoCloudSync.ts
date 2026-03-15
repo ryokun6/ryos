@@ -34,6 +34,7 @@ import {
   downloadAndApplyCloudSyncDomain,
   fetchCloudSyncMetadata,
   getSyncSessionId,
+  individualBlobDomainNeedsLocalReconcile,
   uploadCloudSyncDomain,
 } from "@/utils/cloudSync";
 import {
@@ -46,10 +47,13 @@ import {
   CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
   getLatestCloudSyncTimestamp,
   getSyncChannelName,
+  hasUnsyncedLocalChanges,
   isCloudSyncDomain,
+  isIndividualBlobSyncDomain,
   parseCloudSyncTimestamp,
   shouldApplyRemoteUpdate,
   shouldDelaySettingsUploadForWallpaperSync,
+  shouldRecheckRemoteAfterLocalSync,
   type CloudSyncDomain,
 } from "@/utils/cloudSyncShared";
 import type { CloudSyncVersionState } from "@/utils/cloudSyncVersion";
@@ -225,6 +229,9 @@ export function useAutoCloudSync() {
   const uploadRetryCountRef = useRef<Record<CloudSyncDomain, number>>(
     createDomainNumberMap(0)
   );
+  const pendingRemoteCatchUpRef = useRef<Record<CloudSyncDomain, boolean>>(
+    createDomainBooleanMap(false)
+  );
   const uploadInFlightRef = useRef<Record<CloudSyncDomain, boolean>>(
     createDomainBooleanMap(false)
   );
@@ -232,6 +239,7 @@ export function useAutoCloudSync() {
     createDomainBooleanMap(false)
   );
   const checkInFlightRef = useRef(false);
+  const checkRemoteUpdatesRef = useRef<(() => Promise<void>) | null>(null);
   const lastVisibilityCheckRef = useRef(0);
   const wallpaperSeedDoneRef = useRef(false);
   const contactsSeedDoneRef = useRef(false);
@@ -345,6 +353,7 @@ export function useAutoCloudSync() {
       pendingUploadAfterCurrentRef.current[domain] = false;
       uploadInFlightRef.current[domain] = true;
       syncState.markUploadStart(domain);
+      let uploadSucceeded = false;
 
       try {
         console.log(`[CloudSync] Uploading ${domain}...`);
@@ -366,6 +375,7 @@ export function useAutoCloudSync() {
           lastLocalChangeAtRef.current[domain] = metadata.updatedAt;
           setPersistedLocalChangeAt(domain, metadata.updatedAt);
         }
+        uploadSucceeded = true;
       } catch (error) {
         const message =
           error instanceof Error ? error.message : `Failed to sync ${domain}.`;
@@ -397,6 +407,13 @@ export function useAutoCloudSync() {
           void uploadDomain(domain);
         } else {
           pendingUploadAfterCurrentRef.current[domain] = false;
+          if (uploadSucceeded && pendingRemoteCatchUpRef.current[domain]) {
+            pendingRemoteCatchUpRef.current[domain] = false;
+            console.log(
+              `[CloudSync] Rechecking remote ${domain} after local upload settled`
+            );
+            void checkRemoteUpdatesRef.current?.();
+          }
         }
       }
     },
@@ -482,7 +499,12 @@ export function useAutoCloudSync() {
       const syncState = useCloudSyncStore.getState();
       const domainStatus = syncState.domainStatus[domain];
 
-      const shouldApply = shouldApplyRemoteUpdate({
+      const hasUnsynced = hasUnsyncedLocalChanges(
+        lastLocalChangeAtRef.current[domain],
+        domainStatus.lastUploadedAt,
+        Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading
+      );
+      const shouldApplyMetadata = shouldApplyRemoteUpdate({
         remoteUpdatedAt,
         remoteSyncVersion: remoteSyncVersion || syncState.remoteMetadata[domain]?.syncVersion,
         lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
@@ -492,19 +514,50 @@ export function useAutoCloudSync() {
           Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
         lastKnownServerVersion: domainStatus.lastKnownServerVersion,
       });
-
-      if (!shouldApply) return;
+      if (
+        !shouldApplyMetadata &&
+        shouldRecheckRemoteAfterLocalSync({
+          remoteUpdatedAt,
+          remoteSyncVersion:
+            remoteSyncVersion || syncState.remoteMetadata[domain]?.syncVersion,
+          lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
+          lastUploadedAt: domainStatus.lastUploadedAt,
+          lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
+          hasPendingUpload:
+            Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
+          lastKnownServerVersion: domainStatus.lastKnownServerVersion,
+        })
+      ) {
+        pendingRemoteCatchUpRef.current[domain] = true;
+      }
+      let reconcileIndividualBlobs = false;
+      if (
+        !shouldApplyMetadata &&
+        !hasUnsynced &&
+        isIndividualBlobSyncDomain(domain)
+      ) {
+        reconcileIndividualBlobs = await individualBlobDomainNeedsLocalReconcile(
+          domain,
+          { username, isAuthenticated }
+        );
+      }
+      if (!shouldApplyMetadata && !reconcileIndividualBlobs) return;
 
       remoteApplySuppressUntilRef.current[domain] = Date.now() + REALTIME_INFLIGHT_SUPPRESSION_MS;
       realtimeInFlightRef.current.add(domain);
 
       try {
-        console.log(`[CloudSync] Realtime download: ${domain}`);
+        console.log(
+          reconcileIndividualBlobs
+            ? `[CloudSync] Realtime reconcile individual blobs: ${domain}`
+            : `[CloudSync] Realtime download: ${domain}`
+        );
         const downloadResult = await downloadAndApplyCloudSyncDomain(domain, {
           username,
           isAuthenticated,
         }, {
           shouldApply: (metadata) => {
+            if (reconcileIndividualBlobs) return true;
             const latestLocalChangeAt =
               getLatestLocalChangeAt(domain) || lastLocalChangeAtRef.current[domain];
             const currentSyncState = useCloudSyncStore.getState();
@@ -581,9 +634,18 @@ export function useAutoCloudSync() {
         const syncState = useCloudSyncStore.getState();
         const domainStatus = syncState.domainStatus[domain];
 
-        const shouldApply = shouldApplyRemoteUpdate({
-          remoteUpdatedAt: remoteMetadata?.updatedAt,
-          remoteSyncVersion: remoteMetadata?.syncVersion,
+        if (!remoteMetadata) {
+          continue;
+        }
+
+        const hasUnsynced = hasUnsyncedLocalChanges(
+          lastLocalChangeAtRef.current[domain],
+          domainStatus.lastUploadedAt,
+          Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading
+        );
+        const shouldApplyMetadata = shouldApplyRemoteUpdate({
+          remoteUpdatedAt: remoteMetadata.updatedAt,
+          remoteSyncVersion: remoteMetadata.syncVersion,
           lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
           lastUploadedAt: domainStatus.lastUploadedAt,
           lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
@@ -591,8 +653,34 @@ export function useAutoCloudSync() {
             Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
           lastKnownServerVersion: domainStatus.lastKnownServerVersion,
         });
-
-        if (!shouldApply || !remoteMetadata) {
+        if (
+          !shouldApplyMetadata &&
+          shouldRecheckRemoteAfterLocalSync({
+            remoteUpdatedAt: remoteMetadata.updatedAt,
+            remoteSyncVersion: remoteMetadata.syncVersion,
+            lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
+            lastUploadedAt: domainStatus.lastUploadedAt,
+            lastLocalChangeAt: lastLocalChangeAtRef.current[domain],
+            hasPendingUpload:
+              Boolean(uploadTimersRef.current[domain]) || domainStatus.isUploading,
+            lastKnownServerVersion: domainStatus.lastKnownServerVersion,
+          })
+        ) {
+          pendingRemoteCatchUpRef.current[domain] = true;
+        }
+        let reconcileIndividualBlobs = false;
+        if (
+          !shouldApplyMetadata &&
+          !hasUnsynced &&
+          isIndividualBlobSyncDomain(domain)
+        ) {
+          reconcileIndividualBlobs =
+            await individualBlobDomainNeedsLocalReconcile(domain, {
+              username,
+              isAuthenticated,
+            });
+        }
+        if (!shouldApplyMetadata && !reconcileIndividualBlobs) {
           continue;
         }
 
@@ -601,6 +689,7 @@ export function useAutoCloudSync() {
           isAuthenticated,
         }, {
           shouldApply: (metadata) => {
+            if (reconcileIndividualBlobs) return true;
             const latestLocalChangeAt =
               getLatestLocalChangeAt(domain) || lastLocalChangeAtRef.current[domain];
             const currentSyncState = useCloudSyncStore.getState();
@@ -682,6 +771,7 @@ export function useAutoCloudSync() {
       checkInFlightRef.current = false;
     }
   }, [isAuthenticated, isDomainEnabled, isSyncActive, queueUpload, username]);
+  checkRemoteUpdatesRef.current = checkRemoteUpdates;
 
   const handleRealtimeDomainUpdateRef = useRef(handleRealtimeDomainUpdate);
   handleRealtimeDomainUpdateRef.current = handleRealtimeDomainUpdate;

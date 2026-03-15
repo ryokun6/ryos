@@ -14,6 +14,7 @@ import {
   normalizeCloudSyncMetadataMap,
   shouldApplyRemoteUpdate,
   shouldDelaySettingsUploadForWallpaperSync,
+  shouldRecheckRemoteAfterLocalSync,
 } from "../src/utils/cloudSyncShared";
 import {
   filterDeletedFilePaths,
@@ -226,6 +227,58 @@ describe("cloud sync shared helpers", () => {
         lastKnownServerVersion: 2,
       })
     ).toBe(true);
+  });
+
+  test("queues a follow-up remote check when local sync temporarily blocks apply", () => {
+    expect(
+      shouldRecheckRemoteAfterLocalSync({
+        remoteUpdatedAt: "2026-03-04T12:05:00.000Z",
+        lastAppliedRemoteAt: "2026-03-04T12:00:00.000Z",
+        lastUploadedAt: "2026-03-04T12:02:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:03:00.000Z",
+        hasPendingUpload: true,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRecheckRemoteAfterLocalSync({
+        remoteUpdatedAt: "2026-03-04T11:59:00.000Z",
+        lastAppliedRemoteAt: "2026-03-04T12:04:00.000Z",
+        lastUploadedAt: "2026-03-04T12:04:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:05:00.000Z",
+        hasPendingUpload: true,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldRecheckRemoteAfterLocalSync({
+        remoteUpdatedAt: "2026-03-04T12:05:00.000Z",
+        remoteSyncVersion: {
+          serverVersion: 3,
+          latestClientId: "client-b",
+          latestClientVersion: 1,
+          clientVersions: {
+            "client-a": 1,
+            "client-b": 1,
+          },
+        },
+        lastAppliedRemoteAt: "2026-03-04T12:04:00.000Z",
+        lastUploadedAt: "2026-03-04T12:04:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:05:00.000Z",
+        hasPendingUpload: true,
+        lastKnownServerVersion: 2,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRecheckRemoteAfterLocalSync({
+        remoteUpdatedAt: "2026-03-04T12:05:00.000Z",
+        lastAppliedRemoteAt: "2026-03-04T12:00:00.000Z",
+        lastUploadedAt: "2026-03-04T12:02:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:02:00.000Z",
+        hasPendingUpload: false,
+      })
+    ).toBe(false);
   });
 
   test("delays settings upload until an active custom wallpaper blob syncs", () => {
