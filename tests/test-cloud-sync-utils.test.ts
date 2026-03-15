@@ -24,7 +24,10 @@ import {
   planIndividualBlobDownload,
   planIndividualBlobUpload,
 } from "../src/utils/cloudSyncIndividualBlobMerge";
-import { mergeSettingsSnapshotData } from "../src/utils/cloudSyncSettingsMerge";
+import {
+  mergeSettingsSnapshotData,
+  shouldRestoreLegacyCustomWallpapers,
+} from "../src/utils/cloudSyncSettingsMerge";
 import {
   advanceCloudSyncVersion,
   assessCloudSyncWrite,
@@ -70,8 +73,9 @@ describe("cloud sync shared helpers", () => {
     expect(isBlobSyncDomain(invalidCalendarDomain)).toBe(false);
 
     expect(isIndividualBlobSyncDomain("files-images")).toBe(true);
+    expect(isIndividualBlobSyncDomain("files-trash")).toBe(true);
+    expect(isIndividualBlobSyncDomain("files-applets")).toBe(true);
     expect(isIndividualBlobSyncDomain("custom-wallpapers")).toBe(true);
-    expect(isIndividualBlobSyncDomain("files-trash")).toBe(false);
     expect(isIndividualBlobSyncDomain("settings" as never)).toBe(false);
   });
 
@@ -639,6 +643,32 @@ describe("cloud sync shared helpers", () => {
     expect(merged.display.currentWallpaper).toBe("/wallpapers/local.jpg");
     expect(merged.audio.masterVolume).toBe(0.5);
     expect(merged.aiModel).toBe("gpt-4o-mini");
+  });
+
+  test("restores legacy custom wallpapers only for first-time migration", () => {
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 0,
+        hasDedicatedCustomWallpaperSync: false,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 1,
+        hasDedicatedCustomWallpaperSync: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 0,
+        hasDedicatedCustomWallpaperSync: true,
+      })
+    ).toBe(false);
   });
 
   test("preserves remote-only individual blob items on upload", () => {

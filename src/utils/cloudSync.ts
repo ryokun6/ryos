@@ -19,7 +19,10 @@ import {
   type TodoItem,
 } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
-import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  useCloudSyncStore,
+  type CloudSyncDeletionBucket,
+} from "@/stores/useCloudSyncStore";
 import type { Contact } from "@/utils/contacts";
 import { normalizeContacts } from "@/utils/contacts";
 import {
@@ -69,6 +72,7 @@ import {
   getRemoteSettingsSectionsToApply,
   mergeSettingsSnapshotData,
   normalizeSettingsSnapshotData,
+  shouldRestoreLegacyCustomWallpapers,
   type SettingsSnapshotData,
 } from "@/utils/cloudSyncSettingsMerge";
 import {
@@ -547,8 +551,27 @@ function getIndividualBlobStoreName(domain: IndividualBlobSyncDomain): string {
   switch (domain) {
     case "files-images":
       return STORES.IMAGES;
+    case "files-trash":
+      return STORES.TRASH;
+    case "files-applets":
+      return STORES.APPLETS;
     case "custom-wallpapers":
       return STORES.CUSTOM_WALLPAPERS;
+  }
+}
+
+function getIndividualBlobDeletionBucket(
+  domain: IndividualBlobSyncDomain
+): CloudSyncDeletionBucket {
+  switch (domain) {
+    case "files-images":
+      return "fileImageKeys";
+    case "files-trash":
+      return "fileTrashKeys";
+    case "files-applets":
+      return "fileAppletKeys";
+    case "custom-wallpapers":
+      return "customWallpaperKeys";
   }
 }
 
@@ -558,21 +581,54 @@ function getIndividualBlobDeletedKeys(
   const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
   switch (domain) {
+    case "files-images":
+      return deletionMarkers.fileImageKeys;
+    case "files-trash":
+      return deletionMarkers.fileTrashKeys;
+    case "files-applets":
+      return deletionMarkers.fileAppletKeys;
     case "custom-wallpapers":
       return deletionMarkers.customWallpaperKeys;
-    case "files-images":
-      return {};
   }
+}
+
+function pruneDeletedKeysForExistingRecords(
+  domain: IndividualBlobSyncDomain,
+  records: SerializedStoreItemRecord[]
+): DeletionMarkerMap {
+  const deletedKeys = getIndividualBlobDeletedKeys(domain);
+  if (Object.keys(deletedKeys).length === 0 || records.length === 0) {
+    return deletedKeys;
+  }
+
+  const existingKeys = new Set(records.map((record) => record.item.key));
+  const staleDeletedKeys = Object.keys(deletedKeys).filter((key) =>
+    existingKeys.has(key)
+  );
+
+  if (staleDeletedKeys.length > 0) {
+    useCloudSyncStore
+      .getState()
+      .clearDeletedKeys(getIndividualBlobDeletionBucket(domain), staleDeletedKeys);
+  }
+
+  return Object.fromEntries(
+    Object.entries(deletedKeys).filter(([key]) => !existingKeys.has(key))
+  );
 }
 
 async function serializeIndividualBlobDomainRecords(
   domain: IndividualBlobSyncDomain
 ): Promise<SerializedStoreItemRecord[]> {
   switch (domain) {
-    case "custom-wallpapers":
-      return serializeCustomWallpapersRecords();
     case "files-images":
       return serializeIndexedDbStoreRecords(STORES.IMAGES);
+    case "files-trash":
+      return serializeIndexedDbStoreRecords(STORES.TRASH);
+    case "files-applets":
+      return serializeIndexedDbStoreRecords(STORES.APPLETS);
+    case "custom-wallpapers":
+      return serializeCustomWallpapersRecords();
   }
 }
 
@@ -735,11 +791,33 @@ async function applySettingsSnapshot(
     remoteSectionUpdatedAt
   );
 
-  // Legacy: if the old settings envelope contained customWallpapers, restore them
-  if (normalizedData.customWallpapers && normalizedData.customWallpapers.length > 0) {
+  const legacyCustomWallpapers = normalizedData.customWallpapers || [];
+  const hasDedicatedCustomWallpaperSync = Boolean(
+    useCloudSyncStore.getState().remoteMetadata["custom-wallpapers"]?.updatedAt
+  );
+
+  // Legacy: restore embedded custom wallpapers only on first migration when
+  // there is no dedicated custom-wallpapers sync domain and nothing local yet.
+  if (legacyCustomWallpapers.length > 0) {
     const db = await ensureIndexedDBInitialized();
     try {
-      await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, normalizedData.customWallpapers);
+      const localWallpaperCount = (
+        await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
+      ).length;
+      if (
+        shouldRestoreLegacyCustomWallpapers({
+          legacyWallpaperCount: legacyCustomWallpapers.length,
+          localWallpaperCount,
+          hasDedicatedCustomWallpaperSync,
+        })
+      ) {
+        await upsertStoreItems(
+          db,
+          STORES.CUSTOM_WALLPAPERS,
+          legacyCustomWallpapers
+        );
+        useDisplaySettingsStore.getState().bumpCustomWallpapersRevision();
+      }
     } finally {
       db.close();
     }
@@ -1045,22 +1123,20 @@ function applyContactsSnapshot(data: ContactsSnapshotData): void {
     );
 }
 
-async function applyCustomWallpapersSnapshot(
-  data: CustomWallpapersSnapshotData
+async function applyLegacyIndividualBlobSnapshot(
+  domain: IndividualBlobSyncDomain,
+  data: FilesStoreSnapshotData
 ): Promise<void> {
-  const deletedKeys = useCloudSyncStore.getState().deletionMarkers.customWallpaperKeys;
-  const filteredData = data.filter((item) => !deletedKeys[item.key]);
-  console.log(
-    `[CloudSync] applyCustomWallpapersSnapshot: replacing with ${filteredData.length} items`
-  );
-  const db = await ensureIndexedDBInitialized();
-  try {
-    await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, filteredData);
-  } finally {
-    db.close();
-  }
+  const changedItems = Object.fromEntries(
+    data.map((item) => [item.key, item])
+  ) as Record<string, StoreItemWithKey>;
 
-  await finalizeCustomWallpaperSync(filteredData.map((item) => item.key));
+  await applyIndividualBlobDomain(
+    domain,
+    [],
+    changedItems,
+    getIndividualBlobDeletedKeys(domain)
+  );
 }
 
 async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promise<void> {
@@ -1136,20 +1212,20 @@ export async function applyCloudSyncEnvelope(
       );
       return;
     case "files-images":
-      await applyIndexedDbStoreSnapshot(
-        STORES.IMAGES,
+      await applyLegacyIndividualBlobSnapshot(
+        "files-images",
         envelope.data as FilesStoreSnapshotData
       );
       return;
     case "files-trash":
-      await applyIndexedDbStoreSnapshot(
-        STORES.TRASH,
+      await applyLegacyIndividualBlobSnapshot(
+        "files-trash",
         envelope.data as FilesStoreSnapshotData
       );
       return;
     case "files-applets":
-      await applyIndexedDbStoreSnapshot(
-        STORES.APPLETS,
+      await applyLegacyIndividualBlobSnapshot(
+        "files-applets",
         envelope.data as FilesStoreSnapshotData
       );
       return;
@@ -1169,7 +1245,8 @@ export async function applyCloudSyncEnvelope(
       applyContactsSnapshot(envelope.data as ContactsSnapshotData);
       return;
     case "custom-wallpapers":
-      await applyCustomWallpapersSnapshot(
+      await applyLegacyIndividualBlobSnapshot(
+        "custom-wallpapers",
         envelope.data as CustomWallpapersSnapshotData
       );
       return;
@@ -1713,7 +1790,7 @@ async function uploadIndividualBlobDomain(
 ): Promise<CloudSyncDomainMetadata> {
   const updatedAt = new Date().toISOString();
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
-  const deletedItems = getIndividualBlobDeletedKeys(domain);
+  const deletedItems = pruneDeletedKeysForExistingRecords(domain, localRecords);
   const knownItems = getIndividualBlobKnownItems(domain);
   const remoteInfo = await fetchBlobDomainInfo(domain, _auth);
   const remoteItems =
@@ -1891,11 +1968,9 @@ async function downloadBlobDomain(
       effectiveDeletedItems
     );
 
-    if (domain === "custom-wallpapers") {
-      useCloudSyncStore
-        .getState()
-        .mergeDeletedKeys("customWallpaperKeys", remoteDeletedItems);
-    }
+    useCloudSyncStore
+      .getState()
+      .mergeDeletedKeys(getIndividualBlobDeletionBucket(domain), remoteDeletedItems);
 
     for (const itemKey of downloadPlan.itemKeysToDownload) {
       const itemMetadata = remoteItems[itemKey];

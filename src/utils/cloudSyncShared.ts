@@ -83,6 +83,8 @@ export type BlobSyncDomain = (typeof BLOB_SYNC_DOMAINS)[number];
 
 export const INDIVIDUAL_BLOB_SYNC_DOMAINS = [
   "files-images",
+  "files-trash",
+  "files-applets",
   "custom-wallpapers",
 ] as const;
 
