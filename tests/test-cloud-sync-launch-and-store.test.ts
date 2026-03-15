@@ -1,5 +1,10 @@
 import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { shouldRequestCloudSyncOnAppLaunch } from "../src/utils/cloudSyncLaunch";
+import {
+  beginApplyingRemoteDomain,
+  endApplyingRemoteDomain,
+  isApplyingRemoteDomain,
+} from "../src/utils/cloudSyncRemoteApplyState";
 
 class MemoryStorage implements Storage {
   private readonly map = new Map<string, string>();
@@ -81,6 +86,19 @@ describe("cloud sync app launch checks", () => {
     expect(shouldRequestCloudSyncOnAppLaunch("terminal")).toBe(false);
     expect(shouldRequestCloudSyncOnAppLaunch("soundboard")).toBe(false);
     expect(shouldRequestCloudSyncOnAppLaunch("photo-booth")).toBe(false);
+  });
+});
+
+describe("cloud sync remote apply guard", () => {
+  test("tracks domains being applied from remote sync", () => {
+    expect(isApplyingRemoteDomain("songs")).toBe(false);
+
+    beginApplyingRemoteDomain("songs");
+    expect(isApplyingRemoteDomain("songs")).toBe(true);
+    expect(isApplyingRemoteDomain("videos")).toBe(false);
+
+    endApplyingRemoteDomain("songs");
+    expect(isApplyingRemoteDomain("songs")).toBe(false);
   });
 });
 

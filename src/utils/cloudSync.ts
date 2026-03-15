@@ -69,6 +69,10 @@ import {
   type SettingsSyncSection,
 } from "@/utils/cloudSyncSettingsState";
 import {
+  beginApplyingRemoteDomain,
+  endApplyingRemoteDomain,
+} from "@/utils/cloudSyncRemoteApplyState";
+import {
   getRemoteSettingsSectionsToApply,
   mergeSettingsSnapshotData,
   normalizeSettingsSnapshotData,
@@ -1286,57 +1290,62 @@ async function applyIndividualBlobDomain(
 export async function applyCloudSyncEnvelope(
   envelope: CloudSyncEnvelope<AnySnapshotData>
 ): Promise<void> {
-  switch (envelope.domain) {
-    case "settings":
-      await applySettingsSnapshot(
-        envelope.data as SettingsSnapshotData,
-        envelope.updatedAt
-      );
-      return;
-    case "files-metadata":
-      await applyFilesMetadataSnapshot(
-        envelope.data as FilesMetadataSnapshotData
-      );
-      return;
-    case "files-images":
-      await applyLegacyIndividualBlobSnapshot(
-        "files-images",
-        envelope.data as FilesStoreSnapshotData
-      );
-      return;
-    case "files-trash":
-      await applyLegacyIndividualBlobSnapshot(
-        "files-trash",
-        envelope.data as FilesStoreSnapshotData
-      );
-      return;
-    case "files-applets":
-      await applyLegacyIndividualBlobSnapshot(
-        "files-applets",
-        envelope.data as FilesStoreSnapshotData
-      );
-      return;
-    case "songs":
-      applySongsSnapshot(envelope.data as SongsSnapshotData);
-      return;
-    case "videos":
-      applyVideosSnapshot(envelope.data as VideosSnapshotData);
-      return;
-    case "stickies":
-      applyStickiesSnapshot(envelope.data as StickiesSnapshotData);
-      return;
-    case "calendar":
-      applyCalendarSnapshot(envelope.data as CalendarSnapshotData);
-      return;
-    case "contacts":
-      applyContactsSnapshot(envelope.data as ContactsSnapshotData);
-      return;
-    case "custom-wallpapers":
-      await applyLegacyIndividualBlobSnapshot(
-        "custom-wallpapers",
-        envelope.data as CustomWallpapersSnapshotData
-      );
-      return;
+  beginApplyingRemoteDomain(envelope.domain);
+  try {
+    switch (envelope.domain) {
+      case "settings":
+        await applySettingsSnapshot(
+          envelope.data as SettingsSnapshotData,
+          envelope.updatedAt
+        );
+        return;
+      case "files-metadata":
+        await applyFilesMetadataSnapshot(
+          envelope.data as FilesMetadataSnapshotData
+        );
+        return;
+      case "files-images":
+        await applyLegacyIndividualBlobSnapshot(
+          "files-images",
+          envelope.data as FilesStoreSnapshotData
+        );
+        return;
+      case "files-trash":
+        await applyLegacyIndividualBlobSnapshot(
+          "files-trash",
+          envelope.data as FilesStoreSnapshotData
+        );
+        return;
+      case "files-applets":
+        await applyLegacyIndividualBlobSnapshot(
+          "files-applets",
+          envelope.data as FilesStoreSnapshotData
+        );
+        return;
+      case "songs":
+        applySongsSnapshot(envelope.data as SongsSnapshotData);
+        return;
+      case "videos":
+        applyVideosSnapshot(envelope.data as VideosSnapshotData);
+        return;
+      case "stickies":
+        applyStickiesSnapshot(envelope.data as StickiesSnapshotData);
+        return;
+      case "calendar":
+        applyCalendarSnapshot(envelope.data as CalendarSnapshotData);
+        return;
+      case "contacts":
+        applyContactsSnapshot(envelope.data as ContactsSnapshotData);
+        return;
+      case "custom-wallpapers":
+        await applyLegacyIndividualBlobSnapshot(
+          "custom-wallpapers",
+          envelope.data as CustomWallpapersSnapshotData
+        );
+        return;
+    }
+  } finally {
+    endApplyingRemoteDomain(envelope.domain);
   }
 }
 
@@ -2119,13 +2128,18 @@ async function downloadBlobDomain(
       };
     }
 
-    await applyIndividualBlobDomain(
-      domain,
-      downloadPlan.keysToDelete,
-      changedItems,
-      effectiveDeletedItems
-    );
-    setIndividualBlobKnownItems(domain, nextKnownItems);
+    beginApplyingRemoteDomain(domain);
+    try {
+      await applyIndividualBlobDomain(
+        domain,
+        downloadPlan.keysToDelete,
+        changedItems,
+        effectiveDeletedItems
+      );
+      setIndividualBlobKnownItems(domain, nextKnownItems);
+    } finally {
+      endApplyingRemoteDomain(domain);
+    }
     return {
       metadata: data.metadata,
       applied: true,

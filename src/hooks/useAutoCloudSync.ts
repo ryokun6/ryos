@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -42,6 +42,7 @@ import {
   isApplyingRemoteSettingsSection,
   markSettingsSectionChanged,
 } from "@/utils/cloudSyncSettingsState";
+import { isApplyingRemoteDomain } from "@/utils/cloudSyncRemoteApplyState";
 import {
   CLOUD_SYNC_DOMAINS,
   CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
@@ -232,6 +233,15 @@ function getLatestLocalChangeAt(domain: CloudSyncDomain): string | null {
     getPersistedLocalChangeAt(domain),
     getPersistedDeletionChangeAt(domain),
   ]);
+}
+
+function alignLocalChangeWithRemoteApply(
+  domain: CloudSyncDomain,
+  timestamp: string,
+  lastLocalChangeAtRef: MutableRefObject<Record<CloudSyncDomain, string | null>>
+): void {
+  lastLocalChangeAtRef.current[domain] = timestamp;
+  setPersistedLocalChangeAt(domain, timestamp);
 }
 
 export function useAutoCloudSync() {
@@ -662,7 +672,11 @@ export function useAutoCloudSync() {
           useCloudSyncStore
             .getState()
             .markRemoteApplied(domain, downloadResult.metadata);
-          lastLocalChangeAtRef.current[domain] = getLatestLocalChangeAt(domain);
+          alignLocalChangeWithRemoteApply(
+            domain,
+            downloadResult.metadata.updatedAt,
+            lastLocalChangeAtRef
+          );
           remoteApplySuppressUntilRef.current[domain] =
             Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
         } else {
@@ -819,7 +833,11 @@ export function useAutoCloudSync() {
             useCloudSyncStore
               .getState()
               .markRemoteApplied(domain, downloadResult.metadata);
-            lastLocalChangeAtRef.current[domain] = getLatestLocalChangeAt(domain);
+            alignLocalChangeWithRemoteApply(
+              domain,
+              downloadResult.metadata.updatedAt,
+              lastLocalChangeAtRef
+            );
             appliedDomains.push(domain);
           }
         } catch (error) {
@@ -1015,6 +1033,7 @@ export function useAutoCloudSync() {
         state.items !== prevState.items ||
         state.libraryState !== prevState.libraryState
       ) {
+        if (isApplyingRemoteDomain("files-metadata")) return;
         queueUpload("files-metadata");
       }
     });
@@ -1057,7 +1076,12 @@ export function useAutoCloudSync() {
           state.debugMode !== prevState.debugMode ||
           state.htmlPreviewSplit !== prevState.htmlPreviewSplit
         ) {
-          if (isApplyingRemoteSettingsSection("display")) return;
+          if (
+            isApplyingRemoteSettingsSection("display") ||
+            isApplyingRemoteDomain("custom-wallpapers")
+          ) {
+            return;
+          }
           markSettingsSectionChanged("display");
           queueUpload("settings");
         }
@@ -1065,7 +1089,12 @@ export function useAutoCloudSync() {
           state.currentWallpaper !== prevState.currentWallpaper &&
           state.currentWallpaper.startsWith("indexeddb://")
         ) {
-          if (isApplyingRemoteSettingsSection("display")) return;
+          if (
+            isApplyingRemoteSettingsSection("display") ||
+            isApplyingRemoteDomain("custom-wallpapers")
+          ) {
+            return;
+          }
           console.log(`[CloudSync] display subscriber: currentWallpaper changed from "${prevState.currentWallpaper}" to "${state.currentWallpaper}"`);
           queueUpload("custom-wallpapers");
         }
@@ -1132,6 +1161,7 @@ export function useAutoCloudSync() {
         state.libraryState !== prevState.libraryState ||
         state.lastKnownVersion !== prevState.lastKnownVersion
       ) {
+        if (isApplyingRemoteDomain("songs")) return;
         if (state.tracks !== prevState.tracks) {
           const currentIds = new Set(state.tracks.map((t) => t.id));
           const prevIds = new Set(prevState.tracks.map((t) => t.id));
@@ -1155,6 +1185,7 @@ export function useAutoCloudSync() {
 
     const videosUnsubscribe = useVideoStore.subscribe((state, prevState) => {
       if (state.videos !== prevState.videos) {
+        if (isApplyingRemoteDomain("videos")) return;
         queueUpload("videos");
       }
     });
@@ -1185,6 +1216,7 @@ export function useAutoCloudSync() {
     const stickiesUnsubscribe = useStickiesStore.subscribe(
       (state, prevState) => {
         if (state.notes !== prevState.notes) {
+          if (isApplyingRemoteDomain("stickies")) return;
           queueUpload("stickies");
         }
       }
@@ -1196,12 +1228,14 @@ export function useAutoCloudSync() {
         state.calendars !== prevState.calendars ||
         state.todos !== prevState.todos
       ) {
+        if (isApplyingRemoteDomain("calendar")) return;
         queueUpload("calendar");
       }
     });
 
     const contactsUnsubscribe = useContactsStore.subscribe((state, prevState) => {
       if (state.contacts !== prevState.contacts) {
+        if (isApplyingRemoteDomain("contacts")) return;
         queueUpload("contacts");
       }
     });
