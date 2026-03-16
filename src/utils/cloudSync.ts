@@ -427,7 +427,7 @@ async function gzipJson(value: unknown): Promise<Uint8Array> {
 }
 
 
-export function serializeSettingsSnapshot(): SettingsSnapshotData {
+function serializeSettingsSnapshot(): SettingsSnapshotData {
   const displayState = useDisplaySettingsStore.getState();
   const audioState = useAudioSettingsStore.getState();
   const ipodState = useIpodStore.getState();
@@ -683,7 +683,7 @@ function serializeContactsSnapshot(): ContactsSnapshotData {
   };
 }
 
-export async function createCloudSyncEnvelope(
+async function createCloudSyncEnvelope(
   domain: CloudSyncDomain
 ): Promise<CloudSyncEnvelope<AnySnapshotData>> {
   const updatedAt = new Date().toISOString();
@@ -1187,7 +1187,7 @@ async function applyIndividualBlobDomain(
   }
 }
 
-export async function applyCloudSyncEnvelope(
+async function applyCloudSyncEnvelope(
   envelope: CloudSyncEnvelope<AnySnapshotData>
 ): Promise<void> {
   beginApplyingRemoteDomain(envelope.domain);
@@ -1279,9 +1279,7 @@ function createWriteSyncVersion(
   };
 }
 
-export async function fetchPhysicalCloudSyncMetadata(
-  _auth: AuthContext
-): Promise<CloudSyncMetadataMap> {
+export async function fetchPhysicalCloudSyncMetadata(): Promise<CloudSyncMetadataMap> {
   const consolidatedRes = await abortableFetch(getApiUrl("/api/sync/domains"), {
     method: "GET",
     headers: authHeaders(),
@@ -1870,29 +1868,3 @@ export async function individualBlobDomainNeedsLocalReconcile(
   return plan.itemKeysToDownload.length > 0 || plan.keysToDelete.length > 0;
 }
 
-export async function downloadAndApplyCloudSyncDomain(
-  domain: CloudSyncDomain,
-  _auth: AuthContext,
-  options?: DownloadCloudSyncOptions
-): Promise<DownloadCloudSyncResult> {
-  const result = isRedisSyncDomain(domain)
-    ? await fetchRedisStateDomainSnapshot(domain, _auth)
-    : await fetchBlobDomainInfo(domain as BlobSyncDomain, _auth);
-
-  if (!result?.metadata) {
-    throw new Error(`No ${domain} sync data found`);
-  }
-
-  return applyDownloadedCloudSyncDomainPayload(
-    domain,
-    (isRedisSyncDomain(domain)
-      ? {
-          data: (result as RedisStateDomainSnapshot).data,
-          metadata: result.metadata,
-        }
-      : ((result as BlobDomainInfoResponse).mode === "individual"
-          ? (result as BlobIndividualDomainDownloadPayload)
-          : (result as BlobMonolithicDomainDownloadPayload))) as CloudSyncDomainDownloadPayload,
-    options
-  );
-}

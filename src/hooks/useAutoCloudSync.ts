@@ -666,7 +666,7 @@ export function useAutoCloudSync() {
 
       let metadataMap = useCloudSyncStore.getState().remoteMetadata;
       try {
-        metadataMap = await fetchPhysicalCloudSyncMetadata({ username, isAuthenticated });
+        metadataMap = await fetchPhysicalCloudSyncMetadata();
         useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
       } catch (error) {
         console.warn(
@@ -775,10 +775,6 @@ export function useAutoCloudSync() {
         const downloadResult = await downloadAndApplyLogicalCloudSyncDomain(
           logicalDomain,
           {
-            username,
-            isAuthenticated,
-          },
-          {
             shouldApplyPart: (partDomain) =>
               candidatePartDomainSet.has(partDomain),
           }
@@ -868,10 +864,7 @@ export function useAutoCloudSync() {
     useCloudSyncStore.getState().setCheckingRemote(true);
 
     try {
-      const metadataMap = await fetchPhysicalCloudSyncMetadata({
-        username,
-        isAuthenticated,
-      });
+      const metadataMap = await fetchPhysicalCloudSyncMetadata();
       useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
       useCloudSyncStore.getState().setLastError(null);
 
@@ -979,10 +972,6 @@ export function useAutoCloudSync() {
           const candidatePartDomainSet = new Set(candidatePartDomains);
           const downloadResult = await downloadAndApplyLogicalCloudSyncDomain(
             logicalDomain,
-            {
-              username,
-              isAuthenticated,
-            },
             {
               shouldApplyPart: (partDomain) =>
                 candidatePartDomainSet.has(partDomain),
@@ -1239,7 +1228,7 @@ export function useAutoCloudSync() {
         console.log(`[CloudSync] Domain-specific sync check requested: ${domain}`);
         void (async () => {
           try {
-            const metadataMap = await fetchPhysicalCloudSyncMetadata({ username, isAuthenticated });
+            const metadataMap = await fetchPhysicalCloudSyncMetadata();
             useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
             const remoteMeta = metadataMap[domain];
             if (remoteMeta?.updatedAt) {

@@ -123,7 +123,6 @@ export async function uploadLogicalCloudSyncDomain(
 
 export async function downloadAndApplyLogicalCloudSyncDomain(
   domain: LogicalCloudSyncDomain,
-  _auth: AuthContext,
   options?: LogicalCloudSyncDownloadOptions
 ): Promise<LogicalCloudSyncTransferResult> {
   const response = await abortableFetch(

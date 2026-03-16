@@ -855,10 +855,7 @@ export function useControlPanelsLogic({
         }
 
         try {
-          const result = await downloadAndApplyLogicalCloudSyncDomain(domain, {
-            username,
-            isAuthenticated,
-          });
+          const result = await downloadAndApplyLogicalCloudSyncDomain(domain);
 
           for (const [partDomain, metadata] of Object.entries(
             result.partMetadata
