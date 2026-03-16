@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ArrowsClockwise, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { getAdminAnalytics } from "@/api/admin";
 
@@ -405,9 +406,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               </span>
             </div>
             {topEndpoints.length === 0 ? (
-              <div className="text-[11px] text-neutral-400 text-center py-4">
-                {t("apps.admin.dashboard.empty.noData")}
-              </div>
+              <EmptyState message={t("apps.admin.dashboard.empty.noData")} />
             ) : (
               <div className="divide-y divide-gray-100">
                 {topEndpoints.slice(0, 10).map((ep) => (
@@ -447,9 +446,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               </span>
             </div>
             {statusCodes.length === 0 ? (
-              <div className="text-[11px] text-neutral-400 text-center py-4">
-                {t("apps.admin.dashboard.empty.noData")}
-              </div>
+              <EmptyState message={t("apps.admin.dashboard.empty.noData")} />
             ) : (
               <div className="divide-y divide-gray-100">
                 {statusCodes.map((sc) => (
@@ -484,9 +481,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               </span>
             </div>
             {aiByUser.length === 0 ? (
-              <div className="text-[11px] text-neutral-400 text-center py-4">
-                {t("apps.admin.dashboard.empty.noAiUsage")}
-              </div>
+              <EmptyState message={t("apps.admin.dashboard.empty.noAiUsage")} />
             ) : (
               <div className="divide-y divide-gray-100">
                 {aiByUser.map((entry) => {

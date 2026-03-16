@@ -212,15 +212,8 @@ export function SpotlightSearch() {
     } as React.CSSProperties;
   })();
 
-  // ── Selection colors ─────────────────────────────────────────────
-  const getSelectedBg = () => {
-    if (currentTheme === "macosx") return "var(--os-color-selection-bg)";
-    if (isSystem7) return "#000000";
-    if (currentTheme === "win98") return "#000080";
-    return "#316AC5"; // XP Luna
-  };
-
-  const getSelectedTextColor = () => "#FFFFFF";
+  const getSelectedBg = () => "var(--os-color-selection-bg)";
+  const getSelectedTextColor = () => "var(--os-color-selection-text)";
 
   // ── Font family per theme ────────────────────────────────────────
   const fontFamily = isXpTheme
