@@ -8,38 +8,12 @@ import {
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import { mergeItemsByIdPreferNewer } from "@/utils/sync/engine/domains/entityMerge";
 
 export interface ContactsSnapshotData {
   contacts: Contact[];
   myContactId: string | null;
   deletedContactIds?: DeletionMarkerMap;
-}
-
-function mergeItemsByIdPreferNewer<T extends { id: string; updatedAt?: number }>(
-  localItems: T[],
-  remoteItems: T[],
-  deletedIds: DeletionMarkerMap
-): T[] {
-  const merged = new Map<string, T>();
-
-  for (const item of remoteItems) {
-    if (!deletedIds[item.id]) {
-      merged.set(item.id, item);
-    }
-  }
-
-  for (const item of localItems) {
-    if (deletedIds[item.id]) {
-      continue;
-    }
-
-    const existing = merged.get(item.id);
-    if (!existing || (item.updatedAt ?? 0) >= (existing.updatedAt ?? 0)) {
-      merged.set(item.id, item);
-    }
-  }
-
-  return Array.from(merged.values());
 }
 
 export function serializeContactsSyncSnapshot(): ContactsSnapshotData {

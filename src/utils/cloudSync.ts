@@ -2,20 +2,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import { getApiUrl } from "@/utils/platform";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
-import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
-import { useIpodStore, type Track } from "@/stores/useIpodStore";
-import { useVideoStore, type Video } from "@/stores/useVideoStore";
-import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
-import {
-  useCalendarStore,
-  type CalendarEvent,
-  type CalendarGroup,
-  type TodoItem,
-} from "@/stores/useCalendarStore";
-import {
-  useCloudSyncStore,
-  type CloudSyncDeletionBucket,
-} from "@/stores/useCloudSyncStore";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   uploadBlobWithStorageInstruction,
 } from "@/utils/storageUpload";
@@ -48,15 +35,10 @@ import {
 } from "@/utils/syncTransportClient";
 import type { CloudSyncWriteVersion } from "@/utils/cloudSyncVersion";
 import {
-  filterDeletedIds,
   mergeDeletionMarkerMaps,
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
-import {
-  mergeFilesMetadataSnapshots,
-  type FilesMetadataSyncSnapshot,
-} from "@/utils/cloudSyncFileMerge";
 import {
   beginApplyingRemoteDomain,
   endApplyingRemoteDomain,
@@ -73,9 +55,55 @@ import {
   type ContactsSnapshotData,
 } from "@/utils/sync/engine/domains/contactsSyncDomain";
 import {
+  applyCalendarSyncSnapshot,
+  mergeCalendarSyncSnapshots,
+  serializeCalendarSyncSnapshot,
+  type CalendarSnapshotData,
+} from "@/utils/sync/engine/domains/calendarSyncDomain";
+import {
+  applyFilesMetadataSyncSnapshot,
+  mergeFilesMetadataSyncSnapshots,
+  serializeFilesMetadataSyncSnapshot,
+  type FilesMetadataSnapshotData,
+} from "@/utils/sync/engine/domains/filesMetadataSyncDomain";
+import {
+  applyIndividualBlobDomain,
+  applyMonolithicBlobSnapshotToIndividualDomain,
+  getIndividualBlobDeletedKeys,
+  getIndividualBlobDeletionBucket,
+  pruneDeletedKeysForExistingRecords,
+  serializeIndividualBlobDomainRecords,
+  serializeIndividualBlobDomainSnapshot,
+  type BlobSyncItemEnvelope,
+} from "@/utils/sync/engine/domains/individualBlobSyncDomain";
+import {
+  readStoreItems,
+  upsertStoreItems,
+  type FilesStoreSnapshotData,
+  type StoreItemWithKey,
+} from "@/utils/sync/engine/domains/indexedDbStoreSync";
+import {
   applySettingsSyncSnapshot,
   serializeSettingsSyncSnapshot,
 } from "@/utils/sync/engine/domains/settingsSyncDomain";
+import {
+  applySongsSyncSnapshot,
+  mergeSongsSyncSnapshots,
+  serializeSongsSyncSnapshot,
+  type SongsSnapshotData,
+} from "@/utils/sync/engine/domains/songsSyncDomain";
+import {
+  applyStickiesSyncSnapshot,
+  mergeStickiesSyncSnapshots,
+  serializeStickiesSyncSnapshot,
+  type StickiesSnapshotData,
+} from "@/utils/sync/engine/domains/stickiesSyncDomain";
+import {
+  applyVideosSyncSnapshot,
+  mergeVideosSyncSnapshots,
+  serializeVideosSyncSnapshot,
+  type VideosSnapshotData,
+} from "@/utils/sync/engine/domains/videosSyncDomain";
 import {
   getIndividualBlobKnownItems,
   setIndividualBlobKnownItems,
@@ -89,51 +117,6 @@ type AuthContext = {
   isAuthenticated: boolean;
 };
 
-interface StoreItem {
-  [key: string]: unknown;
-}
-
-interface StoreItemWithKey {
-  key: string;
-  value: StoreItem;
-}
-
-type CustomWallpapersSnapshotData = StoreItemWithKey[];
-
-interface FilesMetadataSnapshotData {
-  items: Record<string, FileSystemItem>;
-  libraryState: "uninitialized" | "loaded" | "cleared";
-  documents?: FilesStoreSnapshotData;
-  deletedPaths?: DeletionMarkerMap;
-}
-
-type FilesStoreSnapshotData = StoreItemWithKey[];
-
-interface SongsSnapshotData {
-  tracks: Track[];
-  libraryState: "uninitialized" | "loaded" | "cleared";
-  lastKnownVersion: number;
-  deletedTrackIds?: DeletionMarkerMap;
-}
-
-interface VideosSnapshotData {
-  videos: Video[];
-}
-
-interface StickiesSnapshotData {
-  notes: StickyNote[];
-  deletedNoteIds?: DeletionMarkerMap;
-}
-
-interface CalendarSnapshotData {
-  events: CalendarEvent[];
-  calendars: CalendarGroup[];
-  todos: TodoItem[];
-  deletedEventIds?: DeletionMarkerMap;
-  deletedCalendarIds?: DeletionMarkerMap;
-  deletedTodoIds?: DeletionMarkerMap;
-}
-
 type AnySnapshotData =
   | SettingsSnapshotData
   | FilesMetadataSnapshotData
@@ -143,20 +126,7 @@ type AnySnapshotData =
   | StickiesSnapshotData
   | CalendarSnapshotData
   | ContactsSnapshotData
-  | CustomWallpapersSnapshotData;
-
-interface SerializedStoreItemRecord {
-  item: StoreItemWithKey;
-  signature: string;
-}
-
-interface BlobSyncItemEnvelope {
-  domain: BlobSyncDomain;
-  key: string;
-  version: number;
-  updatedAt: string;
-  data: StoreItemWithKey;
-}
+  | FilesStoreSnapshotData;
 
 interface IndividualBlobDomainResponse {
   mode?: "individual";
@@ -299,203 +269,6 @@ function assertCompressionSupport(): void {
   }
 }
 
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = () =>
-      reject(reader.error || new Error("Failed to serialize blob"));
-    reader.readAsDataURL(blob);
-  });
-
-const base64ToBlob = (dataUrl: string): Blob => {
-  const [meta, base64] = dataUrl.split(",");
-  const mimeMatch = meta.match(/data:(.*);base64/);
-  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new Blob([array], { type: mime });
-};
-
-async function computeSyncSignature(value: unknown): Promise<string> {
-  const payload = new TextEncoder().encode(JSON.stringify(value));
-  const digest = await crypto.subtle.digest("SHA-256", payload);
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("");
-}
-
-async function readStoreItems(
-  db: IDBDatabase,
-  storeName: string
-): Promise<StoreItemWithKey[]> {
-  return new Promise((resolve, reject) => {
-    try {
-      const transaction = db.transaction(storeName, "readonly");
-      const store = transaction.objectStore(storeName);
-      const items: StoreItemWithKey[] = [];
-      const request = store.openCursor();
-
-      request.onsuccess = (event) => {
-        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-        if (cursor) {
-          items.push({
-            key: cursor.key as string,
-            value: cursor.value as StoreItem,
-          });
-          cursor.continue();
-          return;
-        }
-
-        resolve(items);
-      };
-
-      request.onerror = () => reject(request.error);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-async function serializeStoreItem(item: StoreItemWithKey): Promise<StoreItemWithKey> {
-  const serializedValue: Record<string, unknown> = {
-    ...item.value,
-  };
-
-  for (const key of Object.keys(item.value)) {
-    if (item.value[key] instanceof Blob) {
-      serializedValue[key] = await blobToBase64(item.value[key] as Blob);
-      serializedValue[`_isBlob_${key}`] = true;
-    }
-  }
-
-  return {
-    key: item.key,
-    value: serializedValue,
-  };
-}
-
-async function serializeStoreItems(
-  items: StoreItemWithKey[]
-): Promise<StoreItemWithKey[]> {
-  return Promise.all(items.map((item) => serializeStoreItem(item)));
-}
-
-async function serializeStoreItemRecords(
-  items: StoreItemWithKey[]
-): Promise<SerializedStoreItemRecord[]> {
-  return Promise.all(
-    items.map(async (item) => {
-      const serializedItem = await serializeStoreItem(item);
-      return {
-        item: serializedItem,
-        signature: await computeSyncSignature(serializedItem),
-      };
-    })
-  );
-}
-
-function deserializeStoreItem(item: StoreItemWithKey): Record<string, unknown> {
-  const restoredValue: Record<string, unknown> = {
-    ...item.value,
-  };
-
-  for (const key of Object.keys(item.value)) {
-    const isBlobKey = `_isBlob_${key}`;
-    if (item.value[isBlobKey] === true && typeof item.value[key] === "string") {
-      restoredValue[key] = base64ToBlob(item.value[key] as string);
-      delete restoredValue[isBlobKey];
-    }
-  }
-
-  return restoredValue;
-}
-
-async function restoreStoreItems(
-  db: IDBDatabase,
-  storeName: string,
-  items: StoreItemWithKey[]
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    const clearRequest = store.clear();
-
-    clearRequest.onsuccess = () => {
-      try {
-        for (const item of items) {
-          store.put(deserializeStoreItem(item), item.key);
-        }
-      } catch (error) {
-        transaction.abort();
-        reject(error);
-      }
-    };
-
-    clearRequest.onerror = () => reject(clearRequest.error);
-  });
-}
-
-async function upsertStoreItems(
-  db: IDBDatabase,
-  storeName: string,
-  items: StoreItemWithKey[]
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    try {
-      for (const item of items) {
-        store.put(deserializeStoreItem(item), item.key);
-      }
-    } catch (error) {
-      transaction.abort();
-      reject(error);
-    }
-  });
-}
-
-async function deleteStoreItemsByKey(
-  db: IDBDatabase,
-  storeName: string,
-  keys: string[]
-): Promise<void> {
-  if (keys.length === 0) {
-    return;
-  }
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    try {
-      for (const key of keys) {
-        store.delete(key);
-      }
-    } catch (error) {
-      transaction.abort();
-      reject(error);
-    }
-  });
-}
-
 async function gzipJson(value: unknown): Promise<Uint8Array> {
   assertCompressionSupport();
   const encoder = new TextEncoder();
@@ -536,191 +309,11 @@ async function gzipJson(value: unknown): Promise<Uint8Array> {
 
 
 export const serializeSettingsSnapshot = serializeSettingsSyncSnapshot;
-
-async function serializeCustomWallpapersSnapshot(): Promise<CustomWallpapersSnapshotData> {
-  const db = await ensureIndexedDBInitialized();
-  try {
-    return await serializeStoreItems(
-      await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
-    );
-  } finally {
-    db.close();
-  }
-}
-
-async function serializeCustomWallpapersRecords(): Promise<SerializedStoreItemRecord[]> {
-  const db = await ensureIndexedDBInitialized();
-  try {
-    return await serializeStoreItemRecords(
-      await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
-    );
-  } finally {
-    db.close();
-  }
-}
-
-async function serializeIndexedDbStoreSnapshot(
-  storeName: string
-): Promise<FilesStoreSnapshotData> {
-  const db = await ensureIndexedDBInitialized();
-
-  try {
-    const items = await readStoreItems(db, storeName);
-    return await serializeStoreItems(items);
-  } finally {
-    db.close();
-  }
-}
-
-async function serializeIndexedDbStoreRecords(
-  storeName: string
-): Promise<SerializedStoreItemRecord[]> {
-  const db = await ensureIndexedDBInitialized();
-
-  try {
-    return await serializeStoreItemRecords(await readStoreItems(db, storeName));
-  } finally {
-    db.close();
-  }
-}
-
-function getIndividualBlobStoreName(domain: IndividualBlobSyncDomain): string {
-  switch (domain) {
-    case "files-images":
-      return STORES.IMAGES;
-    case "files-trash":
-      return STORES.TRASH;
-    case "files-applets":
-      return STORES.APPLETS;
-    case "custom-wallpapers":
-      return STORES.CUSTOM_WALLPAPERS;
-  }
-}
-
-function getIndividualBlobDeletionBucket(
-  domain: IndividualBlobSyncDomain
-): CloudSyncDeletionBucket {
-  switch (domain) {
-    case "files-images":
-      return "fileImageKeys";
-    case "files-trash":
-      return "fileTrashKeys";
-    case "files-applets":
-      return "fileAppletKeys";
-    case "custom-wallpapers":
-      return "customWallpaperKeys";
-  }
-}
-
-function getIndividualBlobDeletedKeys(
-  domain: IndividualBlobSyncDomain
-): DeletionMarkerMap {
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  switch (domain) {
-    case "files-images":
-      return deletionMarkers.fileImageKeys;
-    case "files-trash":
-      return deletionMarkers.fileTrashKeys;
-    case "files-applets":
-      return deletionMarkers.fileAppletKeys;
-    case "custom-wallpapers":
-      return deletionMarkers.customWallpaperKeys;
-  }
-}
-
-function pruneDeletedKeysForExistingRecords(
-  domain: IndividualBlobSyncDomain,
-  records: SerializedStoreItemRecord[]
-): DeletionMarkerMap {
-  const deletedKeys = getIndividualBlobDeletedKeys(domain);
-  if (Object.keys(deletedKeys).length === 0 || records.length === 0) {
-    return deletedKeys;
-  }
-
-  const existingKeys = new Set(records.map((record) => record.item.key));
-  const staleDeletedKeys = Object.keys(deletedKeys).filter((key) =>
-    existingKeys.has(key)
-  );
-
-  if (staleDeletedKeys.length > 0) {
-    useCloudSyncStore
-      .getState()
-      .clearDeletedKeys(getIndividualBlobDeletionBucket(domain), staleDeletedKeys);
-  }
-
-  return Object.fromEntries(
-    Object.entries(deletedKeys).filter(([key]) => !existingKeys.has(key))
-  );
-}
-
-async function serializeIndividualBlobDomainRecords(
-  domain: IndividualBlobSyncDomain
-): Promise<SerializedStoreItemRecord[]> {
-  switch (domain) {
-    case "files-images":
-      return serializeIndexedDbStoreRecords(STORES.IMAGES);
-    case "files-trash":
-      return serializeIndexedDbStoreRecords(STORES.TRASH);
-    case "files-applets":
-      return serializeIndexedDbStoreRecords(STORES.APPLETS);
-    case "custom-wallpapers":
-      return serializeCustomWallpapersRecords();
-  }
-}
-
-async function serializeFilesMetadataSnapshot(): Promise<FilesMetadataSnapshotData> {
-  const filesState = useFilesStore.getState();
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  return {
-    items: filesState.items,
-    libraryState: filesState.libraryState,
-    documents: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS),
-    deletedPaths: deletionMarkers.fileMetadataPaths,
-  };
-}
-
-function serializeSongsSnapshot(): SongsSnapshotData {
-  const ipodState = useIpodStore.getState();
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  return {
-    tracks: ipodState.tracks,
-    libraryState: ipodState.libraryState,
-    lastKnownVersion: ipodState.lastKnownVersion,
-    deletedTrackIds: deletionMarkers.songTrackIds,
-  };
-}
-
-function serializeVideosSnapshot(): VideosSnapshotData {
-  return {
-    videos: useVideoStore.getState().videos,
-  };
-}
-
-function serializeStickiesSnapshot(): StickiesSnapshotData {
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-  return {
-    notes: useStickiesStore.getState().notes,
-    deletedNoteIds: deletionMarkers.stickyNoteIds,
-  };
-}
-
-function serializeCalendarSnapshot(): CalendarSnapshotData {
-  const calendarState = useCalendarStore.getState();
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  return {
-    events: calendarState.events,
-    calendars: calendarState.calendars,
-    todos: calendarState.todos,
-    deletedEventIds: deletionMarkers.calendarEventIds,
-    deletedCalendarIds: deletionMarkers.calendarIds,
-    deletedTodoIds: deletionMarkers.calendarTodoIds,
-  };
-}
-
+const serializeFilesMetadataSnapshot = serializeFilesMetadataSyncSnapshot;
+const serializeSongsSnapshot = serializeSongsSyncSnapshot;
+const serializeVideosSnapshot = serializeVideosSyncSnapshot;
+const serializeStickiesSnapshot = serializeStickiesSyncSnapshot;
+const serializeCalendarSnapshot = serializeCalendarSyncSnapshot;
 const serializeContactsSnapshot = serializeContactsSyncSnapshot;
 
 export async function createCloudSyncEnvelope(
@@ -748,21 +341,21 @@ export async function createCloudSyncEnvelope(
         domain,
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
-        data: await serializeIndexedDbStoreSnapshot(STORES.IMAGES),
+        data: await serializeIndividualBlobDomainSnapshot("files-images"),
       };
     case "files-trash":
       return {
         domain,
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
-        data: await serializeIndexedDbStoreSnapshot(STORES.TRASH),
+        data: await serializeIndividualBlobDomainSnapshot("files-trash"),
       };
     case "files-applets":
       return {
         domain,
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
-        data: await serializeIndexedDbStoreSnapshot(STORES.APPLETS),
+        data: await serializeIndividualBlobDomainSnapshot("files-applets"),
       };
     case "songs":
       return {
@@ -804,7 +397,7 @@ export async function createCloudSyncEnvelope(
         domain,
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
-        data: await serializeCustomWallpapersSnapshot(),
+        data: await serializeIndividualBlobDomainSnapshot("custom-wallpapers"),
       };
   }
 }
@@ -851,213 +444,12 @@ async function applySettingsSnapshot(
     },
   });
 }
-
-async function applyIndexedDbStoreSnapshot(
-  storeName: string,
-  data: FilesStoreSnapshotData
-): Promise<void> {
-  const db = await ensureIndexedDBInitialized();
-
-  try {
-    await restoreStoreItems(db, storeName, data);
-  } finally {
-    db.close();
-  }
-}
-
-async function applyFilesMetadataSnapshot(
-  data: FilesMetadataSnapshotData
-): Promise<void> {
-  const remoteDeletedPaths = normalizeDeletionMarkerMap(data.deletedPaths);
-  const cloudSyncState = useCloudSyncStore.getState();
-  const localDeletedPaths = cloudSyncState.deletionMarkers.fileMetadataPaths;
-  const localSnapshot: FilesMetadataSyncSnapshot = {
-    items: useFilesStore.getState().items,
-    libraryState: useFilesStore.getState().libraryState,
-    documents: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS),
-    deletedPaths: localDeletedPaths,
-  };
-  const mergedSnapshot = mergeFilesMetadataSnapshots(localSnapshot, {
-    ...data,
-    deletedPaths: remoteDeletedPaths,
-  });
-  const effectiveDeletedPaths = mergeDeletionMarkerMaps(
-    localDeletedPaths,
-    remoteDeletedPaths
-  );
-  const prunedDeletedPaths = Object.keys(effectiveDeletedPaths).filter(
-    (path) => !mergedSnapshot.deletedPaths?.[path]
-  );
-
-  cloudSyncState.mergeDeletedKeys("fileMetadataPaths", remoteDeletedPaths);
-  cloudSyncState.clearDeletedKeys("fileMetadataPaths", prunedDeletedPaths);
-
-  useFilesStore.setState({
-    items: mergedSnapshot.items,
-    libraryState: mergedSnapshot.libraryState,
-  });
-
-  await applyIndexedDbStoreSnapshot(
-    STORES.DOCUMENTS,
-    mergedSnapshot.documents || []
-  );
-}
-
-function applySongsSnapshot(data: SongsSnapshotData): void {
-  const remoteDeletedTrackIds = normalizeDeletionMarkerMap(data.deletedTrackIds);
-  const cloudSyncState = useCloudSyncStore.getState();
-  const effectiveDeletedTrackIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.songTrackIds,
-    remoteDeletedTrackIds
-  );
-
-  cloudSyncState.mergeDeletedKeys("songTrackIds", remoteDeletedTrackIds);
-
-  useIpodStore.setState({
-    tracks: filterDeletedIds(data.tracks, effectiveDeletedTrackIds, (track) => track.id),
-    libraryState: data.libraryState,
-    lastKnownVersion: data.lastKnownVersion,
-  });
-}
-
-function applyVideosSnapshot(data: VideosSnapshotData): void {
-  useVideoStore.setState({
-    videos: data.videos,
-  });
-}
-
-function applyStickiesSnapshot(data: StickiesSnapshotData): void {
-  const remoteDeletedNoteIds = normalizeDeletionMarkerMap(data.deletedNoteIds);
-  const cloudSyncState = useCloudSyncStore.getState();
-  const effectiveDeletedNoteIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.stickyNoteIds,
-    remoteDeletedNoteIds
-  );
-
-  cloudSyncState.mergeDeletedKeys("stickyNoteIds", remoteDeletedNoteIds);
-
-  useStickiesStore.setState({
-    notes: filterDeletedIds(data.notes, effectiveDeletedNoteIds, (note) => note.id),
-  });
-}
-
-function applyCalendarSnapshot(data: CalendarSnapshotData): void {
-  const remoteDeletedTodoIds = normalizeDeletionMarkerMap(data.deletedTodoIds);
-  const remoteDeletedEventIds = normalizeDeletionMarkerMap(data.deletedEventIds);
-  const remoteDeletedCalendarIds = normalizeDeletionMarkerMap(
-    data.deletedCalendarIds
-  );
-  const cloudSyncState = useCloudSyncStore.getState();
-  const effectiveDeletedTodoIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.calendarTodoIds,
-    remoteDeletedTodoIds
-  );
-  const effectiveDeletedEventIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.calendarEventIds,
-    remoteDeletedEventIds
-  );
-  const effectiveDeletedCalendarIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.calendarIds,
-    remoteDeletedCalendarIds
-  );
-
-  cloudSyncState.mergeDeletedKeys("calendarTodoIds", remoteDeletedTodoIds);
-  cloudSyncState.mergeDeletedKeys("calendarEventIds", remoteDeletedEventIds);
-  cloudSyncState.mergeDeletedKeys("calendarIds", remoteDeletedCalendarIds);
-
-  useCalendarStore.setState({
-    events: filterDeletedIds(
-      data.events,
-      effectiveDeletedEventIds,
-      (event) => event.id
-    ),
-    calendars: filterDeletedIds(
-      data.calendars,
-      effectiveDeletedCalendarIds,
-      (calendar) => calendar.id
-    ),
-    todos: filterDeletedIds(
-      data.todos,
-      effectiveDeletedTodoIds,
-      (todo) => todo.id
-    ),
-  });
-}
-
+const applyFilesMetadataSnapshot = applyFilesMetadataSyncSnapshot;
+const applySongsSnapshot = applySongsSyncSnapshot;
+const applyVideosSnapshot = applyVideosSyncSnapshot;
+const applyStickiesSnapshot = applyStickiesSyncSnapshot;
+const applyCalendarSnapshot = applyCalendarSyncSnapshot;
 const applyContactsSnapshot = applyContactsSyncSnapshot;
-
-async function applyMonolithicBlobSnapshotToIndividualDomain(
-  domain: IndividualBlobSyncDomain,
-  data: FilesStoreSnapshotData
-): Promise<void> {
-  const changedItems = Object.fromEntries(
-    data.map((item) => [item.key, item])
-  ) as Record<string, StoreItemWithKey>;
-
-  await applyIndividualBlobDomain(
-    domain,
-    [],
-    changedItems,
-    getIndividualBlobDeletedKeys(domain)
-  );
-}
-
-async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promise<void> {
-  const remoteKeySet = new Set(remoteKeys);
-  const displayStore = useDisplaySettingsStore.getState();
-  const current = displayStore.currentWallpaper;
-
-  if (current?.startsWith("indexeddb://")) {
-    const id = current.substring("indexeddb://".length);
-    if (remoteKeySet.has(id)) {
-      await displayStore.setWallpaper(current);
-    } else {
-      useDisplaySettingsStore.setState({
-        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-        wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
-      });
-    }
-  }
-
-  displayStore.bumpCustomWallpapersRevision();
-}
-
-async function applyIndividualBlobDomain(
-  domain: IndividualBlobSyncDomain,
-  keysToDelete: string[],
-  changedItems: Record<string, StoreItemWithKey>,
-  deletedKeys: DeletionMarkerMap = {}
-): Promise<void> {
-  const storeName = getIndividualBlobStoreName(domain);
-  const db = await ensureIndexedDBInitialized();
-  let existingKeys = new Set<string>();
-
-  try {
-    const existingItems = await readStoreItems(db, storeName);
-    existingKeys = new Set(existingItems.map((item) => item.key));
-
-    await deleteStoreItemsByKey(db, storeName, keysToDelete);
-    await upsertStoreItems(
-      db,
-      storeName,
-      Object.values(changedItems).filter((item) => !deletedKeys[item.key])
-    );
-  } finally {
-    db.close();
-  }
-
-  if (domain === "custom-wallpapers") {
-    const finalKeySet = new Set(
-      Array.from(existingKeys).filter((key) => !keysToDelete.includes(key))
-    );
-    for (const item of Object.values(changedItems)) {
-      if (!deletedKeys[item.key]) {
-        finalKeySet.add(item.key);
-      }
-    }
-    await finalizeCustomWallpaperSync(finalKeySet);
-  }
-}
 
 export async function applyCloudSyncEnvelope(
   envelope: CloudSyncEnvelope<AnySnapshotData>
@@ -1112,7 +504,7 @@ export async function applyCloudSyncEnvelope(
       case "custom-wallpapers":
         await applyMonolithicBlobSnapshotToIndividualDomain(
           "custom-wallpapers",
-          envelope.data as CustomWallpapersSnapshotData
+          envelope.data as FilesStoreSnapshotData
         );
         return;
     }
@@ -1183,120 +575,12 @@ export async function fetchPhysicalCloudSyncMetadata(
   throw new Error("Failed to fetch consolidated sync metadata");
 }
 
-function mergeItemsByIdPreferNewer<T extends { id: string; updatedAt?: number }>(
-  localItems: T[],
-  remoteItems: T[],
-  deletedIds: DeletionMarkerMap
-): T[] {
-  const merged = new Map<string, T>();
-  for (const item of remoteItems) {
-    if (!deletedIds[item.id]) merged.set(item.id, item);
-  }
-  for (const item of localItems) {
-    if (deletedIds[item.id]) continue;
-    const existing = merged.get(item.id);
-    if (
-      !existing ||
-      (item.updatedAt ?? 0) >= (existing.updatedAt ?? 0)
-    ) {
-      merged.set(item.id, item);
-    }
-  }
-  return Array.from(merged.values());
-}
-
-function mergeItemsById<T extends { id: string }>(
-  localItems: T[],
-  remoteItems: T[]
-): T[] {
-  const merged = new Map<string, T>();
-  for (const item of remoteItems) {
-    merged.set(item.id, item);
-  }
-  for (const item of localItems) {
-    merged.set(item.id, item);
-  }
-  return Array.from(merged.values());
-}
-
-function mergeStickiesSnapshots(
-  local: StickiesSnapshotData,
-  remote: StickiesSnapshotData
-): StickiesSnapshotData {
-  const mergedDeleted = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedNoteIds),
-    normalizeDeletionMarkerMap(remote.deletedNoteIds)
-  );
-  return {
-    notes: mergeItemsByIdPreferNewer(local.notes, remote.notes, mergedDeleted),
-    deletedNoteIds: mergedDeleted,
-  };
-}
-
-function mergeCalendarSnapshots(
-  local: CalendarSnapshotData,
-  remote: CalendarSnapshotData
-): CalendarSnapshotData {
-  const mergedDeletedEvents = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedEventIds),
-    normalizeDeletionMarkerMap(remote.deletedEventIds)
-  );
-  const mergedDeletedCalendars = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedCalendarIds),
-    normalizeDeletionMarkerMap(remote.deletedCalendarIds)
-  );
-  const mergedDeletedTodos = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedTodoIds),
-    normalizeDeletionMarkerMap(remote.deletedTodoIds)
-  );
-  return {
-    events: mergeItemsByIdPreferNewer(local.events, remote.events, mergedDeletedEvents),
-    calendars: mergeItemsByIdPreferNewer(
-      local.calendars as (CalendarGroup & { updatedAt?: number })[],
-      remote.calendars as (CalendarGroup & { updatedAt?: number })[],
-      mergedDeletedCalendars
-    ) as CalendarGroup[],
-    todos: mergeItemsById(
-      filterDeletedIds(local.todos, mergedDeletedTodos, (t) => t.id),
-      filterDeletedIds(remote.todos, mergedDeletedTodos, (t) => t.id)
-    ),
-    deletedEventIds: mergedDeletedEvents,
-    deletedCalendarIds: mergedDeletedCalendars,
-    deletedTodoIds: mergedDeletedTodos,
-  };
-}
-
+const mergeFilesMetadataSnapshots = mergeFilesMetadataSyncSnapshots;
+const mergeStickiesSnapshots = mergeStickiesSyncSnapshots;
+const mergeCalendarSnapshots = mergeCalendarSyncSnapshots;
 const mergeContactsSnapshots = mergeContactsSyncSnapshots;
-
-function mergeSongsSnapshots(
-  local: SongsSnapshotData,
-  remote: SongsSnapshotData
-): SongsSnapshotData {
-  const mergedDeleted = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedTrackIds),
-    normalizeDeletionMarkerMap(remote.deletedTrackIds)
-  );
-  return {
-    tracks: mergeItemsById(
-      filterDeletedIds(local.tracks, mergedDeleted, (t) => t.id),
-      filterDeletedIds(remote.tracks, mergedDeleted, (t) => t.id)
-    ),
-    libraryState: local.libraryState === "loaded" || remote.libraryState === "loaded"
-      ? "loaded"
-      : local.libraryState,
-    lastKnownVersion: Math.max(local.lastKnownVersion, remote.lastKnownVersion),
-    deletedTrackIds: mergedDeleted,
-  };
-}
-
-function mergeVideosSnapshots(
-  local: VideosSnapshotData,
-  remote: VideosSnapshotData
-): VideosSnapshotData {
-  return {
-    videos: mergeItemsById(local.videos, remote.videos),
-  };
-}
+const mergeSongsSnapshots = mergeSongsSyncSnapshots;
+const mergeVideosSnapshots = mergeVideosSyncSnapshots;
 
 function mergeRedisStateConflict(
   domain: RedisSyncDomain,
