@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { useSound, Sounds } from "@/hooks/useSound";
 
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
@@ -52,9 +52,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
     const Comp = asChild ? Slot : "button";
-    const currentTheme = useThemeStore((state) => state.current);
-    const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-    const isMacTheme = currentTheme === "macosx";
+    const { isXpTheme, isMacOSTheme } = useThemeFlags();
 
     const [isFocused, setIsFocused] = React.useState(false);
     const [isPressed, setIsPressed] = React.useState(false);
@@ -65,7 +63,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     // For macOS theme, use aqua variant for default buttons
-    if (isMacTheme && variant === "default") {
+    if (isMacOSTheme && variant === "default") {
       return (
         <Comp
           className={cn("aqua-button primary", className)}
@@ -78,7 +76,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     // For macOS theme with secondary variant, use aqua secondary
-    if (isMacTheme && variant === "secondary") {
+    if (isMacOSTheme && variant === "secondary") {
       return (
         <Comp
           className={cn("aqua-button secondary", className)}

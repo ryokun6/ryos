@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTheme } from "@/themes";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 
@@ -64,10 +64,8 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
 >(({ className, children, overlayClassName, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
-  const isSystem7Theme = currentTheme === "system7";
+  const { currentTheme, isXpTheme, isMacOSTheme, isSystem7Theme } =
+    useThemeFlags();
 
   // Function to clean up pointer-events
   const cleanupPointerEvents = React.useCallback(() => {
@@ -91,7 +89,7 @@ const DialogContent = React.forwardRef<
       );
     }
 
-    if (isMacOsxTheme) {
+    if (isMacOSTheme) {
       return cn(
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-os-window-bg p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 origin-center overflow-hidden",
         // Ensure all descendant buttons use 13px text size in macOSX dialogs
@@ -122,7 +120,7 @@ const DialogContent = React.forwardRef<
         <div
           className="flex flex-1 min-h-0 flex-col"
           style={
-            isMacOsxTheme
+            isMacOSTheme
               ? {
                   backgroundColor: "var(--os-color-window-bg)",
                   backgroundImage: "var(--os-pinstripe-window)",
@@ -146,9 +144,7 @@ const DialogHeader = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { currentTheme, isXpTheme, isMacOSTheme } = useThemeFlags();
   const closeRef = React.useRef<HTMLButtonElement>(null);
 
   if (isXpTheme) {
@@ -168,7 +164,7 @@ const DialogHeader = ({
     );
   }
 
-  if (isMacOsxTheme) {
+  if (isMacOSTheme) {
     const theme = getTheme(currentTheme);
     return (
       <div

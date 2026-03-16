@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useContactsStore } from "@/stores/useContactsStore";
 import type { Contact, ContactDraft } from "@/utils/contacts";
 import { contactMatchesQuery, parseVCardText, sortContacts } from "@/utils/contacts";
@@ -22,10 +22,8 @@ interface ContactGroup {
 export function useContactsLogic() {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("contacts", helpItems);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
-  const isSystem7Theme = currentTheme === "system7";
+  const { currentTheme, isXpTheme, isMacOSTheme, isSystem7Theme } =
+    useThemeFlags();
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
@@ -230,7 +228,7 @@ export function useContactsLogic() {
     t,
     translatedHelpItems,
     isXpTheme,
-    isMacOsxTheme,
+      isMacOsxTheme: isMacOSTheme,
     isSystem7Theme,
     isHelpDialogOpen,
     setIsHelpDialogOpen,

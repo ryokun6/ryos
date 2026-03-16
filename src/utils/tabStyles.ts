@@ -1,4 +1,5 @@
 import { OsThemeId } from "@/themes/types";
+import { getThemeMetadata } from "@/themes";
 
 export interface TabStyleConfig {
   tabListClasses: string;
@@ -8,7 +9,8 @@ export interface TabStyleConfig {
 }
 
 export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const metadata = getThemeMetadata(currentTheme);
+  const isXpTheme = metadata.isWindows;
   const isMacOSXTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
   const isWindowsLegacyTheme = isXpTheme;
