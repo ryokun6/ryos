@@ -19,11 +19,10 @@ describe("logical cloud sync helpers", () => {
 
   test("maps physical domains into logical groups", () => {
     expect(getLogicalCloudSyncDomainForPhysical("custom-wallpapers")).toBe(
-      "settings"
+      "files"
     );
     expect(getLogicalCloudSyncDomainForPhysical("files-images")).toBe("files");
     expect(getLogicalCloudSyncDomainPhysicalParts("settings")).toEqual([
-      "custom-wallpapers",
       "settings",
     ]);
     expect(getLogicalCloudSyncDomainPhysicalParts("files")).toEqual([
@@ -31,6 +30,7 @@ describe("logical cloud sync helpers", () => {
       "files-trash",
       "files-applets",
       "files-metadata",
+      "custom-wallpapers",
     ]);
   });
 
@@ -80,21 +80,21 @@ describe("logical cloud sync helpers", () => {
     const aggregated = aggregateLogicalCloudSyncMetadata(metadata);
 
     expect(aggregated.settings).toMatchObject({
-      updatedAt: "2026-03-15T10:05:00.000Z",
-      createdAt: "2026-03-15T08:00:00.000Z",
-      totalSize: 350,
+      updatedAt: "2026-03-15T10:00:00.000Z",
+      createdAt: "2026-03-15T09:00:00.000Z",
+      totalSize: 100,
     });
     expect(Object.keys(aggregated.settings?.parts || {}).sort()).toEqual([
-      "custom-wallpapers",
       "settings",
     ]);
 
     expect(aggregated.files).toMatchObject({
-      updatedAt: "2026-03-15T09:45:00.000Z",
-      createdAt: "2026-03-15T09:00:00.000Z",
-      totalSize: 580,
+      updatedAt: "2026-03-15T10:05:00.000Z",
+      createdAt: "2026-03-15T08:00:00.000Z",
+      totalSize: 830,
     });
     expect(Object.keys(aggregated.files?.parts || {}).sort()).toEqual([
+      "custom-wallpapers",
       "files-images",
       "files-metadata",
     ]);
