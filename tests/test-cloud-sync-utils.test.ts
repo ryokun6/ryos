@@ -27,6 +27,7 @@ import {
 } from "../src/utils/cloudSyncIndividualBlobMerge";
 import {
   mergeSettingsSnapshotData,
+  normalizeSettingsSnapshotData,
   shouldRestoreLegacyCustomWallpapers,
 } from "../src/utils/cloudSyncSettingsMerge";
 import type { SettingsSnapshotData } from "../src/utils/cloudSyncSettingsMerge";
@@ -957,6 +958,219 @@ describe("cloud sync shared helpers", () => {
     expect(mergedWithoutInflation.ipod?.displayMode).toBe("cover");
     expect(mergedWithoutInflation.ipod?.showLyrics).toBe(true);
     expect(mergedWithoutInflation.ipod?.theme).toBe("u2");
+  });
+
+  test("normalizes undefined lyricsTranslationLanguage to null in ipod section", () => {
+    const snapshot = {
+      theme: "xp",
+      language: "en" as const,
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini" as const,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null as "openai" | "elevenlabs" | null,
+        ttsVoice: null as string | null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video" as const,
+        showLyrics: true,
+        lyricsAlignment: "alternating" as const,
+        lyricsFont: "serif-red" as const,
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW" as const,
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: undefined as unknown as string | null,
+        theme: "classic" as const,
+        lcdFilterOn: true,
+      },
+      sectionUpdatedAt: {},
+    } as unknown as SettingsSnapshotData;
+
+    const normalized = normalizeSettingsSnapshotData(snapshot, null);
+    expect(normalized.ipod?.lyricsTranslationLanguage).toBeNull();
+  });
+
+  test("preserves explicit lyricsTranslationLanguage values during normalization", () => {
+    const snapshot = {
+      theme: "xp",
+      language: "en" as const,
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini" as const,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null as "openai" | "elevenlabs" | null,
+        ttsVoice: null as string | null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video" as const,
+        showLyrics: true,
+        lyricsAlignment: "alternating" as const,
+        lyricsFont: "serif-red" as const,
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW" as const,
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "ja",
+        theme: "classic" as const,
+        lcdFilterOn: true,
+      },
+      sectionUpdatedAt: {},
+    } as SettingsSnapshotData;
+
+    const normalized = normalizeSettingsSnapshotData(snapshot, null);
+    expect(normalized.ipod?.lyricsTranslationLanguage).toBe("ja");
+
+    snapshot.ipod!.lyricsTranslationLanguage = null;
+    const normalizedNull = normalizeSettingsSnapshotData(snapshot, null);
+    expect(normalizedNull.ipod?.lyricsTranslationLanguage).toBeNull();
+
+    snapshot.ipod!.lyricsTranslationLanguage = "auto";
+    const normalizedAuto = normalizeSettingsSnapshotData(snapshot, null);
+    expect(normalizedAuto.ipod?.lyricsTranslationLanguage).toBe("auto");
+  });
+
+  test("remote ipod section with undefined lyricsTranslationLanguage uses null when merged", () => {
+    const local: SettingsSnapshotData = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video",
+        showLyrics: false,
+        lyricsAlignment: "center",
+        lyricsFont: "sans-serif",
+        romanization: {
+          enabled: false,
+          japaneseFurigana: false,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "en",
+        theme: "classic",
+        lcdFilterOn: false,
+      },
+      sectionUpdatedAt: {
+        ipod: "2026-03-14T10:00:00.000Z",
+      },
+    };
+
+    const remote = {
+      ...local,
+      ipod: {
+        displayMode: "cover",
+        showLyrics: true,
+        lyricsAlignment: "alternating",
+        lyricsFont: "serif-red",
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: undefined,
+        theme: "u2",
+        lcdFilterOn: true,
+      },
+      sectionUpdatedAt: {
+        ipod: "2026-03-14T12:00:00.000Z",
+      },
+    } as unknown as SettingsSnapshotData;
+
+    const merged = mergeSettingsSnapshotData(local, remote);
+
+    expect(merged.ipod?.showLyrics).toBe(true);
+    expect(merged.ipod?.theme).toBe("u2");
+    expect(merged.ipod?.lyricsTranslationLanguage).toBeNull();
   });
 
   test("preserves local settings when remote snapshot has undefined sections", () => {

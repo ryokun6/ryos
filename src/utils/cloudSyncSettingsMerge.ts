@@ -88,8 +88,17 @@ export function normalizeSettingsSnapshotData(
     }
   }
 
+  const normalizedIpod = snapshot.ipod
+    ? {
+        ...snapshot.ipod,
+        lyricsTranslationLanguage:
+          snapshot.ipod.lyricsTranslationLanguage ?? null,
+      }
+    : snapshot.ipod;
+
   return {
     ...snapshot,
+    ipod: normalizedIpod,
     sectionUpdatedAt: normalizedSectionUpdatedAt,
   };
 }
