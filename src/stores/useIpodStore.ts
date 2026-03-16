@@ -994,9 +994,9 @@ export const useIpodStore = create<IpodState>()(
                 return url.pathname.slice(1) || null;
               }
 
-              // Embedded or other YouTube formats
+              // Embedded, shorts, or other YouTube formats
               const pathMatch = url.pathname.match(
-                /\/(?:embed\/|v\/)?([a-zA-Z0-9_-]{11})/
+                /\/(?:embed\/|v\/|shorts\/)?([a-zA-Z0-9_-]{11})/
               );
               if (pathMatch) return pathMatch[1];
             }
@@ -1076,6 +1076,7 @@ export const useIpodStore = create<IpodState>()(
           const oembedResponse = await abortableFetch(oembedUrl, {
             timeout: 15000,
             throwOnHttpError: false,
+            credentials: "omit",
             retry: { maxAttempts: 1, initialDelayMs: 250 },
           });
 
