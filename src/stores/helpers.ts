@@ -21,22 +21,56 @@ export function useStoreShallow<TState, TSelected>(
   return store(useShallow(selector));
 }
 
-const createShallowHook = <TState>(store: BoundStoreHook<TState>) =>
-  <TSelected>(selector: (state: TState) => TSelected): TSelected =>
-    useStoreShallow(store, selector);
+export function useAppStoreShallow<T>(
+  selector: (state: ReturnType<typeof useAppStore.getState>) => T
+): T {
+  return useStoreShallow(useAppStore, selector);
+}
 
-export const useAppStoreShallow = createShallowHook(useAppStore);
-export const useIpodStoreShallow = createShallowHook(useIpodStore);
-export const useVideoStoreShallow = createShallowHook(useVideoStore);
-export const useAudioSettingsStoreShallow = createShallowHook(
-  useAudioSettingsStore
-);
-export const useDisplaySettingsStoreShallow = createShallowHook(
-  useDisplaySettingsStore
-);
-export const useChatsStoreShallow = createShallowHook(useChatsStore);
-export const useFilesStoreShallow = createShallowHook(useFilesStore);
-export const useTerminalStoreShallow = createShallowHook(useTerminalStore);
-export const useInternetExplorerStoreShallow = createShallowHook(
-  useInternetExplorerStore
-);
+export function useIpodStoreShallow<T>(
+  selector: (state: ReturnType<typeof useIpodStore.getState>) => T
+): T {
+  return useStoreShallow(useIpodStore, selector);
+}
+
+export function useVideoStoreShallow<T>(
+  selector: (state: ReturnType<typeof useVideoStore.getState>) => T
+): T {
+  return useStoreShallow(useVideoStore, selector);
+}
+
+export function useAudioSettingsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useAudioSettingsStore.getState>) => T
+): T {
+  return useStoreShallow(useAudioSettingsStore, selector);
+}
+
+export function useDisplaySettingsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useDisplaySettingsStore.getState>) => T
+): T {
+  return useStoreShallow(useDisplaySettingsStore, selector);
+}
+
+export function useChatsStoreShallow<T>(
+  selector: (state: ReturnType<typeof useChatsStore.getState>) => T
+): T {
+  return useStoreShallow(useChatsStore, selector);
+}
+
+export function useFilesStoreShallow<T>(
+  selector: (state: ReturnType<typeof useFilesStore.getState>) => T
+): T {
+  return useStoreShallow(useFilesStore, selector);
+}
+
+export function useTerminalStoreShallow<T>(
+  selector: (state: ReturnType<typeof useTerminalStore.getState>) => T
+): T {
+  return useStoreShallow(useTerminalStore, selector);
+}
+
+export function useInternetExplorerStoreShallow<T>(
+  selector: (state: ReturnType<typeof useInternetExplorerStore.getState>) => T
+): T {
+  return useStoreShallow(useInternetExplorerStore, selector);
+}
