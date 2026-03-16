@@ -561,15 +561,15 @@ No shared icon size tokens or scale.
 9. ~~**Define z-index scale** as CSS variables~~ ✅ `--z-base` through `--z-spotlight`
 10. ~~**Add `prefers-reduced-motion` support**~~ ✅
 
-### Tier 3 — Structural Improvements — PARTIALLY COMPLETED
+### Tier 3 — Structural Improvements — MOSTLY COMPLETED
 
-11. **Refactor `button.tsx`** to single render path with theme-resolved classes
+11. ~~**Refactor `button.tsx`** to single render path~~ ✅ 8 return paths → 1, -53% lines
 12. ~~**Refactor `input.tsx`** to use CSS state selectors instead of JS event handler styling~~ ✅
-13. **Refactor `select.tsx`** to share Aqua styles with button via CSS classes
-14. **Reconcile JS theme objects with CSS variables** (single source of truth)
+13. ~~**Refactor `select.tsx`** to share Aqua styles via CSS classes~~ ✅ -25% lines
+14. ~~**Reconcile JS theme objects with CSS variables**~~ ✅ CSS is now single source of truth
 15. **Define type scale** and remove global font-size `!important` overrides
 16. ~~**Rename `calendar-sidebar` to `os-sidebar`** and generalize~~ ✅
-17. **Extract `<ToolbarButton>` / `<ToolbarButtonGroup>`** components
+17. ~~**Extract `<ToolbarButton>` / `<ToolbarButtonGroup>`**~~ ✅ `src/components/ui/toolbar-button.tsx`
 18. ~~**Extract `<EmptyState>`**~~ ✅ `src/components/ui/empty-state.tsx` / **`<LoadingOverlay>`** remaining
 19. **Create `useKeyboardShortcuts`** hook or shortcut registry
 
