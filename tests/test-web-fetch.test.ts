@@ -71,14 +71,14 @@ function stripHtmlToText(html: string, selector?: string): string {
     working = extractMainContent(working);
   }
 
-  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script\s*>/gi);
-  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style\s*>/gi);
-  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript\s*>/gi);
-  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav\s*>/gi);
-  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer\s*>/gi);
-  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header\s*>/gi);
+  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script[^>]*>/gi);
+  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style[^>]*>/gi);
+  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript[^>]*>/gi);
+  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav[^>]*>/gi);
+  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer[^>]*>/gi);
+  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header[^>]*>/gi);
   working = stripTagsLoop(working, /<!--[\s\S]*?-->/g);
-  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg\s*>/gi);
+  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg[^>]*>/gi);
 
   working = working.replace(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi, (_m, tag, inner) => {
     const level = parseInt(tag.charAt(1), 10);
@@ -94,13 +94,13 @@ function stripHtmlToText(html: string, selector?: string): string {
   working = working.replace(/<td[^>]*>/gi, "\t");
 
   working = working.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => {
-    const linkText = text.replace(/<[^>]+>/g, "").trim();
+    const linkText = stripTagsLoop(text, /<[^>]+>/g).trim();
     if (!linkText) return "";
     if (href.startsWith("#") || DANGEROUS_URL_SCHEMES.test(href)) return linkText;
     return `${linkText} (${href})`;
   });
 
-  working = working.replace(/<[^>]+>/g, " ");
+  working = stripTagsLoop(working, /<[^>]+>/g);
 
   working = decodeHtmlEntitiesOnce(working);
 
@@ -283,8 +283,16 @@ describe("webFetch metadata extraction", () => {
 describe("webFetch security", () => {
   test("stripTagsLoop handles nested script injection", () => {
     const payload = `<scri<script></script>pt>alert(1)</script>`;
-    const result = stripTagsLoop(payload, /<script\b[\s\S]*?<\/script\s*>/gi);
+    const result = stripTagsLoop(payload, /<script\b[\s\S]*?<\/script[^>]*>/gi);
     expect(result).not.toContain("<script");
+  });
+
+  test("strips malformed closing tags with extra chars before >", () => {
+    const html = `<p>Safe</p><script>evil()</script\t\n bar><p>Also safe</p>`;
+    const result = stripHtmlToText(html);
+    expect(result).not.toContain("evil");
+    expect(result).toContain("Safe");
+    expect(result).toContain("Also safe");
   });
 
   test("decodeHtmlEntitiesOnce does not double-decode", () => {

@@ -311,15 +311,16 @@ function stripHtmlToText(html: string, selector?: string): string {
   }
 
   // Strip dangerous/non-content tags in a loop to handle nested obfuscation.
-  // Regex allows optional whitespace before `>` in closing tags (e.g. `</script >`).
-  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script\s*>/gi);
-  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style\s*>/gi);
-  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript\s*>/gi);
-  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav\s*>/gi);
-  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer\s*>/gi);
-  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header\s*>/gi);
+  // Closing-tag regex uses `[^>]*>` to match malformed variants like
+  // `</script \t\n bar>` where extra chars appear before `>`.
+  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script[^>]*>/gi);
+  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style[^>]*>/gi);
+  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript[^>]*>/gi);
+  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav[^>]*>/gi);
+  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer[^>]*>/gi);
+  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header[^>]*>/gi);
   working = stripTagsLoop(working, /<!--[\s\S]*?-->/g);
-  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg\s*>/gi);
+  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg[^>]*>/gi);
 
   working = working.replace(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi, (_m, tag, inner) => {
     const level = parseInt(tag.charAt(1), 10);
@@ -335,13 +336,14 @@ function stripHtmlToText(html: string, selector?: string): string {
   working = working.replace(/<td[^>]*>/gi, "\t");
 
   working = working.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => {
-    const linkText = text.replace(/<[^>]+>/g, "").trim();
+    const linkText = stripTagsLoop(text, /<[^>]+>/g).trim();
     if (!linkText) return "";
     if (href.startsWith("#") || DANGEROUS_URL_SCHEMES.test(href)) return linkText;
     return `${linkText} (${href})`;
   });
 
-  working = working.replace(/<[^>]+>/g, " ");
+  // Loop-strip remaining tags to handle any nested fragments
+  working = stripTagsLoop(working, /<[^>]+>/g);
 
   working = decodeHtmlEntitiesOnce(working);
 
