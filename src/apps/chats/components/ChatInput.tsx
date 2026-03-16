@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AI_MODELS } from "@/types/aiModels";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import { CHAT_ANALYTICS } from "@/utils/analytics";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
@@ -129,7 +130,7 @@ export function ChatInput({
   const aiModel = useAppStoreShallow((s) => s.aiModel);
   const currentTheme = useThemeStore((s) => s.current);
   const isMacTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   // Get the model display name for debug information
   const modelDisplayName = aiModel ? AI_MODELS[aiModel]?.name : null;
