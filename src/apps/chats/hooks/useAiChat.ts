@@ -21,9 +21,9 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import {
   useFileSystem,
   dbOperations,
-  STORES,
   type DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
