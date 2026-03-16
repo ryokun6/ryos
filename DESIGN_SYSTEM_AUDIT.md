@@ -505,13 +505,13 @@ The `SelectTrigger` has ~35 lines of inline styles for macOS (lines 69–91) tha
 
 **Recommendation**: Extract a shared `.macos-select-trigger` CSS class that handles all Aqua styling in `themes.css`.
 
-### 12.4 `dialog.tsx` — System 7 Hardcoded Background
+### 12.4 `dialog.tsx` — System 7 Hardcoded Background — FIXED
 
-Line 131: `backgroundColor: "#E3E3E3"` for System 7 dialog body. This should consume `--os-color-panel-bg`.
+~~Line 131: `backgroundColor: "#E3E3E3"` for System 7 dialog body.~~ Now uses `var(--os-color-panel-bg)`.
 
-### 12.5 `switch.tsx` — Non-macOS Hardcoded Colors
+### 12.5 `switch.tsx` — Non-macOS Hardcoded Colors — FIXED
 
-Non-macOS themes use hardcoded `#111827` and `#9ca3af` for switch track colors instead of tokens.
+~~Non-macOS themes use hardcoded `#111827` and `#9ca3af` for switch track colors.~~ Now uses `var(--os-color-switch-track)` and `var(--os-color-switch-track-checked)` tokens.
 
 ### 12.6 `dial.tsx` — Fully Hardcoded Colors
 
@@ -545,26 +545,26 @@ No shared icon size tokens or scale.
 
 ## 14. Priority Extraction Roadmap
 
-### Tier 1 — Highest Impact, Lowest Risk
+### Tier 1 — Highest Impact, Lowest Risk — COMPLETED
 
-1. **Add missing CSS variable tokens** (`--os-color-input-*`, `--os-color-panel-*`, `--os-color-separator`) to `themes.css`
-2. **Create `[data-selected]` utility class** for selection styling (replaces 12+ inline style blocks)
-3. **Extract `<SelectableListItem>`** component
-4. **Extract `<SearchInput>`** component
-5. **Consolidate theme checks** to use `isWindowsTheme()` / `isMacTheme()` consistently
+1. ~~**Add missing CSS variable tokens** (`--os-color-input-*`, `--os-color-panel-*`, `--os-color-separator`) to `themes.css`~~ ✅
+2. ~~**Create `[data-selected]` utility class** for selection styling (replaces 12+ inline style blocks)~~ ✅
+3. ~~**Extract `<SelectableListItem>`** component~~ ✅ `src/components/ui/selectable-list-item.tsx`
+4. ~~**Extract `<SearchInput>`** component~~ ✅ `src/components/ui/search-input.tsx`
+5. ~~**Consolidate theme checks** to use `isWindowsTheme()` / `isMacTheme()` consistently~~ ✅ (shared UI components)
 
-### Tier 2 — High Impact, Medium Effort
+### Tier 2 — High Impact, Medium Effort — PARTIALLY COMPLETED
 
 6. **Scope XP/98 CSS** to `[data-os-theme]` selectors to reduce `!important` usage
-7. **Move macOS Aqua control styles** from inline JS to CSS classes in `themes.css`
-8. **Extract `<AppSidebarPanel>`** and `<PanelHeader>`** layout primitives
-9. **Define z-index scale** as CSS variables
-10. **Define motion tokens** and add `prefers-reduced-motion` support
+7. ~~**Move macOS Aqua input styles** from inline JS to CSS classes in `themes.css`~~ ✅ `.os-themed-input`
+8. **Extract `<AppSidebarPanel>`** and **`<PanelHeader>`** layout primitives
+9. ~~**Define z-index scale** as CSS variables~~ ✅ `--z-base` through `--z-spotlight`
+10. ~~**Add `prefers-reduced-motion` support**~~ ✅
 
 ### Tier 3 — Structural Improvements
 
 11. **Refactor `button.tsx`** to single render path with theme-resolved classes
-12. **Refactor `input.tsx`** to use CSS state selectors instead of JS event handler styling
+12. ~~**Refactor `input.tsx`** to use CSS state selectors instead of JS event handler styling~~ ✅
 13. **Refactor `select.tsx`** to share Aqua styles with button via CSS classes
 14. **Reconcile JS theme objects with CSS variables** (single source of truth)
 15. **Define type scale** and remove global font-size `!important` overrides
