@@ -46,6 +46,35 @@
   text-shadow: var(--os-color-selection-text-shadow);
 }
 
+/* Z-index scale — centralizes all layering values */
+:root {
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-dialog: 200;
+  --z-screensaver: 500;
+  --z-fullscreen: 600;
+  --z-expose-backdrop: 700;
+  --z-expose: 701;
+  --z-menubar: 800;
+  --z-menubar-expose: 750;
+  --z-dropdown: 900;
+  --z-submenu: 901;
+  --z-spotlight-backdrop: 950;
+  --z-spotlight: 951;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Webamp playlist and UI - override skin fonts with system theme fonts */
 #webamp,
 #webamp * {

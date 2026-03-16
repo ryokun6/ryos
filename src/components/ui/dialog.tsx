@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { getTheme } from "@/themes";
+import { getTheme, isWindowsTheme } from "@/themes";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 
 const Dialog = ({
@@ -65,7 +65,7 @@ const DialogContent = React.forwardRef<
   DialogContentProps
 >(({ className, children, overlayClassName, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
 
@@ -147,7 +147,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
   const closeRef = React.useRef<HTMLButtonElement>(null);
 

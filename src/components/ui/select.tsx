@@ -3,6 +3,7 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, CaretDown, CaretUp } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 
 import { cn } from "@/lib/utils";
 
@@ -42,7 +43,7 @@ const SelectTrigger = React.forwardRef<
   const [isPressed, setIsPressed] = React.useState(false);
 
   const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   return (
     <SelectPrimitive.Trigger
