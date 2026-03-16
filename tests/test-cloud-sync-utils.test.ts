@@ -1283,7 +1283,7 @@ describe("cloud sync shared helpers", () => {
     const {
       getSettingsSectionTimestampMap,
       setSettingsSectionTimestamps,
-    } = await import("../src/utils/cloudSyncSettingsState");
+    } = await import("../src/utils/sync/engine/state/syncStateAdapter");
     const { applyResolvedRedisUploadLocally } = await import(
       "../src/utils/cloudSync"
     );
@@ -1389,6 +1389,30 @@ describe("cloud sync shared helpers", () => {
       browserGlobals.document = originalDocument;
       browserGlobals.window = originalWindow;
       browserGlobals.fetch = originalFetch;
+    }
+  });
+
+  test("serializes language initialization from centralized sync metadata", async () => {
+    const browserGlobals = globalThis as typeof globalThis & {
+      localStorage?: Storage;
+    };
+    const originalLocalStorage = browserGlobals.localStorage;
+
+    browserGlobals.localStorage = new MemoryStorage();
+
+    try {
+      const { setCloudSyncLanguageInitialized } = await import(
+        "../src/utils/sync/engine/state/syncStateAdapter"
+      );
+      const { serializeSettingsSnapshot } = await import("../src/utils/cloudSync");
+
+      setCloudSyncLanguageInitialized(false);
+      expect(serializeSettingsSnapshot().languageInitialized).toBe(false);
+
+      setCloudSyncLanguageInitialized(true);
+      expect(serializeSettingsSnapshot().languageInitialized).toBe(true);
+    } finally {
+      browserGlobals.localStorage = originalLocalStorage;
     }
   });
 

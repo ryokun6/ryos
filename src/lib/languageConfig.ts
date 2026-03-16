@@ -163,11 +163,20 @@ const readPersistedLanguageState = (): PersistedLanguageState => {
   };
 };
 
+export const getPersistedLanguageInitializationState = (): boolean =>
+  readPersistedLanguageState().isInitialized;
+
+export const setPersistedLanguageInitializationState = (
+  isInitialized: boolean
+): void => {
+  writeStorageValue(LANGUAGE_INITIALIZED_KEY, isInitialized ? "true" : "false");
+  removeStorageValue(LEGACY_LANGUAGE_INITIALIZED_KEY);
+};
+
 export const persistLanguageSelection = (language: SupportedLanguage): void => {
   writeStorageValue(LANGUAGE_KEY, language);
-  writeStorageValue(LANGUAGE_INITIALIZED_KEY, "true");
+  setPersistedLanguageInitializationState(true);
   removeStorageValue(LEGACY_LANGUAGE_KEY);
-  removeStorageValue(LEGACY_LANGUAGE_INITIALIZED_KEY);
 };
 
 /**
