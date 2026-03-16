@@ -16,9 +16,8 @@ import {
   List,
   GearSix,
   CaretDown,
-  MagnifyingGlass,
-  XCircle,
 } from "@phosphor-icons/react";
+import { SearchInput } from "@/components/ui/search-input";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -420,29 +419,11 @@ export function FinderAppComponent({
                 </DropdownMenu>
               </div>
               <div className="flex-1" />
-              <div className="relative w-[150px]">
-                <MagnifyingGlass
-                  size={13}
-                  weight="bold"
-                  className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-black/45"
-                />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] outline-none font-geneva-12"
-                  placeholder=""
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center text-black/40 hover:text-black/60"
-                  >
-                    <XCircle size={14} weight="fill" />
-                  </button>
-                )}
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                width="150px"
+              />
             </div>
           ) : (
             <div

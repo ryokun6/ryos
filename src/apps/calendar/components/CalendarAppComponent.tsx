@@ -13,7 +13,8 @@ import {
   type WeekDay,
 } from "../hooks/useCalendarLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
-import { CaretLeft, CaretRight, Plus, ListChecks, Trash, MagnifyingGlass, XCircle, SidebarSimple, CalendarBlank } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Plus, ListChecks, Trash, SidebarSimple, CalendarBlank } from "@phosphor-icons/react";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, CalendarGroup, TodoItem } from "@/stores/useCalendarStore";
@@ -942,45 +943,13 @@ function BottomToolbar({
 
   const searchField = showSearch ? (
     <div className="flex items-center justify-center min-w-0">
-      <div className={cn("relative min-w-0", isMacOSTheme ? "w-[150px]" : "w-[170px]")}>
-        <MagnifyingGlass
-          size={13}
-          weight="bold"
-          className={cn(
-            "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2",
-            isMacOSTheme ? "text-black/45" : "text-black/35"
-          )}
-        />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          onKeyDown={(e) => e.stopPropagation()}
-          aria-label={t("common.search")}
-          title={t("common.search")}
-          className={cn(
-            "w-full outline-none min-w-0",
-            isMacOSTheme
-              ? "rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] font-geneva-12"
-              : "rounded-full border border-black/20 bg-white pl-7 pr-7 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]"
-          )}
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onSearchQueryChange("")}
-            className={cn(
-              "absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center",
-              isMacOSTheme ? "text-black/40 hover:text-black/60" : "text-black/35 hover:text-black/55"
-            )}
-            aria-label={t("spotlight.ariaLabels.clearSearch")}
-            title={t("spotlight.ariaLabels.clearSearch")}
-          >
-            <XCircle size={14} weight="fill" />
-          </button>
-        )}
-      </div>
+      <SearchInput
+        value={searchQuery}
+        onChange={onSearchQueryChange}
+        width={isMacOSTheme ? "150px" : "170px"}
+        ariaLabel={t("common.search")}
+        onKeyDown={(e) => e.stopPropagation()}
+      />
     </div>
   ) : null;
 
