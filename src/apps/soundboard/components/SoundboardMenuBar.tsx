@@ -11,6 +11,7 @@ import { MenuBar } from "@/components/layout/MenuBar";
 import { useState, useEffect } from "react";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -56,7 +57,7 @@ export function SoundboardMenuBar({
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const [isOptionPressed, setIsOptionPressed] = useState(false);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   useEffect(() => {

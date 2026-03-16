@@ -1,6 +1,7 @@
 import React from "react";
 import { TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import { getTabStyles } from "@/utils/tabStyles";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,7 @@ interface ThemedTabsListProps {
 
 export function ThemedTabsList({ children, className }: ThemedTabsListProps) {
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const tabStyles = getTabStyles(currentTheme);
 
   if (isXpTheme) {
@@ -57,7 +58,7 @@ export function ThemedTabsTrigger({
   className,
 }: ThemedTabsTriggerProps) {
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const tabStyles = getTabStyles(currentTheme);
 
   if (isXpTheme) {

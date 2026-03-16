@@ -7,6 +7,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import {
   Tooltip,
   TooltipContent,
@@ -47,8 +48,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
 
   // Theme detection for border styling
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isWindowsLegacyTheme = isXpTheme;
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   // Section headings are non-interactive; show all lists by default
 
@@ -83,15 +83,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
           "group relative py-1 px-5",
           isSelected ? "" : "hover:bg-black/5"
         )}
-        style={
-          isSelected
-            ? {
-                background: "var(--os-color-selection-bg)",
-                color: "var(--os-color-selection-text)",
-                textShadow: "var(--os-color-selection-text-shadow)",
-              }
-            : undefined
-        }
+        data-selected={isSelected ? "true" : undefined}
         onClick={() => {
           playButtonClick();
           onRoomSelect(room);
@@ -165,14 +157,14 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
         "flex flex-col font-geneva-12 text-[12px] bg-neutral-100",
         isOverlay
           ? `w-full border-b ${
-              isWindowsLegacyTheme
+              isXpTheme
                 ? "border-[#919b9c]"
                 : currentTheme === "macosx"
                 ? "border-black/10"
                 : "border-black"
             }`
           : `w-56 border-r h-full overflow-hidden ${
-              isWindowsLegacyTheme
+              isXpTheme
                 ? "border-[#919b9c]"
                 : currentTheme === "macosx"
                 ? "border-black/10"
@@ -223,15 +215,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
               "py-1 px-5",
               currentRoom === null ? "" : "hover:bg-black/5"
             )}
-            style={
-              currentRoom === null
-                ? {
-                    background: "var(--os-color-selection-bg)",
-                    color: "var(--os-color-selection-text)",
-                    textShadow: "var(--os-color-selection-text-shadow)",
-                  }
-                : undefined
-            }
+            data-selected={currentRoom === null ? "true" : undefined}
             onClick={() => {
               playButtonClick();
               onRoomSelect(null);

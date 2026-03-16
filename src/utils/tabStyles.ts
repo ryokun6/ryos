@@ -8,26 +8,19 @@ export interface TabStyleConfig {
 }
 
 export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOSXTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
-  const isWindowsLegacyTheme = isXpTheme;
 
-  const separatorColor = isMacOSXTheme
-    ? "rgba(0, 0, 0, 0.2)"
-    : isSystem7Theme || isWindowsLegacyTheme
-    ? "#808080"
-    : "rgba(0, 0, 0, 0.2)";
+  const separatorColor = "var(--os-color-separator)";
 
   const tabListBase = `flex w-full ${
     isMacOSXTheme ? "" : "h-6"
   } space-x-0.5 shadow-none`;
 
-  // System 7 styling - classic, no gradients or gloss
-  const tabListSystem7 = "bg-[#E3E3E3] border-b border-[#808080]";
+  const tabListSystem7 = "bg-os-panel-bg border-b border-os-separator";
   const tabTriggerSystem7 =
-    "bg-[#D4D4D4] data-[state=active]:bg-[#E3E3E3] border border-[#808080] data-[state=active]:border-b-[#E3E3E3]";
-  const tabContentSystem7 = "bg-[#E3E3E3] border border-t-0 border-[#808080]";
+    "bg-[#D4D4D4] data-[state=active]:bg-os-panel-bg border border-os-separator data-[state=active]:border-b-os-panel-bg";
+  const tabContentSystem7 = "bg-os-panel-bg border border-t-0 border-os-separator";
 
   // macOS styling - use aqua-button CSS classes
   const tabListMacOSX = "aqua-tab-bar";

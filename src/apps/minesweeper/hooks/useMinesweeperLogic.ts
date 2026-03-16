@@ -4,6 +4,7 @@ import { helpItems } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 
 const BOARD_SIZE = 9;
 const MINES_COUNT = 10;
@@ -289,7 +290,7 @@ export function useMinesweeperLogic() {
   }, [initializeBoard]);
 
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   return {

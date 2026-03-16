@@ -6,6 +6,7 @@ import type { DialogState, Soundboard } from "@/types/types";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import { useTranslation } from "react-i18next";
 import { helpItems as sharedHelpItems } from "..";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -54,7 +55,7 @@ export function useSoundboardLogic({
 
   // Get current theme
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   useEffect(() => {
     if (!hasInitialized) {

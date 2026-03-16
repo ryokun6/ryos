@@ -8,6 +8,7 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 import type { CalendarView } from "@/stores/useCalendarStore";
@@ -50,7 +51,7 @@ export function CalendarMenuBar({
 }: CalendarMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
   const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
 
