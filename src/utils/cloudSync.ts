@@ -549,7 +549,7 @@ async function gzipJson(value: unknown): Promise<Uint8Array> {
 }
 
 
-function serializeSettingsSnapshot(): SettingsSnapshotData {
+export function serializeSettingsSnapshot(): SettingsSnapshotData {
   const displayState = useDisplaySettingsStore.getState();
   const audioState = useAudioSettingsStore.getState();
   const ipodState = useIpodStore.getState();
@@ -595,7 +595,7 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
       lyricsAlignment: ipodState.lyricsAlignment,
       lyricsFont: ipodState.lyricsFont,
       romanization: ipodState.romanization,
-      lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage,
+      lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage ?? null,
       theme: ipodState.theme,
       lcdFilterOn: ipodState.lcdFilterOn,
     },
@@ -1017,15 +1017,16 @@ async function applySettingsSnapshot(
 
     if (normalizedData.ipod && sectionsToApply.includes("ipod")) {
       try {
+        const remoteIpod = normalizedData.ipod;
         useIpodStore.setState({
-          displayMode: normalizedData.ipod.displayMode,
-          showLyrics: normalizedData.ipod.showLyrics,
-          lyricsAlignment: normalizedData.ipod.lyricsAlignment,
-          lyricsFont: normalizedData.ipod.lyricsFont,
-          romanization: normalizedData.ipod.romanization,
-          lyricsTranslationLanguage: normalizedData.ipod.lyricsTranslationLanguage,
-          theme: normalizedData.ipod.theme,
-          lcdFilterOn: normalizedData.ipod.lcdFilterOn,
+          displayMode: remoteIpod.displayMode,
+          showLyrics: remoteIpod.showLyrics,
+          lyricsAlignment: remoteIpod.lyricsAlignment,
+          lyricsFont: remoteIpod.lyricsFont,
+          romanization: remoteIpod.romanization,
+          lyricsTranslationLanguage: remoteIpod.lyricsTranslationLanguage ?? null,
+          theme: remoteIpod.theme,
+          lcdFilterOn: remoteIpod.lcdFilterOn,
         });
         appliedSections.push("ipod");
       } catch (e) {

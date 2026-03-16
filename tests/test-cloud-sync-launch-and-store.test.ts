@@ -212,6 +212,79 @@ describe("ipod lyrics settings sync events", () => {
   });
 });
 
+describe("ipod translation settings sync events", () => {
+  test("emits settings domain change when translation language changes", async () => {
+    const { useIpodStore } = await getIpodStoreModule();
+    const domains: string[] = [];
+    const unsubscribe = subscribeToCloudSyncDomainChanges((domain) => {
+      domains.push(domain);
+    });
+
+    try {
+      useIpodStore.setState({ lyricsTranslationLanguage: "auto" });
+      useIpodStore.getState().setLyricsTranslationLanguage("en");
+
+      expect(domains).toEqual(["settings"]);
+      expect(useIpodStore.getState().lyricsTranslationLanguage).toBe("en");
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  test("does not emit settings domain change when translation language stays the same", async () => {
+    const { useIpodStore } = await getIpodStoreModule();
+    let eventCount = 0;
+    const unsubscribe = subscribeToCloudSyncDomainChanges(() => {
+      eventCount += 1;
+    });
+
+    try {
+      useIpodStore.setState({ lyricsTranslationLanguage: "ja" });
+      useIpodStore.getState().setLyricsTranslationLanguage("ja");
+
+      expect(eventCount).toBe(0);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  test("emits settings domain change when translation language changes to null", async () => {
+    const { useIpodStore } = await getIpodStoreModule();
+    const domains: string[] = [];
+    const unsubscribe = subscribeToCloudSyncDomainChanges((domain) => {
+      domains.push(domain);
+    });
+
+    try {
+      useIpodStore.setState({ lyricsTranslationLanguage: "en" });
+      useIpodStore.getState().setLyricsTranslationLanguage(null);
+
+      expect(domains).toEqual(["settings"]);
+      expect(useIpodStore.getState().lyricsTranslationLanguage).toBeNull();
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  test("emits settings domain change when translation language changes from null to auto", async () => {
+    const { useIpodStore } = await getIpodStoreModule();
+    const domains: string[] = [];
+    const unsubscribe = subscribeToCloudSyncDomainChanges((domain) => {
+      domains.push(domain);
+    });
+
+    try {
+      useIpodStore.setState({ lyricsTranslationLanguage: null });
+      useIpodStore.getState().setLyricsTranslationLanguage("auto");
+
+      expect(domains).toEqual(["settings"]);
+      expect(useIpodStore.getState().lyricsTranslationLanguage).toBe("auto");
+    } finally {
+      unsubscribe();
+    }
+  });
+});
+
 describe("cloud sync store download audit timestamps", () => {
   test("tracks fetch and apply timestamps independently", async () => {
     const { useCloudSyncStore } = await getStoreModule();
