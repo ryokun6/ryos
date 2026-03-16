@@ -28,6 +28,7 @@ export interface ApiRequestOptions<TBody = unknown> {
   query?: Record<string, string | number | boolean | null | undefined>;
   body?: TBody;
   headers?: HeadersInit;
+  signal?: AbortSignal;
   timeout?: number;
   retry?: AbortableFetchOptions["retry"];
 }
@@ -69,28 +70,42 @@ async function parseErrorPayload(response: Response): Promise<ApiErrorPayload> {
   }
 }
 
-export async function apiRequest<TResponse, TBody = unknown>(
+async function performApiRequest<TBody = unknown>(
   options: ApiRequestOptions<TBody>
-): Promise<TResponse> {
+): Promise<Response> {
   const {
     path,
     method = "GET",
     query,
     body,
     headers,
+    signal,
     timeout = 15000,
     retry = { maxAttempts: 1, initialDelayMs: 250 },
   } = options;
 
   const hasBody = body !== undefined;
-  const response = await abortableFetch(buildUrl(path, query), {
+  return abortableFetch(buildUrl(path, query), {
     method,
     headers: buildHeaders(headers, hasBody),
     body: hasBody ? JSON.stringify(body) : undefined,
+    signal,
     timeout,
     throwOnHttpError: false,
     retry,
   });
+}
+
+export async function apiRequestRaw<TBody = unknown>(
+  options: ApiRequestOptions<TBody>
+): Promise<Response> {
+  return performApiRequest(options);
+}
+
+export async function apiRequest<TResponse, TBody = unknown>(
+  options: ApiRequestOptions<TBody>
+): Promise<TResponse> {
+  const response = await performApiRequest(options);
 
   if (!response.ok) {
     const payload = await parseErrorPayload(response);

@@ -18,6 +18,12 @@ export interface RoomMessage {
   clientId?: string;
 }
 
+export interface CreateRoomPayload {
+  type: "public" | "private";
+  name?: string;
+  members?: string[];
+}
+
 export async function listRooms(): Promise<{ rooms: RoomSummary[] }> {
   return apiRequest<{ rooms: RoomSummary[] }>({
     path: "/api/rooms",
@@ -68,6 +74,27 @@ export async function deleteRoom(
   return apiRequest<{ success: boolean }>({
     path: `/api/rooms/${encodeURIComponent(roomId)}`,
     method: "DELETE",
+  });
+}
+
+export async function createRoom(
+  payload: CreateRoomPayload,
+): Promise<{ room: RoomSummary }> {
+  return apiRequest<{ room: RoomSummary }, CreateRoomPayload>({
+    path: "/api/rooms",
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function sendRoomMessage(
+  roomId: string,
+  payload: { content: string },
+): Promise<{ message: RoomMessage }> {
+  return apiRequest<{ message: RoomMessage }, typeof payload>({
+    path: `/api/rooms/${encodeURIComponent(roomId)}/messages`,
+    method: "POST",
+    body: payload,
   });
 }
 

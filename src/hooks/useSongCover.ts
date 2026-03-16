@@ -3,8 +3,8 @@
  * Returns the Kugou cover URL if available, otherwise falls back to YouTube thumbnail.
  */
 import { useState, useEffect } from "react";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { ApiRequestError } from "@/api/core";
+import { getSongById } from "@/api/songs";
 
 interface SongMetadataResponse {
   id: string;
@@ -68,36 +68,22 @@ export function useSongCover(
     
     (async () => {
       try {
-        const response = await abortableFetch(
-          getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata`),
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            signal: controller.signal,
-            timeout: 10000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-
-        if (response.ok) {
-          const data: SongMetadataResponse = await response.json();
-          const formattedCover = formatKugouImageUrl(data.cover, 400);
-          coverCache.set(youtubeId, formattedCover);
-          setCoverUrl(formattedCover ?? fallbackThumbnail ?? null);
-        } else {
-          // Song not found or error - cache null and use fallback
-          coverCache.set(youtubeId, null);
-          setCoverUrl(fallbackThumbnail ?? null);
-        }
+        const data = await getSongById<SongMetadataResponse>(youtubeId, {
+          include: "metadata",
+          signal: controller.signal,
+        });
+        const formattedCover = formatKugouImageUrl(data.cover, 400);
+        coverCache.set(youtubeId, formattedCover);
+        setCoverUrl(formattedCover ?? fallbackThumbnail ?? null);
       } catch (error) {
-        // Ignore abort errors
         if (error instanceof Error && error.name === "AbortError") {
           return;
         }
-        // On error, use fallback
+        if (error instanceof ApiRequestError && error.status === 404) {
+          coverCache.set(youtubeId, null);
+          setCoverUrl(fallbackThumbnail ?? null);
+          return;
+        }
         console.warn(`[useSongCover] Failed to fetch cover for ${youtubeId}:`, error);
         coverCache.set(youtubeId, null);
         setCoverUrl(fallbackThumbnail ?? null);

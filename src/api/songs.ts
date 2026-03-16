@@ -1,6 +1,4 @@
-import { apiRequest } from "@/api/core";
-import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
+import { apiRequest, apiRequestRaw } from "@/api/core";
 
 /** Auth context for cookie-based auth (credentials sent automatically via credentials: "include") */
 export interface SongsAuthContext {
@@ -52,12 +50,13 @@ export async function listSongs<TSong = Record<string, unknown>>(
 
 export async function getSongById<TSong = Record<string, unknown>>(
   songId: string,
-  options: { include?: string } = {}
+  options: { include?: string; signal?: AbortSignal } = {}
 ): Promise<TSong> {
   return apiRequest<TSong>({
     path: `/api/songs/${encodeURIComponent(songId)}`,
     method: "GET",
     query: { include: options.include || "metadata" },
+    signal: options.signal,
   });
 }
 
@@ -97,14 +96,11 @@ export async function importSongsBatch(params: {
   auth: SongsAuthContext;
   timeout?: number;
 }): Promise<SongImportBatchResult> {
-  const response = await abortableFetch(getApiUrl("/api/songs"), {
+  const response = await apiRequestRaw({
+    path: "/api/songs",
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ action: "import", songs: params.songs }),
+    body: { action: "import", songs: params.songs },
     timeout: params.timeout ?? 30000,
-    throwOnHttpError: false,
     retry: { maxAttempts: 1, initialDelayMs: 250 },
   });
 
