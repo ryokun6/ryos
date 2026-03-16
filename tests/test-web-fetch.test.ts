@@ -1,22 +1,49 @@
 /**
  * Unit tests for the webFetch tool's HTML-to-text extraction.
  *
- * These tests exercise the stripHtmlToText helper indirectly via the executor
- * by mocking the network layer, so no server is needed.
+ * These tests exercise the pure HTML→text logic that mirrors the executor's
+ * internal helpers. No server or network access needed.
  */
 
 import { describe, test, expect } from "bun:test";
 
-// We can't easily unit-test the executor without mocking fetch + SSRF, so
-// instead we pull out the pure HTML→text logic by re-implementing a thin
-// wrapper that matches the executor's internal `stripHtmlToText`.
-//
-// NOTE: if the executor's stripping logic is later extracted to its own module,
-// this test should import from there instead.
-
 // ---------------------------------------------------------------------------
 // Inline copy of the stripping helpers (kept in sync with executors.ts)
 // ---------------------------------------------------------------------------
+
+const DANGEROUS_URL_SCHEMES = /^(?:javascript|data|vbscript|blob):/i;
+
+function stripTagsLoop(html: string, pattern: RegExp, maxPasses = 10): string {
+  let result = html;
+  for (let i = 0; i < maxPasses; i++) {
+    const next = result.replace(pattern, "");
+    if (next === result) break;
+    result = next;
+  }
+  return result;
+}
+
+function decodeHtmlEntitiesOnce(text: string): string {
+  const NAMED_ENTITIES: Record<string, string> = {
+    "&nbsp;": " ",
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#39;": "'",
+    "&apos;": "'",
+  };
+
+  return text.replace(
+    /&(?:#x([0-9a-fA-F]+);|#(\d+);|[a-zA-Z]+;)/g,
+    (match, hex, dec) => {
+      if (hex) return String.fromCharCode(parseInt(hex, 16));
+      if (dec) return String.fromCharCode(parseInt(dec, 10));
+      const lower = match.toLowerCase();
+      return NAMED_ENTITIES[lower] ?? match;
+    }
+  );
+}
 
 function extractMainContent(html: string): string {
   const mainPatterns = [
@@ -44,14 +71,14 @@ function stripHtmlToText(html: string, selector?: string): string {
     working = extractMainContent(working);
   }
 
-  working = working.replace(/<script[\s\S]*?<\/script>/gi, "");
-  working = working.replace(/<style[\s\S]*?<\/style>/gi, "");
-  working = working.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
-  working = working.replace(/<nav[\s\S]*?<\/nav>/gi, "");
-  working = working.replace(/<footer[\s\S]*?<\/footer>/gi, "");
-  working = working.replace(/<header[\s\S]*?<\/header>/gi, "");
-  working = working.replace(/<!--[\s\S]*?-->/g, "");
-  working = working.replace(/<svg[\s\S]*?<\/svg>/gi, "");
+  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script\s*>/gi);
+  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style\s*>/gi);
+  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript\s*>/gi);
+  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav\s*>/gi);
+  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer\s*>/gi);
+  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header\s*>/gi);
+  working = stripTagsLoop(working, /<!--[\s\S]*?-->/g);
+  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg\s*>/gi);
 
   working = working.replace(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi, (_m, tag, inner) => {
     const level = parseInt(tag.charAt(1), 10);
@@ -69,25 +96,13 @@ function stripHtmlToText(html: string, selector?: string): string {
   working = working.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => {
     const linkText = text.replace(/<[^>]+>/g, "").trim();
     if (!linkText) return "";
-    if (href.startsWith("#") || href.startsWith("javascript:")) return linkText;
+    if (href.startsWith("#") || DANGEROUS_URL_SCHEMES.test(href)) return linkText;
     return `${linkText} (${href})`;
   });
 
   working = working.replace(/<[^>]+>/g, " ");
 
-  working = working
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_m, hex) =>
-      String.fromCharCode(parseInt(hex, 16))
-    )
-    .replace(/&#(\d+);/g, (_m, dec) =>
-      String.fromCharCode(parseInt(dec, 10))
-    );
+  working = decodeHtmlEntitiesOnce(working);
 
   working = working.replace(/[ \t]+/g, " ");
   working = working.replace(/\n[ \t]+/g, "\n");
@@ -128,6 +143,22 @@ describe("webFetch HTML→text extraction", () => {
     expect(result).toContain("World");
   });
 
+  test("strips script tags with space before closing angle bracket", () => {
+    const html = `<p>Safe</p><script >alert('x')</script ><p>Also safe</p>`;
+    const result = stripHtmlToText(html);
+    expect(result).not.toContain("alert");
+    expect(result).toContain("Safe");
+    expect(result).toContain("Also safe");
+  });
+
+  test("handles nested/obfuscated script tags via loop stripping", () => {
+    const html = `<p>Before</p><scr<script>alert(1)</script>ipt>evil</scr<script></script>ipt><p>After</p>`;
+    const result = stripHtmlToText(html);
+    expect(result).not.toContain("evil");
+    expect(result).toContain("Before");
+    expect(result).toContain("After");
+  });
+
   test("converts headings to markdown", () => {
     const html = `<h1>Title</h1><h2>Subtitle</h2><p>Body text</p>`;
     const result = stripHtmlToText(html);
@@ -159,6 +190,15 @@ describe("webFetch HTML→text extraction", () => {
     expect(result).not.toContain("#section");
   });
 
+  test("strips data: and vbscript: URLs from links", () => {
+    const html = `<a href="data:text/html,<script>alert(1)</script>">Trap</a> <a href="vbscript:MsgBox('hi')">VB</a>`;
+    const result = stripHtmlToText(html);
+    expect(result).toContain("Trap");
+    expect(result).toContain("VB");
+    expect(result).not.toContain("data:");
+    expect(result).not.toContain("vbscript:");
+  });
+
   test("decodes HTML entities", () => {
     const html = `<p>&amp; &lt; &gt; &quot; &#39; &#x2603;</p>`;
     const result = stripHtmlToText(html);
@@ -168,6 +208,12 @@ describe("webFetch HTML→text extraction", () => {
     expect(result).toContain('"');
     expect(result).toContain("'");
     expect(result).toContain("☃");
+  });
+
+  test("does not double-unescape entities", () => {
+    const html = `<p>&amp;lt; should stay as &lt; not become <</p>`;
+    const result = stripHtmlToText(html);
+    expect(result).toContain("&lt;");
   });
 
   test("strips nav, footer, header, and comments", () => {
@@ -231,5 +277,27 @@ describe("webFetch metadata extraction", () => {
     expect(meta.title).toBeUndefined();
     expect(meta.description).toBeUndefined();
     expect(meta.siteName).toBeUndefined();
+  });
+});
+
+describe("webFetch security", () => {
+  test("stripTagsLoop handles nested script injection", () => {
+    const payload = `<scri<script></script>pt>alert(1)</script>`;
+    const result = stripTagsLoop(payload, /<script\b[\s\S]*?<\/script\s*>/gi);
+    expect(result).not.toContain("<script");
+  });
+
+  test("decodeHtmlEntitiesOnce does not double-decode", () => {
+    expect(decodeHtmlEntitiesOnce("&amp;lt;")).toBe("&lt;");
+    expect(decodeHtmlEntitiesOnce("&amp;amp;")).toBe("&amp;");
+  });
+
+  test("DANGEROUS_URL_SCHEMES blocks known dangerous protocols", () => {
+    expect(DANGEROUS_URL_SCHEMES.test("javascript:alert(1)")).toBe(true);
+    expect(DANGEROUS_URL_SCHEMES.test("data:text/html,<h1>hi</h1>")).toBe(true);
+    expect(DANGEROUS_URL_SCHEMES.test("vbscript:MsgBox")).toBe(true);
+    expect(DANGEROUS_URL_SCHEMES.test("blob:http://example.com")).toBe(true);
+    expect(DANGEROUS_URL_SCHEMES.test("https://safe.com")).toBe(false);
+    expect(DANGEROUS_URL_SCHEMES.test("http://ok.com")).toBe(false);
   });
 });

@@ -254,6 +254,49 @@ const WEB_FETCH_BROWSER_HEADERS: Record<string, string> = {
   "Upgrade-Insecure-Requests": "1",
 };
 
+const DANGEROUS_URL_SCHEMES = /^(?:javascript|data|vbscript|blob):/i;
+
+/**
+ * Repeatedly strip tag patterns until no more matches remain,
+ * preventing nested-tag bypass (e.g. `<scr<script>ipt>`).
+ */
+function stripTagsLoop(html: string, pattern: RegExp, maxPasses = 10): string {
+  let result = html;
+  for (let i = 0; i < maxPasses; i++) {
+    const next = result.replace(pattern, "");
+    if (next === result) break;
+    result = next;
+  }
+  return result;
+}
+
+/**
+ * Decode HTML entities exactly once. We decode numeric/named entities in a
+ * single pass to avoid double-unescaping (e.g. `&amp;lt;` → `&lt;` stays
+ * as `&lt;`, not `<`).
+ */
+function decodeHtmlEntitiesOnce(text: string): string {
+  const NAMED_ENTITIES: Record<string, string> = {
+    "&nbsp;": " ",
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#39;": "'",
+    "&apos;": "'",
+  };
+
+  return text.replace(
+    /&(?:#x([0-9a-fA-F]+);|#(\d+);|[a-zA-Z]+;)/g,
+    (match, hex, dec) => {
+      if (hex) return String.fromCharCode(parseInt(hex, 16));
+      if (dec) return String.fromCharCode(parseInt(dec, 10));
+      const lower = match.toLowerCase();
+      return NAMED_ENTITIES[lower] ?? match;
+    }
+  );
+}
+
 function stripHtmlToText(html: string, selector?: string): string {
   let working = html;
 
@@ -267,14 +310,16 @@ function stripHtmlToText(html: string, selector?: string): string {
     working = extractMainContent(working);
   }
 
-  working = working.replace(/<script[\s\S]*?<\/script>/gi, "");
-  working = working.replace(/<style[\s\S]*?<\/style>/gi, "");
-  working = working.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
-  working = working.replace(/<nav[\s\S]*?<\/nav>/gi, "");
-  working = working.replace(/<footer[\s\S]*?<\/footer>/gi, "");
-  working = working.replace(/<header[\s\S]*?<\/header>/gi, "");
-  working = working.replace(/<!--[\s\S]*?-->/g, "");
-  working = working.replace(/<svg[\s\S]*?<\/svg>/gi, "");
+  // Strip dangerous/non-content tags in a loop to handle nested obfuscation.
+  // Regex allows optional whitespace before `>` in closing tags (e.g. `</script >`).
+  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script\s*>/gi);
+  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style\s*>/gi);
+  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript\s*>/gi);
+  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav\s*>/gi);
+  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer\s*>/gi);
+  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header\s*>/gi);
+  working = stripTagsLoop(working, /<!--[\s\S]*?-->/g);
+  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg\s*>/gi);
 
   working = working.replace(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi, (_m, tag, inner) => {
     const level = parseInt(tag.charAt(1), 10);
@@ -292,25 +337,13 @@ function stripHtmlToText(html: string, selector?: string): string {
   working = working.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => {
     const linkText = text.replace(/<[^>]+>/g, "").trim();
     if (!linkText) return "";
-    if (href.startsWith("#") || href.startsWith("javascript:")) return linkText;
+    if (href.startsWith("#") || DANGEROUS_URL_SCHEMES.test(href)) return linkText;
     return `${linkText} (${href})`;
   });
 
   working = working.replace(/<[^>]+>/g, " ");
 
-  working = working
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_m, hex) =>
-      String.fromCharCode(parseInt(hex, 16))
-    )
-    .replace(/&#(\d+);/g, (_m, dec) =>
-      String.fromCharCode(parseInt(dec, 10))
-    );
+  working = decodeHtmlEntitiesOnce(working);
 
   working = working.replace(/[ \t]+/g, " ");
   working = working.replace(/\n[ \t]+/g, "\n");
