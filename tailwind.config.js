@@ -98,6 +98,23 @@ module.exports = {
             secondary: "var(--os-color-text-secondary)",
             disabled: "var(--os-color-text-disabled)",
           },
+          panel: {
+            bg: "var(--os-color-panel-bg)",
+          },
+          separator: "var(--os-color-separator)",
+          input: {
+            bg: "var(--os-color-input-bg)",
+            border: "var(--os-color-input-border)",
+            focusBorder: "var(--os-color-input-focus-border)",
+            focusRing: "var(--os-color-input-focus-ring)",
+          },
+          sidebar: {
+            border: "var(--os-color-sidebar-border)",
+          },
+          switch: {
+            track: "var(--os-color-switch-track)",
+            trackChecked: "var(--os-color-switch-track-checked)",
+          },
         },
         // Keep system7 for backwards compatibility temporarily
         system7: {

@@ -22,11 +22,28 @@
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #666666;
   --os-color-text-disabled: #999999;
+  --os-color-panel-bg: #f0f0f0;
+  --os-color-separator: rgba(0, 0, 0, 0.2);
+  --os-color-input-bg: #ffffff;
+  --os-color-input-border: rgba(0, 0, 0, 0.2);
+  --os-color-input-focus-border: rgba(52, 106, 227, 0.6);
+  --os-color-input-focus-ring: rgba(52, 106, 227, 0.25);
+  --os-color-sidebar-border: rgba(0, 0, 0, 0.55);
+  --os-color-sidebar-inset-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  --os-color-switch-track: #9ca3af;
+  --os-color-switch-track-checked: #111827;
   --os-metrics-border-width: 2px;
   --os-metrics-radius: 0.5rem;
   --os-metrics-titlebar-height: 1.5rem;
   --os-metrics-menubar-height: 28px;
   --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
+}
+
+/* Selection styling utility — replaces 12+ inline style blocks */
+[data-selected="true"] {
+  background: var(--os-color-selection-bg);
+  color: var(--os-color-selection-text);
+  text-shadow: var(--os-color-selection-text-shadow);
 }
 
 /* Webamp playlist and UI - override skin fonts with system theme fonts */
@@ -106,6 +123,16 @@
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #666666;
   --os-color-text-disabled: #999999;
+  --os-color-panel-bg: #e3e3e3;
+  --os-color-separator: #808080;
+  --os-color-input-bg: #ffffff;
+  --os-color-input-border: #000000;
+  --os-color-input-focus-border: #000000;
+  --os-color-input-focus-ring: transparent;
+  --os-color-sidebar-border: #000000;
+  --os-color-sidebar-inset-shadow: none;
+  --os-color-switch-track: #9ca3af;
+  --os-color-switch-track-checked: #000000;
   --os-metrics-border-width: 2px;
   --os-metrics-radius: 0px; /* System 7 has square corners */
   --os-metrics-titlebar-height: 1.5rem;
@@ -161,6 +188,16 @@
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #4b4b4b;
   --os-color-text-disabled: #999999;
+  --os-color-panel-bg: #ececec;
+  --os-color-separator: rgba(0, 0, 0, 0.2);
+  --os-color-input-bg: rgba(255, 255, 255, 1);
+  --os-color-input-border: rgba(0, 0, 0, 0.2);
+  --os-color-input-focus-border: rgba(52, 106, 227, 0.6);
+  --os-color-input-focus-ring: rgba(52, 106, 227, 0.25);
+  --os-color-sidebar-border: rgba(0, 0, 0, 0.55);
+  --os-color-sidebar-inset-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  --os-color-switch-track: #9ca3af;
+  --os-color-switch-track-checked: #111827;
   --os-metrics-border-width: 0.5px;
   --os-metrics-titlebar-border-width: 1px;
   --os-metrics-radius: 0.45rem;
@@ -379,6 +416,16 @@
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #333333;
   --os-color-text-disabled: #7f7f7f;
+  --os-color-panel-bg: #c0c0c0;
+  --os-color-separator: #808080;
+  --os-color-input-bg: #ffffff;
+  --os-color-input-border: #808080;
+  --os-color-input-focus-border: #000080;
+  --os-color-input-focus-ring: transparent;
+  --os-color-sidebar-border: #808080;
+  --os-color-sidebar-inset-shadow: none;
+  --os-color-switch-track: #9ca3af;
+  --os-color-switch-track-checked: #000080;
   --os-metrics-border-width: 2px;
   --os-metrics-radius: 0px;
   --os-metrics-titlebar-height: 1.375rem;
@@ -432,6 +479,16 @@
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #5a5a5a;
   --os-color-text-disabled: #a0a0a0;
+  --os-color-panel-bg: #ece9d8;
+  --os-color-separator: #aca899;
+  --os-color-input-bg: #ffffff;
+  --os-color-input-border: #7f9db9;
+  --os-color-input-focus-border: #316ac5;
+  --os-color-input-focus-ring: transparent;
+  --os-color-sidebar-border: #aca899;
+  --os-color-sidebar-inset-shadow: none;
+  --os-color-switch-track: #9ca3af;
+  --os-color-switch-track-checked: #316ac5;
   --os-metrics-border-width: 3px;
   --os-metrics-radius: 0.5rem;
   --os-metrics-titlebar-height: 1.875rem;
