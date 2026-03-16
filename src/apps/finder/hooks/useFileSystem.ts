@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FileItem as DisplayFileItem } from "../components/FileList";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
-// Re-export STORES for backward compatibility (other modules import from here)
-export { STORES };
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -32,8 +30,6 @@ import {
   type CloudSyncDeletionBucket,
 } from "@/stores/useCloudSyncStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-
-// STORES is now imported from @/utils/indexedDB to avoid duplication
 
 // Interface for content stored in IndexedDB
 export interface DocumentContent {

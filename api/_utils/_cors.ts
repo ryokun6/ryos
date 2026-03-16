@@ -1,17 +1,9 @@
 // Shared CORS utilities for API routes (Node.js runtime only)
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getConfiguredPublicOrigin } from "./runtime-config.js";
+import { getHeader } from "./request-helpers.js";
 
 type RuntimeEnv = "production" | "preview" | "development";
-
-// Helper to get header value from Node.js IncomingMessage headers
-function getHeader(req: VercelRequest, name: string): string | null {
-  const value = req.headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return value[0] || null;
-  }
-  return typeof value === "string" ? value : null;
-}
 
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
 const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";

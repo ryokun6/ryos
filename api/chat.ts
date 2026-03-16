@@ -24,22 +24,13 @@ import {
 } from "./_utils/ryo-conversation.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import { getHeader } from "./_utils/request-helpers.js";
 type SystemState = RyoConversationSystemState;
 
 
 // Node.js runtime configuration
 export const runtime = "nodejs";
 export const maxDuration = 80;
-
-// Helper to get header value from Node.js IncomingMessage headers
-function getHeader(req: VercelRequest, name: string): string | null {
-  const value = req.headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return value[0] || null;
-  }
-  return typeof value === "string" ? value : null;
-}
-
 
 export default apiHandler<{
   messages: unknown[];
