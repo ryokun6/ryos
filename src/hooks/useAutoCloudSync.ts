@@ -134,8 +134,8 @@ function createLogicalDomainNumberMap(
   initialValue: number
 ): Record<LogicalCloudSyncDomain, number> {
   return {
-    settings: initialValue,
     files: initialValue,
+    settings: initialValue,
     songs: initialValue,
     videos: initialValue,
     stickies: initialValue,
@@ -148,8 +148,8 @@ function createLogicalDomainBooleanMap(
   initialValue: boolean
 ): Record<LogicalCloudSyncDomain, boolean> {
   return {
-    settings: initialValue,
     files: initialValue,
+    settings: initialValue,
     songs: initialValue,
     videos: initialValue,
     stickies: initialValue,
@@ -186,8 +186,8 @@ function createLogicalPendingRemoteUpdateMap(): Record<
   } | null
 > {
   return {
-    settings: null,
     files: null,
+    settings: null,
     songs: null,
     videos: null,
     stickies: null,
