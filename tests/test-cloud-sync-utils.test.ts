@@ -153,7 +153,7 @@ describe("cloud sync shared helpers", () => {
     expect(getCloudSyncCategory("files-metadata")).toBe("files");
     expect(getCloudSyncCategory("files-images")).toBe("files");
     expect(getCloudSyncCategory("settings")).toBe("settings");
-    expect(getCloudSyncCategory("custom-wallpapers")).toBe("settings");
+    expect(getCloudSyncCategory("custom-wallpapers")).toBe("files");
     expect(getCloudSyncCategory("songs")).toBe("songs");
     expect(getCloudSyncCategory("calendar")).toBe("calendar");
   });

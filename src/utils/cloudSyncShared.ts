@@ -56,6 +56,7 @@ export const FILE_SYNC_DOMAINS = [
   "files-images",
   "files-trash",
   "files-applets",
+  "custom-wallpapers",
 ] as const;
 
 export type FileCloudSyncDomain = (typeof FILE_SYNC_DOMAINS)[number];
@@ -181,7 +182,6 @@ export function getCloudSyncCategory(
 
   switch (domain) {
     case "settings":
-    case "custom-wallpapers":
       return "settings";
     case "songs":
       return "songs";
