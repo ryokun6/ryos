@@ -92,19 +92,19 @@ import {
   planIndividualBlobDownload,
   planIndividualBlobUpload,
 } from "@/utils/cloudSyncIndividualBlobMerge";
+import {
+  deserializeStoreItem,
+  readStoreItems,
+  restoreStoreItems,
+  serializeStoreItem,
+  serializeStoreItems,
+  type IndexedDBStoreItem as StoreItem,
+  type IndexedDBStoreItemWithKey as StoreItemWithKey,
+} from "@/utils/indexedDBBackup";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
 };
-
-interface StoreItem {
-  [key: string]: unknown;
-}
-
-interface StoreItemWithKey {
-  key: string;
-  value: StoreItem;
-}
 
 type CustomWallpapersSnapshotData = StoreItemWithKey[];
 
@@ -313,86 +313,12 @@ function assertCompressionSupport(): void {
   }
 }
 
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = () =>
-      reject(reader.error || new Error("Failed to serialize blob"));
-    reader.readAsDataURL(blob);
-  });
-
-const base64ToBlob = (dataUrl: string): Blob => {
-  const [meta, base64] = dataUrl.split(",");
-  const mimeMatch = meta.match(/data:(.*);base64/);
-  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new Blob([array], { type: mime });
-};
-
 async function computeSyncSignature(value: unknown): Promise<string> {
   const payload = new TextEncoder().encode(JSON.stringify(value));
   const digest = await crypto.subtle.digest("SHA-256", payload);
   return Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, "0")
   ).join("");
-}
-
-async function readStoreItems(
-  db: IDBDatabase,
-  storeName: string
-): Promise<StoreItemWithKey[]> {
-  return new Promise((resolve, reject) => {
-    try {
-      const transaction = db.transaction(storeName, "readonly");
-      const store = transaction.objectStore(storeName);
-      const items: StoreItemWithKey[] = [];
-      const request = store.openCursor();
-
-      request.onsuccess = (event) => {
-        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-        if (cursor) {
-          items.push({
-            key: cursor.key as string,
-            value: cursor.value as StoreItem,
-          });
-          cursor.continue();
-          return;
-        }
-
-        resolve(items);
-      };
-
-      request.onerror = () => reject(request.error);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-async function serializeStoreItem(item: StoreItemWithKey): Promise<StoreItemWithKey> {
-  const serializedValue: Record<string, unknown> = {
-    ...item.value,
-  };
-
-  for (const key of Object.keys(item.value)) {
-    if (item.value[key] instanceof Blob) {
-      serializedValue[key] = await blobToBase64(item.value[key] as Blob);
-      serializedValue[`_isBlob_${key}`] = true;
-    }
-  }
-
-  return {
-    key: item.key,
-    value: serializedValue,
-  };
-}
-
-async function serializeStoreItems(
-  items: StoreItemWithKey[]
-): Promise<StoreItemWithKey[]> {
-  return Promise.all(items.map((item) => serializeStoreItem(item)));
 }
 
 async function serializeStoreItemRecords(
@@ -407,53 +333,6 @@ async function serializeStoreItemRecords(
       };
     })
   );
-}
-
-function deserializeStoreItem(item: StoreItemWithKey): Record<string, unknown> {
-  const restoredValue: Record<string, unknown> = {
-    ...item.value,
-  };
-
-  for (const key of Object.keys(item.value)) {
-    const isBlobKey = `_isBlob_${key}`;
-    if (item.value[isBlobKey] === true && typeof item.value[key] === "string") {
-      restoredValue[key] = base64ToBlob(item.value[key] as string);
-      delete restoredValue[isBlobKey];
-    }
-  }
-
-  return restoredValue;
-}
-
-async function restoreStoreItems(
-  db: IDBDatabase,
-  storeName: string,
-  items: StoreItemWithKey[]
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    const clearRequest = store.clear();
-
-    clearRequest.onsuccess = () => {
-      try {
-        for (const item of items) {
-          store.put(deserializeStoreItem(item), item.key);
-        }
-      } catch (error) {
-        transaction.abort();
-        reject(error);
-      }
-    };
-
-    clearRequest.onerror = () => reject(clearRequest.error);
-  });
 }
 
 async function upsertStoreItems(
