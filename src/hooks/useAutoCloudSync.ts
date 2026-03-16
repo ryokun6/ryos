@@ -34,7 +34,7 @@ import {
 import {
   fetchPhysicalCloudSyncMetadata,
   individualBlobDomainNeedsLocalReconcile,
-} from "@/utils/cloudSync";
+} from "@/sync/domains";
 import { getSyncSessionId } from "@/utils/syncSession";
 import {
   downloadAndApplyLogicalCloudSyncDomain,

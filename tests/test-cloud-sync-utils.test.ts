@@ -1285,7 +1285,7 @@ describe("cloud sync shared helpers", () => {
       setSettingsSectionTimestamps,
     } = await import("../src/sync/state");
     const { applyResolvedRedisUploadLocally } = await import(
-      "../src/utils/cloudSync"
+      "../src/sync/domains"
     );
 
     const localTimestamp = "2026-03-15T10:00:00.000Z";

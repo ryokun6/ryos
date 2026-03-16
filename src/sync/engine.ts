@@ -3,11 +3,13 @@ import { getApiUrl } from "@/utils/platform";
 import {
   applyDownloadedCloudSyncDomainPayload,
   prepareCloudSyncDomainWrite,
-  type BlobIndividualDomainDownloadPayload,
-  type BlobMonolithicDomainDownloadPayload,
-  type PreparedCloudSyncDomainWrite,
-  type RedisStateDomainDownloadPayload,
-} from "@/utils/cloudSync";
+} from "@/sync/domains";
+import type {
+  BlobIndividualDomainDownloadPayload,
+  BlobMonolithicDomainDownloadPayload,
+  PreparedCloudSyncDomainWrite,
+  RedisStateDomainDownloadPayload,
+} from "@/sync/types";
 import { getSyncSessionId } from "@/utils/syncSession";
 import {
   aggregateLogicalCloudSyncMetadata,

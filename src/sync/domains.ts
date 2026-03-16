@@ -100,6 +100,14 @@ import {
   serializeStoreItems,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
+import type {
+  BlobIndividualDomainDownloadPayload,
+  BlobMonolithicDomainDownloadPayload,
+  CloudSyncDomainDownloadPayload,
+  DownloadCloudSyncResult,
+  PreparedCloudSyncDomainWrite,
+  RedisStateDomainDownloadPayload,
+} from "@/sync/types";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
@@ -178,43 +186,9 @@ interface IndividualBlobDomainResponse {
   deletedItems?: DeletionMarkerMap;
 }
 
-export interface DownloadCloudSyncResult {
-  metadata: CloudSyncDomainMetadata;
-  applied: boolean;
-}
-
 interface DownloadCloudSyncOptions {
   shouldApply?: (metadata: CloudSyncDomainMetadata) => boolean;
 }
-
-export interface PreparedCloudSyncDomainWrite {
-  domain: CloudSyncDomain;
-  payload: Record<string, unknown>;
-  onCommitted?: (metadata: CloudSyncDomainMetadata) => Promise<void> | void;
-}
-
-export interface RedisStateDomainDownloadPayload {
-  data: unknown;
-  metadata: CloudSyncDomainMetadata;
-}
-
-export interface BlobMonolithicDomainDownloadPayload {
-  metadata: CloudSyncDomainMetadata;
-  downloadUrl?: string;
-  blobUrl?: string;
-}
-
-export interface BlobIndividualDomainDownloadPayload {
-  mode: "individual";
-  items?: Record<string, CloudSyncBlobItemDownloadMetadata>;
-  metadata: CloudSyncDomainMetadata;
-  deletedItems?: DeletionMarkerMap;
-}
-
-export type CloudSyncDomainDownloadPayload =
-  | RedisStateDomainDownloadPayload
-  | BlobMonolithicDomainDownloadPayload
-  | BlobIndividualDomainDownloadPayload;
 
 type RedisStateDomainSnapshot = {
   data: AnySnapshotData;
