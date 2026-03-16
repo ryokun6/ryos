@@ -89,7 +89,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     // For macOS theme with retro variant, use aqua primary
-    if (isMacTheme && variant === "retro") {
+    if (isMacOSTheme && variant === "retro") {
       return (
         <Comp
           className={cn("aqua-button secondary", className)}
@@ -102,7 +102,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     // macOS Aqua Select-look variant (matches macOS select trigger styling)
-    if (isMacTheme && variant === "aqua_select") {
+    if (isMacOSTheme && variant === "aqua_select") {
       const dataState = (props as Record<string, unknown>)["data-state"];
       const ariaPressed = (props as Record<string, unknown>)["aria-pressed"];
       const isActiveSelected = dataState === "on" || ariaPressed === true;
@@ -213,7 +213,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     // For macOS theme with ghost variant, maintain clean appearance for menubars
-    if (isMacTheme && variant === "ghost") {
+    if (isMacOSTheme && variant === "ghost") {
       return (
         <Comp
           className={cn(

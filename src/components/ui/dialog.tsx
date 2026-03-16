@@ -64,8 +64,7 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
 >(({ className, children, overlayClassName, ...props }, ref) => {
-  const { currentTheme, isXpTheme, isMacOSTheme, isSystem7Theme } =
-    useThemeFlags();
+  const { isXpTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
 
   // Function to clean up pointer-events
   const cleanupPointerEvents = React.useCallback(() => {
