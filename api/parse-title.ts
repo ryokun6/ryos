@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
@@ -80,7 +80,7 @@ export default apiHandler<ParseTitleRequest>(
 
       // Use generateText with structured output (AI SDK v6)
       const { output: parsedData } = await generateText({
-        model: openai("gpt-4.1-mini"),
+        model: google("gemini-3-flash-preview"),
         output: Output.object({
           schema: ParsedTitleSchema,
           name: "parsed_title",
