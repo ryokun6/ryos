@@ -25,6 +25,7 @@ import {
 import {
   subscribeToCloudSyncDomainChanges,
   subscribeToCloudSyncCheckRequests,
+  subscribeToCloudSyncDomainCheckRequests,
 } from "@/utils/cloudSyncEvents";
 import {
   getPersistedLocalChangeAt,
@@ -1232,6 +1233,29 @@ export function useAutoCloudSync() {
       void checkRemoteUpdates();
     });
 
+    const domainCheckUnsubscribe = subscribeToCloudSyncDomainCheckRequests(
+      (domain) => {
+        if (!username || !isAuthenticated || !isDomainEnabled(domain)) return;
+        console.log(`[CloudSync] Domain-specific sync check requested: ${domain}`);
+        void (async () => {
+          try {
+            const metadataMap = await fetchPhysicalCloudSyncMetadata({ username, isAuthenticated });
+            useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
+            const remoteMeta = metadataMap[domain];
+            if (remoteMeta?.updatedAt) {
+              void handleRealtimeDomainUpdateRef.current(
+                domain,
+                remoteMeta.updatedAt,
+                remoteMeta.syncVersion
+              );
+            }
+          } catch (error) {
+            console.warn(`[CloudSync] Domain check metadata fetch failed for ${domain}:`, error);
+          }
+        })();
+      }
+    );
+
     const themeUnsubscribe = useThemeStore.subscribe((state, prevState) => {
       if (state.current !== prevState.current) {
         if (isApplyingRemoteSettingsSection("theme")) return;
@@ -1492,6 +1516,7 @@ export function useAutoCloudSync() {
       filesUnsubscribe();
       syncEventsUnsubscribe();
       syncCheckUnsubscribe();
+      domainCheckUnsubscribe();
       themeUnsubscribe();
       languageUnsubscribe();
       displayUnsubscribe();

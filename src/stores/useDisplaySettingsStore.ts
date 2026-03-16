@@ -6,7 +6,7 @@ import { checkShaderPerformance } from "@/utils/performanceCheck";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import {
   emitCloudSyncDomainChange,
-  requestCloudSyncCheck,
+  requestCloudSyncDomainCheck,
 } from "@/utils/cloudSyncEvents";
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
@@ -160,7 +160,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
             wallpaperSource: data || fallbackSource,
           });
           if (!data) {
-            requestCloudSyncCheck();
+            requestCloudSyncDomainCheck("custom-wallpapers");
           }
         }
         window.dispatchEvent(
