@@ -116,16 +116,6 @@ module.exports = {
             trackChecked: "var(--os-color-switch-track-checked)",
           },
         },
-        // Keep system7 for backwards compatibility temporarily
-        system7: {
-          "window-bg": "#FFFFFF",
-          "menubar-bg": "#FFFFFF",
-          "title-bar": "#000000",
-          "title-text": "#FFFFFF",
-          border: "#000000",
-          "button-highlight": "#FFFFFF",
-          "button-shadow": "#808080",
-        },
         chart: {
           1: "hsl(var(--chart-1))",
           2: "hsl(var(--chart-2))",

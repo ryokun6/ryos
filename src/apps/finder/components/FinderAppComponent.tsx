@@ -1,5 +1,6 @@
-import { type CSSProperties, type ReactNode, useRef } from "react";
+import { type CSSProperties, useRef } from "react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { FinderMenuBar } from "./FinderMenuBar";
 import { AppProps } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -40,37 +41,7 @@ import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { AirDropView } from "./AirDropView";
 
-function FinderPanel({
-  className,
-  children,
-  bordered = true,
-  style,
-}: {
-  className?: string;
-  children: ReactNode;
-  bordered?: boolean;
-  style?: CSSProperties;
-}) {
-  return (
-    <div
-      className={cn(
-        "overflow-hidden calendar-sidebar",
-        bordered ? "bg-white/90" : "bg-white",
-        className
-      )}
-      style={{
-        ...(bordered ? {
-          border: "1px solid rgba(0, 0, 0, 0.55)",
-          boxShadow:
-            "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-        } : {}),
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+const FinderPanel = AppSidebarPanel;
 
 function SidebarItem({
   name,

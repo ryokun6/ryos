@@ -80,7 +80,7 @@ function CalendarList({
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   return (
-    <div className={cn("select-none calendar-sidebar", !isMacOSTheme && "py-1.5")}>
+    <div className={cn("select-none os-sidebar", !isMacOSTheme && "py-1.5")}>
       {isMacOSTheme ? (
         <div
           className={cn("text-[11px] font-regular text-center", useGeneva && "font-geneva-12")}
@@ -209,7 +209,7 @@ function TodoSidebar({
   );
 
   return (
-    <div className="flex flex-col h-full select-none calendar-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
+    <div className="flex flex-col h-full select-none os-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
       {isMacOSTheme ? (
         <div
           className={cn("text-[11px] font-regular text-center", useGeneva && "font-geneva-12")}
@@ -367,7 +367,7 @@ function MiniCalendar({
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
   return (
-    <div className="flex flex-col select-none py-1 px-1.5 calendar-sidebar" style={{ minWidth: 150, flexShrink: 0 }}>
+    <div className="flex flex-col select-none py-1 px-1.5 os-sidebar" style={{ minWidth: 150, flexShrink: 0 }}>
       <div className="flex items-center justify-between px-0.5 py-1">
         <button type="button" onClick={onPrevMonth} className="p-0.5 hover:opacity-70 rounded">
           <CaretLeft size={10} weight="bold" />

@@ -602,15 +602,6 @@
   box-shadow: none !important;
 }
 
-/* Backwards compatibility aliases */
-.bg-system7-window-bg {
-  background: var(--os-color-window-bg);
-}
-
-.bg-system7-menubar-bg {
-  background: var(--os-color-menubar-bg);
-}
-
 /* Mac OS X Aqua Button Styles */
 .aqua-button {
   line-height: 1;
@@ -832,7 +823,7 @@
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.calendar-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
+:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
   font-size: 13px !important;
   font-weight: normal !important;
 }
@@ -848,7 +839,7 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.calendar-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
+:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
   font-size: 11px !important;
 }
 
@@ -856,8 +847,8 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] p:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.calendar-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)),
-:root[data-os-theme="macosx"] div:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.calendar-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
+:root[data-os-theme="macosx"] p:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)),
+:root[data-os-theme="macosx"] div:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
   font-size: 13px !important;
 }
 
