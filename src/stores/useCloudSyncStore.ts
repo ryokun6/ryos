@@ -12,6 +12,11 @@ import {
   mergeDeletionMarkerMaps,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import {
+  createEmptyCloudSyncPersistedMetadataState,
+  normalizeCloudSyncPersistedMetadataState,
+  type CloudSyncPersistedMetadataState,
+} from "@/utils/sync/engine/state/syncStateSchema";
 
 interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
@@ -77,6 +82,7 @@ interface CloudSyncStoreState {
   remoteMetadata: CloudSyncMetadataMap;
   domainStatus: CloudSyncDomainStatusMap;
   deletionMarkers: CloudSyncDeletionMarkerState;
+  persistedMetadata: CloudSyncPersistedMetadataState;
   setAutoSyncEnabled: (enabled: boolean) => void;
   setDomainEnabled: (domain: CloudSyncDomain, enabled: boolean) => void;
   isDomainEnabled: (domain: CloudSyncDomain) => boolean;
@@ -116,6 +122,11 @@ interface CloudSyncStoreState {
     bucket: CloudSyncDeletionBucket,
     markers: DeletionMarkerMap
   ) => void;
+  updatePersistedMetadata: (
+    updater: (
+      current: CloudSyncPersistedMetadataState
+    ) => CloudSyncPersistedMetadataState
+  ) => void;
 }
 
 function createInitialDomainStatus(): CloudSyncDomainStatusMap {
@@ -144,7 +155,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 8;
+const STORE_VERSION = 9;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -163,6 +174,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       remoteMetadata: createEmptyCloudSyncMetadataMap(),
       domainStatus: createInitialDomainStatus(),
       deletionMarkers: createEmptyDeletionMarkers(),
+      persistedMetadata: createEmptyCloudSyncPersistedMetadataState(),
 
       setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
 
@@ -408,6 +420,11 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             },
           };
         }),
+
+      updatePersistedMetadata: (updater) =>
+        set((state) => ({
+          persistedMetadata: updater(state.persistedMetadata),
+        })),
     }),
     {
       name: STORE_NAME,
@@ -424,6 +441,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncContacts: state.syncContacts,
         lastCheckedAt: state.lastCheckedAt,
         deletionMarkers: state.deletionMarkers,
+        persistedMetadata: state.persistedMetadata,
         domainStatus: Object.fromEntries(
           Object.entries(state.domainStatus).map(([domain, status]) => [
             domain,
@@ -513,6 +531,13 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncContacts: (candidate as Record<string, unknown>).syncContacts as boolean ?? true,
           lastCheckedAt: candidate.lastCheckedAt ?? null,
           deletionMarkers,
+          persistedMetadata: normalizeCloudSyncPersistedMetadataState(
+            (
+              candidate as Partial<{
+                persistedMetadata: CloudSyncPersistedMetadataState;
+              }>
+            ).persistedMetadata
+          ),
           domainStatus,
         };
       },

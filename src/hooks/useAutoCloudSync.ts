@@ -30,7 +30,7 @@ import {
 import {
   getPersistedLocalChangeAt,
   setPersistedLocalChangeAt,
-} from "@/utils/cloudSyncLocalChangeState";
+} from "@/utils/sync/engine/state/syncStateAdapter";
 import {
   fetchPhysicalCloudSyncMetadata,
   individualBlobDomainNeedsLocalReconcile,
@@ -56,7 +56,8 @@ import {
   getLatestSettingsSectionTimestamp,
   isApplyingRemoteSettingsSection,
   markSettingsSectionChanged,
-} from "@/utils/cloudSyncSettingsState";
+  setCloudSyncLanguageInitialized,
+} from "@/utils/sync/engine/state/syncStateAdapter";
 import { isApplyingRemoteDomain } from "@/utils/cloudSyncRemoteApplyState";
 import {
   CLOUD_SYNC_DOMAINS,
@@ -1267,6 +1268,7 @@ export function useAutoCloudSync() {
     const languageUnsubscribe = useLanguageStore.subscribe((state, prevState) => {
       if (state.current !== prevState.current) {
         if (isApplyingRemoteSettingsSection("language")) return;
+        setCloudSyncLanguageInitialized(true);
         markSettingsSectionChanged("language");
         queueUpload("settings");
       }
