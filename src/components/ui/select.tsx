@@ -39,9 +39,6 @@ const SelectTrigger = React.forwardRef<
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const currentTheme = useThemeStore((state) => state.current);
 
-  const [isFocused, setIsFocused] = React.useState(false);
-  const [isPressed, setIsPressed] = React.useState(false);
-
   const isMacOSTheme = currentTheme === "macosx";
   const isXpTheme = isWindowsTheme(currentTheme);
 
@@ -49,69 +46,20 @@ const SelectTrigger = React.forwardRef<
     <SelectPrimitive.Trigger
       ref={ref}
       className={cn(
-        // Base classes for non-macOS themes
         !isMacOSTheme &&
           "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm [border-image:url('/assets/button.svg')_30_stretch] active:[border-image:url('/assets/button-default.svg')_60_stretch] focus:[border-image:url('/assets/button-default.svg')_60_stretch] border-[5px] ring-offset-background placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-        // macOS theme classes
         isMacOSTheme &&
-          "macos-select-trigger flex w-full items-center justify-between whitespace-nowrap rounded px-2 py-1 text-sm placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+          "macos-select-trigger os-select-trigger-macos flex w-full items-center justify-between whitespace-nowrap px-2 py-1 text-sm placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
         className
       )}
       style={{
         fontFamily: isXpTheme
           ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-          : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
           : undefined,
-        fontSize: isXpTheme ? "11px" : isMacOSTheme ? "14px" : undefined,
-        ...(isXpTheme && {
-          color: "black",
-        }),
-        ...(isMacOSTheme && {
-          height: "24px", // Match Input h-6 height for macOS theme
-          lineHeight: 1.5,
-          minWidth: "60px",
-          borderRadius: "6px",
-          position: "relative",
-          overflow: "hidden",
-          cursor: "default",
-          border: "none",
-          boxSizing: "border-box",
-          WebkitFontSmoothing: "antialiased",
-          background: isPressed
-            ? "linear-gradient(rgba(140, 140, 140, 0.625), rgba(235, 235, 235, 0.625))"
-            : "linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625))",
-          boxShadow: isPressed
-            ? "inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.2)"
-            : isFocused
-            ? "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 3px var(--os-color-selection-glow)"
-            : "0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.3)",
-          color: "black",
-          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
-          paddingRight: "24px",
-        }),
+        fontSize: isXpTheme ? "11px" : undefined,
+        ...(isXpTheme && { color: "black" }),
       }}
       onClick={() => playClick()}
-      onFocus={(e) => {
-        setIsFocused(true);
-        props.onFocus?.(e);
-      }}
-      onBlur={(e) => {
-        setIsFocused(false);
-        props.onBlur?.(e);
-      }}
-      onMouseDown={(e) => {
-        setIsPressed(true);
-        props.onMouseDown?.(e);
-      }}
-      onMouseUp={(e) => {
-        setIsPressed(false);
-        props.onMouseUp?.(e);
-      }}
-      onMouseLeave={(e) => {
-        setIsPressed(false);
-        props.onMouseLeave?.(e);
-      }}
       {...props}
     >
       {children}
@@ -211,33 +159,13 @@ SelectContent.displayName = SelectPrimitive.Content.displayName;
 const SelectLabel = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
->(({ className, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
-
-  const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-
-  return (
-    <SelectPrimitive.Label
-      ref={ref}
-      className={cn("px-2 py-1.5 text-sm font-semibold", className)}
-      style={{
-        fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-          : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-          : undefined,
-        fontSize: isXpTheme ? "11px" : isMacOSTheme ? "11px" : undefined,
-        ...(isMacOSTheme && {
-          WebkitFontSmoothing: "antialiased",
-          fontSmooth: "auto",
-          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
-        }),
-      }}
-      {...props}
-    />
-  );
-});
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Label
+    ref={ref}
+    className={cn("px-2 py-1.5 text-sm font-semibold", className)}
+    {...props}
+  />
+));
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
 const SelectItem = React.forwardRef<
@@ -245,37 +173,14 @@ const SelectItem = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const currentTheme = useThemeStore((state) => state.current);
-
-  const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   return (
     <SelectPrimitive.Item
       ref={ref}
       className={cn(
-        "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "os-select-item relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className
       )}
-      style={{
-        fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-          : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-          : undefined,
-        fontSize: isXpTheme
-          ? "11px"
-          : isMacOSTheme
-          ? "13px !important"
-          : undefined,
-        ...(isMacOSTheme && {
-          WebkitFontSmoothing: "antialiased",
-          fontSmooth: "auto",
-          borderRadius: "0px",
-          padding: "6px 20px 6px 16px",
-          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
-        }),
-      }}
       onSelect={(event) => {
         playClick();
         props.onSelect?.(event);
@@ -303,37 +208,14 @@ const SelectItemWithDescription = React.forwardRef<
   SelectItemWithDescriptionProps
 >(({ className, children, description, ...props }, ref) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const currentTheme = useThemeStore((state) => state.current);
-
-  const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   return (
     <SelectPrimitive.Item
       ref={ref}
       className={cn(
-        "group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "os-select-item-with-description group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className
       )}
-      style={{
-        fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-          : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-          : undefined,
-        fontSize: isXpTheme
-          ? "11px"
-          : isMacOSTheme
-          ? "13px !important"
-          : undefined,
-        ...(isMacOSTheme && {
-          WebkitFontSmoothing: "antialiased",
-          fontSmooth: "auto",
-          borderRadius: "0px",
-          padding: "8px 20px 8px 16px",
-          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
-        }),
-      }}
       onSelect={(event) => {
         playClick();
         props.onSelect?.(event);
