@@ -3,20 +3,57 @@ services:
     build: .
     ports:
       - "${PORT:-3000}:3000"
-    env_file:
-      - .env.local
     environment:
+      # Core
       - NODE_ENV=production
       - PORT=3000
       - API_HOST=0.0.0.0
+
+      # Browser sidecar (internal, do not change)
       - BROWSER_CDP_URL=ws://browser:9222
+
+      # Redis
+      - REDIS_URL=${REDIS_URL:-}
+      - REDIS_KV_REST_API_URL=${REDIS_KV_REST_API_URL:?}
+      - REDIS_KV_REST_API_TOKEN=${REDIS_KV_REST_API_TOKEN:?}
+      - REDIS_PROVIDER=${REDIS_PROVIDER:-}
+
+      # Public origin & CORS
+      - APP_PUBLIC_ORIGIN=${APP_PUBLIC_ORIGIN:-}
+      - API_ALLOWED_ORIGINS=${API_ALLOWED_ORIGINS:-}
+      - APP_ALLOWED_HOSTS=${APP_ALLOWED_HOSTS:-}
+
+      # AI providers
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY:-}
+
+      # Pusher (realtime)
+      - PUSHER_APP_ID=${PUSHER_APP_ID:-}
+      - PUSHER_KEY=${PUSHER_KEY:-}
+      - PUSHER_SECRET=${PUSHER_SECRET:-}
+      - PUSHER_CLUSTER=${PUSHER_CLUSTER:-}
+
+      # Optional services
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+      - YOUTUBE_API_KEY_2=${YOUTUBE_API_KEY_2:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-}
+
+      # Storage (S3 / Vercel Blob)
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-}
+      - S3_BUCKET=${S3_BUCKET:-}
+      - S3_REGION=${S3_REGION:-}
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
+      - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT:-}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-}
+      - BLOB_READ_WRITE_TOKEN=${BLOB_READ_WRITE_TOKEN:-}
     depends_on:
       browser:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      - internal
-      - default
 
   browser:
     image: lightpanda/browser:latest
@@ -35,9 +72,3 @@ services:
         limits:
           memory: 512M
           cpus: "1.0"
-    networks:
-      - internal
-
-networks:
-  internal:
-    driver: bridge
