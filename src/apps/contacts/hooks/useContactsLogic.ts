@@ -8,7 +8,7 @@ import { useContactsStore } from "@/stores/useContactsStore";
 import type { Contact, ContactDraft } from "@/utils/contacts";
 import { contactMatchesQuery, parseVCardText, sortContacts } from "@/utils/contacts";
 import { resizeImageToBase64 } from "@/utils/imageResize";
-import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
+import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { helpItems } from "..";
 
 type ContactGroupId = "all" | "imported" | "telegram" | "work" | "birthdays";
@@ -120,7 +120,7 @@ export function useContactsLogic() {
   );
 
   useEffect(() => {
-    requestCloudSyncCheck();
+    requestCloudSyncDomainCheck("contacts");
   }, []);
 
   useEffect(() => {

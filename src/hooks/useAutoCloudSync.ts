@@ -25,6 +25,7 @@ import {
 import {
   subscribeToCloudSyncDomainChanges,
   subscribeToCloudSyncCheckRequests,
+  subscribeToCloudSyncDomainCheckRequests,
 } from "@/utils/cloudSyncEvents";
 import {
   getPersistedLocalChangeAt,
@@ -529,11 +530,13 @@ export function useAutoCloudSync() {
         } else {
           pendingUploadAfterCurrentRef.current[logicalDomain] = false;
           if (uploadSucceeded) {
+            let hadPendingCatchUp = false;
             for (const partDomain of enabledPartDomains) {
               const pendingRemoteUpdate = pendingRemoteCatchUpRef.current[partDomain];
               if (!pendingRemoteUpdate) {
                 continue;
               }
+              hadPendingCatchUp = true;
               pendingRemoteCatchUpRef.current[partDomain] = null;
               console.log(
                 `[CloudSync] Rechecking deferred remote update for ${partDomain}`
@@ -543,6 +546,13 @@ export function useAutoCloudSync() {
                 pendingRemoteUpdate.updatedAt,
                 pendingRemoteUpdate.syncVersion
               );
+            }
+
+            if (!hadPendingCatchUp) {
+              console.log(
+                `[CloudSync] Post-push sync check for ${logicalDomain}`
+              );
+              void checkRemoteDomainUpdateRef.current(domain);
             }
           }
         }
@@ -1078,8 +1088,162 @@ export function useAutoCloudSync() {
     }
   }, [isAuthenticated, isDomainEnabled, isSyncActive, queueUpload, username]);
 
+  const checkRemoteDomainUpdate = useCallback(
+    async (domain: CloudSyncDomain) => {
+      if (!username || !isAuthenticated || !isSyncActive || !isDomainEnabled(domain)) {
+        return;
+      }
+
+      const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
+
+      let metadataMap = useCloudSyncStore.getState().remoteMetadata;
+      try {
+        metadataMap = await fetchPhysicalCloudSyncMetadata({ username, isAuthenticated });
+        useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
+      } catch (error) {
+        console.warn(
+          `[CloudSync] Failed to refresh metadata for domain check ${domain}:`,
+          error
+        );
+      }
+
+      const enabledPartDomains = getEnabledPartDomains(logicalDomain);
+      const candidatePartDomains: CloudSyncDomain[] = [];
+
+      for (const partDomain of enabledPartDomains) {
+        const syncState = useCloudSyncStore.getState();
+        const domainStatus = syncState.domainStatus[partDomain];
+        const remoteMetadata = metadataMap[partDomain];
+
+        if (!remoteMetadata) {
+          continue;
+        }
+
+        const hasUnsynced = hasUnsyncedLocalChanges(
+          lastLocalChangeAtRef.current[partDomain],
+          domainStatus.lastUploadedAt,
+          hasPendingUploadForDomain(partDomain) || domainStatus.isUploading
+        );
+        const shouldApplyMetadata = shouldApplyRemoteUpdate({
+          remoteUpdatedAt: remoteMetadata.updatedAt,
+          remoteSyncVersion: remoteMetadata.syncVersion,
+          lastAppliedRemoteAt: domainStatus.lastAppliedRemoteAt,
+          lastUploadedAt: domainStatus.lastUploadedAt,
+          lastLocalChangeAt: lastLocalChangeAtRef.current[partDomain],
+          hasPendingUpload:
+            hasPendingUploadForDomain(partDomain) || domainStatus.isUploading,
+          lastKnownServerVersion: domainStatus.lastKnownServerVersion,
+        });
+        let reconcileIndividualBlobs = false;
+        if (
+          !shouldApplyMetadata &&
+          !hasUnsynced &&
+          isIndividualBlobSyncDomain(partDomain)
+        ) {
+          reconcileIndividualBlobs =
+            await individualBlobDomainNeedsLocalReconcile(partDomain, {
+              username,
+              isAuthenticated,
+            });
+        }
+        if (!shouldApplyMetadata && !reconcileIndividualBlobs) {
+          continue;
+        }
+
+        candidatePartDomains.push(partDomain);
+      }
+
+      if (candidatePartDomains.length === 0) {
+        return;
+      }
+
+      for (const partDomain of candidatePartDomains) {
+        remoteApplySuppressUntilRef.current[partDomain] =
+          Date.now() + REALTIME_INFLIGHT_SUPPRESSION_MS;
+      }
+
+      try {
+        console.log(
+          `[CloudSync] Targeted domain check: ${logicalDomain} (${candidatePartDomains.join(", ")})`
+        );
+        for (const partDomain of candidatePartDomains) {
+          useCloudSyncStore.getState().markDownloadStart(partDomain);
+        }
+        const candidatePartDomainSet = new Set(candidatePartDomains);
+        const downloadResult = await downloadAndApplyLogicalCloudSyncDomain(
+          logicalDomain,
+          { username, isAuthenticated },
+          {
+            shouldApplyPart: (partDomain) =>
+              candidatePartDomainSet.has(partDomain),
+          }
+        );
+
+        for (const [partDomain, metadata] of Object.entries(
+          downloadResult.partMetadata
+        ) as Array<
+          [
+            CloudSyncDomain,
+            NonNullable<(typeof downloadResult.partMetadata)[CloudSyncDomain]>
+          ]
+        >) {
+          useCloudSyncStore
+            .getState()
+            .updateRemoteMetadataForDomain(partDomain, metadata);
+
+          if (!candidatePartDomainSet.has(partDomain)) {
+            continue;
+          }
+
+          useCloudSyncStore
+            .getState()
+            .markDownloadSuccess(partDomain, metadata);
+
+          if (downloadResult.applied) {
+            useCloudSyncStore
+              .getState()
+              .markRemoteApplied(partDomain, metadata);
+            alignLocalChangeWithRemoteApply(
+              partDomain,
+              metadata.updatedAt,
+              lastLocalChangeAtRef
+            );
+            remoteApplySuppressUntilRef.current[partDomain] =
+              Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
+          } else {
+            remoteApplySuppressUntilRef.current[partDomain] = 0;
+          }
+        }
+      } catch (error) {
+        console.error(
+          `[CloudSync] Targeted domain check ${logicalDomain} failed:`,
+          error
+        );
+        const message =
+          error instanceof Error
+            ? error.message
+            : `Failed to download ${logicalDomain}.`;
+        for (const partDomain of candidatePartDomains) {
+          useCloudSyncStore.getState().markDownloadFailure(partDomain, message);
+          remoteApplySuppressUntilRef.current[partDomain] = 0;
+        }
+      }
+    },
+    [
+      getEnabledPartDomains,
+      hasPendingUploadForDomain,
+      isAuthenticated,
+      isDomainEnabled,
+      isSyncActive,
+      username,
+    ]
+  );
+
   const handleRealtimeDomainUpdateRef = useRef(handleRealtimeDomainUpdate);
   handleRealtimeDomainUpdateRef.current = handleRealtimeDomainUpdate;
+
+  const checkRemoteDomainUpdateRef = useRef(checkRemoteDomainUpdate);
+  checkRemoteDomainUpdateRef.current = checkRemoteDomainUpdate;
 
   useEffect(() => {
     if (!isSyncActive || !username) {
@@ -1231,6 +1395,13 @@ export function useAutoCloudSync() {
     const syncCheckUnsubscribe = subscribeToCloudSyncCheckRequests(() => {
       void checkRemoteUpdates();
     });
+
+    const domainCheckUnsubscribe = subscribeToCloudSyncDomainCheckRequests(
+      (domain) => {
+        console.log(`[CloudSync] Domain-specific sync check requested: ${domain}`);
+        void checkRemoteDomainUpdateRef.current(domain);
+      }
+    );
 
     const themeUnsubscribe = useThemeStore.subscribe((state, prevState) => {
       if (state.current !== prevState.current) {
@@ -1492,6 +1663,7 @@ export function useAutoCloudSync() {
       filesUnsubscribe();
       syncEventsUnsubscribe();
       syncCheckUnsubscribe();
+      domainCheckUnsubscribe();
       themeUnsubscribe();
       languageUnsubscribe();
       displayUnsubscribe();

@@ -41,6 +41,7 @@ import {
   downloadAndApplyLogicalCloudSyncDomain,
   uploadLogicalCloudSyncDomain,
 } from "@/utils/syncLogicalClient";
+import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import {
   LOGICAL_CLOUD_SYNC_DOMAINS,
   getLogicalCloudSyncDomainPhysicalParts,
@@ -857,6 +858,13 @@ export function useControlPanelsLogic({
           description: failures[0],
         });
         return;
+      }
+
+      for (const domain of enabledDomains) {
+        const partDomains = getLogicalCloudSyncDomainPhysicalParts(domain);
+        if (partDomains.length > 0) {
+          requestCloudSyncDomainCheck(partDomains[0]);
+        }
       }
 
       toast.success(t("apps.control-panels.cloudSync.forceUploadSuccess"));
