@@ -4,9 +4,6 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - API_HOST=0.0.0.0
       - BROWSER_CDP_URL=ws://browser:9222
     depends_on:
       browser:
