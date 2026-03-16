@@ -1377,6 +1377,43 @@
   text-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
 }
 
+/* macOS Aqua select-look button variant — replaces inline styles in button.tsx aqua_select */
+.os-btn-aqua-select {
+  position: relative;
+  z-index: 1;
+  height: 22px;
+  line-height: 1.5;
+  min-width: 60px;
+  overflow: hidden;
+  cursor: default;
+  border: none;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  background: linear-gradient(rgba(160, 160, 160, 0.625), rgba(255, 255, 255, 0.625));
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.3);
+  color: black;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.os-btn-aqua-select:focus {
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 3px var(--os-color-selection-glow);
+  outline: none;
+}
+
+.os-btn-aqua-select:active {
+  background: linear-gradient(#9e9e9e, #cbcbcb);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+/* Ghost button reset for XP/Win98 and macOS — overrides xp-custom.css globals */
+.os-btn-ghost-reset {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 /* macOS Aqua Radix select trigger — replaces inline styles in select.tsx */
 .os-select-trigger-macos {
   height: 24px;
