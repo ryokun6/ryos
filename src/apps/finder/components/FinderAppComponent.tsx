@@ -19,6 +19,7 @@ import {
   CaretDown,
 } from "@phosphor-icons/react";
 import { SearchInput } from "@/components/ui/search-input";
+import { ToolbarButton, ToolbarButtonGroup } from "@/components/ui/toolbar-button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -321,10 +322,9 @@ export function FinderAppComponent({
               style={{ background: "transparent" }}
             >
               <div className="flex items-center gap-1.5">
-                <div className="metal-inset-btn-group">
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
+                <ToolbarButtonGroup>
+                  <ToolbarButton
+                    icon
                     onClick={() => {
                       if (isAirDropView) {
                         navigateAwayFromAirDrop();
@@ -335,42 +335,27 @@ export function FinderAppComponent({
                     disabled={!isAirDropView && !canNavigateBack()}
                   >
                     <CaretLeft size={14} weight="fill" className="scale-x-150 scale-y-90" />
-                  </button>
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    onClick={navigateForward}
-                    disabled={!canNavigateForward()}
-                  >
+                  </ToolbarButton>
+                  <ToolbarButton icon onClick={navigateForward} disabled={!canNavigateForward()}>
                     <CaretRight size={14} weight="fill" className="scale-x-150 scale-y-90" />
-                  </button>
-                </div>
-                <div className="metal-inset-btn-group">
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    data-state={viewType === "large" ? "on" : "off"}
-                    onClick={() => setViewType("large")}
-                  >
+                  </ToolbarButton>
+                </ToolbarButtonGroup>
+                <ToolbarButtonGroup>
+                  <ToolbarButton icon data-state={viewType === "large" ? "on" : "off"} onClick={() => setViewType("large")}>
                     <SquaresFour size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    data-state={viewType === "list" ? "on" : "off"}
-                    onClick={() => setViewType("list")}
-                  >
+                  </ToolbarButton>
+                  <ToolbarButton icon data-state={viewType === "list" ? "on" : "off"} onClick={() => setViewType("list")}>
                     <List size={14} />
-                  </button>
-                </div>
+                  </ToolbarButton>
+                </ToolbarButtonGroup>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className="metal-inset-btn-group">
-                      <button type="button" className="metal-inset-btn metal-inset-icon gap-0.5">
+                    <ToolbarButtonGroup>
+                      <ToolbarButton icon className="gap-0.5">
                         <GearSix size={14} weight="fill" style={{ transform: "rotate(30deg)" }} />
                         <CaretDown size={8} weight="bold" />
-                      </button>
-                    </div>
+                      </ToolbarButton>
+                    </ToolbarButtonGroup>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
                     <DropdownMenuItem className="text-md h-6 px-3" onClick={handleNewFolder} disabled={!canCreateFolder}>
