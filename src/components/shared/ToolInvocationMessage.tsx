@@ -174,6 +174,13 @@ export function ToolInvocationMessage({
             toolName: formatToolName(toolName),
           });
         break;
+      case "webFetch": {
+        const url = typeof input?.url === "string" ? input.url : "";
+        let hostname = "";
+        try { hostname = new URL(url.startsWith("http") ? url : `https://${url}`).hostname; } catch { /* */ }
+        displayCallMessage = t("apps.chats.toolCalls.webFetch.fetching", { hostname: hostname || url });
+        break;
+      }
       case "web_search":
       case "google_search":
         displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
@@ -551,6 +558,15 @@ export function ToolInvocationMessage({
         } else if (out.message) {
           displayResultMessage = out.message;
         }
+      }
+    } else if (toolName === "webFetch") {
+      const out = output as { success?: boolean; message?: string; title?: string; siteName?: string } | undefined;
+      if (out?.success) {
+        displayResultMessage = out.title
+          ? t("apps.chats.toolCalls.webFetch.fetchedPage", { title: out.title })
+          : t("apps.chats.toolCalls.webFetch.fetched", { siteName: out.siteName || out.message || "" });
+      } else if (out?.message) {
+        displayResultMessage = out.message;
       }
     } else if (toolName === "infiniteMacControl") {
       const action = input?.action;
