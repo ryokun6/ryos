@@ -24,7 +24,6 @@ import {
 import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
 import {
   collectTelegramReplyText,
-  TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
   streamTelegramReply,
 } from "../_utils/telegram-streaming.js";
 import {
@@ -727,7 +726,6 @@ export default async function handler(
       ? {
           text: await collectTelegramReplyText({
             textStream: result.textStream,
-            maxReplyLength: TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
             formatText: simplifyTelegramCitationDisplay,
           }),
           previewMode: "none" as const,
@@ -738,7 +736,6 @@ export default async function handler(
           draftId: parsedUpdate.updateId,
           textStream: result.textStream,
           replyToMessageId: parsedUpdate.messageId,
-          maxReplyLength: TELEGRAM_DEFAULT_REPLY_MAX_LENGTH,
           formatText: simplifyTelegramCitationDisplay,
           onBeforePreview: async () => {
             await statusReporter.dispose();
