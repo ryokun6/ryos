@@ -3,6 +3,8 @@ import { CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
+import { SelectableListItem } from "@/components/ui/selectable-list-item";
 import { useTranslation } from "react-i18next";
 
 type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
@@ -45,8 +47,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isWindowsLegacyTheme = isXpTheme;
+  const isWindowsLegacyTheme = isWindowsTheme(currentTheme);
 
   const publicRooms = rooms.filter((r) => r.type !== "private");
 
@@ -74,97 +75,43 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           className="space-y-1 flex-1 overflow-y-auto min-h-0"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {/* Dashboard Section */}
-          <div
-            className={cn(
-              "py-1 px-5 cursor-pointer",
-              activeSection === "dashboard" ? "" : "hover:bg-black/5"
-            )}
-            data-selected={activeSection === "dashboard" ? "true" : undefined}
-            onClick={() => {
-              playButtonClick();
-              onSectionChange("dashboard");
-              onRoomSelect(null);
-            }}
+          <SelectableListItem
+            isSelected={activeSection === "dashboard"}
+            onClick={() => { playButtonClick(); onSectionChange("dashboard"); onRoomSelect(null); }}
           >
             {t("apps.admin.sidebar.dashboard", "Dashboard")}
-          </div>
+          </SelectableListItem>
 
-          {/* Server Section */}
-          <div
-            className={cn(
-              "py-1 px-5 cursor-pointer",
-              activeSection === "server" ? "" : "hover:bg-black/5"
-            )}
-            data-selected={activeSection === "server" ? "true" : undefined}
-            onClick={() => {
-              playButtonClick();
-              onSectionChange("server");
-              onRoomSelect(null);
-            }}
+          <SelectableListItem
+            isSelected={activeSection === "server"}
+            onClick={() => { playButtonClick(); onSectionChange("server"); onRoomSelect(null); }}
           >
             {t("apps.admin.sidebar.server", "Server")}
-          </div>
+          </SelectableListItem>
 
-          {/* Songs Section */}
-          <div
-            className={cn(
-              "py-1 px-5 cursor-pointer",
-              activeSection === "songs" && selectedRoomId === null
-                ? ""
-                : "hover:bg-black/5"
-            )}
-            data-selected={activeSection === "songs" && selectedRoomId === null ? "true" : undefined}
-            onClick={() => {
-              playButtonClick();
-              onSectionChange("songs");
-              onRoomSelect(null);
-            }}
+          <SelectableListItem
+            isSelected={activeSection === "songs" && selectedRoomId === null}
+            onClick={() => { playButtonClick(); onSectionChange("songs"); onRoomSelect(null); }}
           >
             <div className="flex items-center">
               <span>{t("apps.admin.sidebar.songs", "Songs")}</span>
-              <span
-                className={cn(
-                  "text-[10px] ml-1.5",
-                  activeSection === "songs" && selectedRoomId === null
-                    ? "text-white/40"
-                    : "text-black/40"
-                )}
-              >
+              <span className={cn("text-[10px] ml-1.5", activeSection === "songs" && selectedRoomId === null ? "text-white/40" : "text-black/40")}>
                 {stats.totalSongs ?? 0}
               </span>
             </div>
-          </div>
+          </SelectableListItem>
 
-          {/* Users Section */}
-          <div
-            className={cn(
-              "py-1 px-5 cursor-pointer",
-              activeSection === "users" && selectedRoomId === null
-                ? ""
-                : "hover:bg-black/5"
-            )}
-            data-selected={activeSection === "users" && selectedRoomId === null ? "true" : undefined}
-            onClick={() => {
-              playButtonClick();
-              onSectionChange("users");
-              onRoomSelect(null);
-            }}
+          <SelectableListItem
+            isSelected={activeSection === "users" && selectedRoomId === null}
+            onClick={() => { playButtonClick(); onSectionChange("users"); onRoomSelect(null); }}
           >
             <div className="flex items-center">
               <span>{t("apps.admin.sidebar.users")}</span>
-              <span
-                className={cn(
-                  "text-[10px] ml-1.5",
-                  activeSection === "users" && selectedRoomId === null
-                    ? "text-white/40"
-                    : "text-black/40"
-                )}
-              >
+              <span className={cn("text-[10px] ml-1.5", activeSection === "users" && selectedRoomId === null ? "text-white/40" : "text-black/40")}>
                 {stats.totalUsers}
               </span>
             </div>
-          </div>
+          </SelectableListItem>
 
           {/* Rooms Section Header */}
           <div
@@ -194,38 +141,25 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               {publicRooms.length > 0 && (
                 <>
                   {publicRooms.map((room) => (
-                    <div
+                    <SelectableListItem
                       key={room.id}
-                      className={cn(
-                        "group relative py-1 px-5 cursor-pointer",
-                        selectedRoomId === room.id ? "" : "hover:bg-black/5"
-                      )}
-                      data-selected={selectedRoomId === room.id ? "true" : undefined}
-                      onClick={() => {
-                        playButtonClick();
-                        onSectionChange("rooms");
-                        onRoomSelect(room.id);
-                      }}
+                      isSelected={selectedRoomId === room.id}
+                      className="group relative"
+                      onClick={() => { playButtonClick(); onSectionChange("rooms"); onRoomSelect(room.id); }}
                     >
                       <div className="flex items-center">
                         <span>#{room.name}</span>
                         <span
                           className={cn(
                             "text-[10px] ml-1.5 transition-opacity",
-                            selectedRoomId === room.id
-                              ? "text-white/40"
-                              : "text-black/40",
-                            room.userCount > 0
-                              ? "opacity-100"
-                              : selectedRoomId === room.id
-                              ? "opacity-100"
-                              : "opacity-0 group-hover:opacity-100"
+                            selectedRoomId === room.id ? "text-white/40" : "text-black/40",
+                            room.userCount > 0 ? "opacity-100" : selectedRoomId === room.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                           )}
                         >
                           {room.userCount} {t("apps.admin.sidebar.online")}
                         </span>
                       </div>
-                    </div>
+                    </SelectableListItem>
                   ))}
                 </>
               )}

@@ -6,9 +6,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SelectableListItem } from "@/components/ui/selectable-list-item";
 import { Plus } from "@phosphor-icons/react";
 import { Soundboard } from "@/types/types";
-import { cn } from "@/lib/utils";
+
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 
@@ -65,22 +66,16 @@ export function BoardList({
           className="space-y-1 overscroll-contain w-full flex-1 overflow-y-auto min-h-0"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {boards.map((board) => {
-            const isSelected = board.id === activeBoardId;
-            return (
-              <div
-                key={board.id}
-                className={cn(
-                  "group relative py-1 px-5 cursor-pointer",
-                  isSelected ? "" : "hover:bg-black/5"
-                )}
-                data-selected={isSelected ? "true" : undefined}
-                onClick={() => onBoardSelect(board.id)}
-              >
-                {board.name}
-              </div>
-            );
-          })}
+          {boards.map((board) => (
+            <SelectableListItem
+              key={board.id}
+              isSelected={board.id === activeBoardId}
+              className="group relative"
+              onClick={() => onBoardSelect(board.id)}
+            >
+              {board.name}
+            </SelectableListItem>
+          ))}
         </div>
 
         {micPermissionGranted && (
