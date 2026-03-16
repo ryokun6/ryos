@@ -131,4 +131,3 @@ export async function requestBlobUploadInstruction(
 
   return (await response.json()) as StorageUploadInstruction;
 }
-

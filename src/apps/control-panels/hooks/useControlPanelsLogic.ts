@@ -40,7 +40,7 @@ import { useTelegramLink } from "@/hooks/useTelegramLink";
 import {
   downloadAndApplyLogicalCloudSyncDomain,
   uploadLogicalCloudSyncDomain,
-} from "@/utils/syncLogicalClient";
+} from "@/sync/engine";
 import {
   LOGICAL_CLOUD_SYNC_DOMAINS,
   getLogicalCloudSyncDomainPhysicalParts,

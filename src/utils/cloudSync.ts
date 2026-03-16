@@ -48,13 +48,13 @@ import {
 import {
   getNextSyncClientVersion,
   getSyncClientId,
-} from "@/utils/cloudSyncClientState";
+} from "@/sync/state";
 import { getSyncSessionId } from "@/utils/syncSession";
 import {
   fetchBlobDomainPayload,
   fetchRedisDomainSnapshot,
   requestBlobUploadInstruction as requestBlobUploadInstructionFromTransport,
-} from "@/utils/syncTransportClient";
+} from "@/sync/transport";
 import type { CloudSyncWriteVersion } from "@/utils/cloudSyncVersion";
 import {
   filterDeletedIds,
@@ -72,7 +72,7 @@ import {
   getSettingsSectionTimestampMap,
   setSettingsSectionTimestamps,
   type SettingsSyncSection,
-} from "@/utils/cloudSyncSettingsState";
+} from "@/sync/state";
 import {
   beginApplyingRemoteDomain,
   endApplyingRemoteDomain,

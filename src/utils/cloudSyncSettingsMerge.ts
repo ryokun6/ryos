@@ -7,7 +7,7 @@ import {
   SETTINGS_SYNC_SECTIONS,
   type SettingsSectionTimestampMap,
   type SettingsSyncSection,
-} from "@/utils/cloudSyncSettingsState";
+} from "@/sync/state";
 
 export interface SettingsSnapshotData {
   theme: string;

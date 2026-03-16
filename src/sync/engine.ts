@@ -15,7 +15,11 @@ import {
   type LogicalCloudSyncDomain,
   type LogicalCloudSyncDomainMetadata,
 } from "@/utils/syncLogicalDomains";
-import { createEmptyCloudSyncMetadataMap, type CloudSyncDomain, type CloudSyncDomainMetadata } from "@/utils/cloudSyncShared";
+import {
+  createEmptyCloudSyncMetadataMap,
+  type CloudSyncDomain,
+  type CloudSyncDomainMetadata,
+} from "@/utils/cloudSyncShared";
 
 type AuthContext = {
   username: string;
@@ -171,7 +175,10 @@ export async function downloadAndApplyLogicalCloudSyncDomain(
     ]
   >) {
     partMetadata[partDomain] = partPayload.metadata;
-    if (options?.shouldApplyPart && !options.shouldApplyPart(partDomain, partPayload.metadata)) {
+    if (
+      options?.shouldApplyPart &&
+      !options.shouldApplyPart(partDomain, partPayload.metadata)
+    ) {
       continue;
     }
 
@@ -188,4 +195,3 @@ export async function downloadAndApplyLogicalCloudSyncDomain(
     applied,
   };
 }
-

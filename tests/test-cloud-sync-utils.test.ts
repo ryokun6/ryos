@@ -1283,7 +1283,7 @@ describe("cloud sync shared helpers", () => {
     const {
       getSettingsSectionTimestampMap,
       setSettingsSectionTimestamps,
-    } = await import("../src/utils/cloudSyncSettingsState");
+    } = await import("../src/sync/state");
     const { applyResolvedRedisUploadLocally } = await import(
       "../src/utils/cloudSync"
     );

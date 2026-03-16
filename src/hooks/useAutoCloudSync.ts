@@ -30,7 +30,7 @@ import {
 import {
   getPersistedLocalChangeAt,
   setPersistedLocalChangeAt,
-} from "@/utils/cloudSyncLocalChangeState";
+} from "@/sync/state";
 import {
   fetchPhysicalCloudSyncMetadata,
   individualBlobDomainNeedsLocalReconcile,
@@ -39,7 +39,7 @@ import { getSyncSessionId } from "@/utils/syncSession";
 import {
   downloadAndApplyLogicalCloudSyncDomain,
   uploadLogicalCloudSyncDomain,
-} from "@/utils/syncLogicalClient";
+} from "@/sync/engine";
 import {
   getLogicalCloudSyncDomainForPhysical,
   getLogicalCloudSyncDomainPhysicalParts,
@@ -56,7 +56,7 @@ import {
   getLatestSettingsSectionTimestamp,
   isApplyingRemoteSettingsSection,
   markSettingsSectionChanged,
-} from "@/utils/cloudSyncSettingsState";
+} from "@/sync/state";
 import { isApplyingRemoteDomain } from "@/utils/cloudSyncRemoteApplyState";
 import {
   CLOUD_SYNC_DOMAINS,
