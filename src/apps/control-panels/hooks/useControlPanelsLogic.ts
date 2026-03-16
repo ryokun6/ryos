@@ -168,8 +168,6 @@ const BACKUP_INDEXEDDB_STORES = [
   "applets",
 ] as const;
 
-type BackupIndexedDbStoreName = (typeof BACKUP_INDEXEDDB_STORES)[number];
-
 function upgradeLegacyBackupStoreValue(
   backupVersion: number,
   storeName: string,

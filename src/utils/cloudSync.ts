@@ -98,7 +98,6 @@ import {
   restoreStoreItems,
   serializeStoreItem,
   serializeStoreItems,
-  type IndexedDBStoreItem as StoreItem,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
 type AuthContext = {
