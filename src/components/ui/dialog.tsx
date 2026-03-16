@@ -128,7 +128,7 @@ const DialogContent = React.forwardRef<
                   backgroundImage: "var(--os-pinstripe-window)",
                 }
               : isSystem7Theme
-              ? { backgroundColor: "#E3E3E3" }
+              ? { backgroundColor: "var(--os-color-panel-bg)" }
               : undefined
           }
         >
