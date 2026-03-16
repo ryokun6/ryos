@@ -553,24 +553,24 @@ No shared icon size tokens or scale.
 4. ~~**Extract `<SearchInput>`** component~~ ✅ `src/components/ui/search-input.tsx`
 5. ~~**Consolidate theme checks** to use `isWindowsTheme()` / `isMacTheme()` consistently~~ ✅ (shared UI components)
 
-### Tier 2 — High Impact, Medium Effort — PARTIALLY COMPLETED
+### Tier 2 — High Impact, Medium Effort — MOSTLY COMPLETED
 
 6. **Scope XP/98 CSS** to `[data-os-theme]` selectors to reduce `!important` usage
 7. ~~**Move macOS Aqua input styles** from inline JS to CSS classes in `themes.css`~~ ✅ `.os-themed-input`
-8. **Extract `<AppSidebarPanel>`** and **`<PanelHeader>`** layout primitives
+8. ~~**Extract `<AppSidebarPanel>`** layout primitive~~ ✅ `src/components/layout/AppSidebarPanel.tsx`
 9. ~~**Define z-index scale** as CSS variables~~ ✅ `--z-base` through `--z-spotlight`
 10. ~~**Add `prefers-reduced-motion` support**~~ ✅
 
-### Tier 3 — Structural Improvements
+### Tier 3 — Structural Improvements — PARTIALLY COMPLETED
 
 11. **Refactor `button.tsx`** to single render path with theme-resolved classes
 12. ~~**Refactor `input.tsx`** to use CSS state selectors instead of JS event handler styling~~ ✅
 13. **Refactor `select.tsx`** to share Aqua styles with button via CSS classes
 14. **Reconcile JS theme objects with CSS variables** (single source of truth)
 15. **Define type scale** and remove global font-size `!important` overrides
-16. **Rename `calendar-sidebar` to `os-sidebar`** and generalize
+16. ~~**Rename `calendar-sidebar` to `os-sidebar`** and generalize~~ ✅
 17. **Extract `<ToolbarButton>` / `<ToolbarButtonGroup>`** components
-18. **Extract `<EmptyState>`** and **`<LoadingOverlay>`** components
+18. ~~**Extract `<EmptyState>`**~~ ✅ `src/components/ui/empty-state.tsx` / **`<LoadingOverlay>`** remaining
 19. **Create `useKeyboardShortcuts`** hook or shortcut registry
 
 ### Tier 4 — Polish & Accessibility
