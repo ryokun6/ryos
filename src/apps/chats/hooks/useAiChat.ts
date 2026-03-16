@@ -758,6 +758,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = "";
             break;
           }
+          case "webFetch": {
+            console.log("[ToolCall] webFetch (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
           // === Unified VFS Tools ===
           case "list": {
             const { path, query, limit } = toolCall.input as {

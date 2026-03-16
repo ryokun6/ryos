@@ -944,6 +944,30 @@ export const documentsControlSchema = z
   });
 
 // ============================================================================
+// Web Fetch Tool Schema
+// ============================================================================
+
+export const webFetchSchema = z.object({
+  url: z
+    .string()
+    .min(1)
+    .max(2048)
+    .describe(
+      "The URL to fetch. Must be a public HTTP/HTTPS URL. " +
+      "Examples: 'https://example.com', 'https://en.wikipedia.org/wiki/TypeScript'"
+    ),
+  selector: z
+    .string()
+    .max(200)
+    .optional()
+    .describe(
+      "Optional CSS selector to extract a specific section of the page. " +
+      "Examples: 'article', 'main', '.content', '#body-text'. " +
+      "If omitted, extracts the main content automatically."
+    ),
+});
+
+// ============================================================================
 // Unified Memory Tool Schemas
 // ============================================================================
 
