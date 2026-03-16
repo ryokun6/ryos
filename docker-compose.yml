@@ -1,0 +1,29 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - BROWSER_CDP_URL=ws://browser:9222
+    depends_on:
+      browser:
+        condition: service_healthy
+    restart: unless-stopped
+
+  browser:
+    image: lightpanda/browser:latest
+    command: ["serve", "--host", "0.0.0.0", "--port", "9222"]
+    expose:
+      - "9222"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "echo > /dev/tcp/127.0.0.1/9222 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
