@@ -319,14 +319,8 @@ export function FileIcon({
               ? "bg-transparent text-white"
               : "bg-white text-black"
           }`}
+          data-selected={isSelected ? "true" : undefined}
           style={{
-            ...(isSelected
-              ? {
-                  background: "var(--os-color-selection-bg)",
-                  color: "var(--os-color-selection-text)",
-                  textShadow: "var(--os-color-selection-text-shadow)",
-                }
-              : {}),
             ...(!isSelected && (isXpTheme || isMacOSXTheme) && !isFinderContext
               ? isMacOSXTheme
                 ? {

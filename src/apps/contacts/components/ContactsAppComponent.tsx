@@ -54,9 +54,7 @@ function ContactListItem({
         "w-full flex items-center gap-2 pl-2 pr-3 py-1.5 text-left",
         isSelected ? "" : "hover:bg-black/5 transition-colors"
       )}
-      style={{
-        ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)", textShadow: "var(--os-color-selection-text-shadow)" } : {}),
-      }}
+      data-selected={isSelected ? "true" : undefined}
     >
       {contact.picture ? (
         <img
@@ -101,9 +99,7 @@ function GroupListItem({
         "w-full flex items-center gap-2 px-3 py-1.5 text-left text-[11px]",
         isSelected ? "" : "hover:bg-black/5 transition-colors"
       )}
-      style={{
-        ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)", textShadow: "var(--os-color-selection-text-shadow)" } : {}),
-      }}
+      data-selected={isSelected ? "true" : undefined}
     >
       <span className="truncate">{label}</span>
     </button>

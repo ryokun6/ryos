@@ -83,15 +83,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
           "group relative py-1 px-5",
           isSelected ? "" : "hover:bg-black/5"
         )}
-        style={
-          isSelected
-            ? {
-                background: "var(--os-color-selection-bg)",
-                color: "var(--os-color-selection-text)",
-                textShadow: "var(--os-color-selection-text-shadow)",
-              }
-            : undefined
-        }
+        data-selected={isSelected ? "true" : undefined}
         onClick={() => {
           playButtonClick();
           onRoomSelect(room);
@@ -223,15 +215,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
               "py-1 px-5",
               currentRoom === null ? "" : "hover:bg-black/5"
             )}
-            style={
-              currentRoom === null
-                ? {
-                    background: "var(--os-color-selection-bg)",
-                    color: "var(--os-color-selection-text)",
-                    textShadow: "var(--os-color-selection-text-shadow)",
-                  }
-                : undefined
-            }
+            data-selected={currentRoom === null ? "true" : undefined}
             onClick={() => {
               playButtonClick();
               onRoomSelect(null);

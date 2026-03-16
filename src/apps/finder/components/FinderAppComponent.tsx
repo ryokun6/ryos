@@ -92,13 +92,7 @@ function SidebarItem({
         "w-full flex items-center gap-1.5 pl-1.5 pr-2.5 py-[2px] text-left text-[12px]",
         isActive ? "" : "hover:bg-black/5 transition-colors"
       )}
-      style={{
-        ...(isActive ? {
-          background: "var(--os-color-selection-bg)",
-          color: "var(--os-color-selection-text)",
-          textShadow: "var(--os-color-selection-text-shadow)",
-        } : {}),
-      }}
+      data-selected={isActive ? "true" : undefined}
     >
       <ThemedIcon name={icon} alt="" className="w-8 h-8 shrink-0 [image-rendering:auto]" />
       <span className="truncate">{name}</span>

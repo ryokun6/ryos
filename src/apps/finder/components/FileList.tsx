@@ -169,15 +169,7 @@ const ListRowItem = memo(function ListRowItem({
           ? ""
           : "odd:bg-gray-200/50 hover:bg-gray-100/50 transition-colors"
       }`}
-      style={
-        isSelected || dropTargetPath === file.path
-          ? {
-              background: "var(--os-color-selection-bg)",
-              color: "var(--os-color-selection-text)",
-              textShadow: "var(--os-color-selection-text-shadow)",
-            }
-          : undefined
-      }
+      data-selected={isSelected || dropTargetPath === file.path ? "true" : undefined}
       onClick={handleClick}
       onMouseDown={(e) => {
         if (

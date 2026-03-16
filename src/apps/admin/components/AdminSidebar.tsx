@@ -80,15 +80,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               "py-1 px-5 cursor-pointer",
               activeSection === "dashboard" ? "" : "hover:bg-black/5"
             )}
-            style={
-              activeSection === "dashboard"
-                ? {
-                    background: "var(--os-color-selection-bg)",
-                    color: "var(--os-color-selection-text)",
-                    textShadow: "var(--os-color-selection-text-shadow)",
-                  }
-                : undefined
-            }
+            data-selected={activeSection === "dashboard" ? "true" : undefined}
             onClick={() => {
               playButtonClick();
               onSectionChange("dashboard");
@@ -104,15 +96,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               "py-1 px-5 cursor-pointer",
               activeSection === "server" ? "" : "hover:bg-black/5"
             )}
-            style={
-              activeSection === "server"
-                ? {
-                    background: "var(--os-color-selection-bg)",
-                    color: "var(--os-color-selection-text)",
-                    textShadow: "var(--os-color-selection-text-shadow)",
-                  }
-                : undefined
-            }
+            data-selected={activeSection === "server" ? "true" : undefined}
             onClick={() => {
               playButtonClick();
               onSectionChange("server");
@@ -130,15 +114,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 ? ""
                 : "hover:bg-black/5"
             )}
-            style={
-              activeSection === "songs" && selectedRoomId === null
-                ? {
-                    background: "var(--os-color-selection-bg)",
-                    color: "var(--os-color-selection-text)",
-                    textShadow: "var(--os-color-selection-text-shadow)",
-                  }
-                : undefined
-            }
+            data-selected={activeSection === "songs" && selectedRoomId === null ? "true" : undefined}
             onClick={() => {
               playButtonClick();
               onSectionChange("songs");
@@ -168,15 +144,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 ? ""
                 : "hover:bg-black/5"
             )}
-            style={
-              activeSection === "users" && selectedRoomId === null
-                ? {
-                    background: "var(--os-color-selection-bg)",
-                    color: "var(--os-color-selection-text)",
-                    textShadow: "var(--os-color-selection-text-shadow)",
-                  }
-                : undefined
-            }
+            data-selected={activeSection === "users" && selectedRoomId === null ? "true" : undefined}
             onClick={() => {
               playButtonClick();
               onSectionChange("users");
@@ -232,15 +200,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         "group relative py-1 px-5 cursor-pointer",
                         selectedRoomId === room.id ? "" : "hover:bg-black/5"
                       )}
-                      style={
-                        selectedRoomId === room.id
-                          ? {
-                              background: "var(--os-color-selection-bg)",
-                              color: "var(--os-color-selection-text)",
-                              textShadow: "var(--os-color-selection-text-shadow)",
-                            }
-                          : undefined
-                      }
+                      data-selected={selectedRoomId === room.id ? "true" : undefined}
                       onClick={() => {
                         playButtonClick();
                         onSectionChange("rooms");
