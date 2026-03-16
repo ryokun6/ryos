@@ -1,0 +1,203 @@
+# ryOS simplification execution waves
+
+## Goal
+
+Turn the audit into a deletion-first simplification program that:
+
+- reduces the number of patterns for storage, fetches, sync, and theming
+- removes dead abstractions and compatibility scaffolding
+- makes data flow more obvious
+- preserves product behavior while shrinking the architecture surface
+
+## Guardrails
+
+- prefer deletion over adaptation
+- prefer one obvious path over option-heavy helpers
+- move shared pure logic into runtime-neutral modules when both `src/` and `api/` need it
+- do not preserve old cloud-sync architecture; replace it outright
+- keep each wave independently reviewable and shippable
+
+## Wave order
+
+### Wave 1 - dead abstractions and duplicated helpers
+
+**Intent**
+
+Remove low-value abstraction layers and helper duplication that make later rewrites harder.
+
+**Scope**
+
+- remove the dead request-context path from `api/_utils/middleware.ts`
+- remove dead helper exports from `api/_utils/middleware.ts`
+- introduce one shared request helper module for header access
+- remove duplicate `getHeader()` implementations
+- remove Finder's `STORES` re-export from `src/apps/finder/hooks/useFileSystem.ts`
+- replace per-store shallow wrapper boilerplate in `src/stores/helpers.ts` with one generic helper
+- update docs that still describe the old backend helper path
+
+**Expected payoff**
+
+- smaller API helper surface
+- fewer local helper clones
+- clearer backend entry pattern
+- less fake indirection in store helpers
+
+**Commit**
+
+- `refactor: remove dead request helpers and duplicate store wrappers`
+
+**Verification**
+
+- `bun run build`
+- targeted bun tests for API-architecture-adjacent behavior if needed
+
+---
+
+### Wave 2 - obvious client/data-access paths
+
+**Intent**
+
+Collapse competing frontend access layers so components and stores stop reaching for raw transport primitives.
+
+**Scope**
+
+- standardize internal API calls on `src/api/*` + `apiRequest`
+- add missing chat room write wrappers to `src/api/rooms.ts`
+- migrate `useChatsStore` room create/delete/send flows away from local raw fetch helpers
+- unify song-related internal API access in `src/api/songs.ts`
+- migrate `useSongCover` to `src/api/songs.ts`
+- remove helper drift where frontend code mixes `apiRequest`, `abortableFetch`, and direct internal fetches
+
+**Expected payoff**
+
+- one obvious internal API path
+- consistent error handling and retry behavior
+- less fetch boilerplate in stores/hooks
+
+**Commit**
+
+- `refactor: unify frontend api access paths`
+
+**Verification**
+
+- `bun run build`
+- targeted chat and song-related test suites
+
+---
+
+### Wave 3 - IndexedDB and backup/restore simplification
+
+**Intent**
+
+Stop splitting blob/content persistence across fake layers and duplicated flows.
+
+**Scope**
+
+- extract one shared IndexedDB content helper surface
+- reuse one backup/restore serializer for local export, local restore, and cloud backup/export paths
+- remove duplicated backup/restore code from `useControlPanelsLogic.ts`
+- narrow `indexedDBOperations.ts` to the winning API shape
+- reduce direct transaction code outside the shared module
+
+**Expected payoff**
+
+- one blob serialization format
+- less duplication in control panels
+- cleaner path to a later file-system split
+
+**Commit**
+
+- `refactor: unify indexeddb access and backup flows`
+
+**Verification**
+
+- `bun run build`
+- targeted file-system and cloud-backup regression checks
+
+---
+
+### Wave 4 - cloud sync rewrite
+
+**Intent**
+
+Delete the current layered sync architecture and replace it with a smaller, explicit engine.
+
+**Rewrite stance**
+
+Do not preserve the existing logical/transport/sidecar split just because it already exists. Keep the external caller surface needed by `useAutoCloudSync` and control panels, but replace the internals aggressively.
+
+**Scope**
+
+- replace the current cloud sync internals with:
+  - one sync engine
+  - one persisted sync state source
+  - one serializer/apply adapter per domain
+  - one transport layer
+- remove `cloudSyncClientState.ts`, `cloudSyncSettingsState.ts`, `cloudSyncLocalChangeState.ts` if their responsibilities can be absorbed into the engine/state layer
+- collapse `syncLogicalClient.ts` and `syncTransportClient.ts` into the rewritten sync engine unless a tiny split remains clearly justified
+- keep only the public API needed by:
+  - `src/hooks/useAutoCloudSync.ts`
+  - `src/apps/control-panels/hooks/useControlPanelsLogic.ts`
+  - `src/utils/cloudSyncEvents.ts`
+  - `src/stores/useCloudSyncStore.ts`
+
+**Target shape**
+
+- `src/sync/engine.ts`
+- `src/sync/domains.ts`
+- `src/sync/state.ts`
+- `src/sync/transport.ts`
+- `src/sync/types.ts`
+
+**Expected payoff**
+
+- fewer moving parts
+- easier debugging
+- easier feature work on sync-enabled apps
+- fewer state races caused by cross-module sidecars
+
+**Commit**
+
+- `refactor: rewrite cloud sync engine`
+
+**Verification**
+
+- `bun run build`
+- targeted sync-related tests if available
+- focused manual terminal checks against the standalone API if needed
+
+---
+
+### Wave 5 - theme branching cleanup
+
+**Intent**
+
+Replace repeated theme booleans and reduce styling drift before it grows further.
+
+**Scope**
+
+- introduce a shared `useThemeFlags()` or equivalent helper backed by `src/themes/index.ts`
+- replace repeated `currentTheme === "xp" || currentTheme === "win98"` checks in touched code
+- reduce token duplication between `src/index.css` and `src/styles/themes.css` where safe
+- keep legacy Windows CSS loading only as an explicit compatibility layer
+
+**Expected payoff**
+
+- fewer repeated theme branches
+- clearer styling model
+- easier app/component implementation
+
+**Commit**
+
+- `refactor: centralize theme flags and simplify style branching`
+
+**Verification**
+
+- `bun run build`
+
+## Execution notes
+
+- Waves should land in order.
+- Each wave should be committed separately.
+- If a wave reveals dead code in adjacent files, delete it in the same wave instead of deferring.
+- If cloud sync becomes easier by deleting old compatibility behavior, delete it.
