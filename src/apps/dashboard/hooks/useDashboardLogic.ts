@@ -1,8 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
+import {
+  DASHBOARD_WIDGET_DEFAULT_SIZES,
+  LEGACY_CALENDAR_WIDGET_HEIGHT,
+  SHORT_CALENDAR_WIDGET_HEIGHT,
+  useDashboardStore,
+  type WidgetType,
+} from "@/stores/useDashboardStore";
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
 
@@ -22,6 +28,7 @@ export function useDashboardLogic() {
     removeWidget,
     moveWidget,
     bringToFront,
+    updateWidget,
     resetToDefaults,
   } = useDashboardStore(
     useShallow((state) => ({
@@ -30,23 +37,32 @@ export function useDashboardLogic() {
       removeWidget: state.removeWidget,
       moveWidget: state.moveWidget,
       bringToFront: state.bringToFront,
+      updateWidget: state.updateWidget,
       resetToDefaults: state.resetToDefaults,
     }))
   );
 
+  useEffect(() => {
+    const targetHeight = DASHBOARD_WIDGET_DEFAULT_SIZES.calendar.height;
+    widgets
+      .filter(
+        (widget) =>
+          widget.type === "calendar" &&
+          (
+            widget.size.height === LEGACY_CALENDAR_WIDGET_HEIGHT ||
+            widget.size.height === SHORT_CALENDAR_WIDGET_HEIGHT
+          )
+      )
+      .forEach((widget) => {
+        updateWidget(widget.id, {
+          size: { ...widget.size, height: targetHeight },
+        });
+      });
+  }, [updateWidget, widgets]);
+
   const handleAddWidget = useCallback(
     (type: WidgetType) => {
-      const sizeMap: Record<WidgetType, { width: number; height: number }> = {
-        clock: { width: 170, height: 170 },
-        calendar: { width: 240, height: 350 },
-        weather: { width: 340, height: 180 },
-        stocks: { width: 240, height: 340 },
-        ipod: { width: 320, height: 125 },
-        dictionary: { width: 240, height: 220 },
-        stickynote: { width: 200, height: 200 },
-        translation: { width: 300, height: 170 },
-      };
-      const size = sizeMap[type];
+      const size = DASHBOARD_WIDGET_DEFAULT_SIZES[type];
 
       const vw = window.innerWidth;
       const vh = window.innerHeight;
