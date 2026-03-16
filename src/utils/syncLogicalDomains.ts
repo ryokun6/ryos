@@ -22,8 +22,8 @@ export const LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS: Record<
   LogicalCloudSyncDomain,
   CloudSyncDomain[]
 > = {
-  settings: ["settings"],
-  files: ["files-images", "files-trash", "files-applets", "files-metadata", "custom-wallpapers"],
+  settings: ["custom-wallpapers", "settings"],
+  files: ["files-images", "files-trash", "files-applets", "files-metadata"],
   songs: ["songs"],
   videos: ["videos"],
   stickies: ["stickies"],

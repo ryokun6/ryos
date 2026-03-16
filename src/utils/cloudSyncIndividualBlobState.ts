@@ -2,8 +2,11 @@ import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import type { IndividualBlobSyncDomain } from "@/utils/cloudSyncShared";
 import {
   createEmptyIndividualBlobKnownState,
-  type IndividualBlobKnownItem,
   type IndividualBlobKnownItemMap,
+} from "@/utils/sync/engine/state/syncStateSchema";
+export type {
+  IndividualBlobKnownItem,
+  IndividualBlobKnownItemMap,
 } from "@/utils/sync/engine/state/syncStateSchema";
 
 export function getIndividualBlobKnownItems(

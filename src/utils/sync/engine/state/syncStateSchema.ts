@@ -1,6 +1,5 @@
 import {
   CLOUD_SYNC_DOMAINS,
-  type IndividualBlobSyncDomain,
   type CloudSyncDomain,
 } from "@/utils/cloudSyncShared";
 import {
