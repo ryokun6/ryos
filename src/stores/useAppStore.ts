@@ -7,7 +7,7 @@ import { AIModel } from "@/types/aiModels";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { requestCloudSyncCheck, requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
-import { shouldRequestCloudSyncOnAppLaunch, getCloudSyncDomainForApp } from "@/utils/cloudSyncLaunch";
+import { shouldRequestCloudSyncOnAppLaunch, getCloudSyncDomainsForApp } from "@/utils/cloudSyncLaunch";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
@@ -582,9 +582,9 @@ const createUseAppStore = () =>
         const shouldRequestSync = shouldRequestCloudSyncOnAppLaunch(appId);
 
         if (shouldRequestSync) {
-          const syncDomain = getCloudSyncDomainForApp(appId);
-          if (syncDomain) {
-            requestCloudSyncDomainCheck(syncDomain);
+          const syncDomains = getCloudSyncDomainsForApp(appId);
+          if (syncDomains) {
+            for (const d of syncDomains) requestCloudSyncDomainCheck(d);
           } else {
             requestCloudSyncCheck();
           }
