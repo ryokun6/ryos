@@ -108,10 +108,10 @@ function shouldUseRemoteSection(
   localSectionUpdatedAt: SettingsSectionTimestampMap,
   remoteSectionUpdatedAt: SettingsSectionTimestampMap
 ): boolean {
-  return (
-    parseTimestamp(remoteSectionUpdatedAt[section]) >
-    parseTimestamp(localSectionUpdatedAt[section])
-  );
+  const remoteTs = parseTimestamp(remoteSectionUpdatedAt[section]);
+  if (remoteTs === 0) return false;
+  const localTs = parseTimestamp(localSectionUpdatedAt[section]);
+  return remoteTs >= localTs;
 }
 
 export function mergeSettingsSnapshotData(
