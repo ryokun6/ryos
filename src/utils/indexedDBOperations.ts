@@ -1,13 +1,13 @@
 /**
  * IndexedDB Operations Utility Module
- * 
+ *
  * Centralized helpers for IndexedDB operations used throughout ryOS.
- * Extracts common patterns from useFilesStore and other stores.
+ * Extracts common patterns from stores and hooks so they do not open
+ * ad-hoc transactions inline.
  */
 
 import { ensureIndexedDBInitialized, STORES } from "./indexedDB";
 
-// Structure for content stored in IndexedDB
 export interface StoredContent {
   name: string;
   content: string | Blob;
@@ -42,6 +42,111 @@ const getExtension = (value?: string): string => {
   return normalized.split(".").pop()?.toLowerCase() || "";
 };
 
+const waitForRequest = <T>(request: IDBRequest<T>): Promise<T> =>
+  new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+
+const waitForTransaction = (transaction: IDBTransaction): Promise<void> =>
+  new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () =>
+      reject(transaction.error || new Error("IndexedDB transaction aborted"));
+  });
+
+const withObjectStore = async <T>(
+  storeName: string,
+  mode: IDBTransactionMode,
+  action: (store: IDBObjectStore, transaction: IDBTransaction) => Promise<T>
+): Promise<T> => {
+  const db = await ensureIndexedDBInitialized();
+
+  try {
+    const transaction = db.transaction(storeName, mode);
+    const store = transaction.objectStore(storeName);
+    return await action(store, transaction);
+  } finally {
+    db.close();
+  }
+};
+
+async function getAll<T>(storeName: string): Promise<T[]> {
+  try {
+    return await withObjectStore(storeName, "readonly", (store) =>
+      waitForRequest(store.getAll() as IDBRequest<T[]>)
+    );
+  } catch (error) {
+    console.error(`Error getting all items from ${storeName}:`, error);
+    return [];
+  }
+}
+
+async function getAllKeys(storeName: string): Promise<string[]> {
+  try {
+    const keys = await withObjectStore(storeName, "readonly", (store) =>
+      waitForRequest(store.getAllKeys() as IDBRequest<IDBValidKey[]>)
+    );
+    return keys.map((key) => String(key));
+  } catch (error) {
+    console.error(`Error getting all keys from ${storeName}:`, error);
+    return [];
+  }
+}
+
+async function get<T>(
+  storeName: string,
+  key: IDBValidKey
+): Promise<T | undefined> {
+  try {
+    return await withObjectStore(storeName, "readonly", (store) =>
+      waitForRequest(store.get(key) as IDBRequest<T | undefined>)
+    );
+  } catch (error) {
+    console.error(`Error getting item "${String(key)}" from ${storeName}:`, error);
+    return undefined;
+  }
+}
+
+async function put<T>(
+  storeName: string,
+  item: T,
+  key?: IDBValidKey
+): Promise<void> {
+  return withObjectStore(storeName, "readwrite", async (store, transaction) => {
+    if (key === undefined) {
+      await waitForRequest(store.put(item) as IDBRequest<IDBValidKey>);
+    } else {
+      await waitForRequest(store.put(item, key) as IDBRequest<IDBValidKey>);
+    }
+    await waitForTransaction(transaction);
+  });
+}
+
+async function remove(storeName: string, key: IDBValidKey): Promise<void> {
+  return withObjectStore(storeName, "readwrite", async (store, transaction) => {
+    await waitForRequest(store.delete(key) as IDBRequest<undefined>);
+    await waitForTransaction(transaction);
+  });
+}
+
+async function clear(storeName: string): Promise<void> {
+  return withObjectStore(storeName, "readwrite", async (store, transaction) => {
+    await waitForRequest(store.clear() as IDBRequest<undefined>);
+    await waitForTransaction(transaction);
+  });
+}
+
+export const dbOperations = {
+  getAll,
+  getAllKeys,
+  get,
+  put,
+  delete: remove,
+  clear,
+};
+
 /**
  * Save file content to IndexedDB.
  * @param uuid - Unique identifier for the content
@@ -55,19 +160,7 @@ export async function saveFileContent(
   content: string | Blob,
   storeName: string
 ): Promise<void> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      const putReq = store.put({ name, content } as StoredContent, uuid);
-      putReq.onsuccess = () => resolve();
-      putReq.onerror = () => reject(putReq.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+  await dbOperations.put(storeName, { name, content } as StoredContent, uuid);
 }
 
 /**
@@ -80,20 +173,7 @@ export async function loadFileContent(
   uuid: string,
   storeName: string
 ): Promise<StoredContent | null> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    const result = await new Promise<StoredContent | null>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(req.result as StoredContent | null);
-      req.onerror = () => reject(req.error);
-    });
-    return result;
-  } finally {
-    if (db) db.close();
-  }
+  return (await dbOperations.get<StoredContent>(storeName, uuid)) ?? null;
 }
 
 /**
@@ -105,19 +185,7 @@ export async function deleteFileContent(
   uuid: string,
   storeName: string
 ): Promise<void> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      const deleteReq = store.delete(uuid);
-      deleteReq.onsuccess = () => resolve();
-      deleteReq.onerror = () => reject(deleteReq.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+  await dbOperations.delete(storeName, uuid);
 }
 
 /**
@@ -129,20 +197,7 @@ export async function contentExists(
   uuid: string,
   storeName: string
 ): Promise<boolean> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    const exists = await new Promise<boolean>((resolve) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(!!req.result);
-      req.onerror = () => resolve(false);
-    });
-    return exists;
-  } finally {
-    if (db) db.close();
-  }
+  return (await dbOperations.get(storeName, uuid)) !== undefined;
 }
 
 /**
@@ -156,24 +211,17 @@ export async function batchSaveFileContent(
   storeName: string
 ): Promise<void> {
   if (files.length === 0) return;
-  
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      
-      for (const file of files) {
-        store.put({ name: file.name, content: file.content } as StoredContent, file.uuid);
-      }
-      
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+
+  await withObjectStore(storeName, "readwrite", async (store, transaction) => {
+    for (const file of files) {
+      store.put(
+        { name: file.name, content: file.content } as StoredContent,
+        file.uuid
+      );
+    }
+
+    await waitForTransaction(transaction);
+  });
 }
 
 /**
@@ -186,24 +234,14 @@ export async function batchDeleteFileContent(
   storeName: string
 ): Promise<void> {
   if (uuids.length === 0) return;
-  
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      
-      for (const uuid of uuids) {
-        store.delete(uuid);
-      }
-      
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+
+  await withObjectStore(storeName, "readwrite", async (store, transaction) => {
+    for (const uuid of uuids) {
+      store.delete(uuid);
+    }
+
+    await waitForTransaction(transaction);
+  });
 }
 
 /**

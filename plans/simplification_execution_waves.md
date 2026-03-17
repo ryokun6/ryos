@@ -37,6 +37,12 @@ Turn the audit into a deletion-first simplification program that:
   - `useThemeFlags()` exists
   - repeated theme booleans were replaced in key touched UI/app files
 
+- Wave 6 is complete:
+  - `src/utils/indexedDBOperations.ts` is the winning IndexedDB helper surface
+  - Finder-owned `dbOperations` was removed in favor of the shared utility
+  - `useFilesStore` and `useDisplaySettingsStore` now use the shared helper path
+  - direct runtime IndexedDB CRUD flows were reduced to the shared module plus backup/migration utilities
+
 ### Partially complete
 
 - Wave 2 is only partially complete:
@@ -60,12 +66,11 @@ Turn the audit into a deletion-first simplification program that:
 
 ## Recommended next agent order
 
-1. Finish IndexedDB unification
-2. Finish internal API client unification
-3. Split `src/sync/domains.ts` into per-domain modules
-4. Unify style tokens between `src/index.css` and `src/styles/themes.css`
-5. Reduce legacy Windows CSS runtime surface
-6. Fix `useFilesStore` rehydrate noise
+1. Finish internal API client unification
+2. Split `src/sync/domains.ts` into per-domain modules
+3. Unify style tokens between `src/index.css` and `src/styles/themes.css`
+4. Reduce legacy Windows CSS runtime surface
+5. Fix `useFilesStore` rehydrate noise
 
 ## Wave order
 

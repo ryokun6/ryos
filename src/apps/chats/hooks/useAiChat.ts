@@ -20,10 +20,10 @@ import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import {
   useFileSystem,
-  dbOperations,
   type DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { dbOperations } from "@/utils/indexedDBOperations";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";

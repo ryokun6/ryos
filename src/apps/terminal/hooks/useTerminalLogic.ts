@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import {
   useFileSystem,
-  dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { dbOperations } from "@/utils/indexedDBOperations";
 import { useTerminalStoreShallow } from "@/stores/helpers";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
