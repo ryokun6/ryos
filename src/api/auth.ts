@@ -18,6 +18,27 @@ export interface RegisterResponse {
   };
 }
 
+export interface SessionResponse {
+  authenticated: boolean;
+  username?: string;
+  expired?: boolean;
+}
+
+export interface PasswordStatusResponse {
+  hasPassword: boolean;
+  username: string;
+}
+
+export interface PasswordSetResponse {
+  success: boolean;
+}
+
+export interface LogoutAllDevicesResponse {
+  success: boolean;
+  message: string;
+  deletedCount: number;
+}
+
 export async function loginWithPassword(params: {
   username: string;
   password: string;
@@ -63,6 +84,52 @@ export async function registerUser(params: {
 export async function logoutUser(): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>({
     path: "/api/auth/logout",
+    method: "POST",
+  });
+}
+
+export async function getSession(params?: {
+  legacyToken?: string | null;
+  username?: string;
+}): Promise<SessionResponse> {
+  const headers = new Headers();
+
+  if (params?.legacyToken) {
+    headers.set("Authorization", `Bearer ${params.legacyToken}`);
+  }
+  if (params?.username) {
+    headers.set("X-Username", params.username);
+  }
+
+  return apiRequest<SessionResponse>({
+    path: "/api/auth/session",
+    method: "GET",
+    headers,
+    retry: { maxAttempts: 2, initialDelayMs: 500 },
+    timeout: 10000,
+  });
+}
+
+export async function checkPassword(): Promise<PasswordStatusResponse> {
+  return apiRequest<PasswordStatusResponse>({
+    path: "/api/auth/password/check",
+    method: "GET",
+  });
+}
+
+export async function setPassword(params: {
+  password: string;
+}): Promise<PasswordSetResponse> {
+  return apiRequest<PasswordSetResponse, { password: string }>({
+    path: "/api/auth/password/set",
+    method: "POST",
+    body: { password: params.password },
+  });
+}
+
+export async function logoutAllDevices(): Promise<LogoutAllDevicesResponse> {
+  return apiRequest<LogoutAllDevicesResponse>({
+    path: "/api/auth/logout-all",
     method: "POST",
   });
 }

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { logoutAllDevices } from "@/api/auth";
 import { clearAllAppStates } from "@/stores/useAppStore";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import {
@@ -30,6 +31,7 @@ import type { ControlPanelsInitialData } from "@/apps/base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { ApiRequestError } from "@/api/core";
 import {
   FILE_SYNC_DOMAINS,
   type CloudSyncDomain,
@@ -445,37 +447,27 @@ export function useControlPanelsLogic({
         return;
       }
 
-      const response = await abortableFetch(getApiUrl("/api/auth/logout-all"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      const data = await logoutAllDevices();
+
+      toast.success("Logged Out", {
+        description: data.message || "Logged out from all devices",
       });
 
-      const data = await response.json();
+      // Immediately clear auth via store logout (bypass confirmation)
+      confirmLogout();
 
-      if (response.ok) {
-        toast.success("Logged Out", {
-          description: data.message || "Logged out from all devices",
-        });
-
-        // Immediately clear auth via store logout (bypass confirmation)
-        confirmLogout();
-
-        // No full page reload needed – UI will update via store reset
-      } else {
+      // No full page reload needed – UI will update via store reset
+    } catch (error) {
+      if (error instanceof ApiRequestError) {
         toast.error("Logout Failed", {
-          description: data.error || "Failed to logout from all devices",
+          description: error.message || "Failed to logout from all devices",
+        });
+      } else {
+        console.error("Error logging out all devices:", error);
+        toast.error("Network Error", {
+          description: "Failed to connect to server",
         });
       }
-    } catch (error) {
-      console.error("Error logging out all devices:", error);
-      toast.error("Network Error", {
-        description: "Failed to connect to server",
-      });
     } finally {
       setIsLoggingOutAllDevices(false);
     }

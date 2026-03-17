@@ -15,11 +15,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { X } from "@phosphor-icons/react";
+import { searchUsers as searchUsersApi } from "@/api/users";
 import { type User } from "@/types/chat";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { abortableFetch } from "@/utils/abortableFetch";
 import {
   ThemedTabsList,
   ThemedTabsTrigger,
@@ -80,14 +80,7 @@ export function CreateRoomDialog({
     const requestId = ++searchRequestIdRef.current;
     setIsSearching(true);
     try {
-      const response = await abortableFetch(
-        `/api/users?search=${encodeURIComponent(query)}`,
-        {
-          timeout: 10000,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-      const data = await response.json();
+      const data = await searchUsersApi(query);
 
       if (requestId !== searchRequestIdRef.current) {
         return;

@@ -29,7 +29,8 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { ApiRequestError } from "@/api/core";
+import { deleteRoomMessage } from "@/api/rooms";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText, type ChatMarkdownToken } from "@/lib/chatMarkdown";
@@ -1240,37 +1241,21 @@ function ChatMessagesContent({
     const serverMessageId = message.serverId || message.id; // prefer serverId when present
     if (!serverMessageId) return;
 
-    // Use DELETE method with proper authentication headers (matching deleteRoom pattern)
-    const url = `/api/rooms/${encodeURIComponent(roomId)}/messages/${encodeURIComponent(serverMessageId)}`;
-
     try {
-      const res = await abortableFetch(url, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        timeout: 10000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
-      if (res.ok) {
-        // Use the actual server message ID for local removal to match store expectations
-        onMessageDeleted?.(serverMessageId);
-        return;
-      }
-
-      // If the server says the message doesn't exist anymore, remove it locally anyway
-      if (res.status === 404 || res.status === 410) {
+      await deleteRoomMessage(roomId, serverMessageId);
+      // Use the actual server message ID for local removal to match store expectations
+      onMessageDeleted?.(serverMessageId);
+    } catch (err) {
+      if (
+        err instanceof ApiRequestError &&
+        (err.status === 404 || err.status === 410)
+      ) {
         console.warn(
-          `Delete message ${serverMessageId} returned ${res.status}; removing locally as orphan.`
+          `Delete message ${serverMessageId} returned ${err.status}; removing locally as orphan.`
         );
         onMessageDeleted?.(serverMessageId);
         return;
       }
-
-      const errorData = await res
-        .json()
-        .catch(() => ({ error: `HTTP error! status: ${res.status}` }));
-      console.error("Failed to delete message", errorData);
-    } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
         console.error("Delete message request timed out", {
           roomId,

@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import {
+  checkPassword as checkPasswordApi,
+  getSession as getSessionApi,
+  logoutUser,
+  registerUser,
+  setPassword as setPasswordApi,
+} from "@/api/auth";
+import {
   type ChatRoom,
   type ChatMessage,
   type AIChatMessage,
@@ -8,8 +15,6 @@ import {
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { ApiRequestError } from "@/api/core";
 import {
   type CreateRoomPayload,
@@ -327,25 +332,20 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              "/api/auth/password/check",
-              {
-                method: "GET",
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (response.ok) {
-              const data = await response.json();
-              set({ hasPassword: data.hasPassword });
-              return { ok: true };
-            } else {
-              set({ hasPassword: null });
-              return { ok: false, error: "Failed to check password status" };
-            }
+            const data = await checkPasswordApi();
+            set({ hasPassword: data.hasPassword });
+            return { ok: true };
           } catch (error) {
+            if (error instanceof ApiRequestError) {
+              if (error.status === 401) {
+                forceLogoutOnUnauthorized();
+              }
+              set({ hasPassword: null });
+              return {
+                ok: false,
+                error: error.message || "Failed to check password status",
+              };
+            }
             console.error(
               "[ChatsStore] Error checking password status:",
               error
@@ -365,25 +365,11 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              getApiUrl("/api/auth/password/set"),
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ password }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (!response.ok) {
-              const data = await response.json();
+            const data = await setPasswordApi({ password });
+            if (!data.success) {
               return {
                 ok: false,
-                error: data.error || "Failed to set password",
+                error: "Failed to set password",
               };
             }
 
@@ -391,6 +377,15 @@ export const useChatsStore = create<ChatsStoreState>()(
             set({ hasPassword: true });
             return { ok: true };
           } catch (error) {
+            if (error instanceof ApiRequestError) {
+              if (error.status === 401) {
+                forceLogoutOnUnauthorized();
+              }
+              return {
+                ok: false,
+                error: error.message || "Failed to set password",
+              };
+            }
             console.error("[ChatsStore] Error setting password:", error);
             return { ok: false, error: "Network error while setting password" };
           }
@@ -628,13 +623,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           if (currentUsername) {
             try {
-              await abortableFetch(getApiUrl("/api/auth/logout"), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              });
+              await logoutUser();
             } catch (err) {
               console.warn(
                 "[ChatsStore] Failed to notify server during logout:",
@@ -1123,29 +1112,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              getApiUrl("/api/auth/register"),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: trimmedUsername, password }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
-              return {
-                ok: false,
-                error: errorData.error || "Failed to create user",
-              };
-            }
-
-            const data = await response.json();
+            const data = await registerUser({
+              username: trimmedUsername,
+              password,
+            });
             if (data.user) {
               set({ username: data.user.username, isAuthenticated: true });
 
@@ -1160,6 +1130,9 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             return { ok: false, error: "Invalid response format" };
           } catch (error) {
+            if (error instanceof ApiRequestError) {
+              return { ok: false, error: error.message || "Failed to create user" };
+            }
             console.error("[ChatsStore] Error creating user:", error);
             return { ok: false, error: "Network error. Please try again." };
           }
@@ -1418,33 +1391,17 @@ async function restoreSessionFromCookie(
   legacyToken?: string | null
 ) {
   try {
-    const headers: Record<string, string> = {};
     if (legacyToken) {
       console.log(
         "[ChatsStore] Migrating legacy token to httpOnly cookie for",
         expectedUsername
       );
-      headers["Authorization"] = `Bearer ${legacyToken}`;
-      headers["X-Username"] = expectedUsername;
     }
 
-    const response = await abortableFetch("/api/auth/session", {
-      method: "GET",
-      headers,
-      timeout: 10000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 2, initialDelayMs: 500 },
+    const data = await getSessionApi({
+      legacyToken,
+      username: legacyToken ? expectedUsername : undefined,
     });
-
-    if (!response.ok) {
-      console.log("[ChatsStore] Session restore failed:", response.status);
-      if (response.status === 401 || response.status === 403) {
-        forceLogoutOnUnauthorized();
-      }
-      return;
-    }
-
-    const data = await response.json();
     if (data.authenticated && data.username) {
       console.log(
         "[ChatsStore] Session restored for",
@@ -1462,6 +1419,13 @@ async function restoreSessionFromCookie(
       forceLogoutOnUnauthorized();
     }
   } catch (err) {
+    if (err instanceof ApiRequestError) {
+      console.log("[ChatsStore] Session restore failed:", err.status);
+      if (err.status === 401 || err.status === 403) {
+        forceLogoutOnUnauthorized();
+        return;
+      }
+    }
     // Network error — keep state, don't force-logout.
     // The user may come back online and the cookie will still be valid.
     console.warn("[ChatsStore] Session restore request failed:", err);
