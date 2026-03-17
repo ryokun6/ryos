@@ -50,6 +50,11 @@ Turn the audit into a deletion-first simplification program that:
   - remaining song, typing, link-preview/share-link, and sync transport clients now flow through `src/api/*`
   - raw internal fetches were reduced to framework-owned transport URLs (`useChat` / AI SDK) rather than ad hoc request code
 
+- Wave 8 is partially complete:
+  - sync song/video/sticky/calendar/contact serializers and apply/merge logic now live in `src/sync/domains/*.ts`
+  - `src/sync/domains.ts` is smaller and now delegates several domain concerns
+  - settings/files/blob-specific logic still remain in the main module and need further extraction
+
 ### Partially complete
 
 - Wave 2 is only partially complete:
