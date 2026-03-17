@@ -255,8 +255,8 @@ export function useLyrics({
         if (effectSongId !== currentSongIdRef.current) return;
         if (err instanceof ApiRequestError && err.status === 404) {
           setOriginalLines([]);
-          setCurrentLine(null);
-          setError(null);
+          setCurrentLine(-1);
+          setError(undefined);
           setFuriganaInfo(undefined);
           setSoramimiInfo(undefined);
           return;
