@@ -98,16 +98,23 @@ module.exports = {
             secondary: "var(--os-color-text-secondary)",
             disabled: "var(--os-color-text-disabled)",
           },
-        },
-        // Keep system7 for backwards compatibility temporarily
-        system7: {
-          "window-bg": "#FFFFFF",
-          "menubar-bg": "#FFFFFF",
-          "title-bar": "#000000",
-          "title-text": "#FFFFFF",
-          border: "#000000",
-          "button-highlight": "#FFFFFF",
-          "button-shadow": "#808080",
+          panel: {
+            bg: "var(--os-color-panel-bg)",
+          },
+          separator: "var(--os-color-separator)",
+          input: {
+            bg: "var(--os-color-input-bg)",
+            border: "var(--os-color-input-border)",
+            focusBorder: "var(--os-color-input-focus-border)",
+            focusRing: "var(--os-color-input-focus-ring)",
+          },
+          sidebar: {
+            border: "var(--os-color-sidebar-border)",
+          },
+          switch: {
+            track: "var(--os-color-switch-track)",
+            trackChecked: "var(--os-color-switch-track-checked)",
+          },
         },
         chart: {
           1: "hsl(var(--chart-1))",
@@ -134,6 +141,21 @@ module.exports = {
       fontFamily: {
         "os-ui": "var(--os-font-ui)",
         "os-mono": "var(--os-font-mono)",
+      },
+      zIndex: {
+        base: "var(--z-base)",
+        sticky: "var(--z-sticky)",
+        dialog: "var(--z-dialog)",
+        screensaver: "var(--z-screensaver)",
+        fullscreen: "var(--z-fullscreen)",
+        "expose-backdrop": "var(--z-expose-backdrop)",
+        expose: "var(--z-expose)",
+        menubar: "var(--z-menubar)",
+        "menubar-expose": "var(--z-menubar-expose)",
+        dropdown: "var(--z-dropdown)",
+        submenu: "var(--z-submenu)",
+        "spotlight-backdrop": "var(--z-spotlight-backdrop)",
+        spotlight: "var(--z-spotlight)",
       },
       backgroundImage: {
         "os-titlebar-pattern": "var(--os-color-titlebar-pattern, none)",

@@ -755,6 +755,16 @@ async function applySettingsSnapshot(
     remoteSectionUpdatedAt
   );
 
+  if (sectionsToApply.length > 0) {
+    console.log(
+      `[CloudSync] Settings apply: sections to apply: [${sectionsToApply.join(", ")}]`
+    );
+  } else {
+    console.log(
+      "[CloudSync] Settings apply: no sections to apply (all local timestamps >= remote)"
+    );
+  }
+
   const legacyCustomWallpapers = normalizedData.customWallpapers || [];
   const hasDedicatedCustomWallpaperSync = Boolean(
     useCloudSyncStore.getState().remoteMetadata["custom-wallpapers"]?.updatedAt

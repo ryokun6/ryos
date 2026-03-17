@@ -72,7 +72,7 @@ describe("logical cloud sync domain API", () => {
     ]);
   });
 
-  test("PUT /api/sync/domains/settings stores grouped settings writes and GET returns grouped parts", async () => {
+  test("PUT /api/sync/domains/settings stores settings writes without custom wallpapers", async () => {
     const authToken = await getAuthToken();
 
     const putRes = await fetchWithAuth(
@@ -94,14 +94,6 @@ describe("logical cloud sync domain API", () => {
                 language: "en",
               },
             },
-            "custom-wallpapers": {
-              domain: "custom-wallpapers",
-              updatedAt: "2026-03-15T12:05:00.000Z",
-              version: 1,
-              syncVersion: makeSyncVersion("wallpaper-client", 1),
-              totalSize: 0,
-              items: {},
-            },
           },
         }),
       }
@@ -111,7 +103,7 @@ describe("logical cloud sync domain API", () => {
     const putJson = await putRes.json();
     expect(putJson.ok).toBe(true);
     expect(putJson.domain).toBe("settings");
-    expect(putJson.metadata.updatedAt).toBe("2026-03-15T12:05:00.000Z");
+    expect(putJson.metadata.updatedAt).toBe("2026-03-15T12:00:00.000Z");
 
     const getRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/domains/settings`,
@@ -123,15 +115,11 @@ describe("logical cloud sync domain API", () => {
     const getJson = await getRes.json();
     expect(getJson.ok).toBe(true);
     expect(getJson.domain).toBe("settings");
-    expect(Object.keys(getJson.parts).sort()).toEqual([
-      "custom-wallpapers",
-      "settings",
-    ]);
+    expect(Object.keys(getJson.parts)).toEqual(["settings"]);
     expect(getJson.parts.settings.data).toEqual({
       theme: "macosx",
       language: "en",
     });
-    expect(getJson.parts["custom-wallpapers"].mode).toBe("individual");
   });
 
   test("PUT /api/sync/domains/contacts rejects malformed contacts snapshots", async () => {
@@ -165,7 +153,7 @@ describe("logical cloud sync domain API", () => {
     expect((json.error || "").toLowerCase()).toContain("contacts");
   });
 
-  test("PUT /api/sync/domains/files preserves tombstones through grouped files writes", async () => {
+  test("PUT /api/sync/domains/files stores files metadata and custom wallpapers together", async () => {
     const authToken = await getAuthToken();
 
     const putRes = await fetchWithAuth(
@@ -190,11 +178,23 @@ describe("logical cloud sync domain API", () => {
                 },
               },
             },
+            "custom-wallpapers": {
+              domain: "custom-wallpapers",
+              updatedAt: "2026-03-18T11:05:00.000Z",
+              version: 1,
+              syncVersion: makeSyncVersion("wallpaper-client", 1),
+              totalSize: 0,
+              items: {},
+            },
           },
         }),
       }
     );
     expect(putRes.status).toBe(200);
+    const putJson = await putRes.json();
+    expect(putJson.ok).toBe(true);
+    expect(putJson.domain).toBe("files");
+    expect(putJson.metadata.updatedAt).toBe("2026-03-18T11:05:00.000Z");
 
     const getRes = await fetchWithAuth(
       `${BASE_URL}/api/sync/domains/files`,
@@ -206,9 +206,10 @@ describe("logical cloud sync domain API", () => {
     expect(getJson.parts["files-metadata"].data.deletedPaths).toEqual({
       "/Photos/cat.png": "2026-03-18T10:59:00.000Z",
     });
+    expect(getJson.parts["custom-wallpapers"].mode).toBe("individual");
   });
 
-  test("POST /api/sync/domains/settings/attachments/prepare validates partDomain ownership", async () => {
+  test("POST /api/sync/domains/files/attachments/prepare accepts custom wallpapers only under files", async () => {
     const authToken = await getAuthToken();
 
     const invalidRes = await fetchWithAuth(
@@ -228,7 +229,7 @@ describe("logical cloud sync domain API", () => {
     expect(invalidRes.status).toBe(400);
 
     const validRes = await fetchWithAuth(
-      `${BASE_URL}/api/sync/domains/settings/attachments/prepare`,
+      `${BASE_URL}/api/sync/domains/files/attachments/prepare`,
       TEST_USERNAME,
       authToken,
       {

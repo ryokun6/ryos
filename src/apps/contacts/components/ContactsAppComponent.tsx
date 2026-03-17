@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { ContactsMenuBar } from "./ContactsMenuBar";
 import { UserPicturePicker } from "./UserPicturePicker";
 import { useContactsLogic } from "../hooks/useContactsLogic";
@@ -54,9 +55,7 @@ function ContactListItem({
         "w-full flex items-center gap-2 pl-2 pr-3 py-1.5 text-left",
         isSelected ? "" : "hover:bg-black/5 transition-colors"
       )}
-      style={{
-        ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)", textShadow: "var(--os-color-selection-text-shadow)" } : {}),
-      }}
+      data-selected={isSelected ? "true" : undefined}
     >
       {contact.picture ? (
         <img
@@ -101,9 +100,7 @@ function GroupListItem({
         "w-full flex items-center gap-2 px-3 py-1.5 text-left text-[11px]",
         isSelected ? "" : "hover:bg-black/5 transition-colors"
       )}
-      style={{
-        ...(isSelected ? { background: "var(--os-color-selection-bg)", color: "var(--os-color-selection-text)", textShadow: "var(--os-color-selection-text-shadow)" } : {}),
-      }}
+      data-selected={isSelected ? "true" : undefined}
     >
       <span className="truncate">{label}</span>
     </button>
@@ -145,37 +142,7 @@ function PanelHeader({
   );
 }
 
-function Panel({
-  className,
-  children,
-  bordered = true,
-  style,
-}: {
-  className?: string;
-  children: ReactNode;
-  bordered?: boolean;
-  style?: CSSProperties;
-}) {
-  return (
-    <div
-      className={cn(
-        "overflow-hidden calendar-sidebar",
-        bordered ? "bg-white/90" : "bg-white",
-        className
-      )}
-      style={{
-        ...(bordered ? {
-          border: "1px solid rgba(0, 0, 0, 0.55)",
-          boxShadow:
-            "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-        } : {}),
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+const Panel = AppSidebarPanel;
 
 function CardRow({ label, children }: { label: string; children: ReactNode }) {
   return (

@@ -1464,7 +1464,15 @@ export function useAutoCloudSync() {
           lastLocalChangeAtRef.current[d] = persisted;
         }
       } else {
-        lastLocalChangeAtRef.current[d] = getLatestLocalChangeAt(d);
+        const domainStatus = useCloudSyncStore.getState().domainStatus[d];
+        if (!domainStatus.lastUploadedAt && !domainStatus.lastAppliedRemoteAt) {
+          // Domain has never been synced. Ignore persisted local change
+          // timestamps — they may originate from another tab sharing
+          // localStorage, and would otherwise block the first remote download.
+          lastLocalChangeAtRef.current[d] = null;
+        } else {
+          lastLocalChangeAtRef.current[d] = getLatestLocalChangeAt(d);
+        }
       }
     }
 

@@ -8,6 +8,7 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 
@@ -36,7 +37,7 @@ export function ContactsMenuBar({
 }: ContactsMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

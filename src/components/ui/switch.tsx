@@ -27,7 +27,9 @@ const Switch = React.forwardRef<
   const switchStyle: React.CSSProperties | undefined = isMacOSX
     ? undefined
     : {
-        backgroundColor: isChecked ? "#111827" : "#9ca3af", // gray-900 : gray-400
+        backgroundColor: isChecked
+          ? "var(--os-color-switch-track-checked)"
+          : "var(--os-color-switch-track)",
         borderRadius: "9999px",
         border: "none",
         boxShadow: "none",

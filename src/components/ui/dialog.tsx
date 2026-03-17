@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { getTheme } from "@/themes";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 
 const Dialog = ({
@@ -125,7 +124,7 @@ const DialogContent = React.forwardRef<
                   backgroundImage: "var(--os-pinstripe-window)",
                 }
               : isSystem7Theme
-              ? { backgroundColor: "#E3E3E3" }
+              ? { backgroundColor: "var(--os-color-panel-bg)" }
               : undefined
           }
         >
@@ -164,7 +163,6 @@ const DialogHeader = ({
   }
 
   if (isMacOSTheme) {
-    const theme = getTheme(currentTheme);
     return (
       <div
         className={cn(
@@ -174,11 +172,7 @@ const DialogHeader = ({
         style={{
           borderRadius: "8px 8px 0px 0px",
           backgroundImage: "var(--os-pinstripe-titlebar)",
-          borderBottom: `1px solid ${
-            theme.colors.titleBar.borderBottom ||
-            theme.colors.titleBar.border ||
-            "rgba(0, 0, 0, 0.1)"
-          }`,
+          borderBottom: "1px solid var(--os-color-titlebar-border, rgba(0, 0, 0, 0.1))",
         }}
         {...props}
       >
