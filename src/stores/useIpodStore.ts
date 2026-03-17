@@ -11,6 +11,7 @@ import {
 } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
+import { parseMediaTitle } from "@/api/media";
 import { getApiUrl } from "@/utils/platform";
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
@@ -1154,32 +1155,13 @@ export const useIpodStore = create<IpodState>()(
         if (!trackInfo.lyricsSource) {
           console.log(`[iPod Store] No Kugou match for ${videoId}, falling back to AI parse`);
           try {
-            // Call /api/parse-title
-            const parseResponse = await abortableFetch(
-              getApiUrl("/api/parse-title"),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  title: rawTitle,
-                  author_name: authorName,
-                }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
-
-            if (parseResponse.ok) {
-              const parsedData = await parseResponse.json();
-              trackInfo.title = parsedData.title || rawTitle;
-              trackInfo.artist = parsedData.artist;
-              trackInfo.album = parsedData.album;
-            } else {
-              console.warn(
-                `Failed to parse title with AI (status: ${parseResponse.status}), using raw title from oEmbed/default.`
-              );
-            }
+            const parsedData = await parseMediaTitle({
+              title: rawTitle,
+              author_name: authorName,
+            });
+            trackInfo.title = parsedData.title || rawTitle;
+            trackInfo.artist = parsedData.artist || undefined;
+            trackInfo.album = parsedData.album || undefined;
           } catch (error) {
             console.error("Error calling /api/parse-title:", error);
           }

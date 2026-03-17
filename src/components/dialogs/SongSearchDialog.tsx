@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { ApiRequestError } from "@/api/core";
+import { searchYouTube } from "@/api/media";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 
 // Check if input looks like a YouTube URL
@@ -109,23 +109,10 @@ export function SongSearchDialog({
     setSelectedIndex(-1);
 
     try {
-      const response = await abortableFetch(getApiUrl("/api/youtube-search"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.trim(), maxResults: 15 }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      const data = await searchYouTube({
+        query: query.trim(),
+        maxResults: 15,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        let errorMsg = errorData.error || `Failed to search (status ${response.status})`;
-        if (errorData.hint) errorMsg += ` - ${errorData.hint}`;
-        throw new Error(response.status === 404 ? t("apps.ipod.dialogs.songSearchNoResults") : errorMsg);
-      }
-
-      const data = await response.json();
       if (data.results && Array.isArray(data.results)) {
         setResults(data.results);
         if (data.results.length === 0) setError(t("apps.ipod.dialogs.songSearchNoResults"));
@@ -134,7 +121,18 @@ export function SongSearchDialog({
       }
     } catch (err) {
       console.error("Song search error:", err);
-      setError(err instanceof Error ? err.message : t("apps.ipod.dialogs.songSearchError"));
+      if (err instanceof ApiRequestError) {
+        let errorMsg = err.message || `Failed to search (status ${err.status})`;
+        const hint = typeof err.payload?.hint === "string" ? err.payload.hint : null;
+        if (hint) errorMsg += ` - ${hint}`;
+        setError(
+          err.status === 404
+            ? t("apps.ipod.dialogs.songSearchNoResults")
+            : errorMsg
+        );
+      } else {
+        setError(err instanceof Error ? err.message : t("apps.ipod.dialogs.songSearchError"));
+      }
     } finally {
       setIsSearching(false);
     }

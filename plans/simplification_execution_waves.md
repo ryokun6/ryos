@@ -43,6 +43,11 @@ Turn the audit into a deletion-first simplification program that:
   - `useFilesStore` and `useDisplaySettingsStore` now use the shared helper path
   - direct runtime IndexedDB CRUD flows were reduced to the shared module plus backup/migration utilities
 
+- Wave 7 is partially complete:
+  - auth, applet sharing, media, presence, AirDrop, and sync status/backup client calls now flow through `src/api/*`
+  - `src/api/core.ts` now supports non-JSON request bodies for shared API wrappers
+  - remaining direct internal calls still exist in some song, typing, shared-url/link-preview, and sync transport paths
+
 ### Partially complete
 
 - Wave 2 is only partially complete:

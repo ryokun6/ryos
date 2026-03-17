@@ -1,6 +1,5 @@
-import { abortableFetch } from "@/utils/abortableFetch";
+import { fetchConsolidatedSyncMetadata } from "@/api/sync";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
-import { getApiUrl } from "@/utils/platform";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
@@ -1326,31 +1325,19 @@ function createWriteSyncVersion(
 }
 
 export async function fetchPhysicalCloudSyncMetadata(): Promise<CloudSyncMetadataMap> {
-  const consolidatedRes = await abortableFetch(getApiUrl("/api/sync/domains"), {
-    method: "GET",
-    headers: authHeaders(),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (consolidatedRes.ok) {
-    const consolidatedData = (await consolidatedRes.json()) as {
-      physicalMetadata?: Partial<CloudSyncMetadataMap>;
-    };
-    if (consolidatedData.physicalMetadata) {
-      const merged = createEmptyCloudSyncMetadataMap();
-      for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
-        const entry =
-          consolidatedData.physicalMetadata[
-            domain as keyof typeof consolidatedData.physicalMetadata
-          ];
-        if (entry) {
-          merged[domain] = entry as CloudSyncDomainMetadata;
-        }
+  const consolidatedData = await fetchConsolidatedSyncMetadata(authHeaders());
+  if (consolidatedData.physicalMetadata) {
+    const merged = createEmptyCloudSyncMetadataMap();
+    for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
+      const entry =
+        consolidatedData.physicalMetadata[
+          domain as keyof typeof consolidatedData.physicalMetadata
+        ];
+      if (entry) {
+        merged[domain] = entry as CloudSyncDomainMetadata;
       }
-      return merged;
     }
+    return merged;
   }
   throw new Error("Failed to fetch consolidated sync metadata");
 }

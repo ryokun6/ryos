@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useAppletActions, type Applet } from "../utils/appletActions";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { listSharedApplets } from "@/api/applets";
 
 export function useAppletUpdates() {
   const [applets, setApplets] = useState<Applet[]>([]);
@@ -16,14 +15,7 @@ export function useAppletUpdates() {
     }
     setIsLoading(true);
     try {
-      const response = await abortableFetch(
-        getApiUrl("/api/share-applet?list=true"),
-        {
-          timeout: 15000,
-          retry: { maxAttempts: 2, initialDelayMs: 500 },
-        }
-      );
-      const data = await response.json();
+      const data = await listSharedApplets();
       // Sort by createdAt descending (latest first)
       const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
         return (b.createdAt || 0) - (a.createdAt || 0);

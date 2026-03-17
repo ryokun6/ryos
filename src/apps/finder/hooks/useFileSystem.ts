@@ -19,7 +19,7 @@ import {
   useVideoStoreShallow,
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { getSharedApplet } from "@/api/applets";
 import { dbOperations, getStoreForFile } from "@/utils/indexedDBOperations";
 import {
   emitCloudSyncDomainChange,
@@ -425,15 +425,7 @@ export function useFileSystem(
       }
 
       try {
-        const response = await abortableFetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`,
-          {
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-
-        const data = await response.json();
+        const data = await getSharedApplet(shareId);
         const content =
           typeof data.content === "string" ? data.content : "";
 

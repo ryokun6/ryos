@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  listGlobalPresenceUsers,
+  sendGlobalPresenceHeartbeat,
+} from "@/api/presence";
+import {
   subscribePusherChannel,
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { useChatsStore } from "@/stores/useChatsStore";
 
 const GLOBAL_PRESENCE_CHANNEL = "presence-global";
@@ -48,35 +50,21 @@ export function useGlobalPresence(): string[] {
 
     // Send heartbeat
     const sendHeartbeat = () => {
-      abortableFetch(getApiUrl("/api/presence/heartbeat"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        timeout: 10000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 500 },
-      }).catch(() => {});
+      sendGlobalPresenceHeartbeat().catch(() => {});
     };
 
     // Initial heartbeat + seed
     sendHeartbeat();
-    abortableFetch(getApiUrl("/api/presence/heartbeat"), {
-      method: "GET",
-      timeout: 10000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 500 },
-    })
-      .then(async (res) => {
-        if (res.ok) {
-          const data = await res.json();
-          const users: string[] = data.users || [];
-          const now = Date.now();
-          const map: Record<string, PresenceEntry> = {};
-          for (const u of users) {
-            map[u] = { timestamp: now };
-          }
-          presenceMapRef.current = map;
-          deriveOnlineList();
+    listGlobalPresenceUsers()
+      .then((data) => {
+        const users: string[] = data.users || [];
+        const now = Date.now();
+        const map: Record<string, PresenceEntry> = {};
+        for (const u of users) {
+          map[u] = { timestamp: now };
         }
+        presenceMapRef.current = map;
+        deriveOnlineList();
       })
       .catch(() => {});
 
