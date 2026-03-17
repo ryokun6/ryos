@@ -109,3 +109,16 @@ export async function deleteRoomMessage(
     method: "DELETE",
   });
 }
+
+export async function emitTypingIndicator(
+  roomId: string,
+  payload: { isTyping?: boolean } = {}
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }, { isTyping?: boolean }>({
+    path: `/api/rooms/${encodeURIComponent(roomId)}/typing`,
+    method: "POST",
+    body: payload,
+    timeout: 5000,
+    retry: { maxAttempts: 1, initialDelayMs: 100 },
+  });
+}

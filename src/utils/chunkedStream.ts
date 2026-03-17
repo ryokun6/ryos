@@ -3,8 +3,7 @@
  * Server processes lyrics line-by-line and streams updates in real-time
  */
 
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { postSongActionRaw } from "@/api/songs";
 
 // =============================================================================
 // Constants
@@ -118,19 +117,14 @@ export async function processTranslationSSE(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-
-      const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
+      const response = await postSongActionRaw(songId, {
           action: "translate-stream",
           language,
           force,
-        }),
+        },
+        {
         signal: controller.signal,
         timeout: 300000,
-        throwOnHttpError: false,
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
@@ -352,18 +346,13 @@ export async function processFuriganaSSE(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const furiganaHeaders: Record<string, string> = { "Content-Type": "application/json" };
-
-      const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
-        method: "POST",
-        headers: furiganaHeaders,
-        body: JSON.stringify({
+      const response = await postSongActionRaw(songId, {
           action: "furigana-stream",
           force,
-        }),
+        },
+        {
         signal: controller.signal,
         timeout: 300000,
-        throwOnHttpError: false,
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
@@ -616,15 +605,9 @@ export async function processSoramimiSSE(
         requestBody.furigana = furigana;
       }
       
-      const soramimiHeaders: Record<string, string> = { "Content-Type": "application/json" };
-
-      const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
-        method: "POST",
-        headers: soramimiHeaders,
-        body: JSON.stringify(requestBody),
+      const response = await postSongActionRaw(songId, requestBody, {
         signal: controller.signal,
         timeout: 300000,
-        throwOnHttpError: false,
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, mock, test } from "bun:test";
 import {
   fetchBlobDomainPayload,
   requestBlobUploadInstruction,
-} from "../src/utils/syncTransportClient";
+} from "../src/sync/transport";
 
 const originalFetch = globalThis.fetch;
 
@@ -13,12 +13,13 @@ afterEach(() => {
 });
 
 describe("sync transport client", () => {
-  test("fetchBlobDomainPayload routes custom wallpapers through logical files", async () => {
+  test("fetchBlobDomainPayload routes custom wallpapers through logical settings", async () => {
     const fetchMock = mock(
       async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-        expect(String(input)).toBe("/api/sync/domains/files");
+        const headers = new Headers(init?.headers);
+        expect(String(input)).toBe("/api/sync/domains/settings");
         expect(init?.method).toBe("GET");
-        expect((init?.headers as Record<string, string>)["X-Sync-Session-Id"]).toBeString();
+        expect(headers.get("X-Sync-Session-Id")).toBeString();
 
         return new Response(
           JSON.stringify({
@@ -52,15 +53,14 @@ describe("sync transport client", () => {
     expect(payload?.mode).toBe("individual");
   });
 
-  test("requestBlobUploadInstruction posts custom wallpapers to files attachments endpoint", async () => {
+  test("requestBlobUploadInstruction posts custom wallpapers to settings attachments endpoint", async () => {
     const fetchMock = mock(
       async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-        expect(String(input)).toBe("/api/sync/domains/files/attachments/prepare");
+        const headers = new Headers(init?.headers);
+        expect(String(input)).toBe("/api/sync/domains/settings/attachments/prepare");
         expect(init?.method).toBe("POST");
-        expect((init?.headers as Record<string, string>)["Content-Type"]).toBe(
-          "application/json"
-        );
-        expect((init?.headers as Record<string, string>)["X-Sync-Session-Id"]).toBeString();
+        expect(headers.get("Content-Type")).toBe("application/json");
+        expect(headers.get("X-Sync-Session-Id")).toBeString();
         expect(init?.body).toBe(
           JSON.stringify({
             partDomain: "custom-wallpapers",

@@ -9,13 +9,12 @@ import {
 import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "@/types/chat";
+import { emitTypingIndicator } from "@/api/rooms";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -424,14 +423,7 @@ export function useChatRoom(
       if (now - lastTypingEmitRef.current < TYPING_THROTTLE_MS) return;
       lastTypingEmitRef.current = now;
 
-      abortableFetch(getApiUrl(`/api/rooms/${roomId}/typing`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isTyping: true }),
-        timeout: 5000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 100 },
-      }).catch(() => {});
+      emitTypingIndicator(roomId, { isTyping: true }).catch(() => {});
     },
     [username, isAuthenticated]
   );

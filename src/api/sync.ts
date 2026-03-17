@@ -1,5 +1,9 @@
 import { apiRequest } from "@/api/core";
 import { getApiUrl } from "@/utils/platform";
+import type {
+  BlobSyncDomain,
+} from "@/utils/cloudSyncShared";
+import type { LogicalCloudSyncDomain } from "@/utils/syncLogicalDomains";
 import type { CloudSyncMetadataMap } from "@/utils/cloudSyncShared";
 import type { StorageUploadInstruction } from "@/utils/storageUpload";
 
@@ -125,6 +129,52 @@ export async function fetchConsolidatedSyncMetadata(
     path: "/api/sync/domains",
     method: "GET",
     headers,
+    timeout: 15000,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
+}
+
+export async function uploadLogicalSyncDomainPayload<TResponse = unknown>(
+  domain: LogicalCloudSyncDomain,
+  writes: Record<string, unknown>,
+  headers?: HeadersInit
+): Promise<TResponse> {
+  return apiRequest<TResponse, { writes: Record<string, unknown> }>({
+    path: `/api/sync/domains/${encodeURIComponent(domain)}`,
+    method: "PUT",
+    headers,
+    body: { writes },
+    timeout: 15000,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
+}
+
+export async function downloadLogicalSyncDomainPayload<TResponse = unknown>(
+  domain: LogicalCloudSyncDomain,
+  headers?: HeadersInit
+): Promise<TResponse> {
+  return apiRequest<TResponse>({
+    path: `/api/sync/domains/${encodeURIComponent(domain)}`,
+    method: "GET",
+    headers,
+    timeout: 15000,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
+}
+
+export async function prepareLogicalSyncAttachmentUpload(
+  logicalDomain: LogicalCloudSyncDomain,
+  payload: {
+    partDomain: BlobSyncDomain;
+    itemKey?: string;
+  },
+  headers?: HeadersInit
+): Promise<StorageUploadInstruction> {
+  return apiRequest<StorageUploadInstruction, typeof payload>({
+    path: `/api/sync/domains/${encodeURIComponent(logicalDomain)}/attachments/prepare`,
+    method: "POST",
+    headers,
+    body: payload,
     timeout: 15000,
     retry: { maxAttempts: 1, initialDelayMs: 250 },
   });

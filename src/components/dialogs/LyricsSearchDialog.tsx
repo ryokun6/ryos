@@ -10,11 +10,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { searchSongLyrics } from "@/api/songs";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { getApiUrl } from "@/utils/platform";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 export interface LyricsSearchResult {
   title: string;
@@ -89,30 +88,9 @@ export function LyricsSearchDialog({
     setSelectedIndex(-1);
 
     try {
-      const response = await abortableFetch(
-        getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "search-lyrics",
-            query: query.trim(),
-          }),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          response.status === 404
-            ? t("apps.ipod.dialogs.lyricsSearchNoResults")
-            : `Failed to search (status ${response.status})`
-        );
-      }
-
-      const data = await response.json();
+      const data = await searchSongLyrics<{
+        results?: LyricsSearchResult[];
+      }>(trackId, query.trim());
       if (data.results && Array.isArray(data.results)) {
         setResults(data.results);
         if (data.results.length === 0) {

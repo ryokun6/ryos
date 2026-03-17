@@ -1,5 +1,8 @@
-import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
+import { ApiRequestError } from "@/api/core";
+import {
+  downloadLogicalSyncDomainPayload,
+  prepareLogicalSyncAttachmentUpload,
+} from "@/api/sync";
 import { getSyncSessionId } from "@/utils/syncSession";
 import {
   getLogicalCloudSyncDomainForPhysical,
@@ -27,36 +30,19 @@ interface LogicalDomainResponse {
   parts?: Partial<Record<CloudSyncDomain, DomainPayload>>;
 }
 
-function getLogicalSyncDomainUrl(domain: LogicalCloudSyncDomain): string {
-  return getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`);
-}
-
 async function fetchLogicalDomainPayload(
   domain: LogicalCloudSyncDomain
 ): Promise<LogicalDomainResponse | null> {
-  const response = await abortableFetch(getLogicalSyncDomainUrl(domain), {
-    method: "GET",
-    headers: {
+  try {
+    return await downloadLogicalSyncDomainPayload<LogicalDomainResponse>(domain, {
       "X-Sync-Session-Id": getSyncSessionId(),
-    },
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (response.status === 404) {
-    return null;
+    });
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) {
+      return null;
+    }
+    throw error;
   }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to download logical sync domain ${domain}`
-    );
-  }
-
-  return (await response.json()) as LogicalDomainResponse;
 }
 
 function extractPhysicalPartPayload(
@@ -102,32 +88,14 @@ export async function requestBlobUploadInstruction(
   itemKey?: string
 ): Promise<StorageUploadInstruction> {
   const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
-  const response = await abortableFetch(
-    getApiUrl(
-      `/api/sync/domains/${encodeURIComponent(logicalDomain)}/attachments/prepare`
-    ),
+  return prepareLogicalSyncAttachmentUpload(
+    logicalDomain,
     {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Sync-Session-Id": getSyncSessionId(),
-      },
-      body: JSON.stringify({
-        partDomain: domain,
-        ...(itemKey ? { itemKey } : {}),
-      }),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
+      partDomain: domain,
+      ...(itemKey ? { itemKey } : {}),
+    },
+    {
+      "X-Sync-Session-Id": getSyncSessionId(),
     }
   );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to get sync upload token"
-    );
-  }
-
-  return (await response.json()) as StorageUploadInstruction;
 }

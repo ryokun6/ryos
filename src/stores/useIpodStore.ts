@@ -12,7 +12,13 @@ import {
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { parseMediaTitle } from "@/api/media";
-import { getApiUrl } from "@/utils/platform";
+import {
+  clearSongCachedData,
+  fetchSongLyrics,
+  listSongs,
+  updateSongById,
+  type SongLyricsSource,
+} from "@/api/songs";
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import i18n from "@/lib/i18n";
@@ -394,40 +400,11 @@ async function saveLyricOffsetToServer(
   console.log(`[iPod Store] Saving lyric offset for ${trackId}: ${lyricOffset}ms...`);
   
   try {
-    const response = await abortableFetch(
-      getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lyricOffset,
-        }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      }
+    const data = await updateSongById<{ lyricOffset: number }>(
+      trackId,
+      { lyricOffset },
+      { username, isAuthenticated }
     );
-
-    if (response.status === 401) {
-      console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyric offset`);
-      return false;
-    }
-
-    if (response.status === 403) {
-      // Permission denied - song is owned by another user
-      console.log(`[iPod Store] Cannot save lyric offset for ${trackId} - song owned by another user`);
-      return false;
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.warn(`[iPod Store] Failed to save lyric offset for ${trackId}: ${response.status} - ${errorText}`);
-      return false;
-    }
-
-    const data = await response.json();
     if (data.success) {
       console.log(`[iPod Store] ✓ Saved lyric offset for ${trackId}: ${lyricOffset}ms (by ${data.createdBy || username})`);
       return true;
@@ -436,6 +413,24 @@ async function saveLyricOffsetToServer(
       return false;
     }
   } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      (error as { status: number }).status === 401
+    ) {
+      console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyric offset`);
+      return false;
+    }
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      (error as { status: number }).status === 403
+    ) {
+      console.log(`[iPod Store] Cannot save lyric offset for ${trackId} - song owned by another user`);
+      return false;
+    }
     console.error(`[iPod Store] Error saving lyric offset for ${trackId}:`, error);
     return false;
   }
@@ -508,52 +503,53 @@ async function saveLyricsSourceToServer(
   }
 
   try {
-    const response = await abortableFetch(
-      getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`),
+    const data = await updateSongById<
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lyricsSource: lyricsSource || undefined,
-          // Update song metadata from lyricsSource (KuGou has more accurate metadata)
-          ...(lyricsSource && {
-            title: lyricsSource.title,
-            artist: lyricsSource.artist,
-            album: lyricsSource.album,
-          }),
-          // Clear translations, furigana, and soramimi since lyrics changed
-          clearTranslations: true,
-          clearFurigana: true,
-          clearSoramimi: true,
-          clearLyrics: true,
-        }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
+        lyricsSource?: SongLyricsSource;
+        title?: string;
+        artist?: string;
+        album?: string;
+        clearTranslations: true;
+        clearFurigana: true;
+        clearSoramimi: true;
+        clearLyrics: true;
       }
+    >(
+      trackId,
+      {
+        lyricsSource: lyricsSource || undefined,
+        ...(lyricsSource && {
+          title: lyricsSource.title,
+          artist: lyricsSource.artist,
+          album: lyricsSource.album,
+        }),
+        clearTranslations: true,
+        clearFurigana: true,
+        clearSoramimi: true,
+        clearLyrics: true,
+      },
+      { username, isAuthenticated }
     );
-
-    if (response.status === 401) {
+    console.log(`[iPod Store] Saved lyrics source for ${trackId}, cleared translations/furigana (by ${data.createdBy || username})`);
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      (error as { status: number }).status === 401
+    ) {
       console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyrics source`);
       return;
     }
-
-    if (response.status === 403) {
-      // Permission denied - song is owned by another user
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      (error as { status: number }).status === 403
+    ) {
       console.log(`[iPod Store] Cannot save lyrics source for ${trackId} - song owned by another user`);
       return;
     }
-
-    if (!response.ok) {
-      console.warn(`[iPod Store] Failed to save lyrics source for ${trackId}: ${response.status}`);
-      return;
-    }
-
-    const data = await response.json();
-    console.log(`[iPod Store] Saved lyrics source for ${trackId}, cleared translations/furigana (by ${data.createdBy || username})`);
-  } catch (error) {
     console.error(`[iPod Store] Error saving lyrics source for ${trackId}:`, error);
   }
 }
@@ -798,18 +794,10 @@ export const useIpodStore = create<IpodState>()(
         
         // Clear server-side cache for translations, furigana, and soramimi
         if (currentTrack?.id) {
-          abortableFetch(getApiUrl(`/api/songs/${currentTrack.id}`), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "clear-cached-data",
-              clearTranslations: true,
-              clearFurigana: true,
-              clearSoramimi: true,
-            }),
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
+          clearSongCachedData(currentTrack.id, {
+            clearTranslations: true,
+            clearFurigana: true,
+            clearSoramimi: true,
           }).catch((err) => {
             console.error("[iPod Store] Failed to clear server cache:", err);
           });
@@ -1112,40 +1100,33 @@ export const useIpodStore = create<IpodState>()(
         // Single call to fetch-lyrics with returnMetadata: searches Kugou, fetches lyrics+cover, returns metadata
         // This consolidates search + fetch into one call
         try {
-          const fetchResponse = await abortableFetch(
-            getApiUrl(`/api/songs/${videoId}`),
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "fetch-lyrics",
-                title: rawTitle,
-                returnMetadata: true,
-              }),
-              timeout: 15000,
-              throwOnHttpError: false,
-              retry: { maxAttempts: 1, initialDelayMs: 250 },
-            }
-          );
+          const fetchData = await fetchSongLyrics<{
+            metadata?: {
+              title?: string;
+              artist?: string;
+              album?: string;
+              cover?: string;
+              lyricsSource?: SongLyricsSource;
+            };
+          }>(videoId, {
+            title: rawTitle,
+            returnMetadata: true,
+          });
 
-          if (fetchResponse.ok) {
-            const fetchData = await fetchResponse.json();
+          // Use metadata from server (Kugou source) if available
+          if (fetchData.metadata?.lyricsSource) {
+            const meta = fetchData.metadata;
+            console.log(`[iPod Store] Got metadata from Kugou for ${videoId}:`, {
+              title: meta.title,
+              artist: meta.artist,
+              cover: meta.cover,
+            });
             
-            // Use metadata from server (Kugou source) if available
-            if (fetchData.metadata?.lyricsSource) {
-              const meta = fetchData.metadata;
-              console.log(`[iPod Store] Got metadata from Kugou for ${videoId}:`, {
-                title: meta.title,
-                artist: meta.artist,
-                cover: meta.cover,
-              });
-              
-              trackInfo.title = meta.title || trackInfo.title;
-              trackInfo.artist = meta.artist;
-              trackInfo.album = meta.album;
-              trackInfo.cover = meta.cover;
-              trackInfo.lyricsSource = meta.lyricsSource;
-            }
+            trackInfo.title = meta.title || trackInfo.title;
+            trackInfo.artist = meta.artist;
+            trackInfo.album = meta.album;
+            trackInfo.cover = meta.cover;
+            trackInfo.lyricsSource = meta.lyricsSource;
           }
         } catch (error) {
           console.warn(`[iPod Store] Failed to fetch lyrics for ${videoId}:`, error);
@@ -1273,73 +1254,59 @@ export const useIpodStore = create<IpodState>()(
             try {
               // Batch fetch metadata for tracks not in default library
               const idsToFetch = tracksNotInDefaultLibrary.map((t) => t.id).join(",");
-              const response = await abortableFetch(
-                getApiUrl(`/api/songs?ids=${encodeURIComponent(idsToFetch)}&include=metadata`),
-                {
-                  method: "GET",
-                  headers: { "Content-Type": "application/json" },
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                }
+              const data = await listSongs<FetchedSongMetadata>({
+                ids: idsToFetch ? idsToFetch.split(",") : [],
+                include: "metadata",
+              });
+              const fetchedSongs = data.songs || [];
+              type FetchedSongMetadata = {
+                id: string;
+                title?: string;
+                artist?: string;
+                album?: string;
+                cover?: string;
+                lyricOffset?: number;
+                lyricsSource?: LyricsSource;
+              };
+              const fetchedMap = new Map<string, FetchedSongMetadata>(
+                fetchedSongs.map((s: FetchedSongMetadata) => [s.id, s])
               );
 
-              if (response.ok) {
-                const data = await response.json();
-                const fetchedSongs = data.songs || [];
-                type FetchedSongMetadata = {
-                  id: string;
-                  title?: string;
-                  artist?: string;
-                  album?: string;
-                  cover?: string;
-                  lyricOffset?: number;
-                  lyricsSource?: LyricsSource;
-                };
-                const fetchedMap = new Map<string, FetchedSongMetadata>(
-                  fetchedSongs.map((s: FetchedSongMetadata) => [s.id, s])
-                );
+              // Update tracks with fetched metadata
+              finalTracks = finalTracks.map((track) => {
+                const fetched = fetchedMap.get(track.id);
+                if (fetched) {
+                  const shouldUpdateLyricsSource =
+                    fetched.lyricsSource && (
+                      !track.lyricsSource ||
+                      track.lyricsSource.hash !== fetched.lyricsSource.hash
+                    );
 
-                // Update tracks with fetched metadata
-                finalTracks = finalTracks.map((track) => {
-                  const fetched = fetchedMap.get(track.id);
-                  if (fetched) {
-                    // Check if lyricsSource should be updated (new or different hash)
-                    const shouldUpdateLyricsSource =
-                      fetched.lyricsSource && (
-                        !track.lyricsSource ||
-                        track.lyricsSource.hash !== fetched.lyricsSource.hash
-                      );
+                  const hasChanges =
+                    (fetched.title && fetched.title !== track.title) ||
+                    (fetched.artist && fetched.artist !== track.artist) ||
+                    (fetched.album && fetched.album !== track.album) ||
+                    (fetched.cover && fetched.cover !== track.cover) ||
+                    (fetched.lyricOffset !== undefined && fetched.lyricOffset !== track.lyricOffset) ||
+                    shouldUpdateLyricsSource;
 
-                    // Check if any metadata has changed
-                    const hasChanges =
-                      (fetched.title && fetched.title !== track.title) ||
-                      (fetched.artist && fetched.artist !== track.artist) ||
-                      (fetched.album && fetched.album !== track.album) ||
-                      (fetched.cover && fetched.cover !== track.cover) ||
-                      (fetched.lyricOffset !== undefined && fetched.lyricOffset !== track.lyricOffset) ||
-                      shouldUpdateLyricsSource;
-
-                    if (hasChanges) {
-                      tracksUpdated++;
-                      return {
-                        ...track,
-                        // Update with server metadata, preserving existing values if server doesn't have them
-                        title: fetched.title || track.title,
-                        artist: fetched.artist ?? track.artist,
-                        album: fetched.album ?? track.album,
-                        cover: fetched.cover ?? track.cover,
-                        lyricOffset: fetched.lyricOffset ?? track.lyricOffset,
-                        // Update lyricsSource from server if it's new or different
-                        ...(shouldUpdateLyricsSource && {
-                          lyricsSource: fetched.lyricsSource,
-                        }),
-                      };
-                    }
+                  if (hasChanges) {
+                    tracksUpdated++;
+                    return {
+                      ...track,
+                      title: fetched.title || track.title,
+                      artist: fetched.artist ?? track.artist,
+                      album: fetched.album ?? track.album,
+                      cover: fetched.cover ?? track.cover,
+                      lyricOffset: fetched.lyricOffset ?? track.lyricOffset,
+                      ...(shouldUpdateLyricsSource && {
+                        lyricsSource: fetched.lyricsSource,
+                      }),
+                    };
                   }
-                  return track;
-                });
-              }
+                }
+                return track;
+              });
             } catch (error) {
               console.warn(`[iPod Store] Failed to fetch metadata for user tracks:`, error);
             }

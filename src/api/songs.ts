@@ -1,4 +1,8 @@
-import { apiRequest, apiRequestRaw } from "@/api/core";
+import {
+  apiRequest,
+  apiRequestRaw,
+  type ApiRequestOptions,
+} from "@/api/core";
 
 /** Auth context for cookie-based auth (credentials sent automatically via credentials: "include") */
 export interface SongsAuthContext {
@@ -31,6 +35,53 @@ export interface SongImportBatchResult {
   status: number;
   retryAfterSeconds?: number;
   data?: Record<string, unknown>;
+}
+
+export interface SongLyricsSource {
+  hash: string;
+  albumId: string | number;
+  title: string;
+  artist: string;
+  album?: string;
+}
+
+export interface SongActionOptions {
+  signal?: AbortSignal;
+  timeout?: number;
+  retry?: ApiRequestOptions["retry"];
+}
+
+export async function postSongActionRaw<TPayload extends Record<string, unknown>>(
+  songId: string,
+  payload: TPayload,
+  options: SongActionOptions = {}
+): Promise<Response> {
+  return apiRequestRaw<TPayload>({
+    path: `/api/songs/${encodeURIComponent(songId)}`,
+    method: "POST",
+    body: payload,
+    signal: options.signal,
+    timeout: options.timeout ?? 15000,
+    retry: options.retry ?? { maxAttempts: 1, initialDelayMs: 250 },
+  });
+}
+
+export async function postSongAction<
+  TResponse,
+  TPayload extends Record<string, unknown>,
+>(
+  songId: string,
+  payload: TPayload,
+  options: SongActionOptions = {}
+): Promise<TResponse> {
+  return apiRequest<TResponse, TPayload>({
+    path: `/api/songs/${encodeURIComponent(songId)}`,
+    method: "POST",
+    body: payload,
+    signal: options.signal,
+    timeout: options.timeout ?? 15000,
+    retry: options.retry ?? { maxAttempts: 1, initialDelayMs: 250 },
+  });
 }
 
 export async function listSongs<TSong = Record<string, unknown>>(
@@ -125,5 +176,87 @@ export async function importSongsBatch(params: {
         : undefined,
     data,
   };
+}
+
+export async function searchSongLyrics<TResponse = Record<string, unknown>>(
+  songId: string,
+  query: string,
+  options: SongActionOptions = {}
+): Promise<TResponse> {
+  return postSongAction<TResponse, { action: "search-lyrics"; query: string }>(
+    songId,
+    {
+      action: "search-lyrics",
+      query,
+    },
+    options
+  );
+}
+
+export async function fetchSongLyrics<TResponse = Record<string, unknown>>(
+  songId: string,
+  payload: {
+    title?: string;
+    force?: boolean;
+    returnMetadata?: boolean;
+    lyricsSource?: SongLyricsSource;
+  },
+  options: SongActionOptions = {}
+): Promise<TResponse> {
+  return postSongAction<
+    TResponse,
+    {
+      action: "fetch-lyrics";
+      title?: string;
+      force?: boolean;
+      returnMetadata?: boolean;
+      lyricsSource?: SongLyricsSource;
+    }
+  >(
+    songId,
+    {
+      action: "fetch-lyrics",
+      ...payload,
+    },
+    options
+  );
+}
+
+export async function clearSongCachedData(
+  songId: string,
+  payload: {
+    clearTranslations?: boolean;
+    clearFurigana?: boolean;
+    clearSoramimi?: boolean;
+  } = {}
+): Promise<{ success?: boolean }> {
+  return postSongAction<
+    { success?: boolean },
+    {
+      action: "clear-cached-data";
+      clearTranslations?: boolean;
+      clearFurigana?: boolean;
+      clearSoramimi?: boolean;
+    }
+  >(songId, {
+    action: "clear-cached-data",
+    ...payload,
+  });
+}
+
+export async function clearSongLyrics(
+  songId: string
+): Promise<{ success?: boolean }> {
+  return postSongAction<{ success?: boolean }, { clearLyrics: true }>(songId, {
+    clearLyrics: true,
+  });
+}
+
+export async function unshareSong(
+  songId: string
+): Promise<{ success?: boolean }> {
+  return postSongAction<{ success?: boolean }, { action: "unshare" }>(songId, {
+    action: "unshare",
+  });
 }
 
