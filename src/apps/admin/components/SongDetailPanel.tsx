@@ -7,16 +7,17 @@ import { ArrowLeft, Trash, MusicNote, Clock, User, VinylRecord, Hash, ArrowSquar
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { ApiRequestError } from "@/api/core";
+import { getLinkPreview } from "@/api/misc";
+import { getSongById, postSongAction } from "@/api/songs";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { LyricsSearchDialog, LyricsSearchResult } from "@/components/dialogs/LyricsSearchDialog";
 import { deleteSongMetadata, saveSongMetadata, CachedLyricsSource } from "@/utils/songMetadataCache";
-import { getApiUrl } from "@/utils/platform";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 interface FuriganaSegment {
   text: string;
@@ -96,28 +97,17 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const fetchSong = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Include lyrics, translations, furigana, soramimi to get full song data
-      const response = await abortableFetch(
-        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata,lyrics,translations,furigana,soramimi`),
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 20000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setSong(data);
-      } else if (response.status === 404) {
-        setSong(null);
-      }
+      const data = await getSongById<SongDetail>(youtubeId, {
+        include: "metadata,lyrics,translations,furigana,soramimi",
+      });
+      setSong(data);
     } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 404) {
+        setSong(null);
+      } else {
       console.error("Failed to fetch song:", error);
       toast.error(t("apps.admin.errors.failedToFetchSong", "Failed to fetch song"));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -132,35 +122,23 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
     setIsForceRefreshing(true);
     try {
-      const response = await abortableFetch(
-        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            action: "fetch-lyrics",
-            force: true,
-            lyricsSource: song.lyricsSource,
-          }),
-          timeout: 20000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (response.ok) {
-        toast.success(t("apps.admin.messages.lyricsRefreshed", "Lyrics refreshed from source"));
-        // Re-fetch song to get updated data
-        await fetchSong();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || t("apps.admin.errors.failedToRefreshLyrics", "Failed to refresh lyrics"));
-      }
+      await postSongAction(youtubeId, {
+        action: "fetch-lyrics",
+        force: true,
+        lyricsSource: song.lyricsSource,
+      }, {
+        timeout: 20000,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      });
+      toast.success(t("apps.admin.messages.lyricsRefreshed", "Lyrics refreshed from source"));
+      await fetchSong();
     } catch (error) {
       console.error("Failed to force refresh lyrics:", error);
-      toast.error(t("apps.admin.errors.failedToRefreshLyrics", "Failed to refresh lyrics"));
+      toast.error(
+        error instanceof ApiRequestError
+          ? error.message || t("apps.admin.errors.failedToRefreshLyrics", "Failed to refresh lyrics")
+          : t("apps.admin.errors.failedToRefreshLyrics", "Failed to refresh lyrics")
+      );
     } finally {
       setIsForceRefreshing(false);
     }
@@ -176,58 +154,33 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     setIsForceRefreshing(true);
     try {
       // First, fetch lyrics with the new source
-      const lyricsResponse = await abortableFetch(
-        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            action: "fetch-lyrics",
-            force: true,
-            lyricsSource: {
-              hash: result.hash,
-              albumId: result.albumId,
-              title: result.title,
-              artist: result.artist,
-              album: result.album,
-            },
-          }),
-          timeout: 20000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (!lyricsResponse.ok) {
-        const data = await lyricsResponse.json();
-        toast.error(data.error || t("apps.admin.errors.failedToUpdateLyrics", "Failed to update lyrics"));
-        return;
-      }
+      await postSongAction(youtubeId, {
+        action: "fetch-lyrics",
+        force: true,
+        lyricsSource: {
+          hash: result.hash,
+          albumId: result.albumId,
+          title: result.title,
+          artist: result.artist,
+          album: result.album,
+        },
+      }, {
+        timeout: 20000,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      });
 
       // Then, update song metadata with title/artist/album from the search result
-      const metadataResponse = await abortableFetch(
-        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: result.title,
-            artist: result.artist,
-            album: result.album,
-          }),
+      try {
+        await postSongAction(youtubeId, {
+          title: result.title,
+          artist: result.artist,
+          album: result.album,
+        }, {
           timeout: 15000,
-          throwOnHttpError: false,
           retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (metadataResponse.ok) {
+        });
         toast.success(t("apps.admin.messages.lyricsAndMetadataUpdated", "Lyrics and metadata updated"));
-      } else {
+      } catch {
         // Lyrics updated but metadata failed - still show partial success
         toast.success(t("apps.admin.messages.lyricsUpdated", "Lyrics updated"));
         toast.warning(t("apps.admin.errors.failedToUpdateMetadata", "Failed to update metadata"));
@@ -248,30 +201,15 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     if (!username || !isAuthenticated) return;
 
     try {
-      const response = await abortableFetch(
-        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            clearLyrics: true,
-          }),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (response.ok) {
-        toast.success(t("apps.admin.messages.lyricsReset", "Lyrics reset"));
-        await fetchSong();
-      } else {
-        toast.error(t("apps.admin.errors.failedToResetLyrics", "Failed to reset lyrics"));
-      }
+      await postSongAction(youtubeId, { clearLyrics: true }, {
+        timeout: 15000,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      });
+      toast.success(t("apps.admin.messages.lyricsReset", "Lyrics reset"));
+      await fetchSong();
     } catch (error) {
       console.error("Failed to reset lyrics:", error);
+      toast.error(t("apps.admin.errors.failedToResetLyrics", "Failed to reset lyrics"));
     }
   }, [youtubeId, username, isAuthenticated, fetchSong, t]);
 
@@ -345,17 +283,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       setIsYoutubeOembedLoading(true);
       try {
         const url = `https://www.youtube.com/watch?v=${youtubeId}`;
-        const response = await abortableFetch(
-          getApiUrl(`/api/link-preview?url=${encodeURIComponent(url)}`),
-          {
-            headers: { "Content-Type": "application/json" },
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-        if (!response.ok) return;
-        const data = (await response.json()) as { title?: string };
+        const data = await getLinkPreview(url);
         const title = data.title?.trim();
         if (!isCancelled) setYoutubeOembedTitle(title && title.length > 0 ? title : null);
       } catch {
@@ -395,27 +323,12 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
     setIsUnsharing(true);
     try {
-      const response = await abortableFetch(
-        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action: "unshare" }),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-
-      if (response.ok) {
-        toast.success(t("apps.admin.messages.songUnshared", "Song unshared"));
-        fetchSong();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || t("apps.admin.errors.failedToUnshareSong", "Failed to unshare song"));
-      }
+      await postSongAction(youtubeId, { action: "unshare" }, {
+        timeout: 15000,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      });
+      toast.success(t("apps.admin.messages.songUnshared", "Song unshared"));
+      fetchSong();
     } catch (error) {
       console.error("Failed to unshare song:", error);
       toast.error(t("apps.admin.errors.failedToUnshareSong", "Failed to unshare song"));

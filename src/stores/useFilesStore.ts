@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
-import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
+import { dbOperations, getStoreForFile } from "@/utils/indexedDBOperations";
 import type { OsThemeId } from "@/themes/types";
 import { getAppBasicInfoList } from "@/config/appRegistryData";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -114,8 +114,19 @@ let appletsDataPromise: Promise<{ applets: FileSystemItemData[] }> | null = null
 // Preload status tracking
 let preloadStarted = false;
 
+function normalizeFileSystemData(data: unknown): FileSystemData {
+  const value = (data && typeof data === "object"
+    ? data
+    : {}) as Partial<FileSystemData>;
+
+  return {
+    directories: Array.isArray(value.directories) ? value.directories : [],
+    files: Array.isArray(value.files) ? value.files : [],
+  };
+}
+
 function withRequiredRootDirectories(data: FileSystemData): FileSystemData {
-  const directories = [...data.directories];
+  const directories = [...(data.directories ?? [])];
 
   for (const requiredDir of REQUIRED_ROOT_DIRECTORIES) {
     const alreadyExists = directories.some((dir) => dir.path === requiredDir.path);
@@ -164,7 +175,7 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
         retry: { maxAttempts: 2, initialDelayMs: 500 },
       });
       const data = await res.json();
-      cachedFileSystemData = data as FileSystemData;
+      cachedFileSystemData = normalizeFileSystemData(data);
       return cachedFileSystemData;
     } catch (err) {
       console.error("Failed to load filesystem.json", err);
@@ -299,13 +310,7 @@ export async function ensureFileContentLoaded(
   filePath: string,
   uuid: string
 ): Promise<boolean> {
-  const storeName = filePath.startsWith("/Documents/")
-    ? STORES.DOCUMENTS
-    : filePath.startsWith("/Images/")
-    ? STORES.IMAGES
-    : filePath.startsWith("/Applets/")
-    ? STORES.APPLETS
-    : null;
+  const storeName = getStoreForFile(filePath);
   if (!storeName) return false;
 
   // Prevent duplicate concurrent loads
@@ -325,37 +330,15 @@ export async function ensureFileContentLoaded(
     // Bug fix: After waiting, verify content was actually loaded by checking IndexedDB
     // The first request might have failed, so we need to verify
     try {
-      const db = await ensureIndexedDBInitialized();
-      try {
-        const exists = await new Promise<boolean>((resolve) => {
-          const tx = db.transaction(storeName, "readonly");
-          const store = tx.objectStore(storeName);
-          const req = store.get(uuid);
-          req.onsuccess = () => resolve(!!req.result);
-          req.onerror = () => resolve(false);
-        });
-        return exists;
-      } finally {
-        db.close();
-      }
+      return await dbOperations.has(storeName, uuid);
     } catch {
       return false;
     }
   }
-
-  let db: IDBDatabase | null = null;
   
   try {
-    db = await ensureIndexedDBInitialized();
-    
     // Check if content already exists in IndexedDB
-    const existing = await new Promise<StoredContent | undefined>((resolve) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(req.result as StoredContent | undefined);
-      req.onerror = () => resolve(undefined);
-    });
+    const existing = await dbOperations.get<StoredContent>(storeName, uuid);
     
     if (existing) {
       return true;
@@ -380,16 +363,11 @@ export async function ensureFileContentLoaded(
       const content = await resp.blob();
       
       // Save to IndexedDB
-      await new Promise<void>((resolve, reject) => {
-        const tx = db!.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-        const putReq = store.put(
-          { name: pendingFile.name, content } as StoredContent,
-          uuid
-        );
-        putReq.onsuccess = () => resolve();
-        putReq.onerror = () => reject(putReq.error);
-      });
+      await dbOperations.put(
+        storeName,
+        { name: pendingFile.name, content } as StoredContent,
+        uuid
+      );
 
       // Remove from pending once successfully loaded
       pendingLazyLoadFiles.delete(filePath);
@@ -402,11 +380,6 @@ export async function ensureFileContentLoaded(
     console.error(`[FilesStore] Error loading content for ${filePath}:`, err);
     loadingAssets.delete(uuid);
     return false;
-  } finally {
-    // Bug fix: Ensure db is always closed, even on errors
-    if (db) {
-      db.close();
-    }
   }
 }
 
@@ -437,11 +410,7 @@ async function saveDefaultContents(
   // Only process text files immediately (they're small and already in JSON)
   if (textFiles.length === 0) return;
   
-  let db: IDBDatabase | null = null;
-  
   try {
-    db = await ensureIndexedDBInitialized();
-    
     // Group files by store for batch operations
     const filesByStore = new Map<string, { file: FileSystemItemData; uuid: string }[]>();
     
@@ -450,13 +419,10 @@ async function saveDefaultContents(
       const uuid = meta?.uuid;
       if (!uuid) continue;
 
-      const storeName = file.path.startsWith("/Documents/")
-        ? STORES.DOCUMENTS
-        : file.path.startsWith("/Images/")
-        ? STORES.IMAGES
-        : file.path.startsWith("/Applets/")
-        ? STORES.APPLETS
-        : null;
+      const storeName = getStoreForFile(file.path, {
+        name: file.name,
+        type: file.type,
+      });
       if (!storeName) continue;
 
       if (!filesByStore.has(storeName)) {
@@ -467,55 +433,27 @@ async function saveDefaultContents(
     
     // Process each store with batched operations
     for (const [storeName, storeFiles] of filesByStore) {
-      // First, check which UUIDs already exist (batch read)
-      const existingUUIDs = new Set<string>();
-      await new Promise<void>((resolve) => {
-        const tx = db!.transaction(storeName, "readonly");
-        const store = tx.objectStore(storeName);
-        let completed = 0;
-        
-        for (const { uuid } of storeFiles) {
-          const req = store.get(uuid);
-          req.onsuccess = () => {
-            if (req.result) existingUUIDs.add(uuid);
-            completed++;
-            if (completed === storeFiles.length) resolve();
-          };
-          req.onerror = () => {
-            completed++;
-            if (completed === storeFiles.length) resolve();
-          };
-        }
-        
-        if (storeFiles.length === 0) resolve();
-      });
+      const existingUUIDs = await dbOperations.getExistingKeys(
+        storeName,
+        storeFiles.map(({ uuid }) => uuid)
+      );
       
       // Filter out existing files and batch write new ones
       const newFiles = storeFiles.filter(({ uuid }) => !existingUUIDs.has(uuid));
       if (newFiles.length === 0) continue;
       
-      // Batch write in a single transaction
-      await new Promise<void>((resolve, reject) => {
-        const tx = db!.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-        
-        for (const { file, uuid } of newFiles) {
-          if (file.content) {
-            store.put({ name: file.name, content: file.content } as StoredContent, uuid);
-          }
-        }
-        
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
+      await dbOperations.putMany(
+        storeName,
+        newFiles
+          .filter(({ file }) => file.content)
+          .map(({ file, uuid }) => ({
+            key: uuid,
+            value: { name: file.name, content: file.content! } as StoredContent,
+          }))
+      );
     }
   } catch (err) {
     console.error("[FilesStore] Error saving default contents:", err);
-  } finally {
-    // Bug fix: Ensure db is always closed, even on errors
-    if (db) {
-      db.close();
-    }
   }
 }
 

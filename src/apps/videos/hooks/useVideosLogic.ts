@@ -6,7 +6,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useVideoStore, DEFAULT_VIDEOS } from "@/stores/useVideoStore";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useAppStore } from "@/stores/useAppStore";
-import { getApiUrl } from "@/utils/platform";
+import { parseTitleMetadata } from "@/api/misc";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useCustomEventListener } from "@/hooks/useEventListener";
@@ -279,33 +279,12 @@ export function useVideosLogic({
 
         try {
           // 2. Call our API to parse the title using AI
-          const parseResponse = await abortableFetch(
-            getApiUrl("/api/parse-title"),
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                title: rawTitle,
-                author_name: authorName,
-              }),
-              timeout: 15000,
-              throwOnHttpError: false,
-              retry: { maxAttempts: 1, initialDelayMs: 250 },
-            }
-          );
-
-          if (parseResponse.ok) {
-            const parsedData = await parseResponse.json();
-            videoInfo.title = parsedData.title || rawTitle;
-            videoInfo.artist = parsedData.artist;
-          } else {
-            console.warn(
-              "Failed to parse title with AI, using raw title:",
-              await parseResponse.text()
-            );
-          }
+          const parsedData = await parseTitleMetadata({
+            title: rawTitle,
+            author_name: authorName,
+          });
+          videoInfo.title = parsedData.title || rawTitle;
+          videoInfo.artist = parsedData.artist;
         } catch (parseError) {
           console.warn(
             "Error calling parse-title API, using raw title:",

@@ -10,11 +10,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { ApiRequestError } from "@/api/core";
+import { postSongAction } from "@/api/songs";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { getApiUrl } from "@/utils/platform";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 export interface LyricsSearchResult {
   title: string;
@@ -89,30 +89,20 @@ export function LyricsSearchDialog({
     setSelectedIndex(-1);
 
     try {
-      const response = await abortableFetch(
-        getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`),
+      const data = await postSongAction<
+        { results?: LyricsSearchResult[] },
+        { action: "search-lyrics"; query: string }
+      >(
+        trackId,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "search-lyrics",
-            query: query.trim(),
-          }),
+          action: "search-lyrics",
+          query: query.trim(),
+        },
+        {
           timeout: 15000,
-          throwOnHttpError: false,
           retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
-
-      if (!response.ok) {
-        throw new Error(
-          response.status === 404
-            ? t("apps.ipod.dialogs.lyricsSearchNoResults")
-            : `Failed to search (status ${response.status})`
-        );
-      }
-
-      const data = await response.json();
       if (data.results && Array.isArray(data.results)) {
         setResults(data.results);
         if (data.results.length === 0) {
@@ -122,6 +112,10 @@ export function LyricsSearchDialog({
         throw new Error(t("apps.ipod.dialogs.lyricsSearchInvalidResponse"));
       }
     } catch (err) {
+      if (err instanceof ApiRequestError && err.status === 404) {
+        setError(t("apps.ipod.dialogs.lyricsSearchNoResults"));
+        return;
+      }
       console.error("Lyrics search error:", err);
       setError(
         err instanceof Error

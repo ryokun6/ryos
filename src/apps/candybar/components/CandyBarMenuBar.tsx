@@ -6,7 +6,7 @@ import {
   MenubarItem,
   MenubarSeparator,
 } from "@/components/ui/menubar";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 
 interface CandyBarMenuBarProps {
@@ -29,9 +29,7 @@ export function CandyBarMenuBar({
   onClearLibrary,
 }: CandyBarMenuBarProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isXpTheme, isMacOSTheme: isMacOsxTheme } = useThemeFlags();
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

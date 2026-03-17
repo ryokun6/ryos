@@ -1,6 +1,5 @@
-import { abortableFetch } from "@/utils/abortableFetch";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
-import { getApiUrl } from "@/utils/platform";
+import { fetchConsolidatedCloudSyncMetadata } from "@/api/sync";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
@@ -49,7 +48,6 @@ import {
   getNextSyncClientVersion,
   getSyncClientId,
 } from "@/sync/state";
-import { getSyncSessionId } from "@/utils/syncSession";
 import {
   fetchBlobDomainPayload,
   fetchRedisDomainSnapshot,
@@ -1295,12 +1293,6 @@ async function applyCloudSyncEnvelope(
   }
 }
 
-function authHeaders(): Record<string, string> {
-  return {
-    "X-Sync-Session-Id": getSyncSessionId(),
-  };
-}
-
 function getDomainFetchCacheKey(auth: AuthContext, domain: string): string {
   return `${auth.username.toLowerCase()}:${domain}`;
 }
@@ -1326,31 +1318,19 @@ function createWriteSyncVersion(
 }
 
 export async function fetchPhysicalCloudSyncMetadata(): Promise<CloudSyncMetadataMap> {
-  const consolidatedRes = await abortableFetch(getApiUrl("/api/sync/domains"), {
-    method: "GET",
-    headers: authHeaders(),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (consolidatedRes.ok) {
-    const consolidatedData = (await consolidatedRes.json()) as {
-      physicalMetadata?: Partial<CloudSyncMetadataMap>;
-    };
-    if (consolidatedData.physicalMetadata) {
-      const merged = createEmptyCloudSyncMetadataMap();
-      for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
-        const entry =
-          consolidatedData.physicalMetadata[
-            domain as keyof typeof consolidatedData.physicalMetadata
-          ];
-        if (entry) {
-          merged[domain] = entry as CloudSyncDomainMetadata;
-        }
+  const consolidatedData = await fetchConsolidatedCloudSyncMetadata();
+  if (consolidatedData.physicalMetadata) {
+    const merged = createEmptyCloudSyncMetadataMap();
+    for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
+      const entry =
+        consolidatedData.physicalMetadata[
+          domain as keyof typeof consolidatedData.physicalMetadata
+        ];
+      if (entry) {
+        merged[domain] = entry as CloudSyncDomainMetadata;
       }
-      return merged;
     }
+    return merged;
   }
   throw new Error("Failed to fetch consolidated sync metadata");
 }

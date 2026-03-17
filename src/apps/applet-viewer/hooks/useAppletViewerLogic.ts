@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { helpItems, AppletViewerInitialData } from "../index";
+import {
+  getSharedApplet,
+  listSharedApplets,
+  saveSharedApplet,
+} from "@/api/shareApplet";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppletStore } from "@/stores/useAppletStore";
@@ -11,19 +16,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAppletUpdates } from "./useAppletUpdates";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { toast } from "sonner";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
 import {
   useFileSystem,
-  dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { STORES } from "@/utils/indexedDB";
+import { dbOperations } from "@/utils/indexedDBOperations";
 import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
@@ -91,14 +94,7 @@ export function useAppletViewerLogic({
   const checkForAppletUpdate = useCallback(
     async (shareId: string) => {
       try {
-        const response = await abortableFetch(
-          getApiUrl("/api/share-applet?list=true"),
-          {
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-        const data = await response.json();
+        const data = await listSharedApplets();
         const applet = (data.applets || []).find(
           (a: Applet) => a.id === shareId
         );
@@ -318,15 +314,7 @@ export function useAppletViewerLogic({
       }
 
       try {
-        const response = await abortableFetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`,
-          {
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-
-        const data = await response.json();
+        const data = await getSharedApplet(shareId);
         const content = typeof data.content === "string" ? data.content : "";
 
         await dbOperations.put<DocumentContent>(
@@ -1146,23 +1134,15 @@ export function useAppletViewerLogic({
 
       const windowDimensions = currentWindowState?.size;
 
-      const response = await abortableFetch(getApiUrl("/api/share-applet"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: htmlContent,
-          title: appletTitle || undefined,
-          icon: appletIcon || undefined,
-          name: appletName || undefined,
-          windowWidth: windowDimensions?.width,
-          windowHeight: windowDimensions?.height,
-          shareId: existingShareId && isAuthor ? existingShareId : undefined,
-        }),
-        timeout: 15000,
-        retry: { maxAttempts: 1 },
+      const data = await saveSharedApplet({
+        content: htmlContent,
+        title: appletTitle || undefined,
+        icon: appletIcon || undefined,
+        name: appletName || undefined,
+        windowWidth: windowDimensions?.width,
+        windowHeight: windowDimensions?.height,
+        shareId: existingShareId && isAuthor ? existingShareId : undefined,
       });
-
-      const data = await response.json();
       setShareId(data.id);
       setIsShareDialogOpen(true);
 
@@ -1212,21 +1192,13 @@ export function useAppletViewerLogic({
 
       const fetchSharedApplet = async () => {
         try {
-          const response = await abortableFetch(
-            getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareCode)}`),
-            {
-              signal: controller.signal,
-              timeout: 15000,
-              retry: { maxAttempts: 2, initialDelayMs: 500 },
-            }
-          );
+          const data = await getSharedApplet(shareCode, {
+            signal: controller.signal,
+          });
           if (!isActive || controller.signal.aborted) return;
-
-          const data = await response.json();
-          if (!isActive || controller.signal.aborted) return;
-          setSharedContent(data.content);
-          setSharedName(data.name);
-          setSharedTitle(data.title);
+          setSharedContent(data.content || "");
+          setSharedName(data.name || "");
+          setSharedTitle(data.title || "");
 
           if (instanceId && data.windowWidth && data.windowHeight) {
             const appStore = useAppStore.getState();
@@ -1288,7 +1260,7 @@ export function useAppletViewerLogic({
                   await saveFile({
                     path: finalPath,
                     name: finalName,
-                    content: data.content,
+                    content: data.content || "",
                     type: "html",
                     icon: data.icon || undefined,
                     shareId: shareCode,
@@ -1305,7 +1277,7 @@ export function useAppletViewerLogic({
                   emitFileSaved({
                     name: finalName,
                     path: finalPath,
-                    content: data.content,
+                    content: data.content || "",
                     icon: data.icon || undefined,
                   });
 

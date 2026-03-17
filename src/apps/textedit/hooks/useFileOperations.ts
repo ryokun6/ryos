@@ -16,11 +16,10 @@ import {
   serializeRichMarkdown,
 } from "../utils/richMarkdown";
 import {
-  dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
-import { getStoreForFile } from "@/utils/indexedDBOperations";
+import { dbOperations, getStoreForFile } from "@/utils/indexedDBOperations";
 
 interface UseFileOperationsProps {
   editor: Editor | null;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { getStocks } from "@/api/misc";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type StocksWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
@@ -199,9 +200,7 @@ async function fetchQuotes(symbols: string[]): Promise<StockQuote[]> {
   const cached = quotesCache.get(key);
   if (cached && Date.now() - cached.ts < CACHE_TTL_QUOTES) return cached.quotes;
 
-  const res = await fetch(`/api/stocks?symbols=${encodeURIComponent(key)}`);
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json();
+  const data = await getStocks({ symbols });
   const quotes: StockQuote[] = (data.quotes as ApiQuote[]).map((q) => ({
     symbol: q.symbol,
     price: q.price,
@@ -220,11 +219,7 @@ async function fetchChart(
   if (cached && Date.now() - cached.ts < CACHE_TTL_CHART) return cached;
 
   const apiRange = RANGE_TO_API[range];
-  const res = await fetch(
-    `/api/stocks?symbols=${encodeURIComponent(symbol)}&chart=${encodeURIComponent(symbol)}&range=${apiRange}`
-  );
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json();
+  const data = await getStocks({ symbols: [symbol], chart: symbol, range: apiRange });
   const points = (data.chart ?? []) as ApiChartPoint[];
   const result = {
     history: points.map((p) => p.close),

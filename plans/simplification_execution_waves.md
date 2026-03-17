@@ -33,6 +33,12 @@ Turn the audit into a deletion-first simplification program that:
   - old `src/utils/cloudSync.ts` entrypoint was removed
   - remaining sync compatibility read paths were deleted
 
+- Wave 6 is complete:
+  - `src/utils/indexedDBOperations.ts` is now the winning shared IndexedDB CRUD entrypoint
+  - the Finder-owned generic `dbOperations` wrapper was removed
+  - Finder content reads, `useFilesStore`, and `useDisplaySettingsStore` now use the shared helper
+  - remaining `ensureIndexedDBInitialized()` call sites are specialized backup, migration, or sync flows rather than routine CRUD
+
 - Wave 5 is partially complete:
   - `useThemeFlags()` exists
   - repeated theme booleans were replaced in key touched UI/app files
@@ -43,29 +49,34 @@ Turn the audit into a deletion-first simplification program that:
   - room and song API paths were unified through `src/api/*`
   - some internal API calls still bypass the shared client layer and use direct `abortableFetch`
 
+- Wave 7 is partially complete:
+  - auth-related client calls now go through `src/api/auth.ts`
+  - remaining room typing, room message delete, and user search client calls now go through `src/api/*`
+  - other internal APIs still need wrappers or migrations before the wave is complete
+
 - Wave 3 is only partially complete:
   - backup/restore serialization was unified
-  - `indexedDBOperations.ts` was not fully narrowed to a single winning API shape
-  - multiple direct IndexedDB transaction paths still exist
+  - `indexedDBOperations.ts` is now narrowed to the shared winning CRUD shape
+  - backup/export/restore and sync still keep specialized bulk or cursor-based IndexedDB logic
 
 - Wave 4 is only partially complete at the domain-file granularity:
   - `src/sync/domains.ts` and `src/sync/types.ts` now exist
   - the sync monolith was moved out of `src/utils/cloudSync.ts`
   - domain logic is still grouped inside one large `src/sync/domains.ts` file rather than split into per-domain modules
 
-### Known unrelated noise still visible during sync verification
+### Recently resolved cleanup noise
 
-- `useFilesStore` rehydrate still logs a null-spread failure in `withRequiredRootDirectories()`
-- this does not currently fail the focused sync suite, but it should be cleaned up
+- `useFilesStore` rehydrate no longer logs the null-spread failure in `withRequiredRootDirectories()`
+- malformed or partial `filesystem.json` payloads are normalized before root-directory reconciliation
 
 ## Recommended next agent order
 
-1. Finish IndexedDB unification
-2. Finish internal API client unification
-3. Split `src/sync/domains.ts` into per-domain modules
-4. Unify style tokens between `src/index.css` and `src/styles/themes.css`
-5. Reduce legacy Windows CSS runtime surface
-6. Fix `useFilesStore` rehydrate noise
+1. Finish internal API client unification
+2. Split `src/sync/domains.ts` into per-domain modules
+3. Unify style tokens between `src/index.css` and `src/styles/themes.css`
+4. Reduce legacy Windows CSS runtime surface
+5. Return to backup/restore dedupe in control panels if more IndexedDB cleanup is needed
+6. Audit remaining sync test-only language/display noise if it still matters
 
 ## Wave order
 
@@ -272,6 +283,10 @@ Replace repeated theme booleans and reduce styling drift before it grows further
 
 ### Wave 6 - finish IndexedDB winner selection
 
+**Status**
+
+Complete.
+
 **Intent**
 
 Collapse the remaining competing IndexedDB entrypoints into one obvious API.
@@ -279,8 +294,8 @@ Collapse the remaining competing IndexedDB entrypoints into one obvious API.
 **Scope**
 
 - decide whether `src/utils/indexedDBOperations.ts` or Finder-owned `dbOperations` wins
-- migrate `useDisplaySettingsStore`, Finder, and any remaining direct transaction code to the winner
-- reduce `ensureIndexedDBInitialized()` call sites outside the chosen shared module
+- migrate `useDisplaySettingsStore`, Finder, and the routine CRUD call sites to the winner
+- reduce `ensureIndexedDBInitialized()` call sites outside the chosen shared module for non-specialized flows
 - remove dead or duplicate helpers after migration
 
 ### Wave 7 - finish internal API client unification

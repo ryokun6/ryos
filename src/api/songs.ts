@@ -1,4 +1,8 @@
-import { apiRequest, apiRequestRaw } from "@/api/core";
+import {
+  apiRequest,
+  apiRequestRaw,
+  type ApiRequestOptions,
+} from "@/api/core";
 
 /** Auth context for cookie-based auth (credentials sent automatically via credentials: "include") */
 export interface SongsAuthContext {
@@ -125,5 +129,23 @@ export async function importSongsBatch(params: {
         : undefined,
     data,
   };
+}
+
+export async function postSongAction<
+  TResponse,
+  TPayload extends Record<string, unknown>,
+>(
+  songId: string,
+  payload: TPayload,
+  options: Pick<ApiRequestOptions<TPayload>, "signal" | "timeout" | "retry"> = {}
+): Promise<TResponse> {
+  return apiRequest<TResponse, TPayload>({
+    path: `/api/songs/${encodeURIComponent(songId)}`,
+    method: "POST",
+    body: payload,
+    signal: options.signal,
+    timeout: options.timeout,
+    retry: options.retry,
+  });
 }
 

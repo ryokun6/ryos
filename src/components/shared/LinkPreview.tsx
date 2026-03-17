@@ -3,10 +3,10 @@ import { motion } from "framer-motion";
 import { WarningCircle, MusicNote, ArrowSquareOut, Microphone } from "@phosphor-icons/react";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
+import { getLinkPreview } from "@/api/misc";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 interface LinkMetadata {
   title?: string;
@@ -183,19 +183,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           if (videoId) {
             // Fetch actual YouTube metadata for the video
             try {
-              const youtubeResponse = await abortableFetch(
-                `/api/link-preview?url=${encodeURIComponent(
-                  `https://www.youtube.com/watch?v=${videoId}`
-                )}`,
-                {
-                  signal: abortController.signal,
-                  timeout: 15000,
-                  retry: { maxAttempts: 2, initialDelayMs: 500 },
-                }
+              const youtubeData = await getLinkPreview(
+                `https://www.youtube.com/watch?v=${videoId}`,
+                { signal: abortController.signal }
               );
-
-              const youtubeData = await youtubeResponse.json();
-              if (!youtubeData.error && isActive && !abortController.signal.aborted) {
+              if (isActive && !abortController.signal.aborted) {
                 setMetadata({
                   title: youtubeData.title,
                   description: youtubeData.description,
@@ -234,21 +226,10 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         }
 
         // Create a simple metadata extraction API endpoint
-        const response = await abortableFetch(
-          `/api/link-preview?url=${encodeURIComponent(url)}`,
-          {
-            signal: abortController.signal,
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-
-        const data = await response.json();
+        const data = await getLinkPreview(url, {
+          signal: abortController.signal,
+        });
         if (!isActive || abortController.signal.aborted) return;
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
 
         setMetadata({
           title: data.title,
