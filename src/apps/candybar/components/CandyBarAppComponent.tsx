@@ -1,5 +1,6 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState } from "react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { CandyBarMenuBar } from "./CandyBarMenuBar";
 import { AppProps } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -9,8 +10,6 @@ import { appMetadata } from "..";
 import { useCandyBarLogic, type IconPack } from "../hooks/useCandyBarLogic";
 import { cn } from "@/lib/utils";
 import {
-  MagnifyingGlass,
-  XCircle,
   ArrowsClockwise,
   CaretLeft,
   CaretRight,
@@ -19,41 +18,9 @@ import {
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { SearchInput } from "@/components/ui/search-input";
 
-/* Contacts-style Panel, PanelHeader, GroupListItem - exact styles from ContactsAppComponent */
-function Panel({
-  className,
-  children,
-  bordered = true,
-  style,
-}: {
-  className?: string;
-  children: ReactNode;
-  bordered?: boolean;
-  style?: CSSProperties;
-}) {
-  return (
-    <div
-      className={cn(
-        "overflow-hidden calendar-sidebar",
-        bordered ? "bg-white/90" : "bg-white",
-        className
-      )}
-      style={{
-        ...(bordered
-          ? {
-              border: "1px solid rgba(0, 0, 0, 0.55)",
-              boxShadow:
-                "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-            }
-          : {}),
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+const Panel = AppSidebarPanel;
 
 function GroupListItem({
   label,
@@ -69,9 +36,10 @@ function GroupListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-2 px-3 py-1.5 text-left text-[11px]",
+        "w-full flex items-center gap-2 px-3 py-1.5 text-left text-[12px]",
         isSelected ? "" : "hover:bg-black/5 transition-colors"
       )}
+      data-selected={isSelected ? "true" : undefined}
       style={{
         ...(isSelected
           ? {
@@ -84,40 +52,6 @@ function GroupListItem({
     >
       <span className="truncate">{label}</span>
     </button>
-  );
-}
-
-function MetalPanel({
-  className,
-  children,
-  bordered = true,
-  style,
-}: {
-  className?: string;
-  children: ReactNode;
-  bordered?: boolean;
-  style?: CSSProperties;
-}) {
-  return (
-    <div
-      className={cn(
-        "overflow-hidden calendar-sidebar",
-        bordered ? "bg-white/90" : "bg-white",
-        className
-      )}
-      style={{
-        ...(bordered
-          ? {
-              border: "1px solid rgba(0, 0, 0, 0.55)",
-              boxShadow:
-                "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-            }
-          : {}),
-        ...style,
-      }}
-    >
-      {children}
-    </div>
   );
 }
 
@@ -369,29 +303,12 @@ export function CandyBarAppComponent({
                 </div>
               </div>
               <div className="flex-1" />
-              <div className="relative w-[150px]">
-                <MagnifyingGlass
-                  size={13}
-                  weight="bold"
-                  className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-black/45"
-                />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] outline-none font-geneva-12"
-                  placeholder={t("apps.candybar.searchPlaceholder")}
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center text-black/40 hover:text-black/60"
-                  >
-                    <XCircle size={14} weight="fill" />
-                  </button>
-                )}
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                width="150px"
+                ariaLabel={t("apps.candybar.searchPlaceholder")}
+              />
             </div>
           ) : (
             <div
@@ -426,11 +343,11 @@ export function CandyBarAppComponent({
                 </Button>
               </div>
               <div className="flex-1" />
-              <input
+              <SearchInput
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-[180px] rounded border border-black/20 bg-white px-2 py-[2px] text-[11px] outline-none font-geneva-12"
-                placeholder={t("apps.candybar.searchPlaceholder")}
+                onChange={setSearchQuery}
+                width="180px"
+                ariaLabel={t("apps.candybar.searchPlaceholder")}
               />
             </div>
           )}
@@ -441,7 +358,7 @@ export function CandyBarAppComponent({
               {/* Sidebar - Contacts group sidebar style */}
               <Panel
                 bordered={isMacOSXTheme}
-                className="w-[170px] shrink-0 flex flex-col min-h-0"
+                className="os-sidebar w-[170px] shrink-0 flex flex-col min-h-0"
                 style={!isMacOSXTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
               >
                 <div className={cn("flex-1 overflow-y-auto", isMacOSXTheme && "font-geneva-12")}>
@@ -460,7 +377,7 @@ export function CandyBarAppComponent({
               </Panel>
 
               {/* Main content */}
-              <MetalPanel bordered className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+              <Panel bordered className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
                 {selectedPack ? (
                   <PackDetailView
                     pack={selectedPack}
@@ -496,14 +413,14 @@ export function CandyBarAppComponent({
                     </div>
                   </div>
                 )}
-              </MetalPanel>
+              </Panel>
             </div>
           ) : (
             <div className="flex-1 overflow-hidden flex gap-0">
               {/* Non-metal sidebar - Contacts group sidebar style */}
               <Panel
                 bordered={false}
-                className="w-[170px] shrink-0 flex flex-col min-h-0"
+                className="os-sidebar w-[170px] shrink-0 flex flex-col min-h-0"
                 style={{ borderRight: isXpTheme ? "1px solid #919b9c" : "1px solid rgba(0,0,0,0.08)" }}
               >
                 <div className="flex-1 overflow-y-auto">
