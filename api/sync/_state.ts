@@ -16,6 +16,11 @@ import {
   type CloudSyncVersionState,
   type CloudSyncWriteVersion,
 } from "../../src/utils/cloudSyncVersion.js";
+import {
+  applyFilesMetadataRedisPatch,
+  isFilesMetadataRedisPatchPayload,
+  type FilesMetadataSyncSnapshot,
+} from "../../src/utils/cloudSyncFileMerge.js";
 import { isSerializedContact } from "../../src/utils/contacts.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import {
@@ -40,6 +45,29 @@ export interface PutStateBody {
   updatedAt?: string;
   version?: number;
   syncVersion?: CloudSyncWriteVersion;
+}
+
+function normalizeFilesMetadataForPatch(data: unknown): FilesMetadataSyncSnapshot {
+  if (!data || typeof data !== "object") {
+    return {
+      items: {},
+      libraryState: "uninitialized",
+      documents: [],
+      deletedPaths: {},
+    };
+  }
+  const d = data as Record<string, unknown>;
+  return {
+    items: (d.items as FilesMetadataSyncSnapshot["items"]) || {},
+    libraryState:
+      (d.libraryState as FilesMetadataSyncSnapshot["libraryState"]) ||
+      "uninitialized",
+    documents: Array.isArray(d.documents)
+      ? (d.documents as FilesMetadataSyncSnapshot["documents"])
+      : [],
+    deletedPaths:
+      (d.deletedPaths as FilesMetadataSyncSnapshot["deletedPaths"]) || {},
+  };
 }
 
 function isContactsSnapshotData(value: unknown): value is { contacts: unknown[] } {
@@ -266,6 +294,7 @@ export async function putRedisStateDomain(
 
   let existingMetadata: CloudSyncDomainMetadata | null = null;
   let existingVersionState: CloudSyncVersionState | null = null;
+  let existingRedisEntry: PersistedRedisStateDomain | null = null;
 
   if (domain === "songs") {
     const existingSongsState = await readSongsState(redis, username);
@@ -284,17 +313,18 @@ export async function putRedisStateDomain(
     const existingRaw = await redis.get<string | PersistedRedisStateDomain>(
       stateKey(username, domain)
     );
-    const existingEntry =
+    const parsed =
       typeof existingRaw === "string" ? JSON.parse(existingRaw) : existingRaw;
-    if (existingEntry) {
+    if (parsed) {
+      existingRedisEntry = parsed as PersistedRedisStateDomain;
       existingVersionState =
-        normalizeCloudSyncVersionState(existingEntry.syncVersion) ||
+        normalizeCloudSyncVersionState(existingRedisEntry.syncVersion) ||
         createSyntheticLegacySyncVersion();
       existingMetadata = {
-        updatedAt: existingEntry.updatedAt,
-        version: existingEntry.version,
+        updatedAt: existingRedisEntry.updatedAt,
+        version: existingRedisEntry.version,
         totalSize: 0,
-        createdAt: existingEntry.createdAt,
+        createdAt: existingRedisEntry.createdAt,
         syncVersion: existingVersionState,
       };
     }
@@ -326,8 +356,33 @@ export async function putRedisStateDomain(
     writeSyncVersion
   );
 
+  let dataToPersist: unknown = body.data;
+  if (domain === "files-metadata" && isFilesMetadataRedisPatchPayload(body.data)) {
+    if (!existingRedisEntry?.data) {
+      return {
+        ok: false,
+        status: 400,
+        error: "files-metadata patch requires an existing snapshot (use full upload first)",
+      };
+    }
+    if (existingRedisEntry.updatedAt !== body.data.baseUpdatedAt) {
+      return {
+        ok: false,
+        status: 409,
+        error:
+          "files-metadata is out of date on the server. Download the latest snapshot and retry.",
+        code: "sync_conflict",
+        metadata: existingMetadata,
+      };
+    }
+    dataToPersist = applyFilesMetadataRedisPatch(
+      normalizeFilesMetadataForPatch(existingRedisEntry.data),
+      body.data
+    );
+  }
+
   const entry: PersistedRedisStateDomain = {
-    data: body.data,
+    data: dataToPersist,
     updatedAt: body.updatedAt,
     version: body.version || AUTO_SYNC_SNAPSHOT_VERSION,
     createdAt: now,

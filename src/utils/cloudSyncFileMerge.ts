@@ -131,10 +131,15 @@ function isDocumentFile(item: FileSystemItem): item is FileSystemItem & { uuid: 
   );
 }
 
-export function mergeFilesMetadataSnapshots(
+function computeMergedFilesMetadataItemPhase(
   localSnapshot: FilesMetadataSyncSnapshot,
   remoteSnapshot: FilesMetadataSyncSnapshot
-): FilesMetadataSyncSnapshot {
+): {
+  mergedItems: Record<string, FileSystemItem>;
+  winningSources: Map<string, ItemSource>;
+  mergedDeletedPaths: DeletionMarkerMap;
+  libraryState: FilesMetadataSyncSnapshot["libraryState"];
+} {
   const localDeletedPaths = normalizeDeletionMarkerMap(localSnapshot.deletedPaths);
   const remoteDeletedPaths = normalizeDeletionMarkerMap(remoteSnapshot.deletedPaths);
   const mergedDeletedCandidates = mergeDeletionMarkerMaps(
@@ -143,10 +148,6 @@ export function mergeFilesMetadataSnapshots(
   );
   const mergedItems: Record<string, FileSystemItem> = {};
   const winningSources = new Map<string, ItemSource>();
-  const localDocuments = new Map((localSnapshot.documents || []).map((item) => [item.key, item]));
-  const remoteDocuments = new Map(
-    (remoteSnapshot.documents || []).map((item) => [item.key, item])
-  );
 
   for (const path of Array.from(
     new Set([
@@ -173,6 +174,25 @@ export function mergeFilesMetadataSnapshots(
     mergedItems,
     mergedDeletedCandidates
   );
+
+  return {
+    mergedItems,
+    winningSources,
+    mergedDeletedPaths,
+    libraryState: resolveMergedLibraryState(
+      localSnapshot.libraryState,
+      remoteSnapshot.libraryState,
+      mergedItems
+    ),
+  };
+}
+
+function buildMergedFilesMetadataDocuments(
+  mergedItems: Record<string, FileSystemItem>,
+  winningSources: Map<string, ItemSource>,
+  localDocuments: Map<string, CloudSyncStoreItem>,
+  remoteDocuments: Map<string, CloudSyncStoreItem>
+): CloudSyncStoreItem[] {
   const mergedDocuments: CloudSyncStoreItem[] = [];
   const includedDocumentKeys = new Set<string>();
 
@@ -198,14 +218,156 @@ export function mergeFilesMetadataSnapshots(
     includedDocumentKeys.add(documentItem.key);
   }
 
+  return mergedDocuments;
+}
+
+/** UUIDs of /Documents/* files whose winning merge side is local (need IndexedDB load). */
+export function getLocalDocumentKeysRequiredForFilesMetadataMerge(
+  localSnapshot: FilesMetadataSyncSnapshot,
+  remoteSnapshot: FilesMetadataSyncSnapshot
+): string[] {
+  const { mergedItems, winningSources } = computeMergedFilesMetadataItemPhase(
+    localSnapshot,
+    remoteSnapshot
+  );
+  const keys = new Set<string>();
+  for (const [path, item] of Object.entries(mergedItems)) {
+    if (winningSources.get(path) === "local" && isDocumentFile(item)) {
+      keys.add(item.uuid);
+    }
+  }
+  return [...keys];
+}
+
+export function mergeFilesMetadataSnapshots(
+  localSnapshot: FilesMetadataSyncSnapshot,
+  remoteSnapshot: FilesMetadataSyncSnapshot
+): FilesMetadataSyncSnapshot {
+  const localDocuments = new Map((localSnapshot.documents || []).map((item) => [item.key, item]));
+  const remoteDocuments = new Map(
+    (remoteSnapshot.documents || []).map((item) => [item.key, item])
+  );
+  const { mergedItems, winningSources, mergedDeletedPaths, libraryState } =
+    computeMergedFilesMetadataItemPhase(localSnapshot, remoteSnapshot);
+
   return {
     items: mergedItems,
-    libraryState: resolveMergedLibraryState(
-      localSnapshot.libraryState,
-      remoteSnapshot.libraryState,
-      mergedItems
+    libraryState,
+    documents: buildMergedFilesMetadataDocuments(
+      mergedItems,
+      winningSources,
+      localDocuments,
+      remoteDocuments
     ),
-    documents: mergedDocuments,
     deletedPaths: mergedDeletedPaths,
+  };
+}
+
+export interface FilesMetadataRedisPatchPayload {
+  filesMetadataPatch: true;
+  baseUpdatedAt: string;
+  itemPathsRemoved?: string[];
+  items?: Record<string, FileSystemItem>;
+  documentKeysRemoved?: string[];
+  documents?: CloudSyncStoreItem[];
+  deletedPaths?: DeletionMarkerMap;
+  libraryState?: FilesMetadataSyncSnapshot["libraryState"];
+}
+
+export function isFilesMetadataRedisPatchPayload(
+  value: unknown
+): value is FilesMetadataRedisPatchPayload {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    (value as FilesMetadataRedisPatchPayload).filesMetadataPatch === true &&
+    typeof (value as FilesMetadataRedisPatchPayload).baseUpdatedAt === "string"
+  );
+}
+
+/** Build a minimal Redis patch from merged snapshot vs remote. Returns null if nothing changed. */
+export function buildFilesMetadataRedisPatch(
+  merged: FilesMetadataSyncSnapshot,
+  remote: FilesMetadataSyncSnapshot,
+  baseUpdatedAt: string
+): FilesMetadataRedisPatchPayload | null {
+  const itemPathsRemoved = Object.keys(remote.items || {}).filter(
+    (p) => !merged.items[p]
+  );
+  const items: Record<string, FileSystemItem> = {};
+  for (const [p, item] of Object.entries(merged.items)) {
+    const prev = remote.items?.[p];
+    if (!prev || JSON.stringify(prev) !== JSON.stringify(item)) {
+      items[p] = item;
+    }
+  }
+
+  const rDocs = new Map((remote.documents || []).map((d) => [d.key, d]));
+  const mDocs = new Map((merged.documents || []).map((d) => [d.key, d]));
+  const documentKeysRemoved = [...rDocs.keys()].filter((k) => !mDocs.has(k));
+  const documents: CloudSyncStoreItem[] = [];
+  for (const d of mDocs.values()) {
+    const rd = rDocs.get(d.key);
+    if (!rd || JSON.stringify(rd) !== JSON.stringify(d)) {
+      documents.push(d);
+    }
+  }
+
+  const delChanged =
+    JSON.stringify(merged.deletedPaths || {}) !==
+    JSON.stringify(remote.deletedPaths || {});
+  const libChanged = merged.libraryState !== remote.libraryState;
+
+  if (
+    itemPathsRemoved.length === 0 &&
+    Object.keys(items).length === 0 &&
+    documentKeysRemoved.length === 0 &&
+    documents.length === 0 &&
+    !delChanged &&
+    !libChanged
+  ) {
+    return null;
+  }
+
+  return {
+    filesMetadataPatch: true,
+    baseUpdatedAt,
+    ...(itemPathsRemoved.length > 0 ? { itemPathsRemoved } : {}),
+    ...(Object.keys(items).length > 0 ? { items } : {}),
+    ...(documentKeysRemoved.length > 0 ? { documentKeysRemoved } : {}),
+    ...(documents.length > 0 ? { documents } : {}),
+    ...(delChanged ? { deletedPaths: merged.deletedPaths } : {}),
+    ...(libChanged ? { libraryState: merged.libraryState } : {}),
+  };
+}
+
+export function applyFilesMetadataRedisPatch(
+  remote: FilesMetadataSyncSnapshot,
+  patch: FilesMetadataRedisPatchPayload
+): FilesMetadataSyncSnapshot {
+  const items: Record<string, FileSystemItem> = { ...(remote.items || {}) };
+  for (const p of patch.itemPathsRemoved || []) {
+    delete items[p];
+  }
+  if (patch.items) {
+    Object.assign(items, patch.items);
+  }
+
+  const docMap = new Map((remote.documents || []).map((d) => [d.key, d]));
+  for (const k of patch.documentKeysRemoved || []) {
+    docMap.delete(k);
+  }
+  for (const d of patch.documents || []) {
+    docMap.set(d.key, d);
+  }
+
+  return {
+    items,
+    libraryState: patch.libraryState ?? remote.libraryState,
+    documents: [...docMap.values()],
+    deletedPaths:
+      patch.deletedPaths !== undefined
+        ? normalizeDeletionMarkerMap(patch.deletedPaths)
+        : normalizeDeletionMarkerMap(remote.deletedPaths),
   };
 }

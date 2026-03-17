@@ -2,6 +2,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import {
   applyDownloadedCloudSyncDomainPayload,
+  invalidateRedisStateSnapshotForUpload,
   prepareCloudSyncDomainWrite,
 } from "@/sync/domains";
 import type {
@@ -74,6 +75,10 @@ export async function uploadLogicalCloudSyncDomain(
     : undefined;
 
   try {
+    const partMetadata: Partial<
+      Record<CloudSyncDomain, CloudSyncDomainMetadata>
+    > = {};
+
     for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
       if (!requestedPartDomains.has(partDomain)) {
         continue;
@@ -84,7 +89,26 @@ export async function uploadLogicalCloudSyncDomain(
         sharedDb
       );
       preparedWrites[partDomain] = preparedWrite;
-      writes[partDomain] = preparedWrite.payload;
+
+      if (
+        preparedWrite.skipRemoteWrite &&
+        preparedWrite.committedMetadataFallback
+      ) {
+        partMetadata[partDomain] = preparedWrite.committedMetadataFallback;
+        await preparedWrite.onCommitted?.(
+          preparedWrite.committedMetadataFallback
+        );
+      } else {
+        writes[partDomain] = preparedWrite.payload;
+      }
+    }
+
+    if (Object.keys(writes).length === 0) {
+      return {
+        metadata: aggregatePartMetadata(domain, partMetadata),
+        partMetadata,
+        applied: false,
+      };
     }
 
     const response = await abortableFetch(
@@ -103,6 +127,9 @@ export async function uploadLogicalCloudSyncDomain(
     );
 
     if (!response.ok) {
+      if (response.status === 409 && writes["files-metadata"]) {
+        invalidateRedisStateSnapshotForUpload(auth.username, "files-metadata");
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         (errorData as { error?: string }).error ||
@@ -120,14 +147,17 @@ export async function uploadLogicalCloudSyncDomain(
       >;
     };
 
-    const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
     for (const partDomain of partDomains) {
+      const prep = preparedWrites[partDomain];
+      if (!prep || prep.skipRemoteWrite) {
+        continue;
+      }
       const metadata = result.writes?.[partDomain]?.metadata;
       if (!metadata) {
         continue;
       }
       partMetadata[partDomain] = metadata;
-      await preparedWrites[partDomain]?.onCommitted?.(metadata);
+      await prep.onCommitted?.(metadata);
     }
 
     return {
