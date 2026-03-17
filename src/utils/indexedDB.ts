@@ -2,6 +2,7 @@
 
 const DB_NAME = "ryOS";
 const DB_VERSION = 7; // Force APPLETS store creation
+let hasLoggedOpenSuccess = false;
 
 export const STORES = {
   DOCUMENTS: "documents",
@@ -23,10 +24,13 @@ export const ensureIndexedDBInitialized = async (): Promise<IDBDatabase> => {
 
     request.onsuccess = () => {
       const db = request.result;
-      console.log(
-        `[IndexedDB] Database opened successfully. Object stores:`,
-        Array.from(db.objectStoreNames)
-      );
+      if (!hasLoggedOpenSuccess) {
+        hasLoggedOpenSuccess = true;
+        console.log(
+          `[IndexedDB] Database opened successfully. Object stores:`,
+          Array.from(db.objectStoreNames)
+        );
+      }
       resolve(db);
     };
 

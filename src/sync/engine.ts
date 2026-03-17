@@ -19,9 +19,11 @@ import {
 } from "@/utils/syncLogicalDomains";
 import {
   createEmptyCloudSyncMetadataMap,
+  isBlobSyncDomain,
   type CloudSyncDomain,
   type CloudSyncDomainMetadata,
 } from "@/utils/cloudSyncShared";
+import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 
 type AuthContext = {
   username: string;
@@ -55,6 +57,10 @@ function aggregatePartMetadata(
   return aggregateLogicalCloudSyncMetadata(metadataMap)[domain];
 }
 
+function logicalPartUsesIndexedDb(domain: CloudSyncDomain): boolean {
+  return domain === "files-metadata" || isBlobSyncDomain(domain);
+}
+
 export async function uploadLogicalCloudSyncDomain(
   domain: LogicalCloudSyncDomain,
   auth: AuthContext,
@@ -63,64 +69,75 @@ export async function uploadLogicalCloudSyncDomain(
   const requestedPartDomains = new Set(partDomains);
   const preparedWrites: Partial<Record<CloudSyncDomain, PreparedCloudSyncDomainWrite>> = {};
   const writes: Partial<Record<CloudSyncDomain, Record<string, unknown>>> = {};
+  const sharedDb = partDomains.some(logicalPartUsesIndexedDb)
+    ? await ensureIndexedDBInitialized()
+    : undefined;
 
-  for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
-    if (!requestedPartDomains.has(partDomain)) {
-      continue;
+  try {
+    for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+      if (!requestedPartDomains.has(partDomain)) {
+        continue;
+      }
+      const preparedWrite = await prepareCloudSyncDomainWrite(
+        partDomain,
+        auth,
+        sharedDb
+      );
+      preparedWrites[partDomain] = preparedWrite;
+      writes[partDomain] = preparedWrite.payload;
     }
-    const preparedWrite = await prepareCloudSyncDomainWrite(partDomain, auth);
-    preparedWrites[partDomain] = preparedWrite;
-    writes[partDomain] = preparedWrite.payload;
-  }
 
-  const response = await abortableFetch(
-    getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Sync-Session-Id": getSyncSessionId(),
-      },
-      body: JSON.stringify({ writes }),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to upload logical sync domain ${domain}`
+    const response = await abortableFetch(
+      getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Sync-Session-Id": getSyncSessionId(),
+        },
+        body: JSON.stringify({ writes }),
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      }
     );
-  }
 
-  const result = (await response.json()) as {
-    metadata?: LogicalCloudSyncDomainMetadata | null;
-    writes?: Partial<
-      Record<
-        CloudSyncDomain,
-        { metadata?: CloudSyncDomainMetadata | null }
-      >
-    >;
-  };
-
-  const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
-  for (const partDomain of partDomains) {
-    const metadata = result.writes?.[partDomain]?.metadata;
-    if (!metadata) {
-      continue;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        (errorData as { error?: string }).error ||
+          `Failed to upload logical sync domain ${domain}`
+      );
     }
-    partMetadata[partDomain] = metadata;
-    await preparedWrites[partDomain]?.onCommitted?.(metadata);
-  }
 
-  return {
-    metadata: result.metadata || aggregatePartMetadata(domain, partMetadata),
-    partMetadata,
-    applied: false,
-  };
+    const result = (await response.json()) as {
+      metadata?: LogicalCloudSyncDomainMetadata | null;
+      writes?: Partial<
+        Record<
+          CloudSyncDomain,
+          { metadata?: CloudSyncDomainMetadata | null }
+        >
+      >;
+    };
+
+    const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
+    for (const partDomain of partDomains) {
+      const metadata = result.writes?.[partDomain]?.metadata;
+      if (!metadata) {
+        continue;
+      }
+      partMetadata[partDomain] = metadata;
+      await preparedWrites[partDomain]?.onCommitted?.(metadata);
+    }
+
+    return {
+      metadata: result.metadata || aggregatePartMetadata(domain, partMetadata),
+      partMetadata,
+      applied: false,
+    };
+  } finally {
+    sharedDb?.close();
+  }
 }
 
 export async function downloadAndApplyLogicalCloudSyncDomain(
@@ -166,33 +183,50 @@ export async function downloadAndApplyLogicalCloudSyncDomain(
 
   const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
   let applied = false;
-
-  for (const [partDomain, partPayload] of Object.entries(payload.parts) as Array<
+  const parts = Object.entries(payload.parts) as Array<
     [
       CloudSyncDomain,
       | RedisStateDomainDownloadPayload
       | BlobMonolithicDomainDownloadPayload
       | BlobIndividualDomainDownloadPayload
     ]
-  >) {
-    partMetadata[partDomain] = partPayload.metadata;
-    if (
-      options?.shouldApplyPart &&
-      !options.shouldApplyPart(partDomain, partPayload.metadata)
-    ) {
-      continue;
+  >;
+  const willApplyIndexedDbPart = parts.some(
+    ([partDomain, partPayload]) =>
+      logicalPartUsesIndexedDb(partDomain) &&
+      (!options?.shouldApplyPart ||
+        options.shouldApplyPart(partDomain, partPayload.metadata))
+  );
+  const sharedDb = willApplyIndexedDbPart
+    ? await ensureIndexedDBInitialized()
+    : undefined;
+
+  try {
+    for (const [partDomain, partPayload] of parts) {
+      partMetadata[partDomain] = partPayload.metadata;
+      if (
+        options?.shouldApplyPart &&
+        !options.shouldApplyPart(partDomain, partPayload.metadata)
+      ) {
+        continue;
+      }
+
+      const result = await applyDownloadedCloudSyncDomainPayload(
+        partDomain,
+        partPayload,
+        {
+          db: sharedDb,
+        }
+      );
+      applied = applied || result.applied;
     }
 
-    const result = await applyDownloadedCloudSyncDomainPayload(
-      partDomain,
-      partPayload
-    );
-    applied = applied || result.applied;
+    return {
+      metadata: aggregatePartMetadata(domain, partMetadata),
+      partMetadata,
+      applied,
+    };
+  } finally {
+    sharedDb?.close();
   }
-
-  return {
-    metadata: aggregatePartMetadata(domain, partMetadata),
-    partMetadata,
-    applied,
-  };
 }
