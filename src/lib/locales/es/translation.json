@@ -1147,7 +1147,6 @@
         "daysAgo": "hace {{count}}d",
         "description": "Sincroniza automáticamente los datos y ajustes seleccionados con la nube tras cambios importantes",
         "error": "Problema de sincronización: {{error}}",
-        "enableHint": "La sincronización automática está desactivada. Activa el interruptor de abajo para sincronizar fondos de pantalla, documentos y ajustes entre dispositivos.",
         "fetching": "Obteniendo",
         "files": "Archivos",
         "hoursAgo": "hace {{count}}h",

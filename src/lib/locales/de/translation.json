@@ -1147,7 +1147,6 @@
         "daysAgo": "vor {{count}}T",
         "description": "Synchronisiert ausgewählte Daten und Einstellungen nach wichtigen Änderungen automatisch mit der Cloud",
         "error": "Synchronisierungsproblem: {{error}}",
-        "enableHint": "Auto-Sync ist aus. Schalten Sie den Schalter unten ein, um Hintergrundbilder, Dokumente und Einstellungen zwischen Geräten zu synchronisieren.",
         "fetching": "Wird abgerufen",
         "files": "Dateien",
         "hoursAgo": "vor {{count}}Std",

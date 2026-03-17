@@ -2379,8 +2379,7 @@
         "minutesAgo": "{{count}}m ago",
         "hoursAgo": "{{count}}h ago",
         "daysAgo": "{{count}}d ago",
-        "error": "Sync issue: {{error}}",
-        "enableHint": "Auto Sync is off. Turn on the switch below to sync wallpaper, documents, and settings across devices."
+        "error": "Sync issue: {{error}}"
       },
       "cloudSync": {
         "description": "Backup or restore all settings and files to the cloud. Max {{limit}}MB.",
