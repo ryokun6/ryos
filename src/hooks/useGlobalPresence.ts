@@ -17,14 +17,12 @@ interface PresenceEntry {
 }
 
 /**
- * Tracks which users are online globally. Logged-in users send a heartbeat
- * every 60s (only while `heartbeatActive`) and receive push updates on the
- * shared channel.
- *
- * @param heartbeatActive - When false, no API calls (e.g. Chats window closed).
- * @returns The set of online usernames (excluding self).
+ * Tracks which users are online globally. Only **logged-in** users (session +
+ * `isAuthenticated`) send heartbeats and subscribe to updates — no API traffic
+ * for guests. Runs while Chats is in the tree (including when the window is
+ * closed but the app instance stays mounted).
  */
-export function useGlobalPresence(heartbeatActive: boolean): string[] {
+export function useGlobalPresence(): string[] {
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
 
@@ -46,7 +44,7 @@ export function useGlobalPresence(heartbeatActive: boolean): string[] {
   }, [username]);
 
   useEffect(() => {
-    if (!username || !isAuthenticated || !heartbeatActive) return;
+    if (!username || !isAuthenticated) return;
 
     // Send heartbeat
     const sendHeartbeat = () => {
@@ -103,7 +101,7 @@ export function useGlobalPresence(heartbeatActive: boolean): string[] {
       channel.unbind("user-heartbeat", handler);
       unsubscribePusherChannel(GLOBAL_PRESENCE_CHANNEL);
     };
-  }, [username, isAuthenticated, heartbeatActive, deriveOnlineList]);
+  }, [username, isAuthenticated, deriveOnlineList]);
 
   return onlineUsers;
 }
