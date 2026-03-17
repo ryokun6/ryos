@@ -7,12 +7,24 @@ interface ThemeState {
   hydrate: () => void;
 }
 
-// Dynamically manage loading/unloading of legacy Windows CSS (xp.css variants)
+const LEGACY_WINDOWS_THEMES: readonly OsThemeId[] = ["xp", "win98"];
+
+const syncLegacyWindowsCompatibilityFlag = (theme: OsThemeId) => {
+  if (LEGACY_WINDOWS_THEMES.includes(theme)) {
+    document.documentElement.dataset.legacyWindowsCss = "true";
+    return;
+  }
+
+  delete document.documentElement.dataset.legacyWindowsCss;
+};
+
+// Dynamically manage loading/unloading of legacy Windows compatibility CSS
 let legacyCssLink: HTMLLinkElement | null = null;
 
 async function ensureLegacyCss(theme: OsThemeId) {
-  // Only xp and win98 use xp.css
-  if (theme !== "xp" && theme !== "win98") {
+  syncLegacyWindowsCompatibilityFlag(theme);
+
+  if (!LEGACY_WINDOWS_THEMES.includes(theme)) {
     if (legacyCssLink) {
       legacyCssLink.remove();
       legacyCssLink = null;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { listCandybarPacks } from "@/api/candybar";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { helpItems } from "..";
@@ -69,10 +70,8 @@ export function useCandyBarLogic({
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/candybar/packs");
-      if (!res.ok) throw new Error(`Failed to fetch icon packs: ${res.status}`);
-      const data = await res.json();
-      setIconPacks(data.packs || []);
+      const data = await listCandybarPacks();
+      setIconPacks((data.packs || []) as IconPack[]);
     } catch (err) {
       console.error("Failed to fetch icon packs:", err);
       setError(

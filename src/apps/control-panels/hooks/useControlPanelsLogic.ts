@@ -18,7 +18,6 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { getApiUrl } from "@/utils/platform";
 import { getTranslatedAppName } from "@/utils/i18n";
 import {
   uploadBlobWithStorageInstruction,
@@ -27,9 +26,15 @@ import {
 import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { logoutAllUsers } from "@/api/auth";
+import {
+  createCloudBackupUploadInstruction,
+  downloadCloudBackupWithProgress,
+  getCloudBackupStatus,
+  saveCloudBackupMetadata,
+} from "@/api/sync";
 import {
   FILE_SYNC_DOMAINS,
   type CloudSyncDomain,
@@ -445,19 +450,9 @@ export function useControlPanelsLogic({
         return;
       }
 
-      const response = await abortableFetch(getApiUrl("/api/auth/logout-all"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
+      const data = await logoutAllUsers();
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (data.success) {
         toast.success("Logged Out", {
           description: data.message || "Logged out from all devices",
         });
@@ -466,10 +461,6 @@ export function useControlPanelsLogic({
         confirmLogout();
 
         // No full page reload needed – UI will update via store reset
-      } else {
-        toast.error("Logout Failed", {
-          description: data.error || "Failed to logout from all devices",
-        });
       }
     } catch (error) {
       console.error("Error logging out all devices:", error);
@@ -531,18 +522,8 @@ export function useControlPanelsLogic({
 
     setIsCloudStatusLoading(true);
     try {
-      const response = await abortableFetch(getApiUrl("/api/sync/status"), {
-        method: "GET",
-        headers: {},
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 2, initialDelayMs: 500 },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCloudSyncStatus(data);
-      }
+      const data = await getCloudBackupStatus();
+      setCloudSyncStatus(data);
     } catch (error) {
       console.error("[CloudSync] Error fetching status:", error);
     } finally {
@@ -674,22 +655,8 @@ export function useControlPanelsLogic({
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.uploading"), percent: 50 });
 
       // Step 1: Get a client token for direct Vercel Blob upload
-      const tokenUrl = getApiUrl("/api/sync/backup-token");
-      const tokenRes = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!tokenRes.ok) {
-        const tokenError = await tokenRes.json().catch(() => ({}));
-        throw new Error(
-          (tokenError as { error?: string })?.error || "Failed to get upload token"
-        );
-      }
-
-      const uploadInstruction = (await tokenRes.json()) as StorageUploadInstruction;
+      const uploadInstruction =
+        (await createCloudBackupUploadInstruction()) as StorageUploadInstruction;
       const compressedBlob = new Blob([combined], { type: "application/gzip" });
       const uploadResult = await uploadBlobWithStorageInstruction(
         compressedBlob,
@@ -706,33 +673,18 @@ export function useControlPanelsLogic({
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 92 });
 
       // Step 3: Save metadata to server
-      const metaUrl = getApiUrl("/api/sync/backup");
-      const metaRes = await fetch(metaUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          storageUrl: uploadResult.storageUrl,
-          timestamp: backup.timestamp,
-          version: backup.version,
-          totalSize: combined.length,
-        }),
-      });
-
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 98 });
 
-      if (metaRes.ok) {
-        setCloudProgress({ phase: t("apps.control-panels.cloudSync.backupSuccess"), percent: 100 });
-        toast.success(t("apps.control-panels.cloudSync.backupSuccess"));
-        await fetchCloudSyncStatus();
-      } else {
-        const errorData = await metaRes.json().catch(() => ({}));
-        const errorMsg =
-          (errorData as { error?: string })?.error ||
-          t("apps.control-panels.cloudSync.backupFailed");
-        toast.error(errorMsg);
-      }
+      await saveCloudBackupMetadata({
+        storageUrl: uploadResult.storageUrl,
+        timestamp: backup.timestamp,
+        version: backup.version,
+        totalSize: combined.length,
+      });
+
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.backupSuccess"), percent: 100 });
+      toast.success(t("apps.control-panels.cloudSync.backupSuccess"));
+      await fetchCloudSyncStatus();
     } catch (error) {
       console.error("[CloudSync] Backup error:", error);
       toast.error(t("apps.control-panels.cloudSync.backupFailed"));
@@ -919,52 +871,21 @@ export function useControlPanelsLogic({
 
     try {
       // Download backup from cloud using XHR for progress
-      const downloadResult = await new Promise<{ ok: boolean; data: unknown }>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const url = getApiUrl("/api/sync/backup");
-        xhr.open("GET", url, true);
-        xhr.withCredentials = true;
-        xhr.timeout = 120000;
-
-        xhr.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const downloadPercent = (event.loaded / event.total) * 100;
-            const overallPercent = (downloadPercent * 40) / 100;
-            setCloudProgress({
-              phase: t("apps.control-panels.cloudSync.progress.downloading"),
-              percent: Math.round(overallPercent),
-            });
-          }
-        };
-
-        xhr.onload = () => {
-          let data: unknown;
-          try {
-            data = JSON.parse(xhr.responseText);
-          } catch {
-            data = {};
-          }
-          resolve({ ok: xhr.status >= 200 && xhr.status < 300, data });
-        };
-
-        xhr.onerror = () => reject(new Error("Network error during download"));
-        xhr.ontimeout = () => reject(new Error("Download timed out"));
-
-        xhr.send();
+      const downloadResult = await downloadCloudBackupWithProgress({
+        onProgress: (loaded, total) => {
+          if (total <= 0) return;
+          const downloadPercent = (loaded / total) * 100;
+          const overallPercent = (downloadPercent * 40) / 100;
+          setCloudProgress({
+            phase: t("apps.control-panels.cloudSync.progress.downloading"),
+            percent: Math.round(overallPercent),
+          });
+        },
       });
-
-      if (!downloadResult.ok) {
-        const errorMsg =
-          (downloadResult.data as { error?: string })?.error ||
-          t("apps.control-panels.cloudSync.restoreFailed");
-        toast.error(errorMsg);
-        return;
-      }
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.decompressing"), percent: 45 });
 
-      const result = downloadResult.data as { data: string };
-      const base64Data = result.data;
+      const base64Data = downloadResult.data;
 
       // Decode base64 to Uint8Array
       const binaryStr = atob(base64Data);

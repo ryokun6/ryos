@@ -1,11 +1,9 @@
 import { Command, CommandContext, CommandResult } from "../types";
 import { appIds, AppId } from "@/config/appIds";
 import { useFilesStore } from "@/stores/useFilesStore";
-import {
-  dbOperations,
-  DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
+import { DocumentContent } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { dbOperations } from "@/utils/indexedDBOperations";
 import i18n from "@/lib/i18n";
 
 // App name aliases for convenience

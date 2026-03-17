@@ -37,6 +37,28 @@ Turn the audit into a deletion-first simplification program that:
   - `useThemeFlags()` exists
   - repeated theme booleans were replaced in key touched UI/app files
 
+- Wave 6 is complete:
+  - `src/utils/indexedDBOperations.ts` is the winning IndexedDB helper surface
+  - Finder-owned `dbOperations` was removed in favor of the shared utility
+  - `useFilesStore` and `useDisplaySettingsStore` now use the shared helper path
+  - direct runtime IndexedDB CRUD flows were reduced to the shared module plus backup/migration utilities
+
+- Wave 7 is complete:
+  - auth, applet sharing, media, presence, AirDrop, and sync status/backup client calls now flow through `src/api/*`
+  - `src/api/core.ts` now supports non-JSON request bodies for shared API wrappers
+  - auth-related client calls now flow through `src/api/auth.ts`
+  - remaining song, typing, link-preview/share-link, and sync transport clients now flow through `src/api/*`
+  - raw internal fetches were reduced to framework-owned transport URLs (`useChat` / AI SDK) rather than ad hoc request code
+
+- Wave 8 is complete:
+  - `src/sync/domains.ts` now delegates per-domain serialization/apply/merge logic to dedicated modules
+  - target domain split now exists across `settings`, `files`, `songs`, `videos`, `stickies`, `calendar`, `contacts`, and `blob-shared`
+
+- Wave 9 is complete:
+  - canonical shared font tokens now live in `src/index.css`
+  - `src/styles/themes.css` now consumes those shared tokens for theme font variables and several repeated font declarations
+  - legacy Windows CSS now hangs off an explicit compatibility flag managed by the theme store
+
 ### Partially complete
 
 - Wave 2 is only partially complete:
@@ -60,12 +82,11 @@ Turn the audit into a deletion-first simplification program that:
 
 ## Recommended next agent order
 
-1. Finish IndexedDB unification
-2. Finish internal API client unification
-3. Split `src/sync/domains.ts` into per-domain modules
-4. Unify style tokens between `src/index.css` and `src/styles/themes.css`
-5. Reduce legacy Windows CSS runtime surface
-6. Fix `useFilesStore` rehydrate noise
+1. Finish internal API client unification
+2. Split `src/sync/domains.ts` into per-domain modules
+3. Unify style tokens between `src/index.css` and `src/styles/themes.css`
+4. Reduce legacy Windows CSS runtime surface
+5. Fix `useFilesStore` rehydrate noise
 
 ## Wave order
 

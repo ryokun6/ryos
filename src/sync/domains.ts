@@ -1,30 +1,6 @@
-import { abortableFetch } from "@/utils/abortableFetch";
-import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
-import { getApiUrl } from "@/utils/platform";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { useLanguageStore } from "@/stores/useLanguageStore";
-import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { useAppStore } from "@/stores/useAppStore";
-import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
-import { useIpodStore, type Track } from "@/stores/useIpodStore";
-import { useVideoStore, type Video } from "@/stores/useVideoStore";
-import { useDockStore } from "@/stores/useDockStore";
-import { useDashboardStore } from "@/stores/useDashboardStore";
-import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
-import {
-  useCalendarStore,
-  type CalendarEvent,
-  type CalendarGroup,
-  type TodoItem,
-} from "@/stores/useCalendarStore";
-import { useContactsStore } from "@/stores/useContactsStore";
-import {
-  useCloudSyncStore,
-  type CloudSyncDeletionBucket,
-} from "@/stores/useCloudSyncStore";
-import type { Contact } from "@/utils/contacts";
-import { normalizeContacts } from "@/utils/contacts";
+import { fetchConsolidatedSyncMetadata } from "@/api/sync";
+import { STORES } from "@/utils/indexedDB";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   uploadBlobWithStorageInstruction,
 } from "@/utils/storageUpload";
@@ -57,31 +33,57 @@ import {
 } from "@/sync/transport";
 import type { CloudSyncWriteVersion } from "@/utils/cloudSyncVersion";
 import {
-  filterDeletedIds,
   mergeDeletionMarkerMaps,
   normalizeDeletionMarkerMap,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
 import {
-  mergeFilesMetadataSnapshots,
-  type FilesMetadataSyncSnapshot,
-} from "@/utils/cloudSyncFileMerge";
+  applyCalendarSnapshot,
+  mergeCalendarSnapshots,
+  serializeCalendarSnapshot,
+  type CalendarSnapshotData,
+} from "@/sync/domains/calendar";
 import {
-  beginApplyingRemoteSettingsSections,
-  endApplyingRemoteSettingsSections,
-  getSettingsSectionTimestampMap,
-  setSettingsSectionTimestamps,
-  type SettingsSyncSection,
-} from "@/sync/state";
+  applyContactsSnapshot,
+  mergeContactsSnapshots,
+  serializeContactsSnapshot,
+  type ContactsSnapshotData,
+} from "@/sync/domains/contacts";
+import {
+  applyFilesMetadataSnapshot,
+  serializeFilesMetadataSnapshot,
+  type FilesMetadataSnapshotData,
+  type FilesStoreSnapshotData,
+} from "@/sync/domains/files";
+import { mergeFilesMetadataSnapshots } from "@/utils/cloudSyncFileMerge";
+import {
+  applySettingsSnapshot,
+  serializeSettingsSnapshot,
+} from "@/sync/domains/settings";
+import {
+  applySongsSnapshot,
+  mergeSongsSnapshots,
+  serializeSongsSnapshot,
+  type SongsSnapshotData,
+} from "@/sync/domains/songs";
+import {
+  applyStickiesSnapshot,
+  mergeStickiesSnapshots,
+  serializeStickiesSnapshot,
+  type StickiesSnapshotData,
+} from "@/sync/domains/stickies";
+import {
+  applyVideosSnapshot,
+  mergeVideosSnapshots,
+  serializeVideosSnapshot,
+  type VideosSnapshotData,
+} from "@/sync/domains/videos";
 import {
   beginApplyingRemoteDomain,
   endApplyingRemoteDomain,
 } from "@/utils/cloudSyncRemoteApplyState";
 import {
-  getRemoteSettingsSectionsToApply,
   mergeSettingsSnapshotData,
-  normalizeSettingsSnapshotData,
-  shouldRestoreLegacyCustomWallpapers,
   type SettingsSnapshotData,
 } from "@/utils/cloudSyncSettingsMerge";
 import {
@@ -93,13 +95,21 @@ import {
   planIndividualBlobUpload,
 } from "@/utils/cloudSyncIndividualBlobMerge";
 import {
-  deserializeStoreItem,
-  readStoreItems,
-  restoreStoreItems,
-  serializeStoreItem,
-  serializeStoreItems,
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
+import {
+  applyIndividualBlobDomain,
+  applyMonolithicBlobSnapshotToIndividualDomain,
+  downloadGzipJson,
+  getIndividualBlobDeletedKeys,
+  getIndividualBlobDeletionBucket,
+  gzipJson,
+  pruneDeletedKeysForExistingRecords,
+  serializeCustomWallpapersSnapshot,
+  serializeIndexedDbStoreSnapshot,
+  serializeIndividualBlobDomainRecords,
+  type BlobSyncItemEnvelope,
+} from "@/sync/domains/blob-shared";
 import type {
   BlobIndividualDomainDownloadPayload,
   BlobMonolithicDomainDownloadPayload,
@@ -115,46 +125,6 @@ type AuthContext = {
 
 type CustomWallpapersSnapshotData = StoreItemWithKey[];
 
-interface FilesMetadataSnapshotData {
-  items: Record<string, FileSystemItem>;
-  libraryState: "uninitialized" | "loaded" | "cleared";
-  documents?: FilesStoreSnapshotData;
-  deletedPaths?: DeletionMarkerMap;
-}
-
-type FilesStoreSnapshotData = StoreItemWithKey[];
-
-interface SongsSnapshotData {
-  tracks: Track[];
-  libraryState: "uninitialized" | "loaded" | "cleared";
-  lastKnownVersion: number;
-  deletedTrackIds?: DeletionMarkerMap;
-}
-
-interface VideosSnapshotData {
-  videos: Video[];
-}
-
-interface StickiesSnapshotData {
-  notes: StickyNote[];
-  deletedNoteIds?: DeletionMarkerMap;
-}
-
-interface CalendarSnapshotData {
-  events: CalendarEvent[];
-  calendars: CalendarGroup[];
-  todos: TodoItem[];
-  deletedEventIds?: DeletionMarkerMap;
-  deletedCalendarIds?: DeletionMarkerMap;
-  deletedTodoIds?: DeletionMarkerMap;
-}
-
-interface ContactsSnapshotData {
-  contacts: Contact[];
-  myContactId: string | null;
-  deletedContactIds?: DeletionMarkerMap;
-}
-
 type AnySnapshotData =
   | SettingsSnapshotData
   | FilesMetadataSnapshotData
@@ -165,19 +135,6 @@ type AnySnapshotData =
   | CalendarSnapshotData
   | ContactsSnapshotData
   | CustomWallpapersSnapshotData;
-
-interface SerializedStoreItemRecord {
-  item: StoreItemWithKey;
-  signature: string;
-}
-
-interface BlobSyncItemEnvelope {
-  domain: BlobSyncDomain;
-  key: string;
-  version: number;
-  updatedAt: string;
-  data: StoreItemWithKey;
-}
 
 interface IndividualBlobDomainResponse {
   mode?: "individual";
@@ -281,423 +238,6 @@ const individualBlobReconcileCache = createBurstFetchCache<boolean>(
   SYNC_DOMAIN_FETCH_BURST_MS
 );
 
-async function getIndexedDbHandle(providedDb?: IDBDatabase): Promise<{
-  db: IDBDatabase;
-  shouldClose: boolean;
-}> {
-  if (providedDb) {
-    return {
-      db: providedDb,
-      shouldClose: false,
-    };
-  }
-
-  return {
-    db: await ensureIndexedDBInitialized(),
-    shouldClose: true,
-  };
-}
-
-function assertCompressionSupport(): void {
-  if (
-    typeof CompressionStream === "undefined" ||
-    typeof DecompressionStream === "undefined"
-  ) {
-    throw new Error("Cloud sync requires browser compression support.");
-  }
-}
-
-async function computeSyncSignature(value: unknown): Promise<string> {
-  const payload = new TextEncoder().encode(JSON.stringify(value));
-  const digest = await crypto.subtle.digest("SHA-256", payload);
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("");
-}
-
-async function serializeStoreItemRecords(
-  items: StoreItemWithKey[]
-): Promise<SerializedStoreItemRecord[]> {
-  return Promise.all(
-    items.map(async (item) => {
-      const serializedItem = await serializeStoreItem(item);
-      return {
-        item: serializedItem,
-        signature: await computeSyncSignature(serializedItem),
-      };
-    })
-  );
-}
-
-async function upsertStoreItems(
-  db: IDBDatabase,
-  storeName: string,
-  items: StoreItemWithKey[]
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    try {
-      for (const item of items) {
-        store.put(deserializeStoreItem(item), item.key);
-      }
-    } catch (error) {
-      transaction.abort();
-      reject(error);
-    }
-  });
-}
-
-async function deleteStoreItemsByKey(
-  db: IDBDatabase,
-  storeName: string,
-  keys: string[]
-): Promise<void> {
-  if (keys.length === 0) {
-    return;
-  }
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    try {
-      for (const key of keys) {
-        store.delete(key);
-      }
-    } catch (error) {
-      transaction.abort();
-      reject(error);
-    }
-  });
-}
-
-async function gzipJson(value: unknown): Promise<Uint8Array> {
-  assertCompressionSupport();
-  const encoder = new TextEncoder();
-  const inputData = encoder.encode(JSON.stringify(value));
-  const readableStream = new ReadableStream({
-    start(controller) {
-      controller.enqueue(inputData);
-      controller.close();
-    },
-  });
-  const compressedStream = readableStream.pipeThrough(
-    new CompressionStream("gzip")
-  );
-  const chunks: Uint8Array[] = [];
-  const reader = compressedStream.getReader();
-
-  while (true) {
-    const { done, value: chunk } = await reader.read();
-    if (done) {
-      break;
-    }
-    if (chunk) {
-      chunks.push(chunk);
-    }
-  }
-
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-  const combined = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    combined.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return combined;
-}
-
-
-function serializeSettingsSnapshot(): SettingsSnapshotData {
-  const displayState = useDisplaySettingsStore.getState();
-  const audioState = useAudioSettingsStore.getState();
-  const ipodState = useIpodStore.getState();
-  const dockState = useDockStore.getState();
-  const dashboardState = useDashboardStore.getState();
-  const sectionUpdatedAt = getSettingsSectionTimestampMap();
-
-  return {
-    theme: useThemeStore.getState().current,
-    language: useLanguageStore.getState().current,
-    languageInitialized:
-      localStorage.getItem("ryos:language-initialized") === "true",
-    aiModel: useAppStore.getState().aiModel,
-    display: {
-      displayMode: displayState.displayMode,
-      shaderEffectEnabled: displayState.shaderEffectEnabled,
-      selectedShaderType: displayState.selectedShaderType,
-      currentWallpaper: displayState.currentWallpaper,
-      screenSaverEnabled: displayState.screenSaverEnabled,
-      screenSaverType: displayState.screenSaverType,
-      screenSaverIdleTime: displayState.screenSaverIdleTime,
-      debugMode: displayState.debugMode,
-      htmlPreviewSplit: displayState.htmlPreviewSplit,
-    },
-    audio: {
-      masterVolume: audioState.masterVolume,
-      uiVolume: audioState.uiVolume,
-      chatSynthVolume: audioState.chatSynthVolume,
-      speechVolume: audioState.speechVolume,
-      ipodVolume: audioState.ipodVolume,
-      uiSoundsEnabled: audioState.uiSoundsEnabled,
-      terminalSoundsEnabled: audioState.terminalSoundsEnabled,
-      typingSynthEnabled: audioState.typingSynthEnabled,
-      speechEnabled: audioState.speechEnabled,
-      keepTalkingEnabled: audioState.keepTalkingEnabled,
-      ttsModel: audioState.ttsModel,
-      ttsVoice: audioState.ttsVoice,
-      synthPreset: audioState.synthPreset,
-    },
-    ipod: {
-      displayMode: ipodState.displayMode,
-      showLyrics: ipodState.showLyrics,
-      lyricsAlignment: ipodState.lyricsAlignment,
-      lyricsFont: ipodState.lyricsFont,
-      romanization: ipodState.romanization,
-      lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage ?? null,
-      theme: ipodState.theme,
-      lcdFilterOn: ipodState.lcdFilterOn,
-    },
-    dock: {
-      pinnedItems: dockState.pinnedItems,
-      scale: dockState.scale,
-      hiding: dockState.hiding,
-      magnification: dockState.magnification,
-    },
-    dashboard: {
-      widgets: dashboardState.widgets,
-    },
-    sectionUpdatedAt,
-  };
-}
-
-async function serializeCustomWallpapersSnapshot(
-  providedDb?: IDBDatabase
-): Promise<CustomWallpapersSnapshotData> {
-  const { db, shouldClose } = await getIndexedDbHandle(providedDb);
-  try {
-    return await serializeStoreItems(
-      await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
-    );
-  } finally {
-    if (shouldClose) {
-      db.close();
-    }
-  }
-}
-
-async function serializeCustomWallpapersRecords(
-  providedDb?: IDBDatabase
-): Promise<SerializedStoreItemRecord[]> {
-  const { db, shouldClose } = await getIndexedDbHandle(providedDb);
-  try {
-    return await serializeStoreItemRecords(
-      await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
-    );
-  } finally {
-    if (shouldClose) {
-      db.close();
-    }
-  }
-}
-
-async function serializeIndexedDbStoreSnapshot(
-  storeName: string,
-  providedDb?: IDBDatabase
-): Promise<FilesStoreSnapshotData> {
-  const { db, shouldClose } = await getIndexedDbHandle(providedDb);
-
-  try {
-    const items = await readStoreItems(db, storeName);
-    return await serializeStoreItems(items);
-  } finally {
-    if (shouldClose) {
-      db.close();
-    }
-  }
-}
-
-async function serializeIndexedDbStoreRecords(
-  storeName: string,
-  providedDb?: IDBDatabase
-): Promise<SerializedStoreItemRecord[]> {
-  const { db, shouldClose } = await getIndexedDbHandle(providedDb);
-
-  try {
-    return await serializeStoreItemRecords(await readStoreItems(db, storeName));
-  } finally {
-    if (shouldClose) {
-      db.close();
-    }
-  }
-}
-
-function getIndividualBlobStoreName(domain: IndividualBlobSyncDomain): string {
-  switch (domain) {
-    case "files-images":
-      return STORES.IMAGES;
-    case "files-trash":
-      return STORES.TRASH;
-    case "files-applets":
-      return STORES.APPLETS;
-    case "custom-wallpapers":
-      return STORES.CUSTOM_WALLPAPERS;
-  }
-}
-
-function getIndividualBlobDeletionBucket(
-  domain: IndividualBlobSyncDomain
-): CloudSyncDeletionBucket {
-  switch (domain) {
-    case "files-images":
-      return "fileImageKeys";
-    case "files-trash":
-      return "fileTrashKeys";
-    case "files-applets":
-      return "fileAppletKeys";
-    case "custom-wallpapers":
-      return "customWallpaperKeys";
-  }
-}
-
-function getIndividualBlobDeletedKeys(
-  domain: IndividualBlobSyncDomain
-): DeletionMarkerMap {
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  switch (domain) {
-    case "files-images":
-      return deletionMarkers.fileImageKeys;
-    case "files-trash":
-      return deletionMarkers.fileTrashKeys;
-    case "files-applets":
-      return deletionMarkers.fileAppletKeys;
-    case "custom-wallpapers":
-      return deletionMarkers.customWallpaperKeys;
-  }
-}
-
-function pruneDeletedKeysForExistingRecords(
-  domain: IndividualBlobSyncDomain,
-  records: SerializedStoreItemRecord[]
-): DeletionMarkerMap {
-  const deletedKeys = getIndividualBlobDeletedKeys(domain);
-  if (Object.keys(deletedKeys).length === 0 || records.length === 0) {
-    return deletedKeys;
-  }
-
-  const existingKeys = new Set(records.map((record) => record.item.key));
-  const staleDeletedKeys = Object.keys(deletedKeys).filter((key) =>
-    existingKeys.has(key)
-  );
-
-  if (staleDeletedKeys.length > 0) {
-    useCloudSyncStore
-      .getState()
-      .clearDeletedKeys(getIndividualBlobDeletionBucket(domain), staleDeletedKeys);
-  }
-
-  return Object.fromEntries(
-    Object.entries(deletedKeys).filter(([key]) => !existingKeys.has(key))
-  );
-}
-
-async function serializeIndividualBlobDomainRecords(
-  domain: IndividualBlobSyncDomain,
-  providedDb?: IDBDatabase
-): Promise<SerializedStoreItemRecord[]> {
-  switch (domain) {
-    case "files-images":
-      return serializeIndexedDbStoreRecords(STORES.IMAGES, providedDb);
-    case "files-trash":
-      return serializeIndexedDbStoreRecords(STORES.TRASH, providedDb);
-    case "files-applets":
-      return serializeIndexedDbStoreRecords(STORES.APPLETS, providedDb);
-    case "custom-wallpapers":
-      return serializeCustomWallpapersRecords(providedDb);
-  }
-}
-
-async function serializeFilesMetadataSnapshot(
-  providedDb?: IDBDatabase
-): Promise<FilesMetadataSnapshotData> {
-  const filesState = useFilesStore.getState();
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  return {
-    items: filesState.items,
-    libraryState: filesState.libraryState,
-    documents: await serializeIndexedDbStoreSnapshot(
-      STORES.DOCUMENTS,
-      providedDb
-    ),
-    deletedPaths: deletionMarkers.fileMetadataPaths,
-  };
-}
-
-function serializeSongsSnapshot(): SongsSnapshotData {
-  const ipodState = useIpodStore.getState();
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  return {
-    tracks: ipodState.tracks,
-    libraryState: ipodState.libraryState,
-    lastKnownVersion: ipodState.lastKnownVersion,
-    deletedTrackIds: deletionMarkers.songTrackIds,
-  };
-}
-
-function serializeVideosSnapshot(): VideosSnapshotData {
-  return {
-    videos: useVideoStore.getState().videos,
-  };
-}
-
-function serializeStickiesSnapshot(): StickiesSnapshotData {
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-  return {
-    notes: useStickiesStore.getState().notes,
-    deletedNoteIds: deletionMarkers.stickyNoteIds,
-  };
-}
-
-function serializeCalendarSnapshot(): CalendarSnapshotData {
-  const calendarState = useCalendarStore.getState();
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  return {
-    events: calendarState.events,
-    calendars: calendarState.calendars,
-    todos: calendarState.todos,
-    deletedEventIds: deletionMarkers.calendarEventIds,
-    deletedCalendarIds: deletionMarkers.calendarIds,
-    deletedTodoIds: deletionMarkers.calendarTodoIds,
-  };
-}
-
-function serializeContactsSnapshot(): ContactsSnapshotData {
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-  return {
-    contacts: useContactsStore.getState().contacts,
-    myContactId: useContactsStore.getState().myContactId,
-    deletedContactIds: deletionMarkers.contactIds,
-  };
-}
-
 async function createCloudSyncEnvelope(
   domain: CloudSyncDomain,
   providedDb?: IDBDatabase
@@ -782,447 +322,6 @@ async function createCloudSyncEnvelope(
         updatedAt,
         data: await serializeCustomWallpapersSnapshot(providedDb),
       };
-  }
-}
-
-async function applySettingsSnapshot(
-  data: SettingsSnapshotData,
-  fallbackUpdatedAt: string,
-  providedDb?: IDBDatabase
-): Promise<void> {
-  const normalizedData = normalizeSettingsSnapshotData(data, fallbackUpdatedAt);
-  const remoteSectionUpdatedAt = normalizedData.sectionUpdatedAt || {};
-  const localSectionUpdatedAt = getSettingsSectionTimestampMap();
-  const sectionsToApply = getRemoteSettingsSectionsToApply(
-    localSectionUpdatedAt,
-    remoteSectionUpdatedAt
-  );
-
-  if (sectionsToApply.length > 0) {
-    console.log(
-      `[CloudSync] Settings apply: sections to apply: [${sectionsToApply.join(", ")}]`
-    );
-  } else {
-    console.log(
-      "[CloudSync] Settings apply: no sections to apply (all local timestamps >= remote)"
-    );
-  }
-
-  const legacyCustomWallpapers = normalizedData.customWallpapers || [];
-  const hasDedicatedCustomWallpaperSync = Boolean(
-    useCloudSyncStore.getState().remoteMetadata["custom-wallpapers"]?.updatedAt
-  );
-
-  // Legacy: restore embedded custom wallpapers only on first migration when
-  // there is no dedicated custom-wallpapers sync domain and nothing local yet.
-  if (legacyCustomWallpapers.length > 0) {
-    const { db, shouldClose } = await getIndexedDbHandle(providedDb);
-    try {
-      const localWallpaperCount = (
-        await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
-      ).length;
-      if (
-        shouldRestoreLegacyCustomWallpapers({
-          legacyWallpaperCount: legacyCustomWallpapers.length,
-          localWallpaperCount,
-          hasDedicatedCustomWallpaperSync,
-        })
-      ) {
-        await upsertStoreItems(
-          db,
-          STORES.CUSTOM_WALLPAPERS,
-          legacyCustomWallpapers
-        );
-        useDisplaySettingsStore.getState().bumpCustomWallpapersRevision();
-      }
-    } finally {
-      if (shouldClose) {
-        db.close();
-      }
-    }
-  }
-
-  const appliedSections: SettingsSyncSection[] = [];
-
-  beginApplyingRemoteSettingsSections(sectionsToApply);
-  try {
-    if (sectionsToApply.includes("theme")) {
-      try {
-        useThemeStore.getState().setTheme(normalizedData.theme as never);
-        appliedSections.push("theme");
-      } catch (e) {
-        console.error("[CloudSync] Failed to apply remote theme:", e);
-      }
-    }
-
-    if (sectionsToApply.includes("language")) {
-      try {
-        localStorage.setItem(
-          "ryos:language-initialized",
-          normalizedData.languageInitialized ? "true" : "false"
-        );
-        await useLanguageStore.getState().setLanguage(normalizedData.language);
-        appliedSections.push("language");
-      } catch (e) {
-        console.error("[CloudSync] Failed to apply remote language:", e);
-      }
-    }
-
-    if (sectionsToApply.includes("display")) {
-      try {
-        useDisplaySettingsStore.setState({
-          displayMode: normalizedData.display.displayMode as never,
-          shaderEffectEnabled: normalizedData.display.shaderEffectEnabled,
-          selectedShaderType: normalizedData.display.selectedShaderType as never,
-          screenSaverEnabled: normalizedData.display.screenSaverEnabled,
-          screenSaverType: normalizedData.display.screenSaverType,
-          screenSaverIdleTime: normalizedData.display.screenSaverIdleTime,
-          debugMode: normalizedData.display.debugMode,
-          htmlPreviewSplit: normalizedData.display.htmlPreviewSplit,
-        });
-
-        await useDisplaySettingsStore
-          .getState()
-          .setWallpaper(normalizedData.display.currentWallpaper);
-        appliedSections.push("display");
-      } catch (e) {
-        console.error("[CloudSync] Failed to apply remote display:", e);
-      }
-    }
-
-    if (sectionsToApply.includes("audio")) {
-      try {
-        useAudioSettingsStore.setState({
-          masterVolume: normalizedData.audio.masterVolume,
-          uiVolume: normalizedData.audio.uiVolume,
-          chatSynthVolume: normalizedData.audio.chatSynthVolume,
-          speechVolume: normalizedData.audio.speechVolume,
-          ipodVolume: normalizedData.audio.ipodVolume,
-          uiSoundsEnabled: normalizedData.audio.uiSoundsEnabled,
-          terminalSoundsEnabled: normalizedData.audio.terminalSoundsEnabled,
-          typingSynthEnabled: normalizedData.audio.typingSynthEnabled,
-          speechEnabled: normalizedData.audio.speechEnabled,
-          keepTalkingEnabled: normalizedData.audio.keepTalkingEnabled,
-          ttsModel: normalizedData.audio.ttsModel,
-          ttsVoice: normalizedData.audio.ttsVoice,
-          synthPreset: normalizedData.audio.synthPreset,
-        });
-        appliedSections.push("audio");
-      } catch (e) {
-        console.error("[CloudSync] Failed to apply remote audio:", e);
-      }
-    }
-
-    if (sectionsToApply.includes("aiModel")) {
-      try {
-        useAppStore.getState().setAiModel(normalizedData.aiModel);
-        appliedSections.push("aiModel");
-      } catch (e) {
-        console.error("[CloudSync] Failed to apply remote aiModel:", e);
-      }
-    }
-
-    if (normalizedData.ipod && sectionsToApply.includes("ipod")) {
-      try {
-        const remoteIpod = normalizedData.ipod;
-        useIpodStore.setState({
-          displayMode: remoteIpod.displayMode,
-          showLyrics: remoteIpod.showLyrics,
-          lyricsAlignment: remoteIpod.lyricsAlignment,
-          lyricsFont: remoteIpod.lyricsFont,
-          romanization: remoteIpod.romanization,
-          lyricsTranslationLanguage: remoteIpod.lyricsTranslationLanguage ?? null,
-          theme: remoteIpod.theme,
-          lcdFilterOn: remoteIpod.lcdFilterOn,
-        });
-        appliedSections.push("ipod");
-      } catch (e) {
-        console.error("[CloudSync] Failed to apply remote ipod:", e);
-      }
-    }
-
-    if (normalizedData.dock && sectionsToApply.includes("dock")) {
-      try {
-        useDockStore.setState({
-          pinnedItems: normalizedData.dock.pinnedItems,
-          scale: normalizedData.dock.scale,
-          hiding: normalizedData.dock.hiding,
-          magnification: normalizedData.dock.magnification,
-        });
-        appliedSections.push("dock");
-      } catch (e) {
-        console.error("[CloudSync] Failed to apply remote dock:", e);
-      }
-    }
-
-    if (
-      normalizedData.dashboard?.widgets &&
-      Array.isArray(normalizedData.dashboard.widgets) &&
-      sectionsToApply.includes("dashboard")
-    ) {
-      try {
-        useDashboardStore.setState({
-          widgets: normalizedData.dashboard.widgets,
-        });
-        appliedSections.push("dashboard");
-      } catch (e) {
-        console.error("[CloudSync] Failed to apply remote dashboard:", e);
-      }
-    }
-  } finally {
-    endApplyingRemoteSettingsSections(sectionsToApply);
-  }
-
-  if (appliedSections.length < sectionsToApply.length) {
-    const failed = sectionsToApply.filter((s) => !appliedSections.includes(s));
-    console.warn(
-      `[CloudSync] Settings apply: ${appliedSections.length}/${sectionsToApply.length} sections succeeded, failed: ${failed.join(", ")}`
-    );
-  }
-
-  setSettingsSectionTimestamps(
-    Object.fromEntries(
-      appliedSections.map((section) => [section, remoteSectionUpdatedAt[section] || fallbackUpdatedAt])
-    )
-  );
-}
-
-async function applyIndexedDbStoreSnapshot(
-  storeName: string,
-  data: FilesStoreSnapshotData,
-  providedDb?: IDBDatabase
-): Promise<void> {
-  const { db, shouldClose } = await getIndexedDbHandle(providedDb);
-
-  try {
-    await restoreStoreItems(db, storeName, data);
-  } finally {
-    if (shouldClose) {
-      db.close();
-    }
-  }
-}
-
-async function applyFilesMetadataSnapshot(
-  data: FilesMetadataSnapshotData,
-  providedDb?: IDBDatabase
-): Promise<void> {
-  const remoteDeletedPaths = normalizeDeletionMarkerMap(data.deletedPaths);
-  const cloudSyncState = useCloudSyncStore.getState();
-  const localDeletedPaths = cloudSyncState.deletionMarkers.fileMetadataPaths;
-  const localSnapshot: FilesMetadataSyncSnapshot = {
-    items: useFilesStore.getState().items,
-    libraryState: useFilesStore.getState().libraryState,
-    documents: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS, providedDb),
-    deletedPaths: localDeletedPaths,
-  };
-  const mergedSnapshot = mergeFilesMetadataSnapshots(localSnapshot, {
-    ...data,
-    deletedPaths: remoteDeletedPaths,
-  });
-  const effectiveDeletedPaths = mergeDeletionMarkerMaps(
-    localDeletedPaths,
-    remoteDeletedPaths
-  );
-  const prunedDeletedPaths = Object.keys(effectiveDeletedPaths).filter(
-    (path) => !mergedSnapshot.deletedPaths?.[path]
-  );
-
-  cloudSyncState.mergeDeletedKeys("fileMetadataPaths", remoteDeletedPaths);
-  cloudSyncState.clearDeletedKeys("fileMetadataPaths", prunedDeletedPaths);
-
-  useFilesStore.setState({
-    items: mergedSnapshot.items,
-    libraryState: mergedSnapshot.libraryState,
-  });
-
-  await applyIndexedDbStoreSnapshot(
-    STORES.DOCUMENTS,
-    mergedSnapshot.documents || [],
-    providedDb
-  );
-}
-
-function applySongsSnapshot(data: SongsSnapshotData): void {
-  const remoteDeletedTrackIds = normalizeDeletionMarkerMap(data.deletedTrackIds);
-  const cloudSyncState = useCloudSyncStore.getState();
-  const effectiveDeletedTrackIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.songTrackIds,
-    remoteDeletedTrackIds
-  );
-
-  cloudSyncState.mergeDeletedKeys("songTrackIds", remoteDeletedTrackIds);
-
-  useIpodStore.setState({
-    tracks: filterDeletedIds(data.tracks, effectiveDeletedTrackIds, (track) => track.id),
-    libraryState: data.libraryState,
-    lastKnownVersion: data.lastKnownVersion,
-  });
-}
-
-function applyVideosSnapshot(data: VideosSnapshotData): void {
-  useVideoStore.setState({
-    videos: data.videos,
-  });
-}
-
-function applyStickiesSnapshot(data: StickiesSnapshotData): void {
-  const remoteDeletedNoteIds = normalizeDeletionMarkerMap(data.deletedNoteIds);
-  const cloudSyncState = useCloudSyncStore.getState();
-  const effectiveDeletedNoteIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.stickyNoteIds,
-    remoteDeletedNoteIds
-  );
-
-  cloudSyncState.mergeDeletedKeys("stickyNoteIds", remoteDeletedNoteIds);
-
-  useStickiesStore.setState({
-    notes: filterDeletedIds(data.notes, effectiveDeletedNoteIds, (note) => note.id),
-  });
-}
-
-function applyCalendarSnapshot(data: CalendarSnapshotData): void {
-  const remoteDeletedTodoIds = normalizeDeletionMarkerMap(data.deletedTodoIds);
-  const remoteDeletedEventIds = normalizeDeletionMarkerMap(data.deletedEventIds);
-  const remoteDeletedCalendarIds = normalizeDeletionMarkerMap(
-    data.deletedCalendarIds
-  );
-  const cloudSyncState = useCloudSyncStore.getState();
-  const effectiveDeletedTodoIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.calendarTodoIds,
-    remoteDeletedTodoIds
-  );
-  const effectiveDeletedEventIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.calendarEventIds,
-    remoteDeletedEventIds
-  );
-  const effectiveDeletedCalendarIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.calendarIds,
-    remoteDeletedCalendarIds
-  );
-
-  cloudSyncState.mergeDeletedKeys("calendarTodoIds", remoteDeletedTodoIds);
-  cloudSyncState.mergeDeletedKeys("calendarEventIds", remoteDeletedEventIds);
-  cloudSyncState.mergeDeletedKeys("calendarIds", remoteDeletedCalendarIds);
-
-  useCalendarStore.setState({
-    events: filterDeletedIds(
-      data.events,
-      effectiveDeletedEventIds,
-      (event) => event.id
-    ),
-    calendars: filterDeletedIds(
-      data.calendars,
-      effectiveDeletedCalendarIds,
-      (calendar) => calendar.id
-    ),
-    todos: filterDeletedIds(
-      data.todos,
-      effectiveDeletedTodoIds,
-      (todo) => todo.id
-    ),
-  });
-}
-
-function applyContactsSnapshot(data: ContactsSnapshotData): void {
-  const remoteDeletedContactIds = normalizeDeletionMarkerMap(
-    data.deletedContactIds
-  );
-  const cloudSyncState = useCloudSyncStore.getState();
-  const effectiveDeletedContactIds = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.contactIds,
-    remoteDeletedContactIds
-  );
-
-  cloudSyncState.mergeDeletedKeys("contactIds", remoteDeletedContactIds);
-
-  useContactsStore
-    .getState()
-    .replaceContactsFromSync(
-      filterDeletedIds(
-        normalizeContacts(data?.contacts),
-        effectiveDeletedContactIds,
-        (contact) => contact.id
-      ),
-      data?.myContactId ?? null
-    );
-}
-
-async function applyMonolithicBlobSnapshotToIndividualDomain(
-  domain: IndividualBlobSyncDomain,
-  data: FilesStoreSnapshotData,
-  providedDb?: IDBDatabase
-): Promise<void> {
-  const changedItems = Object.fromEntries(
-    data.map((item) => [item.key, item])
-  ) as Record<string, StoreItemWithKey>;
-
-  await applyIndividualBlobDomain(
-    domain,
-    [],
-    changedItems,
-    getIndividualBlobDeletedKeys(domain),
-    providedDb
-  );
-}
-
-async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promise<void> {
-  const remoteKeySet = new Set(remoteKeys);
-  const displayStore = useDisplaySettingsStore.getState();
-  const current = displayStore.currentWallpaper;
-
-  if (current?.startsWith("indexeddb://")) {
-    const id = current.substring("indexeddb://".length);
-    if (remoteKeySet.has(id)) {
-      await displayStore.setWallpaper(current);
-    } else {
-      useDisplaySettingsStore.setState({
-        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-        wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
-      });
-    }
-  }
-
-  displayStore.bumpCustomWallpapersRevision();
-}
-
-async function applyIndividualBlobDomain(
-  domain: IndividualBlobSyncDomain,
-  keysToDelete: string[],
-  changedItems: Record<string, StoreItemWithKey>,
-  deletedKeys: DeletionMarkerMap = {},
-  providedDb?: IDBDatabase
-): Promise<void> {
-  const storeName = getIndividualBlobStoreName(domain);
-  const { db, shouldClose } = await getIndexedDbHandle(providedDb);
-  let existingKeys = new Set<string>();
-
-  try {
-    const existingItems = await readStoreItems(db, storeName);
-    existingKeys = new Set(existingItems.map((item) => item.key));
-
-    await deleteStoreItemsByKey(db, storeName, keysToDelete);
-    await upsertStoreItems(
-      db,
-      storeName,
-      Object.values(changedItems).filter((item) => !deletedKeys[item.key])
-    );
-  } finally {
-    if (shouldClose) {
-      db.close();
-    }
-  }
-
-  if (domain === "custom-wallpapers") {
-    const finalKeySet = new Set(
-      Array.from(existingKeys).filter((key) => !keysToDelete.includes(key))
-    );
-    for (const item of Object.values(changedItems)) {
-      if (!deletedKeys[item.key]) {
-        finalKeySet.add(item.key);
-      }
-    }
-    await finalizeCustomWallpaperSync(finalKeySet);
   }
 }
 
@@ -1326,165 +425,21 @@ function createWriteSyncVersion(
 }
 
 export async function fetchPhysicalCloudSyncMetadata(): Promise<CloudSyncMetadataMap> {
-  const consolidatedRes = await abortableFetch(getApiUrl("/api/sync/domains"), {
-    method: "GET",
-    headers: authHeaders(),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (consolidatedRes.ok) {
-    const consolidatedData = (await consolidatedRes.json()) as {
-      physicalMetadata?: Partial<CloudSyncMetadataMap>;
-    };
-    if (consolidatedData.physicalMetadata) {
-      const merged = createEmptyCloudSyncMetadataMap();
-      for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
-        const entry =
-          consolidatedData.physicalMetadata[
-            domain as keyof typeof consolidatedData.physicalMetadata
-          ];
-        if (entry) {
-          merged[domain] = entry as CloudSyncDomainMetadata;
-        }
+  const consolidatedData = await fetchConsolidatedSyncMetadata(authHeaders());
+  if (consolidatedData.physicalMetadata) {
+    const merged = createEmptyCloudSyncMetadataMap();
+    for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
+      const entry =
+        consolidatedData.physicalMetadata[
+          domain as keyof typeof consolidatedData.physicalMetadata
+        ];
+      if (entry) {
+        merged[domain] = entry as CloudSyncDomainMetadata;
       }
-      return merged;
     }
+    return merged;
   }
   throw new Error("Failed to fetch consolidated sync metadata");
-}
-
-function mergeItemsByIdPreferNewer<T extends { id: string; updatedAt?: number }>(
-  localItems: T[],
-  remoteItems: T[],
-  deletedIds: DeletionMarkerMap
-): T[] {
-  const merged = new Map<string, T>();
-  for (const item of remoteItems) {
-    if (!deletedIds[item.id]) merged.set(item.id, item);
-  }
-  for (const item of localItems) {
-    if (deletedIds[item.id]) continue;
-    const existing = merged.get(item.id);
-    if (
-      !existing ||
-      (item.updatedAt ?? 0) >= (existing.updatedAt ?? 0)
-    ) {
-      merged.set(item.id, item);
-    }
-  }
-  return Array.from(merged.values());
-}
-
-function mergeItemsById<T extends { id: string }>(
-  localItems: T[],
-  remoteItems: T[]
-): T[] {
-  const merged = new Map<string, T>();
-  for (const item of remoteItems) {
-    merged.set(item.id, item);
-  }
-  for (const item of localItems) {
-    merged.set(item.id, item);
-  }
-  return Array.from(merged.values());
-}
-
-function mergeStickiesSnapshots(
-  local: StickiesSnapshotData,
-  remote: StickiesSnapshotData
-): StickiesSnapshotData {
-  const mergedDeleted = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedNoteIds),
-    normalizeDeletionMarkerMap(remote.deletedNoteIds)
-  );
-  return {
-    notes: mergeItemsByIdPreferNewer(local.notes, remote.notes, mergedDeleted),
-    deletedNoteIds: mergedDeleted,
-  };
-}
-
-function mergeCalendarSnapshots(
-  local: CalendarSnapshotData,
-  remote: CalendarSnapshotData
-): CalendarSnapshotData {
-  const mergedDeletedEvents = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedEventIds),
-    normalizeDeletionMarkerMap(remote.deletedEventIds)
-  );
-  const mergedDeletedCalendars = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedCalendarIds),
-    normalizeDeletionMarkerMap(remote.deletedCalendarIds)
-  );
-  const mergedDeletedTodos = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedTodoIds),
-    normalizeDeletionMarkerMap(remote.deletedTodoIds)
-  );
-  return {
-    events: mergeItemsByIdPreferNewer(local.events, remote.events, mergedDeletedEvents),
-    calendars: mergeItemsByIdPreferNewer(
-      local.calendars as (CalendarGroup & { updatedAt?: number })[],
-      remote.calendars as (CalendarGroup & { updatedAt?: number })[],
-      mergedDeletedCalendars
-    ) as CalendarGroup[],
-    todos: mergeItemsById(
-      filterDeletedIds(local.todos, mergedDeletedTodos, (t) => t.id),
-      filterDeletedIds(remote.todos, mergedDeletedTodos, (t) => t.id)
-    ),
-    deletedEventIds: mergedDeletedEvents,
-    deletedCalendarIds: mergedDeletedCalendars,
-    deletedTodoIds: mergedDeletedTodos,
-  };
-}
-
-function mergeContactsSnapshots(
-  local: ContactsSnapshotData,
-  remote: ContactsSnapshotData
-): ContactsSnapshotData {
-  const mergedDeleted = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedContactIds),
-    normalizeDeletionMarkerMap(remote.deletedContactIds)
-  );
-  return {
-    contacts: mergeItemsByIdPreferNewer(
-      local.contacts,
-      normalizeContacts(remote.contacts),
-      mergedDeleted
-    ),
-    myContactId: local.myContactId ?? remote.myContactId,
-    deletedContactIds: mergedDeleted,
-  };
-}
-
-function mergeSongsSnapshots(
-  local: SongsSnapshotData,
-  remote: SongsSnapshotData
-): SongsSnapshotData {
-  const mergedDeleted = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(local.deletedTrackIds),
-    normalizeDeletionMarkerMap(remote.deletedTrackIds)
-  );
-  return {
-    tracks: mergeItemsById(
-      filterDeletedIds(local.tracks, mergedDeleted, (t) => t.id),
-      filterDeletedIds(remote.tracks, mergedDeleted, (t) => t.id)
-    ),
-    libraryState: local.libraryState === "loaded" || remote.libraryState === "loaded"
-      ? "loaded"
-      : local.libraryState,
-    lastKnownVersion: Math.max(local.lastKnownVersion, remote.lastKnownVersion),
-    deletedTrackIds: mergedDeleted,
-  };
-}
-
-function mergeVideosSnapshots(
-  local: VideosSnapshotData,
-  remote: VideosSnapshotData
-): VideosSnapshotData {
-  return {
-    videos: mergeItemsById(local.videos, remote.videos),
-  };
 }
 
 function mergeRedisStateConflict(
@@ -1616,21 +571,6 @@ async function fetchBlobDomainInfo(
     getDomainFetchCacheKey(_auth, domain),
     async () => (await fetchBlobDomainPayload(domain)) as BlobDomainInfoResponse | null
   );
-}
-
-async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
-  const blobResponse = await fetch(downloadUrl);
-  if (!blobResponse.ok) {
-    throw new Error(`Failed to fetch sync blob from CDN: ${blobResponse.status}`);
-  }
-
-  const compressedBuf = await blobResponse.arrayBuffer();
-  const compressedBlob = new Blob([compressedBuf], { type: "application/gzip" });
-  const decompressedStream = compressedBlob
-    .stream()
-    .pipeThrough(new DecompressionStream("gzip"));
-  const jsonString = await new Response(decompressedStream).text();
-  return JSON.parse(jsonString) as T;
 }
 
 async function uploadMonolithicBlobDomain(

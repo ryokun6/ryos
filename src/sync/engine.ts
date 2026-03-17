@@ -1,5 +1,8 @@
-import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
+import { ApiRequestError } from "@/api/core";
+import {
+  downloadLogicalSyncDomainPayload,
+  uploadLogicalSyncDomainPayload,
+} from "@/api/sync";
 import {
   applyDownloadedCloudSyncDomainPayload,
   prepareCloudSyncDomainWrite,
@@ -87,30 +90,7 @@ export async function uploadLogicalCloudSyncDomain(
       writes[partDomain] = preparedWrite.payload;
     }
 
-    const response = await abortableFetch(
-      getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Sync-Session-Id": getSyncSessionId(),
-        },
-        body: JSON.stringify({ writes }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        (errorData as { error?: string }).error ||
-          `Failed to upload logical sync domain ${domain}`
-      );
-    }
-
-    const result = (await response.json()) as {
+    const result = await uploadLogicalSyncDomainPayload<{
       metadata?: LogicalCloudSyncDomainMetadata | null;
       writes?: Partial<
         Record<
@@ -118,7 +98,9 @@ export async function uploadLogicalCloudSyncDomain(
           { metadata?: CloudSyncDomainMetadata | null }
         >
       >;
-    };
+    }>(domain, writes, {
+      "X-Sync-Session-Id": getSyncSessionId(),
+    });
 
     const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
     for (const partDomain of partDomains) {
@@ -144,29 +126,7 @@ export async function downloadAndApplyLogicalCloudSyncDomain(
   domain: LogicalCloudSyncDomain,
   options?: LogicalCloudSyncDownloadOptions
 ): Promise<LogicalCloudSyncTransferResult> {
-  const response = await abortableFetch(
-    getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`),
-    {
-      method: "GET",
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }
-  );
-
-  if (response.status === 404) {
-    throw new Error(`No ${domain} sync data found`);
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to download logical sync domain ${domain}`
-    );
-  }
-
-  const payload = (await response.json()) as {
+  let payload: {
     parts?: Partial<
       Record<
         CloudSyncDomain,
@@ -176,6 +136,14 @@ export async function downloadAndApplyLogicalCloudSyncDomain(
       >
     >;
   };
+  try {
+    payload = await downloadLogicalSyncDomainPayload<typeof payload>(domain);
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) {
+      throw new Error(`No ${domain} sync data found`);
+    }
+    throw error;
+  }
 
   if (!payload.parts) {
     throw new Error("Logical sync domain response was invalid.");

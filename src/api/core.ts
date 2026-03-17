@@ -33,6 +33,25 @@ export interface ApiRequestOptions<TBody = unknown> {
   retry?: AbortableFetchOptions["retry"];
 }
 
+const isRawRequestBody = (body: unknown): body is BodyInit => {
+  if (typeof body === "string") return true;
+  if (typeof Blob !== "undefined" && body instanceof Blob) return true;
+  if (typeof FormData !== "undefined" && body instanceof FormData) return true;
+  if (
+    typeof URLSearchParams !== "undefined" &&
+    body instanceof URLSearchParams
+  ) {
+    return true;
+  }
+  if (body instanceof ArrayBuffer) return true;
+  if (ArrayBuffer.isView(body)) return true;
+  if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) {
+    return true;
+  }
+
+  return false;
+};
+
 function buildUrl(
   path: string,
   query?: Record<string, string | number | boolean | null | undefined>
@@ -52,13 +71,18 @@ function buildUrl(
 
 function buildHeaders(
   headers: HeadersInit | undefined,
-  hasBody: boolean
+  body: unknown
 ): Headers {
   const merged = new Headers(headers);
-  if (hasBody && !merged.has("Content-Type")) {
+  if (body !== undefined && !isRawRequestBody(body) && !merged.has("Content-Type")) {
     merged.set("Content-Type", "application/json");
   }
   return merged;
+}
+
+function buildRequestBody(body: unknown): BodyInit | undefined {
+  if (body === undefined) return undefined;
+  return isRawRequestBody(body) ? body : JSON.stringify(body);
 }
 
 async function parseErrorPayload(response: Response): Promise<ApiErrorPayload> {
@@ -84,11 +108,10 @@ async function performApiRequest<TBody = unknown>(
     retry = { maxAttempts: 1, initialDelayMs: 250 },
   } = options;
 
-  const hasBody = body !== undefined;
   return abortableFetch(buildUrl(path, query), {
     method,
-    headers: buildHeaders(headers, hasBody),
-    body: hasBody ? JSON.stringify(body) : undefined,
+    headers: buildHeaders(headers, body),
+    body: buildRequestBody(body),
     signal,
     timeout,
     throwOnHttpError: false,
