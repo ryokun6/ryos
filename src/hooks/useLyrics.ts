@@ -3,8 +3,8 @@ import type { LyricLine } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCacheBustTrigger, useRefetchTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { ApiRequestError } from "@/api/core";
+import { postSongAction } from "@/api/songs";
 import {
   processTranslationSSE,
   parseLrcToTranslations,
@@ -215,25 +215,11 @@ export function useLyrics({
       };
     }
 
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-
-    abortableFetch(getApiUrl(`/api/songs/${effectSongId}`), {
-      method: "POST",
-      headers,
-      body: JSON.stringify(requestBody),
+    postSongAction<UnifiedLyricsResponse, typeof requestBody>(effectSongId, requestBody, {
       signal: controller.signal,
       timeout: 15000,
       retry: { maxAttempts: 3, initialDelayMs: 1000, backoffMultiplier: 2 },
     })
-      .then(async (res) => {
-        if (controller.signal.aborted) return null;
-        if (effectSongId !== currentSongIdRef.current) return null;
-        if (!res.ok) {
-          if (res.status === 404) return null;
-          throw new Error(`Failed to fetch lyrics (status ${res.status})`);
-        }
-        return res.json() as Promise<UnifiedLyricsResponse>;
-      })
       .then((json) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
@@ -267,6 +253,14 @@ export function useLyrics({
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
+        if (err instanceof ApiRequestError && err.status === 404) {
+          setOriginalLines([]);
+          setCurrentLine(null);
+          setError(null);
+          setFuriganaInfo(undefined);
+          setSoramimiInfo(undefined);
+          return;
+        }
         handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
         // Clear furigana/soramimi info on error to avoid showing stale data
         setFuriganaInfo(undefined);
