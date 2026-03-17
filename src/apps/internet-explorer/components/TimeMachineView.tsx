@@ -20,10 +20,13 @@ import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useEventListener } from "@/hooks/useEventListener";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import {
+  buildIframeCheckPath,
+  fetchIframeAiSnapshot,
+} from "@/api/iframeCheck";
 import TimeNavigationControls from "./TimeNavigationControls";
 import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Define type for preview content source
 type PreviewSource = "html" | "url";
@@ -401,9 +404,10 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
         if (previewYear === "current") {
           // 2a. 'current' uses direct proxy URL
           console.log(`[TimeMachine] Source: current -> URL`);
-          const proxyUrl = `/api/iframe-check?url=${encodeURIComponent(
-            currentUrl
-          )}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`;
+          const proxyUrl = buildIframeCheckPath({
+            url: currentUrl,
+            theme: document.documentElement.dataset.osTheme || "",
+          });
           if (
             abortController.signal.aborted ||
             previewRequestIdRef.current !== myRequestId
@@ -427,9 +431,13 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
             const currentMonth = (new Date().getMonth() + 1)
               .toString()
               .padStart(2, "0");
-            const proxyUrl = `/api/iframe-check?mode=proxy&url=${encodeURIComponent(
-              currentUrl
-            )}&year=${yearString}&month=${currentMonth}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`;
+            const proxyUrl = buildIframeCheckPath({
+              url: currentUrl,
+              mode: "proxy",
+              year: yearString,
+              month: currentMonth,
+              theme: document.documentElement.dataset.osTheme || "",
+            });
             if (
               abortController.signal.aborted ||
               previewRequestIdRef.current !== myRequestId
@@ -444,16 +452,13 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
             console.log(
               `[TimeMachine] Source: ${previewYear} < 1996 or BC -> HTML (AI Fetch)`
             );
-            const aiResponse = await abortableFetch(
-              `/api/iframe-check?mode=ai&url=${encodeURIComponent(
-                currentUrl
-              )}&year=${previewYear}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`,
+            const aiResponse = await fetchIframeAiSnapshot(
               {
-                signal: abortController.signal,
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
+                url: currentUrl,
+                year: previewYear,
+                theme: document.documentElement.dataset.osTheme || "",
+              },
+              { signal: abortController.signal }
             );
 
             if (

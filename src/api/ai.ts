@@ -1,3 +1,5 @@
+import { abortableFetch } from "@/utils/abortableFetch";
+import { getApiUrl } from "@/utils/platform";
 import { apiRequest } from "@/api/core";
 
 export async function extractConversationMemories(payload: {
@@ -52,4 +54,27 @@ export async function requestRyoReply(payload: {
     timeout: 20000,
     retry: { maxAttempts: 1, initialDelayMs: 250 },
   });
+}
+
+export async function fetchProactiveGreeting(options?: {
+  signal?: AbortSignal;
+}): Promise<{ greeting?: string }> {
+  const response = await abortableFetch(getApiUrl("/api/chat"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: [],
+      proactiveGreeting: true,
+    }),
+    timeout: 20000,
+    signal: options?.signal,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch proactive greeting (${response.status})`);
+  }
+
+  return (await response.json()) as { greeting?: string };
 }

@@ -20,6 +20,10 @@ import {
 import { useAiGeneration } from "./useAiGeneration";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { track } from "@vercel/analytics";
+import {
+  buildIframeCheckPath,
+  fetchIframeAiSnapshot,
+} from "@/api/iframeCheck";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -563,13 +567,12 @@ export function useInternetExplorerLogic({
     console.log(
       `[IE] Using Wayback Machine URL for ${formattedUrl} in ${year}`
     );
-    const themeParam =
-      typeof currentTheme === "string"
-        ? `&theme=${encodeURIComponent(currentTheme)}`
-        : "";
-    return `/api/iframe-check?url=${encodeURIComponent(
-      formattedUrl
-    )}&year=${year}&month=${month}${themeParam}`;
+    return buildIframeCheckPath({
+      url: formattedUrl,
+      year,
+      month,
+      theme: typeof currentTheme === "string" ? currentTheme : undefined,
+    });
   }, [currentTheme]);
 
   // Ref to keep the most recent navigation token in sync without waiting for a render
@@ -841,16 +844,12 @@ export function useInternetExplorerLogic({
               console.log(
                 `[IE] Checking REMOTE cache for ${normalizedTargetUrl} in ${targetYearParam}...`
               );
-              const res = await abortableFetch(
-                `/api/iframe-check?mode=ai&url=${encodeURIComponent(
-                  normalizedTargetUrl
-                )}&year=${targetYearParam}`,
+              const res = await fetchIframeAiSnapshot(
                 {
-                  signal: abortController.signal,
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                }
+                  url: normalizedTargetUrl,
+                  year: targetYearParam,
+                },
+                { signal: abortController.signal }
               );
               if (abortController.signal.aborted) return;
               console.log(
@@ -987,16 +986,19 @@ export function useInternetExplorerLogic({
               urlToLoad = normalizedTargetUrl;
             } else {
               // Proxy current year sites through iframe-check
-              urlToLoad = `/api/iframe-check?url=${encodeURIComponent(
-                normalizedTargetUrl
-              )}&theme=${encodeURIComponent(currentTheme)}`;
+              urlToLoad = buildIframeCheckPath({
+                url: normalizedTargetUrl,
+                theme: currentTheme,
+              });
             }
 
             try {
               const checkRes = await abortableFetch(
-                `/api/iframe-check?mode=check&url=${encodeURIComponent(
-                  normalizedTargetUrl
-                )}&theme=${encodeURIComponent(currentTheme)}`,
+                buildIframeCheckPath({
+                  url: normalizedTargetUrl,
+                  mode: "check",
+                  theme: currentTheme,
+                }),
                 {
                   signal: abortController.signal,
                   timeout: 15000,

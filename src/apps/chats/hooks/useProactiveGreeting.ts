@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { fetchProactiveGreeting } from "@/api/ai";
 import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 /**
  * Minimum idle time (ms) since the last chat message before a proactive
@@ -101,20 +100,7 @@ export function useProactiveGreeting() {
       setIsLoadingGreeting(true);
 
       try {
-        const response = await abortableFetch(getApiUrl("/api/chat"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [],
-            proactiveGreeting: true,
-          }),
-          timeout: 20000,
-          signal: controller.signal,
-        });
-
-        if (controller.signal.aborted) return;
-
-        const data = await response.json();
+        const data = await fetchProactiveGreeting({ signal: controller.signal });
 
         if (data.greeting && typeof data.greeting === "string") {
           const proactiveMessage: AIChatMessage = {
