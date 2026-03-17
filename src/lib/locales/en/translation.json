@@ -3002,6 +3002,80 @@
         "resetWidgets": "Reset to Defaults"
       }
     },
+    "candybar": {
+      "name": "CandyBar",
+      "title": "CandyBar",
+      "description": "Browse and apply icon packs",
+      "loading": "Loading icon packs…",
+      "noPacks": "No icon packs found",
+      "searchPlaceholder": "Search",
+      "sidebar": {
+        "categories": "Categories",
+        "all": "All Packs",
+        "system": "System",
+        "apps": "Applications",
+        "folders": "Folders",
+        "devices": "Devices",
+        "community": "Community"
+      },
+      "packDetail": {
+        "by": "by",
+        "icons": "icons",
+        "apply": "Apply",
+        "applied": "Applied",
+        "preview": "Preview"
+      },
+      "statusBar": {
+        "pack": "pack",
+        "packs": "packs",
+        "icon": "icon",
+        "icons": "icons",
+        "backToList": "Back to list",
+        "iconSize": "Size"
+      },
+      "menu": {
+        "refresh": "Refresh",
+        "help": "CandyBar Help",
+        "about": "About CandyBar",
+        "library": "Library",
+        "addToLibrary": "Add to Library…",
+        "syncLibrary": "Sync Library",
+        "clearLibrary": "Clear Library"
+      },
+      "help": {
+        "browseIconPacks": {
+          "title": "Browse Icon Packs",
+          "description": "Browse available icon packs in the sidebar categories and preview them in the main area"
+        },
+        "iconPackDetails": {
+          "title": "Icon Pack Details",
+          "description": "Click on an icon pack to see a full preview of all included icons"
+        },
+        "applyIconPacks": {
+          "title": "Apply Icon Packs",
+          "description": "Select an icon pack and click Apply to customize your desktop icons"
+        },
+        "favorites": {
+          "title": "Favorites",
+          "description": "Mark icon packs as favorites for quick access from the sidebar"
+        },
+        "search": {
+          "title": "Search",
+          "description": "Use the search bar to quickly find icon packs by name or author"
+        },
+        "cloudLibrary": {
+          "title": "Cloud Library",
+          "description": "Icon packs are stored in the cloud and available across all your sessions"
+        }
+      },
+      "dialogs": {
+        "clearLibrary": {
+          "title": "Clear Library",
+          "description": "Remove all icon packs from the library? You can sync to restore built-in packs."
+        },
+        "addPackComingSoon": "Add icon pack — coming soon"
+      }
+    },
     "admin": {
       "name": "Admin",
       "description": "System administration panel",

@@ -152,6 +152,11 @@ const LazyDashboardApp = createLazyComponent<unknown>(
   "dashboard"
 );
 
+const LazyCandyBarApp = createLazyComponent<unknown>(
+  () => import("@/apps/candybar/components/CandyBarAppComponent").then(m => ({ default: m.CandyBarAppComponent })),
+  "candybar"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -183,6 +188,7 @@ import { appMetadata as winampMetadata, helpItems as winampHelpItems } from "@/a
 import { appMetadata as calendarMetadata, helpItems as calendarHelpItems } from "@/apps/calendar/metadata";
 import { appMetadata as contactsMetadata, helpItems as contactsHelpItems } from "@/apps/contacts";
 import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
+import { appMetadata as candybarMetadata, helpItems as candybarHelpItems } from "@/apps/candybar/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 
 // ============================================================================
@@ -496,6 +502,19 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 500, height: 400 },
       minSize: { width: 300, height: 250 },
+    } as WindowConstraints,
+  },
+  ["candybar"]: {
+    id: "candybar",
+    name: "CandyBar",
+    icon: { type: "image", src: candybarMetadata.icon },
+    description: "Browse and apply icon packs",
+    component: LazyCandyBarApp,
+    helpItems: candybarHelpItems,
+    metadata: candybarMetadata,
+    windowConfig: {
+      defaultSize: { width: 680, height: 460 },
+      minSize: { width: 500, height: 350 },
     } as WindowConstraints,
   },
 } as const;

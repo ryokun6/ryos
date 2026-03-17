@@ -518,6 +518,80 @@
         "week": "Settimana"
       }
     },
+    "candybar": {
+      "description": "Sfoglia e applica pacchetti di icone",
+      "dialogs": {
+        "addPackComingSoon": "Aggiungi pacchetto di icone — in arrivo",
+        "clearLibrary": {
+          "description": "Rimuovere tutti i pacchetti di icone dalla libreria? Puoi sincronizzare per ripristinare i pacchetti integrati.",
+          "title": "Svuota libreria"
+        }
+      },
+      "help": {
+        "applyIconPacks": {
+          "description": "Seleziona un pacchetto di icone e fai clic su Applica per personalizzare le icone del desktop",
+          "title": "Applica pacchetti di icone"
+        },
+        "browseIconPacks": {
+          "description": "Sfoglia i pacchetti di icone disponibili nelle categorie della barra laterale e visualizzali in anteprima nell'area principale",
+          "title": "Sfoglia pacchetti di icone"
+        },
+        "cloudLibrary": {
+          "description": "I pacchetti di icone sono memorizzati nel cloud e disponibili in tutte le tue sessioni",
+          "title": "Libreria cloud"
+        },
+        "favorites": {
+          "description": "Contrassegna i pacchetti di icone come preferiti per un accesso rapido dalla barra laterale",
+          "title": "Preferiti"
+        },
+        "iconPackDetails": {
+          "description": "Fai clic su un pacchetto di icone per vedere un'anteprima completa di tutte le icone incluse",
+          "title": "Dettagli pacchetto di icone"
+        },
+        "search": {
+          "description": "Usa la barra di ricerca per trovare rapidamente i pacchetti di icone per nome o autore",
+          "title": "Cerca"
+        }
+      },
+      "loading": "Caricamento pacchetti di icone…",
+      "menu": {
+        "about": "Informazioni su CandyBar",
+        "addToLibrary": "Aggiungi alla libreria…",
+        "clearLibrary": "Svuota libreria",
+        "help": "Aiuto CandyBar",
+        "library": "Libreria",
+        "refresh": "Aggiorna",
+        "syncLibrary": "Sincronizza libreria"
+      },
+      "name": "CandyBar",
+      "noPacks": "Nessun pacchetto di icone trovato",
+      "packDetail": {
+        "applied": "Applicato",
+        "apply": "Applica",
+        "by": "di",
+        "icons": "icone",
+        "preview": "Anteprima"
+      },
+      "searchPlaceholder": "Cerca",
+      "sidebar": {
+        "all": "Tutti i pacchetti",
+        "apps": "Applicazioni",
+        "categories": "Categorie",
+        "community": "Community",
+        "devices": "Dispositivi",
+        "folders": "Cartelle",
+        "system": "Sistema"
+      },
+      "statusBar": {
+        "backToList": "Torna all'elenco",
+        "icon": "icona",
+        "iconSize": "Dimensioni",
+        "icons": "icone",
+        "pack": "pacchetto",
+        "packs": "pacchetti"
+      },
+      "title": "CandyBar"
+    },
     "chats": {
       "ariaLabels": {
         "attachImage": "Allega immagine",
@@ -1157,7 +1231,6 @@
       "description": "Impostazioni di sistema",
       "displayMode": "Modalità di visualizzazione",
       "downloadMacApp": "Scarica App Mac",
-      "viewChangelog": "Visualizza changelog",
       "dream": "Sogno",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID Voce ElevenLabs",
@@ -1320,6 +1393,7 @@
       "ui": "Interfaccia",
       "uiSounds": "Suoni UI",
       "uiVolume": "Volume interfaccia",
+      "viewChangelog": "Visualizza changelog",
       "wallpaperCategories": {
         "aqua": "Aqua",
         "convergency": "Convergenza",

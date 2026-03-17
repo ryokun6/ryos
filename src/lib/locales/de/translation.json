@@ -518,6 +518,80 @@
         "week": "Woche"
       }
     },
+    "candybar": {
+      "description": "Icon-Pakete durchsuchen und anwenden",
+      "dialogs": {
+        "addPackComingSoon": "Icon-Paket hinzufügen — demnächst verfügbar",
+        "clearLibrary": {
+          "description": "Alle Icon-Pakete aus der Mediathek entfernen? Sie können synchronisieren, um integrierte Pakete wiederherzustellen.",
+          "title": "Mediathek leeren"
+        }
+      },
+      "help": {
+        "applyIconPacks": {
+          "description": "Wählen Sie ein Icon-Paket aus und klicken Sie auf „Anwenden“, um Ihre Desktop-Icons anzupassen.",
+          "title": "Icon-Pakete anwenden"
+        },
+        "browseIconPacks": {
+          "description": "Durchsuchen Sie verfügbare Icon-Pakete in den Seitenleisten-Kategorien und lassen Sie sich eine Vorschau im Hauptbereich anzeigen.",
+          "title": "Icon-Pakete durchsuchen"
+        },
+        "cloudLibrary": {
+          "description": "Icon-Pakete werden in der Cloud gespeichert und sind über alle Ihre Sitzungen hinweg verfügbar.",
+          "title": "Cloud-Bibliothek"
+        },
+        "favorites": {
+          "description": "Markieren Sie Icon-Pakete als Favoriten für den schnellen Zugriff über die Seitenleiste.",
+          "title": "Favoriten"
+        },
+        "iconPackDetails": {
+          "description": "Klicken Sie auf ein Icon-Paket, um eine vollständige Vorschau aller enthaltenen Icons zu sehen.",
+          "title": "Icon-Paket-Details"
+        },
+        "search": {
+          "description": "Nutzen Sie die Suchleiste, um Icon-Pakete schnell nach Name oder Autor zu finden.",
+          "title": "Suche"
+        }
+      },
+      "loading": "Icon-Pakete werden geladen…",
+      "menu": {
+        "about": "Über CandyBar",
+        "addToLibrary": "Zur Mediathek hinzufügen…",
+        "clearLibrary": "Mediathek leeren",
+        "help": "CandyBar-Hilfe",
+        "library": "Mediathek",
+        "refresh": "Aktualisieren",
+        "syncLibrary": "Mediathek synchronisieren"
+      },
+      "name": "CandyBar",
+      "noPacks": "Keine Icon-Pakete gefunden",
+      "packDetail": {
+        "applied": "Angewendet",
+        "apply": "Anwenden",
+        "by": "von",
+        "icons": "Icons",
+        "preview": "Vorschau"
+      },
+      "searchPlaceholder": "Suchen",
+      "sidebar": {
+        "all": "Alle Pakete",
+        "apps": "Programme",
+        "categories": "Kategorien",
+        "community": "Community",
+        "devices": "Geräte",
+        "folders": "Ordner",
+        "system": "System"
+      },
+      "statusBar": {
+        "backToList": "Zurück zur Liste",
+        "icon": "Icon",
+        "iconSize": "Größe",
+        "icons": "Icons",
+        "pack": "Paket",
+        "packs": "Pakete"
+      },
+      "title": "CandyBar"
+    },
     "chats": {
       "ariaLabels": {
         "attachImage": "Bild anhängen",
@@ -1157,7 +1231,6 @@
       "description": "Systemeinstellungen",
       "displayMode": "Anzeigemodus",
       "downloadMacApp": "Mac-App herunterladen",
-      "viewChangelog": "Änderungsprotokoll anzeigen",
       "dream": "Traum",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs Sprach-ID",
@@ -1320,6 +1393,7 @@
       "ui": "UI",
       "uiSounds": "UI Töne",
       "uiVolume": "UI-Lautstärke",
+      "viewChangelog": "Änderungsprotokoll anzeigen",
       "wallpaperCategories": {
         "aqua": "Aqua",
         "convergency": "Konvergenz",

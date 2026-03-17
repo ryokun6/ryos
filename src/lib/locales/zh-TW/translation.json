@@ -518,6 +518,80 @@
         "week": "週"
       }
     },
+    "candybar": {
+      "description": "瀏覽並套用圖示套件",
+      "dialogs": {
+        "addPackComingSoon": "新增圖示套件 — 即將推出",
+        "clearLibrary": {
+          "description": "要從資料庫移除所有圖示套件嗎？您可以透過同步來還原內建套件。",
+          "title": "清除資料庫"
+        }
+      },
+      "help": {
+        "applyIconPacks": {
+          "description": "選擇圖示套件並點擊「套用」以自訂您的桌面圖示",
+          "title": "套用圖示套件"
+        },
+        "browseIconPacks": {
+          "description": "在側邊欄分類中瀏覽可用的圖示套件，並在主區域預覽",
+          "title": "瀏覽圖示套件"
+        },
+        "cloudLibrary": {
+          "description": "圖示套件儲存於雲端，可在您的所有工作階段中使用",
+          "title": "雲端資料庫"
+        },
+        "favorites": {
+          "description": "將圖示套件標記為收藏，以便從側邊欄快速存取",
+          "title": "收藏"
+        },
+        "iconPackDetails": {
+          "description": "點擊圖示套件以查看所有包含圖示的完整預覽",
+          "title": "圖示套件詳情"
+        },
+        "search": {
+          "description": "使用搜尋列依名稱或作者快速尋找圖示套件",
+          "title": "搜尋"
+        }
+      },
+      "loading": "正在載入圖示套件…",
+      "menu": {
+        "about": "關於 CandyBar",
+        "addToLibrary": "加入至資料庫…",
+        "clearLibrary": "清除資料庫",
+        "help": "CandyBar 說明",
+        "library": "資料庫",
+        "refresh": "重新整理",
+        "syncLibrary": "同步資料庫"
+      },
+      "name": "CandyBar",
+      "noPacks": "找不到圖示套件",
+      "packDetail": {
+        "applied": "已套用",
+        "apply": "套用",
+        "by": "由",
+        "icons": "個圖示",
+        "preview": "預覽"
+      },
+      "searchPlaceholder": "搜尋",
+      "sidebar": {
+        "all": "所有套件",
+        "apps": "應用程式",
+        "categories": "類別",
+        "community": "社群",
+        "devices": "裝置",
+        "folders": "檔案夾",
+        "system": "系統"
+      },
+      "statusBar": {
+        "backToList": "返回列表",
+        "icon": "圖示",
+        "iconSize": "大小",
+        "icons": "圖示",
+        "pack": "套件",
+        "packs": "套件"
+      },
+      "title": "CandyBar"
+    },
     "chats": {
       "ariaLabels": {
         "attachImage": "附加圖片",
@@ -1157,7 +1231,6 @@
       "description": "系統設定",
       "displayMode": "顯示模式",
       "downloadMacApp": "下載 Mac 應用程式",
-      "viewChangelog": "查看更新日誌",
       "dream": "夢幻",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",
@@ -1320,6 +1393,7 @@
       "ui": "使用者介面",
       "uiSounds": "UI 音效",
       "uiVolume": "使用者介面音量",
+      "viewChangelog": "查看更新日誌",
       "wallpaperCategories": {
         "aqua": "水藍",
         "convergency": "匯聚",

@@ -43,7 +43,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "winamp"
     | "calendar"
     | "contacts"
-    | "dashboard";
+    | "dashboard"
+    | "candybar";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;

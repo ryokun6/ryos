@@ -518,6 +518,80 @@
         "week": "週"
       }
     },
+    "candybar": {
+      "description": "アイコンパックをブラウズして適用",
+      "dialogs": {
+        "addPackComingSoon": "アイコンパックを追加 — 近日公開",
+        "clearLibrary": {
+          "description": "ライブラリからすべてのアイコンパックを削除しますか？同期することで内蔵パックを復元できます。",
+          "title": "ライブラリを消去"
+        }
+      },
+      "help": {
+        "applyIconPacks": {
+          "description": "アイコンパックを選択して「適用」をクリックし、デスクトップアイコンをカスタマイズします",
+          "title": "アイコンパックを適用"
+        },
+        "browseIconPacks": {
+          "description": "サイドバーのカテゴリから利用可能なアイコンパックをブラウズし、メインエリアでプレビューを確認できます",
+          "title": "アイコンパックをブラウズ"
+        },
+        "cloudLibrary": {
+          "description": "アイコンパックはクラウドに保存され、すべてのセッションで利用可能です",
+          "title": "クラウドライブラリ"
+        },
+        "favorites": {
+          "description": "アイコンパックをお気に入りに登録すると、サイドバーからすばやくアクセスできます",
+          "title": "お気に入り"
+        },
+        "iconPackDetails": {
+          "description": "アイコンパックをクリックすると、含まれているすべてのアイコンのプレビューが表示されます",
+          "title": "アイコンパックの詳細"
+        },
+        "search": {
+          "description": "検索バーを使用して、名前や作成者からアイコンパックをすばやく検索できます",
+          "title": "検索"
+        }
+      },
+      "loading": "アイコンパックを読み込み中…",
+      "menu": {
+        "about": "CandyBarについて",
+        "addToLibrary": "ライブラリに追加…",
+        "clearLibrary": "ライブラリを消去",
+        "help": "CandyBarヘルプ",
+        "library": "ライブラリ",
+        "refresh": "更新",
+        "syncLibrary": "ライブラリを同期"
+      },
+      "name": "CandyBar",
+      "noPacks": "アイコンパックが見つかりません",
+      "packDetail": {
+        "applied": "適用済み",
+        "apply": "適用",
+        "by": "作成者",
+        "icons": "アイコン",
+        "preview": "プレビュー"
+      },
+      "searchPlaceholder": "検索",
+      "sidebar": {
+        "all": "すべてのパック",
+        "apps": "アプリケーション",
+        "categories": "カテゴリ",
+        "community": "コミュニティ",
+        "devices": "デバイス",
+        "folders": "フォルダ",
+        "system": "システム"
+      },
+      "statusBar": {
+        "backToList": "リストに戻る",
+        "icon": "アイコン",
+        "iconSize": "サイズ",
+        "icons": "アイコン",
+        "pack": "パック",
+        "packs": "パック"
+      },
+      "title": "CandyBar"
+    },
     "chats": {
       "ariaLabels": {
         "attachImage": "画像を添付",
@@ -1157,7 +1231,6 @@
       "description": "システム設定",
       "displayMode": "表示モード",
       "downloadMacApp": "Macアプリをダウンロード",
-      "viewChangelog": "変更履歴を見る",
       "dream": "ドリーム",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 音声ID",
@@ -1320,6 +1393,7 @@
       "ui": "UI",
       "uiSounds": "UI サウンド",
       "uiVolume": "UI 音量",
+      "viewChangelog": "変更履歴を見る",
       "wallpaperCategories": {
         "aqua": "アクア",
         "convergency": "コンバージェンス",

@@ -24,7 +24,8 @@ export type AppId =
   | "winamp"
   | "calendar"
   | "contacts"
-  | "dashboard";
+  | "dashboard"
+  | "candybar";
 
 /**
  * Get translated app name with theme-awareness
@@ -154,6 +155,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     calendar: ["navigateMonths", "createEvents", "dayView", "colorCoding", "deleteEvents", "autoSave"],
     contacts: ["browseContacts", "createContacts", "editDetails", "importVCards", "useWithRyo", "cloudSync"],
     dashboard: ["openDashboard", "clockWidget", "calendarWidget", "weatherWidget", "moveWidgets", "closeDashboard"],
+    candybar: ["browseIconPacks", "iconPackDetails", "applyIconPacks", "favorites", "search", "cloudLibrary"],
   };
 
   const keys = helpKeys[appId] || [];

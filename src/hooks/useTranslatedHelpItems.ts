@@ -157,6 +157,14 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "moveWidgets",
     "closeDashboard",
   ],
+  candybar: [
+    "browseIconPacks",
+    "iconPackDetails",
+    "applyIconPacks",
+    "favorites",
+    "search",
+    "cloudLibrary",
+  ],
 };
 
 /**
