@@ -41,7 +41,6 @@ import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
 import { AnyExtension } from "@tiptap/core";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
   emitAppletUpdated,

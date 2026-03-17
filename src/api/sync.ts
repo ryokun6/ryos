@@ -21,8 +21,18 @@ export function getCloudBackupDownloadUrl(): string {
   return getApiUrl("/api/sync/backup");
 }
 
-export async function fetchCloudSyncStatus(): Promise<Record<string, unknown>> {
-  return apiRequest<Record<string, unknown>>({
+export interface CloudSyncStatusResponse {
+  hasBackup: boolean;
+  metadata: {
+    timestamp: string;
+    version: number;
+    totalSize: number;
+    createdAt: string;
+  } | null;
+}
+
+export async function fetchCloudSyncStatus(): Promise<CloudSyncStatusResponse> {
+  return apiRequest<CloudSyncStatusResponse>({
     path: "/api/sync/status",
     method: "GET",
     timeout: 15000,

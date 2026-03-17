@@ -7,7 +7,6 @@ import { useVideoStore, DEFAULT_VIDEOS } from "@/stores/useVideoStore";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useAppStore } from "@/stores/useAppStore";
 import { parseTitleMetadata } from "@/api/misc";
-import { getApiUrl } from "@/utils/platform";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useCustomEventListener } from "@/hooks/useEventListener";

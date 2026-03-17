@@ -1196,9 +1196,9 @@ export function useAppletViewerLogic({
             signal: controller.signal,
           });
           if (!isActive || controller.signal.aborted) return;
-          setSharedContent(data.content);
-          setSharedName(data.name);
-          setSharedTitle(data.title);
+          setSharedContent(data.content || "");
+          setSharedName(data.name || "");
+          setSharedTitle(data.title || "");
 
           if (instanceId && data.windowWidth && data.windowHeight) {
             const appStore = useAppStore.getState();
@@ -1260,7 +1260,7 @@ export function useAppletViewerLogic({
                   await saveFile({
                     path: finalPath,
                     name: finalName,
-                    content: data.content,
+                    content: data.content || "",
                     type: "html",
                     icon: data.icon || undefined,
                     shareId: shareCode,
@@ -1277,7 +1277,7 @@ export function useAppletViewerLogic({
                   emitFileSaved({
                     name: finalName,
                     path: finalPath,
-                    content: data.content,
+                    content: data.content || "",
                     icon: data.icon || undefined,
                   });
 

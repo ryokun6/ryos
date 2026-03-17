@@ -20,7 +20,6 @@ import {
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
 import { getSharedApplet } from "@/api/shareApplet";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { dbOperations, getStoreForFile } from "@/utils/indexedDBOperations";
 import {
   emitCloudSyncDomainChange,

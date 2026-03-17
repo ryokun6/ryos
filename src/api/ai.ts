@@ -8,9 +8,19 @@ export async function extractConversationMemories(payload: {
     metadata?: { createdAt?: string | number };
   }>;
   userTimeZone?: string;
-}): Promise<{ extracted: number; dailyNotes?: number; analyzed?: number }> {
+}): Promise<{
+  extracted: number;
+  dailyNotes?: number;
+  analyzed?: number;
+  message?: string;
+}> {
   return apiRequest<
-    { extracted: number; dailyNotes?: number; analyzed?: number },
+    {
+      extracted: number;
+      dailyNotes?: number;
+      analyzed?: number;
+      message?: string;
+    },
     typeof payload
   >({
     path: "/api/ai/extract-memories",

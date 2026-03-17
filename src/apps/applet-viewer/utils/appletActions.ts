@@ -172,7 +172,7 @@ export const useAppletActions = () => {
       await saveFile({
         path: finalPath,
         name: finalName,
-        content: data.content,
+        content: data.content || "",
         type: "html",
         icon: data.icon || undefined,
         shareId: applet.id,
@@ -194,7 +194,7 @@ export const useAppletActions = () => {
       emitFileSaved({
         name: finalName,
         path: finalPath,
-        content: data.content,
+        content: data.content || "",
         icon: data.icon || undefined,
       });
       
@@ -223,7 +223,7 @@ export const useAppletActions = () => {
             launchApp("applet-viewer", {
               initialData: {
                 path: finalPath,
-                content: data.content,
+                content: data.content || "",
               },
             });
           },
@@ -235,7 +235,7 @@ export const useAppletActions = () => {
         launchApp("applet-viewer", {
           initialData: {
             path: finalPath,
-            content: data.content,
+            content: data.content || "",
             forceNewInstance: true,
           },
         });

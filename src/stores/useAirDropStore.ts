@@ -179,7 +179,7 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
     try {
       const data = await respondToAirDropTransferApi({ transferId, accept });
       get().removeTransfer(transferId);
-      return { success: true, ...data };
+      return data;
     } catch {
       return { success: false };
     }

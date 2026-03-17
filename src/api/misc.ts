@@ -9,7 +9,7 @@ export interface CandyBarIconPack {
   iconCount: number;
   downloadUrl?: string;
   createdAt: string;
-  category: string;
+  category: "all" | "system" | "apps" | "folders" | "devices" | "community";
 }
 
 export interface StockQuote {
