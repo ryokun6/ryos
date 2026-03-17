@@ -52,12 +52,22 @@
     --ring: 0 0% 0%;
     --radius: 0px;
     --sat-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --font-chicago: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-apple-garamond: "AppleGaramond", "Hiragino Mincho ProN", "SerenityOS-Emoji",
       serif;
+    --font-lucida-grande: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
+      "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, sans-serif;
     --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
+    --font-ms-sans: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
+      "SerenityOS-Emoji", system-ui, sans-serif;
+    --font-tahoma-ui: Tahoma, "Pixelated MS Sans Serif", "MS Sans Serif",
+      "ArkPixel", "SerenityOS-Emoji", sans-serif;
+    --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", ui-monospace,
+      SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New",
+      monospace;
     --font-jacquard: "Jacquard", "ArkPixel", "SerenityOS-Emoji", system-ui;
   }
 

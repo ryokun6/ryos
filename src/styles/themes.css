@@ -1,8 +1,7 @@
 /* Default/fallback values */
 :root {
-  --os-font-ui: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
-    -apple-system, sans-serif;
-  --os-font-mono: "Monaco", "ArkPixel", "SerenityOS-Emoji", monospace;
+  --os-font-ui: var(--font-geneva-12);
+  --os-font-mono: var(--font-monaco);
   --os-color-window-bg: #ffffff;
   --os-color-menubar-bg: #ffffff;
   --os-color-menubar-border: #000000;
@@ -84,7 +83,7 @@
 /* Mac Classic (System 7) - use Geneva 12 for Webamp, smooth (non-pixelated) rendering */
 :root[data-os-theme="system7"] #webamp,
 :root[data-os-theme="system7"] #webamp * {
-  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui !important;
+  font-family: var(--font-geneva-12) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
 }
@@ -130,9 +129,8 @@
 
 /* System 7 Theme */
 :root[data-os-theme="system7"] {
-  --os-font-ui: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
-    -apple-system, sans-serif;
-  --os-font-mono: "Monaco", "ArkPixel", "SerenityOS-Emoji", monospace;
+  --os-font-ui: var(--font-chicago);
+  --os-font-mono: var(--font-monaco);
   --os-color-window-bg: #ffffff;
   --os-color-menubar-bg: #ffffff;
   --os-color-menubar-border: #000000;
@@ -182,10 +180,8 @@
 
 /* Mac OS X Theme */
 :root[data-os-theme="macosx"] {
-  --os-font-ui: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif;
-  --os-font-mono: Monaco, Menlo, monospace;
+  --os-font-ui: var(--font-lucida-grande);
+  --os-font-mono: var(--font-monaco);
   --os-color-window-bg: #ececec;
   --os-color-menubar-bg: linear-gradient(to bottom, #f8f8f8, #d4d4d4);
   --os-color-menubar-border: rgba(0, 0, 0, 0.44);
@@ -422,11 +418,8 @@
 
 /* Windows 98 Theme */
 :root[data-os-theme="win98"] {
-  --os-font-ui: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
-    "SerenityOS-Emoji", sans-serif;
-  --os-font-mono: Monaco, Consolas, "Courier New", monospace;
-  --font-ms-sans: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
-    "SerenityOS-Emoji", system-ui, sans-serif;
+  --os-font-ui: var(--font-ms-sans);
+  --os-font-mono: var(--font-monaco);
   --os-color-window-bg: #c0c0c0;
   --os-color-menubar-bg: #c0c0c0;
   --os-color-menubar-border: #808080;
@@ -485,11 +478,8 @@
 
 /* Windows XP Theme */
 :root[data-os-theme="xp"] {
-  --os-font-ui: Tahoma, "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
-    "SerenityOS-Emoji", sans-serif;
-  --os-font-mono: Consolas, Courier New, monospace;
-  --font-ms-sans: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
-    "SerenityOS-Emoji", system-ui, sans-serif;
+  --os-font-ui: var(--font-tahoma-ui);
+  --os-font-mono: var(--font-monaco);
   --os-color-window-bg: #ece9d8;
   --os-color-menubar-bg: linear-gradient(to bottom, #245edc, #1941a5);
   --os-color-menubar-border: #0a246a;
@@ -1207,8 +1197,7 @@
 
 /* System 7 specific select styling with retro borders */
 :root[data-os-theme="system7"] select {
-  font-family: "ChicagoKare", Geneva, -apple-system, BlinkMacSystemFont,
-    sans-serif !important;
+  font-family: var(--font-chicago) !important;
   font-size: 12px !important;
   border: 2px inset #c0c0c0;
   background-color: #ffffff;
@@ -1514,8 +1503,7 @@
 
 :root[data-os-theme="macosx"] .ipod-force-font .font-chicago,
 :root[data-os-theme="macosx"] .font-chicago {
-  font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
-    -apple-system, sans-serif !important;
+  font-family: var(--font-chicago) !important;
   -webkit-font-smoothing: none !important;
   font-smooth: never !important;
 }
@@ -1554,17 +1542,14 @@
 }
 
 :root[data-os-theme="macosx"] .ipod-force-font .font-geneva-12 {
-  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
-    -apple-system, sans-serif !important;
+  font-family: var(--font-geneva-12) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
   font-size: 12px !important;
 }
 
 :root[data-os-theme="macosx"] .synth-force-font .font-geneva-12 {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--font-lucida-grande) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
   font-size: 12px !important;
@@ -1893,7 +1878,7 @@
 
 /* Use Apple Garamond for ryOS branding in macOSX dialogs */
 :root[data-os-theme="macosx"] .macosx-dialog .font-mondwest {
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", serif !important;
+  font-family: var(--font-apple-garamond) !important;
 }
 
 :root[data-os-theme="macosx"] .macosx-dialog-header {
@@ -2056,14 +2041,14 @@
 
 /* AboutDialog title styling for macOS theme */
 :root[data-os-theme="macosx"] .font-apple-garamond {
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
+  font-family: var(--font-apple-garamond) !important;
   font-size: 1.5rem !important;
 }
 
 /* Ensure AboutDialog title doesn't get overridden by general div styles */
 :root[data-os-theme="macosx"] .font-apple-garamond.text-2xl {
   font-size: 1.5rem !important;
-  font-family: "AppleGaramond", "Apple Garamond", "Times New Roman", "Hiragino Mincho ProN", serif !important;
+  font-family: var(--font-apple-garamond) !important;
 }
 
 /* AboutDialog body text styling for macOS theme */
