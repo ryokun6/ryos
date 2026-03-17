@@ -20,12 +20,20 @@ import {
   filterDeletedIds,
   mergeDeletionMarkerMaps,
 } from "../src/utils/cloudSyncDeletionMarkers";
-import { mergeFilesMetadataSnapshots } from "../src/utils/cloudSyncFileMerge";
+import {
+  applyFilesMetadataRedisPatch,
+  buildFilesMetadataRedisPatch,
+  getLocalDocumentKeysRequiredForFilesMetadataMerge,
+  mergeFilesMetadataSnapshots,
+} from "../src/utils/cloudSyncFileMerge";
 import {
   planIndividualBlobDownload,
   planIndividualBlobUpload,
 } from "../src/utils/cloudSyncIndividualBlobMerge";
 import {
+  applySettingsRedisPatch,
+  buildSettingsRedisPatch,
+  getSettingsSectionsToPatchUpload,
   mergeSettingsSnapshotData,
   normalizeSettingsSnapshotData,
   shouldRestoreLegacyCustomWallpapers,
@@ -533,6 +541,290 @@ describe("cloud sync shared helpers", () => {
 
     expect(merged.items["/Documents/recreated.md"]?.uuid).toBe("recreated-doc");
     expect(merged.deletedPaths).toEqual({});
+  });
+
+  test("getLocalDocumentKeysRequiredForFilesMetadataMerge lists only local-winning document UUIDs", () => {
+    const keys = getLocalDocumentKeysRequiredForFilesMetadataMerge(
+      {
+        items: {
+          "/Documents/a.md": {
+            path: "/Documents/a.md",
+            name: "a.md",
+            isDirectory: false,
+            uuid: "u-local",
+            modifiedAt: 300,
+            createdAt: 100,
+            status: "active",
+            type: "markdown",
+          },
+        },
+        libraryState: "loaded",
+        documents: [],
+        deletedPaths: {},
+      },
+      {
+        items: {
+          "/Documents/b.md": {
+            path: "/Documents/b.md",
+            name: "b.md",
+            isDirectory: false,
+            uuid: "u-remote",
+            modifiedAt: 400,
+            createdAt: 100,
+            status: "active",
+            type: "markdown",
+          },
+        },
+        libraryState: "loaded",
+        documents: [
+          {
+            key: "u-remote",
+            value: { name: "b.md", content: "r" },
+          },
+        ],
+        deletedPaths: {},
+      }
+    );
+    expect(keys.sort()).toEqual(["u-local"]);
+  });
+
+  test("buildFilesMetadataRedisPatch is null when merged matches remote", () => {
+    const remote = {
+      items: {
+        "/Documents/x.md": {
+          path: "/Documents/x.md",
+          name: "x.md",
+          isDirectory: false,
+          uuid: "d1",
+          modifiedAt: 1,
+          createdAt: 1,
+          status: "active",
+          type: "markdown",
+        },
+      },
+      libraryState: "loaded" as const,
+      documents: [{ key: "d1", value: { content: "hi" } }],
+      deletedPaths: {},
+    };
+    const merged = mergeFilesMetadataSnapshots(remote, remote);
+    expect(buildFilesMetadataRedisPatch(merged, remote, "2026-01-01T00:00:00.000Z")).toBeNull();
+  });
+
+  test("applyFilesMetadataRedisPatch round-trips incremental file-metadata upload", () => {
+    const remote = {
+      items: {
+        "/Documents/keep.md": {
+          path: "/Documents/keep.md",
+          name: "keep.md",
+          isDirectory: false,
+          uuid: "k",
+          modifiedAt: 50,
+          createdAt: 50,
+          status: "active",
+          type: "markdown",
+        },
+        "/Documents/old.md": {
+          path: "/Documents/old.md",
+          name: "old.md",
+          isDirectory: false,
+          uuid: "o",
+          modifiedAt: 40,
+          createdAt: 40,
+          status: "active",
+          type: "markdown",
+        },
+      },
+      libraryState: "loaded" as const,
+      documents: [
+        { key: "k", value: { content: "k" } },
+        { key: "o", value: { content: "o" } },
+      ],
+      deletedPaths: {},
+    };
+    const local = {
+      items: {
+        ...remote.items,
+        "/Documents/new.md": {
+          path: "/Documents/new.md",
+          name: "new.md",
+          isDirectory: false,
+          uuid: "n",
+          modifiedAt: 100,
+          createdAt: 100,
+          status: "active",
+          type: "markdown",
+        },
+      },
+      libraryState: "loaded" as const,
+      documents: [
+        ...(remote.documents || []),
+        { key: "n", value: { content: "fresh" } },
+      ],
+      deletedPaths: {},
+    };
+    const merged = mergeFilesMetadataSnapshots(local, remote);
+    const patch = buildFilesMetadataRedisPatch(
+      merged,
+      remote,
+      "2026-01-01T00:00:00.000Z"
+    );
+    expect(patch).not.toBeNull();
+    expect(Object.keys(patch!.items || {})).toEqual(["/Documents/new.md"]);
+    expect(patch!.items?.["/Documents/new.md"]?.uuid).toBe("n");
+    const roundTrip = applyFilesMetadataRedisPatch(remote, patch!);
+    expect(Object.keys(roundTrip.items).sort()).toEqual(
+      Object.keys(merged.items).sort()
+    );
+    for (const p of Object.keys(merged.items)) {
+      expect(roundTrip.items[p]).toEqual(merged.items[p]);
+    }
+    const docByKey = (docs: typeof merged.documents) =>
+      new Map((docs || []).map((d) => [d.key, d]));
+    expect([...docByKey(roundTrip.documents).keys()].sort()).toEqual(
+      [...docByKey(merged.documents).keys()].sort()
+    );
+    for (const k of docByKey(merged.documents).keys()) {
+      expect(docByKey(roundTrip.documents).get(k)).toEqual(
+        docByKey(merged.documents).get(k)
+      );
+    }
+  });
+
+  test("getSettingsSectionsToPatchUpload returns only sections with newer local timestamps", () => {
+    const t1 = "2026-01-01T00:00:00.000Z";
+    const t2 = "2026-01-05T00:00:00.000Z";
+    const sectionUpdatedAt = {
+      theme: t1,
+      language: t1,
+      display: t1,
+      audio: t1,
+      aiModel: t1,
+      ipod: t1,
+      dock: t1,
+      dashboard: t1,
+    };
+    const remote = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: null,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "",
+        currentWallpaper: "",
+        screenSaverEnabled: false,
+        screenSaverType: "",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: false,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: false,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "",
+      },
+      ipod: {
+        displayMode: "browser" as const,
+        showLyrics: true,
+        lyricsAlignment: "center" as const,
+        lyricsFont: "default" as const,
+        romanization: {},
+        lyricsTranslationLanguage: null,
+        theme: "classic" as const,
+        lcdFilterOn: false,
+      },
+      dock: { pinnedItems: [], scale: 1, hiding: false, magnification: false },
+      dashboard: { widgets: [] },
+      sectionUpdatedAt: { ...sectionUpdatedAt },
+    };
+    const local = {
+      ...remote,
+      theme: "aqua",
+      sectionUpdatedAt: { ...sectionUpdatedAt, theme: t2 },
+    };
+    expect(getSettingsSectionsToPatchUpload(local, remote)).toEqual(["theme"]);
+  });
+
+  test("applySettingsRedisPatch applies incremental settings sections", () => {
+    const t1 = "2026-01-01T00:00:00.000Z";
+    const t2 = "2026-01-06T00:00:00.000Z";
+    const sectionUpdatedAt = {
+      theme: t1,
+      language: t1,
+      display: t1,
+      audio: t1,
+      aiModel: t1,
+      ipod: t1,
+      dock: t1,
+      dashboard: t1,
+    };
+    const remote = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: null,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "",
+        currentWallpaper: "",
+        screenSaverEnabled: false,
+        screenSaverType: "",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: false,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: false,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "",
+      },
+      ipod: {
+        displayMode: "browser" as const,
+        showLyrics: true,
+        lyricsAlignment: "center" as const,
+        lyricsFont: "default" as const,
+        romanization: {},
+        lyricsTranslationLanguage: null,
+        theme: "classic" as const,
+        lcdFilterOn: false,
+      },
+      dock: { pinnedItems: [], scale: 1, hiding: false, magnification: false },
+      dashboard: { widgets: [] },
+      sectionUpdatedAt: { ...sectionUpdatedAt },
+    };
+    const local = {
+      ...remote,
+      theme: "aqua",
+      sectionUpdatedAt: { ...sectionUpdatedAt, theme: t2 },
+    };
+    const patch = buildSettingsRedisPatch(local, ["theme"], t1);
+    expect(patch).not.toBeNull();
+    const out = applySettingsRedisPatch(remote, patch!);
+    expect(out.theme).toBe("aqua");
+    expect(out.sectionUpdatedAt?.theme).toBe(t2);
+    expect(out.language).toBe("en");
   });
 
   test("merges settings per store so newer local and remote sections both survive", () => {

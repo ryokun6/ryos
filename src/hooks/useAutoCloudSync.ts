@@ -53,6 +53,10 @@ import {
   markLogicalDirtyPart,
 } from "@/utils/syncLogicalDirtyState";
 import {
+  fetchAutoSyncPreferenceFromServer,
+  persistAutoSyncPreferenceToServer,
+} from "@/utils/autoSyncPreference";
+import {
   getLatestSettingsSectionTimestamp,
   isApplyingRemoteSettingsSection,
   markSettingsSectionChanged,
@@ -259,20 +263,6 @@ function getLatestLocalChangeAt(domain: CloudSyncDomain): string | null {
   ]);
 }
 
-function getLatestLogicalLocalChangeAt(
-  parts: CloudSyncDomain[],
-  lastLocalChangeAtRef: MutableRefObject<Record<CloudSyncDomain, string | null>>
-): string | null {
-  return getLatestCloudSyncTimestamp(
-    parts.map((domain) =>
-      getLatestCloudSyncTimestamp([
-        getLatestLocalChangeAt(domain),
-        lastLocalChangeAtRef.current[domain],
-      ])
-    )
-  );
-}
-
 function alignLocalChangeWithRemoteApply(
   domain: CloudSyncDomain,
   timestamp: string,
@@ -348,6 +338,29 @@ export function useAutoCloudSync() {
   const contactsSeedDoneRef = useRef(false);
 
   const isSyncActive = Boolean(username && isAuthenticated && autoSyncEnabled);
+
+  useEffect(() => {
+    if (!username || !isAuthenticated) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const result = await fetchAutoSyncPreferenceFromServer();
+      if (cancelled || !result.ok) {
+        return;
+      }
+      if (result.apply) {
+        useCloudSyncStore.getState().applyServerAutoSyncPreference(result.enabled);
+        return;
+      }
+      if (useCloudSyncStore.getState().autoSyncEnabled) {
+        void persistAutoSyncPreferenceToServer(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [username, isAuthenticated]);
 
   const enabledDomainsKey = useMemo(
     () =>
@@ -1135,33 +1148,50 @@ export function useAutoCloudSync() {
       const enabledPartDomains = getEnabledPartDomains(logicalDomain);
       if (enabledPartDomains.length === 0) continue;
 
-      const localChangeTs = parseCloudSyncTimestamp(
-        getLatestLogicalLocalChangeAt(
-          enabledPartDomains,
-          lastLocalChangeAtRef
-        )
-      );
-
-      if (localChangeTs === 0) continue;
-
-      const lastSyncedTs = Math.max(
-        ...enabledPartDomains.map((domain) =>
-          Math.max(
-            parseCloudSyncTimestamp(syncState.domainStatus[domain].lastUploadedAt),
-            parseCloudSyncTimestamp(
-              syncState.domainStatus[domain].lastAppliedRemoteAt
-            )
-          )
-        )
-      );
-
-      if (localChangeTs > lastSyncedTs) {
-        const representativeDomain = enabledPartDomains[0];
-        setTimeout(
-          () => queueUpload(representativeDomain),
-          REMOTE_APPLY_SUPPRESSION_MS + 1000
+      // Compare each physical part's local change time to that part's own
+      // last sync — not the max across the logical domain. Using a single
+      // aggregate caused: (1) catch-up to queue files-images first whenever
+      // any file part was stale, re-scanning/uploading all images even when
+      // only metadata/documents changed; (2) skipping files-metadata upload
+      // when images had a newer server timestamp. Same bug affected settings
+      // vs custom-wallpapers (first in list is custom-wallpapers).
+      const partsNeedingUpload: CloudSyncDomain[] = [];
+      for (const partDomain of enabledPartDomains) {
+        const localChangeTs = parseCloudSyncTimestamp(
+          getLatestCloudSyncTimestamp([
+            getLatestLocalChangeAt(partDomain),
+            lastLocalChangeAtRef.current[partDomain],
+          ])
         );
+        if (localChangeTs === 0) continue;
+
+        const partLastSyncedTs = Math.max(
+          parseCloudSyncTimestamp(
+            syncState.domainStatus[partDomain].lastUploadedAt
+          ),
+          parseCloudSyncTimestamp(
+            syncState.domainStatus[partDomain].lastAppliedRemoteAt
+          )
+        );
+
+        if (localChangeTs > partLastSyncedTs) {
+          markLogicalDirtyPart(partDomain);
+          partsNeedingUpload.push(partDomain);
+        }
       }
+
+      if (partsNeedingUpload.length === 0) continue;
+
+      const physicalOrder =
+        getLogicalCloudSyncDomainPhysicalParts(logicalDomain);
+      const representative =
+        physicalOrder.find((d) => partsNeedingUpload.includes(d)) ??
+        partsNeedingUpload[0];
+
+      setTimeout(
+        () => queueUpload(representative),
+        REMOTE_APPLY_SUPPRESSION_MS + 1000
+      );
     }
   }, [getEnabledPartDomains, queueUpload]);
 

@@ -2,7 +2,9 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import {
   applyDownloadedCloudSyncDomainPayload,
+  invalidateRedisStateSnapshotForUpload,
   prepareCloudSyncDomainWrite,
+  type CloudSyncRedisUploadOptions,
 } from "@/sync/domains";
 import type {
   BlobIndividualDomainDownloadPayload,
@@ -64,7 +66,8 @@ function logicalPartUsesIndexedDb(domain: CloudSyncDomain): boolean {
 export async function uploadLogicalCloudSyncDomain(
   domain: LogicalCloudSyncDomain,
   auth: AuthContext,
-  partDomains: CloudSyncDomain[] = getLogicalCloudSyncDomainPhysicalParts(domain)
+  partDomains: CloudSyncDomain[] = getLogicalCloudSyncDomainPhysicalParts(domain),
+  uploadOptions?: CloudSyncRedisUploadOptions
 ): Promise<LogicalCloudSyncTransferResult> {
   const requestedPartDomains = new Set(partDomains);
   const preparedWrites: Partial<Record<CloudSyncDomain, PreparedCloudSyncDomainWrite>> = {};
@@ -74,6 +77,10 @@ export async function uploadLogicalCloudSyncDomain(
     : undefined;
 
   try {
+    const partMetadata: Partial<
+      Record<CloudSyncDomain, CloudSyncDomainMetadata>
+    > = {};
+
     for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
       if (!requestedPartDomains.has(partDomain)) {
         continue;
@@ -81,10 +88,30 @@ export async function uploadLogicalCloudSyncDomain(
       const preparedWrite = await prepareCloudSyncDomainWrite(
         partDomain,
         auth,
-        sharedDb
+        sharedDb,
+        uploadOptions
       );
       preparedWrites[partDomain] = preparedWrite;
-      writes[partDomain] = preparedWrite.payload;
+
+      if (
+        preparedWrite.skipRemoteWrite &&
+        preparedWrite.committedMetadataFallback
+      ) {
+        partMetadata[partDomain] = preparedWrite.committedMetadataFallback;
+        await preparedWrite.onCommitted?.(
+          preparedWrite.committedMetadataFallback
+        );
+      } else {
+        writes[partDomain] = preparedWrite.payload;
+      }
+    }
+
+    if (Object.keys(writes).length === 0) {
+      return {
+        metadata: aggregatePartMetadata(domain, partMetadata),
+        partMetadata,
+        applied: false,
+      };
     }
 
     const response = await abortableFetch(
@@ -103,6 +130,14 @@ export async function uploadLogicalCloudSyncDomain(
     );
 
     if (!response.ok) {
+      if (response.status === 409) {
+        if (writes["files-metadata"]) {
+          invalidateRedisStateSnapshotForUpload(auth.username, "files-metadata");
+        }
+        if (writes["settings"]) {
+          invalidateRedisStateSnapshotForUpload(auth.username, "settings");
+        }
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         (errorData as { error?: string }).error ||
@@ -120,14 +155,17 @@ export async function uploadLogicalCloudSyncDomain(
       >;
     };
 
-    const partMetadata: Partial<Record<CloudSyncDomain, CloudSyncDomainMetadata>> = {};
     for (const partDomain of partDomains) {
+      const prep = preparedWrites[partDomain];
+      if (!prep || prep.skipRemoteWrite) {
+        continue;
+      }
       const metadata = result.writes?.[partDomain]?.metadata;
       if (!metadata) {
         continue;
       }
       partMetadata[partDomain] = metadata;
-      await preparedWrites[partDomain]?.onCommitted?.(metadata);
+      await prep.onCommitted?.(metadata);
     }
 
     return {

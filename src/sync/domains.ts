@@ -63,6 +63,8 @@ import {
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
 import {
+  buildFilesMetadataRedisPatch,
+  getLocalDocumentKeysRequiredForFilesMetadataMerge,
   mergeFilesMetadataSnapshots,
   type FilesMetadataSyncSnapshot,
 } from "@/utils/cloudSyncFileMerge";
@@ -78,6 +80,9 @@ import {
   endApplyingRemoteDomain,
 } from "@/utils/cloudSyncRemoteApplyState";
 import {
+  applySettingsRedisPatch,
+  buildSettingsRedisPatch,
+  getSettingsSectionsToPatchUpload,
   getRemoteSettingsSectionsToApply,
   mergeSettingsSnapshotData,
   normalizeSettingsSnapshotData,
@@ -94,6 +99,7 @@ import {
 } from "@/utils/cloudSyncIndividualBlobMerge";
 import {
   deserializeStoreItem,
+  readAndSerializeStoreItemsByKeys,
   readStoreItems,
   restoreStoreItems,
   serializeStoreItem,
@@ -1313,6 +1319,16 @@ function cacheRedisStateDomainSnapshot(
   redisStateDomainSnapshotCache.set(getDomainFetchCacheKey(auth, domain), value);
 }
 
+/** After a 409 on incremental files-metadata upload, drop cached remote snapshot so the next prepare refetches. */
+export function invalidateRedisStateSnapshotForUpload(
+  username: string,
+  domain: RedisSyncDomain
+): void {
+  redisStateDomainSnapshotCache.invalidate(
+    `${username.toLowerCase()}:${domain}`
+  );
+}
+
 function createWriteSyncVersion(
   domain: CloudSyncDomain,
   baseMetadata: CloudSyncDomainMetadata | null | undefined
@@ -1536,11 +1552,264 @@ function mergeRedisStateConflict(
   }
 }
 
-async function prepareRedisStateDomainWrite(
-  domain: RedisSyncDomain,
+function normalizeRemoteFilesMetadataSnapshot(
+  data: unknown
+): FilesMetadataSyncSnapshot {
+  if (!data || typeof data !== "object") {
+    return {
+      items: {},
+      libraryState: "uninitialized",
+      documents: [],
+      deletedPaths: {},
+    };
+  }
+  const d = data as Record<string, unknown>;
+  return {
+    items: (d.items as Record<string, FileSystemItem>) || {},
+    libraryState:
+      (d.libraryState as FilesMetadataSyncSnapshot["libraryState"]) ||
+      "uninitialized",
+    documents: Array.isArray(d.documents)
+      ? (d.documents as FilesMetadataSyncSnapshot["documents"])
+      : [],
+    deletedPaths: (d.deletedPaths as FilesMetadataSyncSnapshot["deletedPaths"]) || {},
+  };
+}
+
+async function prepareFilesMetadataDomainWrite(
   _auth: AuthContext,
   providedDb?: IDBDatabase
 ): Promise<PreparedCloudSyncDomainWrite> {
+  const domain = "files-metadata" as const;
+  const filesState = useFilesStore.getState();
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
+  const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
+
+  if (!remoteSnapshot?.data) {
+    const envelope = await createCloudSyncEnvelope(domain, providedDb);
+    let data = envelope.data;
+    let baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
+    return {
+      domain,
+      payload: {
+        domain,
+        data,
+        updatedAt: envelope.updatedAt,
+        version: envelope.version,
+        syncVersion: createWriteSyncVersion(domain, baseMetadata),
+      },
+      onCommitted: async (metadata) => {
+        cacheRedisStateDomainSnapshot(domain, _auth, {
+          data,
+          metadata,
+        });
+      },
+    };
+  }
+
+  const remoteData = normalizeRemoteFilesMetadataSnapshot(remoteSnapshot.data);
+  const localSnapshotMinimal: FilesMetadataSyncSnapshot = {
+    items: filesState.items,
+    libraryState: filesState.libraryState,
+    documents: [],
+    deletedPaths: deletionMarkers.fileMetadataPaths,
+  };
+
+  const docKeys = getLocalDocumentKeysRequiredForFilesMetadataMerge(
+    localSnapshotMinimal,
+    remoteData
+  );
+
+  const { db, shouldClose } = await getIndexedDbHandle(providedDb);
+  let merged: FilesMetadataSnapshotData;
+  try {
+    const localDocs = await readAndSerializeStoreItemsByKeys(
+      db,
+      STORES.DOCUMENTS,
+      docKeys
+    );
+    const localSnapshot: FilesMetadataSyncSnapshot = {
+      ...localSnapshotMinimal,
+      documents: localDocs,
+    };
+    merged = mergeFilesMetadataSnapshots(localSnapshot, remoteData);
+  } finally {
+    if (shouldClose) {
+      db.close();
+    }
+  }
+
+  const patch = buildFilesMetadataRedisPatch(
+    merged,
+    remoteData,
+    remoteSnapshot.metadata.updatedAt
+  );
+
+  if (!patch) {
+    return {
+      domain,
+      skipRemoteWrite: true,
+      committedMetadataFallback: remoteSnapshot.metadata,
+      payload: {},
+      onCommitted: async (metadata) => {
+        cacheRedisStateDomainSnapshot(domain, _auth, {
+          data: merged,
+          metadata,
+        });
+      },
+    };
+  }
+
+  const updatedAt = new Date().toISOString();
+  return {
+    domain,
+    payload: {
+      domain,
+      data: patch,
+      updatedAt,
+      version: AUTO_SYNC_SNAPSHOT_VERSION,
+      syncVersion: createWriteSyncVersion(domain, remoteSnapshot.metadata),
+    },
+    onCommitted: async (metadata) => {
+      cacheRedisStateDomainSnapshot(domain, _auth, {
+        data: merged,
+        metadata,
+      });
+    },
+  };
+}
+
+export type CloudSyncRedisUploadOptions = {
+  forceFullSettingsUpload?: boolean;
+};
+
+async function prepareSettingsDomainWrite(
+  _auth: AuthContext,
+  uploadOptions?: CloudSyncRedisUploadOptions
+): Promise<PreparedCloudSyncDomainWrite> {
+  const domain = "settings" as const;
+  const L = serializeSettingsSnapshot();
+  const remoteSnapshot = await fetchRedisStateDomainSnapshot(domain, _auth);
+  const baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
+
+  if (!remoteSnapshot?.data || uploadOptions?.forceFullSettingsUpload) {
+    let data: SettingsSnapshotData = L;
+    if (remoteSnapshot?.data) {
+      data = mergeSettingsSnapshotData(
+        L,
+        remoteSnapshot.data as SettingsSnapshotData,
+        null,
+        remoteSnapshot.metadata.updatedAt
+      );
+    }
+    const updatedAt = new Date().toISOString();
+    return {
+      domain,
+      payload: {
+        domain,
+        data,
+        updatedAt,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        syncVersion: createWriteSyncVersion(domain, baseMetadata),
+      },
+      onCommitted: async (metadata) => {
+        cacheRedisStateDomainSnapshot(domain, _auth, { data, metadata });
+        await applyResolvedRedisUploadLocally(domain, data, metadata.updatedAt);
+      },
+    };
+  }
+
+  const R = remoteSnapshot.data as SettingsSnapshotData;
+  const dirtySections = getSettingsSectionsToPatchUpload(L, R);
+  if (dirtySections.length === 0) {
+    const merged = mergeSettingsSnapshotData(
+      L,
+      R,
+      null,
+      remoteSnapshot.metadata.updatedAt
+    );
+    return {
+      domain,
+      skipRemoteWrite: true,
+      committedMetadataFallback: remoteSnapshot.metadata,
+      payload: {},
+      onCommitted: async (metadata) => {
+        cacheRedisStateDomainSnapshot(domain, _auth, {
+          data: merged,
+          metadata,
+        });
+      },
+    };
+  }
+
+  const patch = buildSettingsRedisPatch(
+    L,
+    dirtySections,
+    remoteSnapshot.metadata.updatedAt
+  );
+  if (!patch) {
+    const merged = mergeSettingsSnapshotData(
+      L,
+      R,
+      null,
+      remoteSnapshot.metadata.updatedAt
+    );
+    return {
+      domain,
+      skipRemoteWrite: true,
+      committedMetadataFallback: remoteSnapshot.metadata,
+      payload: {},
+      onCommitted: async (metadata) => {
+        cacheRedisStateDomainSnapshot(domain, _auth, {
+          data: merged,
+          metadata,
+        });
+      },
+    };
+  }
+
+  const mergedAfter = applySettingsRedisPatch(
+    normalizeSettingsSnapshotData(R, remoteSnapshot.metadata.updatedAt),
+    patch
+  );
+  const updatedAt = new Date().toISOString();
+
+  return {
+    domain,
+    payload: {
+      domain,
+      data: patch,
+      updatedAt,
+      version: AUTO_SYNC_SNAPSHOT_VERSION,
+      syncVersion: createWriteSyncVersion(domain, remoteSnapshot.metadata),
+    },
+    onCommitted: async (metadata) => {
+      cacheRedisStateDomainSnapshot(domain, _auth, {
+        data: mergedAfter,
+        metadata,
+      });
+      await applyResolvedRedisUploadLocally(
+        domain,
+        mergedAfter,
+        metadata.updatedAt
+      );
+    },
+  };
+}
+
+async function prepareRedisStateDomainWrite(
+  domain: RedisSyncDomain,
+  _auth: AuthContext,
+  providedDb?: IDBDatabase,
+  uploadOptions?: CloudSyncRedisUploadOptions
+): Promise<PreparedCloudSyncDomainWrite> {
+  if (domain === "files-metadata") {
+    return prepareFilesMetadataDomainWrite(_auth, providedDb);
+  }
+  if (domain === "settings") {
+    return prepareSettingsDomainWrite(_auth, uploadOptions);
+  }
+
   const envelope = await createCloudSyncEnvelope(domain, providedDb);
   let data = envelope.data;
   let baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
@@ -1765,10 +2034,11 @@ async function uploadIndividualBlobDomain(
 export async function prepareCloudSyncDomainWrite(
   domain: CloudSyncDomain,
   _auth: AuthContext,
-  providedDb?: IDBDatabase
+  providedDb?: IDBDatabase,
+  uploadOptions?: CloudSyncRedisUploadOptions
 ): Promise<PreparedCloudSyncDomainWrite> {
   if (isRedisSyncDomain(domain)) {
-    return prepareRedisStateDomainWrite(domain, _auth, providedDb);
+    return prepareRedisStateDomainWrite(domain, _auth, providedDb, uploadOptions);
   }
   if (isBlobSyncDomain(domain)) {
     return isIndividualBlobSyncDomain(domain)

@@ -13,6 +13,9 @@ export interface PreparedCloudSyncDomainWrite {
   domain: CloudSyncDomain;
   payload: Record<string, unknown>;
   onCommitted?: (metadata: CloudSyncDomainMetadata) => Promise<void> | void;
+  /** When true, do not include this part in PUT /api/sync — metadata unchanged on server */
+  skipRemoteWrite?: boolean;
+  committedMetadataFallback?: CloudSyncDomainMetadata;
 }
 
 export interface RedisStateDomainDownloadPayload {
