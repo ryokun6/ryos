@@ -55,40 +55,6 @@ function Panel({
   );
 }
 
-function PanelHeader({
-  title,
-  useGeneva = false,
-  bordered = false,
-}: {
-  title: string;
-  useGeneva?: boolean;
-  bordered?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        bordered
-          ? "relative text-[11px] font-regular text-left pl-3 pr-2 pt-1.5 pb-1"
-          : "relative text-[9px] font-bold uppercase tracking-wide opacity-50 text-left pl-3 pr-2 pt-2 pb-1",
-        useGeneva && "font-geneva-12"
-      )}
-      style={
-        bordered
-          ? {
-              background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
-              color: "#222",
-              textShadow: "0 1px 0 #e1e1e1",
-              borderTop: "1px solid rgba(255,255,255,0.5)",
-              borderBottom: "1px solid #787878",
-            }
-          : { color: "rgba(0,0,0,0.5)" }
-      }
-    >
-      <span>{title}</span>
-    </div>
-  );
-}
-
 function GroupListItem({
   label,
   isSelected,
