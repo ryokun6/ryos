@@ -12,7 +12,6 @@ import {
   saveCloudBackupMetadata,
 } from "@/api/sync";
 import { clearAllAppStates } from "@/stores/useAppStore";
-import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
 import {
   useAppStoreShallow,
   useAudioSettingsStoreShallow,
@@ -21,7 +20,6 @@ import {
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
 import { AI_MODEL_METADATA } from "@/types/aiModels";
-import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -54,11 +52,13 @@ import {
   type LogicalCloudSyncDomain,
 } from "@/utils/syncLogicalDomains";
 import {
-  readStoreItems,
-  restoreStoreItems,
-  serializeStoreItems,
-  type IndexedDBStoreItemWithKey as StoreItemWithKey,
+  collectFullRyOSBackupPayload,
+  gzipUtf8String,
+  parseRyosFullBackupObject,
+  ungzipBase64GzipPayload,
+  ungzipToUtf8String,
 } from "@/utils/indexedDBBackup";
+import { applyRyosFullBackupRestore } from "@/utils/fullBackupRestore";
 
 type PhotoCategory =
   | "3d_graphics"
@@ -165,36 +165,6 @@ const AI_MODELS = AI_MODEL_METADATA;
 
 /** Maximum cloud backup size in bytes (must match server-side MAX_BACKUP_SIZE) */
 const CLOUD_BACKUP_MAX_SIZE = 50 * 1024 * 1024;
-
-const BACKUP_INDEXEDDB_STORES = [
-  "documents",
-  "images",
-  "trash",
-  "custom_wallpapers",
-  "applets",
-] as const;
-
-function upgradeLegacyBackupStoreValue(
-  backupVersion: number,
-  storeName: string,
-  value: Record<string, unknown>
-): Record<string, unknown> {
-  if (
-    backupVersion >= 2 ||
-    (storeName !== "documents" && storeName !== "images")
-  ) {
-    return value;
-  }
-
-  const nextValue = { ...value };
-  if (!nextValue.uuid) {
-    nextValue.uuid = uuidv4();
-  }
-  if (!nextValue.contentUrl && nextValue.content instanceof Blob) {
-    nextValue.contentUrl = URL.createObjectURL(nextValue.content);
-  }
-  return nextValue;
-}
 
 export interface UseControlPanelsLogicProps {
   initialData?: ControlPanelsInitialData;
@@ -556,93 +526,26 @@ export function useControlPanelsLogic({
     setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.collecting"), percent: 0 });
 
     try {
-      // Build the same backup structure used for local backup
-      const backup: {
-        localStorage: Record<string, string | null>;
-        indexedDB: {
-          documents: StoreItemWithKey[];
-          images: StoreItemWithKey[];
-          trash: StoreItemWithKey[];
-          custom_wallpapers: StoreItemWithKey[];
-          applets: StoreItemWithKey[];
-        };
-        timestamp: string;
-        version: number;
-      } = {
-        localStorage: {},
-        indexedDB: {
-          documents: [],
-          images: [],
-          trash: [],
-          custom_wallpapers: [],
-          applets: [],
-        },
-        timestamp: new Date().toISOString(),
-        version: 3,
-      };
-
-      // Backup all localStorage data
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          backup.localStorage[key] = localStorage.getItem(key);
-        }
-      }
-
-      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.collecting"), percent: 10 });
-
-      // Backup IndexedDB data
-      try {
-        const db = await ensureIndexedDBInitialized();
-
-        setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.serializing"), percent: 20 });
-        const serializedStores = await Promise.all(
-          BACKUP_INDEXEDDB_STORES.map(async (storeName) => [
-            storeName,
-            await serializeStoreItems(await readStoreItems(db, storeName)),
-          ] as const)
-        );
-        for (const [storeName, items] of serializedStores) {
-          backup.indexedDB[storeName] = items;
-        }
-        db.close();
-      } catch (error) {
-        console.error("[CloudSync] Error backing up IndexedDB:", error);
-      }
-
-      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.compressing"), percent: 35 });
-
-      // Convert to JSON and compress
-      const jsonString = JSON.stringify(backup);
-      const encoder = new TextEncoder();
-      const inputData = encoder.encode(jsonString);
-
-      // Gzip compress
-      const readableStream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(inputData);
-          controller.close();
-        },
+      const backup = await collectFullRyOSBackupPayload({
+        logPrefix: "[CloudSync]",
+        onAfterLocalStorageSnapshot: () =>
+          setCloudProgress({
+            phase: t("apps.control-panels.cloudSync.progress.collecting"),
+            percent: 10,
+          }),
+        onBeforeIndexedDBSerialize: () =>
+          setCloudProgress({
+            phase: t("apps.control-panels.cloudSync.progress.serializing"),
+            percent: 20,
+          }),
       });
-      const compressionStream = new CompressionStream("gzip");
-      const compressedStream = readableStream.pipeThrough(compressionStream);
-      const chunks: Uint8Array[] = [];
-      const reader = compressedStream.getReader();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-      }
+      setCloudProgress({
+        phase: t("apps.control-panels.cloudSync.progress.compressing"),
+        percent: 35,
+      });
 
-      // Combine chunks into a single buffer
-      const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
-      const combined = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const chunk of chunks) {
-        combined.set(chunk, offset);
-        offset += chunk.length;
-      }
+      const combined = await gzipUtf8String(JSON.stringify(backup));
 
       // Check size before uploading
       if (combined.length > CLOUD_BACKUP_MAX_SIZE) {
@@ -919,108 +822,38 @@ export function useControlPanelsLogic({
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.decompressing"), percent: 45 });
 
       const result = downloadResult.data as { data: string };
-      const base64Data = result.data;
-
-      // Decode base64 to Uint8Array
-      const binaryStr = atob(base64Data);
-      const compressedData = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        compressedData[i] = binaryStr.charCodeAt(i);
-      }
-
-      // Decompress gzip
-      const compressedResponse = new Response(compressedData);
-      const compressedStreamBody = compressedResponse.body;
-      if (!compressedStreamBody) {
-        throw new Error("Failed to create stream from compressed data");
-      }
-      const decompressionStream = new DecompressionStream("gzip");
-      const decompressedStream =
-        compressedStreamBody.pipeThrough(decompressionStream);
-      const decompressedResponse = new Response(decompressedStream);
-      const jsonString = await decompressedResponse.text();
+      const jsonString = await ungzipBase64GzipPayload(result.data);
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 55 });
 
-      // Parse backup
-      const backup = JSON.parse(jsonString);
+      const backup = parseRyosFullBackupObject(JSON.parse(jsonString), "cloud");
 
-      if (!backup || !backup.localStorage || !backup.timestamp) {
-        throw new Error("Invalid backup format");
-      }
-
-      // Clear current state
-      clearAllAppStates();
-      clearPrefetchFlag();
-
-      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 65 });
-
-      // Restore localStorage
-      Object.entries(backup.localStorage).forEach(([key, value]) => {
-        if (value !== null) {
-          localStorage.setItem(key, value as string);
-        }
+      await applyRyosFullBackupRestore(backup, {
+        setCurrentWallpaper,
+        logPrefix: "[CloudSync]",
+        logFilesNormalizeError: (e) =>
+          console.error("[CloudSync] Files store fallback failed:", e),
+        onAfterClearState: () =>
+          setCloudProgress({
+            phase: t("apps.control-panels.cloudSync.progress.restoring"),
+            percent: 65,
+          }),
+        onAfterLocalStorage: () =>
+          setCloudProgress({
+            phase: t("apps.control-panels.cloudSync.progress.restoring"),
+            percent: 75,
+          }),
+        onAfterIndexedDB: () =>
+          setCloudProgress({
+            phase: t("apps.control-panels.cloudSync.progress.finishing"),
+            percent: 90,
+          }),
+        onAfterWallpaperAndNormalize: () =>
+          setCloudProgress({
+            phase: t("apps.control-panels.cloudSync.progress.finishing"),
+            percent: 100,
+          }),
       });
-
-      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 75 });
-
-      // Restore IndexedDB data if available
-      if (backup.indexedDB) {
-        try {
-          const db = await ensureIndexedDBInitialized();
-          const restorePromises = BACKUP_INDEXEDDB_STORES.flatMap((storeName) => {
-            const items = backup.indexedDB?.[storeName];
-            if (!items) {
-              return [];
-            }
-
-            return restoreStoreItems(db, storeName, items, {
-              mapValue: (value) =>
-                upgradeLegacyBackupStoreValue(backup.version, storeName, value),
-            });
-          });
-
-          await Promise.all(restorePromises);
-          db.close();
-        } catch (error) {
-          console.error("[CloudSync] Error restoring IndexedDB:", error);
-        }
-      }
-
-      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 90 });
-
-      // Handle wallpaper restore
-      if (backup.localStorage["ryos:app:settings:wallpaper"]) {
-        const wallpaper = backup.localStorage["ryos:app:settings:wallpaper"];
-        if (wallpaper) {
-          setCurrentWallpaper(wallpaper);
-        }
-      }
-
-      // Ensure files store is in a safe state.
-      // Preserve the version from the backup so Zustand doesn't
-      // re-run migrations on already-current data.
-      try {
-        const persistedKey = "ryos:files";
-        const persistedState = localStorage.getItem(persistedKey);
-        if (persistedState) {
-          const parsed = JSON.parse(persistedState);
-          if (parsed?.state) {
-            const hasItems =
-              parsed.state.items &&
-              Object.keys(parsed.state.items).length > 0;
-            parsed.state.libraryState = hasItems ? "loaded" : "uninitialized";
-            if (!parsed.version || parsed.version < 5) {
-              parsed.version = 5;
-            }
-            localStorage.setItem(persistedKey, JSON.stringify(parsed));
-          }
-        }
-      } catch (fallbackErr) {
-        console.error("[CloudSync] Files store fallback failed:", fallbackErr);
-      }
-
-      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 100 });
 
       setNextBootMessage(t("common.system.restoringSystem"));
 
@@ -1144,94 +977,15 @@ export function useControlPanelsLogic({
   };
 
   const handleBackup = async () => {
-    const backup: {
-      localStorage: Record<string, string | null>;
-      indexedDB: {
-        documents: StoreItemWithKey[];
-        images: StoreItemWithKey[];
-        trash: StoreItemWithKey[];
-        custom_wallpapers: StoreItemWithKey[];
-        applets: StoreItemWithKey[];
-      };
-      timestamp: string;
-      version: number; // Add version to identify backup format
-    } = {
-      localStorage: {},
-      indexedDB: {
-        documents: [],
-        images: [],
-        trash: [],
-        custom_wallpapers: [],
-        applets: [],
-      },
-      timestamp: new Date().toISOString(),
-      version: 3, // Version 3 includes applets support
-    };
+    const backup = await collectFullRyOSBackupPayload({
+      onIndexedDBBackupError: () =>
+        alert(t("apps.control-panels.alerts.failedToBackupFileSystem")),
+    });
 
-    // Backup all localStorage data
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
-        backup.localStorage[key] = localStorage.getItem(key);
-      }
-    }
-
-    // Backup IndexedDB data
-    try {
-      const db = await ensureIndexedDBInitialized();
-      const serializedStores = await Promise.all(
-        BACKUP_INDEXEDDB_STORES.map(async (storeName) => [
-          storeName,
-          await serializeStoreItems(await readStoreItems(db, storeName)),
-        ] as const)
-      );
-      for (const [storeName, items] of serializedStores) {
-        backup.indexedDB[storeName] = items;
-      }
-      db.close();
-    } catch (error) {
-      console.error("Error backing up IndexedDB:", error);
-      alert(t("apps.control-panels.alerts.failedToBackupFileSystem"));
-    }
-
-    // Convert to JSON string
     const jsonString = JSON.stringify(backup);
 
-    // Create download with gzip compression
     try {
-      // Check if CompressionStream is available
-      if (typeof CompressionStream === "undefined") {
-        throw new Error("CompressionStream API not available in this browser");
-      }
-
-      // Convert string to Uint8Array for compression
-      const encoder = new TextEncoder();
-      const inputData = encoder.encode(jsonString);
-
-      // Create a ReadableStream from the data
-      const readableStream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(inputData);
-          controller.close();
-        },
-      });
-
-      // Compress the stream
-      const compressionStream = new CompressionStream("gzip");
-      const compressedStream = readableStream.pipeThrough(compressionStream);
-
-      // Convert the compressed stream to a blob
-      const chunks: Uint8Array[] = [];
-      const reader = compressedStream.getReader();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-      }
-
-      // Combine chunks into a single blob
-      const compressedBlob = new Blob(chunks as BlobPart[], {
+      const compressedBlob = new Blob([await gzipUtf8String(jsonString)], {
         type: "application/gzip",
       });
 
@@ -1277,24 +1031,9 @@ export function useControlPanelsLogic({
 
         if (file.name.endsWith(".gz")) {
           try {
-            const arrayBuffer = e.target?.result as ArrayBuffer;
-
-            // Create a Response object with the compressed data
-            const compressedResponse = new Response(arrayBuffer);
-            const compressedStream = compressedResponse.body;
-
-            if (!compressedStream) {
-              throw new Error("Failed to create stream from compressed data");
-            }
-
-            // Decompress the stream
-            const decompressionStream = new DecompressionStream("gzip");
-            const decompressedStream =
-              compressedStream.pipeThrough(decompressionStream);
-
-            // Read the decompressed data
-            const decompressedResponse = new Response(decompressedStream);
-            data = await decompressedResponse.text();
+            data = await ungzipToUtf8String(
+              e.target?.result as ArrayBuffer
+            );
           } catch (decompressionError) {
             console.error("Decompression failed:", decompressionError);
             throw new Error(
@@ -1309,10 +1048,9 @@ export function useControlPanelsLogic({
           data = e.target?.result as string;
         }
 
-        // Try to parse the JSON
-        let backup;
+        let parsed: unknown;
         try {
-          backup = JSON.parse(data);
+          parsed = JSON.parse(data);
         } catch (parseError) {
           console.error("JSON parse error:", parseError);
           throw new Error(
@@ -1320,84 +1058,18 @@ export function useControlPanelsLogic({
           );
         }
 
-        // Validate backup structure
-        if (!backup || !backup.localStorage || !backup.timestamp) {
-          throw new Error(
-            "Invalid backup format. Missing required backup data."
-          );
-        }
+        const backup = parseRyosFullBackupObject(parsed, "local");
 
-        // Clear current state
-        clearAllAppStates();
-        clearPrefetchFlag(); // Force re-prefetch on next boot
-
-        // Restore localStorage
-        Object.entries(backup.localStorage).forEach(([key, value]) => {
-          if (value !== null) {
-            localStorage.setItem(key, value as string);
-          }
+        await applyRyosFullBackupRestore(backup, {
+          setCurrentWallpaper,
+          onIndexedDBRestoreError: () =>
+            alert(t("apps.control-panels.alerts.failedToRestoreFileSystem")),
+          logFilesNormalizeError: (fallbackErr) =>
+            console.error(
+              "[ControlPanels] Emergency fallback failed:",
+              fallbackErr
+            ),
         });
-
-        // Restore IndexedDB data if available
-        if (backup.indexedDB) {
-          try {
-            const db = await ensureIndexedDBInitialized();
-            const restorePromises = BACKUP_INDEXEDDB_STORES.flatMap((storeName) => {
-              const items = backup.indexedDB?.[storeName];
-              if (!items) {
-                return [];
-              }
-
-              return restoreStoreItems(db, storeName, items, {
-                mapValue: (value) =>
-                  upgradeLegacyBackupStoreValue(backup.version, storeName, value),
-              });
-            });
-
-            await Promise.all(restorePromises);
-            db.close();
-          } catch (error) {
-            console.error("Error restoring IndexedDB:", error);
-            alert(t("apps.control-panels.alerts.failedToRestoreFileSystem"));
-          }
-        }
-
-        // Update wallpaper after restore
-        if (backup.localStorage["ryos:app:settings:wallpaper"]) {
-          const wallpaper = backup.localStorage["ryos:app:settings:wallpaper"];
-          if (wallpaper) {
-            setCurrentWallpaper(wallpaper);
-          }
-        }
-
-        try {
-          // Ensure the files store is in a safe state after restore.
-          // Preserve the version from the backup so Zustand doesn't
-          // re-run migrations on already-current data.
-          const persistedKey = "ryos:files";
-          const persistedState = localStorage.getItem(persistedKey);
-
-          if (persistedState) {
-            const parsed = JSON.parse(persistedState);
-            if (parsed && parsed.state) {
-              const hasItems =
-                parsed.state.items &&
-                Object.keys(parsed.state.items).length > 0;
-              parsed.state.libraryState = hasItems
-                ? "loaded"
-                : "uninitialized";
-              if (!parsed.version || parsed.version < 5) {
-                parsed.version = 5;
-              }
-              localStorage.setItem(persistedKey, JSON.stringify(parsed));
-            }
-          }
-        } catch (fallbackErr) {
-          console.error(
-            "[ControlPanels] Emergency fallback failed:",
-            fallbackErr
-          );
-        }
 
         setNextBootMessage(t("common.system.restoringSystem"));
 
