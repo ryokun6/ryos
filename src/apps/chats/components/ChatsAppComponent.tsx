@@ -143,8 +143,8 @@ export function ChatsAppComponent({
     confirmDeleteRoom,
   } = chatRoomResult;
 
-  // Global online presence for sidebar indicators
-  const globalOnlineUsers = useGlobalPresence();
+  // Global online presence — only while Chats is open (hook runs even when window is closed)
+  const globalOnlineUsers = useGlobalPresence(!!isWindowOpen);
 
   // Proactive greeting for eligible users
   const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting();
