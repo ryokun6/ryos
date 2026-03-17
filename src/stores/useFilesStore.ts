@@ -114,8 +114,19 @@ let appletsDataPromise: Promise<{ applets: FileSystemItemData[] }> | null = null
 // Preload status tracking
 let preloadStarted = false;
 
+function normalizeFileSystemData(data: unknown): FileSystemData {
+  const value = (data && typeof data === "object"
+    ? data
+    : {}) as Partial<FileSystemData>;
+
+  return {
+    directories: Array.isArray(value.directories) ? value.directories : [],
+    files: Array.isArray(value.files) ? value.files : [],
+  };
+}
+
 function withRequiredRootDirectories(data: FileSystemData): FileSystemData {
-  const directories = [...data.directories];
+  const directories = [...(data.directories ?? [])];
 
   for (const requiredDir of REQUIRED_ROOT_DIRECTORIES) {
     const alreadyExists = directories.some((dir) => dir.path === requiredDir.path);
@@ -164,7 +175,7 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
         retry: { maxAttempts: 2, initialDelayMs: 500 },
       });
       const data = await res.json();
-      cachedFileSystemData = data as FileSystemData;
+      cachedFileSystemData = normalizeFileSystemData(data);
       return cachedFileSystemData;
     } catch (err) {
       console.error("Failed to load filesystem.json", err);

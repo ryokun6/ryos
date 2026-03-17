@@ -49,6 +49,11 @@ Turn the audit into a deletion-first simplification program that:
   - room and song API paths were unified through `src/api/*`
   - some internal API calls still bypass the shared client layer and use direct `abortableFetch`
 
+- Wave 7 is partially complete:
+  - auth-related client calls now go through `src/api/auth.ts`
+  - remaining room typing, room message delete, and user search client calls now go through `src/api/*`
+  - other internal APIs still need wrappers or migrations before the wave is complete
+
 - Wave 3 is only partially complete:
   - backup/restore serialization was unified
   - `indexedDBOperations.ts` is now narrowed to the shared winning CRUD shape
@@ -59,10 +64,10 @@ Turn the audit into a deletion-first simplification program that:
   - the sync monolith was moved out of `src/utils/cloudSync.ts`
   - domain logic is still grouped inside one large `src/sync/domains.ts` file rather than split into per-domain modules
 
-### Known unrelated noise still visible during sync verification
+### Recently resolved cleanup noise
 
-- `useFilesStore` rehydrate still logs a null-spread failure in `withRequiredRootDirectories()`
-- this does not currently fail the focused sync suite, but it should be cleaned up
+- `useFilesStore` rehydrate no longer logs the null-spread failure in `withRequiredRootDirectories()`
+- malformed or partial `filesystem.json` payloads are normalized before root-directory reconciliation
 
 ## Recommended next agent order
 
@@ -71,7 +76,7 @@ Turn the audit into a deletion-first simplification program that:
 3. Unify style tokens between `src/index.css` and `src/styles/themes.css`
 4. Reduce legacy Windows CSS runtime surface
 5. Return to backup/restore dedupe in control panels if more IndexedDB cleanup is needed
-6. Fix `useFilesStore` rehydrate noise
+6. Audit remaining sync test-only language/display noise if it still matters
 
 ## Wave order
 
