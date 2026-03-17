@@ -146,6 +146,35 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
   };
 }
 
+/**
+ * Zustand persist merge is shallow: a persisted `domainStatus` object with fewer
+ * keys than the current schema replaces the entire map and drops new domains
+ * (e.g. custom-wallpapers), causing crashes when UI iterates FILE_SYNC_DOMAINS.
+ * @see tests/test-cloud-sync-persist-domain-status.test.ts
+ */
+export function mergePersistedCloudSyncDomainStatus(
+  partial: Partial<CloudSyncDomainStatusMap> | undefined
+): CloudSyncDomainStatusMap {
+  const next = createInitialDomainStatus();
+  if (!partial) {
+    return next;
+  }
+  for (const domain of Object.keys(next) as CloudSyncDomain[]) {
+    const row = partial[domain];
+    if (row && typeof row === "object") {
+      next[domain] = {
+        lastUploadedAt: row.lastUploadedAt ?? null,
+        lastFetchedAt: row.lastFetchedAt ?? null,
+        lastAppliedRemoteAt: row.lastAppliedRemoteAt ?? null,
+        lastKnownServerVersion: row.lastKnownServerVersion ?? null,
+        isUploading: false,
+        isDownloading: false,
+      };
+    }
+  }
+  return next;
+}
+
 const STORE_NAME = "ryos:cloud-sync";
 const STORE_VERSION = 10;
 
@@ -424,6 +453,17 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       name: STORE_NAME,
       version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage),
+      merge: (persistedState, currentState) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return currentState;
+        }
+        const p = persistedState as Partial<CloudSyncStoreState>;
+        return {
+          ...currentState,
+          ...p,
+          domainStatus: mergePersistedCloudSyncDomainStatus(p.domainStatus),
+        };
+      },
       partialize: (state) => ({
         autoSyncEnabled: state.autoSyncEnabled,
         syncFiles: state.syncFiles,
