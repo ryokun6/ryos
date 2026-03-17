@@ -226,16 +226,19 @@ export function parseCloudSyncTimestamp(
 export function hasUnsyncedLocalChanges(
   lastLocalChangeAt: string | null | undefined,
   lastUploadedAt: string | null | undefined,
+  lastAppliedRemoteAt: string | null | undefined = null,
   hasPendingUpload: boolean = false
 ): boolean {
   if (hasPendingUpload) {
     return true;
   }
 
-  return (
-    parseCloudSyncTimestamp(lastLocalChangeAt) >
-    parseCloudSyncTimestamp(lastUploadedAt)
+  const newestAcknowledgedLocalTime = Math.max(
+    parseCloudSyncTimestamp(lastUploadedAt),
+    parseCloudSyncTimestamp(lastAppliedRemoteAt)
   );
+
+  return parseCloudSyncTimestamp(lastLocalChangeAt) > newestAcknowledgedLocalTime;
 }
 
 export function shouldApplyRemoteUpdate({
@@ -255,7 +258,12 @@ export function shouldApplyRemoteUpdate({
   }
 
   if (
-    hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
+    hasUnsyncedLocalChanges(
+      lastLocalChangeAt,
+      lastUploadedAt,
+      lastAppliedRemoteAt,
+      hasPendingUpload
+    )
   ) {
     return false;
   }
@@ -289,7 +297,12 @@ export function shouldRecheckRemoteAfterLocalSync(
   } = params;
 
   if (
-    !hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
+    !hasUnsyncedLocalChanges(
+      lastLocalChangeAt,
+      lastUploadedAt,
+      lastAppliedRemoteAt,
+      hasPendingUpload
+    )
   ) {
     return false;
   }

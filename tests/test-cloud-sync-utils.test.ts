@@ -188,10 +188,30 @@ describe("cloud sync shared helpers", () => {
     ).toBe(false);
     expect(
       hasUnsyncedLocalChanges(
+        "2026-03-04T12:01:00.000Z",
+        "2026-03-04T12:00:00.000Z",
+        "2026-03-04T12:01:00.000Z"
+      )
+    ).toBe(false);
+    expect(
+      hasUnsyncedLocalChanges(
         "2026-03-04T12:00:00.000Z",
         "2026-03-04T12:00:00.000Z",
+        null,
         true
       )
+    ).toBe(true);
+  });
+
+  test("treats remote-applied timestamps as already acknowledged", () => {
+    expect(
+      shouldApplyRemoteUpdate({
+        remoteUpdatedAt: "2026-03-04T12:06:00.000Z",
+        lastAppliedRemoteAt: "2026-03-04T12:04:00.000Z",
+        lastUploadedAt: "2026-03-04T12:02:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:04:00.000Z",
+        hasPendingUpload: false,
+      })
     ).toBe(true);
   });
 

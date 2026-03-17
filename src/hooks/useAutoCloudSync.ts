@@ -447,7 +447,6 @@ export function useAutoCloudSync() {
       );
       const targetPartDomains =
         dirtyPartDomains.length > 0 ? dirtyPartDomains : enabledPartDomains;
-
       for (const partDomain of targetPartDomains) {
         syncState.markUploadStart(partDomain);
       }
@@ -705,6 +704,7 @@ export function useAutoCloudSync() {
         const hasUnsynced = hasUnsyncedLocalChanges(
           lastLocalChangeAtRef.current[partDomain],
           domainStatus.lastUploadedAt,
+          domainStatus.lastAppliedRemoteAt,
           hasPendingUploadForDomain(partDomain) || domainStatus.isUploading
         );
         const shouldApplyMetadata = shouldApplyRemoteUpdate({
@@ -909,6 +909,7 @@ export function useAutoCloudSync() {
           const hasUnsynced = hasUnsyncedLocalChanges(
             lastLocalChangeAtRef.current[domain],
             domainStatus.lastUploadedAt,
+            domainStatus.lastAppliedRemoteAt,
             hasPendingUploadForDomain(domain) || domainStatus.isUploading
           );
           const shouldApplyMetadata = shouldApplyRemoteUpdate({
