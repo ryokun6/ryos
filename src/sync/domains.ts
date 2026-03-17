@@ -5,7 +5,6 @@ import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
-import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
@@ -59,6 +58,13 @@ import {
   type ContactsSnapshotData,
 } from "@/sync/domains/contacts";
 import {
+  applyFilesMetadataSnapshot,
+  serializeFilesMetadataSnapshot,
+  type FilesMetadataSnapshotData,
+  type FilesStoreSnapshotData,
+} from "@/sync/domains/files";
+import { mergeFilesMetadataSnapshots } from "@/utils/cloudSyncFileMerge";
+import {
   applySongsSnapshot,
   mergeSongsSnapshots,
   serializeSongsSnapshot,
@@ -76,10 +82,6 @@ import {
   serializeVideosSnapshot,
   type VideosSnapshotData,
 } from "@/sync/domains/videos";
-import {
-  mergeFilesMetadataSnapshots,
-  type FilesMetadataSyncSnapshot,
-} from "@/utils/cloudSyncFileMerge";
 import {
   beginApplyingRemoteSettingsSections,
   endApplyingRemoteSettingsSections,
@@ -111,7 +113,6 @@ import {
   type IndexedDBStoreItemWithKey as StoreItemWithKey,
 } from "@/utils/indexedDBBackup";
 import {
-  applyIndexedDbStoreSnapshot,
   applyIndividualBlobDomain,
   applyMonolithicBlobSnapshotToIndividualDomain,
   downloadGzipJson,
@@ -140,15 +141,6 @@ type AuthContext = {
 };
 
 type CustomWallpapersSnapshotData = StoreItemWithKey[];
-
-interface FilesMetadataSnapshotData {
-  items: Record<string, FileSystemItem>;
-  libraryState: "uninitialized" | "loaded" | "cleared";
-  documents?: FilesStoreSnapshotData;
-  deletedPaths?: DeletionMarkerMap;
-}
-
-type FilesStoreSnapshotData = StoreItemWithKey[];
 
 type AnySnapshotData =
   | SettingsSnapshotData
@@ -324,23 +316,6 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
       widgets: dashboardState.widgets,
     },
     sectionUpdatedAt,
-  };
-}
-
-async function serializeFilesMetadataSnapshot(
-  providedDb?: IDBDatabase
-): Promise<FilesMetadataSnapshotData> {
-  const filesState = useFilesStore.getState();
-  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
-
-  return {
-    items: filesState.items,
-    libraryState: filesState.libraryState,
-    documents: await serializeIndexedDbStoreSnapshot(
-      STORES.DOCUMENTS,
-      providedDb
-    ),
-    deletedPaths: deletionMarkers.fileMetadataPaths,
   };
 }
 
@@ -630,46 +605,6 @@ async function applySettingsSnapshot(
     Object.fromEntries(
       appliedSections.map((section) => [section, remoteSectionUpdatedAt[section] || fallbackUpdatedAt])
     )
-  );
-}
-
-async function applyFilesMetadataSnapshot(
-  data: FilesMetadataSnapshotData,
-  providedDb?: IDBDatabase
-): Promise<void> {
-  const remoteDeletedPaths = normalizeDeletionMarkerMap(data.deletedPaths);
-  const cloudSyncState = useCloudSyncStore.getState();
-  const localDeletedPaths = cloudSyncState.deletionMarkers.fileMetadataPaths;
-  const localSnapshot: FilesMetadataSyncSnapshot = {
-    items: useFilesStore.getState().items,
-    libraryState: useFilesStore.getState().libraryState,
-    documents: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS, providedDb),
-    deletedPaths: localDeletedPaths,
-  };
-  const mergedSnapshot = mergeFilesMetadataSnapshots(localSnapshot, {
-    ...data,
-    deletedPaths: remoteDeletedPaths,
-  });
-  const effectiveDeletedPaths = mergeDeletionMarkerMaps(
-    localDeletedPaths,
-    remoteDeletedPaths
-  );
-  const prunedDeletedPaths = Object.keys(effectiveDeletedPaths).filter(
-    (path) => !mergedSnapshot.deletedPaths?.[path]
-  );
-
-  cloudSyncState.mergeDeletedKeys("fileMetadataPaths", remoteDeletedPaths);
-  cloudSyncState.clearDeletedKeys("fileMetadataPaths", prunedDeletedPaths);
-
-  useFilesStore.setState({
-    items: mergedSnapshot.items,
-    libraryState: mergedSnapshot.libraryState,
-  });
-
-  await applyIndexedDbStoreSnapshot(
-    STORES.DOCUMENTS,
-    mergedSnapshot.documents || [],
-    providedDb
   );
 }
 

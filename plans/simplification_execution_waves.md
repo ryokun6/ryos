@@ -53,6 +53,7 @@ Turn the audit into a deletion-first simplification program that:
 - Wave 8 is partially complete:
   - sync song/video/sticky/calendar/contact serializers and apply/merge logic now live in `src/sync/domains/*.ts`
   - IndexedDB/blob sync helpers now live in `src/sync/domains/blob-shared.ts`
+  - file metadata snapshot serialization/apply logic now live in `src/sync/domains/files.ts`
   - `src/sync/domains.ts` is smaller and now delegates several domain concerns
   - settings/files/blob-specific logic still remain in the main module and need further extraction
 
