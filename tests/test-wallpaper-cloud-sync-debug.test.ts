@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { subscribeToCloudSyncCheckRequests } from "../src/utils/cloudSyncEvents";
+import { subscribeToCloudSyncDomainCheckRequests } from "../src/utils/cloudSyncEvents";
 import { planIndividualBlobDownload } from "../src/utils/cloudSyncIndividualBlobMerge";
 import { shouldApplyRemoteUpdate } from "../src/utils/cloudSyncShared";
 
@@ -98,9 +98,9 @@ describe("wallpaper cloud sync debug reproduction", () => {
     const { useDisplaySettingsStore } = await import(
       "../src/stores/useDisplaySettingsStore"
     );
-    let syncChecks = 0;
-    const unsubscribe = subscribeToCloudSyncCheckRequests(() => {
-      syncChecks += 1;
+    const requestedDomains: string[] = [];
+    const unsubscribe = subscribeToCloudSyncDomainCheckRequests((domain) => {
+      requestedDomains.push(domain);
     });
 
     try {
@@ -120,7 +120,7 @@ describe("wallpaper cloud sync debug reproduction", () => {
       expect(useDisplaySettingsStore.getState().wallpaperSource).toBe(
         "/wallpapers/photos/aqua/water.jpg"
       );
-      expect(syncChecks).toBe(1);
+      expect(requestedDomains).toEqual(["custom-wallpapers"]);
     } finally {
       unsubscribe();
       browserGlobals.window = originalWindow;
