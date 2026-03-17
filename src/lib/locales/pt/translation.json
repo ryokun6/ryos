@@ -1147,6 +1147,7 @@
         "daysAgo": "{{count}}d atrás",
         "description": "Sincroniza automaticamente os dados e definições selecionados com a nuvem após alterações importantes",
         "error": "Problema de sincronização: {{error}}",
+        "enableHint": "A sincronização automática está desligada. Ative o interruptor abaixo para sincronizar fundos, documentos e definições entre dispositivos.",
         "fetching": "Buscando",
         "files": "Ficheiros",
         "hoursAgo": "{{count}}h atrás",

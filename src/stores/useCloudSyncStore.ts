@@ -144,12 +144,12 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 8;
+const STORE_VERSION = 9;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
     (set, get) => ({
-      autoSyncEnabled: false,
+      autoSyncEnabled: true,
       syncFiles: true,
       syncSettings: true,
       syncSongs: true,
@@ -503,7 +503,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         }
 
         return {
-          autoSyncEnabled: candidate.autoSyncEnabled ?? false,
+          autoSyncEnabled: candidate.autoSyncEnabled ?? true,
           syncFiles: candidate.syncFiles ?? true,
           syncSettings: candidate.syncSettings ?? true,
           syncSongs: candidate.syncSongs ?? true,

@@ -1147,6 +1147,7 @@
         "daysAgo": "{{count}}g fa",
         "description": "Sincronizza automaticamente i dati e le impostazioni selezionati con il cloud dopo modifiche importanti",
         "error": "Problema di sincronizzazione: {{error}}",
+        "enableHint": "La sincronizzazione automatica è disattivata. Attiva l’interruttore sotto per sincronizzare sfondi, documenti e impostazioni tra i dispositivi.",
         "fetching": "Recupero...",
         "files": "File",
         "hoursAgo": "{{count}}h fa",

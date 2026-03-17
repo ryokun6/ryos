@@ -692,6 +692,14 @@ export function ControlPanelsAppComponent({
             <ThemedTabsContent value="sync">
               <div className="space-y-4 h-full overflow-y-auto p-4">
                 <div className="space-y-3 pt-1">
+                  {username && !autoSyncEnabled && (
+                    <div
+                      className="rounded-md border border-amber-600/40 bg-amber-500/15 px-3 py-2.5 text-sm leading-snug"
+                      role="status"
+                    >
+                      {t("apps.control-panels.autoSync.enableHint")}
+                    </div>
+                  )}
                   {username ? (
                     <div className="flex items-center justify-between gap-4">
                       <SyncSectionTitle

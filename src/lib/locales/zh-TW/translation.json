@@ -1147,6 +1147,7 @@
         "daysAgo": "{{count}}天前",
         "description": "在重要更新後，自動將選取的資料與設定同步到雲端",
         "error": "同步問題：{{error}}",
+        "enableHint": "自動同步已關閉。請開啟下方開關，以在裝置間同步桌布、文件與設定。",
         "fetching": "正在擷取",
         "files": "檔案",
         "hoursAgo": "{{count}}小時前",
