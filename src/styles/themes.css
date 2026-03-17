@@ -3,6 +3,13 @@
   --os-font-ui: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
     -apple-system, sans-serif;
   --os-font-mono: "Monaco", "ArkPixel", "SerenityOS-Emoji", monospace;
+  --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
+  --font-apple-garamond: "AppleGaramond", "Hiragino Mincho ProN",
+    "SerenityOS-Emoji", serif;
+  --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
+  --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
+  --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
+  --font-jacquard: "Jacquard", "ArkPixel", "SerenityOS-Emoji", system-ui;
   --os-color-window-bg: #ffffff;
   --os-color-menubar-bg: #ffffff;
   --os-color-menubar-border: #000000;
@@ -2413,6 +2420,145 @@
 /* Sonner Toaster theme-aware typography               */
 /* Use OS theme font variables instead of per-component overrides */
 /* -------------------------------------------------- */
+.file-icon-label {
+  font-family: var(--os-font-ui);
+}
+
+:root[data-os-theme="system7"] .file-icon-label {
+  font-family: var(--font-geneva-12);
+  -webkit-font-smoothing: antialiased;
+  font-smooth: always;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Legacy Windows compatibility layer (xp-custom.css / 98-custom.css)        */
+/* Keep XP/98 reset rules here so the broad theme sheets stay explicit.       */
+/* ------------------------------------------------------------------------- */
+input.terminal-input[type="text"] {
+  padding: 0 !important;
+  border: none !important;
+  background-color: transparent !important;
+  box-sizing: border-box !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  vertical-align: top;
+}
+
+input.terminal-input[type="text"]:focus {
+  outline: none !important;
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+button.piano-key {
+  font-size: inherit !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+  outline: none !important;
+  outline-offset: initial !important;
+  border: 1px solid #333333 !important;
+  border-radius: 0 0 6px 6px !important;
+}
+
+button.piano-key.system7-square {
+  border-radius: 0 !important;
+}
+
+button.piano-key:not(:disabled).active,
+button.piano-key:not(:disabled):active {
+  box-shadow: none !important;
+}
+
+button.piano-key.focused,
+button.piano-key:focus {
+  outline: none !important;
+  outline-offset: initial !important;
+}
+
+button.piano-key.bg-black,
+button.piano-key.bg-black.bg-black {
+  background: rgb(0 0 0) !important;
+  background-color: rgb(0 0 0) !important;
+}
+
+button.piano-key.bg-white,
+button.piano-key.bg-white.bg-white {
+  background: rgb(255 255 255) !important;
+  background-color: rgb(255 255 255) !important;
+}
+
+button.piano-key.bg-black:hover,
+button.piano-key.bg-black.bg-black:hover {
+  background: rgb(51 51 51) !important;
+  background-color: rgb(51 51 51) !important;
+}
+
+button.piano-key.bg-white:hover,
+button.piano-key.bg-white.bg-white:hover {
+  background: rgb(245 245 245) !important;
+  background-color: rgb(245 245 245) !important;
+}
+
+button.piano-key[class*="bg-[#ff33ff]"],
+button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
+  background: #ff33ff !important;
+  background-color: #ff33ff !important;
+}
+
+button.preview-button {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none;
+  padding: 0 !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  border-radius: 3px !important;
+  overflow: hidden;
+}
+
+button.preview-button:focus,
+button.preview-button:active,
+button.preview-button:hover {
+  background-color: transparent !important;
+  outline: none !important;
+}
+
+/* ------------------------------------------------------------------------- */
+/* macOS X theme override: disable pixelated rendering for icons and media    */
+/* ------------------------------------------------------------------------- */
+:root[data-os-theme="macosx"] .\[image-rendering\:pixelated\],
+:root[data-os-theme="macosx"] img,
+:root[data-os-theme="macosx"] canvas,
+:root[data-os-theme="macosx"] video {
+  image-rendering: auto !important;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Sonner toast positioning and theme-specific styling                        */
+/* ------------------------------------------------------------------------- */
+[data-sonner-toaster][data-x-position="right"] {
+  right: 12px !important;
+}
+
+@media (max-width: 768px) {
+  [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+  }
+
+  :root[data-os-theme="macosx"] [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+  }
+
+  :root[data-os-theme="xp"] [data-sonner-toaster][data-y-position="bottom"],
+  :root[data-os-theme="win98"] [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 46px) !important;
+  }
+}
+
 .toaster {
   font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
@@ -2424,6 +2570,107 @@
   font-family: var(--font-geneva-12) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
+}
+
+:root[data-os-theme="system7"] [data-sonner-toast] {
+  border-radius: 0 !important;
+  border: 1px solid #000 !important;
+  box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5) !important;
+}
+
+:root[data-os-theme="system7"] [data-sonner-toast] .text-sm,
+:root[data-os-theme="system7"] [data-sonner-toast] [data-content] {
+  font-size: 12px !important;
+}
+
+:root[data-os-theme="system7"] [data-sonner-toast] button {
+  font-size: 12px !important;
+  border: 5px solid transparent !important;
+  border-image: url("/assets/button.svg") 30 stretch !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: #000 !important;
+}
+
+:root[data-os-theme="system7"] [data-sonner-toast] button:active {
+  border-image: url("/assets/button-default.svg") 60 stretch !important;
+}
+
+:root[data-os-theme="xp"] [data-sonner-toast] {
+  background: #ece9d8 !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(0, 0, 0, 0.7) !important;
+  box-shadow: none !important;
+  color: #000 !important;
+}
+
+:root[data-os-theme="xp"] [data-sonner-toast] [data-title],
+:root[data-os-theme="xp"] [data-sonner-toast] [data-description],
+:root[data-os-theme="xp"] [data-sonner-toast] .text-sm,
+:root[data-os-theme="xp"] [data-sonner-toast] [data-content] {
+  color: #000 !important;
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
+  font-size: 11px !important;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+:root[data-os-theme="xp"] [data-sonner-toast] button {
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
+  font-size: 11px !important;
+  background: #ece9d8 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff,
+    inset -2px -2px #888, inset 2px 2px #dfdfdf !important;
+  color: #000 !important;
+  padding: 4px 12px !important;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+:root[data-os-theme="xp"] [data-sonner-toast] button:active {
+  box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff,
+    inset 2px 2px #888, inset -2px -2px #dfdfdf !important;
+}
+
+:root[data-os-theme="win98"] [data-sonner-toast] {
+  background: #c0c0c0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff,
+    inset -2px -2px grey, inset 2px 2px #dfdfdf !important;
+  color: #000 !important;
+}
+
+:root[data-os-theme="win98"] [data-sonner-toast] [data-title],
+:root[data-os-theme="win98"] [data-sonner-toast] [data-description],
+:root[data-os-theme="win98"] [data-sonner-toast] .text-sm,
+:root[data-os-theme="win98"] [data-sonner-toast] [data-content] {
+  color: #000 !important;
+  font-size: 12px !important;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+:root[data-os-theme="win98"] [data-sonner-toast] button {
+  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
+  font-size: 11px !important;
+  background: #c0c0c0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff,
+    inset -2px -2px grey, inset 2px 2px #dfdfdf !important;
+  color: #000 !important;
+  padding: 4px 12px !important;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+:root[data-os-theme="win98"] [data-sonner-toast] button:active {
+  box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff,
+    inset 2px 2px grey, inset -2px -2px #dfdfdf !important;
 }
 
 /* macOS: Style toast containers with semi-transparent pinstripes like dock */

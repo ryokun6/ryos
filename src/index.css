@@ -52,13 +52,6 @@
     --ring: 0 0% 0%;
     --radius: 0px;
     --sat-safe-area-bottom: env(safe-area-inset-bottom, 0px);
-    --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-apple-garamond: "AppleGaramond", "Hiragino Mincho ProN", "SerenityOS-Emoji",
-      serif;
-    --font-mondwest: "Mondwest", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-neuebit: "NeueBit", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-monaco: "Monaco", "ArkPixel", "SerenityOS-Emoji", system-ui;
-    --font-jacquard: "Jacquard", "ArkPixel", "SerenityOS-Emoji", system-ui;
   }
 
   .dark {
@@ -148,96 +141,6 @@
 
 .input--focused {
   animation: blink_input_opacity_to_prevent_scrolling_when_focus 0.01s;
-}
-
-/* Terminal input override styles to prevent XP/98 theme interference */
-input.terminal-input[type="text"] {
-  padding: 0 !important;
-  border: none !important;
-  background-color: transparent !important;
-  box-sizing: border-box !important;
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  /* Allow inline styles to control height/line-height for IME alignment */
-  vertical-align: top;
-}
-
-input.terminal-input[type="text"]:focus {
-  outline: none !important;
-  border: none !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Piano key override styles to prevent XP/98 theme button interference */
-button.piano-key {
-  font-size: inherit !important;
-  box-sizing: border-box !important;
-  box-shadow: none !important;
-  outline: none !important;
-  outline-offset: initial !important;
-}
-
-/* Restore borders for piano keys */
-button.piano-key {
-  border: 1px solid #333333 !important;
-}
-
-/* Default: rounded corners for modern themes */
-button.piano-key {
-  border-radius: 0 0 6px 6px !important; /* rounded-b-md equivalent */
-}
-
-/* Square corners for retro themes - using specific override classes */
-button.piano-key.system7-square {
-  border-radius: 0 !important;
-}
-
-button.piano-key:not(:disabled).active,
-button.piano-key:not(:disabled):active {
-  box-shadow: none !important;
-}
-
-button.piano-key.focused,
-button.piano-key:focus {
-  outline: none !important;
-  outline-offset: initial !important;
-}
-
-/* Specifically preserve Tailwind background classes for piano keys - High specificity */
-button.piano-key.bg-black,
-button.piano-key.bg-black.bg-black {
-  background: rgb(0 0 0) !important;
-  background-color: rgb(0 0 0) !important;
-}
-
-button.piano-key.bg-white,
-button.piano-key.bg-white.bg-white {
-  background: rgb(255 255 255) !important;
-  background-color: rgb(255 255 255) !important;
-}
-
-/* Preserve hover states with high specificity */
-button.piano-key.bg-black:hover,
-button.piano-key.bg-black.bg-black:hover {
-  background: rgb(51 51 51) !important; /* #333333 */
-  background-color: rgb(51 51 51) !important;
-}
-
-button.piano-key.bg-white:hover,
-button.piano-key.bg-white.bg-white:hover {
-  background: rgb(245 245 245) !important; /* #f5f5f5 */
-  background-color: rgb(245 245 245) !important;
-}
-
-/* Preserve pressed state with high specificity */
-button.piano-key[class*="bg-[#ff33ff]"],
-button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
-  background: #ff33ff !important;
-  background-color: #ff33ff !important;
 }
 
 @keyframes progress-indeterminate {
@@ -357,18 +260,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 @layer utilities {
   .font-geneva-12 {
-    font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
-      -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    font-smooth: always;
-  }
-
-  .file-icon-label {
-    font-family: var(--os-font-ui);
-  }
-
-  :root[data-os-theme="system7"] .file-icon-label {
-    font-family: var(--font-geneva-12);
+    font-family: var(--font-geneva-12), -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
@@ -380,15 +272,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   .font-mondwest {
-    font-family: "Mondwest", "Yu Mincho", "Hiragino Mincho Pro", "Georgia",
-      "Palatino", "Yu Mincho", "Hiragino Mincho Pro", serif;
+    font-family: var(--font-mondwest), "Yu Mincho", "Hiragino Mincho Pro",
+      "Georgia", "Palatino", "Yu Mincho", "Hiragino Mincho Pro", serif;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
 
   .font-neuebit {
-    font-family: "NeueBit", "ArkPixel", "SerenityOS-Emoji", "Helvetica", "Arial",
-      "Hiragino Sans", sans-serif;
+    font-family: var(--font-neuebit), "Helvetica", "Arial", "Hiragino Sans",
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
@@ -559,24 +451,6 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     -webkit-touch-callout: none !important;
   }
 
-  /* Preview button reset - removes XP/98 theme button styling for image/canvas preview buttons */
-  button.preview-button {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none;
-    padding: 0 !important;
-    outline: none !important;
-    outline-offset: 0 !important;
-    border-radius: 3px !important;
-    overflow: hidden;
-  }
-
-  button.preview-button:focus,
-  button.preview-button:active,
-  button.preview-button:hover {
-    background-color: transparent !important;
-    outline: none !important;
-  }
 }
 
 @keyframes highlight-bg-opacity {
@@ -928,152 +802,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 }
 
 /* ------------------------------------------------------------------------- */
-/* macOS X theme override: disable pixelated rendering for icons and media    */
-/* Ensures smoother interpolation for macOS X while keeping retro themes      */
-/* (system7, win98, xp) pixelated via existing utility classes or inline      */
-/* styles. Uses !important to override Tailwind arbitrary value classes or    */
-/* inline styles that set image-rendering: pixelated.                         */
-/* ------------------------------------------------------------------------- */
-:root[data-os-theme="macosx"] .\[image-rendering\:pixelated\],
-:root[data-os-theme="macosx"] img,
-:root[data-os-theme="macosx"] canvas,
-:root[data-os-theme="macosx"] video {
-  image-rendering: auto !important;
-}
-
-/* ------------------------------------------------------------------------- */
 /* Sonner toast positioning and animations                                   */
 /* ------------------------------------------------------------------------- */
-
-/* Reduce right margin for right-positioned toasts */
-[data-sonner-toaster][data-x-position="right"] {
-  right: 12px !important;
-}
-
-/* Mobile bottom-positioned toasts: account for dock/taskbar height and safe area */
-@media (max-width: 768px) {
-  [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
-  }
-  
-  /* macOS X theme: add dock height (56px) */
-  :root[data-os-theme="macosx"] [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
-  }
-  
-  /* Windows XP theme: add taskbar height (30px) */
-  :root[data-os-theme="xp"] [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 46px) !important;
-  }
-  
-  /* Windows 98 theme: add taskbar height (30px) */
-  :root[data-os-theme="win98"] [data-sonner-toaster][data-y-position="bottom"] {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 46px) !important;
-  }
-}
-
-/* System 7 theme: square corners, black border, drop shadow, smaller body text */
-:root[data-os-theme="system7"] [data-sonner-toast] {
-  border-radius: 0 !important;
-  border: 1px solid #000 !important;
-  box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* Smaller body text for System 7 toasts */
-:root[data-os-theme="system7"] [data-sonner-toast] .text-sm,
-:root[data-os-theme="system7"] [data-sonner-toast] [data-content] {
-  font-size: 12px !important;
-}
-
-/* Retro button style for System 7 toasts */
-:root[data-os-theme="system7"] [data-sonner-toast] button {
-  font-size: 12px !important;
-  border: 5px solid transparent !important;
-  border-image: url('/assets/button.svg') 30 stretch !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  color: #000 !important;
-}
-
-:root[data-os-theme="system7"] [data-sonner-toast] button:active {
-  border-image: url('/assets/button-default.svg') 60 stretch !important;
-}
-
-
-
-/* Windows XP theme: yellow XP background, no shadows, rounded corners */
-:root[data-os-theme="xp"] [data-sonner-toast] {
-  background: #ECE9D8 !important;
-  border-radius: 4px !important;
-  border: 1px solid rgba(0, 0, 0, 0.7) !important;
-  box-shadow: none !important;
-  color: #000 !important;
-}
-
-:root[data-os-theme="xp"] [data-sonner-toast] [data-title],
-:root[data-os-theme="xp"] [data-sonner-toast] [data-description],
-:root[data-os-theme="xp"] [data-sonner-toast] .text-sm,
-:root[data-os-theme="xp"] [data-sonner-toast] [data-content] {
-  color: #000 !important;
-  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
-  font-size: 11px !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
-}
-
-:root[data-os-theme="xp"] [data-sonner-toast] button {
-  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
-  font-size: 11px !important;
-  background: #ECE9D8 !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #888, inset 2px 2px #dfdfdf !important;
-  color: #000 !important;
-  padding: 4px 12px !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
-}
-
-:root[data-os-theme="xp"] [data-sonner-toast] button:active {
-  box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px #888, inset -2px -2px #dfdfdf !important;
-}
-
-/* Windows 98 theme: silver background, classic beveled 3D effect */
-:root[data-os-theme="win98"] [data-sonner-toast] {
-  background: #C0C0C0 !important;
-  border-radius: 0 !important;
-  border: none !important;
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf !important;
-  color: #000 !important;
-}
-
-:root[data-os-theme="win98"] [data-sonner-toast] [data-title],
-:root[data-os-theme="win98"] [data-sonner-toast] [data-description],
-:root[data-os-theme="win98"] [data-sonner-toast] .text-sm,
-:root[data-os-theme="win98"] [data-sonner-toast] [data-content] {
-  color: #000 !important;
-  font-size: 12px !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
-}
-
-:root[data-os-theme="win98"] [data-sonner-toast] button {
-  font-family: "Pixelated MS Sans Serif", "ArkPixel", Tahoma, sans-serif !important;
-  font-size: 11px !important;
-  background: #C0C0C0 !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf !important;
-  color: #000 !important;
-  padding: 4px 12px !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
-}
-
-:root[data-os-theme="win98"] [data-sonner-toast] button:active {
-  box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px grey, inset -2px -2px #dfdfdf !important;
-}
 
 /* ------------------------------------------------------------------------- */
 /* Japanese Furigana (Ruby) styling for lyrics display                       */
