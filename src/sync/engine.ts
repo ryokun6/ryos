@@ -4,6 +4,7 @@ import {
   applyDownloadedCloudSyncDomainPayload,
   invalidateRedisStateSnapshotForUpload,
   prepareCloudSyncDomainWrite,
+  type CloudSyncRedisUploadOptions,
 } from "@/sync/domains";
 import type {
   BlobIndividualDomainDownloadPayload,
@@ -65,7 +66,8 @@ function logicalPartUsesIndexedDb(domain: CloudSyncDomain): boolean {
 export async function uploadLogicalCloudSyncDomain(
   domain: LogicalCloudSyncDomain,
   auth: AuthContext,
-  partDomains: CloudSyncDomain[] = getLogicalCloudSyncDomainPhysicalParts(domain)
+  partDomains: CloudSyncDomain[] = getLogicalCloudSyncDomainPhysicalParts(domain),
+  uploadOptions?: CloudSyncRedisUploadOptions
 ): Promise<LogicalCloudSyncTransferResult> {
   const requestedPartDomains = new Set(partDomains);
   const preparedWrites: Partial<Record<CloudSyncDomain, PreparedCloudSyncDomainWrite>> = {};
@@ -86,7 +88,8 @@ export async function uploadLogicalCloudSyncDomain(
       const preparedWrite = await prepareCloudSyncDomainWrite(
         partDomain,
         auth,
-        sharedDb
+        sharedDb,
+        uploadOptions
       );
       preparedWrites[partDomain] = preparedWrite;
 
@@ -127,8 +130,13 @@ export async function uploadLogicalCloudSyncDomain(
     );
 
     if (!response.ok) {
-      if (response.status === 409 && writes["files-metadata"]) {
-        invalidateRedisStateSnapshotForUpload(auth.username, "files-metadata");
+      if (response.status === 409) {
+        if (writes["files-metadata"]) {
+          invalidateRedisStateSnapshotForUpload(auth.username, "files-metadata");
+        }
+        if (writes["settings"]) {
+          invalidateRedisStateSnapshotForUpload(auth.username, "settings");
+        }
       }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(

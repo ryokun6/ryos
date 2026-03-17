@@ -215,6 +215,188 @@ export function getRemoteSettingsSectionsToApply(
   );
 }
 
+function parseSectionTs(value: string | null | undefined): number {
+  if (!value) {
+    return 0;
+  }
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function getSectionPayloadForSettingsPatch(
+  data: SettingsSnapshotData,
+  section: SettingsSyncSection
+): unknown {
+  switch (section) {
+    case "theme":
+      return data.theme;
+    case "language":
+      return {
+        language: data.language,
+        languageInitialized: data.languageInitialized,
+      };
+    case "display":
+      return data.display;
+    case "audio":
+      return data.audio;
+    case "aiModel":
+      return data.aiModel;
+    case "ipod":
+      return data.ipod ?? null;
+    case "dock":
+      return data.dock ?? null;
+    case "dashboard":
+      return data.dashboard ?? null;
+    default:
+      return null;
+  }
+}
+
+function settingsSectionContentEqual(
+  section: SettingsSyncSection,
+  left: SettingsSnapshotData,
+  right: SettingsSnapshotData
+): boolean {
+  return (
+    JSON.stringify(getSectionPayloadForSettingsPatch(left, section)) ===
+    JSON.stringify(getSectionPayloadForSettingsPatch(right, section))
+  );
+}
+
+/** Sections local should push (newer timestamps or same-ts content drift). */
+export function getSettingsSectionsToPatchUpload(
+  localSnapshot: SettingsSnapshotData,
+  remoteSnapshot: SettingsSnapshotData
+): SettingsSyncSection[] {
+  const L = normalizeSettingsSnapshotData(localSnapshot, null);
+  const R = normalizeSettingsSnapshotData(remoteSnapshot, null);
+  const localAt = L.sectionUpdatedAt || {};
+  const remoteAt = R.sectionUpdatedAt || {};
+  const out: SettingsSyncSection[] = [];
+
+  for (const section of SETTINGS_SYNC_SECTIONS) {
+    const lt = parseSectionTs(localAt[section]);
+    const rt = parseSectionTs(remoteAt[section]);
+    if (lt > rt) {
+      out.push(section);
+      continue;
+    }
+    if (lt >= rt && !settingsSectionContentEqual(section, L, R)) {
+      out.push(section);
+    }
+  }
+
+  return out;
+}
+
+export interface SettingsRedisPatchPayload {
+  settingsPatch: true;
+  baseUpdatedAt: string;
+  sections: Partial<Record<SettingsSyncSection, unknown>>;
+  sectionUpdatedAt: Partial<Record<SettingsSyncSection, string>>;
+}
+
+export function isSettingsRedisPatchPayload(
+  value: unknown
+): value is SettingsRedisPatchPayload {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    (value as SettingsRedisPatchPayload).settingsPatch === true &&
+    typeof (value as SettingsRedisPatchPayload).baseUpdatedAt === "string"
+  );
+}
+
+export function buildSettingsRedisPatch(
+  localSnapshot: SettingsSnapshotData,
+  sections: SettingsSyncSection[],
+  baseUpdatedAt: string
+): SettingsRedisPatchPayload | null {
+  if (sections.length === 0) {
+    return null;
+  }
+  const L = normalizeSettingsSnapshotData(localSnapshot, null);
+  const localAt = L.sectionUpdatedAt || {};
+  const patch: SettingsRedisPatchPayload = {
+    settingsPatch: true,
+    baseUpdatedAt,
+    sections: {},
+    sectionUpdatedAt: {},
+  };
+
+  for (const section of sections) {
+    patch.sections[section] = getSectionPayloadForSettingsPatch(L, section);
+    patch.sectionUpdatedAt[section] =
+      localAt[section] || new Date().toISOString();
+  }
+
+  return patch;
+}
+
+export function applySettingsRedisPatch(
+  remoteSnapshot: SettingsSnapshotData,
+  patch: SettingsRedisPatchPayload
+): SettingsSnapshotData {
+  const R = normalizeSettingsSnapshotData(remoteSnapshot, null);
+  const next: SettingsSnapshotData = {
+    ...R,
+    sectionUpdatedAt: { ...R.sectionUpdatedAt },
+  };
+
+  for (const section of SETTINGS_SYNC_SECTIONS) {
+    if (!(section in (patch.sections || {}))) {
+      continue;
+    }
+    const val = patch.sections[section];
+    switch (section) {
+      case "theme":
+        next.theme = val as string;
+        break;
+      case "language": {
+        const v = val as {
+          language: LanguageCode;
+          languageInitialized: boolean;
+        };
+        next.language = v.language;
+        next.languageInitialized = v.languageInitialized;
+        break;
+      }
+      case "display":
+        next.display = {
+          ...(val as SettingsSnapshotData["display"]),
+        };
+        break;
+      case "audio":
+        next.audio = { ...(val as SettingsSnapshotData["audio"]) };
+        break;
+      case "aiModel":
+        next.aiModel = val as SettingsSnapshotData["aiModel"];
+        break;
+      case "ipod":
+        next.ipod = val
+          ? { ...(val as NonNullable<SettingsSnapshotData["ipod"]>) }
+          : undefined;
+        break;
+      case "dock":
+        next.dock = val
+          ? { ...(val as NonNullable<SettingsSnapshotData["dock"]>) }
+          : undefined;
+        break;
+      case "dashboard":
+        next.dashboard = val
+          ? { ...(val as NonNullable<SettingsSnapshotData["dashboard"]>) }
+          : undefined;
+        break;
+    }
+    const ts = patch.sectionUpdatedAt[section];
+    if (ts) {
+      next.sectionUpdatedAt![section] = ts;
+    }
+  }
+
+  return next;
+}
+
 export function shouldRestoreLegacyCustomWallpapers(params: {
   legacyWallpaperCount: number;
   localWallpaperCount: number;

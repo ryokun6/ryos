@@ -21,6 +21,12 @@ import {
   isFilesMetadataRedisPatchPayload,
   type FilesMetadataSyncSnapshot,
 } from "../../src/utils/cloudSyncFileMerge.js";
+import {
+  applySettingsRedisPatch,
+  isSettingsRedisPatchPayload,
+  normalizeSettingsSnapshotData,
+  type SettingsSnapshotData,
+} from "../../src/utils/cloudSyncSettingsMerge.js";
 import { isSerializedContact } from "../../src/utils/contacts.js";
 import { triggerRealtimeEvent } from "../_utils/realtime.js";
 import {
@@ -377,6 +383,31 @@ export async function putRedisStateDomain(
     }
     dataToPersist = applyFilesMetadataRedisPatch(
       normalizeFilesMetadataForPatch(existingRedisEntry.data),
+      body.data
+    );
+  } else if (domain === "settings" && isSettingsRedisPatchPayload(body.data)) {
+    if (!existingRedisEntry?.data) {
+      return {
+        ok: false,
+        status: 400,
+        error: "settings patch requires an existing snapshot (use full upload first)",
+      };
+    }
+    if (existingRedisEntry.updatedAt !== body.data.baseUpdatedAt) {
+      return {
+        ok: false,
+        status: 409,
+        error:
+          "settings are out of date on the server. Download the latest snapshot and retry.",
+        code: "sync_conflict",
+        metadata: existingMetadata,
+      };
+    }
+    dataToPersist = applySettingsRedisPatch(
+      normalizeSettingsSnapshotData(
+        existingRedisEntry.data as SettingsSnapshotData,
+        existingRedisEntry.updatedAt
+      ),
       body.data
     );
   }

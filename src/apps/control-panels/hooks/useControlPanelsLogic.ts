@@ -779,10 +779,15 @@ export function useControlPanelsLogic({
         }
 
         try {
-          const result = await uploadLogicalCloudSyncDomain(domain, {
-            username,
-            isAuthenticated,
-          });
+          const result = await uploadLogicalCloudSyncDomain(
+            domain,
+            {
+              username,
+              isAuthenticated,
+            },
+            undefined,
+            { forceFullSettingsUpload: true }
+          );
 
           for (const [partDomain, metadata] of Object.entries(
             result.partMetadata

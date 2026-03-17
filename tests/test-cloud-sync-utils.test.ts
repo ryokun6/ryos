@@ -31,6 +31,9 @@ import {
   planIndividualBlobUpload,
 } from "../src/utils/cloudSyncIndividualBlobMerge";
 import {
+  applySettingsRedisPatch,
+  buildSettingsRedisPatch,
+  getSettingsSectionsToPatchUpload,
   mergeSettingsSnapshotData,
   normalizeSettingsSnapshotData,
   shouldRestoreLegacyCustomWallpapers,
@@ -685,6 +688,143 @@ describe("cloud sync shared helpers", () => {
         docByKey(merged.documents).get(k)
       );
     }
+  });
+
+  test("getSettingsSectionsToPatchUpload returns only sections with newer local timestamps", () => {
+    const t1 = "2026-01-01T00:00:00.000Z";
+    const t2 = "2026-01-05T00:00:00.000Z";
+    const sectionUpdatedAt = {
+      theme: t1,
+      language: t1,
+      display: t1,
+      audio: t1,
+      aiModel: t1,
+      ipod: t1,
+      dock: t1,
+      dashboard: t1,
+    };
+    const remote = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: null,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "",
+        currentWallpaper: "",
+        screenSaverEnabled: false,
+        screenSaverType: "",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: false,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: false,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "",
+      },
+      ipod: {
+        displayMode: "browser" as const,
+        showLyrics: true,
+        lyricsAlignment: "center" as const,
+        lyricsFont: "default" as const,
+        romanization: {},
+        lyricsTranslationLanguage: null,
+        theme: "classic" as const,
+        lcdFilterOn: false,
+      },
+      dock: { pinnedItems: [], scale: 1, hiding: false, magnification: false },
+      dashboard: { widgets: [] },
+      sectionUpdatedAt: { ...sectionUpdatedAt },
+    };
+    const local = {
+      ...remote,
+      theme: "aqua",
+      sectionUpdatedAt: { ...sectionUpdatedAt, theme: t2 },
+    };
+    expect(getSettingsSectionsToPatchUpload(local, remote)).toEqual(["theme"]);
+  });
+
+  test("applySettingsRedisPatch applies incremental settings sections", () => {
+    const t1 = "2026-01-01T00:00:00.000Z";
+    const t2 = "2026-01-06T00:00:00.000Z";
+    const sectionUpdatedAt = {
+      theme: t1,
+      language: t1,
+      display: t1,
+      audio: t1,
+      aiModel: t1,
+      ipod: t1,
+      dock: t1,
+      dashboard: t1,
+    };
+    const remote = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: null,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "",
+        currentWallpaper: "",
+        screenSaverEnabled: false,
+        screenSaverType: "",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: false,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: false,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "",
+      },
+      ipod: {
+        displayMode: "browser" as const,
+        showLyrics: true,
+        lyricsAlignment: "center" as const,
+        lyricsFont: "default" as const,
+        romanization: {},
+        lyricsTranslationLanguage: null,
+        theme: "classic" as const,
+        lcdFilterOn: false,
+      },
+      dock: { pinnedItems: [], scale: 1, hiding: false, magnification: false },
+      dashboard: { widgets: [] },
+      sectionUpdatedAt: { ...sectionUpdatedAt },
+    };
+    const local = {
+      ...remote,
+      theme: "aqua",
+      sectionUpdatedAt: { ...sectionUpdatedAt, theme: t2 },
+    };
+    const patch = buildSettingsRedisPatch(local, ["theme"], t1);
+    expect(patch).not.toBeNull();
+    const out = applySettingsRedisPatch(remote, patch!);
+    expect(out.theme).toBe("aqua");
+    expect(out.sectionUpdatedAt?.theme).toBe(t2);
+    expect(out.language).toBe("en");
   });
 
   test("merges settings per store so newer local and remote sections both survive", () => {
