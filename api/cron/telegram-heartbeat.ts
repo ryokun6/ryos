@@ -44,6 +44,7 @@ import {
   getOpenAIProviderOptions,
   type SupportedModel,
 } from "../_utils/_aiModels.js";
+import { getHeader } from "../_utils/request-helpers.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
@@ -58,14 +59,6 @@ function sendJson(
   payload: Record<string, unknown>
 ): void {
   res.status(status).json(payload);
-}
-
-function getHeader(req: VercelRequest, name: string): string | null {
-  const value = req.headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return value[0] || null;
-  }
-  return typeof value === "string" ? value : null;
 }
 
 export function getTelegramModel(

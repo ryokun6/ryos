@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AI_MODELS } from "@/types/aiModels";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import { CHAT_ANALYTICS } from "@/utils/analytics";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
@@ -53,14 +54,8 @@ interface ChatInputProps {
   onDirectMessageSubmit?: (message: string) => void;
   onNudge?: () => void;
   previousMessages?: string[];
-  /**
-   * Whether to display the "nudge" (👋) button. Defaults to true so that the
-   * button is shown in the regular Ryo chat, and can be disabled for chat-room
-   * contexts where nudging is not available.
-   */
   showNudgeButton?: boolean;
   isInChatRoom?: boolean;
-  /** Whether TTS speech is currently playing */
   isSpeechPlaying?: boolean;
   rateLimitError?: {
     isAuthenticated: boolean;
@@ -70,12 +65,10 @@ interface ChatInputProps {
   } | null;
   needsUsername?: boolean;
   isOffline?: boolean;
-  /** Called when manual stop is triggered (to cancel keep talking mode) */
   onManualStop?: () => void;
-  /** Currently selected image data (base64) */
   selectedImage?: string | null;
-  /** Callback when an image is selected or cleared */
   onImageChange?: (imageData: string | null) => void;
+  onTyping?: () => void;
 }
 
 export function ChatInput({
@@ -97,6 +90,7 @@ export function ChatInput({
   onManualStop,
   selectedImage,
   onImageChange,
+  onTyping,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
@@ -136,7 +130,7 @@ export function ChatInput({
   const aiModel = useAppStoreShallow((s) => s.aiModel);
   const currentTheme = useThemeStore((s) => s.current);
   const isMacTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   // Get the model display name for debug information
   const modelDisplayName = aiModel ? AI_MODELS[aiModel]?.name : null;
@@ -214,13 +208,16 @@ export function ChatInput({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     onInputChange(e);
-    setHistoryIndex(-1); // Reset history index when typing
+    setHistoryIndex(-1);
 
-    // Only play sound if typing synth is enabled and enough time has passed
     const now = Date.now();
     if (typingSynthEnabled && now - lastTypingTime > 50) {
       playNote();
       setLastTypingTime(now);
+    }
+
+    if (e.target.value.trim()) {
+      onTyping?.();
     }
   };
 

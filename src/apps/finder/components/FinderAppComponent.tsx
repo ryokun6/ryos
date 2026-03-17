@@ -1,5 +1,6 @@
-import { type CSSProperties, type ReactNode, useRef } from "react";
+import { type CSSProperties, useRef } from "react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
+import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { FinderMenuBar } from "./FinderMenuBar";
 import { AppProps } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -16,9 +17,9 @@ import {
   List,
   GearSix,
   CaretDown,
-  MagnifyingGlass,
-  XCircle,
 } from "@phosphor-icons/react";
+import { SearchInput } from "@/components/ui/search-input";
+import { ToolbarButton, ToolbarButtonGroup } from "@/components/ui/toolbar-button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -41,37 +42,7 @@ import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { AirDropView } from "./AirDropView";
 
-function FinderPanel({
-  className,
-  children,
-  bordered = true,
-  style,
-}: {
-  className?: string;
-  children: ReactNode;
-  bordered?: boolean;
-  style?: CSSProperties;
-}) {
-  return (
-    <div
-      className={cn(
-        "overflow-hidden calendar-sidebar",
-        bordered ? "bg-white/90" : "bg-white",
-        className
-      )}
-      style={{
-        ...(bordered ? {
-          border: "1px solid rgba(0, 0, 0, 0.55)",
-          boxShadow:
-            "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-        } : {}),
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+const FinderPanel = AppSidebarPanel;
 
 function SidebarItem({
   name,
@@ -92,13 +63,7 @@ function SidebarItem({
         "w-full flex items-center gap-1.5 pl-1.5 pr-2.5 py-[2px] text-left text-[12px]",
         isActive ? "" : "hover:bg-black/5 transition-colors"
       )}
-      style={{
-        ...(isActive ? {
-          background: "var(--os-color-selection-bg)",
-          color: "var(--os-color-selection-text)",
-          textShadow: "var(--os-color-selection-text-shadow)",
-        } : {}),
-      }}
+      data-selected={isActive ? "true" : undefined}
     >
       <ThemedIcon name={icon} alt="" className="w-8 h-8 shrink-0 [image-rendering:auto]" />
       <span className="truncate">{name}</span>
@@ -357,10 +322,9 @@ export function FinderAppComponent({
               style={{ background: "transparent" }}
             >
               <div className="flex items-center gap-1.5">
-                <div className="metal-inset-btn-group">
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
+                <ToolbarButtonGroup>
+                  <ToolbarButton
+                    icon
                     onClick={() => {
                       if (isAirDropView) {
                         navigateAwayFromAirDrop();
@@ -371,42 +335,27 @@ export function FinderAppComponent({
                     disabled={!isAirDropView && !canNavigateBack()}
                   >
                     <CaretLeft size={14} weight="fill" className="scale-x-150 scale-y-90" />
-                  </button>
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    onClick={navigateForward}
-                    disabled={!canNavigateForward()}
-                  >
+                  </ToolbarButton>
+                  <ToolbarButton icon onClick={navigateForward} disabled={!canNavigateForward()}>
                     <CaretRight size={14} weight="fill" className="scale-x-150 scale-y-90" />
-                  </button>
-                </div>
-                <div className="metal-inset-btn-group">
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    data-state={viewType === "large" ? "on" : "off"}
-                    onClick={() => setViewType("large")}
-                  >
+                  </ToolbarButton>
+                </ToolbarButtonGroup>
+                <ToolbarButtonGroup>
+                  <ToolbarButton icon data-state={viewType === "large" ? "on" : "off"} onClick={() => setViewType("large")}>
                     <SquaresFour size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    data-state={viewType === "list" ? "on" : "off"}
-                    onClick={() => setViewType("list")}
-                  >
+                  </ToolbarButton>
+                  <ToolbarButton icon data-state={viewType === "list" ? "on" : "off"} onClick={() => setViewType("list")}>
                     <List size={14} />
-                  </button>
-                </div>
+                  </ToolbarButton>
+                </ToolbarButtonGroup>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className="metal-inset-btn-group">
-                      <button type="button" className="metal-inset-btn metal-inset-icon gap-0.5">
-                        <GearSix size={14} weight="fill" />
+                    <ToolbarButtonGroup>
+                      <ToolbarButton icon className="gap-0.5">
+                        <GearSix size={14} weight="fill" style={{ transform: "rotate(30deg)" }} />
                         <CaretDown size={8} weight="bold" />
-                      </button>
-                    </div>
+                      </ToolbarButton>
+                    </ToolbarButtonGroup>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
                     <DropdownMenuItem className="text-md h-6 px-3" onClick={handleNewFolder} disabled={!canCreateFolder}>
@@ -426,29 +375,11 @@ export function FinderAppComponent({
                 </DropdownMenu>
               </div>
               <div className="flex-1" />
-              <div className="relative w-[150px]">
-                <MagnifyingGlass
-                  size={13}
-                  weight="bold"
-                  className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-black/45"
-                />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] outline-none font-geneva-12"
-                  placeholder=""
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center text-black/40 hover:text-black/60"
-                  >
-                    <XCircle size={14} weight="fill" />
-                  </button>
-                )}
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                width="150px"
+              />
             </div>
           ) : (
             <div

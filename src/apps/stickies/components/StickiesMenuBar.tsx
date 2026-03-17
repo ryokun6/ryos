@@ -10,7 +10,7 @@ import {
   MenubarSubContent,
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
+import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 import { StickyColor } from "@/stores/useStickiesStore";
 
@@ -65,7 +65,7 @@ export function StickiesMenuBar({
             {t("apps.stickies.menu.clearAll")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={requestCloudSyncCheck} className="text-md h-6 px-3">
+          <MenubarItem onClick={() => requestCloudSyncDomainCheck("stickies")} className="text-md h-6 px-3">
             {t("apps.stickies.menu.syncStickies", { defaultValue: "Sync Stickies" })}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />

@@ -35,6 +35,7 @@ import {
 import { useChatsFrameLayout } from "../hooks/useChatsFrameLayout";
 import { useProactiveGreeting } from "../hooks/useProactiveGreeting";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
+import { useGlobalPresence } from "@/hooks/useGlobalPresence";
 
 export function ChatsAppComponent({
   isWindowOpen,
@@ -126,6 +127,8 @@ export function ChatsAppComponent({
     currentRoomMessagesLimited,
     isSidebarVisible,
     isAdmin,
+    currentRoomTypingUsers,
+    emitTyping,
     handleRoomSelect,
     sendRoomMessage,
     toggleSidebarVisibility,
@@ -139,6 +142,9 @@ export function ChatsAppComponent({
     roomToDelete,
     confirmDeleteRoom,
   } = chatRoomResult;
+
+  // Global online presence for sidebar indicators
+  const globalOnlineUsers = useGlobalPresence();
 
   // Proactive greeting for eligible users
   const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting();
@@ -579,10 +585,11 @@ export function ChatsAppComponent({
                     onRoomSelect={handleMobileRoomSelect}
                     onAddRoom={promptAddRoom}
                     onDeleteRoom={(room) => promptDeleteRoom(room)}
-                    isVisible={true} // Always visible when overlay is shown
+                    isVisible={true}
                     isAdmin={isAdmin}
                     username={username}
                     isOverlay={true}
+                    onlineUsers={globalOnlineUsers}
                   />
                 </motion.div>
               </motion.div>
@@ -605,6 +612,7 @@ export function ChatsAppComponent({
                 isVisible={sidebarVisibleBool}
                 isAdmin={isAdmin}
                 username={username}
+                onlineUsers={globalOnlineUsers}
               />
             </div>
 
@@ -725,7 +733,6 @@ export function ChatsAppComponent({
                     username={username || undefined}
                     onMessageDeleted={(deletedId) => {
                       if (currentRoomId) {
-                        // Optimistically remove locally; realtime event will reconcile
                         useChatsStore
                           .getState()
                           .removeMessageFromRoom(currentRoomId, deletedId);
@@ -737,6 +744,7 @@ export function ChatsAppComponent({
                     isSpeaking={isSpeaking}
                     onSendMessage={handleSendMessage}
                     isLoadingGreeting={isLoadingGreeting}
+                    typingUsers={currentRoomTypingUsers}
                   />
                 </div>
                 {/* Input Area or Create Account Prompt */}
@@ -788,6 +796,7 @@ export function ChatsAppComponent({
                       needsUsername={needsUsername && !username}
                       selectedImage={selectedImage}
                       onImageChange={handleImageChange}
+                      onTyping={currentRoomId ? () => emitTyping(currentRoomId) : undefined}
                     />
                   )}
                 </div>

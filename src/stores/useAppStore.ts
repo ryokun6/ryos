@@ -6,6 +6,8 @@ import { AppState } from "@/apps/base/types";
 import { AIModel } from "@/types/aiModels";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
+import { requestCloudSyncCheck, requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
+import { shouldRequestCloudSyncOnAppLaunch, getCloudSyncDomainsForApp } from "@/utils/cloudSyncLaunch";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
@@ -577,6 +579,16 @@ const createUseAppStore = () =>
       },
       launchApp: (appId, initialData, title, multiWindow = false, launchOrigin) => {
         const state = get();
+        const shouldRequestSync = shouldRequestCloudSyncOnAppLaunch(appId);
+
+        if (shouldRequestSync) {
+          const syncDomains = getCloudSyncDomainsForApp(appId);
+          if (syncDomains) {
+            for (const d of syncDomains) requestCloudSyncDomainCheck(d);
+          } else {
+            requestCloudSyncCheck();
+          }
+        }
         
         // Check if all instances of this app are minimized
         // If so, restore them instead of creating a new instance

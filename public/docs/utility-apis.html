@@ -553,24 +553,22 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 const { quotes, chart } = await response.json();</code></pre>
 <hr>
 <h2>Sync APIs (Cloud Backup Metadata)</h2>
-<p>The sync endpoints manage backup metadata and retrieval around client-side Vercel Blob uploads.</p>
+<p>The sync endpoints manage full backup metadata and logical domain sync around client-side object storage uploads.</p>
 <h3>Endpoint Summary</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate short-lived Blob client upload token</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/auto-token</code></td><td>Generate domain-specific auto-sync upload token</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr><tr><td>GET, POST</td><td><code>/api/sync/auto</code></td><td>Automatic sync with Pusher/WebSocket notifications</td><td>Required</td></tr><tr><td>GET, PUT</td><td><code>/api/sync/state</code></td><td>Sync state read/write</td><td>Required</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate backup upload instructions</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/domains</code></td><td>Read logical and physical cloud sync metadata</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/domains/[domain]</code></td><td>Download a logical cloud sync domain payload</td><td>Required</td></tr><tr><td>PUT</td><td><code>/api/sync/domains/[domain]</code></td><td>Apply writes for one logical cloud sync domain</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/domains/[domain]/attachments/prepare</code></td><td>Generate upload instructions for blob-backed sync parts</td><td>Required</td></tr></tbody></table>
 <h3>POST /api/sync/backup-token</h3>
-<p>Generates a direct-upload token for <code>backups/{username}/backup.gz</code>.</p>
+<p>Generates direct-upload instructions for <code>backups/{username}/backup.gz</code>. The route is rate-limited to 10 requests per hour per user.</p>
 <p>Response:</p>
 <pre><code>{
+  "provider": "vercel-blob",
+  "uploadMethod": "vercel-client-token",
+  "pathname": "backups/alice/backup.gz",
+  "contentType": "application/gzip",
+  "maximumSizeInBytes": 52428800,
   "clientToken": "vercel_blob_client_token..."
 }</code></pre>
-<h3>POST /api/sync/auto-token</h3>
-<p>Generates a direct-upload token for domain-specific auto-sync uploads (e.g., contacts, settings). Rate-limited to 20 requests/minute.</p>
-<p>Request body:</p>
-<pre><code>{
-  "domain": "contacts",
-  "itemKey": "optional-item-key"
-}</code></pre>
-<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>domain</code></td><td>string</td><td>Sync domain (e.g., <code>"contacts"</code>, <code>"settings"</code>)</td></tr><tr><td><code>itemKey</code></td><td>string</td><td>Optional item key for individual blob sync domains</td></tr></tbody></table>
 <h3>GET /api/sync/status</h3>
+<p>Returns <code>hasBackup: false</code> with <code>metadata: null</code> when no backup exists.</p>
 <p>Response:</p>
 <pre><code>{
   "hasBackup": true,
@@ -584,11 +582,12 @@ const { quotes, chart } = await response.json();</code></pre>
 <h3>/api/sync/backup</h3>
 <h4>POST request body</h4>
 <pre><code>{
-  "blobUrl": "https://...blob.vercel-storage.com/backups/user/backup.gz",
+  "storageUrl": "https://...blob.vercel-storage.com/backups/user/backup.gz",
   "timestamp": "2026-02-29T12:34:56.000Z",
   "version": 3,
   "totalSize": 1234567
 }</code></pre>
+<code>blobUrl</code> is also accepted for backward compatibility; the server resolves either field.
 <h4>POST response</h4>
 <pre><code>{
   "ok": true,
@@ -614,6 +613,14 @@ const { quotes, chart } = await response.json();</code></pre>
 <pre><code>{
   "ok": true
 }</code></pre>
+<h3>GET /api/sync/domains</h3>
+<p>Returns two metadata maps for the authenticated user: <ul><li><code>metadata</code>: logical domains such as <code>settings</code>, <code>files</code>, and <code>contacts</code></li></ul><ul><li><code>physicalMetadata</code>: physical sync parts such as <code>settings</code>, <code>custom-wallpapers</code>, and <code>files-images</code></li></ul></p>
+<h3>GET /api/sync/domains/[domain]</h3>
+<p>Downloads a logical sync domain. The response includes aggregated logical metadata plus a <code>parts</code> object keyed by physical domain so Redis-backed and blob-backed data travel together.</p>
+<h3>PUT /api/sync/domains/[domain]</h3>
+<p>Applies grouped writes for a single logical sync domain. The request body contains a <code>writes</code> object keyed by physical domain, and clients may include <code>X-Sync-Session-Id</code> to help suppress self-triggered realtime updates.</p>
+<h3>POST /api/sync/domains/[domain]/attachments/prepare</h3>
+<p>Generates upload instructions for blob-backed logical sync parts. The request body includes a required <code>partDomain</code> and an optional <code>itemKey</code> for per-item blob domains such as <code>custom-wallpapers</code> or <code>files-images</code>.</p>
 <hr>
 <h2>Admin API</h2>
 <p>Administrative endpoints for user and memory management in the chat system. All operations require admin authentication (user <code>ryo</code> with valid token).</p>

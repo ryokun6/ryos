@@ -105,3 +105,19 @@ export interface RomanizationSettings {
   /** Only pronunciation - replace original text with phonetic content (e.g., 日本 → にほん, 한국 → hanguk) */
   pronunciationOnly?: boolean;
 }
+
+export function areRomanizationSettingsEqual(
+  a: RomanizationSettings,
+  b: RomanizationSettings
+): boolean {
+  return (
+    a.enabled === b.enabled &&
+    a.japaneseFurigana === b.japaneseFurigana &&
+    a.japaneseRomaji === b.japaneseRomaji &&
+    a.korean === b.korean &&
+    a.chinese === b.chinese &&
+    a.soramimi === b.soramimi &&
+    a.soramamiTargetLanguage === b.soramamiTargetLanguage &&
+    Boolean(a.pronunciationOnly) === Boolean(b.pronunciationOnly)
+  );
+}

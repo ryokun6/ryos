@@ -7,7 +7,7 @@ import {
   SETTINGS_SYNC_SECTIONS,
   type SettingsSectionTimestampMap,
   type SettingsSyncSection,
-} from "@/utils/cloudSyncSettingsState";
+} from "@/sync/state";
 
 export interface SettingsSnapshotData {
   theme: string;
@@ -88,8 +88,17 @@ export function normalizeSettingsSnapshotData(
     }
   }
 
+  const normalizedIpod = snapshot.ipod
+    ? {
+        ...snapshot.ipod,
+        lyricsTranslationLanguage:
+          snapshot.ipod.lyricsTranslationLanguage ?? null,
+      }
+    : snapshot.ipod;
+
   return {
     ...snapshot,
+    ipod: normalizedIpod,
     sectionUpdatedAt: normalizedSectionUpdatedAt,
   };
 }
@@ -99,10 +108,10 @@ function shouldUseRemoteSection(
   localSectionUpdatedAt: SettingsSectionTimestampMap,
   remoteSectionUpdatedAt: SettingsSectionTimestampMap
 ): boolean {
-  return (
-    parseTimestamp(remoteSectionUpdatedAt[section]) >
-    parseTimestamp(localSectionUpdatedAt[section])
-  );
+  const remoteTs = parseTimestamp(remoteSectionUpdatedAt[section]);
+  if (remoteTs === 0) return false;
+  const localTs = parseTimestamp(localSectionUpdatedAt[section]);
+  return remoteTs >= localTs;
 }
 
 export function mergeSettingsSnapshotData(
@@ -130,14 +139,16 @@ export function mergeSettingsSnapshotData(
   };
 
   if (
-    shouldUseRemoteSection("theme", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("theme", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.theme !== undefined
   ) {
     merged.theme = normalizedRemote.theme;
     merged.sectionUpdatedAt!.theme = remoteSectionUpdatedAt.theme;
   }
 
   if (
-    shouldUseRemoteSection("language", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("language", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.language !== undefined
   ) {
     merged.language = normalizedRemote.language;
     merged.languageInitialized = normalizedRemote.languageInitialized;
@@ -145,21 +156,24 @@ export function mergeSettingsSnapshotData(
   }
 
   if (
-    shouldUseRemoteSection("display", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("display", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.display !== undefined
   ) {
     merged.display = normalizedRemote.display;
     merged.sectionUpdatedAt!.display = remoteSectionUpdatedAt.display;
   }
 
   if (
-    shouldUseRemoteSection("audio", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("audio", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.audio !== undefined
   ) {
     merged.audio = normalizedRemote.audio;
     merged.sectionUpdatedAt!.audio = remoteSectionUpdatedAt.audio;
   }
 
   if (
-    shouldUseRemoteSection("aiModel", localSectionUpdatedAt, remoteSectionUpdatedAt)
+    shouldUseRemoteSection("aiModel", localSectionUpdatedAt, remoteSectionUpdatedAt) &&
+    normalizedRemote.aiModel !== undefined
   ) {
     merged.aiModel = normalizedRemote.aiModel;
     merged.sectionUpdatedAt!.aiModel = remoteSectionUpdatedAt.aiModel;
@@ -198,5 +212,17 @@ export function getRemoteSettingsSectionsToApply(
 ): SettingsSyncSection[] {
   return SETTINGS_SYNC_SECTIONS.filter((section) =>
     shouldUseRemoteSection(section, localSectionUpdatedAt, remoteSectionUpdatedAt)
+  );
+}
+
+export function shouldRestoreLegacyCustomWallpapers(params: {
+  legacyWallpaperCount: number;
+  localWallpaperCount: number;
+  hasDedicatedCustomWallpaperSync: boolean;
+}): boolean {
+  return (
+    params.legacyWallpaperCount > 0 &&
+    params.localWallpaperCount === 0 &&
+    !params.hasDedicatedCustomWallpaperSync
   );
 }

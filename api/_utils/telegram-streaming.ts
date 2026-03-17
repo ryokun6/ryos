@@ -5,7 +5,6 @@ import {
 } from "./telegram.js";
 
 export const TELEGRAM_MAX_MESSAGE_LENGTH = 4096;
-export const TELEGRAM_DEFAULT_REPLY_MAX_LENGTH = 1200;
 const DEFAULT_STREAM_UPDATE_INTERVAL_MS = 900;
 const DEFAULT_STREAM_MIN_CHAR_DELTA = 80;
 

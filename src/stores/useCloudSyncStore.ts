@@ -8,10 +8,14 @@ import {
   createEmptyCloudSyncMetadataMap,
   getCloudSyncCategory,
 } from "@/utils/cloudSyncShared";
-import type { DeletionMarkerMap } from "@/utils/cloudSyncDeletionMarkers";
+import {
+  mergeDeletionMarkerMaps,
+  type DeletionMarkerMap,
+} from "@/utils/cloudSyncDeletionMarkers";
 
 interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
+  lastFetchedAt: string | null;
   lastAppliedRemoteAt: string | null;
   lastKnownServerVersion: number | null;
   isUploading: boolean;
@@ -27,7 +31,11 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "stickyNoteIds",
   "contactIds",
   "fileMetadataPaths",
+  "fileImageKeys",
+  "fileTrashKeys",
+  "fileAppletKeys",
   "customWallpaperKeys",
+  "songTrackIds",
 ] as const;
 
 export type CloudSyncDeletionBucket =
@@ -46,7 +54,11 @@ function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     stickyNoteIds: {},
     contactIds: {},
     fileMetadataPaths: {},
+    fileImageKeys: {},
+    fileTrashKeys: {},
+    fileAppletKeys: {},
     customWallpaperKeys: {},
+    songTrackIds: {},
   };
 }
 
@@ -109,6 +121,7 @@ interface CloudSyncStoreState {
 function createInitialDomainStatus(): CloudSyncDomainStatusMap {
   const empty = (): CloudSyncDomainStatus => ({
     lastUploadedAt: null,
+    lastFetchedAt: null,
     lastAppliedRemoteAt: null,
     lastKnownServerVersion: null,
     isUploading: false,
@@ -131,7 +144,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 6;
+const STORE_VERSION = 8;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -277,7 +290,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             [domain]: {
               ...state.domainStatus[domain],
               isDownloading: false,
-              lastAppliedRemoteAt:
+              lastFetchedAt:
                 typeof metadata === "string" ? metadata : metadata.updatedAt,
               lastKnownServerVersion:
                 (typeof metadata === "string"
@@ -373,19 +386,16 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
 
       mergeDeletedKeys: (bucket, markers) =>
         set((state) => {
-          const nextBucket = { ...state.deletionMarkers[bucket] };
-          let changed = false;
-
-          for (const [key, value] of Object.entries(markers)) {
-            if (typeof key !== "string" || key.length === 0 || typeof value !== "string") {
-              continue;
-            }
-
-            if (nextBucket[key] !== value) {
-              nextBucket[key] = value;
-              changed = true;
-            }
-          }
+          const nextBucket = mergeDeletionMarkerMaps(
+            state.deletionMarkers[bucket],
+            markers
+          );
+          const currentBucket = state.deletionMarkers[bucket];
+          const changed =
+            Object.keys(nextBucket).length !== Object.keys(currentBucket).length ||
+            Object.entries(nextBucket).some(
+              ([key, value]) => currentBucket[key] !== value
+            );
 
           if (!changed) {
             return state;
@@ -419,6 +429,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             domain,
             {
               lastUploadedAt: status.lastUploadedAt,
+              lastFetchedAt: status.lastFetchedAt,
               lastAppliedRemoteAt: status.lastAppliedRemoteAt,
               lastKnownServerVersion: status.lastKnownServerVersion,
               isUploading: false,
@@ -438,6 +449,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             if (saved) {
               domainStatus[domain] = {
                 lastUploadedAt: saved.lastUploadedAt ?? null,
+                lastFetchedAt: saved.lastFetchedAt ?? null,
                 lastAppliedRemoteAt: saved.lastAppliedRemoteAt ?? null,
                 lastKnownServerVersion: saved.lastKnownServerVersion ?? null,
                 isUploading: false,
@@ -459,6 +471,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
               if (!domainStatus[domain].lastUploadedAt) {
                 domainStatus[domain] = {
                   lastUploadedAt: legacyFilesStatus.lastUploadedAt ?? null,
+                  lastFetchedAt: null,
                   lastAppliedRemoteAt:
                     legacyFilesStatus.lastAppliedRemoteAt ?? null,
                   lastKnownServerVersion:

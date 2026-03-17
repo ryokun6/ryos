@@ -32,29 +32,27 @@ import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   FILE_SYNC_DOMAINS,
+  type CloudSyncDomain,
   getLatestCloudSyncTimestamp,
 } from "@/utils/cloudSyncShared";
 import { useShallow } from "zustand/react/shallow";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
 import {
-  uploadCloudSyncDomain,
-  downloadAndApplyCloudSyncDomain,
-} from "@/utils/cloudSync";
-import { CLOUD_SYNC_DOMAINS } from "@/utils/cloudSyncShared";
-
-interface StoreItem {
-  name: string;
-  content?: string;
-  type?: string;
-  modifiedAt?: string;
-  size?: number;
-  [key: string]: unknown;
-}
-
-interface StoreItemWithKey {
-  key: string;
-  value: StoreItem;
-}
+  downloadAndApplyLogicalCloudSyncDomain,
+  uploadLogicalCloudSyncDomain,
+} from "@/sync/engine";
+import {
+  LOGICAL_CLOUD_SYNC_DOMAINS,
+  getLogicalCloudSyncDomainPhysicalParts,
+  isLogicalCloudSyncDomainEnabled,
+  type LogicalCloudSyncDomain,
+} from "@/utils/syncLogicalDomains";
+import {
+  readStoreItems,
+  restoreStoreItems,
+  serializeStoreItems,
+  type IndexedDBStoreItemWithKey as StoreItemWithKey,
+} from "@/utils/indexedDBBackup";
 
 type PhotoCategory =
   | "3d_graphics"
@@ -162,30 +160,35 @@ const AI_MODELS = AI_MODEL_METADATA;
 /** Maximum cloud backup size in bytes (must match server-side MAX_BACKUP_SIZE) */
 const CLOUD_BACKUP_MAX_SIZE = 50 * 1024 * 1024;
 
-// Utility to convert Blob to base64 string for JSON serialization
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string; // data:<mime>;base64,xxxx
-      resolve(dataUrl);
-    };
-    reader.onerror = (error) => {
-      console.error("Error converting blob to base64:", error);
-      reject(error);
-    };
-    reader.readAsDataURL(blob);
-  });
+const BACKUP_INDEXEDDB_STORES = [
+  "documents",
+  "images",
+  "trash",
+  "custom_wallpapers",
+  "applets",
+] as const;
 
-// Utility to convert base64 data URL back to Blob
-const base64ToBlob = (dataUrl: string): Blob => {
-  const [meta, base64] = dataUrl.split(",");
-  const mimeMatch = meta.match(/data:(.*);base64/);
-  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  return new Blob([array], { type: mime });
-};
+function upgradeLegacyBackupStoreValue(
+  backupVersion: number,
+  storeName: string,
+  value: Record<string, unknown>
+): Record<string, unknown> {
+  if (
+    backupVersion >= 2 ||
+    (storeName !== "documents" && storeName !== "images")
+  ) {
+    return value;
+  }
+
+  const nextValue = { ...value };
+  if (!nextValue.uuid) {
+    nextValue.uuid = uuidv4();
+  }
+  if (!nextValue.contentUrl && nextValue.content instanceof Blob) {
+    nextValue.contentUrl = URL.createObjectURL(nextValue.content);
+  }
+  return nextValue;
+}
 
 export interface UseControlPanelsLogicProps {
   initialData?: ControlPanelsInitialData;
@@ -357,6 +360,13 @@ export function useControlPanelsLogic({
           (domain) => internalAutoSyncDomainStatus[domain].lastUploadedAt
         )
       ),
+      lastFetchedAt: getLatestCloudSyncTimestamp(
+        FILE_SYNC_DOMAINS.map(
+          (domain) =>
+            internalAutoSyncDomainStatus[domain].lastFetchedAt ||
+            internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
+        )
+      ),
       lastAppliedRemoteAt: getLatestCloudSyncTimestamp(
         FILE_SYNC_DOMAINS.map(
           (domain) => internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
@@ -364,6 +374,9 @@ export function useControlPanelsLogic({
       ),
       isUploading: FILE_SYNC_DOMAINS.some(
         (domain) => internalAutoSyncDomainStatus[domain].isUploading
+      ),
+      isDownloading: FILE_SYNC_DOMAINS.some(
+        (domain) => internalAutoSyncDomainStatus[domain].isDownloading
       ),
     },
     settings: internalAutoSyncDomainStatus.settings,
@@ -595,66 +608,17 @@ export function useControlPanelsLogic({
       // Backup IndexedDB data
       try {
         const db = await ensureIndexedDBInitialized();
-        const getStoreData = async (
-          storeName: string
-        ): Promise<StoreItemWithKey[]> => {
-          return new Promise((resolve, reject) => {
-            try {
-              const transaction = db.transaction(storeName, "readonly");
-              const store = transaction.objectStore(storeName);
-              const items: StoreItemWithKey[] = [];
-              const request = store.openCursor();
-              request.onsuccess = (event) => {
-                const cursor = (
-                  event.target as IDBRequest<IDBCursorWithValue>
-                ).result;
-                if (cursor) {
-                  items.push({ key: cursor.key as string, value: cursor.value });
-                  cursor.continue();
-                } else {
-                  resolve(items);
-                }
-              };
-              request.onerror = () => reject(request.error);
-            } catch (error) {
-              console.error(`Error accessing store ${storeName}:`, error);
-              resolve([]);
-            }
-          });
-        };
-
-        const [docs, imgs, trash, walls, apps] = await Promise.all([
-          getStoreData("documents"),
-          getStoreData("images"),
-          getStoreData("trash"),
-          getStoreData("custom_wallpapers"),
-          getStoreData("applets"),
-        ]);
 
         setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.serializing"), percent: 20 });
-
-        const serializeStore = async (items: StoreItemWithKey[]) =>
-          Promise.all(
-            items.map(async (item) => {
-              const serializedValue: Record<string, unknown> = {
-                ...item.value,
-              };
-              for (const key of Object.keys(item.value)) {
-                if (item.value[key] instanceof Blob) {
-                  const base64 = await blobToBase64(item.value[key] as Blob);
-                  serializedValue[key] = base64;
-                  serializedValue[`_isBlob_${key}`] = true;
-                }
-              }
-              return { key: item.key, value: serializedValue as StoreItem };
-            })
-          );
-
-        backup.indexedDB.documents = await serializeStore(docs);
-        backup.indexedDB.images = await serializeStore(imgs);
-        backup.indexedDB.trash = await serializeStore(trash);
-        backup.indexedDB.custom_wallpapers = await serializeStore(walls);
-        backup.indexedDB.applets = await serializeStore(apps);
+        const serializedStores = await Promise.all(
+          BACKUP_INDEXEDDB_STORES.map(async (storeName) => [
+            storeName,
+            await serializeStoreItems(await readStoreItems(db, storeName)),
+          ] as const)
+        );
+        for (const [storeName, items] of serializedStores) {
+          backup.indexedDB[storeName] = items;
+        }
         db.close();
       } catch (error) {
         console.error("[CloudSync] Error backing up IndexedDB:", error);
@@ -787,8 +751,8 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = CLOUD_SYNC_DOMAINS.filter((domain) =>
-      syncStore.isDomainEnabled(domain)
+    const enabledDomains = LOGICAL_CLOUD_SYNC_DOMAINS.filter((domain) =>
+      isLogicalCloudSyncDomainEnabled(syncStore.isDomainEnabled, domain)
     );
 
     if (enabledDomains.length === 0) {
@@ -799,25 +763,40 @@ export function useControlPanelsLogic({
     setIsCloudForceUploading(true);
 
     const failures: string[] = [];
+    const markLogicalUploadFailure = (
+      domain: LogicalCloudSyncDomain,
+      message: string
+    ) => {
+      for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+        syncStore.markUploadFailure(partDomain, message);
+      }
+    };
 
     try {
       for (const domain of enabledDomains) {
-        syncStore.markUploadStart(domain);
+        for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+          syncStore.markUploadStart(partDomain);
+        }
 
         try {
-          const metadata = await uploadCloudSyncDomain(domain, {
+          const result = await uploadLogicalCloudSyncDomain(domain, {
             username,
             isAuthenticated,
           });
-          syncStore.markUploadSuccess(domain, metadata);
-          syncStore.updateRemoteMetadataForDomain(domain, metadata);
+
+          for (const [partDomain, metadata] of Object.entries(
+            result.partMetadata
+          ) as Array<[CloudSyncDomain, NonNullable<(typeof result.partMetadata)[CloudSyncDomain]>]>) {
+            syncStore.markUploadSuccess(partDomain, metadata);
+            syncStore.updateRemoteMetadataForDomain(partDomain, metadata);
+          }
         } catch (error) {
           const message =
             error instanceof Error
               ? error.message
               : t("apps.control-panels.cloudSync.forceUploadFailed");
           failures.push(message);
-          syncStore.markUploadFailure(domain, message);
+          markLogicalUploadFailure(domain, message);
         }
       }
 
@@ -842,8 +821,8 @@ export function useControlPanelsLogic({
     }
 
     const syncStore = useCloudSyncStore.getState();
-    const enabledDomains = CLOUD_SYNC_DOMAINS.filter((domain) =>
-      syncStore.isDomainEnabled(domain)
+    const enabledDomains = LOGICAL_CLOUD_SYNC_DOMAINS.filter((domain) =>
+      isLogicalCloudSyncDomainEnabled(syncStore.isDomainEnabled, domain)
     );
 
     if (enabledDomains.length === 0) {
@@ -855,6 +834,14 @@ export function useControlPanelsLogic({
 
     const failures: string[] = [];
     let appliedCount = 0;
+    const markLogicalDownloadFailure = (
+      domain: LogicalCloudSyncDomain,
+      message: string
+    ) => {
+      for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+        syncStore.markDownloadFailure(partDomain, message);
+      }
+    };
 
     const isNoDataError = (msg: string) =>
       /no \w+ state found/i.test(msg) ||
@@ -863,19 +850,25 @@ export function useControlPanelsLogic({
 
     try {
       for (const domain of enabledDomains) {
-        syncStore.markDownloadStart(domain);
+        for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+          syncStore.markDownloadStart(partDomain);
+        }
 
         try {
-          const result = await downloadAndApplyCloudSyncDomain(domain, {
-            username,
-            isAuthenticated,
-          });
-          syncStore.updateRemoteMetadataForDomain(domain, result.metadata);
+          const result = await downloadAndApplyLogicalCloudSyncDomain(domain);
+
+          for (const [partDomain, metadata] of Object.entries(
+            result.partMetadata
+          ) as Array<[CloudSyncDomain, NonNullable<(typeof result.partMetadata)[CloudSyncDomain]>]>) {
+            syncStore.updateRemoteMetadataForDomain(partDomain, metadata);
+            syncStore.markDownloadSuccess(partDomain, metadata);
+            if (result.applied) {
+              syncStore.markRemoteApplied(partDomain, metadata);
+            }
+          }
+
           if (result.applied) {
-            syncStore.markDownloadSuccess(domain, result.metadata);
             appliedCount++;
-          } else {
-            syncStore.markDownloadSuccess(domain, result.metadata.updatedAt);
           }
         } catch (error) {
           const message =
@@ -883,9 +876,14 @@ export function useControlPanelsLogic({
               ? error.message
               : t("apps.control-panels.cloudSync.forceDownloadFailed");
           if (isNoDataError(message)) {
-            syncStore.markDownloadSuccess(domain, new Date().toISOString());
+            for (const partDomain of getLogicalCloudSyncDomainPhysicalParts(domain)) {
+              syncStore.markDownloadSuccess(
+                partDomain,
+                new Date().toISOString()
+              );
+            }
           } else {
-            syncStore.markDownloadFailure(domain, message);
+            markLogicalDownloadFailure(domain, message);
             failures.push(message);
           }
         }
@@ -1015,95 +1013,17 @@ export function useControlPanelsLogic({
       if (backup.indexedDB) {
         try {
           const db = await ensureIndexedDBInitialized();
+          const restorePromises = BACKUP_INDEXEDDB_STORES.flatMap((storeName) => {
+            const items = backup.indexedDB?.[storeName];
+            if (!items) {
+              return [];
+            }
 
-          const restoreStore = async (
-            storeName: string,
-            items: StoreItemWithKey[]
-          ) => {
-            return new Promise<void>((resolve, reject) => {
-              const transaction = db.transaction(storeName, "readwrite");
-              const store = transaction.objectStore(storeName);
-
-              transaction.oncomplete = () => resolve();
-              transaction.onerror = () => reject(transaction.error);
-              transaction.onabort = () =>
-                reject(
-                  transaction.error ||
-                    new Error(`Transaction aborted for ${storeName}`)
-                );
-
-              const clearRequest = store.clear();
-
-              clearRequest.onsuccess = () => {
-                try {
-                  for (const item of items) {
-                    const itemValue: Record<string, unknown> = {
-                      ...item.value,
-                    };
-                    for (const key of Object.keys(item.value)) {
-                      const isBlobKey = `_isBlob_${key}`;
-                      if (item.value[isBlobKey] === true) {
-                        itemValue[key] = base64ToBlob(
-                          item.value[key] as string
-                        );
-                        delete itemValue[isBlobKey];
-                      }
-                    }
-                    if (backup.version < 2) {
-                      if (
-                        storeName === "documents" ||
-                        storeName === "images"
-                      ) {
-                        if (!itemValue.uuid) {
-                          itemValue.uuid = uuidv4();
-                        }
-                        if (!itemValue.contentUrl && itemValue.content) {
-                          itemValue.contentUrl = URL.createObjectURL(
-                            itemValue.content as Blob
-                          );
-                        }
-                      }
-                    }
-                    store.put(itemValue, item.key);
-                  }
-                } catch (error) {
-                  transaction.abort();
-                  reject(error);
-                }
-              };
-              clearRequest.onerror = () => reject(clearRequest.error);
+            return restoreStoreItems(db, storeName, items, {
+              mapValue: (value) =>
+                upgradeLegacyBackupStoreValue(backup.version, storeName, value),
             });
-          };
-
-          const restorePromises: Promise<void>[] = [];
-          if (backup.indexedDB.documents) {
-            restorePromises.push(
-              restoreStore("documents", backup.indexedDB.documents)
-            );
-          }
-          if (backup.indexedDB.images) {
-            restorePromises.push(
-              restoreStore("images", backup.indexedDB.images)
-            );
-          }
-          if (backup.indexedDB.trash) {
-            restorePromises.push(
-              restoreStore("trash", backup.indexedDB.trash)
-            );
-          }
-          if (backup.indexedDB.custom_wallpapers) {
-            restorePromises.push(
-              restoreStore(
-                "custom_wallpapers",
-                backup.indexedDB.custom_wallpapers
-              )
-            );
-          }
-          if (backup.indexedDB.applets) {
-            restorePromises.push(
-              restoreStore("applets", backup.indexedDB.applets)
-            );
-          }
+          });
 
           await Promise.all(restorePromises);
           db.close();
@@ -1304,75 +1224,15 @@ export function useControlPanelsLogic({
     // Backup IndexedDB data
     try {
       const db = await ensureIndexedDBInitialized();
-      const getStoreData = async (
-        storeName: string
-      ): Promise<StoreItemWithKey[]> => {
-        return new Promise((resolve, reject) => {
-          try {
-            const transaction = db.transaction(storeName, "readonly");
-            const store = transaction.objectStore(storeName);
-            const items: StoreItemWithKey[] = [];
-
-            // Use openCursor to get both keys and values
-            const request = store.openCursor();
-
-            request.onsuccess = (event) => {
-              const cursor = (event.target as IDBRequest<IDBCursorWithValue>)
-                .result;
-              if (cursor) {
-                items.push({
-                  key: cursor.key as string,
-                  value: cursor.value,
-                });
-                cursor.continue();
-              } else {
-                // No more entries
-                resolve(items);
-              }
-            };
-
-            request.onerror = () => reject(request.error);
-          } catch (error) {
-            console.error(`Error accessing store ${storeName}:`, error);
-            resolve([]);
-          }
-        });
-      };
-
-      const [docs, imgs, trash, walls, apps] = await Promise.all([
-        getStoreData("documents"),
-        getStoreData("images"),
-        getStoreData("trash"),
-        getStoreData("custom_wallpapers"),
-        getStoreData("applets"),
-      ]);
-
-      const serializeStore = async (items: StoreItemWithKey[]) =>
-        Promise.all(
-          items.map(async (item) => {
-            const serializedValue: Record<string, unknown> = { ...item.value };
-
-            // Check all fields for Blob instances
-            for (const key of Object.keys(item.value)) {
-              if (item.value[key] instanceof Blob) {
-                const base64 = await blobToBase64(item.value[key] as Blob);
-                serializedValue[key] = base64;
-                serializedValue[`_isBlob_${key}`] = true;
-              }
-            }
-
-            return {
-              key: item.key,
-              value: serializedValue as StoreItem,
-            };
-          })
-        );
-
-      backup.indexedDB.documents = await serializeStore(docs);
-      backup.indexedDB.images = await serializeStore(imgs);
-      backup.indexedDB.trash = await serializeStore(trash);
-      backup.indexedDB.custom_wallpapers = await serializeStore(walls);
-      backup.indexedDB.applets = await serializeStore(apps);
+      const serializedStores = await Promise.all(
+        BACKUP_INDEXEDDB_STORES.map(async (storeName) => [
+          storeName,
+          await serializeStoreItems(await readStoreItems(db, storeName)),
+        ] as const)
+      );
+      for (const [storeName, items] of serializedStores) {
+        backup.indexedDB[storeName] = items;
+      }
       db.close();
     } catch (error) {
       console.error("Error backing up IndexedDB:", error);
@@ -1527,102 +1387,17 @@ export function useControlPanelsLogic({
         if (backup.indexedDB) {
           try {
             const db = await ensureIndexedDBInitialized();
+            const restorePromises = BACKUP_INDEXEDDB_STORES.flatMap((storeName) => {
+              const items = backup.indexedDB?.[storeName];
+              if (!items) {
+                return [];
+              }
 
-            const restoreStore = async (
-              storeName: string,
-              items: StoreItemWithKey[]
-            ) => {
-              return new Promise<void>((resolve, reject) => {
-                const transaction = db.transaction(storeName, "readwrite");
-                const store = transaction.objectStore(storeName);
-
-                transaction.oncomplete = () => resolve();
-                transaction.onerror = () => reject(transaction.error);
-                transaction.onabort = () =>
-                  reject(
-                    transaction.error ||
-                      new Error(`Transaction aborted for ${storeName}`)
-                  );
-
-                const clearRequest = store.clear();
-
-                clearRequest.onsuccess = () => {
-                  try {
-                    for (const item of items) {
-                      const itemValue: Record<string, unknown> = {
-                        ...item.value,
-                      };
-
-                      for (const key of Object.keys(item.value)) {
-                        const isBlobKey = `_isBlob_${key}`;
-
-                        if (item.value[isBlobKey] === true) {
-                          itemValue[key] = base64ToBlob(
-                            item.value[key] as string
-                          );
-                          delete itemValue[isBlobKey];
-                        }
-                      }
-
-                      if (backup.version < 2) {
-                        if (
-                          storeName === "documents" ||
-                          storeName === "images"
-                        ) {
-                          if (!itemValue.uuid) {
-                            itemValue.uuid = uuidv4();
-                          }
-                          if (!itemValue.contentUrl && itemValue.content) {
-                            itemValue.contentUrl = URL.createObjectURL(
-                              itemValue.content as Blob
-                            );
-                          }
-                        }
-                      }
-
-                      store.put(itemValue, item.key);
-                    }
-                  } catch (error) {
-                    transaction.abort();
-                    reject(error);
-                  }
-                };
-
-                clearRequest.onerror = () => reject(clearRequest.error);
+              return restoreStoreItems(db, storeName, items, {
+                mapValue: (value) =>
+                  upgradeLegacyBackupStoreValue(backup.version, storeName, value),
               });
-            };
-
-            // Restore each store
-            const restorePromises: Promise<void>[] = [];
-
-            if (backup.indexedDB.documents) {
-              restorePromises.push(
-                restoreStore("documents", backup.indexedDB.documents)
-              );
-            }
-            if (backup.indexedDB.images) {
-              restorePromises.push(
-                restoreStore("images", backup.indexedDB.images)
-              );
-            }
-            if (backup.indexedDB.trash) {
-              restorePromises.push(
-                restoreStore("trash", backup.indexedDB.trash)
-              );
-            }
-            if (backup.indexedDB.custom_wallpapers) {
-              restorePromises.push(
-                restoreStore(
-                  "custom_wallpapers",
-                  backup.indexedDB.custom_wallpapers
-                )
-              );
-            }
-            if (backup.indexedDB.applets) {
-              restorePromises.push(
-                restoreStore("applets", backup.indexedDB.applets)
-              );
-            }
+            });
 
             await Promise.all(restorePromises);
             db.close();

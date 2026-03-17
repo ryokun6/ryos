@@ -18,7 +18,7 @@ interface ListenSyncOptions {
 }
 
 const HEARTBEAT_INTERVAL_MS = 3000;   // when playing
-const HEARTBEAT_PAUSED_MS = 12000;   // when paused – less frequent to avoid spam
+const HEARTBEAT_PAUSED_MS = 30000;   // when paused – infrequent since position doesn't change
 const MIN_STATE_SYNC_INTERVAL_MS = 2500; // Min interval for "state changed" sync to avoid loop
 const SOFT_SYNC_THRESHOLD_MS = 500;  // Below this, no correction needed
 const HARD_SEEK_THRESHOLD_MS = 3000; // Above this, hard seek
@@ -94,14 +94,19 @@ export function useListenSync({
 
   broadcastStateRef.current = broadcastState;
 
-  // Sync only when track or play state actually change (not on every render), and throttle to avoid loop
+  // Sync only when track or play state actually change (not on every render), and throttle to avoid loop.
+  // Exception: always send immediately when transitioning to playing (unpause)
+  // so listeners resync right away instead of waiting for the next heartbeat.
   useEffect(() => {
     if (!canBroadcast) return;
     const trackChanged = currentTrackId !== prevTrackIdRef.current;
     const playingChanged = isPlaying !== prevPlayingRef.current;
     if (!trackChanged && !playingChanged) return;
+
+    const isUnpause = playingChanged && isPlaying;
     const now = Date.now();
-    if (now - lastSentRef.current < MIN_STATE_SYNC_INTERVAL_MS) return;
+    if (!isUnpause && now - lastSentRef.current < MIN_STATE_SYNC_INTERVAL_MS) return;
+
     prevTrackIdRef.current = currentTrackId;
     prevPlayingRef.current = isPlaying;
     lastSentRef.current = now;

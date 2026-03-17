@@ -9,14 +9,7 @@
 import type { VercelRequest } from "@vercel/node";
 import type { ExtractedAuth } from "./_types.js";
 import { parseAuthCookie } from "../_cookie.js";
-
-function getHeader(req: VercelRequest, name: string): string | null {
-  const value = req.headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return value[0] || null;
-  }
-  return typeof value === "string" ? value : null;
-}
+import { getHeader } from "../request-helpers.js";
 
 /**
  * Extract authentication credentials from request.

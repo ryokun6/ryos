@@ -117,8 +117,14 @@ class BunResponseShim extends EventEmitter {
   private streamController: ReadableStreamDefaultController<Uint8Array> | null =
     null;
 
+  private _headersSentResolve: (() => void) | null = null;
+  readonly headersSentPromise: Promise<void>;
+
   constructor() {
     super();
+    this.headersSentPromise = new Promise<void>((resolve) => {
+      this._headersSentResolve = resolve;
+    });
     this.stream = new ReadableStream<Uint8Array>({
       start: (controller) => {
         this.streamController = controller;
@@ -127,6 +133,14 @@ class BunResponseShim extends EventEmitter {
         this.closeStream();
       },
     });
+  }
+
+  private markHeadersSent(): void {
+    if (!this.headersSent) {
+      this.headersSent = true;
+      this._headersSentResolve?.();
+      this._headersSentResolve = null;
+    }
   }
 
   status(code: number): this {
@@ -180,18 +194,18 @@ class BunResponseShim extends EventEmitter {
       }
     }
 
-    this.headersSent = true;
+    this.markHeadersSent();
     return this;
   }
 
   flushHeaders(): this {
-    this.headersSent = true;
+    this.markHeadersSent();
     return this;
   }
 
   write(chunk: unknown): boolean {
     if (this.writableEnded) return false;
-    this.headersSent = true;
+    this.markHeadersSent();
 
     const payload = toUint8Array(chunk);
     if (!payload) return true;
@@ -274,7 +288,7 @@ class BunResponseShim extends EventEmitter {
     if (this.writableEnded) return;
 
     this.writableEnded = true;
-    this.headersSent = true;
+    this.markHeadersSent();
     try {
       this.streamController?.close();
     } catch {
@@ -792,7 +806,26 @@ async function bootstrap(): Promise<void> {
 
       try {
         const handler = await getHandler(matched.route);
-        await Promise.resolve(handler(reqShim, resShim));
+        const handlerPromise = Promise.resolve(handler(reqShim, resShim));
+
+        // Race between handler completion and first write.
+        // For SSE/streaming handlers, headersSentPromise resolves on the first
+        // res.write(), allowing us to return the Response immediately so Bun
+        // can start streaming data to the client while the handler continues.
+        await Promise.race([handlerPromise, resShim.headersSentPromise]);
+
+        if (!resShim.writableEnded) {
+          // Handler is still running (SSE streaming) — handle errors in background
+          handlerPromise.catch((error) => {
+            console.error(
+              `[api-standalone] Handler error in ${matched.route.routePath} (${matched.route.relativePath})`,
+              error
+            );
+            if (!resShim.writableEnded) {
+              resShim.end();
+            }
+          });
+        }
       } catch (error) {
         console.error(
           `[api-standalone] Handler error in ${matched.route.routePath} (${matched.route.relativePath})`,

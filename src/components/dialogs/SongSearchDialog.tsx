@@ -231,6 +231,7 @@ export function SongSearchDialog({
                 tabIndex={0}
                 role="button"
                 className={cn(fontClass, "w-full")}
+                data-selected={selectedIndex === index ? "true" : undefined}
                 style={{
                   ...fontStyle,
                   padding: "8px",
@@ -239,13 +240,9 @@ export function SongSearchDialog({
                   alignItems: "center",
                   gap: "8px",
                   boxSizing: "border-box",
-                  background: selectedIndex === index
-                    ? "var(--os-color-selection-bg)"
-                    : index % 2 === 1
-                      ? "#f3f4f6"
-                      : "white",
-                  color: selectedIndex === index ? "var(--os-color-selection-text)" : undefined,
-                  textShadow: selectedIndex === index ? "var(--os-color-selection-text-shadow)" : undefined,
+                  background: selectedIndex !== index
+                    ? (index % 2 === 1 ? "#f3f4f6" : "white")
+                    : undefined,
                 }}
               >
                 {result.thumbnail && (

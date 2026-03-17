@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useStickiesStore, StickyColor } from "@/stores/useStickiesStore";
 import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
@@ -11,8 +11,7 @@ export function useStickiesLogic() {
   const translatedHelpItems = useTranslatedHelpItems("stickies", helpItems);
 
   // Theme state
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { currentTheme, isXpTheme } = useThemeFlags();
 
   // Dialog state
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);

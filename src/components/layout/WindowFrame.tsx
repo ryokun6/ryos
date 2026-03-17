@@ -14,7 +14,7 @@ import { useIsPhone } from "@/hooks/useIsPhone";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
-import { getTheme } from "@/themes";
+
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 import { motion, AnimatePresence } from "framer-motion";
@@ -161,7 +161,7 @@ export function WindowFrame({
     isXpTheme,
     currentTheme,
   } = useWindowInsets();
-  const theme = getTheme(currentTheme);
+
   
   // Derive material booleans for internal use
   const isTransparent = material === "transparent" || material === "notitlebar";
@@ -1248,7 +1248,7 @@ export function WindowFrame({
                 ...(currentTheme === "xp" ? { minHeight: "30px" } : undefined),
                 ...(!isForeground
                   ? {
-                      background: theme.colors.titleBar.inactiveBg,
+                      background: "var(--os-color-titlebar-inactive-bg)",
                     }
                   : undefined),
               }}
@@ -1290,7 +1290,7 @@ export function WindowFrame({
                   overflow: "hidden",
                   ...(!isForeground
                     ? {
-                        color: theme.colors.titleBar.inactiveText,
+                        color: "var(--os-color-titlebar-text-inactive)",
                       }
                     : {}),
                 }}
@@ -1391,11 +1391,8 @@ export function WindowFrame({
                 ...(!isNoTitlebar && !isBrushedMetal && {
                   borderBottom: `1px solid ${
                     isForeground
-                      ? theme.colors.titleBar.borderBottom ||
-                        theme.colors.titleBar.border ||
-                        "rgba(0, 0, 0, 0.1)"
-                      : theme.colors.titleBar.borderInactive ||
-                        "rgba(0, 0, 0, 0.05)"
+                      ? "var(--os-color-titlebar-border, rgba(0, 0, 0, 0.1))"
+                      : "var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.05))"
                   }`,
                 }),
               }}

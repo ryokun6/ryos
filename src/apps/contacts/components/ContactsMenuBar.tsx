@@ -8,7 +8,8 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
+import { isWindowsTheme } from "@/themes";
+import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 
 interface ContactsMenuBarProps {
@@ -36,7 +37,7 @@ export function ContactsMenuBar({
 }: ContactsMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (
@@ -53,7 +54,7 @@ export function ContactsMenuBar({
             {t("apps.contacts.menu.importVCard")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={requestCloudSyncCheck} className="text-md h-6 px-3">
+          <MenubarItem onClick={() => requestCloudSyncDomainCheck("contacts")} className="text-md h-6 px-3">
             {t("apps.contacts.menu.syncContacts", { defaultValue: "Sync Contacts" })}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />

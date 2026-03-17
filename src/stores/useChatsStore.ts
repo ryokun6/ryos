@@ -10,10 +10,15 @@ import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { ApiRequestError } from "@/api/core";
 import {
+  type CreateRoomPayload,
+  createRoom as createRoomApi,
+  deleteRoom as deleteRoomApi,
   getBulkMessages as getBulkMessagesApi,
   getRoomMessages as getRoomMessagesApi,
   listRooms as listRoomsApi,
+  sendRoomMessage as sendRoomMessageApi,
   switchPresence as switchPresenceApi,
 } from "@/api/rooms";
 
@@ -34,12 +39,6 @@ interface ApiMessage {
   username: string;
   content: string;
   timestamp: string | number;
-}
-
-interface CreateRoomPayload {
-  type: "public" | "private";
-  name?: string;
-  members?: string[];
 }
 
 // Username recovery: plain-text localStorage (username is not secret)
@@ -110,29 +109,6 @@ const clearApiUnavailable = (key: string): void => {
   delete apiUnavailableUntil[key];
 };
 
-
-/**
- * Send an authenticated request (auth via httpOnly cookie).
- * If the server responds 401, the session is dead — force logout.
- */
-const makeAuthenticatedRequest = async (
-  url: string,
-  options: RequestInit,
-): Promise<Response> => {
-  const response = await abortableFetch(url, {
-    ...options,
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (response.status === 401) {
-    console.log("[ChatsStore] Received 401 — forcing logout");
-    forceLogoutOnUnauthorized();
-  }
-
-  return response;
-};
 
 /**
  * Clear auth state without making API calls (which could 401 again).
@@ -1029,26 +1005,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               payload.members = members;
             }
 
-            const response = await makeAuthenticatedRequest(
-              "/api/rooms",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-              },
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
-              return {
-                ok: false,
-                error: errorData.error || "Failed to create room",
-              };
-            }
-
-            const data = await response.json();
+            const data = await createRoomApi(payload);
             if (data.room) {
               // Room will be added via Pusher update, so we don't need to manually add it
               return { ok: true, roomId: data.room.id };
@@ -1056,6 +1013,13 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             return { ok: false, error: "Invalid response format" };
           } catch (error) {
+            if (error instanceof ApiRequestError) {
+              if (error.status === 401) {
+                console.log("[ChatsStore] Received 401 — forcing logout");
+                forceLogoutOnUnauthorized();
+              }
+              return { ok: false, error: error.message || "Failed to create room" };
+            }
             console.error("[ChatsStore] Error creating room:", error);
             return { ok: false, error: "Network error. Please try again." };
           }
@@ -1068,24 +1032,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await makeAuthenticatedRequest(
-              `/api/rooms/${encodeURIComponent(roomId)}`,
-              {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-              },
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
-              return {
-                ok: false,
-                error: errorData.error || "Failed to delete room",
-              };
-            }
-
+            await deleteRoomApi(roomId);
             // Room will be removed via Pusher update
             // If we're currently in this room, switch to @ryo
             const currentRoomId = get().currentRoomId;
@@ -1095,6 +1042,13 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             return { ok: true };
           } catch (error) {
+            if (error instanceof ApiRequestError) {
+              if (error.status === 401) {
+                console.log("[ChatsStore] Received 401 — forcing logout");
+                forceLogoutOnUnauthorized();
+              }
+              return { ok: false, error: error.message || "Failed to delete room" };
+            }
             console.error("[ChatsStore] Error deleting room:", error);
             return { ok: false, error: "Network error. Please try again." };
           }
@@ -1121,37 +1075,19 @@ export const useChatsStore = create<ChatsStoreState>()(
           get().addMessageToRoom(roomId, optimisticMessage);
 
           try {
-            const messageUrl = `/api/rooms/${encodeURIComponent(roomId)}/messages`;
-            const messageBody = JSON.stringify({
-              content: content.trim(),
-            });
-
-            const response = await makeAuthenticatedRequest(
-              messageUrl,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: messageBody,
-              },
-            );
-
-            if (!response.ok) {
-              // Remove optimistic message on failure
-              get().removeMessageFromRoom(roomId, tempId);
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
-              return {
-                ok: false,
-                error: errorData.error || "Failed to send message",
-              };
-            }
-
+            await sendRoomMessageApi(roomId, { content: content.trim() });
             // Real message will be added via Pusher, which will replace the optimistic one
             return { ok: true };
           } catch (error) {
             // Remove optimistic message on failure
             get().removeMessageFromRoom(roomId, tempId);
+            if (error instanceof ApiRequestError) {
+              if (error.status === 401) {
+                console.log("[ChatsStore] Received 401 — forcing logout");
+                forceLogoutOnUnauthorized();
+              }
+              return { ok: false, error: error.message || "Failed to send message" };
+            }
             console.error("[ChatsStore] Error sending message:", error);
             return { ok: false, error: "Network error. Please try again." };
           }

@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
@@ -10,8 +10,7 @@ export function useDashboardLogic() {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("dashboard", helpItems);
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { currentTheme, isXpTheme } = useThemeFlags();
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);

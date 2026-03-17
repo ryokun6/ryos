@@ -84,6 +84,8 @@ graph LR
 | `/api/rooms/[id]/messages/[msgId]` | Delete message (admin) |
 | `/api/messages/bulk` | Bulk message fetch |
 | `/api/presence/switch` | Presence switching |
+| `/api/presence/heartbeat` | Global online presence heartbeat |
+| `/api/rooms/[id]/typing` | Broadcast typing indicator |
 | `/api/users` | User search |
 | `/api/ai/ryo-reply` | AI reply in rooms |
 | `/api/listen/sessions` | List/create listen-together sessions |
@@ -104,13 +106,17 @@ graph LR
 | `/api/iframe-check` | Embeddability checking |
 | `/api/share-applet` | Applet sharing |
 | `/api/stocks` | Real-time stock quotes |
-| `/api/sync/backup-token` | Generate cloud backup upload token |
+| `/api/sync/backup-token` | Generate cloud backup upload descriptor |
 | `/api/sync/backup` | Save/list/delete cloud backup metadata |
 | `/api/sync/status` | Cloud backup status summary |
-| `/api/sync/auto` | Automatic sync operations |
-| `/api/sync/auto-token` | Generate domain-specific auto-sync upload token |
-| `/api/sync/state` | Sync state management |
+| `/api/sync/domains` | Read logical and physical cloud sync metadata |
+| `/api/sync/domains/[domain]` | Download or update one logical sync domain |
+| `/api/sync/domains/[domain]/attachments/prepare` | Generate blob upload instructions for logical sync parts |
 | `/api/admin` | Admin operations |
+| `/api/airdrop/heartbeat` | AirDrop presence heartbeat |
+| `/api/airdrop/discover` | Discover nearby AirDrop users |
+| `/api/airdrop/send` | Send file via AirDrop |
+| `/api/airdrop/respond` | Accept/decline AirDrop transfer |
 
 ### Endpoint Categories Overview
 
@@ -163,4 +169,4 @@ Token-based sessions use a 90-day TTL. Auth-required endpoints use the shared `r
 |----------|--------|
 | OpenAI | gpt-5.4, gpt-4.1-mini, tts-1, whisper-1 |
 | Anthropic | sonnet-4.6 |
-| Google | gemini-3-flash, gemini-3-flash-preview, gemini-3.1-pro-preview, gemini-3.1-flash-image-preview, gemini-2.0-flash |
+| Google | gemini-3-flash, gemini-3-flash-preview, gemini-3.1-pro-preview, gemini-3.1-flash-image-preview |

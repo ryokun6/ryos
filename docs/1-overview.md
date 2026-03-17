@@ -90,13 +90,13 @@ graph TB
 │   └── _utils/       # Shared API utilities (api-handler, middleware, auth, redis, storage, realtime, analytics, etc.)
 ├── public/           # Static assets
 ├── src/
-│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, sync)
+│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram)
 │   ├── apps/         # 23 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # 42 custom hooks
+│   ├── hooks/        # 44 custom hooks
 │   ├── lib/          # Libraries
-│   ├── stores/       # 30 Zustand stores
+│   ├── stores/       # 31 Zustand stores
 │   ├── styles/       # CSS
 │   ├── themes/       # 4 theme definitions
 │   ├── types/        # TypeScript types

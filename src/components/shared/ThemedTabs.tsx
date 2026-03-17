@@ -1,6 +1,6 @@
 import React from "react";
 import { TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTabStyles } from "@/utils/tabStyles";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +14,7 @@ interface ThemedTabsListProps {
 }
 
 export function ThemedTabsList({ children, className }: ThemedTabsListProps) {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { currentTheme, isXpTheme } = useThemeFlags();
   const tabStyles = getTabStyles(currentTheme);
 
   if (isXpTheme) {
@@ -56,8 +55,7 @@ export function ThemedTabsTrigger({
   children,
   className,
 }: ThemedTabsTriggerProps) {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { currentTheme, isXpTheme } = useThemeFlags();
   const tabStyles = getTabStyles(currentTheme);
 
   if (isXpTheme) {
@@ -109,7 +107,7 @@ export function ThemedTabsContent({
   children,
   className,
 }: ThemedTabsContentProps) {
-  const currentTheme = useThemeStore((state) => state.current);
+  const { currentTheme } = useThemeFlags();
   const tabStyles = getTabStyles(currentTheme);
 
   return (

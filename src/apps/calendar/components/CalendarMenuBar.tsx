@@ -8,7 +8,8 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
+import { isWindowsTheme } from "@/themes";
+import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 import type { CalendarView } from "@/stores/useCalendarStore";
 import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
@@ -50,7 +51,7 @@ export function CalendarMenuBar({
 }: CalendarMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
   const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
 
@@ -72,7 +73,7 @@ export function CalendarMenuBar({
             {t("apps.calendar.menu.exportToIcs")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={requestCloudSyncCheck} className="text-md h-6 px-3">
+          <MenubarItem onClick={() => requestCloudSyncDomainCheck("calendar")} className="text-md h-6 px-3">
             {t("apps.calendar.menu.syncCalendar", { defaultValue: "Sync Calendar" })}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />

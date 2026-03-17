@@ -9,6 +9,7 @@
  */
 
 import type { Redis } from "../../_utils/redis.js";
+import { redisStateMetaKey } from "../../sync/_keys.js";
 import type {
   ServerToolContext,
   GenerateHtmlInput,
@@ -39,8 +40,10 @@ import type {
   SongLibraryToolRecord,
   SongLibraryScope,
   SongLibraryLyricsSource,
+  WebFetchInput,
+  WebFetchOutput,
 } from "./types.js";
-import { stateKey } from "../../sync/state.js";
+import { stateKey } from "../../sync/_state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
 import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";
 import {
@@ -224,6 +227,355 @@ export async function executeSearchSongs(
 
   // All keys exhausted
   throw new Error(`All YouTube API keys exhausted. Last error: ${lastError || 'Unknown'}`);
+}
+
+// ============================================================================
+// Web Fetch Tool Executor
+// ============================================================================
+
+import {
+  safeFetchWithRedirects,
+  validatePublicUrl,
+  SsrfBlockedError,
+} from "../../_utils/_ssrf.js";
+
+const WEB_FETCH_MAX_CONTENT_LENGTH = 24_000;
+const WEB_FETCH_TIMEOUT_MS = 15_000;
+
+const WEB_FETCH_BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Upgrade-Insecure-Requests": "1",
+};
+
+const DANGEROUS_URL_SCHEMES = /^(?:javascript|data|vbscript|blob):/i;
+
+/**
+ * Repeatedly strip tag patterns until no more matches remain,
+ * preventing nested-tag bypass (e.g. `<scr<script>ipt>`).
+ */
+function stripTagsLoop(html: string, pattern: RegExp, maxPasses = 10): string {
+  let result = html;
+  for (let i = 0; i < maxPasses; i++) {
+    const next = result.replace(pattern, "");
+    if (next === result) break;
+    result = next;
+  }
+  return result;
+}
+
+/**
+ * Decode HTML entities exactly once. We decode numeric/named entities in a
+ * single pass to avoid double-unescaping (e.g. `&amp;lt;` → `&lt;` stays
+ * as `&lt;`, not `<`).
+ */
+function decodeHtmlEntitiesOnce(text: string): string {
+  const NAMED_ENTITIES: Record<string, string> = {
+    "&nbsp;": " ",
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#39;": "'",
+    "&apos;": "'",
+  };
+
+  return text.replace(
+    /&(?:#x([0-9a-fA-F]+);|#(\d+);|[a-zA-Z]+;)/g,
+    (match, hex, dec) => {
+      if (hex) return String.fromCharCode(parseInt(hex, 16));
+      if (dec) return String.fromCharCode(parseInt(dec, 10));
+      const lower = match.toLowerCase();
+      return NAMED_ENTITIES[lower] ?? match;
+    }
+  );
+}
+
+function stripHtmlToText(html: string, selector?: string): string {
+  let working = html;
+
+  if (selector) {
+    const selectorPatterns = buildSelectorPatterns(selector);
+    const extracted = extractByPatterns(working, selectorPatterns);
+    if (extracted) {
+      working = extracted;
+    }
+  } else {
+    working = extractMainContent(working);
+  }
+
+  // Strip dangerous/non-content tags in a loop to handle nested obfuscation.
+  // Closing-tag regex uses `[^>]*>` to match malformed variants like
+  // `</script \t\n bar>` where extra chars appear before `>`.
+  working = stripTagsLoop(working, /<script\b[\s\S]*?<\/script[^>]*>/gi);
+  working = stripTagsLoop(working, /<style\b[\s\S]*?<\/style[^>]*>/gi);
+  working = stripTagsLoop(working, /<noscript\b[\s\S]*?<\/noscript[^>]*>/gi);
+  working = stripTagsLoop(working, /<nav\b[\s\S]*?<\/nav[^>]*>/gi);
+  working = stripTagsLoop(working, /<footer\b[\s\S]*?<\/footer[^>]*>/gi);
+  working = stripTagsLoop(working, /<header\b[\s\S]*?<\/header[^>]*>/gi);
+  working = stripTagsLoop(working, /<!--[\s\S]*?-->/g);
+  working = stripTagsLoop(working, /<svg\b[\s\S]*?<\/svg[^>]*>/gi);
+
+  working = working.replace(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi, (_m, tag, inner) => {
+    const level = parseInt(tag.charAt(1), 10);
+    return "\n" + "#".repeat(level) + " " + inner.trim() + "\n";
+  });
+
+  working = working.replace(/<li[^>]*>/gi, "\n- ");
+  working = working.replace(/<\/li>/gi, "");
+  working = working.replace(/<br\s*\/?>/gi, "\n");
+  working = working.replace(/<\/p>/gi, "\n\n");
+  working = working.replace(/<\/div>/gi, "\n");
+  working = working.replace(/<\/tr>/gi, "\n");
+  working = working.replace(/<td[^>]*>/gi, "\t");
+
+  working = working.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, text) => {
+    const linkText = stripTagsLoop(text, /<[^>]+>/g).trim();
+    if (!linkText) return "";
+    if (href.startsWith("#") || DANGEROUS_URL_SCHEMES.test(href)) return linkText;
+    return `${linkText} (${href})`;
+  });
+
+  // Loop-strip remaining tags to handle any nested fragments
+  working = stripTagsLoop(working, /<[^>]+>/g);
+
+  working = decodeHtmlEntitiesOnce(working);
+
+  working = working.replace(/[ \t]+/g, " ");
+  working = working.replace(/\n[ \t]+/g, "\n");
+  working = working.replace(/\n{3,}/g, "\n\n");
+  working = working.trim();
+
+  return working;
+}
+
+function buildSelectorPatterns(selector: string): RegExp[] {
+  const patterns: RegExp[] = [];
+
+  if (selector.startsWith("#")) {
+    const id = selector.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    patterns.push(new RegExp(`<[a-z][a-z0-9]*[^>]*\\bid=["']${id}["'][^>]*>[\\s\\S]*?(?=<\\/[a-z])`, "i"));
+  } else if (selector.startsWith(".")) {
+    const cls = selector.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    patterns.push(new RegExp(`<[a-z][a-z0-9]*[^>]*\\bclass=["'][^"']*\\b${cls}\\b[^"']*["'][^>]*>[\\s\\S]*?(?=<\\/[a-z])`, "i"));
+  } else {
+    const tag = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    patterns.push(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, "gi"));
+  }
+
+  return patterns;
+}
+
+function extractByPatterns(html: string, patterns: RegExp[]): string | null {
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) return match[0];
+  }
+  return null;
+}
+
+function extractMainContent(html: string): string {
+  const mainPatterns = [
+    /<main[^>]*>([\s\S]*?)<\/main>/i,
+    /<article[^>]*>([\s\S]*?)<\/article>/i,
+    /<div[^>]*(?:id|class)=["'][^"']*(?:content|article|post|entry|main-body|main_content|page-content|post-content)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    /<div[^>]*role=["']main["'][^>]*>([\s\S]*?)<\/div>/i,
+  ];
+
+  for (const pattern of mainPatterns) {
+    const match = html.match(pattern);
+    if (match) {
+      const content = match[1] || match[0];
+      if (content.length > 200) return content;
+    }
+  }
+
+  return html;
+}
+
+function extractMetadata(html: string): {
+  title?: string;
+  description?: string;
+  siteName?: string;
+} {
+  const result: { title?: string; description?: string; siteName?: string } = {};
+
+  const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+  const titleTag = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  result.title = ogTitle?.[1]?.trim() || titleTag?.[1]?.trim().replace(/\s+/g, " ");
+
+  const ogDesc = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+  const metaDesc = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+  result.description = ogDesc?.[1]?.trim() || metaDesc?.[1]?.trim();
+
+  const ogSite = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+  result.siteName = ogSite?.[1]?.trim();
+
+  return result;
+}
+
+export async function executeWebFetch(
+  input: WebFetchInput,
+  context: ServerToolContext
+): Promise<WebFetchOutput> {
+  const { url, selector } = input;
+
+  context.log(`[webFetch] Fetching: ${url}${selector ? ` (selector: ${selector})` : ""}`);
+
+  try {
+    await validatePublicUrl(url);
+  } catch (error) {
+    const message =
+      error instanceof SsrfBlockedError ? error.message : "Invalid URL format";
+    context.log(`[webFetch] Blocked: ${message}`);
+    return {
+      success: false,
+      url,
+      content: "",
+      contentLength: 0,
+      truncated: false,
+      message: `Cannot fetch this URL: ${message}`,
+    };
+  }
+
+  try {
+    const { response, finalUrl } = await safeFetchWithRedirects(
+      url,
+      {
+        headers: WEB_FETCH_BROWSER_HEADERS,
+        signal: AbortSignal.timeout(WEB_FETCH_TIMEOUT_MS),
+      },
+      { maxRedirects: 5 }
+    );
+
+    if (!response.ok) {
+      context.log(`[webFetch] HTTP ${response.status} for ${url}`);
+      return {
+        success: false,
+        url,
+        finalUrl,
+        content: "",
+        contentLength: 0,
+        truncated: false,
+        message: `HTTP ${response.status}: ${response.statusText || "Request failed"}`,
+      };
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      const text = await response.text();
+      const truncated = text.length > WEB_FETCH_MAX_CONTENT_LENGTH;
+      const content = truncated
+        ? text.slice(0, WEB_FETCH_MAX_CONTENT_LENGTH) + "\n\n[...truncated]"
+        : text;
+
+      context.log(`[webFetch] JSON response (${text.length} chars)`);
+      return {
+        success: true,
+        url,
+        finalUrl,
+        content,
+        contentLength: text.length,
+        truncated,
+        message: `Fetched JSON from ${new URL(finalUrl).hostname} (${text.length} chars)`,
+      };
+    }
+
+    if (contentType.includes("text/plain")) {
+      const text = await response.text();
+      const truncated = text.length > WEB_FETCH_MAX_CONTENT_LENGTH;
+      const content = truncated
+        ? text.slice(0, WEB_FETCH_MAX_CONTENT_LENGTH) + "\n\n[...truncated]"
+        : text;
+
+      context.log(`[webFetch] Plain text response (${text.length} chars)`);
+      return {
+        success: true,
+        url,
+        finalUrl,
+        content,
+        contentLength: text.length,
+        truncated,
+        message: `Fetched text from ${new URL(finalUrl).hostname} (${text.length} chars)`,
+      };
+    }
+
+    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+      context.log(`[webFetch] Non-text content type: ${contentType}`);
+      return {
+        success: false,
+        url,
+        finalUrl,
+        content: "",
+        contentLength: 0,
+        truncated: false,
+        message: `Cannot extract text from content type: ${contentType}`,
+      };
+    }
+
+    const html = await response.text();
+    const metadata = extractMetadata(html);
+    let textContent = stripHtmlToText(html, selector);
+
+    const truncated = textContent.length > WEB_FETCH_MAX_CONTENT_LENGTH;
+    if (truncated) {
+      textContent =
+        textContent.slice(0, WEB_FETCH_MAX_CONTENT_LENGTH) + "\n\n[...truncated]";
+    }
+
+    const hostname = new URL(finalUrl).hostname;
+    context.log(
+      `[webFetch] Extracted ${textContent.length} chars from ${hostname} (title: ${metadata.title || "none"})`
+    );
+
+    return {
+      success: true,
+      url,
+      finalUrl,
+      title: metadata.title,
+      description: metadata.description,
+      siteName: metadata.siteName || hostname,
+      content: textContent,
+      contentLength: textContent.length,
+      truncated,
+      message: `Fetched and extracted content from ${metadata.siteName || hostname}${metadata.title ? `: "${metadata.title}"` : ""} (${textContent.length} chars${truncated ? ", truncated" : ""})`,
+    };
+  } catch (error) {
+    if (error instanceof SsrfBlockedError) {
+      context.log(`[webFetch] SSRF blocked during redirect: ${error.message}`);
+      return {
+        success: false,
+        url,
+        content: "",
+        contentLength: 0,
+        truncated: false,
+        message: `Blocked: ${error.message}`,
+      };
+    }
+
+    const isTimeout =
+      error instanceof Error &&
+      (error.name === "AbortError" || error.name === "TimeoutError");
+
+    context.logError(`[webFetch] Fetch error for ${url}:`, error);
+    return {
+      success: false,
+      url,
+      content: "",
+      contentLength: 0,
+      truncated: false,
+      message: isTimeout
+        ? "Request timed out — the page took too long to respond."
+        : `Failed to fetch: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
 }
 
 function buildSongLinks(context: ServerToolContext, id: string): Pick<
@@ -1156,7 +1508,7 @@ function filesMetadataStateKey(username: string): string {
 }
 
 function stateMetaKey(username: string): string {
-  return `sync:state:meta:${username}`;
+  return redisStateMetaKey(username);
 }
 
 async function readFilesMetadataState(
@@ -1575,7 +1927,7 @@ async function writeCalendarState(
     stateKey(username, "calendar"),
     JSON.stringify({ data, updatedAt: now, version: 1, createdAt: now })
   );
-  const metaKey = `sync:state:meta:${username}`;
+  const metaKey = redisStateMetaKey(username);
   const rawMeta = await redis.get<string | Record<string, unknown>>(metaKey);
   const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
   meta.calendar = { updatedAt: now, version: 1, createdAt: now };
@@ -1604,7 +1956,7 @@ async function writeStickiesState(
     stateKey(username, "stickies"),
     JSON.stringify({ data, updatedAt: now, version: 1, createdAt: now })
   );
-  const metaKey = `sync:state:meta:${username}`;
+  const metaKey = redisStateMetaKey(username);
   const rawMeta = await redis.get<string | Record<string, unknown>>(metaKey);
   const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
   meta.stickies = { updatedAt: now, version: 1, createdAt: now };

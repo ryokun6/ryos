@@ -55,7 +55,9 @@ graph TD
 | `memoryWrite` | Unified memory writer (`long_term` or `daily`) |
 | `memoryRead` | Unified memory reader (`long_term` by key or `daily` by date) |
 | `memoryDelete` | Delete long-term memory by key |
+| `songLibraryControl` | Search ryOS song libraries and cached metadata from server (list/search/get/searchYoutube/add; scopes: user/global/any; Telegram/server-side) |
 | `web_search` | OpenAI provider web search (GPT-5.4 only, authenticated users, with geolocation context) |
+| `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
 
 ## API Endpoints
 
@@ -110,7 +112,7 @@ Backend tool registry lives in `api/chat/tools/`:
 
 Tool profiles control which tools are available per channel:
 - `all` (web chat): Full tool set — all client-side and server-side tools
-- `telegram`: Server-side subset — memory, calendar, stickies, contacts, documents (all execute server-side via Redis)
+- `telegram`: Server-side subset — memory, calendar, stickies, contacts, documents, songLibraryControl (all execute server-side via Redis)
 - `memory`: Memory tools only
 
 Client execution handlers remain in `src/apps/chats/tools/`:
@@ -237,7 +239,7 @@ Common endpoint configurations in this AI stack:
 - **Proactive greetings**: `/api/chat` supports a proactive greeting mode for logged-in users with memories. Uses `gemini-3-flash-preview` to generate a short, context-aware greeting referencing recent activity or memories. Triggers background daily-note processing on each greeting.
 - **Telegram bot DM chat**: `/api/webhooks/telegram` enables private Telegram DM conversations with Ryo. Supports image attachments (downloaded and injected as multimodal content), web search, and server-side tool execution (memory, calendar, stickies, contacts, documents). Users link accounts via `/api/telegram/link/*` endpoints. Includes per-user burst and account-window rate limiting.
 - **Telegram heartbeat insights**: `/api/cron/telegram-heartbeat` runs on a 30-minute cron schedule. Analyzes today's daily notes, recent Telegram conversation, and heartbeat history to decide whether to proactively message the user. Processes daily notes and extracts memories from new chat messages before each decision. Uses gating logic to avoid redundant or stale nudges.
-- **Web search**: OpenAI provider `web_search` tool is automatically enabled for authenticated users on the `gpt-5.4` model. Includes geolocation context (country, city, region, timezone) when available.
+- **Web search**: Authenticated users get a search tool based on the selected model: `web_search` (OpenAI) for `gpt-5.4` with geolocation context, or `google_search` (Google) for `gemini-3-flash`. Anonymous users do not get search tools.
 - **Chat-room auto replies**: `/api/ai/ryo-reply` generates room messages as `ryo` with dedicated rate limits.
 - **Applet multimodal AI**: `/api/applet-ai` supports text chat, image attachments in message history, and binary image generation responses.
 - **Infinite Mac visual loop**: `infiniteMacControl` can return screenshots for model-visible state inspection.

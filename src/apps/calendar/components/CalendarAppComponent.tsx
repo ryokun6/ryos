@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { CalendarMenuBar } from "./CalendarMenuBar";
-import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
+import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { EventDialog } from "./EventDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -13,7 +13,8 @@ import {
   type WeekDay,
 } from "../hooks/useCalendarLogic";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
-import { CaretLeft, CaretRight, Plus, ListChecks, Trash, MagnifyingGlass, XCircle, SidebarSimple, CalendarBlank } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Plus, ListChecks, Trash, SidebarSimple, CalendarBlank } from "@phosphor-icons/react";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, CalendarGroup, TodoItem } from "@/stores/useCalendarStore";
@@ -79,7 +80,7 @@ function CalendarList({
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   return (
-    <div className={cn("select-none calendar-sidebar", !isMacOSTheme && "py-1.5")}>
+    <div className={cn("select-none os-sidebar", !isMacOSTheme && "py-1.5")}>
       {isMacOSTheme ? (
         <div
           className={cn("text-[11px] font-regular text-center", useGeneva && "font-geneva-12")}
@@ -208,7 +209,7 @@ function TodoSidebar({
   );
 
   return (
-    <div className="flex flex-col h-full select-none calendar-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
+    <div className="flex flex-col h-full select-none os-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
       {isMacOSTheme ? (
         <div
           className={cn("text-[11px] font-regular text-center", useGeneva && "font-geneva-12")}
@@ -366,7 +367,7 @@ function MiniCalendar({
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
   return (
-    <div className="flex flex-col select-none py-1 px-1.5 calendar-sidebar" style={{ minWidth: 150, flexShrink: 0 }}>
+    <div className="flex flex-col select-none py-1 px-1.5 os-sidebar" style={{ minWidth: 150, flexShrink: 0 }}>
       <div className="flex items-center justify-between px-0.5 py-1">
         <button type="button" onClick={onPrevMonth} className="p-0.5 hover:opacity-70 rounded">
           <CaretLeft size={10} weight="bold" />
@@ -942,45 +943,13 @@ function BottomToolbar({
 
   const searchField = showSearch ? (
     <div className="flex items-center justify-center min-w-0">
-      <div className={cn("relative min-w-0", isMacOSTheme ? "w-[150px]" : "w-[170px]")}>
-        <MagnifyingGlass
-          size={13}
-          weight="bold"
-          className={cn(
-            "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2",
-            isMacOSTheme ? "text-black/45" : "text-black/35"
-          )}
-        />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          onKeyDown={(e) => e.stopPropagation()}
-          aria-label={t("common.search")}
-          title={t("common.search")}
-          className={cn(
-            "w-full outline-none min-w-0",
-            isMacOSTheme
-              ? "rounded-full border border-black/40 bg-white pl-7 pr-7 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.3),inset_0_0_1px_rgba(0,0,0,0.15),0_1px_0_rgba(255,255,255,0.45)] font-geneva-12"
-              : "rounded-full border border-black/20 bg-white pl-7 pr-7 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)]"
-          )}
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onSearchQueryChange("")}
-            className={cn(
-              "absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center justify-center",
-              isMacOSTheme ? "text-black/40 hover:text-black/60" : "text-black/35 hover:text-black/55"
-            )}
-            aria-label={t("spotlight.ariaLabels.clearSearch")}
-            title={t("spotlight.ariaLabels.clearSearch")}
-          >
-            <XCircle size={14} weight="fill" />
-          </button>
-        )}
-      </div>
+      <SearchInput
+        value={searchQuery}
+        onChange={onSearchQueryChange}
+        width={isMacOSTheme ? "150px" : "170px"}
+        ariaLabel={t("common.search")}
+        onKeyDown={(e) => e.stopPropagation()}
+      />
     </div>
   ) : null;
 
@@ -1148,7 +1117,7 @@ function BottomToolbar({
 export function CalendarAppComponent({
   isWindowOpen, onClose, isForeground, skipInitialSound, instanceId, onNavigateNext, onNavigatePrevious,
 }: AppProps) {
-  useEffect(() => { requestCloudSyncCheck(); }, []);
+  useEffect(() => { requestCloudSyncDomainCheck("calendar"); }, []);
 
   const logic = useCalendarLogic();
   const {

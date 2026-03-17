@@ -304,7 +304,7 @@
     <main class="content">
       <article>
         <h1>State Management</h1>
-<p>ryOS uses Zustand for state management with 30 stores following consistent patterns, combined with localStorage and IndexedDB for persistence. Cloud sync (<code>useCloudSyncStore</code> + <code>useAutoCloudSync</code>) extends persistence to a remote backend via Pusher for real-time multi-device synchronization across 11 domains (settings, files, songs, videos, stickies, calendar, contacts, custom wallpapers). CPU-intensive search indexing (Spotlight dynamic results) is offloaded to a dedicated Web Worker rather than running on the main thread.</p>
+<p>ryOS uses Zustand for state management with 31 stores following consistent patterns, combined with localStorage and IndexedDB for persistence. Cloud sync (<code>useCloudSyncStore</code> + <code>useAutoCloudSync</code>) extends persistence to a remote backend via Pusher for real-time multi-device synchronization across 11 domains (settings, files, songs, videos, stickies, calendar, contacts, custom wallpapers). CPU-intensive search indexing (Spotlight dynamic results) is offloaded to a dedicated Web Worker rather than running on the main thread.</p>
 <h2>Architecture Overview</h2>
 <pre class="mermaid">flowchart TB
     subgraph "Presentation Layer"
@@ -571,13 +571,8 @@ hydrate: () =&gt; {
   return state;
 },</code></pre>
 <h3>Recovery Mechanisms</h3>
-<p>Critical data uses separate recovery keys to survive store resets:</p>
+<p>Username recovery uses a plain-text localStorage key to survive store resets. Auth tokens are <strong>not</strong> stored in localStorage — they live exclusively in an <code>httpOnly</code> cookie (<code>ryos_auth</code>) set by the server. On page reload the client calls <code>GET /api/auth/session</code> (the cookie is sent automatically via <code>credentials: "include"</code>) to verify the session.</p>
 <pre><code>const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
-const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
-
-// Encode/decode for basic obfuscation
-const encode = (value: string) =&gt; btoa(value.split("").reverse().join(""));
-const decode = (encoded: string) =&gt; atob(encoded).split("").reverse().join("");
 
 // Recovery on rehydrate
 onRehydrateStorage: () =&gt; (state, error) =&gt; {
@@ -585,6 +580,8 @@ onRehydrateStorage: () =&gt; (state, error) =&gt; {
     const recovered = getUsernameFromRecovery();
     if (recovered) state.username = recovered;
   }
+  // Auth token is restored from httpOnly cookie, not localStorage
+  restoreSessionFromCookie(state.username);
 }</code></pre>
 <h2>Cross-Store Communication</h2>
 <h3>Direct Store Access</h3>
@@ -593,17 +590,22 @@ onRehydrateStorage: () =&gt; (state, error) =&gt; {
 async function saveLyricOffsetToServer(trackId: string, offset: number) {
   const { username, authToken } = useChatsStore.getState();
   
-  if (!username || !authToken) {
+  if (!username) {
     console.log("Skipping save - user not logged in");
     return false;
   }
   
-  // Make authenticated API call
+  // Make authenticated API call.
+  // Authorization header is sent when an in-memory token is available;
+  // otherwise the httpOnly cookie provides auth automatically.
+  const headers: Record&lt;string, string&gt; = {};
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+    headers["X-Username"] = username;
+  }
   await fetch("/api/songs/...", {
-    headers: {
-      "Authorization": `Bearer ${authToken}`,
-      "X-Username": username,
-    },
+    credentials: "include",
+    headers,
   });
 }</code></pre>
 <h3>Store Dependency Pattern</h3>

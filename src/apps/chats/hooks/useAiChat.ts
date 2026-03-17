@@ -21,9 +21,9 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import {
   useFileSystem,
   dbOperations,
-  STORES,
   type DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
+import { STORES } from "@/utils/indexedDB";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -754,6 +754,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }
           case "memoryDelete": {
             console.log("[ToolCall] memoryDelete (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "webFetch": {
+            console.log("[ToolCall] webFetch (server-side):", toolCall.input);
             // Result comes from server — do not call addToolResult
             result = "";
             break;

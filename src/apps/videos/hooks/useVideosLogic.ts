@@ -216,10 +216,23 @@ export function useVideosLogic({
   }, []);
 
   const extractVideoId = useCallback((url: string): string | null => {
-    const regExp =
-      /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[7].length === 11 ? match[7] : null;
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname.includes("youtube.com") || parsed.hostname.includes("youtu.be")) {
+        const vParam = parsed.searchParams.get("v");
+        if (vParam && /^[a-zA-Z0-9_-]{11}$/.test(vParam)) return vParam;
+        if (parsed.hostname === "youtu.be") {
+          const id = parsed.pathname.slice(1);
+          return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+        }
+        const pathMatch = parsed.pathname.match(/\/(?:embed\/|v\/|shorts\/)?([a-zA-Z0-9_-]{11})/);
+        if (pathMatch) return pathMatch[1];
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }, []);
 
   const addVideo = useCallback(
@@ -231,15 +244,25 @@ export function useVideosLogic({
           throw new Error("Invalid YouTube URL");
         }
 
+        const existingVideos = useVideoStore.getState().videos;
+        const existing = existingVideos.find((v) => v.id === videoId);
+        if (existing) {
+          safeSetCurrentVideoId(existing.id);
+          setIsPlaying(true);
+          showStatus(t("apps.videos.status.videoAdded"));
+          setUrlInput("");
+          setIsAddDialogOpen(false);
+          return;
+        }
+
         // 1. Fetch initial info from oEmbed
-        const oembedResponse = await abortableFetch(
-          `https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=${videoId}&format=json`,
-          {
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
+        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`;
+        const oembedResponse = await abortableFetch(oembedUrl, {
+          timeout: 15000,
+          throwOnHttpError: false,
+          credentials: "omit",
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
+        });
         if (!oembedResponse.ok) {
           throw new Error(
             `Failed to fetch video info (${oembedResponse.status}). Please check the YouTube URL.`

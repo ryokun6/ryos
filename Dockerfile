@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.9 AS build
+FROM --platform=linux/amd64 oven/bun:1.3.9 AS build
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 RUN bun run build
 
-FROM oven/bun:1.3.9 AS runtime
+FROM --platform=linux/amd64 oven/bun:1.3.9 AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 

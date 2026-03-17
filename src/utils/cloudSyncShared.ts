@@ -56,6 +56,7 @@ export const FILE_SYNC_DOMAINS = [
   "files-images",
   "files-trash",
   "files-applets",
+  "custom-wallpapers",
 ] as const;
 
 export type FileCloudSyncDomain = (typeof FILE_SYNC_DOMAINS)[number];
@@ -83,6 +84,8 @@ export type BlobSyncDomain = (typeof BLOB_SYNC_DOMAINS)[number];
 
 export const INDIVIDUAL_BLOB_SYNC_DOMAINS = [
   "files-images",
+  "files-trash",
+  "files-applets",
   "custom-wallpapers",
 ] as const;
 
@@ -179,7 +182,6 @@ export function getCloudSyncCategory(
 
   switch (domain) {
     case "settings":
-    case "custom-wallpapers":
       return "settings";
     case "songs":
       return "songs";
@@ -255,6 +257,47 @@ export function shouldApplyRemoteUpdate({
   if (
     hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
   ) {
+    return false;
+  }
+
+  if (remoteServerVersion > 0) {
+    const shouldApplyByVersion =
+      remoteServerVersion > (lastKnownServerVersion || 0);
+
+    return shouldApplyByVersion;
+  }
+
+  const newestKnownLocalTime = Math.max(
+    parseCloudSyncTimestamp(lastAppliedRemoteAt),
+    parseCloudSyncTimestamp(lastUploadedAt)
+  );
+
+  return remoteTime > newestKnownLocalTime;
+}
+
+export function shouldRecheckRemoteAfterLocalSync(
+  params: ShouldApplyRemoteUpdateParams
+): boolean {
+  const {
+    remoteUpdatedAt,
+    remoteSyncVersion,
+    lastAppliedRemoteAt,
+    lastUploadedAt,
+    lastLocalChangeAt,
+    hasPendingUpload = false,
+    lastKnownServerVersion,
+  } = params;
+
+  if (
+    !hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
+  ) {
+    return false;
+  }
+
+  const remoteServerVersion = getCloudSyncServerVersion(remoteSyncVersion);
+  const remoteTime = parseCloudSyncTimestamp(remoteUpdatedAt);
+
+  if (remoteServerVersion === 0 && remoteTime === 0) {
     return false;
   }
 

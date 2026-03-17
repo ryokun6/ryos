@@ -13,6 +13,7 @@ import {
   isIndividualBlobSyncDomain,
   normalizeCloudSyncMetadataMap,
   shouldApplyRemoteUpdate,
+  shouldRecheckRemoteAfterLocalSync,
 } from "../src/utils/cloudSyncShared";
 import {
   filterDeletedFilePaths,
@@ -24,11 +25,45 @@ import {
   planIndividualBlobDownload,
   planIndividualBlobUpload,
 } from "../src/utils/cloudSyncIndividualBlobMerge";
-import { mergeSettingsSnapshotData } from "../src/utils/cloudSyncSettingsMerge";
+import {
+  mergeSettingsSnapshotData,
+  normalizeSettingsSnapshotData,
+  shouldRestoreLegacyCustomWallpapers,
+} from "../src/utils/cloudSyncSettingsMerge";
+import type { SettingsSnapshotData } from "../src/utils/cloudSyncSettingsMerge";
 import {
   advanceCloudSyncVersion,
   assessCloudSyncWrite,
 } from "../src/utils/cloudSyncVersion";
+import { areRomanizationSettingsEqual } from "../src/types/lyrics";
+
+class MemoryStorage implements Storage {
+  private readonly map = new Map<string, string>();
+
+  get length(): number {
+    return this.map.size;
+  }
+
+  clear(): void {
+    this.map.clear();
+  }
+
+  getItem(key: string): string | null {
+    return this.map.get(key) ?? null;
+  }
+
+  key(index: number): string | null {
+    return Array.from(this.map.keys())[index] ?? null;
+  }
+
+  removeItem(key: string): void {
+    this.map.delete(key);
+  }
+
+  setItem(key: string, value: string): void {
+    this.map.set(key, value);
+  }
+}
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
@@ -70,8 +105,9 @@ describe("cloud sync shared helpers", () => {
     expect(isBlobSyncDomain(invalidCalendarDomain)).toBe(false);
 
     expect(isIndividualBlobSyncDomain("files-images")).toBe(true);
+    expect(isIndividualBlobSyncDomain("files-trash")).toBe(true);
+    expect(isIndividualBlobSyncDomain("files-applets")).toBe(true);
     expect(isIndividualBlobSyncDomain("custom-wallpapers")).toBe(true);
-    expect(isIndividualBlobSyncDomain("files-trash")).toBe(false);
     expect(isIndividualBlobSyncDomain("settings" as never)).toBe(false);
   });
 
@@ -117,7 +153,7 @@ describe("cloud sync shared helpers", () => {
     expect(getCloudSyncCategory("files-metadata")).toBe("files");
     expect(getCloudSyncCategory("files-images")).toBe("files");
     expect(getCloudSyncCategory("settings")).toBe("settings");
-    expect(getCloudSyncCategory("custom-wallpapers")).toBe("settings");
+    expect(getCloudSyncCategory("custom-wallpapers")).toBe("files");
     expect(getCloudSyncCategory("songs")).toBe("songs");
     expect(getCloudSyncCategory("calendar")).toBe("calendar");
   });
@@ -220,6 +256,58 @@ describe("cloud sync shared helpers", () => {
         lastKnownServerVersion: 2,
       })
     ).toBe(true);
+  });
+
+  test("queues a follow-up remote check when local sync temporarily blocks apply", () => {
+    expect(
+      shouldRecheckRemoteAfterLocalSync({
+        remoteUpdatedAt: "2026-03-04T12:05:00.000Z",
+        lastAppliedRemoteAt: "2026-03-04T12:00:00.000Z",
+        lastUploadedAt: "2026-03-04T12:02:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:03:00.000Z",
+        hasPendingUpload: true,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRecheckRemoteAfterLocalSync({
+        remoteUpdatedAt: "2026-03-04T11:59:00.000Z",
+        lastAppliedRemoteAt: "2026-03-04T12:04:00.000Z",
+        lastUploadedAt: "2026-03-04T12:04:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:05:00.000Z",
+        hasPendingUpload: true,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldRecheckRemoteAfterLocalSync({
+        remoteUpdatedAt: "2026-03-04T12:05:00.000Z",
+        remoteSyncVersion: {
+          serverVersion: 3,
+          latestClientId: "client-b",
+          latestClientVersion: 1,
+          clientVersions: {
+            "client-a": 1,
+            "client-b": 1,
+          },
+        },
+        lastAppliedRemoteAt: "2026-03-04T12:04:00.000Z",
+        lastUploadedAt: "2026-03-04T12:04:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:05:00.000Z",
+        hasPendingUpload: true,
+        lastKnownServerVersion: 2,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRecheckRemoteAfterLocalSync({
+        remoteUpdatedAt: "2026-03-04T12:05:00.000Z",
+        lastAppliedRemoteAt: "2026-03-04T12:00:00.000Z",
+        lastUploadedAt: "2026-03-04T12:02:00.000Z",
+        lastLocalChangeAt: "2026-03-04T12:02:00.000Z",
+        hasPendingUpload: false,
+      })
+    ).toBe(false);
   });
 
   test("returns the newest timestamp in a group", () => {
@@ -581,6 +669,806 @@ describe("cloud sync shared helpers", () => {
     expect(merged.sectionUpdatedAt?.audio).toBe("2026-03-14T16:00:06.000Z");
   });
 
+  test("remote ipod/dock/dashboard win when local has no section timestamp", () => {
+    const localSnapshot: SettingsSnapshotData = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video",
+        showLyrics: false,
+        lyricsAlignment: "center",
+        lyricsFont: "sans",
+        romanization: {
+          enabled: false,
+          japaneseFurigana: false,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: null,
+        theme: "classic",
+        lcdFilterOn: false,
+      },
+      dock: {
+        pinnedItems: [],
+        scale: 1,
+        hiding: false,
+        magnification: false,
+      },
+      sectionUpdatedAt: {
+        theme: "2026-03-15T10:00:00.000Z",
+      },
+    };
+
+    const remoteSnapshot: SettingsSnapshotData = {
+      theme: "system7",
+      language: "ja",
+      languageInitialized: true,
+      aiModel: "claude-3-5-sonnet-latest",
+      display: {
+        displayMode: "grayscale",
+        shaderEffectEnabled: true,
+        selectedShaderType: "matrix",
+        currentWallpaper: "/wallpapers/remote.jpg",
+        screenSaverEnabled: true,
+        screenSaverType: "matrix",
+        screenSaverIdleTime: 15,
+        debugMode: false,
+        htmlPreviewSplit: false,
+      },
+      audio: {
+        masterVolume: 0.9,
+        uiVolume: 0.8,
+        chatSynthVolume: 0.7,
+        speechVolume: 0.6,
+        ipodVolume: 0.5,
+        uiSoundsEnabled: false,
+        terminalSoundsEnabled: false,
+        typingSynthEnabled: true,
+        speechEnabled: true,
+        keepTalkingEnabled: false,
+        ttsModel: "openai",
+        ttsVoice: "alloy",
+        synthPreset: "modern",
+      },
+      ipod: {
+        displayMode: "cover",
+        showLyrics: true,
+        lyricsAlignment: "alternating",
+        lyricsFont: "serif-red",
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "ja",
+        theme: "u2",
+        lcdFilterOn: true,
+      },
+      dock: {
+        pinnedItems: [{ type: "app", id: "finder" }],
+        scale: 1.2,
+        hiding: true,
+        magnification: true,
+      },
+      dashboard: {
+        widgets: [{ id: "clock", type: "clock", position: { x: 0, y: 0 }, size: { width: 1, height: 1 } }],
+      },
+      sectionUpdatedAt: {
+        theme: "2026-03-15T09:00:00.000Z",
+        language: "2026-03-15T09:30:00.000Z",
+        display: "2026-03-15T09:30:00.000Z",
+        audio: "2026-03-15T09:30:00.000Z",
+        aiModel: "2026-03-15T09:30:00.000Z",
+        ipod: "2026-03-15T09:30:00.000Z",
+        dock: "2026-03-15T09:30:00.000Z",
+        dashboard: "2026-03-15T09:30:00.000Z",
+      },
+    };
+
+    const merged = mergeSettingsSnapshotData(
+      localSnapshot,
+      remoteSnapshot,
+      null,
+      "2026-03-15T09:30:00.000Z"
+    );
+
+    expect(merged.theme).toBe("xp");
+    expect(merged.sectionUpdatedAt?.theme).toBe("2026-03-15T10:00:00.000Z");
+
+    expect(merged.ipod?.displayMode).toBe("cover");
+    expect(merged.ipod?.showLyrics).toBe(true);
+    expect(merged.ipod?.theme).toBe("u2");
+    expect(merged.ipod?.lcdFilterOn).toBe(true);
+    expect(merged.sectionUpdatedAt?.ipod).toBe("2026-03-15T09:30:00.000Z");
+
+    expect(merged.dock?.scale).toBe(1.2);
+    expect(merged.dock?.hiding).toBe(true);
+    expect(merged.sectionUpdatedAt?.dock).toBe("2026-03-15T09:30:00.000Z");
+
+    expect(merged.dashboard?.widgets).toHaveLength(1);
+    expect(merged.sectionUpdatedAt?.dashboard).toBe("2026-03-15T09:30:00.000Z");
+
+    expect(merged.language).toBe("ja");
+    expect(merged.audio.masterVolume).toBe(0.9);
+    expect(merged.aiModel).toBe("claude-3-5-sonnet-latest");
+  });
+
+  test("local fallback timestamp does not inflate missing section timestamps", () => {
+    const localSnapshot: SettingsSnapshotData = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video",
+        showLyrics: false,
+        lyricsAlignment: "center",
+        lyricsFont: "sans",
+        romanization: {
+          enabled: false,
+          japaneseFurigana: false,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: null,
+        theme: "classic",
+        lcdFilterOn: false,
+      },
+      sectionUpdatedAt: {
+        theme: "2026-03-15T10:00:00.000Z",
+      },
+    };
+
+    const remoteSnapshot: SettingsSnapshotData = {
+      theme: "system7",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "cover",
+        showLyrics: true,
+        lyricsAlignment: "alternating",
+        lyricsFont: "serif-red",
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "ja",
+        theme: "u2",
+        lcdFilterOn: true,
+      },
+      sectionUpdatedAt: {
+        ipod: "2026-03-15T09:30:00.000Z",
+      },
+    };
+
+    const mergedWithInflation = mergeSettingsSnapshotData(
+      localSnapshot,
+      remoteSnapshot,
+      "2026-03-15T11:00:00.000Z",
+      "2026-03-15T09:30:00.000Z"
+    );
+    expect(mergedWithInflation.ipod?.displayMode).toBe("video");
+
+    const mergedWithoutInflation = mergeSettingsSnapshotData(
+      localSnapshot,
+      remoteSnapshot,
+      null,
+      "2026-03-15T09:30:00.000Z"
+    );
+    expect(mergedWithoutInflation.ipod?.displayMode).toBe("cover");
+    expect(mergedWithoutInflation.ipod?.showLyrics).toBe(true);
+    expect(mergedWithoutInflation.ipod?.theme).toBe("u2");
+  });
+
+  test("normalizes undefined lyricsTranslationLanguage to null in ipod section", () => {
+    const snapshot = {
+      theme: "xp",
+      language: "en" as const,
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini" as const,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null as "openai" | "elevenlabs" | null,
+        ttsVoice: null as string | null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video" as const,
+        showLyrics: true,
+        lyricsAlignment: "alternating" as const,
+        lyricsFont: "serif-red" as const,
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW" as const,
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: undefined as unknown as string | null,
+        theme: "classic" as const,
+        lcdFilterOn: true,
+      },
+      sectionUpdatedAt: {},
+    } as unknown as SettingsSnapshotData;
+
+    const normalized = normalizeSettingsSnapshotData(snapshot, null);
+    expect(normalized.ipod?.lyricsTranslationLanguage).toBeNull();
+  });
+
+  test("preserves explicit lyricsTranslationLanguage values during normalization", () => {
+    const snapshot = {
+      theme: "xp",
+      language: "en" as const,
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini" as const,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null as "openai" | "elevenlabs" | null,
+        ttsVoice: null as string | null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video" as const,
+        showLyrics: true,
+        lyricsAlignment: "alternating" as const,
+        lyricsFont: "serif-red" as const,
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW" as const,
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "ja",
+        theme: "classic" as const,
+        lcdFilterOn: true,
+      },
+      sectionUpdatedAt: {},
+    } as SettingsSnapshotData;
+
+    const normalized = normalizeSettingsSnapshotData(snapshot, null);
+    expect(normalized.ipod?.lyricsTranslationLanguage).toBe("ja");
+
+    snapshot.ipod!.lyricsTranslationLanguage = null;
+    const normalizedNull = normalizeSettingsSnapshotData(snapshot, null);
+    expect(normalizedNull.ipod?.lyricsTranslationLanguage).toBeNull();
+
+    snapshot.ipod!.lyricsTranslationLanguage = "auto";
+    const normalizedAuto = normalizeSettingsSnapshotData(snapshot, null);
+    expect(normalizedAuto.ipod?.lyricsTranslationLanguage).toBe("auto");
+  });
+
+  test("remote ipod section with undefined lyricsTranslationLanguage uses null when merged", () => {
+    const local: SettingsSnapshotData = {
+      theme: "xp",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video",
+        showLyrics: false,
+        lyricsAlignment: "center",
+        lyricsFont: "sans-serif",
+        romanization: {
+          enabled: false,
+          japaneseFurigana: false,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "en",
+        theme: "classic",
+        lcdFilterOn: false,
+      },
+      sectionUpdatedAt: {
+        ipod: "2026-03-14T10:00:00.000Z",
+      },
+    };
+
+    const remote = {
+      ...local,
+      ipod: {
+        displayMode: "cover",
+        showLyrics: true,
+        lyricsAlignment: "alternating",
+        lyricsFont: "serif-red",
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: undefined,
+        theme: "u2",
+        lcdFilterOn: true,
+      },
+      sectionUpdatedAt: {
+        ipod: "2026-03-14T12:00:00.000Z",
+      },
+    } as unknown as SettingsSnapshotData;
+
+    const merged = mergeSettingsSnapshotData(local, remote);
+
+    expect(merged.ipod?.showLyrics).toBe(true);
+    expect(merged.ipod?.theme).toBe("u2");
+    expect(merged.ipod?.lyricsTranslationLanguage).toBeNull();
+  });
+
+  test("preserves local settings when remote snapshot has undefined sections", () => {
+    const localSnapshot = {
+      theme: "xp",
+      language: "en" as const,
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini" as const,
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/local.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null as "openai" | "elevenlabs" | null,
+        ttsVoice: null as string | null,
+        synthPreset: "classic",
+      },
+      sectionUpdatedAt: {
+        theme: "2026-03-14T16:00:00.000Z",
+        language: "2026-03-14T16:00:00.000Z",
+        display: "2026-03-14T16:00:00.000Z",
+        audio: "2026-03-14T16:00:00.000Z",
+        aiModel: "2026-03-14T16:00:00.000Z",
+      },
+    };
+
+    const malformedRemote = {
+      sectionUpdatedAt: {
+        theme: "2026-03-14T16:00:05.000Z",
+        language: "2026-03-14T16:00:05.000Z",
+        display: "2026-03-14T16:00:05.000Z",
+        audio: "2026-03-14T16:00:05.000Z",
+        aiModel: "2026-03-14T16:00:05.000Z",
+      },
+    } as unknown as Parameters<typeof mergeSettingsSnapshotData>[1];
+
+    const merged = mergeSettingsSnapshotData(localSnapshot, malformedRemote);
+
+    expect(merged.theme).toBe("xp");
+    expect(merged.language).toBe("en");
+    expect(merged.display.currentWallpaper).toBe("/wallpapers/local.jpg");
+    expect(merged.audio.masterVolume).toBe(0.5);
+    expect(merged.aiModel).toBe("gpt-4o-mini");
+  });
+
+  test("hydrates remote-winning settings sections locally after upload resolution", async () => {
+    const browserGlobals = globalThis as typeof globalThis & {
+      localStorage?: Storage;
+      document?: Document;
+      window?: Window & typeof globalThis;
+      fetch?: typeof fetch;
+    };
+    const originalLocalStorage = browserGlobals.localStorage;
+    const originalDocument = browserGlobals.document;
+    const originalWindow = browserGlobals.window;
+    const originalFetch = browserGlobals.fetch;
+
+    browserGlobals.localStorage = new MemoryStorage();
+    browserGlobals.document = {
+      documentElement: {
+        dataset: {},
+      },
+      visibilityState: "visible",
+      head: {
+        appendChild: () => undefined,
+      },
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      createTextNode: () => ({}),
+      createElement: () => ({
+        dataset: {},
+        styleSheet: null,
+        appendChild: () => undefined,
+        remove: () => undefined,
+        replaceWith: () => undefined,
+      }),
+    } as unknown as Document;
+    browserGlobals.window = {
+      AudioContext: class {} as typeof AudioContext,
+      document: browserGlobals.document,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    } as unknown as Window & typeof globalThis;
+    browserGlobals.fetch = (async () =>
+      new Response(JSON.stringify({ songs: [] }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })) as typeof fetch;
+
+    const { useThemeStore } = await import("../src/stores/useThemeStore");
+    const {
+      getSettingsSectionTimestampMap,
+      setSettingsSectionTimestamps,
+    } = await import("../src/sync/state");
+    const { applyResolvedRedisUploadLocally } = await import(
+      "../src/sync/domains"
+    );
+
+    const localTimestamp = "2026-03-15T10:00:00.000Z";
+    const remoteThemeTimestamp = "2026-03-15T10:05:00.000Z";
+    const resolvedSnapshot: SettingsSnapshotData = {
+      theme: "macosx",
+      language: "en",
+      languageInitialized: true,
+      aiModel: "gpt-4o-mini",
+      display: {
+        displayMode: "color",
+        shaderEffectEnabled: false,
+        selectedShaderType: "aurora",
+        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
+        screenSaverEnabled: false,
+        screenSaverType: "starfield",
+        screenSaverIdleTime: 5,
+        debugMode: false,
+        htmlPreviewSplit: true,
+      },
+      audio: {
+        masterVolume: 0.5,
+        uiVolume: 0.4,
+        chatSynthVolume: 0.3,
+        speechVolume: 0.2,
+        ipodVolume: 0.1,
+        uiSoundsEnabled: true,
+        terminalSoundsEnabled: true,
+        typingSynthEnabled: false,
+        speechEnabled: false,
+        keepTalkingEnabled: true,
+        ttsModel: null,
+        ttsVoice: null,
+        synthPreset: "classic",
+      },
+      ipod: {
+        displayMode: "video",
+        showLyrics: true,
+        lyricsAlignment: "alternating",
+        lyricsFont: "serif-red",
+        romanization: {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        lyricsTranslationLanguage: "ja",
+        theme: "classic",
+        lcdFilterOn: true,
+      },
+      dock: {
+        pinnedItems: [{ type: "app", id: "finder" }],
+        scale: 1,
+        hiding: false,
+        magnification: true,
+      },
+      dashboard: {
+        widgets: [],
+      },
+      sectionUpdatedAt: {
+        theme: remoteThemeTimestamp,
+        language: localTimestamp,
+        display: localTimestamp,
+        audio: localTimestamp,
+        aiModel: localTimestamp,
+        ipod: localTimestamp,
+        dock: localTimestamp,
+        dashboard: localTimestamp,
+      },
+    };
+
+    try {
+      useThemeStore.setState({ current: "system7" });
+      setSettingsSectionTimestamps({
+        theme: localTimestamp,
+        language: localTimestamp,
+        display: localTimestamp,
+        audio: localTimestamp,
+        aiModel: localTimestamp,
+        ipod: localTimestamp,
+        dock: localTimestamp,
+        dashboard: localTimestamp,
+      });
+
+      await applyResolvedRedisUploadLocally(
+        "settings",
+        resolvedSnapshot,
+        "2026-03-15T10:06:00.000Z"
+      );
+
+      expect(useThemeStore.getState().current).toBe("macosx");
+      expect(getSettingsSectionTimestampMap().theme).toBe(remoteThemeTimestamp);
+      expect(getSettingsSectionTimestampMap().language).toBe(localTimestamp);
+    } finally {
+      useThemeStore.setState({ current: "system7" });
+      browserGlobals.localStorage = originalLocalStorage;
+      browserGlobals.document = originalDocument;
+      browserGlobals.window = originalWindow;
+      browserGlobals.fetch = originalFetch;
+    }
+  });
+
+  test("treats structurally equal romanization settings as unchanged", () => {
+    expect(
+      areRomanizationSettingsEqual(
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+        }
+      )
+    ).toBe(true);
+
+    expect(
+      areRomanizationSettingsEqual(
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: false,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        },
+        {
+          enabled: true,
+          japaneseFurigana: true,
+          japaneseRomaji: false,
+          korean: false,
+          chinese: false,
+          soramimi: true,
+          soramamiTargetLanguage: "zh-TW",
+          pronunciationOnly: false,
+        }
+      )
+    ).toBe(false);
+  });
+
+  test("restores legacy custom wallpapers only for first-time migration", () => {
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 0,
+        hasDedicatedCustomWallpaperSync: false,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 1,
+        hasDedicatedCustomWallpaperSync: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldRestoreLegacyCustomWallpapers({
+        legacyWallpaperCount: 2,
+        localWallpaperCount: 0,
+        hasDedicatedCustomWallpaperSync: true,
+      })
+    ).toBe(false);
+  });
+
   test("preserves remote-only individual blob items on upload", () => {
     const plan = planIndividualBlobUpload(
       [
@@ -607,7 +1495,7 @@ describe("cloud sync shared helpers", () => {
     expect(Object.keys(plan.preservedRemoteItems)).toEqual(["remote-image"]);
   });
 
-  test("treats missing known individual blob items as local deletions on upload", () => {
+  test("preserves missing known individual blob items on upload", () => {
     const plan = planIndividualBlobUpload(
       [],
       {
@@ -628,7 +1516,14 @@ describe("cloud sync shared helpers", () => {
     );
 
     expect(plan.itemsToUpload).toEqual([]);
-    expect(plan.preservedRemoteItems).toEqual({});
+    expect(plan.preservedRemoteItems).toEqual({
+      "remote-image": {
+        signature: "remote-signature",
+        updatedAt: "2026-03-14T04:00:00.000Z",
+        size: 10,
+        storageUrl: "remote://image",
+      },
+    });
   });
 
   test("preserves local-only individual blob items on download", () => {
@@ -668,6 +1563,31 @@ describe("cloud sync shared helpers", () => {
 
     expect(plan.keysToDelete).toEqual(["old-image"]);
     expect(plan.itemKeysToDownload).toEqual([]);
+  });
+
+  test("re-downloads missing known individual blob items when local storage is empty", () => {
+    const plan = planIndividualBlobDownload(
+      [],
+      {
+        "remote-image": {
+          signature: "remote-signature",
+          updatedAt: "2026-03-14T04:00:00.000Z",
+          size: 10,
+          storageUrl: "remote://image",
+        },
+      },
+      {
+        "remote-image": {
+          signature: "remote-signature",
+          updatedAt: "2026-03-14T03:00:00.000Z",
+        },
+      },
+      {}
+    );
+
+    expect(plan.itemKeysToDownload).toEqual(["remote-image"]);
+    expect(plan.keysToDelete).toEqual([]);
+    expect(plan.nextKnownItems).toEqual({});
   });
 
   test("preserves local individual blob edits when remote changed the same key", () => {

@@ -37,6 +37,7 @@ import type {
   MemoryWriteInput,
   MemoryReadInput,
   MemoryDeleteInput,
+  WebFetchInput,
 } from "./types.js";
 import * as schemas from "./schemas.js";
 import type {
@@ -57,6 +58,7 @@ import {
   executeDocumentsControl,
   executeStickiesControl,
   executeContactsControl,
+  executeWebFetch,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -74,6 +76,7 @@ export {
   executeDocumentsControl,
   executeStickiesControl,
   executeContactsControl,
+  executeWebFetch,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -217,6 +220,15 @@ export const TOOL_DESCRIPTIONS = {
     "'delete' removes a contact by ID. " +
     "Use 'list' first to get IDs before calling 'get', 'update', or 'delete'.",
 
+  webFetch:
+    "Fetch and read the text content of a web page. Use this when the user asks you to look something up online, " +
+    "read an article, check a website, get information from a URL, or when you need live/current data from the web. " +
+    "Returns extracted text content (HTML is converted to readable text). " +
+    "Supports HTML pages, JSON APIs, and plain text. Does NOT execute JavaScript — " +
+    "works best with server-rendered content (most sites). " +
+    "For JS-heavy single-page apps, content may be limited. " +
+    "Optionally pass a CSS selector to extract a specific section.",
+
   // Unified Memory Tools
   memoryWrite:
     "Write to user memory. Supports two types via the 'type' parameter:\n" +
@@ -347,6 +359,17 @@ export function createChatTools(
       },
     },
     // ============================================================================
+    // Web Fetch Tool (Server-side execution)
+    // ============================================================================
+    webFetch: {
+      description: TOOL_DESCRIPTIONS.webFetch,
+      inputSchema: schemas.webFetchSchema,
+      execute: async (input: WebFetchInput) => {
+        return executeWebFetch(input, context);
+      },
+    },
+
+    // ============================================================================
     // System Settings Tools (Client-side execution)
     // ============================================================================
     settings: {
@@ -452,6 +475,7 @@ export function createChatTools(
 
   if (profile === "telegram") {
     return {
+      webFetch: allTools.webFetch,
       memoryWrite: allTools.memoryWrite,
       memoryRead: allTools.memoryRead,
       memoryDelete: allTools.memoryDelete,

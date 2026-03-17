@@ -2,9 +2,11 @@ import type { CloudSyncDomain } from "@/utils/cloudSyncShared";
 
 type CloudSyncDomainListener = (domain: CloudSyncDomain) => void;
 type SyncCheckRequestListener = () => void;
+type DomainSyncCheckRequestListener = (domain: CloudSyncDomain) => void;
 
 const listeners = new Set<CloudSyncDomainListener>();
 const syncCheckListeners = new Set<SyncCheckRequestListener>();
+const domainSyncCheckListeners = new Set<DomainSyncCheckRequestListener>();
 
 export function emitCloudSyncDomainChange(domain: CloudSyncDomain): void {
   listeners.forEach((listener) => {
@@ -50,5 +52,24 @@ export function subscribeToCloudSyncCheckRequests(
   syncCheckListeners.add(listener);
   return () => {
     syncCheckListeners.delete(listener);
+  };
+}
+
+export function requestCloudSyncDomainCheck(domain: CloudSyncDomain): void {
+  domainSyncCheckListeners.forEach((listener) => {
+    try {
+      listener(domain);
+    } catch (error) {
+      console.error("[CloudSyncEvents] Domain sync check listener failed:", error);
+    }
+  });
+}
+
+export function subscribeToCloudSyncDomainCheckRequests(
+  listener: DomainSyncCheckRequestListener
+): () => void {
+  domainSyncCheckListeners.add(listener);
+  return () => {
+    domainSyncCheckListeners.delete(listener);
   };
 }

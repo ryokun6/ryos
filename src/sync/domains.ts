@@ -19,12 +19,14 @@ import {
   type TodoItem,
 } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
-import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  useCloudSyncStore,
+  type CloudSyncDeletionBucket,
+} from "@/stores/useCloudSyncStore";
 import type { Contact } from "@/utils/contacts";
 import { normalizeContacts } from "@/utils/contacts";
 import {
   uploadBlobWithStorageInstruction,
-  type StorageUploadInstruction,
 } from "@/utils/storageUpload";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
@@ -46,7 +48,13 @@ import {
 import {
   getNextSyncClientVersion,
   getSyncClientId,
-} from "@/utils/cloudSyncClientState";
+} from "@/sync/state";
+import { getSyncSessionId } from "@/utils/syncSession";
+import {
+  fetchBlobDomainPayload,
+  fetchRedisDomainSnapshot,
+  requestBlobUploadInstruction as requestBlobUploadInstructionFromTransport,
+} from "@/sync/transport";
 import type { CloudSyncWriteVersion } from "@/utils/cloudSyncVersion";
 import {
   filterDeletedIds,
@@ -63,11 +71,17 @@ import {
   endApplyingRemoteSettingsSections,
   getSettingsSectionTimestampMap,
   setSettingsSectionTimestamps,
-} from "@/utils/cloudSyncSettingsState";
+  type SettingsSyncSection,
+} from "@/sync/state";
+import {
+  beginApplyingRemoteDomain,
+  endApplyingRemoteDomain,
+} from "@/utils/cloudSyncRemoteApplyState";
 import {
   getRemoteSettingsSectionsToApply,
   mergeSettingsSnapshotData,
   normalizeSettingsSnapshotData,
+  shouldRestoreLegacyCustomWallpapers,
   type SettingsSnapshotData,
 } from "@/utils/cloudSyncSettingsMerge";
 import {
@@ -78,32 +92,26 @@ import {
   planIndividualBlobDownload,
   planIndividualBlobUpload,
 } from "@/utils/cloudSyncIndividualBlobMerge";
+import {
+  deserializeStoreItem,
+  readStoreItems,
+  restoreStoreItems,
+  serializeStoreItem,
+  serializeStoreItems,
+  type IndexedDBStoreItemWithKey as StoreItemWithKey,
+} from "@/utils/indexedDBBackup";
+import type {
+  BlobIndividualDomainDownloadPayload,
+  BlobMonolithicDomainDownloadPayload,
+  CloudSyncDomainDownloadPayload,
+  DownloadCloudSyncResult,
+  PreparedCloudSyncDomainWrite,
+  RedisStateDomainDownloadPayload,
+} from "@/sync/types";
 type AuthContext = {
   username: string;
   isAuthenticated: boolean;
 };
-
-let _syncSessionId: string | null = null;
-
-/** Stable per-tab identifier used to skip self-originated realtime events. */
-export function getSyncSessionId(): string {
-  if (!_syncSessionId) {
-    _syncSessionId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-  return _syncSessionId;
-}
-
-interface StoreItem {
-  [key: string]: unknown;
-}
-
-interface StoreItemWithKey {
-  key: string;
-  value: StoreItem;
-}
 
 type CustomWallpapersSnapshotData = StoreItemWithKey[];
 
@@ -120,6 +128,7 @@ interface SongsSnapshotData {
   tracks: Track[];
   libraryState: "uninitialized" | "loaded" | "cleared";
   lastKnownVersion: number;
+  deletedTrackIds?: DeletionMarkerMap;
 }
 
 interface VideosSnapshotData {
@@ -177,14 +186,96 @@ interface IndividualBlobDomainResponse {
   deletedItems?: DeletionMarkerMap;
 }
 
-export interface DownloadCloudSyncResult {
-  metadata: CloudSyncDomainMetadata;
-  applied: boolean;
-}
-
 interface DownloadCloudSyncOptions {
   shouldApply?: (metadata: CloudSyncDomainMetadata) => boolean;
 }
+
+type RedisStateDomainSnapshot = {
+  data: AnySnapshotData;
+  metadata: CloudSyncDomainMetadata;
+};
+
+type BlobDomainInfoResponse = IndividualBlobDomainResponse & {
+  downloadUrl?: string;
+  blobUrl?: string;
+};
+
+interface BurstFetchCacheEntry<T> {
+  promise: Promise<T> | null;
+  value?: T;
+  hasValue: boolean;
+  expiresAt: number;
+}
+
+const SYNC_DOMAIN_FETCH_BURST_MS = 1500;
+
+function createBurstFetchCache<T>(burstMs: number) {
+  const entries = new Map<string, BurstFetchCacheEntry<T>>();
+
+  return {
+    get(key: string, loader: () => Promise<T>): Promise<T> {
+      const now = Date.now();
+      const existing = entries.get(key);
+
+      if (existing?.hasValue && existing.expiresAt > now) {
+        return Promise.resolve(existing.value as T);
+      }
+
+      if (existing?.promise) {
+        return existing.promise;
+      }
+
+      const nextEntry: BurstFetchCacheEntry<T> =
+        existing ?? {
+          promise: null,
+          value: undefined,
+          hasValue: false,
+          expiresAt: 0,
+        };
+
+      const promise = loader()
+        .then((value) => {
+          nextEntry.promise = null;
+          nextEntry.value = value;
+          nextEntry.hasValue = true;
+          nextEntry.expiresAt = Date.now() + burstMs;
+          entries.set(key, nextEntry);
+          return value;
+        })
+        .catch((error) => {
+          nextEntry.promise = null;
+          if (nextEntry.hasValue && nextEntry.expiresAt > Date.now()) {
+            entries.set(key, nextEntry);
+          } else {
+            entries.delete(key);
+          }
+          throw error;
+        });
+
+      nextEntry.promise = promise;
+      entries.set(key, nextEntry);
+      return promise;
+    },
+    set(key: string, value: T): void {
+      entries.set(key, {
+        promise: null,
+        value,
+        hasValue: true,
+        expiresAt: Date.now() + burstMs,
+      });
+    },
+    invalidate(key: string): void {
+      entries.delete(key);
+    },
+  };
+}
+
+const redisStateDomainSnapshotCache = createBurstFetchCache<
+  RedisStateDomainSnapshot | null
+>(SYNC_DOMAIN_FETCH_BURST_MS);
+const blobDomainInfoCache = createBurstFetchCache<BlobDomainInfoResponse | null>(
+  SYNC_DOMAIN_FETCH_BURST_MS
+);
 
 function assertCompressionSupport(): void {
   if (
@@ -195,86 +286,12 @@ function assertCompressionSupport(): void {
   }
 }
 
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = () =>
-      reject(reader.error || new Error("Failed to serialize blob"));
-    reader.readAsDataURL(blob);
-  });
-
-const base64ToBlob = (dataUrl: string): Blob => {
-  const [meta, base64] = dataUrl.split(",");
-  const mimeMatch = meta.match(/data:(.*);base64/);
-  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new Blob([array], { type: mime });
-};
-
 async function computeSyncSignature(value: unknown): Promise<string> {
   const payload = new TextEncoder().encode(JSON.stringify(value));
   const digest = await crypto.subtle.digest("SHA-256", payload);
   return Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, "0")
   ).join("");
-}
-
-async function readStoreItems(
-  db: IDBDatabase,
-  storeName: string
-): Promise<StoreItemWithKey[]> {
-  return new Promise((resolve, reject) => {
-    try {
-      const transaction = db.transaction(storeName, "readonly");
-      const store = transaction.objectStore(storeName);
-      const items: StoreItemWithKey[] = [];
-      const request = store.openCursor();
-
-      request.onsuccess = (event) => {
-        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-        if (cursor) {
-          items.push({
-            key: cursor.key as string,
-            value: cursor.value as StoreItem,
-          });
-          cursor.continue();
-          return;
-        }
-
-        resolve(items);
-      };
-
-      request.onerror = () => reject(request.error);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-async function serializeStoreItem(item: StoreItemWithKey): Promise<StoreItemWithKey> {
-  const serializedValue: Record<string, unknown> = {
-    ...item.value,
-  };
-
-  for (const key of Object.keys(item.value)) {
-    if (item.value[key] instanceof Blob) {
-      serializedValue[key] = await blobToBase64(item.value[key] as Blob);
-      serializedValue[`_isBlob_${key}`] = true;
-    }
-  }
-
-  return {
-    key: item.key,
-    value: serializedValue,
-  };
-}
-
-async function serializeStoreItems(
-  items: StoreItemWithKey[]
-): Promise<StoreItemWithKey[]> {
-  return Promise.all(items.map((item) => serializeStoreItem(item)));
 }
 
 async function serializeStoreItemRecords(
@@ -289,53 +306,6 @@ async function serializeStoreItemRecords(
       };
     })
   );
-}
-
-function deserializeStoreItem(item: StoreItemWithKey): Record<string, unknown> {
-  const restoredValue: Record<string, unknown> = {
-    ...item.value,
-  };
-
-  for (const key of Object.keys(item.value)) {
-    const isBlobKey = `_isBlob_${key}`;
-    if (item.value[isBlobKey] === true && typeof item.value[key] === "string") {
-      restoredValue[key] = base64ToBlob(item.value[key] as string);
-      delete restoredValue[isBlobKey];
-    }
-  }
-
-  return restoredValue;
-}
-
-async function restoreStoreItems(
-  db: IDBDatabase,
-  storeName: string,
-  items: StoreItemWithKey[]
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
-
-    const clearRequest = store.clear();
-
-    clearRequest.onsuccess = () => {
-      try {
-        for (const item of items) {
-          store.put(deserializeStoreItem(item), item.key);
-        }
-      } catch (error) {
-        transaction.abort();
-        reject(error);
-      }
-    };
-
-    clearRequest.onerror = () => reject(clearRequest.error);
-  });
 }
 
 async function upsertStoreItems(
@@ -477,7 +447,7 @@ function serializeSettingsSnapshot(): SettingsSnapshotData {
       lyricsAlignment: ipodState.lyricsAlignment,
       lyricsFont: ipodState.lyricsFont,
       romanization: ipodState.romanization,
-      lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage,
+      lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage ?? null,
       theme: ipodState.theme,
       lcdFilterOn: ipodState.lcdFilterOn,
     },
@@ -545,8 +515,27 @@ function getIndividualBlobStoreName(domain: IndividualBlobSyncDomain): string {
   switch (domain) {
     case "files-images":
       return STORES.IMAGES;
+    case "files-trash":
+      return STORES.TRASH;
+    case "files-applets":
+      return STORES.APPLETS;
     case "custom-wallpapers":
       return STORES.CUSTOM_WALLPAPERS;
+  }
+}
+
+function getIndividualBlobDeletionBucket(
+  domain: IndividualBlobSyncDomain
+): CloudSyncDeletionBucket {
+  switch (domain) {
+    case "files-images":
+      return "fileImageKeys";
+    case "files-trash":
+      return "fileTrashKeys";
+    case "files-applets":
+      return "fileAppletKeys";
+    case "custom-wallpapers":
+      return "customWallpaperKeys";
   }
 }
 
@@ -556,21 +545,54 @@ function getIndividualBlobDeletedKeys(
   const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
   switch (domain) {
+    case "files-images":
+      return deletionMarkers.fileImageKeys;
+    case "files-trash":
+      return deletionMarkers.fileTrashKeys;
+    case "files-applets":
+      return deletionMarkers.fileAppletKeys;
     case "custom-wallpapers":
       return deletionMarkers.customWallpaperKeys;
-    case "files-images":
-      return {};
   }
+}
+
+function pruneDeletedKeysForExistingRecords(
+  domain: IndividualBlobSyncDomain,
+  records: SerializedStoreItemRecord[]
+): DeletionMarkerMap {
+  const deletedKeys = getIndividualBlobDeletedKeys(domain);
+  if (Object.keys(deletedKeys).length === 0 || records.length === 0) {
+    return deletedKeys;
+  }
+
+  const existingKeys = new Set(records.map((record) => record.item.key));
+  const staleDeletedKeys = Object.keys(deletedKeys).filter((key) =>
+    existingKeys.has(key)
+  );
+
+  if (staleDeletedKeys.length > 0) {
+    useCloudSyncStore
+      .getState()
+      .clearDeletedKeys(getIndividualBlobDeletionBucket(domain), staleDeletedKeys);
+  }
+
+  return Object.fromEntries(
+    Object.entries(deletedKeys).filter(([key]) => !existingKeys.has(key))
+  );
 }
 
 async function serializeIndividualBlobDomainRecords(
   domain: IndividualBlobSyncDomain
 ): Promise<SerializedStoreItemRecord[]> {
   switch (domain) {
-    case "custom-wallpapers":
-      return serializeCustomWallpapersRecords();
     case "files-images":
       return serializeIndexedDbStoreRecords(STORES.IMAGES);
+    case "files-trash":
+      return serializeIndexedDbStoreRecords(STORES.TRASH);
+    case "files-applets":
+      return serializeIndexedDbStoreRecords(STORES.APPLETS);
+    case "custom-wallpapers":
+      return serializeCustomWallpapersRecords();
   }
 }
 
@@ -588,11 +610,13 @@ async function serializeFilesMetadataSnapshot(): Promise<FilesMetadataSnapshotDa
 
 function serializeSongsSnapshot(): SongsSnapshotData {
   const ipodState = useIpodStore.getState();
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
   return {
     tracks: ipodState.tracks,
     libraryState: ipodState.libraryState,
     lastKnownVersion: ipodState.lastKnownVersion,
+    deletedTrackIds: deletionMarkers.songTrackIds,
   };
 }
 
@@ -633,7 +657,7 @@ function serializeContactsSnapshot(): ContactsSnapshotData {
   };
 }
 
-export async function createCloudSyncEnvelope(
+async function createCloudSyncEnvelope(
   domain: CloudSyncDomain
 ): Promise<CloudSyncEnvelope<AnySnapshotData>> {
   const updatedAt = new Date().toISOString();
@@ -731,89 +755,159 @@ async function applySettingsSnapshot(
     remoteSectionUpdatedAt
   );
 
-  // Legacy: if the old settings envelope contained customWallpapers, restore them
-  if (normalizedData.customWallpapers && normalizedData.customWallpapers.length > 0) {
+  if (sectionsToApply.length > 0) {
+    console.log(
+      `[CloudSync] Settings apply: sections to apply: [${sectionsToApply.join(", ")}]`
+    );
+  } else {
+    console.log(
+      "[CloudSync] Settings apply: no sections to apply (all local timestamps >= remote)"
+    );
+  }
+
+  const legacyCustomWallpapers = normalizedData.customWallpapers || [];
+  const hasDedicatedCustomWallpaperSync = Boolean(
+    useCloudSyncStore.getState().remoteMetadata["custom-wallpapers"]?.updatedAt
+  );
+
+  // Legacy: restore embedded custom wallpapers only on first migration when
+  // there is no dedicated custom-wallpapers sync domain and nothing local yet.
+  if (legacyCustomWallpapers.length > 0) {
     const db = await ensureIndexedDBInitialized();
     try {
-      await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, normalizedData.customWallpapers);
+      const localWallpaperCount = (
+        await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)
+      ).length;
+      if (
+        shouldRestoreLegacyCustomWallpapers({
+          legacyWallpaperCount: legacyCustomWallpapers.length,
+          localWallpaperCount,
+          hasDedicatedCustomWallpaperSync,
+        })
+      ) {
+        await upsertStoreItems(
+          db,
+          STORES.CUSTOM_WALLPAPERS,
+          legacyCustomWallpapers
+        );
+        useDisplaySettingsStore.getState().bumpCustomWallpapersRevision();
+      }
     } finally {
       db.close();
     }
   }
 
+  const appliedSections: SettingsSyncSection[] = [];
+
   beginApplyingRemoteSettingsSections(sectionsToApply);
   try {
     if (sectionsToApply.includes("theme")) {
-      useThemeStore.getState().setTheme(normalizedData.theme as never);
+      try {
+        useThemeStore.getState().setTheme(normalizedData.theme as never);
+        appliedSections.push("theme");
+      } catch (e) {
+        console.error("[CloudSync] Failed to apply remote theme:", e);
+      }
     }
 
     if (sectionsToApply.includes("language")) {
-      localStorage.setItem(
-        "ryos:language-initialized",
-        normalizedData.languageInitialized ? "true" : "false"
-      );
-      await useLanguageStore.getState().setLanguage(normalizedData.language);
+      try {
+        localStorage.setItem(
+          "ryos:language-initialized",
+          normalizedData.languageInitialized ? "true" : "false"
+        );
+        await useLanguageStore.getState().setLanguage(normalizedData.language);
+        appliedSections.push("language");
+      } catch (e) {
+        console.error("[CloudSync] Failed to apply remote language:", e);
+      }
     }
 
     if (sectionsToApply.includes("display")) {
-      useDisplaySettingsStore.setState({
-        displayMode: normalizedData.display.displayMode as never,
-        shaderEffectEnabled: normalizedData.display.shaderEffectEnabled,
-        selectedShaderType: normalizedData.display.selectedShaderType as never,
-        screenSaverEnabled: normalizedData.display.screenSaverEnabled,
-        screenSaverType: normalizedData.display.screenSaverType,
-        screenSaverIdleTime: normalizedData.display.screenSaverIdleTime,
-        debugMode: normalizedData.display.debugMode,
-        htmlPreviewSplit: normalizedData.display.htmlPreviewSplit,
-      });
+      try {
+        useDisplaySettingsStore.setState({
+          displayMode: normalizedData.display.displayMode as never,
+          shaderEffectEnabled: normalizedData.display.shaderEffectEnabled,
+          selectedShaderType: normalizedData.display.selectedShaderType as never,
+          screenSaverEnabled: normalizedData.display.screenSaverEnabled,
+          screenSaverType: normalizedData.display.screenSaverType,
+          screenSaverIdleTime: normalizedData.display.screenSaverIdleTime,
+          debugMode: normalizedData.display.debugMode,
+          htmlPreviewSplit: normalizedData.display.htmlPreviewSplit,
+        });
 
-      await useDisplaySettingsStore
-        .getState()
-        .setWallpaper(normalizedData.display.currentWallpaper);
+        await useDisplaySettingsStore
+          .getState()
+          .setWallpaper(normalizedData.display.currentWallpaper);
+        appliedSections.push("display");
+      } catch (e) {
+        console.error("[CloudSync] Failed to apply remote display:", e);
+      }
     }
 
     if (sectionsToApply.includes("audio")) {
-      useAudioSettingsStore.setState({
-        masterVolume: normalizedData.audio.masterVolume,
-        uiVolume: normalizedData.audio.uiVolume,
-        chatSynthVolume: normalizedData.audio.chatSynthVolume,
-        speechVolume: normalizedData.audio.speechVolume,
-        ipodVolume: normalizedData.audio.ipodVolume,
-        uiSoundsEnabled: normalizedData.audio.uiSoundsEnabled,
-        terminalSoundsEnabled: normalizedData.audio.terminalSoundsEnabled,
-        typingSynthEnabled: normalizedData.audio.typingSynthEnabled,
-        speechEnabled: normalizedData.audio.speechEnabled,
-        keepTalkingEnabled: normalizedData.audio.keepTalkingEnabled,
-        ttsModel: normalizedData.audio.ttsModel,
-        ttsVoice: normalizedData.audio.ttsVoice,
-        synthPreset: normalizedData.audio.synthPreset,
-      });
+      try {
+        useAudioSettingsStore.setState({
+          masterVolume: normalizedData.audio.masterVolume,
+          uiVolume: normalizedData.audio.uiVolume,
+          chatSynthVolume: normalizedData.audio.chatSynthVolume,
+          speechVolume: normalizedData.audio.speechVolume,
+          ipodVolume: normalizedData.audio.ipodVolume,
+          uiSoundsEnabled: normalizedData.audio.uiSoundsEnabled,
+          terminalSoundsEnabled: normalizedData.audio.terminalSoundsEnabled,
+          typingSynthEnabled: normalizedData.audio.typingSynthEnabled,
+          speechEnabled: normalizedData.audio.speechEnabled,
+          keepTalkingEnabled: normalizedData.audio.keepTalkingEnabled,
+          ttsModel: normalizedData.audio.ttsModel,
+          ttsVoice: normalizedData.audio.ttsVoice,
+          synthPreset: normalizedData.audio.synthPreset,
+        });
+        appliedSections.push("audio");
+      } catch (e) {
+        console.error("[CloudSync] Failed to apply remote audio:", e);
+      }
     }
 
     if (sectionsToApply.includes("aiModel")) {
-      useAppStore.getState().setAiModel(normalizedData.aiModel);
+      try {
+        useAppStore.getState().setAiModel(normalizedData.aiModel);
+        appliedSections.push("aiModel");
+      } catch (e) {
+        console.error("[CloudSync] Failed to apply remote aiModel:", e);
+      }
     }
 
     if (normalizedData.ipod && sectionsToApply.includes("ipod")) {
-      useIpodStore.setState({
-        displayMode: normalizedData.ipod.displayMode,
-        showLyrics: normalizedData.ipod.showLyrics,
-        lyricsAlignment: normalizedData.ipod.lyricsAlignment,
-        lyricsFont: normalizedData.ipod.lyricsFont,
-        romanization: normalizedData.ipod.romanization,
-        lyricsTranslationLanguage: normalizedData.ipod.lyricsTranslationLanguage,
-        theme: normalizedData.ipod.theme,
-        lcdFilterOn: normalizedData.ipod.lcdFilterOn,
-      });
+      try {
+        const remoteIpod = normalizedData.ipod;
+        useIpodStore.setState({
+          displayMode: remoteIpod.displayMode,
+          showLyrics: remoteIpod.showLyrics,
+          lyricsAlignment: remoteIpod.lyricsAlignment,
+          lyricsFont: remoteIpod.lyricsFont,
+          romanization: remoteIpod.romanization,
+          lyricsTranslationLanguage: remoteIpod.lyricsTranslationLanguage ?? null,
+          theme: remoteIpod.theme,
+          lcdFilterOn: remoteIpod.lcdFilterOn,
+        });
+        appliedSections.push("ipod");
+      } catch (e) {
+        console.error("[CloudSync] Failed to apply remote ipod:", e);
+      }
     }
 
     if (normalizedData.dock && sectionsToApply.includes("dock")) {
-      useDockStore.setState({
-        pinnedItems: normalizedData.dock.pinnedItems,
-        scale: normalizedData.dock.scale,
-        hiding: normalizedData.dock.hiding,
-        magnification: normalizedData.dock.magnification,
-      });
+      try {
+        useDockStore.setState({
+          pinnedItems: normalizedData.dock.pinnedItems,
+          scale: normalizedData.dock.scale,
+          hiding: normalizedData.dock.hiding,
+          magnification: normalizedData.dock.magnification,
+        });
+        appliedSections.push("dock");
+      } catch (e) {
+        console.error("[CloudSync] Failed to apply remote dock:", e);
+      }
     }
 
     if (
@@ -821,17 +915,29 @@ async function applySettingsSnapshot(
       Array.isArray(normalizedData.dashboard.widgets) &&
       sectionsToApply.includes("dashboard")
     ) {
-      useDashboardStore.setState({
-        widgets: normalizedData.dashboard.widgets,
-      });
+      try {
+        useDashboardStore.setState({
+          widgets: normalizedData.dashboard.widgets,
+        });
+        appliedSections.push("dashboard");
+      } catch (e) {
+        console.error("[CloudSync] Failed to apply remote dashboard:", e);
+      }
     }
   } finally {
     endApplyingRemoteSettingsSections(sectionsToApply);
   }
 
+  if (appliedSections.length < sectionsToApply.length) {
+    const failed = sectionsToApply.filter((s) => !appliedSections.includes(s));
+    console.warn(
+      `[CloudSync] Settings apply: ${appliedSections.length}/${sectionsToApply.length} sections succeeded, failed: ${failed.join(", ")}`
+    );
+  }
+
   setSettingsSectionTimestamps(
     Object.fromEntries(
-      sectionsToApply.map((section) => [section, remoteSectionUpdatedAt[section] || fallbackUpdatedAt])
+      appliedSections.map((section) => [section, remoteSectionUpdatedAt[section] || fallbackUpdatedAt])
     )
   );
 }
@@ -888,8 +994,17 @@ async function applyFilesMetadataSnapshot(
 }
 
 function applySongsSnapshot(data: SongsSnapshotData): void {
+  const remoteDeletedTrackIds = normalizeDeletionMarkerMap(data.deletedTrackIds);
+  const cloudSyncState = useCloudSyncStore.getState();
+  const effectiveDeletedTrackIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.songTrackIds,
+    remoteDeletedTrackIds
+  );
+
+  cloudSyncState.mergeDeletedKeys("songTrackIds", remoteDeletedTrackIds);
+
   useIpodStore.setState({
-    tracks: data.tracks,
+    tracks: filterDeletedIds(data.tracks, effectiveDeletedTrackIds, (track) => track.id),
     libraryState: data.libraryState,
     lastKnownVersion: data.lastKnownVersion,
   });
@@ -983,22 +1098,20 @@ function applyContactsSnapshot(data: ContactsSnapshotData): void {
     );
 }
 
-async function applyCustomWallpapersSnapshot(
-  data: CustomWallpapersSnapshotData
+async function applyMonolithicBlobSnapshotToIndividualDomain(
+  domain: IndividualBlobSyncDomain,
+  data: FilesStoreSnapshotData
 ): Promise<void> {
-  const deletedKeys = useCloudSyncStore.getState().deletionMarkers.customWallpaperKeys;
-  const filteredData = data.filter((item) => !deletedKeys[item.key]);
-  console.log(
-    `[CloudSync] applyCustomWallpapersSnapshot: replacing with ${filteredData.length} items`
-  );
-  const db = await ensureIndexedDBInitialized();
-  try {
-    await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, filteredData);
-  } finally {
-    db.close();
-  }
+  const changedItems = Object.fromEntries(
+    data.map((item) => [item.key, item])
+  ) as Record<string, StoreItemWithKey>;
 
-  await finalizeCustomWallpaperSync(filteredData.map((item) => item.key));
+  await applyIndividualBlobDomain(
+    domain,
+    [],
+    changedItems,
+    getIndividualBlobDeletedKeys(domain)
+  );
 }
 
 async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promise<void> {
@@ -1058,59 +1171,65 @@ async function applyIndividualBlobDomain(
   }
 }
 
-export async function applyCloudSyncEnvelope(
+async function applyCloudSyncEnvelope(
   envelope: CloudSyncEnvelope<AnySnapshotData>
 ): Promise<void> {
-  switch (envelope.domain) {
-    case "settings":
-      await applySettingsSnapshot(
-        envelope.data as SettingsSnapshotData,
-        envelope.updatedAt
-      );
-      return;
-    case "files-metadata":
-      await applyFilesMetadataSnapshot(
-        envelope.data as FilesMetadataSnapshotData
-      );
-      return;
-    case "files-images":
-      await applyIndexedDbStoreSnapshot(
-        STORES.IMAGES,
-        envelope.data as FilesStoreSnapshotData
-      );
-      return;
-    case "files-trash":
-      await applyIndexedDbStoreSnapshot(
-        STORES.TRASH,
-        envelope.data as FilesStoreSnapshotData
-      );
-      return;
-    case "files-applets":
-      await applyIndexedDbStoreSnapshot(
-        STORES.APPLETS,
-        envelope.data as FilesStoreSnapshotData
-      );
-      return;
-    case "songs":
-      applySongsSnapshot(envelope.data as SongsSnapshotData);
-      return;
-    case "videos":
-      applyVideosSnapshot(envelope.data as VideosSnapshotData);
-      return;
-    case "stickies":
-      applyStickiesSnapshot(envelope.data as StickiesSnapshotData);
-      return;
-    case "calendar":
-      applyCalendarSnapshot(envelope.data as CalendarSnapshotData);
-      return;
-    case "contacts":
-      applyContactsSnapshot(envelope.data as ContactsSnapshotData);
-      return;
-    case "custom-wallpapers":
-      await applyCustomWallpapersSnapshot(
-        envelope.data as CustomWallpapersSnapshotData
-      );
-      return;
+  beginApplyingRemoteDomain(envelope.domain);
+  try {
+    switch (envelope.domain) {
+      case "settings":
+        await applySettingsSnapshot(
+          envelope.data as SettingsSnapshotData,
+          envelope.updatedAt
+        );
+        return;
+      case "files-metadata":
+        await applyFilesMetadataSnapshot(
+          envelope.data as FilesMetadataSnapshotData
+        );
+        return;
+      case "files-images":
+        await applyMonolithicBlobSnapshotToIndividualDomain(
+          "files-images",
+          envelope.data as FilesStoreSnapshotData
+        );
+        return;
+      case "files-trash":
+        await applyMonolithicBlobSnapshotToIndividualDomain(
+          "files-trash",
+          envelope.data as FilesStoreSnapshotData
+        );
+        return;
+      case "files-applets":
+        await applyMonolithicBlobSnapshotToIndividualDomain(
+          "files-applets",
+          envelope.data as FilesStoreSnapshotData
+        );
+        return;
+      case "songs":
+        applySongsSnapshot(envelope.data as SongsSnapshotData);
+        return;
+      case "videos":
+        applyVideosSnapshot(envelope.data as VideosSnapshotData);
+        return;
+      case "stickies":
+        applyStickiesSnapshot(envelope.data as StickiesSnapshotData);
+        return;
+      case "calendar":
+        applyCalendarSnapshot(envelope.data as CalendarSnapshotData);
+        return;
+      case "contacts":
+        applyContactsSnapshot(envelope.data as ContactsSnapshotData);
+        return;
+      case "custom-wallpapers":
+        await applyMonolithicBlobSnapshotToIndividualDomain(
+          "custom-wallpapers",
+          envelope.data as CustomWallpapersSnapshotData
+        );
+        return;
+    }
+  } finally {
+    endApplyingRemoteDomain(envelope.domain);
   }
 }
 
@@ -1118,6 +1237,18 @@ function authHeaders(): Record<string, string> {
   return {
     "X-Sync-Session-Id": getSyncSessionId(),
   };
+}
+
+function getDomainFetchCacheKey(auth: AuthContext, domain: string): string {
+  return `${auth.username.toLowerCase()}:${domain}`;
+}
+
+function cacheRedisStateDomainSnapshot(
+  domain: RedisSyncDomain,
+  auth: AuthContext,
+  value: RedisStateDomainSnapshot | null
+): void {
+  redisStateDomainSnapshotCache.set(getDomainFetchCacheKey(auth, domain), value);
 }
 
 function createWriteSyncVersion(
@@ -1132,53 +1263,34 @@ function createWriteSyncVersion(
   };
 }
 
-export async function fetchCloudSyncMetadata(
-  _auth: AuthContext
-): Promise<CloudSyncMetadataMap> {
-  const [blobRes, redisRes] = await Promise.all([
-    abortableFetch(getApiUrl("/api/sync/auto"), {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }),
-    abortableFetch(getApiUrl("/api/sync/state"), {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }),
-  ]);
+export async function fetchPhysicalCloudSyncMetadata(): Promise<CloudSyncMetadataMap> {
+  const consolidatedRes = await abortableFetch(getApiUrl("/api/sync/domains"), {
+    method: "GET",
+    headers: authHeaders(),
+    timeout: 15000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
 
-  const merged = createEmptyCloudSyncMetadataMap();
-
-  if (blobRes.ok) {
-    const blobData = (await blobRes.json()) as { metadata?: Partial<CloudSyncMetadataMap> };
-    if (blobData.metadata) {
-      for (const domain of BLOB_SYNC_DOMAINS) {
-        const entry = blobData.metadata[domain as keyof typeof blobData.metadata];
-        if (entry) merged[domain] = entry as CloudSyncDomainMetadata;
+  if (consolidatedRes.ok) {
+    const consolidatedData = (await consolidatedRes.json()) as {
+      physicalMetadata?: Partial<CloudSyncMetadataMap>;
+    };
+    if (consolidatedData.physicalMetadata) {
+      const merged = createEmptyCloudSyncMetadataMap();
+      for (const domain of [...BLOB_SYNC_DOMAINS, ...REDIS_SYNC_DOMAINS]) {
+        const entry =
+          consolidatedData.physicalMetadata[
+            domain as keyof typeof consolidatedData.physicalMetadata
+          ];
+        if (entry) {
+          merged[domain] = entry as CloudSyncDomainMetadata;
+        }
       }
+      return merged;
     }
   }
-
-  if (redisRes.ok) {
-    const redisData = (await redisRes.json()) as { metadata?: Partial<CloudSyncMetadataMap> };
-    if (redisData.metadata) {
-      for (const domain of REDIS_SYNC_DOMAINS) {
-        const entry = redisData.metadata[domain as keyof typeof redisData.metadata];
-        if (entry) merged[domain] = entry as CloudSyncDomainMetadata;
-      }
-    }
-  }
-
-  if (!blobRes.ok && !redisRes.ok) {
-    throw new Error("Failed to fetch sync metadata from both endpoints");
-  }
-
-  return merged;
+  throw new Error("Failed to fetch consolidated sync metadata");
 }
 
 function mergeItemsByIdPreferNewer<T extends { id: string; updatedAt?: number }>(
@@ -1287,12 +1399,20 @@ function mergeSongsSnapshots(
   local: SongsSnapshotData,
   remote: SongsSnapshotData
 ): SongsSnapshotData {
+  const mergedDeleted = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(local.deletedTrackIds),
+    normalizeDeletionMarkerMap(remote.deletedTrackIds)
+  );
   return {
-    tracks: mergeItemsById(local.tracks, remote.tracks),
+    tracks: mergeItemsById(
+      filterDeletedIds(local.tracks, mergedDeleted, (t) => t.id),
+      filterDeletedIds(remote.tracks, mergedDeleted, (t) => t.id)
+    ),
     libraryState: local.libraryState === "loaded" || remote.libraryState === "loaded"
       ? "loaded"
       : local.libraryState,
     lastKnownVersion: Math.max(local.lastKnownVersion, remote.lastKnownVersion),
+    deletedTrackIds: mergedDeleted,
   };
 }
 
@@ -1309,7 +1429,6 @@ function mergeRedisStateConflict(
   domain: RedisSyncDomain,
   localData: AnySnapshotData,
   remoteData: AnySnapshotData,
-  localUpdatedAt: string,
   remoteUpdatedAt: string
 ): AnySnapshotData | null {
   switch (domain) {
@@ -1317,7 +1436,7 @@ function mergeRedisStateConflict(
       return mergeSettingsSnapshotData(
         localData as SettingsSnapshotData,
         remoteData as SettingsSnapshotData,
-        localUpdatedAt,
+        null,
         remoteUpdatedAt
       );
     case "files-metadata":
@@ -1355,10 +1474,10 @@ function mergeRedisStateConflict(
   }
 }
 
-async function uploadRedisStateDomain(
+async function prepareRedisStateDomainWrite(
   domain: RedisSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const envelope = await createCloudSyncEnvelope(domain);
   let data = envelope.data;
   let baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
@@ -1369,7 +1488,6 @@ async function uploadRedisStateDomain(
       domain,
       envelope.data,
       remoteSnapshot.data,
-      envelope.updatedAt,
       remoteSnapshot.metadata.updatedAt
     );
     if (merged) {
@@ -1378,215 +1496,63 @@ async function uploadRedisStateDomain(
     }
   }
 
-  const sendStateUpload = async (
-    nextData: AnySnapshotData,
-    nextUpdatedAt: string,
-    nextBaseMetadata: CloudSyncDomainMetadata | null | undefined
-  ) =>
-    abortableFetch(getApiUrl("/api/sync/state"), {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeaders(),
-      },
-      body: JSON.stringify({
-        domain,
-        data: nextData,
-        updatedAt: nextUpdatedAt,
-        version: envelope.version,
-        syncVersion: createWriteSyncVersion(domain, nextBaseMetadata),
-      }),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
+  return {
+    domain,
+    payload: {
+      domain,
+      data,
+      updatedAt: envelope.updatedAt,
+      version: envelope.version,
+      syncVersion: createWriteSyncVersion(domain, baseMetadata),
+    },
+    onCommitted: async (metadata) => {
+      cacheRedisStateDomainSnapshot(domain, _auth, {
+        data,
+        metadata,
+      });
+      await applyResolvedRedisUploadLocally(domain, data, metadata.updatedAt);
+    },
+  };
+}
 
-  let response = await sendStateUpload(data, envelope.updatedAt, baseMetadata);
-
-  if (response.status === 409) {
-    const latestRemote = await fetchRedisStateDomainSnapshot(domain, _auth);
-    if (latestRemote?.data) {
-      const merged = mergeRedisStateConflict(
-        domain,
-        envelope.data,
-        latestRemote.data,
-        envelope.updatedAt,
-        latestRemote.metadata.updatedAt
-      );
-      if (merged) {
-        response = await sendStateUpload(
-          merged,
-          new Date().toISOString(),
-          latestRemote.metadata
-        );
-      }
-    }
+export async function applyResolvedRedisUploadLocally(
+  domain: RedisSyncDomain,
+  data: AnySnapshotData,
+  updatedAt: string
+): Promise<void> {
+  if (domain === "settings") {
+    await applySettingsSnapshot(data as SettingsSnapshotData, updatedAt);
   }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || `Failed to sync ${domain} state`
-    );
-  }
-
-  const result = (await response.json()) as { metadata?: CloudSyncDomainMetadata };
-  if (!result.metadata) {
-    throw new Error("State sync response was invalid.");
-  }
-
-  return result.metadata;
 }
 
 async function fetchRedisStateDomainSnapshot(
   domain: RedisSyncDomain,
   _auth: AuthContext
-): Promise<
-  | {
-      data: AnySnapshotData;
-      metadata: CloudSyncDomainMetadata;
-    }
-  | null
-> {
-  const response = await abortableFetch(
-    getApiUrl(`/api/sync/state?domain=${encodeURIComponent(domain)}`),
-    {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
+): Promise<RedisStateDomainSnapshot | null> {
+  return redisStateDomainSnapshotCache.get(
+    getDomainFetchCacheKey(_auth, domain),
+    async () => {
+      const result = await fetchRedisDomainSnapshot(domain);
+      if (!result) {
+        return null;
+      }
+
+      return {
+        data: result.data as AnySnapshotData,
+        metadata: result.metadata,
+      };
     }
   );
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to download ${domain} state`
-    );
-  }
-
-  const result = (await response.json()) as {
-    data?: unknown;
-    metadata?: CloudSyncDomainMetadata;
-  };
-
-  if (result.data === undefined || !result.metadata) {
-    throw new Error("State download response was invalid.");
-  }
-
-  return {
-    data: result.data as AnySnapshotData,
-    metadata: result.metadata,
-  };
 }
 
 async function fetchBlobDomainInfo(
   domain: BlobSyncDomain,
   _auth: AuthContext
-): Promise<
-  | (IndividualBlobDomainResponse & {
-      downloadUrl?: string;
-      blobUrl?: string;
-    })
-  | null
-> {
-  const response = await abortableFetch(
-    getApiUrl(`/api/sync/auto?domain=${encodeURIComponent(domain)}`),
-    {
-      method: "GET",
-      headers: authHeaders(),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }
+): Promise<BlobDomainInfoResponse | null> {
+  return blobDomainInfoCache.get(
+    getDomainFetchCacheKey(_auth, domain),
+    async () => (await fetchBlobDomainPayload(domain)) as BlobDomainInfoResponse | null
   );
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error ||
-        `Failed to fetch ${domain} sync data`
-    );
-  }
-
-  return (await response.json()) as IndividualBlobDomainResponse & {
-    downloadUrl?: string;
-    blobUrl?: string;
-  };
-}
-
-async function requestBlobUploadInstruction(
-  domain: BlobSyncDomain,
-  _auth: AuthContext,
-  itemKey?: string
-): Promise<StorageUploadInstruction> {
-  const tokenResponse = await abortableFetch(getApiUrl("/api/sync/auto-token"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
-    body: JSON.stringify({
-      domain,
-      ...(itemKey ? { itemKey } : {}),
-    }),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!tokenResponse.ok) {
-    const errorData = await tokenResponse.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to get sync upload token"
-    );
-  }
-
-  return (await tokenResponse.json()) as StorageUploadInstruction;
-}
-
-async function saveBlobDomainMetadata(
-  payload: Record<string, unknown>,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
-  const metadataResponse = await abortableFetch(getApiUrl("/api/sync/auto"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
-    body: JSON.stringify(payload),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-
-  if (!metadataResponse.ok) {
-    const errorData = await metadataResponse.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to save sync metadata"
-    );
-  }
-
-  const metadataData = (await metadataResponse.json()) as {
-    metadata?: CloudSyncDomainMetadata;
-  };
-
-  if (!metadataData.metadata) {
-    throw new Error("Sync metadata save response was invalid.");
-  }
-
-  return metadataData.metadata;
 }
 
 async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
@@ -1604,10 +1570,10 @@ async function downloadGzipJson<T>(downloadUrl: string): Promise<T> {
   return JSON.parse(jsonString) as T;
 }
 
-async function uploadLegacyBlobDomain(
+async function uploadMonolithicBlobDomain(
   domain: BlobSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const envelope = await createCloudSyncEnvelope(domain);
   const remoteInfo = await fetchBlobDomainInfo(domain, _auth).catch(() => null);
   const dataItems = Array.isArray(envelope.data) ? envelope.data.length : "N/A";
@@ -1615,14 +1581,15 @@ async function uploadLegacyBlobDomain(
   const compressed = await gzipJson(envelope);
   console.log(`[CloudSync:blob] ${domain}: compressed to ${compressed.length} bytes`);
 
-  const uploadInstruction = await requestBlobUploadInstruction(domain, _auth);
+  const uploadInstruction = await requestBlobUploadInstructionFromTransport(domain);
   const uploadResult = await uploadBlobWithStorageInstruction(
     new Blob([compressed], { type: "application/gzip" }),
     uploadInstruction
   );
 
-  return saveBlobDomainMetadata(
-    {
+  return {
+    domain,
+    payload: {
       domain,
       storageUrl: uploadResult.storageUrl,
       updatedAt: envelope.updatedAt,
@@ -1633,17 +1600,16 @@ async function uploadLegacyBlobDomain(
         remoteInfo?.metadata || useCloudSyncStore.getState().remoteMetadata[domain]
       ),
     },
-    _auth
-  );
+  };
 }
 
 async function uploadIndividualBlobDomain(
   domain: IndividualBlobSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   const updatedAt = new Date().toISOString();
   const localRecords = await serializeIndividualBlobDomainRecords(domain);
-  const deletedItems = getIndividualBlobDeletedKeys(domain);
+  const deletedItems = pruneDeletedKeysForExistingRecords(domain, localRecords);
   const knownItems = getIndividualBlobKnownItems(domain);
   const remoteInfo = await fetchBlobDomainInfo(domain, _auth);
   const remoteItems =
@@ -1678,9 +1644,8 @@ async function uploadIndividualBlobDomain(
   }
 
   for (const record of uploadPlan.itemsToUpload) {
-    const uploadInstruction = await requestBlobUploadInstruction(
+    const uploadInstruction = await requestBlobUploadInstructionFromTransport(
       domain,
-      _auth,
       record.item.key
     );
     const itemEnvelope: BlobSyncItemEnvelope = {
@@ -1712,8 +1677,9 @@ async function uploadIndividualBlobDomain(
   console.log(
     `[CloudSync:blob] ${domain}: uploaded ${uploadedCount}/${uploadPlan.itemsToUpload.length} individual items`
   );
-  const metadata = await saveBlobDomainMetadata(
-    {
+  return {
+    domain,
+    payload: {
       domain,
       updatedAt,
       version: AUTO_SYNC_SNAPSHOT_VERSION,
@@ -1725,85 +1691,63 @@ async function uploadIndividualBlobDomain(
         remoteInfo?.metadata || useCloudSyncStore.getState().remoteMetadata[domain]
       ),
     },
-    _auth
-  );
-  setIndividualBlobKnownItems(domain, nextKnownItems);
-  return metadata;
+    onCommitted: async () => {
+      setIndividualBlobKnownItems(domain, nextKnownItems);
+    },
+  };
 }
 
-async function uploadBlobDomain(
-  domain: BlobSyncDomain,
-  _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
-  if (isIndividualBlobSyncDomain(domain)) {
-    return uploadIndividualBlobDomain(domain, _auth);
-  }
-
-  return uploadLegacyBlobDomain(domain, _auth);
-}
-
-export async function uploadCloudSyncDomain(
+export async function prepareCloudSyncDomainWrite(
   domain: CloudSyncDomain,
   _auth: AuthContext
-): Promise<CloudSyncDomainMetadata> {
+): Promise<PreparedCloudSyncDomainWrite> {
   if (isRedisSyncDomain(domain)) {
-    return uploadRedisStateDomain(domain, _auth);
+    return prepareRedisStateDomainWrite(domain, _auth);
   }
   if (isBlobSyncDomain(domain)) {
-    return uploadBlobDomain(domain, _auth);
+    return isIndividualBlobSyncDomain(domain)
+      ? uploadIndividualBlobDomain(domain, _auth)
+      : uploadMonolithicBlobDomain(domain, _auth);
   }
   throw new Error(`Unknown sync domain: ${domain}`);
 }
 
-async function downloadRedisStateDomain(
-  domain: RedisSyncDomain,
-  _auth: AuthContext,
+export async function applyDownloadedCloudSyncDomainPayload(
+  domain: CloudSyncDomain,
+  payload: CloudSyncDomainDownloadPayload,
   options?: DownloadCloudSyncOptions
 ): Promise<DownloadCloudSyncResult> {
-  const result = await fetchRedisStateDomainSnapshot(domain, _auth);
-  if (!result) {
-    throw new Error(`No ${domain} state found`);
-  }
-
-  if (options?.shouldApply && !options.shouldApply(result.metadata)) {
+  if (options?.shouldApply && !options.shouldApply(payload.metadata)) {
     return {
-      metadata: result.metadata,
+      metadata: payload.metadata,
       applied: false,
     };
   }
 
-  const envelope: CloudSyncEnvelope<AnySnapshotData> = {
-    domain,
-    version: result.metadata.version,
-    updatedAt: result.metadata.updatedAt,
-    data: result.data as AnySnapshotData,
-  };
+  if (isRedisSyncDomain(domain)) {
+    const redisPayload = payload as RedisStateDomainDownloadPayload;
+    const envelope: CloudSyncEnvelope<AnySnapshotData> = {
+      domain,
+      version: redisPayload.metadata.version,
+      updatedAt: redisPayload.metadata.updatedAt,
+      data: redisPayload.data as AnySnapshotData,
+    };
 
-  await applyCloudSyncEnvelope(envelope);
-  return {
-    metadata: result.metadata,
-    applied: true,
-  };
-}
-
-async function downloadBlobDomain(
-  domain: BlobSyncDomain,
-  _auth: AuthContext,
-  options?: DownloadCloudSyncOptions
-): Promise<DownloadCloudSyncResult> {
-  const data = await fetchBlobDomainInfo(domain, _auth);
-  if (!data?.metadata) {
-    throw new Error("Sync download response was invalid.");
-  }
-
-  if (options?.shouldApply && !options.shouldApply(data.metadata)) {
+    await applyCloudSyncEnvelope(envelope);
     return {
-      metadata: data.metadata,
-      applied: false,
+      metadata: redisPayload.metadata,
+      applied: true,
     };
   }
 
-  if (isIndividualBlobSyncDomain(domain) && data.mode === "individual") {
+  if (!isBlobSyncDomain(domain)) {
+    throw new Error(`Unknown sync domain: ${domain}`);
+  }
+
+  const data =
+    payload as BlobMonolithicDomainDownloadPayload | BlobIndividualDomainDownloadPayload;
+
+  if (isIndividualBlobSyncDomain(domain) && "mode" in data && data.mode === "individual") {
     const remoteItems = data.items || {};
     const remoteDeletedItems = normalizeDeletionMarkerMap(data.deletedItems);
     const localDeletedItems = getIndividualBlobDeletedKeys(domain);
@@ -1821,11 +1765,9 @@ async function downloadBlobDomain(
       effectiveDeletedItems
     );
 
-    if (domain === "custom-wallpapers") {
-      useCloudSyncStore
-        .getState()
-        .mergeDeletedKeys("customWallpaperKeys", remoteDeletedItems);
-    }
+    useCloudSyncStore
+      .getState()
+      .mergeDeletedKeys(getIndividualBlobDeletionBucket(domain), remoteDeletedItems);
 
     for (const itemKey of downloadPlan.itemKeysToDownload) {
       const itemMetadata = remoteItems[itemKey];
@@ -1845,20 +1787,26 @@ async function downloadBlobDomain(
       };
     }
 
-    await applyIndividualBlobDomain(
-      domain,
-      downloadPlan.keysToDelete,
-      changedItems,
-      effectiveDeletedItems
-    );
-    setIndividualBlobKnownItems(domain, nextKnownItems);
+    beginApplyingRemoteDomain(domain);
+    try {
+      await applyIndividualBlobDomain(
+        domain,
+        downloadPlan.keysToDelete,
+        changedItems,
+        effectiveDeletedItems
+      );
+      setIndividualBlobKnownItems(domain, nextKnownItems);
+    } finally {
+      endApplyingRemoteDomain(domain);
+    }
     return {
       metadata: data.metadata,
       applied: true,
     };
   }
 
-  const downloadUrl = data.downloadUrl || data.blobUrl;
+  const monolithicData = data as BlobMonolithicDomainDownloadPayload;
+  const downloadUrl = monolithicData.downloadUrl || monolithicData.blobUrl;
   if (!downloadUrl) {
     throw new Error("Sync download response was invalid.");
   }
@@ -1871,16 +1819,36 @@ async function downloadBlobDomain(
   };
 }
 
-export async function downloadAndApplyCloudSyncDomain(
-  domain: CloudSyncDomain,
-  _auth: AuthContext,
-  options?: DownloadCloudSyncOptions
-): Promise<DownloadCloudSyncResult> {
-  if (isRedisSyncDomain(domain)) {
-    return downloadRedisStateDomain(domain, _auth, options);
+/**
+ * True when local IndexedDB is out of sync with the remote per-item manifest:
+ * missing blob downloads or local orphans to remove, even if domain
+ * `updatedAt` / server version already match (so {@link shouldApplyRemoteUpdate}
+ * would be false). Covers partial storage clears and settings applied before
+ * wallpaper blobs finished downloading.
+ */
+export async function individualBlobDomainNeedsLocalReconcile(
+  domain: IndividualBlobSyncDomain,
+  auth: AuthContext
+): Promise<boolean> {
+  const data = await fetchBlobDomainInfo(domain, auth);
+  if (!data?.metadata || data.mode !== "individual") {
+    return false;
   }
-  if (isBlobSyncDomain(domain)) {
-    return downloadBlobDomain(domain, _auth, options);
-  }
-  throw new Error(`Unknown sync domain: ${domain}`);
+  const remoteItems = data.items || {};
+  const remoteDeletedItems = normalizeDeletionMarkerMap(data.deletedItems);
+  const localDeletedItems = getIndividualBlobDeletedKeys(domain);
+  const effectiveDeletedItems = mergeDeletionMarkerMaps(
+    localDeletedItems,
+    remoteDeletedItems
+  );
+  const localRecords = await serializeIndividualBlobDomainRecords(domain);
+  const knownItems = getIndividualBlobKnownItems(domain);
+  const plan = planIndividualBlobDownload(
+    localRecords,
+    remoteItems,
+    knownItems,
+    effectiveDeletedItems
+  );
+  return plan.itemKeysToDownload.length > 0 || plan.keysToDelete.length > 0;
 }
+

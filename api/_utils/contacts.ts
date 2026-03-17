@@ -3,18 +3,14 @@ import type { Contact } from "../../src/utils/contacts.js";
 import { getContactSummary, normalizeContacts } from "../../src/utils/contacts.js";
 import { normalizeDeletionMarkerMap } from "../../src/utils/cloudSyncDeletionMarkers.js";
 import type { ContactsSnapshotData } from "../chat/tools/types.js";
-import { stateKey } from "../sync/state.js";
-
-function metaKey(username: string): string {
-  return `sync:state:meta:${username}`;
-}
+import { redisStateKey, redisStateMetaKey } from "../sync/_keys.js";
 
 export async function readContactsState(
   redis: Redis,
   username: string
 ): Promise<ContactsSnapshotData> {
   const raw = await redis.get<string | { data?: ContactsSnapshotData }>(
-    stateKey(username, "contacts")
+    redisStateKey(username, "contacts")
   );
 
   if (!raw) {
@@ -36,7 +32,7 @@ export async function writeContactsState(
   data: ContactsSnapshotData
 ): Promise<void> {
   const now = new Date().toISOString();
-  const key = stateKey(username, "contacts");
+  const key = redisStateKey(username, "contacts");
 
   await redis.set(
     key,
@@ -48,7 +44,9 @@ export async function writeContactsState(
     })
   );
 
-  const existingMeta = await redis.get<string | Record<string, unknown>>(metaKey(username));
+  const existingMeta = await redis.get<string | Record<string, unknown>>(
+    redisStateMetaKey(username)
+  );
   const metadata =
     typeof existingMeta === "string"
       ? JSON.parse(existingMeta)
@@ -60,7 +58,7 @@ export async function writeContactsState(
     createdAt: now,
   };
 
-  await redis.set(metaKey(username), JSON.stringify(metadata));
+  await redis.set(redisStateMetaKey(username), JSON.stringify(metadata));
 }
 
 export function serializeContactForTool(contact: Contact) {

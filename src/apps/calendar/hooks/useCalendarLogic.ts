@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   useCalendarStore,
   type CalendarEvent,
@@ -48,12 +48,14 @@ export function useCalendarLogic() {
   const translatedHelpItems = useTranslatedHelpItems("calendar", helpItems);
 
   // Theme
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx" || currentTheme === "system7";
-  const isMacOSTheme = currentTheme === "macosx";
-  const isSystem7Theme = currentTheme === "system7";
-  const isClassicTheme = isXpTheme || isSystem7Theme; // non-Aqua themes
+  const {
+    currentTheme,
+    isXpTheme,
+    isMacTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isClassicTheme,
+  } = useThemeFlags();
 
   // Dialog states
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);

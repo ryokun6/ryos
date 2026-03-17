@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FileItem as DisplayFileItem } from "../components/FileList";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
-// Re-export STORES for backward compatibility (other modules import from here)
-export { STORES };
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -27,10 +25,11 @@ import {
   emitCloudSyncDomainChange,
   emitCloudSyncDomainChanges,
 } from "@/utils/cloudSyncEvents";
-import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  useCloudSyncStore,
+  type CloudSyncDeletionBucket,
+} from "@/stores/useCloudSyncStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-
-// STORES is now imported from @/utils/indexedDB to avoid duplication
 
 // Interface for content stored in IndexedDB
 export interface DocumentContent {
@@ -75,6 +74,36 @@ const getCloudSyncDomainForContentStore = (
       return "files-applets";
     default:
       return null;
+  }
+};
+
+const getCloudSyncDeletionBucketForContentStore = (
+  storeName: string
+): CloudSyncDeletionBucket | null => {
+  switch (storeName) {
+    case STORES.IMAGES:
+      return "fileImageKeys";
+    case STORES.TRASH:
+      return "fileTrashKeys";
+    case STORES.APPLETS:
+      return "fileAppletKeys";
+    default:
+      return null;
+  }
+};
+
+const getIndexedDbStoreKeys = async (storeName: string): Promise<string[]> => {
+  const db = await ensureIndexedDBInitialized();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, "readonly");
+      const store = tx.objectStore(storeName);
+      const request = store.getAllKeys();
+      request.onsuccess = () => resolve(request.result as string[]);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
   }
 };
 
@@ -1731,6 +1760,12 @@ export function useFileSystem(
               fileMetadata.uuid
             );
             await dbOperations.delete(storeName, fileMetadata.uuid);
+            const deletionBucket = getCloudSyncDeletionBucketForContentStore(storeName);
+            if (deletionBucket) {
+              useCloudSyncStore
+                .getState()
+                .markDeletedKeys(deletionBucket, [fileMetadata.uuid]);
+            }
             emitCloudSyncDomainChanges(
               [
                 getCloudSyncDomainForContentStore(storeName),
@@ -1792,6 +1827,9 @@ export function useFileSystem(
               fileMetadata.uuid
             );
             await dbOperations.delete(STORES.TRASH, fileMetadata.uuid); // Delete content from trash store
+            useCloudSyncStore
+              .getState()
+              .markDeletedKeys("fileTrashKeys", [fileMetadata.uuid]);
             emitCloudSyncDomainChanges(
               [
                 getCloudSyncDomainForContentStore(targetStoreName),
@@ -1828,6 +1866,9 @@ export function useFileSystem(
         await dbOperations.delete(STORES.TRASH, uuid);
       }
       if (contentUUIDsToDelete.length > 0) {
+        useCloudSyncStore
+          .getState()
+          .markDeletedKeys("fileTrashKeys", contentUUIDsToDelete);
         emitCloudSyncDomainChange("files-trash");
       }
       console.log("[useFileSystem] Cleared trash content from IndexedDB.");
@@ -1840,6 +1881,15 @@ export function useFileSystem(
   // --- Format File System (Refactored) --- //
   const formatFileSystem = useCallback(async () => {
     try {
+      const [imageKeys, trashKeys, customWallpaperKeys] = await Promise.all([
+        getIndexedDbStoreKeys(STORES.IMAGES),
+        getIndexedDbStoreKeys(STORES.TRASH),
+        getIndexedDbStoreKeys(STORES.CUSTOM_WALLPAPERS),
+      ]);
+      const syncStore = useCloudSyncStore.getState();
+      syncStore.markDeletedKeys("fileImageKeys", imageKeys);
+      syncStore.markDeletedKeys("fileTrashKeys", trashKeys);
+      syncStore.markDeletedKeys("customWallpaperKeys", customWallpaperKeys);
       await Promise.all([
         dbOperations.clear(STORES.IMAGES),
         dbOperations.clear(STORES.TRASH),
@@ -1850,6 +1900,7 @@ export function useFileSystem(
         "files-metadata",
         "files-images",
         "files-trash",
+        "custom-wallpapers",
       ]);
 
       // Clear the migration flag so UUID migration will run again after reset

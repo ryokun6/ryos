@@ -9,65 +9,68 @@ import { useFilesStore } from "./useFilesStore";
 import { useTerminalStore } from "./useTerminalStore";
 import { useInternetExplorerStore } from "./useInternetExplorerStore";
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for AppStore
+type BoundStoreHook<TState> = {
+  <TSelected>(selector: (state: TState) => TSelected): TSelected;
+  getState: () => TState;
+};
+
+export function useStoreShallow<TState, TSelected>(
+  store: BoundStoreHook<TState>,
+  selector: (state: TState) => TSelected
+): TSelected {
+  return store(useShallow(selector));
+}
+
 export function useAppStoreShallow<T>(
   selector: (state: ReturnType<typeof useAppStore.getState>) => T
 ): T {
-  return useAppStore(useShallow(selector));
+  return useStoreShallow(useAppStore, selector);
 }
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for IpodStore
 export function useIpodStoreShallow<T>(
   selector: (state: ReturnType<typeof useIpodStore.getState>) => T
 ): T {
-  return useIpodStore(useShallow(selector));
+  return useStoreShallow(useIpodStore, selector);
 }
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for VideoStore
 export function useVideoStoreShallow<T>(
   selector: (state: ReturnType<typeof useVideoStore.getState>) => T
 ): T {
-  return useVideoStore(useShallow(selector));
+  return useStoreShallow(useVideoStore, selector);
 }
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for AudioSettingsStore
 export function useAudioSettingsStoreShallow<T>(
   selector: (state: ReturnType<typeof useAudioSettingsStore.getState>) => T
 ): T {
-  return useAudioSettingsStore(useShallow(selector));
+  return useStoreShallow(useAudioSettingsStore, selector);
 }
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for DisplaySettingsStore
 export function useDisplaySettingsStoreShallow<T>(
   selector: (state: ReturnType<typeof useDisplaySettingsStore.getState>) => T
 ): T {
-  return useDisplaySettingsStore(useShallow(selector));
+  return useStoreShallow(useDisplaySettingsStore, selector);
 }
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for ChatsStore
 export function useChatsStoreShallow<T>(
   selector: (state: ReturnType<typeof useChatsStore.getState>) => T
 ): T {
-  return useChatsStore(useShallow(selector));
+  return useStoreShallow(useChatsStore, selector);
 }
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for FilesStore
 export function useFilesStoreShallow<T>(
   selector: (state: ReturnType<typeof useFilesStore.getState>) => T
 ): T {
-  return useFilesStore(useShallow(selector));
+  return useStoreShallow(useFilesStore, selector);
 }
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for TerminalStore
 export function useTerminalStoreShallow<T>(
   selector: (state: ReturnType<typeof useTerminalStore.getState>) => T
 ): T {
-  return useTerminalStore(useShallow(selector));
+  return useStoreShallow(useTerminalStore, selector);
 }
 
-// Generic helper to wrap a selector with Zustand's shallow comparator for InternetExplorerStore
 export function useInternetExplorerStoreShallow<T>(
   selector: (state: ReturnType<typeof useInternetExplorerStore.getState>) => T
 ): T {
-  return useInternetExplorerStore(useShallow(selector));
+  return useStoreShallow(useInternetExplorerStore, selector);
 }

@@ -568,6 +568,29 @@ export interface MemoryDeleteOutput {
 }
 
 // ============================================================================
+// Web Fetch Tool Types
+// ============================================================================
+
+export interface WebFetchInput {
+  url: string;
+  /** Extract only a CSS-selector subset of the page (optional) */
+  selector?: string;
+}
+
+export interface WebFetchOutput {
+  success: boolean;
+  url: string;
+  finalUrl?: string;
+  title?: string;
+  description?: string;
+  siteName?: string;
+  content: string;
+  contentLength: number;
+  truncated: boolean;
+  message: string;
+}
+
+// ============================================================================
 // App State Types (for server-side calendar/stickies executors)
 // ============================================================================
 

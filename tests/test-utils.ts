@@ -46,6 +46,16 @@ export const makeRateLimitBypassHeaders = (): Record<string, string> => ({
   "X-Forwarded-For": `10.2.${Date.now() % 255}.${Math.floor(Math.random() * 255)}`,
 });
 
+function getTokenFromAuthCookie(response: Response): string | null {
+  const setCookie = response.headers.get("set-cookie");
+  if (!setCookie) {
+    return null;
+  }
+
+  const match = setCookie.match(/(?:^|;\s*)ryos_auth=([^:;]+):([^;]+)/);
+  return match?.[2] || null;
+}
+
 /**
  * Register-or-login helper. Returns a token or null.
  */
@@ -61,7 +71,7 @@ export async function ensureUserAuth(
 
   if (registerRes.status === 201) {
     const data = await registerRes.json();
-    return data.token ?? null;
+    return data.token ?? getTokenFromAuthCookie(registerRes);
   }
 
   if (registerRes.status === 409) {
@@ -72,7 +82,7 @@ export async function ensureUserAuth(
     });
     if (loginRes.ok) {
       const data = await loginRes.json();
-      return data.token ?? null;
+      return data.token ?? getTokenFromAuthCookie(loginRes);
     }
   }
 

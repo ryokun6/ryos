@@ -1,6 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { LyricsAlignment, KoreanDisplay, JapaneseFurigana, LyricsFont, RomanizationSettings, DisplayMode } from "@/types/lyrics";
+import {
+  LyricsAlignment,
+  KoreanDisplay,
+  JapaneseFurigana,
+  LyricsFont,
+  RomanizationSettings,
+  DisplayMode,
+  areRomanizationSettingsEqual,
+} from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
@@ -9,6 +17,7 @@ import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMe
 import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -772,7 +781,10 @@ export const useIpodStore = create<IpodState>()(
           };
         }),
       setShowVideo: (show) => set({ showVideo: show }),
-      toggleLyrics: () => set((state) => ({ showLyrics: !state.showLyrics })),
+      toggleLyrics: () => {
+        set((state) => ({ showLyrics: !state.showLyrics }));
+        emitCloudSyncDomainChange("settings");
+      },
       refreshLyrics: () =>
         set((state) => ({
           lyricsRefetchTrigger: state.lyricsRefetchTrigger + 1,
@@ -858,20 +870,43 @@ export const useIpodStore = create<IpodState>()(
         // Side effect moved outside set() for cleaner separation
         debouncedSaveLyricOffset(trackId, offsetMs);
       },
-      setLyricsAlignment: (alignment) => set({ lyricsAlignment: alignment }),
-      setLyricsFont: (font) => set({ lyricsFont: font }),
-      setRomanization: (settings) =>
-        set((state) => ({
-          romanization: { ...state.romanization, ...settings },
-        })),
-      toggleRomanization: () =>
+      setLyricsAlignment: (alignment) => {
+        if (get().lyricsAlignment === alignment) {
+          return;
+        }
+        set({ lyricsAlignment: alignment });
+        emitCloudSyncDomainChange("settings");
+      },
+      setLyricsFont: (font) => {
+        if (get().lyricsFont === font) {
+          return;
+        }
+        set({ lyricsFont: font });
+        emitCloudSyncDomainChange("settings");
+      },
+      setRomanization: (settings) => {
+        const nextRomanization = { ...get().romanization, ...settings };
+        if (areRomanizationSettingsEqual(get().romanization, nextRomanization)) {
+          return;
+        }
+        set({ romanization: nextRomanization });
+        emitCloudSyncDomainChange("settings");
+      },
+      toggleRomanization: () => {
         set((state) => ({
           romanization: { ...state.romanization, enabled: !state.romanization.enabled },
-        })),
-      setLyricsTranslationLanguage: (language) =>
+        }));
+        emitCloudSyncDomainChange("settings");
+      },
+      setLyricsTranslationLanguage: (language) => {
+        if (get().lyricsTranslationLanguage === language) {
+          return;
+        }
         set({
           lyricsTranslationLanguage: language,
-        }),
+        });
+        emitCloudSyncDomainChange("settings");
+      },
       importLibrary: (json: string) => {
         try {
           const importedTracks = JSON.parse(json) as Track[];
@@ -959,9 +994,9 @@ export const useIpodStore = create<IpodState>()(
                 return url.pathname.slice(1) || null;
               }
 
-              // Embedded or other YouTube formats
+              // Embedded, shorts, or other YouTube formats
               const pathMatch = url.pathname.match(
-                /\/(?:embed\/|v\/)?([a-zA-Z0-9_-]{11})/
+                /\/(?:embed\/|v\/|shorts\/)?([a-zA-Z0-9_-]{11})/
               );
               if (pathMatch) return pathMatch[1];
             }
@@ -1041,6 +1076,7 @@ export const useIpodStore = create<IpodState>()(
           const oembedResponse = await abortableFetch(oembedUrl, {
             timeout: 15000,
             throwOnHttpError: false,
+            credentials: "omit",
             retry: { maxAttempts: 1, initialDelayMs: 250 },
           });
 
