@@ -54,10 +54,10 @@ Turn the audit into a deletion-first simplification program that:
   - `src/sync/domains.ts` now delegates per-domain serialization/apply/merge logic to dedicated modules
   - target domain split now exists across `settings`, `files`, `songs`, `videos`, `stickies`, `calendar`, `contacts`, and `blob-shared`
 
-- Wave 9 is partially complete:
+- Wave 9 is complete:
   - canonical shared font tokens now live in `src/index.css`
-  - `src/styles/themes.css` now consumes those shared tokens for theme font variables and several repeated macOS/System 7 font declarations
-  - legacy Windows compatibility rules remain in place while using shared font tokens
+  - `src/styles/themes.css` now consumes those shared tokens for theme font variables and several repeated font declarations
+  - legacy Windows CSS now hangs off an explicit compatibility flag managed by the theme store
 
 ### Partially complete
 

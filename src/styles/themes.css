@@ -94,17 +94,14 @@
   font-size: revert !important;
 }
 
-/* Win98/XP - reset input/button overrides from 98-custom.css/xp-custom.css so Webamp skin displays correctly (seek bar color, seek button offset) */
-:root[data-os-theme="win98"] #webamp input[type="range"],
-:root[data-os-theme="xp"] #webamp input[type="range"] {
+/* Legacy Windows compatibility layer - limits external XP/98 CSS impact */
+:root[data-legacy-windows-css="true"] #webamp input[type="range"] {
   -webkit-appearance: auto !important;
   appearance: auto !important;
   transform: none !important;
 }
-:root[data-os-theme="win98"] #webamp input[type="range"]::-webkit-slider-thumb,
-:root[data-os-theme="win98"] #webamp input[type="range"]::-moz-range-thumb,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-webkit-slider-thumb,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-thumb {
+:root[data-legacy-windows-css="true"] #webamp input[type="range"]::-webkit-slider-thumb,
+:root[data-legacy-windows-css="true"] #webamp input[type="range"]::-moz-range-thumb {
   -webkit-appearance: auto !important;
   appearance: auto !important;
   background: revert !important;
@@ -112,16 +109,13 @@
   box-shadow: none !important;
   border: none !important;
 }
-:root[data-os-theme="win98"] #webamp input[type="range"]::-webkit-slider-runnable-track,
-:root[data-os-theme="win98"] #webamp input[type="range"]::-moz-range-track,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-webkit-slider-runnable-track,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-track {
+:root[data-legacy-windows-css="true"] #webamp input[type="range"]::-webkit-slider-runnable-track,
+:root[data-legacy-windows-css="true"] #webamp input[type="range"]::-moz-range-track {
   background: revert !important;
   box-shadow: none !important;
   border: none !important;
 }
-:root[data-os-theme="win98"] #webamp button,
-:root[data-os-theme="xp"] #webamp button {
+:root[data-legacy-windows-css="true"] #webamp button {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
@@ -536,17 +530,15 @@
   -webkit-font-smoothing: antialiased !important;
 }
 
-/* Reset XP/Win98 button styles for menubar triggers - they should look like plain text */
-:root[data-os-theme="xp"] .menubar-trigger,
-:root[data-os-theme="win98"] .menubar-trigger {
+/* Reset legacy Windows button styles for menubar triggers */
+:root[data-legacy-windows-css="true"] .menubar-trigger {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
 }
 
-:root[data-os-theme="xp"] .menubar-trigger:active,
-:root[data-os-theme="win98"] .menubar-trigger:active {
+:root[data-legacy-windows-css="true"] .menubar-trigger:active {
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -555,38 +547,31 @@
    Those stylesheets handle the button icons via background-image.
    No override needed here - CSS specificity handles it. */
 
-/* Reset XP/Win98 button styles for iPod/Karaoke fullscreen toolbar buttons */
-:root[data-os-theme="xp"] .ipod-force-font button,
-:root[data-os-theme="xp"] .karaoke-force-font button,
-:root[data-os-theme="win98"] .ipod-force-font button,
-:root[data-os-theme="win98"] .karaoke-force-font button {
+/* Reset legacy Windows button styles for iPod/Karaoke fullscreen toolbar buttons */
+:root[data-legacy-windows-css="true"] .ipod-force-font button,
+:root[data-legacy-windows-css="true"] .karaoke-force-font button {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 9999px !important;
 }
 
-:root[data-os-theme="xp"] .ipod-force-font button:active,
-:root[data-os-theme="xp"] .karaoke-force-font button:active,
-:root[data-os-theme="win98"] .ipod-force-font button:active,
-:root[data-os-theme="win98"] .karaoke-force-font button:active {
+:root[data-legacy-windows-css="true"] .ipod-force-font button:active,
+:root[data-legacy-windows-css="true"] .karaoke-force-font button:active {
   background: rgba(255, 255, 255, 0.1) !important;
   box-shadow: none !important;
 }
 
-/* Reset XP/Win98 button styles for ghost variant buttons (toolbar buttons, etc.)
+/* Reset legacy Windows button styles for ghost variant buttons (toolbar buttons, etc.)
    These buttons want to be fully transparent - no background at all */
-:root[data-os-theme="xp"] button.\!bg-transparent,
-:root[data-os-theme="win98"] button.\!bg-transparent {
+:root[data-legacy-windows-css="true"] button.\!bg-transparent {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
 
-:root[data-os-theme="xp"] button.\!bg-transparent:hover,
-:root[data-os-theme="xp"] button.\!bg-transparent:active,
-:root[data-os-theme="win98"] button.\!bg-transparent:hover,
-:root[data-os-theme="win98"] button.\!bg-transparent:active {
+:root[data-legacy-windows-css="true"] button.\!bg-transparent:hover,
+:root[data-legacy-windows-css="true"] button.\!bg-transparent:active {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -1315,35 +1300,30 @@
   font-smooth: auto !important;
 }
 
-/* XP / Win98 Spotlight: reset button styles from xp-custom.css / 98-custom.css
+/* Legacy Windows Spotlight: reset button styles from xp-custom.css / 98-custom.css
    Those stylesheets apply background + 3D box-shadow to ALL <button> elements.
    Spotlight rows are <button> so they inherit the raised 3D look. Reset them.
    Use :not([data-selected]) to preserve the selection highlight background. */
-:root[data-os-theme="xp"] .spotlight-panel button:not([data-selected]),
-:root[data-os-theme="win98"] .spotlight-panel button:not([data-selected]) {
+:root[data-legacy-windows-css="true"] .spotlight-panel button:not([data-selected]) {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
 }
-:root[data-os-theme="xp"] .spotlight-panel button[data-selected],
-:root[data-os-theme="win98"] .spotlight-panel button[data-selected] {
+:root[data-legacy-windows-css="true"] .spotlight-panel button[data-selected] {
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
 }
-:root[data-os-theme="xp"] .spotlight-panel button:active,
-:root[data-os-theme="win98"] .spotlight-panel button:active,
-:root[data-os-theme="xp"] .spotlight-panel button:focus,
-:root[data-os-theme="win98"] .spotlight-panel button:focus {
+:root[data-legacy-windows-css="true"] .spotlight-panel button:active,
+:root[data-legacy-windows-css="true"] .spotlight-panel button:focus {
   box-shadow: none !important;
   border: none !important;
   outline: none !important;
 }
 
-/* XP / Win98 Spotlight: reset input styles */
-:root[data-os-theme="xp"] .spotlight-panel input,
-:root[data-os-theme="win98"] .spotlight-panel input {
+/* Legacy Windows Spotlight: reset input styles */
+:root[data-legacy-windows-css="true"] .spotlight-panel input {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
