@@ -12,6 +12,7 @@ import {
   mergeDeletionMarkerMaps,
   type DeletionMarkerMap,
 } from "@/utils/cloudSyncDeletionMarkers";
+import { persistAutoSyncPreferenceToServer } from "@/utils/autoSyncPreference";
 
 interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
@@ -78,6 +79,8 @@ interface CloudSyncStoreState {
   domainStatus: CloudSyncDomainStatusMap;
   deletionMarkers: CloudSyncDeletionMarkerState;
   setAutoSyncEnabled: (enabled: boolean) => void;
+  /** Apply server preference without writing back (login / new device). */
+  applyServerAutoSyncPreference: (enabled: boolean) => void;
   setDomainEnabled: (domain: CloudSyncDomain, enabled: boolean) => void;
   isDomainEnabled: (domain: CloudSyncDomain) => boolean;
   setCheckingRemote: (checking: boolean) => void;
@@ -144,12 +147,12 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 9;
+const STORE_VERSION = 10;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
     (set, get) => ({
-      autoSyncEnabled: true,
+      autoSyncEnabled: false,
       syncFiles: true,
       syncSettings: true,
       syncSongs: true,
@@ -164,7 +167,15 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       domainStatus: createInitialDomainStatus(),
       deletionMarkers: createEmptyDeletionMarkers(),
 
-      setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
+      setAutoSyncEnabled: (enabled) => {
+        set({ autoSyncEnabled: enabled });
+        if (typeof window !== "undefined") {
+          void persistAutoSyncPreferenceToServer(enabled);
+        }
+      },
+
+      applyServerAutoSyncPreference: (enabled) =>
+        set({ autoSyncEnabled: enabled }),
 
       setDomainEnabled: (domain, enabled) => {
         switch (getCloudSyncCategory(domain)) {
@@ -503,7 +514,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         }
 
         return {
-          autoSyncEnabled: candidate.autoSyncEnabled ?? true,
+          autoSyncEnabled: candidate.autoSyncEnabled ?? false,
           syncFiles: candidate.syncFiles ?? true,
           syncSettings: candidate.syncSettings ?? true,
           syncSongs: candidate.syncSongs ?? true,

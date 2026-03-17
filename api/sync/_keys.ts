@@ -16,3 +16,7 @@ export function redisStateKey(username: string, domain: RedisSyncDomain): string
 export function redisStateMetaKey(username: string): string {
   return `sync:state:meta:${username}`;
 }
+
+export function autoSyncPreferenceKey(username: string): string {
+  return `sync:pref:autoSync:${username.toLowerCase()}`;
+}

@@ -53,6 +53,10 @@ import {
   markLogicalDirtyPart,
 } from "@/utils/syncLogicalDirtyState";
 import {
+  fetchAutoSyncPreferenceFromServer,
+  persistAutoSyncPreferenceToServer,
+} from "@/utils/autoSyncPreference";
+import {
   getLatestSettingsSectionTimestamp,
   isApplyingRemoteSettingsSection,
   markSettingsSectionChanged,
@@ -334,6 +338,29 @@ export function useAutoCloudSync() {
   const contactsSeedDoneRef = useRef(false);
 
   const isSyncActive = Boolean(username && isAuthenticated && autoSyncEnabled);
+
+  useEffect(() => {
+    if (!username || !isAuthenticated) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const result = await fetchAutoSyncPreferenceFromServer();
+      if (cancelled || !result.ok) {
+        return;
+      }
+      if (result.apply) {
+        useCloudSyncStore.getState().applyServerAutoSyncPreference(result.enabled);
+        return;
+      }
+      if (useCloudSyncStore.getState().autoSyncEnabled) {
+        void persistAutoSyncPreferenceToServer(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [username, isAuthenticated]);
 
   const enabledDomainsKey = useMemo(
     () =>
