@@ -1215,6 +1215,12 @@ export function useAutoCloudSync() {
     });
 
     const syncEventsUnsubscribe = subscribeToCloudSyncDomainChanges((domain) => {
+      // Settings already have direct store subscriptions below. Ignoring the
+      // legacy event path prevents duplicate queueing from action helpers such
+      // as the iPod settings store.
+      if (domain === "settings") {
+        return;
+      }
       console.log(`[CloudSync] Domain change event received: ${domain}`);
       queueUpload(domain);
     });
