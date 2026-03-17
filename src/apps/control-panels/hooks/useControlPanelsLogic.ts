@@ -32,6 +32,7 @@ import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   FILE_SYNC_DOMAINS,
+  SETTINGS_SYNC_DOMAINS,
   type CloudSyncDomain,
   getLatestCloudSyncTimestamp,
 } from "@/utils/cloudSyncShared";
@@ -379,7 +380,31 @@ export function useControlPanelsLogic({
         (domain) => internalAutoSyncDomainStatus[domain].isDownloading
       ),
     },
-    settings: internalAutoSyncDomainStatus.settings,
+    settings: {
+      lastUploadedAt: getLatestCloudSyncTimestamp(
+        SETTINGS_SYNC_DOMAINS.map(
+          (domain) => internalAutoSyncDomainStatus[domain].lastUploadedAt
+        )
+      ),
+      lastFetchedAt: getLatestCloudSyncTimestamp(
+        SETTINGS_SYNC_DOMAINS.map(
+          (domain) =>
+            internalAutoSyncDomainStatus[domain].lastFetchedAt ||
+            internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
+        )
+      ),
+      lastAppliedRemoteAt: getLatestCloudSyncTimestamp(
+        SETTINGS_SYNC_DOMAINS.map(
+          (domain) => internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
+        )
+      ),
+      isUploading: SETTINGS_SYNC_DOMAINS.some(
+        (domain) => internalAutoSyncDomainStatus[domain].isUploading
+      ),
+      isDownloading: SETTINGS_SYNC_DOMAINS.some(
+        (domain) => internalAutoSyncDomainStatus[domain].isDownloading
+      ),
+    },
     songs: internalAutoSyncDomainStatus.songs,
     videos: internalAutoSyncDomainStatus.videos,
     stickies: internalAutoSyncDomainStatus.stickies,

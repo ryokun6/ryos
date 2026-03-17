@@ -1290,19 +1290,9 @@ export function useAutoCloudSync() {
           markSettingsSectionChanged("display");
           queueUpload("settings");
         }
-        if (
-          state.currentWallpaper !== prevState.currentWallpaper &&
-          state.currentWallpaper.startsWith("indexeddb://")
-        ) {
-          if (
-            isApplyingRemoteSettingsSection("display") ||
-            isApplyingRemoteDomain("custom-wallpapers")
-          ) {
-            return;
-          }
-          console.log(`[CloudSync] display subscriber: currentWallpaper changed from "${prevState.currentWallpaper}" to "${state.currentWallpaper}"`);
-          queueUpload("custom-wallpapers");
-        }
+        // Custom wallpaper blob uploads are driven by explicit add/delete events.
+        // Re-queueing here for every indexeddb:// selection forces a full
+        // wallpaper store re-scan even when no wallpaper file actually changed.
       }
     );
 

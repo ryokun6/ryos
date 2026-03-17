@@ -135,6 +135,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
 
       setWallpaper: async (path) => {
         let wall: string;
+        const createdCustomWallpaper = path instanceof File;
         if (path instanceof File) {
           try {
             wall = await saveCustomWallpaper(path);
@@ -166,6 +167,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         window.dispatchEvent(
           new CustomEvent("wallpaperChange", { detail: wall })
         );
+        if (createdCustomWallpaper) {
+          get().bumpCustomWallpapersRevision();
+          emitCloudSyncDomainChange("custom-wallpapers");
+        }
       },
 
       loadCustomWallpapers: async () => {

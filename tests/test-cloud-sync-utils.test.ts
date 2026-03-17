@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   CLOUD_SYNC_DOMAINS,
   CLOUD_SYNC_REMOTE_APPLY_DOMAINS,
+  FILE_SYNC_DOMAINS,
+  SETTINGS_SYNC_DOMAINS,
   createEmptyCloudSyncMetadataMap,
   getCloudSyncCategory,
   getCloudSyncRemoteApplyDomains,
@@ -153,9 +155,59 @@ describe("cloud sync shared helpers", () => {
     expect(getCloudSyncCategory("files-metadata")).toBe("files");
     expect(getCloudSyncCategory("files-images")).toBe("files");
     expect(getCloudSyncCategory("settings")).toBe("settings");
-    expect(getCloudSyncCategory("custom-wallpapers")).toBe("files");
+    expect(getCloudSyncCategory("custom-wallpapers")).toBe("settings");
     expect(getCloudSyncCategory("songs")).toBe("songs");
     expect(getCloudSyncCategory("calendar")).toBe("calendar");
+  });
+
+  test("keeps custom wallpapers out of the files sync bucket", () => {
+    expect(FILE_SYNC_DOMAINS).not.toContain("custom-wallpapers");
+    expect(SETTINGS_SYNC_DOMAINS).toContain("custom-wallpapers");
+  });
+
+  test("routes custom wallpaper enablement through the settings toggle", async () => {
+    const browserGlobals = globalThis as typeof globalThis & {
+      localStorage?: Storage;
+    };
+    const originalLocalStorage = browserGlobals.localStorage;
+    browserGlobals.localStorage = new MemoryStorage();
+
+    const { useCloudSyncStore } = await import("../src/stores/useCloudSyncStore");
+
+    try {
+      useCloudSyncStore.setState({
+        syncFiles: true,
+        syncSettings: true,
+      });
+
+      useCloudSyncStore
+        .getState()
+        .setDomainEnabled("custom-wallpapers", false);
+
+      expect(useCloudSyncStore.getState().syncFiles).toBe(true);
+      expect(useCloudSyncStore.getState().syncSettings).toBe(false);
+
+      useCloudSyncStore.setState({
+        syncFiles: false,
+        syncSettings: false,
+      });
+
+      useCloudSyncStore
+        .getState()
+        .setDomainEnabled("custom-wallpapers", true);
+
+      expect(useCloudSyncStore.getState().syncFiles).toBe(false);
+      expect(useCloudSyncStore.getState().syncSettings).toBe(true);
+      expect(useCloudSyncStore.getState().isDomainEnabled("custom-wallpapers")).toBe(
+        true
+      );
+    } finally {
+      useCloudSyncStore.setState({
+        syncFiles: true,
+        syncSettings: true,
+      });
+      browserGlobals.localStorage = originalLocalStorage;
+    }
   });
 
   test("prioritizes custom wallpapers before settings during remote apply", () => {
