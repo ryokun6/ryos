@@ -11,7 +11,7 @@ A summary of changes and updates to ryOS, organized by month.
 - Add AirDrop-style Finder sharing with discovery, send/receive, and Downloads folder; multi-select on Desktop and Finder (marquee, modifier, range); universal undo/redo for Finder, Paint, and TextEdit.
 - Refactor cloud sync around **logical domains** (`/api/sync/domains`, per-domain GET/PUT, attachment prepare): incremental settings and files-metadata uploads, coalesced uploads, domain triggers on app launch, deletion markers for songs, custom wallpapers on the files domain, and safer remote apply / merge (incl. iPod translation and wallpaper ordering).
 - Persist **Auto Sync** server-side (default on) with incremental Redis settings upload and force-full on manual upload; localized Sync tab statuses.
-- Add **webFetch** server-side tool for Ryo chat (URL → HTML-to-text extraction, hardening, unit tests); document Lightpanda browser sidecar + docker-compose for future JS-rendered fetch and iframe proxy.
+- Add **webFetch** server-side tool for Ryo chat (URL → HTML-to-text extraction, hardening, unit tests).
 - Enhance Contacts (vCard import, cloud sync); Telegram linking, DMs, voice notes, song library tool, Gemini web search, heartbeats; migrate auth to **httpOnly cookies** with force upload/download sync controls.
 - Improve real-time stack and presence (heartbeat when Chats open with auth); fix launch crashes from partial cloud-sync persist and invalid theme.
 - Unify theme system on semantic tokens and CSS variables; extract shared UI (ToolbarButton, SearchInput, EmptyState, SelectableListItem); z-index scale and prefers-reduced-motion; Finder brushed metal and Spotlight-style selection.
