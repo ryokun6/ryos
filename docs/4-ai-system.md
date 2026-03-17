@@ -58,6 +58,7 @@ graph TD
 | `songLibraryControl` | Search ryOS song libraries and cached metadata from server (list/search/get/searchYoutube/add; scopes: user/global/any; Telegram/server-side) |
 | `web_search` | OpenAI provider web search (GPT-5.4 only, authenticated users, with geolocation context) |
 | `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
+| `webFetch` | Server-side URL fetch with HTML-to-text extraction for Ryo (sanitized; optional Lightpanda sidecar planned for JS-heavy pages) |
 
 ## API Endpoints
 

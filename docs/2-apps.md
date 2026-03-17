@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 23 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 24 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 ## App Overview
 
@@ -28,6 +28,7 @@ ryOS includes 23 built-in applications, each designed to replicate classic deskt
 | [Calendar](/docs/calendar) | iCal-style calendar with month, week, and day views, todos, and cloud sync | Productivity |
 | [Contacts](/docs/contacts) | Address book with vCard import and cloud sync | Productivity |
 | [Dashboard](/docs/dashboard) | Tiger-style widget overlay with clock, calendar, weather, stocks, iPod, translation, sticky notes, and dictionary | Utilities |
+| [CandyBar](/docs/candybar) | Browse and apply dock icon packs | Utilities |
 | [Admin](/docs/admin) | Usage analytics dashboard with server info and user management (admin only) | System |
 
 ## App Architecture

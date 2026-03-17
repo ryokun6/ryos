@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/plan-browser-sidecar" class="">Plan: Robust Web Fetch & Iframe Proxy via Lightpanda Browser Sidecar</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -226,6 +232,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/candybar" class="nav-child ">2.24 CandyBar</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -307,10 +314,10 @@
 <p>A summary of changes and updates to ryOS, organized by month.</p>
 <hr>
 <h2>March 2026</h2>
-<ul><li>Add Calendar app with iCal support, Dashboard widget overlay, and AI integration.</li></ul><ul><li>Implement cloud sync for dock icons, iPod/karaoke settings, stickies, wallpapers, images, contacts, videos library, dashboard widgets, and songs.</li><li>Add AirDrop-like file sharing to Finder with nearby user discovery, send/receive flows, and Downloads folder.</li><li>Add multi-select for Desktop and Finder with Ctrl/Cmd+click, Shift+click range, and marquee selection.</li><li>Introduce a universal undo/redo mechanism for Finder, Paint, and TextEdit.</li><li>Redesign the Dashboard with a widget strip, improved placement, and new widgets like Stocks, Dictionary, and Translator.</li><li>Enhance Contacts app with vCard import, refined UI, and cloud sync.</li><li>Add Telegram bot linking, DM chat, voice notes, song library tool, Gemini web search, and morning/evening heartbeat briefings.</li><li>Migrate auth tokens to httpOnly cookies with Force Upload/Download sync controls.</li></ul>
+<ul><li>Add Calendar app with iCal support, Dashboard widget overlay, and AI integration; redesign Dashboard with widget strip, Stocks, Dictionary, Translator, and smarter placement.</li></ul><ul><li>Add CandyBar app to browse and apply dock icon packs; align dock customization with shared app UI patterns.</li><li>Add AirDrop-style Finder sharing with discovery, send/receive, and Downloads folder; multi-select on Desktop and Finder (marquee, modifier, range); universal undo/redo for Finder, Paint, and TextEdit.</li><li>Refactor cloud sync around <strong>logical domains</strong> (<code>/api/sync/domains</code>, per-domain GET/PUT, attachment prepare): incremental settings and files-metadata uploads, coalesced uploads, domain triggers on app launch, deletion markers for songs, custom wallpapers on the files domain, and safer remote apply / merge (incl. iPod translation and wallpaper ordering).</li><li>Persist <strong>Auto Sync</strong> server-side (default on) with incremental Redis settings upload and force-full on manual upload; localized Sync tab statuses.</li><li>Add <strong>webFetch</strong> server-side tool for Ryo chat (URL → HTML-to-text extraction, hardening, unit tests); document Lightpanda browser sidecar + docker-compose for future JS-rendered fetch and iframe proxy.</li><li>Enhance Contacts (vCard import, cloud sync); Telegram linking, DMs, voice notes, song library tool, Gemini web search, heartbeats; migrate auth to <strong>httpOnly cookies</strong> with force upload/download sync controls.</li><li>Improve real-time stack and presence (heartbeat when Chats open with auth); fix launch crashes from partial cloud-sync persist and invalid theme.</li><li>Unify theme system on semantic tokens and CSS variables; extract shared UI (ToolbarButton, SearchInput, EmptyState, SelectableListItem); z-index scale and prefers-reduced-motion; Finder brushed metal and Spotlight-style selection.</li></ul>
 <details>
-<summary>Minor changes (16)</summary>
-<ul><li>Improve iPod and karaoke playback performance and add iPod widget control for karaoke.</li></ul><ul><li>Add voice ducking for TTS and karaoke playback with shared infrastructure.</li><li>Harden cloud sync with deletion markers, merge-on-conflict, and race-condition fixes.</li><li>Enable Gemini search in chat for authenticated users on the gemini-3-flash model.</li><li>Add brushed metal window material for Finder on macOS Aqua theme with Spotlight-style selection gradient.</li><li>Enhance admin dashboard with date range selector (Today/7d/14d/30d) and localized keys.</li><li>Add calendar todos with due dates, mobile editing, and hover-to-show actions.</li><li>Add Finder "Go Up" toolbar item, sidebar reordering, and narrow-width sidebar hiding.</li><li>Refactor API endpoints to use apiHandler for improved security and consistency.</li><li>Improve real-time SSE streaming in Bun standalone server.</li><li>Upgrade Gemini flash and image models and consolidate GPT defaults on gpt-5.4.</li><li>Fix smart widget placement to avoid overlap and default weather to San Francisco.</li><li>Add switchable Vercel Blob and S3-compatible storage.</li><li>Refactor dialog traffic lights to use shared TrafficLightButton component.</li><li>Improve stale cache recovery by clearing caches and unregistering SW before reload.</li><li>Support subdomain wildcard patterns in CORS and host allowlists.</li></ul>
+<summary>Minor changes (22)</summary>
+<ul><li>Improve iPod/karaoke playback, voice ducking for TTS/karaoke, and iPod widget control for karaoke.</li></ul><ul><li>Switch parse-title to Gemini 3 Flash; harden add-track against CORS, duplicates, and Shorts URLs.</li><li>Enable Gemini web search in chat for authenticated gemini-3-flash users; upgrade default chat/image models (gpt-5.4, etc.).</li><li>Admin dashboard date range (Today/7d/14d/30d); calendar todos with due dates and mobile editing.</li><li>Finder Go Up, sidebar reorder, narrow sidebar hide; refactor apiHandler across APIs; Bun SSE improvements.</li><li>Smart weather default (San Francisco); Vercel Blob / S3-compatible storage switch; TrafficLightButton for dialogs.</li><li>Stale cache recovery clears storage and unregisters service worker; subdomain wildcard CORS; fix dev PORT clash when <code>.env.local</code> sets 3000; reduce app reload loops on version update.</li><li>Remove Telegram reply truncation; refactor cloud sync client (single transport, logical grouping); optimize IndexedDB hot paths.</li><li>Centralize frontend API paths; unify IndexedDB/backup access; remove legacy sync public routes.</li><li>Docs: simplification waves, audit roadmaps, sync utility ordering, browser sidecar plan.</li></ul>
 </details>
 <h2>February 2026</h2>
 <ul><li>Implement Winamp integration with Webamp, including frameless mode, skins, YouTube seeking, and iPod library loading.</li></ul><ul><li>Introduce a two-tier memory system with daily notes and long-term memories, enhancing AI proactive greetings and user experience.</li><li>Enhance the AmbientBackground component with audio-reactive features and new liquid and warp display modes for iPod and Karaoke.</li><li>Implement display mode selection in KaraokeAppComponent and update display modes in iPod and Karaoke components.</li><li>Add app and desktop error boundaries for improved stability and user experience.</li><li>Implement app switcher functionality with keyboard shortcuts.</li></ul>
@@ -397,7 +404,7 @@
 <ul><li>Add sound effects for window operations, buttons, menus, and chat interactions.</li></ul><ul><li>Implement chat typing synthesis with Tone.js and pentatonic scale.</li><li>Add audio transcription support for voice input in Chats and TextEdit.</li><li>Improve mobile responsiveness with touch support, swipe navigation, and adaptive window sizing.</li><li>Add SEO meta tags, favicon, and Geneva font for classic Mac aesthetics.</li><li>Implement localStorage persistence for app state across sessions.</li><li>Add About This Computer dialog with dynamic memory usage visualization.</li><li>Add help and about dialogs with grid layout to all apps.</li><li>Enhance Internet Explorer with loading states, error handling, and favicon support.</li><li>Add emoji picker, wallpaper selection, and UI interaction sound effects.</li></ul>
 </details>
 <hr>
-<em>This changelog is automatically generated and summarized from git history. Last updated: 2026-03-15</em>
+<em>This changelog is maintained from git history and manual curation. Last updated: 2026-03-17</em>
       </article>
       
       <nav class="nav">

@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/plan-browser-sidecar" class="">Plan: Robust Web Fetch & Iframe Proxy via Lightpanda Browser Sidecar</a>
+  </div>
+</div>
+<div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
@@ -226,6 +232,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/candybar" class="nav-child ">2.24 CandyBar</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -404,9 +411,8 @@
   // Route wrapper
   apiHandler,
 
-  // Redis + request context
+  // Redis
   createRedis,
-  createRequestContext,
 
   // CORS
   getEffectiveOrigin,
@@ -417,9 +423,6 @@
   extractAuth,
   extractAuthNormalized,
   isAdmin,
-
-  // Rate limiting
-  RATE_LIMITS,
 
   // Constants
   REDIS_PREFIXES,
@@ -442,24 +445,10 @@
 );</code></pre>
 <code>apiHandler</code> provides:
 <ul><li>Shared CORS + origin checks</li></ul><ul><li>Method allow-list enforcement (<code>405</code> on unsupported methods)</li><li>Optional/required auth resolution via <code>request-auth.ts</code></li><li>Shared Redis/logger/request context for handlers</li><li>Consistent <code>500</code> handling for uncaught exceptions</li></ul>
-<h3>Request Context Pattern</h3>
-<p>For endpoints that still use explicit middleware composition, <code>createRequestContext()</code> reduces boilerplate by extracting common data from requests.</p>
-<strong><code>RequestContext</code> interface:</strong>
-<table><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>requestId</code></td><td>string</td><td>Unique ID for logging</td></tr><tr><td><code>origin</code></td><td>string \</td><td>null</td><td>Effective origin from request</td></tr><tr><td><code>originAllowed</code></td><td>boolean</td><td>Whether origin is allowed</td></tr><tr><td><code>ip</code></td><td>string</td><td>Client IP address</td></tr><tr><td><code>user</code></td><td>AuthenticatedUser \</td><td>null</td><td>Authenticated user (if any)</td></tr><tr><td><code>redis</code></td><td>Redis</td><td>Redis client instance</td></tr><tr><td><code>log</code></td><td>function</td><td>Logging helper with request ID</td></tr><tr><td><code>logError</code></td><td>function</td><td>Error logging helper</td></tr></tbody></table>
+<h3>Specialized route wrappers</h3>
+<p>Routes should default to <code>apiHandler()</code>. If an endpoint needs multipart upload, webhook verification, or cron-only auth behavior, it should use a specialized wrapper that keeps the same shared entry flow instead of introducing a separate request-context pattern.</p>
 <h3>Auth Utilities</h3>
 <table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody><tr><td><code>resolveRequestAuth(req, redis, { required, allowExpired })</code></td><td>Resolves optional/required auth and validates token</td></tr><tr><td><code>extractAuthNormalized(req)</code></td><td>Normalized header extraction (<code>Authorization</code>, <code>X-Username</code>)</td></tr><tr><td><code>validateAuth(redis, username, token, options)</code></td><td>Low-level token validation + expiry/grace handling</td></tr><tr><td><code>isAdmin(redis, username, token)</code></td><td>Admin check helper</td></tr></tbody></table>
-<h3>Rate Limit Presets</h3>
-<pre><code>// Built-in rate limit configuration helpers
-const RATE_LIMITS = {
-  burst: (prefix) =&gt; ({ prefix: `${prefix}:burst`, windowSeconds: 60, limit: 10, byIp: true }),
-  daily: (prefix, limit = 100) =&gt; ({ prefix: `${prefix}:daily`, windowSeconds: 86400, limit, byIp: true }),
-  hourly: (prefix, limit = 60) =&gt; ({ prefix: `${prefix}:hourly`, windowSeconds: 3600, limit, byIp: false }),
-  budget5h: (prefix, limit = 15) =&gt; ({ prefix: `${prefix}:5h`, windowSeconds: 18000, limit, byIp: false }),
-};
-
-// Usage
-const burst = RATE_LIMITS.burst("songs");
-const daily = RATE_LIMITS.daily("songs", 500);</code></pre>
 <p>> <strong>See Also:</strong> <a href="/docs/api-design-guide">API Design Guide</a> for comprehensive patterns and examples.</p>
 <h2>API Endpoint Inventory</h2>
 <h3>Core APIs</h3>
@@ -469,7 +458,7 @@ const daily = RATE_LIMITS.daily("songs", 500);</code></pre>
 <h3>AI Generation APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/ie-generate</code></td><td>POST</td><td>Internet Explorer time-travel</td></tr><tr><td><code>/api/applet-ai</code></td><td>POST</td><td>Applet AI assistant</td></tr></tbody></table>
 <h3>Communication APIs</h3>
-<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/rooms</code></td><td>GET, POST</td><td>Rooms list + create</td></tr><tr><td><code>/api/rooms/[id]</code></td><td>GET, DELETE</td><td>Room detail + delete</td></tr><tr><td><code>/api/rooms/[id]/messages</code></td><td>GET, POST</td><td>Messages</td></tr><tr><td><code>/api/rooms/[id]/messages/[msgId]</code></td><td>DELETE</td><td>Delete message (admin)</td></tr><tr><td><code>/api/messages/bulk</code></td><td>GET</td><td>Bulk messages</td></tr><tr><td><code>/api/presence/switch</code></td><td>POST</td><td>Presence switching</td></tr><tr><td><code>/api/presence/heartbeat</code></td><td>GET, POST</td><td>Global online presence heartbeat / list online users</td></tr><tr><td><code>/api/rooms/[id]/join</code></td><td>POST</td><td>Join room</td></tr><tr><td><code>/api/rooms/[id]/leave</code></td><td>POST</td><td>Leave room</td></tr><tr><td><code>/api/rooms/[id]/typing</code></td><td>POST</td><td>Broadcast typing indicator</td></tr><tr><td><code>/api/users</code></td><td>GET</td><td>User search</td></tr><tr><td><code>/api/ai/ryo-reply</code></td><td>POST</td><td>AI reply in rooms</td></tr><tr><td><code>/api/share-applet</code></td><td>GET, POST, PATCH, DELETE</td><td>Applet sharing/store</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/rooms</code></td><td>GET, POST</td><td>Rooms list + create</td></tr><tr><td><code>/api/rooms/[id]</code></td><td>GET, DELETE</td><td>Room detail + delete</td></tr><tr><td><code>/api/rooms/[id]/messages</code></td><td>GET, POST</td><td>Messages</td></tr><tr><td><code>/api/rooms/[id]/messages/[msgId]</code></td><td>DELETE</td><td>Delete message (admin)</td></tr><tr><td><code>/api/messages/bulk</code></td><td>GET</td><td>Bulk messages</td></tr><tr><td><code>/api/presence/switch</code></td><td>POST</td><td>Presence switching</td></tr><tr><td><code>/api/presence/heartbeat</code></td><td>GET, POST</td><td>Global presence (authenticated): list online / heartbeat</td></tr><tr><td><code>/api/rooms/[id]/join</code></td><td>POST</td><td>Join room</td></tr><tr><td><code>/api/rooms/[id]/leave</code></td><td>POST</td><td>Leave room</td></tr><tr><td><code>/api/rooms/[id]/typing</code></td><td>POST</td><td>Broadcast typing indicator</td></tr><tr><td><code>/api/users</code></td><td>GET</td><td>User search</td></tr><tr><td><code>/api/ai/ryo-reply</code></td><td>POST</td><td>AI reply in rooms</td></tr><tr><td><code>/api/share-applet</code></td><td>GET, POST, PATCH, DELETE</td><td>Applet sharing/store</td></tr></tbody></table>
 <h3>Listen APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/listen/sessions</code></td><td>GET, POST</td><td>List/create listen-together sessions</td></tr><tr><td><code>/api/listen/sessions/[id]</code></td><td>GET</td><td>Fetch session state</td></tr><tr><td><code>/api/listen/sessions/[id]/join</code></td><td>POST</td><td>Join session</td></tr><tr><td><code>/api/listen/sessions/[id]/leave</code></td><td>POST</td><td>Leave session</td></tr><tr><td><code>/api/listen/sessions/[id]/sync</code></td><td>POST</td><td>Sync DJ playback state</td></tr><tr><td><code>/api/listen/sessions/[id]/reaction</code></td><td>POST</td><td>Send emoji reaction</td></tr></tbody></table>
 <h3>Cloud Sync APIs</h3>

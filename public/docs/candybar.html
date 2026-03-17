@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chats - ryOS Docs</title>
+  <title>CandyBar - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -209,7 +209,7 @@
     <a href="/docs/apps" class="">2. Apps</a>
   </button>
   <div class="nav-children" style="display: block;">
-    <a href="/docs/chats" class="nav-child active">2.1 Chats</a>
+    <a href="/docs/chats" class="nav-child ">2.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">2.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">2.3 iPod</a>
     <a href="/docs/karaoke" class="nav-child ">2.4 Karaoke</a>
@@ -232,7 +232,7 @@
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
     <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
     <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
-    <a href="/docs/candybar" class="nav-child ">2.24 CandyBar</a>
+    <a href="/docs/candybar" class="nav-child active">2.24 CandyBar</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -310,38 +310,19 @@
     
     <main class="content">
       <article>
-        <h1>Chats</h1>
-<p>Chats is the central communication hub for ryOS, enabling users to interact with the intelligent Ryo AI assistant, engage in public chat rooms, and even control their desktop environment using natural language commands. It streamlines various ryOS functionalities into a single, intuitive interface.</p>
-<h2>Overview</h2>
-<p>The Chats app serves as a versatile communication platform within ryOS. Its primary function is to provide direct access to the Ryo AI assistant, a powerful tool capable of understanding natural language requests to assist with coding, provide help with ryOS features, and even manage files and applications. Beyond its AI capabilities, Chats also fosters community interaction by allowing users to join public chat rooms, connecting with other ryOS users.</p>
-<p>Whether you need to quickly generate a code snippet, find a specific file, launch an app, or simply chat with fellow users, Chats offers a unified and efficient way to manage your digital interactions. Its blend of AI-driven productivity and social connectivity makes it an indispensable part of the ryOS experience, designed to enhance user workflow and collaboration.</p>
+        <h1>CandyBar</h1>
+<p>CandyBar is a dock customization app for ryOS: browse icon packs and apply them to the Mac-style dock. It follows the same window and sidebar patterns as other productivity apps.</p>
 <h2>Features</h2>
-<ul><li><strong>Ryo AI Assistant:</strong><ul><li><strong>Intelligent Conversation:</strong> Chat with Ryo for general assistance, code generation, or specific help regarding ryOS functionalities.</li><li><strong>File & Applet Management:</strong> Request Ryo to create new HTML applets, edit existing documents, read file contents, or search the Applets Store for new tools.</li><li><strong>System Control:</strong> Command Ryo to launch or close applications, switch between ryOS themes, or manage playback in the <a href="/docs/ipod">iPod</a> app.</li><li><strong>Contextual Assistance:</strong> Send a 👋 nudge to receive context-aware tips from Ryo. When music is playing, Ryo automatically enters "DJ Mode," offering relevant music-related interactions.</li></ul></li></ul><ul><li><strong>Interactive Chat Rooms:</strong><ul><li><strong>Public Engagement:</strong> Join various public chat rooms to connect and communicate with other ryOS users.</li><li><strong>AI Integration in Rooms:</strong> Mention <code>@ryo</code> within any chat room to solicit responses or assistance from the AI assistant in a public context.</li></ul></li><li><strong>Image Messaging:</strong><ul><li><strong>Image Upload:</strong> Attach images to messages by clicking the image icon or dragging files into the chat input.</li><li><strong>Image Preview:</strong> Attached images display as Aqua-styled thumbnails before sending.</li><li><strong>Inline Display:</strong> Received images appear inline in chat messages with full-bleed styling.</li><li><strong>AI Image Analysis:</strong> When chatting with Ryo, attached images are automatically resized and sent for AI-powered visual analysis.</li></ul></li><li><strong>Voice Messaging:</strong><ul><li><strong>Push-to-Talk:</strong> Utilize the Push-to-Talk feature by holding the <code>Space</code> key or tapping the microphone button to record and send voice messages effortlessly.</li></ul></li></ul>
-<h2>User Guide</h2>
-<h3>Getting Started</h3>
-To launch the Chats app, simply click its icon in the ryOS dock or navigate to it via the <a href="/docs/applet-store">Applet Store</a>. Upon opening, you'll be presented with the chat interface, ready for you to interact with Ryo or join a chat room.
-<h3>Key Actions</h3>
-<ul><li><strong>To chat with Ryo:</strong> Type your message directly into the input field at the bottom of the window and press Enter.</li><li><strong>To create or edit files:</strong> Simply ask Ryo, e.g., "Ryo, create a new HTML applet called 'MyWidget'" or "Ryo, edit my 'Notes.txt' file."</li><li><strong>To control ryOS apps:</strong> Issue commands like "Ryo, launch Calculator" or "Ryo, switch to Dark theme."</li><li><strong>To join a chat room:</strong> Look for the chat room sidebar (if visible) or use a menu option to browse and join available rooms.</li><li><strong>To send a voice message:</strong> Hold down the <code>Space</code> key while speaking, then release to send. Alternatively, click the microphone icon to record.</li><li><strong>To send an image:</strong> Click the image icon in the chat input, or drag and drop an image file into the chat. You can include a text message along with your image.</li></ul>
-<h3>Tips & Shortcuts</h3>
-<ul><li><strong>Push-to-Talk:</strong> Hold the <code>Space</code> key for quick voice messages.</li><li><strong>AI in Chat Rooms:</strong> Type <code>@ryo</code> followed by your message in a chat room to get an AI response.</li><li><strong>Contextual Help:</strong> Send a <code>👋 nudge</code> message to Ryo for helpful tips based on your current ryOS activity.</li><li><strong>DJ Mode:</strong> If the Music app is playing, Ryo will automatically offer music-related interactions.</li></ul>
-<h2>Technical Details</h2>
-<h3>Window Configuration</h3>
-<ul><li><strong>Default size:</strong> 560×360px</li><li><strong>Minimum size:</strong> 300×320px</li></ul>
-<h3>Component Architecture</h3>
-The app consists of 7 component file(s):
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatMessages.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/components/ChatMessages.tsx</a></code></li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/TokenStatus.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/components/TokenStatus.tsx</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/CreateRoomDialog.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/components/CreateRoomDialog.tsx</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatRoomSidebar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/components/ChatRoomSidebar.tsx</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatsMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/components/ChatsMenuBar.tsx</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatInput.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/components/ChatInput.tsx</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatsAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/components/ChatsAppComponent.tsx</a></code></li></ul>
-<h3>Hooks & Utilities</h3>
-<strong>Custom Hooks:</strong>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useTokenRefresh.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/hooks/useTokenRefresh.ts</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useRyoChat.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/hooks/useRyoChat.ts</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useChatRoom.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/hooks/useChatRoom.ts</a></code></li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useAiChat.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/hooks/useAiChat.ts</a></code></li></ul>
-<h3>State Management</h3>
-The Chats app leverages a Zustand store, specifically <code>useChatsStore</code>, for managing global application state related to chat messages, room information, and other UI states. Local component state is also utilized where appropriate for temporary UI interactions.
-<h2>Related Apps</h2>
-<p>The <a href="/docs/finder">Finder</a> app works seamlessly with Chats, as Ryo can directly interact with documents and applets stored within your file system. The <a href="/docs/ipod">iPod</a> app integrates with Chats, enabling Ryo's "DJ Mode" for a more interactive audio experience.</p>
+<ul><li><strong>Icon pack browser:</strong> Explore available packs and preview styles before applying.</li></ul><ul><li><strong>Dock integration:</strong> Updates dock icons when a pack is selected (syncs with dock icon cloud settings where enabled).</li><li><strong>Themes:</strong> Adapts to System 7, macOS Aqua, Windows XP, and Windows 98.</li></ul>
+<h2>User guide</h2>
+<p>Open CandyBar from the launcher. Pick an icon pack from the list; the dock updates to match. Use the app menu for pack-related actions as exposed in your build.</p>
+<h2>Technical notes</h2>
+<ul><li>Main UI: <code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/candybar/components/CandyBarAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/candybar/components/CandyBarAppComponent.tsx</a></code></li></ul><ul><li>Logic and pack types: <code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/candybar/hooks/useCandyBarLogic.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/candybar/hooks/useCandyBarLogic.ts</a></code></li><li>Registered in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/config/appRegistry.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/config/appRegistry.tsx</a></code> as <strong>CandyBar</strong></li></ul>
       </article>
       
       <nav class="nav">
-        <a href="/docs/apps">← Apps</a>
-        <a href="/docs/internet-explorer">Internet Explorer →</a>
+        <a href="/docs/contacts">← Contacts</a>
+        <a href="/docs/application-framework">Application Framework →</a>
       </nav>
       
     </main>

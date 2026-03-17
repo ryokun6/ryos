@@ -1,13 +1,13 @@
 # Overview
 
-ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 23 fully-functional apps, an AI assistant, and a complete virtual file system.
+ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 24 fully-functional apps, an AI assistant, and a complete virtual file system.
 
 Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
 ```mermaid
 graph TB
     subgraph Presentation["Presentation Layer"]
-        Apps[23 App Modules]
+        Apps[24 App Modules]
         UI[UI Components]
         Themes[4 Themes]
     end
@@ -54,7 +54,7 @@ graph TB
 ## Key Features
 
 - **[Multi-Theme Support](/docs/theme-system):** System 7, Mac OS X (Aqua), Windows XP, Windows 98
-- **[23 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, and more
+- **[24 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, CandyBar, and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
 - **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading and cloud sync
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
@@ -91,7 +91,7 @@ graph TB
 ├── public/           # Static assets
 ├── src/
 │   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram)
-│   ├── apps/         # 23 app modules
+│   ├── apps/         # 24 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
 │   ├── hooks/        # 44 custom hooks

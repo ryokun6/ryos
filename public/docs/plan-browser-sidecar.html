@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan: Robust Web Fetch & Iframe Proxy via Lightpanda Browser Sidecar - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+      font-size: 11px;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
+    /* Collapsible details */
+    details { margin: 8px 0; }
+    details summary { 
+      cursor: pointer; 
+      color: #666; 
+      font-size: 11px;
+      padding: 4px 0;
+      user-select: none;
+    }
+    details summary:hover { color: #000; }
+    details[open] summary { margin-bottom: 8px; }
+    details ul { margin-top: 0; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/plan-browser-sidecar" class="active">Plan: Robust Web Fetch & Iframe Proxy via Lightpanda Browser Sidecar</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+    <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
+    <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/apps" class="">2. Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chats" class="nav-child ">2.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">2.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">2.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">2.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">2.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">2.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">2.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">2.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">2.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">2.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">2.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">2.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">2.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">2.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">2.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">2.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">2.17 Applet Store</a>
+    <a href="/docs/stickies" class="nav-child ">2.18 Stickies</a>
+    <a href="/docs/infinite-mac" class="nav-child ">2.19 Infinite Mac</a>
+    <a href="/docs/winamp" class="nav-child ">2.20 Winamp</a>
+    <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
+    <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
+    <a href="/docs/contacts" class="nav-child ">2.23 Contacts</a>
+    <a href="/docs/candybar" class="nav-child ">2.24 CandyBar</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">3. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">3.1 Window Management</a>
+    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/hooks-architecture" class="nav-child ">3.4 Hooks Architecture</a>
+    <a href="/docs/component-architecture" class="nav-child ">3.5 Component Architecture</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/ai-system" class="">4. AI System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/file-system" class="">5. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">6. Audio System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-components" class="">7. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/api-reference" class="">8. API Reference</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
+    <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
+    <a href="/docs/auth-api" class="nav-child ">8.4 Auth API</a>
+    <a href="/docs/rooms-api" class="nav-child ">8.5 Rooms API</a>
+    <a href="/docs/messages-api" class="nav-child ">8.6 Messages API</a>
+    <a href="/docs/presence-api" class="nav-child ">8.7 Presence API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
+    <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/changelog" class="">9. Changelog</a>
+  </div>
+</div>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>Plan: Robust Web Fetch & Iframe Proxy via Lightpanda Browser Sidecar</h1>
+<h2>Problem Statement</h2>
+<p>The current web fetch (<code>/<a href="https://github.com/ryokun6/ryos/blob/main/api/chat/tools/executors.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/chat/tools/executors.ts</a> → executeWebFetch</code>) and iframe proxy (<code>/<a href="https://github.com/ryokun6/ryos/blob/main/api/iframe-check.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/iframe-check.ts</a></code>) use Node/Bun's native <code>fetch()</code> to download pages. This approach has fundamental limitations:</p>
+<table><thead><tr><th>Issue</th><th>Impact</th></tr></thead><tbody><tr><td><strong>No JavaScript execution</strong></td><td>SPA/CSR sites return empty shells (<code>&lt;div id="root"&gt;&lt;/div&gt;</code>) — content is invisible to both <code>webFetch</code> (AI chat) and the iframe proxy</td></tr><tr><td><strong>Regex-based HTML parsing</strong></td><td>Metadata extraction, tag stripping, and selector matching all use regex — fragile against malformed or complex HTML</td></tr><tr><td><strong>No real DOM</strong></td><td><code>webFetch</code>'s <code>selector</code> param is accepted but effectively useless — there's no DOM to query</td></tr><tr><td><strong>Sub-resource CORS failures</strong></td><td>The injected <code>fetch</code>/<code>XHR</code> interceptor only covers same-origin GETs; cross-origin CSS/JS/images still break in the iframe</td></tr><tr><td><strong>Bot detection</strong></td><td>Despite header rotation, many sites serve degraded content or CAPTCHAs to raw <code>fetch()</code> requests (no cookie jar, no JS challenge solving)</td></tr><tr><td><strong>Full-page buffering</strong></td><td><code>response.text()</code> loads entire pages into memory before injection — very large pages can spike RAM</td></tr><tr><td><strong>No cookie/session state</strong></td><td>Each request is stateless — sites that require login, cookie consent, or multi-step flows can't be handled</td></tr></tbody></table>
+<h2>Proposed Solution: Lightpanda Browser Sidecar</h2>
+<a href="https://github.com/lightpanda-io/browser">Lightpanda</a> is an open-source headless browser written in Zig with a V8 JS engine:
+<ul><li><strong>10× faster</strong> and <strong>9× less memory</strong> than Chrome headless</li></ul><ul><li><strong>Sub-100ms cold start</strong> — no warm-up penalty</li><li><strong>Native CDP</strong> (Chrome DevTools Protocol) — compatible with Playwright and Puppeteer</li><li><strong>Docker image</strong>: <code>lightpanda/browser:nightly</code> exposes CDP on port <code>9222</code></li><li><strong>Single binary, single process</strong> — trivial to deploy as a sidecar</li></ul>
+<h3>Architecture</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                        Docker Compose                           │
+│                                                                 │
+│  ┌──────────────────────┐     CDP/WS      ┌──────────────────┐ │
+│  │    ryOS API Server   │ ◄─────────────► │    Lightpanda    │ │
+│  │    (Bun, port 3000)  │   :9222          │    Browser       │ │
+│  │                      │                  │    (Zig + V8)    │ │
+│  │  - /api/iframe-check │                  │                  │ │
+│  │  - /api/link-preview │                  │  - JS execution  │ │
+│  │  - webFetch (chat)   │                  │  - Real DOM      │ │
+│  │                      │                  │  - Cookie jar    │ │
+│  └──────────────────────┘                  └──────────────────┘ │
+│              │                                                   │
+│              │ Redis                                             │
+│  ┌───────────▼──────────┐                                       │
+│  │   Upstash Redis      │                                       │
+│  └──────────────────────┘                                       │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+<p>The API server talks to Lightpanda over CDP WebSocket on an internal Docker network. Lightpanda is never exposed to the public internet.</p>
+<h3>Graceful Degradation</h3>
+<p>The browser sidecar is <strong>optional</strong>. When <code>BROWSER_CDP_URL</code> is not set (or the sidecar is unreachable), all endpoints fall back to the current <code>safeFetchWithRedirects</code> behavior. This means: <ul><li><strong>Dev mode</strong> works without Docker — no change to <code>bun run dev</code></li></ul><ul><li><strong>Vercel deployment</strong> continues to work as-is (no sidecar available)</li><li><strong>Self-hosted Docker</strong> gets the full browser-backed experience</li></ul></p>
+<hr>
+<h2>Implementation Plan</h2>
+<h3>Phase 1: Infrastructure & Browser Client</h3>
+<strong>Goal:</strong> Add Lightpanda as a sidecar container and create a shared browser client module.
+<h4>1a. Docker Compose setup</h4>
+<p>Create <code>docker-compose.yml</code>:</p>
+<pre><code>services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - BROWSER_CDP_URL=ws://lightpanda:9222
+      # ... other env vars from .env.local
+    depends_on:
+      lightpanda:
+        condition: service_started
+
+  lightpanda:
+    image: lightpanda/browser:nightly
+    command: ["serve", "--host", "0.0.0.0", "--port", "9222"]
+    restart: unless-stopped
+    # Internal only — not exposed to host
+    expose:
+      - "9222"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"</code></pre>
+<h4>1b. Browser client module</h4>
+<p>Create <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_browser.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/_browser.ts</a></code> — a thin abstraction over CDP/Playwright:</p>
+<pre><code>// api/_utils/_browser.ts
+
+import { chromium, type Browser, type Page } from "playwright";
+
+const BROWSER_CDP_URL = process.env.BROWSER_CDP_URL; // e.g. ws://lightpanda:9222
+const BROWSER_TIMEOUT_MS = 25_000;
+const BROWSER_MAX_CONTENT_LENGTH = 5 * 1024 * 1024; // 5MB safety limit
+
+let _browserPromise: Promise&lt;Browser&gt; | null = null;
+
+/** Lazily connect to the CDP browser sidecar. Returns null if unconfigured. */
+export async function getBrowser(): Promise&lt;Browser | null&gt; {
+  if (!BROWSER_CDP_URL) return null;
+
+  if (!_browserPromise) {
+    _browserPromise = chromium.connectOverCDP(BROWSER_CDP_URL).catch((err) =&gt; {
+      _browserPromise = null; // retry next call
+      throw err;
+    });
+  }
+
+  return _browserPromise;
+}
+
+/** Check if the browser sidecar is available. */
+export function isBrowserAvailable(): boolean {
+  return !!BROWSER_CDP_URL;
+}
+
+export interface BrowserFetchResult {
+  html: string;
+  finalUrl: string;
+  title?: string;
+  contentType: string;
+  status: number;
+}
+
+export interface BrowserFetchOptions {
+  timeoutMs?: number;
+  waitUntil?: "load" | "domcontentloaded" | "networkidle";
+  blockResources?: string[];  // e.g. ["image", "media", "font"] for webFetch
+  userAgent?: string;
+  extraHeaders?: Record&lt;string, string&gt;;
+}
+
+/**
+ * Fetch a URL using the headless browser, returning fully-rendered HTML.
+ * Falls back to null if the browser sidecar is unavailable.
+ */
+export async function browserFetch(
+  url: string,
+  options: BrowserFetchOptions = {}
+): Promise&lt;BrowserFetchResult | null&gt; {
+  const browser = await getBrowser();
+  if (!browser) return null;
+
+  const context = await browser.newContext({
+    userAgent: options.userAgent,
+    extraHTTPHeaders: options.extraHeaders,
+    bypassCSP: true,
+  });
+
+  const page = await context.newPage();
+
+  try {
+    // Optionally block heavy resources to speed up fetch
+    if (options.blockResources?.length) {
+      await page.route("**/*", (route) =&gt; {
+        const type = route.request().resourceType();
+        if (options.blockResources!.includes(type)) {
+          return route.abort();
+        }
+        return route.continue();
+      });
+    }
+
+    const response = await page.goto(url, {
+      timeout: options.timeoutMs ?? BROWSER_TIMEOUT_MS,
+      waitUntil: options.waitUntil ?? "load",
+    });
+
+    if (!response) {
+      return null;
+    }
+
+    const html = await page.content();
+    const title = await page.title();
+
+    return {
+      html,
+      finalUrl: page.url(),
+      title: title || undefined,
+      contentType: response.headers()["content-type"] || "text/html",
+      status: response.status(),
+    };
+  } finally {
+    await page.close();
+    await context.close();
+  }
+}
+
+/**
+ * Extract text content from a page using real DOM selectors.
+ * Much more accurate than regex-based extraction.
+ */
+export async function browserExtractText(
+  url: string,
+  options: BrowserFetchOptions &amp; { selector?: string } = {}
+): Promise&lt;{
+  text: string;
+  title?: string;
+  description?: string;
+  siteName?: string;
+  finalUrl: string;
+} | null&gt; {
+  const browser = await getBrowser();
+  if (!browser) return null;
+
+  const context = await browser.newContext({
+    userAgent: options.userAgent,
+    extraHTTPHeaders: options.extraHeaders,
+    bypassCSP: true,
+  });
+
+  const page = await context.newPage();
+
+  try {
+    // Block images/media/fonts for faster text extraction
+    await page.route("**/*", (route) =&gt; {
+      const type = route.request().resourceType();
+      if (["image", "media", "font", "stylesheet"].includes(type)) {
+        return route.abort();
+      }
+      return route.continue();
+    });
+
+    await page.goto(url, {
+      timeout: options.timeoutMs ?? BROWSER_TIMEOUT_MS,
+      waitUntil: options.waitUntil ?? "load",
+    });
+
+    const result = await page.evaluate((sel) =&gt; {
+      const meta = (name: string) =&gt;
+        document.querySelector(`meta[property="${name}"], meta[name="${name}"]`)
+          ?.getAttribute("content") ?? undefined;
+
+      let textContent: string;
+      if (sel) {
+        const el = document.querySelector(sel);
+        textContent = el?.textContent ?? document.body.innerText;
+      } else {
+        // Prefer &lt;main&gt; or &lt;article&gt; if present
+        const main =
+          document.querySelector("main") ??
+          document.querySelector("article") ??
+          document.querySelector('[role="main"]');
+        textContent = (main ?? document.body).innerText;
+      }
+
+      return {
+        text: textContent,
+        title: document.title || meta("og:title"),
+        description: meta("og:description") || meta("description"),
+        siteName: meta("og:site_name"),
+      };
+    }, options.selector ?? null);
+
+    return {
+      ...result,
+      finalUrl: page.url(),
+    };
+  } finally {
+    await page.close();
+    await context.close();
+  }
+}</code></pre>
+<strong>Key design decisions:</strong>
+<ul><li>Lazy connection — doesn't connect until first request</li><li>Auto-reconnect on failure (nulls the promise so next call retries)</li><li><code>bypassCSP: true</code> — we're proxying, CSP should not restrict us</li><li>Resource blocking for <code>webFetch</code> — skip images/fonts to keep extraction fast</li><li>Real DOM <code>document.querySelector</code> replaces all regex-based selector/content extraction</li></ul>
+<h4>1c. Configuration</h4>
+<p>Add to <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/runtime-config.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/runtime-config.ts</a></code>:</p>
+<pre><code>export const BROWSER_CDP_URL = process.env.BROWSER_CDP_URL || "";
+export const BROWSER_ENABLED = !!BROWSER_CDP_URL;</code></pre>
+<p>Add <code>playwright</code> as a dependency (it's already in devDependencies, move to dependencies or add <code>playwright-core</code> for lighter install):</p>
+<pre><code>bun add playwright-core</code></pre>
+<p>> <strong>Note:</strong> <code>playwright-core</code> (no bundled browsers) is sufficient since we connect over CDP to an external browser. No need for <code>npx playwright install</code>.</p>
+<hr>
+<h3>Phase 2: Upgrade <code>webFetch</code> (AI Chat Tool)</h3>
+<strong>Goal:</strong> When the browser sidecar is available, use it for <code>webFetch</code> to get JS-rendered content with real DOM extraction.
+<strong>File:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/api/chat/tools/executors.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/chat/tools/executors.ts</a></code>
+<p>Changes to <code>executeWebFetch()</code>:</p>
+<pre><code>import { browserExtractText, isBrowserAvailable } from "../_utils/_browser.js";
+
+export async function executeWebFetch(
+  input: WebFetchInput,
+  context: ServerToolContext
+): Promise&lt;WebFetchOutput&gt; {
+  const { url, selector } = input;
+
+  // --- Try browser-based extraction first ---
+  if (isBrowserAvailable()) {
+    try {
+      const result = await browserExtractText(url, {
+        selector,
+        blockResources: ["image", "media", "font"],
+        timeoutMs: WEB_FETCH_TIMEOUT_MS,
+      });
+
+      if (result) {
+        let textContent = result.text;
+        const truncated = textContent.length &gt; WEB_FETCH_MAX_CONTENT_LENGTH;
+        if (truncated) {
+          textContent = textContent.slice(0, WEB_FETCH_MAX_CONTENT_LENGTH) + "\n\n[...truncated]";
+        }
+
+        return {
+          success: true,
+          url,
+          finalUrl: result.finalUrl,
+          title: result.title,
+          description: result.description,
+          siteName: result.siteName || new URL(result.finalUrl).hostname,
+          content: textContent,
+          contentLength: textContent.length,
+          truncated,
+          message: `Fetched content from ${result.siteName || new URL(result.finalUrl).hostname}`,
+        };
+      }
+    } catch (err) {
+      context.log(`[webFetch] Browser extraction failed, falling back to fetch: ${err}`);
+    }
+  }
+
+  // --- Fallback: existing fetch-based logic (unchanged) ---
+  // ... current implementation ...
+}</code></pre>
+<strong>What this fixes:</strong>
+<ul><li>SPA/CSR sites now return actual rendered content</li><li><code>selector</code> parameter actually works via <code>document.querySelector()</code></li><li>Metadata extraction uses real DOM instead of regex</li><li>Content extraction uses <code>innerText</code> (respects visibility, <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code> excluded automatically)</li></ul>
+<hr>
+<h3>Phase 3: Upgrade Iframe Proxy</h3>
+<strong>Goal:</strong> Use the browser to render pages before proxying them into the iframe, solving JS-dependent sites and improving sub-resource handling.
+<strong>File:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/api/iframe-check.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/iframe-check.ts</a></code>
+<p>The iframe proxy is the most complex integration point. The approach: <ol><li><strong>For proxy mode:</strong> Use the browser to get fully-rendered HTML, then apply the existing injection pipeline (base tag, navigation interceptor, font overrides)</li></ol><ol><li><strong>For check mode:</strong> Use the browser to detect actual frame-blocking behavior (some sites only block via JS)</li><li><strong>Keep the existing <code>safeFetchWithRedirects</code> as fallback</strong></li></ol></p>
+<pre><code>// In the proxy section of iframe-check.ts:
+
+import { browserFetch, isBrowserAvailable } from "./_utils/_browser.js";
+
+// Inside the proxy mode handler:
+let html: string;
+let pageTitle: string | undefined;
+let finalUrl: string;
+
+if (isBrowserAvailable()) {
+  try {
+    const result = await browserFetch(targetUrl, {
+      timeoutMs: 25_000,
+      waitUntil: "load",
+      userAgent: BROWSER_HEADERS["User-Agent"],
+    });
+
+    if (result &amp;&amp; result.status &lt; 400) {
+      html = result.html;
+      pageTitle = result.title;
+      finalUrl = result.finalUrl;
+    } else {
+      // Fall through to fetch-based approach
+      throw new Error("Browser fetch returned error status");
+    }
+  } catch (err) {
+    logger.warn("Browser fetch failed, falling back to safeFetch", { err });
+    // ... existing safeFetchWithRedirects logic ...
+  }
+} else {
+  // ... existing safeFetchWithRedirects logic ...
+}
+
+// Continue with existing HTML injection pipeline...</code></pre>
+<strong>What this fixes:</strong>
+<ul><li>JS-rendered content appears in the iframe (React/Vue/Angular sites)</li><li>Pages that use JS-based frame-busting are neutralized at the browser level</li><li>Cookie consent dialogs and JS challenges may be handled</li><li>Sub-resources are fetched by the real browser, reducing CORS issues</li></ul>
+<strong>Important:</strong> The navigation interceptor script and font overrides still get injected into the rendered HTML. The browser renders the page first, then we inject our overrides.
+<hr>
+<h3>Phase 4: Upgrade Link Preview</h3>
+<strong>Goal:</strong> Extract OpenGraph metadata from JS-rendered pages.
+<strong>File:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/api/link-preview.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/link-preview.ts</a></code>
+<p>Many modern sites inject OG meta tags via JavaScript. Using the browser:</p>
+<pre><code>import { browserFetch, isBrowserAvailable } from "./_utils/_browser.js";
+
+// In the metadata extraction section:
+if (isBrowserAvailable()) {
+  try {
+    const result = await browserFetch(url, {
+      blockResources: ["image", "media", "font"],
+      timeoutMs: 8_000, // Shorter timeout for previews
+      waitUntil: "domcontentloaded",
+    });
+
+    if (result) {
+      // Extract OG metadata from the fully-rendered HTML
+      // ... same regex extraction, but on rendered HTML ...
+    }
+  } catch {
+    // Fall back to current approach
+  }
+}</code></pre>
+<hr>
+<h3>Phase 5: Connection Pooling & Health Checks</h3>
+<strong>Goal:</strong> Make the browser connection production-grade.
+<h4>5a. Connection pool with health monitoring</h4>
+<p>Enhance <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_browser.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/_browser.ts</a></code>:</p>
+<pre><code>let _lastHealthCheck = 0;
+const HEALTH_CHECK_INTERVAL_MS = 30_000;
+
+export async function ensureBrowserHealthy(): Promise&lt;boolean&gt; {
+  if (!BROWSER_CDP_URL) return false;
+
+  const now = Date.now();
+  if (now - _lastHealthCheck &lt; HEALTH_CHECK_INTERVAL_MS) return true;
+
+  try {
+    const browser = await getBrowser();
+    if (!browser?.isConnected()) {
+      _browserPromise = null; // force reconnect
+      return false;
+    }
+    _lastHealthCheck = now;
+    return true;
+  } catch {
+    _browserPromise = null;
+    return false;
+  }
+}</code></pre>
+<h4>5b. Page timeout & cleanup</h4>
+<p>Guard against leaked pages/contexts:</p>
+<pre><code>// Enforce a hard timeout on all page operations
+const HARD_TIMEOUT_MS = 30_000;
+
+async function withPage&lt;T&gt;(
+  fn: (page: Page) =&gt; Promise&lt;T&gt;,
+  options?: BrowserFetchOptions
+): Promise&lt;T | null&gt; {
+  const browser = await getBrowser();
+  if (!browser) return null;
+
+  const context = await browser.newContext({ bypassCSP: true });
+  const page = await context.newPage();
+
+  const timer = setTimeout(async () =&gt; {
+    try { await page.close(); } catch {}
+    try { await context.close(); } catch {}
+  }, HARD_TIMEOUT_MS);
+
+  try {
+    return await fn(page);
+  } finally {
+    clearTimeout(timer);
+    try { await page.close(); } catch {}
+    try { await context.close(); } catch {}
+  }
+}</code></pre>
+<h4>5c. Concurrency limiting</h4>
+<p>Prevent the sidecar from being overwhelmed:</p>
+<pre><code>const MAX_CONCURRENT_PAGES = 10;
+let _activePagesCount = 0;
+
+async function acquirePage(): Promise&lt;boolean&gt; {
+  if (_activePagesCount &gt;= MAX_CONCURRENT_PAGES) return false;
+  _activePagesCount++;
+  return true;
+}
+
+function releasePage(): void {
+  _activePagesCount = Math.max(0, _activePagesCount - 1);
+}</code></pre>
+<hr>
+<h3>Phase 6: SSRF Protection for Browser Fetches</h3>
+<strong>Goal:</strong> Ensure the browser sidecar can't be used for SSRF attacks.
+<p>The browser makes its own network requests, bypassing our <code>safeFetchWithRedirects</code>. We need defense-in-depth: <ol><li><strong>Pre-validate URLs</strong> before sending to the browser (existing <code>validatePublicUrl</code>)</li></ol><ol><li><strong>Network isolation</strong> — the Lightpanda container only gets external network access, not internal Docker network access to other services</li><li><strong>Request interception</strong> via Playwright to validate every URL the browser tries to fetch:</li></ol></p>
+<pre><code>await page.route("**/*", async (route) =&gt; {
+  const url = route.request().url();
+  try {
+    await validatePublicUrl(url);
+    await route.continue();
+  } catch {
+    await route.abort("blockedbyclient");
+  }
+});</code></pre>
+<p>Docker network isolation:</p>
+<pre><code># docker-compose.yml
+networks:
+  internal:
+    driver: bridge
+  external:
+    driver: bridge
+
+services:
+  app:
+    networks:
+      - internal
+      - external
+
+  lightpanda:
+    networks:
+      - internal   # Can talk to app
+      - external   # Can fetch public websites
+    # But NOT connected to any network with databases, Redis, etc.</code></pre>
+<hr>
+<h2>File Change Summary</h2>
+<table><thead><tr><th>File</th><th>Change</th><th>Phase</th></tr></thead><tbody><tr><td><code>docker-compose.yml</code></td><td><strong>New</strong> — defines app + lightpanda sidecar</td><td>1</td></tr><tr><td><code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_browser.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/_browser.ts</a></code></td><td><strong>New</strong> — browser client module</td><td>1</td></tr><tr><td><code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/runtime-config.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/runtime-config.ts</a></code></td><td>Add <code>BROWSER_CDP_URL</code> / <code>BROWSER_ENABLED</code></td><td>1</td></tr><tr><td><code>package.json</code></td><td>Add <code>playwright-core</code> dependency</td><td>1</td></tr><tr><td><code><a href="https://github.com/ryokun6/ryos/blob/main/api/chat/tools/executors.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/chat/tools/executors.ts</a></code></td><td>Use <code>browserExtractText</code> in <code>executeWebFetch</code> with fallback</td><td>2</td></tr><tr><td><code><a href="https://github.com/ryokun6/ryos/blob/main/api/iframe-check.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/iframe-check.ts</a></code></td><td>Use <code>browserFetch</code> in proxy mode with fallback</td><td>3</td></tr><tr><td><code><a href="https://github.com/ryokun6/ryos/blob/main/api/link-preview.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/link-preview.ts</a></code></td><td>Use <code>browserFetch</code> for OG metadata with fallback</td><td>4</td></tr><tr><td><code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_browser.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/_browser.ts</a></code></td><td>Add health checks, pooling, concurrency limits</td><td>5</td></tr><tr><td><code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_browser.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/_browser.ts</a></code></td><td>Add SSRF protection via request interception</td><td>6</td></tr><tr><td><code>Dockerfile</code></td><td>No change needed (browser is a separate container)</td><td>—</td></tr><tr><td><code>.env.local</code></td><td>Add <code>BROWSER_CDP_URL=ws://lightpanda:9222</code> example</td><td>1</td></tr><tr><td><code>AGENTS.md</code></td><td>Document <code>BROWSER_CDP_URL</code> env var</td><td>1</td></tr></tbody></table>
+<h2>Deployment Topologies</h2>
+<h3>Local Development (no Docker)</h3>
+<pre><code>BROWSER_CDP_URL not set → all endpoints use safeFetchWithRedirects (current behavior)</code></pre>
+<h3>Local Development (with Docker)</h3>
+<pre><code>docker compose up
+# App on :3000, Lightpanda on :9222 (internal only)
+# BROWSER_CDP_URL=ws://lightpanda:9222 set automatically</code></pre>
+<h3>Self-Hosted Production (Docker)</h3>
+<p>Same as above but with production env vars. Lightpanda runs as a sidecar.</p>
+<h3>Vercel Deployment</h3>
+<pre><code>BROWSER_CDP_URL not set → safeFetchWithRedirects fallback
+# OR
+BROWSER_CDP_URL=wss://cloud.lightpanda.io/ws?token=... → use Lightpanda Cloud</code></pre>
+<h3>Fly.io / Railway / Similar</h3>
+<p>Lightpanda runs as a separate service on the same internal network.</p>
+<hr>
+<h2>Risk Assessment</h2>
+<table><thead><tr><th>Risk</th><th>Mitigation</th></tr></thead><tbody><tr><td>Lightpanda crashes or hangs</td><td>Health checks + auto-reconnect + graceful fallback to <code>fetch()</code></td></tr><tr><td>Memory leak from unclosed pages</td><td>Hard timeout + <code>finally</code> cleanup + concurrency limit</td></tr><tr><td>SSRF through browser</td><td>Pre-validation + request interception + network isolation</td></tr><tr><td>Lightpanda doesn't support a site</td><td>Graceful fallback to <code>safeFetchWithRedirects</code></td></tr><tr><td>Added latency from browser rendering</td><td>Only ~100-500ms overhead for most sites; configurable <code>waitUntil</code></td></tr><tr><td>Playwright dependency size</td><td>Use <code>playwright-core</code> (no bundled browsers) — ~5MB</td></tr><tr><td>Lightpanda API instability (nightly)</td><td>Pin to a specific tag once stable releases begin; fallback ensures no breakage</td></tr></tbody></table>
+<h2>Success Metrics</h2>
+<p>After implementation, these should be measurably improved: <ol><li><strong>webFetch coverage</strong> — sites like Twitter/X, React SPAs, etc. return actual content instead of empty shells</li></ol><ol><li><strong>Iframe proxy fidelity</strong> — JS-rendered sites display correctly in the Internet Explorer app</li><li><strong>Link preview accuracy</strong> — OG metadata is extracted from JS-injected meta tags</li><li><strong>Selector support</strong> — <code>webFetch</code> <code>selector</code> param actually queries the DOM</li><li><strong>Zero regression</strong> — all existing tests pass; Vercel/dev-only deployments work exactly as before</li></ol></p>
+<h2>Estimated Effort</h2>
+<table><thead><tr><th>Phase</th><th>Effort</th><th>Dependencies</th></tr></thead><tbody><tr><td>Phase 1: Infrastructure & Client</td><td>1-2 days</td><td>None</td></tr><tr><td>Phase 2: webFetch upgrade</td><td>0.5 day</td><td>Phase 1</td></tr><tr><td>Phase 3: Iframe proxy upgrade</td><td>1 day</td><td>Phase 1</td></tr><tr><td>Phase 4: Link preview upgrade</td><td>0.5 day</td><td>Phase 1</td></tr><tr><td>Phase 5: Production hardening</td><td>1 day</td><td>Phases 1-4</td></tr><tr><td>Phase 6: SSRF protection</td><td>0.5 day</td><td>Phase 1</td></tr><tr><td><strong>Total</strong></td><td><strong>~5 days</strong></td></tr></tbody></table>
+      </article>
+      
+      <nav class="nav">
+        <span></span>
+        <a href="/docs/overview">Overview →</a>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
+    });
+  </script>
+</body>
+</html>
