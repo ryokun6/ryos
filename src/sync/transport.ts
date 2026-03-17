@@ -1,6 +1,7 @@
-import { abortableFetch } from "@/utils/abortableFetch";
-import { getApiUrl } from "@/utils/platform";
-import { getSyncSessionId } from "@/utils/syncSession";
+import {
+  fetchLogicalCloudSyncDomainResponse,
+  prepareCloudSyncAttachmentUpload,
+} from "@/api/sync";
 import {
   getLogicalCloudSyncDomainForPhysical,
   type LogicalCloudSyncDomain,
@@ -27,22 +28,10 @@ interface LogicalDomainResponse {
   parts?: Partial<Record<CloudSyncDomain, DomainPayload>>;
 }
 
-function getLogicalSyncDomainUrl(domain: LogicalCloudSyncDomain): string {
-  return getApiUrl(`/api/sync/domains/${encodeURIComponent(domain)}`);
-}
-
 async function fetchLogicalDomainPayload(
   domain: LogicalCloudSyncDomain
 ): Promise<LogicalDomainResponse | null> {
-  const response = await abortableFetch(getLogicalSyncDomainUrl(domain), {
-    method: "GET",
-    headers: {
-      "X-Sync-Session-Id": getSyncSessionId(),
-    },
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+  const response = await fetchLogicalCloudSyncDomainResponse(domain);
 
   if (response.status === 404) {
     return null;
@@ -102,32 +91,8 @@ export async function requestBlobUploadInstruction(
   itemKey?: string
 ): Promise<StorageUploadInstruction> {
   const logicalDomain = getLogicalCloudSyncDomainForPhysical(domain);
-  const response = await abortableFetch(
-    getApiUrl(
-      `/api/sync/domains/${encodeURIComponent(logicalDomain)}/attachments/prepare`
-    ),
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Sync-Session-Id": getSyncSessionId(),
-      },
-      body: JSON.stringify({
-        partDomain: domain,
-        ...(itemKey ? { itemKey } : {}),
-      }),
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorData as { error?: string }).error || "Failed to get sync upload token"
-    );
-  }
-
-  return (await response.json()) as StorageUploadInstruction;
+  return prepareCloudSyncAttachmentUpload(logicalDomain, {
+    partDomain: domain,
+    ...(itemKey ? { itemKey } : {}),
+  });
 }

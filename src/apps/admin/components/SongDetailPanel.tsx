@@ -7,6 +7,7 @@ import { ArrowLeft, Trash, MusicNote, Clock, User, VinylRecord, Hash, ArrowSquar
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { getLinkPreview } from "@/api/misc";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { LyricsSearchDialog, LyricsSearchResult } from "@/components/dialogs/LyricsSearchDialog";
 import { deleteSongMetadata, saveSongMetadata, CachedLyricsSource } from "@/utils/songMetadataCache";
@@ -345,17 +346,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       setIsYoutubeOembedLoading(true);
       try {
         const url = `https://www.youtube.com/watch?v=${youtubeId}`;
-        const response = await abortableFetch(
-          getApiUrl(`/api/link-preview?url=${encodeURIComponent(url)}`),
-          {
-            headers: { "Content-Type": "application/json" },
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-        if (!response.ok) return;
-        const data = (await response.json()) as { title?: string };
+        const data = await getLinkPreview(url);
         const title = data.title?.trim();
         if (!isCancelled) setYoutubeOembedTitle(title && title.length > 0 ? title : null);
       } catch {

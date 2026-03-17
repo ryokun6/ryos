@@ -2,14 +2,18 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import {
+  deleteSharedApplet,
+  getSharedApplet,
+  listSharedApplets,
+  updateSharedApplet,
+} from "@/api/shareApplet";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { Trash, Star, ArrowLeft, Sparkle, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
 import { useTranslation } from "react-i18next";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 interface AppStoreProps {
   theme?: string;
@@ -43,17 +47,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
 
   const fetchApplets = useCallback(async (signal?: AbortSignal) => {
     try {
-      const response = await abortableFetch(
-        getApiUrl("/api/share-applet?list=true"),
-        {
-          signal,
-          timeout: 15000,
-          retry: { maxAttempts: 2, initialDelayMs: 500 },
-        }
-      );
-      if (signal?.aborted) return;
-
-      const data = await response.json();
+      const data = await listSharedApplets({ signal });
       if (signal?.aborted) return;
 
       // Sort by createdAt descending (latest first)
@@ -195,17 +189,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       let isActive = true;
       const fetchSharedApplet = async () => {
         try {
-          const response = await abortableFetch(
-            getApiUrl(`/api/share-applet?id=${encodeURIComponent(sharedAppletId)}`),
-            {
-              signal: controller.signal,
-              timeout: 15000,
-              retry: { maxAttempts: 2, initialDelayMs: 500 },
-            }
-          );
-          if (!isActive || controller.signal.aborted) return;
-
-          const data = await response.json();
+          const data = await getSharedApplet(sharedAppletId, {
+            signal: controller.signal,
+          });
           if (!isActive || controller.signal.aborted) return;
 
           const applet: Applet = {
@@ -260,17 +246,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       }
       setSelectedAppletContent("");
       try {
-        const response = await abortableFetch(
-          getApiUrl(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`),
-          {
-            signal: controller.signal,
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-        if (!isActive || controller.signal.aborted) return;
-
-        const data = await response.json();
+        const data = await getSharedApplet(selectedApplet.id, {
+          signal: controller.signal,
+        });
         if (!isActive || controller.signal.aborted) return;
 
         setSelectedAppletContent(data.content || "");
@@ -366,14 +344,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     }
 
     try {
-      await abortableFetch(
-        getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
-        {
-          method: "DELETE",
-          timeout: 15000,
-          retry: { maxAttempts: 1 },
-        }
-      );
+      await deleteSharedApplet(appletId);
 
       toast.success(t("apps.applet-viewer.dialogs.appletDeleted"));
       void fetchApplets(); // Refresh list
@@ -389,16 +360,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     if (!isAdmin) return;
 
     try {
-      await abortableFetch(
-        getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ featured: !currentFeatured }),
-          timeout: 15000,
-          retry: { maxAttempts: 1 },
-        }
-      );
+      await updateSharedApplet(appletId, { featured: !currentFeatured });
 
       toast.success(currentFeatured ? t("apps.applet-viewer.dialogs.removedFromFeatured") : t("apps.applet-viewer.dialogs.addedToFeatured"));
       void fetchApplets(); // Refresh list

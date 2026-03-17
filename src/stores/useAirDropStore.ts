@@ -1,6 +1,10 @@
 import { create } from "zustand";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  discoverAirDropUsers,
+  respondToAirDropTransfer as respondToAirDropTransferApi,
+  sendAirDropFile,
+  sendAirDropHeartbeat,
+} from "@/api/airdrop";
 import {
   subscribePusherChannel,
   unsubscribePusherChannel,
@@ -55,19 +59,6 @@ interface AirDropState {
   unsubscribeFromChannel: () => void;
 }
 
-const makeApiRequest = async (
-  url: string,
-  options: RequestInit
-): Promise<Response> => {
-  return abortableFetch(url, {
-    ...options,
-    credentials: "include",
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
-};
-
 export const useAirDropStore = create<AirDropState>((set, get) => ({
   nearbyUsers: [],
   isDiscovering: false,
@@ -86,10 +77,7 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
 
     const heartbeat = async () => {
       try {
-        await makeApiRequest(getApiUrl("/api/airdrop/heartbeat"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
+        await sendAirDropHeartbeat();
       } catch {
         // Silently fail heartbeat
       }
@@ -158,19 +146,14 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
   fetchNearbyUsers: async () => {
     try {
       set({ isDiscovering: true });
-      const res = await makeApiRequest(getApiUrl("/api/airdrop/discover"), {
-        method: "GET",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const users: string[] = data.users || [];
-        const now = Date.now();
-        const map: Record<string, number> = {};
-        for (const u of users) {
-          map[u] = now;
-        }
-        set({ nearbyUsers: users, presenceMap: map });
+      const data = await discoverAirDropUsers();
+      const users: string[] = data.users || [];
+      const now = Date.now();
+      const map: Record<string, number> = {};
+      for (const u of users) {
+        map[u] = now;
       }
+      set({ nearbyUsers: users, presenceMap: map });
     } catch {
       // Silently fail
     } finally {
@@ -181,20 +164,11 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
   sendFile: async (recipient, fileName, content, fileType) => {
     set({ isSending: true });
     try {
-      const res = await makeApiRequest(getApiUrl("/api/airdrop/send"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipient, fileName, fileType, content }),
-      });
-      if (res.ok) {
-        toast.success(`Sent "${fileName}" to @${recipient}`);
-        return true;
-      }
-      const err = await res.json().catch(() => ({ error: "Send failed" }));
-      toast.error(err.error || "Failed to send file");
-      return false;
-    } catch {
-      toast.error("Failed to send file");
+      await sendAirDropFile({ recipient, fileName, fileType, content });
+      toast.success(`Sent "${fileName}" to @${recipient}`);
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send file");
       return false;
     } finally {
       set({ isSending: false });
@@ -203,17 +177,9 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
 
   respondToTransfer: async (transferId, accept) => {
     try {
-      const res = await makeApiRequest(getApiUrl("/api/airdrop/respond"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transferId, accept }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        get().removeTransfer(transferId);
-        return { success: true, ...data };
-      }
-      return { success: false };
+      const data = await respondToAirDropTransferApi({ transferId, accept });
+      get().removeTransfer(transferId);
+      return { success: true, ...data };
     } catch {
       return { success: false };
     }

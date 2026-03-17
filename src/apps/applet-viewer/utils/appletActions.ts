@@ -1,12 +1,11 @@
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { getSharedApplet } from "@/api/shareApplet";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { emitFileSaved } from "@/utils/appEventBus";
 
 export interface Applet {
@@ -151,19 +150,8 @@ export const useAppletActions = () => {
 
     try {
       const isUpdate = isAppletInstalled(applet.id);
-      
-      const response = await abortableFetch(
-        getApiUrl(`/api/share-applet?id=${encodeURIComponent(applet.id)}`),
-        {
-          timeout: 15000,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch applet");
-      }
 
-      const data = await response.json();
+      const data = await getSharedApplet(applet.id);
       
       let defaultName = data.name || data.title || "shared-applet";
       const { remainingText } = extractEmojiIcon(defaultName);

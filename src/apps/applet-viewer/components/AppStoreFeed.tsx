@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { getSharedApplet, listSharedApplets } from "@/api/shareApplet";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppletActions, type Applet } from "../utils/appletActions";
@@ -9,9 +10,7 @@ import {
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
-import { getApiUrl } from "@/utils/platform";
 import { useChatsStoreShallow } from "@/stores/helpers";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 interface AppStoreFeedProps {
   theme?: string;
@@ -206,14 +205,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       return shuffled;
     };
     try {
-      const response = await abortableFetch(
-        getApiUrl("/api/share-applet?list=true"),
-        {
-          timeout: 15000,
-          retry: { maxAttempts: 2, initialDelayMs: 500 },
-        }
-      );
-      const data = await response.json();
+      const data = await listSharedApplets();
       const allApplets = data.applets || [];
         
         // Categorize applets by priority
@@ -276,17 +268,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       setLoadingContents((prev) => new Set(prev).add(appletId));
 
       try {
-        const response = await abortableFetch(
-          getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
-          {
-            signal: abortController.signal,
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
-        );
-        if (!isActive || abortController.signal.aborted) return;
-
-        const data = await response.json();
+        const data = await getSharedApplet(appletId, {
+          signal: abortController.signal,
+        });
         if (!isActive || abortController.signal.aborted) return;
 
         loadedRef.current.add(appletId);

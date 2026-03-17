@@ -7,6 +7,8 @@ import {
 import { useChatsStore } from "@/stores/useChatsStore";
 import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
+import { extractConversationMemories } from "@/api/ai";
+import { getSharedApplet, listSharedApplets } from "@/api/shareApplet";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { getApiUrl } from "@/utils/platform";
@@ -823,15 +825,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ? Math.min(Math.max(limit, 1), 100)
                   : 50;
 
-                const response = await abortableFetch(
-                  getApiUrl("/api/share-applet?list=true"),
-                  {
-                    timeout: 15000,
-                    retry: { maxAttempts: 2, initialDelayMs: 500 },
-                  }
-                );
-
-                const data = await response.json();
+                const data = await listSharedApplets();
                 const allApplets: Array<{
                   id: string;
                   title?: string;
@@ -1017,14 +1011,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Fetch applet metadata to get the name
                 let appletName = shareId;
                 try {
-                  const response = await abortableFetch(
-                    getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`),
-                    {
-                      timeout: 15000,
-                      retry: { maxAttempts: 1, initialDelayMs: 250 },
-                    }
-                  );
-                  const data = await response.json();
+                  const data = await getSharedApplet(shareId);
                   appletName = data.title || data.name || shareId;
                 } catch {
                   // Fall back to shareId if fetch fails
@@ -1213,15 +1200,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (path.startsWith("/Applets Store/")) {
                 // Fetch shared applet content
                 const shareId = path.replace("/Applets Store/", "");
-                const response = await abortableFetch(
-                  getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`),
-                  {
-                    timeout: 15000,
-                    retry: { maxAttempts: 2, initialDelayMs: 500 },
-                  }
-                );
-
-                const data = await response.json();
+                const data = await getSharedApplet(shareId);
                 const filesStore = useFilesStore.getState();
                 const installedEntry = Object.values(filesStore.items).find(
                   (item) =>
@@ -2265,31 +2244,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     if (currentUsername && isAuthenticated && messagesToAnalyze.length > 2) {
       console.log("[clearChats] Triggering async memory extraction...");
 
-      abortableFetch(getApiUrl("/api/ai/extract-memories"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Timezone": currentTimeZone,
-        },
-        body: JSON.stringify({
-          timeZone: currentTimeZone,
-          messages: messagesToAnalyze.map(msg => ({
-            role: msg.role,
-            parts: msg.parts,
-            metadata: msg.metadata?.createdAt
-              ? {
-                  createdAt:
-                    msg.metadata.createdAt instanceof Date
-                      ? msg.metadata.createdAt.toISOString()
-                      : msg.metadata.createdAt,
-                }
-              : undefined,
-          })),
-        }),
-        timeout: 15000,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      extractConversationMemories({
+        userTimeZone: currentTimeZone,
+        timeZone: currentTimeZone,
+        messages: messagesToAnalyze.map(msg => ({
+          role: msg.role,
+          parts: msg.parts,
+          metadata: msg.metadata?.createdAt
+            ? {
+                createdAt:
+                  msg.metadata.createdAt instanceof Date
+                    ? msg.metadata.createdAt.toISOString()
+                    : msg.metadata.createdAt,
+              }
+            : undefined,
+        })),
       })
-        .then(res => res.json())
         .then(data => {
           if (data.extracted > 0) {
             console.log(`[clearChats] Extracted ${data.extracted} memories from conversation`);

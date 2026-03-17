@@ -2,6 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { requestRyoReply } from "@/api/ai";
 import { useAppStore } from "@/stores/useAppStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
@@ -9,7 +10,6 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Helper function to get system state for AI chat
 const getSystemState = () => {
@@ -147,16 +147,10 @@ export function useRyoChat({
 
       if (!currentRoomId) return;
       try {
-        await abortableFetch(getApiUrl("/api/ai/ryo-reply"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomId: currentRoomId,
-            prompt: messageContent,
-            systemState: systemStateWithChat,
-          }),
-          timeout: 20000,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
+        await requestRyoReply({
+          roomId: currentRoomId,
+          prompt: messageContent,
+          systemState: systemStateWithChat,
         });
       } catch (error) {
         console.error("[RyoChat] Failed to request @ryo reply:", error);
