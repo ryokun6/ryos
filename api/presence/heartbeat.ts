@@ -1,10 +1,10 @@
 /**
  * POST /api/presence/heartbeat
- * Global online presence heartbeat. Keeps the user in the online ZSET
- * and broadcasts their status on the global presence channel.
+ * Global online presence heartbeat (authenticated). Keeps the user in the
+ * online ZSET and broadcasts on the global presence channel.
  *
  * GET /api/presence/heartbeat
- * Returns the list of currently online users.
+ * Returns online users (authenticated only).
  */
 
 import { apiHandler } from "../_utils/api-handler.js";
@@ -23,12 +23,12 @@ export default apiHandler(
   async ({ req, res, user }) => {
     const redis = createRedis();
 
-    if (req.method === "POST") {
-      if (!user) {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
+    if (!user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
 
+    if (req.method === "POST") {
       const username = user.username;
       const now = Date.now();
 
@@ -44,7 +44,7 @@ export default apiHandler(
       return;
     }
 
-    // GET: return online users
+    // GET: return online users (authenticated)
     const cutoff = Date.now() - GLOBAL_PRESENCE_TTL_SECONDS * 1000;
     await redis.zremrangebyscore(GLOBAL_PRESENCE_KEY, 0, cutoff);
     const onlineUsers: string[] = await redis.zrange(GLOBAL_PRESENCE_KEY, 0, -1);

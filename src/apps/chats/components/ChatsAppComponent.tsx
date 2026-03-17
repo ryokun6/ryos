@@ -143,7 +143,6 @@ export function ChatsAppComponent({
     confirmDeleteRoom,
   } = chatRoomResult;
 
-  // Global online presence for sidebar indicators
   const globalOnlineUsers = useGlobalPresence();
 
   // Proactive greeting for eligible users

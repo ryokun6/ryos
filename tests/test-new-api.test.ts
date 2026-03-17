@@ -5,6 +5,7 @@
  * - /api/rooms/[id]/messages
  * - /api/messages/bulk
  * - /api/presence/switch
+ * - /api/presence/heartbeat
  */
 
 import { describe, test, expect } from "bun:test";
@@ -309,6 +310,31 @@ describe("New API", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.success).toBe(true);
+    });
+
+    test("Presence heartbeat GET without auth → 401", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/presence/heartbeat`);
+      expect(res.status).toBe(401);
+    });
+
+    test("Presence heartbeat POST without auth → 401", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/presence/heartbeat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      expect(res.status).toBe(401);
+    });
+
+    test("Presence heartbeat GET with auth → 200", async () => {
+      if (!testUsername || !testToken) return;
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/presence/heartbeat`,
+        testUsername,
+        testToken
+      );
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(Array.isArray(data.users)).toBe(true);
     });
 
     test("Get room users", async () => {

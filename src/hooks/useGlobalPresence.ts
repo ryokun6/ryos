@@ -17,10 +17,10 @@ interface PresenceEntry {
 }
 
 /**
- * Tracks which users are online globally. Authenticated users send a heartbeat
- * every 60s and receive push-based presence updates via the shared channel.
- *
- * Returns the set of online usernames (excluding self).
+ * Tracks which users are online globally. Only **logged-in** users (session +
+ * `isAuthenticated`) send heartbeats and subscribe to updates — no API traffic
+ * for guests. Runs while Chats is in the tree (including when the window is
+ * closed but the app instance stays mounted).
  */
 export function useGlobalPresence(): string[] {
   const username = useChatsStore((s) => s.username);
