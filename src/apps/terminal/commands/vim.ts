@@ -2,10 +2,10 @@ import { Command, CommandContext, CommandResult } from "../types";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import {
-  dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { dbOperations } from "@/utils/indexedDBOperations";
 
 export const vimCommand: Command = {
   name: "vim",

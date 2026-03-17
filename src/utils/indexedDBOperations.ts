@@ -13,6 +13,22 @@ export interface StoredContent {
   content: string | Blob;
 }
 
+type StorePutRecord<T> = {
+  key?: IDBValidKey;
+  value: T;
+};
+
+const withDatabase = async <T>(
+  operation: (db: IDBDatabase) => Promise<T>
+): Promise<T> => {
+  const db = await ensureIndexedDBInitialized();
+  try {
+    return await operation(db);
+  } finally {
+    db.close();
+  }
+};
+
 const IMAGE_FILE_EXTENSIONS = new Set([
   "png",
   "jpg",
@@ -42,6 +58,209 @@ const getExtension = (value?: string): string => {
   return normalized.split(".").pop()?.toLowerCase() || "";
 };
 
+export const dbOperations = {
+  async getAll<T>(storeName: string): Promise<T[]> {
+    return withDatabase(
+      (db) =>
+        new Promise<T[]>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readonly");
+            const store = transaction.objectStore(storeName);
+            const request = store.getAll();
+
+            request.onsuccess = () => resolve(request.result as T[]);
+            request.onerror = () => reject(request.error);
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+
+  async getAllKeys(storeName: string): Promise<string[]> {
+    return withDatabase(
+      (db) =>
+        new Promise<string[]>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readonly");
+            const store = transaction.objectStore(storeName);
+            const request = store.getAllKeys();
+
+            request.onsuccess = () => resolve(request.result as string[]);
+            request.onerror = () => reject(request.error);
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+
+  async get<T>(storeName: string, key: IDBValidKey): Promise<T | undefined> {
+    return withDatabase(
+      (db) =>
+        new Promise<T | undefined>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readonly");
+            const store = transaction.objectStore(storeName);
+            const request = store.get(key);
+
+            request.onsuccess = () => resolve(request.result as T | undefined);
+            request.onerror = () => reject(request.error);
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+
+  async has(storeName: string, key: IDBValidKey): Promise<boolean> {
+    return withDatabase(
+      (db) =>
+        new Promise<boolean>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readonly");
+            const store = transaction.objectStore(storeName);
+            const request = store.getKey(key);
+
+            request.onsuccess = () => resolve(request.result !== undefined);
+            request.onerror = () => reject(request.error);
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+
+  async getExistingKeys(
+    storeName: string,
+    keys: readonly IDBValidKey[]
+  ): Promise<Set<string>> {
+    if (keys.length === 0) {
+      return new Set();
+    }
+
+    return withDatabase(
+      (db) =>
+        new Promise<Set<string>>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readonly");
+            const store = transaction.objectStore(storeName);
+            const existingKeys = new Set<string>();
+            let remaining = keys.length;
+
+            const finish = () => {
+              remaining -= 1;
+              if (remaining === 0) {
+                resolve(existingKeys);
+              }
+            };
+
+            for (const key of keys) {
+              const request = store.getKey(key);
+              request.onsuccess = () => {
+                if (request.result !== undefined) {
+                  existingKeys.add(String(key));
+                }
+                finish();
+              };
+              request.onerror = () => reject(request.error);
+            }
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+
+  async put<T>(storeName: string, item: T, key?: IDBValidKey): Promise<void> {
+    return withDatabase(
+      (db) =>
+        new Promise<void>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readwrite");
+            const store = transaction.objectStore(storeName);
+            const request = key === undefined ? store.put(item) : store.put(item, key);
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+
+  async putMany<T>(
+    storeName: string,
+    records: readonly StorePutRecord<T>[]
+  ): Promise<void> {
+    if (records.length === 0) {
+      return;
+    }
+
+    return withDatabase(
+      (db) =>
+        new Promise<void>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readwrite");
+            const store = transaction.objectStore(storeName);
+
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+            transaction.onabort = () =>
+              reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
+
+            for (const record of records) {
+              if (record.key === undefined) {
+                store.put(record.value);
+              } else {
+                store.put(record.value, record.key);
+              }
+            }
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+
+  async delete(storeName: string, key: IDBValidKey): Promise<void> {
+    return withDatabase(
+      (db) =>
+        new Promise<void>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readwrite");
+            const store = transaction.objectStore(storeName);
+            const request = store.delete(key);
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+
+  async clear(storeName: string): Promise<void> {
+    return withDatabase(
+      (db) =>
+        new Promise<void>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(storeName, "readwrite");
+            const store = transaction.objectStore(storeName);
+            const request = store.clear();
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+          } catch (error) {
+            reject(error);
+          }
+        })
+    );
+  },
+};
+
 /**
  * Save file content to IndexedDB.
  * @param uuid - Unique identifier for the content
@@ -55,19 +274,7 @@ export async function saveFileContent(
   content: string | Blob,
   storeName: string
 ): Promise<void> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      const putReq = store.put({ name, content } as StoredContent, uuid);
-      putReq.onsuccess = () => resolve();
-      putReq.onerror = () => reject(putReq.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+  await dbOperations.put(storeName, { name, content } as StoredContent, uuid);
 }
 
 /**
@@ -80,20 +287,7 @@ export async function loadFileContent(
   uuid: string,
   storeName: string
 ): Promise<StoredContent | null> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    const result = await new Promise<StoredContent | null>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(req.result as StoredContent | null);
-      req.onerror = () => reject(req.error);
-    });
-    return result;
-  } finally {
-    if (db) db.close();
-  }
+  return (await dbOperations.get<StoredContent>(storeName, uuid)) ?? null;
 }
 
 /**
@@ -105,19 +299,7 @@ export async function deleteFileContent(
   uuid: string,
   storeName: string
 ): Promise<void> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      const deleteReq = store.delete(uuid);
-      deleteReq.onsuccess = () => resolve();
-      deleteReq.onerror = () => reject(deleteReq.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+  await dbOperations.delete(storeName, uuid);
 }
 
 /**
@@ -129,20 +311,7 @@ export async function contentExists(
   uuid: string,
   storeName: string
 ): Promise<boolean> {
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    const exists = await new Promise<boolean>((resolve) => {
-      const tx = db!.transaction(storeName, "readonly");
-      const store = tx.objectStore(storeName);
-      const req = store.get(uuid);
-      req.onsuccess = () => resolve(!!req.result);
-      req.onerror = () => resolve(false);
-    });
-    return exists;
-  } finally {
-    if (db) db.close();
-  }
+  return dbOperations.has(storeName, uuid);
 }
 
 /**
@@ -155,25 +324,13 @@ export async function batchSaveFileContent(
   files: Array<{ uuid: string; name: string; content: string | Blob }>,
   storeName: string
 ): Promise<void> {
-  if (files.length === 0) return;
-  
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      
-      for (const file of files) {
-        store.put({ name: file.name, content: file.content } as StoredContent, file.uuid);
-      }
-      
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+  await dbOperations.putMany(
+    storeName,
+    files.map((file) => ({
+      key: file.uuid,
+      value: { name: file.name, content: file.content } as StoredContent,
+    }))
+  );
 }
 
 /**
@@ -186,24 +343,27 @@ export async function batchDeleteFileContent(
   storeName: string
 ): Promise<void> {
   if (uuids.length === 0) return;
-  
-  let db: IDBDatabase | null = null;
-  try {
-    db = await ensureIndexedDBInitialized();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db!.transaction(storeName, "readwrite");
-      const store = tx.objectStore(storeName);
-      
-      for (const uuid of uuids) {
-        store.delete(uuid);
-      }
-      
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } finally {
-    if (db) db.close();
-  }
+
+  await withDatabase(
+    (db) =>
+      new Promise<void>((resolve, reject) => {
+        try {
+          const transaction = db.transaction(storeName, "readwrite");
+          const store = transaction.objectStore(storeName);
+
+          transaction.oncomplete = () => resolve();
+          transaction.onerror = () => reject(transaction.error);
+          transaction.onabort = () =>
+            reject(transaction.error || new Error(`Transaction aborted: ${storeName}`));
+
+          for (const uuid of uuids) {
+            store.delete(uuid);
+          }
+        } catch (error) {
+          reject(error);
+        }
+      })
+  );
 }
 
 /**

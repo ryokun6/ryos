@@ -19,11 +19,11 @@ import {
 } from "@/utils/appletAuthBridge";
 import {
   useFileSystem,
-  dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { STORES } from "@/utils/indexedDB";
+import { dbOperations } from "@/utils/indexedDBOperations";
 import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
