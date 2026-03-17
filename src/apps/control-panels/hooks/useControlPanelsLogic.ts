@@ -357,26 +357,29 @@ export function useControlPanelsLogic({
     files: {
       lastUploadedAt: getLatestCloudSyncTimestamp(
         FILE_SYNC_DOMAINS.map(
-          (domain) => internalAutoSyncDomainStatus[domain].lastUploadedAt
+          (domain) =>
+            internalAutoSyncDomainStatus[domain]?.lastUploadedAt ?? null
         )
       ),
       lastFetchedAt: getLatestCloudSyncTimestamp(
         FILE_SYNC_DOMAINS.map(
           (domain) =>
-            internalAutoSyncDomainStatus[domain].lastFetchedAt ||
-            internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
+            internalAutoSyncDomainStatus[domain]?.lastFetchedAt ||
+            internalAutoSyncDomainStatus[domain]?.lastAppliedRemoteAt ||
+            null
         )
       ),
       lastAppliedRemoteAt: getLatestCloudSyncTimestamp(
         FILE_SYNC_DOMAINS.map(
-          (domain) => internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
+          (domain) =>
+            internalAutoSyncDomainStatus[domain]?.lastAppliedRemoteAt ?? null
         )
       ),
       isUploading: FILE_SYNC_DOMAINS.some(
-        (domain) => internalAutoSyncDomainStatus[domain].isUploading
+        (domain) => internalAutoSyncDomainStatus[domain]?.isUploading ?? false
       ),
       isDownloading: FILE_SYNC_DOMAINS.some(
-        (domain) => internalAutoSyncDomainStatus[domain].isDownloading
+        (domain) => internalAutoSyncDomainStatus[domain]?.isDownloading ?? false
       ),
     },
     settings: internalAutoSyncDomainStatus.settings,
