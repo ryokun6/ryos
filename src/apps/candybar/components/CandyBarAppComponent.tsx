@@ -485,16 +485,18 @@ export function CandyBarAppComponent({
             </div>
           )}
 
-          {/* Status bar */}
+          {/* Status bar — padding/height aligned with Calendar bottom toolbar */}
           {isMacOSXTheme ? (
             <div
-              className="os-status-bar os-status-bar-text relative flex items-center px-2 pt-1 pb-0 text-[10px] font-geneva-12 bg-transparent border-t border-black/10"
+              className="os-status-bar os-status-bar-text flex items-center gap-2 py-1.5 px-1 text-[10px] font-geneva-12 border-t"
               style={{
+                borderColor: "rgba(0,0,0,0.25)",
+                background: "transparent",
                 textShadow: "0 1px 0 rgba(255,255,255,0.5)",
                 color: "#333",
               }}
             >
-              <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <div className="metal-inset-btn-group">
                   <button
                     type="button"
@@ -516,15 +518,21 @@ export function CandyBarAppComponent({
                   className="w-20"
                 />
               </div>
-              <div className="flex-1 flex items-center justify-center pointer-events-none">
+              <div className="flex-1 min-w-0 flex items-center justify-center pointer-events-none">
                 {selectedPack
                   ? `${selectedPack.iconCount} ${selectedPack.iconCount !== 1 ? t("apps.candybar.statusBar.icons") : t("apps.candybar.statusBar.icon")}`
                   : `${filteredPacks.length} ${filteredPacks.length !== 1 ? t("apps.candybar.statusBar.packs") : t("apps.candybar.statusBar.pack")}`}
               </div>
             </div>
           ) : (
-            <div className="os-status-bar os-status-bar-text relative flex items-center px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
-              <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 shrink-0">
+            <div
+              className="os-status-bar os-status-bar-text flex items-center gap-2 py-1.5 px-2 text-[10px] font-geneva-12 border-t"
+              style={{
+                borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)",
+                background: isXpTheme ? "#ECE9D8" : "#e0e0e0",
+              }}
+            >
+              <div className="flex items-center gap-1 shrink-0">
                 <Button
                   variant={isSystem7Theme ? "player" : "ghost"}
                   size="icon"
@@ -545,7 +553,7 @@ export function CandyBarAppComponent({
                   className="w-20"
                 />
               </div>
-              <div className="flex-1 flex items-center justify-center pointer-events-none">
+              <div className="flex-1 min-w-0 flex items-center justify-center pointer-events-none">
                 {selectedPack
                   ? `${selectedPack.iconCount} ${selectedPack.iconCount !== 1 ? t("apps.candybar.statusBar.icons") : t("apps.candybar.statusBar.icon")}`
                   : `${filteredPacks.length} ${filteredPacks.length !== 1 ? t("apps.candybar.statusBar.packs") : t("apps.candybar.statusBar.pack")}`}
