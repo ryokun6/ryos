@@ -295,6 +295,25 @@ export const useCalendarStore = create<CalendarStoreState>()(
     },
     {
       name: "calendar-storage",
+      // Do not persist viewport — opening Calendar should show today, not last session.
+      partialize: (state) => ({
+        events: state.events,
+        calendars: state.calendars,
+        todos: state.todos,
+        showTodoSidebar: state.showTodoSidebar,
+        view: state.view,
+      }),
+      merge: (persistedState, currentState) => {
+        const now = new Date();
+        const p = persistedState as Partial<CalendarStoreState>;
+        return {
+          ...currentState,
+          ...p,
+          selectedDate: getTodayStr(),
+          currentMonth: now.getMonth(),
+          currentYear: now.getFullYear(),
+        };
+      },
     }
   )
 );
