@@ -153,8 +153,9 @@ export type AnyInitialData =
 // For XP/98 themes, pass the menu bar as a prop to WindowFrame
 // For other themes, render the menu bar normally outside WindowFrame
 // Example:
+// import { isWindowsTheme } from "@/themes";
 // const currentTheme = useThemeStore((state) => state.current);
-// const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+// const isXpTheme = isWindowsTheme(currentTheme);
 // const menuBar = <AppMenuBar ... />;
 // return (
 //   <>

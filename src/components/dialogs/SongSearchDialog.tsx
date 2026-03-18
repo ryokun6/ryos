@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { isWindowsTheme } from "@/themes";
 
 // Check if input looks like a YouTube URL
 function isYouTubeUrl(input: string): boolean {
@@ -52,7 +53,7 @@ export function SongSearchDialog({
 }: SongSearchDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   const [query, setQuery] = useState(initialQuery);

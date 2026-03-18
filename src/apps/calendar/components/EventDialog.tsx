@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, EventColor, CalendarGroup } from "@/stores/useCalendarStore";
+import { isWindowsTheme } from "@/themes";
 
 interface EventDialogProps {
   isOpen: boolean;
@@ -57,7 +58,7 @@ export function EventDialog({
 }: EventDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   const [title, setTitle] = useState("");

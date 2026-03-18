@@ -9,6 +9,7 @@ import {
 import { SelectableListItem } from "@/components/ui/selectable-list-item";
 import { Plus } from "@phosphor-icons/react";
 import { Soundboard } from "@/types/types";
+import { isWindowsTheme } from "@/themes";
 
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
@@ -36,7 +37,7 @@ export function BoardList({
 }: BoardListProps) {
   // Theme detection for border styling
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isWindowsLegacyTheme = isXpTheme;
   const { t } = useTranslation();
 

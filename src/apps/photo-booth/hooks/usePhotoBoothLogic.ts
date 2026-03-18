@@ -12,6 +12,7 @@ import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTimeout } from "@/hooks/useTimeout";
 import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
+import { isWindowsTheme } from "@/themes";
 
 interface Effect {
   name: string;
@@ -191,7 +192,7 @@ export function usePhotoBoothLogic({
   const recentPhotoPreviewsRef = useRef<Map<string, string>>(new Map());
 
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   const windowTitle = getTranslatedAppName("photo-booth");

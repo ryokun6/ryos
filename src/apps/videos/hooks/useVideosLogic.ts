@@ -14,6 +14,7 @@ import { helpItems } from "..";
 import type { VideosInitialData } from "../../base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
+import { isWindowsTheme } from "@/themes";
 
 interface Video {
   id: string;
@@ -66,7 +67,7 @@ export function useVideosLogic({
 
   // Theme and audio settings
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOSTheme = currentTheme === "macosx";
   const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
 

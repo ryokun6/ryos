@@ -20,6 +20,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { isWindowsTheme } from "@/themes";
 import {
   ThemedTabsList,
   ThemedTabsTrigger,
@@ -60,7 +61,7 @@ export function CreateRoomDialog({
 
   // Theme detection
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   // Reset form when dialog opens
   useEffect(() => {

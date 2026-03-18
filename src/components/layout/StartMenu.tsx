@@ -14,6 +14,7 @@ import { AppId } from "@/config/appIds";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { toggleSpotlightSearch } from "@/utils/appEventBus";
+import { isWindowsTheme } from "@/themes";
 
 interface StartMenuProps {
   apps: AnyApp[];
@@ -118,7 +119,7 @@ export function StartMenu({ apps }: StartMenuProps) {
             width: "280px",
             maxHeight: "80vh",
             background:
-              currentTheme === "xp" || currentTheme === "win98"
+              isWindowsTheme(currentTheme)
                 ? "#ece9d8"
                 : "#c0c0c0",
             border:
@@ -132,7 +133,7 @@ export function StartMenu({ apps }: StartMenuProps) {
         >
           <div className="flex h-full">
             {/* Left Panel with rotated text */}
-            {(currentTheme === "xp" || currentTheme === "win98") && (
+            {(isWindowsTheme(currentTheme)) && (
               <div
                 className="relative w-[32px] overflow-hidden"
                 style={{
@@ -169,7 +170,7 @@ export function StartMenu({ apps }: StartMenuProps) {
               className="flex-1 flex flex-col"
               style={{
                 background:
-                  currentTheme === "xp" || currentTheme === "win98"
+                  isWindowsTheme(currentTheme)
                     ? "#ffffff"
                     : "#c0c0c0",
                 maxHeight: "80vh", // Responsive height to enable scrolling

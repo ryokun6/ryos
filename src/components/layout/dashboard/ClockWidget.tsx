@@ -4,6 +4,7 @@ import { useDashboardStore, type ClockWidgetConfig } from "@/stores/useDashboard
 import { MapPin, MagnifyingGlass, NavigationArrow } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface CityResult {
   name: string;
@@ -73,7 +74,7 @@ export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   const { t } = useTranslation();
   const [time, setTime] = useState(new Date());
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const config = widget?.config as ClockWidgetConfig | undefined;
   const gradId = useMemo(() => widgetId?.replace(/[^a-zA-Z0-9]/g, "") ?? "default", [widgetId]);
@@ -231,7 +232,7 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
   const { t } = useTranslation();
   const popularCities = useMemo(() => getPopularCities(t), [t]);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
   const [searchQuery, setSearchQuery] = useState("");

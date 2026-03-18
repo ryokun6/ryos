@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
+import { isWindowsTheme } from "@/themes";
 
 interface ListenSessionInviteProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ export function ListenSessionInvite({
   const [shareUrl, setShareUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   const baseUrl = useMemo(() => {

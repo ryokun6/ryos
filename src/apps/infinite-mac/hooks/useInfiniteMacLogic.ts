@@ -11,6 +11,7 @@ import {
 } from "@/stores/useInfiniteMacStore";
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
+import { isWindowsTheme } from "@/themes";
 
 // Re-export types and presets for consumers
 export type { ScaleOption, MacPreset, ScreenData } from "@/stores/useInfiniteMacStore";
@@ -106,7 +107,7 @@ export function useInfiniteMacLogic({
 
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
   const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset, currentScale) : null;
 

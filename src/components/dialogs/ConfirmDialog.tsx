@@ -13,6 +13,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ export function ConfirmDialog({
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const { play: playAlertSound } = useSound(Sounds.ALERT_SOSUMI);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   // Play sound when dialog opens

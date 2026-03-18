@@ -22,6 +22,7 @@ import {
   DEFAULT_TIMELINE,
 } from "@/stores/useInternetExplorerStore";
 import { useInternetExplorerStoreShallow } from "@/stores/helpers";
+import { isWindowsTheme } from "@/themes";
 
 interface FutureSettingsDialogProps {
   isOpen: boolean;
@@ -34,7 +35,7 @@ const FutureSettingsDialog = ({
 }: FutureSettingsDialogProps) => {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
   const [selectedYear, setSelectedYear] = useState<string>("2030");
   const saveButtonRef = useRef<HTMLButtonElement>(null);

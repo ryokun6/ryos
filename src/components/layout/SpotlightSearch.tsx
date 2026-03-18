@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 import { onExposeToggle, onSpotlightToggle } from "@/utils/appEventBus";
+import { isWindowsTheme } from "@/themes";
 
 // Section header labels by result type
 const SECTION_TYPE_ORDER: SpotlightResult["type"][] = [
@@ -55,7 +56,7 @@ export function SpotlightSearch() {
   const listRef = useRef<HTMLDivElement>(null);
   const proxyInputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isSystem7 = currentTheme === "system7";
   const isMac = currentTheme === "macosx" || isSystem7;
   const isMobile = useIsMobile();

@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { helpItems } from "..";
 import type { PaintInitialData } from "../../base/types";
 import { emitFileSaved } from "@/utils/appEventBus";
+import { isWindowsTheme } from "@/themes";
 
 interface PaintCanvasHandle {
   undo: () => void;
@@ -423,7 +424,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
   }, []);
 
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const windowTitle = currentFilePath
     ? currentFilePath.split("/").pop() || t("apps.paint.untitled")

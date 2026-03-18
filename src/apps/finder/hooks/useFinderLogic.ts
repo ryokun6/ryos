@@ -34,6 +34,7 @@ import {
 } from "@/utils/appEventBus";
 import { useAirDropStore } from "@/stores/useAirDropStore";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { isWindowsTheme } from "@/themes";
 
 type FinderUndoAction =
   | { type: "moveToTrash"; fileName: string; originalPath: string }
@@ -1289,7 +1290,7 @@ export function useFinderLogic({
     },
   ];
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOSXTheme = currentTheme === "macosx";
 
   // Sidebar state

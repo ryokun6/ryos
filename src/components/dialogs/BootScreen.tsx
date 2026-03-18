@@ -5,6 +5,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 
 interface BootScreenProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export function BootScreen({
   const currentTheme = useThemeStore((state) => state.current);
   const localizedTitle = title ?? t("common.system.systemRestoring");
   
-  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
+  const windowsTheme = isWindowsTheme(currentTheme);
   const isMacOSX = currentTheme === "macosx";
 
   const handleDone = () => {
@@ -99,7 +100,7 @@ export function BootScreen({
   };
 
   // Windows themes use full boot screen images
-  if (isWindowsTheme) {
+  if (windowsTheme) {
     return (
       <Dialog open={isOpen} onOpenChange={() => {}} modal>
         <DialogPrimitive.Portal>

@@ -27,6 +27,7 @@ import {
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
+import { isWindowsTheme } from "@/themes";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -66,7 +67,7 @@ export function AppManager({ apps }: AppManagerProps) {
 
   // Get current theme to determine if we should show the desktop menubar
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const [crashedInstanceIds, setCrashedInstanceIds] = useState<Set<string>>(
     () => new Set()

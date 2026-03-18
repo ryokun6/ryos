@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { helpItems } from "..";
+import { isWindowsTheme } from "@/themes";
 
 export interface IconPackIcon {
   name: string;
@@ -49,7 +50,7 @@ export function useCandyBarLogic({
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("candybar", helpItems);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOSXTheme = currentTheme === "macosx";
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);

@@ -4,6 +4,7 @@ import type { TFunction } from "i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type WeatherWidgetConfig } from "@/stores/useDashboardStore";
 import { MapPin, MagnifyingGlass, NavigationArrow } from "@phosphor-icons/react";
+import { isWindowsTheme } from "@/themes";
 
 interface DailyForecast {
   dayLabel: string;
@@ -130,7 +131,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language || "en";
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const cityConfig = widget?.config as WeatherWidgetConfig | undefined;
@@ -434,7 +435,7 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
   const { t } = useTranslation();
   const popularCities = useMemo(() => getPopularCities(t), [t]);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
   const [searchQuery, setSearchQuery] = useState("");

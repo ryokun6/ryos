@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { ALL_USER_PICTURES } from "@/utils/userPictures";
 import { resizeImageToBase64 } from "@/utils/imageResize";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface UserPicturePickerProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export function UserPicturePicker({
 }: UserPicturePickerProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   const fontClassName = isXpTheme

@@ -3,6 +3,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type StocksWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
 import { MagnifyingGlass, Plus, X, ArrowClockwise } from "@phosphor-icons/react";
+import { isWindowsTheme } from "@/themes";
 
 interface StockQuote {
   symbol: string;
@@ -241,7 +242,7 @@ interface StocksWidgetProps {
 export function StocksWidget({ widgetId }: StocksWidgetProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const config = widget?.config as StocksWidgetConfig | undefined;
@@ -559,7 +560,7 @@ export function StocksBackPanel({
 }) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));

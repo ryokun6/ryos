@@ -3,6 +3,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type TranslationWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
 import { ArrowsLeftRight, ArrowsDownUp } from "@phosphor-icons/react";
+import { isWindowsTheme } from "@/themes";
 
 const LANGUAGE_CODES = ["en", "fr", "es", "de", "it", "pt", "ja", "ko", "zh-TW", "ru"] as const;
 
@@ -28,7 +29,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
   const { t, i18n } = useTranslation();
   const LANGUAGES = useLocalizedLanguages(i18n.language);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const widget = useDashboardStore((s) =>
     widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined
@@ -524,7 +525,7 @@ export function TranslationBackPanel({
   const { t, i18n } = useTranslation();
   const LANGUAGES = useLocalizedLanguages(i18n.language);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const config = widget?.config as TranslationWidgetConfig | undefined;

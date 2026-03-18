@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { isWindowsTheme } from "@/themes";
 
 export interface LyricsSearchResult {
   title: string;
@@ -58,7 +59,7 @@ export function LyricsSearchDialog({
 }: LyricsSearchDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   const [query, setQuery] = useState(initialQuery || "");

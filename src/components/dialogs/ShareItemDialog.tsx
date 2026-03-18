@@ -14,6 +14,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { QRCodeSVG } from "qrcode.react";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface ShareItemDialogProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export function ShareItemDialog({
   const [shareUrl, setShareUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   // Translate itemType (e.g., "Page" -> translated "Page", "Song" -> translated "Song")

@@ -23,6 +23,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { Track } from "@/stores/useIpodStore";
+import { isWindowsTheme } from "@/themes";
 
 interface KaraokeMenuBarProps {
   onClose: () => void;
@@ -105,7 +106,7 @@ export function KaraokeMenuBar({
   const appName = t("apps.karaoke.name");
 
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const username = useChatsStore((state) => state.username);

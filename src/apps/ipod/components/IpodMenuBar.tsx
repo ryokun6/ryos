@@ -23,6 +23,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface IpodMenuBarProps {
   onClose: () => void;
@@ -151,7 +152,7 @@ export function IpodMenuBar({
   }));
 
   const appTheme = useThemeStore((state) => state.current);
-  const isXpTheme = appTheme === "xp" || appTheme === "win98";
+  const isXpTheme = isWindowsTheme(appTheme);
   const isMacOsxTheme = appTheme === "macosx";
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const username = useChatsStore((state) => state.username);

@@ -13,6 +13,7 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import type { ScaleOption } from "../hooks/useInfiniteMacLogic";
+import { isWindowsTheme } from "@/themes";
 
 interface InfiniteMacMenuBarProps {
   onClose: () => void;
@@ -43,7 +44,7 @@ export function InfiniteMacMenuBar({
 }: InfiniteMacMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

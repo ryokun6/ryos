@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface StickyNoteWidgetConfig {
   text?: string;
@@ -40,7 +41,7 @@ function textColorForBg(hex: string): string {
 export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const widget = useDashboardStore((s) =>
     widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined
@@ -198,7 +199,7 @@ export function StickyNoteBackPanel({
 }) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const widget = useDashboardStore((s) =>
     s.widgets.find((w) => w.id === widgetId)

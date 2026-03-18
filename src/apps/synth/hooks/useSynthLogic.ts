@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
+import { isWindowsTheme } from "@/themes";
 
 // Define oscillator type
 type OscillatorType = "sine" | "square" | "triangle" | "sawtooth";
@@ -127,7 +128,7 @@ export const useSynthLogic = ({
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("synth", helpItems);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isSystem7Theme = currentTheme === "system7";
   const isClassicTheme = currentTheme === "macosx" || isXpTheme;
   const isMacOSTheme = currentTheme === "macosx";

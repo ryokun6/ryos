@@ -35,6 +35,7 @@ import { useInternetExplorerStoreShallow } from "@/stores/helpers";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { isWindowsTheme } from "@/themes";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -1899,7 +1900,7 @@ export function useInternetExplorerLogic({
     setIsShareDialogOpen(true);
   }, []);
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isOffline = useOffline();
 
   return {

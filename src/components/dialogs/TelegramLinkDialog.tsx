@@ -17,6 +17,7 @@ import type {
 } from "@/api/telegram";
 import { getTelegramLinkedAccountLabel } from "@/hooks/useTelegramLink";
 import { ArrowRight, PaperPlaneRight } from "@phosphor-icons/react";
+import { isWindowsTheme } from "@/themes";
 
 interface TelegramLinkDialogProps {
   isOpen: boolean;
@@ -47,7 +48,7 @@ export function TelegramLinkDialog({
 }: TelegramLinkDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   const linkedAccountLabel = linkedAccount
