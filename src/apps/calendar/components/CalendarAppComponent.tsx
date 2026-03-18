@@ -470,7 +470,10 @@ function WeekTimeGrid({
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const scrollRef = useRef<HTMLDivElement>(null);
-  useTimeScaleGestures(scrollRef, hourHeight, setHourHeight);
+  const horizontalScrollRef = useRef<HTMLDivElement>(null);
+  useTimeScaleGestures(scrollRef, hourHeight, setHourHeight, {
+    horizontalScrollParentRef: horizontalScrollRef,
+  });
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
   const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
@@ -513,7 +516,7 @@ function WeekTimeGrid({
   const MIN_WEEK_WIDTH = 48 + 7 * MIN_DAY_COL;
 
   return (
-    <div className="flex-1 overflow-x-auto overflow-y-hidden">
+    <div ref={horizontalScrollRef} className="flex-1 overflow-x-auto overflow-y-hidden">
       <div className="flex flex-col h-full" style={{ minWidth: MIN_WEEK_WIDTH }}>
         <div
           className="flex border-b shrink-0"
@@ -581,7 +584,7 @@ function WeekTimeGrid({
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 touch-pan-y">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
           <div className="flex relative" style={{ height: totalHours * hourHeight }}>
             <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} className="relative">
               {Array.from({ length: totalHours }, (_, i) => {
@@ -780,7 +783,7 @@ function DayTimeGrid({
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden touch-pan-y">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="flex relative w-full" style={{ height: totalHours * hourHeight }}>
           <div style={{ width: 52, minWidth: 52, flexShrink: 0 }} className="relative">
             {Array.from({ length: totalHours }, (_, i) => {
