@@ -16,6 +16,9 @@ import {
   type CloudSyncVersionState,
   type CloudSyncWriteVersion,
 } from "../../src/utils/cloudSyncVersion.js";
+
+/** Server-side tool writes (Telegram DM, etc.): bump sync version + broadcast so auto-sync clients pull. */
+export const SERVER_TOOL_SYNC_CLIENT_ID = "__server_tool__";
 import {
   applyFilesMetadataRedisPatch,
   isFilesMetadataRedisPatchPayload,
@@ -198,6 +201,69 @@ async function persistStateEntry(
     syncVersion: entry.syncVersion,
   };
   await redis.set(metaKey(username), JSON.stringify(meta));
+}
+
+/**
+ * Persist a Redis-backed sync domain from server-side executors (Telegram tools, etc.).
+ * Matches normal sync semantics: advances {@link CloudSyncVersionState}, updates meta map,
+ * and emits {@code domain-updated} for realtime client pull.
+ */
+export async function writeRedisSyncDomainFromServerTool(
+  redis: Redis,
+  username: string,
+  domain: RedisSyncDomain,
+  data: unknown
+): Promise<void> {
+  if (domain === "songs") {
+    throw new Error(
+      "writeRedisSyncDomainFromServerTool: use writeSongsState + realtime broadcast for songs"
+    );
+  }
+
+  const now = new Date().toISOString();
+  const existingRaw = await redis.get<string | PersistedRedisStateDomain>(
+    stateKey(username, domain)
+  );
+  const existingEntry: PersistedRedisStateDomain | null =
+    typeof existingRaw === "string" ? JSON.parse(existingRaw) : existingRaw;
+
+  const existingVersion =
+    normalizeCloudSyncVersionState(existingEntry?.syncVersion) ||
+    createSyntheticLegacySyncVersion();
+
+  const prevToolVersion =
+    existingVersion.clientVersions[SERVER_TOOL_SYNC_CLIENT_ID] || 0;
+  const writeVersion: CloudSyncWriteVersion = {
+    clientId: SERVER_TOOL_SYNC_CLIENT_ID,
+    clientVersion: prevToolVersion + 1,
+    baseServerVersion: existingVersion.serverVersion,
+  };
+
+  const nextSyncVersion = advanceCloudSyncVersion(existingVersion, writeVersion);
+
+  const entry: PersistedRedisStateDomain = {
+    data,
+    updatedAt: now,
+    version: existingEntry?.version ?? AUTO_SYNC_SNAPSHOT_VERSION,
+    createdAt: existingEntry?.createdAt ?? now,
+    syncVersion: nextSyncVersion,
+  };
+
+  await persistStateEntry(redis, username, domain, entry);
+
+  try {
+    const channel = getSyncChannelName(username);
+    await triggerRealtimeEvent(channel, "domain-updated", {
+      domain,
+      updatedAt: entry.updatedAt,
+      syncVersion: nextSyncVersion,
+    });
+  } catch (realtimeErr) {
+    console.warn(
+      "[sync/state] Failed to broadcast domain-updated (server tool):",
+      realtimeErr
+    );
+  }
 }
 
 export async function getRedisStateDomainPayload(
