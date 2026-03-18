@@ -1178,7 +1178,12 @@ export function CalendarAppComponent({
   const [containerWidth, setContainerWidth] = useState(700);
   const [showCalendarSidebar, setShowCalendarSidebar] = useState(true);
   const [showMiniCalendar, setShowMiniCalendar] = useState(true);
-  const [timeGridHourHeight, setTimeGridHourHeight] = useState(DEFAULT_TIME_GRID_HOUR_HEIGHT);
+  const [weekTimeGridHourHeight, setWeekTimeGridHourHeight] = useState(
+    DEFAULT_TIME_GRID_HOUR_HEIGHT,
+  );
+  const [dayTimeGridHourHeight, setDayTimeGridHourHeight] = useState(
+    DEFAULT_TIME_GRID_HOUR_HEIGHT,
+  );
   useResizeObserverWithRef(containerRef, (entry) => {
     setContainerWidth(entry.contentRect.width);
   });
@@ -1346,14 +1351,14 @@ export function CalendarAppComponent({
                     onDateClick={handleDateClick} onTimeSlotClick={handleNewEventAtTime}
                     onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
                     isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
-                    hourHeight={timeGridHourHeight} setHourHeight={setTimeGridHourHeight} />
+                    hourHeight={weekTimeGridHourHeight} setHourHeight={setWeekTimeGridHourHeight} />
                 )}
                 {effectiveView === "day" && (
                   <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
                     onTimeSlotClick={handleNewEventAtTime}
                     onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
                     isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
-                    hourHeight={timeGridHourHeight} setHourHeight={setTimeGridHourHeight} />
+                    hourHeight={dayTimeGridHourHeight} setHourHeight={setDayTimeGridHourHeight} />
                 )}
                 {effectiveView === "month" && (
                   <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
