@@ -3,7 +3,8 @@ import type { Contact } from "../../src/utils/contacts.js";
 import { getContactSummary, normalizeContacts } from "../../src/utils/contacts.js";
 import { normalizeDeletionMarkerMap } from "../../src/utils/cloudSyncDeletionMarkers.js";
 import type { ContactsSnapshotData } from "../chat/tools/types.js";
-import { redisStateKey, redisStateMetaKey } from "../sync/_keys.js";
+import { redisStateKey } from "../sync/_keys.js";
+import { writeRedisSyncDomainFromServerTool } from "../sync/_state.js";
 
 export async function readContactsState(
   redis: Redis,
@@ -31,34 +32,7 @@ export async function writeContactsState(
   username: string,
   data: ContactsSnapshotData
 ): Promise<void> {
-  const now = new Date().toISOString();
-  const key = redisStateKey(username, "contacts");
-
-  await redis.set(
-    key,
-    JSON.stringify({
-      data,
-      updatedAt: now,
-      version: 1,
-      createdAt: now,
-    })
-  );
-
-  const existingMeta = await redis.get<string | Record<string, unknown>>(
-    redisStateMetaKey(username)
-  );
-  const metadata =
-    typeof existingMeta === "string"
-      ? JSON.parse(existingMeta)
-      : existingMeta || {};
-
-  metadata.contacts = {
-    updatedAt: now,
-    version: 1,
-    createdAt: now,
-  };
-
-  await redis.set(redisStateMetaKey(username), JSON.stringify(metadata));
+  await writeRedisSyncDomainFromServerTool(redis, username, "contacts", data);
 }
 
 export function serializeContactForTool(contact: Contact) {

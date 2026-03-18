@@ -9,7 +9,6 @@
  */
 
 import type { Redis } from "../../_utils/redis.js";
-import { redisStateMetaKey } from "../../sync/_keys.js";
 import type {
   ServerToolContext,
   GenerateHtmlInput,
@@ -43,7 +42,7 @@ import type {
   WebFetchInput,
   WebFetchOutput,
 } from "./types.js";
-import { stateKey } from "../../sync/_state.js";
+import { stateKey, writeRedisSyncDomainFromServerTool } from "../../sync/_state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
 import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";
 import {
@@ -1507,10 +1506,6 @@ function filesMetadataStateKey(username: string): string {
   return stateKey(username, "files-metadata");
 }
 
-function stateMetaKey(username: string): string {
-  return redisStateMetaKey(username);
-}
-
 async function readFilesMetadataState(
   redis: Redis,
   username: string
@@ -1528,23 +1523,12 @@ async function writeFilesMetadataState(
   username: string,
   data: FilesMetadataSnapshotData
 ): Promise<void> {
-  const now = new Date().toISOString();
-  await redis.set(
-    filesMetadataStateKey(username),
-    JSON.stringify({
-      data,
-      updatedAt: now,
-      version: 1,
-      createdAt: now,
-    })
+  await writeRedisSyncDomainFromServerTool(
+    redis,
+    username,
+    "files-metadata",
+    data
   );
-
-  const rawMeta = await redis.get<string | Record<string, unknown>>(
-    stateMetaKey(username)
-  );
-  const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
-  meta["files-metadata"] = { updatedAt: now, version: 1, createdAt: now };
-  await redis.set(stateMetaKey(username), JSON.stringify(meta));
 }
 
 function isActiveDocument(item: SyncedFileSystemItem | undefined): item is SyncedFileSystemItem {
@@ -1922,16 +1906,7 @@ async function writeCalendarState(
   username: string,
   data: CalendarSnapshotData
 ): Promise<void> {
-  const now = new Date().toISOString();
-  await redis.set(
-    stateKey(username, "calendar"),
-    JSON.stringify({ data, updatedAt: now, version: 1, createdAt: now })
-  );
-  const metaKey = redisStateMetaKey(username);
-  const rawMeta = await redis.get<string | Record<string, unknown>>(metaKey);
-  const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
-  meta.calendar = { updatedAt: now, version: 1, createdAt: now };
-  await redis.set(metaKey, JSON.stringify(meta));
+  await writeRedisSyncDomainFromServerTool(redis, username, "calendar", data);
 }
 
 async function readStickiesState(
@@ -1951,16 +1926,7 @@ async function writeStickiesState(
   username: string,
   data: StickiesSnapshotData
 ): Promise<void> {
-  const now = new Date().toISOString();
-  await redis.set(
-    stateKey(username, "stickies"),
-    JSON.stringify({ data, updatedAt: now, version: 1, createdAt: now })
-  );
-  const metaKey = redisStateMetaKey(username);
-  const rawMeta = await redis.get<string | Record<string, unknown>>(metaKey);
-  const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
-  meta.stickies = { updatedAt: now, version: 1, createdAt: now };
-  await redis.set(metaKey, JSON.stringify(meta));
+  await writeRedisSyncDomainFromServerTool(redis, username, "stickies", data);
 }
 
 function generateId(): string {
