@@ -588,7 +588,8 @@
         "iconSize": "サイズ",
         "icons": "アイコン",
         "pack": "パック",
-        "packs": "パック"
+        "packs": "パック",
+        "toggleSidebar": "Show or hide categories sidebar"
       },
       "title": "CandyBar"
     },
@@ -1010,6 +1011,11 @@
         "toolExecutionFailed": "ツールの実行に失敗しました",
         "unknownError": "不明なエラー",
         "updatedDocument": "ドキュメントを更新しました: {{path}}",
+        "webFetch": {
+          "fetched": "Read {{siteName}}",
+          "fetchedPage": "Read \"{{title}}\"",
+          "fetching": "Reading {{hostname}}…"
+        },
         "writingContent": "コンテンツを書き込み中…"
       }
     },

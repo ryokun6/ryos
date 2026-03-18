@@ -588,7 +588,8 @@
         "iconSize": "크기",
         "icons": "아이콘",
         "pack": "팩",
-        "packs": "팩"
+        "packs": "팩",
+        "toggleSidebar": "Show or hide categories sidebar"
       },
       "title": "CandyBar"
     },
@@ -1010,6 +1011,11 @@
         "toolExecutionFailed": "도구 실행 실패",
         "unknownError": "알 수 없는 오류",
         "updatedDocument": "문서 업데이트됨: {{path}}",
+        "webFetch": {
+          "fetched": "Read {{siteName}}",
+          "fetchedPage": "Read \"{{title}}\"",
+          "fetching": "Reading {{hostname}}…"
+        },
         "writingContent": "내용 쓰는 중…"
       }
     },
