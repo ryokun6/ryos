@@ -18,6 +18,7 @@ import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
+import { sortTracksByCatalogOrder } from "@/utils/ipodTrackOrdering";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -44,6 +45,10 @@ export interface Track {
   lyricOffset?: number;
   /** Selected lyrics source from Kugou (user override) */
   lyricsSource?: LyricsSource;
+  /** Redis/catalog creation time (ms); used for library ordering (newer first) */
+  createdAt?: number;
+  /** Stable tie-break for bulk imports (lower = earlier in list when createdAt matches) */
+  importOrder?: number;
 }
 
 type LibraryState = "uninitialized" | "loaded" | "cleared";
@@ -145,6 +150,8 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
         cover: song.cover,
         lyricOffset: song.lyricOffset,
         lyricsSource: song.lyricsSource,
+        createdAt: song.createdAt,
+        importOrder: song.importOrder,
       }));
       // Use the latest createdAt timestamp as version (or 1 if empty)
       const version = cachedSongs.length > 0 
@@ -633,7 +640,10 @@ export const useIpodStore = create<IpodState>()(
       setTheme: (theme) => set({ theme }),
       addTrack: (track) =>
         set((state) => ({
-          tracks: [track, ...state.tracks],
+          tracks: [
+            { ...track, createdAt: track.createdAt ?? Date.now() },
+            ...state.tracks,
+          ],
           currentSongId: track.id,
           currentLyrics: null,
           currentFuriganaMap: null,
@@ -658,7 +668,7 @@ export const useIpodStore = create<IpodState>()(
       resetLibrary: async () => {
         const { tracks, version } = await loadDefaultTracks();
         set({
-          tracks,
+          tracks: sortTracksByCatalogOrder(tracks),
           currentSongId: tracks[0]?.id ?? null,
           currentLyrics: null,
           currentFuriganaMap: null,
@@ -944,7 +954,7 @@ export const useIpodStore = create<IpodState>()(
         if (current.libraryState === "uninitialized") {
           const { tracks, version } = await loadDefaultTracks();
           set({
-            tracks,
+            tracks: sortTracksByCatalogOrder(tracks),
             currentSongId: tracks[0]?.id ?? null,
             currentLyrics: null,
             currentFuriganaMap: null,
@@ -1047,6 +1057,8 @@ export const useIpodStore = create<IpodState>()(
               cover: cachedMetadata.cover,
               lyricOffset: cachedMetadata.lyricOffset ?? 500,
               lyricsSource: cachedMetadata.lyricsSource,
+              createdAt: cachedMetadata.createdAt ?? Date.now(),
+              importOrder: cachedMetadata.importOrder,
             };
 
             try {
@@ -1194,6 +1206,7 @@ export const useIpodStore = create<IpodState>()(
           cover: trackInfo.cover,
           lyricOffset: 500, // Default 500ms offset for new tracks
           lyricsSource: trackInfo.lyricsSource,
+          createdAt: Date.now(),
         };
 
         try {
@@ -1236,7 +1249,9 @@ export const useIpodStore = create<IpodState>()(
                 currentTrack.album !== serverTrack.album ||
                 currentTrack.cover !== serverTrack.cover ||
                 currentTrack.url !== serverTrack.url ||
-                currentTrack.lyricOffset !== serverTrack.lyricOffset;
+                currentTrack.lyricOffset !== serverTrack.lyricOffset ||
+                currentTrack.createdAt !== serverTrack.createdAt ||
+                currentTrack.importOrder !== serverTrack.importOrder;
 
               // Check if we should update lyricsSource:
               // - Server has lyricsSource but user doesn't have one yet
@@ -1258,6 +1273,8 @@ export const useIpodStore = create<IpodState>()(
                   cover: serverTrack.cover,
                   url: serverTrack.url,
                   lyricOffset: serverTrack.lyricOffset,
+                  createdAt: serverTrack.createdAt ?? currentTrack.createdAt,
+                  importOrder: serverTrack.importOrder ?? currentTrack.importOrder,
                   // Update lyricsSource from server if it's new or different
                   ...(shouldUpdateLyricsSource && {
                     lyricsSource: serverTrack.lyricsSource,
@@ -1276,8 +1293,11 @@ export const useIpodStore = create<IpodState>()(
           );
           newTracksAdded = tracksToAdd.length;
 
-          // Combine new tracks (at top) with updated existing tracks
-          let finalTracks = [...tracksToAdd, ...updatedTracks];
+          // Merge new server tracks with existing rows, then order by catalog metadata (newest first)
+          let finalTracks = sortTracksByCatalogOrder([
+            ...tracksToAdd,
+            ...updatedTracks,
+          ]);
 
           // Fetch metadata for tracks not in the default library
           // These are user-added tracks that might have updated metadata in Redis
@@ -1313,6 +1333,8 @@ export const useIpodStore = create<IpodState>()(
                   cover?: string;
                   lyricOffset?: number;
                   lyricsSource?: LyricsSource;
+                  createdAt?: number;
+                  importOrder?: number;
                 };
                 const fetchedMap = new Map<string, FetchedSongMetadata>(
                   fetchedSongs.map((s: FetchedSongMetadata) => [s.id, s])
@@ -1336,6 +1358,10 @@ export const useIpodStore = create<IpodState>()(
                       (fetched.album && fetched.album !== track.album) ||
                       (fetched.cover && fetched.cover !== track.cover) ||
                       (fetched.lyricOffset !== undefined && fetched.lyricOffset !== track.lyricOffset) ||
+                      (fetched.createdAt !== undefined &&
+                        fetched.createdAt !== track.createdAt) ||
+                      (fetched.importOrder !== undefined &&
+                        fetched.importOrder !== track.importOrder) ||
                       shouldUpdateLyricsSource;
 
                     if (hasChanges) {
@@ -1348,6 +1374,8 @@ export const useIpodStore = create<IpodState>()(
                         album: fetched.album ?? track.album,
                         cover: fetched.cover ?? track.cover,
                         lyricOffset: fetched.lyricOffset ?? track.lyricOffset,
+                        createdAt: fetched.createdAt ?? track.createdAt,
+                        importOrder: fetched.importOrder ?? track.importOrder,
                         // Update lyricsSource from server if it's new or different
                         ...(shouldUpdateLyricsSource && {
                           lyricsSource: fetched.lyricsSource,
@@ -1362,6 +1390,8 @@ export const useIpodStore = create<IpodState>()(
               console.warn(`[iPod Store] Failed to fetch metadata for user tracks:`, error);
             }
           }
+
+          finalTracks = sortTracksByCatalogOrder(finalTracks);
 
           // Update store if there were any changes
           if (newTracksAdded > 0 || tracksUpdated > 0) {

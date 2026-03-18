@@ -8,6 +8,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import { sortTracksByCatalogOrder } from "@/utils/ipodTrackOrdering";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
@@ -1481,11 +1482,25 @@ function mergeSongsSnapshots(
     normalizeDeletionMarkerMap(local.deletedTrackIds),
     normalizeDeletionMarkerMap(remote.deletedTrackIds)
   );
+  const localFiltered = filterDeletedIds(
+    local.tracks,
+    mergedDeleted,
+    (t) => t.id
+  );
+  const remoteFiltered = filterDeletedIds(
+    remote.tracks,
+    mergedDeleted,
+    (t) => t.id
+  );
+  const byId = new Map<string, Track>();
+  for (const item of remoteFiltered) {
+    byId.set(item.id, item);
+  }
+  for (const item of localFiltered) {
+    byId.set(item.id, item);
+  }
   return {
-    tracks: mergeItemsById(
-      filterDeletedIds(local.tracks, mergedDeleted, (t) => t.id),
-      filterDeletedIds(remote.tracks, mergedDeleted, (t) => t.id)
-    ),
+    tracks: sortTracksByCatalogOrder(Array.from(byId.values())),
     libraryState: local.libraryState === "loaded" || remote.libraryState === "loaded"
       ? "loaded"
       : local.libraryState,
