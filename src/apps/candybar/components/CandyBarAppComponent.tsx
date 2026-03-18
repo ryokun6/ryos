@@ -121,41 +121,43 @@ function PackDetailView({
   iconSize: number;
 }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-black/10">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-[13px] font-geneva-12 font-bold truncate">
-            {pack.name}
-          </h2>
-          <p className="text-[11px] font-geneva-12 text-black/50">
-            {t("apps.candybar.packDetail.by")} {pack.author}
-          </p>
+    <div className="flex flex-col flex-1 min-h-0 h-full">
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="p-4 border-b border-black/10">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-[13px] font-geneva-12 font-bold truncate">
+              {pack.name}
+            </h2>
+            <p className="text-[11px] font-geneva-12 text-black/50">
+              {t("apps.candybar.packDetail.by")} {pack.author}
+            </p>
+          </div>
+          {pack.description && (
+            <p className="text-[11px] font-geneva-12 text-black/70 mt-2">
+              {pack.description}
+            </p>
+          )}
         </div>
-        {pack.description && (
-          <p className="text-[11px] font-geneva-12 text-black/70 mt-2">
-            {pack.description}
-          </p>
-        )}
-      </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-3">
-          {pack.previewIcons.map((icon) => (
-            <div key={icon.name} className="flex flex-col items-center gap-1">
-              <img
-                src={icon.url}
-                alt={icon.name}
-                className={cn(
-                  "object-contain [image-rendering:auto]",
-                  isMacOSXTheme ? "drop-shadow-sm" : ""
-                )}
-                style={{ width: iconSize, height: iconSize }}
-                loading="lazy"
-              />
-              <span className="text-[9px] font-geneva-12 text-black truncate w-full text-center">
-                {icon.name}
-              </span>
-            </div>
-          ))}
+        <div className="p-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-3">
+            {pack.previewIcons.map((icon) => (
+              <div key={icon.name} className="flex flex-col items-center gap-1">
+                <img
+                  src={icon.url}
+                  alt={icon.name}
+                  className={cn(
+                    "object-contain [image-rendering:auto]",
+                    isMacOSXTheme ? "drop-shadow-sm" : ""
+                  )}
+                  style={{ width: iconSize, height: iconSize }}
+                  loading="lazy"
+                />
+                <span className="text-[9px] font-geneva-12 text-black truncate w-full text-center">
+                  {icon.name}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -397,8 +399,7 @@ export function CandyBarAppComponent({
                           {error}
                         </div>
                       ) : filteredPacks.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-[12px] font-geneva-12 text-black/40 gap-1">
-                          <span className="text-[24px]">🍬</span>
+                        <div className="flex flex-col items-center justify-center h-full text-[12px] font-geneva-12 text-black/40">
                           <span>{t("apps.candybar.noPacks")}</span>
                         </div>
                       ) : (
@@ -441,7 +442,7 @@ export function CandyBarAppComponent({
               {/* Main content */}
               <div className="flex-1 relative min-h-0 min-w-0">
                 {selectedPack ? (
-                  <div className="absolute inset-0 overflow-y-auto bg-white">
+                  <div className="absolute inset-0 flex flex-col min-h-0 bg-white">
                     <PackDetailView
                       pack={selectedPack}
                       isMacOSXTheme={isMacOSXTheme}
@@ -458,8 +459,7 @@ export function CandyBarAppComponent({
                     {error}
                   </div>
                 ) : filteredPacks.length === 0 ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-[12px] font-geneva-12 text-black/40 gap-1">
-                    <span className="text-[24px]">🍬</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-[12px] font-geneva-12 text-black/40">
                     <span>{t("apps.candybar.noPacks")}</span>
                   </div>
                 ) : (
