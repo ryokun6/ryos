@@ -3109,7 +3109,8 @@
           "uniqueVisitors": "Unique Visitors",
           "aiRequests": "AI Requests",
           "errors": "Errors",
-          "avgResponseTime": "Avg Response Time (ms)"
+          "avgResponseTime": "Avg Response Time (ms)",
+          "hourlyUtc": "UTC hourly"
         },
         "sections": {
           "topEndpoints": "Top Endpoints",

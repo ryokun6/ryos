@@ -12,7 +12,8 @@
           "apiCalls": "API 呼叫",
           "avgResponseTime": "平均回應時間 (ms)",
           "errors": "錯誤",
-          "uniqueVisitors": "不重複訪客"
+          "uniqueVisitors": "不重複訪客",
+          "hourlyUtc": "UTC 每小時"
         },
         "empty": {
           "noAiUsage": "尚無 AI 使用紀錄",
