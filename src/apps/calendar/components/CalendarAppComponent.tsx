@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from "react";
 import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { CalendarMenuBar } from "./CalendarMenuBar";
@@ -12,6 +12,10 @@ import {
   type CalendarDayCell,
   type WeekDay,
 } from "../hooks/useCalendarLogic";
+import {
+  DEFAULT_TIME_GRID_HOUR_HEIGHT,
+  useTimeScaleGestures,
+} from "../hooks/useTimeScaleGestures";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 import { CaretLeft, CaretRight, Plus, ListChecks, Trash, SidebarSimple, CalendarBlank } from "@phosphor-icons/react";
 import { SearchInput } from "@/components/ui/search-input";
@@ -46,7 +50,6 @@ const EVENT_COLOR_LIGHT: Record<string, string> = {
 
 const HOUR_START = 0;
 const HOUR_END = 24;
-const HOUR_HEIGHT = 40;
 const TODAY_RED = "#E25B4F";
 const TODAY_RED_XP = "#B53325";
 const SEARCH_DIM_OPACITY = 0.28;
@@ -447,6 +450,8 @@ function WeekTimeGrid({
   isSystem7Theme,
   searchQuery,
   hourLabels,
+  hourHeight,
+  setHourHeight,
 }: {
   weekDates: WeekDay[];
   selectedEventId: string | null;
@@ -459,10 +464,16 @@ function WeekTimeGrid({
   isSystem7Theme: boolean;
   searchQuery: string;
   hourLabels: string[];
+  hourHeight: number;
+  setHourHeight: (h: number) => void;
 }) {
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const scrollRef = useRef<HTMLDivElement>(null);
+  const horizontalScrollRef = useRef<HTMLDivElement>(null);
+  useTimeScaleGestures(scrollRef, hourHeight, setHourHeight, {
+    horizontalScrollParentRef: horizontalScrollRef,
+  });
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
   const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
@@ -483,11 +494,11 @@ function WeekTimeGrid({
     return now.getHours() * 60 + now.getMinutes();
   });
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      const scrollTo = (8 - HOUR_START) * HOUR_HEIGHT;
-      scrollRef.current.scrollTop = Math.max(0, scrollTo - 20);
-    }
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const scrollTo = (8 - HOUR_START) * DEFAULT_TIME_GRID_HOUR_HEIGHT;
+    el.scrollTop = Math.max(0, scrollTo - 20);
   }, []);
 
   useEffect(() => {
@@ -505,7 +516,7 @@ function WeekTimeGrid({
   const MIN_WEEK_WIDTH = 48 + 7 * MIN_DAY_COL;
 
   return (
-    <div className="flex-1 overflow-x-auto overflow-y-hidden">
+    <div ref={horizontalScrollRef} className="flex-1 overflow-x-auto overflow-y-hidden">
       <div className="flex flex-col h-full" style={{ minWidth: MIN_WEEK_WIDTH }}>
         <div
           className="flex border-b shrink-0"
@@ -574,7 +585,7 @@ function WeekTimeGrid({
         )}
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
-          <div className="flex relative" style={{ height: totalHours * HOUR_HEIGHT }}>
+          <div className="flex relative" style={{ height: totalHours * hourHeight }}>
             <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} className="relative">
               {Array.from({ length: totalHours }, (_, i) => {
                 const hour = HOUR_START + i;
@@ -582,7 +593,7 @@ function WeekTimeGrid({
                   <div
                     key={hour}
                     className={cn("absolute right-1 text-[10px] opacity-40 text-right", useGeneva && "font-geneva-12")}
-                    style={{ top: i * HOUR_HEIGHT - 6, width: 40 }}
+                    style={{ top: i * hourHeight - 6, width: 40 }}
                   >
                     {hourLabels[hour]}
                   </div>
@@ -603,7 +614,7 @@ function WeekTimeGrid({
                     onClick={() => onTimeSlotClick(day.date, HOUR_START + i)}
                     className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
                     style={{
-                      top: i * HOUR_HEIGHT, height: HOUR_HEIGHT,
+                      top: i * hourHeight, height: hourHeight,
                       borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
                     }}
                   />
@@ -614,8 +625,8 @@ function WeekTimeGrid({
                   const [eh, em] = (ev.endTime || `${sh + 1}:00`).split(":").map(Number);
                   const startMin = sh * 60 + sm;
                   const endMin = eh * 60 + em;
-                  const top = ((startMin - HOUR_START * 60) / 60) * HOUR_HEIGHT;
-                  const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 18);
+                  const top = ((startMin - HOUR_START * 60) / 60) * hourHeight;
+                  const height = Math.max(((endMin - startMin) / 60) * hourHeight, 18);
 
                   return (
                     <button
@@ -648,8 +659,8 @@ function WeekTimeGrid({
                 })}
 
                 {day.isToday && (() => {
-                  const topPos = ((currentMinute - HOUR_START * 60) / 60) * HOUR_HEIGHT;
-                  if (topPos < 0 || topPos > totalHours * HOUR_HEIGHT) return null;
+                  const topPos = ((currentMinute - HOUR_START * 60) / 60) * hourHeight;
+                  if (topPos < 0 || topPos > totalHours * hourHeight) return null;
                   return (
                     <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                       <div className="flex items-center">
@@ -684,6 +695,8 @@ function DayTimeGrid({
   isSystem7Theme,
   searchQuery,
   hourLabels,
+  hourHeight,
+  setHourHeight,
 }: {
   date: string;
   events: CalendarEvent[];
@@ -696,9 +709,12 @@ function DayTimeGrid({
   isSystem7Theme: boolean;
   searchQuery: string;
   hourLabels: string[];
+  hourHeight: number;
+  setHourHeight: (h: number) => void;
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const scrollRef = useRef<HTMLDivElement>(null);
+  useTimeScaleGestures(scrollRef, hourHeight, setHourHeight);
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
   const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
@@ -728,11 +744,11 @@ function DayTimeGrid({
   }, []);
   const isToday = date === todayStr;
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      const scrollTo = (8 - HOUR_START) * HOUR_HEIGHT;
-      scrollRef.current.scrollTop = Math.max(0, scrollTo - 20);
-    }
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const scrollTo = (8 - HOUR_START) * DEFAULT_TIME_GRID_HOUR_HEIGHT;
+    el.scrollTop = Math.max(0, scrollTo - 20);
   }, []);
 
   useEffect(() => {
@@ -768,12 +784,12 @@ function DayTimeGrid({
       )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="flex relative w-full" style={{ height: totalHours * HOUR_HEIGHT }}>
+        <div className="flex relative w-full" style={{ height: totalHours * hourHeight }}>
           <div style={{ width: 52, minWidth: 52, flexShrink: 0 }} className="relative">
             {Array.from({ length: totalHours }, (_, i) => {
               const hour = HOUR_START + i;
               return (
-                <div key={hour} className={cn("absolute right-1 text-[10px] opacity-40 text-right", useGeneva && "font-geneva-12")} style={{ top: i * HOUR_HEIGHT - 6, width: 44 }}>
+                <div key={hour} className={cn("absolute right-1 text-[10px] opacity-40 text-right", useGeneva && "font-geneva-12")} style={{ top: i * hourHeight - 6, width: 44 }}>
                   {hourLabels[hour]}
                 </div>
               );
@@ -784,7 +800,7 @@ function DayTimeGrid({
             {Array.from({ length: totalHours }, (_, i) => (
               <button key={i} type="button" onClick={() => onTimeSlotClick(date, HOUR_START + i)}
                 className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
-                style={{ top: i * HOUR_HEIGHT, height: HOUR_HEIGHT, borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)" }}
+                style={{ top: i * hourHeight, height: hourHeight, borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)" }}
               />
             ))}
 
@@ -793,8 +809,8 @@ function DayTimeGrid({
               const [eh, em] = (ev.endTime || `${sh + 1}:00`).split(":").map(Number);
               const startMin = sh * 60 + sm;
               const endMin = eh * 60 + em;
-              const top = ((startMin - HOUR_START * 60) / 60) * HOUR_HEIGHT;
-              const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 22);
+              const top = ((startMin - HOUR_START * 60) / 60) * hourHeight;
+              const height = Math.max(((endMin - startMin) / 60) * hourHeight, 22);
 
               return (
                 <button key={ev.id} type="button"
@@ -820,8 +836,8 @@ function DayTimeGrid({
             })}
 
             {isToday && (() => {
-              const topPos = ((currentMinute - HOUR_START * 60) / 60) * HOUR_HEIGHT;
-              if (topPos < 0 || topPos > totalHours * HOUR_HEIGHT) return null;
+              const topPos = ((currentMinute - HOUR_START * 60) / 60) * hourHeight;
+              if (topPos < 0 || topPos > totalHours * hourHeight) return null;
               return (
                 <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                   <div className="flex items-center">
@@ -1162,6 +1178,7 @@ export function CalendarAppComponent({
   const [containerWidth, setContainerWidth] = useState(700);
   const [showCalendarSidebar, setShowCalendarSidebar] = useState(true);
   const [showMiniCalendar, setShowMiniCalendar] = useState(true);
+  const [timeGridHourHeight, setTimeGridHourHeight] = useState(DEFAULT_TIME_GRID_HOUR_HEIGHT);
   useResizeObserverWithRef(containerRef, (entry) => {
     setContainerWidth(entry.contentRect.width);
   });
@@ -1328,13 +1345,15 @@ export function CalendarAppComponent({
                   <WeekTimeGrid weekDates={weekDates} selectedEventId={selectedEventId}
                     onDateClick={handleDateClick} onTimeSlotClick={handleNewEventAtTime}
                     onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels} />
+                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
+                    hourHeight={timeGridHourHeight} setHourHeight={setTimeGridHourHeight} />
                 )}
                 {effectiveView === "day" && (
                   <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
                     onTimeSlotClick={handleNewEventAtTime}
                     onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels} />
+                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
+                    hourHeight={timeGridHourHeight} setHourHeight={setTimeGridHourHeight} />
                 )}
                 {effectiveView === "month" && (
                   <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
