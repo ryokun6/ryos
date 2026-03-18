@@ -1451,6 +1451,7 @@ export function useAutoCloudSync() {
     const stickiesUnsubscribe = useStickiesStore.subscribe(
       (state, prevState) => {
         if (state.notes !== prevState.notes) {
+          if (!useStickiesStore.persist.hasHydrated()) return;
           if (isApplyingRemoteDomain("stickies")) return;
           queueUpload("stickies");
         }
@@ -1463,6 +1464,9 @@ export function useAutoCloudSync() {
         state.calendars !== prevState.calendars ||
         state.todos !== prevState.todos
       ) {
+        // Persist calls set(mergedState) before hasHydrated=true; without this
+        // guard, rehydration looks like a local edit and blocks remote pull.
+        if (!useCalendarStore.persist.hasHydrated()) return;
         if (isApplyingRemoteDomain("calendar")) return;
         queueUpload("calendar");
       }
@@ -1470,6 +1474,7 @@ export function useAutoCloudSync() {
 
     const contactsUnsubscribe = useContactsStore.subscribe((state, prevState) => {
       if (state.contacts !== prevState.contacts) {
+        if (!useContactsStore.persist.hasHydrated()) return;
         if (isApplyingRemoteDomain("contacts")) return;
         queueUpload("contacts");
       }

@@ -18,6 +18,8 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, CalendarGroup, TodoItem } from "@/stores/useCalendarStore";
+import { useChatsStore } from "@/stores/useChatsStore";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useTranslation } from "react-i18next";
 import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
@@ -1117,7 +1119,19 @@ function BottomToolbar({
 export function CalendarAppComponent({
   isWindowOpen, onClose, isForeground, skipInitialSound, instanceId, onNavigateNext, onNavigatePrevious,
 }: AppProps) {
-  useEffect(() => { requestCloudSyncDomainCheck("calendar"); }, []);
+  const username = useChatsStore((s) => s.username);
+  const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
+  const calendarSyncReady = useCloudSyncStore(
+    (s) => s.autoSyncEnabled && s.syncCalendar
+  );
+  const canSyncCalendar = Boolean(
+    username && isAuthenticated && calendarSyncReady
+  );
+  useEffect(() => {
+    if (canSyncCalendar) {
+      requestCloudSyncDomainCheck("calendar");
+    }
+  }, [canSyncCalendar]);
 
   const logic = useCalendarLogic();
   const {
