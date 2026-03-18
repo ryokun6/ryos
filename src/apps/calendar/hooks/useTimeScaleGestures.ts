@@ -18,7 +18,8 @@ export type TimeScaleGesturesOptions = {
 };
 
 /**
- * Pinch-to-zoom and Ctrl/Cmd+wheel zoom for the calendar time scale (day/week).
+ * Pinch-to-zoom and Ctrl/Cmd+wheel zoom for the calendar time grid hour height.
+ * Day and week views each use their own `hourHeight` state so zoom is independent per view.
  * Uses non-passive listeners so preventDefault works for trackpad pinch zoom.
  * Optional horizontal parent: locks single-finger drag to H or V after threshold, and
  * routes dominant horizontal wheel deltas to that parent.
