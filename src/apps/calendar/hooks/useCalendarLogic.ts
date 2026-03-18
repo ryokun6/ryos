@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -117,6 +117,11 @@ export function useCalendarLogic() {
       goToToday: state.goToToday,
     }))
   );
+
+  // When the Calendar app window mounts (open / restore from dock), show today.
+  useEffect(() => {
+    goToToday();
+  }, [goToToday]);
 
   // ========================================================================
   // UNDO / REDO
