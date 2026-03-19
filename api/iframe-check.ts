@@ -684,14 +684,28 @@ export default apiHandler(
         res.setHeader("Content-Type", "application/json");
         res.setHeader("Access-Control-Allow-Origin", "*");
         logger.response(upstreamRes.status, Date.now() - startTime);
+
+        const cfMitigated = upstreamRes.headers.get("cf-mitigated");
+        const serverHdr = upstreamRes.headers.get("server")?.toLowerCase() ?? "";
+        const isCloudflareChallenge =
+          upstreamRes.status === 403 &&
+          (cfMitigated !== null || serverHdr.includes("cloudflare"));
+
+        const defaultMessage = `The page cannot be found. HTTP ${upstreamRes.status} - ${
+          upstreamRes.statusText || "File not found"
+        }`;
+
         return res.status(upstreamRes.status).json({
           error: true,
           status: upstreamRes.status,
           statusText: upstreamRes.statusText || "File not found",
-          type: "http_error",
-          message: `The page cannot be found. HTTP ${upstreamRes.status} - ${
-            upstreamRes.statusText || "File not found"
-          }`,
+          type: isCloudflareChallenge ? "cloudflare_challenge" : "http_error",
+          message: isCloudflareChallenge
+            ? "This site blocked the ryOS preview proxy (often Cloudflare bot / challenge mode)."
+            : defaultMessage,
+          details: isCloudflareChallenge
+            ? "The Internet Explorer app fetches pages on the server to strip frame-blocking headers. Automated requests cannot complete browser challenges. Fix: allowlist ryOS deployment IPs or trusted headers on the target zone, or open the URL in an external browser."
+            : undefined,
         });
       }
 
