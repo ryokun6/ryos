@@ -423,16 +423,13 @@ export function Desktop({
   const getWallpaperStyles = (path: string): DesktopStyles => {
     if (!path || isVideoWallpaper) return {};
 
-    // Custom wallpapers resolve to a blob URL asynchronously; avoid invalid url(indexeddb://…)
-    // or stale persisted blob: URLs (broken image icon on first paint).
-    const resolvedPath =
-      path.startsWith(INDEXEDDB_PREFIX) || path.startsWith("blob:")
-        ? "/wallpapers/photos/aqua/water.jpg"
-        : path;
+    // Custom wallpapers resolve to a blob URL asynchronously; skip background until then
+    // (invalid url(indexeddb://…) would paint a broken-image icon).
+    if (path.startsWith(INDEXEDDB_PREFIX)) return {};
 
-    const isTiled = resolvedPath.includes("/wallpapers/tiles/");
+    const isTiled = path.includes("/wallpapers/tiles/");
     return {
-      backgroundImage: `url(${resolvedPath})`,
+      backgroundImage: `url(${path})`,
       backgroundSize: isTiled ? "64px 64px" : "cover",
       backgroundRepeat: isTiled ? "repeat" : "no-repeat",
       backgroundPosition: "center",
