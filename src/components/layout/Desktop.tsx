@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { FileIcon } from "@/apps/finder/components/FileIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { useWallpaper } from "@/hooks/useWallpaper";
+import { INDEXEDDB_PREFIX } from "@/stores/useDisplaySettingsStore";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { SortType } from "@/apps/finder/components/FinderMenuBar";
 import { useLongPress } from "@/hooks/useLongPress";
@@ -422,9 +423,16 @@ export function Desktop({
   const getWallpaperStyles = (path: string): DesktopStyles => {
     if (!path || isVideoWallpaper) return {};
 
-    const isTiled = path.includes("/wallpapers/tiles/");
+    // Custom wallpapers resolve to a blob URL asynchronously; avoid invalid url(indexeddb://…)
+    // or stale persisted blob: URLs (broken image icon on first paint).
+    const resolvedPath =
+      path.startsWith(INDEXEDDB_PREFIX) || path.startsWith("blob:")
+        ? "/wallpapers/photos/aqua/water.jpg"
+        : path;
+
+    const isTiled = resolvedPath.includes("/wallpapers/tiles/");
     return {
-      backgroundImage: `url(${path})`,
+      backgroundImage: `url(${resolvedPath})`,
       backgroundSize: isTiled ? "64px 64px" : "cover",
       backgroundRepeat: isTiled ? "repeat" : "no-repeat",
       backgroundPosition: "center",
