@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { FileIcon } from "@/apps/finder/components/FileIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { useWallpaper } from "@/hooks/useWallpaper";
+import { INDEXEDDB_PREFIX } from "@/stores/useDisplaySettingsStore";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { SortType } from "@/apps/finder/components/FinderMenuBar";
 import { useLongPress } from "@/hooks/useLongPress";
@@ -421,6 +422,10 @@ export function Desktop({
 
   const getWallpaperStyles = (path: string): DesktopStyles => {
     if (!path || isVideoWallpaper) return {};
+
+    // Custom wallpapers resolve to a blob URL asynchronously; skip background until then
+    // (invalid url(indexeddb://…) would paint a broken-image icon).
+    if (path.startsWith(INDEXEDDB_PREFIX)) return {};
 
     const isTiled = path.includes("/wallpapers/tiles/");
     return {

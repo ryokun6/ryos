@@ -287,6 +287,24 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         debugMode: state.debugMode,
         htmlPreviewSplit: state.htmlPreviewSplit,
       }),
+      merge: (persistedState, currentState) => {
+        const merged = {
+          ...currentState,
+          ...(persistedState as Partial<DisplaySettingsState> | undefined),
+        };
+        const cw = merged.currentWallpaper;
+        const ws = merged.wallpaperSource;
+        // Persisted blob: object URLs are invalid after reload; never hydrate them as the CSS/video src.
+        if (
+          typeof cw === "string" &&
+          cw.startsWith(INDEXEDDB_PREFIX) &&
+          typeof ws === "string" &&
+          (ws.startsWith("blob:") || ws === cw)
+        ) {
+          return { ...merged, wallpaperSource: cw };
+        }
+        return merged;
+      },
     }
   )
 );
