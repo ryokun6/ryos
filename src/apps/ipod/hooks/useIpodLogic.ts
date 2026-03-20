@@ -12,6 +12,8 @@ import { useFurigana } from "@/hooks/useFurigana";
 import { useActivityState } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
+import { useListenSync } from "@/hooks/useListenSync";
+import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import {
   useIpodStore,
@@ -169,6 +171,33 @@ export function useIpodLogic({
     [username, isAuthenticated]
   );
 
+  // Live Listen session state
+  const {
+    currentSession: listenSession,
+    isHost: isListenSessionHost,
+    isDj: isListenSessionDj,
+    isAnonymous: isListenSessionAnonymous,
+    listenerCount: listenListenerCount,
+    createSession: createListenSession,
+    joinSession: joinListenSession,
+    leaveSession: leaveListenSession,
+    syncSession: syncListenSession,
+    sendReaction: sendListenReaction,
+  } = useListenSessionStore(
+    useShallow((state) => ({
+      currentSession: state.currentSession,
+      isHost: state.isHost,
+      isDj: state.isDj,
+      isAnonymous: state.isAnonymous,
+      listenerCount: state.listenerCount,
+      createSession: state.createSession,
+      joinSession: state.joinSession,
+      leaveSession: state.leaveSession,
+      syncSession: state.syncSession,
+      sendReaction: state.sendReaction,
+    }))
+  );
+
 
   const lyricOffset = useIpodStore(
     (s) => {
@@ -213,6 +242,8 @@ export function useIpodLogic({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
+  const [isListenInviteOpen, setIsListenInviteOpen] = useState(false);
+  const [isJoinListenDialogOpen, setIsJoinListenDialogOpen] = useState(false);
   
   // Cover Flow state
   const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
@@ -275,6 +306,39 @@ export function useIpodLogic({
   const isIOS = /iP(hone|od|ad)/.test(ua);
   const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
   const isIOSSafari = isIOS && isSafari;
+
+  // Current track metadata for Live Listen sync
+  const currentTrackForSync: Track | null = tracks[currentIndex] || null;
+  const currentTrackMeta = useMemo(
+    () =>
+      currentTrackForSync
+        ? {
+            title: currentTrackForSync.title,
+            artist: currentTrackForSync.artist,
+            cover: currentTrackForSync.cover,
+          }
+        : null,
+    [currentTrackForSync]
+  );
+
+  const getActivePlayer = useCallback(
+    () => (isFullScreen ? fullScreenPlayerRef.current : playerRef.current),
+    [isFullScreen]
+  );
+
+  // Live Listen sync hook
+  useListenSync({
+    currentTrackId: currentTrackForSync?.id ?? null,
+    currentTrackMeta,
+    isPlaying,
+    setIsPlaying,
+    setCurrentTrackId: setCurrentSongId,
+    getActivePlayer,
+    addTrackFromId: useIpodStore.getState().addTrackFromVideoId,
+  });
+
+  // Ref to track processed listen session data
+  const lastProcessedListenSessionRef = useRef<string | null>(null);
 
   // Status helper functions
   const showStatus = useCallback((message: string) => {
@@ -910,11 +974,39 @@ export function useIpodLogic({
   }, [isWindowOpen, initialData, processVideoId, clearIpodInitialData, instanceId]);
 
 
+  // Handle listenSessionId from initial data
+  useEffect(() => {
+    if (
+      isWindowOpen &&
+      initialData?.listenSessionId &&
+      typeof initialData.listenSessionId === "string"
+    ) {
+      if (lastProcessedListenSessionRef.current === initialData.listenSessionId) return;
+
+      const sessionIdToProcess = initialData.listenSessionId;
+      setTimeout(() => {
+        joinListenSession(sessionIdToProcess, username || undefined)
+          .then((result) => {
+            if (!result.ok) {
+              toast.error("Failed to join session", {
+                description: result.error || "Please try again.",
+              });
+            }
+            if (instanceId) clearIpodInitialData(instanceId);
+          })
+          .catch((error) => {
+            console.error(`[iPod] Error joining listen session ${sessionIdToProcess}:`, error);
+          });
+      }, 100);
+      lastProcessedListenSessionRef.current = initialData.listenSessionId;
+    }
+  }, [isWindowOpen, initialData, joinListenSession, username, clearIpodInitialData, instanceId]);
+
   // Update app event handling
   useEffect(() => {
     return onAppUpdate((event) => {
       const updateInitialData = event.detail.initialData as
-        | { videoId?: string }
+        | { videoId?: string; listenSessionId?: string }
         | undefined;
 
       if (
@@ -936,8 +1028,32 @@ export function useIpodLogic({
         });
         lastProcessedInitialDataRef.current = updateInitialData;
       }
+
+      if (
+        event.detail.appId === "ipod" &&
+        updateInitialData?.listenSessionId &&
+        (!event.detail.instanceId || event.detail.instanceId === instanceId)
+      ) {
+        const sessionId = updateInitialData.listenSessionId;
+        if (lastProcessedListenSessionRef.current === sessionId) return;
+        if (instanceId) {
+          bringInstanceToForeground(instanceId);
+        }
+        joinListenSession(sessionId, username || undefined)
+          .then((result) => {
+            if (!result.ok) {
+              toast.error("Failed to join session", {
+                description: result.error || "Please try again.",
+              });
+            }
+          })
+          .catch((error) => {
+            console.error(`[iPod] Error joining listen session ${sessionId}:`, error);
+          });
+        lastProcessedListenSessionRef.current = sessionId;
+      }
     });
-  }, [bringInstanceToForeground, instanceId, processVideoId]);
+  }, [bringInstanceToForeground, instanceId, processVideoId, joinListenSession, username]);
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {
@@ -1388,6 +1504,84 @@ export function useIpodLogic({
     [handleAddTrack]
   );
 
+  // Live Listen session handlers
+  const handleStartListenSession = useCallback(async () => {
+    if (!username) {
+      toast.error("Login required", {
+        description: "Set a username in Chats to start a session.",
+      });
+      return;
+    }
+    const result = await createListenSession(username);
+    if (!result.ok) {
+      toast.error("Failed to start session", {
+        description: result.error || "Please try again.",
+      });
+      return;
+    }
+    setIsListenInviteOpen(true);
+  }, [createListenSession, username]);
+
+  const handleJoinListenSession = useCallback(
+    async (sessionId: string) => {
+      const result = await joinListenSession(sessionId, username || undefined);
+      if (!result.ok) {
+        toast.error("Failed to join session", {
+          description: result.error || "Please try again.",
+        });
+        return;
+      }
+    },
+    [joinListenSession, username]
+  );
+
+  const handleLeaveListenSession = useCallback(async () => {
+    const result = await leaveListenSession();
+    if (!result.ok) {
+      toast.error("Failed to leave session", {
+        description: result.error || "Please try again.",
+      });
+      return;
+    }
+    setIsListenInviteOpen(false);
+  }, [leaveListenSession]);
+
+  const handlePassDj = useCallback(
+    async (nextDj: string) => {
+      const activePlayer = getActivePlayer();
+      const positionMs = Math.max(0, (activePlayer?.getCurrentTime() ?? 0) * 1000);
+      const result = await syncListenSession({
+        currentTrackId: currentTrackForSync?.id ?? null,
+        currentTrackMeta,
+        isPlaying,
+        positionMs,
+        djUsername: nextDj,
+      });
+      if (!result.ok) {
+        toast.error("Failed to pass DJ", {
+          description: result.error || "Please try again.",
+        });
+      } else {
+        toast.success("DJ passed", {
+          description: `@${nextDj} is now the DJ.`,
+        });
+      }
+    },
+    [currentTrackForSync, currentTrackMeta, getActivePlayer, isPlaying, syncListenSession]
+  );
+
+  const handleSendReaction = useCallback(
+    async (emoji: string) => {
+      const result = await sendListenReaction(emoji);
+      if (!result.ok) {
+        toast.error("Failed to send reaction", {
+          description: result.error || "Please try again.",
+        });
+      }
+    },
+    [sendListenReaction]
+  );
+
   const currentTrack = tracks[currentIndex];
   const lyricsSourceOverride = currentTrack?.lyricsSource;
 
@@ -1793,6 +1987,22 @@ export function useIpodLogic({
     setIsSongSearchDialogOpen,
     isSyncModeOpen,
     setIsSyncModeOpen,
+    isListenInviteOpen,
+    setIsListenInviteOpen,
+    isJoinListenDialogOpen,
+    setIsJoinListenDialogOpen,
+
+    // Live Listen
+    listenSession,
+    listenListenerCount,
+    isListenSessionHost,
+    isListenSessionDj,
+    isListenSessionAnonymous,
+    handleStartListenSession,
+    handleJoinListenSession,
+    handleLeaveListenSession,
+    handlePassDj,
+    handleSendReaction,
 
     // Current track
     currentTrack,
