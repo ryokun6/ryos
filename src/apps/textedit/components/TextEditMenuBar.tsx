@@ -17,6 +17,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
 
 interface TextEditMenuBarProps {
@@ -82,9 +83,14 @@ export function TextEditMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onImportFile}
-            className="text-md h-6 px-3"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
-            {t("apps.textedit.menu.open")}
+            <ThemedIcon
+              name="/icons/default/folder.png"
+              alt=""
+              className="w-4 h-4 [image-rendering:pixelated] shrink-0"
+            />
+            {t("common.menu.openProject")}
           </MenubarItem>
           <MenubarItem
             onClick={onSave}
