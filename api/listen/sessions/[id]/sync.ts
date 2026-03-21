@@ -130,6 +130,7 @@ export default apiHandler(
         timestamp: now,
         djUsername: session.djUsername,
         listenerCount,
+        sourceUsername: username,
       });
 
       logger.info("Listen session synced", {
