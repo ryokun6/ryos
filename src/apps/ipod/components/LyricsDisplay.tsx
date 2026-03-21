@@ -8,7 +8,7 @@ import {
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { useMemo, useRef, useState, useEffect, useCallback, memo } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCoverPalette } from "@/hooks/useCoverPalette";
@@ -1144,13 +1144,8 @@ const getVariants = (
   };
 };
 
-type LyricsVisibleLineRowProps = {
+type LyricsLineRowContentProps = {
   line: LyricLine;
-  index: number;
-  visibleLinesLength: number;
-  alignment: LyricsAlignment;
-  lineTextAlign: string;
-  position: number;
   isCurrent: boolean;
   hasWordTimings: boolean;
   /** Only passed for rows that need per-tick playback time (word highlight + gradient hue). */
@@ -1176,13 +1171,9 @@ type LyricsVisibleLineRowProps = {
   glowShadowHighlight: string;
 };
 
-const LyricsVisibleLineRow = memo(function LyricsVisibleLineRow({
+/** Inner lyric body only — `motion.div` must wrap this as a direct child of `AnimatePresence` for layout/exit. */
+function LyricsLineRowContent({
   line,
-  index,
-  visibleLinesLength,
-  alignment,
-  lineTextAlign,
-  position,
   isCurrent,
   hasWordTimings,
   timeMsForRow,
@@ -1190,7 +1181,6 @@ const LyricsVisibleLineRow = memo(function LyricsVisibleLineRow({
   textSizeClass,
   lineHeightClass,
   fontClassName,
-  interactive,
   onSeekToTime,
   romanization,
   furiganaMap,
@@ -1205,32 +1195,7 @@ const LyricsVisibleLineRow = memo(function LyricsVisibleLineRow({
   baseColor,
   glowFilter,
   glowShadowHighlight,
-}: LyricsVisibleLineRowProps) {
-  const isAlternatingLayout = alignment === LyricsAlignment.Alternating;
-
-  const variants = useMemo(
-    () =>
-      getVariants(
-        position,
-        isAlternatingLayout,
-        isCurrent,
-        hasWordTimings,
-        isOldSchoolKaraoke
-      ),
-    [position, isAlternatingLayout, isCurrent, hasWordTimings, isOldSchoolKaraoke]
-  );
-
-  const dynamicTransition = useMemo(
-    () => ({
-      ...ANIMATION_CONFIG.spring,
-      opacity: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
-      textShadow: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
-      filter: ANIMATION_CONFIG.fade,
-      duration: 0.15,
-    }),
-    [hasWordTimings]
-  );
-
+}: LyricsLineRowContentProps) {
   const processedOriginal = useMemo(
     () => processText(line.words),
     [line.words, processText]
@@ -1255,34 +1220,7 @@ const LyricsVisibleLineRow = memo(function LyricsVisibleLineRow({
     hasWordTimings && isCurrent && timeMsForRow !== undefined;
 
   return (
-    <motion.div
-      layout="position"
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={variants}
-      transition={dynamicTransition}
-      className={`px-2 md:px-4 whitespace-pre-wrap break-words max-w-full text-white`}
-      style={{
-        textAlign: lineTextAlign as CanvasTextAlign,
-        width: "100%",
-        pointerEvents: interactive ? "auto" : "none",
-        paddingLeft:
-          alignment === LyricsAlignment.Alternating &&
-          index === 0 &&
-          visibleLinesLength > 1
-            ? "5%"
-            : undefined,
-        paddingRight:
-          alignment === LyricsAlignment.Alternating &&
-          index === 1 &&
-          visibleLinesLength > 1
-            ? "5%"
-            : undefined,
-        backfaceVisibility: "hidden",
-        transform: "translateZ(0)",
-      }}
-    >
+    <>
       {(() => {
         const soramimiSegments =
           romanization.enabled && romanization.soramimi
@@ -1395,9 +1333,9 @@ const LyricsVisibleLineRow = memo(function LyricsVisibleLineRow({
             {processedTranslation}
           </div>
         )}
-    </motion.div>
+    </>
   );
-});
+}
 
 export function LyricsDisplay({
   lines,
@@ -2043,38 +1981,77 @@ export function LyricsDisplay({
               ? currentTimeMs
               : undefined;
 
+          const variants = getVariants(
+            position,
+            alignment === LyricsAlignment.Alternating,
+            isCurrent,
+            hasWordTimings,
+            isOldSchoolKaraoke
+          );
+          const dynamicTransition = {
+            ...ANIMATION_CONFIG.spring,
+            opacity: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
+            textShadow: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
+            filter: ANIMATION_CONFIG.fade,
+            duration: 0.15,
+          };
+
           return (
-            <LyricsVisibleLineRow
+            <motion.div
               key={line.startTimeMs}
-              line={line}
-              index={index}
-              visibleLinesLength={visibleLines.length}
-              alignment={alignment}
-              lineTextAlign={lineTextAlign}
-              position={position}
-              isCurrent={isCurrent}
-              hasWordTimings={hasWordTimings}
-              timeMsForRow={timeMsForRow}
-              translatedText={translatedText}
-              textSizeClass={textSizeClass}
-              lineHeightClass={lineHeightClass}
-              fontClassName={fontClassName}
-              interactive={interactive}
-              onSeekToTime={onSeekToTime}
-              romanization={romanization}
-              furiganaMap={furiganaMap}
-              soramimiMap={soramimiMap}
-              renderWithFurigana={renderWithFurigana}
-              processText={processText}
-              showKoreanRomanization={showKoreanRomanization}
-              isOldSchoolKaraoke={isOldSchoolKaraoke}
-              isGradientStyle={isGradientStyle}
-              isColoredGlow={isColoredGlow}
-              highlightColor={highlightColor}
-              baseColor={baseColorResolved}
-              glowFilter={glowFilterStr}
-              glowShadowHighlight={glowShadowHighlight}
-            />
+              layout="position"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={variants}
+              transition={dynamicTransition}
+              className={`px-2 md:px-4 whitespace-pre-wrap break-words max-w-full text-white`}
+              style={{
+                textAlign: lineTextAlign as CanvasTextAlign,
+                width: "100%",
+                pointerEvents: interactive ? "auto" : "none",
+                paddingLeft:
+                  alignment === LyricsAlignment.Alternating &&
+                  index === 0 &&
+                  visibleLines.length > 1
+                    ? "5%"
+                    : undefined,
+                paddingRight:
+                  alignment === LyricsAlignment.Alternating &&
+                  index === 1 &&
+                  visibleLines.length > 1
+                    ? "5%"
+                    : undefined,
+                backfaceVisibility: "hidden",
+                transform: "translateZ(0)",
+              }}
+            >
+              <LyricsLineRowContent
+                line={line}
+                isCurrent={isCurrent}
+                hasWordTimings={hasWordTimings}
+                timeMsForRow={timeMsForRow}
+                translatedText={translatedText}
+                textSizeClass={textSizeClass}
+                lineHeightClass={lineHeightClass}
+                fontClassName={fontClassName}
+                interactive={interactive}
+                onSeekToTime={onSeekToTime}
+                romanization={romanization}
+                furiganaMap={furiganaMap}
+                soramimiMap={soramimiMap}
+                renderWithFurigana={renderWithFurigana}
+                processText={processText}
+                showKoreanRomanization={showKoreanRomanization}
+                isOldSchoolKaraoke={isOldSchoolKaraoke}
+                isGradientStyle={isGradientStyle}
+                isColoredGlow={isColoredGlow}
+                highlightColor={highlightColor}
+                baseColor={baseColorResolved}
+                glowFilter={glowFilterStr}
+                glowShadowHighlight={glowShadowHighlight}
+              />
+            </motion.div>
           );
         })}
       </AnimatePresence>
