@@ -28,8 +28,8 @@ const SOFT_SYNC_THRESHOLD_MS = 500; // Below this, no correction needed
 const HARD_SEEK_THRESHOLD_MS = 3000; // Above this, hard seek
 const DJ_DISCONNECT_WARNING_MS = 15000; // Show warning after 15s
 const DJ_DISCONNECT_PROMOTE_MS = 30000; // Auto-promote after 30s
-/** Remote-only UI: avoid RAF + setState every frame (~60/s) — was melting mobile GPUs and re-rendering lyrics. */
-const VIRTUAL_ELAPSED_TICK_MS = 100;
+/** Remote-only UI: throttle virtual clock (not every RAF frame). 50ms ≈ smoother lyrics than 100ms without ~60 React updates/s. */
+const VIRTUAL_ELAPSED_TICK_MS = 50;
 
 // Soft sync: Adjust playback rate slightly to catch up/slow down
 const SOFT_SYNC_RATE_FAST = 1.05; // Speed up 5% to catch up

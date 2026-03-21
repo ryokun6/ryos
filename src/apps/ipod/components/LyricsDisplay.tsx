@@ -93,9 +93,6 @@ const ANIMATION_CONFIG = {
   },
 } as const;
 
-/** Update gradient hue-rotate at most ~4/s; avoids filter churn on every lyrics clock tick. */
-const LYRIC_GRADIENT_HUE_BUCKET_MS = 250;
-
 const LoadingState = ({
   bottomPaddingClass = "pb-5",
 }: {
@@ -1233,15 +1230,6 @@ export function LyricsDisplay({
     return findCurrentLineIndex(parsedTimestamps, currentTimeMs);
   }, [currentTimeMs, parsedTimestamps, displayOriginalLines.length, currentLine]);
 
-  const gradientHueDegrees = useMemo(() => {
-    if (currentTimeMs === undefined) return undefined;
-    const ms =
-      Math.round(currentTimeMs / LYRIC_GRADIENT_HUE_BUCKET_MS) * LYRIC_GRADIENT_HUE_BUCKET_MS;
-    return (ms / 6000) * 360;
-  }, [
-    currentTimeMs === undefined ? -1 : Math.floor(currentTimeMs / LYRIC_GRADIENT_HUE_BUCKET_MS),
-  ]);
-
   // Create a map of startTimeMs -> translated text for quick lookup
   // Also create index-based fallback in case timestamps don't match exactly
   const { translationMap, translationByIndex } = useMemo(() => {
@@ -1885,10 +1873,9 @@ export function LyricsDisplay({
                                       color: isCurrent ? highlightColor : getBaseColor(),
                                       textShadow: isCurrent ? getGlowShadow(true) : BASE_SHADOW,
                                       // Apply hue-rotate only when current (playing), continues from current playback position
-                                      filter:
-                                        isCurrent && gradientHueDegrees !== undefined
-                                          ? `${GRADIENT_GLOW_FILTER} hue-rotate(${gradientHueDegrees % 360}deg)`
-                                          : undefined,
+                                      filter: isCurrent && currentTimeMs !== undefined 
+                                        ? `${GRADIENT_GLOW_FILTER} hue-rotate(${(currentTimeMs / 6000 * 360) % 360}deg)` 
+                                        : undefined,
                                     } as React.CSSProperties
                                   : isColoredGlow && !hasWordTimings
                                   ? {
@@ -1920,11 +1907,7 @@ export function LyricsDisplay({
                     glowFilter={getGlowFilter()}
                     baseColor={getBaseColor()}
                     isGradient={isGradientStyle}
-                    rainbowHue={
-                      isGradientStyle && gradientHueDegrees !== undefined
-                        ? gradientHueDegrees % 360
-                        : undefined
-                    }
+                    rainbowHue={isGradientStyle && currentTimeMs !== undefined ? (currentTimeMs / 6000 * 360) % 360 : undefined}
                   />
                 ) : hasWordTimings ? (
                   <StaticWordRendering
