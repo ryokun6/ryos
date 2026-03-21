@@ -157,7 +157,9 @@ export function resolveInitialRoute(
           type: "text",
           message: "Opening live session...",
         },
-        urlCleanupTiming: "immediate",
+        // Must not use "immediate": URL is cleared before the delayed launch runs.
+        // React Strict Mode remounts with pathname "/" and the join never fires.
+        urlCleanupTiming: "after-dispatch",
       },
     );
   }
