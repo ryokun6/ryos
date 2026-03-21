@@ -237,6 +237,11 @@ export function KaraokeAppComponent({
   const shouldAnimateVisuals =
     isPlaying && (isForeground ?? true) && !isListenSessionRemoteOnly;
 
+  /** Remote listeners have no local video; force cover backdrop regardless of stored display mode. */
+  const effectiveDisplayMode = isListenSessionRemoteOnly
+    ? DisplayMode.Cover
+    : displayMode;
+
   if (!isWindowOpen) return null;
 
   return (
@@ -349,7 +354,11 @@ export function KaraokeAppComponent({
           {currentTrack ? (
             <div
               className="absolute inset-0 overflow-hidden"
-              style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+              style={
+                effectiveDisplayMode !== DisplayMode.Video
+                  ? { visibility: "hidden", pointerEvents: "none" }
+                  : undefined
+              }
             >
               <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
                 <ReactPlayer
@@ -397,7 +406,7 @@ export function KaraokeAppComponent({
           )}
 
           {/* Landscape video background */}
-          {displayMode === DisplayMode.Landscapes && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Landscapes && currentTrack && (
             <LandscapeVideoBackground
               isActive={shouldAnimateVisuals}
               className="absolute inset-0 z-[5]"
@@ -405,7 +414,7 @@ export function KaraokeAppComponent({
           )}
 
           {/* Warp shader background */}
-          {displayMode === DisplayMode.Shader && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Shader && currentTrack && (
             <AmbientBackground
               coverUrl={coverUrl}
               variant="warp"
@@ -415,7 +424,7 @@ export function KaraokeAppComponent({
           )}
 
           {/* Mesh gradient background */}
-          {displayMode === DisplayMode.Mesh && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Mesh && currentTrack && (
             <MeshGradientBackground
               coverUrl={coverUrl}
               isActive={shouldAnimateVisuals}
@@ -424,7 +433,7 @@ export function KaraokeAppComponent({
           )}
 
           {/* Water shader background */}
-          {displayMode === DisplayMode.Water && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Water && currentTrack && (
             <WaterBackground
               coverUrl={coverUrl}
               isActive={shouldAnimateVisuals}
@@ -434,7 +443,9 @@ export function KaraokeAppComponent({
 
           {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
           <AnimatePresence>
-            {currentTrack && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
+            {currentTrack &&
+              coverUrl &&
+              (effectiveDisplayMode === DisplayMode.Cover || !isPlaying) && (
               <motion.div
                 className="absolute inset-0 z-15"
                 initial={{ opacity: 0 }}
@@ -842,7 +853,11 @@ export function KaraokeAppComponent({
               <div className="relative w-full h-full overflow-hidden">
                 <div
                   className="absolute inset-0 w-full h-full"
-                  style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+                  style={
+                    effectiveDisplayMode !== DisplayMode.Video
+                      ? { visibility: "hidden", pointerEvents: "none" }
+                      : undefined
+                  }
                 >
                   <div
                     className="w-full absolute"
@@ -893,7 +908,7 @@ export function KaraokeAppComponent({
                 </div>
 
                 {/* Landscape video background (fullscreen) */}
-                {displayMode === DisplayMode.Landscapes && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Landscapes && currentTrack && (
                   <LandscapeVideoBackground
                     isActive={shouldAnimateVisuals}
                     className="fixed inset-0 z-[5]"
@@ -901,7 +916,7 @@ export function KaraokeAppComponent({
                 )}
 
                 {/* Warp shader background (fullscreen) */}
-                {displayMode === DisplayMode.Shader && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Shader && currentTrack && (
                   <AmbientBackground
                     coverUrl={coverUrl}
                     variant="warp"
@@ -911,7 +926,7 @@ export function KaraokeAppComponent({
                 )}
 
                 {/* Mesh gradient background (fullscreen) */}
-                {displayMode === DisplayMode.Mesh && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Mesh && currentTrack && (
                   <MeshGradientBackground
                     coverUrl={coverUrl}
                     isActive={shouldAnimateVisuals}
@@ -920,7 +935,7 @@ export function KaraokeAppComponent({
                 )}
 
                 {/* Water shader background (fullscreen) */}
-                {displayMode === DisplayMode.Water && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Water && currentTrack && (
                   <WaterBackground
                     coverUrl={coverUrl}
                     isActive={shouldAnimateVisuals}
@@ -930,7 +945,9 @@ export function KaraokeAppComponent({
 
                 {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
                 <AnimatePresence>
-                  {currentTrack && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
+                  {currentTrack &&
+                    coverUrl &&
+                    (effectiveDisplayMode === DisplayMode.Cover || !isPlaying) && (
                     <motion.div
                       className="fixed inset-0 z-15"
                       initial={{ opacity: 0 }}
