@@ -775,6 +775,35 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           fromClientInstanceId: clientInstanceId,
           ...args,
         });
+        // Listeners don't control local playback; UI + virtual clock read lastSyncPayload.
+        // Merge play/pause immediately so isPlaying and position don't wait for the next Pusher sync.
+        if (args.action === "play" || args.action === "pause") {
+          const nextPlaying = args.action === "play";
+          const positionMs =
+            typeof args.positionMs === "number"
+              ? args.positionMs
+              : Math.max(0, get().lastSyncPayload?.positionMs ?? 0);
+          set((state) => {
+            if (!state.lastSyncPayload || !state.currentSession) return {};
+            const merged: ListenSyncPayload = {
+              ...state.lastSyncPayload,
+              isPlaying: nextPlaying,
+              positionMs,
+              timestamp: Date.now(),
+            };
+            const nextSession: ListenSession = {
+              ...state.currentSession,
+              isPlaying: nextPlaying,
+              positionMs,
+              lastSyncAt: merged.timestamp,
+            };
+            return {
+              lastSyncPayload: merged,
+              lastSyncAt: merged.timestamp,
+              currentSession: nextSession,
+            };
+          });
+        }
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] sendRemotePlaybackCommand failed", error);
