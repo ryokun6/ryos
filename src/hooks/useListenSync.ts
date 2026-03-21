@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type ReactPlayer from "react-player";
 import {
@@ -18,7 +18,7 @@ interface ListenSyncOptions {
   /** When false, listener shows session state only (no local A/V sync). */
   applyListenerPlayback?: boolean;
   /** Virtual timeline for remotes (seconds). */
-  setVirtualElapsedSeconds?: (seconds: number) => void;
+  setVirtualElapsedSeconds?: Dispatch<SetStateAction<number>>;
 }
 
 const HEARTBEAT_INTERVAL_MS = 3000; // when playing
@@ -30,6 +30,8 @@ const DJ_DISCONNECT_WARNING_MS = 15000; // Show warning after 15s
 const DJ_DISCONNECT_PROMOTE_MS = 30000; // Auto-promote after 30s
 /** Remote-only UI: throttle virtual clock (not every RAF frame). 50ms ≈ smoother lyrics than 100ms without ~60 React updates/s. */
 const VIRTUAL_ELAPSED_TICK_MS = 50;
+/** Sync payloads can be a few 100ms behind local extrapolation; snapping back looks like jitter. Larger jumps = real seek. */
+const VIRTUAL_BACKWARD_IGNORE_SEC = 0.35;
 
 // Soft sync: Adjust playback rate slightly to catch up/slow down
 const SOFT_SYNC_RATE_FAST = 1.05; // Speed up 5% to catch up
@@ -74,6 +76,34 @@ export function useListenSync({
   const broadcastStateRef = useRef<() => Promise<void>>(async () => {});
   const currentPlaybackRateRef = useRef<number>(1.0);
   const djDisconnectWarningShownRef = useRef<boolean>(false);
+  const lastVirtualTrackForSmoothingRef = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!currentSession) {
+      lastVirtualTrackForSmoothingRef.current = undefined;
+    }
+  }, [currentSession]);
+
+  const applySmoothedVirtualElapsed = useCallback(
+    (nextSec: number, trackId: string | null, playing: boolean) => {
+      if (!setVirtualElapsedSeconds) return;
+      setVirtualElapsedSeconds((prev) => {
+        const next = Math.max(0, nextSec);
+        if (lastVirtualTrackForSmoothingRef.current !== trackId) {
+          lastVirtualTrackForSmoothingRef.current = trackId;
+          return next;
+        }
+        if (!playing) {
+          return next;
+        }
+        if (next < prev && prev - next < VIRTUAL_BACKWARD_IGNORE_SEC) {
+          return prev;
+        }
+        return next;
+      });
+    },
+    [setVirtualElapsedSeconds],
+  );
 
   const canBroadcast = useMemo(
     () => Boolean(currentSession?.id && isDj),
@@ -180,7 +210,11 @@ export function useListenSync({
           (lastSyncPayload.positionMs +
             (lastSyncPayload.isPlaying ? now - lastSyncPayload.timestamp : 0)) /
           1000;
-        setVirtualElapsedSeconds(Math.max(0, expectedSec));
+        applySmoothedVirtualElapsed(
+          expectedSec,
+          lastSyncPayload.currentTrackId,
+          lastSyncPayload.isPlaying
+        );
       }
       return;
     }
@@ -243,6 +277,7 @@ export function useListenSync({
     setIsPlaying,
     setPlaybackRate,
     setVirtualElapsedSeconds,
+    applySmoothedVirtualElapsed,
     clientInstanceId,
     username,
   ]);
@@ -255,10 +290,14 @@ export function useListenSync({
       const now = Date.now();
       const expectedSec =
         (lastSyncPayload.positionMs + (now - lastSyncPayload.timestamp)) / 1000;
-      setVirtualElapsedSeconds(Math.max(0, expectedSec));
+      applySmoothedVirtualElapsed(
+        expectedSec,
+        lastSyncPayload.currentTrackId,
+        lastSyncPayload.isPlaying
+      );
     }, VIRTUAL_ELAPSED_TICK_MS);
     return () => window.clearInterval(id);
-  }, [applyListenerPlayback, lastSyncPayload, setVirtualElapsedSeconds]);
+  }, [applyListenerPlayback, lastSyncPayload, applySmoothedVirtualElapsed]);
 
   // DJ disconnect detection - check if we haven't received sync for too long
   useEffect(() => {

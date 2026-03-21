@@ -925,10 +925,9 @@ function WordTimingHighlight({
       const clampedElapsed = Math.min(elapsed, 500); // Max 500ms interpolation
       const rawTime = timeRef.current.propTime + clampedElapsed;
       
-      // Monotonic time: prevent backward jitter unless it's a significant seek
-      // Reduced threshold from 500ms to 100ms to allow small backward seeks
+      // Monotonic time: ignore small backward jitter (remote sync / prop noise); larger = real seek
       const lastDisplayed = timeRef.current.lastDisplayedTime;
-      const isSeek = lastDisplayed - rawTime >= 100;
+      const isSeek = lastDisplayed - rawTime >= 300;
       const interpolatedTime = isSeek || rawTime >= lastDisplayed ? rawTime : lastDisplayed;
       timeRef.current.lastDisplayedTime = interpolatedTime;
       
