@@ -1256,7 +1256,7 @@ const LyricsVisibleLineRow = memo(function LyricsVisibleLineRow({
 
   return (
     <motion.div
-      layout={false}
+      layout="position"
       initial="initial"
       animate="animate"
       exit="exit"
