@@ -12,6 +12,10 @@ import {
 import { getCurrentTimestamp, getSession, setSession } from "../../_helpers/_redis.js";
 import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { AssignDjRequest } from "../../_helpers/_types.js";
+import {
+  migrateSessionClientIds,
+  normalizeClientInstanceId,
+} from "../../_helpers/_client-instance.js";
 import { broadcastDjChanged } from "../../_helpers/_pusher.js";
 
 export { runtime, maxDuration };
@@ -30,7 +34,9 @@ export default apiHandler(
     const body = (req.body || {}) as AssignDjRequest;
     const claimedUsername = body?.username?.toLowerCase();
     const username = user!.username;
+    const hostClientId = normalizeClientInstanceId(username, body.clientInstanceId);
     const nextDjUsername = body?.nextDjUsername?.toLowerCase();
+    const nextDjClientInstanceIdRaw = body?.nextDjClientInstanceId;
 
     if (claimedUsername && claimedUsername !== username) {
       logger.warn("Username mismatch in listen assign-dj body", {
@@ -73,31 +79,57 @@ export default apiHandler(
         return;
       }
 
-      if (session.hostUsername !== username) {
+      migrateSessionClientIds(session);
+
+      if (
+        session.hostUsername !== username ||
+        session.hostClientInstanceId !== hostClientId
+      ) {
         logger.response(403, Date.now() - startTime);
         res.status(403).json({ error: "Only the host can assign playback device" });
         return;
       }
 
-      if (nextDjUsername === session.djUsername) {
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: "User is already the playback device" });
-        return;
-      }
+      const nextClientId =
+        typeof nextDjClientInstanceIdRaw === "string" &&
+        nextDjClientInstanceIdRaw.trim().length > 0
+          ? normalizeClientInstanceId(nextDjUsername, nextDjClientInstanceIdRaw)
+          : undefined;
 
-      const isMember = session.users.some((u) => u.username === nextDjUsername);
-      if (!isMember) {
+      const targetUser = session.users.find(
+        (u) =>
+          u.username === nextDjUsername &&
+          (nextClientId != null ? u.clientInstanceId === nextClientId : true)
+      );
+      if (!targetUser) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Playback device must be an active session member" });
         return;
       }
 
+      const resolvedClientId =
+        targetUser.clientInstanceId ?? normalizeClientInstanceId(nextDjUsername, undefined);
+
+      if (
+        session.djUsername === nextDjUsername &&
+        session.djClientInstanceId === resolvedClientId
+      ) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "User is already the playback device" });
+        return;
+      }
+
       const previousDj = session.djUsername;
       session.djUsername = nextDjUsername;
+      session.djClientInstanceId = resolvedClientId;
       session.lastSyncAt = getCurrentTimestamp();
 
       await setSession(sessionId, session);
-      await broadcastDjChanged(sessionId, { previousDj, newDj: nextDjUsername });
+      await broadcastDjChanged(sessionId, {
+        previousDj,
+        newDj: nextDjUsername,
+        newDjClientInstanceId: session.djClientInstanceId,
+      });
 
       logger.info("Listen session DJ assigned by host", {
         sessionId,

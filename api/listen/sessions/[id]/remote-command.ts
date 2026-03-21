@@ -15,6 +15,10 @@ import type {
   ListenRemoteCommandAction,
   RemoteCommandRequest,
 } from "../../_helpers/_types.js";
+import {
+  migrateSessionClientIds,
+  normalizeClientInstanceId,
+} from "../../_helpers/_client-instance.js";
 import { broadcastRemoteCommand } from "../../_helpers/_pusher.js";
 
 export { runtime, maxDuration };
@@ -92,13 +96,24 @@ export default apiHandler(
         return;
       }
 
-      if (!session.users.some((u) => u.username === username)) {
+      migrateSessionClientIds(session);
+
+      const fromClientId = normalizeClientInstanceId(username, body.fromClientInstanceId);
+
+      if (
+        !session.users.some(
+          (u) => u.username === username && u.clientInstanceId === fromClientId
+        )
+      ) {
         logger.response(403, Date.now() - startTime);
         res.status(403).json({ error: "User not in session" });
         return;
       }
 
-      if (session.djUsername === username) {
+      if (
+        session.djUsername === username &&
+        session.djClientInstanceId === fromClientId
+      ) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Playback device should use local controls, not remote commands" });
         return;
@@ -112,6 +127,7 @@ export default apiHandler(
 
       await broadcastRemoteCommand(sessionId, {
         fromUsername: username,
+        fromClientInstanceId: fromClientId,
         action,
         positionMs,
         trackId: typeof body.trackId === "string" ? body.trackId.trim() : undefined,

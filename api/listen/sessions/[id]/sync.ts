@@ -16,6 +16,10 @@ import {
 } from "../../_helpers/_redis.js";
 import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { SyncSessionRequest } from "../../_helpers/_types.js";
+import {
+  migrateSessionClientIds,
+  normalizeClientInstanceId,
+} from "../../_helpers/_client-instance.js";
 import { broadcastDjChanged, broadcastSync } from "../../_helpers/_pusher.js";
 
 export { runtime, maxDuration };
@@ -82,13 +86,24 @@ export default apiHandler(
         return;
       }
 
-      if (!session.users.some((u) => u.username === username)) {
+      migrateSessionClientIds(session);
+
+      const callerClientId = normalizeClientInstanceId(username, body.clientInstanceId);
+
+      if (
+        !session.users.some(
+          (u) => u.username === username && u.clientInstanceId === callerClientId
+        )
+      ) {
         logger.response(403, Date.now() - startTime);
         res.status(403).json({ error: "User not in session" });
         return;
       }
 
-      if (session.djUsername !== username) {
+      if (
+        session.djUsername !== username ||
+        session.djClientInstanceId !== callerClientId
+      ) {
         logger.response(403, Date.now() - startTime);
         res.status(403).json({ error: "Only the DJ can sync playback" });
         return;
@@ -104,18 +119,55 @@ export default apiHandler(
       session.positionMs = Math.max(0, Math.floor(state.positionMs));
       session.lastSyncAt = now;
 
-      if (state.djUsername && state.djUsername.toLowerCase() !== session.djUsername) {
-        const nextDj = state.djUsername.toLowerCase();
-        const isValidDj = session.users.some((u) => u.username === nextDj);
-        if (!isValidDj) {
+      const requestedDj =
+        state.djUsername != null && String(state.djUsername).trim() !== ""
+          ? String(state.djUsername).toLowerCase()
+          : session.djUsername;
+      const nextClientRaw = state.djClientInstanceId;
+      const nextClientIdFromState =
+        typeof nextClientRaw === "string" && nextClientRaw.trim().length > 0
+          ? normalizeClientInstanceId(requestedDj, nextClientRaw)
+          : undefined;
+
+      const djOrClientChanged =
+        requestedDj !== session.djUsername ||
+        (nextClientIdFromState != null &&
+          nextClientIdFromState !== session.djClientInstanceId);
+
+      if (djOrClientChanged) {
+        let targetUser = undefined as (typeof session.users)[0] | undefined;
+        if (requestedDj === session.djUsername) {
+          if (nextClientIdFromState == null) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({ error: "djClientInstanceId is required for same-user handoff" });
+            return;
+          }
+          targetUser = session.users.find(
+            (u) => u.username === requestedDj && u.clientInstanceId === nextClientIdFromState
+          );
+        } else if (nextClientIdFromState != null) {
+          targetUser = session.users.find(
+            (u) => u.username === requestedDj && u.clientInstanceId === nextClientIdFromState
+          );
+        } else {
+          const sorted = [...session.users].sort((a, b) => a.joinedAt - b.joinedAt);
+          targetUser = sorted.find((u) => u.username === requestedDj);
+        }
+        if (!targetUser) {
           logger.response(400, Date.now() - startTime);
           res.status(400).json({ error: "DJ must be an active session member" });
           return;
         }
 
         const previousDj = session.djUsername;
-        session.djUsername = nextDj;
-        await broadcastDjChanged(sessionId, { previousDj, newDj: nextDj });
+        session.djUsername = requestedDj;
+        session.djClientInstanceId =
+          targetUser.clientInstanceId ?? normalizeClientInstanceId(requestedDj, undefined);
+        await broadcastDjChanged(sessionId, {
+          previousDj,
+          newDj: session.djUsername,
+          newDjClientInstanceId: session.djClientInstanceId,
+        });
       }
 
       await setSession(sessionId, session);
@@ -128,9 +180,13 @@ export default apiHandler(
         isPlaying: session.isPlaying,
         positionMs: session.positionMs,
         timestamp: now,
+        hostUsername: session.hostUsername,
+        hostClientInstanceId: session.hostClientInstanceId,
         djUsername: session.djUsername,
+        djClientInstanceId: session.djClientInstanceId,
         listenerCount,
         sourceUsername: username,
+        sourceClientInstanceId: callerClientId,
       });
 
       logger.info("Listen session synced", {

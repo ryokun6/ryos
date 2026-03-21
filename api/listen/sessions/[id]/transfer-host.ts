@@ -12,6 +12,10 @@ import {
 import { getCurrentTimestamp, getSession, setSession } from "../../_helpers/_redis.js";
 import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { TransferHostRequest } from "../../_helpers/_types.js";
+import {
+  migrateSessionClientIds,
+  normalizeClientInstanceId,
+} from "../../_helpers/_client-instance.js";
 import { broadcastHostChanged } from "../../_helpers/_pusher.js";
 
 export { runtime, maxDuration };
@@ -30,6 +34,7 @@ export default apiHandler(
     const body = (req.body || {}) as TransferHostRequest;
     const claimedUsername = body?.username?.toLowerCase();
     const username = user!.username;
+    const callerClientId = normalizeClientInstanceId(username, body.clientInstanceId);
     const nextHostUsername = body?.nextHostUsername?.toLowerCase();
 
     if (claimedUsername && claimedUsername !== username) {
@@ -73,31 +78,65 @@ export default apiHandler(
         return;
       }
 
-      if (session.hostUsername !== username) {
+      migrateSessionClientIds(session);
+
+      if (
+        session.hostUsername !== username ||
+        session.hostClientInstanceId !== callerClientId
+      ) {
         logger.response(403, Date.now() - startTime);
         res.status(403).json({ error: "Only the host can transfer host" });
         return;
       }
 
-      if (nextHostUsername === session.hostUsername) {
+      const nextHostClientRaw = body.nextHostClientInstanceId;
+      const nextHostClientId =
+        typeof nextHostClientRaw === "string" && nextHostClientRaw.trim().length > 0
+          ? normalizeClientInstanceId(nextHostUsername, nextHostClientRaw)
+          : undefined;
+
+      const candidates = session.users.filter((u) => u.username === nextHostUsername);
+      if (candidates.length === 0) {
         logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: "User is already the host" });
+        res.status(400).json({ error: "New host must be an active session member" });
         return;
       }
 
-      const isMember = session.users.some((u) => u.username === nextHostUsername);
-      if (!isMember) {
+      const targetHost =
+        nextHostClientId != null
+          ? candidates.find((u) => u.clientInstanceId === nextHostClientId)
+          : [...candidates].sort((a, b) => a.joinedAt - b.joinedAt)[0];
+
+      if (!targetHost) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "New host must be an active session member" });
         return;
       }
 
       const previousHost = session.hostUsername;
-      session.hostUsername = nextHostUsername;
+      const newHostClientId =
+        targetHost.clientInstanceId ??
+        normalizeClientInstanceId(targetHost.username, undefined);
+
+      if (
+        session.hostUsername === targetHost.username &&
+        session.hostClientInstanceId === newHostClientId
+      ) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "That connection is already the host" });
+        return;
+      }
+
+      session.hostUsername = targetHost.username;
+      session.hostClientInstanceId = newHostClientId;
       session.lastSyncAt = getCurrentTimestamp();
 
       await setSession(sessionId, session);
-      await broadcastHostChanged(sessionId, { previousHost, newHost: nextHostUsername });
+      await broadcastHostChanged(sessionId, {
+        previousHost,
+        newHost: targetHost.username,
+        newHostClientInstanceId: session.hostClientInstanceId,
+      });
 
       logger.info("Listen session host transferred", {
         sessionId,

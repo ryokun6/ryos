@@ -28,6 +28,10 @@ import type {
   ListenSessionUser,
   ListenAnonymousListener,
 } from "../../_helpers/_types.js";
+import {
+  migrateSessionClientIds,
+  normalizeClientInstanceId,
+} from "../../_helpers/_client-instance.js";
 import { broadcastUserJoined } from "../../_helpers/_pusher.js";
 
 export { runtime, maxDuration };
@@ -108,6 +112,8 @@ export default apiHandler(
           return;
         }
 
+        migrateSessionClientIds(session);
+
         if (!userData) {
           logger.response(404, Date.now() - startTime);
           res.status(404).json({ error: "User not found" });
@@ -115,7 +121,10 @@ export default apiHandler(
         }
 
         const now = getCurrentTimestamp();
-        const existingIndex = session.users.findIndex((u) => u.username === username);
+        const clientId = normalizeClientInstanceId(username, body.clientInstanceId);
+        const existingIndex = session.users.findIndex(
+          (u) => u.username === username && u.clientInstanceId === clientId
+        );
         let shouldBroadcast = false;
 
         if (existingIndex === -1) {
@@ -129,6 +138,7 @@ export default apiHandler(
             username,
             joinedAt: now,
             isOnline: true,
+            clientInstanceId: clientId,
           };
           session.users.push(newUser);
           shouldBroadcast = true;
@@ -140,6 +150,7 @@ export default apiHandler(
           session.users[existingIndex] = {
             ...existingUser,
             isOnline: true,
+            clientInstanceId: clientId,
           };
         }
 
@@ -149,7 +160,7 @@ export default apiHandler(
         await setSession(sessionId, session);
 
         if (shouldBroadcast) {
-          await broadcastUserJoined(sessionId, { username });
+          await broadcastUserJoined(sessionId, { username, clientInstanceId: clientId });
         }
 
         logger.info("User joined listen session", { sessionId, username });
