@@ -53,12 +53,18 @@ function AquaShineOverlays() {
 
 interface ListenSessionToolbarProps {
   session: ListenSession;
+  isHost: boolean;
   isDj: boolean;
   isAnonymous: boolean;
   listenerCount: number;
+  currentUsername: string | null;
   onShare: () => void;
   onLeave: () => void;
+  /** Host: set which device plays audio */
+  onAssignPlaybackDevice: (username: string) => void;
+  /** Non-host DJ: hand off playback to another member (legacy sync path) */
   onPassDj: (username: string) => void;
+  onTransferHost: (username: string) => void;
   onSendReaction: (emoji: string) => void;
   onInteraction?: () => void;
   portalContainer?: HTMLElement | null;
@@ -67,12 +73,16 @@ interface ListenSessionToolbarProps {
 
 export function ListenSessionToolbar({
   session,
+  isHost,
   isDj,
   isAnonymous,
   listenerCount,
+  currentUsername,
   onShare,
   onLeave,
+  onAssignPlaybackDevice,
   onPassDj,
+  onTransferHost,
   onSendReaction,
   onInteraction,
   portalContainer,
@@ -137,7 +147,7 @@ export function ListenSessionToolbar({
             >
               {isDj && (
                 <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-white/20", iconClasses)}>
-                  DJ
+                  {t("apps.karaoke.liveListen.playbackBadge")}
                 </span>
               )}
               <Headphones weight="fill" size={svgSize} className={iconClasses} />
@@ -159,27 +169,60 @@ export function ListenSessionToolbar({
               {listenerCount - session.users.length > 0 &&
                 ` (${t("apps.karaoke.liveListen.anonymous", { count: listenerCount - session.users.length })})`}
             </div>
-            {session.users.length > 1 && (
-              <DropdownMenuRadioGroup
-                value={session.djUsername}
-                onValueChange={(username) => {
-                  onInteraction?.();
-                  if (username !== session.djUsername) {
+            {session.users.length > 1 && (isHost || isDj) && (
+              <>
+                <div className="px-2 py-1 text-[11px] text-muted-foreground">
+                  {isHost
+                    ? t("apps.karaoke.liveListen.playbackOnDevice")
+                    : t("apps.karaoke.liveListen.passPlayback")}
+                </div>
+                <DropdownMenuRadioGroup
+                  value={session.djUsername}
+                  onValueChange={(u) => {
+                    onInteraction?.();
+                    if (u === session.djUsername) return;
                     playClick();
-                    onPassDj(username);
-                  }
-                }}
-              >
-                {session.users.map((user) => (
-                  <DropdownMenuRadioItem
-                    key={user.username}
-                    value={user.username}
-                    className="text-md h-6 pr-3"
-                  >
-                    {user.username}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
+                    if (isHost) onAssignPlaybackDevice(u);
+                    else onPassDj(u);
+                  }}
+                >
+                  {session.users.map((user) => (
+                    <DropdownMenuRadioItem
+                      key={user.username}
+                      value={user.username}
+                      className="text-md h-6 pr-3"
+                    >
+                      {user.username}
+                      {user.username === session.djUsername
+                        ? ` (${t("apps.karaoke.liveListen.playbackBadge")})`
+                        : ""}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </>
+            )}
+            {isHost && session.users.length > 1 && (
+              <>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1 text-[11px] text-muted-foreground">
+                  {t("apps.karaoke.liveListen.makeHost")}
+                </div>
+                {session.users
+                  .filter((u) => u.username !== currentUsername)
+                  .map((user) => (
+                    <DropdownMenuItem
+                      key={`host-${user.username}`}
+                      onClick={() => {
+                        onInteraction?.();
+                        playClick();
+                        onTransferHost(user.username);
+                      }}
+                      className="text-md h-6"
+                    >
+                      @{user.username}
+                    </DropdownMenuItem>
+                  ))}
+              </>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -190,7 +233,7 @@ export function ListenSessionToolbar({
               }}
               className="text-md h-6"
             >
-              {session.hostUsername === session.djUsername ? t("apps.karaoke.liveListen.endSession") : t("apps.karaoke.liveListen.leaveSession")}
+              {isHost ? t("apps.karaoke.liveListen.endSession") : t("apps.karaoke.liveListen.leaveSession")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

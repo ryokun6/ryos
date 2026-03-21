@@ -4,12 +4,16 @@ import { getPusherClient } from "@/lib/pusherClient";
 import { toast } from "@/hooks/useToast";
 import { useChatsStore } from "@/stores/useChatsStore";
 import {
+  assignListenSessionDj,
   createListenSession,
   fetchListenSessions,
   joinListenSession,
   leaveListenSession,
   reactListenSession,
+  sendListenRemoteCommand,
   syncListenSession,
+  transferListenSessionHost,
+  type ListenRemoteCommandAction,
 } from "@/api/listen";
 export interface ListenTrackMeta {
   title: string;
@@ -42,14 +46,25 @@ export interface ListenSession {
   anonymousListeners?: ListenAnonymousListener[];
 }
 
+export interface ListenRemoteCommandPayload {
+  fromUsername: string;
+  action: ListenRemoteCommandAction;
+  positionMs?: number;
+  trackId?: string;
+  trackMeta?: ListenTrackMeta;
+  timestamp: number;
+}
+
 export interface ListenSyncPayload {
   currentTrackId: string | null;
   currentTrackMeta: ListenTrackMeta | null;
   isPlaying: boolean;
   positionMs: number;
   timestamp: number;
-  djUsername: string; // Sender identification to ignore own syncs
+  djUsername: string;
   listenerCount: number; // Total listeners (users + anonymous)
+  /** Who produced this revision (omit in older payloads — treated as djUsername) */
+  sourceUsername?: string;
 }
 
 export interface ListenReactionPayload {
@@ -85,6 +100,8 @@ export interface ListenSessionState {
   lastSyncPayload: ListenSyncPayload | null;
   lastSyncAt: number | null;
   reactions: ListenReactionPayload[];
+  /** Bumps when the DJ should drain remote-command queue */
+  remoteCommandFlushId: number;
 
   fetchSessions: () => Promise<{
     ok: boolean;
@@ -110,6 +127,15 @@ export interface ListenSessionState {
   }) => Promise<{ ok: boolean; error?: string }>;
   sendReaction: (emoji: string) => Promise<{ ok: boolean; error?: string }>;
   clearReactions: () => void;
+  transferHost: (nextHostUsername: string) => Promise<{ ok: boolean; error?: string }>;
+  assignDj: (nextDjUsername: string) => Promise<{ ok: boolean; error?: string }>;
+  sendRemotePlaybackCommand: (args: {
+    action: ListenRemoteCommandAction;
+    positionMs?: number;
+    trackId?: string;
+    trackMeta?: ListenTrackMeta;
+  }) => Promise<{ ok: boolean; error?: string }>;
+  takeRemoteCommands: () => ListenRemoteCommandPayload[];
 }
 
 const initialState = {
@@ -124,7 +150,10 @@ const initialState = {
   lastSyncPayload: null,
   lastSyncAt: null,
   reactions: [],
+  remoteCommandFlushId: 0,
 };
+
+let remoteCommandBuffer: ListenRemoteCommandPayload[] = [];
 
 // Generate a random anonymous ID
 function generateAnonymousId(): string {
@@ -165,6 +194,7 @@ function updateIdentityFlags(
 }
 
 function unsubscribeFromSession(): void {
+  remoteCommandBuffer = [];
   if (pusherClient && channelRef) {
     pusherClient.unsubscribe(channelRef.name);
   }
@@ -193,21 +223,25 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.unbind("session-ended");
 
     channelRef.bind("sync", (payload: ListenSyncPayload) => {
+      const normalized: ListenSyncPayload = {
+        ...payload,
+        sourceUsername: payload.sourceUsername ?? payload.djUsername,
+      };
       set((state) => {
         if (!state.currentSession) return {};
         const nextSession: ListenSession = {
           ...state.currentSession,
-          currentTrackId: payload.currentTrackId,
-          currentTrackMeta: payload.currentTrackMeta,
-          isPlaying: payload.isPlaying,
-          positionMs: payload.positionMs,
-          lastSyncAt: payload.timestamp,
+          currentTrackId: normalized.currentTrackId,
+          currentTrackMeta: normalized.currentTrackMeta,
+          isPlaying: normalized.isPlaying,
+          positionMs: normalized.positionMs,
+          lastSyncAt: normalized.timestamp,
         };
         return {
           currentSession: nextSession,
-          lastSyncPayload: payload,
-          lastSyncAt: payload.timestamp,
-          listenerCount: payload.listenerCount ?? state.listenerCount,
+          lastSyncPayload: normalized,
+          lastSyncAt: normalized.timestamp,
+          listenerCount: normalized.listenerCount ?? state.listenerCount,
           ...updateIdentityFlags(nextSession, state.username),
         };
       });
@@ -260,6 +294,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.bind(
       "dj-changed",
       ({ previousDj, newDj }: { previousDj: string; newDj: string }) => {
+        remoteCommandBuffer = [];
         set((state) => {
           if (!state.currentSession) return {};
           const nextSession = {
@@ -267,8 +302,8 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
             djUsername: newDj,
           };
           if (state.username === newDj) {
-            toast("You're the DJ now!", {
-              description: `DJ control transferred from @${previousDj}`,
+            toast("Playback is on this device", {
+              description: `Transferred from @${previousDj}`,
             });
           }
           return {
@@ -278,6 +313,36 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         });
       }
     );
+
+    channelRef.bind(
+      "host-changed",
+      ({ previousHost, newHost }: { previousHost: string; newHost: string }) => {
+        remoteCommandBuffer = [];
+        set((state) => {
+          if (!state.currentSession) return {};
+          const nextSession = {
+            ...state.currentSession,
+            hostUsername: newHost,
+          };
+          if (state.username === newHost) {
+            toast("You're the host now", {
+              description: `Host transferred from @${previousHost}`,
+            });
+          }
+          return {
+            currentSession: nextSession,
+            ...updateIdentityFlags(nextSession, state.username),
+          };
+        });
+      }
+    );
+
+    channelRef.bind("remote-command", (payload: ListenRemoteCommandPayload) => {
+      const st = get();
+      if (!st.currentSession || !st.isDj) return;
+      remoteCommandBuffer.push(payload);
+      set({ remoteCommandFlushId: st.remoteCommandFlushId + 1 });
+    });
 
     channelRef.bind("reaction", (payload: ListenReactionPayload) => {
       set((state) => ({
@@ -290,7 +355,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         description: "The host ended the listening session.",
       });
       unsubscribeFromSession();
-      set({ ...initialState });
+      set({ ...initialState, remoteCommandFlushId: 0 });
     });
 
     channelRef.bind(
@@ -330,6 +395,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         const session = data.session as ListenSession;
         const identity = updateIdentityFlags(session, username);
 
+        remoteCommandBuffer = [];
         bindChannelEvents(session.id);
         set({
           currentSession: session,
@@ -338,6 +404,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           lastSyncAt: session.lastSyncAt,
           lastSyncPayload: null,
           reactions: [],
+          remoteCommandFlushId: 0,
           ...identity,
         });
 
@@ -372,6 +439,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         const listenerCount =
           session.users.length + (session.anonymousListeners?.length ?? 0);
 
+        remoteCommandBuffer = [];
         bindChannelEvents(session.id);
         set({
           currentSession: session,
@@ -383,6 +451,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           lastSyncAt: session.lastSyncAt,
           lastSyncPayload: null,
           reactions: [],
+          remoteCommandFlushId: 0,
           ...identity,
         });
 
@@ -485,6 +554,91 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
     clearReactions: () => {
       set({ reactions: [] });
+    },
+
+    transferHost: async (nextHostUsername: string) => {
+      const { currentSession, username } = get();
+      if (!currentSession || !username) {
+        return { ok: false, error: "No active session" };
+      }
+      if (!hasMatchingAuth(username)) {
+        return { ok: false, error: "Authentication required" };
+      }
+      try {
+        const data = await transferListenSessionHost(currentSession.id, {
+          username,
+          nextHostUsername,
+        });
+        const session = data.session as ListenSession;
+        set({
+          currentSession: session,
+          ...updateIdentityFlags(session, username),
+        });
+        return { ok: true };
+      } catch (error) {
+        console.error("[ListenSession] transferHost failed", error);
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
+      }
+    },
+
+    assignDj: async (nextDjUsername: string) => {
+      const { currentSession, username } = get();
+      if (!currentSession || !username) {
+        return { ok: false, error: "No active session" };
+      }
+      if (!hasMatchingAuth(username)) {
+        return { ok: false, error: "Authentication required" };
+      }
+      try {
+        const data = await assignListenSessionDj(currentSession.id, {
+          username,
+          nextDjUsername,
+        });
+        const session = data.session as ListenSession;
+        set({
+          currentSession: session,
+          ...updateIdentityFlags(session, username),
+        });
+        return { ok: true };
+      } catch (error) {
+        console.error("[ListenSession] assignDj failed", error);
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
+      }
+    },
+
+    sendRemotePlaybackCommand: async (args) => {
+      const { currentSession, username, isDj, isAnonymous } = get();
+      if (!currentSession || !username) {
+        return { ok: false, error: "No active session" };
+      }
+      if (isAnonymous) {
+        return { ok: false, error: "Sign in to control playback" };
+      }
+      if (isDj) {
+        return { ok: false, error: "Use local controls on the playback device" };
+      }
+      if (!hasMatchingAuth(username)) {
+        return { ok: false, error: "Authentication required" };
+      }
+      try {
+        await sendListenRemoteCommand(currentSession.id, {
+          username,
+          ...args,
+        });
+        return { ok: true };
+      } catch (error) {
+        console.error("[ListenSession] sendRemotePlaybackCommand failed", error);
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
+      }
+    },
+
+    takeRemoteCommands: () => {
+      const out = remoteCommandBuffer;
+      remoteCommandBuffer = [];
+      return out;
     },
   };
 });

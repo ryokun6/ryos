@@ -115,3 +115,49 @@ export async function reactListenSession(
   });
 }
 
+export type ListenRemoteCommandAction =
+  | "play"
+  | "pause"
+  | "next"
+  | "previous"
+  | "playTrack";
+
+export async function transferListenSessionHost(
+  sessionId: string,
+  payload: { username: string; nextHostUsername: string }
+): Promise<{ success: boolean; session: ListenSession }> {
+  return apiRequest<{ success: boolean; session: ListenSession }, typeof payload>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/transfer-host`,
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function assignListenSessionDj(
+  sessionId: string,
+  payload: { username: string; nextDjUsername: string }
+): Promise<{ success: boolean; session: ListenSession }> {
+  return apiRequest<{ success: boolean; session: ListenSession }, typeof payload>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/assign-dj`,
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function sendListenRemoteCommand(
+  sessionId: string,
+  payload: {
+    username: string;
+    action: ListenRemoteCommandAction;
+    positionMs?: number;
+    trackId?: string;
+    trackMeta?: ListenTrackMeta;
+  }
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }, typeof payload>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/remote-command`,
+    method: "POST",
+    body: payload,
+  });
+}
+
