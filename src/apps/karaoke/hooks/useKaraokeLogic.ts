@@ -832,13 +832,43 @@ export function useKaraokeLogic({
     [listenRemoteOnly, showStatus, isFullScreen]
   );
 
+  const seekActivePlayerToMs = useCallback(
+    (playerTimeMs: number) => {
+      const activePlayer = getActivePlayer();
+      if (!activePlayer) return false;
+
+      isTrackSwitchingRef.current = true;
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
+      }
+
+      const nextTime = Math.max(0, playerTimeMs / 1000);
+      activePlayer.seekTo(nextTime);
+
+      if (!isPlaying) {
+        setIsPlaying(true);
+        const internalPlayer = activePlayer.getInternalPlayer?.();
+        if (internalPlayer && typeof internalPlayer.playVideo === "function") {
+          internalPlayer.playVideo();
+        }
+      }
+
+      trackSwitchTimeoutRef.current = setTimeout(() => {
+        isTrackSwitchingRef.current = false;
+      }, 500);
+
+      return true;
+    },
+    [getActivePlayer, isPlaying, setIsPlaying]
+  );
+
   // Seek to absolute time (in ms) and start playing
   // timeMs is in "lyrics time" (player time + offset), so we subtract the offset to get player time
   const seekToTime = useCallback(
     (timeMs: number) => {
       const lyricOffset = currentTrack?.lyricOffset ?? 0;
       const playerTimeMs = Math.round(Math.max(0, timeMs - lyricOffset));
-      const newTime = Math.max(0, playerTimeMs / 1000);
+      const newTime = playerTimeMs / 1000;
 
       if (listenRemoteOnly) {
         void sendRemotePlaybackCommand({ action: "seek", positionMs: playerTimeMs }).then((r) => {
@@ -850,43 +880,18 @@ export function useKaraokeLogic({
         return;
       }
 
-      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-      if (activePlayer) {
-        // Set guard to prevent spurious onPause events during seek from killing playback
-        isTrackSwitchingRef.current = true;
-        if (trackSwitchTimeoutRef.current) {
-          clearTimeout(trackSwitchTimeoutRef.current);
-        }
-
-        activePlayer.seekTo(newTime);
-        
-        // Start playing if paused - also call playVideo() directly for iOS Safari
-        if (!isPlaying) {
-          setIsPlaying(true);
-          // Directly call playVideo on the internal player to ensure it plays
-          const internalPlayer = activePlayer?.getInternalPlayer?.();
-          if (internalPlayer && typeof internalPlayer.playVideo === "function") {
-            internalPlayer.playVideo();
-          }
-        }
+      if (seekActivePlayerToMs(playerTimeMs)) {
         showStatus(
           `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
         );
-        
-        // Clear guard after a short delay to allow seek + play to complete
-        trackSwitchTimeoutRef.current = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-        }, 500);
       }
     },
     [
       listenRemoteOnly,
       sendRemotePlaybackCommand,
+      seekActivePlayerToMs,
       showStatus,
-      isFullScreen,
-      isPlaying,
       currentTrack?.lyricOffset,
-      setIsPlaying,
     ]
   );
 
@@ -1135,16 +1140,9 @@ export function useKaraokeLogic({
           }
           case "seek": {
             const pos = cmd.positionMs;
-            if (typeof pos === "number") {
-              const p = getActivePlayer();
-              p?.seekTo(pos / 1000, "seconds");
-              afterSeekMs = pos;
-              setIsPlaying(true);
-              const internalPlayer = p?.getInternalPlayer?.();
-              if (internalPlayer && typeof internalPlayer.playVideo === "function") {
-                internalPlayer.playVideo();
-              }
-            }
+            if (typeof pos !== "number") break;
+            afterSeekMs = pos;
+            seekActivePlayerToMs(pos);
             break;
           }
           case "next":
@@ -1195,6 +1193,7 @@ export function useKaraokeLogic({
     listenSession,
     pushListenState,
     remoteCommandFlushId,
+    seekActivePlayerToMs,
     setCurrentSongId,
     setIsPlaying,
     startTrackSwitch,

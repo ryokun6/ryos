@@ -234,6 +234,48 @@ function unsubscribeFromSession(): void {
 }
 
 export const useListenSessionStore = create<ListenSessionState>((set, get) => {
+  const applyOptimisticRemotePlayback = (
+    desiredIsPlaying: boolean,
+    positionMs?: number
+  ) => {
+    const nextPositionMs =
+      typeof positionMs === "number"
+        ? Math.max(0, Math.floor(positionMs))
+        : Math.max(0, get().lastSyncPayload?.positionMs ?? 0);
+
+    set((state) => {
+      if (!state.lastSyncPayload || !state.currentSession) return {};
+
+      const prevTs = Math.max(
+        state.lastSyncAt ?? 0,
+        state.lastSyncPayload.timestamp ?? 0
+      );
+      const mergedTs = Math.max(Date.now(), prevTs + 1);
+      const merged: ListenSyncPayload = {
+        ...state.lastSyncPayload,
+        isPlaying: desiredIsPlaying,
+        positionMs: nextPositionMs,
+        timestamp: mergedTs,
+      };
+      const nextSession: ListenSession = {
+        ...state.currentSession,
+        isPlaying: desiredIsPlaying,
+        positionMs: nextPositionMs,
+        lastSyncAt: merged.timestamp,
+      };
+
+      return {
+        lastSyncPayload: merged,
+        lastSyncAt: merged.timestamp,
+        currentSession: nextSession,
+        pendingRemotePlayback: {
+          desiredIsPlaying,
+          sinceMs: Date.now(),
+        },
+      };
+    });
+  };
+
   const bindChannelEvents = (sessionId: string) => {
     const client = ensurePusherClient();
 
@@ -814,77 +856,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           ...args,
         });
         // Listeners don't control local playback; UI + virtual clock read lastSyncPayload.
-        // Merge play/pause immediately so isPlaying and position don't wait for the next Pusher sync.
-        if (args.action === "play" || args.action === "pause") {
-          const nextPlaying = args.action === "play";
-          const positionMs =
-            typeof args.positionMs === "number"
-              ? args.positionMs
-              : Math.max(0, get().lastSyncPayload?.positionMs ?? 0);
-          set((state) => {
-            if (!state.lastSyncPayload || !state.currentSession) return {};
-            const prevTs = Math.max(
-              state.lastSyncAt ?? 0,
-              state.lastSyncPayload.timestamp ?? 0
-            );
-            // Strictly increase revision so stale Pusher payloads never win over this merge.
-            const mergedTs = Math.max(Date.now(), prevTs + 1);
-            const merged: ListenSyncPayload = {
-              ...state.lastSyncPayload,
-              isPlaying: nextPlaying,
-              positionMs,
-              timestamp: mergedTs,
-            };
-            const nextSession: ListenSession = {
-              ...state.currentSession,
-              isPlaying: nextPlaying,
-              positionMs,
-              lastSyncAt: merged.timestamp,
-            };
-            return {
-              lastSyncPayload: merged,
-              lastSyncAt: merged.timestamp,
-              currentSession: nextSession,
-              pendingRemotePlayback: {
-                desiredIsPlaying: nextPlaying,
-                sinceMs: Date.now(),
-              },
-            };
-          });
-        } else if (args.action === "seek") {
-          const positionMs =
-            typeof args.positionMs === "number"
-              ? Math.max(0, Math.floor(args.positionMs))
-              : Math.max(0, get().lastSyncPayload?.positionMs ?? 0);
-          set((state) => {
-            if (!state.lastSyncPayload || !state.currentSession) return {};
-            const prevTs = Math.max(
-              state.lastSyncAt ?? 0,
-              state.lastSyncPayload.timestamp ?? 0
-            );
-            const mergedTs = Math.max(Date.now(), prevTs + 1);
-            const merged: ListenSyncPayload = {
-              ...state.lastSyncPayload,
-              isPlaying: true,
-              positionMs,
-              timestamp: mergedTs,
-            };
-            const nextSession: ListenSession = {
-              ...state.currentSession,
-              isPlaying: true,
-              positionMs,
-              lastSyncAt: merged.timestamp,
-            };
-            return {
-              lastSyncPayload: merged,
-              lastSyncAt: merged.timestamp,
-              currentSession: nextSession,
-              pendingRemotePlayback: {
-                desiredIsPlaying: true,
-                sinceMs: Date.now(),
-              },
-            };
-          });
+        // Merge play/pause/seek immediately so playback state doesn't wait for the next Pusher sync.
+        if (args.action === "play" || args.action === "pause" || args.action === "seek") {
+          applyOptimisticRemotePlayback(args.action !== "pause", args.positionMs);
         }
         return { ok: true };
       } catch (error) {
