@@ -8,6 +8,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
@@ -135,6 +136,10 @@ interface SongsSnapshotData {
   libraryState: "uninitialized" | "loaded" | "cleared";
   lastKnownVersion: number;
   deletedTrackIds?: DeletionMarkerMap;
+}
+
+function normalizeSongsTrackOrder(tracks: Track[]): Track[] {
+  return sortTracksLikeServerOrder(tracks);
 }
 
 interface VideosSnapshotData {
@@ -660,7 +665,8 @@ function serializeSongsSnapshot(): SongsSnapshotData {
   const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
 
   return {
-    tracks: ipodState.tracks,
+    // Keep songs newest-first before upload so cloud merges cannot preserve a stale bottom-appended order.
+    tracks: normalizeSongsTrackOrder(ipodState.tracks),
     libraryState: ipodState.libraryState,
     lastKnownVersion: ipodState.lastKnownVersion,
     deletedTrackIds: deletionMarkers.songTrackIds,
@@ -1060,7 +1066,9 @@ function applySongsSnapshot(data: SongsSnapshotData): void {
   cloudSyncState.mergeDeletedKeys("songTrackIds", remoteDeletedTrackIds);
 
   useIpodStore.setState({
-    tracks: filterDeletedIds(data.tracks, effectiveDeletedTrackIds, (track) => track.id),
+    tracks: normalizeSongsTrackOrder(
+      filterDeletedIds(data.tracks, effectiveDeletedTrackIds, (track) => track.id)
+    ),
     libraryState: data.libraryState,
     lastKnownVersion: data.lastKnownVersion,
   });
@@ -1482,9 +1490,11 @@ function mergeSongsSnapshots(
     normalizeDeletionMarkerMap(remote.deletedTrackIds)
   );
   return {
-    tracks: mergeItemsById(
-      filterDeletedIds(local.tracks, mergedDeleted, (t) => t.id),
-      filterDeletedIds(remote.tracks, mergedDeleted, (t) => t.id)
+    tracks: normalizeSongsTrackOrder(
+      mergeItemsById(
+        filterDeletedIds(local.tracks, mergedDeleted, (t) => t.id),
+        filterDeletedIds(remote.tracks, mergedDeleted, (t) => t.id)
+      )
     ),
     libraryState: local.libraryState === "loaded" || remote.libraryState === "loaded"
       ? "loaded"
