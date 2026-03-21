@@ -4,13 +4,18 @@ import { getPusherClient } from "@/lib/pusherClient";
 import { toast } from "@/hooks/useToast";
 import { useChatsStore } from "@/stores/useChatsStore";
 import {
+  assignListenSessionDj,
   createListenSession,
   fetchListenSessions,
   joinListenSession,
   leaveListenSession,
   reactListenSession,
+  sendListenRemoteCommand,
   syncListenSession,
+  transferListenSessionHost,
+  type ListenRemoteCommandAction,
 } from "@/api/listen";
+import { getListenClientInstanceId } from "@/lib/listenClientInstance";
 export interface ListenTrackMeta {
   title: string;
   artist?: string;
@@ -21,6 +26,7 @@ export interface ListenSessionUser {
   username: string;
   joinedAt: number;
   isOnline: boolean;
+  clientInstanceId?: string;
 }
 
 export interface ListenAnonymousListener {
@@ -31,7 +37,9 @@ export interface ListenAnonymousListener {
 export interface ListenSession {
   id: string;
   hostUsername: string;
+  hostClientInstanceId?: string;
   djUsername: string;
+  djClientInstanceId?: string;
   createdAt: number;
   currentTrackId: string | null;
   currentTrackMeta: ListenTrackMeta | null;
@@ -42,14 +50,30 @@ export interface ListenSession {
   anonymousListeners?: ListenAnonymousListener[];
 }
 
+export interface ListenRemoteCommandPayload {
+  fromUsername: string;
+  fromClientInstanceId?: string;
+  action: ListenRemoteCommandAction;
+  positionMs?: number;
+  trackId?: string;
+  trackMeta?: ListenTrackMeta;
+  timestamp: number;
+}
+
 export interface ListenSyncPayload {
   currentTrackId: string | null;
   currentTrackMeta: ListenTrackMeta | null;
   isPlaying: boolean;
   positionMs: number;
   timestamp: number;
-  djUsername: string; // Sender identification to ignore own syncs
+  hostUsername?: string;
+  hostClientInstanceId?: string;
+  djUsername: string;
+  djClientInstanceId?: string;
   listenerCount: number; // Total listeners (users + anonymous)
+  /** Who produced this revision (omit in older payloads — treated as djUsername) */
+  sourceUsername?: string;
+  sourceClientInstanceId?: string;
 }
 
 export interface ListenReactionPayload {
@@ -73,9 +97,14 @@ export interface ListenSessionSummary {
   listenerCount: number;
 }
 
+/** Listener (non-DJ): optimistic play/pause until Pusher shows the host agrees. */
+export type PendingRemotePlayback = { desiredIsPlaying: boolean; sinceMs: number };
+
 export interface ListenSessionState {
   currentSession: ListenSession | null;
   username: string | null;
+  /** This tab's listen connection id (per-tab sessionStorage) */
+  clientInstanceId: string | null;
   anonymousId: string | null; // For anonymous listeners
   isAnonymous: boolean;
   isHost: boolean;
@@ -85,6 +114,10 @@ export interface ListenSessionState {
   lastSyncPayload: ListenSyncPayload | null;
   lastSyncAt: number | null;
   reactions: ListenReactionPayload[];
+  /** Bumps when the DJ should drain remote-command queue */
+  remoteCommandFlushId: number;
+  /** Non-DJ only: after remote play/pause, ignore conflicting host isPlaying until confirmed or timeout. */
+  pendingRemotePlayback: PendingRemotePlayback | null;
 
   fetchSessions: () => Promise<{
     ok: boolean;
@@ -107,14 +140,31 @@ export interface ListenSessionState {
     isPlaying: boolean;
     positionMs: number;
     djUsername?: string;
+    djClientInstanceId?: string;
   }) => Promise<{ ok: boolean; error?: string }>;
   sendReaction: (emoji: string) => Promise<{ ok: boolean; error?: string }>;
   clearReactions: () => void;
+  transferHost: (
+    nextHostUsername: string,
+    nextHostClientInstanceId: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  assignDj: (
+    nextDjUsername: string,
+    nextDjClientInstanceId: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  sendRemotePlaybackCommand: (args: {
+    action: ListenRemoteCommandAction;
+    positionMs?: number;
+    trackId?: string;
+    trackMeta?: ListenTrackMeta;
+  }) => Promise<{ ok: boolean; error?: string }>;
+  takeRemoteCommands: () => ListenRemoteCommandPayload[];
 }
 
 const initialState = {
   currentSession: null,
   username: null,
+  clientInstanceId: null,
   anonymousId: null,
   isAnonymous: false,
   isHost: false,
@@ -124,7 +174,11 @@ const initialState = {
   lastSyncPayload: null,
   lastSyncAt: null,
   reactions: [],
+  remoteCommandFlushId: 0,
+  pendingRemotePlayback: null,
 };
+
+let remoteCommandBuffer: ListenRemoteCommandPayload[] = [];
 
 // Generate a random anonymous ID
 function generateAnonymousId(): string {
@@ -153,18 +207,26 @@ function getChannelName(sessionId: string): string {
 
 function updateIdentityFlags(
   session: ListenSession | null,
-  username: string | null
+  username: string | null,
+  clientInstanceId: string | null
 ): { isHost: boolean; isDj: boolean } {
-  if (!session || !username) {
+  if (!session || !username || !clientInstanceId) {
     return { isHost: false, isDj: false };
   }
+  const hostMatch =
+    session.hostUsername === username &&
+    session.hostClientInstanceId === clientInstanceId;
+  const djMatch =
+    session.djUsername === username &&
+    session.djClientInstanceId === clientInstanceId;
   return {
-    isHost: session.hostUsername === username,
-    isDj: session.djUsername === username,
+    isHost: hostMatch,
+    isDj: djMatch,
   };
 }
 
 function unsubscribeFromSession(): void {
+  remoteCommandBuffer = [];
   if (pusherClient && channelRef) {
     pusherClient.unsubscribe(channelRef.name);
   }
@@ -172,6 +234,48 @@ function unsubscribeFromSession(): void {
 }
 
 export const useListenSessionStore = create<ListenSessionState>((set, get) => {
+  const applyOptimisticRemotePlayback = (
+    desiredIsPlaying: boolean,
+    positionMs?: number
+  ) => {
+    const nextPositionMs =
+      typeof positionMs === "number"
+        ? Math.max(0, Math.floor(positionMs))
+        : Math.max(0, get().lastSyncPayload?.positionMs ?? 0);
+
+    set((state) => {
+      if (!state.lastSyncPayload || !state.currentSession) return {};
+
+      const prevTs = Math.max(
+        state.lastSyncAt ?? 0,
+        state.lastSyncPayload.timestamp ?? 0
+      );
+      const mergedTs = Math.max(Date.now(), prevTs + 1);
+      const merged: ListenSyncPayload = {
+        ...state.lastSyncPayload,
+        isPlaying: desiredIsPlaying,
+        positionMs: nextPositionMs,
+        timestamp: mergedTs,
+      };
+      const nextSession: ListenSession = {
+        ...state.currentSession,
+        isPlaying: desiredIsPlaying,
+        positionMs: nextPositionMs,
+        lastSyncAt: merged.timestamp,
+      };
+
+      return {
+        lastSyncPayload: merged,
+        lastSyncAt: merged.timestamp,
+        currentSession: nextSession,
+        pendingRemotePlayback: {
+          desiredIsPlaying,
+          sinceMs: Date.now(),
+        },
+      };
+    });
+  };
+
   const bindChannelEvents = (sessionId: string) => {
     const client = ensurePusherClient();
 
@@ -193,91 +297,251 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.unbind("session-ended");
 
     channelRef.bind("sync", (payload: ListenSyncPayload) => {
+      const normalized: ListenSyncPayload = {
+        ...payload,
+        sourceUsername: payload.sourceUsername ?? payload.djUsername,
+      };
       set((state) => {
         if (!state.currentSession) return {};
+        const prevTs = Math.max(
+          state.lastSyncAt ?? 0,
+          state.lastSyncPayload?.timestamp ?? 0
+        );
+        // Drop out-of-order syncs (e.g. stale broadcast after optimistic remote play/pause).
+        if (normalized.timestamp < prevTs) {
+          return {};
+        }
+
+        const pending = state.pendingRemotePlayback;
+        let effective = normalized;
+        let pendingNext: PendingRemotePlayback | null = pending;
+
+        // Listeners: host sync can arrive with a newer timestamp but stale isPlaying (heartbeat
+        // before the DJ applied the remote command). Keep desired play/pause until host agrees.
+        if (pending && !state.isDj) {
+          const age = Date.now() - pending.sinceMs;
+          if (normalized.isPlaying === pending.desiredIsPlaying) {
+            pendingNext = null;
+          } else if (age < 5000) {
+            effective = {
+              ...normalized,
+              isPlaying: pending.desiredIsPlaying,
+            };
+          } else {
+            pendingNext = null;
+          }
+        }
+
         const nextSession: ListenSession = {
           ...state.currentSession,
-          currentTrackId: payload.currentTrackId,
-          currentTrackMeta: payload.currentTrackMeta,
-          isPlaying: payload.isPlaying,
-          positionMs: payload.positionMs,
-          lastSyncAt: payload.timestamp,
+          currentTrackId: effective.currentTrackId,
+          currentTrackMeta: effective.currentTrackMeta,
+          isPlaying: effective.isPlaying,
+          positionMs: effective.positionMs,
+          lastSyncAt: effective.timestamp,
+          ...(effective.hostUsername != null
+            ? { hostUsername: effective.hostUsername }
+            : {}),
+          ...(effective.hostClientInstanceId != null
+            ? { hostClientInstanceId: effective.hostClientInstanceId }
+            : {}),
+          djUsername: effective.djUsername,
+          ...(effective.djClientInstanceId != null
+            ? { djClientInstanceId: effective.djClientInstanceId }
+            : {}),
         };
         return {
           currentSession: nextSession,
-          lastSyncPayload: payload,
-          lastSyncAt: payload.timestamp,
-          listenerCount: payload.listenerCount ?? state.listenerCount,
-          ...updateIdentityFlags(nextSession, state.username),
-        };
-      });
-    });
-
-    channelRef.bind("user-joined", ({ username }: { username: string }) => {
-      set((state) => {
-        if (!state.currentSession) return {};
-        const existingIndex = state.currentSession.users.findIndex(
-          (user) => user.username === username
-        );
-        const users = [...state.currentSession.users];
-        if (existingIndex === -1) {
-          users.push({
-            username,
-            joinedAt: Date.now(),
-            isOnline: true,
-          });
-        } else {
-          users[existingIndex] = {
-            ...users[existingIndex],
-            isOnline: true,
-          };
-        }
-        users.sort((a, b) => a.joinedAt - b.joinedAt);
-        return {
-          currentSession: {
-            ...state.currentSession,
-            users,
-          },
-        };
-      });
-    });
-
-    channelRef.bind("user-left", ({ username }: { username: string }) => {
-      set((state) => {
-        if (!state.currentSession) return {};
-        const users = state.currentSession.users.filter(
-          (user) => user.username !== username
-        );
-        return {
-          currentSession: {
-            ...state.currentSession,
-            users,
-          },
+          lastSyncPayload: effective,
+          lastSyncAt: effective.timestamp,
+          listenerCount: effective.listenerCount ?? state.listenerCount,
+          pendingRemotePlayback: pendingNext,
+          ...updateIdentityFlags(
+            nextSession,
+            state.username,
+            state.clientInstanceId
+          ),
         };
       });
     });
 
     channelRef.bind(
-      "dj-changed",
-      ({ previousDj, newDj }: { previousDj: string; newDj: string }) => {
+      "user-joined",
+      ({
+        username,
+        clientInstanceId,
+      }: {
+        username: string;
+        clientInstanceId?: string;
+      }) => {
         set((state) => {
           if (!state.currentSession) return {};
-          const nextSession = {
-            ...state.currentSession,
-            djUsername: newDj,
-          };
-          if (state.username === newDj) {
-            toast("You're the DJ now!", {
-              description: `DJ control transferred from @${previousDj}`,
+          const cid =
+            clientInstanceId ??
+            `legacy:${username.toLowerCase()}`;
+          const existingIndex = state.currentSession.users.findIndex(
+            (user) =>
+              user.username === username && user.clientInstanceId === cid
+          );
+          const users = [...state.currentSession.users];
+          if (existingIndex === -1) {
+            users.push({
+              username,
+              joinedAt: Date.now(),
+              isOnline: true,
+              clientInstanceId: cid,
             });
+          } else {
+            users[existingIndex] = {
+              ...users[existingIndex],
+              isOnline: true,
+              clientInstanceId: cid,
+            };
           }
+          users.sort((a, b) => a.joinedAt - b.joinedAt);
           return {
-            currentSession: nextSession,
-            ...updateIdentityFlags(nextSession, state.username),
+            currentSession: {
+              ...state.currentSession,
+              users,
+            },
           };
         });
       }
     );
+
+    channelRef.bind(
+      "user-left",
+      ({
+        username,
+        clientInstanceId,
+      }: {
+        username: string;
+        clientInstanceId?: string;
+      }) => {
+        set((state) => {
+          if (!state.currentSession) return {};
+          const cid =
+            clientInstanceId ??
+            `legacy:${username.toLowerCase()}`;
+          const users = state.currentSession.users.filter(
+            (user) =>
+              !(
+                user.username === username &&
+                user.clientInstanceId === cid
+              )
+          );
+          return {
+            currentSession: {
+              ...state.currentSession,
+              users,
+            },
+          };
+        });
+      }
+    );
+
+    channelRef.bind(
+      "dj-changed",
+      ({
+        previousDj,
+        newDj,
+        newDjClientInstanceId,
+      }: {
+        previousDj: string;
+        newDj: string;
+        newDjClientInstanceId?: string;
+      }) => {
+        remoteCommandBuffer = [];
+        set((state) => {
+          if (!state.currentSession) return {};
+          const djConn = state.currentSession.users.find(
+            (u) => u.username === newDj
+          );
+          const nextSession = {
+            ...state.currentSession,
+            djUsername: newDj,
+            djClientInstanceId:
+              newDjClientInstanceId ??
+              djConn?.clientInstanceId ??
+              `legacy:${newDj.toLowerCase()}`,
+          };
+          if (
+            state.username === newDj &&
+            state.clientInstanceId === nextSession.djClientInstanceId
+          ) {
+            toast("Playback is on this device", {
+              description: `Transferred from @${previousDj}`,
+            });
+          }
+          return {
+            currentSession: nextSession,
+            ...updateIdentityFlags(
+              nextSession,
+              state.username,
+              state.clientInstanceId
+            ),
+          };
+        });
+      }
+    );
+
+    channelRef.bind(
+      "host-changed",
+      ({
+        previousHost,
+        newHost,
+        newHostClientInstanceId,
+      }: {
+        previousHost: string;
+        newHost: string;
+        newHostClientInstanceId?: string;
+      }) => {
+        remoteCommandBuffer = [];
+        set((state) => {
+          if (!state.currentSession) return {};
+          const hostConn = state.currentSession.users.find(
+            (u) => u.username === newHost
+          );
+          const nextSession = {
+            ...state.currentSession,
+            hostUsername: newHost,
+            hostClientInstanceId:
+              newHostClientInstanceId ??
+              hostConn?.clientInstanceId ??
+              `legacy:${newHost.toLowerCase()}`,
+          };
+          if (
+            state.username === newHost &&
+            state.clientInstanceId === nextSession.hostClientInstanceId
+          ) {
+            toast("You're the host now", {
+              description: `Host transferred from @${previousHost}`,
+            });
+          }
+          return {
+            currentSession: nextSession,
+            ...updateIdentityFlags(
+              nextSession,
+              state.username,
+              state.clientInstanceId
+            ),
+          };
+        });
+      }
+    );
+
+    channelRef.bind("remote-command", (payload: ListenRemoteCommandPayload) => {
+      const st = get();
+      if (!st.currentSession || !st.isDj) return;
+      if (
+        payload.fromUsername === st.username &&
+        payload.fromClientInstanceId === st.clientInstanceId
+      ) {
+        return;
+      }
+      remoteCommandBuffer.push(payload);
+      set({ remoteCommandFlushId: st.remoteCommandFlushId + 1 });
+    });
 
     channelRef.bind("reaction", (payload: ListenReactionPayload) => {
       set((state) => ({
@@ -290,7 +554,11 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         description: "The host ended the listening session.",
       });
       unsubscribeFromSession();
-      set({ ...initialState });
+      set({
+        ...initialState,
+        clientInstanceId: get().clientInstanceId,
+        remoteCommandFlushId: 0,
+      });
     });
 
     channelRef.bind(
@@ -326,18 +594,23 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
 
       try {
-        const data = await createListenSession(username);
+        const clientInstanceId = getListenClientInstanceId();
+        const data = await createListenSession(username, clientInstanceId);
         const session = data.session as ListenSession;
-        const identity = updateIdentityFlags(session, username);
+        const identity = updateIdentityFlags(session, username, clientInstanceId);
 
+        remoteCommandBuffer = [];
         bindChannelEvents(session.id);
         set({
           currentSession: session,
           username,
+          clientInstanceId,
           isConnected: true,
           lastSyncAt: session.lastSyncAt,
           lastSyncPayload: null,
           reactions: [],
+          remoteCommandFlushId: 0,
+          pendingRemotePlayback: null,
           ...identity,
         });
 
@@ -354,6 +627,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         // If no username, join as anonymous
         const isAnonymous = !username;
         const anonymousId = isAnonymous ? generateAnonymousId() : null;
+        const clientInstanceId = isAnonymous ? null : getListenClientInstanceId();
 
         if (!isAnonymous && username && !hasMatchingAuth(username)) {
           return { ok: false, error: "Authentication required" };
@@ -361,21 +635,25 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
         const data = await joinListenSession(
           sessionId,
-          isAnonymous ? { anonymousId: anonymousId || undefined } : { username }
+          isAnonymous
+            ? { anonymousId: anonymousId || undefined }
+            : { username, clientInstanceId: clientInstanceId || undefined }
         );
         const session = data.session as ListenSession;
         const identity = isAnonymous
           ? { isHost: false, isDj: false }
-          : updateIdentityFlags(session, username!);
+          : updateIdentityFlags(session, username!, clientInstanceId);
 
         // Calculate initial listener count
         const listenerCount =
           session.users.length + (session.anonymousListeners?.length ?? 0);
 
+        remoteCommandBuffer = [];
         bindChannelEvents(session.id);
         set({
           currentSession: session,
           username: username ?? null,
+          clientInstanceId,
           anonymousId,
           isAnonymous,
           isConnected: true,
@@ -383,6 +661,8 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           lastSyncAt: session.lastSyncAt,
           lastSyncPayload: null,
           reactions: [],
+          remoteCommandFlushId: 0,
+          pendingRemotePlayback: null,
           ...identity,
         });
 
@@ -395,7 +675,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     leaveSession: async () => {
-      const { currentSession, username, anonymousId, isAnonymous } = get();
+      const { currentSession, username, clientInstanceId, anonymousId, isAnonymous } = get();
       if (!currentSession) {
         return { ok: true };
       }
@@ -403,7 +683,10 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       // Must have either username or anonymousId
       if (!username && !anonymousId) {
         unsubscribeFromSession();
-        set({ ...initialState });
+        set({
+          ...initialState,
+          clientInstanceId: get().clientInstanceId,
+        });
         return { ok: true };
       }
 
@@ -414,11 +697,19 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
         await leaveListenSession(
           currentSession.id,
-          isAnonymous ? { anonymousId: anonymousId || undefined } : { username: username || undefined }
+          isAnonymous
+            ? { anonymousId: anonymousId || undefined }
+            : {
+                username: username || undefined,
+                clientInstanceId: clientInstanceId || undefined,
+              }
         );
 
         unsubscribeFromSession();
-        set({ ...initialState });
+        set({
+          ...initialState,
+          clientInstanceId: get().clientInstanceId,
+        });
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] leaveSession failed", error);
@@ -428,8 +719,8 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     syncSession: async (payload) => {
-      const { currentSession, username } = get();
-      if (!currentSession || !username) {
+      const { currentSession, username, clientInstanceId } = get();
+      if (!currentSession || !username || !clientInstanceId) {
         return { ok: false, error: "No active session" };
       }
 
@@ -442,6 +733,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           currentSession.id,
           {
             username,
+            clientInstanceId,
             state: payload,
           }
         );
@@ -485,6 +777,101 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
     clearReactions: () => {
       set({ reactions: [] });
+    },
+
+    transferHost: async (nextHostUsername: string, nextHostClientInstanceId: string) => {
+      const { currentSession, username, clientInstanceId } = get();
+      if (!currentSession || !username || !clientInstanceId) {
+        return { ok: false, error: "No active session" };
+      }
+      if (!hasMatchingAuth(username)) {
+        return { ok: false, error: "Authentication required" };
+      }
+      try {
+        const data = await transferListenSessionHost(currentSession.id, {
+          username,
+          clientInstanceId,
+          nextHostUsername,
+          nextHostClientInstanceId,
+        });
+        const session = data.session as ListenSession;
+        set({
+          currentSession: session,
+          ...updateIdentityFlags(session, username, clientInstanceId),
+        });
+        return { ok: true };
+      } catch (error) {
+        console.error("[ListenSession] transferHost failed", error);
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
+      }
+    },
+
+    assignDj: async (nextDjUsername: string, nextDjClientInstanceId: string) => {
+      const { currentSession, username, clientInstanceId } = get();
+      if (!currentSession || !username || !clientInstanceId) {
+        return { ok: false, error: "No active session" };
+      }
+      if (!hasMatchingAuth(username)) {
+        return { ok: false, error: "Authentication required" };
+      }
+      try {
+        const data = await assignListenSessionDj(currentSession.id, {
+          username,
+          clientInstanceId,
+          nextDjUsername,
+          nextDjClientInstanceId,
+        });
+        const session = data.session as ListenSession;
+        set({
+          currentSession: session,
+          ...updateIdentityFlags(session, username, clientInstanceId),
+        });
+        return { ok: true };
+      } catch (error) {
+        console.error("[ListenSession] assignDj failed", error);
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
+      }
+    },
+
+    sendRemotePlaybackCommand: async (args) => {
+      const { currentSession, username, clientInstanceId, isDj, isAnonymous } = get();
+      if (!currentSession || !username || !clientInstanceId) {
+        return { ok: false, error: "No active session" };
+      }
+      if (isAnonymous) {
+        return { ok: false, error: "Sign in to control playback" };
+      }
+      if (isDj) {
+        return { ok: false, error: "Use local controls on the playback device" };
+      }
+      if (!hasMatchingAuth(username)) {
+        return { ok: false, error: "Authentication required" };
+      }
+      try {
+        await sendListenRemoteCommand(currentSession.id, {
+          username,
+          fromClientInstanceId: clientInstanceId,
+          ...args,
+        });
+        // Listeners don't control local playback; UI + virtual clock read lastSyncPayload.
+        // Merge play/pause/seek immediately so playback state doesn't wait for the next Pusher sync.
+        if (args.action === "play" || args.action === "pause" || args.action === "seek") {
+          applyOptimisticRemotePlayback(args.action !== "pause", args.positionMs);
+        }
+        return { ok: true };
+      } catch (error) {
+        console.error("[ListenSession] sendRemotePlaybackCommand failed", error);
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
+      }
+    },
+
+    takeRemoteCommands: () => {
+      const out = remoteCommandBuffer;
+      remoteCommandBuffer = [];
+      return out;
     },
   };
 });

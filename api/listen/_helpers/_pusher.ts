@@ -5,7 +5,9 @@
 import { triggerRealtimeEvent } from "../../_utils/realtime.js";
 import type {
   ListenDjChangedPayload,
+  ListenHostChangedPayload,
   ListenReactionPayload,
+  ListenRemoteCommandPayload,
   ListenSyncPayload,
   ListenUserPayload,
 } from "./_types.js";
@@ -44,6 +46,20 @@ export async function broadcastDjChanged(
   payload: ListenDjChangedPayload
 ): Promise<void> {
   await triggerRealtimeEvent(getChannelName(sessionId), "dj-changed", payload);
+}
+
+export async function broadcastHostChanged(
+  sessionId: string,
+  payload: ListenHostChangedPayload
+): Promise<void> {
+  await triggerRealtimeEvent(getChannelName(sessionId), "host-changed", payload);
+}
+
+export async function broadcastRemoteCommand(
+  sessionId: string,
+  payload: ListenRemoteCommandPayload
+): Promise<void> {
+  await triggerRealtimeEvent(getChannelName(sessionId), "remote-command", payload);
 }
 
 export async function broadcastReaction(

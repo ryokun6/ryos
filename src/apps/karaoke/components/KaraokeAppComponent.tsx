@@ -64,12 +64,9 @@ export function KaraokeAppComponent({
     setLyricsTranslationLanguage,
     displayMode,
     toggleLyrics,
-    togglePlay,
     toggleShuffle,
     toggleLoopAll,
     toggleLoopCurrent,
-    nextTrack,
-    previousTrack,
     toggleFullScreen,
     isOffline,
     manualSync,
@@ -105,7 +102,7 @@ export function KaraokeAppComponent({
     LONG_PRESS_MOVE_THRESHOLD,
     fullScreenPlayerRef,
     playerRef,
-    elapsedTime,
+    displayElapsedTime,
     duration,
     setDuration,
     statusMessage,
@@ -122,9 +119,12 @@ export function KaraokeAppComponent({
     hasActiveActivity,
     translationLanguages,
     listenSession,
+    listenSessionUsername,
+    listenSessionClientInstanceId,
     listenListenerCount,
     isListenSessionHost,
     isListenSessionDj,
+    isListenSessionRemoteOnly,
     isListenSessionAnonymous,
     showStatus,
     showOfflineStatus,
@@ -157,6 +157,8 @@ export function KaraokeAppComponent({
     handleJoinListenSession,
     handleLeaveListenSession,
     handlePassDj,
+    handleAssignPlaybackDevice,
+    handleTransferSessionHost,
     handleSendReaction,
     handlePlayTrack,
     handleToggleCoverFlow,
@@ -206,9 +208,9 @@ export function KaraokeAppComponent({
       onClearLibrary={() => setIsConfirmClearOpen(true)}
       onSyncLibrary={manualSync}
       onPlayTrack={handlePlayTrack}
-      onTogglePlay={togglePlay}
-      onPreviousTrack={previousTrack}
-      onNextTrack={nextTrack}
+      onTogglePlay={handlePlayPause}
+      onPreviousTrack={handlePrevious}
+      onNextTrack={handleNext}
       isPlaying={isPlaying}
       isShuffled={isShuffled}
       onToggleShuffle={toggleShuffle}
@@ -232,7 +234,13 @@ export function KaraokeAppComponent({
       isListenSessionHost={isListenSessionHost}
     />
   );
-  const shouldAnimateVisuals = isPlaying && (isForeground ?? true);
+  const shouldAnimateVisuals =
+    isPlaying && (isForeground ?? true) && !isListenSessionRemoteOnly;
+
+  /** Remote listeners have no local video; force cover backdrop regardless of stored display mode. */
+  const effectiveDisplayMode = isListenSessionRemoteOnly
+    ? DisplayMode.Cover
+    : displayMode;
 
   if (!isWindowOpen) return null;
 
@@ -340,19 +348,25 @@ export function KaraokeAppComponent({
           }}
         >
           {/* Reaction overlay for listen sessions */}
-          {listenSession && <ReactionOverlay className="z-40" />}
+          {listenSession && !isSyncModeOpen && (
+            <ReactionOverlay className="z-40" />
+          )}
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
           {/* When display mode is not Video, the player is hidden visually but still plays audio */}
           {currentTrack ? (
             <div
               className="absolute inset-0 overflow-hidden"
-              style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+              style={
+                effectiveDisplayMode !== DisplayMode.Video
+                  ? { visibility: "hidden", pointerEvents: "none" }
+                  : undefined
+              }
             >
               <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
                 <ReactPlayer
                   ref={playerRef}
                   url={currentTrack.url}
-                  playing={isPlaying && !isFullScreen}
+                  playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
                   width="100%"
                   height="100%"
                   volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
@@ -394,7 +408,7 @@ export function KaraokeAppComponent({
           )}
 
           {/* Landscape video background */}
-          {displayMode === DisplayMode.Landscapes && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Landscapes && currentTrack && (
             <LandscapeVideoBackground
               isActive={shouldAnimateVisuals}
               className="absolute inset-0 z-[5]"
@@ -402,7 +416,7 @@ export function KaraokeAppComponent({
           )}
 
           {/* Warp shader background */}
-          {displayMode === DisplayMode.Shader && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Shader && currentTrack && (
             <AmbientBackground
               coverUrl={coverUrl}
               variant="warp"
@@ -412,7 +426,7 @@ export function KaraokeAppComponent({
           )}
 
           {/* Mesh gradient background */}
-          {displayMode === DisplayMode.Mesh && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Mesh && currentTrack && (
             <MeshGradientBackground
               coverUrl={coverUrl}
               isActive={shouldAnimateVisuals}
@@ -421,7 +435,7 @@ export function KaraokeAppComponent({
           )}
 
           {/* Water shader background */}
-          {displayMode === DisplayMode.Water && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Water && currentTrack && (
             <WaterBackground
               coverUrl={coverUrl}
               isActive={shouldAnimateVisuals}
@@ -431,7 +445,9 @@ export function KaraokeAppComponent({
 
           {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
           <AnimatePresence>
-            {currentTrack && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
+            {currentTrack &&
+              coverUrl &&
+              (effectiveDisplayMode === DisplayMode.Cover || !isPlaying) && (
               <motion.div
                 className="absolute inset-0 z-15"
                 initial={{ opacity: 0 }}
@@ -479,22 +495,20 @@ export function KaraokeAppComponent({
                     const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
                     const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
                     showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                    lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+                    lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
                   }}
                   onSwipeUp={() => {
                     if (isOffline) {
                       showOfflineStatus();
                     } else {
-                      nextTrack();
-                      showStatus("⏭");
+                      handleNext();
                     }
                   }}
                   onSwipeDown={() => {
                     if (isOffline) {
                       showOfflineStatus();
                     } else {
-                      previousTrack();
-                      showStatus("⏮");
+                      handlePrevious();
                     }
                   }}
                   isTranslating={lyricsControls.isTranslating}
@@ -507,7 +521,7 @@ export function KaraokeAppComponent({
                   bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-12"}
                   furiganaMap={furiganaMap}
                   soramimiMap={soramimiMap}
-                  currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                  currentTimeMs={(displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                   onSeekToTime={seekToTime}
                   coverUrl={coverUrl}
                 />
@@ -528,7 +542,7 @@ export function KaraokeAppComponent({
                 isVisible={isCoverFlowOpen}
                 ipodMode={false}
                 isPlaying={isPlaying}
-                onTogglePlay={togglePlay}
+                onTogglePlay={handlePlayPause}
                 onPlayTrackInPlace={handleCoverFlowPlayInPlace}
               />
             </div>
@@ -580,7 +594,7 @@ export function KaraokeAppComponent({
           </AnimatePresence>
 
           {/* Listen Together toolbar - top right when in a session, not tied to bottom controls */}
-          {listenSession && !isCoverFlowOpen && (
+          {listenSession && !isCoverFlowOpen && !isSyncModeOpen && (
             <div
               className="absolute top-6 right-6 z-[60] flex justify-end pointer-events-auto"
               onClick={(e) => {
@@ -590,12 +604,18 @@ export function KaraokeAppComponent({
             >
               <ListenSessionToolbar
                 session={listenSession}
+                isRemoteOnly={isListenSessionRemoteOnly}
+                isHost={isListenSessionHost}
                 isDj={isListenSessionDj}
                 isAnonymous={isListenSessionAnonymous}
                 listenerCount={listenListenerCount}
+                currentUsername={listenSessionUsername}
+                currentClientInstanceId={listenSessionClientInstanceId}
                 onShare={() => setIsListenInviteOpen(true)}
                 onLeave={handleLeaveListenSession}
+                onAssignPlaybackDevice={handleAssignPlaybackDevice}
                 onPassDj={handlePassDj}
+                onTransferHost={handleTransferSessionHost}
                 onSendReaction={handleSendReaction}
                 onInteraction={restartAutoHideTimer}
               />
@@ -723,7 +743,7 @@ export function KaraokeAppComponent({
           <div className="absolute inset-0 z-40" style={{ borderRadius: "inherit" }}>
             <LyricsSyncMode
               lines={lyricsControls.originalLines}
-              currentTimeMs={elapsedTime * 1000}
+              currentTimeMs={displayElapsedTime * 1000}
               durationMs={duration * 1000}
               currentOffset={currentTrack?.lyricOffset ?? 0}
               romanization={romanization}
@@ -755,21 +775,25 @@ export function KaraokeAppComponent({
       {isFullScreen && (
         <FullScreenPortal
           onClose={toggleFullScreen}
-          togglePlay={togglePlay}
+          togglePlay={handlePlayPause}
           nextTrack={() => {
-            nextTrack();
-            const newTrack = getCurrentKaraokeTrack();
-            if (newTrack) {
-              const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-              showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+            handleNext();
+            if (!isListenSessionRemoteOnly) {
+              const newTrack = getCurrentKaraokeTrack();
+              if (newTrack) {
+                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+              }
             }
           }}
           previousTrack={() => {
-            previousTrack();
-            const newTrack = getCurrentKaraokeTrack();
-            if (newTrack) {
-              const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-              showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+            handlePrevious();
+            if (!isListenSessionRemoteOnly) {
+              const newTrack = getCurrentKaraokeTrack();
+              if (newTrack) {
+                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+              }
             }
           }}
           seekTime={seekTime}
@@ -796,7 +820,7 @@ export function KaraokeAppComponent({
             lyricsControls.originalLines.length > 0 ? (
               <LyricsSyncMode
                 lines={lyricsControls.originalLines}
-                currentTimeMs={elapsedTime * 1000}
+                currentTimeMs={displayElapsedTime * 1000}
                 durationMs={duration * 1000}
                 currentOffset={currentTrack?.lyricOffset ?? 0}
                 romanization={romanization}
@@ -831,7 +855,11 @@ export function KaraokeAppComponent({
               <div className="relative w-full h-full overflow-hidden">
                 <div
                   className="absolute inset-0 w-full h-full"
-                  style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+                  style={
+                    effectiveDisplayMode !== DisplayMode.Video
+                      ? { visibility: "hidden", pointerEvents: "none" }
+                      : undefined
+                  }
                 >
                   <div
                     className="w-full absolute"
@@ -845,7 +873,7 @@ export function KaraokeAppComponent({
                         <ReactPlayer
                           ref={fullScreenPlayerRef}
                           url={currentTrack.url}
-                          playing={isPlaying && isFullScreen}
+                          playing={isPlaying && isFullScreen && !isListenSessionRemoteOnly}
                           controls
                           width="100%"
                           height="100%"
@@ -882,7 +910,7 @@ export function KaraokeAppComponent({
                 </div>
 
                 {/* Landscape video background (fullscreen) */}
-                {displayMode === DisplayMode.Landscapes && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Landscapes && currentTrack && (
                   <LandscapeVideoBackground
                     isActive={shouldAnimateVisuals}
                     className="fixed inset-0 z-[5]"
@@ -890,7 +918,7 @@ export function KaraokeAppComponent({
                 )}
 
                 {/* Warp shader background (fullscreen) */}
-                {displayMode === DisplayMode.Shader && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Shader && currentTrack && (
                   <AmbientBackground
                     coverUrl={coverUrl}
                     variant="warp"
@@ -900,7 +928,7 @@ export function KaraokeAppComponent({
                 )}
 
                 {/* Mesh gradient background (fullscreen) */}
-                {displayMode === DisplayMode.Mesh && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Mesh && currentTrack && (
                   <MeshGradientBackground
                     coverUrl={coverUrl}
                     isActive={shouldAnimateVisuals}
@@ -909,7 +937,7 @@ export function KaraokeAppComponent({
                 )}
 
                 {/* Water shader background (fullscreen) */}
-                {displayMode === DisplayMode.Water && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Water && currentTrack && (
                   <WaterBackground
                     coverUrl={coverUrl}
                     isActive={shouldAnimateVisuals}
@@ -919,7 +947,9 @@ export function KaraokeAppComponent({
 
                 {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
                 <AnimatePresence>
-                  {currentTrack && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
+                  {currentTrack &&
+                    coverUrl &&
+                    (effectiveDisplayMode === DisplayMode.Cover || !isPlaying) && (
                     <motion.div
                       className="fixed inset-0 z-15"
                       initial={{ opacity: 0 }}
@@ -968,36 +998,40 @@ export function KaraokeAppComponent({
                         const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
                         const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
                         showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                        lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+                        lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
                       }}
                       onSwipeUp={() => {
                         if (isOffline) {
                           showOfflineStatus();
                         } else {
-                          nextTrack();
-                          setTimeout(() => {
-                            const newIndex = (currentIndex + 1) % tracks.length;
-                            const newTrack = tracks[newIndex];
-                            if (newTrack) {
-                              const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                              showStatus(`⏭ ${newTrack.title}${artistInfo}`);
-                            }
-                          }, 150);
+                          handleNext();
+                          if (!isListenSessionRemoteOnly) {
+                            setTimeout(() => {
+                              const newIndex = (currentIndex + 1) % tracks.length;
+                              const newTrack = tracks[newIndex];
+                              if (newTrack) {
+                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+                              }
+                            }, 150);
+                          }
                         }
                       }}
                       onSwipeDown={() => {
                         if (isOffline) {
                           showOfflineStatus();
                         } else {
-                          previousTrack();
-                          setTimeout(() => {
-                            const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
-                            const newTrack = tracks[newIndex];
-                            if (newTrack) {
-                              const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                              showStatus(`⏮ ${newTrack.title}${artistInfo}`);
-                            }
-                          }, 150);
+                          handlePrevious();
+                          if (!isListenSessionRemoteOnly) {
+                            setTimeout(() => {
+                              const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
+                              const newTrack = tracks[newIndex];
+                              if (newTrack) {
+                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+                                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+                              }
+                            }, 150);
+                          }
                         }
                       }}
                       isTranslating={lyricsControls.isTranslating}
@@ -1012,7 +1046,7 @@ export function KaraokeAppComponent({
                       bottomPaddingClass={controlsVisible ? "pb-28" : "pb-16"}
                       furiganaMap={furiganaMap}
                       soramimiMap={soramimiMap}
-                      currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                      currentTimeMs={(displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                       onSeekToTime={seekToTime}
                       coverUrl={coverUrl}
                     />

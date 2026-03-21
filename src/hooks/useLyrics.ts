@@ -404,7 +404,9 @@ export function useLyrics({
 
   useEffect(() => {
     lastTimeRef.current = currentTime;
-    setCurrentLine(calculateCurrentLine(currentTime));
+    const next = calculateCurrentLine(currentTime);
+    // Remote / virtual clock ticks ~10/s; avoid setState when line index unchanged (saves Karaoke re-renders).
+    setCurrentLine((prev) => (prev === next ? prev : next));
   }, [currentTime, calculateCurrentLine]);
 
   const updateCurrentTimeManually = useCallback(

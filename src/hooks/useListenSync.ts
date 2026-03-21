@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type ReactPlayer from "react-player";
 import {
@@ -15,19 +15,26 @@ interface ListenSyncOptions {
   setCurrentTrackId: (trackId: string | null) => void;
   getActivePlayer: () => ReactPlayer | null;
   addTrackFromId?: (trackId: string) => Promise<unknown> | void;
+  /** When false, listener shows session state only (no local A/V sync). */
+  applyListenerPlayback?: boolean;
+  /** Virtual timeline for remotes (seconds). */
+  setVirtualElapsedSeconds?: Dispatch<SetStateAction<number>>;
 }
 
-const HEARTBEAT_INTERVAL_MS = 3000;   // when playing
-const HEARTBEAT_PAUSED_MS = 30000;   // when paused – infrequent since position doesn't change
+const HEARTBEAT_INTERVAL_MS = 3000; // playing and paused — keeps listeners aligned without long gaps
 const MIN_STATE_SYNC_INTERVAL_MS = 2500; // Min interval for "state changed" sync to avoid loop
-const SOFT_SYNC_THRESHOLD_MS = 500;  // Below this, no correction needed
+const SOFT_SYNC_THRESHOLD_MS = 500; // Below this, no correction needed
 const HARD_SEEK_THRESHOLD_MS = 3000; // Above this, hard seek
 const DJ_DISCONNECT_WARNING_MS = 15000; // Show warning after 15s
 const DJ_DISCONNECT_PROMOTE_MS = 30000; // Auto-promote after 30s
+/** Remote-only UI: throttle virtual clock (not every RAF frame). 50ms ≈ smoother lyrics than 100ms without ~60 React updates/s. */
+const VIRTUAL_ELAPSED_TICK_MS = 50;
+/** Sync payloads can be a few 100ms behind local extrapolation; snapping back looks like jitter. Larger jumps = real seek. */
+const VIRTUAL_BACKWARD_IGNORE_SEC = 0.35;
 
 // Soft sync: Adjust playback rate slightly to catch up/slow down
-const SOFT_SYNC_RATE_FAST = 1.05;  // Speed up 5% to catch up
-const SOFT_SYNC_RATE_SLOW = 0.95;  // Slow down 5% to wait
+const SOFT_SYNC_RATE_FAST = 1.05; // Speed up 5% to catch up
+const SOFT_SYNC_RATE_SLOW = 0.95; // Slow down 5% to wait
 
 export function useListenSync({
   currentTrackId,
@@ -37,12 +44,15 @@ export function useListenSync({
   setCurrentTrackId,
   getActivePlayer,
   addTrackFromId,
+  applyListenerPlayback = true,
+  setVirtualElapsedSeconds,
 }: ListenSyncOptions) {
   const {
     currentSession,
     isDj,
     isAnonymous,
     username,
+    clientInstanceId,
     lastSyncPayload,
     lastSyncAt,
     syncSession,
@@ -52,6 +62,7 @@ export function useListenSync({
       isDj: state.isDj,
       isAnonymous: state.isAnonymous,
       username: state.username,
+      clientInstanceId: state.clientInstanceId,
       lastSyncPayload: state.lastSyncPayload,
       lastSyncAt: state.lastSyncAt,
       syncSession: state.syncSession,
@@ -64,6 +75,34 @@ export function useListenSync({
   const broadcastStateRef = useRef<() => Promise<void>>(async () => {});
   const currentPlaybackRateRef = useRef<number>(1.0);
   const djDisconnectWarningShownRef = useRef<boolean>(false);
+  const lastVirtualTrackForSmoothingRef = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!currentSession) {
+      lastVirtualTrackForSmoothingRef.current = undefined;
+    }
+  }, [currentSession]);
+
+  const applySmoothedVirtualElapsed = useCallback(
+    (nextSec: number, trackId: string | null, playing: boolean) => {
+      if (!setVirtualElapsedSeconds) return;
+      setVirtualElapsedSeconds((prev) => {
+        const next = Math.max(0, nextSec);
+        if (lastVirtualTrackForSmoothingRef.current !== trackId) {
+          lastVirtualTrackForSmoothingRef.current = trackId;
+          return next;
+        }
+        if (!playing) {
+          return next;
+        }
+        if (next < prev && prev - next < VIRTUAL_BACKWARD_IGNORE_SEC) {
+          return prev;
+        }
+        return next;
+      });
+    },
+    [setVirtualElapsedSeconds],
+  );
 
   const canBroadcast = useMemo(
     () => Boolean(currentSession?.id && isDj),
@@ -104,8 +143,10 @@ export function useListenSync({
     if (!trackChanged && !playingChanged) return;
 
     const isUnpause = playingChanged && isPlaying;
+    const isPause = playingChanged && !isPlaying;
     const now = Date.now();
-    if (!isUnpause && now - lastSentRef.current < MIN_STATE_SYNC_INTERVAL_MS) return;
+    // Always broadcast play/pause edges so remotes don't wait for throttle or heartbeat
+    if (!isUnpause && !isPause && now - lastSentRef.current < MIN_STATE_SYNC_INTERVAL_MS) return;
 
     prevTrackIdRef.current = currentTrackId;
     prevPlayingRef.current = isPlaying;
@@ -113,20 +154,19 @@ export function useListenSync({
     broadcastState();
   }, [broadcastState, canBroadcast, currentTrackId, isPlaying]);
 
-  // Heartbeat: use ref so interval is not cleared on every re-render; slower when paused
+  // Heartbeat: periodic sync while DJ is connected (playing or paused).
   useEffect(() => {
     if (!canBroadcast) return;
-    const intervalMs = isPlaying ? HEARTBEAT_INTERVAL_MS : HEARTBEAT_PAUSED_MS;
     const id = setInterval(() => {
       broadcastStateRef.current();
-    }, intervalMs);
+    }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [canBroadcast, isPlaying]);
+  }, [canBroadcast]);
 
   // Helper to set playback rate on the internal player
   const setPlaybackRate = useCallback((player: ReactPlayer, rate: number) => {
     if (currentPlaybackRateRef.current === rate) return;
-    
+
     try {
       const internalPlayer = player.getInternalPlayer();
       if (internalPlayer && typeof internalPlayer.playbackRate !== "undefined") {
@@ -139,14 +179,43 @@ export function useListenSync({
   }, []);
 
   // Listener effect: apply sync from DJ to local playback
-  // Skip if: no session, user is the DJ, no sync payload, or sync was sent by self
   useEffect(() => {
     if (!currentSession || !lastSyncPayload) return;
-    
-    // Ignore sync events sent by ourselves (DJ shouldn't apply their own syncs)
-    // This prevents race conditions where the DJ receives their own broadcast
-    const isSelfSync = lastSyncPayload.djUsername === username;
-    if (isDj || isSelfSync) return;
+
+    const source = lastSyncPayload.sourceUsername ?? lastSyncPayload.djUsername;
+    const sourceConn = lastSyncPayload.sourceClientInstanceId;
+    const isSelfOriginated =
+      username != null &&
+      source.toLowerCase() === username.toLowerCase() &&
+      (sourceConn == null
+        ? true
+        : sourceConn === clientInstanceId);
+
+    // Playback tab ignores its own sync echo; still applies updates when another tab of the same user sent them.
+    if (isDj && isSelfOriginated) return;
+
+    if (!applyListenerPlayback) {
+      djDisconnectWarningShownRef.current = false;
+      if (lastSyncPayload.currentTrackId !== currentTrackId) {
+        setCurrentTrackId(lastSyncPayload.currentTrackId);
+      }
+      if (lastSyncPayload.isPlaying !== isPlaying) {
+        setIsPlaying(lastSyncPayload.isPlaying);
+      }
+      if (setVirtualElapsedSeconds) {
+        const now = Date.now();
+        const expectedSec =
+          (lastSyncPayload.positionMs +
+            (lastSyncPayload.isPlaying ? now - lastSyncPayload.timestamp : 0)) /
+          1000;
+        applySmoothedVirtualElapsed(
+          expectedSec,
+          lastSyncPayload.currentTrackId,
+          lastSyncPayload.isPlaying
+        );
+      }
+      return;
+    }
 
     // Reset DJ disconnect warning when we receive a sync
     djDisconnectWarningShownRef.current = false;
@@ -181,29 +250,21 @@ export function useListenSync({
     const driftMs = expectedPosition - currentPosition;
     const absDrift = Math.abs(driftMs);
 
-    // Drift correction strategy:
-    // - <500ms: No correction (acceptable)
-    // - 500ms-3000ms: Soft sync (adjust playback rate)
-    // - >3000ms: Hard seek
     if (absDrift > HARD_SEEK_THRESHOLD_MS) {
-      // Hard seek for large drift
       player.seekTo(expectedPosition / 1000, "seconds");
       setPlaybackRate(player, 1.0);
     } else if (absDrift > SOFT_SYNC_THRESHOLD_MS) {
-      // Soft sync: adjust playback rate to gradually catch up/slow down
       if (driftMs > 0) {
-        // We're behind, speed up
         setPlaybackRate(player, SOFT_SYNC_RATE_FAST);
       } else {
-        // We're ahead, slow down
         setPlaybackRate(player, SOFT_SYNC_RATE_SLOW);
       }
     } else {
-      // Within acceptable range, reset to normal speed
       setPlaybackRate(player, 1.0);
     }
   }, [
     addTrackFromId,
+    applyListenerPlayback,
     currentSession,
     currentTrackId,
     getActivePlayer,
@@ -213,8 +274,29 @@ export function useListenSync({
     setCurrentTrackId,
     setIsPlaying,
     setPlaybackRate,
+    setVirtualElapsedSeconds,
+    applySmoothedVirtualElapsed,
+    clientInstanceId,
     username,
   ]);
+
+  // Virtual timeline tick for remote-only UI (throttled — not every animation frame)
+  useEffect(() => {
+    if (applyListenerPlayback || !setVirtualElapsedSeconds || !lastSyncPayload) return;
+    // Gate on local isPlaying too so we stop immediately on pause (payload can lag one frame).
+    if (!isPlaying || !lastSyncPayload.isPlaying) return;
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      const expectedSec =
+        (lastSyncPayload.positionMs + (now - lastSyncPayload.timestamp)) / 1000;
+      applySmoothedVirtualElapsed(
+        expectedSec,
+        lastSyncPayload.currentTrackId,
+        lastSyncPayload.isPlaying
+      );
+    }, VIRTUAL_ELAPSED_TICK_MS);
+    return () => window.clearInterval(id);
+  }, [applyListenerPlayback, lastSyncPayload, applySmoothedVirtualElapsed, isPlaying]);
 
   // DJ disconnect detection - check if we haven't received sync for too long
   useEffect(() => {
@@ -226,21 +308,17 @@ export function useListenSync({
       const timeSinceLastSync = now - lastSyncAt;
 
       if (timeSinceLastSync > DJ_DISCONNECT_PROMOTE_MS) {
-        // DJ has been disconnected for too long
-        // The server will handle auto-promotion when DJ leaves
-        // For now, just show a persistent warning
         if (!djDisconnectWarningShownRef.current) {
-          toast.warning("DJ may have disconnected", {
-            description: "Waiting for DJ to reconnect or for a new DJ to be assigned.",
+          toast.warning("Playback device may be offline", {
+            description: "Waiting for the device that plays audio to reconnect.",
             duration: 10000,
           });
           djDisconnectWarningShownRef.current = true;
         }
       } else if (timeSinceLastSync > DJ_DISCONNECT_WARNING_MS) {
-        // Show warning
         if (!djDisconnectWarningShownRef.current) {
-          toast.info("DJ connection unstable", {
-            description: "Haven't received updates from DJ in a while.",
+          toast.info("Connection unstable", {
+            description: "Haven't received updates from the playback device in a while.",
             duration: 5000,
           });
           djDisconnectWarningShownRef.current = true;
@@ -248,7 +326,6 @@ export function useListenSync({
       }
     };
 
-    // Check immediately and then every 5 seconds
     checkDjConnection();
     const interval = setInterval(checkDjConnection, 5000);
     return () => clearInterval(interval);

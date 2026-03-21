@@ -184,6 +184,12 @@ export function useKaraokeLogic({
     leaveSession: leaveListenSession,
     syncSession: syncListenSession,
     sendReaction: sendListenReaction,
+    transferHost: transferListenHost,
+    assignDj: assignListenDj,
+    listenClientInstanceId,
+    sendRemotePlaybackCommand,
+    remoteCommandFlushId,
+    takeRemoteCommands,
   } = useListenSessionStore(
     useShallow((state) => ({
       currentSession: state.currentSession,
@@ -196,7 +202,17 @@ export function useKaraokeLogic({
       leaveSession: state.leaveSession,
       syncSession: state.syncSession,
       sendReaction: state.sendReaction,
+      transferHost: state.transferHost,
+      assignDj: state.assignDj,
+      listenClientInstanceId: state.clientInstanceId,
+      sendRemotePlaybackCommand: state.sendRemotePlaybackCommand,
+      remoteCommandFlushId: state.remoteCommandFlushId,
+      takeRemoteCommands: state.takeRemoteCommands,
     }))
+  );
+
+  const listenRemoteOnly = Boolean(
+    listenSession && !isListenSessionDj && !isListenSessionAnonymous
   );
 
   // Compute currentIndex from currentSongId
@@ -238,6 +254,7 @@ export function useKaraokeLogic({
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [virtualListenElapsed, setVirtualListenElapsed] = useState(0);
   const [duration, setDurationLocal] = useState(0);
   const setDuration = useCallback((d: number) => {
     setDurationLocal(d);
@@ -284,6 +301,25 @@ export function useKaraokeLogic({
     [isFullScreen]
   );
 
+  const pushListenState = useCallback(async () => {
+    const activePlayer = getActivePlayer();
+    const positionMs = Math.max(0, (activePlayer?.getCurrentTime() ?? 0) * 1000);
+    return syncListenSession({
+      currentTrackId: currentTrack?.id ?? null,
+      currentTrackMeta,
+      isPlaying,
+      positionMs,
+    });
+  }, [
+    currentTrack,
+    currentTrackMeta,
+    getActivePlayer,
+    isPlaying,
+    syncListenSession,
+  ]);
+
+  const displayElapsedTime = listenRemoteOnly ? virtualListenElapsed : elapsedTime;
+
   useListenSync({
     currentTrackId: currentTrack?.id ?? null,
     currentTrackMeta,
@@ -292,6 +328,8 @@ export function useKaraokeLogic({
     setCurrentTrackId: setCurrentSongId,
     getActivePlayer,
     addTrackFromId: addTrackFromVideoId,
+    applyListenerPlayback: !listenRemoteOnly,
+    setVirtualElapsedSeconds: listenRemoteOnly ? setVirtualListenElapsed : undefined,
   });
   const lyricsSourceOverride = currentTrack?.lyricsSource;
 
@@ -327,7 +365,7 @@ export function useKaraokeLogic({
     songId: currentTrack?.id ?? "",
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
-    currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
+    currentTime: displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
@@ -453,33 +491,75 @@ export function useKaraokeLogic({
   const handlePrevious = useCallback(() => {
     if (isOffline) {
       showOfflineStatus();
+    } else if (listenRemoteOnly) {
+      void sendRemotePlaybackCommand({ action: "previous" }).then((r) => {
+        if (!r.ok) toast.error(r.error ?? "Could not skip");
+      });
+      showStatus("⏮");
     } else {
       startTrackSwitch();
       previousTrack();
       showStatus("⏮");
     }
-  }, [isOffline, showOfflineStatus, previousTrack, showStatus, startTrackSwitch]);
+  }, [
+    isOffline,
+    listenRemoteOnly,
+    previousTrack,
+    sendRemotePlaybackCommand,
+    showOfflineStatus,
+    showStatus,
+    startTrackSwitch,
+  ]);
 
   const handlePlayPause = useCallback(() => {
     // Mark user interaction for autoplay guard
     userHasInteractedRef.current = true;
     if (isOffline) {
       showOfflineStatus();
+    } else if (listenRemoteOnly) {
+      const positionMs = Math.round(displayElapsedTime * 1000);
+      const action = isPlaying ? "pause" : "play";
+      void sendRemotePlaybackCommand({ action, positionMs }).then((r) => {
+        if (!r.ok) toast.error(r.error ?? "Remote control failed");
+      });
+      showStatus(isPlaying ? "⏸" : "▶");
     } else {
       togglePlay();
       showStatus(isPlaying ? "⏸" : "▶");
     }
-  }, [isOffline, showOfflineStatus, togglePlay, showStatus, isPlaying]);
+  }, [
+    displayElapsedTime,
+    isOffline,
+    isPlaying,
+    listenRemoteOnly,
+    sendRemotePlaybackCommand,
+    showOfflineStatus,
+    togglePlay,
+    showStatus,
+  ]);
 
   const handleNext = useCallback(() => {
     if (isOffline) {
       showOfflineStatus();
+    } else if (listenRemoteOnly) {
+      void sendRemotePlaybackCommand({ action: "next" }).then((r) => {
+        if (!r.ok) toast.error(r.error ?? "Could not skip");
+      });
+      showStatus("⏭");
     } else {
       startTrackSwitch();
       nextTrack();
       showStatus("⏭");
     }
-  }, [isOffline, showOfflineStatus, nextTrack, showStatus, startTrackSwitch]);
+  }, [
+    isOffline,
+    listenRemoteOnly,
+    nextTrack,
+    sendRemotePlaybackCommand,
+    showOfflineStatus,
+    showStatus,
+    startTrackSwitch,
+  ]);
 
   useEffect(() => {
     // Always show controls when not playing, menu is open, or sync mode is open
@@ -654,6 +734,7 @@ export function useKaraokeLogic({
 
   // Playback handlers
   const handleTrackEnd = useCallback(() => {
+    if (listenRemoteOnly) return;
     if (loopCurrent) {
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
       activePlayer?.seekTo(0);
@@ -661,45 +742,59 @@ export function useKaraokeLogic({
     } else {
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, isFullScreen, setIsPlaying]);
+  }, [listenRemoteOnly, loopCurrent, nextTrack, isFullScreen, setIsPlaying]);
 
-  const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    setElapsedTime(state.playedSeconds);
-    setStoreElapsedTime(state.playedSeconds);
-  }, [setStoreElapsedTime]);
+  const handleProgress = useCallback(
+    (state: { playedSeconds: number }) => {
+      if (listenRemoteOnly) return;
+      setElapsedTime(state.playedSeconds);
+      setStoreElapsedTime(state.playedSeconds);
+    },
+    [listenRemoteOnly, setStoreElapsedTime]
+  );
 
   const handlePlay = useCallback(() => {
+    if (listenRemoteOnly) return;
     // Don't update state if we're in the middle of a track switch
     if (isTrackSwitchingRef.current) {
       return;
     }
     setIsPlaying(true);
-  }, [setIsPlaying]);
+  }, [listenRemoteOnly, setIsPlaying]);
 
   const handlePause = useCallback(() => {
+    if (listenRemoteOnly) return;
     // Don't update state if we're in the middle of a track switch
     if (isTrackSwitchingRef.current) {
       return;
     }
     setIsPlaying(false);
-  }, [setIsPlaying]);
+  }, [listenRemoteOnly, setIsPlaying]);
 
   // Main player pause handler - ignore pause when switching to fullscreen or switching tracks
   const handleMainPlayerPause = useCallback(() => {
+    if (listenRemoteOnly) return;
     // Don't set isPlaying to false if we're in fullscreen mode or switching tracks
     // (the pause was triggered by switching players, not user action)
     if (!isFullScreen && !isTrackSwitchingRef.current) {
       setIsPlaying(false);
     }
-  }, [isFullScreen, setIsPlaying]);
+  }, [isFullScreen, listenRemoteOnly, setIsPlaying]);
 
   // Handle player ready
   const handleReady = useCallback(() => {}, []);
 
-  // Watchdog for blocked autoplay on iOS Safari
-  // If isPlaying is true but elapsed time hasn't changed, the player needs user interaction
+  // Watchdog for blocked autoplay on iOS Safari (local playback only).
+  // Skip for anyone in a listen session who is not the DJ — playback time comes from sync / virtual clock,
+  // so elapsed can stay flat while isPlaying is true (would wrongly force-pause and desync remote control).
   useEffect(() => {
-    if (!isPlaying || !isIOSSafari || userHasInteractedRef.current) return;
+    if (
+      (listenSession && !isListenSessionDj) ||
+      !isPlaying ||
+      !isIOSSafari ||
+      userHasInteractedRef.current
+    )
+      return;
 
     const startElapsed = elapsedTime;
     const timer = setTimeout(() => {
@@ -710,11 +805,20 @@ export function useKaraokeLogic({
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, elapsedTime, setIsPlaying, showStatus, isIOSSafari]);
+  }, [
+    elapsedTime,
+    isIOSSafari,
+    isListenSessionDj,
+    isPlaying,
+    listenSession,
+    setIsPlaying,
+    showStatus,
+  ]);
 
   // Seek time (delta)
   const seekTime = useCallback(
     (delta: number) => {
+      if (listenRemoteOnly) return;
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
       if (activePlayer) {
         const currentTime = activePlayer.getCurrentTime() || 0;
@@ -725,47 +829,70 @@ export function useKaraokeLogic({
         );
       }
     },
-    [showStatus, isFullScreen]
+    [listenRemoteOnly, showStatus, isFullScreen]
+  );
+
+  const seekActivePlayerToMs = useCallback(
+    (playerTimeMs: number) => {
+      const activePlayer = getActivePlayer();
+      if (!activePlayer) return false;
+
+      isTrackSwitchingRef.current = true;
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
+      }
+
+      const nextTime = Math.max(0, playerTimeMs / 1000);
+      activePlayer.seekTo(nextTime);
+
+      if (!isPlaying) {
+        setIsPlaying(true);
+        const internalPlayer = activePlayer.getInternalPlayer?.();
+        if (internalPlayer && typeof internalPlayer.playVideo === "function") {
+          internalPlayer.playVideo();
+        }
+      }
+
+      trackSwitchTimeoutRef.current = setTimeout(() => {
+        isTrackSwitchingRef.current = false;
+      }, 500);
+
+      return true;
+    },
+    [getActivePlayer, isPlaying, setIsPlaying]
   );
 
   // Seek to absolute time (in ms) and start playing
   // timeMs is in "lyrics time" (player time + offset), so we subtract the offset to get player time
   const seekToTime = useCallback(
     (timeMs: number) => {
-      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-      if (activePlayer) {
-        // Set guard to prevent spurious onPause events during seek from killing playback
-        isTrackSwitchingRef.current = true;
-        if (trackSwitchTimeoutRef.current) {
-          clearTimeout(trackSwitchTimeoutRef.current);
-        }
-        
-        // Subtract lyricOffset to convert from lyrics time to player time
-        const lyricOffset = currentTrack?.lyricOffset ?? 0;
-        const playerTimeMs = timeMs - lyricOffset;
-        const newTime = Math.max(0, playerTimeMs / 1000);
-        activePlayer.seekTo(newTime);
-        
-        // Start playing if paused - also call playVideo() directly for iOS Safari
-        if (!isPlaying) {
-          setIsPlaying(true);
-          // Directly call playVideo on the internal player to ensure it plays
-          const internalPlayer = activePlayer?.getInternalPlayer?.();
-          if (internalPlayer && typeof internalPlayer.playVideo === "function") {
-            internalPlayer.playVideo();
-          }
-        }
+      const lyricOffset = currentTrack?.lyricOffset ?? 0;
+      const playerTimeMs = Math.round(Math.max(0, timeMs - lyricOffset));
+      const newTime = playerTimeMs / 1000;
+
+      if (listenRemoteOnly) {
+        void sendRemotePlaybackCommand({ action: "seek", positionMs: playerTimeMs }).then((r) => {
+          if (!r.ok) toast.error(r.error ?? "Could not seek");
+        });
         showStatus(
           `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
         );
-        
-        // Clear guard after a short delay to allow seek + play to complete
-        trackSwitchTimeoutRef.current = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-        }, 500);
+        return;
+      }
+
+      if (seekActivePlayerToMs(playerTimeMs)) {
+        showStatus(
+          `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
+        );
       }
     },
-    [showStatus, isFullScreen, isPlaying, currentTrack?.lyricOffset, setIsPlaying]
+    [
+      listenRemoteOnly,
+      sendRemotePlaybackCommand,
+      seekActivePlayerToMs,
+      showStatus,
+      currentTrack?.lyricOffset,
+    ]
   );
 
   // Alignment cycle
@@ -916,8 +1043,40 @@ export function useKaraokeLogic({
     setIsListenInviteOpen(false);
   }, [leaveListenSession]);
 
+  const handleAssignPlaybackDevice = useCallback(
+    async (nextDj: string, nextDjClientInstanceId: string) => {
+      const result = await assignListenDj(nextDj, nextDjClientInstanceId);
+      if (!result.ok) {
+        toast.error("Could not set playback device", {
+          description: result.error || "Please try again.",
+        });
+      } else {
+        toast.success("Playback device updated", {
+          description: `@${nextDj} plays audio for the group.`,
+        });
+      }
+    },
+    [assignListenDj]
+  );
+
+  const handleTransferSessionHost = useCallback(
+    async (nextHost: string, nextHostClientInstanceId: string) => {
+      const result = await transferListenHost(nextHost, nextHostClientInstanceId);
+      if (!result.ok) {
+        toast.error("Could not transfer host", {
+          description: result.error || "Please try again.",
+        });
+      }
+    },
+    [transferListenHost]
+  );
+
   const handlePassDj = useCallback(
-    async (nextDj: string) => {
+    async (nextDj: string, nextDjClientInstanceId: string) => {
+      if (isListenSessionHost) {
+        await handleAssignPlaybackDevice(nextDj, nextDjClientInstanceId);
+        return;
+      }
       const activePlayer = getActivePlayer();
       const positionMs = Math.max(0, (activePlayer?.getCurrentTime() ?? 0) * 1000);
       const result = await syncListenSession({
@@ -926,6 +1085,7 @@ export function useKaraokeLogic({
         isPlaying,
         positionMs,
         djUsername: nextDj,
+        djClientInstanceId: nextDjClientInstanceId,
       });
       if (!result.ok) {
         toast.error("Failed to pass DJ", {
@@ -937,8 +1097,108 @@ export function useKaraokeLogic({
         });
       }
     },
-    [currentTrack, currentTrackMeta, getActivePlayer, isPlaying, syncListenSession]
+    [
+      currentTrack,
+      currentTrackMeta,
+      getActivePlayer,
+      handleAssignPlaybackDevice,
+      isListenSessionHost,
+      isPlaying,
+      syncListenSession,
+    ]
   );
+
+  useEffect(() => {
+    if (!isListenSessionDj || !listenSession) return;
+    const cmds = takeRemoteCommands();
+    if (cmds.length === 0) return;
+
+    const run = async () => {
+      let afterSeekMs: number | undefined;
+
+      for (const cmd of cmds) {
+        switch (cmd.action) {
+          case "play": {
+            const pos = cmd.positionMs;
+            if (typeof pos === "number") {
+              const p = getActivePlayer();
+              p?.seekTo(pos / 1000, "seconds");
+              afterSeekMs = pos;
+            }
+            setIsPlaying(true);
+            break;
+          }
+          case "pause": {
+            const pos = cmd.positionMs;
+            if (typeof pos === "number") {
+              const p = getActivePlayer();
+              p?.seekTo(pos / 1000, "seconds");
+              afterSeekMs = pos;
+            }
+            setIsPlaying(false);
+            break;
+          }
+          case "seek": {
+            const pos = cmd.positionMs;
+            if (typeof pos !== "number") break;
+            afterSeekMs = pos;
+            seekActivePlayerToMs(pos);
+            break;
+          }
+          case "next":
+            startTrackSwitch();
+            useKaraokeStore.getState().nextTrack();
+            break;
+          case "previous":
+            startTrackSwitch();
+            useKaraokeStore.getState().previousTrack();
+            break;
+          case "playTrack": {
+            if (!cmd.trackId) break;
+            startTrackSwitch();
+            const existing = useIpodStore.getState().tracks.some((t) => t.id === cmd.trackId);
+            if (!existing) {
+              await useIpodStore
+                .getState()
+                .addTrackFromVideoId(cmd.trackId, false)
+                .catch(() => null);
+            }
+            setCurrentSongId(cmd.trackId);
+            setIsPlaying(true);
+            break;
+          }
+          default:
+            break;
+        }
+      }
+
+      requestAnimationFrame(() => {
+        if (afterSeekMs !== undefined) {
+          getActivePlayer()?.seekTo(afterSeekMs / 1000, "seconds");
+        }
+        void pushListenState().then((r) => {
+          if (!r.ok) {
+            toast.error("Could not sync after remote control", {
+              description: r.error ?? undefined,
+            });
+          }
+        });
+      });
+    };
+
+    void run();
+  }, [
+    getActivePlayer,
+    isListenSessionDj,
+    listenSession,
+    pushListenState,
+    remoteCommandFlushId,
+    seekActivePlayerToMs,
+    setCurrentSongId,
+    setIsPlaying,
+    startTrackSwitch,
+    takeRemoteCommands,
+  ]);
 
   const handleSendReaction = useCallback(
     async (emoji: string) => {
@@ -990,6 +1250,20 @@ export function useKaraokeLogic({
   const handleSongSearchSelect = useCallback(
     async (result: SongSearchResult) => {
       try {
+        if (listenRemoteOnly) {
+          const r = await sendRemotePlaybackCommand({
+            action: "playTrack",
+            trackId: result.videoId,
+            trackMeta: {
+              title: result.title,
+              artist: result.channelTitle,
+              cover: result.thumbnail,
+            },
+          });
+          if (!r.ok) toast.error(r.error ?? "Could not queue track");
+          showStatus(t("apps.ipod.status.added"));
+          return;
+        }
         const url = `https://www.youtube.com/watch?v=${result.videoId}`;
         await handleAddTrack(url);
       } catch (error) {
@@ -997,25 +1271,57 @@ export function useKaraokeLogic({
         showStatus(`❌ ${t("apps.ipod.dialogs.errorAdding")} ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     },
-    [handleAddTrack, showStatus, t]
+    [handleAddTrack, listenRemoteOnly, sendRemotePlaybackCommand, showStatus, t]
   );
 
   const handleAddUrl = useCallback(
     async (url: string) => {
+      if (listenRemoteOnly) {
+        const id = getYouTubeVideoId(url);
+        if (!id) {
+          toast.error("Only YouTube links can be queued remotely");
+          return;
+        }
+        const r = await sendRemotePlaybackCommand({ action: "playTrack", trackId: id });
+        if (!r.ok) toast.error(r.error ?? "Could not queue track");
+        return;
+      }
       await handleAddTrack(url);
     },
-    [handleAddTrack]
+    [handleAddTrack, listenRemoteOnly, sendRemotePlaybackCommand]
   );
 
   // Play track handler for Library menu
-  const handlePlayTrack = useCallback((index: number) => {
-    const trackId = tracks[index]?.id;
-    if (trackId) {
+  const handlePlayTrack = useCallback(
+    (index: number) => {
+      const trackId = tracks[index]?.id;
+      if (!trackId) return;
+      if (listenRemoteOnly) {
+        const tr = tracks[index];
+        void sendRemotePlaybackCommand({
+          action: "playTrack",
+          trackId,
+          trackMeta: tr
+            ? { title: tr.title, artist: tr.artist, cover: tr.cover }
+            : undefined,
+        }).then((r) => {
+          if (!r.ok) toast.error(r.error ?? "Could not queue track");
+        });
+        return;
+      }
       startTrackSwitch();
       setCurrentSongId(trackId);
       setIsPlaying(true);
-    }
-  }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
+    },
+    [
+      listenRemoteOnly,
+      sendRemotePlaybackCommand,
+      setCurrentSongId,
+      setIsPlaying,
+      startTrackSwitch,
+      tracks,
+    ]
+  );
 
   // CoverFlow toggle handler (for long press and menu)
   const handleToggleCoverFlow = useCallback(() => {
@@ -1027,26 +1333,71 @@ export function useKaraokeLogic({
   }, [isCoverFlowOpen, tracks.length]);
 
   // CoverFlow track selection handler
-  const handleCoverFlowSelectTrack = useCallback((index: number) => {
-    const trackId = tracks[index]?.id;
-    if (trackId) {
+  const handleCoverFlowSelectTrack = useCallback(
+    (index: number) => {
+      const trackId = tracks[index]?.id;
+      if (!trackId) return;
+      if (listenRemoteOnly) {
+        const tr = tracks[index];
+        void sendRemotePlaybackCommand({
+          action: "playTrack",
+          trackId,
+          trackMeta: tr
+            ? { title: tr.title, artist: tr.artist, cover: tr.cover }
+            : undefined,
+        }).then((r) => {
+          if (!r.ok) toast.error(r.error ?? "Could not queue track");
+        });
+        setIsCoverFlowOpen(false);
+        return;
+      }
       startTrackSwitch();
       setCurrentSongId(trackId);
       setIsPlaying(true);
       setIsCoverFlowOpen(false);
-    }
-  }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
+    },
+    [
+      listenRemoteOnly,
+      sendRemotePlaybackCommand,
+      setCurrentSongId,
+      setIsCoverFlowOpen,
+      setIsPlaying,
+      startTrackSwitch,
+      tracks,
+    ]
+  );
 
   // Play a track without exiting CoverFlow
-  const handleCoverFlowPlayInPlace = useCallback((index: number) => {
-    const trackId = tracks[index]?.id;
-    if (trackId) {
+  const handleCoverFlowPlayInPlace = useCallback(
+    (index: number) => {
+      const trackId = tracks[index]?.id;
+      if (!trackId) return;
+      if (listenRemoteOnly) {
+        const tr = tracks[index];
+        void sendRemotePlaybackCommand({
+          action: "playTrack",
+          trackId,
+          trackMeta: tr
+            ? { title: tr.title, artist: tr.artist, cover: tr.cover }
+            : undefined,
+        }).then((r) => {
+          if (!r.ok) toast.error(r.error ?? "Could not queue track");
+        });
+        return;
+      }
       startTrackSwitch();
       setCurrentSongId(trackId);
       setIsPlaying(true);
-      // Don't close CoverFlow - stay in place
-    }
-  }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
+    },
+    [
+      listenRemoteOnly,
+      sendRemotePlaybackCommand,
+      setCurrentSongId,
+      setIsPlaying,
+      startTrackSwitch,
+      tracks,
+    ]
+  );
 
   // CoverFlow rotation feedback
   const handleCoverFlowRotation = useCallback(() => {
@@ -1067,6 +1418,8 @@ export function useKaraokeLogic({
         userHasInteractedRef.current = true;
         if (isOffline) {
           showOfflineStatus();
+        } else if (listenRemoteOnly) {
+          handlePlayPause();
         } else {
           togglePlay();
           showStatus(isPlaying ? "⏸" : "▶");
@@ -1077,12 +1430,18 @@ export function useKaraokeLogic({
         seekTime(5);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        previousTrack();
-        showStatus("⏮");
+        if (listenRemoteOnly) handlePrevious();
+        else {
+          previousTrack();
+          showStatus("⏮");
+        }
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        nextTrack();
-        showStatus("⏭");
+        if (listenRemoteOnly) handleNext();
+        else {
+          nextTrack();
+          showStatus("⏭");
+        }
       } else if (e.key === "[" || e.key === "]") {
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
@@ -1090,13 +1449,32 @@ export function useKaraokeLogic({
         const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
         const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
         showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-        lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+        lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isForeground, isPlaying, isOffline, togglePlay, nextTrack, previousTrack, seekTime, showStatus, showOfflineStatus, currentIndex, currentTrack, elapsedTime, lyricsControls, t]);
+  }, [
+    displayElapsedTime,
+    handleNext,
+    handlePlayPause,
+    handlePrevious,
+    isForeground,
+    isPlaying,
+    isOffline,
+    listenRemoteOnly,
+    togglePlay,
+    nextTrack,
+    previousTrack,
+    seekTime,
+    showStatus,
+    showOfflineStatus,
+    currentIndex,
+    currentTrack,
+    lyricsControls,
+    t,
+  ]);
 
   // Handle initial data (shared track) - process video ID to add/play
   useEffect(() => {
@@ -1278,6 +1656,7 @@ export function useKaraokeLogic({
     fullScreenPlayerRef,
     playerRef,
     elapsedTime,
+    displayElapsedTime,
     duration,
     setDuration,
     statusMessage,
@@ -1315,14 +1694,19 @@ export function useKaraokeLogic({
     handleAddTrack,
     processVideoId,
     listenSession,
+    listenSessionUsername: username ?? null,
+    listenSessionClientInstanceId: listenClientInstanceId,
     listenListenerCount,
     isListenSessionHost,
     isListenSessionDj,
+    isListenSessionRemoteOnly: listenRemoteOnly,
     isListenSessionAnonymous,
     handleStartListenSession,
     handleJoinListenSession,
     handleLeaveListenSession,
     handlePassDj,
+    handleAssignPlaybackDevice,
+    handleTransferSessionHost,
     handleSendReaction,
     handleShareSong,
     karaokeGenerateShareUrl,

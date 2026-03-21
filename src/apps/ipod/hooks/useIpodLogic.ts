@@ -26,6 +26,7 @@ import {
   useAudioSettingsStoreShallow,
 } from "@/stores/helpers";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
@@ -196,6 +197,9 @@ export function useIpodLogic({
     ? instances[instanceId]?.isMinimized ?? false
     : false;
   const lastProcessedInitialDataRef = useRef<unknown>(null);
+  const lastProcessedListenSessionRef = useRef<string | null>(null);
+
+  const joinListenSession = useListenSessionStore((s) => s.joinSession);
 
   // Status management
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
@@ -909,12 +913,45 @@ export function useIpodLogic({
     }
   }, [isWindowOpen, initialData, processVideoId, clearIpodInitialData, instanceId]);
 
+  useEffect(() => {
+    if (
+      isWindowOpen &&
+      initialData?.listenSessionId &&
+      typeof initialData.listenSessionId === "string"
+    ) {
+      if (lastProcessedListenSessionRef.current === initialData.listenSessionId) return;
+
+      const sessionIdToProcess = initialData.listenSessionId;
+      setTimeout(() => {
+        joinListenSession(sessionIdToProcess, username || undefined)
+          .then((result) => {
+            if (!result.ok) {
+              toast.error("Failed to join session", {
+                description: result.error || "Please try again.",
+              });
+            }
+            if (instanceId) clearIpodInitialData(instanceId);
+          })
+          .catch((error) => {
+            console.error(`[iPod] Error joining listen session ${sessionIdToProcess}:`, error);
+          });
+      }, 100);
+      lastProcessedListenSessionRef.current = initialData.listenSessionId;
+    }
+  }, [
+    isWindowOpen,
+    initialData,
+    joinListenSession,
+    username,
+    clearIpodInitialData,
+    instanceId,
+  ]);
 
   // Update app event handling
   useEffect(() => {
     return onAppUpdate((event) => {
       const updateInitialData = event.detail.initialData as
-        | { videoId?: string }
+        | { videoId?: string; listenSessionId?: string }
         | undefined;
 
       if (
@@ -936,8 +973,32 @@ export function useIpodLogic({
         });
         lastProcessedInitialDataRef.current = updateInitialData;
       }
+
+      if (
+        event.detail.appId === "ipod" &&
+        updateInitialData?.listenSessionId &&
+        (!event.detail.instanceId || event.detail.instanceId === instanceId)
+      ) {
+        const sessionId = updateInitialData.listenSessionId;
+        if (lastProcessedListenSessionRef.current === sessionId) return;
+        if (instanceId) {
+          bringInstanceToForeground(instanceId);
+        }
+        joinListenSession(sessionId, username || undefined)
+          .then((result) => {
+            if (!result.ok) {
+              toast.error("Failed to join session", {
+                description: result.error || "Please try again.",
+              });
+            }
+          })
+          .catch((error) => {
+            console.error(`[iPod] Error joining listen session ${sessionId}:`, error);
+          });
+        lastProcessedListenSessionRef.current = sessionId;
+      }
     });
-  }, [bringInstanceToForeground, instanceId, processVideoId]);
+  }, [bringInstanceToForeground, instanceId, joinListenSession, processVideoId, username]);
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {

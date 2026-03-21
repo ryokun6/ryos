@@ -22,6 +22,7 @@ import {
   maxDuration,
 } from "../_helpers/_constants.js";
 import type { CreateSessionRequest, ListenSession } from "../_helpers/_types.js";
+import { normalizeClientInstanceId } from "../_helpers/_client-instance.js";
 import { broadcastUserJoined } from "../_helpers/_pusher.js";
 
 export { runtime, maxDuration };
@@ -155,11 +156,14 @@ export default apiHandler(
 
     const sessionId = generateSessionId();
     const now = getCurrentTimestamp();
+    const hostClientId = normalizeClientInstanceId(username, body.clientInstanceId);
 
     const session: ListenSession = {
       id: sessionId,
       hostUsername: username,
+      hostClientInstanceId: hostClientId,
       djUsername: username,
+      djClientInstanceId: hostClientId,
       createdAt: now,
       currentTrackId: null,
       currentTrackMeta: null,
@@ -171,6 +175,7 @@ export default apiHandler(
           username,
           joinedAt: now,
           isOnline: true,
+          clientInstanceId: hostClientId,
         },
       ],
       anonymousListeners: [],
@@ -178,7 +183,7 @@ export default apiHandler(
 
     try {
       await setSession(sessionId, session);
-      await broadcastUserJoined(sessionId, { username });
+      await broadcastUserJoined(sessionId, { username, clientInstanceId: hostClientId });
 
       logger.info("Listen session created", { sessionId, username });
       logger.response(201, Date.now() - startTime);

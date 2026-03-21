@@ -48,7 +48,12 @@ export function ListenSessionInvite({
       setShareUrl("");
       return;
     }
-    setShareUrl(`${baseUrl}/listen/${sessionId}?app=${appType}`);
+    // Default route opens Karaoke; ?app=ipod only when sharing from iPod (if added later)
+    setShareUrl(
+      appType === "ipod"
+        ? `${baseUrl}/listen/${sessionId}?app=ipod`
+        : `${baseUrl}/listen/${sessionId}`
+    );
   }, [appType, baseUrl, isOpen, sessionId]);
 
   useEffect(() => {

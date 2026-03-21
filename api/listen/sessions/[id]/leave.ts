@@ -22,7 +22,12 @@ import {
 import { runtime, maxDuration } from "../../_helpers/_constants.js";
 import type { LeaveSessionRequest } from "../../_helpers/_types.js";
 import {
+  migrateSessionClientIds,
+  normalizeClientInstanceId,
+} from "../../_helpers/_client-instance.js";
+import {
   broadcastDjChanged,
+  broadcastHostChanged,
   broadcastSessionEnded,
   broadcastUserLeft,
 } from "../../_helpers/_pusher.js";
@@ -99,8 +104,15 @@ export default apiHandler(
         return;
       }
 
+      migrateSessionClientIds(session);
+
       if (username) {
-        if (session.hostUsername === username) {
+        const leaveClientId = normalizeClientInstanceId(username, body.clientInstanceId);
+
+        if (
+          session.hostUsername === username &&
+          session.hostClientInstanceId === leaveClientId
+        ) {
           await deleteSession(sessionId);
           await broadcastSessionEnded(sessionId);
 
@@ -110,21 +122,63 @@ export default apiHandler(
           return;
         }
 
-        const userIndex = session.users.findIndex((u) => u.username === username);
-        const wasDj = session.djUsername === username;
+        const userIndex = session.users.findIndex(
+          (u) => u.username === username && u.clientInstanceId === leaveClientId
+        );
+        const wasPlaybackConnection =
+          session.djUsername === username && session.djClientInstanceId === leaveClientId;
         const userExisted = userIndex !== -1;
 
         if (userIndex !== -1) {
           session.users.splice(userIndex, 1);
         }
 
-        if (wasDj) {
-          const nextDj = session.users.sort((a, b) => a.joinedAt - b.joinedAt)[0]?.username;
-          if (nextDj) {
-            const previousDj = session.djUsername;
-            session.djUsername = nextDj;
-            await broadcastDjChanged(sessionId, { previousDj, newDj: nextDj });
+        const hostStillPresent = session.users.some(
+          (u) =>
+            u.username === session.hostUsername &&
+            u.clientInstanceId === session.hostClientInstanceId
+        );
+        if (!hostStillPresent && session.users.length > 0) {
+          const sorted = [...session.users].sort((a, b) => a.joinedAt - b.joinedAt);
+          const newHost = sorted[0];
+          if (newHost) {
+            const previousHost = session.hostUsername;
+            session.hostUsername = newHost.username;
+            session.hostClientInstanceId =
+              newHost.clientInstanceId ??
+              normalizeClientInstanceId(newHost.username, undefined);
+            await broadcastHostChanged(sessionId, {
+              previousHost,
+              newHost: newHost.username,
+              newHostClientInstanceId: session.hostClientInstanceId,
+            });
           }
+        }
+
+        if (wasPlaybackConnection && session.users.length > 0) {
+          const sorted = [...session.users].sort((a, b) => a.joinedAt - b.joinedAt);
+          const sameUserOther = sorted.find((u) => u.username === session.djUsername);
+          const next = sameUserOther ?? sorted[0];
+          if (next) {
+            const previousDj = session.djUsername;
+            session.djUsername = next.username;
+            session.djClientInstanceId =
+              next.clientInstanceId ?? `legacy:${next.username.toLowerCase()}`;
+            await broadcastDjChanged(sessionId, {
+              previousDj,
+              newDj: next.username,
+              newDjClientInstanceId: session.djClientInstanceId,
+            });
+          }
+        }
+
+        if (session.users.length === 0) {
+          await deleteSession(sessionId);
+          await broadcastSessionEnded(sessionId);
+          logger.info("Listen session ended (last member left)", { sessionId });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({ success: true });
+          return;
         }
 
         session.lastSyncAt = getCurrentTimestamp();
@@ -133,7 +187,10 @@ export default apiHandler(
         await setSession(sessionId, session);
 
         if (userExisted) {
-          await broadcastUserLeft(sessionId, { username });
+          await broadcastUserLeft(sessionId, {
+            username,
+            clientInstanceId: leaveClientId,
+          });
         }
 
         logger.info("User left listen session", { sessionId, username });
