@@ -186,6 +186,7 @@ export function useKaraokeLogic({
     sendReaction: sendListenReaction,
     transferHost: transferListenHost,
     assignDj: assignListenDj,
+    listenClientInstanceId,
     sendRemotePlaybackCommand,
     remoteCommandFlushId,
     takeRemoteCommands,
@@ -203,6 +204,7 @@ export function useKaraokeLogic({
       sendReaction: state.sendReaction,
       transferHost: state.transferHost,
       assignDj: state.assignDj,
+      listenClientInstanceId: state.clientInstanceId,
       sendRemotePlaybackCommand: state.sendRemotePlaybackCommand,
       remoteCommandFlushId: state.remoteCommandFlushId,
       takeRemoteCommands: state.takeRemoteCommands,
@@ -1012,8 +1014,8 @@ export function useKaraokeLogic({
   }, [leaveListenSession]);
 
   const handleAssignPlaybackDevice = useCallback(
-    async (nextDj: string) => {
-      const result = await assignListenDj(nextDj);
+    async (nextDj: string, nextDjClientInstanceId: string) => {
+      const result = await assignListenDj(nextDj, nextDjClientInstanceId);
       if (!result.ok) {
         toast.error("Could not set playback device", {
           description: result.error || "Please try again.",
@@ -1028,8 +1030,8 @@ export function useKaraokeLogic({
   );
 
   const handleTransferSessionHost = useCallback(
-    async (nextHost: string) => {
-      const result = await transferListenHost(nextHost);
+    async (nextHost: string, nextHostClientInstanceId: string) => {
+      const result = await transferListenHost(nextHost, nextHostClientInstanceId);
       if (!result.ok) {
         toast.error("Could not transfer host", {
           description: result.error || "Please try again.",
@@ -1040,9 +1042,9 @@ export function useKaraokeLogic({
   );
 
   const handlePassDj = useCallback(
-    async (nextDj: string) => {
+    async (nextDj: string, nextDjClientInstanceId: string) => {
       if (isListenSessionHost) {
-        await handleAssignPlaybackDevice(nextDj);
+        await handleAssignPlaybackDevice(nextDj, nextDjClientInstanceId);
         return;
       }
       const activePlayer = getActivePlayer();
@@ -1053,6 +1055,7 @@ export function useKaraokeLogic({
         isPlaying,
         positionMs,
         djUsername: nextDj,
+        djClientInstanceId: nextDjClientInstanceId,
       });
       if (!result.ok) {
         toast.error("Failed to pass DJ", {
@@ -1654,6 +1657,7 @@ export function useKaraokeLogic({
     processVideoId,
     listenSession,
     listenSessionUsername: username ?? null,
+    listenSessionClientInstanceId: listenClientInstanceId,
     listenListenerCount,
     isListenSessionHost,
     isListenSessionDj,

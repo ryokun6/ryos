@@ -15,6 +15,7 @@ import {
   transferListenSessionHost,
   type ListenRemoteCommandAction,
 } from "@/api/listen";
+import { getListenClientInstanceId } from "@/lib/listenClientInstance";
 export interface ListenTrackMeta {
   title: string;
   artist?: string;
@@ -25,6 +26,7 @@ export interface ListenSessionUser {
   username: string;
   joinedAt: number;
   isOnline: boolean;
+  clientInstanceId?: string;
 }
 
 export interface ListenAnonymousListener {
@@ -35,7 +37,9 @@ export interface ListenAnonymousListener {
 export interface ListenSession {
   id: string;
   hostUsername: string;
+  hostClientInstanceId?: string;
   djUsername: string;
+  djClientInstanceId?: string;
   createdAt: number;
   currentTrackId: string | null;
   currentTrackMeta: ListenTrackMeta | null;
@@ -48,6 +52,7 @@ export interface ListenSession {
 
 export interface ListenRemoteCommandPayload {
   fromUsername: string;
+  fromClientInstanceId?: string;
   action: ListenRemoteCommandAction;
   positionMs?: number;
   trackId?: string;
@@ -61,10 +66,14 @@ export interface ListenSyncPayload {
   isPlaying: boolean;
   positionMs: number;
   timestamp: number;
+  hostUsername?: string;
+  hostClientInstanceId?: string;
   djUsername: string;
+  djClientInstanceId?: string;
   listenerCount: number; // Total listeners (users + anonymous)
   /** Who produced this revision (omit in older payloads — treated as djUsername) */
   sourceUsername?: string;
+  sourceClientInstanceId?: string;
 }
 
 export interface ListenReactionPayload {
@@ -91,6 +100,8 @@ export interface ListenSessionSummary {
 export interface ListenSessionState {
   currentSession: ListenSession | null;
   username: string | null;
+  /** This tab's listen connection id (per-tab sessionStorage) */
+  clientInstanceId: string | null;
   anonymousId: string | null; // For anonymous listeners
   isAnonymous: boolean;
   isHost: boolean;
@@ -124,11 +135,18 @@ export interface ListenSessionState {
     isPlaying: boolean;
     positionMs: number;
     djUsername?: string;
+    djClientInstanceId?: string;
   }) => Promise<{ ok: boolean; error?: string }>;
   sendReaction: (emoji: string) => Promise<{ ok: boolean; error?: string }>;
   clearReactions: () => void;
-  transferHost: (nextHostUsername: string) => Promise<{ ok: boolean; error?: string }>;
-  assignDj: (nextDjUsername: string) => Promise<{ ok: boolean; error?: string }>;
+  transferHost: (
+    nextHostUsername: string,
+    nextHostClientInstanceId: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  assignDj: (
+    nextDjUsername: string,
+    nextDjClientInstanceId: string
+  ) => Promise<{ ok: boolean; error?: string }>;
   sendRemotePlaybackCommand: (args: {
     action: ListenRemoteCommandAction;
     positionMs?: number;
@@ -141,6 +159,7 @@ export interface ListenSessionState {
 const initialState = {
   currentSession: null,
   username: null,
+  clientInstanceId: null,
   anonymousId: null,
   isAnonymous: false,
   isHost: false,
@@ -182,14 +201,21 @@ function getChannelName(sessionId: string): string {
 
 function updateIdentityFlags(
   session: ListenSession | null,
-  username: string | null
+  username: string | null,
+  clientInstanceId: string | null
 ): { isHost: boolean; isDj: boolean } {
-  if (!session || !username) {
+  if (!session || !username || !clientInstanceId) {
     return { isHost: false, isDj: false };
   }
+  const hostMatch =
+    session.hostUsername === username &&
+    session.hostClientInstanceId === clientInstanceId;
+  const djMatch =
+    session.djUsername === username &&
+    session.djClientInstanceId === clientInstanceId;
   return {
-    isHost: session.hostUsername === username,
-    isDj: session.djUsername === username,
+    isHost: hostMatch,
+    isDj: djMatch,
   };
 }
 
@@ -236,79 +262,146 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           isPlaying: normalized.isPlaying,
           positionMs: normalized.positionMs,
           lastSyncAt: normalized.timestamp,
+          ...(normalized.hostUsername != null
+            ? { hostUsername: normalized.hostUsername }
+            : {}),
+          ...(normalized.hostClientInstanceId != null
+            ? { hostClientInstanceId: normalized.hostClientInstanceId }
+            : {}),
+          djUsername: normalized.djUsername,
+          ...(normalized.djClientInstanceId != null
+            ? { djClientInstanceId: normalized.djClientInstanceId }
+            : {}),
         };
         return {
           currentSession: nextSession,
           lastSyncPayload: normalized,
           lastSyncAt: normalized.timestamp,
           listenerCount: normalized.listenerCount ?? state.listenerCount,
-          ...updateIdentityFlags(nextSession, state.username),
-        };
-      });
-    });
-
-    channelRef.bind("user-joined", ({ username }: { username: string }) => {
-      set((state) => {
-        if (!state.currentSession) return {};
-        const existingIndex = state.currentSession.users.findIndex(
-          (user) => user.username === username
-        );
-        const users = [...state.currentSession.users];
-        if (existingIndex === -1) {
-          users.push({
-            username,
-            joinedAt: Date.now(),
-            isOnline: true,
-          });
-        } else {
-          users[existingIndex] = {
-            ...users[existingIndex],
-            isOnline: true,
-          };
-        }
-        users.sort((a, b) => a.joinedAt - b.joinedAt);
-        return {
-          currentSession: {
-            ...state.currentSession,
-            users,
-          },
-        };
-      });
-    });
-
-    channelRef.bind("user-left", ({ username }: { username: string }) => {
-      set((state) => {
-        if (!state.currentSession) return {};
-        const users = state.currentSession.users.filter(
-          (user) => user.username !== username
-        );
-        return {
-          currentSession: {
-            ...state.currentSession,
-            users,
-          },
+          ...updateIdentityFlags(
+            nextSession,
+            state.username,
+            state.clientInstanceId
+          ),
         };
       });
     });
 
     channelRef.bind(
+      "user-joined",
+      ({
+        username,
+        clientInstanceId,
+      }: {
+        username: string;
+        clientInstanceId?: string;
+      }) => {
+        set((state) => {
+          if (!state.currentSession) return {};
+          const cid =
+            clientInstanceId ??
+            `legacy:${username.toLowerCase()}`;
+          const existingIndex = state.currentSession.users.findIndex(
+            (user) =>
+              user.username === username && user.clientInstanceId === cid
+          );
+          const users = [...state.currentSession.users];
+          if (existingIndex === -1) {
+            users.push({
+              username,
+              joinedAt: Date.now(),
+              isOnline: true,
+              clientInstanceId: cid,
+            });
+          } else {
+            users[existingIndex] = {
+              ...users[existingIndex],
+              isOnline: true,
+              clientInstanceId: cid,
+            };
+          }
+          users.sort((a, b) => a.joinedAt - b.joinedAt);
+          return {
+            currentSession: {
+              ...state.currentSession,
+              users,
+            },
+          };
+        });
+      }
+    );
+
+    channelRef.bind(
+      "user-left",
+      ({
+        username,
+        clientInstanceId,
+      }: {
+        username: string;
+        clientInstanceId?: string;
+      }) => {
+        set((state) => {
+          if (!state.currentSession) return {};
+          const cid =
+            clientInstanceId ??
+            `legacy:${username.toLowerCase()}`;
+          const users = state.currentSession.users.filter(
+            (user) =>
+              !(
+                user.username === username &&
+                user.clientInstanceId === cid
+              )
+          );
+          return {
+            currentSession: {
+              ...state.currentSession,
+              users,
+            },
+          };
+        });
+      }
+    );
+
+    channelRef.bind(
       "dj-changed",
-      ({ previousDj, newDj }: { previousDj: string; newDj: string }) => {
+      ({
+        previousDj,
+        newDj,
+        newDjClientInstanceId,
+      }: {
+        previousDj: string;
+        newDj: string;
+        newDjClientInstanceId?: string;
+      }) => {
         remoteCommandBuffer = [];
         set((state) => {
           if (!state.currentSession) return {};
+          const djConn = state.currentSession.users.find(
+            (u) => u.username === newDj
+          );
           const nextSession = {
             ...state.currentSession,
             djUsername: newDj,
+            djClientInstanceId:
+              newDjClientInstanceId ??
+              djConn?.clientInstanceId ??
+              `legacy:${newDj.toLowerCase()}`,
           };
-          if (state.username === newDj) {
+          if (
+            state.username === newDj &&
+            state.clientInstanceId === nextSession.djClientInstanceId
+          ) {
             toast("Playback is on this device", {
               description: `Transferred from @${previousDj}`,
             });
           }
           return {
             currentSession: nextSession,
-            ...updateIdentityFlags(nextSession, state.username),
+            ...updateIdentityFlags(
+              nextSession,
+              state.username,
+              state.clientInstanceId
+            ),
           };
         });
       }
@@ -316,22 +409,44 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
     channelRef.bind(
       "host-changed",
-      ({ previousHost, newHost }: { previousHost: string; newHost: string }) => {
+      ({
+        previousHost,
+        newHost,
+        newHostClientInstanceId,
+      }: {
+        previousHost: string;
+        newHost: string;
+        newHostClientInstanceId?: string;
+      }) => {
         remoteCommandBuffer = [];
         set((state) => {
           if (!state.currentSession) return {};
+          const hostConn = state.currentSession.users.find(
+            (u) => u.username === newHost
+          );
           const nextSession = {
             ...state.currentSession,
             hostUsername: newHost,
+            hostClientInstanceId:
+              newHostClientInstanceId ??
+              hostConn?.clientInstanceId ??
+              `legacy:${newHost.toLowerCase()}`,
           };
-          if (state.username === newHost) {
+          if (
+            state.username === newHost &&
+            state.clientInstanceId === nextSession.hostClientInstanceId
+          ) {
             toast("You're the host now", {
               description: `Host transferred from @${previousHost}`,
             });
           }
           return {
             currentSession: nextSession,
-            ...updateIdentityFlags(nextSession, state.username),
+            ...updateIdentityFlags(
+              nextSession,
+              state.username,
+              state.clientInstanceId
+            ),
           };
         });
       }
@@ -340,6 +455,12 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.bind("remote-command", (payload: ListenRemoteCommandPayload) => {
       const st = get();
       if (!st.currentSession || !st.isDj) return;
+      if (
+        payload.fromUsername === st.username &&
+        payload.fromClientInstanceId === st.clientInstanceId
+      ) {
+        return;
+      }
       remoteCommandBuffer.push(payload);
       set({ remoteCommandFlushId: st.remoteCommandFlushId + 1 });
     });
@@ -355,7 +476,11 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         description: "The host ended the listening session.",
       });
       unsubscribeFromSession();
-      set({ ...initialState, remoteCommandFlushId: 0 });
+      set({
+        ...initialState,
+        clientInstanceId: get().clientInstanceId,
+        remoteCommandFlushId: 0,
+      });
     });
 
     channelRef.bind(
@@ -391,15 +516,17 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
 
       try {
-        const data = await createListenSession(username);
+        const clientInstanceId = getListenClientInstanceId();
+        const data = await createListenSession(username, clientInstanceId);
         const session = data.session as ListenSession;
-        const identity = updateIdentityFlags(session, username);
+        const identity = updateIdentityFlags(session, username, clientInstanceId);
 
         remoteCommandBuffer = [];
         bindChannelEvents(session.id);
         set({
           currentSession: session,
           username,
+          clientInstanceId,
           isConnected: true,
           lastSyncAt: session.lastSyncAt,
           lastSyncPayload: null,
@@ -421,6 +548,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         // If no username, join as anonymous
         const isAnonymous = !username;
         const anonymousId = isAnonymous ? generateAnonymousId() : null;
+        const clientInstanceId = isAnonymous ? null : getListenClientInstanceId();
 
         if (!isAnonymous && username && !hasMatchingAuth(username)) {
           return { ok: false, error: "Authentication required" };
@@ -428,12 +556,14 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
         const data = await joinListenSession(
           sessionId,
-          isAnonymous ? { anonymousId: anonymousId || undefined } : { username }
+          isAnonymous
+            ? { anonymousId: anonymousId || undefined }
+            : { username, clientInstanceId: clientInstanceId || undefined }
         );
         const session = data.session as ListenSession;
         const identity = isAnonymous
           ? { isHost: false, isDj: false }
-          : updateIdentityFlags(session, username!);
+          : updateIdentityFlags(session, username!, clientInstanceId);
 
         // Calculate initial listener count
         const listenerCount =
@@ -444,6 +574,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         set({
           currentSession: session,
           username: username ?? null,
+          clientInstanceId,
           anonymousId,
           isAnonymous,
           isConnected: true,
@@ -464,7 +595,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     leaveSession: async () => {
-      const { currentSession, username, anonymousId, isAnonymous } = get();
+      const { currentSession, username, clientInstanceId, anonymousId, isAnonymous } = get();
       if (!currentSession) {
         return { ok: true };
       }
@@ -472,7 +603,10 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       // Must have either username or anonymousId
       if (!username && !anonymousId) {
         unsubscribeFromSession();
-        set({ ...initialState });
+        set({
+          ...initialState,
+          clientInstanceId: get().clientInstanceId,
+        });
         return { ok: true };
       }
 
@@ -483,11 +617,19 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
         await leaveListenSession(
           currentSession.id,
-          isAnonymous ? { anonymousId: anonymousId || undefined } : { username: username || undefined }
+          isAnonymous
+            ? { anonymousId: anonymousId || undefined }
+            : {
+                username: username || undefined,
+                clientInstanceId: clientInstanceId || undefined,
+              }
         );
 
         unsubscribeFromSession();
-        set({ ...initialState });
+        set({
+          ...initialState,
+          clientInstanceId: get().clientInstanceId,
+        });
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] leaveSession failed", error);
@@ -497,8 +639,8 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     syncSession: async (payload) => {
-      const { currentSession, username } = get();
-      if (!currentSession || !username) {
+      const { currentSession, username, clientInstanceId } = get();
+      if (!currentSession || !username || !clientInstanceId) {
         return { ok: false, error: "No active session" };
       }
 
@@ -511,6 +653,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           currentSession.id,
           {
             username,
+            clientInstanceId,
             state: payload,
           }
         );
@@ -556,9 +699,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       set({ reactions: [] });
     },
 
-    transferHost: async (nextHostUsername: string) => {
-      const { currentSession, username } = get();
-      if (!currentSession || !username) {
+    transferHost: async (nextHostUsername: string, nextHostClientInstanceId: string) => {
+      const { currentSession, username, clientInstanceId } = get();
+      if (!currentSession || !username || !clientInstanceId) {
         return { ok: false, error: "No active session" };
       }
       if (!hasMatchingAuth(username)) {
@@ -567,12 +710,14 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       try {
         const data = await transferListenSessionHost(currentSession.id, {
           username,
+          clientInstanceId,
           nextHostUsername,
+          nextHostClientInstanceId,
         });
         const session = data.session as ListenSession;
         set({
           currentSession: session,
-          ...updateIdentityFlags(session, username),
+          ...updateIdentityFlags(session, username, clientInstanceId),
         });
         return { ok: true };
       } catch (error) {
@@ -582,9 +727,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
     },
 
-    assignDj: async (nextDjUsername: string) => {
-      const { currentSession, username } = get();
-      if (!currentSession || !username) {
+    assignDj: async (nextDjUsername: string, nextDjClientInstanceId: string) => {
+      const { currentSession, username, clientInstanceId } = get();
+      if (!currentSession || !username || !clientInstanceId) {
         return { ok: false, error: "No active session" };
       }
       if (!hasMatchingAuth(username)) {
@@ -593,12 +738,14 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       try {
         const data = await assignListenSessionDj(currentSession.id, {
           username,
+          clientInstanceId,
           nextDjUsername,
+          nextDjClientInstanceId,
         });
         const session = data.session as ListenSession;
         set({
           currentSession: session,
-          ...updateIdentityFlags(session, username),
+          ...updateIdentityFlags(session, username, clientInstanceId),
         });
         return { ok: true };
       } catch (error) {
@@ -609,8 +756,8 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     sendRemotePlaybackCommand: async (args) => {
-      const { currentSession, username, isDj, isAnonymous } = get();
-      if (!currentSession || !username) {
+      const { currentSession, username, clientInstanceId, isDj, isAnonymous } = get();
+      if (!currentSession || !username || !clientInstanceId) {
         return { ok: false, error: "No active session" };
       }
       if (isAnonymous) {
@@ -625,6 +772,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       try {
         await sendListenRemoteCommand(currentSession.id, {
           username,
+          fromClientInstanceId: clientInstanceId,
           ...args,
         });
         return { ok: true };

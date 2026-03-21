@@ -10,6 +10,7 @@ export interface ListenSessionUser {
   username: string;
   joinedAt: number;
   isOnline: boolean;
+  clientInstanceId?: string;
 }
 
 export interface ListenAnonymousListener {
@@ -20,7 +21,9 @@ export interface ListenAnonymousListener {
 export interface ListenSession {
   id: string;
   hostUsername: string;
+  hostClientInstanceId?: string;
   djUsername: string;
+  djClientInstanceId?: string;
   createdAt: number;
   currentTrackId: string | null;
   currentTrackMeta: ListenTrackMeta | null;
@@ -53,18 +56,19 @@ export async function fetchListenSessions(): Promise<{ sessions: ListenSessionSu
 }
 
 export async function createListenSession(
-  username?: string
+  username?: string,
+  clientInstanceId?: string
 ): Promise<{ session: ListenSession }> {
-  return apiRequest<{ session: ListenSession }, { username?: string }>({
+  return apiRequest<{ session: ListenSession }, { username?: string; clientInstanceId?: string }>({
     path: "/api/listen/sessions",
     method: "POST",
-    body: username ? { username } : {},
+    body: username ? { username, clientInstanceId } : {},
   });
 }
 
 export async function joinListenSession(
   sessionId: string,
-  payload: { username?: string; anonymousId?: string }
+  payload: { username?: string; anonymousId?: string; clientInstanceId?: string }
 ): Promise<{ session: ListenSession }> {
   return apiRequest<{ session: ListenSession }, typeof payload>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/join`,
@@ -75,7 +79,7 @@ export async function joinListenSession(
 
 export async function leaveListenSession(
   sessionId: string,
-  payload: { username?: string; anonymousId?: string }
+  payload: { username?: string; anonymousId?: string; clientInstanceId?: string }
 ): Promise<{ success: boolean; session?: ListenSession }> {
   return apiRequest<{ success: boolean; session?: ListenSession }, typeof payload>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/leave`,
@@ -88,12 +92,14 @@ export async function syncListenSession(
   sessionId: string,
   payload: {
     username?: string;
+    clientInstanceId?: string;
     state: {
       currentTrackId: string | null;
       currentTrackMeta: ListenTrackMeta | null;
       isPlaying: boolean;
       positionMs: number;
       djUsername?: string;
+      djClientInstanceId?: string;
     };
   }
 ): Promise<{ success: boolean }> {
@@ -124,7 +130,12 @@ export type ListenRemoteCommandAction =
 
 export async function transferListenSessionHost(
   sessionId: string,
-  payload: { username: string; nextHostUsername: string }
+  payload: {
+    username: string;
+    clientInstanceId?: string;
+    nextHostUsername: string;
+    nextHostClientInstanceId?: string;
+  }
 ): Promise<{ success: boolean; session: ListenSession }> {
   return apiRequest<{ success: boolean; session: ListenSession }, typeof payload>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/transfer-host`,
@@ -135,7 +146,12 @@ export async function transferListenSessionHost(
 
 export async function assignListenSessionDj(
   sessionId: string,
-  payload: { username: string; nextDjUsername: string }
+  payload: {
+    username: string;
+    clientInstanceId?: string;
+    nextDjUsername: string;
+    nextDjClientInstanceId?: string;
+  }
 ): Promise<{ success: boolean; session: ListenSession }> {
   return apiRequest<{ success: boolean; session: ListenSession }, typeof payload>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/assign-dj`,
@@ -148,6 +164,7 @@ export async function sendListenRemoteCommand(
   sessionId: string,
   payload: {
     username: string;
+    fromClientInstanceId?: string;
     action: ListenRemoteCommandAction;
     positionMs?: number;
     trackId?: string;

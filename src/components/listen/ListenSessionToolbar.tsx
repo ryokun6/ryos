@@ -4,6 +4,10 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { ListenSession } from "@/stores/useListenSessionStore";
 import {
+  connectionLabel,
+  makeConnectionKey,
+} from "@/lib/listenClientInstance";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -58,13 +62,14 @@ interface ListenSessionToolbarProps {
   isAnonymous: boolean;
   listenerCount: number;
   currentUsername: string | null;
+  currentClientInstanceId: string | null;
   onShare: () => void;
   onLeave: () => void;
   /** Host: set which device plays audio */
-  onAssignPlaybackDevice: (username: string) => void;
+  onAssignPlaybackDevice: (username: string, clientInstanceId: string) => void;
   /** Non-host DJ: hand off playback to another member (legacy sync path) */
-  onPassDj: (username: string) => void;
-  onTransferHost: (username: string) => void;
+  onPassDj: (username: string, clientInstanceId: string) => void;
+  onTransferHost: (username: string, clientInstanceId: string) => void;
   onSendReaction: (emoji: string) => void;
   onInteraction?: () => void;
   portalContainer?: HTMLElement | null;
@@ -78,6 +83,7 @@ export function ListenSessionToolbar({
   isAnonymous,
   listenerCount,
   currentUsername,
+  currentClientInstanceId,
   onShare,
   onLeave,
   onAssignPlaybackDevice,
@@ -128,6 +134,16 @@ export function ListenSessionToolbar({
 
   const svgSize = 14;
 
+  const playbackValue = makeConnectionKey(
+    session.djUsername,
+    session.djClientInstanceId ??
+      `legacy:${session.djUsername.toLowerCase()}`
+  );
+
+  const isSelfConnection = (u: (typeof session.users)[0]) =>
+    u.username === currentUsername &&
+    u.clientInstanceId === currentClientInstanceId;
+
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {/* Listen Session Status Island – count opens session menu (listeners, Pass DJ, Leave) */}
@@ -161,7 +177,7 @@ export function ListenSessionToolbar({
             side="bottom"
             align="center"
             sideOffset={8}
-            className="px-0 w-40"
+            className="px-0 w-56"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-2 py-1 text-xs text-muted-foreground">
@@ -177,27 +193,39 @@ export function ListenSessionToolbar({
                     : t("apps.karaoke.liveListen.passPlayback")}
                 </div>
                 <DropdownMenuRadioGroup
-                  value={session.djUsername}
-                  onValueChange={(u) => {
+                  value={playbackValue}
+                  onValueChange={(key) => {
                     onInteraction?.();
-                    if (u === session.djUsername) return;
+                    if (key === playbackValue) return;
                     playClick();
-                    if (isHost) onAssignPlaybackDevice(u);
-                    else onPassDj(u);
+                    const pipe = key.indexOf("|");
+                    const uname = pipe === -1 ? key : key.slice(0, pipe);
+                    const cid =
+                      pipe === -1
+                        ? `legacy:${uname.toLowerCase()}`
+                        : key.slice(pipe + 1);
+                    if (isHost) onAssignPlaybackDevice(uname, cid);
+                    else onPassDj(uname, cid);
                   }}
                 >
-                  {session.users.map((user) => (
-                    <DropdownMenuRadioItem
-                      key={user.username}
-                      value={user.username}
-                      className="text-md h-6 pr-3"
-                    >
-                      {user.username}
-                      {user.username === session.djUsername
-                        ? ` (${t("apps.karaoke.liveListen.playbackBadge")})`
-                        : ""}
-                    </DropdownMenuRadioItem>
-                  ))}
+                  {session.users.map((user) => {
+                    const cid =
+                      user.clientInstanceId ??
+                      `legacy:${user.username.toLowerCase()}`;
+                    const key = makeConnectionKey(user.username, cid);
+                    return (
+                      <DropdownMenuRadioItem
+                        key={key}
+                        value={key}
+                        className="text-md h-6 pr-3"
+                      >
+                        {connectionLabel(user.username, cid)}
+                        {key === playbackValue
+                          ? ` (${t("apps.karaoke.liveListen.playbackBadge")})`
+                          : ""}
+                      </DropdownMenuRadioItem>
+                    );
+                  })}
                 </DropdownMenuRadioGroup>
               </>
             )}
@@ -208,20 +236,25 @@ export function ListenSessionToolbar({
                   {t("apps.karaoke.liveListen.makeHost")}
                 </div>
                 {session.users
-                  .filter((u) => u.username !== currentUsername)
-                  .map((user) => (
-                    <DropdownMenuItem
-                      key={`host-${user.username}`}
-                      onClick={() => {
-                        onInteraction?.();
-                        playClick();
-                        onTransferHost(user.username);
-                      }}
-                      className="text-md h-6"
-                    >
-                      @{user.username}
-                    </DropdownMenuItem>
-                  ))}
+                  .filter((u) => !isSelfConnection(u))
+                  .map((user) => {
+                    const cid =
+                      user.clientInstanceId ??
+                      `legacy:${user.username.toLowerCase()}`;
+                    return (
+                      <DropdownMenuItem
+                        key={`host-${makeConnectionKey(user.username, cid)}`}
+                        onClick={() => {
+                          onInteraction?.();
+                          playClick();
+                          onTransferHost(user.username, cid);
+                        }}
+                        className="text-md h-6"
+                      >
+                        {connectionLabel(user.username, cid)}
+                      </DropdownMenuItem>
+                    );
+                  })}
               </>
             )}
             <DropdownMenuSeparator />

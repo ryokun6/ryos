@@ -49,6 +49,7 @@ export function useListenSync({
     isDj,
     isAnonymous,
     username,
+    clientInstanceId,
     lastSyncPayload,
     lastSyncAt,
     syncSession,
@@ -58,6 +59,7 @@ export function useListenSync({
       isDj: state.isDj,
       isAnonymous: state.isAnonymous,
       username: state.username,
+      clientInstanceId: state.clientInstanceId,
       lastSyncPayload: state.lastSyncPayload,
       lastSyncAt: state.lastSyncAt,
       syncSession: state.syncSession,
@@ -149,11 +151,15 @@ export function useListenSync({
     if (!currentSession || !lastSyncPayload) return;
 
     const source = lastSyncPayload.sourceUsername ?? lastSyncPayload.djUsername;
+    const sourceConn = lastSyncPayload.sourceClientInstanceId;
     const isSelfOriginated =
-      username != null && source.toLowerCase() === username.toLowerCase();
+      username != null &&
+      source.toLowerCase() === username.toLowerCase() &&
+      (sourceConn == null
+        ? true
+        : sourceConn === clientInstanceId);
 
-    // DJ ignores self-originated syncs (their own broadcasts). Playback device also applies
-    // server revisions from remote commands (source !== dj) so queue/skip from remotes applies locally.
+    // Playback tab ignores its own sync echo; still applies updates when another tab of the same user sent them.
     if (isDj && isSelfOriginated) return;
 
     if (!applyListenerPlayback) {
@@ -233,6 +239,7 @@ export function useListenSync({
     setIsPlaying,
     setPlaybackRate,
     setVirtualElapsedSeconds,
+    clientInstanceId,
     username,
   ]);
 

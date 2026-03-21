@@ -120,6 +120,7 @@ export function KaraokeAppComponent({
     translationLanguages,
     listenSession,
     listenSessionUsername,
+    listenSessionClientInstanceId,
     listenListenerCount,
     isListenSessionHost,
     isListenSessionDj,
@@ -599,6 +600,7 @@ export function KaraokeAppComponent({
                 isAnonymous={isListenSessionAnonymous}
                 listenerCount={listenListenerCount}
                 currentUsername={listenSessionUsername}
+                currentClientInstanceId={listenSessionClientInstanceId}
                 onShare={() => setIsListenInviteOpen(true)}
                 onLeave={handleLeaveListenSession}
                 onAssignPlaybackDevice={handleAssignPlaybackDevice}
