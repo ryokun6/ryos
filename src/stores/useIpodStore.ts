@@ -18,6 +18,7 @@ import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
+import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -44,6 +45,12 @@ export interface Track {
   lyricOffset?: number;
   /** Selected lyrics source from Kugou (user override) */
   lyricsSource?: LyricsSource;
+  /** Server/library creation time (ms); used for All Songs order (newest first) */
+  createdAt?: number;
+  /** Stable sequence when createdAt ties (e.g. bulk import index) */
+  importOrder?: number;
+  /** Last metadata update from server (ms); tiebreaker for list order */
+  updatedAt?: number;
 }
 
 type LibraryState = "uninitialized" | "loaded" | "cleared";
@@ -98,6 +105,8 @@ interface IpodData {
 // In-memory cache for iPod tracks data
 let cachedIpodData: { tracks: Track[]; version: number } | null = null;
 let ipodDataPromise: Promise<{ tracks: Track[]; version: number }> | null = null;
+/** Only the latest load may write `cachedIpodData` (avoids stale force-refresh overwrites). */
+let ipodLoadGeneration = 0;
 
 /**
  * Preload iPod tracks data early (can be called before React mounts).
@@ -127,6 +136,8 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
     return ipodDataPromise;
   }
   
+  const thisGeneration = ++ipodLoadGeneration;
+
   // Start new fetch
   const fetchPromise = (async () => {
     try {
@@ -145,13 +156,21 @@ async function loadDefaultTracks(forceRefresh = false): Promise<{
         cover: song.cover,
         lyricOffset: song.lyricOffset,
         lyricsSource: song.lyricsSource,
+        createdAt: song.createdAt,
+        importOrder: song.importOrder,
+        updatedAt: song.updatedAt,
       }));
       // Use the latest createdAt timestamp as version (or 1 if empty)
       const version = cachedSongs.length > 0 
         ? Math.max(...cachedSongs.map((s) => s.createdAt || 1))
         : 1;
-      cachedIpodData = { tracks, version };
-      return cachedIpodData;
+      const payload = { tracks, version };
+      if (thisGeneration === ipodLoadGeneration) {
+        cachedIpodData = payload;
+        return payload;
+      }
+      // A newer load won the race; prefer latest cache so awaiters do not apply stale tracks.
+      return cachedIpodData ?? payload;
     } catch (err) {
       console.error("Failed to load tracks from cache", err);
       return { tracks: [], version: 1 };
@@ -633,7 +652,15 @@ export const useIpodStore = create<IpodState>()(
       setTheme: (theme) => set({ theme }),
       addTrack: (track) =>
         set((state) => ({
-          tracks: [track, ...state.tracks],
+          tracks: [
+            {
+              ...track,
+              createdAt: track.createdAt ?? Date.now(),
+              importOrder: track.importOrder ?? 0,
+              updatedAt: track.updatedAt ?? Date.now(),
+            },
+            ...state.tracks,
+          ],
           currentSongId: track.id,
           currentLyrics: null,
           currentFuriganaMap: null,
@@ -1047,6 +1074,9 @@ export const useIpodStore = create<IpodState>()(
               cover: cachedMetadata.cover,
               lyricOffset: cachedMetadata.lyricOffset ?? 500,
               lyricsSource: cachedMetadata.lyricsSource,
+              createdAt: cachedMetadata.createdAt,
+              importOrder: cachedMetadata.importOrder,
+              updatedAt: cachedMetadata.updatedAt,
             };
 
             try {
@@ -1225,7 +1255,7 @@ export const useIpodStore = create<IpodState>()(
           let newTracksAdded = 0;
           let tracksUpdated = 0;
 
-          // Process existing tracks: update metadata if track exists on server
+          // Process existing tracks: merge server timestamps + metadata when on server
           const updatedTracks = current.tracks.map((currentTrack) => {
             const serverTrack = serverTrackMap.get(currentTrack.id);
             if (serverTrack) {
@@ -1247,25 +1277,38 @@ export const useIpodStore = create<IpodState>()(
                   currentTrack.lyricsSource.hash !== serverTrack.lyricsSource.hash
                 );
 
+              const mergedCreatedAt = Math.max(
+                currentTrack.createdAt ?? 0,
+                serverTrack.createdAt ?? 0
+              );
+              const mergedUpdatedAt = Math.max(
+                currentTrack.updatedAt ?? 0,
+                serverTrack.updatedAt ?? 0
+              );
+              const mergedBase = {
+                ...currentTrack,
+                createdAt: mergedCreatedAt || undefined,
+                updatedAt: mergedUpdatedAt || undefined,
+                importOrder: serverTrack.importOrder ?? currentTrack.importOrder,
+              };
+
               if (hasMetadataChanges || shouldUpdateLyricsSource) {
                 tracksUpdated++;
-                // Update with server metadata but preserve any user customizations we want to keep
                 return {
-                  ...currentTrack,
+                  ...mergedBase,
                   title: serverTrack.title,
                   artist: serverTrack.artist,
                   album: serverTrack.album,
                   cover: serverTrack.cover,
                   url: serverTrack.url,
                   lyricOffset: serverTrack.lyricOffset,
-                  // Update lyricsSource from server if it's new or different
                   ...(shouldUpdateLyricsSource && {
                     lyricsSource: serverTrack.lyricsSource,
                   }),
                 };
               }
+              return mergedBase;
             }
-            // Return unchanged track (either no server version or no changes)
             return currentTrack;
           });
 
@@ -1276,8 +1319,11 @@ export const useIpodStore = create<IpodState>()(
           );
           newTracksAdded = tracksToAdd.length;
 
-          // Combine new tracks (at top) with updated existing tracks
-          let finalTracks = [...tracksToAdd, ...updatedTracks];
+          // Union then sort like GET /api/songs (newest first, then importOrder)
+          let finalTracks = sortTracksLikeServerOrder([
+            ...tracksToAdd,
+            ...updatedTracks,
+          ]);
 
           // Fetch metadata for tracks not in the default library
           // These are user-added tracks that might have updated metadata in Redis
@@ -1313,6 +1359,9 @@ export const useIpodStore = create<IpodState>()(
                   cover?: string;
                   lyricOffset?: number;
                   lyricsSource?: LyricsSource;
+                  createdAt?: number;
+                  importOrder?: number;
+                  updatedAt?: number;
                 };
                 const fetchedMap = new Map<string, FetchedSongMetadata>(
                   fetchedSongs.map((s: FetchedSongMetadata) => [s.id, s])
@@ -1348,6 +1397,15 @@ export const useIpodStore = create<IpodState>()(
                         album: fetched.album ?? track.album,
                         cover: fetched.cover ?? track.cover,
                         lyricOffset: fetched.lyricOffset ?? track.lyricOffset,
+                        createdAt: Math.max(
+                          track.createdAt ?? 0,
+                          fetched.createdAt ?? 0
+                        ) || undefined,
+                        importOrder: fetched.importOrder ?? track.importOrder,
+                        updatedAt: Math.max(
+                          track.updatedAt ?? 0,
+                          fetched.updatedAt ?? 0
+                        ) || undefined,
                         // Update lyricsSource from server if it's new or different
                         ...(shouldUpdateLyricsSource && {
                           lyricsSource: fetched.lyricsSource,
@@ -1355,7 +1413,20 @@ export const useIpodStore = create<IpodState>()(
                       };
                     }
                   }
-                  return track;
+                  const mergedCreated = Math.max(
+                    track.createdAt ?? 0,
+                    fetched?.createdAt ?? 0
+                  );
+                  const mergedUpdated = Math.max(
+                    track.updatedAt ?? 0,
+                    fetched?.updatedAt ?? 0
+                  );
+                  return {
+                    ...track,
+                    createdAt: mergedCreated || undefined,
+                    importOrder: fetched?.importOrder ?? track.importOrder,
+                    updatedAt: mergedUpdated || undefined,
+                  };
                 });
               }
             } catch (error) {
@@ -1363,8 +1434,14 @@ export const useIpodStore = create<IpodState>()(
             }
           }
 
+          finalTracks = sortTracksLikeServerOrder(finalTracks);
+
+          const orderChanged =
+            finalTracks.length !== current.tracks.length ||
+            finalTracks.some((t, i) => t.id !== current.tracks[i]?.id);
+
           // Update store if there were any changes
-          if (newTracksAdded > 0 || tracksUpdated > 0) {
+          if (newTracksAdded > 0 || tracksUpdated > 0 || orderChanged) {
             const nextCurrentSongId =
               wasEmpty && finalTracks.length > 0
                 ? finalTracks[0]?.id ?? null
