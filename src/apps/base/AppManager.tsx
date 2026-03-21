@@ -182,7 +182,10 @@ export function AppManager({ apps }: AppManagerProps) {
 
   // Process shared URLs and direct app launch paths
   useEffect(() => {
-    const routeAction = resolveInitialRoute(window.location.pathname);
+    const routeAction = resolveInitialRoute(
+      window.location.pathname,
+      window.location.search
+    );
 
     if (!routeAction) {
       return;

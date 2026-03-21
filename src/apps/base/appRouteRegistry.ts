@@ -23,6 +23,12 @@ export type RouteAction =
 
 const KNOWN_APP_IDS = new Set<string>(appIds);
 
+/** Strip trailing slash; keep leading slash for matching */
+function normalizePathname(pathname: string): string {
+  if (!pathname || pathname === "/") return pathname;
+  return pathname.replace(/\/+$/, "") || "/";
+}
+
 function createLaunchAction(
   request: AppLaunchRequest,
   options: {
@@ -40,12 +46,21 @@ function createLaunchAction(
   };
 }
 
-export function resolveInitialRoute(pathname: string): RouteAction | null {
+export function resolveInitialRoute(
+  pathname: string,
+  search?: string
+): RouteAction | null {
+  pathname = normalizePathname(pathname);
   if (!pathname || pathname === "/") {
     return null;
   }
 
-  if (pathname === "/applet-viewer" || pathname === "/applet-viewer/") {
+  const searchParams =
+    typeof search === "string" && search.length > 0
+      ? new URLSearchParams(search.startsWith("?") ? search.slice(1) : search)
+      : null;
+
+  if (pathname === "/applet-viewer") {
     return createLaunchAction(
       { appId: "applet-viewer" },
       {
@@ -123,13 +138,17 @@ export function resolveInitialRoute(pathname: string): RouteAction | null {
     );
   }
 
-  const listenMatch = pathname.match(/^\/listen\/(.+)$/);
+  const listenMatch = pathname.match(/^\/listen\/([^/?#]+)$/);
   if (listenMatch) {
+    const listenSessionId = listenMatch[1];
+    const appHint = searchParams?.get("app")?.toLowerCase();
+    const targetAppId: AppId = appHint === "ipod" ? "ipod" : "karaoke";
+
     return createLaunchAction(
       {
-        appId: "karaoke",
+        appId: targetAppId,
         initialData: {
-          listenSessionId: listenMatch[1],
+          listenSessionId,
         },
       },
       {
