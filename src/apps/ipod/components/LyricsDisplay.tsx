@@ -925,9 +925,10 @@ function WordTimingHighlight({
       const clampedElapsed = Math.min(elapsed, 500); // Max 500ms interpolation
       const rawTime = timeRef.current.propTime + clampedElapsed;
       
-      // Monotonic time: ignore small backward jitter (remote sync / prop noise); larger = real seek
+      // Monotonic time: ignore tiny backward jitter between progress ticks (~200ms). Keep at 100ms so local
+      // playback stays smooth; larger remote-only drift is smoothed in useListenSync, not here.
       const lastDisplayed = timeRef.current.lastDisplayedTime;
-      const isSeek = lastDisplayed - rawTime >= 300;
+      const isSeek = lastDisplayed - rawTime >= 100;
       const interpolatedTime = isSeek || rawTime >= lastDisplayed ? rawTime : lastDisplayed;
       timeRef.current.lastDisplayedTime = interpolatedTime;
       
