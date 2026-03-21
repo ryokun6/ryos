@@ -53,6 +53,8 @@ export function useLibraryUpdateChecker(isActive: boolean) {
           cover: song.cover,
           lyricOffset: song.lyricOffset,
           lyricsSource: song.lyricsSource,
+          createdAt: song.createdAt,
+          importOrder: song.importOrder,
         }));
         const serverVersion = Math.max(...cachedSongs.map((s) => s.createdAt || 1));
 
@@ -84,6 +86,8 @@ export function useLibraryUpdateChecker(isActive: boolean) {
               currentTrack.cover !== serverTrack.cover ||
               currentTrack.url !== serverTrack.url ||
               currentTrack.lyricOffset !== serverTrack.lyricOffset ||
+              currentTrack.createdAt !== serverTrack.createdAt ||
+              currentTrack.importOrder !== serverTrack.importOrder ||
               shouldUpdateLyricsSource;
             if (hasChanges) tracksUpdated++;
           }
