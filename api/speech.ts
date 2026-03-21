@@ -5,9 +5,7 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import {
   DEFAULT_ELEVENLABS_MODEL_ID,
-  DEFAULT_ELEVENLABS_OUTPUT_FORMAT,
   DEFAULT_ELEVENLABS_VOICE_ID,
-  DEFAULT_ELEVENLABS_VOICE_SETTINGS,
   DEFAULT_OPENAI_TTS_SPEED,
   DEFAULT_OPENAI_TTS_VOICE,
   DEFAULT_TTS_MODEL,

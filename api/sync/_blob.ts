@@ -406,7 +406,9 @@ export async function saveBlobDomainMetadata(
       if (previousStorageUrl && !nextStorageUrls.has(previousStorageUrl)) {
         try {
           await deleteStoredObject(previousStorageUrl);
-        } catch {}
+        } catch (error) {
+          void error;
+        }
       }
 
       for (const item of Object.values(previousItems)) {
@@ -417,7 +419,9 @@ export async function saveBlobDomainMetadata(
 
         try {
           await deleteStoredObject(previousItemStorageUrl);
-        } catch {}
+        } catch (error) {
+          void error;
+        }
       }
 
       existing[body.domain] = {
@@ -469,7 +473,9 @@ export async function saveBlobDomainMetadata(
       if (previousStorageUrl && previousStorageUrl !== legacyStorageUrl) {
         try {
           await deleteStoredObject(previousStorageUrl);
-        } catch {}
+        } catch (error) {
+          void error;
+        }
       }
 
       for (const item of Object.values(previous?.items ?? {})) {
@@ -480,7 +486,9 @@ export async function saveBlobDomainMetadata(
 
         try {
           await deleteStoredObject(previousItemStorageUrl);
-        } catch {}
+        } catch (error) {
+          void error;
+        }
       }
 
       existing[body.domain] = {

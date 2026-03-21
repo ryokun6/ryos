@@ -30,7 +30,7 @@ interface PersistedSongsLegacyState extends SongsStateMetadata {
   data?: unknown;
 }
 
-interface WriteSongsStateOptions extends Partial<SongsStateMetadata> {}
+type WriteSongsStateOptions = Partial<SongsStateMetadata>;
 
 function syncMetaKey(username: string): string {
   return redisStateMetaKey(username);

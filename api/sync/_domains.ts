@@ -24,7 +24,6 @@ import {
   type PutStateBody,
 } from "./_state.js";
 import {
-  extractPhysicalSyncDomainMetadata,
   getPhysicalSyncDomainPayload,
   putPhysicalSyncDomain,
   type PhysicalSyncDomainPayload,

@@ -120,6 +120,7 @@ export function useKaraokeLogic({
   // Ref to track processed initial data
   const lastProcessedInitialDataRef = useRef<typeof initialData | null>(null);
   const lastProcessedListenSessionRef = useRef<string | null>(null);
+  const pendingRemoteTrackHydrationRef = useRef<string | null>(null);
 
   // Independent playback state from Karaoke store (not shared with iPod)
   const {
@@ -215,12 +216,22 @@ export function useKaraokeLogic({
     listenSession && !isListenSessionDj && !isListenSessionAnonymous
   );
 
-  // Compute currentIndex from currentSongId
+  const activeTrackId = listenRemoteOnly
+    ? listenSession?.currentTrackId ?? null
+    : currentSongId;
+  const activeListenTrackMeta = listenRemoteOnly
+    ? listenSession?.currentTrackMeta ?? null
+    : null;
+
+  // In remote-only listen mode, the session track is the source of truth.
   const currentIndex = useMemo(() => {
-    if (!currentSongId) return tracks.length > 0 ? 0 : -1;
-    const index = tracks.findIndex((t) => t.id === currentSongId);
-    return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
-  }, [tracks, currentSongId]);
+    if (!activeTrackId) {
+      return listenRemoteOnly ? -1 : (tracks.length > 0 ? 0 : -1);
+    }
+    const index = tracks.findIndex((t) => t.id === activeTrackId);
+    if (index >= 0) return index;
+    return listenRemoteOnly ? -1 : (tracks.length > 0 ? 0 : -1);
+  }, [activeTrackId, listenRemoteOnly, tracks]);
 
   // Dialog state
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
@@ -283,7 +294,32 @@ export function useKaraokeLogic({
   const userHasInteractedRef = useRef(false);
 
   // Current track
-  const currentTrack: Track | null = tracks[currentIndex] || null;
+  const currentTrack = useMemo<Track | null>(() => {
+    if (activeTrackId) {
+      const matchedTrack = tracks.find((track) => track.id === activeTrackId);
+      if (matchedTrack) return matchedTrack;
+    }
+    if (listenRemoteOnly && activeTrackId && activeListenTrackMeta) {
+      return {
+        id: activeTrackId,
+        url: `https://www.youtube.com/watch?v=${activeTrackId}`,
+        title: activeListenTrackMeta.title,
+        artist: activeListenTrackMeta.artist,
+        cover: activeListenTrackMeta.cover,
+        lyricOffset: 500,
+      };
+    }
+    if (!listenRemoteOnly && currentIndex >= 0) {
+      return tracks[currentIndex] ?? null;
+    }
+    return null;
+  }, [
+    activeListenTrackMeta,
+    activeTrackId,
+    currentIndex,
+    listenRemoteOnly,
+    tracks,
+  ]);
   const currentTrackMeta = useMemo(
     () =>
       currentTrack
@@ -295,6 +331,64 @@ export function useKaraokeLogic({
         : null,
     [currentTrack]
   );
+
+  useEffect(() => {
+    if (!listenRemoteOnly) {
+      pendingRemoteTrackHydrationRef.current = null;
+      return;
+    }
+
+    if (!activeTrackId) {
+      pendingRemoteTrackHydrationRef.current = null;
+      if (currentSongId !== null) {
+        setCurrentSongId(null);
+      }
+      return;
+    }
+
+    if (tracks.some((track) => track.id === activeTrackId)) {
+      pendingRemoteTrackHydrationRef.current = null;
+      if (currentSongId !== activeTrackId) {
+        setCurrentSongId(activeTrackId);
+      }
+      return;
+    }
+
+    if (pendingRemoteTrackHydrationRef.current === activeTrackId) {
+      return;
+    }
+
+    pendingRemoteTrackHydrationRef.current = activeTrackId;
+    let cancelled = false;
+
+    void addTrackFromVideoId(activeTrackId, false)
+      .then((addedTrack) => {
+        if (cancelled || addedTrack?.id !== activeTrackId) return;
+        setCurrentSongId(activeTrackId);
+      })
+      .catch((error) => {
+        console.warn(
+          `[Karaoke] Failed to hydrate remote listen track ${activeTrackId}:`,
+          error
+        );
+      })
+      .finally(() => {
+        if (!cancelled && pendingRemoteTrackHydrationRef.current === activeTrackId) {
+          pendingRemoteTrackHydrationRef.current = null;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeTrackId,
+    addTrackFromVideoId,
+    currentSongId,
+    listenRemoteOnly,
+    setCurrentSongId,
+    tracks,
+  ]);
 
   const getActivePlayer = useCallback(
     () => (isFullScreen ? fullScreenPlayerRef.current : playerRef.current),
@@ -1492,11 +1586,27 @@ export function useKaraokeLogic({
           });
       }, 100);
       lastProcessedInitialDataRef.current = initialData;
-    } else if (isWindowOpen && tracks.length > 0 && currentSongId && !tracks.some((t) => t.id === currentSongId)) {
+    } else if (
+      isWindowOpen &&
+      !listenRemoteOnly &&
+      tracks.length > 0 &&
+      currentSongId &&
+      !tracks.some((t) => t.id === currentSongId)
+    ) {
       // Reset to first track if current song no longer exists in library
       setCurrentSongId(tracks[0]?.id ?? null);
     }
-  }, [isWindowOpen, initialData, processVideoId, clearInstanceInitialData, instanceId, tracks, currentSongId, setCurrentSongId]);
+  }, [
+    isWindowOpen,
+    initialData,
+    listenRemoteOnly,
+    processVideoId,
+    clearInstanceInitialData,
+    instanceId,
+    tracks,
+    currentSongId,
+    setCurrentSongId,
+  ]);
 
   useEffect(() => {
     if (

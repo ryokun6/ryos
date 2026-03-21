@@ -1,4 +1,3 @@
-import type { VercelRequest } from "@vercel/node";
 import {
   streamText,
   generateText,

@@ -1587,8 +1587,8 @@ async function prepareFilesMetadataDomainWrite(
 
   if (!remoteSnapshot?.data) {
     const envelope = await createCloudSyncEnvelope(domain, providedDb);
-    let data = envelope.data;
-    let baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
+    const data = envelope.data;
+    const baseMetadata = useCloudSyncStore.getState().remoteMetadata[domain];
     return {
       domain,
       payload: {
