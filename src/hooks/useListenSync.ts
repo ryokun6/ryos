@@ -285,7 +285,8 @@ export function useListenSync({
   // Virtual timeline tick for remote-only UI (throttled — not every animation frame)
   useEffect(() => {
     if (applyListenerPlayback || !setVirtualElapsedSeconds || !lastSyncPayload) return;
-    if (!lastSyncPayload.isPlaying) return;
+    // Gate on local isPlaying too so we stop immediately on pause (payload can lag one frame).
+    if (!isPlaying || !lastSyncPayload.isPlaying) return;
     const id = window.setInterval(() => {
       const now = Date.now();
       const expectedSec =
@@ -297,7 +298,7 @@ export function useListenSync({
       );
     }, VIRTUAL_ELAPSED_TICK_MS);
     return () => window.clearInterval(id);
-  }, [applyListenerPlayback, lastSyncPayload, applySmoothedVirtualElapsed]);
+  }, [applyListenerPlayback, lastSyncPayload, applySmoothedVirtualElapsed, isPlaying]);
 
   // DJ disconnect detection - check if we haven't received sync for too long
   useEffect(() => {

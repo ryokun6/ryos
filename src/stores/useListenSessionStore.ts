@@ -255,6 +255,14 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       };
       set((state) => {
         if (!state.currentSession) return {};
+        const prevTs = Math.max(
+          state.lastSyncAt ?? 0,
+          state.lastSyncPayload?.timestamp ?? 0
+        );
+        // Drop out-of-order syncs (e.g. stale broadcast after optimistic remote play/pause).
+        if (normalized.timestamp < prevTs) {
+          return {};
+        }
         const nextSession: ListenSession = {
           ...state.currentSession,
           currentTrackId: normalized.currentTrackId,
@@ -785,11 +793,17 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
               : Math.max(0, get().lastSyncPayload?.positionMs ?? 0);
           set((state) => {
             if (!state.lastSyncPayload || !state.currentSession) return {};
+            const prevTs = Math.max(
+              state.lastSyncAt ?? 0,
+              state.lastSyncPayload.timestamp ?? 0
+            );
+            // Strictly increase revision so stale Pusher payloads never win over this merge.
+            const mergedTs = Math.max(Date.now(), prevTs + 1);
             const merged: ListenSyncPayload = {
               ...state.lastSyncPayload,
               isPlaying: nextPlaying,
               positionMs,
-              timestamp: Date.now(),
+              timestamp: mergedTs,
             };
             const nextSession: ListenSession = {
               ...state.currentSession,
