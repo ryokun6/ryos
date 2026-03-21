@@ -234,7 +234,8 @@ export function KaraokeAppComponent({
       isListenSessionHost={isListenSessionHost}
     />
   );
-  const shouldAnimateVisuals = isPlaying && (isForeground ?? true);
+  const shouldAnimateVisuals =
+    isPlaying && (isForeground ?? true) && !isListenSessionRemoteOnly;
 
   if (!isWindowOpen) return null;
 

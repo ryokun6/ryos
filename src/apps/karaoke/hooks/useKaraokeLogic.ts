@@ -784,12 +784,12 @@ export function useKaraokeLogic({
   // Handle player ready
   const handleReady = useCallback(() => {}, []);
 
-  // Watchdog for blocked autoplay on iOS Safari
-  // If isPlaying is true but elapsed time hasn't changed, the player needs user interaction
+  // Watchdog for blocked autoplay on iOS Safari (local playback only).
+  // Skip for anyone in a listen session who is not the DJ — playback time comes from sync / virtual clock,
+  // so elapsed can stay flat while isPlaying is true (would wrongly force-pause and desync remote control).
   useEffect(() => {
     if (
-      listenRemoteOnly ||
-      (listenSession && isListenSessionDj) ||
+      (listenSession && !isListenSessionDj) ||
       !isPlaying ||
       !isIOSSafari ||
       userHasInteractedRef.current
@@ -810,7 +810,6 @@ export function useKaraokeLogic({
     isIOSSafari,
     isListenSessionDj,
     isPlaying,
-    listenRemoteOnly,
     listenSession,
     setIsPlaying,
     showStatus,

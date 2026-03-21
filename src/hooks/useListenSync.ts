@@ -28,6 +28,8 @@ const SOFT_SYNC_THRESHOLD_MS = 500; // Below this, no correction needed
 const HARD_SEEK_THRESHOLD_MS = 3000; // Above this, hard seek
 const DJ_DISCONNECT_WARNING_MS = 15000; // Show warning after 15s
 const DJ_DISCONNECT_PROMOTE_MS = 30000; // Auto-promote after 30s
+/** Remote-only UI: avoid RAF + setState every frame (~60/s) — was melting mobile GPUs and re-rendering lyrics. */
+const VIRTUAL_ELAPSED_TICK_MS = 100;
 
 // Soft sync: Adjust playback rate slightly to catch up/slow down
 const SOFT_SYNC_RATE_FAST = 1.05; // Speed up 5% to catch up
@@ -245,20 +247,17 @@ export function useListenSync({
     username,
   ]);
 
-  // Virtual timeline tick for remote-only UI
+  // Virtual timeline tick for remote-only UI (throttled — not every animation frame)
   useEffect(() => {
     if (applyListenerPlayback || !setVirtualElapsedSeconds || !lastSyncPayload) return;
     if (!lastSyncPayload.isPlaying) return;
-    let raf = 0;
-    const tick = () => {
+    const id = window.setInterval(() => {
       const now = Date.now();
       const expectedSec =
         (lastSyncPayload.positionMs + (now - lastSyncPayload.timestamp)) / 1000;
       setVirtualElapsedSeconds(Math.max(0, expectedSec));
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    }, VIRTUAL_ELAPSED_TICK_MS);
+    return () => window.clearInterval(id);
   }, [applyListenerPlayback, lastSyncPayload, setVirtualElapsedSeconds]);
 
   // DJ disconnect detection - check if we haven't received sync for too long
