@@ -57,6 +57,8 @@ function AquaShineOverlays() {
 
 interface ListenSessionToolbarProps {
   session: ListenSession;
+  /** This tab is in the session but not the playback device */
+  isRemoteOnly?: boolean;
   isHost: boolean;
   isDj: boolean;
   isAnonymous: boolean;
@@ -78,6 +80,7 @@ interface ListenSessionToolbarProps {
 
 export function ListenSessionToolbar({
   session,
+  isRemoteOnly = false,
   isHost,
   isDj,
   isAnonymous,
@@ -164,6 +167,11 @@ export function ListenSessionToolbar({
               {isDj && (
                 <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-white/20", iconClasses)}>
                   {t("apps.karaoke.liveListen.playbackBadge")}
+                </span>
+              )}
+              {isRemoteOnly && !isDj && (
+                <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-amber-500/35", iconClasses)}>
+                  {t("apps.karaoke.liveListen.remoteBadge")}
                 </span>
               )}
               <Headphones weight="fill" size={svgSize} className={iconClasses} />

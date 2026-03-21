@@ -2232,7 +2232,7 @@
         "playbackOnDevice": "재생 기기",
         "passPlayback": "재생 넘기기",
         "makeHost": "호스트로 지정",
-        "remoteModeBanner": "원격: 오디오는 재생 기기에서 재생됩니다.",
+        "remoteBadge": "원격",
         "end": "실시간 듣기 종료",
         "endSession": "세션 종료",
         "hostLabel": "호스트",

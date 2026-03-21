@@ -2232,7 +2232,7 @@
         "playbackOnDevice": "Dispositivo de reprodução",
         "passPlayback": "Passar reprodução",
         "makeHost": "Tornar anfitrião",
-        "remoteModeBanner": "Remoto: o áudio toca no dispositivo de reprodução.",
+        "remoteBadge": "Remoto",
         "end": "Terminar Ouvir em Direto",
         "endSession": "Encerrar Sessão",
         "hostLabel": "Anfitrião",

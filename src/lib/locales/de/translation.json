@@ -2232,7 +2232,7 @@
         "playbackOnDevice": "Wiedergabegerät",
         "passPlayback": "Wiedergabe übergeben",
         "makeHost": "Zum Host machen",
-        "remoteModeBanner": "Remote: Audio läuft auf dem Wiedergabegerät.",
+        "remoteBadge": "Remote",
         "end": "Live Listen beenden",
         "endSession": "Sitzung beenden",
         "hostLabel": "Host",

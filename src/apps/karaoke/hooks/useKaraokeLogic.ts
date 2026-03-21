@@ -787,7 +787,14 @@ export function useKaraokeLogic({
   // Watchdog for blocked autoplay on iOS Safari
   // If isPlaying is true but elapsed time hasn't changed, the player needs user interaction
   useEffect(() => {
-    if (listenRemoteOnly || !isPlaying || !isIOSSafari || userHasInteractedRef.current) return;
+    if (
+      listenRemoteOnly ||
+      (listenSession && isListenSessionDj) ||
+      !isPlaying ||
+      !isIOSSafari ||
+      userHasInteractedRef.current
+    )
+      return;
 
     const startElapsed = elapsedTime;
     const timer = setTimeout(() => {
@@ -798,7 +805,16 @@ export function useKaraokeLogic({
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, elapsedTime, listenRemoteOnly, setIsPlaying, showStatus, isIOSSafari]);
+  }, [
+    elapsedTime,
+    isIOSSafari,
+    isListenSessionDj,
+    isPlaying,
+    listenRemoteOnly,
+    listenSession,
+    setIsPlaying,
+    showStatus,
+  ]);
 
   // Seek time (delta)
   const seekTime = useCallback(

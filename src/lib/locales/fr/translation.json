@@ -2232,7 +2232,7 @@
         "playbackOnDevice": "Appareil de lecture",
         "passPlayback": "Transférer la lecture",
         "makeHost": "Nommer hôte",
-        "remoteModeBanner": "Télécommande : l'audio est sur l'appareil de lecture.",
+        "remoteBadge": "Télécommande",
         "end": "Terminer l'écoute en direct",
         "endSession": "Terminer la session",
         "hostLabel": "Hôte",

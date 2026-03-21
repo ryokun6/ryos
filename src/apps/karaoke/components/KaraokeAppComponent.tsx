@@ -343,11 +343,6 @@ export function KaraokeAppComponent({
         >
           {/* Reaction overlay for listen sessions */}
           {listenSession && <ReactionOverlay className="z-40" />}
-          {isListenSessionRemoteOnly && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[55] pointer-events-none px-3 py-1 rounded-full bg-black/55 text-white text-xs font-geneva-12 max-w-[90%] text-center">
-              {t("apps.karaoke.liveListen.remoteModeBanner")}
-            </div>
-          )}
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
           {/* When display mode is not Video, the player is hidden visually but still plays audio */}
           {currentTrack ? (
@@ -595,6 +590,7 @@ export function KaraokeAppComponent({
             >
               <ListenSessionToolbar
                 session={listenSession}
+                isRemoteOnly={isListenSessionRemoteOnly}
                 isHost={isListenSessionHost}
                 isDj={isListenSessionDj}
                 isAnonymous={isListenSessionAnonymous}

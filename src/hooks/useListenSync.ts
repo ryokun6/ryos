@@ -112,8 +112,10 @@ export function useListenSync({
     if (!trackChanged && !playingChanged) return;
 
     const isUnpause = playingChanged && isPlaying;
+    const isPause = playingChanged && !isPlaying;
     const now = Date.now();
-    if (!isUnpause && now - lastSentRef.current < MIN_STATE_SYNC_INTERVAL_MS) return;
+    // Always broadcast play/pause edges so remotes don't wait for throttle or heartbeat
+    if (!isUnpause && !isPause && now - lastSentRef.current < MIN_STATE_SYNC_INTERVAL_MS) return;
 
     prevTrackIdRef.current = currentTrackId;
     prevPlayingRef.current = isPlaying;

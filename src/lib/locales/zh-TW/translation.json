@@ -2232,7 +2232,7 @@
         "playbackOnDevice": "播放裝置",
         "passPlayback": "轉交播放",
         "makeHost": "設為主持人",
-        "remoteModeBanner": "遙控：音訊在播放裝置上播出。",
+        "remoteBadge": "遙控",
         "end": "結束實時聆聽",
         "endSession": "結束會話",
         "hostLabel": "主持人",

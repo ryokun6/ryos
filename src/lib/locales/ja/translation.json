@@ -2232,7 +2232,7 @@
         "playbackOnDevice": "再生デバイス",
         "passPlayback": "再生を渡す",
         "makeHost": "ホストにする",
-        "remoteModeBanner": "リモート：音声は再生デバイスで鳴ります。",
+        "remoteBadge": "リモート",
         "end": "ライブリスニングを終了",
         "endSession": "セッションを終了",
         "hostLabel": "ホスト",

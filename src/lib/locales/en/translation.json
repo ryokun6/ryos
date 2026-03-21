@@ -1830,7 +1830,7 @@
         "playbackOnDevice": "Playback device",
         "passPlayback": "Pass playback",
         "makeHost": "Make host",
-        "remoteModeBanner": "Remote: audio plays on the playback device.",
+        "remoteBadge": "Remote",
         "hostLabel": "Host",
         "listener": "listener",
         "listenerPlural": "listeners",
