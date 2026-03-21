@@ -97,6 +97,9 @@ export interface ListenSessionSummary {
   listenerCount: number;
 }
 
+/** Listener (non-DJ): optimistic play/pause until Pusher shows the host agrees. */
+export type PendingRemotePlayback = { desiredIsPlaying: boolean; sinceMs: number };
+
 export interface ListenSessionState {
   currentSession: ListenSession | null;
   username: string | null;
@@ -113,6 +116,8 @@ export interface ListenSessionState {
   reactions: ListenReactionPayload[];
   /** Bumps when the DJ should drain remote-command queue */
   remoteCommandFlushId: number;
+  /** Non-DJ only: after remote play/pause, ignore conflicting host isPlaying until confirmed or timeout. */
+  pendingRemotePlayback: PendingRemotePlayback | null;
 
   fetchSessions: () => Promise<{
     ok: boolean;
@@ -170,6 +175,7 @@ const initialState = {
   lastSyncAt: null,
   reactions: [],
   remoteCommandFlushId: 0,
+  pendingRemotePlayback: null,
 };
 
 let remoteCommandBuffer: ListenRemoteCommandPayload[] = [];
@@ -263,29 +269,51 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         if (normalized.timestamp < prevTs) {
           return {};
         }
+
+        const pending = state.pendingRemotePlayback;
+        let effective = normalized;
+        let pendingNext: PendingRemotePlayback | null = pending;
+
+        // Listeners: host sync can arrive with a newer timestamp but stale isPlaying (heartbeat
+        // before the DJ applied the remote command). Keep desired play/pause until host agrees.
+        if (pending && !state.isDj) {
+          const age = Date.now() - pending.sinceMs;
+          if (normalized.isPlaying === pending.desiredIsPlaying) {
+            pendingNext = null;
+          } else if (age < 5000) {
+            effective = {
+              ...normalized,
+              isPlaying: pending.desiredIsPlaying,
+            };
+          } else {
+            pendingNext = null;
+          }
+        }
+
         const nextSession: ListenSession = {
           ...state.currentSession,
-          currentTrackId: normalized.currentTrackId,
-          currentTrackMeta: normalized.currentTrackMeta,
-          isPlaying: normalized.isPlaying,
-          positionMs: normalized.positionMs,
-          lastSyncAt: normalized.timestamp,
-          ...(normalized.hostUsername != null
-            ? { hostUsername: normalized.hostUsername }
+          currentTrackId: effective.currentTrackId,
+          currentTrackMeta: effective.currentTrackMeta,
+          isPlaying: effective.isPlaying,
+          positionMs: effective.positionMs,
+          lastSyncAt: effective.timestamp,
+          ...(effective.hostUsername != null
+            ? { hostUsername: effective.hostUsername }
             : {}),
-          ...(normalized.hostClientInstanceId != null
-            ? { hostClientInstanceId: normalized.hostClientInstanceId }
+          ...(effective.hostClientInstanceId != null
+            ? { hostClientInstanceId: effective.hostClientInstanceId }
             : {}),
-          djUsername: normalized.djUsername,
-          ...(normalized.djClientInstanceId != null
-            ? { djClientInstanceId: normalized.djClientInstanceId }
+          djUsername: effective.djUsername,
+          ...(effective.djClientInstanceId != null
+            ? { djClientInstanceId: effective.djClientInstanceId }
             : {}),
         };
         return {
           currentSession: nextSession,
-          lastSyncPayload: normalized,
-          lastSyncAt: normalized.timestamp,
-          listenerCount: normalized.listenerCount ?? state.listenerCount,
+          lastSyncPayload: effective,
+          lastSyncAt: effective.timestamp,
+          listenerCount: effective.listenerCount ?? state.listenerCount,
+          pendingRemotePlayback: pendingNext,
           ...updateIdentityFlags(
             nextSession,
             state.username,
@@ -540,6 +568,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           lastSyncPayload: null,
           reactions: [],
           remoteCommandFlushId: 0,
+          pendingRemotePlayback: null,
           ...identity,
         });
 
@@ -591,6 +620,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           lastSyncPayload: null,
           reactions: [],
           remoteCommandFlushId: 0,
+          pendingRemotePlayback: null,
           ...identity,
         });
 
@@ -815,6 +845,10 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
               lastSyncPayload: merged,
               lastSyncAt: merged.timestamp,
               currentSession: nextSession,
+              pendingRemotePlayback: {
+                desiredIsPlaying: nextPlaying,
+                sinceMs: Date.now(),
+              },
             };
           });
         }
