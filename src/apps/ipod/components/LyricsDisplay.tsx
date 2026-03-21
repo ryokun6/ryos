@@ -8,7 +8,7 @@ import {
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback, memo } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCoverPalette } from "@/hooks/useCoverPalette";
@@ -1144,6 +1144,261 @@ const getVariants = (
   };
 };
 
+type LyricsVisibleLineRowProps = {
+  line: LyricLine;
+  index: number;
+  visibleLinesLength: number;
+  alignment: LyricsAlignment;
+  lineTextAlign: string;
+  position: number;
+  isCurrent: boolean;
+  hasWordTimings: boolean;
+  /** Only passed for rows that need per-tick playback time (word highlight + gradient hue). */
+  timeMsForRow: number | undefined;
+  translatedText: string | null;
+  textSizeClass: string;
+  lineHeightClass: string;
+  fontClassName: string;
+  interactive: boolean;
+  onSeekToTime?: (timeMs: number) => void;
+  romanization: RomanizationSettings;
+  furiganaMap: Map<string, FuriganaSegment[]>;
+  soramimiMap: Map<string, FuriganaSegment[]>;
+  renderWithFurigana: (line: LyricLine, processedText: string) => ReactNode;
+  processText: (text: string) => string;
+  showKoreanRomanization: boolean;
+  isOldSchoolKaraoke: boolean;
+  isGradientStyle: boolean;
+  isColoredGlow: boolean;
+  highlightColor: string;
+  baseColor: string | undefined;
+  glowFilter: string;
+  glowShadowHighlight: string;
+};
+
+const LyricsVisibleLineRow = memo(function LyricsVisibleLineRow({
+  line,
+  index,
+  visibleLinesLength,
+  alignment,
+  lineTextAlign,
+  position,
+  isCurrent,
+  hasWordTimings,
+  timeMsForRow,
+  translatedText,
+  textSizeClass,
+  lineHeightClass,
+  fontClassName,
+  interactive,
+  onSeekToTime,
+  romanization,
+  furiganaMap,
+  soramimiMap,
+  renderWithFurigana,
+  processText,
+  showKoreanRomanization,
+  isOldSchoolKaraoke,
+  isGradientStyle,
+  isColoredGlow,
+  highlightColor,
+  baseColor,
+  glowFilter,
+  glowShadowHighlight,
+}: LyricsVisibleLineRowProps) {
+  const isAlternatingLayout = alignment === LyricsAlignment.Alternating;
+
+  const variants = useMemo(
+    () =>
+      getVariants(
+        position,
+        isAlternatingLayout,
+        isCurrent,
+        hasWordTimings,
+        isOldSchoolKaraoke
+      ),
+    [position, isAlternatingLayout, isCurrent, hasWordTimings, isOldSchoolKaraoke]
+  );
+
+  const dynamicTransition = useMemo(
+    () => ({
+      ...ANIMATION_CONFIG.spring,
+      opacity: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
+      textShadow: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
+      filter: ANIMATION_CONFIG.fade,
+      duration: 0.15,
+    }),
+    [hasWordTimings]
+  );
+
+  const processedOriginal = useMemo(
+    () => processText(line.words),
+    [line.words, processText]
+  );
+  const processedTranslation = useMemo(() => {
+    if (!translatedText) return null;
+    return processText(translatedText);
+  }, [translatedText, processText]);
+
+  const isFullscreenSize =
+    textSizeClass.includes("vw") ||
+    textSizeClass.includes("vh") ||
+    textSizeClass.includes("fullscreen-lyrics-text");
+  const isKaraokeSize = textSizeClass.includes("karaoke-lyrics-text");
+  const translationSizeClass = isFullscreenSize
+    ? "lyrics-translation-fullscreen"
+    : isKaraokeSize
+      ? "lyrics-translation-karaoke"
+      : "lyrics-translation-ipod";
+
+  const shouldUseAnimatedWordTiming =
+    hasWordTimings && isCurrent && timeMsForRow !== undefined;
+
+  return (
+    <motion.div
+      layout={false}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={variants}
+      transition={dynamicTransition}
+      className={`px-2 md:px-4 whitespace-pre-wrap break-words max-w-full text-white`}
+      style={{
+        textAlign: lineTextAlign as CanvasTextAlign,
+        width: "100%",
+        pointerEvents: interactive ? "auto" : "none",
+        paddingLeft:
+          alignment === LyricsAlignment.Alternating &&
+          index === 0 &&
+          visibleLinesLength > 1
+            ? "5%"
+            : undefined,
+        paddingRight:
+          alignment === LyricsAlignment.Alternating &&
+          index === 1 &&
+          visibleLinesLength > 1
+            ? "5%"
+            : undefined,
+        backfaceVisibility: "hidden",
+        transform: "translateZ(0)",
+      }}
+    >
+      {(() => {
+        const soramimiSegments =
+          romanization.enabled && romanization.soramimi
+            ? soramimiMap.get(line.startTimeMs)
+            : undefined;
+        const annotationSegments =
+          soramimiSegments ??
+          (romanization.enabled && romanization.japaneseFurigana
+            ? furiganaMap.get(line.startTimeMs)
+            : undefined);
+        return (
+          <div
+            className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer lyrics-line-clickable" : ""}`}
+            style={
+              isOldSchoolKaraoke && !hasWordTimings
+                ? ({
+                    color: isCurrent ? highlightColor : OLD_SCHOOL_BASE_COLOR,
+                    WebkitTextStroke: isCurrent
+                      ? OLD_SCHOOL_HIGHLIGHT_STROKE
+                      : OLD_SCHOOL_BASE_STROKE,
+                    paintOrder: "stroke fill",
+                  } as React.CSSProperties)
+                : isGradientStyle && !hasWordTimings
+                  ? ({
+                      color: isCurrent ? highlightColor : baseColor ?? undefined,
+                      textShadow: isCurrent ? glowShadowHighlight : BASE_SHADOW,
+                      filter:
+                        isCurrent && timeMsForRow !== undefined
+                          ? `${GRADIENT_GLOW_FILTER} hue-rotate(${(timeMsForRow / 6000) * 360 % 360}deg)`
+                          : undefined,
+                    } as React.CSSProperties)
+                  : isColoredGlow && !hasWordTimings
+                    ? ({
+                        color: isCurrent ? highlightColor : baseColor,
+                        textShadow: isCurrent ? glowShadowHighlight : BASE_SHADOW,
+                      } as React.CSSProperties)
+                    : undefined
+            }
+            onClick={
+              onSeekToTime && !hasWordTimings
+                ? (e) => {
+                    e.stopPropagation();
+                    onSeekToTime(parseInt(line.startTimeMs, 10));
+                  }
+                : undefined
+            }
+          >
+            {shouldUseAnimatedWordTiming ? (
+              <WordTimingHighlight
+                wordTimings={line.wordTimings!}
+                lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+                currentTimeMs={timeMsForRow!}
+                processText={processText}
+                furiganaSegments={annotationSegments}
+                koreanRomanized={!soramimiSegments && showKoreanRomanization}
+                japaneseRomaji={
+                  !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
+                }
+                chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                soramimiTargetLanguage={
+                  soramimiSegments ? romanization.soramamiTargetLanguage : undefined
+                }
+                onSeekToTime={onSeekToTime}
+                isOldSchoolKaraoke={isOldSchoolKaraoke}
+                highlightColor={highlightColor}
+                glowFilter={glowFilter}
+                baseColor={baseColor}
+                isGradient={isGradientStyle}
+                rainbowHue={
+                  isGradientStyle && timeMsForRow !== undefined
+                    ? ((timeMsForRow / 6000) * 360) % 360
+                    : undefined
+                }
+              />
+            ) : hasWordTimings ? (
+              <StaticWordRendering
+                wordTimings={line.wordTimings!}
+                processText={processText}
+                furiganaSegments={annotationSegments}
+                koreanRomanized={!soramimiSegments && showKoreanRomanization}
+                japaneseRomaji={
+                  !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
+                }
+                chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                soramimiTargetLanguage={
+                  soramimiSegments ? romanization.soramamiTargetLanguage : undefined
+                }
+                lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+                onSeekToTime={onSeekToTime}
+                isOldSchoolKaraoke={isOldSchoolKaraoke}
+                baseColor={baseColor}
+              />
+            ) : (
+              renderWithFurigana(line, processedOriginal)
+            )}
+          </div>
+        );
+      })()}
+      {processedTranslation &&
+        processedTranslation !== processedOriginal && (
+          <div
+            className={`text-white ${fontClassName} ${translationSizeClass}`}
+            style={{
+              lineHeight: 1.1,
+              opacity: 0.55,
+            }}
+          >
+            {processedTranslation}
+          </div>
+        )}
+    </motion.div>
+  );
+});
+
 export function LyricsDisplay({
   lines,
   originalLines,
@@ -1474,6 +1729,9 @@ export function LyricsDisplay({
   const highlightColor = getHighlightColor();
   const isColoredGlow = styleCategory === 'glow-gold' || styleCategory === 'glow-gradient';
   const isGradientStyle = styleCategory === 'glow-gradient';
+  const glowShadowHighlight = getGlowShadow(true);
+  const glowFilterStr = getGlowFilter();
+  const baseColorResolved = getBaseColor();
 
   const getTextAlign = (
     align: LyricsAlignment,
@@ -1708,6 +1966,11 @@ export function LyricsDisplay({
     hasTriggeredSwipeRef.current = false;
   }, []);
 
+  const currentAnchorIdx =
+    actualCurrentLine >= 0 && actualCurrentLine < displayOriginalLines.length
+      ? actualCurrentLine
+      : -1;
+
   if (!visible) return null;
   if (isLoading)
     return (
@@ -1752,200 +2015,66 @@ export function LyricsDisplay({
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
           const isCurrent = line === displayOriginalLines[actualCurrentLine];
+          const lineActualIdx = displayOriginalLines.indexOf(line);
           let position = 0;
-
           if (alignment === LyricsAlignment.Alternating) {
             position = isCurrent ? 0 : 1;
           } else {
-            const currentActualIdx = displayOriginalLines.indexOf(displayOriginalLines[actualCurrentLine]);
-            const lineActualIdx = displayOriginalLines.indexOf(line);
-            position = lineActualIdx - currentActualIdx;
+            position =
+              currentAnchorIdx >= 0 ? lineActualIdx - currentAnchorIdx : 0;
           }
-
-          // Determine if line has word timings available (always check original lines)
-          const hasWordTimings =
-            line.wordTimings &&
-            line.wordTimings.length > 0;
-
-          // Determine if we should use animated word-level highlighting (only for current line)
-          const shouldUseAnimatedWordTiming =
-            hasWordTimings && isCurrent && currentTimeMs !== undefined;
-
-          const variants = getVariants(
-            position,
-            alignment === LyricsAlignment.Alternating,
-            isCurrent,
-            hasWordTimings,
-            isOldSchoolKaraoke
+          const hasWordTimings = !!(
+            line.wordTimings && line.wordTimings.length > 0
           );
-          // Ensure transitions are extra smooth during offset adjustments
-          // For word-timing lines, use subtle fade; word highlights handle the main visual feedback
-          const dynamicTransition = {
-            ...ANIMATION_CONFIG.spring,
-            opacity: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
-            textShadow: hasWordTimings ? { duration: 0.15 } : ANIMATION_CONFIG.fade,
-            filter: ANIMATION_CONFIG.fade,
-            duration: 0.15, // Faster transitions for smoother adjustment feedback
-          };
           const lineTextAlign = getTextAlign(
             alignment,
             index,
             visibleLines.length
           );
-
-          // Get translated text if translation is active
-          // Try timestamp lookup first, then fall back to index-based lookup
-          const lineIndex = displayOriginalLines.indexOf(line);
-          const translatedText = hasTranslation 
-            ? (translationMap.get(line.startTimeMs) || translationByIndex[lineIndex] || null)
+          const translatedText = hasTranslation
+            ? translationMap.get(line.startTimeMs) ||
+              translationByIndex[lineActualIdx] ||
+              null
             : null;
-
-          // Pre-compute processed text values once to avoid calling processText 3x per line
-          const processedOriginal = processText(line.words);
-          const processedTranslation = translatedText ? processText(translatedText) : null;
-
-          // Determine translation size class based on textSizeClass
-          // - Fullscreen (viewport units vw/vh or fullscreen-lyrics-text): use viewport-relative sizing
-          // - Karaoke window (karaoke-lyrics-text): use container-relative sizing
-          // - iPod window (text-[12px] default): use small fixed size
-          const isFullscreenSize = textSizeClass.includes("vw") || textSizeClass.includes("vh") || textSizeClass.includes("fullscreen-lyrics-text");
-          const isKaraokeSize = textSizeClass.includes("karaoke-lyrics-text");
-          const translationSizeClass = isFullscreenSize 
-            ? "lyrics-translation-fullscreen"
-            : isKaraokeSize
-            ? "lyrics-translation-karaoke"
-            : "lyrics-translation-ipod";
-
+          const timeMsForRow =
+            isCurrent &&
+            currentTimeMs !== undefined &&
+            (hasWordTimings || (isGradientStyle && !hasWordTimings))
+              ? currentTimeMs
+              : undefined;
 
           return (
-                          <motion.div
-                            key={line.startTimeMs}
-                            layout="position"
-                            initial="initial"
-                            animate="animate"
-                            exit="exit"
-                            variants={variants}
-                            transition={dynamicTransition}
-                            className={`px-2 md:px-4 whitespace-pre-wrap break-words max-w-full text-white`}
-                            style={{
-                              textAlign: lineTextAlign as CanvasTextAlign,
-                              width: "100%",
-                              pointerEvents: interactive ? "auto" : "none",
-                              paddingLeft:
-                                alignment === LyricsAlignment.Alternating &&
-                                index === 0 &&
-                                visibleLines.length > 1
-                                  ? "5%"
-                                  : undefined,
-                              paddingRight:
-                                alignment === LyricsAlignment.Alternating &&
-                                index === 1 &&
-                                visibleLines.length > 1
-                                  ? "5%"
-                                  : undefined,
-                              // Keep GPU-composited to prevent pixel rounding at end of transforms
-                              backfaceVisibility: "hidden",
-                              transform: "translateZ(0)",
-                            }}
-                          >
-                            {/* Original lyrics with karaoke highlighting */}
-                            {/* Determine which annotation segments to use: soramimi takes precedence, then furigana */}
-                            {(() => {
-                              const soramimiSegments = romanization.enabled && romanization.soramimi ? soramimiMap.get(line.startTimeMs) : undefined;
-                              const annotationSegments = soramimiSegments ?? (
-                                romanization.enabled && romanization.japaneseFurigana
-                                  ? furiganaMap.get(line.startTimeMs)
-                                  : undefined
-                              );
-                              return (
-                            <div
-                              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer lyrics-line-clickable" : ""}`}
-                              style={
-                                // For old-school karaoke non-word-timed lines, apply stroke and color
-                                isOldSchoolKaraoke && !hasWordTimings
-                                  ? { 
-                                      color: isCurrent ? highlightColor : OLD_SCHOOL_BASE_COLOR,
-                                      WebkitTextStroke: isCurrent ? OLD_SCHOOL_HIGHLIGHT_STROKE : OLD_SCHOOL_BASE_STROKE,
-                                      paintOrder: "stroke fill",
-                                    } as React.CSSProperties
-                                  : isGradientStyle && !hasWordTimings
-                                  ? {
-                                      color: isCurrent ? highlightColor : getBaseColor(),
-                                      textShadow: isCurrent ? getGlowShadow(true) : BASE_SHADOW,
-                                      // Apply hue-rotate only when current (playing), continues from current playback position
-                                      filter: isCurrent && currentTimeMs !== undefined 
-                                        ? `${GRADIENT_GLOW_FILTER} hue-rotate(${(currentTimeMs / 6000 * 360) % 360}deg)` 
-                                        : undefined,
-                                    } as React.CSSProperties
-                                  : isColoredGlow && !hasWordTimings
-                                  ? {
-                                      color: isCurrent ? highlightColor : getBaseColor(),
-                                      textShadow: isCurrent ? getGlowShadow(true) : BASE_SHADOW,
-                                    } as React.CSSProperties
-                                  : undefined
-                              }
-                              onClick={onSeekToTime && !hasWordTimings ? (e) => { 
-                                e.stopPropagation(); 
-                                onSeekToTime(parseInt(line.startTimeMs, 10)); 
-                              } : undefined}
-                            >
-                              {shouldUseAnimatedWordTiming ? (
-                  <WordTimingHighlight
-                    wordTimings={line.wordTimings!}
-                    lineStartTimeMs={parseInt(line.startTimeMs, 10)}
-                    currentTimeMs={currentTimeMs!}
-                    processText={processText}
-                    furiganaSegments={annotationSegments}
-                    koreanRomanized={!soramimiSegments && showKoreanRomanization}
-                    japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
-                    chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
-                    pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
-                    soramimiTargetLanguage={soramimiSegments ? romanization.soramamiTargetLanguage : undefined}
-                    onSeekToTime={onSeekToTime}
-                    isOldSchoolKaraoke={isOldSchoolKaraoke}
-                    highlightColor={highlightColor}
-                    glowFilter={getGlowFilter()}
-                    baseColor={getBaseColor()}
-                    isGradient={isGradientStyle}
-                    rainbowHue={isGradientStyle && currentTimeMs !== undefined ? (currentTimeMs / 6000 * 360) % 360 : undefined}
-                  />
-                ) : hasWordTimings ? (
-                  <StaticWordRendering
-                    wordTimings={line.wordTimings!}
-                    processText={processText}
-                    furiganaSegments={annotationSegments}
-                    koreanRomanized={!soramimiSegments && showKoreanRomanization}
-                    japaneseRomaji={!soramimiSegments && romanization.enabled && romanization.japaneseRomaji}
-                    chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
-                    pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
-                    soramimiTargetLanguage={soramimiSegments ? romanization.soramamiTargetLanguage : undefined}
-                    lineStartTimeMs={parseInt(line.startTimeMs, 10)}
-                    onSeekToTime={onSeekToTime}
-                    isOldSchoolKaraoke={isOldSchoolKaraoke}
-                    baseColor={getBaseColor()}
-                  />
-                ) : (
-                  // The hook's renderWithFurigana handles furigana + all romanization types including soramimi
-                  renderWithFurigana(line, processedOriginal)
-                )}
-              </div>
-                              );
-                            })()}
-              {/* Translated subtitle (shown below original when translation is active) */}
-              {/* Only show if translation differs from processed original (handles Traditional Chinese conversion) */}
-              {/* Uses pre-computed values to avoid calling processText 3x per line */}
-              {processedTranslation && processedTranslation !== processedOriginal && (
-                <div
-                  className={`text-white ${fontClassName} ${translationSizeClass}`}
-                  style={{
-                    lineHeight: 1.1,
-                    opacity: 0.55,
-                  }}
-                >
-                  {processedTranslation}
-                </div>
-              )}
-            </motion.div>
+            <LyricsVisibleLineRow
+              key={line.startTimeMs}
+              line={line}
+              index={index}
+              visibleLinesLength={visibleLines.length}
+              alignment={alignment}
+              lineTextAlign={lineTextAlign}
+              position={position}
+              isCurrent={isCurrent}
+              hasWordTimings={hasWordTimings}
+              timeMsForRow={timeMsForRow}
+              translatedText={translatedText}
+              textSizeClass={textSizeClass}
+              lineHeightClass={lineHeightClass}
+              fontClassName={fontClassName}
+              interactive={interactive}
+              onSeekToTime={onSeekToTime}
+              romanization={romanization}
+              furiganaMap={furiganaMap}
+              soramimiMap={soramimiMap}
+              renderWithFurigana={renderWithFurigana}
+              processText={processText}
+              showKoreanRomanization={showKoreanRomanization}
+              isOldSchoolKaraoke={isOldSchoolKaraoke}
+              isGradientStyle={isGradientStyle}
+              isColoredGlow={isColoredGlow}
+              highlightColor={highlightColor}
+              baseColor={baseColorResolved}
+              glowFilter={glowFilterStr}
+              glowShadowHighlight={glowShadowHighlight}
+            />
           );
         })}
       </AnimatePresence>
