@@ -21,8 +21,7 @@ interface ListenSyncOptions {
   setVirtualElapsedSeconds?: Dispatch<SetStateAction<number>>;
 }
 
-const HEARTBEAT_INTERVAL_MS = 3000; // when playing
-const HEARTBEAT_PAUSED_MS = 30000; // when paused – infrequent since position doesn't change
+const HEARTBEAT_INTERVAL_MS = 3000; // playing and paused — keeps listeners aligned without long gaps
 const MIN_STATE_SYNC_INTERVAL_MS = 2500; // Min interval for "state changed" sync to avoid loop
 const SOFT_SYNC_THRESHOLD_MS = 500; // Below this, no correction needed
 const HARD_SEEK_THRESHOLD_MS = 3000; // Above this, hard seek
@@ -155,15 +154,14 @@ export function useListenSync({
     broadcastState();
   }, [broadcastState, canBroadcast, currentTrackId, isPlaying]);
 
-  // Heartbeat: use ref so interval is not cleared on every re-render; slower when paused
+  // Heartbeat: periodic sync while DJ is connected (playing or paused).
   useEffect(() => {
     if (!canBroadcast) return;
-    const intervalMs = isPlaying ? HEARTBEAT_INTERVAL_MS : HEARTBEAT_PAUSED_MS;
     const id = setInterval(() => {
       broadcastStateRef.current();
-    }, intervalMs);
+    }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [canBroadcast, isPlaying]);
+  }, [canBroadcast]);
 
   // Helper to set playback rate on the internal player
   const setPlaybackRate = useCallback((player: ReactPlayer, rate: number) => {
