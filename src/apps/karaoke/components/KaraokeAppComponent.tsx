@@ -348,7 +348,9 @@ export function KaraokeAppComponent({
           }}
         >
           {/* Reaction overlay for listen sessions */}
-          {listenSession && <ReactionOverlay className="z-40" />}
+          {listenSession && !isSyncModeOpen && (
+            <ReactionOverlay className="z-40" />
+          )}
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
           {/* When display mode is not Video, the player is hidden visually but still plays audio */}
           {currentTrack ? (
@@ -592,7 +594,7 @@ export function KaraokeAppComponent({
           </AnimatePresence>
 
           {/* Listen Together toolbar - top right when in a session, not tied to bottom controls */}
-          {listenSession && !isCoverFlowOpen && (
+          {listenSession && !isCoverFlowOpen && !isSyncModeOpen && (
             <div
               className="absolute top-6 right-6 z-[60] flex justify-end pointer-events-auto"
               onClick={(e) => {
