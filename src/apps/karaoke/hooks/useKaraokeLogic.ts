@@ -836,7 +836,20 @@ export function useKaraokeLogic({
   // timeMs is in "lyrics time" (player time + offset), so we subtract the offset to get player time
   const seekToTime = useCallback(
     (timeMs: number) => {
-      if (listenRemoteOnly) return;
+      const lyricOffset = currentTrack?.lyricOffset ?? 0;
+      const playerTimeMs = Math.round(Math.max(0, timeMs - lyricOffset));
+      const newTime = Math.max(0, playerTimeMs / 1000);
+
+      if (listenRemoteOnly) {
+        void sendRemotePlaybackCommand({ action: "seek", positionMs: playerTimeMs }).then((r) => {
+          if (!r.ok) toast.error(r.error ?? "Could not seek");
+        });
+        showStatus(
+          `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
+        );
+        return;
+      }
+
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
       if (activePlayer) {
         // Set guard to prevent spurious onPause events during seek from killing playback
@@ -844,11 +857,7 @@ export function useKaraokeLogic({
         if (trackSwitchTimeoutRef.current) {
           clearTimeout(trackSwitchTimeoutRef.current);
         }
-        
-        // Subtract lyricOffset to convert from lyrics time to player time
-        const lyricOffset = currentTrack?.lyricOffset ?? 0;
-        const playerTimeMs = timeMs - lyricOffset;
-        const newTime = Math.max(0, playerTimeMs / 1000);
+
         activePlayer.seekTo(newTime);
         
         // Start playing if paused - also call playVideo() directly for iOS Safari
@@ -872,6 +881,7 @@ export function useKaraokeLogic({
     },
     [
       listenRemoteOnly,
+      sendRemotePlaybackCommand,
       showStatus,
       isFullScreen,
       isPlaying,
@@ -1121,6 +1131,20 @@ export function useKaraokeLogic({
               afterSeekMs = pos;
             }
             setIsPlaying(false);
+            break;
+          }
+          case "seek": {
+            const pos = cmd.positionMs;
+            if (typeof pos === "number") {
+              const p = getActivePlayer();
+              p?.seekTo(pos / 1000, "seconds");
+              afterSeekMs = pos;
+              setIsPlaying(true);
+              const internalPlayer = p?.getInternalPlayer?.();
+              if (internalPlayer && typeof internalPlayer.playVideo === "function") {
+                internalPlayer.playVideo();
+              }
+            }
             break;
           }
           case "next":

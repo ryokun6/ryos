@@ -124,6 +124,7 @@ export async function reactListenSession(
 export type ListenRemoteCommandAction =
   | "play"
   | "pause"
+  | "seek"
   | "next"
   | "previous"
   | "playTrack";

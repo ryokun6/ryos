@@ -851,6 +851,40 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
               },
             };
           });
+        } else if (args.action === "seek") {
+          const positionMs =
+            typeof args.positionMs === "number"
+              ? Math.max(0, Math.floor(args.positionMs))
+              : Math.max(0, get().lastSyncPayload?.positionMs ?? 0);
+          set((state) => {
+            if (!state.lastSyncPayload || !state.currentSession) return {};
+            const prevTs = Math.max(
+              state.lastSyncAt ?? 0,
+              state.lastSyncPayload.timestamp ?? 0
+            );
+            const mergedTs = Math.max(Date.now(), prevTs + 1);
+            const merged: ListenSyncPayload = {
+              ...state.lastSyncPayload,
+              isPlaying: true,
+              positionMs,
+              timestamp: mergedTs,
+            };
+            const nextSession: ListenSession = {
+              ...state.currentSession,
+              isPlaying: true,
+              positionMs,
+              lastSyncAt: merged.timestamp,
+            };
+            return {
+              lastSyncPayload: merged,
+              lastSyncAt: merged.timestamp,
+              currentSession: nextSession,
+              pendingRemotePlayback: {
+                desiredIsPlaying: true,
+                sinceMs: Date.now(),
+              },
+            };
+          });
         }
         return { ok: true };
       } catch (error) {

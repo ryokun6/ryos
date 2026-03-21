@@ -98,6 +98,7 @@ export interface AssignDjRequest {
 export type ListenRemoteCommandAction =
   | "play"
   | "pause"
+  | "seek"
   | "next"
   | "previous"
   | "playTrack";
@@ -106,7 +107,7 @@ export interface RemoteCommandRequest {
   username: string;
   fromClientInstanceId?: string;
   action: ListenRemoteCommandAction;
-  /** For play/pause — optional scrub position */
+  /** For play/pause — optional scrub position; required for seek (player timeline ms) */
   positionMs?: number;
   /** For playTrack */
   trackId?: string;

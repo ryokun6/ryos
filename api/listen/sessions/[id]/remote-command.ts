@@ -26,6 +26,7 @@ export { runtime, maxDuration };
 const VALID_ACTIONS: ListenRemoteCommandAction[] = [
   "play",
   "pause",
+  "seek",
   "next",
   "previous",
   "playTrack",
@@ -68,6 +69,15 @@ export default apiHandler(
       if (!trackId) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "trackId is required for playTrack" });
+        return;
+      }
+    }
+
+    if (action === "seek") {
+      const pm = body.positionMs;
+      if (typeof pm !== "number" || !Number.isFinite(pm)) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "positionMs is required for seek" });
         return;
       }
     }
