@@ -17,6 +17,22 @@ export function containsKanji(text: string): boolean {
   return /[\u4E00-\u9FFF]/.test(text);
 }
 
+/**
+ * Whether a lyric line should go through furigana AI (vs. pass-through as plain segments).
+ * Lines that are only hiragana/katakana (plus whitespace and punctuation) skip the model;
+ * kanji, Latin, Hangul, Cyrillic, etc. get readings (katakana for non-Japanese words).
+ */
+export function lineNeedsFuriganaGeneration(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  for (const char of text) {
+    if (/[\s\p{P}]/u.test(char)) continue;
+    if (/[\u3040-\u309F\u30A0-\u30FF]/.test(char)) continue;
+    return true;
+  }
+  return false;
+}
+
 export function containsKana(text: string): boolean {
   return /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
 }
@@ -90,22 +106,39 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
 // Furigana Generation
 // =============================================================================
 
-export const FURIGANA_SYSTEM_PROMPT = `Add furigana to kanji using ruby markup format: <text:reading>
+export const FURIGANA_CORE_RULES = `Add readings using ruby markup: <text:reading> (text first, colon, then reading).
 
-Format: <漢字:ふりがな> - text first, then reading after colon
-- Plain text without reading stays as-is
-- Separate okurigana: <走:はし>る (NOT <走る:はしる>)
+- Kanji: use hiragana readings; separate okurigana: <走:はし>る (NOT <走る:はしる>)
+- Latin letters and other non-Japanese script (English, Hangul, Cyrillic, etc.): wrap each word or phrase and use katakana for the Japanese pronunciation (外来語・カタカナ表記)
+- Keep whitespace and punctuation outside ruby when reasonable; plain kana segments stay as-is without extra markup
 
-One line output per input line.
+Examples:
+Input: 夜空の星
+Output: <夜空:よぞら>の<星:ほし>
+
+Input: I love you と言った
+Output: <I:アイ> <love:ラブ> <you:ユー> と<言:い>った`;
+
+/** One user line in → one annotated line out (no line numbers). */
+export const FURIGANA_SYSTEM_PROMPT = `${FURIGANA_CORE_RULES}
+
+One line output per input line.`;
+
+/** Numbered lines for streaming parsers (matches "1: ..." output convention). */
+export const FURIGANA_STREAM_SYSTEM_PROMPT = `${FURIGANA_CORE_RULES}
+
+Output format: Number each line like "1: annotated line", "2: annotated line", etc.
 
 Example:
 Input:
-夜空の星
-私は走る
+1: 夜空の星
+2: 私は走る
+3: Hello 世界
 
 Output:
-<夜空:よぞら>の<星:ほし>
-<私:わたし>は<走:はし>る`;
+1: <夜空:よぞら>の<星:ほし>
+2: <私:わたし>は<走:はし>る
+3: <Hello:ハロー> <世界:せかい>`;
 
 // AI generation timeout (90 seconds for full song streaming)
 const AI_TIMEOUT_MS = 90000;
@@ -175,7 +208,7 @@ export async function streamFurigana(
   const lineInfo = lines.map((line, originalIndex) => ({
     line,
     originalIndex,
-    needsFurigana: containsKanji(line.words),
+    needsFurigana: lineNeedsFuriganaGeneration(line.words),
   }));
 
   const linesNeedingFurigana = lineInfo.filter((info) => info.needsFurigana);
@@ -194,27 +227,11 @@ export async function streamFurigana(
   }
 
   if (linesNeedingFurigana.length === 0) {
-    logInfo(requestId, `No kanji lines, skipping furigana AI generation`);
+    logInfo(requestId, `No lines need furigana generation, skipping AI`);
     return { furigana: results, success: true };
   }
 
-  // Use numbered lines for reliable parsing during streaming
-  const systemPrompt = `Add furigana to kanji using ruby markup format: <text:reading>
-
-Format: <漢字:ふりがな> - text first, then reading after colon
-- Plain text without reading stays as-is
-- Separate okurigana: <走:はし>る (NOT <走る:はしる>)
-
-Output format: Number each line like "1: annotated line", "2: annotated line", etc.
-
-Example:
-Input:
-1: 夜空の星
-2: 私は走る
-
-Output:
-1: <夜空:よぞら>の<星:ほし>
-2: <私:わたし>は<走:はし>る`;
+  const systemPrompt = FURIGANA_STREAM_SYSTEM_PROMPT;
 
   const textsToProcess = linesNeedingFurigana.map((info, i) => `${i + 1}: ${info.line.words}`).join("\n");
 

@@ -318,6 +318,20 @@ interface FuriganaMappingResult {
 }
 
 /**
+ * When combining adjacent timed words into one ruby unit, we trim each word and concatenate.
+ * That drops spaces between Latin words (e.g. "Oh" + "no" → "Ohno"). Insert a single ASCII
+ * space only when both sides look like Latin word chunks (alphanumeric), not for CJK.
+ */
+function needsSpaceBetweenTimedWordChunks(prevTrimmed: string, nextTrimmed: string): boolean {
+  if (!prevTrimmed || !nextTrimmed) return false;
+  const prevChars = [...prevTrimmed];
+  const nextChars = [...nextTrimmed];
+  const last = prevChars[prevChars.length - 1];
+  const first = nextChars[0];
+  return /[A-Za-z0-9]/.test(last) && /[A-Za-z0-9]/.test(first);
+}
+
+/**
  * Maps word timings to furigana segments using character-position alignment.
  * Handles cases where AI-generated segment boundaries don't match word timing boundaries.
  * 
@@ -473,10 +487,15 @@ function mapWordTimingsToFurigana(
     let extraDurationMs = 0;
     for (let i = 0; i < combinedWords.length; i++) {
       const w = wordTimings[combinedWords[i]];
-      combinedText += w.text.trim();
+      const part = w.text.trim();
       if (i > 0) {
         extraDurationMs += w.durationMs;
+        const prev = combinedText.trimEnd();
+        if (needsSpaceBetweenTimedWordChunks(prev, part)) {
+          combinedText += " ";
+        }
       }
+      combinedText += part;
     }
     
     renderItems.push({

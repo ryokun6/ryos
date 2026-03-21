@@ -71,8 +71,9 @@ import {
 
 import {
   lyricsAreMostlyChinese,
-  containsKanji,
   parseRubyMarkup,
+  lineNeedsFuriganaGeneration,
+  FURIGANA_STREAM_SYSTEM_PROMPT,
 } from "./_furigana.js";
 
 import {
@@ -1066,15 +1067,15 @@ export default apiHandler<Record<string, unknown>>(
           startTimeMs: line.startTimeMs,
         }));
 
-        // Build index mapping: track which lines need furigana (contain kanji)
+        // Build index mapping: lines that need AI (kanji, Latin, Hangul, etc.); kana-only lines skip
         const lineInfo = lines.map((line, originalIndex) => ({
           line,
           originalIndex,
-          needsFurigana: containsKanji(line.words),
+          needsFurigana: lineNeedsFuriganaGeneration(line.words),
         }));
         const linesNeedingFurigana = lineInfo.filter((info) => info.needsFurigana);
 
-        // Build numbered text input for AI (only kanji lines)
+        // Build numbered text input for AI
         const textsToProcess = linesNeedingFurigana.map((info, i) => `${i + 1}: ${info.line.words}`).join("\n");
 
         // Use native SSE streaming for custom events
@@ -1100,7 +1101,7 @@ export default apiHandler<Record<string, unknown>>(
           // Send start event immediately
           sendEvent("start", { totalLines, message: "Furigana generation started" });
 
-          // Emit non-kanji lines immediately (they don't need furigana)
+          // Emit kana-only / empty lines immediately (no AI)
           for (const info of lineInfo) {
             if (!info.needsFurigana) {
               completedLines++;
@@ -1112,9 +1113,9 @@ export default apiHandler<Record<string, unknown>>(
             }
           }
 
-          // If no kanji lines, we're done
+          // If every line is kana-only, we're done
           if (linesNeedingFurigana.length === 0) {
-            logger.info(`No kanji lines, skipping furigana AI generation`);
+            logger.info(`No lines need furigana generation, skipping AI`);
             sendEvent("complete", { 
               totalLines, 
               successCount: completedLines, 
@@ -1151,28 +1152,10 @@ export default apiHandler<Record<string, unknown>>(
             }
           };
 
-          // Use streamText with GPT-5.2 for furigana (using numbered prompt format)
-          const furiganaSystemPrompt = `Add furigana to kanji using ruby markup format: <text:reading>
-
-Format: <漢字:ふりがな> - text first, then reading after colon
-- Plain text without reading stays as-is
-- Separate okurigana: <走:はし>る (NOT <走る:はしる>)
-
-Output format: Number each line like "1: annotated line", "2: annotated line", etc.
-
-Example:
-Input:
-1: 夜空の星
-2: 私は走る
-
-Output:
-1: <夜空:よぞら>の<星:ほし>
-2: <私:わたし>は<走:はし>る`;
-
           const result = streamText({
             model: openai("gpt-5.4"),
             messages: [
-              { role: "system", content: furiganaSystemPrompt },
+              { role: "system", content: FURIGANA_STREAM_SYSTEM_PROMPT },
               { role: "user", content: textsToProcess },
             ],
             temperature: 0.1,
