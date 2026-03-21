@@ -7,9 +7,10 @@ import {
 function t(
   id: string,
   createdAt?: number,
-  importOrder?: number
+  importOrder?: number,
+  updatedAt?: number
 ): IpodTrackSortFields {
-  return { id, createdAt, importOrder };
+  return { id, createdAt, importOrder, updatedAt };
 }
 
 describe("sortTracksLikeServerOrder", () => {
@@ -26,5 +27,14 @@ describe("sortTracksLikeServerOrder", () => {
     const b = t("b", 50, 0);
     expect(sortTracksLikeServerOrder([a, b]).map((x) => x.id)).toEqual(["a", "b"]);
     expect(sortTracksLikeServerOrder([b, a]).map((x) => x.id)).toEqual(["b", "a"]);
+  });
+
+  test("when createdAt and importOrder tie, newer updatedAt first", () => {
+    const older = t("old", 100, 0, 1);
+    const newer = t("new", 100, 0, 99);
+    expect(sortTracksLikeServerOrder([older, newer]).map((x) => x.id)).toEqual([
+      "new",
+      "old",
+    ]);
   });
 });

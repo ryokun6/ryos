@@ -1,10 +1,12 @@
 /**
- * Matches listSongs ordering in api/_utils/_song-service.ts (newest first, then importOrder).
- * When both tie, preserves the prior array order (stable).
+ * Matches listSongs ordering in api/_utils/_song-service.ts (newest first, then importOrder),
+ * with updatedAt as a tiebreaker so recently edited songs surface like the server list intent.
+ * When all tie, preserves the prior array order (stable).
  */
 export interface IpodTrackSortFields {
   id: string;
   createdAt?: number;
+  updatedAt?: number;
   importOrder?: number;
 }
 
@@ -19,6 +21,8 @@ export function sortTracksLikeServerOrder<T extends IpodTrackSortFields>(
       (a.importOrder ?? Number.POSITIVE_INFINITY) -
       (b.importOrder ?? Number.POSITIVE_INFINITY);
     if (importDiff !== 0) return importDiff;
+    const updatedAtDiff = (b.updatedAt ?? 0) - (a.updatedAt ?? 0);
+    if (updatedAtDiff !== 0) return updatedAtDiff;
     return (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0);
   });
 }

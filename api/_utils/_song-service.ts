@@ -510,11 +510,14 @@ export async function listSongs(
     songs.push(result);
   }
 
-  // Sort by createdAt (newest first), then by importOrder for stable sorting
+  // Sort by createdAt (newest first), then importOrder, then updatedAt (recent activity first)
   songs.sort((a, b) => {
     const createdAtDiff = (b.createdAt || 0) - (a.createdAt || 0);
     if (createdAtDiff !== 0) return createdAtDiff;
-    return (a.importOrder ?? Infinity) - (b.importOrder ?? Infinity);
+    const importDiff =
+      (a.importOrder ?? Infinity) - (b.importOrder ?? Infinity);
+    if (importDiff !== 0) return importDiff;
+    return (b.updatedAt || 0) - (a.updatedAt || 0);
   });
 
   return songs;
