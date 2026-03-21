@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { CloudSyncDomainMetadata } from "../src/utils/cloudSyncShared";
 import type { Track } from "../src/stores/useIpodStore";
 
@@ -36,7 +36,85 @@ type CloudSyncStoreModule = typeof import("../src/stores/useCloudSyncStore");
 
 const browserGlobals = globalThis as typeof globalThis & {
   localStorage?: Storage;
+  document?: Document;
+  window?: Window & typeof globalThis;
+  navigator?: Navigator;
 };
+
+const originalLocalStorage = browserGlobals.localStorage;
+const originalDocument = browserGlobals.document;
+const originalWindow = browserGlobals.window;
+const originalNavigator = browserGlobals.navigator;
+
+class MockAudioContext {
+  state: AudioContextState = "running";
+  destination = {};
+  onstatechange: (() => void) | null = null;
+
+  async resume(): Promise<void> {
+    this.state = "running";
+  }
+
+  async close(): Promise<void> {
+    this.state = "closed";
+  }
+
+  addEventListener(): void {}
+
+  removeEventListener(): void {}
+
+  createBuffer(): AudioBuffer {
+    return {} as AudioBuffer;
+  }
+
+  createBufferSource(): AudioBufferSourceNode {
+    return {
+      connect: () => undefined,
+      start: () => undefined,
+      stop: () => undefined,
+      buffer: null,
+    } as unknown as AudioBufferSourceNode;
+  }
+}
+
+function createBrowserTestEnvironment(): void {
+  browserGlobals.localStorage = new MemoryStorage();
+  browserGlobals.document = {
+    documentElement: {
+      dataset: {},
+    },
+    visibilityState: "visible",
+    head: {
+      appendChild: () => undefined,
+    },
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    createTextNode: () => ({}),
+    createElement: () => ({
+      dataset: {},
+      styleSheet: null,
+      appendChild: () => undefined,
+      remove: () => undefined,
+      replaceWith: () => undefined,
+    }),
+  } as unknown as Document;
+  browserGlobals.navigator = {
+    onLine: true,
+    userAgent: "bun-test",
+    mediaDevices: {
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    },
+  } as unknown as Navigator;
+  browserGlobals.window = {
+    AudioContext: MockAudioContext as unknown as typeof AudioContext,
+    document: browserGlobals.document,
+    navigator: browserGlobals.navigator,
+    location: { host: "localhost:5173", origin: "http://localhost:5173" } as Location,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  } as unknown as Window & typeof globalThis;
+}
 
 let domainsModulePromise: Promise<DomainsModule> | null = null;
 let ipodStoreModulePromise: Promise<IpodStoreModule> | null = null;
@@ -104,12 +182,12 @@ function makeTrack(
 }
 
 beforeAll(() => {
-  browserGlobals.localStorage = new MemoryStorage();
+  createBrowserTestEnvironment();
   seedPersistedStores();
 });
 
 beforeEach(async () => {
-  browserGlobals.localStorage = new MemoryStorage();
+  createBrowserTestEnvironment();
   seedPersistedStores();
 
   const { useIpodStore } = await getIpodStoreModule();
@@ -135,6 +213,13 @@ beforeEach(async () => {
       songTrackIds: {},
     },
   }));
+});
+
+afterAll(() => {
+  browserGlobals.localStorage = originalLocalStorage;
+  browserGlobals.document = originalDocument;
+  browserGlobals.window = originalWindow;
+  browserGlobals.navigator = originalNavigator;
 });
 
 describe("cloud sync songs ordering", () => {
