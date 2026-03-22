@@ -37,25 +37,6 @@ import {
   mergeLeadingInterludeWithNextLine,
 } from "@/utils/karaokeInterludeDisplay";
 
-type DebugLogPayload = {
-  hypothesisId: string;
-  location: string;
-  message: string;
-  data: Record<string, unknown>;
-};
-
-const appendDebugLog = (payload: DebugLogPayload) => {
-  if (!("Bun" in globalThis)) return;
-  void Function("return import('node:fs')")()
-    .then(({ appendFileSync }: typeof import("node:fs")) => {
-      appendFileSync(
-        "/opt/cursor/logs/debug.log",
-        `${JSON.stringify({ ...payload, timestamp: Date.now() })}\n`
-      );
-    })
-    .catch(() => {});
-};
-
 interface LyricsDisplayProps {
   lines: LyricLine[];
   /** Original untranslated lyrics (used for furigana) */
@@ -1968,21 +1949,7 @@ export function LyricsDisplay({
     }
 
     if (align === LyricsAlignment.Alternating) {
-      const alternatingTextAlign =
-        totalVisibleLines === 1 ? "center" : lineIndex === 0 ? "left" : "right";
-      // #region agent log
-      appendDebugLog({
-        hypothesisId: "A",
-        location: "src/apps/ipod/components/LyricsDisplay.tsx:1951",
-        message: "Computed alternating text alignment",
-        data: {
-          lineIndex,
-          totalVisibleLines,
-          alternatingTextAlign,
-        },
-      });
-      // #endregion
-      return alternatingTextAlign;
+      return totalVisibleLines === 1 ? "center" : lineIndex === 0 ? "left" : "right";
     }
 
     if (totalVisibleLines === 1) {
@@ -2015,37 +1982,11 @@ export function LyricsDisplay({
 
     if (clampedIdx % 2 === 0) {
       // Current is on top
-      const result = [allLines[clampedIdx], nextLine].filter(Boolean);
-      // #region agent log
-      appendDebugLog({
-        hypothesisId: "C",
-        location: "src/apps/ipod/components/LyricsDisplay.tsx:1984",
-        message: "Computed alternating visible lines for even current index",
-        data: {
-          currIdx,
-          clampedIdx,
-          resultStarts: result.map((line) => line.startTimeMs),
-        },
-      });
-      // #endregion
-      return result;
+      return [allLines[clampedIdx], nextLine].filter(Boolean);
     }
 
     // Current is at bottom
-    const result = [nextLine, allLines[clampedIdx]].filter(Boolean);
-    // #region agent log
-    appendDebugLog({
-      hypothesisId: "C",
-      location: "src/apps/ipod/components/LyricsDisplay.tsx:1989",
-      message: "Computed alternating visible lines for odd current index",
-      data: {
-        currIdx,
-        clampedIdx,
-        resultStarts: result.map((line) => line.startTimeMs),
-      },
-    });
-    // #endregion
-    return result;
+    return [nextLine, allLines[clampedIdx]].filter(Boolean);
   };
 
   // State to hold lines displayed in Alternating mode so we can delay updates
@@ -2067,20 +2008,7 @@ export function LyricsDisplay({
 
     // Instantly update on song load, translation switch, or initial state
     if (linesChanged || actualCurrentLine < 0) {
-      const nextAltLines = computeAltVisibleLines(displayOriginalLines, actualCurrentLine);
-      // #region agent log
-      appendDebugLog({
-        hypothesisId: "C",
-        location: "src/apps/ipod/components/LyricsDisplay.tsx:2010",
-        message: "Applied immediate alternating line update",
-        data: {
-          linesChanged,
-          actualCurrentLine,
-          nextAltLineStarts: nextAltLines.map((line) => line.startTimeMs),
-        },
-      });
-      // #endregion
-      setAltLines(nextAltLines);
+      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
       return;
     }
 
@@ -2104,20 +2032,7 @@ export function LyricsDisplay({
     const delayMs = Math.min(400, Math.max(20, Math.floor(rawDuration * 0.2)));
 
     const timer = setTimeout(() => {
-      const nextAltLines = computeAltVisibleLines(displayOriginalLines, actualCurrentLine);
-      // #region agent log
-      appendDebugLog({
-        hypothesisId: "C",
-        location: "src/apps/ipod/components/LyricsDisplay.tsx:2035",
-        message: "Applied delayed alternating line update",
-        data: {
-          actualCurrentLine,
-          delayMs,
-          nextAltLineStarts: nextAltLines.map((line) => line.startTimeMs),
-        },
-      });
-      // #endregion
-      setAltLines(nextAltLines);
+      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
     }, delayMs);
 
     return () => clearTimeout(timer);
@@ -2390,31 +2305,6 @@ export function LyricsDisplay({
             filter: ANIMATION_CONFIG.fade,
             duration: 0.15,
           };
-
-          if (
-            alignment === LyricsAlignment.Alternating &&
-            (leadingInterlude || totalVisibleLines === 1 || isInterludePlaceholder)
-          ) {
-            // #region agent log
-            appendDebugLog({
-              hypothesisId: "B",
-              location: "src/apps/ipod/components/LyricsDisplay.tsx:2310",
-              message: "Rendering alternating lyric row",
-              data: {
-                lineStart: line.startTimeMs,
-                isCurrent,
-                isInterludePlaceholder,
-                hasLeadingInterlude: !!leadingInterlude,
-                originalIndex,
-                totalVisibleLines,
-                lineTextAlign,
-                position,
-                lineActualIdx,
-                currentAnchorIdx,
-              },
-            });
-            // #endregion
-          }
 
           return (
             <motion.div
