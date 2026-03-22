@@ -1170,6 +1170,7 @@ const getVariants = (
 type LyricsLineRowContentProps = {
   line: LyricLine;
   isCurrent: boolean;
+  isInterludePlaceholder?: boolean;
   hasWordTimings: boolean;
   /** Only passed for rows that need per-tick playback time (word highlight + gradient hue). */
   timeMsForRow: number | undefined;
@@ -1198,6 +1199,7 @@ type LyricsLineRowContentProps = {
 function LyricsLineRowContent({
   line,
   isCurrent,
+  isInterludePlaceholder = false,
   hasWordTimings,
   timeMsForRow,
   translatedText,
@@ -1256,9 +1258,15 @@ function LyricsLineRowContent({
             : undefined);
         return (
           <div
-            className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer lyrics-line-clickable" : ""}`}
+            className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${
+              onSeekToTime && !hasWordTimings && !isInterludePlaceholder
+                ? "cursor-pointer lyrics-line-clickable"
+                : ""
+            }`}
             style={
-              isOldSchoolKaraoke && !hasWordTimings
+              isInterludePlaceholder
+                ? undefined
+                : isOldSchoolKaraoke && !hasWordTimings
                 ? ({
                     color: isCurrent ? highlightColor : OLD_SCHOOL_BASE_COLOR,
                     WebkitTextStroke: isCurrent
@@ -1283,7 +1291,7 @@ function LyricsLineRowContent({
                     : undefined
             }
             onClick={
-              onSeekToTime && !hasWordTimings
+              onSeekToTime && !hasWordTimings && !isInterludePlaceholder
                 ? (e) => {
                     e.stopPropagation();
                     onSeekToTime(parseInt(line.startTimeMs, 10));
@@ -1291,7 +1299,13 @@ function LyricsLineRowContent({
                 : undefined
             }
           >
-            {shouldUseAnimatedWordTiming ? (
+            {isInterludePlaceholder ? (
+              <span className="karaoke-interlude-dots" aria-hidden>
+                <span className="karaoke-interlude-dot" />
+                <span className="karaoke-interlude-dot" />
+                <span className="karaoke-interlude-dot" />
+              </span>
+            ) : shouldUseAnimatedWordTiming ? (
               <WordTimingHighlight
                 wordTimings={line.wordTimings!}
                 lineStartTimeMs={parseInt(line.startTimeMs, 10)}
@@ -2084,6 +2098,7 @@ export function LyricsDisplay({
                     : line
                 }
                 isCurrent={isCurrent}
+                isInterludePlaceholder={isInterludePlaceholder}
                 hasWordTimings={hasWordTimings}
                 timeMsForRow={timeMsForRow}
                 translatedText={translatedText}
