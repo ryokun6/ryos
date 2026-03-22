@@ -1710,6 +1710,11 @@
   letter-spacing: 0.18em !important;
 }
 
+:root[data-os-theme="macosx"] .karaoke-force-font .fullscreen-lyrics-text .karaoke-interlude-circle-dots {
+  font-size: clamp(12px, 0.34em, 24px) !important;
+  letter-spacing: 0.12em !important;
+}
+
 /* Preserve lyrics translation sizes on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-ipod {
   font-size: 10px !important;

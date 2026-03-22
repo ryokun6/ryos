@@ -490,6 +490,12 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     letter-spacing: 0.18em !important;
   }
 
+  /* Fullscreen lyrics lines are huge; keep interlude dots smaller than windowed karaoke */
+  .karaoke-force-font .fullscreen-lyrics-text .karaoke-interlude-circle-dots {
+    font-size: clamp(12px, 0.34em, 24px) !important;
+    letter-spacing: 0.12em !important;
+  }
+
   /* Fullscreen lyrics text - viewport-relative with max cap */
   .fullscreen-lyrics-text {
     font-size: clamp(32px, min(10vw, 10vh), 120px);
