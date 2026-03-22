@@ -561,13 +561,7 @@ export function useAutoCloudSync() {
         }
       }
     },
-    [
-      clearUploadTimer,
-      getEnabledPartDomains,
-      isAuthenticated,
-      username,
-      uploadLogicalCloudSyncDomain,
-    ]
+    [clearUploadTimer, getEnabledPartDomains, isAuthenticated, username]
   );
 
   const queueUpload = useCallback(
@@ -1080,7 +1074,14 @@ export function useAutoCloudSync() {
         void checkRemoteUpdates();
       }
     }
-  }, [isAuthenticated, isDomainEnabled, isSyncActive, queueUpload, username]);
+  }, [
+    hasPendingUploadForDomain,
+    isAuthenticated,
+    isDomainEnabled,
+    isSyncActive,
+    queueUpload,
+    username,
+  ]);
 
   const handleRealtimeDomainUpdateRef = useRef(handleRealtimeDomainUpdate);
   handleRealtimeDomainUpdateRef.current = handleRealtimeDomainUpdate;
@@ -1575,7 +1576,10 @@ export function useAutoCloudSync() {
     clearAllUploadTimers,
     enabledDomainsKey,
     flushPendingUploads,
+    isAuthenticated,
+    isDomainEnabled,
     isSyncActive,
     queueUpload,
+    username,
   ]);
 }

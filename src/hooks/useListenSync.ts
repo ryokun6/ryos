@@ -296,7 +296,13 @@ export function useListenSync({
       );
     }, VIRTUAL_ELAPSED_TICK_MS);
     return () => window.clearInterval(id);
-  }, [applyListenerPlayback, lastSyncPayload, applySmoothedVirtualElapsed, isPlaying]);
+  }, [
+    applyListenerPlayback,
+    lastSyncPayload,
+    applySmoothedVirtualElapsed,
+    isPlaying,
+    setVirtualElapsedSeconds,
+  ]);
 
   // DJ disconnect detection - check if we haven't received sync for too long
   useEffect(() => {

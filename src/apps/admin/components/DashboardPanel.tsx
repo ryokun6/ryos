@@ -185,7 +185,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [username, isAuthenticated, rangeDays]);
+  }, [username, isAuthenticated, rangeDays, t]);
 
   useEffect(() => {
     fetchData();
