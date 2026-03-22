@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { LyricsAlignment, type LyricLine } from "../src/types/lyrics";
 import {
   applyKaraokeInterludeEllipsis,
+  buildInterludeLyricLineWithWordTimings,
   isInterludePlaceholderLine,
 } from "../src/utils/karaokeInterludeDisplay";
 
@@ -14,7 +15,7 @@ function makeLine(startTimeMs: number, words: string): LyricLine {
 }
 
 describe("karaoke interlude ellipsis", () => {
-  test("shows lead-in ellipsis during a long intro in center mode", () => {
+  test("does not show lead-in intro dots in single-line (center) mode", () => {
     const lines = [makeLine(12000, "First line")];
 
     const visible = applyKaraokeInterludeEllipsis({
@@ -26,12 +27,67 @@ describe("karaoke interlude ellipsis", () => {
       enabled: true,
     });
 
-    expect(visible).toHaveLength(1);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
-    expect(visible[0]?.words).toBe("\u2022\u2022\u2022");
+    expect(visible).toEqual([lines[0]]);
+    expect(isInterludePlaceholderLine(visible[0]!)).toBe(false);
   });
 
-  test("replaces the held current line with ellipsis during a long mid-song interlude", () => {
+  test("does not show lead-in intro dots until the countdown window starts", () => {
+    const lines = [makeLine(12000, "First line")];
+
+    const visible = applyKaraokeInterludeEllipsis({
+      visibleLines: [lines[0]],
+      allLines: lines,
+      alignment: LyricsAlignment.FocusThree,
+      currentIndex: -1,
+      currentTimeMs: 4000,
+      enabled: true,
+    });
+
+    expect(visible).toEqual([lines[0]]);
+    expect(isInterludePlaceholderLine(visible[0]!)).toBe(false);
+  });
+
+  test("shows lead-in intro dots during countdown of a long intro in focus-three mode", () => {
+    const lines = [makeLine(12000, "First line")];
+
+    const visible = applyKaraokeInterludeEllipsis({
+      visibleLines: [lines[0]],
+      allLines: lines,
+      alignment: LyricsAlignment.FocusThree,
+      currentIndex: -1,
+      currentTimeMs: 9500,
+      enabled: true,
+    });
+
+    expect(visible).toHaveLength(2);
+    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
+    expect(visible[1]).toBe(lines[0]);
+  });
+
+  test("buildInterludeLyricLineWithWordTimings splits the silent gap into three timed words", () => {
+    const lines = [
+      makeLine(0, "Verse line"),
+      makeLine(15000, "Next line"),
+    ];
+    const placeholder = applyKaraokeInterludeEllipsis({
+      visibleLines: [lines[0], lines[1]],
+      allLines: lines,
+      alignment: LyricsAlignment.Alternating,
+      currentIndex: 0,
+      currentTimeMs: 12200,
+      enabled: true,
+    })[0];
+    if (!isInterludePlaceholderLine(placeholder!)) throw new Error("expected placeholder");
+
+    const timed = buildInterludeLyricLineWithWordTimings(placeholder, lines, 0);
+    expect(timed.wordTimings).toHaveLength(3);
+    // Countdown is last 3s before next line: next at 15000 → line starts at 12000, 3000ms total
+    const total = timed.wordTimings!.reduce((s, w) => s + w.durationMs, 0);
+    expect(total).toBe(3000);
+    expect(timed.startTimeMs).toBe("12000");
+  });
+
+  test("does not replace the current line with ellipsis before the countdown window", () => {
     const lines = [
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
@@ -43,6 +99,25 @@ describe("karaoke interlude ellipsis", () => {
       alignment: LyricsAlignment.Alternating,
       currentIndex: 0,
       currentTimeMs: 5000,
+      enabled: true,
+    });
+
+    expect(visible).toEqual([lines[0], lines[1]]);
+    expect(isInterludePlaceholderLine(visible[0]!)).toBe(false);
+  });
+
+  test("replaces the held current line with ellipsis during countdown of a long mid-song interlude", () => {
+    const lines = [
+      makeLine(0, "Verse line"),
+      makeLine(15000, "Next line"),
+    ];
+
+    const visible = applyKaraokeInterludeEllipsis({
+      visibleLines: [lines[0], lines[1]],
+      allLines: lines,
+      alignment: LyricsAlignment.Alternating,
+      currentIndex: 0,
+      currentTimeMs: 12200,
       enabled: true,
     });
 

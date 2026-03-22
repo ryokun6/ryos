@@ -1,4 +1,4 @@
-import { LyricsAlignment, type LyricLine } from "@/types/lyrics";
+import { LyricsAlignment, type LyricLine, type LyricWord } from "@/types/lyrics";
 
 export interface InterludePlaceholderLine {
   startTimeMs: string;
@@ -9,10 +9,47 @@ export interface InterludePlaceholderLine {
 
 export type VisibleLyricLine = LyricLine | InterludePlaceholderLine;
 
-const INTERLUDE_ELLIPSIS = "\u2022\u2022\u2022";
 const MIN_LINE_HOLD_MS = 2500;
 const LONG_INTERLUDE_THRESHOLD_MS = 8000;
 const INTERLUDE_PLACEHOLDER_DELAY_MS = 2000;
+
+/**
+ * Duration of the 3-2-1 style dot fill, ending exactly when the next line starts.
+ * Word timings only cover this tail of the interlude (not the full silent gap).
+ */
+export const INTERLUDE_COUNTDOWN_TOTAL_MS = 3000;
+
+/** U+25CF BLACK CIRCLE — reads as a filled dot at lyric font sizes */
+const INTERLUDE_DOT = "\u25CF";
+
+/** Last `INTERLUDE_COUNTDOWN_TOTAL_MS` (or full span if shorter) ending at `fullEndMs`. */
+export function buildCountdownSegment(
+  fullStartMs: number,
+  fullEndMs: number
+): { segmentStartMs: number; segmentEndMs: number } {
+  const segmentEndMs = fullEndMs;
+  const spanMs = Math.max(0, fullEndMs - fullStartMs);
+  const countdownMs = Math.min(INTERLUDE_COUNTDOWN_TOTAL_MS, spanMs);
+  const segmentStartMs = segmentEndMs - countdownMs;
+  return { segmentStartMs, segmentEndMs };
+}
+
+function interludeWordsAndTimings(
+  segmentStartMs: number,
+  segmentEndMs: number
+): { words: string; wordTimings: LyricWord[] } {
+  const totalMs = Math.max(3, segmentEndMs - segmentStartMs);
+  const d = totalMs / 3;
+  const wordTimings: LyricWord[] = [
+    { text: `${INTERLUDE_DOT} `, startTimeMs: 0, durationMs: d },
+    { text: `${INTERLUDE_DOT} `, startTimeMs: d, durationMs: d },
+    { text: INTERLUDE_DOT, startTimeMs: 2 * d, durationMs: d },
+  ];
+  return {
+    words: `${INTERLUDE_DOT} ${INTERLUDE_DOT} ${INTERLUDE_DOT}`,
+    wordTimings,
+  };
+}
 
 function createInterludePlaceholder(
   id: string,
@@ -20,7 +57,7 @@ function createInterludePlaceholder(
 ): InterludePlaceholderLine {
   return {
     startTimeMs: `interlude-${id}`,
-    words: INTERLUDE_ELLIPSIS,
+    words: `${INTERLUDE_DOT} ${INTERLUDE_DOT} ${INTERLUDE_DOT}`,
     isInterludePlaceholder: true,
     anchorLineIndex,
   };
@@ -71,6 +108,52 @@ export function isInterludePlaceholderLine(
   return "isInterludePlaceholder" in line && line.isInterludePlaceholder === true;
 }
 
+/**
+ * Build a real {@link LyricLine} with synthetic word timings so interlude dots use the same
+ * karaoke mask/outline path as timed lyrics. The three beats fall in a short countdown window
+ * ending at the next line (see INTERLUDE_COUNTDOWN_TOTAL_MS), not across the full break.
+ */
+export function buildInterludeLyricLineWithWordTimings(
+  placeholder: InterludePlaceholderLine,
+  allLines: LyricLine[],
+  actualCurrentLine: number
+): LyricLine {
+  let segmentStartMs: number;
+  let segmentEndMs: number;
+
+  if (actualCurrentLine < 0) {
+    const first = allLines[0];
+    if (!first) {
+      return {
+        startTimeMs: "0",
+        ...interludeWordsAndTimings(0, 1),
+      };
+    }
+    const fullEndMs = getLineStartMs(first);
+    ({ segmentStartMs, segmentEndMs } = buildCountdownSegment(0, fullEndMs));
+  } else {
+    const current = allLines[placeholder.anchorLineIndex];
+    const next = allLines[placeholder.anchorLineIndex + 1];
+    if (!current || !next) {
+      return {
+        startTimeMs: "0",
+        ...interludeWordsAndTimings(0, 1),
+      };
+    }
+    const fullStartMs = getLineEndMs(current) + INTERLUDE_PLACEHOLDER_DELAY_MS;
+    const fullEndMs = getLineStartMs(next);
+    ({ segmentStartMs, segmentEndMs } = buildCountdownSegment(fullStartMs, fullEndMs));
+  }
+
+  const { words, wordTimings } = interludeWordsAndTimings(segmentStartMs, segmentEndMs);
+
+  return {
+    startTimeMs: String(segmentStartMs),
+    words,
+    wordTimings,
+  };
+}
+
 export function applyKaraokeInterludeEllipsis({
   visibleLines,
   allLines,
@@ -95,14 +178,25 @@ export function applyKaraokeInterludeEllipsis({
       return visibleLines;
     }
 
+    // Single-line (center) mode: no lead-in intro dots before the first lyric
+    if (alignment === LyricsAlignment.Center) {
+      return visibleLines;
+    }
+
+    const first = allLines[0];
+    if (!first) {
+      return visibleLines;
+    }
+    const { segmentStartMs } = buildCountdownSegment(0, getLineStartMs(first));
+    // Hide dots until the 3-2-1 countdown window begins (not during the whole silent intro)
+    if (currentTimeMs < segmentStartMs) {
+      return visibleLines;
+    }
+
     const placeholder = createInterludePlaceholder(
       `intro-${allLines[0]?.startTimeMs ?? "start"}`,
       0
     );
-
-    if (alignment === LyricsAlignment.Center) {
-      return [placeholder];
-    }
 
     const firstLine = visibleLines[0] ?? allLines[0];
     return firstLine ? [placeholder, firstLine] : [placeholder];
@@ -111,6 +205,14 @@ export function applyKaraokeInterludeEllipsis({
   const currentLine = allLines[currentIndex];
   const nextLine = allLines[currentIndex + 1];
   if (!currentLine || !nextLine || !hasLongInterlude(currentLine, nextLine, currentTimeMs)) {
+    return visibleLines;
+  }
+
+  const fullStartMs = getLineEndMs(currentLine) + INTERLUDE_PLACEHOLDER_DELAY_MS;
+  const fullEndMs = getLineStartMs(nextLine);
+  const { segmentStartMs } = buildCountdownSegment(fullStartMs, fullEndMs);
+  // Hide dots until the countdown window begins (not across the whole long gap)
+  if (currentTimeMs < segmentStartMs) {
     return visibleLines;
   }
 
