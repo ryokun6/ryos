@@ -11,6 +11,13 @@ export interface InterludePlaceholderLine {
 
 export type VisibleLyricLine = LyricLine | InterludePlaceholderLine;
 
+export interface RenderableVisibleLyricLine {
+  line: VisibleLyricLine;
+  leadingInterlude?: InterludePlaceholderLine;
+  originalIndex: number;
+  totalVisibleLines: number;
+}
+
 const MIN_LINE_HOLD_MS = 2500;
 const LONG_INTERLUDE_THRESHOLD_MS = 8000;
 const INTERLUDE_PLACEHOLDER_DELAY_MS = 2000;
@@ -131,6 +138,50 @@ export function isInterludePlaceholderLine(
   line: VisibleLyricLine
 ): line is InterludePlaceholderLine {
   return "isInterludePlaceholder" in line && line.isInterludePlaceholder === true;
+}
+
+/**
+ * Collapse a standalone interlude placeholder onto the following lyric row so the dots
+ * can render with the next lyric instead of taking a dedicated layout slot.
+ */
+export function mergeLeadingInterludeWithNextLine(
+  visibleLines: VisibleLyricLine[]
+): RenderableVisibleLyricLine[] {
+  const mergedRows = visibleLines.flatMap((line, index) => {
+    const nextLine = visibleLines[index + 1];
+    const previousLine = visibleLines[index - 1];
+
+    if (
+      isInterludePlaceholderLine(line) &&
+      nextLine &&
+      !isInterludePlaceholderLine(nextLine)
+    ) {
+      return [];
+    }
+
+    const leadingInterlude =
+      previousLine &&
+      isInterludePlaceholderLine(previousLine) &&
+      !isInterludePlaceholderLine(line)
+        ? previousLine
+        : undefined;
+
+    return [
+      {
+        line,
+        leadingInterlude,
+        originalIndex: index,
+        totalVisibleLines: visibleLines.length,
+      },
+    ];
+  });
+
+  const renderableTotalLines = mergedRows.length;
+  return mergedRows.map((row, renderIndex) => ({
+    ...row,
+    originalIndex: renderIndex,
+    totalVisibleLines: renderableTotalLines,
+  }));
 }
 
 /**
