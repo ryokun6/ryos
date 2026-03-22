@@ -478,58 +478,16 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-size: clamp(32px, 8cqw, 96px);
   }
 
-  /* Long interlude / lead-in placeholder — three large dots, tight spacing, staggered pulse */
-  @keyframes karaoke-interlude-dot-pulse {
-    0%,
-    100% {
-      opacity: 0.35;
-      transform: scale(0.82);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.12);
-    }
-  }
-
-  .karaoke-interlude-dots {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(3px, 0.45cqw, 10px);
-    line-height: 0;
-    vertical-align: middle;
-  }
-
-  .karaoke-interlude-dot {
-    flex: 0 0 auto;
-    width: clamp(22px, 5.5cqw, 64px);
-    height: clamp(22px, 5.5cqw, 64px);
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow:
-      0 0 10px rgba(255, 255, 255, 0.45),
-      0 0 8px rgba(0, 0, 0, 0.55);
-    animation: karaoke-interlude-dot-pulse 1.15s ease-in-out infinite;
-  }
-
-  .karaoke-interlude-dot:nth-child(1) {
-    animation-delay: 0s;
-  }
-
-  .karaoke-interlude-dot:nth-child(2) {
-    animation-delay: 0.18s;
-  }
-
-  .karaoke-interlude-dot:nth-child(3) {
-    animation-delay: 0.36s;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .karaoke-interlude-dot {
-      animation: none;
-      opacity: 0.85;
-      transform: none;
-    }
+  /*
+   * Interlude lead-in: U+25CF circles.
+   * `em` is vs `.karaoke-lyrics-text` parent. Use `.karaoke-force-font` + `!important` so macOS
+   * theme rules (`.karaoke-force-font * { font-size: unset !important }`) do not win.
+   */
+  .karaoke-force-font .karaoke-interlude-circle-dots {
+    display: inline-block;
+    font-size: clamp(18px, 0.52em, 44px) !important;
+    line-height: 1 !important;
+    letter-spacing: 0.18em !important;
   }
 
   /* Fullscreen lyrics text - viewport-relative with max cap */

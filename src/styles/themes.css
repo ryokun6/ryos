@@ -1699,6 +1699,17 @@
   font-size: clamp(32px, 8cqw, 96px) !important;
 }
 
+/*
+ * Interlude timed dots (WordTimingHighlight wrapper). The rules above reset
+ * `.karaoke-force-font *` and `.karaoke-force-font div` to `font-size: unset !important`,
+ * which made `.karaoke-interlude-circle-dots` inherit the full karaoke line size.
+ */
+:root[data-os-theme="macosx"] .karaoke-force-font .karaoke-interlude-circle-dots {
+  font-size: clamp(18px, 0.52em, 44px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.18em !important;
+}
+
 /* Preserve lyrics translation sizes on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-ipod {
   font-size: 10px !important;

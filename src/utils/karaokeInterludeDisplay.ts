@@ -24,7 +24,7 @@ export const INTERLUDE_COUNTDOWN_TOTAL_MS = 3000;
 /**
  * Dots stay at this opacity until the fade-in window, then ramp to 1 at {@link InterludePlaceholderLine.countdownStartMs}.
  */
-export const INTERLUDE_DOTS_REST_OPACITY = 0.2;
+export const INTERLUDE_DOTS_REST_OPACITY = 0.4;
 
 /**
  * Dots fade from {@link INTERLUDE_DOTS_REST_OPACITY} → 1 over this window ending at {@link InterludePlaceholderLine.countdownStartMs}.
