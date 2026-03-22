@@ -318,17 +318,16 @@ interface FuriganaMappingResult {
 }
 
 /**
- * When combining adjacent timed words into one ruby unit, we trim each word and concatenate.
- * That drops spaces between Latin words (e.g. "Oh" + "no" → "Ohno"). Insert a single ASCII
- * space only when both sides look like Latin word chunks (alphanumeric), not for CJK.
+ * Preserve the original whitespace authored in timed lyric chunks.
+ * Japanese chunks typically have no spaces, while English/Korean often do.
  */
-function needsSpaceBetweenTimedWordChunks(prevTrimmed: string, nextTrimmed: string): boolean {
-  if (!prevTrimmed || !nextTrimmed) return false;
-  const prevChars = [...prevTrimmed];
-  const nextChars = [...nextTrimmed];
-  const last = prevChars[prevChars.length - 1];
-  const first = nextChars[0];
-  return /[A-Za-z0-9]/.test(last) && /[A-Za-z0-9]/.test(first);
+function getTrailingWhitespace(text: string): string {
+  const match = text.match(/\s+$/u);
+  return match?.[0] ?? "";
+}
+
+function stripTrailingWhitespace(text: string): string {
+  return text.replace(/\s+$/u, "");
 }
 
 /**
@@ -482,21 +481,18 @@ function mapWordTimingsToFurigana(
       }
     }
     
-    // Build combined text and extra duration
+    // Build combined text and extra duration. Preserve authored whitespace between timed words,
+    // but keep trailing whitespace outside the ruby span so layout matches single-word rendering.
     let combinedText = "";
     let extraDurationMs = 0;
     for (let i = 0; i < combinedWords.length; i++) {
       const w = wordTimings[combinedWords[i]];
-      const part = w.text.trim();
       if (i > 0) {
         extraDurationMs += w.durationMs;
-        const prev = combinedText.trimEnd();
-        if (needsSpaceBetweenTimedWordChunks(prev, part)) {
-          combinedText += " ";
-        }
       }
-      combinedText += part;
+      combinedText += w.text;
     }
+    combinedText = stripTrailingWhitespace(combinedText);
     
     renderItems.push({
       wordIdx,
@@ -613,8 +609,7 @@ function StaticWordRendering({
         // Get trailing space from last combined word
         const lastWordIdx = item.combinedWordIndices[item.combinedWordIndices.length - 1];
         const lastWord = wordTimings[lastWordIdx];
-        const lastTrimmed = lastWord.text.trim();
-        const trailingSpace = lastWord.text.slice(lastTrimmed.length);
+        const trailingSpace = getTrailingWhitespace(lastWord.text);
         const isLastWord = idx === mappedItems.length - 1;
         
         let content: ReactNode;
@@ -658,8 +653,7 @@ function StaticWordRendering({
     
     return wordTimings.map((word, idx) => {
       const isLastWord = idx === wordTimings.length - 1;
-      const trimmed = word.text.trim();
-      const trailingSpace = word.text.slice(trimmed.length);
+      const trailingSpace = getTrailingWhitespace(word.text);
       const wordContent = getWordContent(word.text);
       // Only add space if output is Latin (romanized)
       const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;
@@ -854,8 +848,7 @@ function WordTimingHighlight({
         // Get trailing space from last combined word
         const lastWordIdx = item.combinedWordIndices[item.combinedWordIndices.length - 1];
         const lastWord = wordTimings[lastWordIdx];
-        const lastTrimmed = lastWord.text.trim();
-        const trailingSpace = lastWord.text.slice(lastTrimmed.length);
+        const trailingSpace = getTrailingWhitespace(lastWord.text);
         const isLastWord = idx === mappedItems.length - 1;
         
         let content: ReactNode;
@@ -902,8 +895,7 @@ function WordTimingHighlight({
     // No furigana - simple word list with romanization support
     return wordTimings.map((word, idx) => {
       const isLastWord = idx === wordTimings.length - 1;
-      const trimmed = word.text.trim();
-      const trailingSpace = word.text.slice(trimmed.length);
+      const trailingSpace = getTrailingWhitespace(word.text);
       const wordContent = getWordContent(word.text);
       // Only add space if output is Latin (romanized)
       const outputIsLatin = willOutputLatin(word.text) || isEnglishSoramimi;

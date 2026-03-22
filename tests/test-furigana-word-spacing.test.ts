@@ -1,40 +1,68 @@
 import { describe, expect, test } from "bun:test";
+import { getFuriganaSegmentsPronunciationOnly } from "../src/utils/romanization";
 
-/** Mirror of LyricsDisplay.tsx logic for regression testing */
-function needsSpaceBetweenTimedWordChunks(prevTrimmed: string, nextTrimmed: string): boolean {
-  if (!prevTrimmed || !nextTrimmed) return false;
-  const prevChars = [...prevTrimmed];
-  const nextChars = [...nextTrimmed];
-  const last = prevChars[prevChars.length - 1];
-  const first = nextChars[0];
-  return /[A-Za-z0-9]/.test(last) && /[A-Za-z0-9]/.test(first);
+function stripTrailingWhitespace(text: string): string {
+  return text.replace(/\s+$/u, "");
 }
 
+/** Mirror of LyricsDisplay.tsx timed-word combine logic for regression testing */
 function combineTimedWordParts(parts: string[]): string {
-  let combined = "";
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i].trim();
-    if (i > 0) {
-      const prev = combined.trimEnd();
-      if (needsSpaceBetweenTimedWordChunks(prev, part)) {
-        combined += " ";
-      }
-    }
-    combined += part;
-  }
-  return combined;
+  return stripTrailingWhitespace(parts.join(""));
 }
 
-describe("furigana multi-word combine preserves Latin spaces", () => {
-  test("English words from separate timings", () => {
-    expect(combineTimedWordParts(["Oh", "no", "loving", "you"])).toBe("Oh no loving you");
+describe("furigana timed-word spacing", () => {
+  test("preserves authored English spaces", () => {
+    expect(combineTimedWordParts(["Oh ", "no ", "loving ", "you"])).toBe("Oh no loving you");
   });
 
-  test("no space between CJK chunks", () => {
+  test("preserves authored Korean spaces", () => {
+    expect(combineTimedWordParts(["안녕 ", "하세요"])).toBe("안녕 하세요");
+  });
+
+  test("keeps Japanese chunks concatenated when source has no spaces", () => {
     expect(combineTimedWordParts(["走", "る"])).toBe("走る");
   });
 
-  test("no space between Latin and kanji boundary", () => {
+  test("keeps mixed Latin and kanji boundary unchanged when source has no spaces", () => {
     expect(combineTimedWordParts(["Hello", "世界"])).toBe("Hello世界");
+  });
+});
+
+describe("furigana pronunciation-only spacing", () => {
+  test("preserves explicit spaces between annotated English words", () => {
+    expect(
+      getFuriganaSegmentsPronunciationOnly([
+        { text: "I", reading: "アイ" },
+        { text: " " },
+        { text: "love", reading: "ラブ" },
+        { text: " " },
+        { text: "you", reading: "ユー" },
+      ])
+    ).toBe("アイ ラブ ユー");
+  });
+
+  test("preserves explicit spaces around Korean text", () => {
+    expect(
+      getFuriganaSegmentsPronunciationOnly(
+        [
+          { text: "안녕" },
+          { text: " " },
+          { text: "하세요" },
+        ],
+        { koreanRomanization: true }
+      )
+    ).toBe("annyeong haseyo");
+  });
+
+  test("keeps Japanese pronunciation concatenated without source spaces", () => {
+    expect(
+      getFuriganaSegmentsPronunciationOnly(
+        [
+          { text: "走", reading: "はし" },
+          { text: "る" },
+        ],
+        { japaneseRomaji: true }
+      )
+    ).toBe("hashiru");
   });
 });
