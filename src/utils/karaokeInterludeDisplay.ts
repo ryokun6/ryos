@@ -2,14 +2,14 @@ import { LyricsAlignment, type LyricLine } from "@/types/lyrics";
 
 export interface InterludePlaceholderLine {
   startTimeMs: string;
-  words: "...";
+  words: string;
   isInterludePlaceholder: true;
   anchorLineIndex: number;
 }
 
 export type VisibleLyricLine = LyricLine | InterludePlaceholderLine;
 
-const INTERLUDE_ELLIPSIS = "...";
+const INTERLUDE_ELLIPSIS = "\u2022\u2022\u2022";
 const MIN_LINE_HOLD_MS = 2500;
 const LONG_INTERLUDE_THRESHOLD_MS = 8000;
 const INTERLUDE_PLACEHOLDER_DELAY_MS = 2000;

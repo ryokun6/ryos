@@ -28,7 +28,7 @@ describe("karaoke interlude ellipsis", () => {
 
     expect(visible).toHaveLength(1);
     expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
-    expect(visible[0]?.words).toBe("...");
+    expect(visible[0]?.words).toBe("\u2022\u2022\u2022");
   });
 
   test("replaces the held current line with ellipsis during a long mid-song interlude", () => {
