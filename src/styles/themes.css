@@ -1705,13 +1705,13 @@
  * which made `.karaoke-interlude-circle-dots` inherit the full karaoke line size.
  */
 :root[data-os-theme="macosx"] .karaoke-force-font .karaoke-interlude-circle-dots {
-  font-size: clamp(18px, 0.52em, 32px) !important;
+  font-size: clamp(18px, 0.52em, 44px) !important;
   line-height: 1 !important;
   letter-spacing: 0.18em !important;
 }
 
 :root[data-os-theme="macosx"] .karaoke-force-font .fullscreen-lyrics-text .karaoke-interlude-circle-dots {
-  font-size: clamp(12px, 0.34em, 24px) !important;
+  font-size: clamp(12px, 0.24em, 28px) !important;
   letter-spacing: 0.12em !important;
 }
 
@@ -1728,7 +1728,7 @@
 
 :root[data-os-theme="macosx"] .ipod-force-font .lyrics-translation-fullscreen,
 :root[data-os-theme="macosx"] .karaoke-force-font .lyrics-translation-fullscreen {
-  font-size: clamp(14px, min(5vw, 5vh), 60px) !important;
+  font-size: clamp(14px, min(5vw, 5vh), 80px) !important;
   margin-top: 0.2em !important;
 }
 
@@ -1740,7 +1740,7 @@
 /* Preserve fullscreen lyrics text clamped sizing on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .fullscreen-lyrics-text,
 :root[data-os-theme="macosx"] .karaoke-force-font .fullscreen-lyrics-text {
-  font-size: clamp(32px, min(10vw, 10vh), 120px) !important;
+  font-size: clamp(32px, min(10vw, 10vh), 160px) !important;
 }
 
 /* Preserve karaoke status text size on macOS theme */
