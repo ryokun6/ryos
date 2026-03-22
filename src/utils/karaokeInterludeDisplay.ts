@@ -8,7 +8,7 @@ type DebugLogPayload = {
 };
 
 const appendDebugLog = (payload: DebugLogPayload) => {
-  if (typeof Bun === "undefined") return;
+  if (!("Bun" in globalThis)) return;
   void Function("return import('node:fs')")()
     .then(({ appendFileSync }: typeof import("node:fs")) => {
       appendFileSync(
