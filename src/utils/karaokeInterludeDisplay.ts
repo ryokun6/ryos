@@ -1,5 +1,24 @@
 import { LyricsAlignment, type LyricLine, type LyricWord } from "@/types/lyrics";
 
+type DebugLogPayload = {
+  hypothesisId: string;
+  location: string;
+  message: string;
+  data: Record<string, unknown>;
+};
+
+const appendDebugLog = (payload: DebugLogPayload) => {
+  if (typeof Bun === "undefined") return;
+  void Function("return import('node:fs')")()
+    .then(({ appendFileSync }: typeof import("node:fs")) => {
+      appendFileSync(
+        "/opt/cursor/logs/debug.log",
+        `${JSON.stringify({ ...payload, timestamp: Date.now() })}\n`
+      );
+    })
+    .catch(() => {});
+};
+
 export interface InterludePlaceholderLine {
   startTimeMs: string;
   words: string;
@@ -161,15 +180,33 @@ export function mergeLeadingInterludeWithNextLine(
       return [];
     }
 
+    const leadingInterlude =
+      previousLine &&
+      isInterludePlaceholderLine(previousLine) &&
+      !isInterludePlaceholderLine(line)
+        ? previousLine
+        : undefined;
+
+    if (leadingInterlude) {
+      // #region agent log
+      appendDebugLog({
+        hypothesisId: "A",
+        location: "src/utils/karaokeInterludeDisplay.ts:183",
+        message: "Merged leading interlude onto lyric row",
+        data: {
+          mergedLineStart: line.startTimeMs,
+          leadingInterludeStart: leadingInterlude.startTimeMs,
+          originalIndex: index,
+          totalVisibleLines,
+        },
+      });
+      // #endregion
+    }
+
     return [
       {
         line,
-        leadingInterlude:
-          previousLine &&
-          isInterludePlaceholderLine(previousLine) &&
-          !isInterludePlaceholderLine(line)
-            ? previousLine
-            : undefined,
+        leadingInterlude,
         originalIndex: index,
         totalVisibleLines,
       },
@@ -283,6 +320,23 @@ export function applyKaraokeInterludeEllipsis({
     currentIndex,
     segmentStartMs
   );
+
+  // #region agent log
+  appendDebugLog({
+    hypothesisId: "A",
+    location: "src/utils/karaokeInterludeDisplay.ts:281",
+    message: "Created gap interlude placeholder",
+    data: {
+      alignment,
+      currentIndex,
+      currentLineStart: currentLine.startTimeMs,
+      nextLineStart: nextLine.startTimeMs,
+      visibleLines: visibleLines.map((line) => line.startTimeMs),
+      placeholderStart: placeholder.startTimeMs,
+      countdownStartMs: placeholder.countdownStartMs,
+    },
+  });
+  // #endregion
 
   if (alignment === LyricsAlignment.Center) {
     return [placeholder];
