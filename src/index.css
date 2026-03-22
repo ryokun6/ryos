@@ -485,7 +485,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
    */
   .karaoke-force-font .karaoke-interlude-circle-dots {
     display: inline-block;
-    font-size: clamp(18px, 0.52em, 44px) !important;
+    font-size: clamp(18px, 0.52em, 32px) !important;
     line-height: 1 !important;
     letter-spacing: 0.18em !important;
   }

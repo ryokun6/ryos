@@ -1705,7 +1705,7 @@
  * which made `.karaoke-interlude-circle-dots` inherit the full karaoke line size.
  */
 :root[data-os-theme="macosx"] .karaoke-force-font .karaoke-interlude-circle-dots {
-  font-size: clamp(18px, 0.52em, 44px) !important;
+  font-size: clamp(18px, 0.52em, 32px) !important;
   line-height: 1 !important;
   letter-spacing: 0.18em !important;
 }
