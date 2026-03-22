@@ -345,77 +345,51 @@ export function getKanaPronunciationOnly(text: string): string {
 }
 
 /**
- * Get pronunciation-only text from furigana segments
- * Returns the reading/pronunciation instead of the original text
- * Adds spaces between segments only when the OUTPUT is romanized (latin characters)
- * Language-specific: only adds spaces for content that is actually romanized
+ * Get pronunciation-only text from furigana segments.
+ * Preserve source whitespace exactly as authored; scripts without spaces
+ * (for example Japanese) stay concatenated.
  */
 export function getFuriganaSegmentsPronunciationOnly(
   segments: FuriganaSegment[],
   options: RomanizationOptions = {}
 ): string {
   const { koreanRomanization = false, japaneseRomaji = false, chinesePinyin = false } = options;
-  
-  // Helper to check if text is primarily Latin characters
-  const isLatinText = (text: string): boolean => {
-    const latinChars = text.match(/[a-zA-Z]/g);
-    return latinChars !== null && latinChars.length > text.length / 2;
-  };
-  
-  // Build parts with metadata about whether each is Latin
-  const partsWithMeta: { text: string; isLatin: boolean }[] = [];
+  const parts: string[] = [];
   
   for (const segment of segments) {
     // If segment has a reading (furigana), use that
     if (segment.reading) {
       const output = japaneseRomaji ? toRomaji(segment.reading) : segment.reading;
-      partsWithMeta.push({ text: output, isLatin: isLatinText(output) });
+      parts.push(output);
       continue;
     }
     
     // Check for Korean text - only romanize if setting is on
     if (koreanRomanization && hasKoreanText(segment.text)) {
       const output = getKoreanPronunciationOnly(segment.text);
-      partsWithMeta.push({ text: output, isLatin: true });
+      parts.push(output);
       continue;
     }
     
     // Check for Chinese text - only convert to pinyin if setting is on
     if (chinesePinyin && isChineseText(segment.text)) {
       const output = getChinesePronunciationOnly(segment.text);
-      partsWithMeta.push({ text: output, isLatin: true });
+      parts.push(output);
       continue;
     }
     
     // Check for standalone kana - only romanize if setting is on
     if (japaneseRomaji && hasKanaTextLocal(segment.text)) {
       const output = getKanaPronunciationOnly(segment.text);
-      partsWithMeta.push({ text: output, isLatin: true });
+      parts.push(output);
       continue;
     }
     
-    // Otherwise, keep the original text (including spaces)
-    // Whitespace-only segments are not Latin but should be preserved
-    const isWhitespace = /^\s*$/.test(segment.text);
-    partsWithMeta.push({ text: segment.text, isLatin: !isWhitespace && isLatinText(segment.text) });
+    // Otherwise, keep the original text exactly as authored (including spaces)
+    parts.push(segment.text);
   }
   
-  // Build result: only add spaces between Latin parts
-  let result = "";
-  for (let i = 0; i < partsWithMeta.length; i++) {
-    const part = partsWithMeta[i];
-    const prevPart = i > 0 ? partsWithMeta[i - 1] : null;
-    
-    // Add space before this part if:
-    // - This part is Latin AND previous part exists AND previous part is Latin
-    // - AND no natural whitespace already exists
-    if (part.isLatin && prevPart?.isLatin && result.length > 0 && !result.endsWith(" ") && !part.text.startsWith(" ")) {
-      result += " ";
-    }
-    result += part.text;
-  }
-  
-  return result.replace(/\s+/g, " ").trim();
+  return parts.join("");
 }
 
 /**

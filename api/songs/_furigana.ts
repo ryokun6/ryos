@@ -109,7 +109,7 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
 export const FURIGANA_CORE_RULES = `Add readings using ruby markup: <text:reading> (text first, colon, then reading).
 
 - Kanji: use hiragana readings; separate okurigana: <走:はし>る (NOT <走る:はしる>)
-- Latin letters and other non-Japanese script (English, Hangul, Cyrillic, etc.): wrap each word or phrase and use katakana for the Japanese pronunciation (外来語・カタカナ表記)
+- Latin letters and other non-Japanese script (English, Hangul, Cyrillic, etc.): wrap each word separately when the source has spaces; only keep multi-word phrases together when the original text itself has no spaces, and use katakana for the Japanese pronunciation (外来語・カタカナ表記)
 - Keep whitespace and punctuation outside ruby when reasonable; plain kana segments stay as-is without extra markup
 
 Examples:
@@ -169,7 +169,7 @@ export function parseRubyMarkup(line: string): FuriganaSegment[] {
     const reading = match[2];
     
     if (text) {
-      segments.push({ text, reading });
+      segments.push(...normalizeFuriganaSegment({ text, reading }));
     }
     
     lastIndex = regex.lastIndex;
@@ -184,6 +184,42 @@ export function parseRubyMarkup(line: string): FuriganaSegment[] {
   }
   
   return segments.length > 0 ? segments : [{ text: line }];
+}
+
+export function normalizeFuriganaSegments(segments: FuriganaSegment[]): FuriganaSegment[] {
+  return segments.flatMap((segment) => normalizeFuriganaSegment(segment));
+}
+
+function normalizeFuriganaSegment(segment: FuriganaSegment): FuriganaSegment[] {
+  if (!segment.reading) {
+    return [segment];
+  }
+
+  const textParts = segment.text.match(/\s+|\S+/gu);
+  const readingParts = segment.reading.match(/\s+|\S+/gu);
+
+  if (!textParts || textParts.length <= 1 || !readingParts || textParts.length !== readingParts.length) {
+    return [segment];
+  }
+
+  const normalized: FuriganaSegment[] = [];
+  for (let i = 0; i < textParts.length; i++) {
+    const textPart = textParts[i];
+    const readingPart = readingParts[i];
+    if (/^\s+$/u.test(textPart)) {
+      if (!/^\s+$/u.test(readingPart)) {
+        return [segment];
+      }
+      normalized.push({ text: textPart });
+      continue;
+    }
+    if (/^\s+$/u.test(readingPart)) {
+      return [segment];
+    }
+    normalized.push({ text: textPart, reading: readingPart });
+  }
+
+  return normalized;
 }
 
 /**

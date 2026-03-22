@@ -62,6 +62,46 @@ interface UseFuriganaReturn {
   renderWithFurigana: (line: LyricLine, processedText: string) => React.ReactNode;
 }
 
+function normalizeClientFuriganaSegments(segments: FuriganaSegment[]): FuriganaSegment[] {
+  return segments.flatMap((segment) => {
+    if (!segment.reading) {
+      return [segment];
+    }
+
+    const textParts = segment.text.match(/\s+|\S+/gu);
+    const readingParts = segment.reading.match(/\s+|\S+/gu);
+    if (
+      !textParts ||
+      textParts.length <= 1 ||
+      !readingParts ||
+      textParts.length !== readingParts.length
+    ) {
+      return [segment];
+    }
+
+    const normalized: FuriganaSegment[] = [];
+    for (let i = 0; i < textParts.length; i++) {
+      const textPart = textParts[i];
+      const readingPart = readingParts[i];
+      if (/^\s+$/u.test(textPart)) {
+        if (!/^\s+$/u.test(readingPart)) {
+          return [segment];
+        }
+        normalized.push({ text: textPart });
+        continue;
+      }
+
+      if (/^\s+$/u.test(readingPart)) {
+        return [segment];
+      }
+
+      normalized.push({ text: textPart, reading: readingPart });
+    }
+
+    return normalized;
+  });
+}
+
 /**
  * Hook for fetching and managing Japanese furigana annotations and other romanization
  * 
@@ -229,7 +269,7 @@ export function useFurigana({
       const finalMap = new Map<string, FuriganaSegment[]>();
       prefetchedInfo.data.forEach((segments, index) => {
         if (index < lines.length && segments) {
-          finalMap.set(lines[index].startTimeMs, segments);
+          finalMap.set(lines[index].startTimeMs, normalizeClientFuriganaSegments(segments));
         }
       });
       setFuriganaMap(finalMap);
@@ -285,7 +325,10 @@ export function useFurigana({
         const currentLines = linesRef.current;
         if (lineIndex < currentLines.length && segments) {
           console.log(`[Furigana] Line ${lineIndex} received:`, segments.length, 'segments');
-          progressiveMap.set(currentLines[lineIndex].startTimeMs, segments);
+          progressiveMap.set(
+            currentLines[lineIndex].startTimeMs,
+            normalizeClientFuriganaSegments(segments)
+          );
           setFuriganaMap(new Map(progressiveMap));
         }
       },
@@ -300,7 +343,10 @@ export function useFurigana({
         const finalMap = new Map<string, FuriganaSegment[]>();
         result.data.forEach((segments, index) => {
           if (index < currentLines.length && segments) {
-            finalMap.set(currentLines[index].startTimeMs, segments);
+            finalMap.set(
+              currentLines[index].startTimeMs,
+              normalizeClientFuriganaSegments(segments)
+            );
           }
         });
 
