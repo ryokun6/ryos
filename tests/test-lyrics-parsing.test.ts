@@ -8,12 +8,13 @@ describe("lyrics prefix filtering", () => {
       "[00:01.00]Original Lyrics",
       "[00:02.00]Digital Edited",
       "[00:03.00]Korean Lyrics",
-      "[00:04.00]Actual lyric line",
+      "[00:04.00]日文词",
+      "[00:05.00]Actual lyric line",
     ].join("\n"));
 
     expect(lines).toEqual([
       {
-        startTimeMs: "4000",
+        startTimeMs: "5000",
         words: "Actual lyric line",
       },
     ]);
