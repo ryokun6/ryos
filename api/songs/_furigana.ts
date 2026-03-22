@@ -109,7 +109,7 @@ export function lyricsAreMostlyChinese(lines: { words: string }[]): boolean {
 export const FURIGANA_CORE_RULES = `Add readings using ruby markup: <text:reading> (text first, colon, then reading).
 
 - Kanji: use hiragana readings; separate okurigana: <走:はし>る (NOT <走る:はしる>)
-- Latin letters and other non-Japanese script (English, Hangul, Cyrillic, etc.): wrap each word or phrase and use katakana for the Japanese pronunciation (外来語・カタカナ表記)
+- Latin letters and other non-Japanese script (English, Hangul, Cyrillic, etc.): wrap each word separately when the source has spaces; only keep multi-word phrases together when the original text itself has no spaces, and use katakana for the Japanese pronunciation (外来語・カタカナ表記)
 - Keep whitespace and punctuation outside ruby when reasonable; plain kana segments stay as-is without extra markup
 
 Examples:

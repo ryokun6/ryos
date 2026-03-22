@@ -449,6 +449,12 @@ function mapWordTimingsToFurigana(
       
       const wordsInSeg = segmentToWords.get(segIdx) || [];
       if (wordsInSeg.length > 1) {
+        // Only merge no-space segments (typically Japanese). If the source segment contains
+        // whitespace, keeping each timed word separate preserves karaoke timing fidelity for
+        // long Korean phrases and short grouped words like "to" / "the".
+        if (/\s/u.test(seg.text)) {
+          continue;
+        }
         // This segment spans multiple words - combine them
         // Only combine consecutive words
         const sortedWords = [...wordsInSeg].sort((a, b) => a - b);

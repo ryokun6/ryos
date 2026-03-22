@@ -79,5 +79,6 @@ describe("FURIGANA_STREAM_SYSTEM_PROMPT", () => {
   test("documents katakana for non-Japanese", () => {
     expect(FURIGANA_STREAM_SYSTEM_PROMPT).toContain("katakana");
     expect(FURIGANA_STREAM_SYSTEM_PROMPT).toContain("Latin");
+    expect(FURIGANA_STREAM_SYSTEM_PROMPT).toContain("wrap each word separately when the source has spaces");
   });
 });

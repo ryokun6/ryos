@@ -10,6 +10,10 @@ function combineTimedWordParts(parts: string[]): string {
   return stripTrailingWhitespace(parts.join(""));
 }
 
+function shouldCombineAcrossWordTimings(segmentText: string): boolean {
+  return !/\s/u.test(segmentText);
+}
+
 describe("furigana timed-word spacing", () => {
   test("preserves authored English spaces", () => {
     expect(combineTimedWordParts(["Oh ", "no ", "loving ", "you"])).toBe("Oh no loving you");
@@ -25,6 +29,18 @@ describe("furigana timed-word spacing", () => {
 
   test("keeps mixed Latin and kanji boundary unchanged when source has no spaces", () => {
     expect(combineTimedWordParts(["Hello", "世界"])).toBe("Hello世界");
+  });
+
+  test("does not combine grouped English furigana phrases across multiple timings", () => {
+    expect(shouldCombineAcrossWordTimings("to the")).toBe(false);
+  });
+
+  test("does not combine grouped Korean furigana phrases across multiple timings", () => {
+    expect(shouldCombineAcrossWordTimings("아주 길게")).toBe(false);
+  });
+
+  test("still combines Japanese no-space furigana across multiple timings", () => {
+    expect(shouldCombineAcrossWordTimings("走る")).toBe(true);
   });
 });
 
