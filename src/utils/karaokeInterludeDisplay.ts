@@ -166,9 +166,8 @@ export function isInterludePlaceholderLine(
 export function mergeLeadingInterludeWithNextLine(
   visibleLines: VisibleLyricLine[]
 ): RenderableVisibleLyricLine[] {
-  const totalVisibleLines = visibleLines.length;
-
-  return visibleLines.flatMap((line, index) => {
+  const mergedRows = visibleLines.flatMap((line, index) => {
+    const totalVisibleLines = visibleLines.length;
     const nextLine = visibleLines[index + 1];
     const previousLine = visibleLines[index - 1];
 
@@ -212,6 +211,13 @@ export function mergeLeadingInterludeWithNextLine(
       },
     ];
   });
+
+  const renderableTotalLines = mergedRows.length;
+  return mergedRows.map((row, renderIndex) => ({
+    ...row,
+    originalIndex: renderIndex,
+    totalVisibleLines: renderableTotalLines,
+  }));
 }
 
 /**

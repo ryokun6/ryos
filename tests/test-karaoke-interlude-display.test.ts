@@ -152,8 +152,8 @@ describe("karaoke interlude ellipsis", () => {
     expect(renderable).toHaveLength(1);
     expect(renderable[0]?.line).toBe(lines[1]);
     expect(renderable[0]?.leadingInterlude?.countdownStartMs).toBe(12000);
-    expect(renderable[0]?.originalIndex).toBe(1);
-    expect(renderable[0]?.totalVisibleLines).toBe(2);
+    expect(renderable[0]?.originalIndex).toBe(0);
+    expect(renderable[0]?.totalVisibleLines).toBe(1);
   });
 
   test("getInterludeDotsFadeOpacity rests dim then ramps to full at countdownStartMs", () => {
