@@ -34,6 +34,7 @@ import {
   buildInterludeLyricLineWithWordTimings,
   getInterludeDotsFadeOpacity,
   isInterludePlaceholderLine,
+  mergeLeadingInterludeWithNextLine,
 } from "@/utils/karaokeInterludeDisplay";
 
 interface LyricsDisplayProps {
@@ -1173,6 +1174,11 @@ type LyricsLineRowContentProps = {
   line: LyricLine;
   isCurrent: boolean;
   isInterludePlaceholder?: boolean;
+  leadingInterlude?: {
+    line: LyricLine;
+    countdownStartMs: number;
+    timeMs: number | undefined;
+  };
   hasWordTimings: boolean;
   /** Only passed for rows that need per-tick playback time (word highlight + gradient hue). */
   timeMsForRow: number | undefined;
@@ -1207,6 +1213,7 @@ function LyricsLineRowContent({
   line,
   isCurrent,
   isInterludePlaceholder = false,
+  leadingInterlude,
   hasWordTimings,
   timeMsForRow,
   translatedText,
@@ -1258,6 +1265,14 @@ function LyricsLineRowContent({
     return getInterludeDotsFadeOpacity(t, interludeMeta.countdownStartMs);
   }, [interludeMeta, timeMsForRow]);
 
+  const leadingInterludeDotsOpacity = useMemo(() => {
+    if (!leadingInterlude || leadingInterlude.timeMs === undefined) return 1;
+    return getInterludeDotsFadeOpacity(
+      leadingInterlude.timeMs,
+      leadingInterlude.countdownStartMs
+    );
+  }, [leadingInterlude]);
+
   return (
     <>
       {(() => {
@@ -1270,6 +1285,260 @@ function LyricsLineRowContent({
           (romanization.enabled && romanization.japaneseFurigana
             ? furiganaMap.get(line.startTimeMs)
             : undefined);
+        const leadingInterludeContent = leadingInterlude ? (
+          <span
+            className="karaoke-interlude-leading-prefix"
+            style={{ whiteSpace: "nowrap" }}
+          >
+            <span
+              className="karaoke-interlude-circle-dots"
+              style={{
+                opacity: leadingInterludeDotsOpacity,
+                transition: "opacity 0.12s linear",
+              }}
+            >
+              {leadingInterlude.timeMs !== undefined ? (
+                <WordTimingHighlight
+                  wordTimings={leadingInterlude.line.wordTimings!}
+                  lineStartTimeMs={parseInt(leadingInterlude.line.startTimeMs, 10)}
+                  currentTimeMs={leadingInterlude.timeMs}
+                  processText={processText}
+                  onSeekToTime={undefined}
+                  isOldSchoolKaraoke={isOldSchoolKaraoke}
+                  highlightColor={highlightColor}
+                  glowFilter={glowFilter}
+                  baseColor={baseColor}
+                  isGradient={isGradientStyle}
+                  rainbowHue={
+                    isGradientStyle
+                      ? ((leadingInterlude.timeMs / 6000) * 360) % 360
+                      : undefined
+                  }
+                />
+              ) : (
+                <StaticWordRendering
+                  wordTimings={leadingInterlude.line.wordTimings!}
+                  processText={processText}
+                  lineStartTimeMs={parseInt(leadingInterlude.line.startTimeMs, 10)}
+                  onSeekToTime={undefined}
+                  isOldSchoolKaraoke={isOldSchoolKaraoke}
+                  baseColor={baseColor}
+                />
+              )}
+            </span>{" "}
+          </span>
+        ) : null;
+        const mainLineContent = shouldUseAnimatedWordTiming ? (
+          isInterludePlaceholder ? (
+            <>
+              {interludeMeta?.anchorLine &&
+                (() => {
+                  const anchorLine = interludeMeta.anchorLine;
+                  const anchorSoramimi =
+                    romanization.enabled && romanization.soramimi
+                      ? soramimiMap.get(anchorLine.startTimeMs)
+                      : undefined;
+                  const anchorAnnotations =
+                    anchorSoramimi ??
+                    (romanization.enabled && romanization.japaneseFurigana
+                      ? furiganaMap.get(anchorLine.startTimeMs)
+                      : undefined);
+                  return (
+                    <div className="karaoke-interlude-anchor-ghost mb-1 opacity-[0.5]">
+                      {anchorLine.wordTimings?.length ? (
+                        <StaticWordRendering
+                          wordTimings={anchorLine.wordTimings}
+                          processText={processText}
+                          furiganaSegments={anchorAnnotations}
+                          koreanRomanized={!anchorSoramimi && showKoreanRomanization}
+                          japaneseRomaji={
+                            !anchorSoramimi &&
+                            romanization.enabled &&
+                            romanization.japaneseRomaji
+                          }
+                          chinesePinyin={
+                            !anchorSoramimi && romanization.enabled && romanization.chinese
+                          }
+                          pronunciationOnly={
+                            romanization.enabled && romanization.pronunciationOnly
+                          }
+                          soramimiTargetLanguage={
+                            anchorSoramimi ? romanization.soramamiTargetLanguage : undefined
+                          }
+                          lineStartTimeMs={parseInt(anchorLine.startTimeMs, 10)}
+                          onSeekToTime={undefined}
+                          isOldSchoolKaraoke={isOldSchoolKaraoke}
+                          baseColor={baseColor}
+                        />
+                      ) : (
+                        renderWithFurigana(anchorLine, processText(anchorLine.words))
+                      )}
+                    </div>
+                  );
+                })()}
+              <div
+                className="karaoke-interlude-circle-dots"
+                style={{
+                  opacity: interludeDotsOpacity,
+                  transition: "opacity 0.12s linear",
+                }}
+              >
+                <WordTimingHighlight
+                  wordTimings={line.wordTimings!}
+                  lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+                  currentTimeMs={timeMsForRow!}
+                  processText={processText}
+                  furiganaSegments={annotationSegments}
+                  koreanRomanized={!soramimiSegments && showKoreanRomanization}
+                  japaneseRomaji={
+                    !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
+                  }
+                  chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                  pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                  soramimiTargetLanguage={
+                    soramimiSegments ? romanization.soramamiTargetLanguage : undefined
+                  }
+                  onSeekToTime={undefined}
+                  isOldSchoolKaraoke={isOldSchoolKaraoke}
+                  highlightColor={highlightColor}
+                  glowFilter={glowFilter}
+                  baseColor={baseColor}
+                  isGradient={isGradientStyle}
+                  rainbowHue={
+                    isGradientStyle && timeMsForRow !== undefined
+                      ? ((timeMsForRow / 6000) * 360) % 360
+                      : undefined
+                  }
+                />
+              </div>
+            </>
+          ) : (
+            <WordTimingHighlight
+              wordTimings={line.wordTimings!}
+              lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+              currentTimeMs={timeMsForRow!}
+              processText={processText}
+              furiganaSegments={annotationSegments}
+              koreanRomanized={!soramimiSegments && showKoreanRomanization}
+              japaneseRomaji={
+                !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
+              }
+              chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+              pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+              soramimiTargetLanguage={
+                soramimiSegments ? romanization.soramamiTargetLanguage : undefined
+              }
+              onSeekToTime={onSeekToTime}
+              isOldSchoolKaraoke={isOldSchoolKaraoke}
+              highlightColor={highlightColor}
+              glowFilter={glowFilter}
+              baseColor={baseColor}
+              isGradient={isGradientStyle}
+              rainbowHue={
+                isGradientStyle && timeMsForRow !== undefined
+                  ? ((timeMsForRow / 6000) * 360) % 360
+                  : undefined
+              }
+            />
+          )
+        ) : hasWordTimings ? (
+          isInterludePlaceholder ? (
+            <>
+              {interludeMeta?.anchorLine &&
+                (() => {
+                  const anchorLine = interludeMeta.anchorLine;
+                  const anchorSoramimi =
+                    romanization.enabled && romanization.soramimi
+                      ? soramimiMap.get(anchorLine.startTimeMs)
+                      : undefined;
+                  const anchorAnnotations =
+                    anchorSoramimi ??
+                    (romanization.enabled && romanization.japaneseFurigana
+                      ? furiganaMap.get(anchorLine.startTimeMs)
+                      : undefined);
+                  return (
+                    <div className="karaoke-interlude-anchor-ghost mb-1 opacity-[0.5]">
+                      {anchorLine.wordTimings?.length ? (
+                        <StaticWordRendering
+                          wordTimings={anchorLine.wordTimings}
+                          processText={processText}
+                          furiganaSegments={anchorAnnotations}
+                          koreanRomanized={!anchorSoramimi && showKoreanRomanization}
+                          japaneseRomaji={
+                            !anchorSoramimi &&
+                            romanization.enabled &&
+                            romanization.japaneseRomaji
+                          }
+                          chinesePinyin={
+                            !anchorSoramimi && romanization.enabled && romanization.chinese
+                          }
+                          pronunciationOnly={
+                            romanization.enabled && romanization.pronunciationOnly
+                          }
+                          soramimiTargetLanguage={
+                            anchorSoramimi ? romanization.soramamiTargetLanguage : undefined
+                          }
+                          lineStartTimeMs={parseInt(anchorLine.startTimeMs, 10)}
+                          onSeekToTime={undefined}
+                          isOldSchoolKaraoke={isOldSchoolKaraoke}
+                          baseColor={baseColor}
+                        />
+                      ) : (
+                        renderWithFurigana(anchorLine, processText(anchorLine.words))
+                      )}
+                    </div>
+                  );
+                })()}
+              <div
+                className="karaoke-interlude-circle-dots"
+                style={{
+                  opacity: interludeDotsOpacity,
+                  transition: "opacity 0.12s linear",
+                }}
+              >
+                <StaticWordRendering
+                  wordTimings={line.wordTimings!}
+                  processText={processText}
+                  furiganaSegments={annotationSegments}
+                  koreanRomanized={!soramimiSegments && showKoreanRomanization}
+                  japaneseRomaji={
+                    !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
+                  }
+                  chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+                  pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                  soramimiTargetLanguage={
+                    soramimiSegments ? romanization.soramamiTargetLanguage : undefined
+                  }
+                  lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+                  onSeekToTime={undefined}
+                  isOldSchoolKaraoke={isOldSchoolKaraoke}
+                  baseColor={baseColor}
+                />
+              </div>
+            </>
+          ) : (
+            <StaticWordRendering
+              wordTimings={line.wordTimings!}
+              processText={processText}
+              furiganaSegments={annotationSegments}
+              koreanRomanized={!soramimiSegments && showKoreanRomanization}
+              japaneseRomaji={
+                !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
+              }
+              chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
+              pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+              soramimiTargetLanguage={
+                soramimiSegments ? romanization.soramamiTargetLanguage : undefined
+              }
+              lineStartTimeMs={parseInt(line.startTimeMs, 10)}
+              onSeekToTime={onSeekToTime}
+              isOldSchoolKaraoke={isOldSchoolKaraoke}
+              baseColor={baseColor}
+            />
+          )
+        ) : (
+          renderWithFurigana(line, processedOriginal)
+        );
         return (
           <div
             className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${
@@ -1311,217 +1580,8 @@ function LyricsLineRowContent({
                 : undefined
             }
           >
-            {shouldUseAnimatedWordTiming ? (
-              isInterludePlaceholder ? (
-                <>
-                  {interludeMeta?.anchorLine &&
-                    (() => {
-                      const anchorLine = interludeMeta.anchorLine;
-                      const anchorSoramimi =
-                        romanization.enabled && romanization.soramimi
-                          ? soramimiMap.get(anchorLine.startTimeMs)
-                          : undefined;
-                      const anchorAnnotations =
-                        anchorSoramimi ??
-                        (romanization.enabled && romanization.japaneseFurigana
-                          ? furiganaMap.get(anchorLine.startTimeMs)
-                          : undefined);
-                      return (
-                        <div className="karaoke-interlude-anchor-ghost mb-1 opacity-[0.5]">
-                          {anchorLine.wordTimings?.length ? (
-                            <StaticWordRendering
-                              wordTimings={anchorLine.wordTimings}
-                              processText={processText}
-                              furiganaSegments={anchorAnnotations}
-                              koreanRomanized={!anchorSoramimi && showKoreanRomanization}
-                              japaneseRomaji={
-                                !anchorSoramimi &&
-                                romanization.enabled &&
-                                romanization.japaneseRomaji
-                              }
-                              chinesePinyin={
-                                !anchorSoramimi && romanization.enabled && romanization.chinese
-                              }
-                              pronunciationOnly={
-                                romanization.enabled && romanization.pronunciationOnly
-                              }
-                              soramimiTargetLanguage={
-                                anchorSoramimi ? romanization.soramamiTargetLanguage : undefined
-                              }
-                              lineStartTimeMs={parseInt(anchorLine.startTimeMs, 10)}
-                              onSeekToTime={undefined}
-                              isOldSchoolKaraoke={isOldSchoolKaraoke}
-                              baseColor={baseColor}
-                            />
-                          ) : (
-                            renderWithFurigana(anchorLine, processText(anchorLine.words))
-                          )}
-                        </div>
-                      );
-                    })()}
-                  <div
-                    className="karaoke-interlude-circle-dots"
-                    style={{
-                      opacity: interludeDotsOpacity,
-                      transition: "opacity 0.12s linear",
-                    }}
-                  >
-                    <WordTimingHighlight
-                      wordTimings={line.wordTimings!}
-                      lineStartTimeMs={parseInt(line.startTimeMs, 10)}
-                      currentTimeMs={timeMsForRow!}
-                      processText={processText}
-                      furiganaSegments={annotationSegments}
-                      koreanRomanized={!soramimiSegments && showKoreanRomanization}
-                      japaneseRomaji={
-                        !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
-                      }
-                      chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
-                      pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
-                      soramimiTargetLanguage={
-                        soramimiSegments ? romanization.soramamiTargetLanguage : undefined
-                      }
-                      onSeekToTime={undefined}
-                      isOldSchoolKaraoke={isOldSchoolKaraoke}
-                      highlightColor={highlightColor}
-                      glowFilter={glowFilter}
-                      baseColor={baseColor}
-                      isGradient={isGradientStyle}
-                      rainbowHue={
-                        isGradientStyle && timeMsForRow !== undefined
-                          ? ((timeMsForRow / 6000) * 360) % 360
-                          : undefined
-                      }
-                    />
-                  </div>
-                </>
-              ) : (
-                <WordTimingHighlight
-                  wordTimings={line.wordTimings!}
-                  lineStartTimeMs={parseInt(line.startTimeMs, 10)}
-                  currentTimeMs={timeMsForRow!}
-                  processText={processText}
-                  furiganaSegments={annotationSegments}
-                  koreanRomanized={!soramimiSegments && showKoreanRomanization}
-                  japaneseRomaji={
-                    !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
-                  }
-                  chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
-                  pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
-                  soramimiTargetLanguage={
-                    soramimiSegments ? romanization.soramamiTargetLanguage : undefined
-                  }
-                  onSeekToTime={onSeekToTime}
-                  isOldSchoolKaraoke={isOldSchoolKaraoke}
-                  highlightColor={highlightColor}
-                  glowFilter={glowFilter}
-                  baseColor={baseColor}
-                  isGradient={isGradientStyle}
-                  rainbowHue={
-                    isGradientStyle && timeMsForRow !== undefined
-                      ? ((timeMsForRow / 6000) * 360) % 360
-                      : undefined
-                  }
-                />
-              )
-            ) : hasWordTimings ? (
-              isInterludePlaceholder ? (
-                <>
-                  {interludeMeta?.anchorLine &&
-                    (() => {
-                      const anchorLine = interludeMeta.anchorLine;
-                      const anchorSoramimi =
-                        romanization.enabled && romanization.soramimi
-                          ? soramimiMap.get(anchorLine.startTimeMs)
-                          : undefined;
-                      const anchorAnnotations =
-                        anchorSoramimi ??
-                        (romanization.enabled && romanization.japaneseFurigana
-                          ? furiganaMap.get(anchorLine.startTimeMs)
-                          : undefined);
-                      return (
-                        <div className="karaoke-interlude-anchor-ghost mb-1 opacity-[0.5]">
-                          {anchorLine.wordTimings?.length ? (
-                            <StaticWordRendering
-                              wordTimings={anchorLine.wordTimings}
-                              processText={processText}
-                              furiganaSegments={anchorAnnotations}
-                              koreanRomanized={!anchorSoramimi && showKoreanRomanization}
-                              japaneseRomaji={
-                                !anchorSoramimi &&
-                                romanization.enabled &&
-                                romanization.japaneseRomaji
-                              }
-                              chinesePinyin={
-                                !anchorSoramimi && romanization.enabled && romanization.chinese
-                              }
-                              pronunciationOnly={
-                                romanization.enabled && romanization.pronunciationOnly
-                              }
-                              soramimiTargetLanguage={
-                                anchorSoramimi ? romanization.soramamiTargetLanguage : undefined
-                              }
-                              lineStartTimeMs={parseInt(anchorLine.startTimeMs, 10)}
-                              onSeekToTime={undefined}
-                              isOldSchoolKaraoke={isOldSchoolKaraoke}
-                              baseColor={baseColor}
-                            />
-                          ) : (
-                            renderWithFurigana(anchorLine, processText(anchorLine.words))
-                          )}
-                        </div>
-                      );
-                    })()}
-                  <div
-                    className="karaoke-interlude-circle-dots"
-                    style={{
-                      opacity: interludeDotsOpacity,
-                      transition: "opacity 0.12s linear",
-                    }}
-                  >
-                    <StaticWordRendering
-                      wordTimings={line.wordTimings!}
-                      processText={processText}
-                      furiganaSegments={annotationSegments}
-                      koreanRomanized={!soramimiSegments && showKoreanRomanization}
-                      japaneseRomaji={
-                        !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
-                      }
-                      chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
-                      pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
-                      soramimiTargetLanguage={
-                        soramimiSegments ? romanization.soramamiTargetLanguage : undefined
-                      }
-                      lineStartTimeMs={parseInt(line.startTimeMs, 10)}
-                      onSeekToTime={undefined}
-                      isOldSchoolKaraoke={isOldSchoolKaraoke}
-                      baseColor={baseColor}
-                    />
-                  </div>
-                </>
-              ) : (
-                <StaticWordRendering
-                  wordTimings={line.wordTimings!}
-                  processText={processText}
-                  furiganaSegments={annotationSegments}
-                  koreanRomanized={!soramimiSegments && showKoreanRomanization}
-                  japaneseRomaji={
-                    !soramimiSegments && romanization.enabled && romanization.japaneseRomaji
-                  }
-                  chinesePinyin={!soramimiSegments && romanization.enabled && romanization.chinese}
-                  pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
-                  soramimiTargetLanguage={
-                    soramimiSegments ? romanization.soramamiTargetLanguage : undefined
-                  }
-                  lineStartTimeMs={parseInt(line.startTimeMs, 10)}
-                  onSeekToTime={onSeekToTime}
-                  isOldSchoolKaraoke={isOldSchoolKaraoke}
-                  baseColor={baseColor}
-                />
-              )
-            ) : (
-              renderWithFurigana(line, processedOriginal)
-            )}
+            {leadingInterludeContent}
+            {mainLineContent}
           </div>
         );
       })()}
@@ -2023,6 +2083,11 @@ export function LyricsDisplay({
     ]
   );
 
+  const renderableVisibleLines = useMemo(
+    () => mergeLeadingInterludeWithNextLine(visibleLines),
+    [visibleLines]
+  );
+
   // Track touch start position and accumulated movement
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const accumulatedDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -2175,7 +2240,8 @@ export function LyricsDisplay({
       onTouchCancel={handleTouchCancel}
     >
       <AnimatePresence mode="popLayout">
-        {visibleLines.map((line, index) => {
+        {renderableVisibleLines.map(
+          ({ line, leadingInterlude, originalIndex, totalVisibleLines }) => {
           const isInterludePlaceholder = isInterludePlaceholderLine(line);
           const lineForContent: LyricLine = isInterludePlaceholder
             ? buildInterludeLyricLineWithWordTimings(
@@ -2202,10 +2268,17 @@ export function LyricsDisplay({
           const hasWordTimings = !!(
             lineForContent.wordTimings && lineForContent.wordTimings.length > 0
           );
+          const leadingInterludeLine = leadingInterlude
+            ? buildInterludeLyricLineWithWordTimings(
+                leadingInterlude,
+                displayOriginalLines,
+                actualCurrentLine
+              )
+            : undefined;
           const lineTextAlign = getTextAlign(
             alignment,
-            index,
-            visibleLines.length
+            originalIndex,
+            totalVisibleLines
           );
           const translatedText = !isInterludePlaceholder && hasTranslation
             ? translationMap.get(line.startTimeMs) ||
@@ -2250,14 +2323,14 @@ export function LyricsDisplay({
                 pointerEvents: interactive ? "auto" : "none",
                 paddingLeft:
                   alignment === LyricsAlignment.Alternating &&
-                  index === 0 &&
-                  visibleLines.length > 1
+                  originalIndex === 0 &&
+                  totalVisibleLines > 1
                     ? "5%"
                     : undefined,
                 paddingRight:
                   alignment === LyricsAlignment.Alternating &&
-                  index === 1 &&
-                  visibleLines.length > 1
+                  originalIndex === 1 &&
+                  totalVisibleLines > 1
                     ? "5%"
                     : undefined,
                 backfaceVisibility: "hidden",
@@ -2268,6 +2341,15 @@ export function LyricsDisplay({
                 line={lineForContent}
                 isCurrent={isCurrent}
                 isInterludePlaceholder={isInterludePlaceholder}
+                leadingInterlude={
+                  leadingInterlude && leadingInterludeLine
+                    ? {
+                        line: leadingInterludeLine,
+                        countdownStartMs: leadingInterlude.countdownStartMs,
+                        timeMs: currentTimeMs,
+                      }
+                    : undefined
+                }
                 hasWordTimings={hasWordTimings}
                 timeMsForRow={timeMsForRow}
                 translatedText={translatedText}

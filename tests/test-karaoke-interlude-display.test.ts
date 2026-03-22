@@ -6,6 +6,7 @@ import {
   buildInterludeLyricLineWithWordTimings,
   getInterludeDotsFadeOpacity,
   isInterludePlaceholderLine,
+  mergeLeadingInterludeWithNextLine,
 } from "../src/utils/karaokeInterludeDisplay";
 
 function makeLine(startTimeMs: number, words: string): LyricLine {
@@ -129,6 +130,30 @@ describe("karaoke interlude ellipsis", () => {
     expect(visible).toHaveLength(2);
     expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
     expect(visible[1]).toBe(lines[1]);
+  });
+
+  test("merges alternating placeholder dots onto the upcoming lyric row", () => {
+    const lines = [
+      makeLine(0, "Verse line"),
+      makeLine(15000, "Next line"),
+    ];
+
+    const visible = applyKaraokeInterludeEllipsis({
+      visibleLines: [lines[0], lines[1]],
+      allLines: lines,
+      alignment: LyricsAlignment.Alternating,
+      currentIndex: 0,
+      currentTimeMs: 5000,
+      enabled: true,
+    });
+
+    const renderable = mergeLeadingInterludeWithNextLine(visible);
+
+    expect(renderable).toHaveLength(1);
+    expect(renderable[0]?.line).toBe(lines[1]);
+    expect(renderable[0]?.leadingInterlude?.countdownStartMs).toBe(12000);
+    expect(renderable[0]?.originalIndex).toBe(1);
+    expect(renderable[0]?.totalVisibleLines).toBe(2);
   });
 
   test("getInterludeDotsFadeOpacity rests dim then ramps to full at countdownStartMs", () => {
