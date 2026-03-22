@@ -7,6 +7,7 @@ const romanizeKorean = (hangulRomanization as { convert: (text: string) => strin
 import { pinyin } from "pinyin-pro";
 import { toRomaji } from "wanakana";
 import { hasKoreanText, isChineseText } from "./languageDetection";
+import { getDisplayReading } from "./furigana";
 
 // Re-export detection utilities for convenience
 export { hasKoreanText, isChineseText, isJapaneseText, hasKanaText } from "./languageDetection";
@@ -204,11 +205,12 @@ export function renderFuriganaSegments(
     <>
       {segments.map((segment, index) => {
         // Handle Japanese furigana (hiragana reading over kanji)
-        if (segment.reading) {
+        const displayReadingSource = getDisplayReading(segment);
+        if (displayReadingSource) {
           // If japaneseRomaji is enabled, convert the reading to romaji
           const displayReading = japaneseRomaji 
-            ? toRomaji(segment.reading)
-            : segment.reading;
+            ? toRomaji(displayReadingSource)
+            : displayReadingSource;
           return (
             <ruby key={index} className="lyrics-furigana">
               {segment.text}
@@ -358,8 +360,9 @@ export function getFuriganaSegmentsPronunciationOnly(
   
   for (const segment of segments) {
     // If segment has a reading (furigana), use that
-    if (segment.reading) {
-      const output = japaneseRomaji ? toRomaji(segment.reading) : segment.reading;
+    const displayReading = getDisplayReading(segment);
+    if (displayReading) {
+      const output = japaneseRomaji ? toRomaji(displayReading) : displayReading;
       parts.push(output);
       continue;
     }

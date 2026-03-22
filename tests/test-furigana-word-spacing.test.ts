@@ -81,4 +81,14 @@ describe("furigana pronunciation-only spacing", () => {
       )
     ).toBe("hashiru");
   });
+
+  test("drops redundant katakana readings in pronunciation-only mode", () => {
+    expect(
+      getFuriganaSegmentsPronunciationOnly([
+        { text: "メロディー", reading: "メロディー" },
+        { text: " " },
+        { text: "世界", reading: "せかい" },
+      ])
+    ).toBe("メロディー せかい");
+  });
 });

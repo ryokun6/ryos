@@ -34,6 +34,7 @@ import {
   getKanaPronunciationOnly,
   type FuriganaSegment,
 } from "@/utils/romanization";
+import { getDisplayReading } from "@/utils/furigana";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 import {
   applyKaraokeInterludeEllipsis,
@@ -634,10 +635,11 @@ function StaticWordRendering({
         const isLastWord = idx === mappedItems.length - 1;
         
         let content: ReactNode;
-        if (item.reading) {
+        const displayReadingSource = getDisplayReading(item);
+        if (displayReadingSource) {
           // Has a reading - show combined text with ruby annotation
           // Convert to romaji if japaneseRomaji is enabled
-          const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
+          const displayReading = japaneseRomaji ? toRomaji(displayReadingSource) : displayReadingSource;
           // Only add space if output is Latin (romanized) or English soramimi
           const outputIsLatin = isLatinText(displayReading) || isEnglishSoramimi;
           const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
@@ -873,10 +875,11 @@ function WordTimingHighlight({
         const isLastWord = idx === mappedItems.length - 1;
         
         let content: ReactNode;
-        if (item.reading) {
+        const displayReadingSource = getDisplayReading(item);
+        if (displayReadingSource) {
           // Has a reading - show combined text with ruby annotation
           // Convert to romaji if japaneseRomaji is enabled
-          const displayReading = japaneseRomaji ? toRomaji(item.reading) : item.reading;
+          const displayReading = japaneseRomaji ? toRomaji(displayReadingSource) : displayReadingSource;
           // Only add space if output is Latin (romanized) or English soramimi
           const outputIsLatin = isLatinText(displayReading) || isEnglishSoramimi;
           const needsSpace = pronunciationOnly && outputIsLatin && !trailingSpace && !isLastWord;
@@ -1946,10 +1949,11 @@ export function LyricsDisplay({
         <>
           {segments.map((segment, index) => {
             // Handle Japanese furigana (hiragana reading over kanji)
-            if (segment.reading) {
+            const displayReadingSource = getDisplayReading(segment);
+            if (displayReadingSource) {
               const displayReading = romanization.japaneseRomaji 
-                ? toRomaji(segment.reading)
-                : segment.reading;
+                ? toRomaji(displayReadingSource)
+                : displayReadingSource;
               return (
                 // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
                 <ruby key={index} className="lyrics-furigana">
