@@ -522,6 +522,7 @@ export function KaraokeAppComponent({
                   furiganaMap={furiganaMap}
                   soramimiMap={soramimiMap}
                   currentTimeMs={(displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                  showInterludeEllipsis
                   onSeekToTime={seekToTime}
                   coverUrl={coverUrl}
                 />
@@ -1047,6 +1048,7 @@ export function KaraokeAppComponent({
                       furiganaMap={furiganaMap}
                       soramimiMap={soramimiMap}
                       currentTimeMs={(displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                      showInterludeEllipsis
                       onSeekToTime={seekToTime}
                       coverUrl={coverUrl}
                     />

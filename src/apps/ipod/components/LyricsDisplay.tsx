@@ -29,6 +29,10 @@ import {
   type FuriganaSegment,
 } from "@/utils/romanization";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
+import {
+  applyKaraokeInterludeEllipsis,
+  isInterludePlaceholderLine,
+} from "@/utils/karaokeInterludeDisplay";
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
@@ -79,6 +83,8 @@ interface LyricsDisplayProps {
   onSeekToTime?: (timeMs: number) => void;
   /** Cover art URL for extracting primary color (used by glow-gold style) */
   coverUrl?: string | null;
+  /** Show ellipsis placeholders during long karaoke interludes */
+  showInterludeEllipsis?: boolean;
 }
 
 const ANIMATION_CONFIG = {
@@ -1381,6 +1387,7 @@ export function LyricsDisplay({
   currentTimeMs,
   onSeekToTime,
   coverUrl,
+  showInterludeEllipsis = false,
 }: LyricsDisplayProps) {
   const { t } = useTranslation();
 
@@ -1813,8 +1820,27 @@ export function LyricsDisplay({
     return displayOriginalLines.slice(Math.max(0, actualCurrentLine - 1), actualCurrentLine + 2);
   }, [displayOriginalLines, actualCurrentLine, alignment]);
 
-  const visibleLines =
-    alignment === LyricsAlignment.Alternating ? altLines : nonAltVisibleLines;
+  const visibleLines = useMemo(
+    () =>
+      applyKaraokeInterludeEllipsis({
+        visibleLines:
+          alignment === LyricsAlignment.Alternating ? altLines : nonAltVisibleLines,
+        allLines: displayOriginalLines,
+        alignment,
+        currentIndex: actualCurrentLine,
+        currentTimeMs,
+        enabled: showInterludeEllipsis,
+      }),
+    [
+      alignment,
+      altLines,
+      nonAltVisibleLines,
+      displayOriginalLines,
+      actualCurrentLine,
+      currentTimeMs,
+      showInterludeEllipsis,
+    ]
+  );
 
   // Track touch start position and accumulated movement
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -1969,8 +1995,13 @@ export function LyricsDisplay({
     >
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
-          const isCurrent = line === displayOriginalLines[actualCurrentLine];
-          const lineActualIdx = displayOriginalLines.indexOf(line);
+          const isInterludePlaceholder = isInterludePlaceholderLine(line);
+          const lineActualIdx = isInterludePlaceholder
+            ? line.anchorLineIndex
+            : displayOriginalLines.indexOf(line);
+          const isCurrent = isInterludePlaceholder
+            ? line.anchorLineIndex === actualCurrentLine
+            : line === displayOriginalLines[actualCurrentLine];
           let position = 0;
           if (alignment === LyricsAlignment.Alternating) {
             position = isCurrent ? 0 : 1;
@@ -1978,7 +2009,7 @@ export function LyricsDisplay({
             position =
               currentAnchorIdx >= 0 ? lineActualIdx - currentAnchorIdx : 0;
           }
-          const hasWordTimings = !!(
+          const hasWordTimings = !isInterludePlaceholder && !!(
             line.wordTimings && line.wordTimings.length > 0
           );
           const lineTextAlign = getTextAlign(
@@ -1986,7 +2017,7 @@ export function LyricsDisplay({
             index,
             visibleLines.length
           );
-          const translatedText = hasTranslation
+          const translatedText = !isInterludePlaceholder && hasTranslation
             ? translationMap.get(line.startTimeMs) ||
               translationByIndex[lineActualIdx] ||
               null
@@ -2044,7 +2075,14 @@ export function LyricsDisplay({
               }}
             >
               <LyricsLineRowContent
-                line={line}
+                line={
+                  isInterludePlaceholder
+                    ? {
+                        startTimeMs: line.startTimeMs,
+                        words: line.words,
+                      }
+                    : line
+                }
                 isCurrent={isCurrent}
                 hasWordTimings={hasWordTimings}
                 timeMsForRow={timeMsForRow}
