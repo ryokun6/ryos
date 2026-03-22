@@ -101,13 +101,28 @@ export function extractChineseFromKrcLanguage(krc: string): string[] | null {
 // Line Filtering
 // =============================================================================
 
+/** Treat full-width (：) and half-width (:) colons the same for metadata prefix matching */
+function normalizeColonsForPrefixMatch(s: string): string {
+  return s.replace(/\uFF1A/g, ":");
+}
+
 /**
  * Check if a line should be skipped (credits, metadata, etc.)
  */
 export function shouldSkipLine(text: string, title?: string, artist?: string): boolean {
   const trimmed = text.trim();
-  
-  if (SKIP_PREFIXES.some((prefix) => trimmed.startsWith(prefix))) {
+
+  if (trimmed.includes("\uFF1A")) {
+    return true;
+  }
+
+  const lineForPrefix = normalizeColonsForPrefixMatch(trimmed);
+
+  if (
+    SKIP_PREFIXES.some((prefix) =>
+      lineForPrefix.startsWith(normalizeColonsForPrefixMatch(prefix)),
+    )
+  ) {
     return true;
   }
   

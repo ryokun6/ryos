@@ -153,17 +153,22 @@ export async function searchKugou(
 
   // Convert Kugou metadata from Simplified to Traditional Chinese
   // Also normalize artist separator from Chinese comma "、" to " & "
-  const scoredResults = infoList.map((song) => ({
+  const scoredResults = infoList.map((song, index) => ({
     title: simplifiedToTraditional(song.songname),
     artist: normalizeArtistSeparator(simplifiedToTraditional(song.singername)),
     album: song.album_name ? simplifiedToTraditional(song.album_name) : undefined,
     hash: song.hash,
     albumId: song.album_id,
     score: Math.round(scoreSongMatch(song, title, artist) * 1000) / 1000,
+    _kugouOrder: index,
   }));
 
-  scoredResults.sort((a, b) => b.score - a.score);
-  return scoredResults;
+  scoredResults.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a._kugouOrder - b._kugouOrder;
+  });
+
+  return scoredResults.map(({ _kugouOrder: _o, ...rest }) => rest);
 }
 
 /**
@@ -208,52 +213,58 @@ export async function fetchLyricsFromKugou(
   const lyricsId = candidate.id;
   const lyricsKey = candidate.accesskey;
 
-  // Try KRC format first
-  let lrc: string | undefined;
-  let krc: string | undefined;
-
   const krcUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=krc&charset=utf8`;
-  try {
-    const krcRes = await fetchWithTimeout(krcUrl, { headers: kugouHeaders });
-    if (krcRes.ok) {
-      const krcJson = (await krcRes.json()) as unknown as LyricsDownloadResponse;
-      if (krcJson?.content) {
-        try {
-          krc = decodeKRC(krcJson.content);
-          logInfo(requestId, "Successfully decoded KRC lyrics");
-        } catch (decodeErr) {
-          logInfo(requestId, "KRC decode failed", decodeErr);
-        }
-      }
-    }
-  } catch (err) {
-    logInfo(requestId, "KRC fetch failed, trying LRC", err);
-  }
-
-  // Fetch LRC format
   const lrcUrl = `http://lyrics.kugou.com/download?ver=1&client=pc&id=${lyricsId}&accesskey=${lyricsKey}&fmt=lrc&charset=utf8`;
-  try {
-    const lrcRes = await fetchWithTimeout(lrcUrl, { headers: kugouHeaders });
-    if (lrcRes.ok) {
-      const lrcJson = (await lrcRes.json()) as unknown as LyricsDownloadResponse;
-      if (lrcJson?.content) {
-        try {
-          lrc = base64ToUtf8(lrcJson.content);
-        } catch (decodeErr) {
-          logInfo(requestId, "LRC base64 decode failed", decodeErr);
+
+  const fetchKrcDecoded = async (): Promise<string | undefined> => {
+    try {
+      const krcRes = await fetchWithTimeout(krcUrl, { headers: kugouHeaders });
+      if (krcRes.ok) {
+        const krcJson = (await krcRes.json()) as unknown as LyricsDownloadResponse;
+        if (krcJson?.content) {
+          try {
+            const decoded = decodeKRC(krcJson.content);
+            logInfo(requestId, "Successfully decoded KRC lyrics");
+            return decoded;
+          } catch (decodeErr) {
+            logInfo(requestId, "KRC decode failed", decodeErr);
+          }
         }
       }
+    } catch (err) {
+      logInfo(requestId, "KRC fetch failed, trying LRC", err);
     }
-  } catch (err) {
-    logInfo(requestId, "LRC fetch failed", err);
-  }
+    return undefined;
+  };
+
+  const fetchLrcDecoded = async (): Promise<string | undefined> => {
+    try {
+      const lrcRes = await fetchWithTimeout(lrcUrl, { headers: kugouHeaders });
+      if (lrcRes.ok) {
+        const lrcJson = (await lrcRes.json()) as unknown as LyricsDownloadResponse;
+        if (lrcJson?.content) {
+          try {
+            return base64ToUtf8(lrcJson.content);
+          } catch (decodeErr) {
+            logInfo(requestId, "LRC base64 decode failed", decodeErr);
+          }
+        }
+      }
+    } catch (err) {
+      logInfo(requestId, "LRC fetch failed", err);
+    }
+    return undefined;
+  };
+
+  const [krc, lrc, cover] = await Promise.all([
+    fetchKrcDecoded(),
+    fetchLrcDecoded(),
+    fetchCoverUrl(hash, albumId),
+  ]);
 
   if (!lrc && !krc) {
     return null;
   }
-
-  // Fetch cover image URL from Kugou API
-  const cover = await fetchCoverUrl(hash, albumId);
 
   return {
     lyrics: {

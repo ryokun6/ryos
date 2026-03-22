@@ -4,9 +4,25 @@
 
 import { z } from "zod";
 import pako from "pako";
+import { Converter } from "opencc-js";
 import { google } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
 import { KRC_DECRYPTION_KEY, YOUTUBE_VIDEO_ID_REGEX } from "./_constants.js";
+
+/** Traditional → Simplified for cross-strait lyric metadata matching (KuGou is Simplified) */
+const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
+
+const HIRAGANA_REGEX = /[\u3040-\u309F]/;
+const KATAKANA_REGEX = /[\u30A0-\u30FF]/;
+const CJK_UNIFIED_REGEX = /[\u4E00-\u9FFF]/;
+
+function hasKana(text: string): boolean {
+  return HIRAGANA_REGEX.test(text) || KATAKANA_REGEX.test(text);
+}
+
+function hasCjkIdeographs(text: string): boolean {
+  return CJK_UNIFIED_REGEX.test(text);
+}
 
 // =============================================================================
 // Types
@@ -105,9 +121,23 @@ export function decodeKRC(krcBase64: string): string {
   return new TextDecoder("utf-8").decode(decompressed);
 }
 
+/**
+ * Remove parenthetical / bracketed segments (ASCII and common CJK wrappers) for cleaner matching.
+ */
 export function stripParentheses(str: string): string {
   if (!str) return str;
-  return str.replace(/\s*\([^)]*\)\s*/g, " ").trim();
+  let s = str;
+  const bracketPatterns = [
+    /\s*\([^)]*\)\s*/g,
+    /\s*（[^）]*）\s*/g,
+    /\s*【[^】]*】\s*/g,
+    /\s*「[^」]*」\s*/g,
+    /\s*『[^』]*』\s*/g,
+  ];
+  for (const re of bracketPatterns) {
+    s = s.replace(re, " ");
+  }
+  return s.replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -125,15 +155,52 @@ export function sanitizeInput(str: string): string {
 // Similarity & Matching
 // =============================================================================
 
+/**
+ * Normalize for fuzzy comparison: Unicode letters/numbers preserved (not ASCII-only \\w).
+ */
 export function normalizeForComparison(str: string): string {
   if (!str) return "";
   return str
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]/g, " ")
+    .normalize("NFC")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function bigramJaccard(a: string, b: string): number {
+  if (a.length < 2 || b.length < 2) return 0;
+  const bigrams = (s: string): Set<string> => {
+    const set = new Set<string>();
+    for (let i = 0; i < s.length - 1; i++) {
+      set.add(s.slice(i, i + 2));
+    }
+    return set;
+  };
+  const A = bigrams(a);
+  const B = bigrams(b);
+  let inter = 0;
+  for (const x of A) {
+    if (B.has(x)) inter++;
+  }
+  const union = A.size + B.size - inter;
+  return union === 0 ? 0 : inter / union;
+}
+
+/**
+ * When both sides may be Chinese (Han) and neither has Japanese Kana, map to Simplified so
+ * Traditional metadata matches KuGou's Simplified strings.
+ */
+function harmonizeChineseScriptForMatch(a: string, b: string): [string, string] {
+  if (hasKana(a) || hasKana(b)) {
+    return [a, b];
+  }
+  if (!hasCjkIdeographs(a) && !hasCjkIdeographs(b)) {
+    return [a, b];
+  }
+  return [traditionalToSimplified(a), traditionalToSimplified(b)];
 }
 
 export function calculateSimilarity(query: string, target: string): number {
@@ -152,7 +219,7 @@ export function calculateSimilarity(query: string, target: string): number {
   for (const word of Array.from(queryWords)) {
     if (targetWords.has(word)) {
       matchingWords++;
-    } else if (word.length > 3) {
+    } else if (word.length > 3 || hasCjkIdeographs(word)) {
       for (const targetWord of Array.from(targetWords)) {
         if (targetWord.includes(word) || word.includes(targetWord)) {
           matchingWords += 0.5;
@@ -161,7 +228,18 @@ export function calculateSimilarity(query: string, target: string): number {
       }
     }
   }
-  return (matchingWords / queryWords.size) * 0.8;
+  let score = (matchingWords / queryWords.size) * 0.8;
+  if (score < 0.75) {
+    const compactQ = normQuery.replace(/\s/g, "");
+    const compactT = normTarget.replace(/\s/g, "");
+    if (compactQ.length >= 2 && compactT.length >= 2) {
+      const j = bigramJaccard(compactQ, compactT);
+      if (j > 0) {
+        score = Math.max(score, j * 0.75);
+      }
+    }
+  }
+  return score;
 }
 
 export function scoreSongMatch(
@@ -169,14 +247,16 @@ export function scoreSongMatch(
   requestedTitle: string,
   requestedArtist: string
 ): number {
-  const titleScore = calculateSimilarity(
-    stripParentheses(requestedTitle),
-    stripParentheses(song.songname)
-  );
-  const artistScore = calculateSimilarity(
-    stripParentheses(requestedArtist),
-    stripParentheses(song.singername)
-  );
+  const titleA = stripParentheses(requestedTitle);
+  const titleB = stripParentheses(song.songname);
+  const artistA = stripParentheses(requestedArtist);
+  const artistB = stripParentheses(song.singername);
+
+  const [t1, t2] = harmonizeChineseScriptForMatch(titleA, titleB);
+  const [a1, a2] = harmonizeChineseScriptForMatch(artistA, artistB);
+
+  const titleScore = calculateSimilarity(t1, t2);
+  const artistScore = calculateSimilarity(a1, a2);
   const combinedScore = titleScore * 0.55 + artistScore * 0.45;
   if (titleScore >= 0.7 && artistScore >= 0.7) {
     return combinedScore + 0.1;

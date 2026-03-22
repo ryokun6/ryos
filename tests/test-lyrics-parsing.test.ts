@@ -19,4 +19,37 @@ describe("lyrics prefix filtering", () => {
       },
     ]);
   });
+
+  test("skips metadata lines that use full-width colon after label", () => {
+    const lines = parseLrcToLines(
+      [
+        "[00:01.00]词\uFF1A作词人名",
+        "[00:02.00]男\uFF1A歌手名",
+        "[00:03.00]Actual lyric line",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "3000",
+        words: "Actual lyric line",
+      },
+    ]);
+  });
+
+  test("skips any line that contains full-width colon", () => {
+    const lines = parseLrcToLines(
+      [
+        "[00:01.00]Not a known prefix\uFF1A still skipped",
+        "[00:02.00]Plain lyric",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "2000",
+        words: "Plain lyric",
+      },
+    ]);
+  });
 });
