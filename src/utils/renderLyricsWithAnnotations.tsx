@@ -13,6 +13,7 @@ import {
   getKanaPronunciationOnly,
   getFuriganaSegmentsPronunciationOnly,
 } from "@/utils/romanization";
+import { getDisplayReading } from "@/utils/furigana";
 
 // =============================================================================
 // Types
@@ -93,10 +94,11 @@ function renderFuriganaSegments(
     <>
       {segments.map((segment, index) => {
         // Handle Japanese furigana (hiragana reading over kanji)
-        if (segment.reading) {
+        const displayReadingSource = getDisplayReading(segment);
+        if (displayReadingSource) {
           const displayReading = romanization.japaneseRomaji
-            ? toRomaji(segment.reading)
-            : segment.reading;
+            ? toRomaji(displayReadingSource)
+            : displayReadingSource;
           return (
             // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
             <ruby key={index} className="lyrics-furigana">

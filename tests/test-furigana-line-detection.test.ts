@@ -59,6 +59,16 @@ describe("parseRubyMarkup", () => {
     const segs = parseRubyMarkup("<走る:はしる>");
     expect(segs).toEqual([{ text: "走る", reading: "はしる" }]);
   });
+
+  test("drops redundant katakana furigana", () => {
+    const segs = parseRubyMarkup("<カタカナ:カタカナ>");
+    expect(segs).toEqual([{ text: "カタカナ" }]);
+  });
+
+  test("drops redundant hiragana reading over katakana text", () => {
+    const segs = parseRubyMarkup("<スーパー:すうぱあ>");
+    expect(segs).toEqual([{ text: "スーパー" }]);
+  });
 });
 
 describe("normalizeFuriganaSegments", () => {
@@ -73,6 +83,12 @@ describe("normalizeFuriganaSegments", () => {
       { text: "you", reading: "ユー" },
     ]);
   });
+
+  test("removes redundant katakana readings from cached segments", () => {
+    expect(normalizeFuriganaSegments([{ text: "アイス", reading: "あいす" }])).toEqual([
+      { text: "アイス" },
+    ]);
+  });
 });
 
 describe("FURIGANA_STREAM_SYSTEM_PROMPT", () => {
@@ -80,5 +96,9 @@ describe("FURIGANA_STREAM_SYSTEM_PROMPT", () => {
     expect(FURIGANA_STREAM_SYSTEM_PROMPT).toContain("katakana");
     expect(FURIGANA_STREAM_SYSTEM_PROMPT).toContain("Latin");
     expect(FURIGANA_STREAM_SYSTEM_PROMPT).toContain("wrap each word separately when the source has spaces");
+  });
+
+  test("documents skipping redundant katakana ruby", () => {
+    expect(FURIGANA_STREAM_SYSTEM_PROMPT).toContain("Do not add ruby when the source text is already katakana");
   });
 });

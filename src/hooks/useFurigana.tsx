@@ -7,6 +7,7 @@ import i18n from "@/lib/i18n";
 import { isJapaneseText } from "@/utils/romanization";
 import { lyricsHaveJapanese } from "@/utils/languageDetection";
 import type { FuriganaSegment } from "@/utils/romanization";
+import { normalizeFuriganaSegments } from "@/utils/furigana";
 import {
   processFuriganaSSE, 
   processSoramimiSSE, 
@@ -63,43 +64,7 @@ interface UseFuriganaReturn {
 }
 
 function normalizeClientFuriganaSegments(segments: FuriganaSegment[]): FuriganaSegment[] {
-  return segments.flatMap((segment) => {
-    if (!segment.reading) {
-      return [segment];
-    }
-
-    const textParts = segment.text.match(/\s+|\S+/gu);
-    const readingParts = segment.reading.match(/\s+|\S+/gu);
-    if (
-      !textParts ||
-      textParts.length <= 1 ||
-      !readingParts ||
-      textParts.length !== readingParts.length
-    ) {
-      return [segment];
-    }
-
-    const normalized: FuriganaSegment[] = [];
-    for (let i = 0; i < textParts.length; i++) {
-      const textPart = textParts[i];
-      const readingPart = readingParts[i];
-      if (/^\s+$/u.test(textPart)) {
-        if (!/^\s+$/u.test(readingPart)) {
-          return [segment];
-        }
-        normalized.push({ text: textPart });
-        continue;
-      }
-
-      if (/^\s+$/u.test(readingPart)) {
-        return [segment];
-      }
-
-      normalized.push({ text: textPart, reading: readingPart });
-    }
-
-    return normalized;
-  });
+  return normalizeFuriganaSegments(segments);
 }
 
 /**
