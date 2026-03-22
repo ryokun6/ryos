@@ -1705,7 +1705,7 @@
  * which made `.karaoke-interlude-circle-dots` inherit the full karaoke line size.
  */
 :root[data-os-theme="macosx"] .karaoke-force-font .karaoke-interlude-circle-dots {
-  font-size: clamp(13px, 0.36em, 30px) !important;
+  font-size: clamp(16px, 0.48em, 42px) !important;
   line-height: 1 !important;
   letter-spacing: 0.14em !important;
 }
@@ -1740,7 +1740,7 @@
 
 /* Fullscreen lyrics are often outside force-font wrappers; keep interlude dots from inheriting line size */
 :root[data-os-theme="macosx"] .fullscreen-lyrics-text .karaoke-interlude-circle-dots {
-  font-size: clamp(13px, min(3.6vw, 3.6vh), 30px) !important;
+  font-size: clamp(16px, min(4.8vw, 4.8vh), 42px) !important;
   line-height: 1 !important;
   letter-spacing: 0.14em !important;
 }
