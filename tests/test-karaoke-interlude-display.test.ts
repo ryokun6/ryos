@@ -4,6 +4,7 @@ import { LyricsAlignment, type LyricLine } from "../src/types/lyrics";
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
+  getInterludeDotsFadeOpacity,
   isInterludePlaceholderLine,
 } from "../src/utils/karaokeInterludeDisplay";
 
@@ -31,7 +32,7 @@ describe("karaoke interlude ellipsis", () => {
     expect(isInterludePlaceholderLine(visible[0]!)).toBe(false);
   });
 
-  test("does not show lead-in intro dots until the countdown window starts", () => {
+  test("shows intro placeholder with countdownStartMs during long intro (dots opacity in UI)", () => {
     const lines = [makeLine(12000, "First line")];
 
     const visible = applyKaraokeInterludeEllipsis({
@@ -43,8 +44,10 @@ describe("karaoke interlude ellipsis", () => {
       enabled: true,
     });
 
-    expect(visible).toEqual([lines[0]]);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(false);
+    expect(visible).toHaveLength(2);
+    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
+    expect(visible[0]!.countdownStartMs).toBe(9000);
+    expect(visible[1]).toBe(lines[0]);
   });
 
   test("shows lead-in intro dots during countdown of a long intro in focus-three mode", () => {
@@ -74,7 +77,7 @@ describe("karaoke interlude ellipsis", () => {
       allLines: lines,
       alignment: LyricsAlignment.Alternating,
       currentIndex: 0,
-      currentTimeMs: 12200,
+      currentTimeMs: 5000,
       enabled: true,
     })[0];
     if (!isInterludePlaceholderLine(placeholder!)) throw new Error("expected placeholder");
@@ -87,7 +90,7 @@ describe("karaoke interlude ellipsis", () => {
     expect(timed.startTimeMs).toBe("12000");
   });
 
-  test("does not replace the current line with ellipsis before the countdown window", () => {
+  test("replaces the held current line with placeholder after delay; countdownStartMs matches dot fill", () => {
     const lines = [
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
@@ -102,27 +105,9 @@ describe("karaoke interlude ellipsis", () => {
       enabled: true,
     });
 
-    expect(visible).toEqual([lines[0], lines[1]]);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(false);
-  });
-
-  test("replaces the held current line with ellipsis during countdown of a long mid-song interlude", () => {
-    const lines = [
-      makeLine(0, "Verse line"),
-      makeLine(15000, "Next line"),
-    ];
-
-    const visible = applyKaraokeInterludeEllipsis({
-      visibleLines: [lines[0], lines[1]],
-      allLines: lines,
-      alignment: LyricsAlignment.Alternating,
-      currentIndex: 0,
-      currentTimeMs: 12200,
-      enabled: true,
-    });
-
     expect(visible).toHaveLength(2);
     expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
+    expect(visible[0]!.countdownStartMs).toBe(12000);
     expect(visible[1]).toBe(lines[1]);
   });
 
@@ -144,6 +129,12 @@ describe("karaoke interlude ellipsis", () => {
     expect(visible).toHaveLength(2);
     expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
     expect(visible[1]).toBe(lines[1]);
+  });
+
+  test("getInterludeDotsFadeOpacity ramps in before countdownStartMs", () => {
+    expect(getInterludeDotsFadeOpacity(11400, 12000)).toBe(0);
+    expect(getInterludeDotsFadeOpacity(11775, 12000)).toBe(0.5);
+    expect(getInterludeDotsFadeOpacity(12000, 12000)).toBe(1);
   });
 
   test("does not show ellipsis for ordinary short gaps", () => {

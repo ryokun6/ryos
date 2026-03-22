@@ -5,6 +5,8 @@ export interface InterludePlaceholderLine {
   words: string;
   isInterludePlaceholder: true;
   anchorLineIndex: number;
+  /** Absolute time when the 3-2-1 dot fill begins (same as synthetic line start). */
+  countdownStartMs: number;
 }
 
 export type VisibleLyricLine = LyricLine | InterludePlaceholderLine;
@@ -18,6 +20,21 @@ const INTERLUDE_PLACEHOLDER_DELAY_MS = 2000;
  * Word timings only cover this tail of the interlude (not the full silent gap).
  */
 export const INTERLUDE_COUNTDOWN_TOTAL_MS = 3000;
+
+/**
+ * Dots fade from opacity 0 → 1 over this window ending at {@link InterludePlaceholderLine.countdownStartMs}.
+ */
+export const INTERLUDE_DOTS_FADE_IN_MS = 450;
+
+export function getInterludeDotsFadeOpacity(
+  currentTimeMs: number,
+  countdownStartMs: number
+): number {
+  const startFade = countdownStartMs - INTERLUDE_DOTS_FADE_IN_MS;
+  if (currentTimeMs < startFade) return 0;
+  if (currentTimeMs >= countdownStartMs) return 1;
+  return (currentTimeMs - startFade) / INTERLUDE_DOTS_FADE_IN_MS;
+}
 
 /** U+25CF BLACK CIRCLE — reads as a filled dot at lyric font sizes */
 const INTERLUDE_DOT = "\u25CF";
@@ -53,13 +70,15 @@ function interludeWordsAndTimings(
 
 function createInterludePlaceholder(
   id: string,
-  anchorLineIndex: number
+  anchorLineIndex: number,
+  countdownStartMs: number
 ): InterludePlaceholderLine {
   return {
     startTimeMs: `interlude-${id}`,
     words: `${INTERLUDE_DOT} ${INTERLUDE_DOT} ${INTERLUDE_DOT}`,
     isInterludePlaceholder: true,
     anchorLineIndex,
+    countdownStartMs,
   };
 }
 
@@ -188,14 +207,11 @@ export function applyKaraokeInterludeEllipsis({
       return visibleLines;
     }
     const { segmentStartMs } = buildCountdownSegment(0, getLineStartMs(first));
-    // Hide dots until the 3-2-1 countdown window begins (not during the whole silent intro)
-    if (currentTimeMs < segmentStartMs) {
-      return visibleLines;
-    }
 
     const placeholder = createInterludePlaceholder(
       `intro-${allLines[0]?.startTimeMs ?? "start"}`,
-      0
+      0,
+      segmentStartMs
     );
 
     const firstLine = visibleLines[0] ?? allLines[0];
@@ -211,14 +227,11 @@ export function applyKaraokeInterludeEllipsis({
   const fullStartMs = getLineEndMs(currentLine) + INTERLUDE_PLACEHOLDER_DELAY_MS;
   const fullEndMs = getLineStartMs(nextLine);
   const { segmentStartMs } = buildCountdownSegment(fullStartMs, fullEndMs);
-  // Hide dots until the countdown window begins (not across the whole long gap)
-  if (currentTimeMs < segmentStartMs) {
-    return visibleLines;
-  }
 
   const placeholder = createInterludePlaceholder(
     `gap-${nextLine.startTimeMs}`,
-    currentIndex
+    currentIndex,
+    segmentStartMs
   );
 
   if (alignment === LyricsAlignment.Center) {
