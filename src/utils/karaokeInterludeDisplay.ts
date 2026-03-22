@@ -22,7 +22,12 @@ const INTERLUDE_PLACEHOLDER_DELAY_MS = 2000;
 export const INTERLUDE_COUNTDOWN_TOTAL_MS = 3000;
 
 /**
- * Dots fade from opacity 0 → 1 over this window ending at {@link InterludePlaceholderLine.countdownStartMs}.
+ * Dots stay at this opacity until the fade-in window, then ramp to 1 at {@link InterludePlaceholderLine.countdownStartMs}.
+ */
+export const INTERLUDE_DOTS_REST_OPACITY = 0.2;
+
+/**
+ * Dots fade from {@link INTERLUDE_DOTS_REST_OPACITY} → 1 over this window ending at {@link InterludePlaceholderLine.countdownStartMs}.
  */
 export const INTERLUDE_DOTS_FADE_IN_MS = 450;
 
@@ -31,9 +36,10 @@ export function getInterludeDotsFadeOpacity(
   countdownStartMs: number
 ): number {
   const startFade = countdownStartMs - INTERLUDE_DOTS_FADE_IN_MS;
-  if (currentTimeMs < startFade) return 0;
+  if (currentTimeMs < startFade) return INTERLUDE_DOTS_REST_OPACITY;
   if (currentTimeMs >= countdownStartMs) return 1;
-  return (currentTimeMs - startFade) / INTERLUDE_DOTS_FADE_IN_MS;
+  const t = (currentTimeMs - startFade) / INTERLUDE_DOTS_FADE_IN_MS;
+  return INTERLUDE_DOTS_REST_OPACITY + t * (1 - INTERLUDE_DOTS_REST_OPACITY);
 }
 
 /** U+25CF BLACK CIRCLE — reads as a filled dot at lyric font sizes */

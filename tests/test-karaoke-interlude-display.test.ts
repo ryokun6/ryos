@@ -131,9 +131,9 @@ describe("karaoke interlude ellipsis", () => {
     expect(visible[1]).toBe(lines[1]);
   });
 
-  test("getInterludeDotsFadeOpacity ramps in before countdownStartMs", () => {
-    expect(getInterludeDotsFadeOpacity(11400, 12000)).toBe(0);
-    expect(getInterludeDotsFadeOpacity(11775, 12000)).toBe(0.5);
+  test("getInterludeDotsFadeOpacity rests dim then ramps to full at countdownStartMs", () => {
+    expect(getInterludeDotsFadeOpacity(11400, 12000)).toBe(0.2);
+    expect(getInterludeDotsFadeOpacity(11775, 12000)).toBeCloseTo(0.6, 5);
     expect(getInterludeDotsFadeOpacity(12000, 12000)).toBe(1);
   });
 
