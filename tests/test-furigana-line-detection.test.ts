@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   lineNeedsFuriganaGeneration,
   parseRubyMarkup,
+  normalizeFuriganaSegments,
   FURIGANA_STREAM_SYSTEM_PROMPT,
 } from "../api/songs/_furigana.ts";
 
@@ -42,6 +43,34 @@ describe("parseRubyMarkup", () => {
       { text: "Hello", reading: "ハロー" },
       { text: " ", reading: undefined },
       { text: "世界", reading: "せかい" },
+    ]);
+  });
+
+  test("splits spaced annotated phrases into per-word furigana segments", () => {
+    const segs = parseRubyMarkup("<안녕 하세요:annyeong haseyo>");
+    expect(segs).toEqual([
+      { text: "안녕", reading: "annyeong" },
+      { text: " " },
+      { text: "하세요", reading: "haseyo" },
+    ]);
+  });
+
+  test("keeps no-space annotated Japanese as one segment", () => {
+    const segs = parseRubyMarkup("<走る:はしる>");
+    expect(segs).toEqual([{ text: "走る", reading: "はしる" }]);
+  });
+});
+
+describe("normalizeFuriganaSegments", () => {
+  test("normalizes cached multi-word furigana segments", () => {
+    expect(
+      normalizeFuriganaSegments([{ text: "I love you", reading: "アイ ラブ ユー" }])
+    ).toEqual([
+      { text: "I", reading: "アイ" },
+      { text: " " },
+      { text: "love", reading: "ラブ" },
+      { text: " " },
+      { text: "you", reading: "ユー" },
     ]);
   });
 });

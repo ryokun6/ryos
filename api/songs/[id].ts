@@ -72,6 +72,7 @@ import {
 import {
   lyricsAreMostlyChinese,
   parseRubyMarkup,
+  normalizeFuriganaSegments,
   lineNeedsFuriganaGeneration,
   FURIGANA_STREAM_SYSTEM_PROMPT,
 } from "./_furigana.js";
@@ -215,6 +216,10 @@ export default apiHandler<Record<string, unknown>>(
           song.lyricsSource?.title || song.title,
           song.lyricsSource?.artist || song.artist
         );
+      }
+
+      if (song.furigana) {
+        song.furigana = song.furigana.map((segments) => normalizeFuriganaSegments(segments));
       }
 
       logger.info(`Response: 200 OK`, { 
@@ -474,7 +479,9 @@ export default apiHandler<Record<string, unknown>>(
             response.furigana = {
               totalLines,
               cached: hasFurigana,
-              ...(hasFurigana ? { data: song.furigana } : {}),
+              ...(hasFurigana
+                ? { data: song.furigana!.map((segments) => normalizeFuriganaSegments(segments)) }
+                : {}),
             };
           }
           
@@ -1052,7 +1059,7 @@ export default apiHandler<Record<string, unknown>>(
           logger.info("Returning cached furigana via SSE");
           sendSSEResponse(res, effectiveOrigin, {
             type: "cached",
-            furigana: song.furigana,
+            furigana: song.furigana.map((segments) => normalizeFuriganaSegments(segments)),
           });
           return;
         }
@@ -1139,7 +1146,7 @@ export default apiHandler<Record<string, unknown>>(
               
               if (kanjiLineIndex >= 0 && kanjiLineIndex < linesNeedingFurigana.length && content) {
                 const originalIndex = linesNeedingFurigana[kanjiLineIndex].originalIndex;
-                const segments = parseRubyMarkup(content);
+                const segments = normalizeFuriganaSegments(parseRubyMarkup(content));
                 allFurigana[originalIndex] = segments;
                 completedLines++;
                 

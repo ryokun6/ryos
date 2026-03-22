@@ -169,7 +169,7 @@ export function parseRubyMarkup(line: string): FuriganaSegment[] {
     const reading = match[2];
     
     if (text) {
-      segments.push({ text, reading });
+      segments.push(...normalizeFuriganaSegment({ text, reading }));
     }
     
     lastIndex = regex.lastIndex;
@@ -184,6 +184,42 @@ export function parseRubyMarkup(line: string): FuriganaSegment[] {
   }
   
   return segments.length > 0 ? segments : [{ text: line }];
+}
+
+export function normalizeFuriganaSegments(segments: FuriganaSegment[]): FuriganaSegment[] {
+  return segments.flatMap((segment) => normalizeFuriganaSegment(segment));
+}
+
+function normalizeFuriganaSegment(segment: FuriganaSegment): FuriganaSegment[] {
+  if (!segment.reading) {
+    return [segment];
+  }
+
+  const textParts = segment.text.match(/\s+|\S+/gu);
+  const readingParts = segment.reading.match(/\s+|\S+/gu);
+
+  if (!textParts || textParts.length <= 1 || !readingParts || textParts.length !== readingParts.length) {
+    return [segment];
+  }
+
+  const normalized: FuriganaSegment[] = [];
+  for (let i = 0; i < textParts.length; i++) {
+    const textPart = textParts[i];
+    const readingPart = readingParts[i];
+    if (/^\s+$/u.test(textPart)) {
+      if (!/^\s+$/u.test(readingPart)) {
+        return [segment];
+      }
+      normalized.push({ text: textPart });
+      continue;
+    }
+    if (/^\s+$/u.test(readingPart)) {
+      return [segment];
+    }
+    normalized.push({ text: textPart, reading: readingPart });
+  }
+
+  return normalized;
 }
 
 /**
