@@ -485,23 +485,25 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
    */
   .karaoke-force-font .karaoke-interlude-circle-dots {
     display: inline-block;
-    font-size: clamp(18px, 0.52em, 44px) !important;
+    font-size: clamp(13px, 0.36em, 30px) !important;
     line-height: 1 !important;
-    letter-spacing: 0.18em !important;
+    letter-spacing: 0.14em !important;
   }
 
   /*
-   * Fullscreen: lyric lines use much larger computed font-size; keep interlude dots
-   * subordinate (smaller em share + lower cap) so they don't dominate the stage.
+   * Fullscreen (Karaoke / iPod) lyrics omit `karaoke-force-font`, so dots would inherit
+   * `.fullscreen-lyrics-text` (up to 120px). Match in-window dot scale via vw/vh (0.36 × 10vw cap).
    */
-  .karaoke-force-font .fullscreen-lyrics-text .karaoke-interlude-circle-dots {
-    font-size: clamp(12px, 0.24em, 28px) !important;
-    letter-spacing: 0.12em !important;
+  .fullscreen-lyrics-text .karaoke-interlude-circle-dots {
+    display: inline-block;
+    font-size: clamp(13px, min(3.6vw, 3.6vh), 30px) !important;
+    line-height: 1 !important;
+    letter-spacing: 0.14em !important;
   }
 
   /* Fullscreen lyrics text - viewport-relative with max cap */
   .fullscreen-lyrics-text {
-    font-size: clamp(32px, min(10vw, 10vh), 160px);
+    font-size: clamp(32px, min(10vw, 10vh), 120px);
   }
 
   /* Lyrics translation sizes - proportional to main lyrics */
@@ -518,7 +520,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Fullscreen: ~50% of main lyrics (5vw/5vh vs 10vw/10vh) */
   .lyrics-translation-fullscreen {
-    font-size: clamp(14px, min(5vw, 5vh), 80px);
+    font-size: clamp(14px, min(5vw, 5vh), 60px);
     margin-top: 0.2em;
   }
 
