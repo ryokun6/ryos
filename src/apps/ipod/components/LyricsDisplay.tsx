@@ -8,7 +8,13 @@ import {
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCoverPalette } from "@/hooks/useCoverPalette";
@@ -32,6 +38,7 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
+  getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
   isInterludePlaceholderLine,
 } from "@/utils/karaokeInterludeDisplay";
@@ -1169,6 +1176,13 @@ const getVariants = (
   };
 };
 
+/** Column alignment for interlude dots stacked above the lyric (matches row textAlign). */
+function interludeStackItemsClass(textAlign: string): string {
+  if (textAlign === "right" || textAlign === "end") return "items-end";
+  if (textAlign === "center") return "items-center";
+  return "items-start";
+}
+
 type LyricsLineRowContentProps = {
   line: LyricLine;
   isCurrent: boolean;
@@ -1178,6 +1192,8 @@ type LyricsLineRowContentProps = {
   timeMsForRow: number | undefined;
   translatedText: string | null;
   textSizeClass: string;
+  /** Row alignment from parent motion.div (stacked interlude dots follow this). */
+  lineTextAlign?: string;
   lineHeightClass: string;
   fontClassName: string;
   interactive: boolean;
@@ -1200,6 +1216,12 @@ type LyricsLineRowContentProps = {
     countdownStartMs: number;
     anchorLine: LyricLine | null;
   };
+  /** Gap + alternating: placeholder row is ghost only; dots render on the next row */
+  interludePlaceholderDotsInlineOnlyGhost?: boolean;
+  /** Intro/gap + alternating: synthetic line for ●●● on the same row as the lyric */
+  interludeInlineDotsLine?: LyricLine;
+  timeMsForInterludeDots?: number;
+  interludeInlineCountdownStartMs?: number;
 };
 
 /** Inner lyric body only — `motion.div` must wrap this as a direct child of `AnimatePresence` for layout/exit. */
@@ -1228,6 +1250,11 @@ function LyricsLineRowContent({
   glowFilter,
   glowShadowHighlight,
   interludeMeta,
+  interludePlaceholderDotsInlineOnlyGhost = false,
+  interludeInlineDotsLine,
+  timeMsForInterludeDots,
+  interludeInlineCountdownStartMs,
+  lineTextAlign = "center",
 }: LyricsLineRowContentProps) {
   const processedOriginal = useMemo(
     () => processText(line.words),
@@ -1258,6 +1285,21 @@ function LyricsLineRowContent({
     return getInterludeDotsFadeOpacity(t, interludeMeta.countdownStartMs);
   }, [interludeMeta, timeMsForRow]);
 
+  const interludeInlineDotsOpacity = useMemo(() => {
+    if (interludeInlineCountdownStartMs === undefined || timeMsForInterludeDots === undefined) {
+      return 1;
+    }
+    return getInterludeDotsFadeOpacity(timeMsForInterludeDots, interludeInlineCountdownStartMs);
+  }, [interludeInlineCountdownStartMs, timeMsForInterludeDots]);
+
+  const dotsActive = !!(
+    interludeInlineDotsLine &&
+    timeMsForInterludeDots !== undefined &&
+    interludeInlineCountdownStartMs !== undefined
+  );
+  const [dotsExitDone, setDotsExitDone] = useState(true);
+  if (dotsActive && dotsExitDone) setDotsExitDone(false);
+
   return (
     <>
       {(() => {
@@ -1270,7 +1312,22 @@ function LyricsLineRowContent({
           (romanization.enabled && romanization.japaneseFurigana
             ? furiganaMap.get(line.startTimeMs)
             : undefined);
-        return (
+
+        const inlineDotsSoramimi =
+          interludeInlineDotsLine &&
+          romanization.enabled &&
+          romanization.soramimi
+            ? soramimiMap.get(interludeInlineDotsLine.startTimeMs)
+            : undefined;
+        const inlineDotsAnnotations =
+          inlineDotsSoramimi ??
+          (interludeInlineDotsLine &&
+          romanization.enabled &&
+          romanization.japaneseFurigana
+            ? furiganaMap.get(interludeInlineDotsLine.startTimeMs)
+            : undefined);
+
+        const lyricBody = (
           <div
             className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${
               onSeekToTime && !hasWordTimings && !isInterludePlaceholder
@@ -1311,7 +1368,55 @@ function LyricsLineRowContent({
                 : undefined
             }
           >
-            {shouldUseAnimatedWordTiming ? (
+            {interludePlaceholderDotsInlineOnlyGhost && isInterludePlaceholder ? (
+              <>
+                {interludeMeta?.anchorLine &&
+                  (() => {
+                    const anchorLine = interludeMeta.anchorLine;
+                    const anchorSoramimi =
+                      romanization.enabled && romanization.soramimi
+                        ? soramimiMap.get(anchorLine.startTimeMs)
+                        : undefined;
+                    const anchorAnnotations =
+                      anchorSoramimi ??
+                      (romanization.enabled && romanization.japaneseFurigana
+                        ? furiganaMap.get(anchorLine.startTimeMs)
+                        : undefined);
+                    return (
+                      <div className="karaoke-interlude-anchor-ghost mb-1 opacity-[0.5]">
+                        {anchorLine.wordTimings?.length ? (
+                          <StaticWordRendering
+                            wordTimings={anchorLine.wordTimings}
+                            processText={processText}
+                            furiganaSegments={anchorAnnotations}
+                            koreanRomanized={!anchorSoramimi && showKoreanRomanization}
+                            japaneseRomaji={
+                              !anchorSoramimi &&
+                              romanization.enabled &&
+                              romanization.japaneseRomaji
+                            }
+                            chinesePinyin={
+                              !anchorSoramimi && romanization.enabled && romanization.chinese
+                            }
+                            pronunciationOnly={
+                              romanization.enabled && romanization.pronunciationOnly
+                            }
+                            soramimiTargetLanguage={
+                              anchorSoramimi ? romanization.soramamiTargetLanguage : undefined
+                            }
+                            lineStartTimeMs={parseInt(anchorLine.startTimeMs, 10)}
+                            onSeekToTime={undefined}
+                            isOldSchoolKaraoke={isOldSchoolKaraoke}
+                            baseColor={baseColor}
+                          />
+                        ) : (
+                          renderWithFurigana(anchorLine, processText(anchorLine.words))
+                        )}
+                      </div>
+                    );
+                  })()}
+              </>
+            ) : shouldUseAnimatedWordTiming ? (
               isInterludePlaceholder ? (
                 <>
                   {interludeMeta?.anchorLine &&
@@ -1524,6 +1629,80 @@ function LyricsLineRowContent({
             )}
           </div>
         );
+
+        if (dotsActive || !dotsExitDone) {
+          const interludeStackKind = isKaraokeSize
+            ? "lyrics-interlude-stack--karaoke"
+            : isFullscreenSize
+              ? "lyrics-interlude-stack--fullscreen"
+              : "lyrics-interlude-stack--ipod";
+          return (
+            <div
+              className={`${textSizeClass} lyrics-interlude-inline-with-line lyrics-interlude-stack flex w-full max-w-full flex-col gap-y-0 ${interludeStackItemsClass(lineTextAlign)} ${interludeStackKind}`}
+            >
+              <AnimatePresence
+                initial={false}
+                onExitComplete={() => setDotsExitDone(true)}
+              >
+                {dotsActive && (
+                  <motion.div
+                    key="inline-dots"
+                    initial={false}
+                    animate={{
+                      opacity: interludeInlineDotsOpacity,
+                      scale: 1,
+                      height: "auto",
+                      marginBottom: 0,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      scale: 0.88,
+                      height: 0,
+                      marginBottom: 0,
+                    }}
+                    transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                    className="origin-top overflow-hidden"
+                  >
+                    <span className="karaoke-interlude-circle-dots inline-block">
+                      <WordTimingHighlight
+                        wordTimings={interludeInlineDotsLine!.wordTimings!}
+                        lineStartTimeMs={parseInt(interludeInlineDotsLine!.startTimeMs, 10)}
+                        currentTimeMs={timeMsForInterludeDots!}
+                        processText={processText}
+                        furiganaSegments={inlineDotsAnnotations}
+                        koreanRomanized={!inlineDotsSoramimi && showKoreanRomanization}
+                        japaneseRomaji={
+                          !inlineDotsSoramimi && romanization.enabled && romanization.japaneseRomaji
+                        }
+                        chinesePinyin={
+                          !inlineDotsSoramimi && romanization.enabled && romanization.chinese
+                        }
+                        pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                        soramimiTargetLanguage={
+                          inlineDotsSoramimi ? romanization.soramamiTargetLanguage : undefined
+                        }
+                        onSeekToTime={undefined}
+                        isOldSchoolKaraoke={isOldSchoolKaraoke}
+                        highlightColor={highlightColor}
+                        glowFilter={glowFilter}
+                        baseColor={baseColor}
+                        isGradient={isGradientStyle}
+                        rainbowHue={
+                          isGradientStyle
+                            ? ((timeMsForInterludeDots! / 6000) * 360) % 360
+                            : undefined
+                        }
+                      />
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {lyricBody}
+            </div>
+          );
+        }
+
+        return lyricBody;
       })()}
       {processedTranslation &&
         processedTranslation !== processedOriginal && (
@@ -2023,6 +2202,16 @@ export function LyricsDisplay({
     ]
   );
 
+  const introInterludeLead = useMemo(
+    () =>
+      alignment === LyricsAlignment.Alternating &&
+      showInterludeEllipsis &&
+      actualCurrentLine < 0
+        ? getIntroInterludeInlineLead(displayOriginalLines, currentTimeMs, showInterludeEllipsis)
+        : null,
+    [alignment, showInterludeEllipsis, actualCurrentLine, displayOriginalLines, currentTimeMs]
+  );
+
   // Track touch start position and accumulated movement
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const accumulatedDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -2219,6 +2408,45 @@ export function LyricsDisplay({
               ? currentTimeMs
               : undefined;
 
+          const prevVisible = index > 0 ? visibleLines[index - 1] : undefined;
+          const nextVisible =
+            index < visibleLines.length - 1 ? visibleLines[index + 1] : undefined;
+          /** Gap dots sit inline on the lyric *after* the placeholder. Alternating order is either [placeholder, nextLyric] or [nextLyric, placeholder] depending on line index parity — only the former has the placeholder in prevVisible. */
+          const interludeLeadForRow =
+            introInterludeLead &&
+            !isInterludePlaceholder &&
+            line.startTimeMs === displayOriginalLines[0]?.startTimeMs &&
+            actualCurrentLine < 0
+              ? introInterludeLead
+              : prevVisible &&
+                  isInterludePlaceholderLine(prevVisible) &&
+                  prevVisible.dotsInlineWithNext
+                ? prevVisible
+                : nextVisible &&
+                    isInterludePlaceholderLine(nextVisible) &&
+                    nextVisible.dotsInlineWithNext
+                  ? nextVisible
+                  : undefined;
+
+          const interludeInlineDotsLine =
+            interludeLeadForRow && currentTimeMs !== undefined
+              ? buildInterludeLyricLineWithWordTimings(
+                  interludeLeadForRow,
+                  displayOriginalLines,
+                  actualCurrentLine
+                )
+              : undefined;
+
+          const interludePlaceholderDotsInlineOnlyGhost =
+            isInterludePlaceholder &&
+            isInterludePlaceholderLine(line) &&
+            line.dotsInlineWithNext;
+
+          const timeMsForInterludeDots =
+            interludeInlineDotsLine !== undefined && currentTimeMs !== undefined
+              ? currentTimeMs
+              : undefined;
+
           const variants = getVariants(
             position,
             alignment === LyricsAlignment.Alternating,
@@ -2300,6 +2528,11 @@ export function LyricsDisplay({
                       }
                     : undefined
                 }
+                interludePlaceholderDotsInlineOnlyGhost={interludePlaceholderDotsInlineOnlyGhost}
+                interludeInlineDotsLine={interludeInlineDotsLine}
+                timeMsForInterludeDots={timeMsForInterludeDots}
+                interludeInlineCountdownStartMs={interludeLeadForRow?.countdownStartMs}
+                lineTextAlign={lineTextAlign}
               />
             </motion.div>
           );

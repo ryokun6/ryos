@@ -116,6 +116,10 @@ export function shouldSkipLine(text: string, title?: string, artist?: string): b
     return true;
   }
 
+  if (trimmed.includes(" - ")) {
+    return true;
+  }
+
   const lineForPrefix = normalizeColonsForPrefixMatch(trimmed);
 
   if (

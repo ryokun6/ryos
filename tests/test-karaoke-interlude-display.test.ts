@@ -4,6 +4,7 @@ import { LyricsAlignment, type LyricLine } from "../src/types/lyrics";
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
+  getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
   isInterludePlaceholderLine,
 } from "../src/utils/karaokeInterludeDisplay";
@@ -65,6 +66,60 @@ describe("karaoke interlude ellipsis", () => {
     expect(visible).toHaveLength(2);
     expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
     expect(visible[1]).toBe(lines[0]);
+  });
+
+  test("alternating long intro: preserves visible rows (inline dots via getIntroInterludeInlineLead)", () => {
+    const oneLineSong = [makeLine(12000, "First line")];
+
+    const visibleOne = applyKaraokeInterludeEllipsis({
+      visibleLines: [oneLineSong[0]],
+      allLines: oneLineSong,
+      alignment: LyricsAlignment.Alternating,
+      currentIndex: -1,
+      currentTimeMs: 4000,
+      enabled: true,
+    });
+
+    expect(visibleOne).toEqual([oneLineSong[0]]);
+    expect(getIntroInterludeInlineLead(oneLineSong, 4000, true)).not.toBeNull();
+
+    const twoLineSong = [
+      makeLine(12000, "First line"),
+      makeLine(25000, "Second line"),
+    ];
+
+    const visibleTwo = applyKaraokeInterludeEllipsis({
+      visibleLines: [twoLineSong[0], twoLineSong[1]],
+      allLines: twoLineSong,
+      alignment: LyricsAlignment.Alternating,
+      currentIndex: -1,
+      currentTimeMs: 4000,
+      enabled: true,
+    });
+
+    expect(visibleTwo).toEqual([twoLineSong[0], twoLineSong[1]]);
+    expect(getIntroInterludeInlineLead(twoLineSong, 4000, true)).not.toBeNull();
+  });
+
+  test("alternating gap placeholder flags dotsInlineWithNext for inline lead on the next row", () => {
+    const lines = [
+      makeLine(0, "Verse line"),
+      makeLine(15000, "Next line"),
+    ];
+
+    const visible = applyKaraokeInterludeEllipsis({
+      visibleLines: [lines[0], lines[1]],
+      allLines: lines,
+      alignment: LyricsAlignment.Alternating,
+      currentIndex: 0,
+      currentTimeMs: 5000,
+      enabled: true,
+    });
+
+    expect(visible).toHaveLength(2);
+    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
+    expect(visible[0]!.dotsInlineWithNext).toBe(true);
+    expect(visible[1]).toBe(lines[1]);
   });
 
   test("buildInterludeLyricLineWithWordTimings splits the silent gap into three timed words", () => {

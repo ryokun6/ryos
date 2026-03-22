@@ -478,29 +478,6 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-size: clamp(32px, 8cqw, 96px);
   }
 
-  /*
-   * Interlude lead-in: U+25CF circles.
-   * `em` is vs `.karaoke-lyrics-text` parent. Use `.karaoke-force-font` + `!important` so macOS
-   * theme rules (`.karaoke-force-font * { font-size: unset !important }`) do not win.
-   */
-  .karaoke-force-font .karaoke-interlude-circle-dots {
-    display: inline-block;
-    font-size: clamp(16px, 0.48em, 42px) !important;
-    line-height: 1 !important;
-    letter-spacing: 0.14em !important;
-  }
-
-  /*
-   * Fullscreen (Karaoke / iPod) lyrics omit `karaoke-force-font`, so dots would inherit
-   * `.fullscreen-lyrics-text` (up to 120px). Match in-window dot scale via vw/vh (0.48 × 10vw cap).
-   */
-  .fullscreen-lyrics-text .karaoke-interlude-circle-dots {
-    display: inline-block;
-    font-size: clamp(16px, min(4.8vw, 4.8vh), 42px) !important;
-    line-height: 1 !important;
-    letter-spacing: 0.14em !important;
-  }
-
   /* Fullscreen lyrics text - viewport-relative with max cap */
   .fullscreen-lyrics-text {
     font-size: clamp(32px, min(10vw, 10vh), 120px);
@@ -600,6 +577,46 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     background-color: transparent !important;
     outline: none !important;
   }
+}
+
+/*
+ * Interlude countdown dots (U+25CF) — MUST be unlayered: themes.css applies unlayered
+ * `.ipod-force-font *` / `.karaoke-force-font * { font-size: unset !important }`, which beats
+ * any `!important` inside `@layer utilities`.
+ */
+.karaoke-force-font .karaoke-interlude-circle-dots {
+  display: inline-block;
+  font-size: clamp(27px, 0.825em, 72px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.05em !important;
+}
+
+.fullscreen-lyrics-text .karaoke-interlude-circle-dots {
+  display: inline-block;
+  font-size: clamp(27px, min(8.25vw, 8.25vh), 72px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.05em !important;
+}
+
+.karaoke-force-font .lyrics-interlude-stack--karaoke .karaoke-interlude-circle-dots {
+  display: inline-block;
+  font-size: clamp(27px, 6.6cqw, 72px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.05em !important;
+}
+
+.fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen .karaoke-interlude-circle-dots {
+  display: inline-block;
+  font-size: clamp(27px, min(8.25vw, 8.25vh), 72px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.05em !important;
+}
+
+.lyrics-interlude-stack--ipod .karaoke-interlude-circle-dots {
+  display: inline-block;
+  font-size: clamp(24px, min(6.3vw, 6.3vh), 42px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.05em !important;
 }
 
 @keyframes highlight-bg-opacity {

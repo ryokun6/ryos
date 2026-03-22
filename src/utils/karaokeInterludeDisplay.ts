@@ -7,6 +7,11 @@ export interface InterludePlaceholderLine {
   anchorLineIndex: number;
   /** Absolute time when the 3-2-1 dot fill begins (same as synthetic line start). */
   countdownStartMs: number;
+  /**
+   * Alternating layout: render timed dots on the same line as the first/next lyric instead of
+   * a separate row (intro) or below the ghost line (gap).
+   */
+  dotsInlineWithNext?: boolean;
 }
 
 export type VisibleLyricLine = LyricLine | InterludePlaceholderLine;
@@ -45,6 +50,9 @@ export function getInterludeDotsFadeOpacity(
 /** U+25CF BLACK CIRCLE — reads as a filled dot at lyric font sizes */
 const INTERLUDE_DOT = "\u25CF";
 
+/** U+2009 thin space — tighter gap between dots than U+0020 (CSS letter-spacing adds the rest). */
+const INTERLUDE_DOT_GAP = "\u2009";
+
 /** Last `INTERLUDE_COUNTDOWN_TOTAL_MS` (or full span if shorter) ending at `fullEndMs`. */
 export function buildCountdownSegment(
   fullStartMs: number,
@@ -64,12 +72,12 @@ function interludeWordsAndTimings(
   const totalMs = Math.max(3, segmentEndMs - segmentStartMs);
   const d = totalMs / 3;
   const wordTimings: LyricWord[] = [
-    { text: `${INTERLUDE_DOT} `, startTimeMs: 0, durationMs: d },
-    { text: `${INTERLUDE_DOT} `, startTimeMs: d, durationMs: d },
+    { text: `${INTERLUDE_DOT}${INTERLUDE_DOT_GAP}`, startTimeMs: 0, durationMs: d },
+    { text: `${INTERLUDE_DOT}${INTERLUDE_DOT_GAP}`, startTimeMs: d, durationMs: d },
     { text: INTERLUDE_DOT, startTimeMs: 2 * d, durationMs: d },
   ];
   return {
-    words: `${INTERLUDE_DOT} ${INTERLUDE_DOT} ${INTERLUDE_DOT}`,
+    words: `${INTERLUDE_DOT}${INTERLUDE_DOT_GAP}${INTERLUDE_DOT}${INTERLUDE_DOT_GAP}${INTERLUDE_DOT}`,
     wordTimings,
   };
 }
@@ -77,14 +85,16 @@ function interludeWordsAndTimings(
 function createInterludePlaceholder(
   id: string,
   anchorLineIndex: number,
-  countdownStartMs: number
+  countdownStartMs: number,
+  options?: { dotsInlineWithNext?: boolean }
 ): InterludePlaceholderLine {
   return {
     startTimeMs: `interlude-${id}`,
-    words: `${INTERLUDE_DOT} ${INTERLUDE_DOT} ${INTERLUDE_DOT}`,
+    words: `${INTERLUDE_DOT}${INTERLUDE_DOT_GAP}${INTERLUDE_DOT}${INTERLUDE_DOT_GAP}${INTERLUDE_DOT}`,
     isInterludePlaceholder: true,
     anchorLineIndex,
     countdownStartMs,
+    dotsInlineWithNext: options?.dotsInlineWithNext,
   };
 }
 
@@ -214,13 +224,21 @@ export function applyKaraokeInterludeEllipsis({
     }
     const { segmentStartMs } = buildCountdownSegment(0, getLineStartMs(first));
 
+    const firstLine = visibleLines[0] ?? allLines[0];
+
+    // Alternating: dots render inline with the first lyric (see LyricsDisplay); no placeholder row,
+    // but keep the same visible line count as normal alternating (e.g. first + next) so layout
+    // does not collapse to one row or jump when the lead-in ends.
+    if (alignment === LyricsAlignment.Alternating) {
+      return visibleLines.length ? visibleLines : firstLine ? [firstLine] : visibleLines;
+    }
+
     const placeholder = createInterludePlaceholder(
       `intro-${allLines[0]?.startTimeMs ?? "start"}`,
       0,
       segmentStartMs
     );
 
-    const firstLine = visibleLines[0] ?? allLines[0];
     return firstLine ? [placeholder, firstLine] : [placeholder];
   }
 
@@ -237,7 +255,8 @@ export function applyKaraokeInterludeEllipsis({
   const placeholder = createInterludePlaceholder(
     `gap-${nextLine.startTimeMs}`,
     currentIndex,
-    segmentStartMs
+    segmentStartMs,
+    alignment === LyricsAlignment.Alternating ? { dotsInlineWithNext: true } : undefined
   );
 
   if (alignment === LyricsAlignment.Center) {
@@ -245,4 +264,32 @@ export function applyKaraokeInterludeEllipsis({
   }
 
   return visibleLines.map((line) => (line === currentLine ? placeholder : line));
+}
+
+/**
+ * Long intro + alternating layout: timed dots are drawn inline with the first lyric; use this to
+ * build synthetic timings and fade state (no placeholder row in `applyKaraokeInterludeEllipsis`).
+ */
+export function getIntroInterludeInlineLead(
+  allLines: LyricLine[],
+  currentTimeMs: number | undefined,
+  enabled: boolean
+): InterludePlaceholderLine | null {
+  if (!enabled || currentTimeMs === undefined || !allLines.length) {
+    return null;
+  }
+  if (!hasLongIntro(allLines, currentTimeMs)) {
+    return null;
+  }
+  const first = allLines[0];
+  if (!first) {
+    return null;
+  }
+  const { segmentStartMs } = buildCountdownSegment(0, getLineStartMs(first));
+  return createInterludePlaceholder(
+    `intro-${first.startTimeMs ?? "start"}`,
+    0,
+    segmentStartMs,
+    { dotsInlineWithNext: true }
+  );
 }

@@ -1700,14 +1700,15 @@
 }
 
 /*
- * Interlude timed dots (WordTimingHighlight wrapper). The rules above reset
- * `.karaoke-force-font *` and `.karaoke-force-font div` to `font-size: unset !important`,
- * which made `.karaoke-interlude-circle-dots` inherit the full karaoke line size.
+ * Interlude timed dots — beat `.karaoke-force-font * { font-size: unset !important }` (above).
+ * Sizes mirror unlayered rules in index.css (slightly larger than 0.48× lyric for readability).
  */
-:root[data-os-theme="macosx"] .karaoke-force-font .karaoke-interlude-circle-dots {
-  font-size: clamp(16px, 0.48em, 42px) !important;
+:root[data-os-theme="macosx"] .karaoke-force-font .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"] .karaoke-force-font span.karaoke-interlude-circle-dots {
+  display: inline-block !important;
+  font-size: clamp(27px, 0.825em, 72px) !important;
   line-height: 1 !important;
-  letter-spacing: 0.14em !important;
+  letter-spacing: 0.05em !important;
 }
 
 /* Preserve lyrics translation sizes on macOS theme */
@@ -1738,11 +1739,50 @@
   font-size: clamp(32px, min(10vw, 10vh), 120px) !important;
 }
 
-/* Fullscreen lyrics are often outside force-font wrappers; keep interlude dots from inheriting line size */
-:root[data-os-theme="macosx"] .fullscreen-lyrics-text .karaoke-interlude-circle-dots {
-  font-size: clamp(16px, min(4.8vw, 4.8vh), 42px) !important;
+/* Fullscreen / iPod: include .ipod-force-font so we beat `.ipod-force-font * { unset }` */
+:root[data-os-theme="macosx"] .ipod-force-font .fullscreen-lyrics-text .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"] .karaoke-force-font .fullscreen-lyrics-text .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"] .fullscreen-lyrics-text span.karaoke-interlude-circle-dots {
+  display: inline-block !important;
+  font-size: clamp(27px, min(8.25vw, 8.25vh), 72px) !important;
   line-height: 1 !important;
-  letter-spacing: 0.14em !important;
+  letter-spacing: 0.05em !important;
+}
+
+:root[data-os-theme="macosx"]
+  .karaoke-force-font
+  .lyrics-interlude-stack--karaoke
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .karaoke-force-font
+  .lyrics-interlude-stack--karaoke
+  span.karaoke-interlude-circle-dots {
+  display: inline-block !important;
+  font-size: clamp(27px, 6.6cqw, 72px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.05em !important;
+}
+
+:root[data-os-theme="macosx"]
+  .ipod-force-font
+  .fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .karaoke-force-font
+  .fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen
+  .karaoke-interlude-circle-dots {
+  display: inline-block !important;
+  font-size: clamp(27px, min(8.25vw, 8.25vh), 72px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.05em !important;
+}
+
+:root[data-os-theme="macosx"] .ipod-force-font .lyrics-interlude-stack--ipod .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"] .lyrics-interlude-stack--ipod span.karaoke-interlude-circle-dots {
+  display: inline-block !important;
+  font-size: clamp(24px, min(6.3vw, 6.3vh), 42px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.05em !important;
 }
 
 /* Preserve karaoke status text size on macOS theme */

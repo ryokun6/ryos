@@ -37,6 +37,22 @@ describe("lyrics prefix filtering", () => {
     ]);
   });
 
+  test("skips lines with space-hyphen-space (title - artist style)", () => {
+    const lines = parseLrcToLines(
+      [
+        "[00:01.00]Some Song - Some Artist",
+        "[00:02.00]Lyric without separator",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "2000",
+        words: "Lyric without separator",
+      },
+    ]);
+  });
+
   test("skips any line that contains full-width colon", () => {
     const lines = parseLrcToLines(
       [
