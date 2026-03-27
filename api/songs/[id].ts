@@ -86,6 +86,8 @@ import {
   parseSoramimiRubyMarkup,
   fillMissingReadings,
   cleanSoramimiReading,
+  selectSoramimiLinesToProcess,
+  shouldProcessEnglishForSoramimi,
 } from "./_soramimi.js";
 
 import { streamText } from "ai";
@@ -1333,17 +1335,10 @@ export default apiHandler<Record<string, unknown>>(
           wordTimings: line.wordTimings,
         }));
 
-        // Build the text prompt for soramimi
-        const nonEnglishLines: { line: LyricLine; originalIndex: number }[] = [];
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          const text = line.words.trim();
-          if (!text) continue;
-          const isEnglish = /^[a-zA-Z0-9\s.,!?'"()\-:;]+$/.test(text);
-          if (!isEnglish) {
-            nonEnglishLines.push({ line, originalIndex: i });
-          }
-        }
+        // Chinese soramimi should also reinterpret ASCII English lines instead of
+        // passing them through unchanged. English-output soramimi keeps passthrough.
+        const shouldProcessEnglishLines = shouldProcessEnglishForSoramimi(targetLanguage);
+        const linesToProcess = selectSoramimiLinesToProcess(lines, targetLanguage);
         
         // Build prompt text - if furigana is available, use annotated text format
         let textsToProcess: string;
@@ -1354,7 +1349,7 @@ export default apiHandler<Record<string, unknown>>(
         
         if (hasFuriganaData) {
           const annotatedLines = convertLinesToAnnotatedText(lines, clientFurigana);
-          textsToProcess = nonEnglishLines.map((info, idx) => {
+          textsToProcess = linesToProcess.map((info, idx) => {
             return `${idx + 1}: ${annotatedLines[info.originalIndex]}`;
           }).join("\n");
           systemPrompt = isEnglishOutput 
@@ -1362,7 +1357,7 @@ export default apiHandler<Record<string, unknown>>(
             : SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT;
           logger.info(`Using ${isEnglishOutput ? 'English' : 'Chinese'} prompt with furigana annotations`);
         } else {
-          textsToProcess = nonEnglishLines.map((info, idx) => {
+          textsToProcess = linesToProcess.map((info, idx) => {
             const wordTimings = info.line.wordTimings;
             if (wordTimings && wordTimings.length > 0) {
               const wordsMarked = wordTimings.map(w => w.text).join('|');
@@ -1398,21 +1393,20 @@ export default apiHandler<Record<string, unknown>>(
           // Send start event immediately
           sendEvent("start", { totalLines, message: "AI processing started" });
 
-          // Emit soramimi for English lines immediately (they stay as-is)
+          // For English-output soramimi, ASCII English lines passthrough unchanged.
           for (let i = 0; i < lines.length; i++) {
             const text = lines[i].words.trim();
             if (!text) {
               allSoramimi[i] = [{ text: "" }];
               continue;
             }
-            const isEnglish = /^[a-zA-Z0-9\s.,!?'"()\-:;]+$/.test(text);
-            if (isEnglish) {
+            if (!shouldProcessEnglishLines && !linesToProcess.some((info) => info.originalIndex === i)) {
               allSoramimi[i] = [{ text }];
               completedLines++;
-              sendEvent("line", { 
-                lineIndex: i, 
-                soramimi: [{ text }], 
-                progress: Math.round((completedLines / totalLines) * 100) 
+              sendEvent("line", {
+                lineIndex: i,
+                soramimi: [{ text }],
+                progress: Math.round((completedLines / totalLines) * 100)
               });
             }
           }
@@ -1424,11 +1418,11 @@ export default apiHandler<Record<string, unknown>>(
             
             const match = trimmedLine.match(/^(\d+)[:.\s]\s*(.*)$/);
             if (match) {
-              const nonEnglishLineIndex = parseInt(match[1], 10) - 1;
+              const processedLineIndex = parseInt(match[1], 10) - 1;
               const content = match[2].trim();
               
-              if (nonEnglishLineIndex >= 0 && nonEnglishLineIndex < nonEnglishLines.length && content) {
-                const info = nonEnglishLines[nonEnglishLineIndex];
+              if (processedLineIndex >= 0 && processedLineIndex < linesToProcess.length && content) {
+                const info = linesToProcess[processedLineIndex];
                 const originalIndex = info.originalIndex;
                 
                 const rawSegments = parseSoramimiRubyMarkup(content);
