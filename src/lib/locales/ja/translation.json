@@ -12,7 +12,8 @@
           "apiCalls": "APIコール",
           "avgResponseTime": "平均レスポンス時間 (ms)",
           "errors": "エラー",
-          "uniqueVisitors": "ユニークビジター"
+          "uniqueVisitors": "ユニークビジター",
+          "hourlyUtc": "UTC 時間別"
         },
         "empty": {
           "noAiUsage": "AIの使用はまだありません",

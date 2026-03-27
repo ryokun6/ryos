@@ -12,7 +12,8 @@
           "apiCalls": "Вызовы API",
           "avgResponseTime": "Ср. время отклика (мс)",
           "errors": "Ошибки",
-          "uniqueVisitors": "Уникальные посетители"
+          "uniqueVisitors": "Уникальные посетители",
+          "hourlyUtc": "по часам UTC"
         },
         "empty": {
           "noAiUsage": "Использование ИИ пока отсутствует",
