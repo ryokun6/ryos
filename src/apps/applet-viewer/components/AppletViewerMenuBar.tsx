@@ -20,6 +20,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import { ThemedIcon } from "@/components/shared/ThemedIcon";
 
 interface AppletViewerMenuBarProps {
   onClose: () => void;
@@ -97,9 +98,14 @@ export function AppletViewerMenuBar({
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
             onClick={() => launchApp("finder", { initialPath: "/Applets" })}
-            className="text-md h-6 px-3"
+            className="text-md h-6 px-3 flex items-center gap-2"
           >
-            {t("apps.applet-viewer.menu.open")}
+            <ThemedIcon
+              name="/icons/default/folder.png"
+              alt=""
+              className="w-4 h-4 [image-rendering:pixelated] shrink-0"
+            />
+            {t("common.menu.openProject")}
           </MenubarItem>
           {hasAppletContent && isLoggedIn && (
             <MenubarItem
