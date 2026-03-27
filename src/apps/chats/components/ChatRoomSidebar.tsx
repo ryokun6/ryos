@@ -182,23 +182,25 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
           <div className="flex items-baseline gap-1.5">
             <h2 className="text-[14px] pl-1">{t("apps.chats.sidebar.chats")}</h2>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onAddRoom}
-                  className="flex items-center text-xs hover:bg-black/5 w-[24px] h-[24px]"
-                >
-                  <Plus className="w-3 h-3" weight="bold" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t("apps.chats.ariaLabels.newChat")}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {username && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onAddRoom}
+                    className="flex items-center text-xs hover:bg-black/5 w-[24px] h-[24px]"
+                  >
+                    <Plus className="w-3 h-3" weight="bold" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t("apps.chats.ariaLabels.newChat")}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         <div
           className={cn(

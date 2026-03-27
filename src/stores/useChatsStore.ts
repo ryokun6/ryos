@@ -304,6 +304,20 @@ export const useChatsStore = create<ChatsStoreState>()(
           saveUsernameToRecovery(username);
           set({ username });
 
+          // Re-filter rooms: drop private rooms the new identity cannot see
+          const lowerUser = username?.toLowerCase() ?? null;
+          const currentRooms = get().rooms;
+          if (currentRooms.length > 0) {
+            const filtered = currentRooms.filter((room) => {
+              if (!room.type || room.type === "public") return true;
+              if (!lowerUser) return false;
+              return Array.isArray(room.members) && room.members.includes(lowerUser);
+            });
+            if (filtered.length !== currentRooms.length) {
+              set({ rooms: filtered });
+            }
+          }
+
           if (username) {
             setTimeout(() => {
               get().checkHasPassword();
@@ -405,10 +419,19 @@ export const useChatsStore = create<ChatsStoreState>()(
             return; // Ignore non-array updates
           }
 
+          const currentUsername = get().username?.toLowerCase() ?? null;
+
+          // Filter out private rooms where current user is not a member
+          const filtered = newRooms.filter((room) => {
+            if (!room.type || room.type === "public") return true;
+            if (!currentUsername) return false;
+            return Array.isArray(room.members) && room.members.includes(currentUsername);
+          });
+
           // Deep comparison to prevent unnecessary updates
           const currentRooms = get().rooms;
           // Apply stable sort to keep UI order consistent (public first, then name, then id)
-          const sortedNewRooms = [...newRooms].sort((a, b) => {
+          const sortedNewRooms = [...filtered].sort((a, b) => {
             const ao = a.type === "private" ? 1 : 0;
             const bo = b.type === "private" ? 1 : 0;
             if (ao !== bo) return ao - bo;
@@ -657,6 +680,9 @@ export const useChatsStore = create<ChatsStoreState>()(
             isAuthenticated: false,
             hasPassword: null,
             currentRoomId: null,
+            rooms: [],
+            roomMessages: {},
+            unreadCounts: {},
           }));
 
           try {
@@ -1339,6 +1365,18 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Auth lives in httpOnly cookies — no token in persisted state.
 
           ensureUsernameRecovery(finalState.username);
+
+          // Filter out private rooms the current user is not a member of.
+          // Persisted state may contain stale private rooms from a
+          // previous session or a different user.
+          if (Array.isArray(finalState.rooms)) {
+            const lowerUser = finalState.username?.toLowerCase() ?? null;
+            finalState.rooms = finalState.rooms.filter((room) => {
+              if (!room.type || room.type === "public") return true;
+              if (!lowerUser) return false;
+              return Array.isArray(room.members) && room.members.includes(lowerUser);
+            });
+          }
 
           console.log("[ChatsStore] Final state from persisted:", finalState);
           console.log(
