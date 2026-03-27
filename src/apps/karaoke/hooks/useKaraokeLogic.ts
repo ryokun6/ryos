@@ -34,6 +34,7 @@ import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
+import { isWindowsTheme } from "@/themes";
 
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;
@@ -1689,7 +1690,7 @@ export function useKaraokeLogic({
   }, [processVideoId, bringInstanceToForeground, joinListenSession, username, instanceId]);
 
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const getCurrentKaraokeTrack = useCallback(() => {
     return useKaraokeStore.getState().getCurrentTrack();

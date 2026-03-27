@@ -12,6 +12,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { cn } from "@/lib/utils";
 import type { AppId } from "@/config/appRegistry";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 import {
   reportRuntimeCrash,
   RYOS_ERROR_BOUNDARY_TEST_EVENT,
@@ -154,7 +155,7 @@ function CrashDialog({
   const headingId = React.useId();
   const descriptionId = React.useId();
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   const bodyTextClasses = cn(

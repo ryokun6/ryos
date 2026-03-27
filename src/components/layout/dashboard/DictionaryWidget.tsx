@@ -3,6 +3,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type DictionaryWidgetConfig } from "@/stores/useDashboardStore";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface DictionaryMeaning {
   partOfSpeech: string;
@@ -25,7 +26,7 @@ interface DictionaryWidgetProps {
 export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const widget = useDashboardStore((s) =>
     s.widgets.find((w) => w.id === widgetId)
@@ -425,7 +426,7 @@ export function DictionaryBackPanel({
 }) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
   const mutedColor = isXpTheme ? "#888" : "rgba(255,255,255,0.4)";
 

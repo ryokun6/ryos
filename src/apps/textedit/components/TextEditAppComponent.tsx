@@ -23,6 +23,7 @@ import { markdownToHtml } from "@/utils/markdown";
 import { useTranslation } from "react-i18next";
 import { onDocumentUpdated } from "@/utils/appEventBus";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
+import { isWindowsTheme } from "@/themes";
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -47,7 +48,7 @@ function TextEditContent({
   const launchAppInstance = useAppStore((state) => state.launchApp);
   const currentTheme = useThemeStore((state) => state.current);
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   // Local UI-only state for Save dialog filename
   const [saveFileName, setSaveFileName] = useState("");
   const [closeSaveFileName, setCloseSaveFileName] = useState("");

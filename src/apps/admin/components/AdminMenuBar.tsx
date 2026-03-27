@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
 
@@ -35,7 +36,7 @@ export function AdminMenuBar({
 }: AdminMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

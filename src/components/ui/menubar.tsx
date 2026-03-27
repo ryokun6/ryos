@@ -4,6 +4,7 @@ import { Check, CaretRight, Circle } from "@phosphor-icons/react"
 import { useSound, Sounds } from "@/hooks/useSound"
 import { useThemeStore } from "@/stores/useThemeStore"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { isWindowsTheme } from "@/themes";
 
 import { cn } from "@/lib/utils"
 
@@ -68,7 +69,7 @@ const MenubarTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
 >(({ className, style, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
-  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98"
+  const windowsTheme = isWindowsTheme(currentTheme)
   const isSystem7 = currentTheme === "system7"
   const isMacOSX = currentTheme === "macosx"
 
@@ -84,7 +85,7 @@ const MenubarTrigger = React.forwardRef<
     // Base styles - h-full + self-stretch ensures trigger fills parent height (works with both CSS var and Tauri's 32px)
     "flex cursor-default select-none items-center h-full self-stretch px-2 text-md font-medium outline-none",
     // Windows themes: plain text style, no background changes, add menubar-trigger class for CSS override
-    isWindowsTheme && "rounded-none menubar-trigger",
+    windowsTheme && "rounded-none menubar-trigger",
     // System 7: black background, white text when open
     // Explicitly clear state when closed to prevent lingering styles (overrides focus states)
     isSystem7 && "rounded-none data-[state=open]:bg-black data-[state=open]:text-white data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit",
@@ -92,7 +93,7 @@ const MenubarTrigger = React.forwardRef<
     // Explicitly clear state when closed to prevent lingering styles (use !important to override focus states)
     isMacOSX && "rounded-none data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white data-[state=closed]:!bg-transparent data-[state=closed]:!text-inherit",
     // Default/other themes
-    !isWindowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
+    !windowsTheme && !isSystem7 && !isMacOSX && "rounded-sm data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
     className
   )
 
@@ -115,7 +116,7 @@ const MenubarSubTrigger = React.forwardRef<
 >(({ className, inset, children, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isXpTheme = isWindowsTheme(currentTheme)
   const isSystem7 = currentTheme === "system7"
 
   return (
@@ -256,7 +257,7 @@ const MenubarItem = React.forwardRef<
 >(({ className, inset, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isXpTheme = isWindowsTheme(currentTheme)
   const isSystem7 = currentTheme === "system7"
 
   return (
@@ -307,7 +308,7 @@ const MenubarCheckboxItem = React.forwardRef<
 >(({ className, children, checked, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isXpTheme = isWindowsTheme(currentTheme)
   const isSystem7 = currentTheme === "system7"
 
   return (
@@ -369,7 +370,7 @@ const MenubarRadioItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isXpTheme = isWindowsTheme(currentTheme)
   const isSystem7 = currentTheme === "system7"
 
   return (
@@ -442,13 +443,13 @@ const MenubarLabel = React.forwardRef<
       )}
       style={{
         fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
+          isWindowsTheme(currentTheme)
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
             ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
+          isWindowsTheme(currentTheme)
             ? "11px"
             : undefined,
       }}

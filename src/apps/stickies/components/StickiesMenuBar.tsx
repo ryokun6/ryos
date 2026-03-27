@@ -13,6 +13,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
 import { StickyColor } from "@/stores/useStickiesStore";
+import { isWindowsTheme } from "@/themes";
 
 interface StickiesMenuBarProps {
   onClose: () => void;
@@ -46,7 +47,7 @@ export function StickiesMenuBar({
 }: StickiesMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

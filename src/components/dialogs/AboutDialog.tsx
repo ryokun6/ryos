@@ -11,6 +11,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName, AppId } from "@/utils/i18n";
 import { useAppStore } from "@/stores/useAppStore";
+import { isWindowsTheme } from "@/themes";
 
 const APP_DOC_NAMES: Partial<Record<AppId, string>> = {
   pc: "virtual-pc",
@@ -41,7 +42,7 @@ export function AboutDialog({
 }: AboutDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const launchApp = useAppStore((state) => state.launchApp);
   
   // Use translated app name if appId is provided, otherwise fall back to metadata.name

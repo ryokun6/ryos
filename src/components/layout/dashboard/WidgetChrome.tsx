@@ -3,6 +3,7 @@ import { X, Info } from "@phosphor-icons/react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface WidgetChromeProps {
   children: ReactNode | ((isFlipped: boolean) => ReactNode);
@@ -37,7 +38,7 @@ export function WidgetChrome({
 }: WidgetChromeProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const [isHovered, setIsHovered] = useState(false);
   const [isTouchActive, setIsTouchActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);

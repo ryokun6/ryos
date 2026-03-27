@@ -49,6 +49,7 @@ import { useSpotlightStore } from "@/stores/useSpotlightStore";
 import { toggleExposeView, toggleSpotlightSearch, requestAppLaunch } from "@/utils/appEventBus";
 import { useUndoRedoStore } from "@/stores/useUndoRedoStore";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { isWindowsTheme } from "@/themes";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -290,7 +291,7 @@ function Clock({ enableExposeToggle = false, enableCalendarOpen = false }: Clock
   const [time, setTime] = useState(new Date());
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const { t, i18n: i18nInstance } = useTranslation();
   
   // Get current locale from i18n (reactive to language changes)
@@ -859,7 +860,7 @@ function VolumeControl() {
   const launchApp = useLaunchApp();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const getVolumeIcon = () => {
     if (masterVolume === 0) {
@@ -953,7 +954,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
   // Get current theme
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   
   // Check if on phone (must be called before any early returns)
   const isPhone = useIsPhone();
@@ -1560,7 +1561,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 function SpotlightMenuBarButton() {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isSpotlightOpen = useSpotlightStore((state) => state.isOpen);
 
   // Only show on Mac themes — Windows themes use Start Menu "Run..."
@@ -1605,7 +1606,7 @@ function OfflineIndicator() {
   const { t } = useTranslation();
   const isOffline = useOffline();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   if (!isOffline) return null;
 
@@ -1637,7 +1638,7 @@ function OfflineIndicator() {
 function ExposeButton() {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   
   // Don't show on Windows themes (they have their own taskbar)
   if (isXpTheme) return null;
@@ -1665,7 +1666,7 @@ function ExposeButton() {
 function CloudSyncIndicator() {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isPhone = useIsPhone();
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

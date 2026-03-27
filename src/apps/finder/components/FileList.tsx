@@ -17,6 +17,7 @@ import { getFinderDisplayName } from "@/utils/finderDisplay";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 import {
   createSelectionRect,
   getIntersectingSelectionIds,
@@ -383,7 +384,7 @@ export function FileList({
   } | null>(null);
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOSXTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   // Add refs for rename timing
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);

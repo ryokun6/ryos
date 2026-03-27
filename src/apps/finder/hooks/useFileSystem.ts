@@ -30,6 +30,7 @@ import {
   type CloudSyncDeletionBucket,
 } from "@/stores/useCloudSyncStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { isWindowsTheme } from "@/themes";
 
 // Interface for content stored in IndexedDB
 export interface DocumentContent {
@@ -872,7 +873,7 @@ export function useFileSystem(
                   name: "Macintosh HD",
                   isDirectory: true,
                   icon:
-                    currentTheme === "xp" || currentTheme === "win98"
+                    isWindowsTheme(currentTheme)
                       ? "/icons/default/pc.png"
                       : "/icons/default/disk.png",
                   type: "directory",

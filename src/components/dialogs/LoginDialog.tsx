@@ -14,6 +14,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 import {
   ThemedTabsList,
   ThemedTabsTrigger,
@@ -69,7 +70,7 @@ export function LoginDialog({
 }: LoginDialogProps) {
   const [activeTab, setActiveTab] = useState<"login" | "signup">(initialTab);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const { t } = useTranslation();
   const dialogTitle = t("common.auth.dialogTitle");
 

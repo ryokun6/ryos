@@ -19,10 +19,11 @@ import { CaretDown, SpeakerHigh, TextB as BoldIcon, TextItalic as ItalicIcon, Te
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme, type OsThemeId } from "@/themes";
 
 interface EditorToolbarProps {
   editor: Editor | null;
-  currentTheme: string;
+  currentTheme: OsThemeId;
   speechEnabled: boolean;
   isTranscribing: boolean;
   isTtsLoading: boolean;
@@ -45,7 +46,7 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isLegacyToolbarTheme = isXpTheme || currentTheme === "system7";
   const isMacOSTheme = currentTheme === "macosx";
 
@@ -307,9 +308,7 @@ export function EditorToolbar({
           ? "border-b border-[#919b9c]"
           : isMacOSTheme
           ? "bg-transparent"
-          : currentTheme === "system7"
-          ? "bg-gray-100 border-b border-black"
-          : "bg-gray-100 border-b border-gray-300"
+          : "bg-gray-100 border-b border-black"
       }`}
       style={{
         borderBottom:

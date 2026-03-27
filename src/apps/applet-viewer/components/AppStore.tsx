@@ -10,6 +10,7 @@ import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { isWindowsTheme } from "@/themes";
 
 interface AppStoreProps {
   theme?: string;
@@ -34,7 +35,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const isMacTheme = theme === "macosx";
   const isSystem7Theme = theme === "system7";
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   
   const actions = useAppletActions();
   const lastUpdateToastKeyRef = useRef<string | null>(null);

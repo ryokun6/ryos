@@ -21,6 +21,7 @@ import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { useAutoCloudSync } from "@/hooks/useAutoCloudSync";
 import { AirDropListener } from "@/components/AirDropListener";
 import { useFilesStore } from "@/stores/useFilesStore";
+import { isWindowsTheme } from "@/themes";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -44,9 +45,9 @@ export function App() {
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
-    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
+    const windowsTheme = isWindowsTheme(currentTheme);
     const dockHeight = currentTheme === "macosx" ? 56 : 0;
-    const taskbarHeight = isWindowsTheme ? 30 : 0;
+    const taskbarHeight = windowsTheme ? 30 : 0;
     
     // Mobile: always show at bottom-center with dock/taskbar and safe area clearance
     if (isMobile) {
@@ -57,7 +58,7 @@ export function App() {
       };
     }
 
-    if (isWindowsTheme) {
+    if (windowsTheme) {
       // Windows themes: bottom-right with taskbar clearance (30px + padding)
       return {
         position: "bottom-right" as const,

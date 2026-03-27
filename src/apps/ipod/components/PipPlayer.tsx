@@ -9,6 +9,7 @@ import { useIsPhone } from "@/hooks/useIsPhone";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { PipPlayerProps } from "../types";
 import { SkipBack, SkipForward, Play, Pause, MusicNote } from "@phosphor-icons/react";
+import { isWindowsTheme } from "@/themes";
 
 export function PipPlayer({
   currentTrack,
@@ -25,8 +26,7 @@ export function PipPlayer({
 
   // Calculate bottom offset based on theme (similar to Sonner positioning)
   const bottomOffset = useMemo(() => {
-    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
-    if (isWindowsTheme) {
+    if (isWindowsTheme(currentTheme)) {
       // Windows themes: taskbar height (30px) + padding
       return "calc(env(safe-area-inset-bottom, 0px) + 42px)";
     } else if (currentTheme === "macosx") {

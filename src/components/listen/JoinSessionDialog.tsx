@@ -17,6 +17,7 @@ import {
   type ListenSessionSummary,
 } from "@/stores/useListenSessionStore";
 import { cn } from "@/lib/utils";
+import { isWindowsTheme } from "@/themes";
 
 interface JoinSessionDialogProps {
   isOpen: boolean;
@@ -63,7 +64,7 @@ export function JoinSessionDialog({
   const currentTheme = useThemeStore((state) => state.current);
   const fetchSessions = useListenSessionStore((state) => state.fetchSessions);
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   const loadSessions = useCallback(async () => {

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface DashboardMenuBarProps {
   onClose: () => void;
@@ -43,7 +44,7 @@ export function DashboardMenuBar({
 }: DashboardMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

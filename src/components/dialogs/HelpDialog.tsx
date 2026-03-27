@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { getTranslatedAppName, type AppId } from "@/utils/i18n";
 import { useAppStore } from "@/stores/useAppStore";
 import { getDocsBaseUrl } from "@/utils/runtimeConfig";
+import { isWindowsTheme } from "@/themes";
 
 // Map appId to doc URL path (most are same, but some have different names)
 const APP_DOC_NAMES: Partial<Record<AppId, string>> = {
@@ -27,7 +28,7 @@ interface HelpCardProps {
 
 function HelpCard({ icon, title, description }: HelpCardProps) {
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
 
   return (
@@ -85,7 +86,7 @@ export function HelpDialog({
 }: HelpDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacTheme = currentTheme === "macosx";
   const launchApp = useAppStore((state) => state.launchApp);
 

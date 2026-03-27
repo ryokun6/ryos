@@ -8,6 +8,7 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface EmojiDialogProps {
   isOpen: boolean;
@@ -234,7 +235,7 @@ export function EmojiDialog({
 }: EmojiDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4 pt-0" : "p-4 py-6"}>

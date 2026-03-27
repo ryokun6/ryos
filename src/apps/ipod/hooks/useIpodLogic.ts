@@ -43,6 +43,7 @@ import type { IpodInitialData } from "../../base/types";
 import type { CoverFlowRef } from "../components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
+import { isWindowsTheme } from "@/themes";
 
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
@@ -1782,7 +1783,7 @@ export function useIpodLogic({
   );
 
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   return {
     // Translation

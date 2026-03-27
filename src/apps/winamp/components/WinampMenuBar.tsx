@@ -12,6 +12,7 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { WEBAMP_SKINS } from "../skins";
+import { isWindowsTheme } from "@/themes";
 
 interface WinampMenuBarProps {
   onClose: () => void;
@@ -48,7 +49,7 @@ export function WinampMenuBar({
 }: WinampMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

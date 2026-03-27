@@ -36,6 +36,7 @@ import { useChatsFrameLayout } from "../hooks/useChatsFrameLayout";
 import { useProactiveGreeting } from "../hooks/useProactiveGreeting";
 import { useTelegramLink } from "@/hooks/useTelegramLink";
 import { useGlobalPresence } from "@/hooks/useGlobalPresence";
+import { isWindowsTheme } from "@/themes";
 
 export function ChatsAppComponent({
   isWindowOpen,
@@ -418,7 +419,7 @@ export function ChatsAppComponent({
   }, [setIsNewRoomDialogOpen]);
 
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isWindowsLegacyTheme = isXpTheme;
   const isMacTheme = currentTheme === "macosx";
   const isOffline = useOffline();

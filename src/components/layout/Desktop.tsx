@@ -19,6 +19,7 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useEventListener } from "@/hooks/useEventListener";
+import { isWindowsTheme } from "@/themes";
 import {
   createSelectionRect,
   getIntersectingSelectionIds,
@@ -103,7 +104,7 @@ export function Desktop({
 
   // Get current theme for layout adjustments
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   
   // Check if running in Tauri
   const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;

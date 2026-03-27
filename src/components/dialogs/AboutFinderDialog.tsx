@@ -16,6 +16,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type { AppId } from "@/config/appRegistry";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { isWindowsTheme } from "@/themes";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export function AboutFinderDialog({
   const version = useAppStore((state) => state.ryOSVersion);
   const buildNumber = useAppStore((state) => state.ryOSBuildNumber);
   const buildTime = useAppStore((state) => state.ryOSBuildTime);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const [versionDisplayMode, setVersionDisplayMode] = useState(0); // 0: version, 1: commit, 2: date
   const [desktopVersion, setDesktopVersion] = useState<string | null>(null);
   const isMac = useMemo(() => 

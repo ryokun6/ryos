@@ -47,6 +47,7 @@ import {
   isLogicalCloudSyncDomainEnabled,
   type LogicalCloudSyncDomain,
 } from "@/utils/syncLogicalDomains";
+import { isWindowsTheme } from "@/themes";
 import {
   readStoreItems,
   restoreStoreItems,
@@ -1492,7 +1493,7 @@ export function useControlPanelsLogic({
     performFormat();
   };
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOSXTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
   const isClassicMacTheme = isMacOSXTheme || isSystem7Theme;

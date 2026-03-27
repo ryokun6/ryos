@@ -24,6 +24,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import { isWindowsTheme } from "@/themes";
 
 interface InternetExplorerMenuBarProps extends Omit<AppProps, "onClose" | "instanceId"> {
   instanceId?: string;
@@ -199,7 +200,7 @@ export function InternetExplorerMenuBar({
   ].reverse();
 
   const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

@@ -32,6 +32,7 @@ import {
   type AdminSection,
 } from "../utils/navigationState";
 import { helpItems } from "..";
+import { isWindowsTheme } from "@/themes";
 
 /**
  * Format Kugou image URL with size and HTTPS
@@ -173,7 +174,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const { username, isAuthenticated } = useAuth();
   const isOffline = useOffline();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = isWindowsTheme(currentTheme);
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
