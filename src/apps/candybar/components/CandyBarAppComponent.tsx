@@ -15,10 +15,12 @@ import {
   CaretRight,
   ArrowLeft,
   ArrowRight,
+  SidebarSimple,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { SearchInput } from "@/components/ui/search-input";
+import { useThemeStore } from "@/stores/useThemeStore";
 
 const Panel = AppSidebarPanel;
 
@@ -235,6 +237,8 @@ export function CandyBarAppComponent({
 
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   const [iconSize, setIconSize] = useState(40);
+  const [showCategorySidebar, setShowCategorySidebar] = useState(true);
+  const isSystem7Theme = useThemeStore((s) => s.current === "system7");
   const menuBar = (
     <CandyBarMenuBar
       onClose={onClose}
@@ -358,25 +362,27 @@ export function CandyBarAppComponent({
           {isMacOSXTheme ? (
             <div className="flex-1 overflow-hidden flex gap-[5px]">
               {/* Sidebar - Contacts group sidebar style */}
-              <Panel
-                bordered={isMacOSXTheme}
-                className="os-sidebar w-[170px] shrink-0 flex flex-col min-h-0"
-                style={!isMacOSXTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
-              >
-                <div className={cn("flex-1 overflow-y-auto", isMacOSXTheme && "font-geneva-12")}>
-                  {sidebarItems.map((item) => (
-                    <GroupListItem
-                      key={item.id}
-                      label={item.label}
-                      isSelected={selectedCategory === item.id}
-                      onClick={() => {
-                        if (selectedPack) navigateBack();
-                        setSelectedCategory(item.id);
-                      }}
-                    />
-                  ))}
-                </div>
-              </Panel>
+              {showCategorySidebar && (
+                <Panel
+                  bordered={isMacOSXTheme}
+                  className="os-sidebar w-[170px] shrink-0 flex flex-col min-h-0"
+                  style={!isMacOSXTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
+                >
+                  <div className={cn("flex-1 overflow-y-auto", isMacOSXTheme && "font-geneva-12")}>
+                    {sidebarItems.map((item) => (
+                      <GroupListItem
+                        key={item.id}
+                        label={item.label}
+                        isSelected={selectedCategory === item.id}
+                        onClick={() => {
+                          if (selectedPack) navigateBack();
+                          setSelectedCategory(item.id);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </Panel>
+              )}
 
               {/* Main content */}
               <Panel bordered className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
@@ -419,25 +425,27 @@ export function CandyBarAppComponent({
           ) : (
             <div className="flex-1 overflow-hidden flex gap-0">
               {/* Non-metal sidebar - Contacts group sidebar style */}
-              <Panel
-                bordered={false}
-                className="os-sidebar w-[170px] shrink-0 flex flex-col min-h-0"
-                style={{ borderRight: isXpTheme ? "1px solid #919b9c" : "1px solid rgba(0,0,0,0.08)" }}
-              >
-                <div className="flex-1 overflow-y-auto">
-                  {sidebarItems.map((item) => (
-                    <GroupListItem
-                      key={item.id}
-                      label={item.label}
-                      isSelected={selectedCategory === item.id}
-                      onClick={() => {
-                        if (selectedPack) navigateBack();
-                        setSelectedCategory(item.id);
-                      }}
-                    />
-                  ))}
-                </div>
-              </Panel>
+              {showCategorySidebar && (
+                <Panel
+                  bordered={false}
+                  className="os-sidebar w-[170px] shrink-0 flex flex-col min-h-0"
+                  style={{ borderRight: isXpTheme ? "1px solid #919b9c" : "1px solid rgba(0,0,0,0.08)" }}
+                >
+                  <div className="flex-1 overflow-y-auto">
+                    {sidebarItems.map((item) => (
+                      <GroupListItem
+                        key={item.id}
+                        label={item.label}
+                        isSelected={selectedCategory === item.id}
+                        onClick={() => {
+                          if (selectedPack) navigateBack();
+                          setSelectedCategory(item.id);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </Panel>
+              )}
 
               {/* Main content */}
               <div className="flex-1 relative min-h-0 min-w-0">
@@ -477,16 +485,30 @@ export function CandyBarAppComponent({
             </div>
           )}
 
-          {/* Status bar */}
+          {/* Status bar — padding/height aligned with Calendar bottom toolbar */}
           {isMacOSXTheme ? (
             <div
-              className="os-status-bar os-status-bar-text relative flex items-center px-2 pt-1 pb-0 text-[10px] font-geneva-12 bg-transparent border-t border-black/10"
+              className="os-status-bar os-status-bar-text flex items-center gap-2 py-1.5 px-1 text-[10px] font-geneva-12 border-t"
               style={{
+                borderColor: "rgba(0,0,0,0.25)",
+                background: "transparent",
                 textShadow: "0 1px 0 rgba(255,255,255,0.5)",
                 color: "#333",
               }}
             >
-              <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="metal-inset-btn-group">
+                  <button
+                    type="button"
+                    className="metal-inset-btn metal-inset-icon"
+                    onClick={() => setShowCategorySidebar((v) => !v)}
+                    data-state={showCategorySidebar ? "on" : "off"}
+                    title={t("apps.candybar.statusBar.toggleSidebar")}
+                    aria-label={t("apps.candybar.statusBar.toggleSidebar")}
+                  >
+                    <SidebarSimple size={14} />
+                  </button>
+                </div>
                 <Slider
                   value={[iconSize]}
                   onValueChange={([v]) => setIconSize(v)}
@@ -496,15 +518,32 @@ export function CandyBarAppComponent({
                   className="w-20"
                 />
               </div>
-              <div className="flex-1 flex items-center justify-center pointer-events-none">
+              <div className="flex-1 min-w-0 flex items-center justify-center pointer-events-none">
                 {selectedPack
                   ? `${selectedPack.iconCount} ${selectedPack.iconCount !== 1 ? t("apps.candybar.statusBar.icons") : t("apps.candybar.statusBar.icon")}`
                   : `${filteredPacks.length} ${filteredPacks.length !== 1 ? t("apps.candybar.statusBar.packs") : t("apps.candybar.statusBar.pack")}`}
               </div>
             </div>
           ) : (
-            <div className="os-status-bar os-status-bar-text relative flex items-center px-2 py-1 text-[10px] font-geneva-12 bg-gray-100 border-t border-gray-300">
-              <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center shrink-0">
+            <div
+              className="os-status-bar os-status-bar-text flex items-center gap-2 py-1.5 px-2 text-[10px] font-geneva-12 border-t"
+              style={{
+                borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)",
+                background: isXpTheme ? "#ECE9D8" : "#e0e0e0",
+              }}
+            >
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant={isSystem7Theme ? "player" : "ghost"}
+                  size="icon"
+                  onClick={() => setShowCategorySidebar((v) => !v)}
+                  data-state={showCategorySidebar ? "on" : "off"}
+                  className={cn("h-6 w-6", isXpTheme && "text-black")}
+                  title={t("apps.candybar.statusBar.toggleSidebar")}
+                  aria-label={t("apps.candybar.statusBar.toggleSidebar")}
+                >
+                  <SidebarSimple size={14} />
+                </Button>
                 <Slider
                   value={[iconSize]}
                   onValueChange={([v]) => setIconSize(v)}
@@ -514,7 +553,7 @@ export function CandyBarAppComponent({
                   className="w-20"
                 />
               </div>
-              <div className="flex-1 flex items-center justify-center pointer-events-none">
+              <div className="flex-1 min-w-0 flex items-center justify-center pointer-events-none">
                 {selectedPack
                   ? `${selectedPack.iconCount} ${selectedPack.iconCount !== 1 ? t("apps.candybar.statusBar.icons") : t("apps.candybar.statusBar.icon")}`
                   : `${filteredPacks.length} ${filteredPacks.length !== 1 ? t("apps.candybar.statusBar.packs") : t("apps.candybar.statusBar.pack")}`}

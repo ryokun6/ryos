@@ -588,7 +588,8 @@
         "iconSize": "Размер",
         "icons": "значки",
         "pack": "набор",
-        "packs": "наборы"
+        "packs": "наборы",
+        "toggleSidebar": "Show or hide categories sidebar"
       },
       "title": "CandyBar"
     },
@@ -1010,6 +1011,11 @@
         "toolExecutionFailed": "Ошибка выполнения инструмента",
         "unknownError": "Неизвестная ошибка",
         "updatedDocument": "Документ обновлен: {{path}}",
+        "webFetch": {
+          "fetched": "Read {{siteName}}",
+          "fetchedPage": "Read \"{{title}}\"",
+          "fetching": "Reading {{hostname}}…"
+        },
         "writingContent": "Запись содержимого…"
       }
     },
