@@ -170,9 +170,15 @@ export default apiHandler<{
       geo = {};
     }
 
-    // Attach geolocation info to system state that will be sent to the prompt
-    const systemState: SystemState | undefined = incomingSystemState
-      ? { ...incomingSystemState, requestGeo: geo }
+    const sanitizedSystemState = incomingSystemState
+      ? Object.fromEntries(
+          Object.entries(incomingSystemState).filter(
+            ([key]) => key !== "__proto__" && key !== "constructor" && key !== "prototype"
+          )
+        )
+      : undefined;
+    const systemState: SystemState | undefined = sanitizedSystemState
+      ? { ...sanitizedSystemState, requestGeo: geo } as SystemState
       : ({ requestGeo: geo } as SystemState);
     const userTimeZone = systemState?.userLocalTime?.timeZone;
     const loadedMemoryContext = await loadRyoMemoryContext({

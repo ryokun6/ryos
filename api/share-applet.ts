@@ -25,14 +25,17 @@ const APPLET_SHARE_PREFIX = "applet:share:";
 const generateId = (): string => generateAuthToken().substring(0, 32);
 
 // Request schemas
+const MAX_APPLET_CONTENT_LENGTH = 512_000; // 512 KB
+const MAX_APPLET_SHARE_ID_LENGTH = 64;
+
 const SaveAppletRequestSchema = z.object({
-  content: z.string().min(1),
-  title: z.string().optional(),
-  icon: z.string().optional(),
-  name: z.string().optional(),
+  content: z.string().min(1).max(MAX_APPLET_CONTENT_LENGTH),
+  title: z.string().max(200).optional(),
+  icon: z.string().max(200).optional(),
+  name: z.string().max(200).optional(),
   windowWidth: z.number().optional(),
   windowHeight: z.number().optional(),
-  shareId: z.string().optional(),
+  shareId: z.string().max(MAX_APPLET_SHARE_ID_LENGTH).optional(),
 });
 
 export default apiHandler<Record<string, unknown>>(

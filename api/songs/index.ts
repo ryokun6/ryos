@@ -90,6 +90,8 @@ const LyricsContentSchema = z.object({
 const compressedOrRaw = <T extends z.ZodTypeAny>(schema: T) => 
   z.union([z.string().startsWith("gzip:"), schema]);
 
+const MAX_BULK_IMPORT_SONGS = 500;
+
 const BulkImportSchema = z.object({
   action: z.literal("import"),
   songs: z.array(
@@ -120,7 +122,7 @@ const BulkImportSchema = z.object({
       updatedAt: z.number().optional(),
       importOrder: z.number().optional(),
     })
-  ),
+  ).max(MAX_BULK_IMPORT_SONGS),
 });
 
 // =============================================================================
@@ -131,21 +133,26 @@ const BulkImportSchema = z.object({
  * Decompress a gzip:base64 encoded string back to the original data
  * Returns the parsed JSON if the string starts with "gzip:", otherwise returns null
  */
+const MAX_DECOMPRESSED_SIZE = 5 * 1024 * 1024; // 5 MB
+
 function decompressFromBase64<T>(value: unknown): T | null {
   if (typeof value !== "string" || !value.startsWith("gzip:")) {
-    return null; // Not compressed, return null to indicate raw data should be used
+    return null;
   }
 
   try {
-    const base64Data = value.slice(5); // Remove "gzip:" prefix
+    const base64Data = value.slice(5);
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // Use ungzip since the data is gzip compressed (not raw deflate)
     const decompressed = pako.ungzip(bytes);
+    if (decompressed.byteLength > MAX_DECOMPRESSED_SIZE) {
+      console.error(`Decompressed payload exceeds limit: ${decompressed.byteLength} bytes`);
+      return null;
+    }
     const text = new TextDecoder("utf-8").decode(decompressed);
     return JSON.parse(text) as T;
   } catch (error) {

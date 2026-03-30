@@ -115,6 +115,9 @@ function getConfiguredAllowedOrigins(): ConfiguredAllowedOrigins {
     .filter(Boolean);
 
   if (tokens.includes("*")) {
+    console.warn(
+      "[CORS] API_ALLOWED_ORIGINS contains '*'. Wildcard with credentials is insecure; treating as reflect-origin mode."
+    );
     return { allowAll: true, origins: new Set(), subdomainSuffixes: [] };
   }
 
@@ -262,6 +265,8 @@ export function setCorsHeaders(
   } = options;
 
   if (origin && isAllowedOrigin(origin)) {
+    // Always reflect the specific origin (never literal "*") when credentials
+    // are enabled — browsers reject `*` with `credentials: "include"`.
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }

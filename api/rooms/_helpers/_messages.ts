@@ -104,11 +104,17 @@ export async function handleGetMessages(
 }
 
 /**
- * Handle get bulk messages request
+ * Handle get bulk messages request.
+ *
+ * @deprecated Use `api/messages/bulk.ts` which performs per-room access
+ * control via `getRoomReadAccessError`. This legacy helper is kept for
+ * compatibility but now skips private rooms unless authenticatedUsername
+ * is a member.
  */
 export async function handleGetBulkMessages(
   roomIds: string[],
-  requestId: string
+  requestId: string,
+  authenticatedUsername?: string | null
 ): Promise<Response> {
   logInfo(
     requestId,
@@ -116,26 +122,38 @@ export async function handleGetBulkMessages(
   );
 
   try {
-    // Validate all room IDs
     for (const id of roomIds) {
       if (!ROOM_ID_REGEX.test(id)) {
         return createErrorResponse("Invalid room ID format", 400);
       }
     }
 
-    // Verify all rooms exist first
-    const roomExistenceChecks = await Promise.all(
-      roomIds.map((roomId) => roomExists(roomId))
-    );
+    const rooms = await Promise.all(roomIds.map((roomId) => getRoom(roomId)));
 
-    const validRoomIds = roomIds.filter((_, index) => roomExistenceChecks[index]);
-    const invalidRoomIds = roomIds.filter((_, index) => !roomExistenceChecks[index]);
+    const validRoomIds: string[] = [];
+    const invalidRoomIds: string[] = [];
 
-    if (invalidRoomIds.length > 0) {
-      logInfo(requestId, `Invalid room IDs: ${invalidRoomIds.join(", ")}`);
+    for (let i = 0; i < roomIds.length; i++) {
+      const room = rooms[i];
+      if (!room) {
+        invalidRoomIds.push(roomIds[i]);
+        continue;
+      }
+      if (
+        room.type === "private" &&
+        (!authenticatedUsername ||
+          !room.members?.includes(authenticatedUsername))
+      ) {
+        invalidRoomIds.push(roomIds[i]);
+        continue;
+      }
+      validRoomIds.push(roomIds[i]);
     }
 
-    // Fetch messages for all valid rooms in parallel
+    if (invalidRoomIds.length > 0) {
+      logInfo(requestId, `Filtered room IDs: ${invalidRoomIds.join(", ")}`);
+    }
+
     const messagePromises = validRoomIds.map(async (roomId) => {
       const messages = await getMessages(roomId, 20);
       return { roomId, messages };
@@ -143,7 +161,6 @@ export async function handleGetBulkMessages(
 
     const results = await Promise.all(messagePromises);
 
-    // Convert to object map
     const messagesMap: Record<string, Message[]> = {};
     results.forEach(({ roomId, messages }) => {
       messagesMap[roomId] = messages;

@@ -94,6 +94,16 @@ export default apiHandler(
       return;
     }
 
+    const RESERVED_USERNAMES = new Set(["ryo", "admin", "system", "moderator", "mod"]);
+    if (RESERVED_USERNAMES.has(rawUsername.toLowerCase())) {
+      const userKey = `${CHAT_USERS_PREFIX}${rawUsername.toLowerCase()}`;
+      const existingUser = await redis.get(userKey);
+      if (!existingUser) {
+        res.status(400).json({ error: "This username is reserved" });
+        return;
+      }
+    }
+
     // Validate password
     if (!password || typeof password !== "string") {
       res.status(400).json({ error: "Password is required" });
@@ -117,16 +127,13 @@ export default apiHandler(
     const username = rawUsername.toLowerCase();
     const userKey = `${CHAT_USERS_PREFIX}${username}`;
 
-    // Check if user already exists
     const existingUser = await redis.get(userKey);
     if (existingUser) {
-      // User exists - try to log them in with provided password
       try {
         const storedHash = await getUserPasswordHash(redis, username);
         if (storedHash) {
           const passwordValid = await verifyPassword(password, storedHash);
           if (passwordValid) {
-            // Password matches - log them in
             const token = generateAuthToken();
             await storeToken(redis, username, token);
             res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
@@ -137,8 +144,7 @@ export default apiHandler(
       } catch (loginError) {
         ctx.logger.error("Error attempting login for existing user", loginError);
       }
-      // Password doesn't match or no password set
-      res.status(409).json({ error: "Username already taken" });
+      res.status(409).json({ error: "Username already taken or invalid credentials" });
       return;
     }
 

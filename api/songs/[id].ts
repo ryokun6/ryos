@@ -1506,6 +1506,10 @@ export default apiHandler<Record<string, unknown>>(
       // Handle clear-cached-data action - clears translations and/or furigana
       // =======================================================================
       if (action === "clear-cached-data") {
+        if (!username) {
+          return errorResponse("Unauthorized - authentication required", 401);
+        }
+
         const parsed = ClearCachedDataSchema.safeParse(bodyObj);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
@@ -1513,7 +1517,6 @@ export default apiHandler<Record<string, unknown>>(
 
         const { clearTranslations: shouldClearTranslations, clearFurigana: shouldClearFurigana, clearSoramimi: shouldClearSoramimi } = parsed.data;
 
-        // Get song to check what needs clearing
         const song = await getSong(redis, songId, {
           includeMetadata: true,
           includeLyrics: true,
@@ -1524,6 +1527,11 @@ export default apiHandler<Record<string, unknown>>(
 
         if (!song) {
           return errorResponse("Song not found", 404);
+        }
+
+        const permission = canModifySong(song, username);
+        if (!permission.canModify) {
+          return errorResponse(permission.reason || "Only the song owner or admin can clear cached data", 403);
         }
 
         const cleared: string[] = [];

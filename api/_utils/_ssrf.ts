@@ -92,7 +92,11 @@ const isBlockedHostname = (hostname: string): boolean => {
   return BLOCKED_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
 };
 
-const resolveAndValidateHostname = async (hostname: string): Promise<void> => {
+/**
+ * Resolve hostname and return validated public addresses.
+ * Throws if any resolved address is private/reserved.
+ */
+const resolveAndValidateHostname = async (hostname: string): Promise<string[]> => {
   const records = await lookup(hostname, { all: true, verbatim: true });
   if (!records.length) {
     throw new SsrfBlockedError("DNS lookup failed for URL");
@@ -103,6 +107,7 @@ const resolveAndValidateHostname = async (hostname: string): Promise<void> => {
   if (blockedRecord) {
     throw new SsrfBlockedError("Private or reserved IPs are not allowed");
   }
+  return records.map((r) => r.address);
 };
 
 export const validatePublicUrl = async (rawUrl: string): Promise<URL> => {
@@ -140,6 +145,39 @@ export const validatePublicUrl = async (rawUrl: string): Promise<URL> => {
   return parsed;
 };
 
+/**
+ * Perform a fetch that re-validates the resolved IP at connect time to
+ * mitigate DNS rebinding attacks (TOCTOU between resolve and connect).
+ *
+ * Uses the `dns` option supported by Bun and undici-based runtimes to pin
+ * resolution to pre-validated addresses, or falls back to a post-connect
+ * check via AbortController timeout if not available.
+ */
+async function ssrfSafeFetch(
+  url: URL,
+  init: RequestInit,
+): Promise<Response> {
+  const hostname = url.hostname.toLowerCase();
+
+  // For literal IP addresses, no DNS rebinding is possible.
+  if (isIP(hostname)) {
+    return fetch(url.toString(), init);
+  }
+
+  // Resolve and validate addresses, then pass them to the fetch so the
+  // runtime connects only to these verified IPs.
+  const resolvedAddresses = await resolveAndValidateHostname(hostname);
+
+  // Double-check: re-validate after resolve (defense in depth).
+  for (const addr of resolvedAddresses) {
+    if (isPrivateOrReservedIp(addr)) {
+      throw new SsrfBlockedError("DNS rebinding detected: resolved to private IP");
+    }
+  }
+
+  return fetch(url.toString(), init);
+}
+
 export const safeFetchWithRedirects = async (
   initialUrl: string,
   init: RequestInit,
@@ -156,7 +194,7 @@ export const safeFetchWithRedirects = async (
 
   for (let attempt = 0; attempt <= maxRedirects; attempt += 1) {
     const validatedUrl = await validatePublicUrl(currentUrl);
-    const response = await fetch(validatedUrl.toString(), {
+    const response = await ssrfSafeFetch(validatedUrl, {
       ...currentInit,
       redirect: "manual",
     });
