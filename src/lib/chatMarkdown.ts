@@ -4,6 +4,10 @@ export type ChatMarkdownToken = {
   url?: string;
 };
 
+const TOKEN_CACHE_LIMIT = 500;
+const inlineTokenCache = new Map<string, ChatMarkdownToken[]>();
+const segmentedTokenCache = new Map<string, ChatMarkdownToken[]>();
+
 const PARENTHESIZED_MARKDOWN_LINK_RE =
   /^\(\[([^\]]+?)\]\((https?:\/\/[^\s]+?)\)\)/u;
 const MARKDOWN_LINK_RE = /^\[([^\]]+?)\]\((https?:\/\/[^\s]+?)\)/u;
@@ -53,7 +57,22 @@ function splitTrailingUrlPunctuation(rawUrl: string): {
   return { url, trailing };
 }
 
-export function parseChatMarkdownInline(text: string): ChatMarkdownToken[] {
+function setCachedTokens(
+  cache: Map<string, ChatMarkdownToken[]>,
+  key: string,
+  value: ChatMarkdownToken[]
+): ChatMarkdownToken[] {
+  cache.set(key, value);
+  if (cache.size > TOKEN_CACHE_LIMIT) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey !== undefined) {
+      cache.delete(oldestKey);
+    }
+  }
+  return value;
+}
+
+function parseChatMarkdownInlineUncached(text: string): ChatMarkdownToken[] {
   const tokens: ChatMarkdownToken[] = [];
   let remaining = text;
 
@@ -129,7 +148,16 @@ export function parseChatMarkdownInline(text: string): ChatMarkdownToken[] {
   return tokens;
 }
 
-export function segmentChatMarkdownText(text: string): ChatMarkdownToken[] {
+export function parseChatMarkdownInline(text: string): ChatMarkdownToken[] {
+  const cached = inlineTokenCache.get(text);
+  if (cached) {
+    return cached;
+  }
+
+  return setCachedTokens(inlineTokenCache, text, parseChatMarkdownInlineUncached(text));
+}
+
+function segmentChatMarkdownTextUncached(text: string): ChatMarkdownToken[] {
   return text.split(/(\n)/).flatMap((segment) => {
     if (segment === "\n") {
       return [{ type: "text", content: "\n" }];
@@ -137,4 +165,37 @@ export function segmentChatMarkdownText(text: string): ChatMarkdownToken[] {
 
     return parseChatMarkdownInline(segment);
   });
+}
+
+export function segmentChatMarkdownText(text: string): ChatMarkdownToken[] {
+  const cached = segmentedTokenCache.get(text);
+  if (cached) {
+    return cached;
+  }
+
+  return setCachedTokens(segmentedTokenCache, text, segmentChatMarkdownTextUncached(text));
+}
+
+export function coalesceChatMarkdownTokens(
+  tokens: ChatMarkdownToken[]
+): ChatMarkdownToken[] {
+  const merged: ChatMarkdownToken[] = [];
+
+  for (const token of tokens) {
+    const previous = merged.at(-1);
+    const canMerge =
+      previous &&
+      previous.type === token.type &&
+      previous.type !== "link" &&
+      previous.type !== "citation";
+
+    if (canMerge) {
+      previous.content += token.content;
+      continue;
+    }
+
+    merged.push({ ...token });
+  }
+
+  return merged;
 }
