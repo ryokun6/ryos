@@ -12,6 +12,8 @@ interface LandscapeVideoBackgroundProps {
   /** Whether the landscape videos should be playing */
   isActive: boolean;
   className?: string;
+  /** Render via canvas when browser video compositing is restricted. */
+  renderMode?: "video" | "canvas";
 }
 
 /**
@@ -23,14 +25,20 @@ interface LandscapeVideoBackgroundProps {
 export function LandscapeVideoBackground({
   isActive,
   className = "",
+  renderMode = "video",
 }: LandscapeVideoBackgroundProps) {
+  const useCanvasRendering = renderMode === "canvas";
   const [videos, setVideos] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showB, setShowB] = useState(false);
   const [activeVideoDurationMs, setActiveVideoDurationMs] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const videoARef = useRef<HTMLVideoElement | null>(null);
   const videoBRef = useRef<HTMLVideoElement | null>(null);
+  const canvasARef = useRef<HTMLCanvasElement | null>(null);
+  const canvasBRef = useRef<HTMLCanvasElement | null>(null);
 
   // Track which src each slot holds
   const [srcA, setSrcA] = useState<string>("");
@@ -75,6 +83,47 @@ export function LandscapeVideoBackground({
     }
   }, [isActive]);
 
+  const syncCanvasSize = useCallback((canvas: HTMLCanvasElement | null) => {
+    if (!canvas) return;
+    const width = Math.max(1, Math.round(canvas.clientWidth));
+    const height = Math.max(1, Math.round(canvas.clientHeight));
+    const dpr = window.devicePixelRatio || 1;
+    const targetWidth = Math.max(1, Math.round(width * dpr));
+    const targetHeight = Math.max(1, Math.round(height * dpr));
+
+    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+    }
+  }, []);
+
+  const drawVideoToCanvas = useCallback(
+    (video: HTMLVideoElement | null, canvas: HTMLCanvasElement | null) => {
+      if (!video || !canvas) return;
+      if (video.readyState < 2 || video.videoWidth <= 0 || video.videoHeight <= 0) return;
+
+      syncCanvasSize(canvas);
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const canvasWidth = canvas.width / dpr;
+      const canvasHeight = canvas.height / dpr;
+      const scale = Math.max(canvasWidth / video.videoWidth, canvasHeight / video.videoHeight);
+      const drawWidth = video.videoWidth * scale;
+      const drawHeight = video.videoHeight * scale;
+      const drawX = (canvasWidth - drawWidth) / 2;
+      const drawY = (canvasHeight - drawHeight) / 2;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(dpr, dpr);
+      ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+    },
+    [syncCanvasSize]
+  );
+
   // When srcA/srcB change, trigger play on the relevant element
   useEffect(() => {
     if (srcA && !showB) ensurePlay(videoARef.current);
@@ -83,6 +132,57 @@ export function LandscapeVideoBackground({
   useEffect(() => {
     if (srcB && showB) ensurePlay(videoBRef.current);
   }, [srcB, showB, ensurePlay]);
+
+  useEffect(() => {
+    if (isActive) {
+      ensurePlay(showB ? videoBRef.current : videoARef.current);
+    }
+  }, [ensurePlay, isActive, showB]);
+
+  useEffect(() => {
+    if (!useCanvasRendering) return;
+
+    const updateCanvasSizes = () => {
+      syncCanvasSize(canvasARef.current);
+      syncCanvasSize(canvasBRef.current);
+    };
+
+    updateCanvasSizes();
+
+    if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+      const resizeObserver = new ResizeObserver(updateCanvasSizes);
+      resizeObserver.observe(containerRef.current);
+      return () => resizeObserver.disconnect();
+    }
+
+    window.addEventListener("resize", updateCanvasSizes);
+    return () => window.removeEventListener("resize", updateCanvasSizes);
+  }, [syncCanvasSize, useCanvasRendering]);
+
+  useEffect(() => {
+    if (!useCanvasRendering || !isActive) {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
+    const render = () => {
+      drawVideoToCanvas(videoARef.current, canvasARef.current);
+      drawVideoToCanvas(videoBRef.current, canvasBRef.current);
+      animationFrameRef.current = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [drawVideoToCanvas, isActive, srcA, srcB, useCanvasRendering]);
 
   // Advance to next video with crossfade
   const advanceVideo = useCallback(() => {
@@ -156,65 +256,150 @@ export function LandscapeVideoBackground({
   }
 
   return (
-    <div className={`absolute inset-0 overflow-hidden ${className}`}>
-      {/* Video A */}
-      <video
-        ref={videoARef}
-        src={srcA}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        data-webkit-playsinline="true"
-        onEnded={!showB ? handleVideoEnded : undefined}
-        onCanPlayThrough={(e) => {
-          const v = e.currentTarget;
-          if (v.paused) v.play().catch(() => {});
-        }}
-        onLoadedMetadata={(e) => {
-          if (showB) return;
-          const durationMs = e.currentTarget.duration * 1000;
-          if (Number.isFinite(durationMs) && durationMs > 0) {
-            setActiveVideoDurationMs(durationMs);
-          }
-        }}
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{
-          opacity: showB ? 0 : 1,
-          transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
-        }}
-      />
+    <div
+      ref={containerRef}
+      className={`absolute inset-0 overflow-hidden ${className}`}
+    >
+      {useCanvasRendering ? (
+        <>
+          <canvas
+            ref={canvasARef}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              opacity: showB ? 0 : 1,
+              transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+            }}
+          />
 
-      {/* Video B */}
-      {videos.length > 1 && srcB && (
-        <video
-          ref={videoBRef}
-          src={srcB}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          data-webkit-playsinline="true"
-          onEnded={showB ? handleVideoEnded : undefined}
-          onCanPlayThrough={(e) => {
-            const v = e.currentTarget;
-            if (v.paused) v.play().catch(() => {});
-          }}
-          onLoadedMetadata={(e) => {
-            if (!showB) return;
-            const durationMs = e.currentTarget.duration * 1000;
-            if (Number.isFinite(durationMs) && durationMs > 0) {
-              setActiveVideoDurationMs(durationMs);
-            }
-          }}
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{
-            opacity: showB ? 1 : 0,
-            transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
-          }}
-        />
+          {videos.length > 1 && srcB && (
+            <canvas
+              ref={canvasBRef}
+              className="absolute inset-0 w-full h-full"
+              style={{
+                opacity: showB ? 1 : 0,
+                transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+              }}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {/* Video A */}
+          <video
+            ref={videoARef}
+            src={srcA}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            data-webkit-playsinline="true"
+            onEnded={!showB ? handleVideoEnded : undefined}
+            onCanPlayThrough={(e) => {
+              const v = e.currentTarget;
+              if (v.paused) v.play().catch(() => {});
+            }}
+            onLoadedMetadata={(e) => {
+              if (showB) return;
+              const durationMs = e.currentTarget.duration * 1000;
+              if (Number.isFinite(durationMs) && durationMs > 0) {
+                setActiveVideoDurationMs(durationMs);
+              }
+            }}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              opacity: showB ? 0 : 1,
+              transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+            }}
+          />
+
+          {/* Video B */}
+          {videos.length > 1 && srcB && (
+            <video
+              ref={videoBRef}
+              src={srcB}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              data-webkit-playsinline="true"
+              onEnded={showB ? handleVideoEnded : undefined}
+              onCanPlayThrough={(e) => {
+                const v = e.currentTarget;
+                if (v.paused) v.play().catch(() => {});
+              }}
+              onLoadedMetadata={(e) => {
+                if (!showB) return;
+                const durationMs = e.currentTarget.duration * 1000;
+                if (Number.isFinite(durationMs) && durationMs > 0) {
+                  setActiveVideoDurationMs(durationMs);
+                }
+              }}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                opacity: showB ? 1 : 0,
+                transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+              }}
+            />
+          )}
+        </>
+      )}
+
+      {useCanvasRendering && (
+        <>
+          {/* Hidden video sources feed the canvases so landscape playback does not rely on visible video tags. */}
+          <video
+            ref={videoARef}
+            src={srcA}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            data-webkit-playsinline="true"
+            onEnded={!showB ? handleVideoEnded : undefined}
+            onCanPlayThrough={(e) => {
+              const v = e.currentTarget;
+              if (v.paused) v.play().catch(() => {});
+            }}
+            onLoadedMetadata={(e) => {
+              if (showB) return;
+              const durationMs = e.currentTarget.duration * 1000;
+              if (Number.isFinite(durationMs) && durationMs > 0) {
+                setActiveVideoDurationMs(durationMs);
+              }
+            }}
+            className="absolute left-[-9999px] top-[-9999px] w-px h-px opacity-0 pointer-events-none"
+          />
+
+          {/* Hidden video B source */}
+          {videos.length > 1 && srcB && (
+            <video
+              ref={videoBRef}
+              src={srcB}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              data-webkit-playsinline="true"
+              onEnded={showB ? handleVideoEnded : undefined}
+              onCanPlayThrough={(e) => {
+                const v = e.currentTarget;
+                if (v.paused) v.play().catch(() => {});
+              }}
+              onLoadedMetadata={(e) => {
+                if (!showB) return;
+                const durationMs = e.currentTarget.duration * 1000;
+                if (Number.isFinite(durationMs) && durationMs > 0) {
+                  setActiveVideoDurationMs(durationMs);
+                }
+              }}
+              className="absolute left-[-9999px] top-[-9999px] w-px h-px opacity-0 pointer-events-none"
+            />
+          )}
+        </>
       )}
 
       {/* Subtle darkening overlay for better lyrics readability */}

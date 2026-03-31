@@ -411,6 +411,7 @@ export function KaraokeAppComponent({
           {effectiveDisplayMode === DisplayMode.Landscapes && currentTrack && (
             <LandscapeVideoBackground
               isActive={shouldAnimateVisuals}
+              renderMode="canvas"
               className="absolute inset-0 z-[5]"
             />
           )}
@@ -914,6 +915,7 @@ export function KaraokeAppComponent({
                 {effectiveDisplayMode === DisplayMode.Landscapes && currentTrack && (
                   <LandscapeVideoBackground
                     isActive={shouldAnimateVisuals}
+                    renderMode="canvas"
                     className="fixed inset-0 z-[5]"
                   />
                 )}
