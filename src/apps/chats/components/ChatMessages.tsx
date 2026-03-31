@@ -46,8 +46,9 @@ import {
   type ChatMarkdownToken,
 } from "@/lib/chatMarkdown";
 import {
-  estimateChatTextLineCount,
-  shouldAnimateAssistantTokens,
+  getChatTextLayoutInfo,
+  getChatTextRevealDurationMs,
+  shouldUseDetailedAssistantTokens,
 } from "@/apps/chats/utils/chatTextLayout";
 
 // Helper to extract image URLs from message parts
@@ -318,6 +319,29 @@ interface AssistantTextPartProps {
   playNote: () => void;
 }
 
+interface AssistantRenderedToken {
+  segment: ChatMarkdownToken;
+  start: number;
+  end: number;
+}
+
+function countRevealedLines(lineEnds: number[], revealedChars: number): number {
+  if (revealedChars <= 0 || lineEnds.length === 0) {
+    return 0;
+  }
+
+  let revealedLines = 0;
+  for (const lineEnd of lineEnds) {
+    if (revealedChars >= lineEnd) {
+      revealedLines += 1;
+      continue;
+    }
+    break;
+  }
+
+  return revealedLines;
+}
+
 const AssistantTextPart = memo(function AssistantTextPart({
   partKey,
   textContent,
@@ -329,29 +353,43 @@ const AssistantTextPart = memo(function AssistantTextPart({
 }: AssistantTextPartProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [contentWidth, setContentWidth] = useState(0);
+  const [revealedChars, setRevealedChars] = useState(
+    isInitialMessage ? Number.MAX_SAFE_INTEGER : 0
+  );
+  const previousVisibleLengthRef = useRef(0);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const trimmedText = textContent.trim();
   const emojiOnly = useMemo(() => isEmojiOnly(trimmedText), [trimmedText]);
   const tokens = useMemo(() => segmentChatMarkdownText(trimmedText), [trimmedText]);
-  const groupedTokens = useMemo(() => coalesceChatMarkdownTokens(tokens), [tokens]);
   const visibleText = useMemo(
     () => tokens.map((token) => token.content).join(""),
     [tokens]
   );
-  const lineCount = useMemo(
-    () => estimateChatTextLineCount(visibleText, fontSize, contentWidth),
+  const layoutInfo = useMemo(
+    () => getChatTextLayoutInfo(visibleText, fontSize, contentWidth),
     [visibleText, fontSize, contentWidth]
   );
-  const animateTokens = useMemo(
+  const lineCount = layoutInfo?.lineCount ?? null;
+  const useDetailedTokens = useMemo(
     () =>
-      shouldAnimateAssistantTokens({
+      shouldUseDetailedAssistantTokens({
         tokenCount: tokens.length,
         textLength: visibleText.length,
         lineCount,
       }),
     [tokens.length, visibleText.length, lineCount]
   );
-  const renderedTokens = animateTokens ? tokens : groupedTokens;
+  const renderedTokens = useMemo<AssistantRenderedToken[]>(() => {
+    const baseTokens = useDetailedTokens ? tokens : coalesceChatMarkdownTokens(tokens);
+    let charPos = 0;
+    return baseTokens.map((segment) => {
+      const start = charPos;
+      const end = charPos + segment.content.length;
+      charPos = end;
+      return { segment, start, end };
+    });
+  }, [tokens, useDetailedTokens]);
 
   useLayoutEffect(() => {
     const node = contentRef.current;
@@ -380,23 +418,75 @@ const AssistantTextPart = memo(function AssistantTextPart({
     return () => observer.disconnect();
   }, [fontSize]);
 
+  useEffect(() => {
+    if (revealTimerRef.current) {
+      clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+
+    if (isInitialMessage) {
+      previousVisibleLengthRef.current = visibleText.length;
+      setRevealedChars(Number.MAX_SAFE_INTEGER);
+      return;
+    }
+
+    const previousLength = previousVisibleLengthRef.current;
+    const nextLength = visibleText.length;
+    const normalizedPrevious = Math.min(previousLength, nextLength);
+    previousVisibleLengthRef.current = nextLength;
+
+    if (nextLength <= 0) {
+      setRevealedChars(0);
+      return;
+    }
+
+    if (nextLength <= normalizedPrevious) {
+      setRevealedChars(nextLength);
+      return;
+    }
+
+    const revealedLineCountBefore = countRevealedLines(
+      layoutInfo?.lineEnds ?? [],
+      normalizedPrevious
+    );
+    const revealedLineCountAfter = countRevealedLines(
+      layoutInfo?.lineEnds ?? [],
+      nextLength
+    );
+
+    setRevealedChars(normalizedPrevious);
+    revealTimerRef.current = setTimeout(() => {
+      setRevealedChars(nextLength);
+      if (nextLength > normalizedPrevious) {
+        playNote();
+      }
+      revealTimerRef.current = null;
+    }, getChatTextRevealDurationMs(
+      nextLength - normalizedPrevious,
+      Math.max(1, revealedLineCountAfter - revealedLineCountBefore)
+    ));
+
+    return () => {
+      if (revealTimerRef.current) {
+        clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = null;
+      }
+    };
+  }, [isInitialMessage, layoutInfo?.lineEnds, playNote, visibleText]);
+
   if (!trimmedText) {
     return null;
   }
 
-  let charPos = 0;
-
   return (
     <div className="w-full">
       <div ref={contentRef} className="whitespace-pre-wrap">
-        {renderedTokens.map((segment, idx) => {
-          const start = charPos;
-          const end = charPos + segment.content.length;
-          charPos = end;
+        {renderedTokens.map(({ segment, start, end }, idx) => {
           const isHighlight =
             !!activeHighlightSegment &&
             start < activeHighlightSegment.end &&
             end > activeHighlightSegment.start;
+          const hidden = end > revealedChars;
           const contentNode = isHighlight ? (
             <span className="animate-highlight">{renderInlineToken(segment)}</span>
           ) : (
@@ -416,39 +506,17 @@ const AssistantTextPart = memo(function AssistantTextPart({
             userSelect: "text" as const,
             fontSize: emojiOnly ? undefined : `${fontSize}px`,
           };
-
-          if (!animateTokens) {
-            return (
-              <span
-                key={`${partKey}-segment-${idx}`}
-                className={className}
-                style={style}
-              >
-                {contentNode}
-              </span>
-            );
-          }
-
           return (
-            <motion.span
+            <span
               key={`${partKey}-segment-${idx}`}
-              initial={
-                isInitialMessage ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }
-              }
-              animate={{ opacity: 1, y: 0 }}
               className={className}
-              style={style}
-              transition={{
-                duration: 0.08,
-                delay: idx * 0.02,
-                ease: "easeOut",
-                onComplete: () => {
-                  if (idx % 2 === 0) playNote();
-                },
+              style={{
+                ...style,
+                visibility: hidden ? "hidden" : "visible",
               }}
             >
               {contentNode}
-            </motion.span>
+            </span>
           );
         })}
       </div>
@@ -1019,7 +1087,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           {showTypingDots ? (
             <TypingDots />
           ) : message.role === "assistant" ? (
-            <motion.div className="select-text flex flex-col gap-1">
+            <div className="select-text flex flex-col gap-1">
               {message.parts?.map(
                 (
                   part: ToolInvocationPart | { type: string; text?: string },
@@ -1044,15 +1112,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ).length;
                         if (openTags !== closeTags) {
                           return (
-                            <motion.span
+                            <span
                               key={partKey}
-                              initial={{ opacity: 1 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0 }}
                               className="select-text italic"
                             >
                               {t("apps.chats.status.editing")}
-                            </motion.span>
+                            </span>
                           );
                         }
                       }
@@ -1101,7 +1166,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }
               )}
-            </motion.div>
+            </div>
           ) : (
             <>
               {displayContent && (

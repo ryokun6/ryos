@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+  buildChatTextLineEnds,
   getChatTextFont,
   getChatTextLineHeight,
-  shouldAnimateAssistantTokens,
+  shouldUseDetailedAssistantTokens,
 } from "../src/apps/chats/utils/chatTextLayout";
 
 describe("chat text layout heuristics", () => {
@@ -17,7 +18,7 @@ describe("chat text layout heuristics", () => {
 
   test("keeps per-token animation for short replies", () => {
     expect(
-      shouldAnimateAssistantTokens({
+      shouldUseDetailedAssistantTokens({
         tokenCount: 24,
         textLength: 120,
         lineCount: 4,
@@ -27,7 +28,7 @@ describe("chat text layout heuristics", () => {
 
   test("disables per-token animation for long replies", () => {
     expect(
-      shouldAnimateAssistantTokens({
+      shouldUseDetailedAssistantTokens({
         tokenCount: 120,
         textLength: 480,
         lineCount: 10,
@@ -37,11 +38,16 @@ describe("chat text layout heuristics", () => {
 
   test("disables per-token animation when line count is high", () => {
     expect(
-      shouldAnimateAssistantTokens({
+      shouldUseDetailedAssistantTokens({
         tokenCount: 40,
         textLength: 180,
         lineCount: 8,
       })
     ).toBe(false);
+  });
+
+  test("builds reveal line ends from pretext line text", () => {
+    expect(buildChatTextLineEnds(["hello", " world"], 11)).toEqual([5, 11]);
+    expect(buildChatTextLineEnds([], 4)).toEqual([4]);
   });
 });

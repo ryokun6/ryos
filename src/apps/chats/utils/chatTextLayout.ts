@@ -1,16 +1,29 @@
-import { layout, prepare, type PreparedText } from "@chenglou/pretext";
+import {
+  layoutWithLines,
+  prepareWithSegments,
+  type PreparedTextWithSegments,
+} from "@chenglou/pretext";
 
 const PREPARED_TEXT_CACHE_LIMIT = 200;
-const preparedTextCache = new Map<string, PreparedText>();
+const preparedTextCache = new Map<string, PreparedTextWithSegments>();
 const CHAT_TEXT_LINE_HEIGHT_RATIO = 1.375;
 
-export interface AssistantTokenAnimationInput {
+export interface AssistantTextAnimationInput {
   tokenCount: number;
   textLength: number;
   lineCount?: number | null;
 }
 
-function setPreparedTextCache(key: string, prepared: PreparedText): PreparedText {
+export interface ChatTextLayoutInfo {
+  lineCount: number;
+  lineEnds: number[];
+  totalChars: number;
+}
+
+function setPreparedTextCache(
+  key: string,
+  prepared: PreparedTextWithSegments
+): PreparedTextWithSegments {
   preparedTextCache.set(key, prepared);
   if (preparedTextCache.size > PREPARED_TEXT_CACHE_LIMIT) {
     const oldestKey = preparedTextCache.keys().next().value;
@@ -29,16 +42,36 @@ export function getChatTextLineHeight(fontSize: number): number {
   return Math.max(fontSize + 2, Math.round(fontSize * CHAT_TEXT_LINE_HEIGHT_RATIO));
 }
 
-export function estimateChatTextLineCount(
+export function buildChatTextLineEnds(
+  lineTexts: string[],
+  totalChars: number
+): number[] {
+  let charPos = 0;
+  const lineEnds: number[] = [];
+
+  for (const lineText of lineTexts) {
+    charPos += lineText.length;
+    lineEnds.push(Math.min(totalChars, charPos));
+  }
+
+  if (lineEnds.length === 0 && totalChars > 0) {
+    return [totalChars];
+  }
+
+  const lastLineEnd = lineEnds.at(-1) ?? 0;
+  if (lastLineEnd < totalChars) {
+    lineEnds.push(totalChars);
+  }
+
+  return lineEnds;
+}
+
+export function getChatTextLayoutInfo(
   text: string,
   fontSize: number,
   maxWidth: number
-): number | null {
-  if (!text || maxWidth <= 0) {
-    return null;
-  }
-
-  if (typeof window === "undefined") {
+): ChatTextLayoutInfo | null {
+  if (!text || maxWidth <= 0 || typeof window === "undefined") {
     return null;
   }
 
@@ -48,19 +81,43 @@ export function estimateChatTextLineCount(
     preparedTextCache.get(cacheKey) ??
     setPreparedTextCache(
       cacheKey,
-      prepare(text, font, {
+      prepareWithSegments(text, font, {
         whiteSpace: "pre-wrap",
       })
     );
 
-  return layout(prepared, maxWidth, getChatTextLineHeight(fontSize)).lineCount;
+  const { lineCount, lines } = layoutWithLines(
+    prepared,
+    maxWidth,
+    getChatTextLineHeight(fontSize)
+  );
+
+  return {
+    lineCount,
+    lineEnds: buildChatTextLineEnds(
+      lines.map((line) => line.text),
+      text.length
+    ),
+    totalChars: text.length,
+  };
 }
 
-export function shouldAnimateAssistantTokens({
+export function getChatTextRevealDurationMs(
+  charDelta: number,
+  crossedLineCount: number
+): number {
+  if (charDelta <= 0) {
+    return 0;
+  }
+
+  return Math.max(120, Math.min(700, charDelta * 8 + crossedLineCount * 70));
+}
+
+export function shouldUseDetailedAssistantTokens({
   tokenCount,
   textLength,
   lineCount,
-}: AssistantTokenAnimationInput): boolean {
+}: AssistantTextAnimationInput): boolean {
   if (tokenCount === 0 || textLength === 0) {
     return false;
   }
