@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -198,6 +198,40 @@ export function KaraokeAppComponent({
     [setDisplayMode, showStatus, t]
   );
 
+  /** Pause video while modal dialogs are open — reduces GPU/compositor cost (iframe + overlay) during typing. */
+  const pauseVideoForModalOverlay = useMemo(
+    () =>
+      isHelpDialogOpen ||
+      isAboutDialogOpen ||
+      isConfirmClearOpen ||
+      isShareDialogOpen ||
+      isLyricsSearchDialogOpen ||
+      isSongSearchDialogOpen ||
+      isListenInviteOpen ||
+      isJoinListenDialogOpen,
+    [
+      isHelpDialogOpen,
+      isAboutDialogOpen,
+      isConfirmClearOpen,
+      isShareDialogOpen,
+      isLyricsSearchDialogOpen,
+      isSongSearchDialogOpen,
+      isListenInviteOpen,
+      isJoinListenDialogOpen,
+    ]
+  );
+
+  const mainPlayerPlaying =
+    isPlaying &&
+    !isFullScreen &&
+    !isListenSessionRemoteOnly &&
+    !pauseVideoForModalOverlay;
+  const fullScreenPlayerPlaying =
+    isPlaying &&
+    isFullScreen &&
+    !isListenSessionRemoteOnly &&
+    !pauseVideoForModalOverlay;
+
   const menuBar = (
     <KaraokeMenuBar
       onClose={onClose}
@@ -366,7 +400,7 @@ export function KaraokeAppComponent({
                 <ReactPlayer
                   ref={playerRef}
                   url={currentTrack.url}
-                  playing={isPlaying && !isFullScreen && !isListenSessionRemoteOnly}
+                  playing={mainPlayerPlaying}
                   width="100%"
                   height="100%"
                   volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
@@ -874,7 +908,7 @@ export function KaraokeAppComponent({
                         <ReactPlayer
                           ref={fullScreenPlayerRef}
                           url={currentTrack.url}
-                          playing={isPlaying && isFullScreen && !isListenSessionRemoteOnly}
+                          playing={fullScreenPlayerPlaying}
                           controls
                           width="100%"
                           height="100%"
