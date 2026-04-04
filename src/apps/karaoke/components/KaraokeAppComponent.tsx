@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -172,14 +172,14 @@ export function KaraokeAppComponent({
     adjustLyricOffset,
   } = useKaraokeLogic({ isWindowOpen, isForeground, initialData, instanceId });
 
-  const displayModeOptions = [
+  const displayModeOptions = useMemo(() => [
     { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
     { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
     { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
     { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
     { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
     { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-  ];
+  ], [t]);
 
   const handleDisplayModeSelect = useCallback(
     (value: DisplayMode) => {
@@ -198,14 +198,23 @@ export function KaraokeAppComponent({
     [setDisplayMode, showStatus, t]
   );
 
-  const menuBar = (
+  const handleShowHelp = useCallback(() => setIsHelpDialogOpen(true), [setIsHelpDialogOpen]);
+  const handleShowAbout = useCallback(() => setIsAboutDialogOpen(true), [setIsAboutDialogOpen]);
+  const handleOpenConfirmClear = useCallback(() => setIsConfirmClearOpen(true), [setIsConfirmClearOpen]);
+  const handleOpenJoinListenDialog = useCallback(() => setIsJoinListenDialogOpen(true), [setIsJoinListenDialogOpen]);
+  const handleShareListenSession = useCallback(() => setIsListenInviteOpen(true), [setIsListenInviteOpen]);
+  const handleAdjustTiming = useCallback(() => setIsSyncModeOpen(true), [setIsSyncModeOpen]);
+  const handleToggleSyncMode = useCallback(() => setIsSyncModeOpen((prev) => !prev), [setIsSyncModeOpen]);
+  const isInListenSession = !!listenSession;
+
+  const menuBar = useMemo(() => (
     <KaraokeMenuBar
       onClose={onClose}
-      onShowHelp={() => setIsHelpDialogOpen(true)}
-      onShowAbout={() => setIsAboutDialogOpen(true)}
+      onShowHelp={handleShowHelp}
+      onShowAbout={handleShowAbout}
       onAddSong={handleAddSong}
       onShareSong={handleShareSong}
-      onClearLibrary={() => setIsConfirmClearOpen(true)}
+      onClearLibrary={handleOpenConfirmClear}
       onSyncLibrary={manualSync}
       onPlayTrack={handlePlayTrack}
       onTogglePlay={handlePlayPause}
@@ -222,18 +231,97 @@ export function KaraokeAppComponent({
       onToggleLyrics={toggleLyrics}
       onToggleFullScreen={toggleFullScreen}
       onRefreshLyrics={handleRefreshLyrics}
-      onAdjustTiming={() => setIsSyncModeOpen(true)}
+      onAdjustTiming={handleAdjustTiming}
       tracks={tracks}
       currentIndex={currentIndex}
       onToggleCoverFlow={handleToggleCoverFlow}
       onStartListenSession={handleStartListenSession}
-      onJoinListenSession={() => setIsJoinListenDialogOpen(true)}
-      onShareListenSession={() => setIsListenInviteOpen(true)}
+      onJoinListenSession={handleOpenJoinListenDialog}
+      onShareListenSession={handleShareListenSession}
       onLeaveListenSession={handleLeaveListenSession}
-      isInListenSession={!!listenSession}
+      isInListenSession={isInListenSession}
       isListenSessionHost={isListenSessionHost}
     />
-  );
+  ), [
+    onClose, handleShowHelp, handleShowAbout, handleAddSong, handleShareSong,
+    handleOpenConfirmClear, manualSync, handlePlayTrack, handlePlayPause,
+    handlePrevious, handleNext, isPlaying, isShuffled, toggleShuffle, loopAll,
+    toggleLoopAll, loopCurrent, toggleLoopCurrent, showLyrics, toggleLyrics,
+    toggleFullScreen, handleRefreshLyrics, handleAdjustTiming, tracks,
+    currentIndex, handleToggleCoverFlow, handleStartListenSession,
+    handleOpenJoinListenDialog, handleShareListenSession,
+    handleLeaveListenSession, isInListenSession, isListenSessionHost,
+  ]);
+  const handleAdjustOffset = useCallback((delta: number) => {
+    adjustLyricOffset(currentIndex, delta);
+    const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
+    const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
+    showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
+    lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
+  }, [adjustLyricOffset, currentIndex, currentTrack?.lyricOffset, showStatus, t, lyricsControls, displayElapsedTime]);
+
+  const handleSwipeUp = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      handleNext();
+    }
+  }, [isOffline, showOfflineStatus, handleNext]);
+
+  const handleSwipeDown = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      handlePrevious();
+    }
+  }, [isOffline, showOfflineStatus, handlePrevious]);
+
+  const handleFullscreenSwipeUp = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      handleNext();
+      if (!isListenSessionRemoteOnly) {
+        setTimeout(() => {
+          const newIndex = (currentIndex + 1) % tracks.length;
+          const newTrack = tracks[newIndex];
+          if (newTrack) {
+            const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+            showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+          }
+        }, 150);
+      }
+    }
+  }, [isOffline, showOfflineStatus, handleNext, isListenSessionRemoteOnly, currentIndex, tracks, showStatus]);
+
+  const handleFullscreenSwipeDown = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      handlePrevious();
+      if (!isListenSessionRemoteOnly) {
+        setTimeout(() => {
+          const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
+          const newTrack = tracks[newIndex];
+          if (newTrack) {
+            const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+            showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+          }
+        }, 150);
+      }
+    }
+  }, [isOffline, showOfflineStatus, handlePrevious, isListenSessionRemoteOnly, currentIndex, tracks, showStatus]);
+
+  const karaokeContainerStyle = useMemo(() => ({
+    gap: "clamp(0.3rem, 2.5cqw, 1rem)",
+  }), []);
+
+  const fullscreenContainerStyle = useMemo(() => ({
+    gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
+    paddingLeft: "env(safe-area-inset-left, 0px)",
+    paddingRight: "env(safe-area-inset-right, 0px)",
+  }), []);
+
   const shouldAnimateVisuals =
     isPlaying && (isForeground ?? true) && !isListenSessionRemoteOnly;
 
@@ -490,33 +578,13 @@ export function KaraokeAppComponent({
                   koreanDisplay={koreanDisplay}
                   japaneseFurigana={japaneseFurigana}
                   fontClassName={lyricsFontClassName}
-                  onAdjustOffset={(delta) => {
-                    adjustLyricOffset(currentIndex, delta);
-                    const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
-                    const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-                    showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                    lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
-                  }}
-                  onSwipeUp={() => {
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      handleNext();
-                    }
-                  }}
-                  onSwipeDown={() => {
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      handlePrevious();
-                    }
-                  }}
+                  onAdjustOffset={handleAdjustOffset}
+                  onSwipeUp={handleSwipeUp}
+                  onSwipeDown={handleSwipeDown}
                   isTranslating={lyricsControls.isTranslating}
                   textSizeClass="karaoke-lyrics-text"
                   gapClass="gap-1"
-                  containerStyle={{
-                    gap: "clamp(0.3rem, 2.5cqw, 1rem)",
-                  }}
+                  containerStyle={karaokeContainerStyle}
                   interactive={true}
                   bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-12"}
                   furiganaMap={furiganaMap}
@@ -651,7 +719,7 @@ export function KaraokeAppComponent({
               displayMode={displayMode}
               onDisplayModeSelect={handleDisplayModeSelect}
               displayModeOptions={displayModeOptions}
-              onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
+              onSyncMode={handleToggleSyncMode}
               currentAlignment={lyricsAlignment}
               onAlignmentCycle={cycleAlignment}
               currentFont={lyricsFont}
@@ -812,7 +880,7 @@ export function KaraokeAppComponent({
           onCycleLyricsFont={cycleLyricsFont}
           romanization={romanization}
           onRomanizationChange={setRomanization}
-          onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
+          onSyncMode={handleToggleSyncMode}
           isSyncModeOpen={isSyncModeOpen}
           displayMode={displayMode}
           onDisplayModeSelect={handleDisplayModeSelect}
@@ -994,55 +1062,13 @@ export function KaraokeAppComponent({
                       koreanDisplay={koreanDisplay}
                       japaneseFurigana={japaneseFurigana}
                       fontClassName={lyricsFontClassName}
-                      onAdjustOffset={(delta) => {
-                        adjustLyricOffset(currentIndex, delta);
-                        const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
-                        const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-                        showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                        lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
-                      }}
-                      onSwipeUp={() => {
-                        if (isOffline) {
-                          showOfflineStatus();
-                        } else {
-                          handleNext();
-                          if (!isListenSessionRemoteOnly) {
-                            setTimeout(() => {
-                              const newIndex = (currentIndex + 1) % tracks.length;
-                              const newTrack = tracks[newIndex];
-                              if (newTrack) {
-                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
-                              }
-                            }, 150);
-                          }
-                        }
-                      }}
-                      onSwipeDown={() => {
-                        if (isOffline) {
-                          showOfflineStatus();
-                        } else {
-                          handlePrevious();
-                          if (!isListenSessionRemoteOnly) {
-                            setTimeout(() => {
-                              const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
-                              const newTrack = tracks[newIndex];
-                              if (newTrack) {
-                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
-                              }
-                            }, 150);
-                          }
-                        }
-                      }}
+                      onAdjustOffset={handleAdjustOffset}
+                      onSwipeUp={handleFullscreenSwipeUp}
+                      onSwipeDown={handleFullscreenSwipeDown}
                       isTranslating={lyricsControls.isTranslating}
                       textSizeClass="fullscreen-lyrics-text"
                       gapClass="gap-0"
-                      containerStyle={{
-                        gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
-                        paddingLeft: "env(safe-area-inset-left, 0px)",
-                        paddingRight: "env(safe-area-inset-right, 0px)",
-                      }}
+                      containerStyle={fullscreenContainerStyle}
                       interactive={true}
                       bottomPaddingClass={controlsVisible ? "pb-28" : "pb-16"}
                       furiganaMap={furiganaMap}

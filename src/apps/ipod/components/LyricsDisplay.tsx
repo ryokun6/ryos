@@ -97,6 +97,8 @@ interface LyricsDisplayProps {
   showInterludeEllipsis?: boolean;
 }
 
+const EMPTY_MAP = new Map() as Map<string, FuriganaSegment[]>;
+
 const ANIMATION_CONFIG = {
   spring: {
     type: "spring" as const,
@@ -1745,8 +1747,8 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
-  furiganaMap = new Map(),
-  soramimiMap = new Map(),
+  furiganaMap = EMPTY_MAP,
+  soramimiMap = EMPTY_MAP,
   currentTimeMs,
   onSeekToTime,
   coverUrl,

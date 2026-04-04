@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -65,7 +65,7 @@ interface KaraokeMenuBarProps {
   currentIndex: number;
 }
 
-export function KaraokeMenuBar({
+export const KaraokeMenuBar = memo(function KaraokeMenuBar({
   onClose,
   onShowHelp,
   onShowAbout,
@@ -818,4 +818,4 @@ export function KaraokeMenuBar({
       />
     </MenuBar>
   );
-}
+});
