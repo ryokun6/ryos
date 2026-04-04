@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -12,16 +12,22 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { SongSearchDialog } from "@/components/dialogs/SongSearchDialog";
 import { appMetadata } from "..";
-import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { CoverFlow } from "@/apps/ipod/components/CoverFlow";
-import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { ListenSessionInvite } from "@/components/listen/ListenSessionInvite";
 import { JoinSessionDialog } from "@/components/listen/JoinSessionDialog";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { getTranslatedAppName } from "@/utils/i18n";
-import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
+import {
+  KaraokeLyricsPlaybackProvider,
+  KaraokeWindowLyricsOverlay,
+  KaraokeFullscreenLyricsOverlay,
+  KaraokeLyricsActivityIndicator,
+  KaraokeSyncModeWindowPanel,
+  KaraokeSyncModeFullscreenPanel,
+} from "./KaraokeLyricsPlayback";
+import { KaraokeIosAutoplayWatchdog } from "./KaraokeIosAutoplayWatchdog";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useKaraokeLogic } from "../hooks/useKaraokeLogic";
@@ -31,6 +37,8 @@ import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
+import { useChatsStore } from "@/stores/useChatsStore";
+import { useShallow } from "zustand/react/shallow";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -55,7 +63,6 @@ export function KaraokeAppComponent({
     showLyrics,
     lyricsAlignment,
     lyricsFont,
-    lyricsFontClassName,
     koreanDisplay,
     japaneseFurigana,
     romanization,
@@ -68,6 +75,7 @@ export function KaraokeAppComponent({
     toggleLoopAll,
     toggleLoopCurrent,
     toggleFullScreen,
+    setIsPlaying,
     isOffline,
     manualSync,
     isHelpDialogOpen,
@@ -87,6 +95,7 @@ export function KaraokeAppComponent({
     setIsLyricsSearchDialogOpen,
     isSongSearchDialogOpen,
     setIsSongSearchDialogOpen,
+    isAddingSong,
     isListenInviteOpen,
     setIsListenInviteOpen,
     isJoinListenDialogOpen,
@@ -102,7 +111,7 @@ export function KaraokeAppComponent({
     LONG_PRESS_MOVE_THRESHOLD,
     fullScreenPlayerRef,
     playerRef,
-    displayElapsedTime,
+    lyricsPlaybackSyncRef,
     duration,
     setDuration,
     statusMessage,
@@ -112,11 +121,6 @@ export function KaraokeAppComponent({
     currentTrack,
     lyricsSourceOverride,
     coverUrl,
-    lyricsControls,
-    furiganaMap,
-    soramimiMap,
-    activityState,
-    hasActiveActivity,
     translationLanguages,
     listenSession,
     listenSessionUsername,
@@ -170,7 +174,20 @@ export function KaraokeAppComponent({
     isXpTheme,
     getCurrentKaraokeTrack,
     adjustLyricOffset,
-  } = useKaraokeLogic({ isWindowOpen, isForeground, initialData, instanceId });
+  } = useKaraokeLogic({
+    isWindowOpen,
+    isForeground,
+    initialData,
+    instanceId,
+  });
+
+  const { username, isAuthenticated } = useChatsStore(
+    useShallow((s) => ({ username: s.username, isAuthenticated: s.isAuthenticated }))
+  );
+  const auth = useMemo(
+    () => (username && isAuthenticated ? { username, isAuthenticated } : undefined),
+    [username, isAuthenticated]
+  );
 
   const displayModeOptions = [
     { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
@@ -197,6 +214,59 @@ export function KaraokeAppComponent({
     },
     [setDisplayMode, showStatus, t]
   );
+
+  const handleFullscreenLyricsSwipeUp = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      handleNext();
+      if (!isListenSessionRemoteOnly) {
+        setTimeout(() => {
+          const newIndex = (currentIndex + 1) % tracks.length;
+          const newTrack = tracks[newIndex];
+          if (newTrack) {
+            const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+            showStatus(`⏭ ${newTrack.title}${artistInfo}`);
+          }
+        }, 150);
+      }
+    }
+  }, [
+    currentIndex,
+    handleNext,
+    isListenSessionRemoteOnly,
+    isOffline,
+    showOfflineStatus,
+    showStatus,
+    tracks,
+  ]);
+
+  const handleFullscreenLyricsSwipeDown = useCallback(() => {
+    if (isOffline) {
+      showOfflineStatus();
+    } else {
+      handlePrevious();
+      if (!isListenSessionRemoteOnly) {
+        setTimeout(() => {
+          const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
+          const newTrack = tracks[newIndex];
+          if (newTrack) {
+            const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
+            showStatus(`⏮ ${newTrack.title}${artistInfo}`);
+          }
+        }, 150);
+      }
+    }
+  }, [
+    currentIndex,
+    handlePrevious,
+    isListenSessionRemoteOnly,
+    isOffline,
+    showOfflineStatus,
+    showStatus,
+    tracks.length,
+    tracks,
+  ]);
 
   const menuBar = (
     <KaraokeMenuBar
@@ -347,6 +417,14 @@ export function KaraokeAppComponent({
             restartAutoHideTimer();
           }}
         >
+          <KaraokeIosAutoplayWatchdog
+            listenSession={listenSession}
+            isListenSessionDj={isListenSessionDj}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            showStatus={showStatus}
+            userHasInteractedRef={userHasInteractedRef}
+          />
           {/* Reaction overlay for listen sessions */}
           {listenSession && !isSyncModeOpen && (
             <ReactionOverlay className="z-40" />
@@ -473,62 +551,56 @@ export function KaraokeAppComponent({
             )}
           </AnimatePresence>
 
-          {/* Lyrics overlay */}
-          {showLyrics && currentTrack && !isFullScreen && (
-            <>
-              <div className="absolute inset-0 z-10 bg-black/50 pointer-events-none" />
-              <div className="absolute inset-0 z-20 pointer-events-none karaoke-force-font">
-                <LyricsDisplay
-                  lines={lyricsControls.lines}
-                  originalLines={lyricsControls.originalLines}
-                  currentLine={lyricsControls.currentLine}
-                  isLoading={lyricsControls.isLoading}
-                  error={lyricsControls.error}
-                  visible={true}
-                  videoVisible={true}
-                  alignment={lyricsAlignment}
-                  koreanDisplay={koreanDisplay}
-                  japaneseFurigana={japaneseFurigana}
-                  fontClassName={lyricsFontClassName}
-                  onAdjustOffset={(delta) => {
-                    adjustLyricOffset(currentIndex, delta);
-                    const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
-                    const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-                    showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                    lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
-                  }}
-                  onSwipeUp={() => {
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      handleNext();
-                    }
-                  }}
-                  onSwipeDown={() => {
-                    if (isOffline) {
-                      showOfflineStatus();
-                    } else {
-                      handlePrevious();
-                    }
-                  }}
-                  isTranslating={lyricsControls.isTranslating}
-                  textSizeClass="karaoke-lyrics-text"
-                  gapClass="gap-1"
-                  containerStyle={{
-                    gap: "clamp(0.3rem, 2.5cqw, 1rem)",
-                  }}
-                  interactive={true}
-                  bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-12"}
-                  furiganaMap={furiganaMap}
-                  soramimiMap={soramimiMap}
-                  currentTimeMs={(displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
-                  showInterludeEllipsis
-                  onSeekToTime={seekToTime}
-                  coverUrl={coverUrl}
-                />
-              </div>
-            </>
-          )}
+          <KaraokeLyricsPlaybackProvider
+            currentTrack={currentTrack}
+            lyricsFont={lyricsFont}
+            romanization={romanization}
+            lyricsTranslationLanguage={lyricsTranslationLanguage}
+            lyricsSourceOverride={lyricsSourceOverride}
+            isAddingSong={isAddingSong}
+            setIsLyricsSearchDialogOpen={setIsLyricsSearchDialogOpen}
+            t={t}
+            auth={auth}
+            lyricsPlaybackSyncRef={lyricsPlaybackSyncRef}
+          >
+            <KaraokeWindowLyricsOverlay
+              showLyrics={showLyrics}
+              isFullScreen={isFullScreen}
+              showControls={showControls}
+              anyMenuOpen={anyMenuOpen}
+              isPlaying={isPlaying}
+              coverUrl={coverUrl}
+              isOffline={isOffline}
+              currentIndex={currentIndex}
+              adjustLyricOffset={adjustLyricOffset}
+              showStatus={showStatus}
+              showOfflineStatus={showOfflineStatus}
+              handleNext={handleNext}
+              handlePrevious={handlePrevious}
+              seekToTime={seekToTime}
+              t={t}
+              currentTrack={currentTrack}
+              koreanDisplay={koreanDisplay}
+              japaneseFurigana={japaneseFurigana}
+              lyricsAlignment={lyricsAlignment}
+            />
+            <KaraokeLyricsActivityIndicator />
+            <KaraokeSyncModeWindowPanel
+              isSyncModeOpen={isSyncModeOpen}
+              isFullScreen={isFullScreen}
+              currentTrack={currentTrack}
+              currentIndex={currentIndex}
+              duration={duration}
+              romanization={romanization}
+              setLyricOffset={setLyricOffset}
+              adjustLyricOffset={adjustLyricOffset}
+              playerRef={playerRef}
+              closeSyncMode={closeSyncMode}
+              handleRefreshLyrics={handleRefreshLyrics}
+              showStatus={showStatus}
+              t={t}
+            />
+          </KaraokeLyricsPlaybackProvider>
 
           {/* CoverFlow overlay - full height, below notitlebar (z-50) */}
           {tracks.length > 0 && (
@@ -572,24 +644,6 @@ export function KaraokeAppComponent({
                     {statusMessage}
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Activity indicator - scales with container size */}
-          <AnimatePresence>
-            {hasActiveActivity && (
-              <motion.div
-                className="absolute top-8 right-6 z-40 pointer-events-none flex justify-end"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ActivityIndicatorWithLabel
-                  size={32}
-                  state={activityState}
-                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -737,43 +791,22 @@ export function KaraokeAppComponent({
           onClose={() => setIsJoinListenDialogOpen(false)}
           onJoin={handleJoinListenSession}
         />
-
-        {/* Lyrics Sync Mode (non-fullscreen only - fullscreen renders in portal) */}
-        {/* z-40 so the notitlebar hover titlebar (z-50) appears above it */}
-        {!isFullScreen && isSyncModeOpen && lyricsControls.originalLines.length > 0 && (
-          <div className="absolute inset-0 z-40" style={{ borderRadius: "inherit" }}>
-            <LyricsSyncMode
-              lines={lyricsControls.originalLines}
-              currentTimeMs={displayElapsedTime * 1000}
-              durationMs={duration * 1000}
-              currentOffset={currentTrack?.lyricOffset ?? 0}
-              romanization={romanization}
-              furiganaMap={furiganaMap}
-              onSetOffset={(offsetMs) => {
-                setLyricOffset(currentIndex, offsetMs);
-                showStatus(
-                  `${t("apps.ipod.status.offset")} ${offsetMs >= 0 ? "+" : ""}${(offsetMs / 1000).toFixed(2)}s`
-                );
-              }}
-              onAdjustOffset={(deltaMs) => {
-                adjustLyricOffset(currentIndex, deltaMs);
-                const newOffset = (currentTrack?.lyricOffset ?? 0) + deltaMs;
-                showStatus(
-                  `${t("apps.ipod.status.offset")} ${newOffset >= 0 ? "+" : ""}${(newOffset / 1000).toFixed(2)}s`
-                );
-              }}
-              onSeek={(timeMs) => {
-                playerRef.current?.seekTo(timeMs / 1000);
-              }}
-              onClose={closeSyncMode}
-              onSearchLyrics={handleRefreshLyrics}
-            />
-          </div>
-        )}
       </WindowFrame>
 
       {/* Full screen portal */}
       {isFullScreen && (
+        <KaraokeLyricsPlaybackProvider
+          currentTrack={currentTrack}
+          lyricsFont={lyricsFont}
+          romanization={romanization}
+          lyricsTranslationLanguage={lyricsTranslationLanguage}
+          lyricsSourceOverride={lyricsSourceOverride}
+          isAddingSong={isAddingSong}
+          setIsLyricsSearchDialogOpen={setIsLyricsSearchDialogOpen}
+          t={t}
+          auth={auth}
+          lyricsPlaybackSyncRef={lyricsPlaybackSyncRef}
+        >
         <FullScreenPortal
           onClose={toggleFullScreen}
           togglePlay={handlePlayPause}
@@ -818,38 +851,24 @@ export function KaraokeAppComponent({
           onDisplayModeSelect={handleDisplayModeSelect}
           displayModeOptions={displayModeOptions}
           syncModeContent={
-            lyricsControls.originalLines.length > 0 ? (
-              <LyricsSyncMode
-                lines={lyricsControls.originalLines}
-                currentTimeMs={displayElapsedTime * 1000}
-                durationMs={duration * 1000}
-                currentOffset={currentTrack?.lyricOffset ?? 0}
-                romanization={romanization}
-                furiganaMap={furiganaMap}
-                onSetOffset={(offsetMs) => {
-                  setLyricOffset(currentIndex, offsetMs);
-                  showStatus(
-                    `${t("apps.ipod.status.offset")} ${offsetMs >= 0 ? "+" : ""}${(offsetMs / 1000).toFixed(2)}s`
-                  );
-                }}
-                onAdjustOffset={(deltaMs) => {
-                  adjustLyricOffset(currentIndex, deltaMs);
-                  const newOffset = (currentTrack?.lyricOffset ?? 0) + deltaMs;
-                  showStatus(
-                    `${t("apps.ipod.status.offset")} ${newOffset >= 0 ? "+" : ""}${(newOffset / 1000).toFixed(2)}s`
-                  );
-                }}
-                onSeek={(timeMs) => {
-                  const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-                  activePlayer?.seekTo(timeMs / 1000);
-                }}
-                onClose={closeSyncMode}
-                onSearchLyrics={handleRefreshLyrics}
-              />
-            ) : undefined
+            <KaraokeSyncModeFullscreenPanel
+              isSyncModeOpen={isSyncModeOpen}
+              isFullScreen={isFullScreen}
+              currentTrack={currentTrack}
+              currentIndex={currentIndex}
+              duration={duration}
+              romanization={romanization}
+              setLyricOffset={setLyricOffset}
+              adjustLyricOffset={adjustLyricOffset}
+              fullScreenPlayerRef={fullScreenPlayerRef}
+              playerRef={playerRef}
+              closeSyncMode={closeSyncMode}
+              handleRefreshLyrics={handleRefreshLyrics}
+              showStatus={showStatus}
+              t={t}
+            />
           }
           fullScreenPlayerRef={fullScreenPlayerRef}
-          activityState={activityState}
         >
           {({ controlsVisible }) => (
             <div className="flex flex-col w-full h-full">
@@ -975,89 +994,31 @@ export function KaraokeAppComponent({
                   )}
                 </AnimatePresence>
 
-                {/* Lyrics overlays - positioned relative to viewport, not video container */}
-                {showLyrics && currentTrack && (
-                  <div className="fixed inset-0 bg-black/50 z-10 pointer-events-none" />
-                )}
-
-                {showLyrics && currentTrack && (
-                  <div className="absolute inset-0 z-20 pointer-events-none" data-lyrics>
-                    <LyricsDisplay
-                      lines={lyricsControls.lines}
-                      originalLines={lyricsControls.originalLines}
-                      currentLine={lyricsControls.currentLine}
-                      isLoading={lyricsControls.isLoading}
-                      error={lyricsControls.error}
-                      visible={true}
-                      videoVisible={true}
-                      alignment={lyricsAlignment}
-                      koreanDisplay={koreanDisplay}
-                      japaneseFurigana={japaneseFurigana}
-                      fontClassName={lyricsFontClassName}
-                      onAdjustOffset={(delta) => {
-                        adjustLyricOffset(currentIndex, delta);
-                        const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
-                        const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-                        showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-                        lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
-                      }}
-                      onSwipeUp={() => {
-                        if (isOffline) {
-                          showOfflineStatus();
-                        } else {
-                          handleNext();
-                          if (!isListenSessionRemoteOnly) {
-                            setTimeout(() => {
-                              const newIndex = (currentIndex + 1) % tracks.length;
-                              const newTrack = tracks[newIndex];
-                              if (newTrack) {
-                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                                showStatus(`⏭ ${newTrack.title}${artistInfo}`);
-                              }
-                            }, 150);
-                          }
-                        }
-                      }}
-                      onSwipeDown={() => {
-                        if (isOffline) {
-                          showOfflineStatus();
-                        } else {
-                          handlePrevious();
-                          if (!isListenSessionRemoteOnly) {
-                            setTimeout(() => {
-                              const newIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
-                              const newTrack = tracks[newIndex];
-                              if (newTrack) {
-                                const artistInfo = newTrack.artist ? ` - ${newTrack.artist}` : "";
-                                showStatus(`⏮ ${newTrack.title}${artistInfo}`);
-                              }
-                            }, 150);
-                          }
-                        }
-                      }}
-                      isTranslating={lyricsControls.isTranslating}
-                      textSizeClass="fullscreen-lyrics-text"
-                      gapClass="gap-0"
-                      containerStyle={{
-                        gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
-                        paddingLeft: "env(safe-area-inset-left, 0px)",
-                        paddingRight: "env(safe-area-inset-right, 0px)",
-                      }}
-                      interactive={true}
-                      bottomPaddingClass={controlsVisible ? "pb-28" : "pb-16"}
-                      furiganaMap={furiganaMap}
-                      soramimiMap={soramimiMap}
-                      currentTimeMs={(displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
-                      showInterludeEllipsis
-                      onSeekToTime={seekToTime}
-                      coverUrl={coverUrl}
-                    />
-                  </div>
-                )}
+                <KaraokeFullscreenLyricsOverlay
+                  showLyrics={showLyrics}
+                  currentTrack={currentTrack}
+                  coverUrl={coverUrl}
+                  isOffline={isOffline}
+                  currentIndex={currentIndex}
+                  adjustLyricOffset={adjustLyricOffset}
+                  showStatus={showStatus}
+                  showOfflineStatus={showOfflineStatus}
+                  handleNext={handleNext}
+                  handlePrevious={handlePrevious}
+                  seekToTime={seekToTime}
+                  t={t}
+                  controlsVisible={controlsVisible}
+                  koreanDisplay={koreanDisplay}
+                  japaneseFurigana={japaneseFurigana}
+                  lyricsAlignment={lyricsAlignment}
+                  onSwipeUp={handleFullscreenLyricsSwipeUp}
+                  onSwipeDown={handleFullscreenLyricsSwipeDown}
+                />
               </div>
             </div>
           )}
         </FullScreenPortal>
+        </KaraokeLyricsPlaybackProvider>
       )}
     </>
   );
