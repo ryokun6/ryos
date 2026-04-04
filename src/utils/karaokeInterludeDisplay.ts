@@ -259,8 +259,10 @@ export function applyKaraokeInterludeEllipsis({
     alignment === LyricsAlignment.Alternating ? { dotsInlineWithNext: true } : undefined
   );
 
+  // Center mode: show the upcoming line immediately (static / "cleared") alongside dots,
+  // not only after the interlude ends (FocusThree already keeps next in `visibleLines`).
   if (alignment === LyricsAlignment.Center) {
-    return [placeholder];
+    return [placeholder, nextLine];
   }
 
   return visibleLines.map((line) => (line === currentLine ? placeholder : line));

@@ -192,6 +192,26 @@ describe("karaoke interlude ellipsis", () => {
     expect(getInterludeDotsFadeOpacity(12000, 12000)).toBe(1);
   });
 
+  test("center mode long gap: shows placeholder and next line so upcoming lyric is visible with dots", () => {
+    const lines = [
+      makeLine(0, "Verse line"),
+      makeLine(15000, "Next line"),
+    ];
+
+    const visible = applyKaraokeInterludeEllipsis({
+      visibleLines: [lines[0]],
+      allLines: lines,
+      alignment: LyricsAlignment.Center,
+      currentIndex: 0,
+      currentTimeMs: 5000,
+      enabled: true,
+    });
+
+    expect(visible).toHaveLength(2);
+    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
+    expect(visible[1]).toBe(lines[1]);
+  });
+
   test("does not show ellipsis for ordinary short gaps", () => {
     const lines = [
       makeLine(0, "Line one"),
