@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
 } from "react";
 import type { CSSProperties, ReactNode } from "react";
@@ -2126,7 +2127,7 @@ export function LyricsDisplay({
   const prevActualCurrentLineRef = useRef(actualCurrentLine);
 
   // Update alternating lines - instantly on song/translation change, delayed for line transitions
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (alignment !== LyricsAlignment.Alternating) {
       prevActualCurrentLineRef.current = actualCurrentLine;
       return;
