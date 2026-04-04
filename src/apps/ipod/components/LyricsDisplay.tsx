@@ -39,6 +39,7 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
+  getGapInterludeInlineLead,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
   isInterludePlaceholderLine,
@@ -2216,6 +2217,21 @@ export function LyricsDisplay({
     [alignment, showInterludeEllipsis, actualCurrentLine, displayOriginalLines, currentTimeMs]
   );
 
+  const gapInterludeInlineLead = useMemo(
+    () =>
+      alignment === LyricsAlignment.Alternating &&
+      showInterludeEllipsis &&
+      actualCurrentLine >= 0
+        ? getGapInterludeInlineLead(
+            displayOriginalLines,
+            actualCurrentLine,
+            currentTimeMs,
+            showInterludeEllipsis
+          )
+        : null,
+    [alignment, showInterludeEllipsis, actualCurrentLine, displayOriginalLines, currentTimeMs]
+  );
+
   // Track touch start position and accumulated movement
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const accumulatedDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -2415,22 +2431,28 @@ export function LyricsDisplay({
           const prevVisible = index > 0 ? visibleLines[index - 1] : undefined;
           const nextVisible =
             index < visibleLines.length - 1 ? visibleLines[index + 1] : undefined;
-          /** Gap dots sit inline on the lyric *after* the placeholder. Alternating order is either [placeholder, nextLyric] or [nextLyric, placeholder] depending on line index parity — only the former has the placeholder in prevVisible. */
+          /** Gap dots sit inline on the lyric *after* the placeholder. Alternating order is either [placeholder, nextLyric] or [nextLyric, placeholder] depending on line index parity — only the former has the placeholder in prevVisible. Long gap + alternating: [next, next+1] with inline dots on next via {@link getGapInterludeInlineLead}. */
           const interludeLeadForRow =
             introInterludeLead &&
             !isInterludePlaceholder &&
             line.startTimeMs === displayOriginalLines[0]?.startTimeMs &&
             actualCurrentLine < 0
               ? introInterludeLead
-              : prevVisible &&
-                  isInterludePlaceholderLine(prevVisible) &&
-                  prevVisible.dotsInlineWithNext
-                ? prevVisible
-                : nextVisible &&
-                    isInterludePlaceholderLine(nextVisible) &&
-                    nextVisible.dotsInlineWithNext
-                  ? nextVisible
-                  : undefined;
+              : gapInterludeInlineLead &&
+                  !isInterludePlaceholder &&
+                  actualCurrentLine >= 0 &&
+                  line.startTimeMs ===
+                    displayOriginalLines[actualCurrentLine + 1]?.startTimeMs
+                ? gapInterludeInlineLead
+                : prevVisible &&
+                    isInterludePlaceholderLine(prevVisible) &&
+                    prevVisible.dotsInlineWithNext
+                  ? prevVisible
+                  : nextVisible &&
+                      isInterludePlaceholderLine(nextVisible) &&
+                      nextVisible.dotsInlineWithNext
+                    ? nextVisible
+                    : undefined;
 
           const interludeInlineDotsLine =
             interludeLeadForRow && currentTimeMs !== undefined

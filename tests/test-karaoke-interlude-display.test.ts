@@ -4,6 +4,7 @@ import { LyricsAlignment, type LyricLine } from "../src/types/lyrics";
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
+  getGapInterludeInlineLead,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
   isInterludePlaceholderLine,
@@ -101,10 +102,11 @@ describe("karaoke interlude ellipsis", () => {
     expect(getIntroInterludeInlineLead(twoLineSong, 4000, true)).not.toBeNull();
   });
 
-  test("alternating gap placeholder flags dotsInlineWithNext for inline lead on the next row", () => {
+  test("alternating long gap: shows next two lyrics (drops previous line); inline lead via getGapInterludeInlineLead", () => {
     const lines = [
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
+      makeLine(28000, "Third line"),
     ];
 
     const visible = applyKaraokeInterludeEllipsis({
@@ -116,10 +118,26 @@ describe("karaoke interlude ellipsis", () => {
       enabled: true,
     });
 
-    expect(visible).toHaveLength(2);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
-    expect(visible[0]!.dotsInlineWithNext).toBe(true);
-    expect(visible[1]).toBe(lines[1]);
+    expect(visible).toEqual([lines[1], lines[2]]);
+    expect(isInterludePlaceholderLine(visible[0]!)).toBe(false);
+    const lead = getGapInterludeInlineLead(lines, 0, 5000, true);
+    expect(lead).not.toBeNull();
+    expect(lead!.dotsInlineWithNext).toBe(true);
+  });
+
+  test("alternating long gap with only two lines: shows upcoming line only", () => {
+    const lines = [makeLine(0, "Verse line"), makeLine(15000, "Next line")];
+
+    const visible = applyKaraokeInterludeEllipsis({
+      visibleLines: [lines[0], lines[1]],
+      allLines: lines,
+      alignment: LyricsAlignment.Alternating,
+      currentIndex: 0,
+      currentTimeMs: 5000,
+      enabled: true,
+    });
+
+    expect(visible).toEqual([lines[1]]);
   });
 
   test("buildInterludeLyricLineWithWordTimings splits the silent gap into three timed words", () => {
@@ -127,14 +145,7 @@ describe("karaoke interlude ellipsis", () => {
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
     ];
-    const placeholder = applyKaraokeInterludeEllipsis({
-      visibleLines: [lines[0], lines[1]],
-      allLines: lines,
-      alignment: LyricsAlignment.Alternating,
-      currentIndex: 0,
-      currentTimeMs: 5000,
-      enabled: true,
-    })[0];
+    const placeholder = getGapInterludeInlineLead(lines, 0, 5000, true);
     if (!isInterludePlaceholderLine(placeholder!)) throw new Error("expected placeholder");
 
     const timed = buildInterludeLyricLineWithWordTimings(placeholder, lines, 0);
@@ -145,31 +156,22 @@ describe("karaoke interlude ellipsis", () => {
     expect(timed.startTimeMs).toBe("12000");
   });
 
-  test("replaces the held current line with placeholder after delay; countdownStartMs matches dot fill", () => {
+  test("gap inline lead countdownStartMs matches dot fill segment start", () => {
     const lines = [
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
     ];
 
-    const visible = applyKaraokeInterludeEllipsis({
-      visibleLines: [lines[0], lines[1]],
-      allLines: lines,
-      alignment: LyricsAlignment.Alternating,
-      currentIndex: 0,
-      currentTimeMs: 5000,
-      enabled: true,
-    });
-
-    expect(visible).toHaveLength(2);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
-    expect(visible[0]!.countdownStartMs).toBe(12000);
-    expect(visible[1]).toBe(lines[1]);
+    const lead = getGapInterludeInlineLead(lines, 0, 5000, true);
+    expect(lead).not.toBeNull();
+    expect(lead!.countdownStartMs).toBe(12000);
   });
 
-  test("keeps the upcoming lyric visible while ellipsis leads into a long gap", () => {
+  test("alternating long gap near next line start: still shows next two lines when a third exists", () => {
     const lines = [
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
+      makeLine(28000, "Third line"),
     ];
 
     const visible = applyKaraokeInterludeEllipsis({
@@ -181,9 +183,7 @@ describe("karaoke interlude ellipsis", () => {
       enabled: true,
     });
 
-    expect(visible).toHaveLength(2);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
-    expect(visible[1]).toBe(lines[1]);
+    expect(visible).toEqual([lines[1], lines[2]]);
   });
 
   test("getInterludeDotsFadeOpacity rests dim then ramps to full at countdownStartMs", () => {
