@@ -6,6 +6,7 @@ import {
   buildInterludeLyricLineWithWordTimings,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
+  hasLongInterludeAtTime,
   isInterludeInlineLyricLine,
   isInterludePlaceholderLine,
 } from "../src/utils/karaokeInterludeDisplay";
@@ -216,6 +217,16 @@ describe("karaoke interlude ellipsis", () => {
     expect(getInterludeDotsFadeOpacity(11400, 12000)).toBe(0.4);
     expect(getInterludeDotsFadeOpacity(11775, 12000)).toBeCloseTo(0.7, 5);
     expect(getInterludeDotsFadeOpacity(12000, 12000)).toBe(1);
+  });
+
+  test("hasLongInterludeAtTime turns off exactly when the upcoming line starts", () => {
+    const lines = [
+      makeLine(0, "Verse line"),
+      makeLine(15000, "Next line"),
+    ];
+
+    expect(hasLongInterludeAtTime(lines, 0, 14999)).toBe(true);
+    expect(hasLongInterludeAtTime(lines, 0, 15000)).toBe(false);
   });
 
   test("does not show ellipsis for ordinary short gaps", () => {

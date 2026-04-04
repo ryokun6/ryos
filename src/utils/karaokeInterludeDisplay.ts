@@ -131,18 +131,42 @@ function hasLongInterlude(
   nextLine: LyricLine,
   currentTimeMs: number
 ): boolean {
-  const currentLineEndMs = getLineEndMs(currentLine);
-  const nextLineStartMs = getLineStartMs(nextLine);
-  const silentGapMs = nextLineStartMs - currentLineEndMs;
-
-  if (silentGapMs < LONG_INTERLUDE_THRESHOLD_MS) {
+  if (!hasLongInterludeGap(currentLine, nextLine)) {
     return false;
   }
 
+  const currentLineEndMs = getLineEndMs(currentLine);
+  const nextLineStartMs = getLineStartMs(nextLine);
   return (
     currentTimeMs >= currentLineEndMs + INTERLUDE_PLACEHOLDER_DELAY_MS &&
     currentTimeMs < nextLineStartMs
   );
+}
+
+function hasLongInterludeGap(currentLine: LyricLine, nextLine: LyricLine): boolean {
+  const currentLineEndMs = getLineEndMs(currentLine);
+  const nextLineStartMs = getLineStartMs(nextLine);
+  const silentGapMs = nextLineStartMs - currentLineEndMs;
+
+  return silentGapMs >= LONG_INTERLUDE_THRESHOLD_MS;
+}
+
+export function hasLongInterludeAtTime(
+  allLines: LyricLine[],
+  currentIndex: number,
+  currentTimeMs: number
+): boolean {
+  if (currentIndex < 0) {
+    return false;
+  }
+
+  const currentLine = allLines[currentIndex];
+  const nextLine = allLines[currentIndex + 1];
+  if (!currentLine || !nextLine) {
+    return false;
+  }
+
+  return hasLongInterlude(currentLine, nextLine, currentTimeMs);
 }
 
 export function isInterludePlaceholderLine(

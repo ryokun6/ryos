@@ -39,6 +39,7 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
+  hasLongInterludeAtTime,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
   isInterludeInlineLyricLine,
@@ -2122,6 +2123,7 @@ export function LyricsDisplay({
 
   // Track previous lines array to detect song/translation changes
   const prevLinesRef = useRef<LyricLine[]>(displayOriginalLines);
+  const prevWasLongInterludeRef = useRef(false);
 
   // Update alternating lines - instantly on song/translation change, delayed for line transitions
   useEffect(() => {
@@ -2130,9 +2132,15 @@ export function LyricsDisplay({
     // Check if lines array changed (new song or translation switch)
     const linesChanged = prevLinesRef.current !== displayOriginalLines;
     prevLinesRef.current = displayOriginalLines;
+    const isInLongInterlude =
+      currentTimeMs !== undefined &&
+      actualCurrentLine >= 0 &&
+      hasLongInterludeAtTime(displayOriginalLines, actualCurrentLine, currentTimeMs);
+    const exitedLongInterlude = prevWasLongInterludeRef.current && !isInLongInterlude;
+    prevWasLongInterludeRef.current = isInLongInterlude;
 
     // Instantly update on song load, translation switch, or initial state
-    if (linesChanged || actualCurrentLine < 0) {
+    if (linesChanged || actualCurrentLine < 0 || exitedLongInterlude) {
       setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
       return;
     }
@@ -2161,7 +2169,7 @@ export function LyricsDisplay({
     }, delayMs);
 
     return () => clearTimeout(timer);
-  }, [alignment, displayOriginalLines, actualCurrentLine]);
+  }, [alignment, displayOriginalLines, actualCurrentLine, currentTimeMs]);
 
   const nonAltVisibleLines = useMemo(() => {
     if (!displayOriginalLines.length) return [] as LyricLine[];
