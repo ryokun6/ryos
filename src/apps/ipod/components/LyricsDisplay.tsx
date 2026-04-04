@@ -2396,14 +2396,31 @@ export function LyricsDisplay({
           const lineActualIdx = isInterludePlaceholder
             ? line.anchorLineIndex
             : displayOriginalLines.indexOf(line);
-          const isCurrent = isInterludePlaceholder
-            ? actualCurrentLine < 0
-              ? true
-              : line.anchorLineIndex === actualCurrentLine
-            : line === displayOriginalLines[actualCurrentLine];
+          const isAlternatingGapInterlude =
+            alignment === LyricsAlignment.Alternating &&
+            showInterludeEllipsis &&
+            actualCurrentLine >= 0 &&
+            gapInterludeInlineLead !== null &&
+            currentTimeMs !== undefined;
+
+          const isCurrent = isAlternatingGapInterlude &&
+            !isInterludePlaceholder &&
+            line === displayOriginalLines[actualCurrentLine + 1]
+            ? false
+            : isInterludePlaceholder
+              ? actualCurrentLine < 0
+                ? true
+                : line.anchorLineIndex === actualCurrentLine
+              : line === displayOriginalLines[actualCurrentLine];
           let position = 0;
           if (alignment === LyricsAlignment.Alternating) {
-            position = isCurrent ? 0 : 1;
+            if (isAlternatingGapInterlude && !isInterludePlaceholder) {
+              // Visible order is [next+1, next] — index 0 top, 1 bottom matches pre-interlude
+              // [current, next] so the upcoming line does not swap vertical slots.
+              position = index;
+            } else {
+              position = isCurrent ? 0 : 1;
+            }
           } else {
             position =
               currentAnchorIdx >= 0 ? lineActualIdx - currentAnchorIdx : 0;

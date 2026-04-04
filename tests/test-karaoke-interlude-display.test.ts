@@ -118,7 +118,8 @@ describe("karaoke interlude ellipsis", () => {
       enabled: true,
     });
 
-    expect(visible).toEqual([lines[1], lines[2]]);
+    // Top slot = line after next, bottom = upcoming (same vertical slot as pre-interlude [current, next])
+    expect(visible).toEqual([lines[2], lines[1]]);
     expect(isInterludePlaceholderLine(visible[0]!)).toBe(false);
     const lead = getGapInterludeInlineLead(lines, 0, 5000, true);
     expect(lead).not.toBeNull();
@@ -183,7 +184,7 @@ describe("karaoke interlude ellipsis", () => {
       enabled: true,
     });
 
-    expect(visible).toEqual([lines[1], lines[2]]);
+    expect(visible).toEqual([lines[2], lines[1]]);
   });
 
   test("getInterludeDotsFadeOpacity rests dim then ramps to full at countdownStartMs", () => {

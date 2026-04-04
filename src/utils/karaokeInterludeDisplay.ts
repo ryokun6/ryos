@@ -266,10 +266,12 @@ export function applyKaraokeInterludeEllipsis({
   }
 
   // Alternating: drop the finished line — show the next two real lyrics with inline dots on the
-  // first (see getGapInterludeInlineLead in LyricsDisplay). No placeholder row / no anchor ghost.
+  // upcoming line (see getGapInterludeInlineLead). Order is [next+1, next] so the upcoming line
+  // stays in the same screen slot as before (bottom when current was on top); the top slot is
+  // replaced by the line after next, avoiding a vertical jump.
   if (alignment === LyricsAlignment.Alternating) {
     const afterNext = allLines[currentIndex + 2];
-    return afterNext !== undefined ? [nextLine, afterNext] : [nextLine];
+    return afterNext !== undefined ? [afterNext, nextLine] : [nextLine];
   }
 
   return visibleLines.map((line) => (line === currentLine ? placeholder : line));
@@ -281,7 +283,7 @@ export function applyKaraokeInterludeEllipsis({
  */
 /**
  * Long gap + alternating layout: same synthetic lead as the gap placeholder, but dots render
- * inline on the upcoming line — used when visible lines are [next, next+1] with no previous row.
+ * inline on the upcoming line — used when visible lines are [next+1, next] with no previous row.
  */
 export function getGapInterludeInlineLead(
   allLines: LyricLine[],
