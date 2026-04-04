@@ -2105,13 +2105,9 @@ export function LyricsDisplay({
     const clampedIdx = Math.min(currIdx, allLines.length - 1);
     const nextLine = allLines[clampedIdx + 1];
 
-    if (clampedIdx % 2 === 0) {
-      // Current is on top
-      return [allLines[clampedIdx], nextLine].filter(Boolean);
-    }
-
-    // Current is at bottom
-    return [nextLine, allLines[clampedIdx]].filter(Boolean);
+    // Always [current, next]: top row = active line, bottom = upcoming. Parity-based
+    // swap used to move the current line between rows and felt like positions jumping during playback.
+    return [allLines[clampedIdx], nextLine].filter(Boolean);
   };
 
   // State to hold lines displayed in Alternating mode so we can delay updates
