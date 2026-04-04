@@ -144,6 +144,36 @@ export function isInterludePlaceholderLine(
 }
 
 /**
+ * True when alternating layout should use the classic parity row swap (current top vs bottom)
+ * during intro or gap interlude dots — not during normal playback.
+ */
+export function isAlternatingInterludeDotsActive(
+  allLines: LyricLine[],
+  alignment: LyricsAlignment,
+  currentIndex: number,
+  currentTimeMs: number | undefined,
+  enabled: boolean
+): boolean {
+  if (
+    alignment !== LyricsAlignment.Alternating ||
+    !enabled ||
+    currentTimeMs === undefined ||
+    !allLines.length
+  ) {
+    return false;
+  }
+  if (currentIndex < 0) {
+    return hasLongIntro(allLines, currentTimeMs);
+  }
+  const currentLine = allLines[currentIndex];
+  const nextLine = allLines[currentIndex + 1];
+  if (!currentLine || !nextLine) {
+    return false;
+  }
+  return hasLongInterlude(currentLine, nextLine, currentTimeMs);
+}
+
+/**
  * Build a real {@link LyricLine} with synthetic word timings so interlude dots use the same
  * karaoke mask/outline path as timed lyrics. The three beats fall in a short countdown window
  * ending at the next line (see INTERLUDE_COUNTDOWN_TOTAL_MS), not across the full break.

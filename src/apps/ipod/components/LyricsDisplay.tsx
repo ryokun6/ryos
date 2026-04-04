@@ -42,6 +42,7 @@ import {
   getGapInterludeInlineLead,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
+  isAlternatingInterludeDotsActive,
   isInterludePlaceholderLine,
 } from "@/utils/karaokeInterludeDisplay";
 
@@ -2090,30 +2091,56 @@ export function LyricsDisplay({
     return "center";
   };
 
+  const interludeDotsParityRows = useMemo(
+    () =>
+      isAlternatingInterludeDotsActive(
+        displayOriginalLines,
+        alignment,
+        actualCurrentLine,
+        currentTimeMs,
+        showInterludeEllipsis
+      ),
+    [
+      displayOriginalLines,
+      alignment,
+      actualCurrentLine,
+      currentTimeMs,
+      showInterludeEllipsis,
+    ]
+  );
+
   // Helper to compute lines for Alternating alignment (current + next)
-  const computeAltVisibleLines = (
-    allLines: LyricLine[],
-    currIdx: number
-  ): LyricLine[] => {
-    if (!allLines.length) return [];
+  const computeAltVisibleLines = useCallback(
+    (allLines: LyricLine[], currIdx: number, parityInterludeRows: boolean): LyricLine[] => {
+      if (!allLines.length) return [];
 
-    // Initial state before any line is current
-    if (currIdx < 0) {
-      return allLines.slice(0, 2).filter(Boolean);
-    }
+      // Initial state before any line is current
+      if (currIdx < 0) {
+        return allLines.slice(0, 2).filter(Boolean);
+      }
 
-    const clampedIdx = Math.min(currIdx, allLines.length - 1);
-    const nextLine = allLines[clampedIdx + 1];
+      const clampedIdx = Math.min(currIdx, allLines.length - 1);
+      const nextLine = allLines[clampedIdx + 1];
 
-    // Always [current, next]: top row = active line, bottom = upcoming. Parity-based
-    // swap used to move the current line between rows and felt like positions jumping during playback.
-    return [allLines[clampedIdx], nextLine].filter(Boolean);
-  };
+      // Normal playback: stable [current, next] so the active line does not jump rows.
+      // Interlude dots (intro/gap): restore parity-based [current,next] vs [next,current] for the
+      // classic alternating look during ●●● only.
+      if (parityInterludeRows) {
+        if (clampedIdx % 2 === 0) {
+          return [allLines[clampedIdx], nextLine].filter(Boolean);
+        }
+        return [nextLine, allLines[clampedIdx]].filter(Boolean);
+      }
+
+      return [allLines[clampedIdx], nextLine].filter(Boolean);
+    },
+    []
+  );
 
   // State to hold lines displayed in Alternating mode so we can delay updates
   // Use displayOriginalLines to ensure word timings are included (not translated lines)
   const [altLines, setAltLines] = useState<LyricLine[]>(() =>
-    computeAltVisibleLines(displayOriginalLines, actualCurrentLine)
+    computeAltVisibleLines(displayOriginalLines, actualCurrentLine, false)
   );
 
   // Track previous lines array to detect song/translation changes
@@ -2130,12 +2157,30 @@ export function LyricsDisplay({
     prevLinesRef.current = displayOriginalLines;
 
     if (linesChanged || actualCurrentLine < 0) {
-      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
+      setAltLines(
+        computeAltVisibleLines(
+          displayOriginalLines,
+          actualCurrentLine,
+          interludeDotsParityRows
+        )
+      );
       return;
     }
 
-    setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
-  }, [alignment, displayOriginalLines, actualCurrentLine]);
+    setAltLines(
+      computeAltVisibleLines(
+        displayOriginalLines,
+        actualCurrentLine,
+        interludeDotsParityRows
+      )
+    );
+  }, [
+    alignment,
+    displayOriginalLines,
+    actualCurrentLine,
+    interludeDotsParityRows,
+    computeAltVisibleLines,
+  ]);
 
   const nonAltVisibleLines = useMemo(() => {
     if (!displayOriginalLines.length) return [] as LyricLine[];

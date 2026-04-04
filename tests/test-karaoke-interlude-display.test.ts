@@ -7,6 +7,7 @@ import {
   getGapInterludeInlineLead,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
+  isAlternatingInterludeDotsActive,
   isInterludePlaceholderLine,
 } from "../src/utils/karaokeInterludeDisplay";
 
@@ -211,6 +212,42 @@ describe("karaoke interlude ellipsis", () => {
     expect(visible).toHaveLength(2);
     expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
     expect(visible[1]).toBe(lines[1]);
+  });
+
+  test("isAlternatingInterludeDotsActive true only during long intro/gap when enabled", () => {
+    const longGap = [
+      makeLine(0, "A"),
+      makeLine(15000, "B"),
+    ];
+    expect(
+      isAlternatingInterludeDotsActive(
+        longGap,
+        LyricsAlignment.Alternating,
+        0,
+        5000,
+        true
+      )
+    ).toBe(true);
+    expect(
+      isAlternatingInterludeDotsActive(
+        longGap,
+        LyricsAlignment.Alternating,
+        0,
+        5000,
+        false
+      )
+    ).toBe(false);
+
+    const shortGap = [makeLine(0, "A"), makeLine(7000, "B")];
+    expect(
+      isAlternatingInterludeDotsActive(
+        shortGap,
+        LyricsAlignment.Alternating,
+        0,
+        5000,
+        true
+      )
+    ).toBe(false);
   });
 
   test("does not show ellipsis for ordinary short gaps", () => {
