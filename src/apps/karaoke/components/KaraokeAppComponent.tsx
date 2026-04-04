@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -172,14 +172,17 @@ export function KaraokeAppComponent({
     adjustLyricOffset,
   } = useKaraokeLogic({ isWindowOpen, isForeground, initialData, instanceId });
 
-  const displayModeOptions = [
-    { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-    { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
-    { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
-    { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-    { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
-    { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-  ];
+  const displayModeOptions = useMemo(
+    () => [
+      { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
+      { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
+      { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
+      { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
+      { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
+      { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
+    ],
+    [t]
+  );
 
   const handleDisplayModeSelect = useCallback(
     (value: DisplayMode) => {
@@ -198,42 +201,109 @@ export function KaraokeAppComponent({
     [setDisplayMode, showStatus, t]
   );
 
-  const menuBar = (
-    <KaraokeMenuBar
-      onClose={onClose}
-      onShowHelp={() => setIsHelpDialogOpen(true)}
-      onShowAbout={() => setIsAboutDialogOpen(true)}
-      onAddSong={handleAddSong}
-      onShareSong={handleShareSong}
-      onClearLibrary={() => setIsConfirmClearOpen(true)}
-      onSyncLibrary={manualSync}
-      onPlayTrack={handlePlayTrack}
-      onTogglePlay={handlePlayPause}
-      onPreviousTrack={handlePrevious}
-      onNextTrack={handleNext}
-      isPlaying={isPlaying}
-      isShuffled={isShuffled}
-      onToggleShuffle={toggleShuffle}
-      loopAll={loopAll}
-      onToggleLoopAll={toggleLoopAll}
-      loopCurrent={loopCurrent}
-      onToggleLoopCurrent={toggleLoopCurrent}
-      showLyrics={showLyrics}
-      onToggleLyrics={toggleLyrics}
-      onToggleFullScreen={toggleFullScreen}
-      onRefreshLyrics={handleRefreshLyrics}
-      onAdjustTiming={() => setIsSyncModeOpen(true)}
-      tracks={tracks}
-      currentIndex={currentIndex}
-      onToggleCoverFlow={handleToggleCoverFlow}
-      onStartListenSession={handleStartListenSession}
-      onJoinListenSession={() => setIsJoinListenDialogOpen(true)}
-      onShareListenSession={() => setIsListenInviteOpen(true)}
-      onLeaveListenSession={handleLeaveListenSession}
-      isInListenSession={!!listenSession}
-      isListenSessionHost={isListenSessionHost}
-    />
+  const openHelpDialog = useCallback(() => {
+    setIsHelpDialogOpen(true);
+  }, [setIsHelpDialogOpen]);
+
+  const openAboutDialog = useCallback(() => {
+    setIsAboutDialogOpen(true);
+  }, [setIsAboutDialogOpen]);
+
+  const openClearLibraryConfirm = useCallback(() => {
+    setIsConfirmClearOpen(true);
+  }, [setIsConfirmClearOpen]);
+
+  const openSyncMode = useCallback(() => {
+    setIsSyncModeOpen(true);
+  }, [setIsSyncModeOpen]);
+
+  const toggleSyncMode = useCallback(() => {
+    setIsSyncModeOpen((prev) => !prev);
+  }, [setIsSyncModeOpen]);
+
+  const openJoinListenDialog = useCallback(() => {
+    setIsJoinListenDialogOpen(true);
+  }, [setIsJoinListenDialogOpen]);
+
+  const openListenInviteDialog = useCallback(() => {
+    setIsListenInviteOpen(true);
+  }, [setIsListenInviteOpen]);
+
+  const menuBar = useMemo(
+    () => (
+      <KaraokeMenuBar
+        onClose={onClose}
+        onShowHelp={openHelpDialog}
+        onShowAbout={openAboutDialog}
+        onAddSong={handleAddSong}
+        onShareSong={handleShareSong}
+        onClearLibrary={openClearLibraryConfirm}
+        onSyncLibrary={manualSync}
+        onPlayTrack={handlePlayTrack}
+        onTogglePlay={handlePlayPause}
+        onPreviousTrack={handlePrevious}
+        onNextTrack={handleNext}
+        isPlaying={isPlaying}
+        isShuffled={isShuffled}
+        onToggleShuffle={toggleShuffle}
+        loopAll={loopAll}
+        onToggleLoopAll={toggleLoopAll}
+        loopCurrent={loopCurrent}
+        onToggleLoopCurrent={toggleLoopCurrent}
+        showLyrics={showLyrics}
+        onToggleLyrics={toggleLyrics}
+        onToggleFullScreen={toggleFullScreen}
+        onRefreshLyrics={handleRefreshLyrics}
+        onAdjustTiming={openSyncMode}
+        tracks={tracks}
+        currentIndex={currentIndex}
+        onToggleCoverFlow={handleToggleCoverFlow}
+        onStartListenSession={handleStartListenSession}
+        onJoinListenSession={openJoinListenDialog}
+        onShareListenSession={openListenInviteDialog}
+        onLeaveListenSession={handleLeaveListenSession}
+        isInListenSession={!!listenSession}
+        isListenSessionHost={isListenSessionHost}
+      />
+    ),
+    [
+      onClose,
+      openHelpDialog,
+      openAboutDialog,
+      handleAddSong,
+      handleShareSong,
+      openClearLibraryConfirm,
+      manualSync,
+      handlePlayTrack,
+      handlePlayPause,
+      handlePrevious,
+      handleNext,
+      isPlaying,
+      isShuffled,
+      toggleShuffle,
+      loopAll,
+      toggleLoopAll,
+      loopCurrent,
+      toggleLoopCurrent,
+      showLyrics,
+      toggleLyrics,
+      toggleFullScreen,
+      handleRefreshLyrics,
+      openSyncMode,
+      tracks,
+      currentIndex,
+      handleToggleCoverFlow,
+      handleStartListenSession,
+      openJoinListenDialog,
+      openListenInviteDialog,
+      handleLeaveListenSession,
+      listenSession,
+      isListenSessionHost,
+    ]
   );
+
+  const lyricsCurrentTimeMs =
+    (displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000;
   const shouldAnimateVisuals =
     isPlaying && (isForeground ?? true) && !isListenSessionRemoteOnly;
 
@@ -521,7 +591,7 @@ export function KaraokeAppComponent({
                   bottomPaddingClass={showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-12"}
                   furiganaMap={furiganaMap}
                   soramimiMap={soramimiMap}
-                  currentTimeMs={(displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                  currentTimeMs={lyricsCurrentTimeMs}
                   showInterludeEllipsis
                   onSeekToTime={seekToTime}
                   coverUrl={coverUrl}
@@ -651,7 +721,7 @@ export function KaraokeAppComponent({
               displayMode={displayMode}
               onDisplayModeSelect={handleDisplayModeSelect}
               displayModeOptions={displayModeOptions}
-              onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
+              onSyncMode={toggleSyncMode}
               currentAlignment={lyricsAlignment}
               onAlignmentCycle={cycleAlignment}
               currentFont={lyricsFont}
@@ -812,7 +882,7 @@ export function KaraokeAppComponent({
           onCycleLyricsFont={cycleLyricsFont}
           romanization={romanization}
           onRomanizationChange={setRomanization}
-          onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
+          onSyncMode={toggleSyncMode}
           isSyncModeOpen={isSyncModeOpen}
           displayMode={displayMode}
           onDisplayModeSelect={handleDisplayModeSelect}
@@ -1047,7 +1117,7 @@ export function KaraokeAppComponent({
                       bottomPaddingClass={controlsVisible ? "pb-28" : "pb-16"}
                       furiganaMap={furiganaMap}
                       soramimiMap={soramimiMap}
-                      currentTimeMs={(displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
+                      currentTimeMs={lyricsCurrentTimeMs}
                       showInterludeEllipsis
                       onSeekToTime={seekToTime}
                       coverUrl={coverUrl}

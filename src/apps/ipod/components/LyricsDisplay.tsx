@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import {
+  memo,
   useMemo,
   useRef,
   useState,
@@ -1301,7 +1302,11 @@ function LyricsLineRowContent({
     interludeInlineCountdownStartMs !== undefined
   );
   const [dotsExitDone, setDotsExitDone] = useState(true);
-  if (dotsActive && dotsExitDone) setDotsExitDone(false);
+  useEffect(() => {
+    if (dotsActive) {
+      setDotsExitDone(false);
+    }
+  }, [dotsActive]);
 
   return (
     <>
@@ -1722,6 +1727,100 @@ function LyricsLineRowContent({
     </>
   );
 }
+
+function areWordTimingsEquivalent(
+  prev?: LyricWord[],
+  next?: LyricWord[]
+): boolean {
+  if (prev === next) return true;
+  if (!prev || !next) return prev === next;
+  if (prev.length !== next.length) return false;
+
+  for (let index = 0; index < prev.length; index += 1) {
+    const prevWord = prev[index];
+    const nextWord = next[index];
+    if (
+      prevWord.text !== nextWord.text ||
+      prevWord.startTimeMs !== nextWord.startTimeMs ||
+      prevWord.durationMs !== nextWord.durationMs
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function areLyricLinesEquivalent(
+  prev: LyricLine | null | undefined,
+  next: LyricLine | null | undefined
+): boolean {
+  if (prev === next) return true;
+  if (!prev || !next) return prev === next;
+
+  return (
+    prev.startTimeMs === next.startTimeMs &&
+    prev.words === next.words &&
+    areWordTimingsEquivalent(prev.wordTimings, next.wordTimings)
+  );
+}
+
+function areInterludeMetaEquivalent(
+  prev: LyricsLineRowContentProps["interludeMeta"],
+  next: LyricsLineRowContentProps["interludeMeta"]
+): boolean {
+  if (prev === next) return true;
+  if (!prev || !next) return prev === next;
+
+  return (
+    prev.countdownStartMs === next.countdownStartMs &&
+    areLyricLinesEquivalent(prev.anchorLine, next.anchorLine)
+  );
+}
+
+const MemoizedLyricsLineRowContent = memo(
+  LyricsLineRowContent,
+  (prev, next) => {
+    return (
+      areLyricLinesEquivalent(prev.line, next.line) &&
+      prev.isCurrent === next.isCurrent &&
+      prev.isInterludePlaceholder === next.isInterludePlaceholder &&
+      prev.hasWordTimings === next.hasWordTimings &&
+      prev.timeMsForRow === next.timeMsForRow &&
+      prev.translatedText === next.translatedText &&
+      prev.textSizeClass === next.textSizeClass &&
+      prev.lineHeightClass === next.lineHeightClass &&
+      prev.fontClassName === next.fontClassName &&
+      prev.interactive === next.interactive &&
+      prev.onSeekToTime === next.onSeekToTime &&
+      prev.romanization === next.romanization &&
+      prev.furiganaMap === next.furiganaMap &&
+      prev.soramimiMap === next.soramimiMap &&
+      prev.renderWithFurigana === next.renderWithFurigana &&
+      prev.processText === next.processText &&
+      prev.showKoreanRomanization === next.showKoreanRomanization &&
+      prev.isOldSchoolKaraoke === next.isOldSchoolKaraoke &&
+      prev.isGradientStyle === next.isGradientStyle &&
+      prev.isColoredGlow === next.isColoredGlow &&
+      prev.highlightColor === next.highlightColor &&
+      prev.baseColor === next.baseColor &&
+      prev.glowFilter === next.glowFilter &&
+      prev.glowShadowHighlight === next.glowShadowHighlight &&
+      areInterludeMetaEquivalent(prev.interludeMeta, next.interludeMeta) &&
+      prev.interludePlaceholderDotsInlineOnlyGhost ===
+        next.interludePlaceholderDotsInlineOnlyGhost &&
+      areLyricLinesEquivalent(
+        prev.interludeInlineDotsLine,
+        next.interludeInlineDotsLine
+      ) &&
+      prev.timeMsForInterludeDots === next.timeMsForInterludeDots &&
+      prev.interludeInlineCountdownStartMs ===
+        next.interludeInlineCountdownStartMs &&
+      prev.lineTextAlign === next.lineTextAlign
+    );
+  }
+);
+MemoizedLyricsLineRowContent.displayName = "LyricsLineRowContent";
 
 export function LyricsDisplay({
   lines,
@@ -2496,7 +2595,7 @@ export function LyricsDisplay({
                 transform: "translateZ(0)",
               }}
             >
-              <LyricsLineRowContent
+              <MemoizedLyricsLineRowContent
                 line={lineForContent}
                 isCurrent={isCurrent}
                 isInterludePlaceholder={isInterludePlaceholder}
