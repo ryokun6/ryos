@@ -13,7 +13,6 @@ import {
   useRef,
   useState,
   useEffect,
-  useLayoutEffect,
   useCallback,
 } from "react";
 import type { CSSProperties, ReactNode } from "react";
@@ -40,12 +39,12 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
-  didAdvancePastLongInterlude,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
   isInterludeInlineLyricLine,
   isInterludePlaceholderLine,
 } from "@/utils/karaokeInterludeDisplay";
+import { useAlternatingVisibleLines } from "@/apps/ipod/components/useAlternatingVisibleLines";
 
 interface LyricsDisplayProps {
   lines: LyricLine[];
@@ -946,16 +945,17 @@ function WordTimingHighlight({
     [renderItems]
   );
 
-  // Sync time ref when prop changes
-  useEffect(() => {
+  const previousPropTime = timeRef.current.propTime;
+  if (previousPropTime !== currentTimeMs) {
     timeRef.current.propTime = currentTimeMs;
     timeRef.current.propTimestamp = performance.now();
-  }, [currentTimeMs]);
+  }
 
   // Animation loop - updates DOM directly without React re-renders
   // Uses CSS custom properties for GPU-accelerated mask animation
   useEffect(() => {
     let animationFrameId: number;
+    lastProgressRef.current = Array.from({ length: renderItems.length }, () => Number.NaN);
     
     const updateMasks = () => {
       // Interpolate time for smooth animation between prop updates
@@ -1008,14 +1008,9 @@ function WordTimingHighlight({
     return () => cancelAnimationFrame(animationFrameId);
   }, [lineStartTimeMs, timingWindows]);
 
-  // Initialize refs array length
-  useEffect(() => {
+  if (overlayRefs.current.length !== renderItems.length) {
     overlayRefs.current = overlayRefs.current.slice(0, renderItems.length);
-  }, [renderItems.length]);
-
-  useEffect(() => {
-    lastProgressRef.current = Array.from({ length: renderItems.length }, () => Number.NaN);
-  }, [lineStartTimeMs, timingWindows, renderItems.length]);
+  }
 
   const handleWordClick = (wordStartTimeMs: number) => {
     if (onSeekToTime) {
@@ -2092,91 +2087,11 @@ export function LyricsDisplay({
     return "center";
   };
 
-  // Helper to compute lines for Alternating alignment (current + next)
-  const computeAltVisibleLines = (
-    allLines: LyricLine[],
-    currIdx: number
-  ): LyricLine[] => {
-    if (!allLines.length) return [];
-
-    // Initial state before any line is current
-    if (currIdx < 0) {
-      return allLines.slice(0, 2).filter(Boolean);
-    }
-
-    const clampedIdx = Math.min(currIdx, allLines.length - 1);
-    const nextLine = allLines[clampedIdx + 1];
-
-    if (clampedIdx % 2 === 0) {
-      // Current is on top
-      return [allLines[clampedIdx], nextLine].filter(Boolean);
-    }
-
-    // Current is at bottom
-    return [nextLine, allLines[clampedIdx]].filter(Boolean);
-  };
-
-  // State to hold lines displayed in Alternating mode so we can delay updates
-  // Use displayOriginalLines to ensure word timings are included (not translated lines)
-  const [altLines, setAltLines] = useState<LyricLine[]>(() =>
-    computeAltVisibleLines(displayOriginalLines, actualCurrentLine)
-  );
-
-  // Track previous lines array to detect song/translation changes
-  const prevLinesRef = useRef<LyricLine[]>(displayOriginalLines);
-  const prevActualCurrentLineRef = useRef(actualCurrentLine);
-
-  // Update alternating lines - instantly on song/translation change, delayed for line transitions
-  useLayoutEffect(() => {
-    if (alignment !== LyricsAlignment.Alternating) {
-      prevActualCurrentLineRef.current = actualCurrentLine;
-      return;
-    }
-
-    // Check if lines array changed (new song or translation switch)
-    const linesChanged = prevLinesRef.current !== displayOriginalLines;
-    const previousActualCurrentLine = prevActualCurrentLineRef.current;
-    prevLinesRef.current = displayOriginalLines;
-    prevActualCurrentLineRef.current = actualCurrentLine;
-    const exitedLongInterlude =
-      !linesChanged &&
-      didAdvancePastLongInterlude(
-        displayOriginalLines,
-        previousActualCurrentLine,
-        actualCurrentLine
-      );
-
-    // Instantly update on song load, translation switch, or initial state
-    if (linesChanged || actualCurrentLine < 0 || exitedLongInterlude) {
-      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
-      return;
-    }
-
-    // For normal line transitions within the same song, apply delay
-    // Determine the duration of the new current line
-    const clampedIdx = Math.min(Math.max(0, actualCurrentLine), displayOriginalLines.length - 1);
-    const currentStart =
-      clampedIdx >= 0 && displayOriginalLines[clampedIdx]
-        ? parseInt(displayOriginalLines[clampedIdx].startTimeMs)
-        : null;
-    const nextStart =
-      clampedIdx + 1 < displayOriginalLines.length && displayOriginalLines[clampedIdx + 1]
-        ? parseInt(displayOriginalLines[clampedIdx + 1].startTimeMs)
-        : null;
-
-    const rawDuration =
-      currentStart !== null && nextStart !== null ? nextStart - currentStart : 0;
-
-    // Use 20% of the line duration; clamp to 20-400ms range to avoid extremes
-    // (prevents 6+ second delays on long instrumental breaks)
-    const delayMs = Math.min(400, Math.max(20, Math.floor(rawDuration * 0.2)));
-
-    const timer = setTimeout(() => {
-      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
-    }, delayMs);
-
-    return () => clearTimeout(timer);
-  }, [alignment, displayOriginalLines, actualCurrentLine]);
+  const altLines = useAlternatingVisibleLines({
+    alignment,
+    allLines: displayOriginalLines,
+    actualCurrentLine,
+  });
 
   const nonAltVisibleLines = useMemo(() => {
     if (!displayOriginalLines.length) return [] as LyricLine[];
