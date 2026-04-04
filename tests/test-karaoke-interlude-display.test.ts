@@ -6,6 +6,7 @@ import {
   buildInterludeLyricLineWithWordTimings,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
+  isInterludeInlineLyricLine,
   isInterludePlaceholderLine,
 } from "../src/utils/karaokeInterludeDisplay";
 
@@ -101,10 +102,11 @@ describe("karaoke interlude ellipsis", () => {
     expect(getIntroInterludeInlineLead(twoLineSong, 4000, true)).not.toBeNull();
   });
 
-  test("alternating gap placeholder flags dotsInlineWithNext for inline lead on the next row", () => {
+  test("alternating gap advances to the next lyric pair and carries inline dots on the upcoming row", () => {
     const lines = [
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
+      makeLine(22000, "Line after next"),
     ];
 
     const visible = applyKaraokeInterludeEllipsis({
@@ -117,27 +119,40 @@ describe("karaoke interlude ellipsis", () => {
     });
 
     expect(visible).toHaveLength(2);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
-    expect(visible[0]!.dotsInlineWithNext).toBe(true);
-    expect(visible[1]).toBe(lines[1]);
+    expect(visible[0]).toBe(lines[2]);
+    expect(isInterludeInlineLyricLine(visible[1]!)).toBe(true);
+    if (!isInterludeInlineLyricLine(visible[1]!)) {
+      throw new Error("expected upcoming lyric with inline interlude lead");
+    }
+    expect(visible[1].startTimeMs).toBe(lines[1]!.startTimeMs);
+    expect(visible[1].words).toBe(lines[1]!.words);
+    expect(visible[1].interludeInlineLead.dotsInlineWithNext).toBe(true);
   });
 
   test("buildInterludeLyricLineWithWordTimings splits the silent gap into three timed words", () => {
     const lines = [
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
+      makeLine(22000, "Line after next"),
     ];
-    const placeholder = applyKaraokeInterludeEllipsis({
+    const visible = applyKaraokeInterludeEllipsis({
       visibleLines: [lines[0], lines[1]],
       allLines: lines,
       alignment: LyricsAlignment.Alternating,
       currentIndex: 0,
       currentTimeMs: 5000,
       enabled: true,
-    })[0];
-    if (!isInterludePlaceholderLine(placeholder!)) throw new Error("expected placeholder");
+    });
+    const upcomingWithLead = visible[1];
+    if (!isInterludeInlineLyricLine(upcomingWithLead!)) {
+      throw new Error("expected upcoming lyric with inline interlude lead");
+    }
 
-    const timed = buildInterludeLyricLineWithWordTimings(placeholder, lines, 0);
+    const timed = buildInterludeLyricLineWithWordTimings(
+      upcomingWithLead.interludeInlineLead,
+      lines,
+      0
+    );
     expect(timed.wordTimings).toHaveLength(3);
     // Countdown is last 3s before next line: next at 15000 → line starts at 12000, 3000ms total
     const total = timed.wordTimings!.reduce((s, w) => s + w.durationMs, 0);
@@ -145,31 +160,38 @@ describe("karaoke interlude ellipsis", () => {
     expect(timed.startTimeMs).toBe("12000");
   });
 
-  test("replaces the held current line with placeholder after delay; countdownStartMs matches dot fill", () => {
+  test("alternating odd rows keep the upcoming lyric first and bring in the following lyric during gaps", () => {
     const lines = [
-      makeLine(0, "Verse line"),
-      makeLine(15000, "Next line"),
+      makeLine(0, "Line one"),
+      makeLine(4000, "Line two"),
+      makeLine(20000, "Line three"),
+      makeLine(28000, "Line four"),
     ];
 
     const visible = applyKaraokeInterludeEllipsis({
-      visibleLines: [lines[0], lines[1]],
+      visibleLines: [lines[2], lines[1]],
       allLines: lines,
       alignment: LyricsAlignment.Alternating,
-      currentIndex: 0,
-      currentTimeMs: 5000,
+      currentIndex: 1,
+      currentTimeMs: 9000,
       enabled: true,
     });
 
     expect(visible).toHaveLength(2);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
-    expect(visible[0]!.countdownStartMs).toBe(12000);
-    expect(visible[1]).toBe(lines[1]);
+    expect(isInterludeInlineLyricLine(visible[0]!)).toBe(true);
+    if (!isInterludeInlineLyricLine(visible[0]!)) {
+      throw new Error("expected upcoming lyric with inline interlude lead");
+    }
+    expect(visible[0].startTimeMs).toBe(lines[2]!.startTimeMs);
+    expect(visible[0].interludeInlineLead.countdownStartMs).toBe(17000);
+    expect(visible[1]).toBe(lines[3]);
   });
 
   test("keeps the upcoming lyric visible while ellipsis leads into a long gap", () => {
     const lines = [
       makeLine(0, "Verse line"),
       makeLine(15000, "Next line"),
+      makeLine(22000, "Line after next"),
     ];
 
     const visible = applyKaraokeInterludeEllipsis({
@@ -182,8 +204,12 @@ describe("karaoke interlude ellipsis", () => {
     });
 
     expect(visible).toHaveLength(2);
-    expect(isInterludePlaceholderLine(visible[0]!)).toBe(true);
-    expect(visible[1]).toBe(lines[1]);
+    expect(visible[0]).toBe(lines[2]);
+    expect(isInterludeInlineLyricLine(visible[1]!)).toBe(true);
+    if (!isInterludeInlineLyricLine(visible[1]!)) {
+      throw new Error("expected upcoming lyric with inline interlude lead");
+    }
+    expect(visible[1].startTimeMs).toBe(lines[1]!.startTimeMs);
   });
 
   test("getInterludeDotsFadeOpacity rests dim then ramps to full at countdownStartMs", () => {

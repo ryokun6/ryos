@@ -41,6 +41,7 @@ import {
   buildInterludeLyricLineWithWordTimings,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
+  isInterludeInlineLyricLine,
   isInterludePlaceholderLine,
 } from "@/utils/karaokeInterludeDisplay";
 
@@ -2370,6 +2371,10 @@ export function LyricsDisplay({
       <AnimatePresence mode="popLayout">
         {visibleLines.map((line, index) => {
           const isInterludePlaceholder = isInterludePlaceholderLine(line);
+          const interludeInlineLead =
+            !isInterludePlaceholder && isInterludeInlineLyricLine(line)
+              ? line.interludeInlineLead
+              : undefined;
           const lineForContent: LyricLine = isInterludePlaceholder
             ? buildInterludeLyricLineWithWordTimings(
                 line,
@@ -2379,12 +2384,16 @@ export function LyricsDisplay({
             : line;
           const lineActualIdx = isInterludePlaceholder
             ? line.anchorLineIndex
-            : displayOriginalLines.indexOf(line);
+            : isInterludeInlineLyricLine(line)
+              ? line.sourceLineIndex
+              : displayOriginalLines.findIndex(
+                  (originalLine) => originalLine.startTimeMs === line.startTimeMs
+                );
           const isCurrent = isInterludePlaceholder
             ? actualCurrentLine < 0
               ? true
               : line.anchorLineIndex === actualCurrentLine
-            : line === displayOriginalLines[actualCurrentLine];
+            : lineActualIdx === actualCurrentLine;
           let position = 0;
           if (alignment === LyricsAlignment.Alternating) {
             position = isCurrent ? 0 : 1;
@@ -2415,13 +2424,15 @@ export function LyricsDisplay({
           const prevVisible = index > 0 ? visibleLines[index - 1] : undefined;
           const nextVisible =
             index < visibleLines.length - 1 ? visibleLines[index + 1] : undefined;
-          /** Gap dots sit inline on the lyric *after* the placeholder. Alternating order is either [placeholder, nextLyric] or [nextLyric, placeholder] depending on line index parity — only the former has the placeholder in prevVisible. */
+          /** Gap dots either ride on a decorated upcoming lyric row or fall back to a visible placeholder. */
           const interludeLeadForRow =
             introInterludeLead &&
             !isInterludePlaceholder &&
             line.startTimeMs === displayOriginalLines[0]?.startTimeMs &&
             actualCurrentLine < 0
               ? introInterludeLead
+              : interludeInlineLead
+                ? interludeInlineLead
               : prevVisible &&
                   isInterludePlaceholderLine(prevVisible) &&
                   prevVisible.dotsInlineWithNext

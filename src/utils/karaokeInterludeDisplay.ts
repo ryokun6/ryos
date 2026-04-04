@@ -14,7 +14,15 @@ export interface InterludePlaceholderLine {
   dotsInlineWithNext?: boolean;
 }
 
-export type VisibleLyricLine = LyricLine | InterludePlaceholderLine;
+export interface InterludeInlineLyricLine extends LyricLine {
+  interludeInlineLead: InterludePlaceholderLine;
+  sourceLineIndex: number;
+}
+
+export type VisibleLyricLine =
+  | LyricLine
+  | InterludePlaceholderLine
+  | InterludeInlineLyricLine;
 
 const MIN_LINE_HOLD_MS = 2500;
 const LONG_INTERLUDE_THRESHOLD_MS = 8000;
@@ -143,6 +151,24 @@ export function isInterludePlaceholderLine(
   return "isInterludePlaceholder" in line && line.isInterludePlaceholder === true;
 }
 
+export function isInterludeInlineLyricLine(
+  line: VisibleLyricLine
+): line is InterludeInlineLyricLine {
+  return "interludeInlineLead" in line;
+}
+
+function decorateLyricLineWithInterludeLead(
+  line: LyricLine,
+  sourceLineIndex: number,
+  interludeInlineLead: InterludePlaceholderLine
+): InterludeInlineLyricLine {
+  return {
+    ...line,
+    interludeInlineLead,
+    sourceLineIndex,
+  };
+}
+
 /**
  * Build a real {@link LyricLine} with synthetic word timings so interlude dots use the same
  * karaoke mask/outline path as timed lyrics. The three beats fall in a short countdown window
@@ -261,6 +287,19 @@ export function applyKaraokeInterludeEllipsis({
 
   if (alignment === LyricsAlignment.Center) {
     return [placeholder];
+  }
+
+  if (alignment === LyricsAlignment.Alternating) {
+    const decoratedNext = decorateLyricLineWithInterludeLead(
+      nextLine,
+      currentIndex + 1,
+      placeholder
+    );
+    const followingLine = allLines[currentIndex + 2];
+
+    return currentIndex % 2 === 0
+      ? [followingLine, decoratedNext].filter(Boolean)
+      : [decoratedNext, followingLine].filter(Boolean);
   }
 
   return visibleLines.map((line) => (line === currentLine ? placeholder : line));
