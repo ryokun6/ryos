@@ -151,22 +151,26 @@ function hasLongInterludeGap(currentLine: LyricLine, nextLine: LyricLine): boole
   return silentGapMs >= LONG_INTERLUDE_THRESHOLD_MS;
 }
 
-export function hasLongInterludeAtTime(
+export function didAdvancePastLongInterlude(
   allLines: LyricLine[],
-  currentIndex: number,
-  currentTimeMs: number
+  previousCurrentIndex: number,
+  currentIndex: number
 ): boolean {
-  if (currentIndex < 0) {
+  if (
+    previousCurrentIndex < 0 ||
+    currentIndex < 0 ||
+    currentIndex !== previousCurrentIndex + 1
+  ) {
     return false;
   }
 
+  const previousLine = allLines[previousCurrentIndex];
   const currentLine = allLines[currentIndex];
-  const nextLine = allLines[currentIndex + 1];
-  if (!currentLine || !nextLine) {
+  if (!previousLine || !currentLine) {
     return false;
   }
 
-  return hasLongInterlude(currentLine, nextLine, currentTimeMs);
+  return hasLongInterludeGap(previousLine, currentLine);
 }
 
 export function isInterludePlaceholderLine(

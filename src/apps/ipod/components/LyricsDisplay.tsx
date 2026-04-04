@@ -39,7 +39,7 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
-  hasLongInterludeAtTime,
+  didAdvancePastLongInterlude,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
   isInterludeInlineLyricLine,
@@ -2123,21 +2123,27 @@ export function LyricsDisplay({
 
   // Track previous lines array to detect song/translation changes
   const prevLinesRef = useRef<LyricLine[]>(displayOriginalLines);
-  const prevWasLongInterludeRef = useRef(false);
+  const prevActualCurrentLineRef = useRef(actualCurrentLine);
 
   // Update alternating lines - instantly on song/translation change, delayed for line transitions
   useEffect(() => {
-    if (alignment !== LyricsAlignment.Alternating) return;
+    if (alignment !== LyricsAlignment.Alternating) {
+      prevActualCurrentLineRef.current = actualCurrentLine;
+      return;
+    }
 
     // Check if lines array changed (new song or translation switch)
     const linesChanged = prevLinesRef.current !== displayOriginalLines;
+    const previousActualCurrentLine = prevActualCurrentLineRef.current;
     prevLinesRef.current = displayOriginalLines;
-    const isInLongInterlude =
-      currentTimeMs !== undefined &&
-      actualCurrentLine >= 0 &&
-      hasLongInterludeAtTime(displayOriginalLines, actualCurrentLine, currentTimeMs);
-    const exitedLongInterlude = prevWasLongInterludeRef.current && !isInLongInterlude;
-    prevWasLongInterludeRef.current = isInLongInterlude;
+    prevActualCurrentLineRef.current = actualCurrentLine;
+    const exitedLongInterlude =
+      !linesChanged &&
+      didAdvancePastLongInterlude(
+        displayOriginalLines,
+        previousActualCurrentLine,
+        actualCurrentLine
+      );
 
     // Instantly update on song load, translation switch, or initial state
     if (linesChanged || actualCurrentLine < 0 || exitedLongInterlude) {
@@ -2169,7 +2175,7 @@ export function LyricsDisplay({
     }, delayMs);
 
     return () => clearTimeout(timer);
-  }, [alignment, displayOriginalLines, actualCurrentLine, currentTimeMs]);
+  }, [alignment, displayOriginalLines, actualCurrentLine]);
 
   const nonAltVisibleLines = useMemo(() => {
     if (!displayOriginalLines.length) return [] as LyricLine[];
