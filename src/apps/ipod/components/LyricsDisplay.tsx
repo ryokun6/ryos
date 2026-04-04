@@ -2123,7 +2123,9 @@ export function LyricsDisplay({
   // Track previous lines array to detect song/translation changes
   const prevLinesRef = useRef<LyricLine[]>(displayOriginalLines);
 
-  // Update alternating lines - instantly on song/translation change, delayed for line transitions
+  // Keep alternating pair in sync with playback immediately. A previous delayed update here
+  // left altLines stale after actualCurrentLine advanced, so interlude / visible lines
+  // still showed [previous, next] while playback had moved on — breaking next+1 preview.
   useEffect(() => {
     if (alignment !== LyricsAlignment.Alternating) return;
 
@@ -2131,36 +2133,12 @@ export function LyricsDisplay({
     const linesChanged = prevLinesRef.current !== displayOriginalLines;
     prevLinesRef.current = displayOriginalLines;
 
-    // Instantly update on song load, translation switch, or initial state
     if (linesChanged || actualCurrentLine < 0) {
       setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
       return;
     }
 
-    // For normal line transitions within the same song, apply delay
-    // Determine the duration of the new current line
-    const clampedIdx = Math.min(Math.max(0, actualCurrentLine), displayOriginalLines.length - 1);
-    const currentStart =
-      clampedIdx >= 0 && displayOriginalLines[clampedIdx]
-        ? parseInt(displayOriginalLines[clampedIdx].startTimeMs)
-        : null;
-    const nextStart =
-      clampedIdx + 1 < displayOriginalLines.length && displayOriginalLines[clampedIdx + 1]
-        ? parseInt(displayOriginalLines[clampedIdx + 1].startTimeMs)
-        : null;
-
-    const rawDuration =
-      currentStart !== null && nextStart !== null ? nextStart - currentStart : 0;
-
-    // Use 20% of the line duration; clamp to 20-400ms range to avoid extremes
-    // (prevents 6+ second delays on long instrumental breaks)
-    const delayMs = Math.min(400, Math.max(20, Math.floor(rawDuration * 0.2)));
-
-    const timer = setTimeout(() => {
-      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
-    }, delayMs);
-
-    return () => clearTimeout(timer);
+    setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
   }, [alignment, displayOriginalLines, actualCurrentLine]);
 
   const nonAltVisibleLines = useMemo(() => {
