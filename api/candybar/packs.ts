@@ -207,6 +207,213 @@ function getBuiltInPacks(): IconPack[] {
       createdAt: "2025-05-01T00:00:00Z",
       category: "apps",
     },
+    {
+      id: "community-win98-rdtg",
+      name: "Windows 98 (Internet Pack)",
+      author: "rtdg (curated for ryOS)",
+      description:
+        "Internet-sourced Win98 icon subset curated from Win98rdtg on WinCustomize (freeware IconPackager package).",
+      previewIcons: [
+        {
+          name: "My Computer",
+          url: "/icons/community/win98-rdtg/my-computer.png",
+        },
+        {
+          name: "Folder (Closed)",
+          url: "/icons/community/win98-rdtg/folder-closed.png",
+        },
+        {
+          name: "Folder (Open)",
+          url: "/icons/community/win98-rdtg/folder-open.png",
+        },
+        {
+          name: "Recycle Bin (Empty)",
+          url: "/icons/community/win98-rdtg/recycle-bin-empty.png",
+        },
+        {
+          name: "Recycle Bin (Full)",
+          url: "/icons/community/win98-rdtg/recycle-bin-full.png",
+        },
+        {
+          name: "Internet Explorer",
+          url: "/icons/community/win98-rdtg/internet-explorer.png",
+        },
+        {
+          name: "Notepad",
+          url: "/icons/community/win98-rdtg/notepad.png",
+        },
+        {
+          name: "Paint",
+          url: "/icons/community/win98-rdtg/paint.png",
+        },
+        {
+          name: "Network Neighborhood",
+          url: "/icons/community/win98-rdtg/network-neighborhood.png",
+        },
+        {
+          name: "Control Panel",
+          url: "/icons/community/win98-rdtg/control-panel.png",
+        },
+      ],
+      iconCount: 10,
+      downloadUrl: "https://www.wincustomize.com/explore/iconpackager/2157",
+      createdAt: "2026-04-05T00:00:00Z",
+      category: "community",
+    },
+    {
+      id: "community-xp-highres-cc0",
+      name: "Windows XP High-Res (CC0)",
+      author: "marchmountain (curated for ryOS)",
+      description:
+        "Internet-sourced Windows XP icon subset curated from the Windows XP High Resolution Icon Pack 2 (CC0 1.0).",
+      previewIcons: [
+        {
+          name: "My Computer",
+          url: "/icons/community/xp-highres-cc0/my-computer.png",
+        },
+        {
+          name: "Folder (Closed)",
+          url: "/icons/community/xp-highres-cc0/folder-closed.png",
+        },
+        {
+          name: "Folder (Open)",
+          url: "/icons/community/xp-highres-cc0/folder-open.png",
+        },
+        {
+          name: "Recycle Bin (Empty)",
+          url: "/icons/community/xp-highres-cc0/recycle-bin-empty.png",
+        },
+        {
+          name: "Recycle Bin (Full)",
+          url: "/icons/community/xp-highres-cc0/recycle-bin-full.png",
+        },
+        {
+          name: "Internet Explorer",
+          url: "/icons/community/xp-highres-cc0/internet-explorer.png",
+        },
+        { name: "Notepad", url: "/icons/community/xp-highres-cc0/notepad.png" },
+        { name: "Paint", url: "/icons/community/xp-highres-cc0/paint.png" },
+        {
+          name: "My Music",
+          url: "/icons/community/xp-highres-cc0/my-music.png",
+        },
+        {
+          name: "My Videos",
+          url: "/icons/community/xp-highres-cc0/my-videos.png",
+        },
+      ],
+      iconCount: 10,
+      downloadUrl:
+        "https://github.com/marchmountain/-Windows-XP-High-Resolution-Icon-Pack",
+      createdAt: "2026-04-05T00:00:00Z",
+      category: "community",
+    },
+    {
+      id: "community-system7-macos8-9-classic",
+      name: "System 7 / macOS 8-9 Classic",
+      author: "danmorgandesigns (curated for ryOS)",
+      description:
+        "Internet-sourced classic Mac icon subset curated from classic-mac-elements (vector recreations inspired by System 1-7 and HyperCard).",
+      previewIcons: [
+        {
+          name: "Happy Mac",
+          url: "/icons/community/system7-macos8-9-classic/happy-mac.png",
+        },
+        {
+          name: "System Folder",
+          url: "/icons/community/system7-macos8-9-classic/system-folder.png",
+        },
+        {
+          name: "Trash (Empty)",
+          url: "/icons/community/system7-macos8-9-classic/trash-empty.png",
+        },
+        {
+          name: "Trash (Full)",
+          url: "/icons/community/system7-macos8-9-classic/trash-full.png",
+        },
+        {
+          name: "Floppy Disk",
+          url: "/icons/community/system7-macos8-9-classic/floppy-disk.png",
+        },
+        {
+          name: "MacPaint",
+          url: "/icons/community/system7-macos8-9-classic/macpaint.png",
+        },
+        {
+          name: "HyperCard",
+          url: "/icons/community/system7-macos8-9-classic/hypercard.png",
+        },
+        {
+          name: "Notepad",
+          url: "/icons/community/system7-macos8-9-classic/notepad.png",
+        },
+        {
+          name: "Sound",
+          url: "/icons/community/system7-macos8-9-classic/sound-icon.png",
+        },
+        {
+          name: "Apple",
+          url: "/icons/community/system7-macos8-9-classic/apple-icon.png",
+        },
+      ],
+      iconCount: 10,
+      downloadUrl: "https://github.com/danmorgandesigns/classic-mac-elements",
+      createdAt: "2026-04-05T00:00:00Z",
+      category: "community",
+    },
+    {
+      id: "community-macosx-tiger-leopard-folders",
+      name: "macOS X Tiger/Leopard Folders",
+      author: "msikma (curated for ryOS)",
+      description:
+        "Internet-sourced Aqua-style folder icon subset curated from osx-folder-icons (MIT-licensed modifications, based on Apple folder artwork).",
+      previewIcons: [
+        {
+          name: "Aqua Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/aqua-folder.png",
+        },
+        {
+          name: "Blue Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/blue-folder.png",
+        },
+        {
+          name: "Dark Blue Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/darkblue-folder.png",
+        },
+        {
+          name: "Generic Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/generic-folder.png",
+        },
+        {
+          name: "Gray Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/gray-folder.png",
+        },
+        {
+          name: "Green Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/green-folder.png",
+        },
+        {
+          name: "Orange Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/orange-folder.png",
+        },
+        {
+          name: "Pink Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/pink-folder.png",
+        },
+        {
+          name: "Red Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/red-folder.png",
+        },
+        {
+          name: "Yellow Folder",
+          url: "/icons/community/macosx-tiger-leopard-folders/yellow-folder.png",
+        },
+      ],
+      iconCount: 10,
+      downloadUrl: "https://github.com/msikma/osx-folder-icons",
+      createdAt: "2026-04-05T00:00:00Z",
+      category: "community",
+    },
   ];
 }
 
