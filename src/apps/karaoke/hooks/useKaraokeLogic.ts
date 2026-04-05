@@ -413,6 +413,11 @@ export function useKaraokeLogic({
   ]);
 
   const displayElapsedTime = listenRemoteOnly ? virtualListenElapsed : elapsedTime;
+  const displayElapsedTimeRef = useRef(displayElapsedTime);
+
+  useEffect(() => {
+    displayElapsedTimeRef.current = displayElapsedTime;
+  }, [displayElapsedTime]);
 
   useListenSync({
     currentTrackId: currentTrack?.id ?? null,
@@ -611,7 +616,7 @@ export function useKaraokeLogic({
     if (isOffline) {
       showOfflineStatus();
     } else if (listenRemoteOnly) {
-      const positionMs = Math.round(displayElapsedTime * 1000);
+      const positionMs = Math.round(displayElapsedTimeRef.current * 1000);
       const action = isPlaying ? "pause" : "play";
       void sendRemotePlaybackCommand({ action, positionMs }).then((r) => {
         if (!r.ok) toast.error(r.error ?? "Remote control failed");
@@ -622,7 +627,6 @@ export function useKaraokeLogic({
       showStatus(isPlaying ? "⏸" : "▶");
     }
   }, [
-    displayElapsedTime,
     isOffline,
     isPlaying,
     listenRemoteOnly,
@@ -1543,14 +1547,13 @@ export function useKaraokeLogic({
         const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
         const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
         showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-        lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
+        lyricsControls.updateCurrentTimeManually(displayElapsedTimeRef.current + newOffset / 1000);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
-    displayElapsedTime,
     handleNext,
     handlePlayPause,
     handlePrevious,

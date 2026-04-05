@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
@@ -102,7 +103,7 @@ export interface FullscreenPlayerControlsProps {
   hideLyricsControls?: boolean;
 }
 
-export function FullscreenPlayerControls({
+function FullscreenPlayerControlsComponent({
   isPlaying,
   onPrevious,
   onPlayPause,
@@ -637,3 +638,6 @@ export function FullscreenPlayerControls({
     </div>
   );
 }
+
+export const FullscreenPlayerControls = memo(FullscreenPlayerControlsComponent);
+FullscreenPlayerControls.displayName = "FullscreenPlayerControls";

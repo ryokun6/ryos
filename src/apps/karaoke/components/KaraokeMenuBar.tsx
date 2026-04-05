@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -65,7 +65,7 @@ interface KaraokeMenuBarProps {
   currentIndex: number;
 }
 
-export function KaraokeMenuBar({
+function KaraokeMenuBarComponent({
   onClose,
   onShowHelp,
   onShowAbout,
@@ -144,40 +144,52 @@ export function KaraokeMenuBar({
     exportLibrary: s.exportLibrary,
   }));
 
-  const translationLanguages = [
-    { label: t("apps.ipod.translationLanguages.original"), code: null },
-    { label: t("apps.ipod.translationLanguages.auto"), code: "auto" },
-    { separator: true },
-    { label: "English", code: "en" },
-    { label: "中文", code: "zh-TW" },
-    { label: "日本語", code: "ja" },
-    { label: "한국어", code: "ko" },
-    { label: "Español", code: "es" },
-    { label: "Français", code: "fr" },
-    { label: "Deutsch", code: "de" },
-    { label: "Português", code: "pt" },
-    { label: "Italiano", code: "it" },
-    { label: "Русский", code: "ru" },
-  ];
-
-  // Group tracks by artist
-  const tracksByArtist = tracks.reduce<
-    Record<string, { track: Track; index: number }[]>
-  >((acc, track, index) => {
-    const artist = track.artist || t("apps.ipod.menu.unknownArtist");
-    if (!acc[artist]) {
-      acc[artist] = [];
-    }
-    acc[artist].push({ track, index });
-    return acc;
-  }, {});
-
-  // Get sorted list of artists
-  const artists = Object.keys(tracksByArtist).sort((a, b) =>
-    a.localeCompare(b, undefined, { sensitivity: "base" })
+  const translationLanguages = useMemo(
+    () => [
+      { label: t("apps.ipod.translationLanguages.original"), code: null },
+      { label: t("apps.ipod.translationLanguages.auto"), code: "auto" },
+      { separator: true },
+      { label: "English", code: "en" },
+      { label: "中文", code: "zh-TW" },
+      { label: "日本語", code: "ja" },
+      { label: "한국어", code: "ko" },
+      { label: "Español", code: "es" },
+      { label: "Français", code: "fr" },
+      { label: "Deutsch", code: "de" },
+      { label: "Português", code: "pt" },
+      { label: "Italiano", code: "it" },
+      { label: "Русский", code: "ru" },
+    ],
+    [t]
   );
 
-  const handleExportLibrary = () => {
+  // Group tracks by artist
+  const tracksByArtist = useMemo(
+    () =>
+      tracks.reduce<Record<string, { track: Track; index: number }[]>>(
+        (acc, track, index) => {
+          const artist = track.artist || t("apps.ipod.menu.unknownArtist");
+          if (!acc[artist]) {
+            acc[artist] = [];
+          }
+          acc[artist].push({ track, index });
+          return acc;
+        },
+        {}
+      ),
+    [tracks, t]
+  );
+
+  // Get sorted list of artists
+  const artists = useMemo(
+    () =>
+      Object.keys(tracksByArtist).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      ),
+    [tracksByArtist]
+  );
+
+  const handleExportLibrary = useCallback(() => {
     try {
       const json = exportLibrary();
       const blob = new Blob([json], { type: "application/json" });
@@ -194,9 +206,9 @@ export function KaraokeMenuBar({
       console.error("Failed to export library:", error);
       toast.error(t("apps.ipod.dialogs.failedToExportLibrary"));
     }
-  };
+  }, [exportLibrary, t]);
 
-  const handleImportLibrary = () => {
+  const handleImportLibrary = useCallback(() => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
@@ -218,7 +230,7 @@ export function KaraokeMenuBar({
       reader.readAsText(file);
     };
     input.click();
-  };
+  }, [importLibrary, t]);
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -819,3 +831,6 @@ export function KaraokeMenuBar({
     </MenuBar>
   );
 }
+
+export const KaraokeMenuBar = memo(KaraokeMenuBarComponent);
+KaraokeMenuBar.displayName = "KaraokeMenuBar";
