@@ -40,6 +40,7 @@ import { AnyExtension } from "@tiptap/core";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { tryInvokeParentStartGrindPlanning } from "@/utils/parentGrindPlanning";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
   emitAppletUpdated,
@@ -2141,6 +2142,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       const freshSystemState = getSystemState();
       console.log("Submitting AI chat with system state:", freshSystemState);
 
+      // Host iframe: delegate planning to parent when available (no image path)
+      if (!imageContent) {
+        const delegated = tryInvokeParentStartGrindPlanning({
+          text: messageContent,
+          model: aiModel,
+          systemState: freshSystemState,
+        });
+        if (delegated) {
+          setInput("");
+          setSelectedImage(null);
+          return;
+        }
+      }
+
       // Build message content - text and optionally image
       if (imageContent) {
         // Extract media type from data URL (e.g., "data:image/png;base64,..." -> "image/png")
@@ -2225,6 +2240,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Clear any previous rate limit errors on new submission attempt
       setRateLimitError(null);
+
+      const delegated = tryInvokeParentStartGrindPlanning({
+        text: message,
+        model: aiModel,
+        systemState: getSystemState(),
+      });
+      if (delegated) {
+        return;
+      }
 
       // Proceed with the actual submission using useChat v5
       console.log("Sending direct message to AI chat");
