@@ -1990,23 +1990,31 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   });
 
   // Ensure all messages have metadata with timestamps (runs synchronously during render)
+  const aiMessageMetadataById = useMemo(() => {
+    return new Map(
+      aiMessages.map((message) => [
+        message.id,
+        message.metadata?.createdAt,
+      ])
+    );
+  }, [aiMessages]);
+
   const messagesWithTimestamps = useMemo<AIChatMessage[]>(() => {
     return (currentSdkMessages as UIMessage[]).map((msg) => {
-      // Check if this message already exists in the store
-      const existingMsg = aiMessages.find((m) => m.id === msg.id);
       const currentMsg = msg as AIChatMessage;
+      const storedCreatedAt = aiMessageMetadataById.get(msg.id);
 
       return {
         ...msg,
         metadata: {
           createdAt:
             currentMsg.metadata?.createdAt ||
-            existingMsg?.metadata?.createdAt ||
+            storedCreatedAt ||
             new Date(),
         },
       } as AIChatMessage;
     });
-  }, [currentSdkMessages, aiMessages]);
+  }, [currentSdkMessages, aiMessageMetadataById]);
 
   // Ref to hold the latest SDK messages for use in callbacks
   const currentSdkMessagesRef = useRef<AIChatMessage[]>([]);

@@ -302,12 +302,12 @@ interface ChatMessageItemProps {
   isRoomView: boolean;
   fontSize: number;
   currentTheme: string;
-  copiedMessageId: string | null;
-  hoveredMessageId: string | null;
-  playingMessageId: string | null;
-  speechLoadingId: string | null;
-  highlightSegment: { messageId: string; start: number; end: number } | null;
-  localHighlightSegment: { messageId: string; start: number; end: number } | null;
+  isCopied: boolean;
+  isHovered: boolean;
+  isPlaying: boolean;
+  isSpeechLoading: boolean;
+  highlightSegment: { start: number; end: number } | null;
+  localHighlightSegment: { start: number; end: number } | null;
   isSpeaking: boolean;
   localTtsSpeaking: boolean;
   speechEnabled: boolean;
@@ -344,10 +344,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     isRoomView,
     fontSize,
     currentTheme,
-    copiedMessageId,
-    hoveredMessageId,
-    playingMessageId,
-    speechLoadingId,
+    isCopied,
+    isHovered,
+    isPlaying,
+    isSpeechLoading,
     highlightSegment,
     localHighlightSegment,
     isSpeaking,
@@ -415,20 +415,36 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   const combinedHighlightSeg = highlightSegment || localHighlightSegment;
   const combinedIsSpeaking = isSpeaking || localTtsSpeaking;
   const highlightActive =
-    combinedIsSpeaking &&
-    combinedHighlightSeg &&
-    combinedHighlightSeg.messageId === message.id;
+    combinedIsSpeaking && combinedHighlightSeg !== null;
 
   const isTouchDevice = () =>
     "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-  const extractUrls = (content: string): string[] => {
+  const extractUrls = (tokens: ChatMarkdownToken[]): string[] => {
     const urls = new Set<string>();
-    segmentChatMarkdownText(content).forEach((token) => {
+    tokens.forEach((token) => {
       if (token.type === "link" && token.url) urls.add(token.url);
     });
     return Array.from(urls);
   };
+
+  const trimmedDisplayContent = useMemo(
+    () => displayContent.trim(),
+    [displayContent]
+  );
+
+  const messageTokens = useMemo(
+    () =>
+      displayContent
+        ? segmentChatMarkdownText(displayContent)
+        : [],
+    [displayContent]
+  );
+
+  const messageUrls = useMemo(
+    () => extractUrls(messageTokens),
+    [messageTokens]
+  );
 
   const renderInlineToken = (segment: ChatMarkdownToken) => {
     const tokenNode =
@@ -525,7 +541,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                     <motion.button
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{
-                        opacity: hoveredMessageId === messageKey ? 1 : 0,
+                        opacity: isHovered ? 1 : 0,
                         scale: 1,
                       }}
                       className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
@@ -544,14 +560,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
+                opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
               className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
-              {copiedMessageId === messageKey ? (
+              {isCopied ? (
                 <Check className="h-3 w-3" weight="bold" />
               ) : (
                 <Copy className="h-3 w-3" weight="bold" />
@@ -601,14 +617,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
+                opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
               className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
-              {copiedMessageId === messageKey ? (
+              {isCopied ? (
                 <Check className="h-3 w-3" weight="bold" />
               ) : (
                 <Copy className="h-3 w-3" weight="bold" />
@@ -618,12 +634,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               <motion.button
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{
-                  opacity: hoveredMessageId === messageKey ? 1 : 0,
+                  opacity: isHovered ? 1 : 0,
                   scale: 1,
                 }}
                 className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
                 onClick={() => {
-                  if (playingMessageId === messageKey) {
+                  if (isPlaying) {
                     stop();
                     setPlayingMessageId(null);
                   } else {
@@ -631,7 +647,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                     setLocalHighlightSegment(null);
                     localHighlightQueueRef.current = [];
                     setSpeechLoadingId(null);
-                    const text = displayContent.trim();
+                    const text = trimmedDisplayContent;
                     if (text) {
                       const chunks: string[] = [];
                       const lines = text.split(/\r?\n/);
@@ -644,10 +660,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       if (chunks.length > 0) {
                         let charCursor = 0;
                         const segments = chunks.map((chunk) => {
-                          const visibleLen = segmentChatMarkdownText(chunk).reduce(
-                            (acc, token) => acc + token.content.length,
-                            0
-                          );
+                          const visibleLen = measureVisibleLength(chunk);
                           const seg = {
                             messageId: message.id || messageKey,
                             start: charCursor,
@@ -685,13 +698,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }}
                 aria-label={
-                  playingMessageId === messageKey
+                  isPlaying
                     ? t("apps.chats.ariaLabels.stopSpeech")
                     : t("apps.chats.ariaLabels.speakMessage")
                 }
               >
-                {playingMessageId === messageKey ? (
-                  speechLoadingId === messageKey ? (
+                {isPlaying ? (
+                  isSpeechLoading ? (
                     <ActivityIndicator size="xs" />
                   ) : (
                     <Pause className="h-3 w-3" weight="bold" />
@@ -713,7 +726,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   <motion.button
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{
-                      opacity: hoveredMessageId === messageKey ? 1 : 0,
+                      opacity: isHovered ? 1 : 0,
                       scale: 1,
                     }}
                     className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
@@ -742,7 +755,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{
-                    opacity: hoveredMessageId === messageKey ? 1 : 0,
+                    opacity: isHovered ? 1 : 0,
                     scale: 1,
                   }}
                   className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
@@ -883,14 +896,16 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         : partText;
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
                       const textContent = partDisplayContent;
+                      const partTokens = textContent
+                        ? segmentChatMarkdownText(textContent.trim())
+                        : [];
                       return (
                         <div key={partKey} className="w-full">
                           <div className="whitespace-pre-wrap">
                             {textContent &&
                               (() => {
-                                const tokens = segmentChatMarkdownText(textContent.trim());
                                 let charPos = 0;
-                                return tokens.map((segment, idx) => {
+                                return partTokens.map((segment, idx) => {
                                   const start = charPos;
                                   const end = charPos + segment.content.length;
                                   charPos = end;
@@ -989,7 +1004,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }}
                 >
                   {(() => {
-                    const tokens = segmentChatMarkdownText(displayContent);
+                    const tokens = messageTokens;
                     let charPos2 = 0;
                     return tokens.map((segment, idx) => {
                       const start2 = charPos2;
@@ -1029,47 +1044,45 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         </motion.div>
       )}
 
-      {(() => {
-        const allUrls = new Set<string>();
-        if (message.role === "assistant") {
-          message.parts?.forEach(
-            (
-              part: ToolInvocationPart | { type: string; text?: string }
-            ) => {
-              if (part.type === "text") {
-                const partText =
-                  (part as { type: string; text?: string }).text || "";
-                const partContent = isUrgentMessage(partText)
-                  ? partText.slice(4).trimStart()
-                  : partText;
-                extractUrls(decodeHtmlEntities(partContent)).forEach((u) =>
-                  allUrls.add(u)
-                );
-              }
-            }
-          );
-        } else {
-          extractUrls(displayContent).forEach((u) => allUrls.add(u));
-        }
-        if (allUrls.size === 0) return null;
-        return (
-          <div
-            className={`flex flex-col gap-2 w-full ${
-              !isUrlOnly(displayContent) ? "mt-2" : ""
-            } ${message.role === "user" ? "items-end" : "items-start"}`}
-          >
-            {Array.from(allUrls).map((url, index) => (
-              <LinkPreview
-                key={`${messageKey}-link-${index}`}
-                url={url}
-                className="max-w-[90%]"
-              />
-            ))}
-          </div>
-        );
-      })()}
+                {messageUrls.length > 0 && (
+                  <div
+                    className={`flex flex-col gap-2 w-full ${
+                      !isUrlOnly(displayContent) ? "mt-2" : ""
+                    } ${message.role === "user" ? "items-end" : "items-start"}`}
+                  >
+                    {messageUrls.map((url, index) => (
+                      <LinkPreview
+                        key={`${messageKey}-link-${index}`}
+                        url={url}
+                        className="max-w-[90%]"
+                      />
+                    ))}
+                  </div>
+                )}
     </motion.div>
   );
+}, (prev, next) => {
+  if (prev.message !== next.message) return false;
+  if (prev.messageKey !== next.messageKey) return false;
+  if (prev.isInitialMessage !== next.isInitialMessage) return false;
+  if (prev.isLoading !== next.isLoading) return false;
+  if (prev.isLoadingGreeting !== next.isLoadingGreeting) return false;
+  if (prev.isRoomView !== next.isRoomView) return false;
+  if (prev.fontSize !== next.fontSize) return false;
+  if (prev.currentTheme !== next.currentTheme) return false;
+  if (prev.isCopied !== next.isCopied) return false;
+  if (prev.isHovered !== next.isHovered) return false;
+  if (prev.isPlaying !== next.isPlaying) return false;
+  if (prev.isSpeechLoading !== next.isSpeechLoading) return false;
+  if (prev.isSpeaking !== next.isSpeaking) return false;
+  if (prev.localTtsSpeaking !== next.localTtsSpeaking) return false;
+  if (prev.speechEnabled !== next.speechEnabled) return false;
+  if (prev.isAdmin !== next.isAdmin) return false;
+  if (prev.roomId !== next.roomId) return false;
+  if (prev.username !== next.username) return false;
+  if (prev.highlightSegment !== next.highlightSegment) return false;
+  if (prev.localHighlightSegment !== next.localHighlightSegment) return false;
+  return true;
 });
 
 // --- NEW INNER COMPONENT ---
@@ -1307,10 +1320,23 @@ function ChatMessagesContent({
       )}
       {messages.map((message) => {
         const messageText = getMessageText(message);
-        const messageKey = (message.id === "1" || message.id === "proactive-1")
-          ? "greeting"
-          : message.id || `${message.role}-${messageText.substring(0, 10)}`;
+        const messageKey =
+          message.id === "1" || message.id === "proactive-1"
+            ? "greeting"
+            : message.id || `${message.role}-${messageText.substring(0, 10)}`;
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
+        const matchesHighlight =
+          !!highlightSegment &&
+          (highlightSegment.messageId === message.id ||
+            highlightSegment.messageId === messageKey);
+        const matchesLocalHighlight =
+          !!localHighlightSegment &&
+          (localHighlightSegment.messageId === message.id ||
+            localHighlightSegment.messageId === messageKey);
+        const messageHighlightSegment = matchesHighlight ? highlightSegment : null;
+        const messageLocalHighlightSegment = matchesLocalHighlight
+          ? localHighlightSegment
+          : null;
         return (
           <ChatMessageItem
             key={messageKey}
@@ -1322,14 +1348,16 @@ function ChatMessagesContent({
             isRoomView={isRoomView}
             fontSize={fontSize}
             currentTheme={currentTheme}
-            copiedMessageId={copiedMessageId}
-            hoveredMessageId={hoveredMessageId}
-            playingMessageId={playingMessageId}
-            speechLoadingId={speechLoadingId}
-            highlightSegment={highlightSegment ?? null}
-            localHighlightSegment={localHighlightSegment}
-            isSpeaking={!!isSpeaking}
-            localTtsSpeaking={localTtsSpeaking}
+            isCopied={
+              copiedMessageId === messageKey || copiedMessageId === message.id
+            }
+            isHovered={hoveredMessageId === messageKey}
+            isPlaying={playingMessageId === messageKey}
+            isSpeechLoading={speechLoadingId === messageKey}
+            highlightSegment={messageHighlightSegment}
+            localHighlightSegment={messageLocalHighlightSegment}
+            isSpeaking={!!isSpeaking && matchesHighlight}
+            localTtsSpeaking={localTtsSpeaking && matchesLocalHighlight}
             speechEnabled={speechEnabled}
             isAdmin={isAdmin}
             roomId={roomId}
