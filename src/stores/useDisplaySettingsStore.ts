@@ -113,17 +113,50 @@ interface DisplaySettingsState {
 }
 
 const STORE_VERSION = 1;
-const initialShaderState = checkShaderPerformance();
 
 export const useDisplaySettingsStore = create<DisplaySettingsState>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      // Avoid creating a WebGL context during module import / first paint.
+      // For existing users, `shaderEffectEnabled` is persisted and will hydrate.
+      // For new users (no persisted display-settings yet), detect capability lazily.
+      if (typeof window !== "undefined") {
+        const storageKey = "ryos:display-settings";
+        const hasPersistedSettings =
+          typeof localStorage !== "undefined" &&
+          localStorage.getItem(storageKey) !== null;
+
+        if (!hasPersistedSettings) {
+          const schedule =
+            "requestIdleCallback" in window
+              ? (cb: () => void) =>
+                  (window as unknown as { requestIdleCallback: (c: () => void) => void }).requestIdleCallback(
+                    cb
+                  )
+              : (cb: () => void) => window.setTimeout(cb, 1500);
+
+          schedule(() => {
+            try {
+              // Only apply if still unconfigured; don't override user interaction.
+              const stillUnconfigured =
+                typeof localStorage !== "undefined" &&
+                localStorage.getItem(storageKey) === null;
+              if (!stillUnconfigured) return;
+              set({ shaderEffectEnabled: checkShaderPerformance() });
+            } catch {
+              // Ignore: capability detection is best-effort.
+            }
+          });
+        }
+      }
+
+      return {
       // Display mode
       displayMode: "color",
       setDisplayMode: (m) => set({ displayMode: m }),
 
       // Shader settings
-      shaderEffectEnabled: initialShaderState,
+      shaderEffectEnabled: false,
       selectedShaderType: ShaderType.AURORA,
       setShaderEffectEnabled: (enabled) => set({ shaderEffectEnabled: enabled }),
       setSelectedShaderType: (t) => set({ selectedShaderType: t }),
@@ -271,7 +304,8 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       customWallpapersRevision: 0,
       bumpCustomWallpapersRevision: () =>
         set((s) => ({ customWallpapersRevision: s.customWallpapersRevision + 1 })),
-    }),
+      };
+    },
     {
       name: "ryos:display-settings",
       version: STORE_VERSION,

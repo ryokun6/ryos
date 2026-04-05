@@ -80,7 +80,7 @@ function ErrorPage({
 
       <ul className="list-disc pl-6 mb-5 space-y-2">
         {suggestions.map((suggestion, index) => (
-          <li key={index}>
+          <li key={typeof suggestion === "string" ? suggestion : index}>
             {typeof suggestion === "string" && suggestion.includes("{hostname}")
               ? suggestion.split("{hostname}").map((part, i) =>
                   i === 0 ? (
