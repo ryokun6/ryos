@@ -3,12 +3,7 @@ import ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import {
-  useIpodStore,
-  Track,
-  getEffectiveTranslationLanguage,
-  flushPendingLyricOffsetSave,
-} from "@/stores/useIpodStore";
+import { useIpodStore, Track, flushPendingLyricOffsetSave } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -16,10 +11,8 @@ import {
   useAudioSettingsStoreShallow,
   useAppStoreShallow,
 } from "@/stores/helpers";
-import { useLyrics } from "@/hooks/useLyrics";
-import { useFurigana } from "@/hooks/useFurigana";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import { useListenSync } from "@/hooks/useListenSync";
 import { TRANSLATION_LANGUAGES, getYouTubeVideoId, formatKugouImageUrl } from "@/apps/ipod/constants";
@@ -27,8 +20,6 @@ import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateCheck
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
-import { useActivityState, isAnyActivityActive } from "@/hooks/useActivityState";
-import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
@@ -48,6 +39,7 @@ export function useKaraokeLogic({
   initialData,
   instanceId,
 }: UseKaraokeLogicOptions) {
+  const lyricsPlaybackSyncRef = useRef<((timeInLyricsSeconds: number) => void) | null>(null);
   const { t } = useTranslation();
   const isOffline = useOffline();
   const translatedHelpItems = useTranslatedHelpItems("karaoke", helpItems);
@@ -165,15 +157,9 @@ export function useKaraokeLogic({
     }))
   );
 
-  // Auth for protected operations (force refresh, change lyrics source)
-  const { username, isAuthenticated } = useChatsStore(
-    useShallow((s) => ({ username: s.username, isAuthenticated: s.isAuthenticated }))
+  const { username } = useChatsStore(
+    useShallow((s) => ({ username: s.username }))
   );
-  const auth = useMemo(
-    () => (username && isAuthenticated ? { username, isAuthenticated } : undefined),
-    [username, isAuthenticated]
-  );
-
   const {
     currentSession: listenSession,
     isHost: isListenSessionHost,
@@ -263,9 +249,7 @@ export function useKaraokeLogic({
   // Full screen additional state
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
 
-  // Playback state
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [virtualListenElapsed, setVirtualListenElapsed] = useState(0);
+  // Playback position lives in karaoke store (high-frequency updates) so the main hook does not re-render every tick
   const [duration, setDurationLocal] = useState(0);
   const setDuration = useCallback((d: number) => {
     setDurationLocal(d);
@@ -288,8 +272,6 @@ export function useKaraokeLogic({
   const ua = navigator.userAgent;
   const isIOS = /iP(hone|od|ad)/.test(ua);
   const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-  const isIOSSafari = isIOS && isSafari;
-
   // Track user interaction for autoplay guard (iOS Safari blocks autoplay until user interacts)
   const userHasInteractedRef = useRef(false);
 
@@ -412,8 +394,6 @@ export function useKaraokeLogic({
     syncListenSession,
   ]);
 
-  const displayElapsedTime = listenRemoteOnly ? virtualListenElapsed : elapsedTime;
-
   useListenSync({
     currentTrackId: currentTrack?.id ?? null,
     currentTrackMeta,
@@ -423,7 +403,7 @@ export function useKaraokeLogic({
     getActivePlayer,
     addTrackFromId: addTrackFromVideoId,
     applyListenerPlayback: !listenRemoteOnly,
-    setVirtualElapsedSeconds: listenRemoteOnly ? setVirtualListenElapsed : undefined,
+    setVirtualElapsedSeconds: listenRemoteOnly ? setStoreElapsedTime : undefined,
   });
   const lyricsSourceOverride = currentTrack?.lyricsSource;
 
@@ -437,89 +417,6 @@ export function useKaraokeLogic({
     return formatKugouImageUrl(currentTrack.cover, 800) ?? youtubeThumbnail;
   }, [currentTrack]);
 
-  // Lyrics hook
-  const selectedMatchForLyrics = useMemo(() => {
-    if (!lyricsSourceOverride) return undefined;
-    return {
-      hash: lyricsSourceOverride.hash,
-      albumId: lyricsSourceOverride.albumId,
-      title: lyricsSourceOverride.title,
-      artist: lyricsSourceOverride.artist,
-      album: lyricsSourceOverride.album,
-    };
-  }, [lyricsSourceOverride]);
-
-  // Resolve "auto" translation language to actual ryOS locale
-  const effectiveTranslationLanguage = useMemo(
-    () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
-    [lyricsTranslationLanguage]
-  );
-
-  const lyricsControls = useLyrics({
-    songId: currentTrack?.id ?? "",
-    title: currentTrack?.title ?? "",
-    artist: currentTrack?.artist ?? "",
-    currentTime: displayElapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
-    translateTo: effectiveTranslationLanguage,
-    selectedMatch: selectedMatchForLyrics,
-    includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls
-    // Always include soramimi in request to avoid hydration timing issues
-    // (default setting is false, but user's saved setting might be true after hydration)
-    // The server only returns cached soramimi data, doesn't generate anything here
-    includeSoramimi: true,
-    // Pass target language so server returns correct cached soramimi data
-    soramimiTargetLanguage: romanization.soramamiTargetLanguage ?? "zh-TW",
-    // Auth for force refresh / changing lyrics source
-    auth,
-  });
-
-  // Show toast with Search button when lyrics fetch fails
-  useLyricsErrorToast({
-    error: lyricsControls.error,
-    songId: currentTrack?.id,
-    onSearchClick: () => setIsLyricsSearchDialogOpen(true),
-    t,
-    appId: "karaoke",
-  });
-
-  // Fetch furigana for lyrics (shared between main and fullscreen displays)
-  // Use pre-fetched info from lyrics request to skip extra API call
-  const { 
-    furiganaMap, 
-    soramimiMap,
-    isFetchingFurigana: isFetchingFuriganaFromHook,
-    isFetchingSoramimi,
-    furiganaProgress,
-    soramimiProgress,
-  } = useFurigana({
-    songId: currentTrack?.id ?? "",
-    lines: lyricsControls.originalLines,
-    isShowingOriginal: true,
-    romanization,
-    prefetchedInfo: lyricsControls.furiganaInfo,
-    prefetchedSoramimiInfo: lyricsControls.soramimiInfo,
-    auth,
-  });
-
-  // Consolidated activity state for loading indicators
-  const activityState = useActivityState({
-    lyricsState: {
-      isLoading: lyricsControls.isLoading,
-      isTranslating: lyricsControls.isTranslating,
-      translationProgress: lyricsControls.translationProgress,
-    },
-    furiganaState: {
-      isFetchingFurigana: isFetchingFuriganaFromHook,
-      furiganaProgress,
-      isFetchingSoramimi,
-      soramimiProgress,
-    },
-    translationLanguage: effectiveTranslationLanguage,
-    isAddingSong,
-  });
-  
-  const hasActiveActivity = isAnyActivityActive(activityState);
-
   // Translation languages with translated labels
   const translationLanguages = useMemo(
     () =>
@@ -530,9 +427,6 @@ export function useKaraokeLogic({
       })),
     [t]
   );
-
-  // Get CSS class name for current lyrics font
-  const lyricsFontClassName = getLyricsFontClassName(lyricsFont);
 
   // Status helper functions
   const showStatus = useCallback((message: string) => {
@@ -611,7 +505,7 @@ export function useKaraokeLogic({
     if (isOffline) {
       showOfflineStatus();
     } else if (listenRemoteOnly) {
-      const positionMs = Math.round(displayElapsedTime * 1000);
+      const positionMs = Math.round(useKaraokeStore.getState().elapsedTime * 1000);
       const action = isPlaying ? "pause" : "play";
       void sendRemotePlaybackCommand({ action, positionMs }).then((r) => {
         if (!r.ok) toast.error(r.error ?? "Remote control failed");
@@ -622,7 +516,6 @@ export function useKaraokeLogic({
       showStatus(isPlaying ? "⏸" : "▶");
     }
   }, [
-    displayElapsedTime,
     isOffline,
     isPlaying,
     listenRemoteOnly,
@@ -696,7 +589,7 @@ export function useKaraokeLogic({
       const seekTarget = -newLyricOffset / 1000;
       
       if (newLyricOffset < 0 && seekTarget >= 1) {
-        setElapsedTime(seekTarget);
+        setStoreElapsedTime(seekTarget);
         
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
@@ -708,14 +601,14 @@ export function useKaraokeLogic({
         }, 2000);
       } else {
         // Start from beginning for positive/zero offset or small negative offset
-        setElapsedTime(0);
+        setStoreElapsedTime(0);
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
         }, 2000);
       }
     }
     prevCurrentIndexRef.current = currentIndex;
-  }, [currentIndex, tracks, isFullScreen, showStatus]);
+  }, [currentIndex, tracks, isFullScreen, showStatus, setStoreElapsedTime]);
 
   // Cleanup
   useEffect(() => {
@@ -769,7 +662,7 @@ export function useKaraokeLogic({
       
       if (isFullScreen) {
         // Entering fullscreen - sync position from main player to fullscreen player
-        const currentTime = playerRef.current?.getCurrentTime() || elapsedTime;
+        const currentTime = playerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
         const wasPlaying = isPlaying;
 
         // Wait for fullscreen player to be ready before seeking
@@ -796,7 +689,7 @@ export function useKaraokeLogic({
         setTimeout(checkAndSync, 100);
       } else {
         // Exiting fullscreen - sync position from fullscreen player to main player
-        const currentTime = fullScreenPlayerRef.current?.getCurrentTime() || elapsedTime;
+        const currentTime = fullScreenPlayerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
         const wasPlaying = isPlaying;
 
         setTimeout(() => {
@@ -814,7 +707,7 @@ export function useKaraokeLogic({
       }
       prevFullScreenRef.current = isFullScreen;
     }
-  }, [isFullScreen, elapsedTime, isPlaying, setIsPlaying]);
+  }, [isFullScreen, isPlaying, setIsPlaying]);
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {
@@ -841,7 +734,6 @@ export function useKaraokeLogic({
   const handleProgress = useCallback(
     (state: { playedSeconds: number }) => {
       if (listenRemoteOnly) return;
-      setElapsedTime(state.playedSeconds);
       setStoreElapsedTime(state.playedSeconds);
     },
     [listenRemoteOnly, setStoreElapsedTime]
@@ -877,37 +769,6 @@ export function useKaraokeLogic({
 
   // Handle player ready
   const handleReady = useCallback(() => {}, []);
-
-  // Watchdog for blocked autoplay on iOS Safari (local playback only).
-  // Skip for anyone in a listen session who is not the DJ — playback time comes from sync / virtual clock,
-  // so elapsed can stay flat while isPlaying is true (would wrongly force-pause and desync remote control).
-  useEffect(() => {
-    if (
-      (listenSession && !isListenSessionDj) ||
-      !isPlaying ||
-      !isIOSSafari ||
-      userHasInteractedRef.current
-    )
-      return;
-
-    const startElapsed = elapsedTime;
-    const timer = setTimeout(() => {
-      if (useKaraokeStore.getState().isPlaying && elapsedTime === startElapsed) {
-        setIsPlaying(false);
-        showStatus("⏸");
-      }
-    }, 1200);
-
-    return () => clearTimeout(timer);
-  }, [
-    elapsedTime,
-    isIOSSafari,
-    isListenSessionDj,
-    isPlaying,
-    listenSession,
-    setIsPlaying,
-    showStatus,
-  ]);
 
   // Seek time (delta)
   const seekTime = useCallback(
@@ -1543,14 +1404,14 @@ export function useKaraokeLogic({
         const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
         const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
         showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-        lyricsControls.updateCurrentTimeManually(displayElapsedTime + newOffset / 1000);
+        const tSec = useKaraokeStore.getState().elapsedTime + newOffset / 1000;
+        lyricsPlaybackSyncRef.current?.(tSec);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
-    displayElapsedTime,
     handleNext,
     handlePlayPause,
     handlePrevious,
@@ -1566,7 +1427,7 @@ export function useKaraokeLogic({
     showOfflineStatus,
     currentIndex,
     currentTrack,
-    lyricsControls,
+    lyricsPlaybackSyncRef,
     t,
   ]);
 
@@ -1709,7 +1570,6 @@ export function useKaraokeLogic({
     showLyrics,
     lyricsAlignment,
     lyricsFont,
-    lyricsFontClassName,
     koreanDisplay,
     japaneseFurigana,
     romanization,
@@ -1765,8 +1625,7 @@ export function useKaraokeLogic({
     LONG_PRESS_MOVE_THRESHOLD,
     fullScreenPlayerRef,
     playerRef,
-    elapsedTime,
-    displayElapsedTime,
+    lyricsPlaybackSyncRef,
     duration,
     setDuration,
     statusMessage,
@@ -1776,11 +1635,6 @@ export function useKaraokeLogic({
     currentTrack,
     lyricsSourceOverride,
     coverUrl,
-    lyricsControls,
-    furiganaMap,
-    soramimiMap,
-    activityState,
-    hasActiveActivity,
     translationLanguages,
     showStatus,
     showOfflineStatus,

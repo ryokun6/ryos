@@ -53,11 +53,13 @@ export function FullScreenPortal({
   fullScreenPlayerRef,
   activityState,
 }: FullScreenPortalProps) {
-  const isAnyActivityActive = activityState.isLoadingLyrics || 
-    activityState.isTranslating || 
-    activityState.isFetchingFurigana || 
-    activityState.isFetchingSoramimi || 
-    activityState.isAddingSong;
+  const isAnyActivityActive = activityState
+    ? activityState.isLoadingLyrics ||
+      activityState.isTranslating ||
+      activityState.isFetchingFurigana ||
+      activityState.isFetchingSoramimi ||
+      activityState.isAddingSong
+    : false;
 
   const { t } = useTranslation();
   const currentTheme = useThemeStore((s) => s.current);
@@ -473,10 +475,12 @@ export function FullScreenPortal({
                 "calc(max(env(safe-area-inset-right), 0.75rem) + clamp(1rem, 6dvw, 4rem))",
             }}
           >
+            {activityState && (
             <ActivityIndicatorWithLabel
               size={32}
               state={activityState}
             />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

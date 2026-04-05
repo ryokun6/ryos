@@ -75,8 +75,8 @@ export interface FullScreenPortalProps {
   displayModeOptions?: { value: DisplayMode; label: string }[];
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
-  /** Activity state for loading indicators */
-  activityState: ActivityInfo;
+  /** Activity state for loading indicators (optional — karaoke supplies from lyrics subtree) */
+  activityState?: ActivityInfo;
 }
 
 // IpodScreen props

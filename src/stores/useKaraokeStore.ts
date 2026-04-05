@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { SetStateAction } from "react";
 import { useIpodStore, Track } from "./useIpodStore";
 
 /** Helper to get current index from song ID */
@@ -51,7 +52,7 @@ export interface KaraokeState extends KaraokeData {
   previousTrack: () => void;
   toggleFullScreen: () => void;
   setFullScreen: (fullScreen: boolean) => void;
-  setElapsedTime: (time: number) => void;
+  setElapsedTime: (time: SetStateAction<number>) => void;
   setTotalTime: (time: number) => void;
 }
 
@@ -196,7 +197,11 @@ export const useKaraokeStore = create<KaraokeState>()(
 
       setFullScreen: (fullScreen) => set({ isFullScreen: fullScreen }),
 
-      setElapsedTime: (time) => set({ elapsedTime: time }),
+      setElapsedTime: (time) =>
+        set((state) => ({
+          elapsedTime:
+            typeof time === "function" ? (time as (prev: number) => number)(state.elapsedTime) : time,
+        })),
       setTotalTime: (time) => set({ totalTime: time }),
     }),
     {
