@@ -57,7 +57,7 @@ export function SoundGrid({
           <div className="grid grid-cols-3 gap-2 md:gap-4 flex-1">
             {board.slots.map((slot, index) => (
               <SoundSlot
-                key={slot.id ?? `slot-${index}`}
+                key={`${board.id}-slot-${index}`}
                 slot={slot}
                 isRecording={playbackStates[index].isRecording}
                 isPlaying={playbackStates[index].isPlaying}
