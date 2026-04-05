@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import type { TFunction } from "i18next";
-import { useShallow } from "zustand/react/shallow";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
@@ -37,7 +36,6 @@ export interface KaraokeLyricsPlaybackContextValue {
   soramimiMap: ReturnType<typeof useFurigana>["soramimiMap"];
   activityState: ReturnType<typeof useActivityState>;
   hasActiveActivity: boolean;
-  elapsedTime: number;
   lyricsFontClassName: string;
 }
 
@@ -82,8 +80,6 @@ export function KaraokeLyricsPlaybackProvider({
   auth,
   lyricsPlaybackSyncRef,
 }: ProviderProps) {
-  const elapsedTime = useKaraokeStore(useShallow((s) => s.elapsedTime));
-
   const lyricsFontClassName = getLyricsFontClassName(lyricsFont ?? LyricsFontEnum.SerifRed);
 
   const selectedMatchForLyrics = useMemo(() => {
@@ -106,7 +102,11 @@ export function KaraokeLyricsPlaybackProvider({
     songId: currentTrack?.id ?? "",
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
-    currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
+    // Karaoke playback time updates frequently. Passing it into `useLyrics` would
+    // cause this provider (and any consumers) to re-render on each tick.
+    // `LyricsDisplay` already derives the active line/highlight from `currentTimeMs`,
+    // so we keep `useLyrics` focused on fetching/translation + manual time updates.
+    currentTime: 0,
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true,
@@ -174,7 +174,6 @@ export function KaraokeLyricsPlaybackProvider({
       soramimiMap,
       activityState,
       hasActiveActivity,
-      elapsedTime,
       lyricsFontClassName,
     }),
     [
@@ -183,7 +182,6 @@ export function KaraokeLyricsPlaybackProvider({
       soramimiMap,
       activityState,
       hasActiveActivity,
-      elapsedTime,
       lyricsFontClassName,
     ]
   );
@@ -254,9 +252,9 @@ export function KaraokeWindowLyricsOverlay({
     lyricsControls,
     furiganaMap,
     soramimiMap,
-    elapsedTime,
     lyricsFontClassName,
   } = useKaraokeLyricsPlayback();
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
 
   const onAdjustOffset = useCallback(
     (delta: number) => {
@@ -374,9 +372,9 @@ export function KaraokeFullscreenLyricsOverlay({
     lyricsControls,
     furiganaMap,
     soramimiMap,
-    elapsedTime,
     lyricsFontClassName,
   } = useKaraokeLyricsPlayback();
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
 
   const onAdjustOffset = useCallback(
     (delta: number) => {
@@ -505,7 +503,8 @@ export function KaraokeSyncModeWindowPanel({
   showStatus,
   t,
 }: SyncModeWindowProps) {
-  const { lyricsControls, furiganaMap, elapsedTime } = useKaraokeLyricsPlayback();
+  const { lyricsControls, furiganaMap } = useKaraokeLyricsPlayback();
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
   if (!isSyncModeOpen || isFullScreen || lyricsControls.originalLines.length === 0) {
     return null;
   }
@@ -574,7 +573,8 @@ export function KaraokeSyncModeFullscreenPanel({
   showStatus,
   t,
 }: SyncModeFullscreenProps) {
-  const { lyricsControls, furiganaMap, elapsedTime } = useKaraokeLyricsPlayback();
+  const { lyricsControls, furiganaMap } = useKaraokeLyricsPlayback();
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
   if (!isSyncModeOpen || !isFullScreen || lyricsControls.originalLines.length === 0) {
     return null;
   }
