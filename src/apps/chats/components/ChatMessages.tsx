@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useMemo, useRef, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -105,6 +105,8 @@ const getCitationLabel = (url: string): string => {
     return url;
   }
 };
+
+const measureVisibleLength = (text: string) => text.replace(/\s+/g, "").length;
 
 // Helper function to extract user-friendly error message
 const getErrorMessage = (error: Error): string => {
@@ -1006,7 +1008,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   {(() => {
                     const tokens = messageTokens;
                     let charPos2 = 0;
-                    return tokens.map((segment, idx) => {
+                    return tokens.map((segment: ChatMarkdownToken, idx: number) => {
                       const start2 = charPos2;
                       const end2 = charPos2 + segment.content.length;
                       charPos2 = end2;
@@ -1050,7 +1052,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       !isUrlOnly(displayContent) ? "mt-2" : ""
                     } ${message.role === "user" ? "items-end" : "items-start"}`}
                   >
-                    {messageUrls.map((url, index) => (
+                    {messageUrls.map((url: string, index: number) => (
                       <LinkPreview
                         key={`${messageKey}-link-${index}`}
                         url={url}

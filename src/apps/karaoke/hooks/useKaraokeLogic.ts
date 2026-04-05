@@ -264,6 +264,7 @@ export function useKaraokeLogic({
   // Track switching state to prevent race conditions
   const isTrackSwitchingRef = useRef(false);
   const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastElapsedTimeRef = useRef<number | null>(null);
 
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
@@ -590,6 +591,7 @@ export function useKaraokeLogic({
       
       if (newLyricOffset < 0 && seekTarget >= 1) {
         setStoreElapsedTime(seekTarget);
+        lastElapsedTimeRef.current = seekTarget;
         
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
@@ -602,6 +604,7 @@ export function useKaraokeLogic({
       } else {
         // Start from beginning for positive/zero offset or small negative offset
         setStoreElapsedTime(0);
+        lastElapsedTimeRef.current = 0;
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
         }, 2000);
@@ -734,7 +737,13 @@ export function useKaraokeLogic({
   const handleProgress = useCallback(
     (state: { playedSeconds: number }) => {
       if (listenRemoteOnly) return;
-      setStoreElapsedTime(state.playedSeconds);
+      const nextTime = state.playedSeconds;
+      const lastTime = lastElapsedTimeRef.current;
+      if (lastTime !== null && Math.abs(nextTime - lastTime) < 0.05) {
+        return;
+      }
+      lastElapsedTimeRef.current = nextTime;
+      setStoreElapsedTime(nextTime);
     },
     [listenRemoteOnly, setStoreElapsedTime]
   );
