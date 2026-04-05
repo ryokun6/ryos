@@ -1,7 +1,11 @@
 #!/usr/bin/env bun
 /**
- * Adds permissively-licensed retro OS icons as **new** assets only under
- * `public/icons/default/vendor/` (does not overwrite themed or default icons).
+ * Adds permissively-licensed retro OS icons under `public/icons/default/vendor/`
+ * only (does not touch `win98/`, `xp/`, `macosx/`, or top-level `default/` icons).
+ *
+ * Exports **everything** from each source:
+ * - All PNGs from @react95/icons package `png/` (preserves filenames, all sizes → scaled to 32×32)
+ * - All `png 64px/{n}.png` from bearz314/MacOS9-icons for n = 1..92 (missing indices skipped)
  *
  * Sources (cached under node_modules/.cache; not committed):
  * - @react95/icons (MIT) — https://github.com/React95/React95
@@ -9,105 +13,26 @@
  *
  * Run: bun run vendor:icons
  * Then: bun run generate:icons
+ *
+ * Pass `--skip-existing` to leave already-written vendor files unchanged (faster re-runs).
  */
 import { spawnSync } from "node:child_process";
 import { createWriteStream, mkdirSync, existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readdir } from "node:fs/promises";
+import { join, relative } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 
 const ROOT = join(import.meta.dir, "..");
 const ICONS = join(ROOT, "public", "icons");
-const DEFAULT_VENDOR = join(ICONS, "default", "vendor");
 const TMP = join(ROOT, "node_modules", ".cache", "vendor-icons");
 const REACT95_VERSION = "2.4.0";
 const REACT95_TGZ = `https://registry.npmjs.org/@react95/icons/-/icons-${REACT95_VERSION}.tgz`;
 const MAC9_BASE =
   "https://raw.githubusercontent.com/bearz314/MacOS9-icons/master/png%2064px";
+const MAC9_MAX_INDEX = 92;
 
-/** Relative path under default/vendor/react95/ -> React95 package/png file */
-const REACT95_VENDOR_MAP: Record<string, string> = {
-  "folder-closed.png": "Folder_32x32_4.png",
-  "folder-open.png": "FolderOpen_32x32_4.png",
-  "folder-documents.png": "FolderFile_32x32_4.png",
-  "folder-images.png": "Shell32137_32x32_4.png",
-  "folder-sounds.png": "Shell32138_32x32_4.png",
-  "folder-movies.png": "Shell32139_32x32_4.png",
-  "html-document.png": "HtmlPage_16x16_8.png",
-  "network-neighborhood.png": "Network3_32x32_4.png",
-  "internet-explorer-document.png": "Mshtml32528_32x32_4.png",
-  "internet-shortcut.png": "Shdocvw257_32x32_4.png",
-  "joystick.png": "Joy102_32x32_4.png",
-  "add-remove-programs.png": "Appwiz1502_32x32_4.png",
-  "windows-explorer.png": "Explorer100_32x32_4.png",
-  "my-computer-classic.png": "Computer3_32x32_4.png",
-  "my-computer-modern.png": "Computer4_32x32_4.png",
-  "hard-drive-explorer.png": "Explorer107_32x32_4.png",
-  "desktop.png": "Desktop_32x32_4.png",
-  "recycle-bin-empty.png": "RecycleEmpty_32x32_4.png",
-  "recycle-bin-full.png": "RecycleFull_32x32_4.png",
-  "volume-speaker.png": "Mmsys110_32x32_4.png",
-  "notepad-document.png": "Notepad1_32x32_4.png",
-  "notepad-generic.png": "Notepad_32x32_4.png",
-  "image-document.png": "Shell32136_32x32_4.png",
-  "paint.png": "Mspaint_32x32_4.png",
-  "minesweeper.png": "Winmine1_32x32_4.png",
-  "ms-dos.png": "MsDos_32x32_32.png",
-  "notepad.png": "Notepad2_32x32_4.png",
-  "media-player.png": "Mplayer111_32x32_4.png",
-  "cd-player.png": "Cdplayer107_32x32_4.png",
-  "media-audio.png": "MediaAudio_32x32_4.png",
-  "warning.png": "Gcdef10006_32x32_4.png",
-  "error.png": "Gcdef10008_32x32_4.png",
-  "info.png": "Gcdef10009_32x32_4.png",
-  "question.png": "Gcdef10010_32x32_4.png",
-  "control-panel.png": "Controls3000_32x32_4.png",
-};
-
-/** MacOS9 64px index -> filename under default/vendor/macos9/ */
-const MAC9_VENDOR_MAP: Record<string, string> = {
-  "26": "folder-closed.png",
-  "12": "folder-open.png",
-  "20": "folder-documents.png",
-  "11": "folder-downloads.png",
-  "24": "folder-images.png",
-  "87": "folder-sounds.png",
-  "21": "folder-movies.png",
-  "22": "folder-videos.png",
-  "25": "folder-sites.png",
-  "27": "network.png",
-  "69": "document-html.png",
-  "70": "document-html-alt.png",
-  "32": "games.png",
-  "59": "folder-applets.png",
-  "60": "folder-applications.png",
-  "41": "computer-happy-mac.png",
-  "42": "apple-logo.png",
-  "16": "hard-drive.png",
-  "66": "floppy-pc.png",
-  "10": "desktop.png",
-  "8": "trash-empty.png",
-  "7": "trash-full.png",
-  "86": "sound-file.png",
-  "68": "text-file.png",
-  "88": "karaoke-file.png",
-  "89": "image-file.png",
-  "19": "generic-document.png",
-  "15": "contacts.png",
-  "44": "textedit.png",
-  "35": "paint.png",
-  "36": "minesweeper.png",
-  "37": "minesweeper-alt.png",
-  "38": "terminal.png",
-  "40": "synth.png",
-  "31": "cdrom.png",
-  "13": "warn.png",
-  "14": "error.png",
-  "17": "info.png",
-  "18": "question.png",
-  "39": "control-panel.png",
-};
+const skipExisting = process.argv.includes("--skip-existing");
 
 async function download(url: string, dest: string) {
   const res = await fetch(url);
@@ -150,50 +75,101 @@ async function ensureReact95PngDir(): Promise<string> {
   return pngDir;
 }
 
-function writeVendorPng(src: string, relativeUnderDefault: string, size: number) {
+async function collectPngFiles(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  const entries = await readdir(dir, { withFileTypes: true });
+  for (const e of entries) {
+    const full = join(dir, e.name);
+    if (e.isDirectory()) {
+      out.push(...(await collectPngFiles(full)));
+    } else if (e.name.toLowerCase().endsWith(".png")) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+function writeVendorPng(
+  src: string,
+  relativeUnderDefault: string,
+  size: number
+) {
   const outPath = join(ICONS, "default", relativeUnderDefault);
-  if (existsSync(outPath)) {
-    console.log(`[vendor-icons] Skip existing ${relativeUnderDefault}`);
+  if (skipExisting && existsSync(outPath)) {
     return;
   }
   mkdirSync(join(outPath, ".."), { recursive: true });
   runFfmpeg(src, outPath, size);
 }
 
-async function applyReact95Vendor() {
+async function applyAllReact95() {
   const pngDir = await ensureReact95PngDir();
-  mkdirSync(join(DEFAULT_VENDOR, "react95"), { recursive: true });
-  console.log("[vendor-icons] React95 -> default/vendor/react95/");
-  for (const [name, file] of Object.entries(REACT95_VENDOR_MAP)) {
-    const src = join(pngDir, file);
-    if (!existsSync(src)) {
-      console.warn(`[vendor-icons] Missing source ${file}, skip ${name}`);
-      continue;
+  const files = (await collectPngFiles(pngDir)).sort();
+  console.log(`[vendor-icons] React95: ${files.length} PNGs -> default/vendor/react95/`);
+  let written = 0;
+  for (const abs of files) {
+    const relFromPng = relative(pngDir, abs).split("\\").join("/");
+    const targetRel = join("vendor", "react95", relFromPng).split("\\").join("/");
+    writeVendorPng(abs, targetRel, 32);
+    written++;
+    if (written % 200 === 0) {
+      console.log(`[vendor-icons] React95 progress ${written}/${files.length}`);
     }
-    const rel = join("vendor", "react95", name).split("\\").join("/");
-    writeVendorPng(src, rel, 32);
   }
 }
 
-async function applyMacOS9Vendor() {
+async function applyAllMacOS9() {
   mkdirSync(join(TMP, "mac9"), { recursive: true });
-  mkdirSync(join(DEFAULT_VENDOR, "macos9"), { recursive: true });
-  console.log("[vendor-icons] MacOS9-icons -> default/vendor/macos9/");
-  for (const [idx, name] of Object.entries(MAC9_VENDOR_MAP)) {
+  console.log(
+    `[vendor-icons] MacOS9-icons: indices 1..${MAC9_MAX_INDEX} -> default/vendor/macos9/`
+  );
+  let ok = 0;
+  let missing = 0;
+  for (let idx = 1; idx <= MAC9_MAX_INDEX; idx++) {
     const url = `${MAC9_BASE}/${idx}.png`;
     const cached = join(TMP, "mac9", `${idx}.png`);
-    if (!existsSync(cached)) {
-      await download(url, cached);
+    const targetRel = join("vendor", "macos9", `${idx}.png`).split("\\").join("/");
+    const outPath = join(ICONS, "default", targetRel);
+    if (skipExisting && existsSync(outPath)) {
+      ok++;
+      continue;
     }
-    const rel = join("vendor", "macos9", name).split("\\").join("/");
-    writeVendorPng(cached, rel, 32);
+    try {
+      if (!existsSync(cached)) {
+        const res = await fetch(url);
+        if (!res.ok) {
+          missing++;
+          continue;
+        }
+        const body = res.body;
+        if (!body) {
+          missing++;
+          continue;
+        }
+        await mkdir(join(cached, ".."), { recursive: true });
+        await pipeline(
+          Readable.fromWeb(body as import("node:stream/web").ReadableStream),
+          createWriteStream(cached)
+        );
+      }
+      writeVendorPng(cached, targetRel, 32);
+      ok++;
+    } catch {
+      missing++;
+    }
   }
+  console.log(
+    `[vendor-icons] MacOS9-icons: wrote ${ok}, skipped/missing ${missing} (e.g. index 63)`
+  );
 }
 
 async function main() {
   mkdirSync(TMP, { recursive: true });
-  await applyReact95Vendor();
-  await applyMacOS9Vendor();
+  if (skipExisting) {
+    console.log("[vendor-icons] --skip-existing: only filling gaps");
+  }
+  await applyAllReact95();
+  await applyAllMacOS9();
   console.log("[vendor-icons] Done. Run: bun run generate:icons");
 }
 
