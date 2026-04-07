@@ -2,7 +2,17 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { EventColor } from "./useCalendarStore";
 
-export type WidgetType = "clock" | "weather" | "calendar" | "stocks" | "ipod" | "dictionary" | "stickynote" | "translation";
+export type WidgetType =
+  | "clock"
+  | "weather"
+  | "calendar"
+  | "stocks"
+  | "ipod"
+  | "dictionary"
+  | "stickynote"
+  | "translation"
+  | "calculator"
+  | "converter";
 
 export interface WeatherWidgetConfig {
   cityName?: string;
@@ -44,7 +54,30 @@ export interface TranslationWidgetConfig {
   toLang?: string;
 }
 
-export type WidgetConfig = WeatherWidgetConfig | ClockWidgetConfig | CalendarWidgetConfig | StocksWidgetConfig | IpodWidgetConfig | DictionaryWidgetConfig | StickyNoteWidgetConfig | TranslationWidgetConfig;
+export interface CalculatorWidgetConfig {
+  display?: string;
+  precision?: number;
+}
+
+export interface ConverterWidgetConfig {
+  category?: "speed" | "length" | "weight" | "temperature" | "volume" | "data";
+  fromUnit?: string;
+  toUnit?: string;
+  value?: string;
+  precision?: number;
+}
+
+export type WidgetConfig =
+  | WeatherWidgetConfig
+  | ClockWidgetConfig
+  | CalendarWidgetConfig
+  | StocksWidgetConfig
+  | IpodWidgetConfig
+  | DictionaryWidgetConfig
+  | StickyNoteWidgetConfig
+  | TranslationWidgetConfig
+  | CalculatorWidgetConfig
+  | ConverterWidgetConfig;
 
 export interface DashboardWidget {
   id: string;
