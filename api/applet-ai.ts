@@ -14,6 +14,7 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
+import { createCachedSystemMessage } from "./_utils/prompt-caching.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -236,7 +237,7 @@ const buildModelMessages = (
   context?: string
 ): ModelMessage[] => {
   const messages: ModelMessage[] = [
-    { role: "system", content: APPLET_SYSTEM_PROMPT.trim() },
+    createCachedSystemMessage(APPLET_SYSTEM_PROMPT.trim()),
   ];
 
   if (context) {

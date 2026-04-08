@@ -8,6 +8,7 @@ import { Converter } from "opencc-js";
 import { google } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
 import { KRC_DECRYPTION_KEY, YOUTUBE_VIDEO_ID_REGEX } from "./_constants.js";
+import { createCachedSystemMessage } from "../_utils/prompt-caching.js";
 
 /** Traditional → Simplified for cross-strait lyric metadata matching (KuGou is Simplified) */
 const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
@@ -362,9 +363,8 @@ export async function parseYouTubeTitleWithAI(
         name: "parsed_song_metadata",
       }),
       messages: [
-        {
-          role: "system",
-          content: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist.
+        createCachedSystemMessage(
+          `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist.
 
 Rules:
 - Return ONLY the clean song title and artist name as simple strings
@@ -378,8 +378,8 @@ Examples:
 - "Jay Chou - Sunny Day (周杰倫 - 晴天)" → title: "晴天", artist: "周杰倫"
 - "NewJeans (뉴진스) 'How Sweet' Official MV" → title: "How Sweet", artist: "뉴진스"
 - "Kenshi Yonezu - KICK BACK" with channel "Kenshi Yonezu" → title: "KICK BACK", artist: "米津玄師"
-- "Lofi Hip Hop Radio" with channel "ChillHop Music" → title: "Lofi Hip Hop Radio", artist: null`,
-        },
+- "Lofi Hip Hop Radio" with channel "ChillHop Music" → title: "Lofi Hip Hop Radio", artist: null`
+        ),
         {
           role: "user",
           content: `Title: ${cleanTitle}${cleanChannel ? `\nChannel: ${cleanChannel}` : ""}`,

@@ -11,7 +11,7 @@ import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-  getOpenAIProviderOptions,
+  getPromptOptimizedProviderOptions,
 } from "./_utils/_aiModels.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import {
@@ -21,6 +21,7 @@ import {
   } from "./_utils/_aiPrompts.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import { createCachedSystemMessage } from "./_utils/prompt-caching.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
@@ -275,10 +276,7 @@ export default apiHandler<IEGenerateRequestBody>(
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
     // Build system messages similar to chat.ts approach
-    const staticSystemMessage = {
-      role: "system" as const,
-      content: STATIC_SYSTEM_PROMPT,
-    };
+    const staticSystemMessage = createCachedSystemMessage(STATIC_SYSTEM_PROMPT);
 
     const dynamicSystemMessage = {
       role: "system" as const,
@@ -308,7 +306,7 @@ export default apiHandler<IEGenerateRequestBody>(
       temperature: 0.7,
       maxOutputTokens: 4000,
       experimental_transform: smoothStream(),
-      providerOptions: getOpenAIProviderOptions(model),
+      providerOptions: getPromptOptimizedProviderOptions(model),
       onFinish: async ({ text }) => {
         if (!cacheKey) {
           logger.info("No cacheKey available, skipping cache save");

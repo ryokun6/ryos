@@ -1,7 +1,8 @@
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
-import type { LanguageModel } from "ai";
+import type { LanguageModel, ProviderOptions } from "ai";
+import { mergeProviderOptions } from "./prompt-caching.js";
 
 // ============================================================================
 // AI Model Types and Constants (duplicated from src/types/aiModels.ts)
@@ -54,7 +55,7 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
 
 export function getOpenAIProviderOptions(
   model: SupportedModel
-): { openai: { reasoningEffort?: OpenAIReasoningEffort } } | undefined {
+): ProviderOptions | undefined {
   if (AI_MODELS[model].provider !== "OpenAI") {
     return undefined;
   }
@@ -75,4 +76,13 @@ export function getOpenAIProviderOptions(
   return {
     openai: openaiOptions,
   };
+}
+
+export function getPromptOptimizedProviderOptions(
+  model: SupportedModel,
+  ...options: Array<ProviderOptions | undefined>
+): ProviderOptions | undefined {
+  const openAIOptions = getOpenAIProviderOptions(model);
+
+  return mergeProviderOptions(openAIOptions, ...options);
 }

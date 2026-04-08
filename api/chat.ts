@@ -9,7 +9,7 @@ import { google } from "@ai-sdk/google";
 import {
   DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
-  getOpenAIProviderOptions,
+  getPromptOptimizedProviderOptions,
   type SupportedModel,
 } from "./_utils/_aiModels.js";
 import {
@@ -21,6 +21,10 @@ import {
   type RyoConversationSystemState,
   type SimpleConversationMessage,
 } from "./_utils/ryo-conversation.js";
+import {
+  createCachedSystemMessage,
+  preparePromptCachingStep,
+} from "./_utils/prompt-caching.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
@@ -245,7 +249,9 @@ export default apiHandler<{
           model: google("gemini-3-flash-preview"),
           temperature: 1,
           maxOutputTokens: 2000,
-          system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
+          messages: [
+            createCachedSystemMessage(
+              `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
 
 Your style:
 - Lowercase, casual, warm
@@ -256,10 +262,6 @@ Your style:
 - Be specific — reference something from their memories or recent activity
 - Mix it up: sometimes ask a question, sometimes share an observation, sometimes reference a shared interest
 
-It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
-
-${greetingMemoryContext}
-
 Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.
 
 Examples of good greetings:
@@ -269,7 +271,16 @@ Examples of good greetings:
 - "hey ryo. happy friday — any plans?"
 
 Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump straight into something specific and interesting. Output ONLY the greeting text, nothing else.`,
-          prompt: "Generate a proactive greeting.",
+            ),
+            {
+              role: "system",
+              content: `It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".\n\n${greetingMemoryContext}`,
+            },
+            {
+              role: "user",
+              content: "Generate a proactive greeting.",
+            },
+          ],
         });
 
         const greeting = text.trim();
@@ -330,13 +341,14 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,
       }),
+      prepareStep: preparePromptCachingStep,
       headers: {
         // Enable fine-grained tool streaming for Anthropic models
         ...(model.startsWith("claude")
           ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
           : {}),
       },
-      providerOptions: getOpenAIProviderOptions(model as SupportedModel),
+      providerOptions: getPromptOptimizedProviderOptions(model as SupportedModel),
     });
 
     // Set CORS headers

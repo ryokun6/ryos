@@ -44,6 +44,7 @@ import {
   MAX_MESSAGE_LENGTH,
 } from "../../_utils/_validation.js";
 import { validateAuth } from "../../_utils/auth/index.js";
+import { createCachedSystemMessage } from "../../_utils/prompt-caching.js";
 import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./_users.js";
 import type { Message, SendMessageData, GenerateRyoReplyData } from "./_types.js";
@@ -452,7 +453,7 @@ when user asks for an aquarium, fish tank, fishes, or sam's aquarium, include th
 </chat_instructions>`;
 
   const messages = [
-    { role: "system" as const, content: STATIC_SYSTEM_PROMPT },
+    createCachedSystemMessage(STATIC_SYSTEM_PROMPT),
     systemState
       ? {
           role: "system" as const,

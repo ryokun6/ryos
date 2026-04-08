@@ -26,6 +26,10 @@ import {
   markDailyNoteProcessed,
   MAX_MEMORIES_PER_USER,
 } from "../_utils/_memory.js";
+import {
+  createCachedSystemMessage,
+  withPromptCacheForLongContent,
+} from "../_utils/prompt-caching.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -320,9 +324,15 @@ export async function extractMemoriesFromConversation({
   const { object: result } = await generateObject({
     model: google("gemini-3-flash-preview"),
     schema: extractionSchema,
-    prompt:
-      `${EXTRACTION_PROMPT}${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\n` +
-      `Extract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
+    messages: [
+      createCachedSystemMessage(EXTRACTION_PROMPT),
+      withPromptCacheForLongContent({
+        role: "user",
+        content:
+          `${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\n` +
+          `Extract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
+      }),
+    ],
     temperature: 0.3,
   });
 
@@ -400,9 +410,15 @@ export async function extractMemoriesFromConversation({
         const { object: consolidated } = await generateObject({
           model: google("gemini-3-flash-preview"),
           schema: consolidationSchema,
-          prompt:
-            `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\n` +
-            "Merge into one clean, deduplicated entry.",
+          messages: [
+            createCachedSystemMessage(CONSOLIDATION_PROMPT),
+            withPromptCacheForLongContent({
+              role: "user",
+              content:
+                `NEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\n` +
+                "Merge into one clean, deduplicated entry.",
+            }),
+          ],
           temperature: 0.3,
         });
 
