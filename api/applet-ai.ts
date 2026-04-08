@@ -231,12 +231,18 @@ const createMessageParts = (
   return parts;
 };
 
+const CACHE_CONTROL_OPTIONS = {
+  providerOptions: {
+    anthropic: { cacheControl: { type: "ephemeral" } },
+  },
+} as const;
+
 const buildModelMessages = (
   conversation: ParsedMessage[],
   context?: string
 ): ModelMessage[] => {
   const messages: ModelMessage[] = [
-    { role: "system", content: APPLET_SYSTEM_PROMPT.trim() },
+    { role: "system", content: APPLET_SYSTEM_PROMPT.trim(), ...CACHE_CONTROL_OPTIONS },
   ];
 
   if (context) {

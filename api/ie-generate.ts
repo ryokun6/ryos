@@ -274,10 +274,14 @@ export default apiHandler<IEGenerateRequestBody>(
     // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
-    // Build system messages similar to chat.ts approach
+    // Build system messages — static portion gets cache control so providers
+    // can reuse the prefix across requests with different year/url params
     const staticSystemMessage = {
       role: "system" as const,
       content: STATIC_SYSTEM_PROMPT,
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
     };
 
     const dynamicSystemMessage = {

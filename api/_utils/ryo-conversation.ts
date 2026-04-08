@@ -155,6 +155,8 @@ export interface PreparedRyoConversation {
   loadedSections: string[];
   staticSystemPrompt: string;
   dynamicSystemPrompt: string;
+  memoryContextPrompt: string;
+  volatileStatePrompt: string;
   userMemories: MemoryIndex | null;
   dailyNotesText: string | null;
   userTimeZone?: string;
@@ -359,18 +361,58 @@ export async function loadRyoMemoryContext({
   }
 }
 
-export function buildDynamicSystemPrompt({
-  channel,
-  systemState,
+/**
+ * Build the memory/user-context system prompt.
+ * This content changes infrequently (once per session or when memories update)
+ * and is placed in a separate system message so providers can cache the static
+ * instructions prefix across requests that share the same user context.
+ */
+export function buildMemoryContextPrompt({
   username,
   userMemories,
   dailyNotesText,
 }: {
-  channel: RyoConversationChannel;
-  systemState?: RyoConversationSystemState;
   username?: string | null;
   userMemories?: MemoryIndex | null;
   dailyNotesText?: string | null;
+}): string {
+  const parts: string[] = [];
+
+  const currentUser = username || "you";
+  parts.push(`<user_context>\n## USER IDENTITY\nCurrent User: ${currentUser}`);
+
+  if (dailyNotesText) {
+    parts.push(`\n## DAILY NOTES (recent journal)\n${dailyNotesText}`);
+  }
+
+  if (userMemories && userMemories.memories.length > 0) {
+    let memBlock = `\n## LONG-TERM MEMORIES`;
+    memBlock += `\nYou have ${userMemories.memories.length} long-term memories about this user:`;
+    for (const mem of userMemories.memories) {
+      memBlock += `\n- ${mem.key}: ${mem.summary}`;
+    }
+    memBlock += `\nUse memoryRead("key") to get full details for any memory.`;
+    parts.push(memBlock);
+  }
+
+  parts.push(`\n</user_context>`);
+  return parts.join("");
+}
+
+/**
+ * Build the volatile per-request system prompt.
+ * This content changes on every request (time, running apps, media state, etc.)
+ * and is sent as the last system message so it never invalidates the cached
+ * static + memory prefix.
+ */
+export function buildVolatileStatePrompt({
+  channel,
+  systemState,
+  username,
+}: {
+  channel: RyoConversationChannel;
+  systemState?: RyoConversationSystemState;
+  username?: string | null;
 }): string {
   const channelProfile = CHANNEL_STATE_PROFILES[channel];
   const effectiveState =
@@ -399,12 +441,8 @@ export function buildDynamicSystemPrompt({
   });
 
   const ryoTimeZone = "America/Los_Angeles";
-  const currentUser = effectiveState.username || username || "you";
 
   let prompt = `<system_state>
-## USER CONTEXT
-Current User: ${currentUser}
-
 ## TIME & LOCATION
 Ryo Time: ${timeString} on ${dateString} (${ryoTimeZone})`;
 
@@ -434,20 +472,6 @@ User Locale: ${effectiveState.locale}`;
       prompt += `
 User Location: ${location} (inferred from IP, may be inaccurate)`;
     }
-  }
-
-  if (dailyNotesText) {
-    prompt += `\n\n## DAILY NOTES (recent journal)`;
-    prompt += `\n${dailyNotesText}`;
-  }
-
-  if (userMemories && userMemories.memories.length > 0) {
-    prompt += `\n\n## LONG-TERM MEMORIES`;
-    prompt += `\nYou have ${userMemories.memories.length} long-term memories about this user:`;
-    for (const mem of userMemories.memories) {
-      prompt += `\n- ${mem.key}: ${mem.summary}`;
-    }
-    prompt += `\nUse memoryRead("key") to get full details for any memory.`;
   }
 
   if (channelProfile.includeRunningApps) {
@@ -637,6 +661,28 @@ Mentioned Message: "${effectiveState.chatRoomContext.mentionedMessage}"
   return prompt;
 }
 
+/**
+ * @deprecated Use buildMemoryContextPrompt + buildVolatileStatePrompt instead.
+ * Kept for backward compatibility during migration.
+ */
+export function buildDynamicSystemPrompt({
+  channel,
+  systemState,
+  username,
+  userMemories,
+  dailyNotesText,
+}: {
+  channel: RyoConversationChannel;
+  systemState?: RyoConversationSystemState;
+  username?: string | null;
+  userMemories?: MemoryIndex | null;
+  dailyNotesText?: string | null;
+}): string {
+  const memory = buildMemoryContextPrompt({ username, userMemories, dailyNotesText });
+  const volatile = buildVolatileStatePrompt({ channel, systemState, username });
+  return [memory, volatile].filter(Boolean).join("\n\n");
+}
+
 export async function prepareRyoConversationModelInput(
   options: PrepareRyoConversationOptions
 ): Promise<PreparedRyoConversation> {
@@ -669,13 +715,23 @@ export async function prepareRyoConversationModelInput(
   const { prompts: staticPrompts, loadedSections } =
     buildContextAwarePrompts(channel);
   const staticSystemPrompt = staticPrompts.join("\n");
-  const dynamicSystemPrompt = buildDynamicSystemPrompt({
-    channel,
-    systemState,
+
+  const memoryContextPrompt = buildMemoryContextPrompt({
     username,
     userMemories: memoryContext.userMemories,
     dailyNotesText: memoryContext.dailyNotesText,
   });
+
+  const volatileStatePrompt = buildVolatileStatePrompt({
+    channel,
+    systemState,
+    username,
+  });
+
+  // Legacy combined prompt for backward compat
+  const dynamicSystemPrompt = [memoryContextPrompt, volatileStatePrompt]
+    .filter(Boolean)
+    .join("\n\n");
 
   const baseTools: ToolSet = createChatTools(
     {
@@ -711,14 +767,27 @@ export async function prepareRyoConversationModelInput(
     tools,
   });
 
+  // Three-tier system message structure for optimal prompt caching:
+  //   1. Static instructions — identical across all users/requests (cacheable)
+  //   2. Memory context   — stable per-user, changes ~once per session (cacheable prefix extends)
+  //   3. Volatile state    — changes every request (time, apps, media — never cached)
   const enrichedMessages = [
     {
       role: "system" as const,
       content: staticSystemPrompt,
       ...CACHE_CONTROL_OPTIONS,
     },
-    ...(dynamicSystemPrompt
-      ? [{ role: "system" as const, content: dynamicSystemPrompt }]
+    ...(memoryContextPrompt
+      ? [
+          {
+            role: "system" as const,
+            content: memoryContextPrompt,
+            ...CACHE_CONTROL_OPTIONS,
+          },
+        ]
+      : []),
+    ...(volatileStatePrompt
+      ? [{ role: "system" as const, content: volatileStatePrompt }]
       : []),
     ...modelMessages,
   ];
@@ -730,6 +799,8 @@ export async function prepareRyoConversationModelInput(
     loadedSections,
     staticSystemPrompt,
     dynamicSystemPrompt,
+    memoryContextPrompt,
+    volatileStatePrompt,
     userMemories: memoryContext.userMemories,
     dailyNotesText: memoryContext.dailyNotesText,
     userTimeZone,
