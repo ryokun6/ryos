@@ -185,6 +185,26 @@ const CHANNEL_PROMPT_SECTIONS = {
   ],
 } as const;
 
+const SYSTEM_STATE_SCHEMA = `<system_state_schema>
+The runtime context is provided in a separate <system_state> message.
+Treat every field as optional and best-effort.
+- USER CONTEXT: current user identity
+- TIME & LOCATION: Ryo time, optional user local time, optional geo/IP hints
+- DAILY NOTES (recent journal): rolling short-term context
+- LONG-TERM MEMORIES: durable user facts and preferences
+- RUNNING APPLICATIONS: foreground/background app instances
+- MEDIA PLAYBACK: video/iPod/karaoke status and optional lyrics
+- INTERNET EXPLORER: active URL, target year, page title/content snapshot
+- TEXTEDIT DOCUMENTS: currently open docs and optional content previews
+- CHAT ROOM CONTEXT: room-specific reply constraints when present
+Use this context for relevance and personalization, but do not assume missing fields.
+</system_state_schema>`;
+
+const STATIC_SYSTEM_PROMPTS: Record<RyoConversationChannel, string> = {
+  chat: [...CHANNEL_PROMPT_SECTIONS.chat, SYSTEM_STATE_SCHEMA].join("\n"),
+  telegram: [...CHANNEL_PROMPT_SECTIONS.telegram, SYSTEM_STATE_SCHEMA].join("\n"),
+};
+
 const CHANNEL_TOOL_PROFILES: Record<RyoConversationChannel, ChatToolProfile> = {
   chat: "all",
   telegram: "telegram",
@@ -291,7 +311,7 @@ export function ensureUIMessageFormat(
 export function buildStaticSystemPrompt(
   channel: RyoConversationChannel
 ): string {
-  return CHANNEL_PROMPT_SECTIONS[channel].join("\n");
+  return STATIC_SYSTEM_PROMPTS[channel];
 }
 
 export function buildContextAwarePrompts(channel: RyoConversationChannel): {
