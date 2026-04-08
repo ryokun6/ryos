@@ -33,6 +33,7 @@ import {
   type ChatToolProfile,
   type ChatToolsContext,
 } from "../chat/tools/index.js";
+import { createSystemMessages } from "./prompt-cache.js";
 
 export interface RyoConversationSystemState {
   username?: string | null;
@@ -159,12 +160,6 @@ export interface PreparedRyoConversation {
   dailyNotesText: string | null;
   userTimeZone?: string;
 }
-
-const CACHE_CONTROL_OPTIONS = {
-  providerOptions: {
-    anthropic: { cacheControl: { type: "ephemeral" } },
-  },
-} as const;
 
 const CHANNEL_PROMPT_SECTIONS = {
   chat: [
@@ -711,15 +706,11 @@ export async function prepareRyoConversationModelInput(
     tools,
   });
 
-  const enrichedMessages = [
-    {
-      role: "system" as const,
-      content: staticSystemPrompt,
-      ...CACHE_CONTROL_OPTIONS,
-    },
-    ...(dynamicSystemPrompt
-      ? [{ role: "system" as const, content: dynamicSystemPrompt }]
-      : []),
+  const enrichedMessages: ModelMessage[] = [
+    ...createSystemMessages({
+      staticPrompt: staticSystemPrompt,
+      dynamicPrompt: dynamicSystemPrompt,
+    }),
     ...modelMessages,
   ];
 

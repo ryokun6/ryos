@@ -14,6 +14,10 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
+import {
+  createDynamicSystemMessage,
+  createStaticSystemMessage,
+} from "./_utils/prompt-cache.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -236,14 +240,13 @@ const buildModelMessages = (
   context?: string
 ): ModelMessage[] => {
   const messages: ModelMessage[] = [
-    { role: "system", content: APPLET_SYSTEM_PROMPT.trim() },
+    createStaticSystemMessage(APPLET_SYSTEM_PROMPT.trim()),
   ];
 
   if (context) {
-    messages.push({
-      role: "system",
-      content: `<applet_context>${context}</applet_context>`,
-    });
+    messages.push(
+      createDynamicSystemMessage(`<applet_context>${context}</applet_context>`)
+    );
   }
 
   conversation.forEach((message, index) => {
