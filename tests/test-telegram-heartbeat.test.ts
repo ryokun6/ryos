@@ -659,6 +659,49 @@ describe("telegram heartbeat helpers", () => {
     expect(prepared.dynamicSystemPrompt).toContain("projects: User is actively iterating");
     expect(prepared.dynamicSystemPrompt).not.toContain("## DAILY NOTES (recent journal)");
   });
+
+  test("heartbeat prompt sections keep memory separate from runtime state", async () => {
+    const prepared = await prepareRyoConversationModelInput({
+      channel: "telegram",
+      username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
+      model: "gpt-5.4",
+      messages: [
+        {
+          id: "heartbeat-3",
+          role: "user",
+          content: buildTelegramHeartbeatPrompt({
+            dailyNoteSnapshot: "- 10:15:00: review release notes",
+            recentTelegramSnapshot:
+              "- 2026-03-07T18:00:00.000Z user: i need the summary",
+            heartbeatLogSnapshot: "- 09:30:00: sent - earlier check-in",
+          }),
+        },
+      ],
+      preloadedMemoryContext: {
+        userMemories: {
+          version: 1,
+          memories: [
+            {
+              key: "projects",
+              summary: "User is actively iterating on ryOS ambient agent behavior.",
+              updatedAt: 123,
+            },
+          ],
+        },
+        dailyNotesText: null,
+        userTimeZone: "America/Los_Angeles",
+      },
+    });
+
+    expect(prepared.loadedSections).toContain("MEMORY_CONTEXT");
+    expect(prepared.loadedSections).toContain("TELEGRAM_RUNTIME_SYSTEM_STATE");
+    expect(prepared.dynamicSystemPrompts).toHaveLength(2);
+    expect(prepared.dynamicSystemPrompts[0]).toContain("<memory_context>");
+    expect(prepared.dynamicSystemPrompts[0]).toContain("projects: User is actively iterating");
+    expect(prepared.dynamicSystemPrompts[1]).toContain("<system_state>");
+    expect(prepared.dynamicSystemPrompts[1]).toContain("Current User:");
+    expect(prepared.dynamicSystemPrompts[1]).not.toContain("## LONG-TERM MEMORIES");
+  });
 });
 
 describe("vercel cron wiring", () => {

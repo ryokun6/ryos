@@ -128,4 +128,59 @@ describe("prepareRyoConversationModelInput web search gating", () => {
 
     expect("google_search" in prepared.tools).toBe(false);
   });
+
+  test("splits cacheable memory context from volatile runtime state", async () => {
+    const prepared = await prepareRyoConversationModelInput({
+      channel: "chat",
+      messages: baseMessages,
+      model: "gpt-5.4",
+      username: "ryo",
+      systemState: {
+        ...baseSystemState,
+        runningApps: {
+          foreground: {
+            instanceId: "chat-1",
+            appId: "chats",
+            title: "Chats",
+          },
+          background: [],
+        },
+      },
+      preloadedMemoryContext: {
+        userMemories: {
+          version: 1,
+          memories: [
+            {
+              key: "projects",
+              summary: "User is iterating on prompt caching",
+              updatedAt: 123,
+            },
+          ],
+        },
+        dailyNotesText: "2026-03-07 – exploring static prompt caching",
+        userTimeZone: "America/Los_Angeles",
+      },
+    });
+
+    expect(prepared.loadedSections).toEqual([
+      "STATIC_SYSTEM_PROMPT",
+      "MEMORY_CONTEXT",
+      "RUNTIME_SYSTEM_STATE",
+    ]);
+    expect(prepared.dynamicSystemPrompts).toHaveLength(2);
+    expect(prepared.dynamicSystemPrompts[0]).toContain("<memory_context>");
+    expect(prepared.dynamicSystemPrompts[0]).toContain("## DAILY NOTES (recent journal)");
+    expect(prepared.dynamicSystemPrompts[0]).toContain("projects: User is iterating on prompt caching");
+    expect(prepared.dynamicSystemPrompts[0]).not.toContain("<system_state>");
+    expect(prepared.dynamicSystemPrompts[1]).toContain("<system_state>");
+    expect(prepared.dynamicSystemPrompts[1]).toContain("## RUNNING APPLICATIONS");
+    expect(prepared.dynamicSystemPrompts[1]).not.toContain("## LONG-TERM MEMORIES");
+
+    expect(prepared.enrichedMessages[0]?.role).toBe("system");
+    expect(prepared.enrichedMessages[0]).toHaveProperty("providerOptions");
+    expect(prepared.enrichedMessages[1]?.role).toBe("system");
+    expect(prepared.enrichedMessages[1]).toHaveProperty("providerOptions");
+    expect(prepared.enrichedMessages[2]?.role).toBe("system");
+    expect(prepared.enrichedMessages[2]).not.toHaveProperty("providerOptions");
+  });
 });

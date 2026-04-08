@@ -14,6 +14,7 @@ import {
   CODE_GENERATION_INSTRUCTIONS,
   CORE_PRIORITY_INSTRUCTIONS,
   MEMORY_INSTRUCTIONS,
+  PROMPT_CACHE_CONTROL_OPTIONS,
   RYO_PERSONA_INSTRUCTIONS,
   TELEGRAM_CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
@@ -154,17 +155,12 @@ export interface PreparedRyoConversation {
   enrichedMessages: ModelMessage[];
   loadedSections: string[];
   staticSystemPrompt: string;
+  dynamicSystemPrompts: string[];
   dynamicSystemPrompt: string;
   userMemories: MemoryIndex | null;
   dailyNotesText: string | null;
   userTimeZone?: string;
 }
-
-const CACHE_CONTROL_OPTIONS = {
-  providerOptions: {
-    anthropic: { cacheControl: { type: "ephemeral" } },
-  },
-} as const;
 
 const CHANNEL_PROMPT_SECTIONS = {
   chat: [
@@ -184,6 +180,11 @@ const CHANNEL_PROMPT_SECTIONS = {
     MEMORY_INSTRUCTIONS,
   ],
 } as const;
+
+const STATIC_CHANNEL_PROMPTS: Record<RyoConversationChannel, string> = {
+  chat: CHANNEL_PROMPT_SECTIONS.chat.join("\n"),
+  telegram: CHANNEL_PROMPT_SECTIONS.telegram.join("\n"),
+};
 
 const CHANNEL_TOOL_PROFILES: Record<RyoConversationChannel, ChatToolProfile> = {
   chat: "all",
@@ -291,7 +292,7 @@ export function ensureUIMessageFormat(
 export function buildStaticSystemPrompt(
   channel: RyoConversationChannel
 ): string {
-  return CHANNEL_PROMPT_SECTIONS[channel].join("\n");
+  return STATIC_CHANNEL_PROMPTS[channel];
 }
 
 export function buildContextAwarePrompts(channel: RyoConversationChannel): {
@@ -299,13 +300,19 @@ export function buildContextAwarePrompts(channel: RyoConversationChannel): {
   loadedSections: string[];
 } {
   return {
-    prompts: [buildStaticSystemPrompt(channel)],
+    prompts: [STATIC_CHANNEL_PROMPTS[channel]],
     loadedSections: [
       channel === "telegram"
         ? "TELEGRAM_STATIC_SYSTEM_PROMPT"
         : "STATIC_SYSTEM_PROMPT",
     ],
   };
+}
+
+interface DynamicPromptSection {
+  name: string;
+  content: string;
+  cacheable?: boolean;
 }
 
 export async function loadRyoMemoryContext({
@@ -359,18 +366,63 @@ export async function loadRyoMemoryContext({
   }
 }
 
-export function buildDynamicSystemPrompt({
+function buildMemoryContextPrompt({
+  dailyNotesText,
+  userMemories,
+}: {
+  dailyNotesText?: string | null;
+  userMemories?: MemoryIndex | null;
+}): string {
+  let prompt = "";
+
+  if (dailyNotesText) {
+    prompt += `## DAILY NOTES (recent journal)\n${dailyNotesText}`;
+  }
+
+  if (userMemories && userMemories.memories.length > 0) {
+    if (prompt) {
+      prompt += `\n\n`;
+    }
+    prompt += `## LONG-TERM MEMORIES`;
+    prompt += `\nYou have ${userMemories.memories.length} long-term memories about this user:`;
+    for (const mem of userMemories.memories) {
+      prompt += `\n- ${mem.key}: ${mem.summary}`;
+    }
+    prompt += `\nUse memoryRead("key") to get full details for any memory.`;
+  }
+
+  if (!prompt) {
+    return "";
+  }
+
+  return `<memory_context>
+${prompt}
+</memory_context>`;
+}
+
+function formatAppInstance(inst: {
+  appId: string;
+  title?: string;
+  appletPath?: string;
+  appletId?: string;
+}): string {
+  let info = inst.appId;
+  if (inst.title) info += ` (${inst.title})`;
+  if (inst.appId === "applet-viewer") {
+    if (inst.appletPath) info += ` [path: ${inst.appletPath}]`;
+    if (inst.appletId) info += ` [appletId: ${inst.appletId}]`;
+  }
+  return info;
+}
+
+function buildRuntimeSystemStatePrompt({
   channel,
   systemState,
   username,
-  userMemories,
-  dailyNotesText,
 }: {
   channel: RyoConversationChannel;
   systemState?: RyoConversationSystemState;
   username?: string | null;
-  userMemories?: MemoryIndex | null;
-  dailyNotesText?: string | null;
 }): string {
   const channelProfile = CHANNEL_STATE_PROFILES[channel];
   const effectiveState =
@@ -436,37 +488,8 @@ User Location: ${location} (inferred from IP, may be inaccurate)`;
     }
   }
 
-  if (dailyNotesText) {
-    prompt += `\n\n## DAILY NOTES (recent journal)`;
-    prompt += `\n${dailyNotesText}`;
-  }
-
-  if (userMemories && userMemories.memories.length > 0) {
-    prompt += `\n\n## LONG-TERM MEMORIES`;
-    prompt += `\nYou have ${userMemories.memories.length} long-term memories about this user:`;
-    for (const mem of userMemories.memories) {
-      prompt += `\n- ${mem.key}: ${mem.summary}`;
-    }
-    prompt += `\nUse memoryRead("key") to get full details for any memory.`;
-  }
-
   if (channelProfile.includeRunningApps) {
     prompt += `\n\n## RUNNING APPLICATIONS`;
-
-    const formatAppInstance = (inst: {
-      appId: string;
-      title?: string;
-      appletPath?: string;
-      appletId?: string;
-    }) => {
-      let info = inst.appId;
-      if (inst.title) info += ` (${inst.title})`;
-      if (inst.appId === "applet-viewer") {
-        if (inst.appletPath) info += ` [path: ${inst.appletPath}]`;
-        if (inst.appletId) info += ` [appletId: ${inst.appletId}]`;
-      }
-      return info;
-    };
 
     if (effectiveState.runningApps?.foreground) {
       prompt += `
@@ -617,24 +640,144 @@ ${index + 1}. ${instance.title}${unsavedMark}${pathInfo} (instanceId: ${instance
 
   prompt += `\n</system_state>`;
 
-  if (
-    channelProfile.includeChatRoomContext &&
-    effectiveState.chatRoomContext
-  ) {
-    prompt += `\n\n<chat_room_reply_instructions>
+  return prompt;
+}
+
+export function buildChatRoomContextPrompt(
+  chatRoomContext?: {
+    roomId: string;
+    recentMessages?: string;
+    mentionedMessage?: string;
+  } | null
+): string {
+  if (!chatRoomContext) {
+    return "";
+  }
+
+  return `<chat_room_reply_instructions>
 ## CHAT ROOM CONTEXT
-Room ID: ${effectiveState.chatRoomContext.roomId}
+Room ID: ${chatRoomContext.roomId}
 Your Role: Respond as 'ryo' in this IRC-style chat room
 Response Style: Use extremely concise responses
 
 Recent Conversation:
-${effectiveState.chatRoomContext.recentMessages}
+${chatRoomContext.recentMessages || ""}
 
-Mentioned Message: "${effectiveState.chatRoomContext.mentionedMessage}"
+Mentioned Message: "${chatRoomContext.mentionedMessage || ""}"
 </chat_room_reply_instructions>`;
+}
+
+export function buildCompactChatRoomContextPrompt(
+  chatRoomContext?: {
+    roomId: string;
+    recentMessages?: string;
+    mentionedMessage?: string;
+  } | null
+): string {
+  if (!chatRoomContext) {
+    return "";
   }
 
-  return prompt;
+  return `<chat_room_context>
+roomId: ${chatRoomContext.roomId}
+recentMessages:
+${chatRoomContext.recentMessages || ""}
+mentionedMessage: ${chatRoomContext.mentionedMessage || ""}
+</chat_room_context>`;
+}
+
+export function buildRoomReplyContextPrompt({
+  roomId,
+  recentMessages,
+  mentionedMessage,
+}: {
+  roomId: string;
+  recentMessages?: string;
+  mentionedMessage?: string;
+}): string {
+  return `<chat_room_context>
+roomId: ${roomId}
+recentMessages:
+${recentMessages || ""}
+mentionedMessage: ${mentionedMessage || ""}
+</chat_room_context>`;
+}
+
+export function buildDynamicSystemPromptSections({
+  channel,
+  systemState,
+  username,
+  userMemories,
+  dailyNotesText,
+}: {
+  channel: RyoConversationChannel;
+  systemState?: RyoConversationSystemState;
+  username?: string | null;
+  userMemories?: MemoryIndex | null;
+  dailyNotesText?: string | null;
+}): DynamicPromptSection[] {
+  const channelProfile = CHANNEL_STATE_PROFILES[channel];
+  const sections: DynamicPromptSection[] = [];
+
+  const memoryPrompt = buildMemoryContextPrompt({
+    dailyNotesText,
+    userMemories,
+  });
+  if (memoryPrompt) {
+    sections.push({
+      name: "MEMORY_CONTEXT",
+      content: memoryPrompt,
+      cacheable: true,
+    });
+  }
+
+  const runtimePrompt = buildRuntimeSystemStatePrompt({
+    channel,
+    systemState,
+    username,
+  });
+  if (runtimePrompt) {
+    sections.push({
+      name:
+        channel === "telegram"
+          ? "TELEGRAM_RUNTIME_SYSTEM_STATE"
+          : "RUNTIME_SYSTEM_STATE",
+      content: runtimePrompt,
+    });
+  }
+
+  if (channelProfile.includeChatRoomContext && systemState?.chatRoomContext) {
+    sections.push({
+      name: "CHAT_ROOM_REPLY_INSTRUCTIONS",
+      content: buildChatRoomContextPrompt(systemState.chatRoomContext),
+    });
+  }
+
+  return sections;
+}
+
+export function buildDynamicSystemPrompt({
+  channel,
+  systemState,
+  username,
+  userMemories,
+  dailyNotesText,
+}: {
+  channel: RyoConversationChannel;
+  systemState?: RyoConversationSystemState;
+  username?: string | null;
+  userMemories?: MemoryIndex | null;
+  dailyNotesText?: string | null;
+}): string {
+  const sections = buildDynamicSystemPromptSections({
+    channel,
+    systemState,
+    username,
+    userMemories,
+    dailyNotesText,
+  });
+
+  return sections.map((section) => section.content).join("\n\n");
 }
 
 export async function prepareRyoConversationModelInput(
@@ -669,13 +812,17 @@ export async function prepareRyoConversationModelInput(
   const { prompts: staticPrompts, loadedSections } =
     buildContextAwarePrompts(channel);
   const staticSystemPrompt = staticPrompts.join("\n");
-  const dynamicSystemPrompt = buildDynamicSystemPrompt({
+  const dynamicPromptSections = buildDynamicSystemPromptSections({
     channel,
     systemState,
     username,
     userMemories: memoryContext.userMemories,
     dailyNotesText: memoryContext.dailyNotesText,
   });
+  const dynamicSystemPrompts = dynamicPromptSections.map(
+    (section) => section.content
+  );
+  const dynamicSystemPrompt = dynamicSystemPrompts.join("\n\n");
 
   const baseTools: ToolSet = createChatTools(
     {
@@ -715,11 +862,13 @@ export async function prepareRyoConversationModelInput(
     {
       role: "system" as const,
       content: staticSystemPrompt,
-      ...CACHE_CONTROL_OPTIONS,
+      ...PROMPT_CACHE_CONTROL_OPTIONS,
     },
-    ...(dynamicSystemPrompt
-      ? [{ role: "system" as const, content: dynamicSystemPrompt }]
-      : []),
+    ...dynamicPromptSections.map((section) => ({
+      role: "system" as const,
+      content: section.content,
+      ...(section.cacheable ? PROMPT_CACHE_CONTROL_OPTIONS : {}),
+    })),
     ...modelMessages,
   ];
 
@@ -727,8 +876,12 @@ export async function prepareRyoConversationModelInput(
     selectedModel: getModelInstance(model),
     tools,
     enrichedMessages,
-    loadedSections,
+    loadedSections: [
+      ...loadedSections,
+      ...dynamicPromptSections.map((section) => section.name),
+    ],
     staticSystemPrompt,
+    dynamicSystemPrompts,
     dynamicSystemPrompt,
     userMemories: memoryContext.userMemories,
     dailyNotesText: memoryContext.dailyNotesText,
