@@ -111,7 +111,7 @@ describe("system prompt cache boundaries", () => {
       content: prepared.dynamicSystemPrompt,
     });
     expect(prepared.staticSystemPrompt).toContain("<chat_instructions>");
-    expect(prepared.staticSystemPrompt).not.toContain("San Francisco");
+    expect(prepared.staticSystemPrompt).not.toContain("User Location:");
     expect(prepared.staticSystemPrompt).not.toContain("10:30 AM");
     expect(prepared.staticSystemPrompt).not.toContain("# dynamic page content");
     expect(prepared.staticSystemPrompt).not.toContain("optimizing prompt cache behavior");
