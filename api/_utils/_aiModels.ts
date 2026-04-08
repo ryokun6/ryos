@@ -28,6 +28,11 @@ export const TELEGRAM_DEFAULT_MODEL: SupportedModel = DEFAULT_MODEL;
 
 type OpenAIReasoningEffort = "none" | "medium";
 
+type OpenAIProviderOptionsShape = {
+  reasoningEffort?: OpenAIReasoningEffort;
+  promptCacheKey?: string;
+};
+
 const OPENAI_REASONING_EFFORT_BY_MODEL: Partial<
   Record<SupportedModel, OpenAIReasoningEffort>
 > = {
@@ -53,19 +58,22 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
 };
 
 export function getOpenAIProviderOptions(
-  model: SupportedModel
-): { openai: { reasoningEffort?: OpenAIReasoningEffort } } | undefined {
+  model: SupportedModel,
+  extras?: { promptCacheKey?: string }
+): { openai: OpenAIProviderOptionsShape } | undefined {
   if (AI_MODELS[model].provider !== "OpenAI") {
     return undefined;
   }
 
-  const openaiOptions: {
-    reasoningEffort?: OpenAIReasoningEffort;
-  } = {};
+  const openaiOptions: OpenAIProviderOptionsShape = {};
 
   const reasoningEffort = OPENAI_REASONING_EFFORT_BY_MODEL[model];
   if (reasoningEffort) {
     openaiOptions.reasoningEffort = reasoningEffort;
+  }
+
+  if (extras?.promptCacheKey) {
+    openaiOptions.promptCacheKey = extras.promptCacheKey;
   }
 
   if (Object.keys(openaiOptions).length === 0) {

@@ -5,6 +5,7 @@ import {
   convertToModelMessages,
   type LanguageModel,
   type ModelMessage,
+  type SystemModelMessage,
   type ToolSet,
   type UIMessage,
 } from "ai";
@@ -151,7 +152,13 @@ export interface PrepareRyoConversationOptions {
 export interface PreparedRyoConversation {
   selectedModel: LanguageModel;
   tools: ToolSet;
+  /** Conversation messages only (no leading system blocks). Pass with `system: streamTextSystem` on streamText. */
   enrichedMessages: ModelMessage[];
+  /**
+   * Static + dynamic system instructions for streamText `system`.
+   * Keeps a stable static prefix first (Anthropic ephemeral cache) so providers can cache from the start.
+   */
+  streamTextSystem: string | SystemModelMessage | SystemModelMessage[];
   loadedSections: string[];
   staticSystemPrompt: string;
   dynamicSystemPrompt: string;
@@ -159,12 +166,6 @@ export interface PreparedRyoConversation {
   dailyNotesText: string | null;
   userTimeZone?: string;
 }
-
-const CACHE_CONTROL_OPTIONS = {
-  providerOptions: {
-    anthropic: { cacheControl: { type: "ephemeral" } },
-  },
-} as const;
 
 const CHANNEL_PROMPT_SECTIONS = {
   chat: [
@@ -184,6 +185,11 @@ const CHANNEL_PROMPT_SECTIONS = {
     MEMORY_INSTRUCTIONS,
   ],
 } as const;
+
+/** Pre-joined at module load so the static prefix is one stable string for provider prompt caches. */
+const STATIC_SYSTEM_PROMPT_CHAT = CHANNEL_PROMPT_SECTIONS.chat.join("\n");
+const STATIC_SYSTEM_PROMPT_TELEGRAM =
+  CHANNEL_PROMPT_SECTIONS.telegram.join("\n");
 
 const CHANNEL_TOOL_PROFILES: Record<RyoConversationChannel, ChatToolProfile> = {
   chat: "all",
@@ -291,7 +297,9 @@ export function ensureUIMessageFormat(
 export function buildStaticSystemPrompt(
   channel: RyoConversationChannel
 ): string {
-  return CHANNEL_PROMPT_SECTIONS[channel].join("\n");
+  return channel === "telegram"
+    ? STATIC_SYSTEM_PROMPT_TELEGRAM
+    : STATIC_SYSTEM_PROMPT_CHAT;
 }
 
 export function buildContextAwarePrompts(channel: RyoConversationChannel): {
@@ -711,22 +719,26 @@ export async function prepareRyoConversationModelInput(
     tools,
   });
 
-  const enrichedMessages = [
-    {
-      role: "system" as const,
-      content: staticSystemPrompt,
-      ...CACHE_CONTROL_OPTIONS,
+  const staticSystemMessage: SystemModelMessage = {
+    role: "system",
+    content: staticSystemPrompt,
+    providerOptions: {
+      anthropic: { cacheControl: { type: "ephemeral" } },
     },
-    ...(dynamicSystemPrompt
-      ? [{ role: "system" as const, content: dynamicSystemPrompt }]
-      : []),
-    ...modelMessages,
-  ];
+  };
+
+  const streamTextSystem: PreparedRyoConversation["streamTextSystem"] =
+    dynamicSystemPrompt
+      ? [staticSystemMessage, { role: "system", content: dynamicSystemPrompt }]
+      : staticSystemMessage;
+
+  const enrichedMessages: ModelMessage[] = [...modelMessages];
 
   return {
     selectedModel: getModelInstance(model),
     tools,
     enrichedMessages,
+    streamTextSystem,
     loadedSections,
     staticSystemPrompt,
     dynamicSystemPrompt,

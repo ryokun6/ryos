@@ -128,4 +128,26 @@ describe("prepareRyoConversationModelInput web search gating", () => {
 
     expect("google_search" in prepared.tools).toBe(false);
   });
+
+  test("streamTextSystem puts cacheable static instructions before dynamic system_state", async () => {
+    const prepared = await prepareConversation({
+      channel: "chat",
+      model: "gpt-5.4",
+      username: "ryo",
+      systemState: baseSystemState,
+    });
+
+    expect(Array.isArray(prepared.streamTextSystem)).toBe(true);
+    const sys = prepared.streamTextSystem as Array<{
+      role: string;
+      content: string;
+      providerOptions?: { anthropic?: { cacheControl?: unknown } };
+    }>;
+    expect(sys[0].role).toBe("system");
+    expect(sys[0].content).toBe(prepared.staticSystemPrompt);
+    expect(sys[0].providerOptions?.anthropic?.cacheControl).toBeDefined();
+    expect(sys[1].role).toBe("system");
+    expect(sys[1].content).toContain("<system_state>");
+    expect(prepared.enrichedMessages.every((m) => m.role !== "system")).toBe(true);
+  });
 });
