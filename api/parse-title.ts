@@ -4,6 +4,7 @@ import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import { createCachedSystemMessage } from "./_utils/prompt-caching.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -86,10 +87,9 @@ export default apiHandler<ParseTitleRequest>(
           name: "parsed_title",
         }),
         messages: [
-          {
-            role: "system",
-            content: `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist. If possible, also extract the album name. Use the channel name as additional context for identifying the artist, especially when the artist name is not clear from the title alone. Respond ONLY with a valid JSON object matching the provided schema. If you cannot determine a field, omit it or set it to null. Always prefer the original language names over translated/romanized versions. For example, prefer "晴天" over "Sunny Day", "周杰倫" over "Jay Chou", "뉴진스" over "NewJeans". When both original and translated names are present, use the original language version. If the song originates from a non-English speaking region, use the native script (Chinese characters, Korean hangul, Japanese kanji/hiragana/katakana, etc.). Example input: title="Jay Chou - Sunny Day (周杰倫 - 晴天)", author_name="Jay Chou". Example output: {"title": "晴天", "artist": "周杰倫"}. Example input: title="NewJeans (뉴진스) 'How Sweet' Official MV", author_name="HYBE LABELS". Example output: {"title": "How Sweet", "artist": "뉴진스"}. Example input: title="Lofi Hip Hop Radio - Beats to Relax/Study to", author_name="ChillHop Music". Example output: {"title": "Lofi Hip Hop Radio - Beats to Relax/Study to", "artist": null}.`,
-          },
+          createCachedSystemMessage(
+            `You are an expert music metadata parser. Given a raw YouTube video title and optionally the channel name, extract the song title and artist. If possible, also extract the album name. Use the channel name as additional context for identifying the artist, especially when the artist name is not clear from the title alone. Respond ONLY with a valid JSON object matching the provided schema. If you cannot determine a field, omit it or set it to null. Always prefer the original language names over translated/romanized versions. For example, prefer "晴天" over "Sunny Day", "周杰倫" over "Jay Chou", "뉴진스" over "NewJeans". When both original and translated names are present, use the original language version. If the song originates from a non-English speaking region, use the native script (Chinese characters, Korean hangul, Japanese kanji/hiragana/katakana, etc.). Example input: title="Jay Chou - Sunny Day (周杰倫 - 晴天)", author_name="Jay Chou". Example output: {"title": "晴天", "artist": "周杰倫"}. Example input: title="NewJeans (뉴진스) 'How Sweet' Official MV", author_name="HYBE LABELS". Example output: {"title": "How Sweet", "artist": "뉴진스"}. Example input: title="Lofi Hip Hop Radio - Beats to Relax/Study to", author_name="ChillHop Music". Example output: {"title": "Lofi Hip Hop Radio - Beats to Relax/Study to", "artist": null}.`
+          ),
           {
             role: "user",
             content: `Title: ${rawTitle}${author_name ? `\nChannel: ${author_name}` : ""}`,

@@ -34,10 +34,11 @@ import {
   prepareRyoConversationModelInput,
   type SimpleConversationMessage,
 } from "../_utils/ryo-conversation.js";
+import { preparePromptCachingStep } from "../_utils/prompt-caching.js";
 import {
   TELEGRAM_DEFAULT_MODEL,
   SUPPORTED_AI_MODELS,
-  getOpenAIProviderOptions,
+  getPromptOptimizedProviderOptions,
   type SupportedModel,
 } from "../_utils/_aiModels.js";
 import {
@@ -685,7 +686,8 @@ export default async function handler(
       temperature: 0.7,
       maxOutputTokens: 4000,
       stopWhen: stepCountIs(6),
-      providerOptions: getOpenAIProviderOptions(telegramModel),
+      prepareStep: preparePromptCachingStep,
+      providerOptions: getPromptOptimizedProviderOptions(telegramModel),
       onChunk: async ({ chunk }) => {
         if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
           return;

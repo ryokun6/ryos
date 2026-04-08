@@ -12,6 +12,7 @@ import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../room
 import { broadcastNewMessage } from "../rooms/_helpers/_pusher.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import { createCachedSystemMessage } from "../_utils/prompt-caching.js";
 
 export const runtime = "nodejs";
 
@@ -111,7 +112,7 @@ export default apiHandler<RyoReplyRequest>(
     }
 
     const messages = [
-      { role: "system" as const, content: STATIC_SYSTEM_PROMPT },
+      createCachedSystemMessage(STATIC_SYSTEM_PROMPT),
       systemState?.chatRoomContext
         ? {
             role: "system" as const,
