@@ -241,11 +241,7 @@ export default apiHandler<{
       });
 
       try {
-        const { text, finishReason } = await generateText({
-          model: google("gemini-3-flash-preview"),
-          temperature: 1,
-          maxOutputTokens: 2000,
-          system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
+        const proactiveGreetingStaticSystem = `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
 
 Your style:
 - Lowercase, casual, warm
@@ -256,10 +252,6 @@ Your style:
 - Be specific — reference something from their memories or recent activity
 - Mix it up: sometimes ask a question, sometimes share an observation, sometimes reference a shared interest
 
-It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
-
-${greetingMemoryContext}
-
 Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.
 
 Examples of good greetings:
@@ -268,7 +260,20 @@ Examples of good greetings:
 - "back again. still working on that project?"
 - "hey ryo. happy friday — any plans?"
 
-Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump straight into something specific and interesting. Output ONLY the greeting text, nothing else.`,
+Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump straight into something specific and interesting. Output ONLY the greeting text, nothing else.`;
+
+        const proactiveGreetingDynamicSystem = `It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
+
+${greetingMemoryContext}`;
+
+        const { text, finishReason } = await generateText({
+          model: google("gemini-3-flash-preview"),
+          temperature: 1,
+          maxOutputTokens: 2000,
+          system: [
+            { role: "system", content: proactiveGreetingStaticSystem },
+            { role: "system", content: proactiveGreetingDynamicSystem },
+          ],
           prompt: "Generate a proactive greeting.",
         });
 
@@ -289,6 +294,7 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
       selectedModel,
       tools,
       enrichedMessages,
+      streamTextSystem,
       loadedSections,
       staticSystemPrompt,
     } = await prepareRyoConversationModelInput({
@@ -320,8 +326,14 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
       log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
     });
 
+    const openaiPromptCacheKey =
+      username && model === "gpt-5.4"
+        ? `ryo-chat:${username}`
+        : undefined;
+
     const result = streamText({
       model: selectedModel,
+      system: streamTextSystem,
       messages: enrichedMessages,
       tools,
       temperature: 0.7,
@@ -336,7 +348,9 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
           ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
           : {}),
       },
-      providerOptions: getOpenAIProviderOptions(model as SupportedModel),
+      providerOptions: getOpenAIProviderOptions(model as SupportedModel, {
+        promptCacheKey: openaiPromptCacheKey,
+      }),
     });
 
     // Set CORS headers

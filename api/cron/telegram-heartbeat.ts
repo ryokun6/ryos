@@ -381,6 +381,7 @@ export default async function handler(
     selectedModel,
     tools,
     enrichedMessages,
+    streamTextSystem,
     loadedSections,
     staticSystemPrompt,
   } = await prepareRyoConversationModelInput({
@@ -406,14 +407,20 @@ export default async function handler(
     approxTokens: Math.round(staticSystemPrompt.length / 4),
   });
 
+  const openaiPromptCacheKey =
+    telegramModel === "gpt-5.4" ? `ryo-telegram-hb:${username}` : undefined;
+
   const result = streamText({
     model: selectedModel,
+    system: streamTextSystem,
     messages: enrichedMessages,
     tools,
     temperature: 0.7,
     maxOutputTokens: 4000,
     stopWhen: stepCountIs(6),
-    providerOptions: getOpenAIProviderOptions(telegramModel),
+    providerOptions: getOpenAIProviderOptions(telegramModel, {
+      promptCacheKey: openaiPromptCacheKey,
+    }),
     onStepFinish: async (stepResult) => {
       if (stepResult.toolResults.length > 0) {
         logger.info("Telegram heartbeat completed tool step", {

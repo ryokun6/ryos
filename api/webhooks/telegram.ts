@@ -630,6 +630,7 @@ export default async function handler(
     selectedModel,
     tools,
     enrichedMessages,
+    streamTextSystem,
     loadedSections,
     staticSystemPrompt,
   } = await prepareRyoConversationModelInput({
@@ -678,14 +679,22 @@ export default async function handler(
       }
     );
 
+    const openaiPromptCacheKey =
+      telegramModel === "gpt-5.4"
+        ? `ryo-telegram:${linkedAccount.username}`
+        : undefined;
+
     const result = streamText({
       model: selectedModel,
+      system: streamTextSystem,
       messages: finalMessages,
       tools: toolsWithStatus,
       temperature: 0.7,
       maxOutputTokens: 4000,
       stopWhen: stepCountIs(6),
-      providerOptions: getOpenAIProviderOptions(telegramModel),
+      providerOptions: getOpenAIProviderOptions(telegramModel, {
+        promptCacheKey: openaiPromptCacheKey,
+      }),
       onChunk: async ({ chunk }) => {
         if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
           return;

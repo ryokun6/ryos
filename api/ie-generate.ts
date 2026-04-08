@@ -3,6 +3,7 @@ import {
   smoothStream,
   convertToModelMessages,
   type ModelMessage,
+  type SystemModelMessage,
   type UIMessage,
 } from "ai";
 import * as RateLimit from "./_utils/_rate-limit.js";
@@ -67,14 +68,19 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
 };
 
 // --- Static System Prompt ---
-// Static portion of the system prompt shared across requests. This string is
-// passed via the `system` option to enable prompt caching by the model
-// provider.
-const STATIC_SYSTEM_PROMPT = `${CORE_PRIORITY_INSTRUCTIONS}\n\nThe user is in ryOS Internet Explorer asking to time travel with website context and a specific year. You are Ryo, a visionary designer specialized in turning present websites into past and futuristic coherent versions in story and design.\n\nGenerate content for the URL path and year provided, original site content, and use provided HTML as template if available.\n\n${IE_HTML_GENERATION_INSTRUCTIONS}`;
+// Large stable prefix (module-constant): pass first in `system` so providers can
+// cache from the start. Year/URL-specific lines live in getDynamicSystemPrompt.
+const STATIC_SYSTEM_PROMPT = `${CORE_PRIORITY_INSTRUCTIONS}\n\nThe user is in ryOS Internet Explorer asking to time travel with website context and a specific year. You are Ryo, a visionary designer specialized in turning present websites into past and futuristic coherent versions in story and design.\n\n${IE_HTML_GENERATION_INSTRUCTIONS}`;
 
-// Function to generate the dynamic portion of the system prompt. This portion
-// depends on the requested year and URL and will be sent as a regular system
-// message so it is not cached by the model provider.
+const IE_STATIC_SYSTEM_CACHED: SystemModelMessage = {
+  role: "system",
+  content: STATIC_SYSTEM_PROMPT,
+  providerOptions: {
+    anthropic: { cacheControl: { type: "ephemeral" } },
+  },
+};
+
+// Dynamic portion: requested year, URL-conditioned persona, and task framing.
 const getDynamicSystemPrompt = (
   year: number | null,
   rawUrl: string | null // Add rawUrl parameter
@@ -274,41 +280,31 @@ export default apiHandler<IEGenerateRequestBody>(
     // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
-    // Build system messages similar to chat.ts approach
-    const staticSystemMessage = {
-      role: "system" as const,
-      content: STATIC_SYSTEM_PROMPT,
-    };
-
-    const dynamicSystemMessage = {
-      role: "system" as const,
-      content: systemPrompt,
-    };
-
     // Convert UIMessages to ModelMessages for the AI model (AI SDK v6)
     const uiMessages = ensureUIMessageFormat(incomingMessages);
     const modelMessages = await convertToModelMessages(uiMessages);
 
-    const enrichedMessages: ModelMessage[] = [
-      staticSystemMessage,
-      dynamicSystemMessage,
-      ...modelMessages,
+    const streamTextSystem: SystemModelMessage[] = [
+      IE_STATIC_SYSTEM_CACHED,
+      { role: "system", content: systemPrompt },
     ];
 
     logger.info("Starting generation", {
       model,
-      messageCount: enrichedMessages.length,
+      messageCount: modelMessages.length,
       cacheKey,
     });
 
     const result = streamText({
       model: selectedModel,
-      messages: enrichedMessages,
-      // We assume prompt/messages already include necessary system/user details
+      system: streamTextSystem,
+      messages: modelMessages,
       temperature: 0.7,
       maxOutputTokens: 4000,
       experimental_transform: smoothStream(),
-      providerOptions: getOpenAIProviderOptions(model),
+      providerOptions: getOpenAIProviderOptions(model, {
+        promptCacheKey: model === "gpt-5.4" ? "ie-time-travel" : undefined,
+      }),
       onFinish: async ({ text }) => {
         if (!cacheKey) {
           logger.info("No cacheKey available, skipping cache save");
