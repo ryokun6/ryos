@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo, useMemo } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -33,7 +33,6 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText, type ChatMarkdownToken } from "@/lib/chatMarkdown";
-import { measureBubble } from "@/lib/chatBubbleLayout";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -412,19 +411,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   ) {
     hasAquarium = true;
   }
-
-  const bubbleWidth = useMemo(() => {
-    if (!displayContent || showTypingDots) return undefined;
-    try {
-      const metrics = measureBubble(displayContent, 600, fontSize);
-      if (metrics.naturalWidth <= 600) {
-        return Math.ceil(metrics.naturalWidth);
-      }
-      return Math.ceil(metrics.shrinkWidth);
-    } catch {
-      return undefined;
-    }
-  }, [displayContent, fontSize, showTypingDots]);
 
   const combinedHighlightSeg = highlightSegment || localHighlightSegment;
   const combinedIsSpeaking = isSpeaking || localTtsSpeaking;
@@ -849,11 +835,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 (message.role === "user"
                   ? "bg-yellow-100 text-black"
                   : "bg-blue-100 text-black")
-          } ${bubbleWidth ? "" : "w-fit"} max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
-          style={{
-            fontSize: `${fontSize}px`,
-            ...(bubbleWidth ? { width: `${bubbleWidth + 16}px` } : {}),
-          }}
+          } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
+          style={{ fontSize: `${fontSize}px` }}
         >
           {showTypingDots ? (
             <TypingDots />
