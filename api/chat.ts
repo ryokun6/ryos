@@ -21,6 +21,7 @@ import {
   type RyoConversationSystemState,
   type SimpleConversationMessage,
 } from "./_utils/ryo-conversation.js";
+import { PROACTIVE_GREETING_INSTRUCTIONS } from "./_utils/_aiPrompts.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
@@ -241,35 +242,30 @@ export default apiHandler<{
       });
 
       try {
+        const greetingDynamicContext = `It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
+
+${greetingMemoryContext}
+
+Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.`;
+
         const { text, finishReason } = await generateText({
           model: google("gemini-3-flash-preview"),
           temperature: 1,
           maxOutputTokens: 2000,
-          system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
-
-Your style:
-- Lowercase, casual, warm
-- Short (1-2 sentences max, under 30 words)
-- No emojis unless natural
-- Sound like a close friend checking in, not a corporate assistant
-- Don't be cheesy or over-enthusiastic
-- Be specific — reference something from their memories or recent activity
-- Mix it up: sometimes ask a question, sometimes share an observation, sometimes reference a shared interest
-
-It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
-
-${greetingMemoryContext}
-
-Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.
-
-Examples of good greetings:
-- "hey, how's the cursor roadmap coming along?"
-- "morning — did you ever try that restaurant you mentioned?"
-- "back again. still working on that project?"
-- "hey ryo. happy friday — any plans?"
-
-Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump straight into something specific and interesting. Output ONLY the greeting text, nothing else.`,
-          prompt: "Generate a proactive greeting.",
+          messages: [
+            {
+              role: "system" as const,
+              content: PROACTIVE_GREETING_INSTRUCTIONS,
+            },
+            {
+              role: "system" as const,
+              content: greetingDynamicContext,
+            },
+            {
+              role: "user" as const,
+              content: "Generate a proactive greeting.",
+            },
+          ],
         });
 
         const greeting = text.trim();
