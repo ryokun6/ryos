@@ -13,6 +13,13 @@ import { setRoomPresence } from "./_helpers/_presence.js";
 import { broadcastRoomCreated } from "./_helpers/_pusher.js";
 import { filterVisibleRooms } from "./_helpers/_access.js";
 import type { Room } from "./_helpers/_types.js";
+import {
+  DEFAULT_IRC_HOST,
+  DEFAULT_IRC_PORT,
+  DEFAULT_IRC_TLS,
+  normalizeIrcChannel,
+} from "../_utils/irc/_types.js";
+import { notifyRoomBindingChange } from "../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -55,9 +62,18 @@ export default apiHandler(
 
     const username = user.username;
     const body = req.body || {};
-    const { name: originalName, type = "public", members = [] } = body;
+    const {
+      name: originalName,
+      type = "public",
+      members = [],
+      ircHost: ircHostBody,
+      ircPort: ircPortBody,
+      ircTls: ircTlsBody,
+      ircChannel: ircChannelBody,
+      ircServerLabel: ircServerLabelBody,
+    } = body;
 
-    if (!["public", "private"].includes(type)) {
+    if (!["public", "private", "irc"].includes(type)) {
       logger.response(400, Date.now() - startTime);
       res.status(400).json({ error: "Invalid room type" });
       return;
@@ -81,6 +97,19 @@ export default apiHandler(
       }
     }
 
+    if (type === "irc") {
+      if (username !== "ryo") {
+        logger.response(403, Date.now() - startTime);
+        res.status(403).json({ error: "Forbidden - Only admin can create IRC rooms" });
+        return;
+      }
+      if (isProfaneUsername(originalName || "")) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Room name contains inappropriate language" });
+        return;
+      }
+    }
+
     let normalizedMembers = [...(members || [])];
     if (type === "private") {
       if (!members || members.length === 0) {
@@ -97,6 +126,20 @@ export default apiHandler(
     let roomName: string;
     if (type === "public") {
       roomName = originalName.toLowerCase().replace(/ /g, "-");
+    } else if (type === "irc") {
+      // Derive the display name from the channel name so sidebar shows
+      // "#pieter" etc. Fall back to provided name.
+      const derivedChannel = normalizeIrcChannel(
+        ircChannelBody || originalName || ""
+      );
+      if (!derivedChannel) {
+        logger.response(400, Date.now() - startTime);
+        res
+          .status(400)
+          .json({ error: "IRC channel is required (e.g. #pieter)" });
+        return;
+      }
+      roomName = derivedChannel.replace(/^#/, "").toLowerCase();
     } else {
       const sortedMembers = [...normalizedMembers].sort();
       roomName = sortedMembers.map((m: string) => `@${m}`).join(", ");
@@ -111,6 +154,18 @@ export default apiHandler(
         createdAt: getCurrentTimestamp(),
         userCount: type === "private" ? normalizedMembers.length : 0,
         ...(type === "private" && { members: normalizedMembers }),
+        ...(type === "irc" && {
+          ircHost: (ircHostBody || DEFAULT_IRC_HOST).toString().toLowerCase(),
+          ircPort: Number(ircPortBody) || DEFAULT_IRC_PORT,
+          ircTls: typeof ircTlsBody === "boolean" ? ircTlsBody : DEFAULT_IRC_TLS,
+          ircChannel: normalizeIrcChannel(
+            ircChannelBody || originalName || ""
+          ),
+          ircServerLabel:
+            typeof ircServerLabelBody === "string" && ircServerLabelBody.trim()
+              ? ircServerLabelBody.trim()
+              : undefined,
+        }),
       };
 
       await setRoom(roomId, room);
@@ -118,6 +173,14 @@ export default apiHandler(
 
       if (type === "private") {
         await Promise.all(normalizedMembers.map((member: string) => setRoomPresence(roomId, member)));
+      }
+
+      if (type === "irc") {
+        try {
+          await notifyRoomBindingChange("bind", room);
+        } catch (err) {
+          logger.warn("IRC bridge bind failed", err);
+        }
       }
 
       await broadcastRoomCreated(room);

@@ -121,6 +121,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "ioredis": "^5.10.0",
     "ios-vibrator-pro-max": "^1.3.2",
+    "irc-framework": "^4.14.0",
     "leo-profanity": "^1.8.0",
     "next-themes": "^0.4.6",
     "openai": "^4.104.0",

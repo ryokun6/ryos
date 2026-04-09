@@ -197,8 +197,15 @@ export interface ChatsStoreState {
   ) => Promise<{ ok: boolean; error?: string }>;
   createRoom: (
     name: string,
-    type?: "public" | "private",
-    members?: string[]
+    type?: "public" | "private" | "irc",
+    members?: string[],
+    ircOptions?: {
+      ircHost?: string;
+      ircPort?: number;
+      ircTls?: boolean;
+      ircChannel?: string;
+      ircServerLabel?: string;
+    }
   ) => Promise<{ ok: boolean; error?: string; roomId?: string }>;
   deleteRoom: (roomId: string) => Promise<{ ok: boolean; error?: string }>;
   sendMessage: (
@@ -304,12 +311,14 @@ export const useChatsStore = create<ChatsStoreState>()(
           saveUsernameToRecovery(username);
           set({ username });
 
-          // Re-filter rooms: drop private rooms the new identity cannot see
+          // Re-filter rooms: drop private rooms the new identity cannot see.
+          // IRC rooms remain visible to everyone.
           const lowerUser = username?.toLowerCase() ?? null;
           const currentRooms = get().rooms;
           if (currentRooms.length > 0) {
             const filtered = currentRooms.filter((room) => {
-              if (!room.type || room.type === "public") return true;
+              if (!room.type || room.type === "public" || room.type === "irc")
+                return true;
               if (!lowerUser) return false;
               return Array.isArray(room.members) && room.members.includes(lowerUser);
             });
@@ -421,9 +430,11 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           const currentUsername = get().username?.toLowerCase() ?? null;
 
-          // Filter out private rooms where current user is not a member
+          // Filter out private rooms where current user is not a member.
+          // IRC rooms are visible to everyone.
           const filtered = newRooms.filter((room) => {
-            if (!room.type || room.type === "public") return true;
+            if (!room.type || room.type === "public" || room.type === "irc")
+              return true;
             if (!currentUsername) return false;
             return Array.isArray(room.members) && room.members.includes(currentUsername);
           });
@@ -1014,8 +1025,15 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         createRoom: async (
           name: string,
-          type: "public" | "private" = "public",
-          members: string[] = []
+          type: "public" | "private" | "irc" = "public",
+          members: string[] = [],
+          ircOptions: {
+            ircHost?: string;
+            ircPort?: number;
+            ircTls?: boolean;
+            ircChannel?: string;
+            ircServerLabel?: string;
+          } = {}
         ) => {
           const username = get().username;
 
@@ -1027,6 +1045,16 @@ export const useChatsStore = create<ChatsStoreState>()(
             const payload: CreateRoomPayload = { type };
             if (type === "public") {
               payload.name = name.trim();
+            } else if (type === "irc") {
+              payload.name = name.trim();
+              if (ircOptions.ircHost) payload.ircHost = ircOptions.ircHost;
+              if (ircOptions.ircPort) payload.ircPort = ircOptions.ircPort;
+              if (typeof ircOptions.ircTls === "boolean")
+                payload.ircTls = ircOptions.ircTls;
+              if (ircOptions.ircChannel)
+                payload.ircChannel = ircOptions.ircChannel;
+              if (ircOptions.ircServerLabel)
+                payload.ircServerLabel = ircOptions.ircServerLabel;
             } else {
               payload.members = members;
             }
@@ -1368,11 +1396,12 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           // Filter out private rooms the current user is not a member of.
           // Persisted state may contain stale private rooms from a
-          // previous session or a different user.
+          // previous session or a different user. IRC rooms are public-like.
           if (Array.isArray(finalState.rooms)) {
             const lowerUser = finalState.username?.toLowerCase() ?? null;
             finalState.rooms = finalState.rooms.filter((room) => {
-              if (!room.type || room.type === "public") return true;
+              if (!room.type || room.type === "public" || room.type === "irc")
+                return true;
               if (!lowerUser) return false;
               return Array.isArray(room.members) && room.members.includes(lowerUser);
             });

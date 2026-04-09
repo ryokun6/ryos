@@ -31,8 +31,15 @@ interface CreateRoomDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (
     name: string,
-    type: "public" | "private",
-    members: string[]
+    type: "public" | "private" | "irc",
+    members: string[],
+    ircOptions?: {
+      ircHost?: string;
+      ircPort?: number;
+      ircTls?: boolean;
+      ircChannel?: string;
+      ircServerLabel?: string;
+    }
   ) => Promise<{ ok: boolean; error?: string }>;
   isAdmin: boolean;
   currentUsername: string | null;
@@ -54,8 +61,14 @@ export function CreateRoomDialog({
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"public" | "private">("private");
+  const [activeTab, setActiveTab] = useState<"public" | "private" | "irc">(
+    "private"
+  );
   const [isSearching, setIsSearching] = useState(false);
+  const [ircChannel, setIrcChannel] = useState("#pieter");
+  const [ircHost, setIrcHost] = useState("irc.pieter.com");
+  const [ircPort, setIrcPort] = useState(6667);
+  const [ircTls, setIrcTls] = useState(false);
   const searchRequestIdRef = useRef(0);
 
   // Theme detection
@@ -71,6 +84,10 @@ export function CreateRoomDialog({
       setSelectedUsers(initialUsers); // Use initialUsers if provided
       setSearchTerm("");
       setUsers([]);
+      setIrcChannel("#pieter");
+      setIrcHost("irc.pieter.com");
+      setIrcPort(6667);
+      setIrcTls(false);
       // Reset to private tab when opening
       setActiveTab("private");
     }
@@ -132,7 +149,28 @@ export function CreateRoomDialog({
     setError(null);
 
     try {
-      const result = await onSubmit(roomName, activeTab, selectedUsers);
+      const ircOptions =
+        activeTab === "irc"
+          ? {
+              ircHost: ircHost.trim() || "irc.pieter.com",
+              ircPort: Number(ircPort) || 6667,
+              ircTls: Boolean(ircTls),
+              ircChannel: ircChannel.trim() || "#pieter",
+              ircServerLabel: (ircHost.trim() || "irc.pieter.com"),
+            }
+          : undefined;
+
+      const ircRoomName =
+        activeTab === "irc"
+          ? (ircChannel.trim() || "#pieter").replace(/^#/, "").toLowerCase()
+          : roomName;
+
+      const result = await onSubmit(
+        ircRoomName,
+        activeTab,
+        selectedUsers,
+        ircOptions
+      );
 
       if (result.ok) {
         onOpenChange(false);
@@ -167,17 +205,18 @@ export function CreateRoomDialog({
     <div className={isXpTheme ? "pt-2 pb-6 px-4" : "pt-3 pb-6 px-6"}>
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "public" | "private")}
+        onValueChange={(v) => setActiveTab(v as "public" | "private" | "irc")}
         className="w-full"
       >
         {isAdmin && (
-          <ThemedTabsList className="grid grid-cols-2 w-full">
+          <ThemedTabsList className="grid grid-cols-3 w-full">
             <ThemedTabsTrigger value="private">
               {t("apps.chats.sidebar.private")}
             </ThemedTabsTrigger>
             <ThemedTabsTrigger value="public">
               {t("apps.chats.dialogs.public")}
             </ThemedTabsTrigger>
+            <ThemedTabsTrigger value="irc">IRC</ThemedTabsTrigger>
           </ThemedTabsList>
         )}
 
@@ -217,6 +256,104 @@ export function CreateRoomDialog({
                   />
                 </div>
               </div>
+            </div>
+          </ThemedTabsContent>
+        )}
+
+        {isAdmin && (
+          <ThemedTabsContent value="irc">
+            <div className="p-4 space-y-3">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="irc-channel"
+                  className={cn("text-gray-700", themeFont)}
+                  style={themeFontStyle}
+                >
+                  Channel
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="irc-channel"
+                    value={ircChannel}
+                    onChange={(e) => {
+                      let v = e.target.value;
+                      if (!v.startsWith("#")) v = `#${v.replace(/^#+/, "")}`;
+                      setIrcChannel(v);
+                    }}
+                    placeholder="#pieter"
+                    className={cn("shadow-none h-8", themeFont)}
+                    style={themeFontStyle}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="irc-host"
+                  className={cn("text-gray-700", themeFont)}
+                  style={themeFontStyle}
+                >
+                  Server
+                </Label>
+                <Input
+                  id="irc-host"
+                  value={ircHost}
+                  onChange={(e) => setIrcHost(e.target.value)}
+                  placeholder="irc.pieter.com"
+                  className={cn("shadow-none h-8", themeFont)}
+                  style={themeFontStyle}
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1 space-y-2">
+                  <Label
+                    htmlFor="irc-port"
+                    className={cn("text-gray-700", themeFont)}
+                    style={themeFontStyle}
+                  >
+                    Port
+                  </Label>
+                  <Input
+                    id="irc-port"
+                    type="number"
+                    value={String(ircPort)}
+                    onChange={(e) => setIrcPort(Number(e.target.value) || 6667)}
+                    className={cn("shadow-none h-8", themeFont)}
+                    style={themeFontStyle}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="flex-1 flex items-end pb-1">
+                  <Label
+                    htmlFor="irc-tls"
+                    className={cn("flex items-center gap-2", themeFont)}
+                    style={themeFontStyle}
+                  >
+                    <Checkbox
+                      id="irc-tls"
+                      checked={ircTls}
+                      onCheckedChange={(v) => setIrcTls(Boolean(v))}
+                      className="h-4 w-4"
+                      disabled={isLoading}
+                    />
+                    <span>TLS</span>
+                  </Label>
+                </div>
+              </div>
+              <p
+                className={cn("text-gray-500 pt-1", themeFont)}
+                style={themeFontStyle}
+              >
+                Messages in this room are bridged to{" "}
+                <span className="font-semibold">
+                  {ircHost || "irc.pieter.com"}
+                </span>{" "}
+                <span className="font-semibold">
+                  {ircChannel || "#pieter"}
+                </span>
+                .
+              </p>
             </div>
           </ThemedTabsContent>
         )}
@@ -347,7 +484,8 @@ export function CreateRoomDialog({
           disabled={
             isLoading ||
             (activeTab === "public" && !roomName.trim()) ||
-            (activeTab === "private" && selectedUsers.length === 0)
+            (activeTab === "private" && selectedUsers.length === 0) ||
+            (activeTab === "irc" && (!ircChannel.trim() || !ircHost.trim()))
           }
           className={cn("h-7", themeFont)}
           style={themeFontStyle}

@@ -56,10 +56,15 @@ interface User {
 interface Room {
   id: string;
   name: string;
-  type: "public" | "private";
+  type: "public" | "private" | "irc";
   createdAt: number;
   userCount: number;
   members?: string[];
+  ircHost?: string;
+  ircPort?: number;
+  ircTls?: boolean;
+  ircChannel?: string;
+  ircServerLabel?: string;
 }
 
 interface Message {

@@ -3,10 +3,15 @@ import { apiRequest } from "@/api/core";
 export interface RoomSummary {
   id: string;
   name: string;
-  type?: "public" | "private";
+  type?: "public" | "private" | "irc";
   createdAt: number;
   members?: string[];
   userCount: number;
+  ircHost?: string;
+  ircPort?: number;
+  ircTls?: boolean;
+  ircChannel?: string;
+  ircServerLabel?: string;
 }
 
 export interface RoomMessage {
@@ -19,9 +24,14 @@ export interface RoomMessage {
 }
 
 export interface CreateRoomPayload {
-  type: "public" | "private";
+  type: "public" | "private" | "irc";
   name?: string;
   members?: string[];
+  ircHost?: string;
+  ircPort?: number;
+  ircTls?: boolean;
+  ircChannel?: string;
+  ircServerLabel?: string;
 }
 
 export async function listRooms(): Promise<{ rooms: RoomSummary[] }> {

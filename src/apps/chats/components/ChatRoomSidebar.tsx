@@ -101,6 +101,14 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
               ? getPrivateRoomDisplayName(room, username ?? null)
               : `#${room.name}`}
           </span>
+          {room.type === "irc" && (
+            <span
+              className="ml-1 text-[9px] font-bold uppercase tracking-wider text-purple-700/70"
+              title={`IRC ${room.ircHost || "irc.pieter.com"}`}
+            >
+              irc
+            </span>
+          )}
           {(hasUnread || room.type !== "private") && (
             <span
               className={cn(

@@ -502,8 +502,15 @@ export function useChatRoom(
   const handleAddRoom = useCallback(
     async (
       roomName: string,
-      type: "public" | "private" = "public",
-      members: string[] = []
+      type: "public" | "private" | "irc" = "public",
+      members: string[] = [],
+      ircOptions: {
+        ircHost?: string;
+        ircPort?: number;
+        ircTls?: boolean;
+        ircChannel?: string;
+        ircServerLabel?: string;
+      } = {}
     ) => {
       if (!username) return { ok: false, error: "Set a username first." };
 
@@ -514,7 +521,14 @@ export function useChatRoom(
         };
       }
 
-      const result = await createRoom(roomName, type, members);
+      if (type === "irc" && !isAdmin) {
+        return {
+          ok: false,
+          error: "Permission denied. Admin access required for IRC rooms.",
+        };
+      }
+
+      const result = await createRoom(roomName, type, members, ircOptions);
       if (result.ok && result.roomId) {
         handleRoomSelect(result.roomId); // Switch to the new room
       }
