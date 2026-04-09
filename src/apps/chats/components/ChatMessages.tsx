@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState, memo, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -33,6 +33,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText, type ChatMarkdownToken } from "@/lib/chatMarkdown";
+import { measureBubble } from "@/lib/chatBubbleLayout";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -411,6 +412,19 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   ) {
     hasAquarium = true;
   }
+
+  const bubbleWidth = useMemo(() => {
+    if (!displayContent || showTypingDots) return undefined;
+    try {
+      const metrics = measureBubble(displayContent, 600, fontSize);
+      if (metrics.naturalWidth <= 600) {
+        return Math.ceil(metrics.naturalWidth);
+      }
+      return Math.ceil(metrics.shrinkWidth);
+    } catch {
+      return undefined;
+    }
+  }, [displayContent, fontSize, showTypingDots]);
 
   const combinedHighlightSeg = highlightSegment || localHighlightSegment;
   const combinedIsSpeaking = isSpeaking || localTtsSpeaking;
@@ -835,13 +849,16 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 (message.role === "user"
                   ? "bg-yellow-100 text-black"
                   : "bg-blue-100 text-black")
-          } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
-          style={{ fontSize: `${fontSize}px` }}
+          } ${bubbleWidth ? "" : "w-fit"} max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
+          style={{
+            fontSize: `${fontSize}px`,
+            ...(bubbleWidth ? { width: `${bubbleWidth + 16}px` } : {}),
+          }}
         >
           {showTypingDots ? (
             <TypingDots />
           ) : message.role === "assistant" ? (
-            <motion.div className="select-text flex flex-col gap-1">
+            <div className="select-text flex flex-col gap-1">
               {message.parts?.map(
                 (
                   part: ToolInvocationPart | { type: string; text?: string },
@@ -866,15 +883,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ).length;
                         if (openTags !== closeTags) {
                           return (
-                            <motion.span
+                            <span
                               key={partKey}
-                              initial={{ opacity: 1 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0 }}
                               className="select-text italic"
                             >
                               {t("apps.chats.status.editing")}
-                            </motion.span>
+                            </span>
                           );
                         }
                       }
@@ -894,16 +908,15 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                   const start = charPos;
                                   const end = charPos + segment.content.length;
                                   charPos = end;
+                                  const shouldAnimate = !isInitialMessage;
                                   return (
-                                    <motion.span
+                                    <span
                                       key={`${partKey}-segment-${idx}`}
-                                      initial={
-                                        isInitialMessage
-                                          ? { opacity: 1, y: 0 }
-                                          : { opacity: 0, y: 12 }
-                                      }
-                                      animate={{ opacity: 1, y: 0 }}
                                       className={`select-text ${
+                                        shouldAnimate
+                                          ? "chat-token-animate"
+                                          : "chat-token-static"
+                                      } ${
                                         isEmojiOnly(textContent)
                                           ? "text-[24px]"
                                           : ""
@@ -919,15 +932,15 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                         fontSize: isEmojiOnly(textContent)
                                           ? undefined
                                           : `${fontSize}px`,
-                                      }}
-                                      transition={{
-                                        duration: 0.08,
-                                        delay: idx * 0.02,
-                                        ease: "easeOut",
-                                        onComplete: () => {
-                                          if (idx % 2 === 0) playNote();
-                                        },
-                                      }}
+                                        "--token-delay": shouldAnimate
+                                          ? idx * 20
+                                          : undefined,
+                                      } as React.CSSProperties}
+                                      onAnimationEnd={
+                                        shouldAnimate && idx % 2 === 0
+                                          ? () => playNote()
+                                          : undefined
+                                      }
                                     >
                                       {highlightActive &&
                                       start < (combinedHighlightSeg?.end ?? 0) &&
@@ -938,7 +951,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                       ) : (
                                         renderInlineToken(segment)
                                       )}
-                                    </motion.span>
+                                    </span>
                                   );
                                 });
                               })()}
@@ -973,7 +986,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }
               )}
-            </motion.div>
+            </div>
           ) : (
             <>
               {displayContent && (
