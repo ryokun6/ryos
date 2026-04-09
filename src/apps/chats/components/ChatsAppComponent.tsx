@@ -484,15 +484,28 @@ export function ChatsAppComponent({
     [aiMessageCount]
   );
 
-  if (!isWindowOpen) return null;
+  // Memoise the rendered message list so that unrelated parent re-renders
+  // (hover, input changes, etc.) don't recreate the array reference and force
+  // ChatMessages to re-diff. Depends on the exact upstream sources used.
+  const currentMessagesToDisplay = useMemo(
+    () =>
+      buildDisplayMessages({
+        currentRoomId,
+        currentRoomMessagesLimited,
+        aiMessages: messages,
+        messageRenderLimit,
+        username,
+      }),
+    [
+      currentRoomId,
+      currentRoomMessagesLimited,
+      messages,
+      messageRenderLimit,
+      username,
+    ]
+  );
 
-  const currentMessagesToDisplay = buildDisplayMessages({
-    currentRoomId,
-    currentRoomMessagesLimited,
-    aiMessages: messages,
-    messageRenderLimit,
-    username,
-  });
+  if (!isWindowOpen) return null;
 
   return (
     <>

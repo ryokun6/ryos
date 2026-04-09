@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { PusherChannel } from "@/lib/pusherClient";
 import {
@@ -114,15 +114,23 @@ export function useChatRoom(
   const [isDeleteRoomDialogOpen, setIsDeleteRoomDialogOpen] = useState(false);
   const [roomToDelete, setRoomToDelete] = useState<ChatRoom | null>(null);
 
-  // Get current room messages
-  const currentRoomMessages = currentRoomId
-    ? roomMessages[currentRoomId] || []
-    : [];
+  // Get current room messages. Memoised so downstream consumers get stable
+  // array references when nothing has changed, avoiding unnecessary renders
+  // in the message list.
+  const currentRoomMessages = useMemo<ChatMessage[]>(
+    () => (currentRoomId ? roomMessages[currentRoomId] || [] : []),
+    [currentRoomId, roomMessages]
+  );
 
-  // Limit messages rendered initially for performance
-  const currentRoomMessagesLimited = currentRoomId
-    ? (roomMessages[currentRoomId] || []).slice(-messageRenderLimit)
-    : [];
+  // Limit messages rendered initially for performance. Memoised for the same
+  // reason – `.slice()` always returns a new array, which would otherwise
+  // force a new reference on every hook call.
+  const currentRoomMessagesLimited = useMemo<ChatMessage[]>(() => {
+    if (!currentRoomId) return [];
+    const list = roomMessages[currentRoomId] || [];
+    if (list.length <= messageRenderLimit) return list;
+    return list.slice(-messageRenderLimit);
+  }, [currentRoomId, roomMessages, messageRenderLimit]);
 
   // --- Pusher Setup ---
   const initializePusher = useCallback(() => {
