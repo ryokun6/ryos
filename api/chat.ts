@@ -21,6 +21,7 @@ import {
   type RyoConversationSystemState,
   type SimpleConversationMessage,
 } from "./_utils/ryo-conversation.js";
+import { createSystemMessages } from "./_utils/prompt-cache.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
@@ -240,12 +241,7 @@ export default apiHandler<{
         weekday: "long",
       });
 
-      try {
-        const { text, finishReason } = await generateText({
-          model: google("gemini-3-flash-preview"),
-          temperature: 1,
-          maxOutputTokens: 2000,
-          system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
+      const greetingStaticPrompt = `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
 
 Your style:
 - Lowercase, casual, warm
@@ -256,10 +252,6 @@ Your style:
 - Be specific — reference something from their memories or recent activity
 - Mix it up: sometimes ask a question, sometimes share an observation, sometimes reference a shared interest
 
-It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
-
-${greetingMemoryContext}
-
 Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.
 
 Examples of good greetings:
@@ -268,8 +260,26 @@ Examples of good greetings:
 - "back again. still working on that project?"
 - "hey ryo. happy friday — any plans?"
 
-Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump straight into something specific and interesting. Output ONLY the greeting text, nothing else.`,
-          prompt: "Generate a proactive greeting.",
+Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump straight into something specific and interesting. Output ONLY the greeting text, nothing else.`;
+      const greetingDynamicPrompt = `<proactive_greeting_context>
+Time: ${dayOfWeek} ${sfTime}
+Username: ${username}
+
+${greetingMemoryContext}
+</proactive_greeting_context>`;
+
+      try {
+        const { text, finishReason } = await generateText({
+          model: google("gemini-3-flash-preview"),
+          temperature: 1,
+          maxOutputTokens: 2000,
+          messages: [
+            ...createSystemMessages({
+              staticPrompt: greetingStaticPrompt,
+              dynamicPrompt: greetingDynamicPrompt,
+            }),
+            { role: "user" as const, content: "Generate a proactive greeting." },
+          ],
         });
 
         const greeting = text.trim();

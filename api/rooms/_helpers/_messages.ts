@@ -48,6 +48,10 @@ import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./_users.js";
 import type { Message, SendMessageData, GenerateRyoReplyData } from "./_types.js";
 import { ROOM_ID_REGEX } from "../../_utils/_validation.js";
+import {
+  createDynamicSystemMessage,
+  createStaticSystemMessage,
+} from "../../_utils/prompt-cache.js";
 
 // ============================================================================
 // Helper Functions
@@ -452,16 +456,15 @@ when user asks for an aquarium, fish tank, fishes, or sam's aquarium, include th
 </chat_instructions>`;
 
   const messages = [
-    { role: "system" as const, content: STATIC_SYSTEM_PROMPT },
+    createStaticSystemMessage(STATIC_SYSTEM_PROMPT),
     systemState
-      ? {
-          role: "system" as const,
-          content: `\n<chat_room_context>\nroomId: ${roomId}\nrecentMessages:\n${
+      ? createDynamicSystemMessage(
+          `\n<chat_room_context>\nroomId: ${roomId}\nrecentMessages:\n${
             systemState?.chatRoomContext?.recentMessages || ""
           }\nmentionedMessage: ${
             systemState?.chatRoomContext?.mentionedMessage || prompt
-          }\n</chat_room_context>`,
-        }
+          }\n</chat_room_context>`
+        )
       : null,
     { role: "user" as const, content: prompt },
   ].filter((m): m is NonNullable<typeof m> => m !== null);

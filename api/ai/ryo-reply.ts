@@ -12,6 +12,10 @@ import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../room
 import { broadcastNewMessage } from "../rooms/_helpers/_pusher.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 import { apiHandler } from "../_utils/api-handler.js";
+import {
+  createDynamicSystemMessage,
+  createStaticSystemMessage,
+} from "../_utils/prompt-cache.js";
 
 export const runtime = "nodejs";
 
@@ -111,16 +115,15 @@ export default apiHandler<RyoReplyRequest>(
     }
 
     const messages = [
-      { role: "system" as const, content: STATIC_SYSTEM_PROMPT },
+      createStaticSystemMessage(STATIC_SYSTEM_PROMPT),
       systemState?.chatRoomContext
-        ? {
-            role: "system" as const,
-            content: `\n<chat_room_context>\nroomId: ${roomId}\nrecentMessages:\n${
+        ? createDynamicSystemMessage(
+            `\n<chat_room_context>\nroomId: ${roomId}\nrecentMessages:\n${
               systemState.chatRoomContext.recentMessages || ""
             }\nmentionedMessage: ${
               systemState.chatRoomContext.mentionedMessage || prompt
-            }\n</chat_room_context>`,
-          }
+            }\n</chat_room_context>`
+          )
         : null,
       { role: "user" as const, content: prompt },
     ].filter((m): m is NonNullable<typeof m> => m !== null);

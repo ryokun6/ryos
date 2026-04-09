@@ -21,6 +21,7 @@ import {
   } from "./_utils/_aiPrompts.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import { createSystemMessages } from "./_utils/prompt-cache.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
@@ -274,24 +275,15 @@ export default apiHandler<IEGenerateRequestBody>(
     // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
-    // Build system messages similar to chat.ts approach
-    const staticSystemMessage = {
-      role: "system" as const,
-      content: STATIC_SYSTEM_PROMPT,
-    };
-
-    const dynamicSystemMessage = {
-      role: "system" as const,
-      content: systemPrompt,
-    };
-
     // Convert UIMessages to ModelMessages for the AI model (AI SDK v6)
     const uiMessages = ensureUIMessageFormat(incomingMessages);
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const enrichedMessages: ModelMessage[] = [
-      staticSystemMessage,
-      dynamicSystemMessage,
+      ...createSystemMessages({
+        staticPrompt: STATIC_SYSTEM_PROMPT,
+        dynamicPrompt: systemPrompt,
+      }),
       ...modelMessages,
     ];
 
