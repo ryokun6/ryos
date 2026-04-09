@@ -629,6 +629,25 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 }
 
+@keyframes chat-urgent-flash {
+  0% {
+    background-color: #bfdbfe; /* blue-200 */
+    color: #111827; /* gray-900 */
+  }
+  50% {
+    background-color: #fecaca; /* red-200 */
+    color: #b91c1c; /* red-700 */
+  }
+  100% {
+    background-color: #fee2e2; /* red-100 */
+    color: #b91c1c; /* red-700 */
+  }
+}
+
+.animate-urgent-bg {
+  animation: chat-urgent-flash 0.9s ease-in-out forwards;
+}
+
 /* CRT Scanline Effect */
 .crt-effect {
   position: relative;
