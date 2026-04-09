@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { PusherChannel } from "@/lib/pusherClient";
 import {
@@ -115,14 +115,16 @@ export function useChatRoom(
   const [roomToDelete, setRoomToDelete] = useState<ChatRoom | null>(null);
 
   // Get current room messages
-  const currentRoomMessages = currentRoomId
-    ? roomMessages[currentRoomId] || []
-    : [];
+  const currentRoomMessages = useMemo(
+    () => (currentRoomId ? roomMessages[currentRoomId] || [] : []),
+    [currentRoomId, roomMessages]
+  );
 
   // Limit messages rendered initially for performance
-  const currentRoomMessagesLimited = currentRoomId
-    ? (roomMessages[currentRoomId] || []).slice(-messageRenderLimit)
-    : [];
+  const currentRoomMessagesLimited = useMemo(
+    () => currentRoomMessages.slice(-messageRenderLimit),
+    [currentRoomMessages, messageRenderLimit]
+  );
 
   // --- Pusher Setup ---
   const initializePusher = useCallback(() => {
@@ -437,9 +439,10 @@ export function useChatRoom(
   );
 
   // Helper to get typing users for the current room
-  const currentRoomTypingUsers = currentRoomId
-    ? Array.from(typingUsers[currentRoomId] || [])
-    : [];
+  const currentRoomTypingUsers = useMemo(
+    () => (currentRoomId ? Array.from(typingUsers[currentRoomId] || []) : []),
+    [currentRoomId, typingUsers]
+  );
 
   // --- Room Management ---
   const handleRoomSelect = useCallback(

@@ -222,16 +222,26 @@ export function ChatsAppComponent({
     (remainingCount > 0 ? `, ${remainingCount}+` : "");
 
   // Use the @ryo chat hook
-  const { isRyoLoading, stopRyo, handleRyoMention, detectAndProcessMention } =
-    useRyoChat({
-      currentRoomId,
-      onScrollToBottom: () => setScrollToBottomTrigger((prev) => prev + 1),
-      roomMessages: currentRoomMessages?.map((msg: AppChatMessage) => ({
+  const ryoRoomMessages = useMemo(
+    () =>
+      currentRoomMessages?.map((msg: AppChatMessage) => ({
         username: msg.username,
         content: msg.content,
         userId: msg.id,
         timestamp: new Date(msg.timestamp).toISOString(),
       })),
+    [currentRoomMessages]
+  );
+
+  const handleRyoScrollToBottom = useCallback(() => {
+    setScrollToBottomTrigger((prev) => prev + 1);
+  }, []);
+
+  const { isRyoLoading, stopRyo, handleRyoMention, detectAndProcessMention } =
+    useRyoChat({
+      currentRoomId,
+      onScrollToBottom: handleRyoScrollToBottom,
+      roomMessages: ryoRoomMessages,
     });
 
   // Wrapper for room selection that handles unread scroll triggering
@@ -484,15 +494,25 @@ export function ChatsAppComponent({
     [aiMessageCount]
   );
 
-  if (!isWindowOpen) return null;
+  const currentMessagesToDisplay = useMemo(
+    () =>
+      buildDisplayMessages({
+        currentRoomId,
+        currentRoomMessagesLimited,
+        aiMessages: messages,
+        messageRenderLimit,
+        username,
+      }),
+    [
+      currentRoomId,
+      currentRoomMessagesLimited,
+      messages,
+      messageRenderLimit,
+      username,
+    ]
+  );
 
-  const currentMessagesToDisplay = buildDisplayMessages({
-    currentRoomId,
-    currentRoomMessagesLimited,
-    aiMessages: messages,
-    messageRenderLimit,
-    username,
-  });
+  if (!isWindowOpen) return null;
 
   return (
     <>

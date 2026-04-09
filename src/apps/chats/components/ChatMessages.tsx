@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -33,6 +33,21 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText, type ChatMarkdownToken } from "@/lib/chatMarkdown";
+
+const MAX_ANIMATED_TEXT_SEGMENTS = 80;
+
+const messageItemVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+};
+
+const getMessageActionButtonClassName = (
+  colorClassName: string,
+  forceVisible = false
+) =>
+  `h-3 w-3 text-gray-400 ${colorClassName} transition-[color,opacity] duration-100 ${
+    forceVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+  } group-hover/message:opacity-100 group-hover/message:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto`;
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -178,6 +193,14 @@ const getMessageText = (message: {
     .join("");
 };
 
+const extractUrlsFromContent = (content: string): string[] => {
+  const urls = new Set<string>();
+  segmentChatMarkdownText(content).forEach((token) => {
+    if (token.type === "link" && token.url) urls.add(token.url);
+  });
+  return Array.from(urls);
+};
+
 // Define an extended message type that includes username
 // Extend VercelMessage and add username and the 'human' role
 interface ChatMessage extends Omit<VercelMessage, "role"> {
@@ -297,13 +320,13 @@ interface ChatMessageItemProps {
   message: ChatMessage;
   messageKey: string;
   isInitialMessage: boolean;
+  isLastMessage: boolean;
   isLoading: boolean;
   isLoadingGreeting: boolean;
   isRoomView: boolean;
   fontSize: number;
   currentTheme: string;
   copiedMessageId: string | null;
-  hoveredMessageId: string | null;
   playingMessageId: string | null;
   speechLoadingId: string | null;
   highlightSegment: { messageId: string; start: number; end: number } | null;
@@ -312,13 +335,9 @@ interface ChatMessageItemProps {
   localTtsSpeaking: boolean;
   speechEnabled: boolean;
   isAdmin: boolean;
-  roomId?: string;
-  username?: string;
-  onMessageDeleted?: (messageId: string) => void;
   onSendMessage?: (username: string) => void;
   onCopyMessage: (message: ChatMessage) => void;
   onDeleteMessage: (message: ChatMessage) => void;
-  setHoveredMessageId: (id: string | null) => void;
   setIsInteractingWithPreview: (v: boolean) => void;
   setLocalHighlightSegment: (seg: { messageId: string; start: number; end: number } | null) => void;
   setPlayingMessageId: (id: string | null) => void;
@@ -339,13 +358,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     message,
     messageKey,
     isInitialMessage,
+    isLastMessage,
     isLoading,
     isLoadingGreeting,
     isRoomView,
     fontSize,
     currentTheme,
     copiedMessageId,
-    hoveredMessageId,
     playingMessageId,
     speechLoadingId,
     highlightSegment,
@@ -354,13 +373,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     localTtsSpeaking,
     speechEnabled,
     isAdmin,
-    roomId: _roomId,
-    username: _username,
-    onMessageDeleted: _onMessageDeleted,
     onSendMessage,
     onCopyMessage,
     onDeleteMessage,
-    setHoveredMessageId,
     setIsInteractingWithPreview,
     setLocalHighlightSegment,
     setPlayingMessageId,
@@ -375,42 +390,83 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     playDingSound,
   } = props;
 
-  let messageText = getMessageText(message);
   const isStaticGreeting = message.role === "assistant" && message.id === "1";
-  if (isStaticGreeting && !messageText) {
-    messageText = t("apps.chats.messages.greeting");
-  }
+  const [areTouchActionsPinned, setAreTouchActionsPinned] = useState(false);
+
+  const messageText = useMemo(() => {
+    const text = getMessageText(message);
+    return isStaticGreeting && !text ? t("apps.chats.messages.greeting") : text;
+  }, [isStaticGreeting, message, t]);
+
   const showTypingDots = isLoadingGreeting && !isRoomView && isStaticGreeting;
-  const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
   const isUrgent = isUrgentMessage(messageText);
-  let bgColorClass = "";
-  if (isUrgent) {
-    bgColorClass = "bg-transparent text-current";
-  } else if (message.role === "user")
-    bgColorClass = "bg-yellow-100 text-black";
-  else if (message.role === "assistant")
-    bgColorClass = "bg-blue-100 text-black";
-  else if (message.role === "human")
-    bgColorClass = getUserColorClass(message.username);
 
-  const rawContent = isUrgent ? messageText.slice(4).trimStart() : messageText;
-  const decodedContent = decodeHtmlEntities(rawContent);
-  const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
-  const displayContent = decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim();
+  const bgColorClass = useMemo(() => {
+    if (isUrgent) return "bg-transparent text-current";
+    if (message.role === "user") return "bg-yellow-100 text-black";
+    if (message.role === "assistant") return "bg-blue-100 text-black";
+    if (message.role === "human") return getUserColorClass(message.username);
+    return "";
+  }, [isUrgent, message.role, message.username]);
 
-  let hasAquarium = false;
-  if (message.role === "assistant" && message.parts) {
-    const aquariumParts = message.parts.filter(
+  const { displayContent, hasAquariumToken } = useMemo(() => {
+    const rawContent = isUrgent ? messageText.slice(4).trimStart() : messageText;
+    const decodedContent = decodeHtmlEntities(rawContent);
+    return {
+      displayContent: decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim(),
+      hasAquariumToken: decodedContent.includes("[[AQUARIUM]]"),
+    };
+  }, [isUrgent, messageText]);
+
+  const hasAquarium = useMemo(() => {
+    if (
+      (message.role === "human" || message.username === "ryo") &&
+      hasAquariumToken
+    ) {
+      return true;
+    }
+
+    return !!message.parts?.some(
       (p: ToolInvocationPart | { type: string }) => p.type === "tool-aquarium"
     );
-    hasAquarium = aquariumParts.length > 0;
-  }
-  if (
-    (message.role === "human" || message.username === "ryo") &&
-    hasAquariumToken
-  ) {
-    hasAquarium = true;
-  }
+  }, [hasAquariumToken, message.parts, message.role, message.username]);
+
+  const imageUrls = useMemo(
+    () =>
+      message.role === "user"
+        ? extractImageParts(message as {
+            parts?: Array<{ type: string; url?: string; mediaType?: string }>;
+          })
+        : [],
+    [message]
+  );
+
+  const displayTokens = useMemo(
+    () => segmentChatMarkdownText(displayContent),
+    [displayContent]
+  );
+
+  const previewUrls = useMemo(() => {
+    const allUrls = new Set<string>();
+    if (message.role === "assistant") {
+      message.parts?.forEach(
+        (part: ToolInvocationPart | { type: string; text?: string }) => {
+          if (part.type === "text") {
+            const partText = (part as { type: string; text?: string }).text || "";
+            const partContent = isUrgentMessage(partText)
+              ? partText.slice(4).trimStart()
+              : partText;
+            extractUrlsFromContent(decodeHtmlEntities(partContent)).forEach((url) =>
+              allUrls.add(url)
+            );
+          }
+        }
+      );
+    } else {
+      extractUrlsFromContent(displayContent).forEach((url) => allUrls.add(url));
+    }
+    return Array.from(allUrls);
+  }, [displayContent, message.parts, message.role]);
 
   const combinedHighlightSeg = highlightSegment || localHighlightSegment;
   const combinedIsSpeaking = isSpeaking || localTtsSpeaking;
@@ -420,15 +476,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     combinedHighlightSeg.messageId === message.id;
 
   const isTouchDevice = () =>
-    "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
-  const extractUrls = (content: string): string[] => {
-    const urls = new Set<string>();
-    segmentChatMarkdownText(content).forEach((token) => {
-      if (token.type === "link" && token.url) urls.add(token.url);
-    });
-    return Array.from(urls);
-  };
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
   const renderInlineToken = (segment: ChatMarkdownToken) => {
     const tokenNode =
@@ -479,34 +528,38 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     return tokenNode;
   };
 
+  const actionButtonClassName = (colorClassName: string, forceVisible = false) =>
+    getMessageActionButtonClassName(
+      colorClassName,
+      areTouchActionsPinned || forceVisible
+    );
+  const isActionsVisible = areTouchActionsPinned || copiedMessageId === messageKey;
+
   return (
     <motion.div
       key={messageKey}
-      variants={variants}
+      variants={messageItemVariants}
       initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
       animate="animate"
       transition={
         isStaticGreeting ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }
       }
-      className={`flex flex-col z-10 w-full ${
+      className={`group/message flex flex-col z-10 w-full ${
         message.role === "user" ? "items-end" : "items-start"
       }`}
       style={{
         transformOrigin: message.role === "user" ? "bottom right" : "bottom left",
       }}
-      onMouseEnter={() =>
-        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(messageKey)
-      }
-      onMouseLeave={() =>
-        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(null)
-      }
       onTouchStart={(e) => {
         if (!isInteractingWithPreview && isTouchDevice()) {
           const target = e.target as HTMLElement;
           const isLinkPreview = target.closest("[data-link-preview]");
+          const isInteractiveControl = target.closest("a, button, input, textarea, select, [role='button']");
           if (!isLinkPreview) {
-            e.preventDefault();
-            setHoveredMessageId(messageKey);
+            setAreTouchActionsPinned(true);
+            if (!isInteractiveControl) {
+              e.preventDefault();
+            }
           }
         }
       }}
@@ -522,18 +575,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{
-                        opacity: hoveredMessageId === messageKey ? 1 : 0,
-                        scale: 1,
-                      }}
-                      className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                    <button
+                      className={actionButtonClassName("hover:text-red-600")}
                       onClick={() => onDeleteMessage(message)}
                       aria-label={t("apps.chats.ariaLabels.deleteMessage")}
+                      tabIndex={isActionsVisible ? 0 : -1}
                     >
                       <Trash className="h-3 w-3" weight="bold" />
-                    </motion.button>
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{t("apps.chats.messages.delete")}</p>
@@ -541,22 +590,18 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 </Tooltip>
               </TooltipProvider>
             )}
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
-                scale: 1,
-              }}
-              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+            <button
+              className={actionButtonClassName("hover:text-neutral-600")}
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
+              tabIndex={isActionsVisible ? 0 : -1}
             >
               {copiedMessageId === messageKey ? (
                 <Check className="h-3 w-3" weight="bold" />
               ) : (
                 <Copy className="h-3 w-3" weight="bold" />
               )}
-            </motion.button>
+            </button>
           </>
         )}
         <span
@@ -598,30 +643,21 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         </span>
         {message.role === "assistant" && (
           <>
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
-                scale: 1,
-              }}
-              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+            <button
+              className={actionButtonClassName("hover:text-neutral-600")}
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
+              tabIndex={isActionsVisible ? 0 : -1}
             >
               {copiedMessageId === messageKey ? (
                 <Check className="h-3 w-3" weight="bold" />
               ) : (
                 <Copy className="h-3 w-3" weight="bold" />
               )}
-            </motion.button>
+            </button>
             {speechEnabled && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{
-                  opacity: hoveredMessageId === messageKey ? 1 : 0,
-                  scale: 1,
-                }}
-                className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              <button
+                className={actionButtonClassName("hover:text-neutral-600")}
                 onClick={() => {
                   if (playingMessageId === messageKey) {
                     stop();
@@ -689,6 +725,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                     ? t("apps.chats.ariaLabels.stopSpeech")
                     : t("apps.chats.ariaLabels.speakMessage")
                 }
+                tabIndex={isActionsVisible ? 0 : -1}
               >
                 {playingMessageId === messageKey ? (
                   speechLoadingId === messageKey ? (
@@ -699,7 +736,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 ) : (
                   <SpeakerHigh className="h-3 w-3" weight="bold" />
                 )}
-              </motion.button>
+              </button>
             )}
           </>
         )}
@@ -710,20 +747,16 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{
-                      opacity: hoveredMessageId === messageKey ? 1 : 0,
-                      scale: 1,
-                    }}
-                    className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
+                  <button
+                    className={actionButtonClassName("hover:text-blue-600")}
                     onClick={() => onSendMessage(message.username!)}
                     aria-label={t("apps.chats.ariaLabels.messageUser", {
                       username: message.username,
                     })}
+                    tabIndex={isActionsVisible ? 0 : -1}
                   >
                     <PaperPlaneRight className="h-3 w-3" weight="bold" />
-                  </motion.button>
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
@@ -739,18 +772,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{
-                    opacity: hoveredMessageId === messageKey ? 1 : 0,
-                    scale: 1,
-                  }}
-                  className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                <button
+                  className={actionButtonClassName("hover:text-red-600")}
                   onClick={() => onDeleteMessage(message)}
                   aria-label={t("apps.chats.ariaLabels.deleteMessage")}
+                  tabIndex={isActionsVisible ? 0 : -1}
                 >
                   <Trash className="h-3 w-3" weight="bold" />
-                </motion.button>
+                </button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{t("apps.chats.messages.delete")}</p>
@@ -763,12 +792,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
       {hasAquarium && <EmojiAquarium />}
 
       {message.role === "user" &&
-        (() => {
-          const imageUrls = extractImageParts(message as {
-            parts?: Array<{ type: string; url?: string; mediaType?: string }>;
-          });
-          if (imageUrls.length === 0) return null;
-          return (
+        imageUrls.length > 0 && (
             <div
               className={`flex flex-col gap-2 w-full mb-1 ${
                 message.role === "user" ? "items-end" : "items-start"
@@ -784,8 +808,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 />
               ))}
             </div>
-          );
-        })()}
+        )}
 
       {!isUrlOnly(displayContent) && (
         <motion.div
@@ -889,55 +912,71 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                             {textContent &&
                               (() => {
                                 const tokens = segmentChatMarkdownText(textContent.trim());
+                                const shouldAnimateText =
+                                  isLastMessage &&
+                                  !isInitialMessage &&
+                                  !isLoading &&
+                                  tokens.length <= MAX_ANIMATED_TEXT_SEGMENTS;
                                 let charPos = 0;
                                 return tokens.map((segment, idx) => {
                                   const start = charPos;
                                   const end = charPos + segment.content.length;
                                   charPos = end;
+                                  const className = `select-text ${
+                                    isEmojiOnly(textContent)
+                                      ? "text-[24px]"
+                                      : ""
+                                  } ${
+                                    segment.type === "bold"
+                                      ? "font-bold"
+                                      : segment.type === "italic"
+                                      ? "italic"
+                                      : ""
+                                  }`;
+                                  const style = {
+                                    userSelect: "text" as const,
+                                    fontSize: isEmojiOnly(textContent)
+                                      ? undefined
+                                      : `${fontSize}px`,
+                                  };
+                                  const node =
+                                    highlightActive &&
+                                    start < (combinedHighlightSeg?.end ?? 0) &&
+                                    end > (combinedHighlightSeg?.start ?? 0) ? (
+                                      <span className="animate-highlight">
+                                        {renderInlineToken(segment)}
+                                      </span>
+                                    ) : (
+                                      renderInlineToken(segment)
+                                    );
+                                  if (!shouldAnimateText) {
+                                    return (
+                                      <span
+                                        key={`${partKey}-segment-${idx}`}
+                                        className={className}
+                                        style={style}
+                                      >
+                                        {node}
+                                      </span>
+                                    );
+                                  }
                                   return (
                                     <motion.span
                                       key={`${partKey}-segment-${idx}`}
-                                      initial={
-                                        isInitialMessage
-                                          ? { opacity: 1, y: 0 }
-                                          : { opacity: 0, y: 12 }
-                                      }
+                                      initial={{ opacity: 0, y: 8 }}
                                       animate={{ opacity: 1, y: 0 }}
-                                      className={`select-text ${
-                                        isEmojiOnly(textContent)
-                                          ? "text-[24px]"
-                                          : ""
-                                      } ${
-                                        segment.type === "bold"
-                                          ? "font-bold"
-                                          : segment.type === "italic"
-                                          ? "italic"
-                                          : ""
-                                      }`}
-                                      style={{
-                                        userSelect: "text",
-                                        fontSize: isEmojiOnly(textContent)
-                                          ? undefined
-                                          : `${fontSize}px`,
-                                      }}
+                                      className={className}
+                                      style={style}
                                       transition={{
                                         duration: 0.08,
-                                        delay: idx * 0.02,
+                                        delay: Math.min(idx * 0.015, 0.18),
                                         ease: "easeOut",
                                         onComplete: () => {
-                                          if (idx % 2 === 0) playNote();
+                                          if (idx < 20 && idx % 2 === 0) playNote();
                                         },
                                       }}
                                     >
-                                      {highlightActive &&
-                                      start < (combinedHighlightSeg?.end ?? 0) &&
-                                      end > (combinedHighlightSeg?.start ?? 0) ? (
-                                        <span className="animate-highlight">
-                                          {renderInlineToken(segment)}
-                                        </span>
-                                      ) : (
-                                        renderInlineToken(segment)
-                                      )}
+                                      {node}
                                     </motion.span>
                                   );
                                 });
@@ -989,9 +1028,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }}
                 >
                   {(() => {
-                    const tokens = segmentChatMarkdownText(displayContent);
                     let charPos2 = 0;
-                    return tokens.map((segment, idx) => {
+                    return displayTokens.map((segment, idx) => {
                       const start2 = charPos2;
                       const end2 = charPos2 + segment.content.length;
                       charPos2 = end2;
@@ -1029,36 +1067,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         </motion.div>
       )}
 
-      {(() => {
-        const allUrls = new Set<string>();
-        if (message.role === "assistant") {
-          message.parts?.forEach(
-            (
-              part: ToolInvocationPart | { type: string; text?: string }
-            ) => {
-              if (part.type === "text") {
-                const partText =
-                  (part as { type: string; text?: string }).text || "";
-                const partContent = isUrgentMessage(partText)
-                  ? partText.slice(4).trimStart()
-                  : partText;
-                extractUrls(decodeHtmlEntities(partContent)).forEach((u) =>
-                  allUrls.add(u)
-                );
-              }
-            }
-          );
-        } else {
-          extractUrls(displayContent).forEach((u) => allUrls.add(u));
-        }
-        if (allUrls.size === 0) return null;
-        return (
+      {previewUrls.length > 0 && (
           <div
             className={`flex flex-col gap-2 w-full ${
               !isUrlOnly(displayContent) ? "mt-2" : ""
             } ${message.role === "user" ? "items-end" : "items-start"}`}
           >
-            {Array.from(allUrls).map((url, index) => (
+            {previewUrls.map((url, index) => (
               <LinkPreview
                 key={`${messageKey}-link-${index}`}
                 url={url}
@@ -1066,8 +1081,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               />
             ))}
           </div>
-        );
-      })()}
+      )}
     </motion.div>
   );
 });
@@ -1122,7 +1136,6 @@ function ChatMessagesContent({
   const currentTheme = useThemeStore((s) => s.current);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [speechLoadingId, setSpeechLoadingId] = useState<string | null>(null);
-  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [isInteractingWithPreview, setIsInteractingWithPreview] =
     useState(false);
 
@@ -1207,7 +1220,7 @@ function ChatMessagesContent({
     }
   }, [localTtsSpeaking, speechLoadingId]);
 
-  const copyMessage = async (message: ChatMessage) => {
+  const copyMessage = useCallback(async (message: ChatMessage) => {
     const messageText = getMessageText(message);
     try {
       await navigator.clipboard.writeText(messageText);
@@ -1233,9 +1246,9 @@ function ChatMessagesContent({
         console.error("Fallback copy failed:", fallbackErr);
       }
     }
-  };
+  }, []);
 
-  const deleteMessage = async (message: ChatMessage) => {
+  const deleteMessage = useCallback(async (message: ChatMessage) => {
     if (!roomId) return;
     const serverMessageId = message.serverId || message.id; // prefer serverId when present
     if (!serverMessageId) return;
@@ -1280,7 +1293,7 @@ function ChatMessagesContent({
       }
       console.error("Error deleting message", err);
     }
-  };
+  }, [onMessageDeleted, roomId]);
 
   // Return the message list rendering logic
   return (
@@ -1305,7 +1318,7 @@ function ChatMessagesContent({
           )}
         </motion.div>
       )}
-      {messages.map((message) => {
+      {messages.map((message, index) => {
         const messageText = getMessageText(message);
         const messageKey = (message.id === "1" || message.id === "proactive-1")
           ? "greeting"
@@ -1317,13 +1330,13 @@ function ChatMessagesContent({
             message={message}
             messageKey={messageKey}
             isInitialMessage={isInitialMessage}
+            isLastMessage={index === messages.length - 1}
             isLoading={isLoading}
             isLoadingGreeting={!!isLoadingGreeting}
             isRoomView={isRoomView}
             fontSize={fontSize}
             currentTheme={currentTheme}
             copiedMessageId={copiedMessageId}
-            hoveredMessageId={hoveredMessageId}
             playingMessageId={playingMessageId}
             speechLoadingId={speechLoadingId}
             highlightSegment={highlightSegment ?? null}
@@ -1332,13 +1345,9 @@ function ChatMessagesContent({
             localTtsSpeaking={localTtsSpeaking}
             speechEnabled={speechEnabled}
             isAdmin={isAdmin}
-            roomId={roomId}
-            username={username}
-            onMessageDeleted={onMessageDeleted}
             onSendMessage={onSendMessage}
             onCopyMessage={copyMessage}
             onDeleteMessage={deleteMessage}
-            setHoveredMessageId={setHoveredMessageId}
             setIsInteractingWithPreview={setIsInteractingWithPreview}
             setLocalHighlightSegment={setLocalHighlightSegment}
             setPlayingMessageId={setPlayingMessageId}

@@ -6,6 +6,9 @@ export interface DisplayMessage extends Omit<AIChatMessage, "role"> {
   serverId?: string;
 }
 
+const roomDisplayMessageCache = new WeakMap<ChatMessage, DisplayMessage>();
+const aiDisplayMessageCache = new WeakMap<AIChatMessage, DisplayMessage>();
+
 interface BuildDisplayMessagesParams {
   currentRoomId: string | null;
   currentRoomMessagesLimited: ChatMessage[];
@@ -22,23 +25,39 @@ export const buildDisplayMessages = ({
   username,
 }: BuildDisplayMessagesParams): DisplayMessage[] => {
   if (currentRoomId) {
-    return currentRoomMessagesLimited.map((msg) => ({
-      // For room messages, use clientId (if present) for stable rendering key
-      id: msg.clientId || msg.id,
-      serverId: msg.id,
-      role: msg.username === username ? "user" : "human",
-      parts: [{ type: "text" as const, text: msg.content }],
-      metadata: {
-        createdAt: new Date(msg.timestamp),
-      },
-      username: msg.username,
-    }));
+    return currentRoomMessagesLimited.map((msg) => {
+      const cached = roomDisplayMessageCache.get(msg);
+      const role = msg.username === username ? "user" : "human";
+      if (cached?.role === role) {
+        return cached;
+      }
+
+      const displayMessage: DisplayMessage = {
+        // For room messages, use clientId (if present) for stable rendering key
+        id: msg.clientId || msg.id,
+        serverId: msg.id,
+        role,
+        parts: [{ type: "text" as const, text: msg.content }],
+        metadata: {
+          createdAt: new Date(msg.timestamp),
+        },
+        username: msg.username,
+      };
+      roomDisplayMessageCache.set(msg, displayMessage);
+      return displayMessage;
+    });
   }
 
-  return aiMessages.slice(-messageRenderLimit).map((msg) => ({
-    ...msg,
-    username: msg.role === "user" ? username || "You" : "Ryo",
-  }));
+  return aiMessages.slice(-messageRenderLimit).map((msg) => {
+    const cached = aiDisplayMessageCache.get(msg);
+    if (cached) {
+      return cached;
+    }
+
+    const displayMessage: DisplayMessage = msg;
+    aiDisplayMessageCache.set(msg, displayMessage);
+    return displayMessage;
+  });
 };
 
 export const extractPreviousUserMessages = (
