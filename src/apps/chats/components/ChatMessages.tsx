@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -178,6 +178,81 @@ const getMessageText = (message: {
     .join("");
 };
 
+const getMessageKey = (message: ChatMessage): string => {
+  const messageText = getMessageText(message);
+  return message.id === "1" || message.id === "proactive-1"
+    ? "greeting"
+    : message.id || `${message.role}-${messageText.substring(0, 10)}`;
+};
+
+const getCreatedAtValue = (createdAt?: Date): number | null => {
+  if (!createdAt) return null;
+  const value = new Date(createdAt).getTime();
+  return Number.isFinite(value) ? value : null;
+};
+
+const areToolPartPayloadsEqual = (a: unknown, b: unknown): boolean => {
+  if (a === b) return true;
+  if (
+    typeof a === "object" &&
+    a !== null &&
+    typeof b === "object" &&
+    b !== null
+  ) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+  return false;
+};
+
+const areMessagePartsEqual = (
+  prevParts?: ChatMessage["parts"],
+  nextParts?: ChatMessage["parts"]
+): boolean => {
+  if (prevParts === nextParts) return true;
+  if (!prevParts || !nextParts) return prevParts === nextParts;
+  if (prevParts.length !== nextParts.length) return false;
+
+  return prevParts.every((part, index) => {
+    const nextPart = nextParts[index];
+    if (!nextPart || part.type !== nextPart.type) return false;
+
+    return (
+      (part as { text?: string }).text === (nextPart as { text?: string }).text &&
+      (part as { url?: string }).url === (nextPart as { url?: string }).url &&
+      (part as { mediaType?: string }).mediaType ===
+        (nextPart as { mediaType?: string }).mediaType &&
+      (part as { toolCallId?: string }).toolCallId ===
+        (nextPart as { toolCallId?: string }).toolCallId &&
+      (part as { state?: string }).state === (nextPart as { state?: string }).state &&
+      (part as { errorText?: string }).errorText ===
+        (nextPart as { errorText?: string }).errorText &&
+      areToolPartPayloadsEqual(
+        (part as { input?: unknown }).input,
+        (nextPart as { input?: unknown }).input
+      ) &&
+      areToolPartPayloadsEqual(
+        (part as { output?: unknown }).output,
+        (nextPart as { output?: unknown }).output
+      )
+    );
+  });
+};
+
+const areMessagesEqual = (prev: ChatMessage, next: ChatMessage): boolean =>
+  prev.id === next.id &&
+  prev.serverId === next.serverId &&
+  prev.role === next.role &&
+  prev.username === next.username &&
+  prev.isPending === next.isPending &&
+  getCreatedAtValue(prev.metadata?.createdAt) ===
+    getCreatedAtValue(next.metadata?.createdAt) &&
+  areMessagePartsEqual(prev.parts, next.parts);
+
+const isSegmentForMessage = (
+  segment: { messageId: string; start: number; end: number } | null,
+  messageId?: string
+): boolean => !!segment && !!messageId && segment.messageId === messageId;
+
 // Define an extended message type that includes username
 // Extend VercelMessage and add username and the 'human' role
 interface ChatMessage extends Omit<VercelMessage, "role"> {
@@ -303,7 +378,6 @@ interface ChatMessageItemProps {
   fontSize: number;
   currentTheme: string;
   copiedMessageId: string | null;
-  hoveredMessageId: string | null;
   playingMessageId: string | null;
   speechLoadingId: string | null;
   highlightSegment: { messageId: string; start: number; end: number } | null;
@@ -312,22 +386,16 @@ interface ChatMessageItemProps {
   localTtsSpeaking: boolean;
   speechEnabled: boolean;
   isAdmin: boolean;
-  roomId?: string;
-  username?: string;
-  onMessageDeleted?: (messageId: string) => void;
   onSendMessage?: (username: string) => void;
   onCopyMessage: (message: ChatMessage) => void;
   onDeleteMessage: (message: ChatMessage) => void;
-  setHoveredMessageId: (id: string | null) => void;
   setIsInteractingWithPreview: (v: boolean) => void;
   setLocalHighlightSegment: (seg: { messageId: string; start: number; end: number } | null) => void;
   setPlayingMessageId: (id: string | null) => void;
   setSpeechLoadingId: (id: string | null) => void;
   localHighlightQueueRef: React.MutableRefObject<{ messageId: string; start: number; end: number }[]>;
-  isInteractingWithPreview: boolean;
   speak: (text: string, onDone?: () => void) => void;
   stop: () => void;
-  playNote: () => void;
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
   playDingSound: () => void;
@@ -345,7 +413,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     fontSize,
     currentTheme,
     copiedMessageId,
-    hoveredMessageId,
     playingMessageId,
     speechLoadingId,
     highlightSegment,
@@ -354,22 +421,16 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     localTtsSpeaking,
     speechEnabled,
     isAdmin,
-    roomId: _roomId,
-    username: _username,
-    onMessageDeleted: _onMessageDeleted,
     onSendMessage,
     onCopyMessage,
     onDeleteMessage,
-    setHoveredMessageId,
     setIsInteractingWithPreview,
     setLocalHighlightSegment,
     setPlayingMessageId,
     setSpeechLoadingId,
     localHighlightQueueRef,
-    isInteractingWithPreview,
     speak,
     stop,
-    playNote,
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
@@ -381,7 +442,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     messageText = t("apps.chats.messages.greeting");
   }
   const showTypingDots = isLoadingGreeting && !isRoomView && isStaticGreeting;
-  const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
   const isUrgent = isUrgentMessage(messageText);
   let bgColorClass = "";
   if (isUrgent) {
@@ -414,21 +474,49 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
 
   const combinedHighlightSeg = highlightSegment || localHighlightSegment;
   const combinedIsSpeaking = isSpeaking || localTtsSpeaking;
+  const resolvedMessageId = message.id || messageKey;
   const highlightActive =
     combinedIsSpeaking &&
     combinedHighlightSeg &&
-    combinedHighlightSeg.messageId === message.id;
+    combinedHighlightSeg.messageId === resolvedMessageId;
+  const isCopied = copiedMessageId === messageKey;
+  const isPlaying = playingMessageId === messageKey;
+  const isSpeechLoading = speechLoadingId === messageKey;
+  const isEmojiOnlyContent = useMemo(
+    () => isEmojiOnly(displayContent),
+    [displayContent]
+  );
+  const actionButtonClass =
+    "h-3 w-3 text-gray-400 opacity-0 transition-[opacity,color] duration-150 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:text-neutral-600";
 
-  const isTouchDevice = () =>
-    "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
-  const extractUrls = (content: string): string[] => {
+  const allUrls = useMemo(() => {
     const urls = new Set<string>();
-    segmentChatMarkdownText(content).forEach((token) => {
-      if (token.type === "link" && token.url) urls.add(token.url);
-    });
+    const collectUrls = (content: string) => {
+      segmentChatMarkdownText(content).forEach((token) => {
+        if (token.type === "link" && token.url) {
+          urls.add(token.url);
+        }
+      });
+    };
+
+    if (message.role === "assistant") {
+      message.parts?.forEach(
+        (part: ToolInvocationPart | { type: string; text?: string }) => {
+          if (part.type === "text") {
+            const partText = (part as { type: string; text?: string }).text || "";
+            const partContent = isUrgentMessage(partText)
+              ? partText.slice(4).trimStart()
+              : partText;
+            collectUrls(decodeHtmlEntities(partContent));
+          }
+        }
+      );
+    } else {
+      collectUrls(displayContent);
+    }
+
     return Array.from(urls);
-  };
+  }, [displayContent, message.parts, message.role]);
 
   const renderInlineToken = (segment: ChatMarkdownToken) => {
     const tokenNode =
@@ -482,33 +570,16 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   return (
     <motion.div
       key={messageKey}
-      variants={variants}
-      initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
-      animate="animate"
-      transition={
-        isStaticGreeting ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }
+      initial={
+        isInitialMessage || isStaticGreeting ? false : { opacity: 0, y: 10 }
       }
-      className={`flex flex-col z-10 w-full ${
+      animate={{ opacity: 1, y: 0 }}
+      transition={isStaticGreeting ? { duration: 0 } : { duration: 0.16, ease: "easeOut" }}
+      className={`group flex flex-col z-10 w-full ${
         message.role === "user" ? "items-end" : "items-start"
       }`}
       style={{
         transformOrigin: message.role === "user" ? "bottom right" : "bottom left",
-      }}
-      onMouseEnter={() =>
-        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(messageKey)
-      }
-      onMouseLeave={() =>
-        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(null)
-      }
-      onTouchStart={(e) => {
-        if (!isInteractingWithPreview && isTouchDevice()) {
-          const target = e.target as HTMLElement;
-          const isLinkPreview = target.closest("[data-link-preview]");
-          if (!isLinkPreview) {
-            e.preventDefault();
-            setHoveredMessageId(messageKey);
-          }
-        }
       }}
     >
       <div
@@ -522,18 +593,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{
-                        opacity: hoveredMessageId === messageKey ? 1 : 0,
-                        scale: 1,
-                      }}
-                      className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                    <button
+                      className={`${actionButtonClass} hover:text-red-600`}
                       onClick={() => onDeleteMessage(message)}
                       aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                     >
                       <Trash className="h-3 w-3" weight="bold" />
-                    </motion.button>
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{t("apps.chats.messages.delete")}</p>
@@ -541,22 +607,17 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 </Tooltip>
               </TooltipProvider>
             )}
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
-                scale: 1,
-              }}
-              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+            <button
+              className={actionButtonClass}
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
-              {copiedMessageId === messageKey ? (
+              {isCopied ? (
                 <Check className="h-3 w-3" weight="bold" />
               ) : (
                 <Copy className="h-3 w-3" weight="bold" />
               )}
-            </motion.button>
+            </button>
           </>
         )}
         <span
@@ -598,32 +659,22 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         </span>
         {message.role === "assistant" && (
           <>
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
-                scale: 1,
-              }}
-              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+            <button
+              className={actionButtonClass}
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
-              {copiedMessageId === messageKey ? (
+              {isCopied ? (
                 <Check className="h-3 w-3" weight="bold" />
               ) : (
                 <Copy className="h-3 w-3" weight="bold" />
               )}
-            </motion.button>
+            </button>
             {speechEnabled && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{
-                  opacity: hoveredMessageId === messageKey ? 1 : 0,
-                  scale: 1,
-                }}
-                className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              <button
+                className={actionButtonClass}
                 onClick={() => {
-                  if (playingMessageId === messageKey) {
+                  if (isPlaying) {
                     stop();
                     setPlayingMessageId(null);
                   } else {
@@ -649,7 +700,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                             0
                           );
                           const seg = {
-                            messageId: message.id || messageKey,
+                            messageId: resolvedMessageId,
                             start: charCursor,
                             end: charCursor + visibleLen,
                           };
@@ -685,13 +736,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }}
                 aria-label={
-                  playingMessageId === messageKey
+                  isPlaying
                     ? t("apps.chats.ariaLabels.stopSpeech")
                     : t("apps.chats.ariaLabels.speakMessage")
                 }
               >
-                {playingMessageId === messageKey ? (
-                  speechLoadingId === messageKey ? (
+                {isPlaying ? (
+                  isSpeechLoading ? (
                     <ActivityIndicator size="xs" />
                   ) : (
                     <Pause className="h-3 w-3" weight="bold" />
@@ -699,7 +750,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 ) : (
                   <SpeakerHigh className="h-3 w-3" weight="bold" />
                 )}
-              </motion.button>
+              </button>
             )}
           </>
         )}
@@ -710,20 +761,15 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{
-                      opacity: hoveredMessageId === messageKey ? 1 : 0,
-                      scale: 1,
-                    }}
-                    className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
+                  <button
+                    className={`${actionButtonClass} hover:text-blue-600`}
                     onClick={() => onSendMessage(message.username!)}
                     aria-label={t("apps.chats.ariaLabels.messageUser", {
                       username: message.username,
                     })}
                   >
                     <PaperPlaneRight className="h-3 w-3" weight="bold" />
-                  </motion.button>
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
@@ -739,18 +785,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{
-                    opacity: hoveredMessageId === messageKey ? 1 : 0,
-                    scale: 1,
-                  }}
-                  className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                <button
+                  className={`${actionButtonClass} hover:text-red-600`}
                   onClick={() => onDeleteMessage(message)}
                   aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                 >
                   <Trash className="h-3 w-3" weight="bold" />
-                </motion.button>
+                </button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{t("apps.chats.messages.delete")}</p>
@@ -788,46 +829,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         })()}
 
       {!isUrlOnly(displayContent) && (
-        <motion.div
-          initial={
-            isUrgent
-              ? {
-                  opacity: 0,
-                  backgroundColor: "#bfdbfe",
-                  color: "#111827",
-                }
-              : { opacity: 0 }
-          }
-          animate={
-            isUrgent
-              ? {
-                  opacity: 1,
-                  backgroundColor: [
-                    "#bfdbfe",
-                    "#fecaca",
-                    "#fee2e2",
-                  ],
-                  color: ["#111827", "#b91c1c", "#b91c1c"],
-                }
-              : { opacity: 1 }
-          }
-          transition={
-            isUrgent
-              ? {
-                  opacity: { duration: 0.12, ease: "easeOut" },
-                  backgroundColor: {
-                    duration: 0.9,
-                    ease: "easeInOut",
-                    times: [0, 0.5, 1],
-                  },
-                  color: {
-                    duration: 0.9,
-                    ease: "easeInOut",
-                    times: [0, 0.5, 1],
-                  },
-                }
-              : undefined
-          }
+        <div
           className={`p-1.5 px-2 chat-bubble ${
             showTypingDots
               ? "bg-neutral-200 text-neutral-400"
@@ -841,7 +843,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           {showTypingDots ? (
             <TypingDots />
           ) : message.role === "assistant" ? (
-            <motion.div className="select-text flex flex-col gap-1">
+            <div className="select-text flex flex-col gap-1">
               {message.parts?.map(
                 (
                   part: ToolInvocationPart | { type: string; text?: string },
@@ -866,15 +868,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ).length;
                         if (openTags !== closeTags) {
                           return (
-                            <motion.span
-                              key={partKey}
-                              initial={{ opacity: 1 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0 }}
-                              className="select-text italic"
-                            >
+                            <span key={partKey} className="select-text italic">
                               {t("apps.chats.status.editing")}
-                            </motion.span>
+                            </span>
                           );
                         }
                       }
@@ -883,6 +879,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         : partText;
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
                       const textContent = partDisplayContent;
+                      const isEmojiOnlyText = isEmojiOnly(textContent);
                       return (
                         <div key={partKey} className="w-full">
                           <div className="whitespace-pre-wrap">
@@ -895,16 +892,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                   const end = charPos + segment.content.length;
                                   charPos = end;
                                   return (
-                                    <motion.span
+                                    <span
                                       key={`${partKey}-segment-${idx}`}
-                                      initial={
-                                        isInitialMessage
-                                          ? { opacity: 1, y: 0 }
-                                          : { opacity: 0, y: 12 }
-                                      }
-                                      animate={{ opacity: 1, y: 0 }}
                                       className={`select-text ${
-                                        isEmojiOnly(textContent)
+                                        isEmojiOnlyText
                                           ? "text-[24px]"
                                           : ""
                                       } ${
@@ -916,17 +907,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                       }`}
                                       style={{
                                         userSelect: "text",
-                                        fontSize: isEmojiOnly(textContent)
+                                        fontSize: isEmojiOnlyText
                                           ? undefined
                                           : `${fontSize}px`,
-                                      }}
-                                      transition={{
-                                        duration: 0.08,
-                                        delay: idx * 0.02,
-                                        ease: "easeOut",
-                                        onComplete: () => {
-                                          if (idx % 2 === 0) playNote();
-                                        },
                                       }}
                                     >
                                       {highlightActive &&
@@ -938,7 +921,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                       ) : (
                                         renderInlineToken(segment)
                                       )}
-                                    </motion.span>
+                                    </span>
                                   );
                                 });
                               })()}
@@ -973,17 +956,17 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }
               )}
-            </motion.div>
+            </div>
           ) : (
             <>
               {displayContent && (
                 <span
                   className={`select-text whitespace-pre-wrap ${
-                    isEmojiOnly(displayContent) ? "text-[24px]" : ""
+                    isEmojiOnlyContent ? "text-[24px]" : ""
                   }`}
                   style={{
                     userSelect: "text",
-                    fontSize: isEmojiOnly(displayContent)
+                    fontSize: isEmojiOnlyContent
                       ? undefined
                       : `${fontSize}px`,
                   }}
@@ -1026,50 +1009,81 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               )}
             </>
           )}
-        </motion.div>
+        </div>
       )}
 
-      {(() => {
-        const allUrls = new Set<string>();
-        if (message.role === "assistant") {
-          message.parts?.forEach(
-            (
-              part: ToolInvocationPart | { type: string; text?: string }
-            ) => {
-              if (part.type === "text") {
-                const partText =
-                  (part as { type: string; text?: string }).text || "";
-                const partContent = isUrgentMessage(partText)
-                  ? partText.slice(4).trimStart()
-                  : partText;
-                extractUrls(decodeHtmlEntities(partContent)).forEach((u) =>
-                  allUrls.add(u)
-                );
-              }
-            }
-          );
-        } else {
-          extractUrls(displayContent).forEach((u) => allUrls.add(u));
-        }
-        if (allUrls.size === 0) return null;
-        return (
-          <div
-            className={`flex flex-col gap-2 w-full ${
-              !isUrlOnly(displayContent) ? "mt-2" : ""
-            } ${message.role === "user" ? "items-end" : "items-start"}`}
-          >
-            {Array.from(allUrls).map((url, index) => (
-              <LinkPreview
-                key={`${messageKey}-link-${index}`}
-                url={url}
-                className="max-w-[90%]"
-              />
-            ))}
-          </div>
-        );
-      })()}
+      {allUrls.length > 0 && (
+        <div
+          className={`flex flex-col gap-2 w-full ${
+            !isUrlOnly(displayContent) ? "mt-2" : ""
+          } ${message.role === "user" ? "items-end" : "items-start"}`}
+        >
+          {allUrls.map((url, index) => (
+            <LinkPreview
+              key={`${messageKey}-link-${index}`}
+              url={url}
+              className="max-w-[90%]"
+            />
+          ))}
+        </div>
+      )}
     </motion.div>
   );
+}, (prevProps, nextProps) => {
+  if (!areMessagesEqual(prevProps.message, nextProps.message)) return false;
+  if (prevProps.messageKey !== nextProps.messageKey) return false;
+  if (prevProps.isInitialMessage !== nextProps.isInitialMessage) return false;
+  if (prevProps.isLoading !== nextProps.isLoading) return false;
+  if (prevProps.isLoadingGreeting !== nextProps.isLoadingGreeting) return false;
+  if (prevProps.isRoomView !== nextProps.isRoomView) return false;
+  if (prevProps.fontSize !== nextProps.fontSize) return false;
+  if (prevProps.currentTheme !== nextProps.currentTheme) return false;
+  if (prevProps.speechEnabled !== nextProps.speechEnabled) return false;
+  if (prevProps.isAdmin !== nextProps.isAdmin) return false;
+  if (prevProps.onSendMessage !== nextProps.onSendMessage) return false;
+
+  const prevMessageId = prevProps.message.id || prevProps.messageKey;
+  const nextMessageId = nextProps.message.id || nextProps.messageKey;
+  const wasCopied = prevProps.copiedMessageId === prevProps.messageKey;
+  const isCopied = nextProps.copiedMessageId === nextProps.messageKey;
+  if (wasCopied !== isCopied) return false;
+
+  const wasPlaying = prevProps.playingMessageId === prevProps.messageKey;
+  const isPlaying = nextProps.playingMessageId === nextProps.messageKey;
+  if (wasPlaying !== isPlaying) return false;
+
+  const wasSpeechLoading = prevProps.speechLoadingId === prevProps.messageKey;
+  const isSpeechLoading = nextProps.speechLoadingId === nextProps.messageKey;
+  if (wasSpeechLoading !== isSpeechLoading) return false;
+
+  const prevHighlightActive =
+    isSegmentForMessage(prevProps.highlightSegment, prevMessageId) ||
+    isSegmentForMessage(prevProps.localHighlightSegment, prevMessageId);
+  const nextHighlightActive =
+    isSegmentForMessage(nextProps.highlightSegment, nextMessageId) ||
+    isSegmentForMessage(nextProps.localHighlightSegment, nextMessageId);
+  if (prevHighlightActive !== nextHighlightActive) return false;
+
+  if (prevHighlightActive || nextHighlightActive) {
+    if (
+      prevProps.highlightSegment?.start !== nextProps.highlightSegment?.start ||
+      prevProps.highlightSegment?.end !== nextProps.highlightSegment?.end ||
+      prevProps.localHighlightSegment?.start !==
+        nextProps.localHighlightSegment?.start ||
+      prevProps.localHighlightSegment?.end !== nextProps.localHighlightSegment?.end
+    ) {
+      return false;
+    }
+  }
+
+  const prevSpeaking =
+    prevProps.isSpeaking !== nextProps.isSpeaking ||
+    prevProps.localTtsSpeaking !== nextProps.localTtsSpeaking;
+  if ((prevHighlightActive || nextHighlightActive) && prevSpeaking) {
+    return false;
+  }
+
+  return true;
 });
 
 // --- NEW INNER COMPONENT ---
@@ -1122,9 +1136,8 @@ function ChatMessagesContent({
   const currentTheme = useThemeStore((s) => s.current);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [speechLoadingId, setSpeechLoadingId] = useState<string | null>(null);
-  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
-  const [isInteractingWithPreview, setIsInteractingWithPreview] =
-    useState(false);
+  const copyResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInteractingWithPreviewRef = useRef(false);
 
   // Local highlight state for manual speech triggered from this component
   const [localHighlightSegment, setLocalHighlightSegment] = useState<{
@@ -1142,6 +1155,10 @@ function ChatMessagesContent({
 
   // Get scrollToBottom from context - NOW SAFE TO CALL HERE
   const { scrollToBottom } = useStickToBottomContext();
+
+  const setIsInteractingWithPreview = useCallback((value: boolean) => {
+    isInteractingWithPreviewRef.current = value;
+  }, []);
 
   // Effect for Sound/Vibration
   useEffect(() => {
@@ -1207,14 +1224,31 @@ function ChatMessagesContent({
     }
   }, [localTtsSpeaking, speechLoadingId]);
 
-  const copyMessage = async (message: ChatMessage) => {
+  useEffect(() => {
+    return () => {
+      if (copyResetTimeoutRef.current) {
+        clearTimeout(copyResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const resetCopiedMessage = useCallback((messageKey: string) => {
+    setCopiedMessageId(messageKey);
+    if (copyResetTimeoutRef.current) {
+      clearTimeout(copyResetTimeoutRef.current);
+    }
+    copyResetTimeoutRef.current = setTimeout(() => {
+      setCopiedMessageId(null);
+      copyResetTimeoutRef.current = null;
+    }, 2000);
+  }, []);
+
+  const copyMessage = useCallback(async (message: ChatMessage) => {
     const messageText = getMessageText(message);
+    const resolvedMessageKey = getMessageKey(message);
     try {
       await navigator.clipboard.writeText(messageText);
-      setCopiedMessageId(
-        message.id || `${message.role}-${messageText.substring(0, 10)}`
-      );
-      setTimeout(() => setCopiedMessageId(null), 2000);
+      resetCopiedMessage(resolvedMessageKey);
     } catch (err) {
       console.error("Failed to copy message:", err);
       // Fallback
@@ -1225,17 +1259,14 @@ function ChatMessagesContent({
         textarea.select();
         document.execCommand("copy");
         document.body.removeChild(textarea);
-        setCopiedMessageId(
-          message.id || `${message.role}-${messageText.substring(0, 10)}`
-        );
-        setTimeout(() => setCopiedMessageId(null), 2000);
+        resetCopiedMessage(resolvedMessageKey);
       } catch (fallbackErr) {
         console.error("Fallback copy failed:", fallbackErr);
       }
     }
-  };
+  }, [resetCopiedMessage]);
 
-  const deleteMessage = async (message: ChatMessage) => {
+  const deleteMessage = useCallback(async (message: ChatMessage) => {
     if (!roomId) return;
     const serverMessageId = message.serverId || message.id; // prefer serverId when present
     if (!serverMessageId) return;
@@ -1280,11 +1311,11 @@ function ChatMessagesContent({
       }
       console.error("Error deleting message", err);
     }
-  };
+  }, [onMessageDeleted, roomId]);
 
   // Return the message list rendering logic
   return (
-    <AnimatePresence initial={false} mode="sync">
+    <>
       {messages.length === 0 && !isRoomView && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1306,10 +1337,7 @@ function ChatMessagesContent({
         </motion.div>
       )}
       {messages.map((message) => {
-        const messageText = getMessageText(message);
-        const messageKey = (message.id === "1" || message.id === "proactive-1")
-          ? "greeting"
-          : message.id || `${message.role}-${messageText.substring(0, 10)}`;
+        const messageKey = getMessageKey(message);
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
         return (
           <ChatMessageItem
@@ -1323,7 +1351,6 @@ function ChatMessagesContent({
             fontSize={fontSize}
             currentTheme={currentTheme}
             copiedMessageId={copiedMessageId}
-            hoveredMessageId={hoveredMessageId}
             playingMessageId={playingMessageId}
             speechLoadingId={speechLoadingId}
             highlightSegment={highlightSegment ?? null}
@@ -1332,22 +1359,16 @@ function ChatMessagesContent({
             localTtsSpeaking={localTtsSpeaking}
             speechEnabled={speechEnabled}
             isAdmin={isAdmin}
-            roomId={roomId}
-            username={username}
-            onMessageDeleted={onMessageDeleted}
             onSendMessage={onSendMessage}
             onCopyMessage={copyMessage}
             onDeleteMessage={deleteMessage}
-            setHoveredMessageId={setHoveredMessageId}
             setIsInteractingWithPreview={setIsInteractingWithPreview}
             setLocalHighlightSegment={setLocalHighlightSegment}
             setPlayingMessageId={setPlayingMessageId}
             setSpeechLoadingId={setSpeechLoadingId}
             localHighlightQueueRef={localHighlightQueueRef}
-            isInteractingWithPreview={isInteractingWithPreview}
             speak={speak}
             stop={stop}
-            playNote={playNote}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
             playDingSound={playDingSound}
@@ -1438,12 +1459,12 @@ function ChatMessagesContent({
             </motion.div>
           );
         })()}
-    </AnimatePresence>
+    </>
   );
 }
 // --- END NEW INNER COMPONENT ---
 
-export function ChatMessages({
+export const ChatMessages = memo(function ChatMessages({
   messages,
   isLoading,
   error,
@@ -1498,4 +1519,4 @@ export function ChatMessages({
       <ScrollToBottomButton />
     </StickToBottom>
   );
-}
+});

@@ -50,8 +50,6 @@ export function ChatsAppComponent({
   const initialData = rawInitialData as ChatsInitialData | undefined;
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
-  const aiMessageCount = useChatsStore((state) => state.aiMessages.length);
-  const aiMessages = useChatsStore((state) => state.aiMessages);
 
   // Use auth hook for authentication functionality
   const authResult = useAuth();
@@ -479,20 +477,28 @@ export function ChatsAppComponent({
   );
 
   const previousUserMessages = useMemo(
-    () => extractPreviousUserMessages(aiMessages),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [aiMessageCount]
+    () => extractPreviousUserMessages(messages),
+    [messages]
+  );
+  const currentMessagesToDisplay = useMemo(
+    () =>
+      buildDisplayMessages({
+        currentRoomId,
+        currentRoomMessagesLimited,
+        aiMessages: messages,
+        messageRenderLimit,
+        username,
+      }),
+    [
+      currentRoomId,
+      currentRoomMessagesLimited,
+      messages,
+      messageRenderLimit,
+      username,
+    ]
   );
 
   if (!isWindowOpen) return null;
-
-  const currentMessagesToDisplay = buildDisplayMessages({
-    currentRoomId,
-    currentRoomMessagesLimited,
-    aiMessages: messages,
-    messageRenderLimit,
-    username,
-  });
 
   return (
     <>

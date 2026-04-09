@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { PusherChannel } from "@/lib/pusherClient";
 import {
@@ -47,6 +47,8 @@ interface RoomHandlers {
   onUserTyping: (data: TypingPayload) => void;
 }
 
+const EMPTY_ROOM_MESSAGES: ChatMessage[] = [];
+
 export function useChatRoom(
   isWindowOpen: boolean,
   onPromptSetUsername?: () => void
@@ -57,7 +59,6 @@ export function useChatRoom(
     isAuthenticated,
     rooms,
     currentRoomId,
-    roomMessages,
     isSidebarVisible,
     toggleSidebarVisibility,
     // Store methods
@@ -71,13 +72,11 @@ export function useChatRoom(
     addMessageToRoom,
     removeMessageFromRoom,
     incrementUnread,
-    messageRenderLimit,
   } = useChatsStoreShallow((state) => ({
     username: state.username,
     isAuthenticated: state.isAuthenticated,
     rooms: state.rooms,
     currentRoomId: state.currentRoomId,
-    roomMessages: state.roomMessages,
     isSidebarVisible: state.isSidebarVisible,
     toggleSidebarVisibility: state.toggleSidebarVisibility,
     fetchRooms: state.fetchRooms,
@@ -90,8 +89,18 @@ export function useChatRoom(
     addMessageToRoom: state.addMessageToRoom,
     removeMessageFromRoom: state.removeMessageFromRoom,
     incrementUnread: state.incrementUnread,
-    messageRenderLimit: state.messageRenderLimit,
   }));
+
+  const messageRenderLimit = useChatsStore((state) => state.messageRenderLimit);
+  const currentRoomMessages = useChatsStore(
+    useCallback(
+      (state) =>
+        currentRoomId
+          ? state.roomMessages[currentRoomId] || EMPTY_ROOM_MESSAGES
+          : EMPTY_ROOM_MESSAGES,
+      [currentRoomId]
+    )
+  );
 
   // Derive isAdmin directly from the username
   const isAdmin = username === "ryo";
@@ -114,15 +123,13 @@ export function useChatRoom(
   const [isDeleteRoomDialogOpen, setIsDeleteRoomDialogOpen] = useState(false);
   const [roomToDelete, setRoomToDelete] = useState<ChatRoom | null>(null);
 
-  // Get current room messages
-  const currentRoomMessages = currentRoomId
-    ? roomMessages[currentRoomId] || []
-    : [];
-
-  // Limit messages rendered initially for performance
-  const currentRoomMessagesLimited = currentRoomId
-    ? (roomMessages[currentRoomId] || []).slice(-messageRenderLimit)
-    : [];
+  const currentRoomMessagesLimited = useMemo(
+    () =>
+      currentRoomId
+        ? currentRoomMessages.slice(-messageRenderLimit)
+        : EMPTY_ROOM_MESSAGES,
+    [currentRoomId, currentRoomMessages, messageRenderLimit]
+  );
 
   // --- Pusher Setup ---
   const initializePusher = useCallback(() => {
