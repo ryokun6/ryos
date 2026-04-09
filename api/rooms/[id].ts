@@ -13,7 +13,7 @@ import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX, CHAT_ROOMS_SET } from "./_hel
 import { refreshRoomUserCount, deleteRoomPresence } from "./_helpers/_presence.js";
 import { broadcastRoomDeleted, broadcastRoomUpdated } from "./_helpers/_pusher.js";
 import type { Room } from "./_helpers/_types.js";
-import { notifyRoomBindingChange } from "../_utils/irc/_bridge.js";
+import { notifyRoomBindingChange, isIrcBridgeEnabled } from "../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -99,7 +99,7 @@ export default apiHandler(
         }
       }
 
-      if (roomData.type === "irc") {
+      if (roomData.type === "irc" && isIrcBridgeEnabled()) {
         try {
           await notifyRoomBindingChange("unbind", roomData);
         } catch (err) {

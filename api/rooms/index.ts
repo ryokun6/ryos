@@ -19,7 +19,7 @@ import {
   DEFAULT_IRC_TLS,
   normalizeIrcChannel,
 } from "../_utils/irc/_types.js";
-import { notifyRoomBindingChange } from "../_utils/irc/_bridge.js";
+import { notifyRoomBindingChange, isIrcBridgeEnabled } from "../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -175,7 +175,7 @@ export default apiHandler(
         await Promise.all(normalizedMembers.map((member: string) => setRoomPresence(roomId, member)));
       }
 
-      if (type === "irc") {
+      if (type === "irc" && isIrcBridgeEnabled()) {
         try {
           await notifyRoomBindingChange("bind", room);
         } catch (err) {

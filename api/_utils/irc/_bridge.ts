@@ -487,6 +487,24 @@ export function getIrcBridge(): IrcBridge {
   return g[GLOBAL_KEY]!;
 }
 
+/**
+ * Return the existing bridge if one has been created, else `null`. Used by
+ * the send-message path so we don't accidentally open new IRC connections in
+ * environments where the bridge has been explicitly disabled.
+ */
+export function getIrcBridgeIfInitialized(): IrcBridge | null {
+  const g = globalThis as GlobalWithBridge;
+  return g[GLOBAL_KEY] ?? null;
+}
+
+/**
+ * Whether the IRC bridge should be active in the current environment.
+ * Setting `IRC_BRIDGE_DISABLED=1` opts out entirely.
+ */
+export function isIrcBridgeEnabled(): boolean {
+  return process.env.IRC_BRIDGE_DISABLED !== "1";
+}
+
 export function setIrcBridgeForTesting(bridge: IrcBridge | null): void {
   const g = globalThis as GlobalWithBridge;
   if (bridge) {
