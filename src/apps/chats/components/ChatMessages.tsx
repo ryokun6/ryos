@@ -168,7 +168,11 @@ const getMessageText = (message: {
     .join("");
 };
 
-// Detect touch device once per render (cheap check; memoized at module scope would miss SSR)
+// Detect touch device once per render (used to gate touch-triggered hover).
+// NOTE: We intentionally do NOT gate mouseenter/mouseleave with this check –
+// some desktop browsers / hybrid devices / cloud VMs report maxTouchPoints > 0
+// even though the primary input is a mouse, and blocking hover there prevents
+// hover-revealed toolbar icons from ever appearing.
 const isTouchDevice = (): boolean =>
   typeof window !== "undefined" &&
   ("ontouchstart" in window || navigator.maxTouchPoints > 0);
@@ -448,12 +452,11 @@ const ChatMessageItem = memo(
       return Array.from(urls);
     }, [message, displayContent]);
 
-    const handleMouseEnter = useCallback(() => {
-      if (!isTouchDevice()) setIsHovered(true);
-    }, []);
-    const handleMouseLeave = useCallback(() => {
-      if (!isTouchDevice()) setIsHovered(false);
-    }, []);
+    // Touch support: toggle toolbar on touch, but skip when the touch lands
+    // on a link preview so it can handle its own gestures. Desktop hover uses
+    // the wrapper's `group-hover:` CSS class (no React state needed), which
+    // avoids a re-render per mouse enter/leave and is also resilient to
+    // environments where synthetic mouse events are dropped.
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
       if (!isTouchDevice()) return;
       const target = e.target as HTMLElement;
@@ -512,39 +515,37 @@ const ChatMessageItem = memo(
       return segment.content;
     };
 
-    // Hover-reveal button visibility: CSS opacity toggle driven by local state.
-    // We avoid `motion.button` here to keep each button a plain DOM node.
+    // Hover-reveal button visibility: CSS opacity toggle driven by the
+    // wrapper's `group` class + group-hover. This is a pure-CSS hover path
+    // (no React state update per hover) which is both fast and also reliable
+    // in contexts where React synthetic events might be misrouted.
+    // We keep `isHovered` state available for the touch path.
     const toolbarBtnClass = (extra: string) =>
-      `h-3 w-3 text-gray-400 transition-opacity duration-150 ${
-        isHovered ? "opacity-100" : "opacity-0"
+      `h-3 w-3 text-gray-400 transition-opacity duration-150 opacity-0 group-hover:opacity-100 ${
+        isHovered ? "!opacity-100" : ""
       } ${extra}`;
 
     // Message entry fade: only animate brand-new messages. For messages already
-    // in the initial list or the static greeting, skip the animation entirely
-    // and render a plain <div> — avoids framer-motion overhead for history.
+    // in the initial list or the static greeting, skip the opacity animation
+    // via `initial={false}`, which makes framer-motion render at the final
+    // state immediately (avoiding a one-shot compositor paint per history item).
     const shouldAnimate = !(isInitialMessage || isStaticGreeting);
-    const WrapperTag: React.ElementType = shouldAnimate ? motion.div : "div";
-    const wrapperMotionProps = shouldAnimate
-      ? {
-          initial: { opacity: 0 },
-          animate: { opacity: 1 },
-          transition: { duration: 0.15, ease: "easeOut" as const },
-        }
-      : {};
+    const wrapperClassName = `group flex flex-col z-10 w-full ${
+      message.role === "user" ? "items-end" : "items-start"
+    }`;
+    const wrapperStyle = {
+      transformOrigin:
+        message.role === "user" ? ("bottom right" as const) : ("bottom left" as const),
+    };
 
     return (
-      <WrapperTag
+      <motion.div
         key={messageKey}
-        {...wrapperMotionProps}
-        className={`flex flex-col z-10 w-full ${
-          message.role === "user" ? "items-end" : "items-start"
-        }`}
-        style={{
-          transformOrigin:
-            message.role === "user" ? "bottom right" : "bottom left",
-        }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        initial={shouldAnimate ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className={wrapperClassName}
+        style={wrapperStyle}
         onTouchStart={handleTouchStart}
       >
         <div
@@ -949,7 +950,7 @@ const ChatMessageItem = memo(
             ))}
           </div>
         )}
-      </WrapperTag>
+      </motion.div>
     );
   },
   // Custom comparator: skip re-render unless something RELEVANT to this
