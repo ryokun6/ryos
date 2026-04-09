@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -302,10 +302,10 @@ interface ChatMessageItemProps {
   isRoomView: boolean;
   fontSize: number;
   currentTheme: string;
-  copiedMessageId: string | null;
-  hoveredMessageId: string | null;
-  playingMessageId: string | null;
-  speechLoadingId: string | null;
+  isCopied: boolean;
+  isHovered: boolean;
+  isPlaying: boolean;
+  isSpeechLoading: boolean;
   highlightSegment: { messageId: string; start: number; end: number } | null;
   localHighlightSegment: { messageId: string; start: number; end: number } | null;
   isSpeaking: boolean;
@@ -327,7 +327,6 @@ interface ChatMessageItemProps {
   isInteractingWithPreview: boolean;
   speak: (text: string, onDone?: () => void) => void;
   stop: () => void;
-  playNote: () => void;
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
   playDingSound: () => void;
@@ -344,10 +343,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     isRoomView,
     fontSize,
     currentTheme,
-    copiedMessageId,
-    hoveredMessageId,
-    playingMessageId,
-    speechLoadingId,
+    isCopied,
+    isHovered,
+    isPlaying,
+    isSpeechLoading,
     highlightSegment,
     localHighlightSegment,
     isSpeaking,
@@ -369,7 +368,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     isInteractingWithPreview,
     speak,
     stop,
-    playNote,
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
@@ -479,38 +477,35 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     return tokenNode;
   };
 
-  return (
-    <motion.div
-      key={messageKey}
-      variants={variants}
-      initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
-      animate="animate"
-      transition={
-        isStaticGreeting ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }
-      }
-      className={`flex flex-col z-10 w-full ${
-        message.role === "user" ? "items-end" : "items-start"
-      }`}
-      style={{
-        transformOrigin: message.role === "user" ? "bottom right" : "bottom left",
-      }}
-      onMouseEnter={() =>
-        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(messageKey)
-      }
-      onMouseLeave={() =>
-        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(null)
-      }
-      onTouchStart={(e) => {
-        if (!isInteractingWithPreview && isTouchDevice()) {
-          const target = e.target as HTMLElement;
-          const isLinkPreview = target.closest("[data-link-preview]");
-          if (!isLinkPreview) {
-            e.preventDefault();
-            setHoveredMessageId(messageKey);
-          }
+  const skipAnimation = isInitialMessage || isStaticGreeting;
+
+  const mouseHandlers = {
+    onMouseEnter: () =>
+      !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(messageKey),
+    onMouseLeave: () =>
+      !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(null),
+    onTouchStart: (e: React.TouchEvent) => {
+      if (!isInteractingWithPreview && isTouchDevice()) {
+        const target = e.target as HTMLElement;
+        const isLinkPreview = target.closest("[data-link-preview]");
+        if (!isLinkPreview) {
+          e.preventDefault();
+          setHoveredMessageId(messageKey);
         }
-      }}
-    >
+      }
+    },
+  };
+
+  const wrapperClassName = `flex flex-col z-10 w-full ${
+    message.role === "user" ? "items-end" : "items-start"
+  }`;
+
+  const wrapperStyle: React.CSSProperties = {
+    transformOrigin: message.role === "user" ? "bottom right" : "bottom left",
+  };
+
+  const messageContent = (
+    <>
       <div
         className={`${
           currentTheme === "macosx" ? "text-[10px]" : "text-[16px]"
@@ -522,18 +517,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{
-                        opacity: hoveredMessageId === messageKey ? 1 : 0,
-                        scale: 1,
-                      }}
-                      className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                    <button
+                      className="h-3 w-3 text-gray-400 hover:text-red-600 transition-all duration-150"
+                      style={{ opacity: isHovered ? 1 : 0 }}
                       onClick={() => onDeleteMessage(message)}
                       aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                     >
                       <Trash className="h-3 w-3" weight="bold" />
-                    </motion.button>
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{t("apps.chats.messages.delete")}</p>
@@ -541,22 +532,18 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 </Tooltip>
               </TooltipProvider>
             )}
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
-                scale: 1,
-              }}
-              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+            <button
+              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-all duration-150"
+              style={{ opacity: isHovered ? 1 : 0 }}
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
-              {copiedMessageId === messageKey ? (
+              {isCopied ? (
                 <Check className="h-3 w-3" weight="bold" />
               ) : (
                 <Copy className="h-3 w-3" weight="bold" />
               )}
-            </motion.button>
+            </button>
           </>
         )}
         <span
@@ -598,32 +585,24 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         </span>
         {message.role === "assistant" && (
           <>
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
-                scale: 1,
-              }}
-              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+            <button
+              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-all duration-150"
+              style={{ opacity: isHovered ? 1 : 0 }}
               onClick={() => onCopyMessage(message)}
               aria-label={t("apps.chats.ariaLabels.copyMessage")}
             >
-              {copiedMessageId === messageKey ? (
+              {isCopied ? (
                 <Check className="h-3 w-3" weight="bold" />
               ) : (
                 <Copy className="h-3 w-3" weight="bold" />
               )}
-            </motion.button>
+            </button>
             {speechEnabled && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{
-                  opacity: hoveredMessageId === messageKey ? 1 : 0,
-                  scale: 1,
-                }}
-                className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              <button
+                className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-all duration-150"
+                style={{ opacity: isHovered ? 1 : 0 }}
                 onClick={() => {
-                  if (playingMessageId === messageKey) {
+                  if (isPlaying) {
                     stop();
                     setPlayingMessageId(null);
                   } else {
@@ -685,13 +664,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }}
                 aria-label={
-                  playingMessageId === messageKey
+                  isPlaying
                     ? t("apps.chats.ariaLabels.stopSpeech")
                     : t("apps.chats.ariaLabels.speakMessage")
                 }
               >
-                {playingMessageId === messageKey ? (
-                  speechLoadingId === messageKey ? (
+                {isPlaying ? (
+                  isSpeechLoading ? (
                     <ActivityIndicator size="xs" />
                   ) : (
                     <Pause className="h-3 w-3" weight="bold" />
@@ -699,7 +678,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 ) : (
                   <SpeakerHigh className="h-3 w-3" weight="bold" />
                 )}
-              </motion.button>
+              </button>
             )}
           </>
         )}
@@ -710,20 +689,16 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{
-                      opacity: hoveredMessageId === messageKey ? 1 : 0,
-                      scale: 1,
-                    }}
-                    className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
+                  <button
+                    className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-all duration-150"
+                    style={{ opacity: isHovered ? 1 : 0 }}
                     onClick={() => onSendMessage(message.username!)}
                     aria-label={t("apps.chats.ariaLabels.messageUser", {
                       username: message.username,
                     })}
                   >
                     <PaperPlaneRight className="h-3 w-3" weight="bold" />
-                  </motion.button>
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
@@ -739,18 +714,14 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{
-                    opacity: hoveredMessageId === messageKey ? 1 : 0,
-                    scale: 1,
-                  }}
-                  className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                <button
+                  className="h-3 w-3 text-gray-400 hover:text-red-600 transition-all duration-150"
+                  style={{ opacity: isHovered ? 1 : 0 }}
                   onClick={() => onDeleteMessage(message)}
                   aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                 >
                   <Trash className="h-3 w-3" weight="bold" />
-                </motion.button>
+                </button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{t("apps.chats.messages.delete")}</p>
@@ -787,61 +758,20 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           );
         })()}
 
-      {!isUrlOnly(displayContent) && (
-        <motion.div
-          initial={
-            isUrgent
-              ? {
-                  opacity: 0,
-                  backgroundColor: "#bfdbfe",
-                  color: "#111827",
-                }
-              : { opacity: 0 }
-          }
-          animate={
-            isUrgent
-              ? {
-                  opacity: 1,
-                  backgroundColor: [
-                    "#bfdbfe",
-                    "#fecaca",
-                    "#fee2e2",
-                  ],
-                  color: ["#111827", "#b91c1c", "#b91c1c"],
-                }
-              : { opacity: 1 }
-          }
-          transition={
-            isUrgent
-              ? {
-                  opacity: { duration: 0.12, ease: "easeOut" },
-                  backgroundColor: {
-                    duration: 0.9,
-                    ease: "easeInOut",
-                    times: [0, 0.5, 1],
-                  },
-                  color: {
-                    duration: 0.9,
-                    ease: "easeInOut",
-                    times: [0, 0.5, 1],
-                  },
-                }
-              : undefined
-          }
-          className={`p-1.5 px-2 chat-bubble ${
-            showTypingDots
-              ? "bg-neutral-200 text-neutral-400"
-              : bgColorClass ||
-                (message.role === "user"
-                  ? "bg-yellow-100 text-black"
-                  : "bg-blue-100 text-black")
-          } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
-          style={{ fontSize: `${fontSize}px` }}
-        >
-          {showTypingDots ? (
+      {!isUrlOnly(displayContent) && (() => {
+        const bubbleClassName = `p-1.5 px-2 chat-bubble ${
+          showTypingDots
+            ? "bg-neutral-200 text-neutral-400"
+            : bgColorClass ||
+              (message.role === "user"
+                ? "bg-yellow-100 text-black"
+                : "bg-blue-100 text-black")
+        } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`;
+        const bubbleStyle: React.CSSProperties = { fontSize: `${fontSize}px` };
+        const bubbleContent = showTypingDots ? (
             <TypingDots />
           ) : message.role === "assistant" ? (
-            <motion.div className="select-text flex flex-col gap-1">
+            <div className="select-text flex flex-col gap-1">
               {message.parts?.map(
                 (
                   part: ToolInvocationPart | { type: string; text?: string },
@@ -866,15 +796,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ).length;
                         if (openTags !== closeTags) {
                           return (
-                            <motion.span
+                            <span
                               key={partKey}
-                              initial={{ opacity: 1 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0 }}
                               className="select-text italic"
                             >
                               {t("apps.chats.status.editing")}
-                            </motion.span>
+                            </span>
                           );
                         }
                       }
@@ -894,51 +821,54 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                   const start = charPos;
                                   const end = charPos + segment.content.length;
                                   charPos = end;
+                                  const segClassName = `select-text ${
+                                    isEmojiOnly(textContent)
+                                      ? "text-[24px]"
+                                      : ""
+                                  } ${
+                                    segment.type === "bold"
+                                      ? "font-bold"
+                                      : segment.type === "italic"
+                                      ? "italic"
+                                      : ""
+                                  }`;
+                                  const segStyle: React.CSSProperties = {
+                                    userSelect: "text",
+                                    fontSize: isEmojiOnly(textContent)
+                                      ? undefined
+                                      : `${fontSize}px`,
+                                  };
+                                  const content = highlightActive &&
+                                    start < (combinedHighlightSeg?.end ?? 0) &&
+                                    end > (combinedHighlightSeg?.start ?? 0) ? (
+                                      <span className="animate-highlight">
+                                        {renderInlineToken(segment)}
+                                      </span>
+                                    ) : (
+                                      renderInlineToken(segment)
+                                    );
+                                  if (isInitialMessage) {
+                                    return (
+                                      <span
+                                        key={`${partKey}-segment-${idx}`}
+                                        className={segClassName}
+                                        style={segStyle}
+                                      >
+                                        {content}
+                                      </span>
+                                    );
+                                  }
                                   return (
-                                    <motion.span
+                                    <span
                                       key={`${partKey}-segment-${idx}`}
-                                      initial={
-                                        isInitialMessage
-                                          ? { opacity: 1, y: 0 }
-                                          : { opacity: 0, y: 12 }
-                                      }
-                                      animate={{ opacity: 1, y: 0 }}
-                                      className={`select-text ${
-                                        isEmojiOnly(textContent)
-                                          ? "text-[24px]"
-                                          : ""
-                                      } ${
-                                        segment.type === "bold"
-                                          ? "font-bold"
-                                          : segment.type === "italic"
-                                          ? "italic"
-                                          : ""
-                                      }`}
+                                      className={`${segClassName} chat-segment-appear`}
                                       style={{
-                                        userSelect: "text",
-                                        fontSize: isEmojiOnly(textContent)
-                                          ? undefined
-                                          : `${fontSize}px`,
-                                      }}
-                                      transition={{
-                                        duration: 0.08,
-                                        delay: idx * 0.02,
-                                        ease: "easeOut",
-                                        onComplete: () => {
-                                          if (idx % 2 === 0) playNote();
-                                        },
+                                        ...segStyle,
+                                        animationDelay: `${idx * 20}ms`,
                                       }}
                                     >
-                                      {highlightActive &&
-                                      start < (combinedHighlightSeg?.end ?? 0) &&
-                                      end > (combinedHighlightSeg?.start ?? 0) ? (
-                                        <span className="animate-highlight">
-                                          {renderInlineToken(segment)}
-                                        </span>
-                                      ) : (
-                                        renderInlineToken(segment)
-                                      )}
-                                    </motion.span>
+                                      {content}
+                                    </span>
                                   );
                                 });
                               })()}
@@ -973,7 +903,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }
               )}
-            </motion.div>
+            </div>
           ) : (
             <>
               {displayContent && (
@@ -1025,9 +955,36 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 </span>
               )}
             </>
-          )}
-        </motion.div>
-      )}
+          );
+
+        if (isUrgent) {
+          return (
+            <motion.div
+              initial={{ opacity: 0, backgroundColor: "#bfdbfe", color: "#111827" }}
+              animate={{
+                opacity: 1,
+                backgroundColor: ["#bfdbfe", "#fecaca", "#fee2e2"],
+                color: ["#111827", "#b91c1c", "#b91c1c"],
+              }}
+              transition={{
+                opacity: { duration: 0.12, ease: "easeOut" },
+                backgroundColor: { duration: 0.9, ease: "easeInOut", times: [0, 0.5, 1] },
+                color: { duration: 0.9, ease: "easeInOut", times: [0, 0.5, 1] },
+              }}
+              className={bubbleClassName}
+              style={bubbleStyle}
+            >
+              {bubbleContent}
+            </motion.div>
+          );
+        }
+
+        return (
+          <div className={bubbleClassName} style={bubbleStyle}>
+            {bubbleContent}
+          </div>
+        );
+      })()}
 
       {(() => {
         const allUrls = new Set<string>();
@@ -1068,6 +1025,33 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           </div>
         );
       })()}
+    </>
+  );
+
+  if (skipAnimation) {
+    return (
+      <div
+        className={wrapperClassName}
+        style={wrapperStyle}
+        {...mouseHandlers}
+      >
+        {messageContent}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      key={messageKey}
+      variants={variants}
+      initial="initial"
+      animate="animate"
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className={wrapperClassName}
+      style={wrapperStyle}
+      {...mouseHandlers}
+    >
+      {messageContent}
     </motion.div>
   );
 });
@@ -1093,7 +1077,7 @@ interface ChatMessagesContentProps {
   typingUsers?: string[];
 }
 
-function ChatMessagesContent({
+const ChatMessagesContent = memo(function ChatMessagesContent({
   messages,
   isLoading,
   error,
@@ -1140,7 +1124,7 @@ function ChatMessagesContent({
   const initialMessageIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedRef = useRef(false);
 
-  // Get scrollToBottom from context - NOW SAFE TO CALL HERE
+  // Get scrollToBottom from context
   const { scrollToBottom } = useStickToBottomContext();
 
   // Effect for Sound/Vibration
@@ -1207,7 +1191,7 @@ function ChatMessagesContent({
     }
   }, [localTtsSpeaking, speechLoadingId]);
 
-  const copyMessage = async (message: ChatMessage) => {
+  const copyMessage = useCallback(async (message: ChatMessage) => {
     const messageText = getMessageText(message);
     try {
       await navigator.clipboard.writeText(messageText);
@@ -1217,7 +1201,6 @@ function ChatMessagesContent({
       setTimeout(() => setCopiedMessageId(null), 2000);
     } catch (err) {
       console.error("Failed to copy message:", err);
-      // Fallback
       try {
         const textarea = document.createElement("textarea");
         textarea.value = messageText;
@@ -1233,14 +1216,13 @@ function ChatMessagesContent({
         console.error("Fallback copy failed:", fallbackErr);
       }
     }
-  };
+  }, []);
 
-  const deleteMessage = async (message: ChatMessage) => {
+  const deleteMessage = useCallback(async (message: ChatMessage) => {
     if (!roomId) return;
-    const serverMessageId = message.serverId || message.id; // prefer serverId when present
+    const serverMessageId = message.serverId || message.id;
     if (!serverMessageId) return;
 
-    // Use DELETE method with proper authentication headers (matching deleteRoom pattern)
     const url = `/api/rooms/${encodeURIComponent(roomId)}/messages/${encodeURIComponent(serverMessageId)}`;
 
     try {
@@ -1252,12 +1234,10 @@ function ChatMessagesContent({
         retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
       if (res.ok) {
-        // Use the actual server message ID for local removal to match store expectations
         onMessageDeleted?.(serverMessageId);
         return;
       }
 
-      // If the server says the message doesn't exist anymore, remove it locally anyway
       if (res.status === 404 || res.status === 410) {
         console.warn(
           `Delete message ${serverMessageId} returned ${res.status}; removing locally as orphan.`
@@ -1280,11 +1260,21 @@ function ChatMessagesContent({
       }
       console.error("Error deleting message", err);
     }
-  };
+  }, [roomId, onMessageDeleted]);
 
-  // Return the message list rendering logic
+  // Pre-compute message keys for stable identity
+  const messageKeys = useMemo(() =>
+    messages.map((message) => {
+      const messageText = getMessageText(message);
+      return (message.id === "1" || message.id === "proactive-1")
+        ? "greeting"
+        : message.id || `${message.role}-${messageText.substring(0, 10)}`;
+    }),
+    [messages]
+  );
+
   return (
-    <AnimatePresence initial={false} mode="sync">
+    <>
       {messages.length === 0 && !isRoomView && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1305,11 +1295,8 @@ function ChatMessagesContent({
           )}
         </motion.div>
       )}
-      {messages.map((message) => {
-        const messageText = getMessageText(message);
-        const messageKey = (message.id === "1" || message.id === "proactive-1")
-          ? "greeting"
-          : message.id || `${message.role}-${messageText.substring(0, 10)}`;
+      {messages.map((message, idx) => {
+        const messageKey = messageKeys[idx];
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
         return (
           <ChatMessageItem
@@ -1322,10 +1309,10 @@ function ChatMessagesContent({
             isRoomView={isRoomView}
             fontSize={fontSize}
             currentTheme={currentTheme}
-            copiedMessageId={copiedMessageId}
-            hoveredMessageId={hoveredMessageId}
-            playingMessageId={playingMessageId}
-            speechLoadingId={speechLoadingId}
+            isCopied={copiedMessageId === messageKey}
+            isHovered={hoveredMessageId === messageKey}
+            isPlaying={playingMessageId === messageKey}
+            isSpeechLoading={speechLoadingId === messageKey}
             highlightSegment={highlightSegment ?? null}
             localHighlightSegment={localHighlightSegment}
             isSpeaking={!!isSpeaking}
@@ -1347,7 +1334,6 @@ function ChatMessagesContent({
             isInteractingWithPreview={isInteractingWithPreview}
             speak={speak}
             stop={stop}
-            playNote={playNote}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
             playDingSound={playDingSound}
@@ -1387,15 +1373,12 @@ function ChatMessagesContent({
         (() => {
           const errorMessage = getErrorMessage(error);
 
-          // Check if it's a rate limit error that's handled elsewhere
           const isRateLimitError =
             errorMessage === "Daily AI message limit reached." ||
             errorMessage === "Set a username to continue chatting with Ryo.";
 
-          // Don't show these errors in chat since they're handled by other UI
           if (isRateLimitError) return null;
 
-          // Special handling for login message - render in gray like "Start a new conversation?"
           if (errorMessage === t("apps.chats.status.loginToContinue")) {
             if (username) {
               return null;
@@ -1414,11 +1397,7 @@ function ChatMessagesContent({
           }
 
           return (
-            <motion.div
-              key="error-indicator"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+            <div
               className="flex items-start gap-2 text-red-600 font-['Geneva-9'] text-[16px] antialiased pl-1 py-1"
             >
               <WarningCircle className="h-3 w-3 mt-0.5 flex-shrink-0" weight="bold" />
@@ -1435,12 +1414,12 @@ function ChatMessagesContent({
                   </Button>
                 )}
               </div>
-            </motion.div>
+            </div>
           );
         })()}
-    </AnimatePresence>
+    </>
   );
-}
+});
 // --- END NEW INNER COMPONENT ---
 
 export function ChatMessages({

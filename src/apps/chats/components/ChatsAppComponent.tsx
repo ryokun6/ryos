@@ -484,15 +484,18 @@ export function ChatsAppComponent({
     [aiMessageCount]
   );
 
-  if (!isWindowOpen) return null;
+  const currentMessagesToDisplay = useMemo(
+    () => buildDisplayMessages({
+      currentRoomId,
+      currentRoomMessagesLimited,
+      aiMessages: messages,
+      messageRenderLimit,
+      username,
+    }),
+    [currentRoomId, currentRoomMessagesLimited, messages, messageRenderLimit, username]
+  );
 
-  const currentMessagesToDisplay = buildDisplayMessages({
-    currentRoomId,
-    currentRoomMessagesLimited,
-    aiMessages: messages,
-    messageRenderLimit,
-    username,
-  });
+  if (!isWindowOpen) return null;
 
   return (
     <>

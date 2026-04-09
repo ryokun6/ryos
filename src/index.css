@@ -535,6 +535,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     animation: highlight-bg-opacity 1.5s ease-in-out infinite;
   }
 
+  .chat-segment-appear {
+    animation: chat-segment-fade-in 0.08s ease-out both;
+  }
+
   /* Draggable area styles - prevents browser gestures on touch devices */
   .draggable-area {
     touch-action: none !important;
@@ -626,6 +630,17 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
   50% {
     background-color: rgb(254 249 195 / 0.5); /* bg-yellow-200/50 */
+  }
+}
+
+@keyframes chat-segment-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
