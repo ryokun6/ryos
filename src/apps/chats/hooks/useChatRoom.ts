@@ -505,6 +505,7 @@ export function useChatRoom(
       type: "public" | "private" | "irc" = "public",
       members: string[] = [],
       ircOptions: {
+        ircServerId?: string;
         ircHost?: string;
         ircPort?: number;
         ircTls?: boolean;
@@ -518,13 +519,6 @@ export function useChatRoom(
         return {
           ok: false,
           error: "Permission denied. Admin access required.",
-        };
-      }
-
-      if (type === "irc" && !isAdmin) {
-        return {
-          ok: false,
-          error: "Permission denied. Admin access required for IRC rooms.",
         };
       }
 

@@ -200,6 +200,7 @@ export interface ChatsStoreState {
     type?: "public" | "private" | "irc",
     members?: string[],
     ircOptions?: {
+      ircServerId?: string;
       ircHost?: string;
       ircPort?: number;
       ircTls?: boolean;
@@ -1028,6 +1029,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           type: "public" | "private" | "irc" = "public",
           members: string[] = [],
           ircOptions: {
+            ircServerId?: string;
             ircHost?: string;
             ircPort?: number;
             ircTls?: boolean;
@@ -1047,6 +1049,8 @@ export const useChatsStore = create<ChatsStoreState>()(
               payload.name = name.trim();
             } else if (type === "irc") {
               payload.name = name.trim();
+              if (ircOptions.ircServerId)
+                payload.ircServerId = ircOptions.ircServerId;
               if (ircOptions.ircHost) payload.ircHost = ircOptions.ircHost;
               if (ircOptions.ircPort) payload.ircPort = ircOptions.ircPort;
               if (typeof ircOptions.ircTls === "boolean")

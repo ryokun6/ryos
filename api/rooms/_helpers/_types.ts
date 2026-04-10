@@ -63,6 +63,8 @@ export interface CreateRoomData {
   type?: RoomType;
   members?: string[];
   // IRC bridging metadata. Only used when `type === "irc"`.
+  /** Registry id from GET /api/irc/servers — required for non-admin IRC room creation. */
+  ircServerId?: string;
   ircHost?: string;
   ircPort?: number;
   ircTls?: boolean;
