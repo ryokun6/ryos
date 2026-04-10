@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -145,6 +146,11 @@ export const ChatsDialogs = ({
 }: ChatsDialogsProps) => {
   const { t } = useTranslation();
 
+  const createRoomInitialUsers = useMemo(
+    () => (prefilledUser ? [prefilledUser] : []),
+    [prefilledUser]
+  );
+
   return (
     <>
       <HelpDialog
@@ -207,7 +213,7 @@ export const ChatsDialogs = ({
         onSubmit={handleAddRoom}
         isAdmin={isAdmin}
         currentUsername={username}
-        initialUsers={prefilledUser ? [prefilledUser] : []}
+        initialUsers={createRoomInitialUsers}
       />
       <ConfirmDialog
         isOpen={isDeleteRoomDialogOpen}

@@ -14,6 +14,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -109,42 +110,41 @@ export function CreateRoomDialog({
 
   const searchRequestIdRef = useRef(0);
   const channelRequestIdRef = useRef(0);
+  /** Stable key so parent re-renders with a new `initialUsers` array do not reset the dialog. */
+  const initialUsersKey = initialUsers.join("\0");
 
   // Theme detection
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
-  // Reset form when dialog opens
+  // Reset form when the dialog opens or when the prefilled user list actually changes.
   useEffect(() => {
-    if (isOpen) {
-      // Reset form when opening
-      setError(null);
-      setRoomName("");
-      setSelectedUsers(initialUsers); // Use initialUsers if provided
-      setSearchTerm("");
-      setUsers([]);
-      // Reset IRC tab state
-      setIrcServers([]);
-      setSelectedServerId(null);
-      setServersError(null);
-      setShowAddServerForm(false);
-      setNewServerHost("");
-      setNewServerPort(6667);
-      setNewServerTls(false);
-      setNewServerLabel("");
-      setIsAddingServer(false);
-      setAddServerError(null);
-      setIrcChannels([]);
-      setChannelsError(null);
-      setChannelFilter("");
-      setChannelListFilter("");
-      setSelectedChannel(null);
-      setCustomChannel("");
-      setChannelsTruncated(false);
-      // Reset to private tab when opening
-      setActiveTab("private");
-    }
-  }, [isOpen, initialUsers]);
+    if (!isOpen) return;
+    setError(null);
+    setRoomName("");
+    setSelectedUsers([...initialUsers]);
+    setSearchTerm("");
+    setUsers([]);
+    // Reset IRC tab state
+    setIrcServers([]);
+    setSelectedServerId(null);
+    setServersError(null);
+    setShowAddServerForm(false);
+    setNewServerHost("");
+    setNewServerPort(6667);
+    setNewServerTls(false);
+    setNewServerLabel("");
+    setIsAddingServer(false);
+    setAddServerError(null);
+    setIrcChannels([]);
+    setChannelsError(null);
+    setChannelFilter("");
+    setChannelListFilter("");
+    setSelectedChannel(null);
+    setCustomChannel("");
+    setChannelsTruncated(false);
+    setActiveTab("private");
+  }, [isOpen, initialUsersKey]);
 
   const searchUsers = useCallback(async (query: string) => {
     const requestId = ++searchRequestIdRef.current;
@@ -451,11 +451,16 @@ export function CreateRoomDialog({
     : undefined;
 
   const dialogContent = (
-    <div className={isXpTheme ? "pt-2 pb-6 px-4" : "pt-3 pb-6 px-6"}>
+    <div
+      className={cn(
+        isXpTheme ? "pt-2 pb-6 px-4" : "pt-3 pb-6 px-6",
+        "min-w-0 w-full max-w-full"
+      )}
+    >
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as "public" | "private" | "irc")}
-        className="w-full"
+        className="w-full min-w-0 max-w-full overflow-x-hidden"
       >
         <ThemedTabsList
           className={cn(
@@ -515,7 +520,7 @@ export function CreateRoomDialog({
         )}
 
         <ThemedTabsContent value="irc">
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-3 min-w-0 w-full max-w-full">
               {/* Step 1: Server picker */}
               <div className="space-y-2">
                 <Label
@@ -817,66 +822,95 @@ export function CreateRoomDialog({
                     </p>
                   )}
                   {!isLoadingChannels && !channelsError && (
-                    <div className="border border-gray-300 rounded max-h-[180px] overflow-y-auto bg-white">
-                      <div className="p-1">
+                    <ScrollArea className="h-[200px] w-full min-w-0 max-w-full overflow-x-hidden border border-gray-300 rounded-md bg-white">
+                      <div className="min-w-0 max-w-full overflow-x-hidden">
                         {filteredChannels.length === 0 &&
                           !(isAdmin && customChannel) && (
-                          <p
-                            className={cn(
-                              "text-gray-500 px-2 py-2",
-                              themeFont
-                            )}
-                            style={themeFontStyle}
-                          >
-                            {isAdmin
-                              ? "No channels available. Type a channel name above to join one anyway."
-                              : "No channels match this filter."}
-                          </p>
-                        )}
-                        {filteredChannels.map((entry) => {
+                            <p
+                              className={cn(
+                                "text-gray-500 px-2 py-1.5",
+                                themeFont
+                              )}
+                              style={themeFontStyle}
+                            >
+                              {isAdmin
+                                ? "No channels available. Type a channel name above to join one anyway."
+                                : "No channels match this filter."}
+                            </p>
+                          )}
+                        {filteredChannels.map((entry, index) => {
                           const isSelected =
                             selectedChannel === entry.channel && !customChannel;
+                          const subline = [
+                            `${entry.numUsers} user${
+                              entry.numUsers === 1 ? "" : "s"
+                            }`,
+                            entry.topic,
+                          ]
+                            .filter(Boolean)
+                            .join(" • ");
                           return (
-                            <button
+                            <div
                               key={entry.channel}
-                              type="button"
+                              role="button"
+                              tabIndex={isLoading ? -1 : 0}
                               onClick={() => {
+                                if (isLoading) return;
                                 setSelectedChannel(entry.channel);
                                 setCustomChannel("");
                                 setChannelFilter("");
                                 setChannelListFilter("");
                               }}
+                              onKeyDown={(e) => {
+                                if (isLoading) return;
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setSelectedChannel(entry.channel);
+                                  setCustomChannel("");
+                                  setChannelFilter("");
+                                  setChannelListFilter("");
+                                }
+                              }}
+                              data-selected={isSelected ? "true" : undefined}
+                              aria-disabled={isLoading}
                               className={cn(
-                                "w-full text-left flex items-center gap-2 p-2 rounded",
-                                isSelected
-                                  ? "bg-blue-100 text-blue-900"
-                                  : "hover:bg-gray-100",
+                                "px-2 py-1.5 w-full min-w-0 max-w-full overflow-hidden text-left box-border",
+                                isLoading
+                                  ? "cursor-not-allowed opacity-60"
+                                  : "cursor-pointer",
+                                !isSelected &&
+                                  (index % 2 === 1 ? "bg-gray-100" : "bg-white"),
                                 themeFont
                               )}
                               style={themeFontStyle}
-                              disabled={isLoading}
                             >
-                              <span className="font-semibold whitespace-nowrap">
+                              <div className="font-semibold truncate">
                                 {entry.channel}
-                              </span>
-                              <span className="text-[10px] text-gray-500 shrink-0">
-                                {entry.numUsers} user
-                                {entry.numUsers === 1 ? "" : "s"}
-                              </span>
-                              {entry.topic && (
-                                <span className="ml-1 text-gray-500 truncate">
-                                  {entry.topic}
-                                </span>
-                              )}
-                            </button>
+                              </div>
+                              {subline ? (
+                                <div
+                                  className={cn(
+                                    "truncate",
+                                    isSelected
+                                      ? "opacity-80"
+                                      : "text-neutral-600"
+                                  )}
+                                >
+                                  {subline}
+                                </div>
+                              ) : null}
+                            </div>
                           );
                         })}
                       </div>
-                    </div>
+                    </ScrollArea>
                   )}
                   {channelsTruncated && (
                     <p
-                      className={cn("text-gray-500", themeFont)}
+                      className={cn(
+                        "text-gray-500 min-w-0 max-w-full break-words",
+                        themeFont
+                      )}
                       style={themeFontStyle}
                     >
                       Showing first {ircChannels.length} channels — refine the
@@ -887,7 +921,10 @@ export function CreateRoomDialog({
                     (customChannel || (selectedChannel && !customChannel))) ||
                     (!isAdmin && selectedChannel)) && (
                     <p
-                      className={cn("text-gray-500", themeFont)}
+                      className={cn(
+                        "text-gray-500 min-w-0 max-w-full break-words",
+                        themeFont
+                      )}
                       style={themeFontStyle}
                     >
                       Will create a room bridged to{" "}
@@ -1057,7 +1094,8 @@ export function CreateRoomDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          activeTab === "irc" ? "max-w-[480px]" : "max-w-[400px]",
+          // Fixed max width so switching tabs (e.g. to IRC) does not resize the dialog.
+          "max-w-[400px] min-w-0 w-full",
           isXpTheme && "p-0 overflow-hidden"
         )}
         style={isXpTheme ? { fontSize: "11px" } : undefined}
@@ -1067,7 +1105,7 @@ export function CreateRoomDialog({
             <DialogHeader>
               {t("apps.chats.dialogs.newChatTitle")}
             </DialogHeader>
-            <div className="window-body">{dialogContent}</div>
+            <div className="window-body min-w-0">{dialogContent}</div>
           </>
         ) : currentTheme === "macosx" ? (
           <>

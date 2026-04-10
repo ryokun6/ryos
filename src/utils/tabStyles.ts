@@ -31,7 +31,8 @@ export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
   const tabTriggerBase = `relative flex-1 ${isMacOSXTheme ? "" : "h-6"} px-2 ${
     isMacOSXTheme ? "" : "-mb-[1px]"
   } rounded-t shadow-none! text-[16px]`;
-  const tabContentBase = "mt-0 h-[calc(100%-2rem)]";
+  const tabContentBase =
+    "mt-0 min-w-0 max-w-full h-[calc(100%-2rem)] overflow-x-hidden";
   // Default content style (non-themed fallback) — kept separate to avoid
   // conflicting bg/border classes when a theme provides its own.
   const tabContentDefault = "bg-white border border-black/20";
