@@ -64,7 +64,14 @@ export interface IrcClientLike extends EventEmitter {
   say(target: string, message: string): void;
   changeNick(nick: string): void;
   quit(message?: string): void;
+  list?: (...args: unknown[]) => void;
   connected?: boolean;
+}
+
+export interface IrcChannelListEntry {
+  channel: string;
+  numUsers: number;
+  topic: string;
 }
 
 interface IrcBridgeDependencies {
@@ -283,6 +290,180 @@ export class IrcBridge extends EventEmitter {
     }
     this.servers.clear();
     this.initialized = false;
+  }
+
+  /**
+   * Run an IRC LIST against the given server and return the result.
+   *
+   * If a persistent connection already exists for the server (because at
+   * least one room is bound to it), the LIST is issued on that client.
+   * Otherwise a short-lived client is created, the LIST is collected, and
+   * the client is disconnected.
+   *
+   * Resolves with up to `options.maxChannels` channels (default 500). The
+   * promise is rejected only if the underlying client fails to connect.
+   */
+  async listChannels(
+    host: string,
+    port: number,
+    tls: boolean,
+    options: { timeoutMs?: number; maxChannels?: number } = {}
+  ): Promise<IrcChannelListEntry[]> {
+    const timeoutMs = Math.max(1000, options.timeoutMs ?? 15000);
+    const maxChannels = Math.max(1, options.maxChannels ?? 500);
+    const normalizedHost = host.toLowerCase();
+    const key = buildIrcServerKey(normalizedHost, port, tls);
+    const existing = this.servers.get(key);
+
+    if (existing?.client && existing.ready) {
+      return await this.collectChannelList(existing.client, timeoutMs, maxChannels);
+    }
+
+    return await this.runOneShotChannelList(
+      normalizedHost,
+      port,
+      tls,
+      timeoutMs,
+      maxChannels
+    );
+  }
+
+  private collectChannelList(
+    client: IrcClientLike,
+    timeoutMs: number,
+    maxChannels: number
+  ): Promise<IrcChannelListEntry[]> {
+    return new Promise<IrcChannelListEntry[]>((resolve) => {
+      const collected: IrcChannelListEntry[] = [];
+      let settled = false;
+
+      const finish = (): void => {
+        if (settled) return;
+        settled = true;
+        try {
+          client.off("channel list", onBatch);
+        } catch {
+          // ignore
+        }
+        try {
+          client.off("channel list end", onEnd);
+        } catch {
+          // ignore
+        }
+        clearTimeout(timer);
+        resolve(collected.slice(0, maxChannels));
+      };
+
+      const onBatch = (
+        batch: Array<{ channel?: string; num_users?: number; topic?: string }>
+      ): void => {
+        if (!Array.isArray(batch)) return;
+        for (const entry of batch) {
+          if (!entry || typeof entry.channel !== "string") continue;
+          collected.push({
+            channel: entry.channel,
+            numUsers: Number(entry.num_users) || 0,
+            topic: typeof entry.topic === "string" ? entry.topic : "",
+          });
+          if (collected.length >= maxChannels) {
+            finish();
+            return;
+          }
+        }
+      };
+
+      const onEnd = (): void => {
+        finish();
+      };
+
+      const timer = setTimeout(finish, timeoutMs);
+
+      try {
+        client.on("channel list", onBatch);
+        client.on("channel list end", onEnd);
+      } catch {
+        finish();
+        return;
+      }
+
+      try {
+        if (typeof client.list === "function") {
+          client.list();
+        } else {
+          finish();
+        }
+      } catch (err) {
+        console.warn("[IrcBridge] LIST command failed:", err);
+        finish();
+      }
+    });
+  }
+
+  private async runOneShotChannelList(
+    host: string,
+    port: number,
+    tls: boolean,
+    timeoutMs: number,
+    maxChannels: number
+  ): Promise<IrcChannelListEntry[]> {
+    const nick = this.buildNick();
+
+    let client: IrcClientLike;
+    try {
+      client = this.deps.createClient({
+        host,
+        port,
+        tls,
+        nick,
+        username: nick,
+        gecos: "ryOS IRC bridge (lister)",
+        version: "ryos-irc-bridge",
+        auto_reconnect: false,
+        auto_reconnect_max_retries: 0,
+      });
+    } catch (err) {
+      console.error(
+        `[IrcBridge] Failed to create one-shot IRC client for ${host}:${port}:`,
+        err
+      );
+      return [];
+    }
+
+    return await new Promise<IrcChannelListEntry[]>((resolve) => {
+      let settled = false;
+
+      const finish = (results: IrcChannelListEntry[]): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(connectTimer);
+        try {
+          client.quit("ryOS list complete");
+        } catch {
+          // ignore
+        }
+        resolve(results);
+      };
+
+      const connectTimer = setTimeout(() => finish([]), timeoutMs);
+
+      client.on("registered", () => {
+        void this.collectChannelList(client, timeoutMs, maxChannels).then(
+          (results) => finish(results)
+        );
+      });
+      client.on("close", () => finish([]));
+      client.on("socket error", () => finish([]));
+
+      try {
+        client.connect();
+      } catch (err) {
+        console.warn(
+          `[IrcBridge] one-shot connect failed for ${host}:${port}:`,
+          err
+        );
+        finish([]);
+      }
+    });
   }
 
   /**

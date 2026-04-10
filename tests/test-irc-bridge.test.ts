@@ -28,13 +28,20 @@ import {
 import type { Message, Room } from "../api/rooms/_helpers/_types";
 
 interface FakeCall {
-  type: "connect" | "join" | "say" | "part" | "quit";
+  type: "connect" | "join" | "say" | "part" | "quit" | "list";
   args: unknown[];
 }
 
 class FakeIrcClient extends EventEmitter implements IrcClientLike {
   calls: FakeCall[] = [];
   connected = false;
+
+  /**
+   * Channels the next `list()` call should respond with. If empty, the
+   * client emits `channel list end` immediately. Tests can override this
+   * to feed the bridge a synthetic LIST result.
+   */
+  listResponse: Array<{ channel: string; num_users: number; topic: string }> = [];
 
   connect(_options?: Record<string, unknown>): void {
     this.calls.push({ type: "connect", args: [_options] });
@@ -69,6 +76,16 @@ class FakeIrcClient extends EventEmitter implements IrcClientLike {
 
   quit(message?: string): void {
     this.calls.push({ type: "quit", args: [message] });
+  }
+
+  list(...args: unknown[]): void {
+    this.calls.push({ type: "list", args });
+    queueMicrotask(() => {
+      if (this.listResponse.length > 0) {
+        this.emit("channel list", this.listResponse);
+      }
+      this.emit("channel list end", undefined);
+    });
   }
 
   nick: string = "";
@@ -283,6 +300,126 @@ describe("IRC Bridge", () => {
     expect(bindings.length).toBe(1);
     expect(bindings[0].roomIds).toContain("rLazy");
   });
+
+  test("listChannels reuses an existing connection when available", async () => {
+    const room = makeIrcRoom();
+    await bridge.bindRoom(room);
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Bridge should now have a single ready client; queue a synthetic LIST
+    // response on it before invoking listChannels.
+    expect(fakeClients.length).toBe(1);
+    const client = fakeClients[0];
+    client.listResponse = [
+      { channel: "#pieter", num_users: 12, topic: "the home channel" },
+      { channel: "#dev", num_users: 4, topic: "" },
+    ];
+
+    const channels = await bridge.listChannels(
+      DEFAULT_IRC_HOST,
+      DEFAULT_IRC_PORT,
+      false
+    );
+
+    // No new client should have been spawned.
+    expect(fakeClients.length).toBe(1);
+    expect(client.calls.some((c) => c.type === "list")).toBe(true);
+    expect(channels.length).toBe(2);
+    expect(channels[0]).toEqual({
+      channel: "#pieter",
+      numUsers: 12,
+      topic: "the home channel",
+    });
+    expect(channels[1]).toEqual({
+      channel: "#dev",
+      numUsers: 4,
+      topic: "",
+    });
+  });
+
+  test("listChannels spins up a one-shot client when no connection exists", async () => {
+    // Inject a list response BEFORE the bridge spawns the client.
+    bridge = new IrcBridge({
+      createClient: (options) => {
+        const client = new FakeIrcClient();
+        client.nick = String(options.nick ?? "test-bot");
+        client.listResponse = [
+          { channel: "#alpha", num_users: 7, topic: "alpha topic" },
+        ];
+        fakeClients.push(client);
+        return client;
+      },
+    });
+
+    const channels = await bridge.listChannels(
+      "irc.example.com",
+      6697,
+      true
+    );
+
+    // A one-shot client was created just for this LIST.
+    expect(fakeClients.length).toBe(1);
+    const client = fakeClients[0];
+    expect(client.calls.some((c) => c.type === "connect")).toBe(true);
+    expect(client.calls.some((c) => c.type === "list")).toBe(true);
+    // After settling the bridge should ask the one-shot client to quit.
+    expect(client.calls.some((c) => c.type === "quit")).toBe(true);
+
+    expect(channels.length).toBe(1);
+    expect(channels[0]).toEqual({
+      channel: "#alpha",
+      numUsers: 7,
+      topic: "alpha topic",
+    });
+  });
+
+  test("listChannels enforces maxChannels truncation", async () => {
+    bridge = new IrcBridge({
+      createClient: (options) => {
+        const client = new FakeIrcClient();
+        client.nick = String(options.nick ?? "test-bot");
+        client.listResponse = Array.from({ length: 50 }, (_, i) => ({
+          channel: `#chan${i}`,
+          num_users: i,
+          topic: "",
+        }));
+        fakeClients.push(client);
+        return client;
+      },
+    });
+
+    const channels = await bridge.listChannels("irc.example.com", 6667, false, {
+      maxChannels: 5,
+    });
+
+    expect(channels.length).toBe(5);
+  });
+
+  test("listChannels resolves with an empty array when LIST times out", async () => {
+    bridge = new IrcBridge({
+      createClient: (options) => {
+        // A bare EventEmitter that never emits anything (no register/list end)
+        const client: IrcClientLike = Object.assign(new EventEmitter(), {
+          connect: () => undefined,
+          join: () => undefined,
+          part: () => undefined,
+          say: () => undefined,
+          changeNick: () => undefined,
+          quit: () => undefined,
+          list: () => undefined,
+        });
+        // Touch options to silence unused-arg lint
+        void options;
+        fakeClients.push(client as unknown as FakeIrcClient);
+        return client;
+      },
+    });
+
+    const channels = await bridge.listChannels("irc.silent.example", 6667, false, {
+      timeoutMs: 50,
+    });
+    expect(channels).toEqual([]);
+  });
 });
 
 describe("IRC Bridge wiring", () => {
@@ -318,5 +455,100 @@ describe("IRC Bridge wiring", () => {
     expect(src).toContain("getIrcBridge");
     expect(/getIrcBridge\(\)\.initialize\(\)/.test(src)).toBe(true);
     expect(src).toContain("isIrcBridgeEnabled");
+  });
+
+  test("irc/servers/index.ts handles GET + POST", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile("api/irc/servers/index.ts", "utf-8");
+    expect(src).toContain("listIrcServers");
+    expect(src).toContain("setIrcServer");
+    expect(src).toContain("normalizeIrcServerInput");
+    expect(src).toContain("generateIrcServerId");
+    // Admin gate
+    expect(src).toContain('user.username !== "ryo"');
+  });
+
+  test("irc/servers/[id].ts deletes a non-default server", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile("api/irc/servers/[id].ts", "utf-8");
+    expect(src).toContain("deleteIrcServer");
+    // Default server is protected.
+    expect(src).toContain("__DEFAULT_IRC_SERVER_ID");
+    expect(src).toContain('user!.username !== "ryo"');
+  });
+
+  test("irc/servers/[id]/channels.ts wires bridge.listChannels", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile("api/irc/servers/[id]/channels.ts", "utf-8");
+    expect(src).toContain("getIrcBridge");
+    expect(src).toContain("listChannels");
+    // Honour the disabled flag.
+    expect(src).toContain("isIrcBridgeEnabled");
+    // Admin gate.
+    expect(src).toContain('user!.username !== "ryo"');
+  });
+});
+
+describe("IRC server registry", () => {
+  test("normalizeIrcServerInput rejects empty hosts", async () => {
+    const { normalizeIrcServerInput } = await import(
+      "../api/_utils/irc/_servers"
+    );
+    const result = normalizeIrcServerInput({ host: "", port: 6667 });
+    expect(result.ok).toBe(false);
+    if (result.ok === false) {
+      expect(result.error.toLowerCase()).toContain("host");
+    }
+  });
+
+  test("normalizeIrcServerInput rejects out-of-range ports", async () => {
+    const { normalizeIrcServerInput } = await import(
+      "../api/_utils/irc/_servers"
+    );
+    const result = normalizeIrcServerInput({
+      host: "irc.example.com",
+      port: 99999,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  test("normalizeIrcServerInput accepts valid hostnames + IPs", async () => {
+    const { normalizeIrcServerInput } = await import(
+      "../api/_utils/irc/_servers"
+    );
+    const hostname = normalizeIrcServerInput({
+      host: "irc.example.com",
+      port: 6667,
+      tls: false,
+    });
+    expect(hostname.ok).toBe(true);
+    if (hostname.ok) {
+      expect(hostname.value.host).toBe("irc.example.com");
+    }
+
+    const ip = normalizeIrcServerInput({
+      host: "192.168.1.1",
+      port: 6697,
+      tls: true,
+    });
+    expect(ip.ok).toBe(true);
+    if (ip.ok) {
+      expect(ip.value.host).toBe("192.168.1.1");
+      expect(ip.value.tls).toBe(true);
+    }
+  });
+
+  test("normalizeIrcServerInput defaults the label to the host", async () => {
+    const { normalizeIrcServerInput } = await import(
+      "../api/_utils/irc/_servers"
+    );
+    const result = normalizeIrcServerInput({
+      host: "irc.example.com",
+      port: 6667,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.label).toBe("irc.example.com");
+    }
   });
 });
