@@ -81,7 +81,7 @@ const DialogContent = React.forwardRef<
   const getDialogContentClasses = () => {
     if (isXpTheme) {
       return cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 origin-center",
+        "fixed left-[50%] top-[50%] z-50 grid w-full min-w-0 max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 origin-center",
         "window", // Use xp.css window class
         className
       );
@@ -89,7 +89,7 @@ const DialogContent = React.forwardRef<
 
     if (isMacOSTheme) {
       return cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-os-window-bg p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 origin-center overflow-hidden",
+        "fixed left-[50%] top-[50%] z-50 grid w-full min-w-0 max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-os-window-bg p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 origin-center overflow-hidden",
         // Ensure all descendant buttons use 13px text size in macOSX dialogs
         "border-[length:var(--os-metrics-border-width)] border-os-window shadow-os-window macosx-dialog [&_button]:text-[13px]",
         className
@@ -98,7 +98,7 @@ const DialogContent = React.forwardRef<
 
     // Default System 7 style
     return cn(
-      "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 origin-center",
+      "fixed left-[50%] top-[50%] z-50 grid w-full min-w-0 max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 origin-center",
       "bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window shadow-os-window",
       className
     );
@@ -116,7 +116,7 @@ const DialogContent = React.forwardRef<
         {...props}
       >
         <div
-          className="flex flex-1 min-h-0 flex-col"
+          className="flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col overflow-x-hidden"
           style={
             isMacOSTheme
               ? {

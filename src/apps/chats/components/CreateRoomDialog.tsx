@@ -460,7 +460,7 @@ export function CreateRoomDialog({
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as "public" | "private" | "irc")}
-        className="w-full min-w-0"
+        className="w-full min-w-0 max-w-full overflow-x-hidden"
       >
         <ThemedTabsList
           className={cn(
@@ -822,8 +822,8 @@ export function CreateRoomDialog({
                     </p>
                   )}
                   {!isLoadingChannels && !channelsError && (
-                    <ScrollArea className="h-[200px] w-full min-w-0 max-w-full border border-gray-300 rounded-md bg-white">
-                      <div className="min-w-0">
+                    <ScrollArea className="h-[200px] w-full min-w-0 max-w-full overflow-x-hidden border border-gray-300 rounded-md bg-white">
+                      <div className="min-w-0 max-w-full overflow-x-hidden">
                         {filteredChannels.length === 0 &&
                           !(isAdmin && customChannel) && (
                             <p
@@ -874,7 +874,7 @@ export function CreateRoomDialog({
                               data-selected={isSelected ? "true" : undefined}
                               aria-disabled={isLoading}
                               className={cn(
-                                "px-2 py-1.5 w-full min-w-0 max-w-full text-left box-border",
+                                "px-2 py-1.5 w-full min-w-0 max-w-full overflow-hidden text-left box-border",
                                 isLoading
                                   ? "cursor-not-allowed opacity-60"
                                   : "cursor-pointer",
@@ -907,7 +907,10 @@ export function CreateRoomDialog({
                   )}
                   {channelsTruncated && (
                     <p
-                      className={cn("text-gray-500", themeFont)}
+                      className={cn(
+                        "text-gray-500 min-w-0 max-w-full break-words",
+                        themeFont
+                      )}
                       style={themeFontStyle}
                     >
                       Showing first {ircChannels.length} channels — refine the
@@ -918,7 +921,10 @@ export function CreateRoomDialog({
                     (customChannel || (selectedChannel && !customChannel))) ||
                     (!isAdmin && selectedChannel)) && (
                     <p
-                      className={cn("text-gray-500", themeFont)}
+                      className={cn(
+                        "text-gray-500 min-w-0 max-w-full break-words",
+                        themeFont
+                      )}
                       style={themeFontStyle}
                     >
                       Will create a room bridged to{" "}
