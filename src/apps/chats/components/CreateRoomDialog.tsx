@@ -1057,7 +1057,7 @@ export function CreateRoomDialog({
       <DialogContent
         className={cn(
           // Fixed max width so switching tabs (e.g. to IRC) does not resize the dialog.
-          "max-w-[480px]",
+          "max-w-[400px]",
           isXpTheme && "p-0 overflow-hidden"
         )}
         style={isXpTheme ? { fontSize: "11px" } : undefined}
