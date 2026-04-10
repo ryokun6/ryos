@@ -58,6 +58,7 @@ interface ChatsDialogsProps {
     type: "public" | "private" | "irc",
     members: string[],
     ircOptions?: {
+      ircServerId?: string;
       ircHost?: string;
       ircPort?: number;
       ircTls?: boolean;

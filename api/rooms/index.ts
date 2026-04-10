@@ -19,7 +19,12 @@ import {
   DEFAULT_IRC_TLS,
   normalizeIrcChannel,
 } from "../_utils/irc/_types.js";
-import { notifyRoomBindingChange, isIrcBridgeEnabled } from "../_utils/irc/_bridge.js";
+import { getIrcServer } from "../_utils/irc/_servers.js";
+import {
+  notifyRoomBindingChange,
+  isIrcBridgeEnabled,
+  getIrcBridge,
+} from "../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -66,6 +71,7 @@ export default apiHandler(
       name: originalName,
       type = "public",
       members = [],
+      ircServerId: ircServerIdBody,
       ircHost: ircHostBody,
       ircPort: ircPortBody,
       ircTls: ircTlsBody,
@@ -98,11 +104,6 @@ export default apiHandler(
     }
 
     if (type === "irc") {
-      if (username !== "ryo") {
-        logger.response(403, Date.now() - startTime);
-        res.status(403).json({ error: "Forbidden - Only admin can create IRC rooms" });
-        return;
-      }
       if (isProfaneUsername(originalName || "")) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Room name contains inappropriate language" });
@@ -124,11 +125,19 @@ export default apiHandler(
     }
 
     let roomName: string;
+    let ircResolved:
+      | {
+          host: string;
+          port: number;
+          tls: boolean;
+          channel: string;
+          ircServerLabel?: string;
+        }
+      | null = null;
+
     if (type === "public") {
       roomName = originalName.toLowerCase().replace(/ /g, "-");
     } else if (type === "irc") {
-      // Derive the display name from the channel name so sidebar shows
-      // "#pieter" etc. Fall back to provided name.
       const derivedChannel = normalizeIrcChannel(
         ircChannelBody || originalName || ""
       );
@@ -139,7 +148,96 @@ export default apiHandler(
           .json({ error: "IRC channel is required (e.g. #pieter)" });
         return;
       }
-      roomName = derivedChannel.replace(/^#/, "").toLowerCase();
+
+      const serverIdRaw =
+        typeof ircServerIdBody === "string" ? ircServerIdBody.trim() : "";
+
+      if (username === "ryo") {
+        const serverFromRegistry = serverIdRaw
+          ? await getIrcServer(serverIdRaw)
+          : null;
+        if (serverIdRaw && !serverFromRegistry) {
+          logger.response(400, Date.now() - startTime);
+          res.status(400).json({ error: "Unknown IRC server id" });
+          return;
+        }
+        if (serverFromRegistry) {
+          ircResolved = {
+            host: serverFromRegistry.host,
+            port: serverFromRegistry.port,
+            tls: serverFromRegistry.tls,
+            channel: derivedChannel,
+            ircServerLabel: serverFromRegistry.label,
+          };
+        } else {
+          ircResolved = {
+            host: (ircHostBody || DEFAULT_IRC_HOST).toString().toLowerCase(),
+            port: Number(ircPortBody) || DEFAULT_IRC_PORT,
+            tls: typeof ircTlsBody === "boolean" ? ircTlsBody : DEFAULT_IRC_TLS,
+            channel: derivedChannel,
+            ircServerLabel:
+              typeof ircServerLabelBody === "string" &&
+              ircServerLabelBody.trim()
+                ? ircServerLabelBody.trim()
+                : undefined,
+          };
+        }
+      } else {
+        if (!serverIdRaw) {
+          logger.response(403, Date.now() - startTime);
+          res.status(403).json({
+            error:
+              "Forbidden — pick a registered IRC server to create a bridged room",
+          });
+          return;
+        }
+        const serverFromRegistry = await getIrcServer(serverIdRaw);
+        if (!serverFromRegistry) {
+          logger.response(400, Date.now() - startTime);
+          res.status(400).json({ error: "Unknown IRC server id" });
+          return;
+        }
+        if (!isIrcBridgeEnabled()) {
+          logger.response(503, Date.now() - startTime);
+          res.status(503).json({
+            error: "IRC bridge is disabled in this environment",
+          });
+          return;
+        }
+        try {
+          const advertised = await getIrcBridge().listChannels(
+            serverFromRegistry.host,
+            serverFromRegistry.port,
+            serverFromRegistry.tls,
+            { maxChannels: 2000, timeoutMs: 15000 }
+          );
+          const channelOk = advertised.some(
+            (c) => c.channel.toLowerCase() === derivedChannel.toLowerCase()
+          );
+          if (!channelOk) {
+            logger.response(403, Date.now() - startTime);
+            res.status(403).json({
+              error:
+                "Channel must appear in that server’s public channel list (refresh the list and pick a channel)",
+            });
+            return;
+          }
+        } catch (err) {
+          logger.error("IRC channel validation failed", err);
+          logger.response(503, Date.now() - startTime);
+          res.status(503).json({ error: "Failed to validate IRC channel" });
+          return;
+        }
+        ircResolved = {
+          host: serverFromRegistry.host,
+          port: serverFromRegistry.port,
+          tls: serverFromRegistry.tls,
+          channel: derivedChannel,
+          ircServerLabel: serverFromRegistry.label,
+        };
+      }
+
+      roomName = ircResolved.channel.replace(/^#/, "").toLowerCase();
     } else {
       const sortedMembers = [...normalizedMembers].sort();
       roomName = sortedMembers.map((m: string) => `@${m}`).join(", ");
@@ -154,18 +252,16 @@ export default apiHandler(
         createdAt: getCurrentTimestamp(),
         userCount: type === "private" ? normalizedMembers.length : 0,
         ...(type === "private" && { members: normalizedMembers }),
-        ...(type === "irc" && {
-          ircHost: (ircHostBody || DEFAULT_IRC_HOST).toString().toLowerCase(),
-          ircPort: Number(ircPortBody) || DEFAULT_IRC_PORT,
-          ircTls: typeof ircTlsBody === "boolean" ? ircTlsBody : DEFAULT_IRC_TLS,
-          ircChannel: normalizeIrcChannel(
-            ircChannelBody || originalName || ""
-          ),
-          ircServerLabel:
-            typeof ircServerLabelBody === "string" && ircServerLabelBody.trim()
-              ? ircServerLabelBody.trim()
-              : undefined,
-        }),
+        ...(type === "irc" &&
+          ircResolved && {
+            ircHost: ircResolved.host.toLowerCase(),
+            ircPort: ircResolved.port,
+            ircTls: ircResolved.tls,
+            ircChannel: ircResolved.channel,
+            ...(ircResolved.ircServerLabel && {
+              ircServerLabel: ircResolved.ircServerLabel,
+            }),
+          }),
       };
 
       await setRoom(roomId, room);

@@ -27,6 +27,8 @@ export interface CreateRoomPayload {
   type: "public" | "private" | "irc";
   name?: string;
   members?: string[];
+  /** Registered server id from GET /api/irc/servers (required for non-admin IRC rooms). */
+  ircServerId?: string;
   ircHost?: string;
   ircPort?: number;
   ircTls?: boolean;

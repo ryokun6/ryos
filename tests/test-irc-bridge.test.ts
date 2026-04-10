@@ -431,6 +431,8 @@ describe("IRC Bridge wiring", () => {
     // The create route must honour the opt-out flag so IRC_BRIDGE_DISABLED=1
     // never accidentally opens a socket.
     expect(src).toContain("isIrcBridgeEnabled");
+    expect(src).toContain("getIrcServer");
+    expect(src).toContain("ircServerId");
   });
 
   test("rooms/[id].ts wires notifyRoomBindingChange on delete", async () => {
@@ -484,8 +486,8 @@ describe("IRC Bridge wiring", () => {
     expect(src).toContain("listChannels");
     // Honour the disabled flag.
     expect(src).toContain("isIrcBridgeEnabled");
-    // Admin gate.
-    expect(src).toContain('user!.username !== "ryo"');
+    // Any authenticated user (not admin-only).
+    expect(src).not.toContain('user!.username !== "ryo"');
   });
 });
 

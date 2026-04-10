@@ -4,8 +4,8 @@
  * GET - List the channels currently advertised by an IRC server.
  *
  * The bridge runs an IRC LIST against the configured server and returns
- * the parsed result. Admin only because it requires opening (or reusing)
- * a real IRC connection.
+ * the parsed result. Any authenticated user may list channels for servers
+ * already registered by an admin (POST/DELETE on servers remain admin-only).
  */
 
 import { apiHandler } from "../../../_utils/api-handler.js";
@@ -25,12 +25,6 @@ export default apiHandler(
     if (!id) {
       logger.response(400, Date.now() - startTime);
       res.status(400).json({ error: "Server id is required" });
-      return;
-    }
-
-    if (user!.username !== "ryo") {
-      logger.response(403, Date.now() - startTime);
-      res.status(403).json({ error: "Forbidden - admin access required" });
       return;
     }
 
