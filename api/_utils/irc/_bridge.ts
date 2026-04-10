@@ -19,6 +19,7 @@
  */
 
 import EventEmitter from "node:events";
+import { randomInt } from "node:crypto";
 import { createRequire } from "node:module";
 import {
   DEFAULT_IRC_HOST,
@@ -641,7 +642,7 @@ export class IrcBridge extends EventEmitter {
   }
 
   private buildNick(): string {
-    const rand = Math.floor(Math.random() * 9999).toString(36);
+    const rand = randomInt(0, 1_000_000).toString(36);
     return `${this.deps.nickPrefix}-${rand}`;
   }
 }
