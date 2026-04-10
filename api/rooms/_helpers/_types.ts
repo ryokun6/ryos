@@ -6,7 +6,7 @@
 // Room Types
 // ============================================================================
 
-export type RoomType = "public" | "private";
+export type RoomType = "public" | "private" | "irc";
 
 export interface Room {
   id: string;
@@ -15,6 +15,12 @@ export interface Room {
   createdAt: number;
   userCount: number;
   members?: string[]; // Only for private rooms
+  // IRC bridging metadata. Present only when `type === "irc"`.
+  ircHost?: string;
+  ircPort?: number;
+  ircTls?: boolean;
+  ircChannel?: string; // e.g. "#pieter"
+  ircServerLabel?: string; // Friendly label shown in UI
 }
 
 export interface RoomWithUsers extends Room {
@@ -56,6 +62,14 @@ export interface CreateRoomData {
   name?: string;
   type?: RoomType;
   members?: string[];
+  // IRC bridging metadata. Only used when `type === "irc"`.
+  /** Registry id from GET /api/irc/servers — required for non-admin IRC room creation. */
+  ircServerId?: string;
+  ircHost?: string;
+  ircPort?: number;
+  ircTls?: boolean;
+  ircChannel?: string;
+  ircServerLabel?: string;
 }
 
 export interface JoinLeaveRoomData {

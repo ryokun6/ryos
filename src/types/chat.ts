@@ -20,11 +20,17 @@ export type ChatMessage = {
 export type ChatRoom = {
   id: string;
   name: string;
-  type?: "public" | "private"; // optional for backward compatibility
+  type?: "public" | "private" | "irc"; // optional for backward compatibility
   createdAt: number;
   userCount: number;
   users?: string[];
   members?: string[]; // for private rooms - list of usernames who can access
+  // IRC bridging metadata. Present only when `type === "irc"`.
+  ircHost?: string;
+  ircPort?: number;
+  ircTls?: boolean;
+  ircChannel?: string; // e.g. "#pieter"
+  ircServerLabel?: string; // Friendly label shown in UI
 };
 
 export type User = {

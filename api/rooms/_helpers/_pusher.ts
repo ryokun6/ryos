@@ -47,11 +47,13 @@ export function filterRoomsForUser(
   username: string | null
 ): Room[] {
   if (!username) {
-    return rooms.filter((room) => !room.type || room.type === "public");
+    return rooms.filter(
+      (room) => !room.type || room.type === "public" || room.type === "irc"
+    );
   }
   const lower = username.toLowerCase();
   return rooms.filter((room) => {
-    if (!room.type || room.type === "public") return true;
+    if (!room.type || room.type === "public" || room.type === "irc") return true;
     if (room.type === "private" && room.members) {
       return room.members.includes(lower);
     }
@@ -77,7 +79,7 @@ export async function broadcastRoomUpdated(roomId: string): Promise<void> {
     const count = await refreshRoomUserCount(roomId);
     const room: Room = { ...roomObj, userCount: count };
 
-    if (!room.type || room.type === "public") {
+    if (!room.type || room.type === "public" || room.type === "irc") {
       await triggerRealtimeEvent("chats-public", "room-updated", { room });
     } else if (Array.isArray(room.members)) {
       await fanOutToPrivateMembers(roomId, "room-updated", { room });
@@ -93,7 +95,7 @@ export async function broadcastRoomUpdated(roomId: string): Promise<void> {
  */
 export async function broadcastRoomCreated(room: Room): Promise<void> {
   try {
-    if (!room.type || room.type === "public") {
+    if (!room.type || room.type === "public" || room.type === "irc") {
       await triggerRealtimeEvent("chats-public", "room-created", { room });
     } else if (Array.isArray(room.members) && room.members.length > 0) {
       // Use batch trigger for multiple members
@@ -119,7 +121,7 @@ export async function broadcastRoomDeleted(
   members: string[] = []
 ): Promise<void> {
   try {
-    if (!type || type === "public") {
+    if (!type || type === "public" || type === "irc") {
       await triggerRealtimeEvent("chats-public", "room-deleted", { roomId });
     } else if (Array.isArray(members) && members.length > 0) {
       // Use batch trigger for multiple members

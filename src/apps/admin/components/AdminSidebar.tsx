@@ -12,7 +12,7 @@ type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
 interface Room {
   id: string;
   name: string;
-  type: "public" | "private";
+  type: "public" | "private" | "irc";
   userCount: number;
 }
 

@@ -28,6 +28,7 @@ import { refreshRoomPresence } from "../_helpers/_presence.js";
 import type { Message } from "../_helpers/_types.js";
 import { getRoomReadAccessError, getRoomWriteAccessError } from "../_helpers/_access.js";
 import { broadcastNewMessage } from "../_helpers/_pusher.js";
+import { getIrcBridge, isIrcBridgeEnabled } from "../../_utils/irc/_bridge.js";
 
 export const runtime = "nodejs";
 
@@ -234,6 +235,20 @@ export default apiHandler(
 
       await broadcastNewMessage(roomId, message, roomData);
       logger.info("Pusher room-message broadcast sent", { roomId, messageId: message.id });
+
+      // If this is an IRC room, forward the message to the IRC bridge. Send
+      // the unescaped content so the IRC side doesn't see HTML entities.
+      if (roomData.type === "irc" && isIrcBridgeEnabled()) {
+        try {
+          await getIrcBridge().sendMessage(
+            roomData,
+            username,
+            filterProfanityPreservingUrls(originalContent)
+          );
+        } catch (err) {
+          logger.error("Failed to forward message to IRC bridge", err);
+        }
+      }
 
       logger.info("Message sent", { username, roomId, messageId: message.id });
       logger.response(201, Date.now() - startTime);

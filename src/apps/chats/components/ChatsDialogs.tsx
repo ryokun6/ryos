@@ -55,8 +55,16 @@ interface ChatsDialogsProps {
   prefilledUser: string;
   handleAddRoom: (
     roomName: string,
-    type: "public" | "private",
-    members: string[]
+    type: "public" | "private" | "irc",
+    members: string[],
+    ircOptions?: {
+      ircServerId?: string;
+      ircHost?: string;
+      ircPort?: number;
+      ircTls?: boolean;
+      ircChannel?: string;
+      ircServerLabel?: string;
+    }
   ) => Promise<{ ok: boolean; error?: string }>;
   isAdmin: boolean;
   username: string | null;

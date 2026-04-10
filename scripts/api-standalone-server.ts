@@ -28,6 +28,7 @@ import {
   unregisterRealtimeSocket,
   unsubscribeRealtimeSocket,
 } from "../api/_utils/realtime.js";
+import { getIrcBridge, isIrcBridgeEnabled } from "../api/_utils/irc/_bridge.js";
 import {
   discoverApiRouteManifest,
   type ApiRouteManifestEntry,
@@ -711,6 +712,17 @@ async function bootstrap(): Promise<void> {
 
   if (shouldEnableLocalRealtime()) {
     await ensureRealtimePubSubBridge();
+  }
+
+  // Initialize the IRC bridge: connects to any IRC servers referenced by
+  // existing `type: "irc"` rooms and keeps the connections open so inbound
+  // IRC messages are persisted + broadcast to subscribed clients.
+  if (isIrcBridgeEnabled()) {
+    try {
+      await getIrcBridge().initialize();
+    } catch (err) {
+      console.warn("[api-standalone] IRC bridge init failed:", err);
+    }
   }
 
   Bun.serve<LocalRealtimeSocketData>({
