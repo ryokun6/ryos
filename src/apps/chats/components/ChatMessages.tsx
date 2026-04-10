@@ -841,7 +841,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           {showTypingDots ? (
             <TypingDots />
           ) : message.role === "assistant" ? (
-            <motion.div className="select-text flex flex-col gap-1">
+            <div className="select-text flex flex-col gap-1">
               {message.parts?.map(
                 (
                   part: ToolInvocationPart | { type: string; text?: string },
@@ -866,15 +866,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ).length;
                         if (openTags !== closeTags) {
                           return (
-                            <motion.span
+                            <span
                               key={partKey}
-                              initial={{ opacity: 1 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0 }}
                               className="select-text italic"
                             >
                               {t("apps.chats.status.editing")}
-                            </motion.span>
+                            </span>
                           );
                         }
                       }
@@ -894,16 +891,15 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                   const start = charPos;
                                   const end = charPos + segment.content.length;
                                   charPos = end;
+                                  const shouldAnimate = !isInitialMessage;
                                   return (
-                                    <motion.span
+                                    <span
                                       key={`${partKey}-segment-${idx}`}
-                                      initial={
-                                        isInitialMessage
-                                          ? { opacity: 1, y: 0 }
-                                          : { opacity: 0, y: 12 }
-                                      }
-                                      animate={{ opacity: 1, y: 0 }}
                                       className={`select-text ${
+                                        shouldAnimate
+                                          ? "chat-token-animate"
+                                          : "chat-token-static"
+                                      } ${
                                         isEmojiOnly(textContent)
                                           ? "text-[24px]"
                                           : ""
@@ -919,15 +915,15 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                         fontSize: isEmojiOnly(textContent)
                                           ? undefined
                                           : `${fontSize}px`,
-                                      }}
-                                      transition={{
-                                        duration: 0.08,
-                                        delay: idx * 0.02,
-                                        ease: "easeOut",
-                                        onComplete: () => {
-                                          if (idx % 2 === 0) playNote();
-                                        },
-                                      }}
+                                        "--token-delay": shouldAnimate
+                                          ? idx * 20
+                                          : undefined,
+                                      } as React.CSSProperties}
+                                      onAnimationEnd={
+                                        shouldAnimate && idx % 2 === 0
+                                          ? () => playNote()
+                                          : undefined
+                                      }
                                     >
                                       {highlightActive &&
                                       start < (combinedHighlightSeg?.end ?? 0) &&
@@ -938,7 +934,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                       ) : (
                                         renderInlineToken(segment)
                                       )}
-                                    </motion.span>
+                                    </span>
                                   );
                                 });
                               })()}
@@ -973,7 +969,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }
               )}
-            </motion.div>
+            </div>
           ) : (
             <>
               {displayContent && (

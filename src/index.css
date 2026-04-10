@@ -894,6 +894,29 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   animation: fade-in 0.3s ease-out;
 }
 
+@keyframes chat-token-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-token-animate {
+  display: inline-block;
+  opacity: 0;
+  animation: chat-token-enter 0.08s ease-out forwards;
+  animation-delay: calc(var(--token-delay) * 1ms);
+  will-change: opacity, transform;
+}
+
+.chat-token-static {
+  opacity: 1;
+}
+
 /* ------------------------------------------------------------------------- */
 /* Safari override: disable SerenityOS-Emoji to fix missing emoji glyphs      */
 /* ------------------------------------------------------------------------- */
