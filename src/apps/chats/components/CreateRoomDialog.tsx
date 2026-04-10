@@ -109,42 +109,41 @@ export function CreateRoomDialog({
 
   const searchRequestIdRef = useRef(0);
   const channelRequestIdRef = useRef(0);
+  /** Stable key so parent re-renders with a new `initialUsers` array do not reset the dialog. */
+  const initialUsersKey = initialUsers.join("\0");
 
   // Theme detection
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
-  // Reset form when dialog opens
+  // Reset form when the dialog opens or when the prefilled user list actually changes.
   useEffect(() => {
-    if (isOpen) {
-      // Reset form when opening
-      setError(null);
-      setRoomName("");
-      setSelectedUsers(initialUsers); // Use initialUsers if provided
-      setSearchTerm("");
-      setUsers([]);
-      // Reset IRC tab state
-      setIrcServers([]);
-      setSelectedServerId(null);
-      setServersError(null);
-      setShowAddServerForm(false);
-      setNewServerHost("");
-      setNewServerPort(6667);
-      setNewServerTls(false);
-      setNewServerLabel("");
-      setIsAddingServer(false);
-      setAddServerError(null);
-      setIrcChannels([]);
-      setChannelsError(null);
-      setChannelFilter("");
-      setChannelListFilter("");
-      setSelectedChannel(null);
-      setCustomChannel("");
-      setChannelsTruncated(false);
-      // Reset to private tab when opening
-      setActiveTab("private");
-    }
-  }, [isOpen, initialUsers]);
+    if (!isOpen) return;
+    setError(null);
+    setRoomName("");
+    setSelectedUsers([...initialUsers]);
+    setSearchTerm("");
+    setUsers([]);
+    // Reset IRC tab state
+    setIrcServers([]);
+    setSelectedServerId(null);
+    setServersError(null);
+    setShowAddServerForm(false);
+    setNewServerHost("");
+    setNewServerPort(6667);
+    setNewServerTls(false);
+    setNewServerLabel("");
+    setIsAddingServer(false);
+    setAddServerError(null);
+    setIrcChannels([]);
+    setChannelsError(null);
+    setChannelFilter("");
+    setChannelListFilter("");
+    setSelectedChannel(null);
+    setCustomChannel("");
+    setChannelsTruncated(false);
+    setActiveTab("private");
+  }, [isOpen, initialUsersKey]);
 
   const searchUsers = useCallback(async (query: string) => {
     const requestId = ++searchRequestIdRef.current;
@@ -1057,7 +1056,8 @@ export function CreateRoomDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          activeTab === "irc" ? "max-w-[480px]" : "max-w-[400px]",
+          // Fixed max width so switching tabs (e.g. to IRC) does not resize the dialog.
+          "max-w-[480px]",
           isXpTheme && "p-0 overflow-hidden"
         )}
         style={isXpTheme ? { fontSize: "11px" } : undefined}
