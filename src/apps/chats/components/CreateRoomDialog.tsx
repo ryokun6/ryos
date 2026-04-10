@@ -50,6 +50,7 @@ interface CreateRoomDialogProps {
     type: "public" | "private" | "irc",
     members: string[],
     ircOptions?: {
+      ircServerId?: string;
       ircHost?: string;
       ircPort?: number;
       ircTls?: boolean;
@@ -100,6 +101,8 @@ export function CreateRoomDialog({
   const [isLoadingChannels, setIsLoadingChannels] = useState(false);
   const [channelsError, setChannelsError] = useState<string | null>(null);
   const [channelFilter, setChannelFilter] = useState("");
+  /** Filter text for the channel list only (non-admins cannot type arbitrary channels). */
+  const [channelListFilter, setChannelListFilter] = useState("");
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
   const [customChannel, setCustomChannel] = useState("");
   const [channelsTruncated, setChannelsTruncated] = useState(false);
@@ -134,6 +137,7 @@ export function CreateRoomDialog({
       setIrcChannels([]);
       setChannelsError(null);
       setChannelFilter("");
+      setChannelListFilter("");
       setSelectedChannel(null);
       setCustomChannel("");
       setChannelsTruncated(false);
@@ -271,6 +275,7 @@ export function CreateRoomDialog({
     if (!selectedServerId) return;
     setSelectedChannel(null);
     setChannelFilter("");
+    setChannelListFilter("");
     setCustomChannel("");
     void loadIrcChannels(selectedServerId);
   }, [isOpen, activeTab, selectedServerId, loadIrcChannels]);
@@ -341,7 +346,9 @@ export function CreateRoomDialog({
   );
 
   const filteredChannels = (() => {
-    const term = channelFilter.trim().toLowerCase();
+    const term = (isAdmin ? channelFilter : channelListFilter)
+      .trim()
+      .toLowerCase();
     if (!term) return ircChannels;
     return ircChannels.filter((entry) => {
       const channelMatch = entry.channel.toLowerCase().includes(term);
@@ -362,6 +369,7 @@ export function CreateRoomDialog({
     try {
       let ircOptions:
         | {
+            ircServerId?: string;
             ircHost?: string;
             ircPort?: number;
             ircTls?: boolean;
@@ -378,9 +386,17 @@ export function CreateRoomDialog({
           setIsLoading(false);
           return;
         }
-        const rawChannel = (customChannel.trim() || selectedChannel || "").trim();
+        const rawChannel = (
+          isAdmin
+            ? customChannel.trim() || selectedChannel || ""
+            : selectedChannel || ""
+        ).trim();
         if (!rawChannel) {
-          setError("Please pick or enter an IRC channel.");
+          setError(
+            isAdmin
+              ? "Please pick or enter an IRC channel."
+              : "Please pick a channel from the list."
+          );
           setIsLoading(false);
           return;
         }
@@ -388,6 +404,7 @@ export function CreateRoomDialog({
           ? rawChannel
           : `#${rawChannel}`;
         ircOptions = {
+          ircServerId: server.id,
           ircHost: server.host,
           ircPort: server.port,
           ircTls: server.tls,
@@ -440,17 +457,22 @@ export function CreateRoomDialog({
         onValueChange={(v) => setActiveTab(v as "public" | "private" | "irc")}
         className="w-full"
       >
-        {isAdmin && (
-          <ThemedTabsList className="grid grid-cols-3 w-full">
-            <ThemedTabsTrigger value="private">
-              {t("apps.chats.sidebar.private")}
-            </ThemedTabsTrigger>
+        <ThemedTabsList
+          className={cn(
+            "grid w-full",
+            isAdmin ? "grid-cols-3" : "grid-cols-2"
+          )}
+        >
+          <ThemedTabsTrigger value="private">
+            {t("apps.chats.sidebar.private")}
+          </ThemedTabsTrigger>
+          {isAdmin && (
             <ThemedTabsTrigger value="public">
               {t("apps.chats.dialogs.public")}
             </ThemedTabsTrigger>
-            <ThemedTabsTrigger value="irc">IRC</ThemedTabsTrigger>
-          </ThemedTabsList>
-        )}
+          )}
+          <ThemedTabsTrigger value="irc">IRC</ThemedTabsTrigger>
+        </ThemedTabsList>
 
         {isAdmin && (
           <ThemedTabsContent value="public">
@@ -492,8 +514,7 @@ export function CreateRoomDialog({
           </ThemedTabsContent>
         )}
 
-        {isAdmin && (
-          <ThemedTabsContent value="irc">
+        <ThemedTabsContent value="irc">
             <div className="p-4 space-y-3">
               {/* Step 1: Server picker */}
               <div className="space-y-2">
@@ -550,19 +571,23 @@ export function CreateRoomDialog({
                             </span>
                           </SelectItem>
                         ))}
-                        <SelectItem
-                          value="__add__"
-                          className={cn(themeFont, "text-blue-600")}
-                        >
-                          <span className="inline-flex items-center gap-1">
-                            <Plus className="h-3 w-3" weight="bold" />
-                            Add new server…
-                          </span>
-                        </SelectItem>
+                        {isAdmin && (
+                          <SelectItem
+                            value="__add__"
+                            className={cn(themeFont, "text-blue-600")}
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              <Plus className="h-3 w-3" weight="bold" />
+                              Add new server…
+                            </span>
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
-                  {selectedServer && !selectedServer.isDefault && (
+                  {isAdmin &&
+                    selectedServer &&
+                    !selectedServer.isDefault && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -588,7 +613,7 @@ export function CreateRoomDialog({
               </div>
 
               {/* Inline "add server" form */}
-              {showAddServerForm && (
+              {isAdmin && showAddServerForm && (
                 <div className="space-y-2 border border-gray-300 rounded p-3 bg-gray-50">
                   <Label
                     className={cn("text-gray-700 font-semibold", themeFont)}
@@ -683,8 +708,17 @@ export function CreateRoomDialog({
               )}
 
               {/* Step 2: Channel browser */}
-              {selectedServerId && !showAddServerForm && (
+              {selectedServerId && (!isAdmin || !showAddServerForm) && (
                 <div className="space-y-2">
+                  {!isAdmin && (
+                    <p
+                      className={cn("text-gray-500 text-[11px]", themeFont)}
+                      style={themeFontStyle}
+                    >
+                      IRC servers are managed by an admin. Choose a channel
+                      from the list to join.
+                    </p>
+                  )}
                   <div className="flex items-center justify-between">
                     <Label
                       htmlFor="irc-channel-filter"
@@ -712,45 +746,68 @@ export function CreateRoomDialog({
                       />
                     </Button>
                   </div>
-                  <div className="relative">
-                    <Input
-                      id="irc-channel-filter"
-                      placeholder={
-                        isLoadingChannels
-                          ? "Loading channels…"
-                          : "Filter channels or type a new one"
-                      }
-                      value={channelFilter || customChannel}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setChannelFilter(v);
-                        // If the user types something that doesn't exactly
-                        // match an existing channel, treat it as a custom
-                        // entry too so they can join an unlisted channel.
-                        const match = ircChannels.find(
-                          (c) => c.channel.toLowerCase() === v.toLowerCase()
-                        );
-                        if (match) {
-                          setSelectedChannel(match.channel);
-                          setCustomChannel("");
-                        } else if (v.startsWith("#") || v.startsWith("&")) {
-                          setCustomChannel(v);
-                          setSelectedChannel(null);
-                        } else {
-                          setCustomChannel("");
+                  {isAdmin ? (
+                    <div className="relative">
+                      <Input
+                        id="irc-channel-filter"
+                        placeholder={
+                          isLoadingChannels
+                            ? "Loading channels…"
+                            : "Filter channels or type a new one"
                         }
-                      }}
-                      className={cn("shadow-none h-8", themeFont)}
-                      style={themeFontStyle}
-                      disabled={isLoading || isLoadingChannels}
-                    />
-                    {isLoadingChannels && (
-                      <ActivityIndicator
-                        size="sm"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                        value={channelFilter || customChannel}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setChannelFilter(v);
+                          const match = ircChannels.find(
+                            (c) => c.channel.toLowerCase() === v.toLowerCase()
+                          );
+                          if (match) {
+                            setSelectedChannel(match.channel);
+                            setCustomChannel("");
+                          } else if (v.startsWith("#") || v.startsWith("&")) {
+                            setCustomChannel(v);
+                            setSelectedChannel(null);
+                          } else {
+                            setCustomChannel("");
+                          }
+                        }}
+                        className={cn("shadow-none h-8", themeFont)}
+                        style={themeFontStyle}
+                        disabled={isLoading || isLoadingChannels}
                       />
-                    )}
-                  </div>
+                      {isLoadingChannels && (
+                        <ActivityIndicator
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Input
+                        id="irc-channel-filter"
+                        placeholder={
+                          isLoadingChannels
+                            ? "Loading channels…"
+                            : "Filter channels"
+                        }
+                        value={channelListFilter}
+                        onChange={(e) => {
+                          setChannelListFilter(e.target.value);
+                        }}
+                        className={cn("shadow-none h-8", themeFont)}
+                        style={themeFontStyle}
+                        disabled={isLoading || isLoadingChannels}
+                      />
+                      {isLoadingChannels && (
+                        <ActivityIndicator
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                        />
+                      )}
+                    </div>
+                  )}
                   {channelsError && (
                     <p
                       className={cn("text-red-600", themeFont)}
@@ -762,7 +819,8 @@ export function CreateRoomDialog({
                   {!isLoadingChannels && !channelsError && (
                     <div className="border border-gray-300 rounded max-h-[180px] overflow-y-auto bg-white">
                       <div className="p-1">
-                        {filteredChannels.length === 0 && !customChannel && (
+                        {filteredChannels.length === 0 &&
+                          !(isAdmin && customChannel) && (
                           <p
                             className={cn(
                               "text-gray-500 px-2 py-2",
@@ -770,8 +828,9 @@ export function CreateRoomDialog({
                             )}
                             style={themeFontStyle}
                           >
-                            No channels available. Type a channel name above
-                            to join one anyway.
+                            {isAdmin
+                              ? "No channels available. Type a channel name above to join one anyway."
+                              : "No channels match this filter."}
                           </p>
                         )}
                         {filteredChannels.map((entry) => {
@@ -785,6 +844,7 @@ export function CreateRoomDialog({
                                 setSelectedChannel(entry.channel);
                                 setCustomChannel("");
                                 setChannelFilter("");
+                                setChannelListFilter("");
                               }}
                               className={cn(
                                 "w-full text-left flex items-center gap-2 p-2 rounded",
@@ -823,15 +883,18 @@ export function CreateRoomDialog({
                       filter to see more.
                     </p>
                   )}
-                  {(customChannel ||
-                    (selectedChannel && !customChannel)) && (
+                  {((isAdmin &&
+                    (customChannel || (selectedChannel && !customChannel))) ||
+                    (!isAdmin && selectedChannel)) && (
                     <p
                       className={cn("text-gray-500", themeFont)}
                       style={themeFontStyle}
                     >
                       Will create a room bridged to{" "}
                       <span className="font-semibold">
-                        {customChannel || selectedChannel}
+                        {isAdmin
+                          ? customChannel || selectedChannel
+                          : selectedChannel}
                       </span>{" "}
                       on{" "}
                       <span className="font-semibold">
@@ -844,7 +907,6 @@ export function CreateRoomDialog({
               )}
             </div>
           </ThemedTabsContent>
-        )}
 
         <ThemedTabsContent value="private">
           <div className="p-4">
@@ -975,8 +1037,10 @@ export function CreateRoomDialog({
             (activeTab === "private" && selectedUsers.length === 0) ||
             (activeTab === "irc" &&
               (!selectedServerId ||
-                showAddServerForm ||
-                !(customChannel.trim() || selectedChannel)))
+                (isAdmin && showAddServerForm) ||
+                (isAdmin
+                  ? !(customChannel.trim() || selectedChannel)
+                  : !selectedChannel)))
           }
           className={cn("h-7", themeFont)}
           style={themeFontStyle}
