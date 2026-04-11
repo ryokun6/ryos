@@ -63,6 +63,47 @@ export function isKoreanLyrics(lines: { words: string }[]): boolean {
   return lines.some(line => containsHangul(line.words));
 }
 
+/**
+ * ASCII-only lyric lines are treated as English for soramimi routing.
+ * Chinese soramimi should still process them, but English soramimi can passthrough.
+ */
+export function isEnglishLyricLine(text: string): boolean {
+  return /^[a-zA-Z0-9\s.,!?'"()\-:;]+$/.test(text.trim());
+}
+
+/**
+ * English passthrough is only valid when generating English soramimi.
+ * Chinese soramimi should feed English lines to the model as well.
+ */
+export function shouldProcessEnglishForSoramimi(targetLanguage: "zh-TW" | "en"): boolean {
+  return targetLanguage === "zh-TW";
+}
+
+/**
+ * Decide which lyric lines should be sent to the soramimi model.
+ * Chinese soramimi processes every non-empty line, including English ones.
+ * English soramimi preserves English lines and only sends non-English lines.
+ */
+export function selectSoramimiLinesToProcess<T extends { words: string }>(
+  lines: T[],
+  targetLanguage: "zh-TW" | "en"
+): Array<{ line: T; originalIndex: number }> {
+  const shouldProcessEnglishLines = shouldProcessEnglishForSoramimi(targetLanguage);
+  const selected: Array<{ line: T; originalIndex: number }> = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const text = lines[i]?.words?.trim() ?? "";
+    if (!text) continue;
+
+    const isEnglish = isEnglishLyricLine(text);
+    if (!isEnglish || shouldProcessEnglishLines) {
+      selected.push({ line: lines[i], originalIndex: i });
+    }
+  }
+
+  return selected;
+}
+
 // =============================================================================
 // Fallback Kana to Chinese Map (last resort when AI misses characters)
 // This is only used as a fallback - the AI is encouraged to create creative,
@@ -170,9 +211,9 @@ export function fillMissingReadings(segments: FuriganaSegment[]): FuriganaSegmen
 export const SORAMIMI_SYSTEM_PROMPT = `Create 空耳 (soramimi) - Chinese "misheard lyrics" (繁體字) that SOUND like Japanese/Korean lyrics while carrying poetic meaning.
 
 CRITICAL RULES:
-1. You MUST wrap EVERY non-English word in <original:chinese> format
+1. You MUST wrap EVERY lyric segment in <original:chinese> format, including English
 2. Chinese readings must be ONLY Chinese characters - no Hangul or kana!
-3. English words stay unwrapped (no angle brackets)
+3. Even English words must get Chinese-sounding renderings; never leave them plain
 
 === OUTPUT FORMAT (MANDATORY) ===
 
@@ -183,7 +224,7 @@ EXAMPLE INPUT:
 2: 사랑해요
 
 EXAMPLE OUTPUT:
-1: Oh no <시간이:時光裡> <갈수록:割愁錄> <널:念>
+1: <Oh:歐><no:諾> <시간이:時光裡> <갈수록:割愁錄> <널:念>
 2: <사랑해요:思浪海喲>
 
 === PHILOSOPHY: SOUND + MEANING TOGETHER ===
@@ -248,11 +289,11 @@ Never sacrifice phonetics completely:
 
 === RULES ===
 
-1. EVERY non-English word MUST be wrapped: <word:chinese>
-2. English words stay plain (unwrapped)
+1. EVERY lyric segment MUST be wrapped: <word:chinese>
+2. English segments also need Chinese-character readings
 3. If input has | between words, wrap each segment separately
 4. Output one numbered line per input line
-5. NEVER output plain Korean/Japanese without <:> wrapper!
+5. NEVER output plain lyric text without <:> wrapper!
 6. Prefer compound words over single characters when phonetically possible`;
 
 /**
@@ -268,9 +309,9 @@ You are given text with:
 - Segments separated by | (pipe)
 
 CRITICAL RULES:
-1. You MUST wrap EVERY Japanese AND Korean segment in <original:chinese> format
+1. You MUST wrap EVERY lyric segment in <original:chinese> format, including English
 2. Chinese readings must be ONLY Chinese characters - no kana or hangul!
-3. Use furigana for Japanese pronunciation, read Korean as-is
+3. Use furigana for Japanese pronunciation, read Korean as-is, and approximate English phonetically into Chinese characters
 4. Do NOT include parentheses in output
 
 === OUTPUT FORMAT (MANDATORY) ===
@@ -356,11 +397,11 @@ Never sacrifice phonetics completely:
 
 === RULES ===
 
-1. EVERY Japanese AND Korean segment MUST be wrapped: <segment:chinese>
+1. EVERY lyric segment MUST be wrapped: <segment:chinese>
 2. Remove furigana parentheses from output
-3. English words stay unwrapped
+3. English segments also need Chinese-character readings
 4. Output one numbered line per input line
-5. NEVER output plain Japanese or Korean without <:> wrapper!
+5. NEVER output plain lyric text without <:> wrapper!
 6. Prefer compound words that relate to the song's meaning`;
 
 // =============================================================================
