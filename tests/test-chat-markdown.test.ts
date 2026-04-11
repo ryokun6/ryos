@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  coalesceChatMarkdownTokens,
   parseChatMarkdownInline,
   segmentChatMarkdownText,
 } from "../src/lib/chatMarkdown";
@@ -72,6 +73,22 @@ describe("chat markdown parsing", () => {
         content: "source",
         url: "https://example.com",
       },
+    ]);
+  });
+
+  test("coalesces adjacent plain text tokens without merging links", () => {
+    const tokens = segmentChatMarkdownText(
+      "see [the article](https://example.com/story) please"
+    );
+
+    expect(coalesceChatMarkdownTokens(tokens)).toEqual([
+      { type: "text", content: "see " },
+      {
+        type: "link",
+        content: "the article",
+        url: "https://example.com/story",
+      },
+      { type: "text", content: " please" },
     ]);
   });
 });

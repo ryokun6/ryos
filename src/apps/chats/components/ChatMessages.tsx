@@ -1,6 +1,14 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  memo,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -32,7 +40,16 @@ import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
-import { segmentChatMarkdownText, type ChatMarkdownToken } from "@/lib/chatMarkdown";
+import {
+  coalesceChatMarkdownTokens,
+  segmentChatMarkdownText,
+  type ChatMarkdownToken,
+} from "@/lib/chatMarkdown";
+import {
+  getChatTextLayoutInfo,
+  getChatTextRevealDurationMs,
+  shouldUseDetailedAssistantTokens,
+} from "@/apps/chats/utils/chatTextLayout";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -292,6 +309,221 @@ function ScrollToBottomButton() {
   );
 }
 
+interface AssistantTextPartProps {
+  partKey: string;
+  textContent: string;
+  isInitialMessage: boolean;
+  fontSize: number;
+  activeHighlightSegment: { start: number; end: number } | null;
+  renderInlineToken: (segment: ChatMarkdownToken) => React.ReactNode;
+  playNote: () => void;
+}
+
+interface AssistantRenderedToken {
+  segment: ChatMarkdownToken;
+  start: number;
+  end: number;
+}
+
+function countRevealedLines(lineEnds: number[], revealedChars: number): number {
+  if (revealedChars <= 0 || lineEnds.length === 0) {
+    return 0;
+  }
+
+  let revealedLines = 0;
+  for (const lineEnd of lineEnds) {
+    if (revealedChars >= lineEnd) {
+      revealedLines += 1;
+      continue;
+    }
+    break;
+  }
+
+  return revealedLines;
+}
+
+const AssistantTextPart = memo(function AssistantTextPart({
+  partKey,
+  textContent,
+  isInitialMessage,
+  fontSize,
+  activeHighlightSegment,
+  renderInlineToken,
+  playNote,
+}: AssistantTextPartProps) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [revealedChars, setRevealedChars] = useState(
+    isInitialMessage ? Number.MAX_SAFE_INTEGER : 0
+  );
+  const previousVisibleLengthRef = useRef(0);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const trimmedText = textContent.trim();
+  const emojiOnly = useMemo(() => isEmojiOnly(trimmedText), [trimmedText]);
+  const tokens = useMemo(() => segmentChatMarkdownText(trimmedText), [trimmedText]);
+  const visibleText = useMemo(
+    () => tokens.map((token) => token.content).join(""),
+    [tokens]
+  );
+  const layoutInfo = useMemo(
+    () => getChatTextLayoutInfo(visibleText, fontSize, contentWidth),
+    [visibleText, fontSize, contentWidth]
+  );
+  const lineCount = layoutInfo?.lineCount ?? null;
+  const useDetailedTokens = useMemo(
+    () =>
+      shouldUseDetailedAssistantTokens({
+        tokenCount: tokens.length,
+        textLength: visibleText.length,
+        lineCount,
+      }),
+    [tokens.length, visibleText.length, lineCount]
+  );
+  const renderedTokens = useMemo<AssistantRenderedToken[]>(() => {
+    const baseTokens = useDetailedTokens ? tokens : coalesceChatMarkdownTokens(tokens);
+    let charPos = 0;
+    return baseTokens.map((segment) => {
+      const start = charPos;
+      const end = charPos + segment.content.length;
+      charPos = end;
+      return { segment, start, end };
+    });
+  }, [tokens, useDetailedTokens]);
+
+  useLayoutEffect(() => {
+    const node = contentRef.current;
+    if (!node || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const updateWidth = (width: number) => {
+      setContentWidth((previousWidth) =>
+        Math.abs(previousWidth - width) < 0.5 ? previousWidth : width
+      );
+    };
+
+    updateWidth(node.getBoundingClientRect().width);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+
+      updateWidth(entry.contentRect.width);
+    });
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fontSize]);
+
+  useEffect(() => {
+    if (revealTimerRef.current) {
+      clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+
+    if (isInitialMessage) {
+      previousVisibleLengthRef.current = visibleText.length;
+      setRevealedChars(Number.MAX_SAFE_INTEGER);
+      return;
+    }
+
+    const previousLength = previousVisibleLengthRef.current;
+    const nextLength = visibleText.length;
+    const normalizedPrevious = Math.min(previousLength, nextLength);
+    previousVisibleLengthRef.current = nextLength;
+
+    if (nextLength <= 0) {
+      setRevealedChars(0);
+      return;
+    }
+
+    if (nextLength <= normalizedPrevious) {
+      setRevealedChars(nextLength);
+      return;
+    }
+
+    const revealedLineCountBefore = countRevealedLines(
+      layoutInfo?.lineEnds ?? [],
+      normalizedPrevious
+    );
+    const revealedLineCountAfter = countRevealedLines(
+      layoutInfo?.lineEnds ?? [],
+      nextLength
+    );
+
+    setRevealedChars(normalizedPrevious);
+    revealTimerRef.current = setTimeout(() => {
+      setRevealedChars(nextLength);
+      if (nextLength > normalizedPrevious) {
+        playNote();
+      }
+      revealTimerRef.current = null;
+    }, getChatTextRevealDurationMs(
+      nextLength - normalizedPrevious,
+      Math.max(1, revealedLineCountAfter - revealedLineCountBefore)
+    ));
+
+    return () => {
+      if (revealTimerRef.current) {
+        clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = null;
+      }
+    };
+  }, [isInitialMessage, layoutInfo?.lineEnds, playNote, visibleText]);
+
+  if (!trimmedText) {
+    return null;
+  }
+
+  return (
+    <div className="w-full">
+      <div ref={contentRef} className="whitespace-pre-wrap">
+        {renderedTokens.map(({ segment, start, end }, idx) => {
+          const isHighlight =
+            !!activeHighlightSegment &&
+            start < activeHighlightSegment.end &&
+            end > activeHighlightSegment.start;
+          const hidden = end > revealedChars;
+          const contentNode = isHighlight ? (
+            <span className="animate-highlight">{renderInlineToken(segment)}</span>
+          ) : (
+            renderInlineToken(segment)
+          );
+
+          const className = `select-text ${
+            emojiOnly ? "text-[24px]" : ""
+          } ${
+            segment.type === "bold"
+              ? "font-bold"
+              : segment.type === "italic"
+              ? "italic"
+              : ""
+          }`;
+          const style = {
+            userSelect: "text" as const,
+            fontSize: emojiOnly ? undefined : `${fontSize}px`,
+          };
+          return (
+            <span
+              key={`${partKey}-segment-${idx}`}
+              className={className}
+              style={{
+                ...style,
+                visibility: hidden ? "hidden" : "visible",
+              }}
+            >
+              {contentNode}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
+
 // Memoized chat message item - extracted for list rendering performance
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -418,6 +650,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     combinedIsSpeaking &&
     combinedHighlightSeg &&
     combinedHighlightSeg.messageId === message.id;
+  const activeHighlightSegment = highlightActive
+    ? {
+        start: combinedHighlightSeg.start,
+        end: combinedHighlightSeg.end,
+      }
+    : null;
 
   const isTouchDevice = () =>
     "ontouchstart" in window || navigator.maxTouchPoints > 0;
@@ -430,7 +668,15 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     return Array.from(urls);
   };
 
-  const renderInlineToken = (segment: ChatMarkdownToken) => {
+  const displayTokens = useMemo(
+    () =>
+      displayContent
+        ? coalesceChatMarkdownTokens(segmentChatMarkdownText(displayContent))
+        : [],
+    [displayContent]
+  );
+
+  const renderInlineToken = useCallback((segment: ChatMarkdownToken) => {
     const tokenNode =
       (segment.type === "link" || segment.type === "citation") && segment.url ? (
         <a
@@ -477,7 +723,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         segment.content
       );
     return tokenNode;
-  };
+  }, [isUrgent]);
 
   return (
     <motion.div
@@ -841,7 +1087,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           {showTypingDots ? (
             <TypingDots />
           ) : message.role === "assistant" ? (
-            <motion.div className="select-text flex flex-col gap-1">
+            <div className="select-text flex flex-col gap-1">
               {message.parts?.map(
                 (
                   part: ToolInvocationPart | { type: string; text?: string },
@@ -866,15 +1112,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ).length;
                         if (openTags !== closeTags) {
                           return (
-                            <motion.span
+                            <span
                               key={partKey}
-                              initial={{ opacity: 1 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0 }}
                               className="select-text italic"
                             >
                               {t("apps.chats.status.editing")}
-                            </motion.span>
+                            </span>
                           );
                         }
                       }
@@ -884,66 +1127,16 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
                       const textContent = partDisplayContent;
                       return (
-                        <div key={partKey} className="w-full">
-                          <div className="whitespace-pre-wrap">
-                            {textContent &&
-                              (() => {
-                                const tokens = segmentChatMarkdownText(textContent.trim());
-                                let charPos = 0;
-                                return tokens.map((segment, idx) => {
-                                  const start = charPos;
-                                  const end = charPos + segment.content.length;
-                                  charPos = end;
-                                  return (
-                                    <motion.span
-                                      key={`${partKey}-segment-${idx}`}
-                                      initial={
-                                        isInitialMessage
-                                          ? { opacity: 1, y: 0 }
-                                          : { opacity: 0, y: 12 }
-                                      }
-                                      animate={{ opacity: 1, y: 0 }}
-                                      className={`select-text ${
-                                        isEmojiOnly(textContent)
-                                          ? "text-[24px]"
-                                          : ""
-                                      } ${
-                                        segment.type === "bold"
-                                          ? "font-bold"
-                                          : segment.type === "italic"
-                                          ? "italic"
-                                          : ""
-                                      }`}
-                                      style={{
-                                        userSelect: "text",
-                                        fontSize: isEmojiOnly(textContent)
-                                          ? undefined
-                                          : `${fontSize}px`,
-                                      }}
-                                      transition={{
-                                        duration: 0.08,
-                                        delay: idx * 0.02,
-                                        ease: "easeOut",
-                                        onComplete: () => {
-                                          if (idx % 2 === 0) playNote();
-                                        },
-                                      }}
-                                    >
-                                      {highlightActive &&
-                                      start < (combinedHighlightSeg?.end ?? 0) &&
-                                      end > (combinedHighlightSeg?.start ?? 0) ? (
-                                        <span className="animate-highlight">
-                                          {renderInlineToken(segment)}
-                                        </span>
-                                      ) : (
-                                        renderInlineToken(segment)
-                                      )}
-                                    </motion.span>
-                                  );
-                                });
-                              })()}
-                          </div>
-                        </div>
+                        <AssistantTextPart
+                          key={partKey}
+                          partKey={partKey}
+                          textContent={textContent}
+                          isInitialMessage={isInitialMessage}
+                          fontSize={fontSize}
+                          activeHighlightSegment={activeHighlightSegment}
+                          renderInlineToken={renderInlineToken}
+                          playNote={playNote}
+                        />
                       );
                     }
                     default: {
@@ -973,7 +1166,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }
                 }
               )}
-            </motion.div>
+            </div>
           ) : (
             <>
               {displayContent && (
@@ -989,16 +1182,15 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }}
                 >
                   {(() => {
-                    const tokens = segmentChatMarkdownText(displayContent);
                     let charPos2 = 0;
-                    return tokens.map((segment, idx) => {
+                    return displayTokens.map((segment, idx) => {
                       const start2 = charPos2;
                       const end2 = charPos2 + segment.content.length;
                       charPos2 = end2;
                       const isHighlight =
-                        highlightActive &&
-                        start2 < (combinedHighlightSeg?.end ?? 0) &&
-                        end2 > (combinedHighlightSeg?.start ?? 0);
+                        !!activeHighlightSegment &&
+                        start2 < activeHighlightSegment.end &&
+                        end2 > activeHighlightSegment.start;
                       const contentNode = renderInlineToken(segment);
                       return (
                         <span
