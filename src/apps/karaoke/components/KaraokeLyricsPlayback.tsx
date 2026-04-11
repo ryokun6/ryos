@@ -4,12 +4,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   type CSSProperties,
   type MutableRefObject,
   type ReactNode,
 } from "react";
 import type { TFunction } from "i18next";
-import { useShallow } from "zustand/react/shallow";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
@@ -37,7 +37,6 @@ export interface KaraokeLyricsPlaybackContextValue {
   soramimiMap: ReturnType<typeof useFurigana>["soramimiMap"];
   activityState: ReturnType<typeof useActivityState>;
   hasActiveActivity: boolean;
-  elapsedTime: number;
   lyricsFontClassName: string;
 }
 
@@ -82,7 +81,11 @@ export function KaraokeLyricsPlaybackProvider({
   auth,
   lyricsPlaybackSyncRef,
 }: ProviderProps) {
-  const elapsedTime = useKaraokeStore(useShallow((s) => s.elapsedTime));
+  const lyricOffsetSeconds = (currentTrack?.lyricOffset ?? 0) / 1000;
+  const initialLyricsTime = useMemo(
+    () => useKaraokeStore.getState().elapsedTime + lyricOffsetSeconds,
+    [currentTrack?.id, lyricOffsetSeconds]
+  );
 
   const lyricsFontClassName = getLyricsFontClassName(lyricsFont ?? LyricsFontEnum.SerifRed);
 
@@ -106,7 +109,7 @@ export function KaraokeLyricsPlaybackProvider({
     songId: currentTrack?.id ?? "",
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
-    currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
+    currentTime: initialLyricsTime,
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true,
@@ -158,6 +161,32 @@ export function KaraokeLyricsPlaybackProvider({
 
   const hasActiveActivity = isAnyActivityActive(activityState);
 
+  const updateCurrentTimeRef = useRef(lyricsControls.updateCurrentTimeManually);
+  useEffect(() => {
+    updateCurrentTimeRef.current = lyricsControls.updateCurrentTimeManually;
+  }, [lyricsControls.updateCurrentTimeManually]);
+
+  const lyricOffsetSecondsRef = useRef(lyricOffsetSeconds);
+  useEffect(() => {
+    lyricOffsetSecondsRef.current = lyricOffsetSeconds;
+  }, [lyricOffsetSeconds]);
+
+  useEffect(() => {
+    const unsubscribe = useKaraokeStore.subscribe((state, prevState) => {
+      if (state.elapsedTime === prevState.elapsedTime) return;
+      updateCurrentTimeRef.current(
+        state.elapsedTime + lyricOffsetSecondsRef.current
+      );
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    updateCurrentTimeRef.current(
+      useKaraokeStore.getState().elapsedTime + lyricOffsetSecondsRef.current
+    );
+  }, [currentTrack?.id, lyricOffsetSeconds]);
+
   useEffect(() => {
     lyricsPlaybackSyncRef.current = (timeInLyricsSeconds: number) => {
       lyricsControls.updateCurrentTimeManually(timeInLyricsSeconds);
@@ -174,7 +203,6 @@ export function KaraokeLyricsPlaybackProvider({
       soramimiMap,
       activityState,
       hasActiveActivity,
-      elapsedTime,
       lyricsFontClassName,
     }),
     [
@@ -183,7 +211,6 @@ export function KaraokeLyricsPlaybackProvider({
       soramimiMap,
       activityState,
       hasActiveActivity,
-      elapsedTime,
       lyricsFontClassName,
     ]
   );
@@ -254,17 +281,22 @@ export function KaraokeWindowLyricsOverlay({
     lyricsControls,
     furiganaMap,
     soramimiMap,
-    elapsedTime,
     lyricsFontClassName,
   } = useKaraokeLyricsPlayback();
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
+  const lyricOffsetSeconds = (currentTrack?.lyricOffset ?? 0) / 1000;
 
   const onAdjustOffset = useCallback(
     (delta: number) => {
       adjustLyricOffset(currentIndex, delta);
       const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
       const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-      showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
-      lyricsControls.updateCurrentTimeManually(elapsedTime + newOffset / 1000);
+      showStatus(
+        `${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`
+      );
+      lyricsControls.updateCurrentTimeManually(
+        elapsedTime + newOffset / 1000
+      );
     },
     [
       adjustLyricOffset,
@@ -277,8 +309,7 @@ export function KaraokeWindowLyricsOverlay({
     ]
   );
 
-  const currentTimeMs =
-    (elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000;
+  const currentTimeMs = (elapsedTime + lyricOffsetSeconds) * 1000;
 
   const bottomPadding =
     showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-12";
@@ -374,9 +405,10 @@ export function KaraokeFullscreenLyricsOverlay({
     lyricsControls,
     furiganaMap,
     soramimiMap,
-    elapsedTime,
     lyricsFontClassName,
   } = useKaraokeLyricsPlayback();
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
+  const lyricOffsetSeconds = (currentTrack?.lyricOffset ?? 0) / 1000;
 
   const onAdjustOffset = useCallback(
     (delta: number) => {
@@ -397,8 +429,7 @@ export function KaraokeFullscreenLyricsOverlay({
     ]
   );
 
-  const currentTimeMs =
-    (elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000;
+  const currentTimeMs = (elapsedTime + lyricOffsetSeconds) * 1000;
 
   const bottomPadding = controlsVisible ? "pb-28" : "pb-16";
 
@@ -505,7 +536,8 @@ export function KaraokeSyncModeWindowPanel({
   showStatus,
   t,
 }: SyncModeWindowProps) {
-  const { lyricsControls, furiganaMap, elapsedTime } = useKaraokeLyricsPlayback();
+  const { lyricsControls, furiganaMap } = useKaraokeLyricsPlayback();
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
   if (!isSyncModeOpen || isFullScreen || lyricsControls.originalLines.length === 0) {
     return null;
   }
@@ -574,7 +606,8 @@ export function KaraokeSyncModeFullscreenPanel({
   showStatus,
   t,
 }: SyncModeFullscreenProps) {
-  const { lyricsControls, furiganaMap, elapsedTime } = useKaraokeLyricsPlayback();
+  const { lyricsControls, furiganaMap } = useKaraokeLyricsPlayback();
+  const elapsedTime = useKaraokeStore((s) => s.elapsedTime);
   if (!isSyncModeOpen || !isFullScreen || lyricsControls.originalLines.length === 0) {
     return null;
   }
