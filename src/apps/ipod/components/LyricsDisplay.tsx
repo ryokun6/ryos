@@ -39,8 +39,10 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 import {
   applyKaraokeInterludeEllipsis,
   buildInterludeLyricLineWithWordTimings,
+  getGapInterludeInlineLead,
   getIntroInterludeInlineLead,
   getInterludeDotsFadeOpacity,
+  isAlternatingInterludeDotsActive,
   isInterludePlaceholderLine,
 } from "@/utils/karaokeInterludeDisplay";
 
@@ -2089,40 +2091,64 @@ export function LyricsDisplay({
     return "center";
   };
 
+  const interludeDotsParityRows = useMemo(
+    () =>
+      isAlternatingInterludeDotsActive(
+        displayOriginalLines,
+        alignment,
+        actualCurrentLine,
+        currentTimeMs,
+        showInterludeEllipsis
+      ),
+    [
+      displayOriginalLines,
+      alignment,
+      actualCurrentLine,
+      currentTimeMs,
+      showInterludeEllipsis,
+    ]
+  );
+
   // Helper to compute lines for Alternating alignment (current + next)
-  const computeAltVisibleLines = (
-    allLines: LyricLine[],
-    currIdx: number
-  ): LyricLine[] => {
-    if (!allLines.length) return [];
+  const computeAltVisibleLines = useCallback(
+    (allLines: LyricLine[], currIdx: number, parityInterludeRows: boolean): LyricLine[] => {
+      if (!allLines.length) return [];
 
-    // Initial state before any line is current
-    if (currIdx < 0) {
-      return allLines.slice(0, 2).filter(Boolean);
-    }
+      // Initial state before any line is current
+      if (currIdx < 0) {
+        return allLines.slice(0, 2).filter(Boolean);
+      }
 
-    const clampedIdx = Math.min(currIdx, allLines.length - 1);
-    const nextLine = allLines[clampedIdx + 1];
+      const clampedIdx = Math.min(currIdx, allLines.length - 1);
+      const nextLine = allLines[clampedIdx + 1];
 
-    if (clampedIdx % 2 === 0) {
-      // Current is on top
+      // Normal playback: stable [current, next] so the active line does not jump rows.
+      // Interlude dots (intro/gap): restore parity-based [current,next] vs [next,current] for the
+      // classic alternating look during ●●● only.
+      if (parityInterludeRows) {
+        if (clampedIdx % 2 === 0) {
+          return [allLines[clampedIdx], nextLine].filter(Boolean);
+        }
+        return [nextLine, allLines[clampedIdx]].filter(Boolean);
+      }
+
       return [allLines[clampedIdx], nextLine].filter(Boolean);
-    }
-
-    // Current is at bottom
-    return [nextLine, allLines[clampedIdx]].filter(Boolean);
-  };
+    },
+    []
+  );
 
   // State to hold lines displayed in Alternating mode so we can delay updates
   // Use displayOriginalLines to ensure word timings are included (not translated lines)
   const [altLines, setAltLines] = useState<LyricLine[]>(() =>
-    computeAltVisibleLines(displayOriginalLines, actualCurrentLine)
+    computeAltVisibleLines(displayOriginalLines, actualCurrentLine, false)
   );
 
   // Track previous lines array to detect song/translation changes
   const prevLinesRef = useRef<LyricLine[]>(displayOriginalLines);
 
-  // Update alternating lines - instantly on song/translation change, delayed for line transitions
+  // Keep alternating pair in sync with playback immediately. A previous delayed update here
+  // left altLines stale after actualCurrentLine advanced, so interlude / visible lines
+  // still showed [previous, next] while playback had moved on — breaking next+1 preview.
   useEffect(() => {
     if (alignment !== LyricsAlignment.Alternating) return;
 
@@ -2130,37 +2156,31 @@ export function LyricsDisplay({
     const linesChanged = prevLinesRef.current !== displayOriginalLines;
     prevLinesRef.current = displayOriginalLines;
 
-    // Instantly update on song load, translation switch, or initial state
     if (linesChanged || actualCurrentLine < 0) {
-      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
+      setAltLines(
+        computeAltVisibleLines(
+          displayOriginalLines,
+          actualCurrentLine,
+          interludeDotsParityRows
+        )
+      );
       return;
     }
 
-    // For normal line transitions within the same song, apply delay
-    // Determine the duration of the new current line
-    const clampedIdx = Math.min(Math.max(0, actualCurrentLine), displayOriginalLines.length - 1);
-    const currentStart =
-      clampedIdx >= 0 && displayOriginalLines[clampedIdx]
-        ? parseInt(displayOriginalLines[clampedIdx].startTimeMs)
-        : null;
-    const nextStart =
-      clampedIdx + 1 < displayOriginalLines.length && displayOriginalLines[clampedIdx + 1]
-        ? parseInt(displayOriginalLines[clampedIdx + 1].startTimeMs)
-        : null;
-
-    const rawDuration =
-      currentStart !== null && nextStart !== null ? nextStart - currentStart : 0;
-
-    // Use 20% of the line duration; clamp to 20-400ms range to avoid extremes
-    // (prevents 6+ second delays on long instrumental breaks)
-    const delayMs = Math.min(400, Math.max(20, Math.floor(rawDuration * 0.2)));
-
-    const timer = setTimeout(() => {
-      setAltLines(computeAltVisibleLines(displayOriginalLines, actualCurrentLine));
-    }, delayMs);
-
-    return () => clearTimeout(timer);
-  }, [alignment, displayOriginalLines, actualCurrentLine]);
+    setAltLines(
+      computeAltVisibleLines(
+        displayOriginalLines,
+        actualCurrentLine,
+        interludeDotsParityRows
+      )
+    );
+  }, [
+    alignment,
+    displayOriginalLines,
+    actualCurrentLine,
+    interludeDotsParityRows,
+    computeAltVisibleLines,
+  ]);
 
   const nonAltVisibleLines = useMemo(() => {
     if (!displayOriginalLines.length) return [] as LyricLine[];
@@ -2212,6 +2232,21 @@ export function LyricsDisplay({
       showInterludeEllipsis &&
       actualCurrentLine < 0
         ? getIntroInterludeInlineLead(displayOriginalLines, currentTimeMs, showInterludeEllipsis)
+        : null,
+    [alignment, showInterludeEllipsis, actualCurrentLine, displayOriginalLines, currentTimeMs]
+  );
+
+  const gapInterludeInlineLead = useMemo(
+    () =>
+      alignment === LyricsAlignment.Alternating &&
+      showInterludeEllipsis &&
+      actualCurrentLine >= 0
+        ? getGapInterludeInlineLead(
+            displayOriginalLines,
+            actualCurrentLine,
+            currentTimeMs,
+            showInterludeEllipsis
+          )
         : null,
     [alignment, showInterludeEllipsis, actualCurrentLine, displayOriginalLines, currentTimeMs]
   );
@@ -2380,14 +2415,31 @@ export function LyricsDisplay({
           const lineActualIdx = isInterludePlaceholder
             ? line.anchorLineIndex
             : displayOriginalLines.indexOf(line);
-          const isCurrent = isInterludePlaceholder
-            ? actualCurrentLine < 0
-              ? true
-              : line.anchorLineIndex === actualCurrentLine
-            : line === displayOriginalLines[actualCurrentLine];
+          const isAlternatingGapInterlude =
+            alignment === LyricsAlignment.Alternating &&
+            showInterludeEllipsis &&
+            actualCurrentLine >= 0 &&
+            gapInterludeInlineLead !== null &&
+            currentTimeMs !== undefined;
+
+          const isCurrent = isAlternatingGapInterlude &&
+            !isInterludePlaceholder &&
+            line === displayOriginalLines[actualCurrentLine + 1]
+            ? false
+            : isInterludePlaceholder
+              ? actualCurrentLine < 0
+                ? true
+                : line.anchorLineIndex === actualCurrentLine
+              : line === displayOriginalLines[actualCurrentLine];
           let position = 0;
           if (alignment === LyricsAlignment.Alternating) {
-            position = isCurrent ? 0 : 1;
+            if (isAlternatingGapInterlude && !isInterludePlaceholder) {
+              // Visible order is [next+1, next] — index 0 top, 1 bottom matches pre-interlude
+              // [current, next] so the upcoming line does not swap vertical slots.
+              position = index;
+            } else {
+              position = isCurrent ? 0 : 1;
+            }
           } else {
             position =
               currentAnchorIdx >= 0 ? lineActualIdx - currentAnchorIdx : 0;
@@ -2415,22 +2467,28 @@ export function LyricsDisplay({
           const prevVisible = index > 0 ? visibleLines[index - 1] : undefined;
           const nextVisible =
             index < visibleLines.length - 1 ? visibleLines[index + 1] : undefined;
-          /** Gap dots sit inline on the lyric *after* the placeholder. Alternating order is either [placeholder, nextLyric] or [nextLyric, placeholder] depending on line index parity — only the former has the placeholder in prevVisible. */
+          /** Gap dots sit inline on the lyric *after* the placeholder. Alternating order is either [placeholder, nextLyric] or [nextLyric, placeholder] depending on line index parity — only the former has the placeholder in prevVisible. Long gap + alternating: [next, next+1] with inline dots on next via {@link getGapInterludeInlineLead}. */
           const interludeLeadForRow =
             introInterludeLead &&
             !isInterludePlaceholder &&
             line.startTimeMs === displayOriginalLines[0]?.startTimeMs &&
             actualCurrentLine < 0
               ? introInterludeLead
-              : prevVisible &&
-                  isInterludePlaceholderLine(prevVisible) &&
-                  prevVisible.dotsInlineWithNext
-                ? prevVisible
-                : nextVisible &&
-                    isInterludePlaceholderLine(nextVisible) &&
-                    nextVisible.dotsInlineWithNext
-                  ? nextVisible
-                  : undefined;
+              : gapInterludeInlineLead &&
+                  !isInterludePlaceholder &&
+                  actualCurrentLine >= 0 &&
+                  line.startTimeMs ===
+                    displayOriginalLines[actualCurrentLine + 1]?.startTimeMs
+                ? gapInterludeInlineLead
+                : prevVisible &&
+                    isInterludePlaceholderLine(prevVisible) &&
+                    prevVisible.dotsInlineWithNext
+                  ? prevVisible
+                  : nextVisible &&
+                      isInterludePlaceholderLine(nextVisible) &&
+                      nextVisible.dotsInlineWithNext
+                    ? nextVisible
+                    : undefined;
 
           const interludeInlineDotsLine =
             interludeLeadForRow && currentTimeMs !== undefined

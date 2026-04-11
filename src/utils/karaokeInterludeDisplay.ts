@@ -144,6 +144,36 @@ export function isInterludePlaceholderLine(
 }
 
 /**
+ * True when alternating layout should use the classic parity row swap (current top vs bottom)
+ * during intro or gap interlude dots — not during normal playback.
+ */
+export function isAlternatingInterludeDotsActive(
+  allLines: LyricLine[],
+  alignment: LyricsAlignment,
+  currentIndex: number,
+  currentTimeMs: number | undefined,
+  enabled: boolean
+): boolean {
+  if (
+    alignment !== LyricsAlignment.Alternating ||
+    !enabled ||
+    currentTimeMs === undefined ||
+    !allLines.length
+  ) {
+    return false;
+  }
+  if (currentIndex < 0) {
+    return hasLongIntro(allLines, currentTimeMs);
+  }
+  const currentLine = allLines[currentIndex];
+  const nextLine = allLines[currentIndex + 1];
+  if (!currentLine || !nextLine) {
+    return false;
+  }
+  return hasLongInterlude(currentLine, nextLine, currentTimeMs);
+}
+
+/**
  * Build a real {@link LyricLine} with synthetic word timings so interlude dots use the same
  * karaoke mask/outline path as timed lyrics. The three beats fall in a short countdown window
  * ending at the next line (see INTERLUDE_COUNTDOWN_TOTAL_MS), not across the full break.
@@ -259,8 +289,19 @@ export function applyKaraokeInterludeEllipsis({
     alignment === LyricsAlignment.Alternating ? { dotsInlineWithNext: true } : undefined
   );
 
+  // Center mode: show the upcoming line immediately (static / "cleared") alongside dots,
+  // not only after the interlude ends (FocusThree already keeps next in `visibleLines`).
   if (alignment === LyricsAlignment.Center) {
-    return [placeholder];
+    return [placeholder, nextLine];
+  }
+
+  // Alternating: drop the finished line — show the next two real lyrics with inline dots on the
+  // upcoming line (see getGapInterludeInlineLead). Order is [next+1, next] so the upcoming line
+  // stays in the same screen slot as before (bottom when current was on top); the top slot is
+  // replaced by the line after next, avoiding a vertical jump.
+  if (alignment === LyricsAlignment.Alternating) {
+    const afterNext = allLines[currentIndex + 2];
+    return afterNext !== undefined ? [afterNext, nextLine] : [nextLine];
   }
 
   return visibleLines.map((line) => (line === currentLine ? placeholder : line));
@@ -270,6 +311,35 @@ export function applyKaraokeInterludeEllipsis({
  * Long intro + alternating layout: timed dots are drawn inline with the first lyric; use this to
  * build synthetic timings and fade state (no placeholder row in `applyKaraokeInterludeEllipsis`).
  */
+/**
+ * Long gap + alternating layout: same synthetic lead as the gap placeholder, but dots render
+ * inline on the upcoming line — used when visible lines are [next+1, next] with no previous row.
+ */
+export function getGapInterludeInlineLead(
+  allLines: LyricLine[],
+  currentIndex: number,
+  currentTimeMs: number | undefined,
+  enabled: boolean
+): InterludePlaceholderLine | null {
+  if (!enabled || currentTimeMs === undefined) {
+    return null;
+  }
+  const currentLine = allLines[currentIndex];
+  const nextLine = allLines[currentIndex + 1];
+  if (!currentLine || !nextLine || !hasLongInterlude(currentLine, nextLine, currentTimeMs)) {
+    return null;
+  }
+  const fullStartMs = getLineEndMs(currentLine) + INTERLUDE_PLACEHOLDER_DELAY_MS;
+  const fullEndMs = getLineStartMs(nextLine);
+  const { segmentStartMs } = buildCountdownSegment(fullStartMs, fullEndMs);
+  return createInterludePlaceholder(
+    `gap-inline-${nextLine.startTimeMs}`,
+    currentIndex,
+    segmentStartMs,
+    { dotsInlineWithNext: true }
+  );
+}
+
 export function getIntroInterludeInlineLead(
   allLines: LyricLine[],
   currentTimeMs: number | undefined,
