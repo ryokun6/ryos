@@ -14,7 +14,15 @@ export interface InterludePlaceholderLine {
   dotsInlineWithNext?: boolean;
 }
 
-export type VisibleLyricLine = LyricLine | InterludePlaceholderLine;
+export interface InterludeInlineLyricLine extends LyricLine {
+  interludeInlineLead: InterludePlaceholderLine;
+  sourceLineIndex: number;
+}
+
+export type VisibleLyricLine =
+  | LyricLine
+  | InterludePlaceholderLine
+  | InterludeInlineLyricLine;
 
 const MIN_LINE_HOLD_MS = 2500;
 const LONG_INTERLUDE_THRESHOLD_MS = 8000;
@@ -123,24 +131,70 @@ function hasLongInterlude(
   nextLine: LyricLine,
   currentTimeMs: number
 ): boolean {
-  const currentLineEndMs = getLineEndMs(currentLine);
-  const nextLineStartMs = getLineStartMs(nextLine);
-  const silentGapMs = nextLineStartMs - currentLineEndMs;
-
-  if (silentGapMs < LONG_INTERLUDE_THRESHOLD_MS) {
+  if (!hasLongInterludeGap(currentLine, nextLine)) {
     return false;
   }
 
+  const currentLineEndMs = getLineEndMs(currentLine);
+  const nextLineStartMs = getLineStartMs(nextLine);
   return (
     currentTimeMs >= currentLineEndMs + INTERLUDE_PLACEHOLDER_DELAY_MS &&
     currentTimeMs < nextLineStartMs
   );
 }
 
+function hasLongInterludeGap(currentLine: LyricLine, nextLine: LyricLine): boolean {
+  const currentLineEndMs = getLineEndMs(currentLine);
+  const nextLineStartMs = getLineStartMs(nextLine);
+  const silentGapMs = nextLineStartMs - currentLineEndMs;
+
+  return silentGapMs >= LONG_INTERLUDE_THRESHOLD_MS;
+}
+
+export function didAdvancePastLongInterlude(
+  allLines: LyricLine[],
+  previousCurrentIndex: number,
+  currentIndex: number
+): boolean {
+  if (
+    previousCurrentIndex < 0 ||
+    currentIndex < 0 ||
+    currentIndex !== previousCurrentIndex + 1
+  ) {
+    return false;
+  }
+
+  const previousLine = allLines[previousCurrentIndex];
+  const currentLine = allLines[currentIndex];
+  if (!previousLine || !currentLine) {
+    return false;
+  }
+
+  return hasLongInterludeGap(previousLine, currentLine);
+}
+
 export function isInterludePlaceholderLine(
   line: VisibleLyricLine
 ): line is InterludePlaceholderLine {
   return "isInterludePlaceholder" in line && line.isInterludePlaceholder === true;
+}
+
+export function isInterludeInlineLyricLine(
+  line: VisibleLyricLine
+): line is InterludeInlineLyricLine {
+  return "interludeInlineLead" in line;
+}
+
+function decorateLyricLineWithInterludeLead(
+  line: LyricLine,
+  sourceLineIndex: number,
+  interludeInlineLead: InterludePlaceholderLine
+): InterludeInlineLyricLine {
+  return {
+    ...line,
+    interludeInlineLead,
+    sourceLineIndex,
+  };
 }
 
 /**
@@ -261,6 +315,19 @@ export function applyKaraokeInterludeEllipsis({
 
   if (alignment === LyricsAlignment.Center) {
     return [placeholder];
+  }
+
+  if (alignment === LyricsAlignment.Alternating) {
+    const decoratedNext = decorateLyricLineWithInterludeLead(
+      nextLine,
+      currentIndex + 1,
+      placeholder
+    );
+    const followingLine = allLines[currentIndex + 2];
+
+    return currentIndex % 2 === 0
+      ? [followingLine, decoratedNext].filter(Boolean)
+      : [decoratedNext, followingLine].filter(Boolean);
   }
 
   return visibleLines.map((line) => (line === currentLine ? placeholder : line));
