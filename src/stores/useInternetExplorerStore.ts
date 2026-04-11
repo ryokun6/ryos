@@ -12,7 +12,11 @@ export interface Favorite {
   isDirectory?: boolean; // New: Flag to indicate if it's a folder
 }
 
-// Define a constant for domains that bypass the proxy when in "now" mode
+// Domains that load directly in the iframe (must allow embedding from os.ryo.lu).
+// Do not add bare `ryo.lu`: it sends X-Frame-Options: SAMEORIGIN, so only pages on
+// exactly https://ryo.lu could embed it — not https://os.ryo.lu. Those sites must use
+// /api/iframe-check (server-side fetch). If that fetch gets HTTP 403 from Cloudflare
+// (cf-mitigated: challenge), the site owner must relax bot rules or allowlist ryOS.
 export const DIRECT_PASSTHROUGH_DOMAINS = [
   "baby-cursor.ryo.lu",
   "os.ryo.lu",
