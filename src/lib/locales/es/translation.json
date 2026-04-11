@@ -12,7 +12,8 @@
           "apiCalls": "Llamadas a la API",
           "avgResponseTime": "Tiempo de respuesta promedio (ms)",
           "errors": "Errores",
-          "uniqueVisitors": "Visitantes únicos"
+          "uniqueVisitors": "Visitantes únicos",
+          "hourlyUtc": "por hora UTC"
         },
         "empty": {
           "noAiUsage": "Aún no hay uso de IA",

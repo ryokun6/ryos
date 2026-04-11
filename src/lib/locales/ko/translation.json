@@ -12,7 +12,8 @@
           "apiCalls": "API 호출",
           "avgResponseTime": "평균 응답 시간 (ms)",
           "errors": "오류",
-          "uniqueVisitors": "순 방문자 수"
+          "uniqueVisitors": "순 방문자 수",
+          "hourlyUtc": "UTC 시간대별"
         },
         "empty": {
           "noAiUsage": "아직 AI 사용 내역이 없습니다",

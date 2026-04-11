@@ -6,7 +6,9 @@
  *
  * Redis key schema:
  *   analytics:daily:{YYYY-MM-DD}    hash  { calls, ai, errors, latsum, latcnt }
+ *   analytics:hourly:{YYYY-MM-DD}   hash  { HH_calls, HH_ai, ... } per UTC hour
  *   analytics:uv:{YYYY-MM-DD}       HyperLogLog  (unique visitor IPs)
+ *   analytics:uvh:{YYYY-MM-DD}:{HH} HyperLogLog  (unique visitors per UTC hour)
  *   analytics:ep:{YYYY-MM-DD}       hash  { endpoint: count }
  *   analytics:st:{YYYY-MM-DD}       hash  { statusCode: count }
  *   analytics:aiu:{YYYY-MM-DD}      hash  { username|"anon": count }
@@ -29,6 +31,20 @@ function todayUTC(): string {
 
 function k(suffix: string, date: string): string {
   return `analytics:${suffix}:${date}`;
+}
+
+/** Per-day hash: fields like 00_calls, 09_ai, 23_latcnt (UTC hours). */
+function hourlyHashKey(date: string): string {
+  return k("hourly", date);
+}
+
+/** HyperLogLog for unique visitors in one UTC hour. */
+function hourlyUvKey(date: string, hourPadded: string): string {
+  return `analytics:uvh:${date}:${hourPadded}`;
+}
+
+function utcHourPadded(): string {
+  return String(new Date().getUTCHours()).padStart(2, "0");
 }
 
 const AI_PATH_PREFIXES = [
@@ -82,8 +98,18 @@ export function recordAnalyticsEvent(
   if (isAI) pipe.hincrby(dailyKey, "ai", 1);
   if (isError) pipe.hincrby(dailyKey, "errors", 1);
 
+  const hourPadded = utcHourPadded();
+  const hourFieldPrefix = `${hourPadded}_`;
+  const hourlyKey = hourlyHashKey(date);
+  pipe.hincrby(hourlyKey, `${hourFieldPrefix}calls`, 1);
+  pipe.hincrby(hourlyKey, `${hourFieldPrefix}latsum`, Math.round(event.latencyMs));
+  pipe.hincrby(hourlyKey, `${hourFieldPrefix}latcnt`, 1);
+  if (isAI) pipe.hincrby(hourlyKey, `${hourFieldPrefix}ai`, 1);
+  if (isError) pipe.hincrby(hourlyKey, `${hourFieldPrefix}errors`, 1);
+
   const visitorId = event.username || `ip:${event.ip}`;
   pipe.pfadd(k("uv", date), visitorId);
+  pipe.pfadd(hourlyUvKey(date, hourPadded), visitorId);
   pipe.hincrby(k("ep", date), endpoint, 1);
   pipe.hincrby(k("st", date), String(event.status), 1);
 
@@ -96,10 +122,15 @@ export function recordAnalyticsEvent(
   if (_lastTTLDate !== date) {
     _lastTTLDate = date;
     pipe.expire(dailyKey, ANALYTICS_TTL_SECONDS);
+    pipe.expire(hourlyKey, ANALYTICS_TTL_SECONDS);
     pipe.expire(k("uv", date), ANALYTICS_TTL_SECONDS);
     pipe.expire(k("ep", date), ANALYTICS_TTL_SECONDS);
     pipe.expire(k("st", date), ANALYTICS_TTL_SECONDS);
     pipe.expire(k("aiu", date), ANALYTICS_TTL_SECONDS);
+    for (let h = 0; h < 24; h++) {
+      const hp = String(h).padStart(2, "0");
+      pipe.expire(hourlyUvKey(date, hp), ANALYTICS_TTL_SECONDS);
+    }
   }
 
   pipe.exec().catch((err) => {
@@ -146,8 +177,20 @@ export interface AIUserBreakdown {
   count: number;
 }
 
+export interface HourlyMetrics {
+  /** 0–23 (UTC), aligned with analytics buckets */
+  hour: number;
+  calls: number;
+  ai: number;
+  errors: number;
+  uniqueVisitors: number;
+  avgLatencyMs: number;
+}
+
 export interface AnalyticsDetail {
   summary: AnalyticsSummary;
+  /** Present when `days === 1`: 24 rows (UTC) for the single requested day */
+  hourly?: HourlyMetrics[];
   topEndpoints: EndpointBreakdown[];
   statusCodes: StatusBreakdown[];
   aiByUser: AIUserBreakdown[];
@@ -200,6 +243,31 @@ function mergeHashCounts(
   for (const [key, cnt] of Object.entries(raw)) {
     map.set(key, (map.get(key) || 0) + parseInt(String(cnt), 10));
   }
+}
+
+/** Builds 24 UTC hour rows from Redis hash + parallel PFCOUNT results. */
+export function buildHourlyMetrics(
+  raw: Record<string, string> | null,
+  uvByHour: number[]
+): HourlyMetrics[] {
+  const out: HourlyMetrics[] = [];
+  for (let h = 0; h < 24; h++) {
+    const p = String(h).padStart(2, "0");
+    const calls = parseInt(String(raw?.[`${p}_calls`] || "0"), 10);
+    const ai = parseInt(String(raw?.[`${p}_ai`] || "0"), 10);
+    const errors = parseInt(String(raw?.[`${p}_errors`] || "0"), 10);
+    const latsum = parseInt(String(raw?.[`${p}_latsum`] || "0"), 10);
+    const latcnt = parseInt(String(raw?.[`${p}_latcnt`] || "0"), 10);
+    out.push({
+      hour: h,
+      calls,
+      ai,
+      errors,
+      uniqueVisitors: uvByHour[h] ?? 0,
+      avgLatencyMs: latcnt > 0 ? Math.round(latsum / latcnt) : 0,
+    });
+  }
+  return out;
 }
 
 /**
@@ -395,5 +463,26 @@ export async function getAnalyticsDetail(
     });
   }
 
-  return { summary, topEndpoints, statusCodes, aiByUser, aiRateLimits };
+  let hourly: HourlyMetrics[] | undefined;
+  if (days === 1 && dates.length === 1) {
+    const day = dates[0];
+    const hpipe = redis.pipeline();
+    hpipe.hgetall(hourlyHashKey(day));
+    for (let h = 0; h < 24; h++) {
+      hpipe.pfcount(hourlyUvKey(day, String(h).padStart(2, "0")));
+    }
+    const hres = await hpipe.exec();
+    const hraw = (hres[0] as Record<string, string> | null) || null;
+    const uvByHour = hres.slice(1, 25).map((x) => Number(x) || 0);
+    hourly = buildHourlyMetrics(hraw, uvByHour);
+  }
+
+  return {
+    summary,
+    ...(hourly ? { hourly } : {}),
+    topEndpoints,
+    statusCodes,
+    aiByUser,
+    aiRateLimits,
+  };
 }
