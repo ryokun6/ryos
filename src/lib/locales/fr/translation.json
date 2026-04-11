@@ -588,7 +588,8 @@
         "iconSize": "Taille",
         "icons": "icônes",
         "pack": "pack",
-        "packs": "packs"
+        "packs": "packs",
+        "toggleSidebar": "Show or hide categories sidebar"
       },
       "title": "CandyBar"
     },
@@ -1010,6 +1011,11 @@
         "toolExecutionFailed": "Échec de l'exécution de l'outil",
         "unknownError": "Erreur inconnue",
         "updatedDocument": "Document mis à jour : {{path}}",
+        "webFetch": {
+          "fetched": "Read {{siteName}}",
+          "fetchedPage": "Read \"{{title}}\"",
+          "fetching": "Reading {{hostname}}…"
+        },
         "writingContent": "Écriture du contenu…"
       }
     },

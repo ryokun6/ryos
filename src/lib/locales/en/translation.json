@@ -3036,7 +3036,8 @@
         "icon": "icon",
         "icons": "icons",
         "backToList": "Back to list",
-        "iconSize": "Size"
+        "iconSize": "Size",
+        "toggleSidebar": "Show or hide categories sidebar"
       },
       "menu": {
         "refresh": "Refresh",

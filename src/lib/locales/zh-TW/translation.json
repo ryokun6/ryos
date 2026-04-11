@@ -588,7 +588,8 @@
         "iconSize": "大小",
         "icons": "圖示",
         "pack": "套件",
-        "packs": "套件"
+        "packs": "套件",
+        "toggleSidebar": "Show or hide categories sidebar"
       },
       "title": "CandyBar"
     },
@@ -1010,6 +1011,11 @@
         "toolExecutionFailed": "工具執行失敗",
         "unknownError": "未知錯誤",
         "updatedDocument": "文件已更新：{{path}}",
+        "webFetch": {
+          "fetched": "Read {{siteName}}",
+          "fetchedPage": "Read \"{{title}}\"",
+          "fetching": "Reading {{hostname}}…"
+        },
         "writingContent": "寫入內容…"
       }
     },
