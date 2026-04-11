@@ -22,6 +22,14 @@ import { SearchInput } from "@/components/ui/search-input";
 
 const Panel = AppSidebarPanel;
 
+function getSourceLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 function GroupListItem({
   label,
   isSelected,
@@ -136,6 +144,16 @@ function PackDetailView({
             <p className="text-[11px] font-geneva-12 text-black/70 mt-2">
               {pack.description}
             </p>
+          )}
+          {pack.downloadUrl && (
+            <a
+              href={pack.downloadUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block mt-2 text-[10px] font-geneva-12 text-[#06c] underline underline-offset-2"
+            >
+              Source: {getSourceLabel(pack.downloadUrl)}
+            </a>
           )}
         </div>
         <div className="p-4">
