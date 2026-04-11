@@ -52,7 +52,8 @@
       "sites": "Sites",
       "videos": "Videos",
       "trash": "Trash",
-      "shareApp": "Share App..."
+      "shareApp": "Share App...",
+      "openProject": "Open..."
     },
     "menuBar": {
       "showAllWindows": "Click to show all windows (F3)",
