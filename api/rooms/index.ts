@@ -6,7 +6,7 @@
  */
 
 import { apiHandler } from "../_utils/api-handler.js";
-import { isProfaneUsername } from "../_utils/_validation.js";
+import { isProfaneUsername, assertValidUsername } from "../_utils/_validation.js";
 import { getRoomsWithCountsFast } from "./_helpers/_presence.js";
 import { generateId, getCurrentTimestamp, setRoom, registerRoom } from "./_helpers/_redis.js";
 import { setRoomPresence } from "./_helpers/_presence.js";
@@ -116,6 +116,15 @@ export default apiHandler(
       if (!members || members.length === 0) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "At least one member is required for private rooms" });
+        return;
+      }
+      try {
+        for (const m of members) {
+          assertValidUsername(m, "room-create");
+        }
+      } catch (e) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: e instanceof Error ? e.message : "Invalid member username" });
         return;
       }
       normalizedMembers = members.map((m: string) => m.toLowerCase());

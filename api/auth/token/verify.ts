@@ -29,7 +29,6 @@ export default apiHandler<VerifyRequest>(
     parseJsonBody: true,
   },
   async ({ res, redis, logger, startTime, user, body }) => {
-    // Prefer body params (cookie-only clients); fall back to middleware-extracted user
     const username = (body?.username || user?.username || "").toLowerCase();
     const token = body?.token || user?.token || "";
 
@@ -46,21 +45,19 @@ export default apiHandler<VerifyRequest>(
       return;
     }
 
-    // When credentials came from the body (not the middleware), validate manually
-    const isBodyAuth = Boolean(body?.username && body?.token);
-    let expired = user?.expired ?? false;
-
-    if (isBodyAuth) {
-      const result = await validateAuth(redis, username, token, {
-        allowExpired: true,
-      });
-      if (!result.valid) {
-        logger.response(401, Date.now() - startTime);
-        res.status(401).json({ error: "Invalid authentication token" });
-        return;
-      }
-      expired = !!result.expired;
+    // Always validate the username+token pair against Redis before setting a
+    // cookie — prevents an attacker from sending only a body `username` (no
+    // body `token`) and having the middleware-resolved token paired with an
+    // arbitrary username in the Set-Cookie header.
+    const result = await validateAuth(redis, username, token, {
+      allowExpired: true,
+    });
+    if (!result.valid) {
+      logger.response(401, Date.now() - startTime);
+      res.status(401).json({ error: "Invalid authentication token" });
+      return;
     }
+    const expired = !!result.expired;
 
     res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
 

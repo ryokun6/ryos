@@ -71,23 +71,20 @@ async function isAdmin(
  */
 export async function handleGetRooms(
   request: Request,
-  requestId: string
+  requestId: string,
+  authenticatedUsername?: string | null
 ): Promise<Response> {
   logInfo(requestId, "Fetching all rooms");
   try {
-    // Handle both full URLs and relative paths (vercel dev uses relative paths)
-    const url = new URL(request.url, "http://localhost");
-    const username = url.searchParams.get("username")?.toLowerCase() || null;
-
     const allRooms = await getRoomsWithCountsFast();
 
-    // Filter rooms based on visibility
+    // Use the authenticated username (not query param) for private room visibility
     const visibleRooms = allRooms.filter((room) => {
       if (!room.type || room.type === "public") {
         return true;
       }
-      if (room.type === "private" && room.members && username) {
-        return room.members.includes(username);
+      if (room.type === "private" && room.members && authenticatedUsername) {
+        return room.members.includes(authenticatedUsername);
       }
       return false;
     });

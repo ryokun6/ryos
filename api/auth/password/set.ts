@@ -22,7 +22,7 @@ export default apiHandler<SetPasswordRequest>(
   {
     methods: ["POST"],
     auth: "required",
-    allowExpiredAuth: true,
+    allowExpiredAuth: false,
     parseJsonBody: true,
   },
   async ({ res, redis, logger, startTime, user, body }): Promise<void> => {
