@@ -305,6 +305,11 @@ interface ChatMessageItemProps {
   isCopied: boolean;
   isPlaying: boolean;
   isSpeechLoading: boolean;
+  // True only for the last assistant message while isLoading is true. When
+  // streaming, we render text as a single span (no markdown tokenization)
+  // to keep per-delta reconciliation cheap. Tokenization happens once the
+  // stream completes.
+  isStreaming: boolean;
   // highlightSegment / localHighlightSegment are ONLY non-null if the segment
   // belongs to THIS message; parent filters these before passing.
   highlightSegment: { messageId: string; start: number; end: number } | null;
@@ -338,6 +343,7 @@ const ChatMessageItem = memo(
       isCopied,
       isPlaying,
       isSpeechLoading,
+      isStreaming,
       highlightSegment,
       localHighlightSegment,
       isSpeakingAny,
@@ -426,7 +432,14 @@ const ChatMessageItem = memo(
     }, [message]);
 
     // Memoise collected URLs for link previews.
+    //
+    // During streaming we skip URL extraction entirely — link previews are
+    // rendered AFTER the stream completes, otherwise we'd be paying for
+    // regex-heavy URL scanning on every ~50ms delta on the longest
+    // in-flight message. When isStreaming flips to false we re-compute
+    // once and render previews.
     const allUrls = useMemo<string[]>(() => {
+      if (isStreaming) return [];
       const urls = new Set<string>();
       const collectFromText = (text: string) => {
         segmentChatMarkdownText(text).forEach((token) => {
@@ -450,7 +463,7 @@ const ChatMessageItem = memo(
         collectFromText(displayContent);
       }
       return Array.from(urls);
-    }, [message, displayContent]);
+    }, [message, displayContent, isStreaming]);
 
     // Touch support: toggle toolbar on touch, but skip when the touch lands
     // on a link preview so it can handle its own gestures. Desktop hover uses
@@ -802,10 +815,36 @@ const ChatMessageItem = memo(
                         if (!textContent) {
                           return <div key={partKey} className="w-full" />;
                         }
+                        const textIsEmojiOnly = isEmojiOnly(textContent);
+                        const commonStyle = {
+                          userSelect: "text" as const,
+                          fontSize: textIsEmojiOnly
+                            ? undefined
+                            : `${fontSize}px`,
+                        };
+                        // Streaming fast-path: the last assistant message
+                        // receives a text delta every ~50ms. Tokenizing +
+                        // rendering hundreds of span nodes per delta is the
+                        // main source of lag here. Render raw text as a
+                        // single span during streaming; tokenize once the
+                        // stream completes (isStreaming -> false).
+                        if (isStreaming) {
+                          return (
+                            <div key={partKey} className="w-full">
+                              <div
+                                className={`whitespace-pre-wrap select-text ${
+                                  textIsEmojiOnly ? "text-[24px]" : ""
+                                }`}
+                                style={commonStyle}
+                              >
+                                {textContent.trim()}
+                              </div>
+                            </div>
+                          );
+                        }
                         const tokens = segmentChatMarkdownText(
                           textContent.trim()
                         );
-                        const textIsEmojiOnly = isEmojiOnly(textContent);
                         let charPos = 0;
                         return (
                           <div key={partKey} className="w-full">
@@ -831,12 +870,7 @@ const ChatMessageItem = memo(
                                         ? "italic"
                                         : ""
                                     }`}
-                                    style={{
-                                      userSelect: "text",
-                                      fontSize: textIsEmojiOnly
-                                        ? undefined
-                                        : `${fontSize}px`,
-                                    }}
+                                    style={commonStyle}
                                   >
                                     {isHighlight ? (
                                       <span className="animate-highlight">
@@ -969,6 +1003,7 @@ const ChatMessageItem = memo(
     if (prev.isCopied !== next.isCopied) return false;
     if (prev.isPlaying !== next.isPlaying) return false;
     if (prev.isSpeechLoading !== next.isSpeechLoading) return false;
+    if (prev.isStreaming !== next.isStreaming) return false;
     // highlightSegment / localHighlightSegment are already nulled-out by
     // parent when they don't apply to this message, so a reference change is
     // meaningful here.
@@ -1317,7 +1352,7 @@ function ChatMessagesContent({
           )}
         </motion.div>
       )}
-      {messages.map((message) => {
+      {messages.map((message, index) => {
         const messageText = getMessageText(message);
         const messageKey =
           message.id === "1" || message.id === "proactive-1"
@@ -1327,6 +1362,13 @@ function ChatMessagesContent({
         const isCopied = copiedMessageId === messageKey;
         const isPlaying = playingMessageId === messageKey;
         const isSpeechLoading = speechLoadingId === messageKey;
+        // Streaming fast-path: only the very last assistant message while
+        // `isLoading` is true. For that message we skip markdown tokenization
+        // per delta to keep reconciliation cheap.
+        const isStreaming =
+          !!isLoading &&
+          message.role === "assistant" &&
+          index === messages.length - 1;
         // Pre-filter highlight segments so the memoized child only re-renders
         // when a highlight that actually belongs to THIS message changes.
         const itemHighlight =
@@ -1352,6 +1394,7 @@ function ChatMessagesContent({
             isCopied={isCopied}
             isPlaying={isPlaying}
             isSpeechLoading={isSpeechLoading}
+            isStreaming={isStreaming}
             highlightSegment={itemHighlight}
             localHighlightSegment={itemLocalHighlight}
             isSpeakingAny={isSpeakingAny}
