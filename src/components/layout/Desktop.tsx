@@ -17,7 +17,7 @@ import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTranslation } from "react-i18next";
-import { getTranslatedAppName } from "@/utils/i18n";
+import { getTranslatedAppName, getTranslatedFolderName } from "@/utils/i18n";
 import { useEventListener } from "@/hooks/useEventListener";
 import {
   createSelectionRect,
@@ -167,6 +167,12 @@ export function Desktop({
     if (shortcut.aliasType === "app" && shortcut.aliasTarget) {
       return getTranslatedAppName(shortcut.aliasTarget as AppId);
     }
+    if (shortcut.aliasType === "file" && shortcut.aliasTarget) {
+      const targetFile = getItem(shortcut.aliasTarget);
+      if (targetFile?.isDirectory) {
+        return getTranslatedFolderName(shortcut.aliasTarget);
+      }
+    }
     // For file aliases, remove file extension
     return shortcut.name.replace(/\.[^/.]+$/, "");
   };
@@ -186,6 +192,11 @@ export function Desktop({
       
       if (!targetFile) {
         console.warn(`[Desktop] Target file not found: ${targetPath}`);
+        return;
+      }
+
+      if (targetFile.isDirectory && targetPath === "/Applications") {
+        launchApp("finder", { initialPath: "/Applications", launchOrigin });
         return;
       }
 
@@ -989,7 +1000,10 @@ export function Desktop({
             >
               <FileIcon
                 name={getDisplayName(shortcut)}
-                isDirectory={false}
+                isDirectory={
+                  shortcut.aliasType === "file" &&
+                  shortcut.aliasTarget === "/Applications"
+                }
                 icon={getShortcutIcon(shortcut)}
                 onClick={(e) =>
                   handleDesktopItemClick(

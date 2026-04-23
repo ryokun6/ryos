@@ -522,8 +522,21 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 10; // Update Applets folder icon
+const STORE_VERSION = 11; // Desktop: Applications folder on non-macosx; Applet Store default on macosx only
 const STORE_NAME = "ryos:files";
+
+const DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME = "Applications";
+
+/** Default bulk app shortcuts hidden on these themes (sparse desktop). */
+const THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS: OsThemeId[] = [
+  "macosx",
+  "system7",
+  "xp",
+  "win98",
+];
+
+/** Default Applet Store shortcut only on macOS X; other themes use Applications folder instead. */
+const THEMES_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT: OsThemeId[] = ["macosx"];
 
 const initialFilesData: FilesStoreState = {
   items: getEmptyFileSystemState(),
@@ -1168,6 +1181,17 @@ export const useFilesStore = create<FilesStoreState>()(
             (item) => item.status === "trashed"
           );
 
+          const hasActiveApplicationsFolderShortcut = desktopItems.some(
+            (item) =>
+              item.aliasType === "file" && item.aliasTarget === "/Applications"
+          );
+          const hasTrashedApplicationsFolderShortcut = trashedItems.some(
+            (item) =>
+              item.aliasType === "file" &&
+              item.aliasTarget === "/Applications" &&
+              item.originalPath?.startsWith("/Desktop/")
+          );
+
           // Process all apps in registry except Finder and Control Panels
           // Use lightweight app data to avoid importing heavy component registry
           const apps = getAppBasicInfoList().filter(
@@ -1196,22 +1220,46 @@ export const useFilesStore = create<FilesStoreState>()(
             );
 
             if (!hasActiveShortcut && !hasTrashedShortcut) {
-              // Queue shortcut for batch creation
+              let hiddenOnThemes: OsThemeId[] = [];
+              if (appId !== "ipod") {
+                if (appId === "applet-viewer") {
+                  hiddenOnThemes = [...THEMES_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT];
+                } else {
+                  hiddenOnThemes = [...THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS];
+                }
+              }
+
               shortcutsToCreate.push({
                 appId,
                 appName: app.name,
-                // Apply hiddenOnThemes for non-iPod/AppletViewer
-                // This ensures they are hidden on macOS X theme but visible on others
-                hiddenOnThemes: appId !== "ipod" && appId !== "applet-viewer" ? ["macosx"] : [],
+                hiddenOnThemes,
               });
             }
           }
 
+          const needsApplicationsFolderShortcut =
+            !hasActiveApplicationsFolderShortcut &&
+            !hasTrashedApplicationsFolderShortcut;
+
           // Batch create all shortcuts in a single state update
-          if (shortcutsToCreate.length > 0) {
+          if (shortcutsToCreate.length > 0 || needsApplicationsFolderShortcut) {
             set((currentState) => {
               const newItems = { ...currentState.items };
               const now = Date.now();
+
+              const allocateUniqueDesktopPath = (displayName: string): string => {
+                const basePath = `/Desktop/${displayName}`;
+                let finalPath = basePath;
+                let counter = 1;
+                while (
+                  newItems[finalPath] &&
+                  newItems[finalPath].status === "active"
+                ) {
+                  finalPath = `/Desktop/${displayName} ${counter}`;
+                  counter++;
+                }
+                return finalPath;
+              };
 
               for (const shortcut of shortcutsToCreate) {
                 const aliasPath = `/Desktop/${shortcut.appName}`;
@@ -1236,10 +1284,32 @@ export const useFilesStore = create<FilesStoreState>()(
                   status: "active",
                   createdAt: now,
                   modifiedAt: now,
-                  hiddenOnThemes: shortcut.hiddenOnThemes.length > 0 ? shortcut.hiddenOnThemes as OsThemeId[] : undefined,
+                  hiddenOnThemes:
+                    shortcut.hiddenOnThemes.length > 0
+                      ? (shortcut.hiddenOnThemes as OsThemeId[])
+                      : undefined,
                 };
 
                 newItems[finalAliasPath] = aliasItem;
+              }
+
+              if (needsApplicationsFolderShortcut) {
+                const finalPath = allocateUniqueDesktopPath(
+                  DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME
+                );
+                newItems[finalPath] = {
+                  path: finalPath,
+                  name: finalPath.split("/").pop() || DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME,
+                  isDirectory: false,
+                  icon: "/icons/default/applications.png",
+                  type: "alias",
+                  aliasTarget: "/Applications",
+                  aliasType: "file",
+                  status: "active",
+                  createdAt: now,
+                  modifiedAt: now,
+                  hiddenOnThemes: [...THEMES_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT],
+                };
               }
 
               return { items: newItems };
@@ -1354,10 +1424,67 @@ export const useFilesStore = create<FilesStoreState>()(
         }
 
         if (version < 8) {
-          // Version 8 doesn't change the data structure,
-          // but we bump it to trigger the one-time sync in useFileSystem
-          // which will calculate actual file sizes and set proper timestamps
-          return persistedState;
+          // Version 8 didn't change persisted shape; sync runs on rehydrate.
+          // Do not return early — later migrations must still run.
+        }
+
+        if (version < 11) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+          const newState: Record<string, FileSystemItem> = {};
+
+          for (const path in oldState.items) {
+            const oldItem = oldState.items[path];
+            const onDesktop =
+              oldItem.status === "active" &&
+              getParentPath(oldItem.path) === "/Desktop";
+            const isAppAlias = oldItem.aliasType === "app";
+
+            if (
+              onDesktop &&
+              isAppAlias &&
+              oldItem.aliasTarget === "applet-viewer"
+            ) {
+              const prev = oldItem.hiddenOnThemes;
+              const wasMacosxOnlyHidden =
+                prev?.length === 1 && prev[0] === "macosx";
+              const hadNoThemeHide = !prev || prev.length === 0;
+              newState[path] =
+                wasMacosxOnlyHidden || hadNoThemeHide
+                  ? {
+                      ...oldItem,
+                      hiddenOnThemes: ["system7", "xp", "win98"],
+                      modifiedAt: oldItem.modifiedAt || now,
+                    }
+                  : { ...oldItem };
+              continue;
+            }
+
+            if (
+              onDesktop &&
+              isAppAlias &&
+              oldItem.aliasTarget !== "ipod" &&
+              oldItem.hiddenOnThemes?.length === 1 &&
+              oldItem.hiddenOnThemes[0] === "macosx"
+            ) {
+              newState[path] = {
+                ...oldItem,
+                hiddenOnThemes: [...THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS],
+                modifiedAt: oldItem.modifiedAt || now,
+              };
+              continue;
+            }
+
+            newState[path] = { ...oldItem };
+          }
+
+          return {
+            items: newState,
+            libraryState: oldState.libraryState || "loaded",
+          };
         }
 
         return persistedState;
