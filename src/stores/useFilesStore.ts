@@ -522,7 +522,7 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 11; // Desktop: Applications folder on non-macosx; Applet Store default on macosx only
+const STORE_VERSION = 12; // Fix inverted hiddenOnThemes for Applet Store vs Applications desktop shortcuts
 const STORE_NAME = "ryos:files";
 
 const DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME = "Applications";
@@ -535,8 +535,17 @@ const THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS: OsThemeId[] = [
   "win98",
 ];
 
-/** Default Applet Store shortcut only on macOS X; other themes use Applications folder instead. */
-const THEMES_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT: OsThemeId[] = ["macosx"];
+/** Applet Store default shortcut: visible on macosx; hidden on other themes (Applications folder used there). */
+const THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT: OsThemeId[] = [
+  "system7",
+  "xp",
+  "win98",
+];
+
+/** Default /Applications folder shortcut: only on non-macosx themes. */
+const THEMES_HIDE_DEFAULT_APPLICATIONS_FOLDER_DESKTOP_SHORTCUT: OsThemeId[] = [
+  "macosx",
+];
 
 const initialFilesData: FilesStoreState = {
   items: getEmptyFileSystemState(),
@@ -1223,7 +1232,7 @@ export const useFilesStore = create<FilesStoreState>()(
               let hiddenOnThemes: OsThemeId[] = [];
               if (appId !== "ipod") {
                 if (appId === "applet-viewer") {
-                  hiddenOnThemes = [...THEMES_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT];
+                  hiddenOnThemes = [...THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT];
                 } else {
                   hiddenOnThemes = [...THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS];
                 }
@@ -1308,7 +1317,9 @@ export const useFilesStore = create<FilesStoreState>()(
                   status: "active",
                   createdAt: now,
                   modifiedAt: now,
-                  hiddenOnThemes: [...THEMES_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT],
+                  hiddenOnThemes: [
+                    ...THEMES_HIDE_DEFAULT_APPLICATIONS_FOLDER_DESKTOP_SHORTCUT,
+                  ],
                 };
               }
 
@@ -1479,6 +1490,43 @@ export const useFilesStore = create<FilesStoreState>()(
             }
 
             newState[path] = { ...oldItem };
+          }
+
+          return {
+            items: newState,
+            libraryState: oldState.libraryState || "loaded",
+          };
+        }
+
+        if (version < 12) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+          const newState: Record<string, FileSystemItem> = {};
+
+          for (const path in oldState.items) {
+            const oldItem = oldState.items[path];
+            const onDesktop =
+              oldItem.status === "active" &&
+              getParentPath(oldItem.path) === "/Desktop";
+            const wronglyHidAppletStoreOnMacosx =
+              onDesktop &&
+              oldItem.aliasType === "app" &&
+              oldItem.aliasTarget === "applet-viewer" &&
+              oldItem.hiddenOnThemes?.length === 1 &&
+              oldItem.hiddenOnThemes[0] === "macosx";
+
+            newState[path] = wronglyHidAppletStoreOnMacosx
+              ? {
+                  ...oldItem,
+                  hiddenOnThemes: [
+                    ...THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT,
+                  ],
+                  modifiedAt: oldItem.modifiedAt || now,
+                }
+              : { ...oldItem };
           }
 
           return {
