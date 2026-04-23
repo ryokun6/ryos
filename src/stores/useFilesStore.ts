@@ -97,7 +97,7 @@ interface FilesStoreState {
   initializeLibrary: () => Promise<void>;
   /** Ensure all root directories from filesystem.json exist in the store */
   syncRootDirectoriesFromDefaults: () => Promise<void>;
-  /** Ensure default desktop shortcuts exist for all apps */
+  /** Ensure default desktop app shortcuts exist (sparse on every OS theme; user can add more). */
   ensureDefaultDesktopShortcuts: () => Promise<void>;
 }
 
@@ -522,8 +522,16 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 10; // Update Applets folder icon
+const STORE_VERSION = 11; // Sparse default desktop app shortcuts on all OS themes
 const STORE_NAME = "ryos:files";
+
+/** Hide bulk default app shortcuts on these themes (iPod + Applet Viewer stay visible). */
+const THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS: OsThemeId[] = [
+  "macosx",
+  "system7",
+  "xp",
+  "win98",
+];
 
 const initialFilesData: FilesStoreState = {
   items: getEmptyFileSystemState(),
@@ -1200,9 +1208,10 @@ export const useFilesStore = create<FilesStoreState>()(
               shortcutsToCreate.push({
                 appId,
                 appName: app.name,
-                // Apply hiddenOnThemes for non-iPod/AppletViewer
-                // This ensures they are hidden on macOS X theme but visible on others
-                hiddenOnThemes: appId !== "ipod" && appId !== "applet-viewer" ? ["macosx"] : [],
+                hiddenOnThemes:
+                  appId !== "ipod" && appId !== "applet-viewer"
+                    ? [...THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS]
+                    : [],
               });
             }
           }
@@ -1354,10 +1363,40 @@ export const useFilesStore = create<FilesStoreState>()(
         }
 
         if (version < 8) {
-          // Version 8 doesn't change the data structure,
-          // but we bump it to trigger the one-time sync in useFileSystem
-          // which will calculate actual file sizes and set proper timestamps
-          return persistedState;
+          // Version 8 didn't change persisted shape; sync runs on rehydrate.
+          // Do not return early — later migrations (e.g. v11) must still run.
+        }
+
+        if (version < 11) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+          const newState: Record<string, FileSystemItem> = {};
+
+          for (const path in oldState.items) {
+            const oldItem = oldState.items[path];
+            const isLegacyMacosxOnlyHidden =
+              oldItem.status === "active" &&
+              getParentPath(oldItem.path) === "/Desktop" &&
+              oldItem.aliasType === "app" &&
+              oldItem.hiddenOnThemes?.length === 1 &&
+              oldItem.hiddenOnThemes[0] === "macosx";
+
+            newState[path] = isLegacyMacosxOnlyHidden
+              ? {
+                  ...oldItem,
+                  hiddenOnThemes: [...THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS],
+                  modifiedAt: oldItem.modifiedAt || now,
+                }
+              : { ...oldItem };
+          }
+
+          return {
+            items: newState,
+            libraryState: oldState.libraryState || "loaded",
+          };
         }
 
         return persistedState;
