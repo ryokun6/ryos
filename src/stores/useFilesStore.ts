@@ -522,7 +522,7 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 12; // Applications folder on non-macosx; Applet Store visible on macosx only
+const STORE_VERSION = 13; // System 7: show Chats, IE, Karaoke on desktop after iPod
 const STORE_NAME = "ryos:files";
 
 const DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME = "Applications";
@@ -531,6 +531,19 @@ const DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME = "Applications";
 const THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS: OsThemeId[] = [
   "macosx",
   "system7",
+  "xp",
+  "win98",
+];
+
+/** Extra desktop icons on System 7 only (after iPod); still hidden on macosx / Windows themes. */
+const SYSTEM7_PROMINENT_DESKTOP_APP_IDS: readonly string[] = [
+  "chats",
+  "internet-explorer",
+  "karaoke",
+];
+
+const THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS: OsThemeId[] = [
+  "macosx",
   "xp",
   "win98",
 ];
@@ -581,6 +594,42 @@ function migrateV12DesktopDefaultShortcuts(
         hiddenOnThemes: [
           ...THEMES_HIDE_DEFAULT_APPLICATIONS_FOLDER_DESKTOP_SHORTCUT,
         ],
+        modifiedAt: oldItem.modifiedAt || now,
+      };
+    }
+  }
+  return newState;
+}
+
+/** v13: Chats, IE, Karaoke visible on System 7 desktop (not hidden with other bulk apps). */
+function migrateV13System7ProminentDesktopApps(
+  items: Record<string, FileSystemItem>,
+  now: number
+): Record<string, FileSystemItem> {
+  const newState = { ...items };
+  const want = THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS;
+  const sparse = THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS;
+
+  for (const path in newState) {
+    const oldItem = newState[path];
+    if (
+      oldItem.status !== "active" ||
+      getParentPath(oldItem.path) !== "/Desktop" ||
+      oldItem.aliasType !== "app" ||
+      !SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(oldItem.aliasTarget)
+    ) {
+      continue;
+    }
+    const h = oldItem.hiddenOnThemes;
+    const looksLikeFullSparse =
+      h?.length === sparse.length && sparse.every((t) => h.includes(t));
+    const missingProminentHides =
+      !h?.length || want.some((theme) => !h.includes(theme));
+    const wronglyHidesOnSystem7 = h?.includes("system7");
+    if (looksLikeFullSparse || missingProminentHides || wronglyHidesOnSystem7) {
+      newState[path] = {
+        ...oldItem,
+        hiddenOnThemes: [...want],
         modifiedAt: oldItem.modifiedAt || now,
       };
     }
@@ -1276,6 +1325,10 @@ export const useFilesStore = create<FilesStoreState>()(
                   hiddenOnThemes = [
                     ...THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT,
                   ];
+                } else if (SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(appId)) {
+                  hiddenOnThemes = [
+                    ...THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS,
+                  ];
                 } else {
                   hiddenOnThemes = [
                     ...THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS,
@@ -1382,6 +1435,9 @@ export const useFilesStore = create<FilesStoreState>()(
             const wantAppletHidden = THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT;
             const wantApplicationsHidden =
               THEMES_HIDE_DEFAULT_APPLICATIONS_FOLDER_DESKTOP_SHORTCUT;
+            const wantSystem7ProminentHidden =
+              THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS;
+            const sparseThemes = THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS;
 
             for (const path of Object.keys(items)) {
               const item = items[path];
@@ -1423,6 +1479,31 @@ export const useFilesStore = create<FilesStoreState>()(
                   items[path] = {
                     ...item,
                     hiddenOnThemes: [...wantApplicationsHidden],
+                    modifiedAt: item.modifiedAt || now,
+                  };
+                  changed = true;
+                }
+              }
+              if (
+                item.aliasType === "app" &&
+                SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(item.aliasTarget)
+              ) {
+                const h = item.hiddenOnThemes;
+                const looksLikeFullSparse =
+                  h?.length === sparseThemes.length &&
+                  sparseThemes.every((t) => h.includes(t));
+                const missingProminentHides =
+                  !h?.length ||
+                  wantSystem7ProminentHidden.some((theme) => !h.includes(theme));
+                const wronglyHidesOnSystem7 = h?.includes("system7");
+                if (
+                  looksLikeFullSparse ||
+                  missingProminentHides ||
+                  wronglyHidesOnSystem7
+                ) {
+                  items[path] = {
+                    ...item,
+                    hiddenOnThemes: [...wantSystem7ProminentHidden],
                     modifiedAt: item.modifiedAt || now,
                   };
                   changed = true;
@@ -1573,7 +1654,10 @@ export const useFilesStore = create<FilesStoreState>()(
           }
 
           return {
-            items: migrateV12DesktopDefaultShortcuts(newState, now),
+            items: migrateV13System7ProminentDesktopApps(
+              migrateV12DesktopDefaultShortcuts(newState, now),
+              now
+            ),
             libraryState: oldState.libraryState || "loaded",
           };
         }
@@ -1586,7 +1670,23 @@ export const useFilesStore = create<FilesStoreState>()(
           const now = Date.now();
 
           return {
-            items: migrateV12DesktopDefaultShortcuts(oldState.items, now),
+            items: migrateV13System7ProminentDesktopApps(
+              migrateV12DesktopDefaultShortcuts(oldState.items, now),
+              now
+            ),
+            libraryState: oldState.libraryState || "loaded",
+          };
+        }
+
+        if (version < 13) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+
+          return {
+            items: migrateV13System7ProminentDesktopApps(oldState.items, now),
             libraryState: oldState.libraryState || "loaded",
           };
         }

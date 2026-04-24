@@ -46,8 +46,9 @@ interface DesktopProps {
 const DEFAULT_SHORTCUT_ORDER: AppId[] = [
   "ipod",
   "chats",
-  "applet-viewer",
   "internet-explorer",
+  "karaoke",
+  "applet-viewer",
   "textedit",
   "photo-booth",
   "videos",
@@ -160,6 +161,10 @@ export function Desktop({
             }
             if (b.aliasType === "app") {
               const bIndex = DEFAULT_SHORTCUT_ORDER.indexOf(b.aliasTarget as AppId);
+              if (currentTheme === "system7") {
+                if (bIndex >= 0 && bIndex <= 3) return 1;
+                return -1;
+              }
               if (bIndex === 0) return 1;
               if (bIndex !== -1) return -1;
             }
@@ -168,6 +173,10 @@ export function Desktop({
           if (b.aliasType === "file" && b.aliasTarget === "/Applications") {
             if (a.aliasType === "app") {
               const aIndex = DEFAULT_SHORTCUT_ORDER.indexOf(a.aliasTarget as AppId);
+              if (currentTheme === "system7") {
+                if (aIndex >= 0 && aIndex <= 3) return -1;
+                return 1;
+              }
               if (aIndex === 0) return -1;
               if (aIndex !== -1) return 1;
             }
