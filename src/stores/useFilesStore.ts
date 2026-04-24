@@ -616,6 +616,7 @@ function migrateV13System7ProminentDesktopApps(
       oldItem.status !== "active" ||
       getParentPath(oldItem.path) !== "/Desktop" ||
       oldItem.aliasType !== "app" ||
+      !oldItem.aliasTarget ||
       !SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(oldItem.aliasTarget)
     ) {
       continue;
@@ -1486,6 +1487,7 @@ export const useFilesStore = create<FilesStoreState>()(
               }
               if (
                 item.aliasType === "app" &&
+                item.aliasTarget &&
                 SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(item.aliasTarget)
               ) {
                 const h = item.hiddenOnThemes;
