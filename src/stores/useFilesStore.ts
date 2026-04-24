@@ -97,7 +97,7 @@ interface FilesStoreState {
   initializeLibrary: () => Promise<void>;
   /** Ensure all root directories from filesystem.json exist in the store */
   syncRootDirectoriesFromDefaults: () => Promise<void>;
-  /** Ensure default desktop shortcuts exist for all apps */
+  /** Ensure default desktop app shortcuts exist (sparse on every OS theme; user can add more). */
   ensureDefaultDesktopShortcuts: () => Promise<void>;
 }
 
@@ -522,8 +522,120 @@ async function saveDefaultContents(
 // Function to generate an empty initial state (just for typing)
 const getEmptyFileSystemState = (): Record<string, FileSystemItem> => ({});
 
-const STORE_VERSION = 10; // Update Applets folder icon
+const STORE_VERSION = 13; // System 7: show Chats, IE, Karaoke on desktop after iPod
 const STORE_NAME = "ryos:files";
+
+const DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME = "Applications";
+
+/** Hide bulk default app shortcuts on these themes (sparse desktop). */
+const THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS: OsThemeId[] = [
+  "macosx",
+  "system7",
+  "xp",
+  "win98",
+];
+
+/** Extra desktop icons on System 7 only (after iPod); still hidden on macosx / Windows themes. */
+const SYSTEM7_PROMINENT_DESKTOP_APP_IDS: readonly string[] = [
+  "chats",
+  "internet-explorer",
+  "karaoke",
+];
+
+const THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS: OsThemeId[] = [
+  "macosx",
+  "xp",
+  "win98",
+];
+
+/** Applet Store default: visible on macosx; hidden on other themes (Applications shortcut there). */
+const THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT: OsThemeId[] = [
+  "system7",
+  "xp",
+  "win98",
+];
+
+/** Default /Applications folder shortcut: non-macosx themes only. */
+const THEMES_HIDE_DEFAULT_APPLICATIONS_FOLDER_DESKTOP_SHORTCUT: OsThemeId[] = [
+  "macosx",
+];
+
+/** v12: Applet Store vs Applications folder default desktop shortcut visibility */
+function migrateV12DesktopDefaultShortcuts(
+  items: Record<string, FileSystemItem>,
+  now: number
+): Record<string, FileSystemItem> {
+  const newState = { ...items };
+  for (const path in newState) {
+    const oldItem = newState[path];
+    const onDesktop =
+      oldItem.status === "active" && getParentPath(oldItem.path) === "/Desktop";
+
+    if (
+      onDesktop &&
+      oldItem.aliasType === "app" &&
+      oldItem.aliasTarget === "applet-viewer"
+    ) {
+      newState[path] = {
+        ...oldItem,
+        hiddenOnThemes: [...THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT],
+        modifiedAt: oldItem.modifiedAt || now,
+      };
+      continue;
+    }
+
+    if (
+      onDesktop &&
+      oldItem.aliasType === "file" &&
+      oldItem.aliasTarget === "/Applications"
+    ) {
+      newState[path] = {
+        ...oldItem,
+        hiddenOnThemes: [
+          ...THEMES_HIDE_DEFAULT_APPLICATIONS_FOLDER_DESKTOP_SHORTCUT,
+        ],
+        modifiedAt: oldItem.modifiedAt || now,
+      };
+    }
+  }
+  return newState;
+}
+
+/** v13: Chats, IE, Karaoke visible on System 7 desktop (not hidden with other bulk apps). */
+function migrateV13System7ProminentDesktopApps(
+  items: Record<string, FileSystemItem>,
+  now: number
+): Record<string, FileSystemItem> {
+  const newState = { ...items };
+  const want = THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS;
+  const sparse = THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS;
+
+  for (const path in newState) {
+    const oldItem = newState[path];
+    if (
+      oldItem.status !== "active" ||
+      getParentPath(oldItem.path) !== "/Desktop" ||
+      oldItem.aliasType !== "app" ||
+      !SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(oldItem.aliasTarget)
+    ) {
+      continue;
+    }
+    const h = oldItem.hiddenOnThemes;
+    const looksLikeFullSparse =
+      h?.length === sparse.length && sparse.every((t) => h.includes(t));
+    const missingProminentHides =
+      !h?.length || want.some((theme) => !h.includes(theme));
+    const wronglyHidesOnSystem7 = h?.includes("system7");
+    if (looksLikeFullSparse || missingProminentHides || wronglyHidesOnSystem7) {
+      newState[path] = {
+        ...oldItem,
+        hiddenOnThemes: [...want],
+        modifiedAt: oldItem.modifiedAt || now,
+      };
+    }
+  }
+  return newState;
+}
 
 const initialFilesData: FilesStoreState = {
   items: getEmptyFileSystemState(),
@@ -1168,6 +1280,17 @@ export const useFilesStore = create<FilesStoreState>()(
             (item) => item.status === "trashed"
           );
 
+          const hasActiveApplicationsFolderShortcut = desktopItems.some(
+            (item) =>
+              item.aliasType === "file" && item.aliasTarget === "/Applications"
+          );
+          const hasTrashedApplicationsFolderShortcut = trashedItems.some(
+            (item) =>
+              item.aliasType === "file" &&
+              item.aliasTarget === "/Applications" &&
+              item.originalPath?.startsWith("/Desktop/")
+          );
+
           // Process all apps in registry except Finder and Control Panels
           // Use lightweight app data to avoid importing heavy component registry
           const apps = getAppBasicInfoList().filter(
@@ -1196,22 +1319,54 @@ export const useFilesStore = create<FilesStoreState>()(
             );
 
             if (!hasActiveShortcut && !hasTrashedShortcut) {
-              // Queue shortcut for batch creation
+              let hiddenOnThemes: OsThemeId[] = [];
+              if (appId !== "ipod") {
+                if (appId === "applet-viewer") {
+                  hiddenOnThemes = [
+                    ...THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT,
+                  ];
+                } else if (SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(appId)) {
+                  hiddenOnThemes = [
+                    ...THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS,
+                  ];
+                } else {
+                  hiddenOnThemes = [
+                    ...THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS,
+                  ];
+                }
+              }
+
               shortcutsToCreate.push({
                 appId,
                 appName: app.name,
-                // Apply hiddenOnThemes for non-iPod/AppletViewer
-                // This ensures they are hidden on macOS X theme but visible on others
-                hiddenOnThemes: appId !== "ipod" && appId !== "applet-viewer" ? ["macosx"] : [],
+                hiddenOnThemes,
               });
             }
           }
 
+          const needsApplicationsFolderShortcut =
+            !hasActiveApplicationsFolderShortcut &&
+            !hasTrashedApplicationsFolderShortcut;
+
           // Batch create all shortcuts in a single state update
-          if (shortcutsToCreate.length > 0) {
+          if (shortcutsToCreate.length > 0 || needsApplicationsFolderShortcut) {
             set((currentState) => {
               const newItems = { ...currentState.items };
               const now = Date.now();
+
+              const allocateUniqueDesktopPath = (displayName: string): string => {
+                const basePath = `/Desktop/${displayName}`;
+                let finalPath = basePath;
+                let counter = 1;
+                while (
+                  newItems[finalPath] &&
+                  newItems[finalPath].status === "active"
+                ) {
+                  finalPath = `/Desktop/${displayName} ${counter}`;
+                  counter++;
+                }
+                return finalPath;
+              };
 
               for (const shortcut of shortcutsToCreate) {
                 const aliasPath = `/Desktop/${shortcut.appName}`;
@@ -1236,15 +1391,127 @@ export const useFilesStore = create<FilesStoreState>()(
                   status: "active",
                   createdAt: now,
                   modifiedAt: now,
-                  hiddenOnThemes: shortcut.hiddenOnThemes.length > 0 ? shortcut.hiddenOnThemes as OsThemeId[] : undefined,
+                  hiddenOnThemes:
+                    shortcut.hiddenOnThemes.length > 0
+                      ? (shortcut.hiddenOnThemes as OsThemeId[])
+                      : undefined,
                 };
 
                 newItems[finalAliasPath] = aliasItem;
               }
 
+              if (needsApplicationsFolderShortcut) {
+                const finalPath = allocateUniqueDesktopPath(
+                  DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME
+                );
+                newItems[finalPath] = {
+                  path: finalPath,
+                  name:
+                    finalPath.split("/").pop() ||
+                    DEFAULT_APPLICATIONS_FOLDER_ALIAS_NAME,
+                  isDirectory: false,
+                  icon: "/icons/default/applications.png",
+                  type: "alias",
+                  aliasTarget: "/Applications",
+                  aliasType: "file",
+                  status: "active",
+                  createdAt: now,
+                  modifiedAt: now,
+                  hiddenOnThemes: [
+                    ...THEMES_HIDE_DEFAULT_APPLICATIONS_FOLDER_DESKTOP_SHORTCUT,
+                  ],
+                };
+              }
+
               return { items: newItems };
             });
           }
+
+          // Fix existing defaults (e.g. persisted before theme-specific metadata)
+          set((s) => {
+            const items = { ...s.items };
+            let changed = false;
+            const now = Date.now();
+            const wantAppletHidden = THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT;
+            const wantApplicationsHidden =
+              THEMES_HIDE_DEFAULT_APPLICATIONS_FOLDER_DESKTOP_SHORTCUT;
+            const wantSystem7ProminentHidden =
+              THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS;
+            const sparseThemes = THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS;
+
+            for (const path of Object.keys(items)) {
+              const item = items[path];
+              if (
+                item.status !== "active" ||
+                getParentPath(item.path) !== "/Desktop"
+              ) {
+                continue;
+              }
+              if (
+                item.aliasType === "app" &&
+                item.aliasTarget === "applet-viewer"
+              ) {
+                const h = item.hiddenOnThemes;
+                const wronglyMacosxOnly =
+                  h?.length === 1 && h[0] === "macosx";
+                const missingNonMacosxHides =
+                  !h?.length ||
+                  wantAppletHidden.some((theme) => !h.includes(theme));
+                if (wronglyMacosxOnly || missingNonMacosxHides) {
+                  items[path] = {
+                    ...item,
+                    hiddenOnThemes: [...wantAppletHidden],
+                    modifiedAt: item.modifiedAt || now,
+                  };
+                  changed = true;
+                }
+              }
+              if (
+                item.aliasType === "file" &&
+                item.aliasTarget === "/Applications"
+              ) {
+                const h = item.hiddenOnThemes;
+                const needsApplicationsHideFix =
+                  !h?.length ||
+                  h.length !== wantApplicationsHidden.length ||
+                  wantApplicationsHidden.some((theme) => !h.includes(theme));
+                if (needsApplicationsHideFix) {
+                  items[path] = {
+                    ...item,
+                    hiddenOnThemes: [...wantApplicationsHidden],
+                    modifiedAt: item.modifiedAt || now,
+                  };
+                  changed = true;
+                }
+              }
+              if (
+                item.aliasType === "app" &&
+                SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(item.aliasTarget)
+              ) {
+                const h = item.hiddenOnThemes;
+                const looksLikeFullSparse =
+                  h?.length === sparseThemes.length &&
+                  sparseThemes.every((t) => h.includes(t));
+                const missingProminentHides =
+                  !h?.length ||
+                  wantSystem7ProminentHidden.some((theme) => !h.includes(theme));
+                const wronglyHidesOnSystem7 = h?.includes("system7");
+                if (
+                  looksLikeFullSparse ||
+                  missingProminentHides ||
+                  wronglyHidesOnSystem7
+                ) {
+                  items[path] = {
+                    ...item,
+                    hiddenOnThemes: [...wantSystem7ProminentHidden],
+                    modifiedAt: item.modifiedAt || now,
+                  };
+                  changed = true;
+                }
+              }
+            }
+            return changed ? { items } : s;
+          });
         } catch (err) {
           console.error("[FilesStore] Failed to ensure default desktop shortcuts:", err);
         }
@@ -1354,10 +1621,74 @@ export const useFilesStore = create<FilesStoreState>()(
         }
 
         if (version < 8) {
-          // Version 8 doesn't change the data structure,
-          // but we bump it to trigger the one-time sync in useFileSystem
-          // which will calculate actual file sizes and set proper timestamps
-          return persistedState;
+          // Version 8 didn't change persisted shape; sync runs on rehydrate.
+          // Do not return early — later migrations (e.g. v11) must still run.
+        }
+
+        if (version < 11) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+          const newState: Record<string, FileSystemItem> = {};
+
+          for (const path in oldState.items) {
+            const oldItem = oldState.items[path];
+            const isLegacyMacosxOnlyHidden =
+              oldItem.status === "active" &&
+              getParentPath(oldItem.path) === "/Desktop" &&
+              oldItem.aliasType === "app" &&
+              oldItem.aliasTarget !== "ipod" &&
+              oldItem.aliasTarget !== "applet-viewer" &&
+              oldItem.hiddenOnThemes?.length === 1 &&
+              oldItem.hiddenOnThemes[0] === "macosx";
+
+            newState[path] = isLegacyMacosxOnlyHidden
+              ? {
+                  ...oldItem,
+                  hiddenOnThemes: [...THEMES_WITH_SPARSE_DEFAULT_DESKTOP_SHORTCUTS],
+                  modifiedAt: oldItem.modifiedAt || now,
+                }
+              : { ...oldItem };
+          }
+
+          return {
+            items: migrateV13System7ProminentDesktopApps(
+              migrateV12DesktopDefaultShortcuts(newState, now),
+              now
+            ),
+            libraryState: oldState.libraryState || "loaded",
+          };
+        }
+
+        if (version < 12) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+
+          return {
+            items: migrateV13System7ProminentDesktopApps(
+              migrateV12DesktopDefaultShortcuts(oldState.items, now),
+              now
+            ),
+            libraryState: oldState.libraryState || "loaded",
+          };
+        }
+
+        if (version < 13) {
+          const oldState = persistedState as {
+            items: Record<string, FileSystemItem>;
+            libraryState?: LibraryState;
+          };
+          const now = Date.now();
+
+          return {
+            items: migrateV13System7ProminentDesktopApps(oldState.items, now),
+            libraryState: oldState.libraryState || "loaded",
+          };
         }
 
         return persistedState;

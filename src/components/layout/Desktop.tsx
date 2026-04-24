@@ -17,7 +17,7 @@ import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTranslation } from "react-i18next";
-import { getTranslatedAppName } from "@/utils/i18n";
+import { getTranslatedAppName, getTranslatedFolderName } from "@/utils/i18n";
 import { useEventListener } from "@/hooks/useEventListener";
 import {
   createSelectionRect,
@@ -46,8 +46,9 @@ interface DesktopProps {
 const DEFAULT_SHORTCUT_ORDER: AppId[] = [
   "ipod",
   "chats",
-  "applet-viewer",
   "internet-explorer",
+  "karaoke",
+  "applet-viewer",
   "textedit",
   "photo-booth",
   "videos",
@@ -154,6 +155,33 @@ export function Desktop({
             if (bIndex !== -1) return 1;
             return a.name.localeCompare(b.name);
           }
+          if (a.aliasType === "file" && a.aliasTarget === "/Applications") {
+            if (b.aliasType === "file" && b.aliasTarget === "/Applications") {
+              return a.name.localeCompare(b.name);
+            }
+            if (b.aliasType === "app") {
+              const bIndex = DEFAULT_SHORTCUT_ORDER.indexOf(b.aliasTarget as AppId);
+              if (currentTheme === "system7") {
+                if (bIndex >= 0 && bIndex <= 3) return 1;
+                return -1;
+              }
+              if (bIndex === 0) return 1;
+              if (bIndex !== -1) return -1;
+            }
+            return a.name.localeCompare(b.name);
+          }
+          if (b.aliasType === "file" && b.aliasTarget === "/Applications") {
+            if (a.aliasType === "app") {
+              const aIndex = DEFAULT_SHORTCUT_ORDER.indexOf(a.aliasTarget as AppId);
+              if (currentTheme === "system7") {
+                if (aIndex >= 0 && aIndex <= 3) return -1;
+                return 1;
+              }
+              if (aIndex === 0) return -1;
+              if (aIndex !== -1) return 1;
+            }
+            return a.name.localeCompare(b.name);
+          }
           if (a.aliasType === "app" && b.aliasType !== "app") return -1;
           if (a.aliasType !== "app" && b.aliasType === "app") return 1;
           return a.name.localeCompare(b.name);
@@ -166,6 +194,12 @@ export function Desktop({
     // For app aliases, use translated app name
     if (shortcut.aliasType === "app" && shortcut.aliasTarget) {
       return getTranslatedAppName(shortcut.aliasTarget as AppId);
+    }
+    if (shortcut.aliasType === "file" && shortcut.aliasTarget) {
+      const targetFile = getItem(shortcut.aliasTarget);
+      if (targetFile?.isDirectory) {
+        return getTranslatedFolderName(shortcut.aliasTarget);
+      }
     }
     // For file aliases, remove file extension
     return shortcut.name.replace(/\.[^/.]+$/, "");
@@ -186,6 +220,11 @@ export function Desktop({
       
       if (!targetFile) {
         console.warn(`[Desktop] Target file not found: ${targetPath}`);
+        return;
+      }
+
+      if (targetFile.isDirectory && targetPath === "/Applications") {
+        launchApp("finder", { initialPath: "/Applications", launchOrigin });
         return;
       }
 
@@ -989,7 +1028,10 @@ export function Desktop({
             >
               <FileIcon
                 name={getDisplayName(shortcut)}
-                isDirectory={false}
+                isDirectory={
+                  shortcut.aliasType === "file" &&
+                  shortcut.aliasTarget === "/Applications"
+                }
                 icon={getShortcutIcon(shortcut)}
                 onClick={(e) =>
                   handleDesktopItemClick(
