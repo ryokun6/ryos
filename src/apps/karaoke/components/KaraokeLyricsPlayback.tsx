@@ -378,6 +378,12 @@ function KaraokeTitleCard({
     borderRadius: "1%",
     boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
   };
+  const titleCardContentStyle: CSSProperties = {
+    gap:
+      variant === "fullscreen"
+        ? "clamp(22px, min(5vw, 5vh), 64px)"
+        : "clamp(22px, 5cqw, 64px)",
+  };
   const regularTextStyle = useMemo((): TitleCardLineStyle => {
     switch (styleCategory) {
       case "outline-blue":
@@ -436,7 +442,8 @@ function KaraokeTitleCard({
       <motion.div
         layout="position"
         transition={TITLE_CARD_MOVEMENT_TRANSITION}
-        className="w-full max-w-none flex items-center justify-start gap-[clamp(12px,2.5vw,28px)]"
+        className="w-full max-w-none flex items-center justify-start"
+        style={titleCardContentStyle}
       >
         {coverUrl && (
           <div className="relative shrink-0" style={coverImageStyle}>
