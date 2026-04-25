@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -6,12 +6,18 @@ interface ScrollingTextProps {
   text: string;
   className?: string;
   isPlaying?: boolean;
+  align?: "center" | "left";
+  fadeEdges?: boolean;
+  style?: CSSProperties;
 }
 
 export function ScrollingText({
   text,
   className,
   isPlaying = true,
+  align = "center",
+  fadeEdges = false,
+  style,
 }: ScrollingTextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -21,23 +27,48 @@ export function ScrollingText({
 
   // Check if text needs to scroll (is wider than container)
   useEffect(() => {
-    if (containerRef.current && textRef.current) {
-      const newContainerWidth = containerRef.current.clientWidth;
-      const newContentWidth = textRef.current.scrollWidth;
+    const container = containerRef.current;
+    const textElement = textRef.current;
+    if (!container || !textElement) return;
 
+    const measure = () => {
+      const newContainerWidth = container.clientWidth;
+      const newContentWidth = textElement.scrollWidth;
       setContentWidth(newContentWidth);
       setShouldScroll(newContentWidth > newContainerWidth);
-    }
-  }, [text]);
+    };
+
+    measure();
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(container);
+    resizeObserver.observe(textElement);
+
+    return () => resizeObserver.disconnect();
+  }, [text, shouldScroll]);
+
+  const maskImage =
+    shouldScroll && fadeEdges
+      ? "linear-gradient(to right, transparent 0, black 0.75em, black calc(100% - 0.75em), transparent 100%)"
+      : undefined;
+  const mergedStyle: CSSProperties = {
+    ...style,
+    maskImage,
+    WebkitMaskImage: maskImage,
+  };
+  const alignClass = align === "left" ? "justify-start" : "justify-center";
+  const textAlignClass = align === "left" ? "text-left" : "text-center";
 
   return (
     <div
       ref={containerRef}
       className={cn(
         "relative overflow-hidden",
-        !shouldScroll && "flex justify-center",
+        !shouldScroll && "flex",
+        !shouldScroll && alignClass,
         className
       )}
+      style={mergedStyle}
     >
       {shouldScroll ? (
         <div className="inline-block whitespace-nowrap">
@@ -67,7 +98,7 @@ export function ScrollingText({
           </motion.div>
         </div>
       ) : (
-        <div ref={textRef} className="whitespace-nowrap text-center">
+        <div ref={textRef} className={cn("whitespace-nowrap", textAlignClass)}>
           {text}
         </div>
       )}

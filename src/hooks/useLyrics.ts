@@ -48,6 +48,7 @@ interface UseLyricsParams {
 interface LyricsState {
   lines: LyricLine[];
   originalLines: LyricLine[];
+  loadedSongId: string | null;
   currentLine: number;
   isLoading: boolean;
   isTranslating: boolean;
@@ -104,6 +105,8 @@ export function useLyrics({
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationProgress, setTranslationProgress] = useState<number | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [errorSongId, setErrorSongId] = useState<string | null>(null);
+  const [loadedSongId, setLoadedSongId] = useState<string | null>(null);
   const [furiganaInfo, setFuriganaInfo] = useState<FuriganaStreamInfo | undefined>();
   const [soramimiInfo, setSoramimiInfo] = useState<SoramimiStreamInfo | undefined>();
 
@@ -160,6 +163,8 @@ export function useLyrics({
       setCurrentLine(-1);
       setIsFetchingOriginal(false);
       setError(undefined);
+      setErrorSongId(null);
+      setLoadedSongId(null);
       setFuriganaInfo(undefined);
       setSoramimiInfo(undefined);
       cachedKeyRef.current = null;
@@ -169,6 +174,8 @@ export function useLyrics({
 
     if (isOffline()) {
       setError("iPod requires an internet connection");
+      setErrorSongId(effectSongId);
+      setLoadedSongId(null);
       return;
     }
 
@@ -187,6 +194,8 @@ export function useLyrics({
     setIsFetchingOriginal(true);
     setIsTranslating(false);
     setError(undefined);
+    setErrorSongId(null);
+    setLoadedSongId(null);
     setFuriganaInfo(undefined);
     setSoramimiInfo(undefined);
     translationInfoRef.current = undefined;
@@ -246,6 +255,8 @@ export function useLyrics({
         }));
 
         setOriginalLines(parsed);
+        setLoadedSongId(effectSongId);
+        setErrorSongId(null);
         cachedKeyRef.current = cacheKey;
         useIpodStore.setState({ currentLyrics: { lines: parsed } });
 
@@ -268,6 +279,8 @@ export function useLyrics({
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
         handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
+        setErrorSongId(effectSongId);
+        setLoadedSongId(null);
         // Clear furigana/soramimi info on error to avoid showing stale data
         setFuriganaInfo(undefined);
         setSoramimiInfo(undefined);
@@ -390,7 +403,12 @@ export function useLyrics({
   // ==========================================================================
   // Current line tracking
   // ==========================================================================
-  const displayLines = translatedLines || originalLines;
+  const hasLyricsForCurrentSong = loadedSongId === songId;
+  const displayOriginalLines = hasLyricsForCurrentSong ? originalLines : [];
+  const displayLines = hasLyricsForCurrentSong ? (translatedLines || originalLines) : [];
+  const currentError = errorSongId === songId ? error : undefined;
+  const isLoadingCurrentLyrics =
+    isFetchingOriginal || Boolean(songId && !hasLyricsForCurrentSong && !currentError);
 
   const parsedTimestamps = useMemo(
     () => parseLyricTimestamps(displayLines),
@@ -419,12 +437,13 @@ export function useLyrics({
 
   return {
     lines: displayLines,
-    originalLines,
+    originalLines: displayOriginalLines,
+    loadedSongId: hasLyricsForCurrentSong ? loadedSongId : null,
     currentLine,
-    isLoading: isFetchingOriginal,
+    isLoading: isLoadingCurrentLyrics,
     isTranslating,
     translationProgress,
-    error,
+    error: currentError,
     updateCurrentTimeManually,
     furiganaInfo,
     soramimiInfo,

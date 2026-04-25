@@ -66,4 +66,34 @@ describe("karaoke title card timing", () => {
       })
     ).toBe(false);
   });
+
+  test("shows after a negative offset when first lyric is still outside the title window", () => {
+    expect(
+      shouldShowKaraokeTitleCard({
+        lines: [line("4500", "First lyric")],
+        currentTimeMs: 0,
+        lyricOffsetMs: -4500,
+      })
+    ).toBe(true);
+  });
+
+  test("shows during pre-seek negative time when first lyric is outside the title window", () => {
+    expect(
+      shouldShowKaraokeTitleCard({
+        lines: [line("4500", "First lyric")],
+        currentTimeMs: -4500,
+        lyricOffsetMs: -4500,
+      })
+    ).toBe(true);
+  });
+
+  test("does not show with offset when first lyric is inside the title window", () => {
+    expect(
+      shouldShowKaraokeTitleCard({
+        lines: [line("4500", "First lyric")],
+        currentTimeMs: 2000,
+        lyricOffsetMs: 2000,
+      })
+    ).toBe(false);
+  });
 });

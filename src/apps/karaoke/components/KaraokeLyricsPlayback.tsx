@@ -19,6 +19,7 @@ import { useCoverPalette } from "@/hooks/useCoverPalette";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { getEffectiveTranslationLanguage, type Track } from "@/stores/useIpodStore";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
+import { ScrollingText } from "@/apps/ipod/components/screen";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { shouldShowKaraokeTitleCard } from "@/apps/karaoke/utils/titleCard";
@@ -203,6 +204,12 @@ const windowContainerStyle: CSSProperties = {
 
 const TITLE_CARD_BASE_SHADOW = "0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.5)";
 const TITLE_CARD_GOLD_GLOW_COLOR_FALLBACK = "#FFD700";
+const TITLE_CARD_MOVEMENT_TRANSITION = {
+  type: "spring" as const,
+  stiffness: 200,
+  damping: 30,
+  mass: 1,
+};
 
 type TitleCardStyleCategory = "outline-blue" | "outline-red" | "glow-white" | "glow-gold" | "glow-gradient";
 type TitleCardLineStyle = Pick<
@@ -328,6 +335,7 @@ function KaraokeTitleCard({
   fontClassName,
   variant,
   coverUrl,
+  bottomPaddingClass = "pb-12",
 }: {
   title: string;
   artist?: string;
@@ -335,6 +343,7 @@ function KaraokeTitleCard({
   fontClassName: string;
   variant: "window" | "fullscreen";
   coverUrl?: string | null;
+  bottomPaddingClass?: string;
 }) {
   const styleCategory = getTitleCardStyleCategory(fontClassName);
   const palette = useCoverPalette(styleCategory === "glow-gold" ? (coverUrl ?? null) : null);
@@ -418,13 +427,17 @@ function KaraokeTitleCard({
   return (
     <motion.div
       key="karaoke-title-card"
-      className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center px-8 text-left text-white select-none"
+      className={`absolute inset-0 z-40 pointer-events-none flex items-end justify-center pl-12 pr-8 text-left text-white select-none ${bottomPaddingClass}`}
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 1.03 }}
       transition={{ duration: 0.28 }}
     >
-      <div className="max-w-[92%] -translate-y-[8%] flex items-center justify-center gap-[clamp(12px,2.5vw,28px)]">
+      <motion.div
+        layout="position"
+        transition={TITLE_CARD_MOVEMENT_TRANSITION}
+        className="w-full max-w-none flex items-center justify-start gap-[clamp(12px,2.5vw,28px)]"
+      >
         {coverUrl && (
           <div className="relative shrink-0" style={coverImageStyle}>
             <div className="absolute inset-0 overflow-hidden" style={coverSleeveStyle}>
@@ -455,13 +468,14 @@ function KaraokeTitleCard({
             </div>
           </div>
         )}
-        <div className="min-w-0 text-left">
-          <div
-            className={`${titleTextSizeClass} ${fontClassName} whitespace-pre-wrap break-words`}
+        <div className="min-w-0 flex-1 text-left overflow-hidden">
+          <ScrollingText
+            text={title}
+            align="left"
+            fadeEdges
+            className={`${titleTextSizeClass} ${fontClassName} w-full max-w-full`}
             style={regularTextStyle}
-          >
-            {title}
-          </div>
+          />
           {metadataLines.map((metadataLine) => (
             <div
               key={metadataLine}
@@ -472,7 +486,7 @@ function KaraokeTitleCard({
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -552,6 +566,7 @@ export function KaraokeWindowLyricsOverlay({
   const showTitleCard = shouldShowKaraokeTitleCard({
     lines: lyricsControls.originalLines,
     currentTimeMs,
+    lyricOffsetMs: currentTrack?.lyricOffset ?? 0,
   });
 
   const bottomPadding =
@@ -572,6 +587,7 @@ export function KaraokeWindowLyricsOverlay({
               fontClassName={lyricsFontClassName}
               variant="window"
               coverUrl={coverUrl}
+              bottomPaddingClass={bottomPadding}
             />
           )}
         </AnimatePresence>
@@ -690,6 +706,7 @@ export function KaraokeFullscreenLyricsOverlay({
   const showTitleCard = shouldShowKaraokeTitleCard({
     lines: lyricsControls.originalLines,
     currentTimeMs,
+    lyricOffsetMs: currentTrack?.lyricOffset ?? 0,
   });
 
   const bottomPadding = controlsVisible ? "pb-28" : "pb-16";
@@ -709,6 +726,7 @@ export function KaraokeFullscreenLyricsOverlay({
               fontClassName={lyricsFontClassName}
               variant="fullscreen"
               coverUrl={coverUrl}
+              bottomPaddingClass={bottomPadding}
             />
           )}
         </AnimatePresence>

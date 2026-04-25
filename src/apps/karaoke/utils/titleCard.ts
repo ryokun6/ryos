@@ -19,11 +19,13 @@ export function getFirstLyricStartMs(lines: LyricLine[]): number | null {
 export function shouldShowKaraokeTitleCard({
   lines,
   currentTimeMs,
+  lyricOffsetMs = 0,
   minLeadMs = KARAOKE_TITLE_CARD_MIN_LEAD_MS,
   durationMs = KARAOKE_TITLE_CARD_DURATION_MS,
 }: {
   lines: LyricLine[];
   currentTimeMs: number | undefined;
+  lyricOffsetMs?: number;
   minLeadMs?: number;
   durationMs?: number;
 }): boolean {
@@ -32,10 +34,13 @@ export function shouldShowKaraokeTitleCard({
   const firstLyricStartMs = getFirstLyricStartMs(lines);
   if (firstLyricStartMs === null) return false;
 
+  const titleCardStartMs = Math.max(0, lyricOffsetMs);
+  const titleCardEndMs = titleCardStartMs + durationMs;
+  const titleCardTimeMs = Math.max(currentTimeMs, titleCardStartMs);
+
   return (
-    firstLyricStartMs >= minLeadMs &&
-    currentTimeMs >= 0 &&
-    currentTimeMs < durationMs &&
-    currentTimeMs < firstLyricStartMs
+    firstLyricStartMs >= titleCardStartMs + minLeadMs &&
+    titleCardTimeMs < titleCardEndMs &&
+    titleCardTimeMs < firstLyricStartMs
   );
 }
