@@ -384,6 +384,12 @@ function KaraokeTitleCard({
         ? "clamp(22px, min(5vw, 5vh), 64px)"
         : "clamp(22px, 5cqw, 64px)",
   };
+  const titleCardOuterStyle: CSSProperties = {
+    paddingLeft:
+      variant === "fullscreen"
+        ? "clamp(24px, min(6vw, 6vh), 80px)"
+        : "clamp(24px, 6cqw, 80px)",
+  };
   const regularTextStyle = useMemo((): TitleCardLineStyle => {
     switch (styleCategory) {
       case "outline-blue":
@@ -433,7 +439,8 @@ function KaraokeTitleCard({
   return (
     <motion.div
       key="karaoke-title-card"
-      className={`absolute inset-0 z-40 pointer-events-none flex items-end justify-center pl-12 pr-8 text-left text-white select-none ${bottomPaddingClass}`}
+      className={`absolute inset-0 z-40 pointer-events-none flex items-end justify-center pr-8 text-left text-white select-none ${bottomPaddingClass}`}
+      style={titleCardOuterStyle}
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 1.03 }}
