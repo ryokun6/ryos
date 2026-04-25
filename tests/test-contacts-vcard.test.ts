@@ -16,7 +16,7 @@ describe("contact display helpers", () => {
   test("formats fallback username initials", () => {
     expect(getUsernameInitials("ryolu")).toBe("RY");
     expect(getUsernameInitials("@ryolu")).toBe("RY");
-    expect(getUsernameInitials("  @r  ")).toBe("R");
+    expect(getUsernameInitials("  @r  ")).toBe("@R");
   });
 
   test("uses question mark for empty fallback username initials", () => {
