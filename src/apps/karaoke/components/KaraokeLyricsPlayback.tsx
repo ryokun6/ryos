@@ -15,11 +15,13 @@ import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
 import { useActivityState, isAnyActivityActive } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
+import { useCoverPalette } from "@/hooks/useCoverPalette";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { getEffectiveTranslationLanguage, type Track } from "@/stores/useIpodStore";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
+import { shouldShowKaraokeTitleCard } from "@/apps/karaoke/utils/titleCard";
 import {
   getLyricsFontClassName,
   LyricsFont as LyricsFontEnum,
@@ -199,12 +201,280 @@ const windowContainerStyle: CSSProperties = {
   gap: "clamp(0.3rem, 2.5cqw, 1rem)",
 };
 
+const TITLE_CARD_BASE_SHADOW = "0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.5)";
+const TITLE_CARD_GOLD_GLOW_COLOR_FALLBACK = "#FFD700";
+
+type TitleCardStyleCategory = "outline-blue" | "outline-red" | "glow-white" | "glow-gold" | "glow-gradient";
+type TitleCardLineStyle = Pick<
+  CSSProperties,
+  "color" | "filter" | "lineHeight" | "paintOrder" | "textShadow" | "WebkitTextStroke"
+>;
+
+function getTitleCardStyleCategory(className: string): TitleCardStyleCategory {
+  if (className.includes("font-lyrics-rounded") && !className.includes("gold-glow")) {
+    return "outline-blue";
+  }
+  if (className.includes("font-lyrics-serif-red")) return "outline-red";
+  if (className.includes("font-lyrics-gold-glow")) return "glow-gold";
+  if (className.includes("font-lyrics-gradient")) return "glow-gradient";
+  return "glow-white";
+}
+
+function titleCardHexToRgb(hex: string): [number, number, number] {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!match) return [255, 215, 0];
+  return [
+    Number.parseInt(match[1]!, 16),
+    Number.parseInt(match[2]!, 16),
+    Number.parseInt(match[3]!, 16),
+  ];
+}
+
+function titleCardRgbSaturation(r: number, g: number, b: number): number {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  if (max === min) return 0;
+  const lightness = (max + min) / 2;
+  return lightness > 0.5
+    ? (max - min) / (2 - max - min)
+    : (max - min) / (max + min);
+}
+
+function pickTitleCardPrimaryColor(palette: string[]): string {
+  let best = palette[0] ?? TITLE_CARD_GOLD_GLOW_COLOR_FALLBACK;
+  let bestScore = -1;
+
+  for (const hex of palette) {
+    const [r, g, b] = titleCardHexToRgb(hex);
+    const saturation = titleCardRgbSaturation(r, g, b);
+    const lightness = (r + g + b) / (3 * 255);
+    const lightnessBoost = 1 - Math.abs(lightness - 0.5) * 2;
+    const score = saturation * 0.7 + lightnessBoost * 0.3;
+    if (score > bestScore) {
+      bestScore = score;
+      best = hex;
+    }
+  }
+
+  return best;
+}
+
+function boostTitleCardGlowColor(hex: string): string {
+  const [r, g, b] = titleCardHexToRgb(hex);
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  let hue = 0;
+  const lightness = (max + min) / 2;
+  const delta = max - min;
+  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+
+  if (delta !== 0) {
+    if (max === rn) hue = ((gn - bn) / delta + 6) % 6;
+    else if (max === gn) hue = (bn - rn) / delta + 2;
+    else hue = (rn - gn) / delta + 4;
+    hue /= 6;
+  }
+
+  const boostedSaturation = Math.max(saturation, 0.85);
+  const boostedLightness = Math.max(Math.min(lightness, 0.65), 0.55);
+  const hslToRgb = (p: number, q: number, t: number) => {
+    let nextT = t;
+    if (nextT < 0) nextT += 1;
+    if (nextT > 1) nextT -= 1;
+    if (nextT < 1 / 6) return p + (q - p) * 6 * nextT;
+    if (nextT < 1 / 2) return q;
+    if (nextT < 2 / 3) return p + (q - p) * (2 / 3 - nextT) * 6;
+    return p;
+  };
+  const q =
+    boostedLightness < 0.5
+      ? boostedLightness * (1 + boostedSaturation)
+      : boostedLightness + boostedSaturation - boostedLightness * boostedSaturation;
+  const p = 2 * boostedLightness - q;
+  const ro = Math.round(hslToRgb(p, q, hue + 1 / 3) * 255);
+  const go = Math.round(hslToRgb(p, q, hue) * 255);
+  const bo = Math.round(hslToRgb(p, q, hue - 1 / 3) * 255);
+  return `#${ro.toString(16).padStart(2, "0")}${go.toString(16).padStart(2, "0")}${bo.toString(16).padStart(2, "0")}`;
+}
+
+function makeTitleCardGlow(hex: string) {
+  const [r, g, b] = titleCardHexToRgb(hex);
+  return {
+    color: hex,
+    shadow: `0 0 8px rgba(${r},${g},${b},0.8), 0 0 16px rgba(${r},${g},${b},0.4), 0 0 6px rgba(0,0,0,0.5)`,
+    filter: `drop-shadow(0 0 8px rgba(${r},${g},${b},0.5))`,
+    baseColor: `rgba(${r},${g},${b},0.6)`,
+  };
+}
+
 function buildFullscreenContainerStyle(): CSSProperties {
   return {
     gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
     paddingLeft: "env(safe-area-inset-left, 0px)",
     paddingRight: "env(safe-area-inset-right, 0px)",
   };
+}
+
+function KaraokeTitleCard({
+  title,
+  artist,
+  album,
+  fontClassName,
+  variant,
+  coverUrl,
+}: {
+  title: string;
+  artist?: string;
+  album?: string;
+  fontClassName: string;
+  variant: "window" | "fullscreen";
+  coverUrl?: string | null;
+}) {
+  const styleCategory = getTitleCardStyleCategory(fontClassName);
+  const palette = useCoverPalette(styleCategory === "glow-gold" ? (coverUrl ?? null) : null);
+  const primaryGlow = useMemo(
+    () => makeTitleCardGlow(boostTitleCardGlowColor(pickTitleCardPrimaryColor(palette))),
+    [palette]
+  );
+  const titleTextSizeClass =
+    variant === "fullscreen"
+      ? "karaoke-title-card-title-fullscreen"
+      : "karaoke-title-card-title-window";
+  const secondaryTextSizeClass =
+    variant === "fullscreen"
+      ? "karaoke-title-card-secondary-fullscreen"
+      : "karaoke-title-card-secondary-window";
+  const secondaryTextStyle: CSSProperties = {
+    lineHeight: 1.1,
+    opacity: 0.55,
+  };
+  const coverImageStyle: CSSProperties = {
+    width:
+      variant === "fullscreen"
+        ? "clamp(120px, min(24vw, 24vh), 320px)"
+        : "clamp(96px, 18cqw, 220px)",
+    height:
+      variant === "fullscreen"
+        ? "clamp(120px, min(24vw, 24vh), 320px)"
+        : "clamp(96px, 18cqw, 220px)",
+  };
+  const coverSleeveStyle: CSSProperties = {
+    background: "#1a1a1a",
+    borderRadius: "1%",
+    boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+  };
+  const regularTextStyle = useMemo((): TitleCardLineStyle => {
+    switch (styleCategory) {
+      case "outline-blue":
+      case "outline-red":
+        return {
+          color: "#fff",
+          lineHeight: 1,
+          WebkitTextStroke: "0.12em rgba(0,0,0,0.7)",
+          paintOrder: "stroke fill",
+          textShadow: "none",
+        };
+      case "glow-gold":
+        return {
+          color: primaryGlow.baseColor,
+          lineHeight: 1,
+          textShadow: TITLE_CARD_BASE_SHADOW,
+          filter: "none",
+        };
+      case "glow-gradient":
+        return {
+          color: "#888",
+          lineHeight: 1,
+          textShadow: TITLE_CARD_BASE_SHADOW,
+          filter: "none",
+        };
+      default:
+        return {
+          color: "rgba(255, 255, 255, 0.78)",
+          lineHeight: 1,
+          textShadow: TITLE_CARD_BASE_SHADOW,
+        };
+    }
+  }, [primaryGlow, styleCategory]);
+  const metadataLines = useMemo(() => {
+    const values: string[] = [];
+    for (const value of [artist, album]) {
+      const trimmed = value?.trim();
+      if (!trimmed) continue;
+      if (values.some((existing) => existing.toLocaleLowerCase() === trimmed.toLocaleLowerCase())) {
+        continue;
+      }
+      values.push(trimmed);
+    }
+    return values;
+  }, [album, artist]);
+
+  return (
+    <motion.div
+      key="karaoke-title-card"
+      className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center px-8 text-left text-white select-none"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 1.03 }}
+      transition={{ duration: 0.28 }}
+    >
+      <div className="max-w-[92%] -translate-y-[8%] flex items-center justify-center gap-[clamp(12px,2.5vw,28px)]">
+        {coverUrl && (
+          <div className="relative shrink-0" style={coverImageStyle}>
+            <div className="absolute inset-0 overflow-hidden" style={coverSleeveStyle}>
+              <img
+                src={coverUrl}
+                alt=""
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
+            </div>
+            <div
+              className="absolute top-full left-0 w-full pointer-events-none"
+              style={{ height: "50%" }}
+            >
+              <img
+                src={coverUrl}
+                alt=""
+                className="w-full h-auto"
+                style={{
+                  transform: "scaleY(-1)",
+                  opacity: 0.3,
+                  maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
+                  WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
+                  borderRadius: "1%",
+                }}
+                draggable={false}
+              />
+            </div>
+          </div>
+        )}
+        <div className="min-w-0 text-left">
+          <div
+            className={`${titleTextSizeClass} ${fontClassName} whitespace-pre-wrap break-words`}
+            style={regularTextStyle}
+          >
+            {title}
+          </div>
+          {metadataLines.map((metadataLine) => (
+            <div
+              key={metadataLine}
+              className={`text-white ${secondaryTextSizeClass} ${fontClassName} whitespace-pre-wrap break-words`}
+              style={secondaryTextStyle}
+            >
+              {metadataLine}
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
 }
 
 interface WindowLyricsProps {
@@ -279,6 +549,10 @@ export function KaraokeWindowLyricsOverlay({
 
   const currentTimeMs =
     (elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000;
+  const showTitleCard = shouldShowKaraokeTitleCard({
+    lines: lyricsControls.originalLines,
+    currentTimeMs,
+  });
 
   const bottomPadding =
     showControls || anyMenuOpen || !isPlaying ? "pb-20" : "pb-12";
@@ -289,40 +563,54 @@ export function KaraokeWindowLyricsOverlay({
     <>
       <div className="absolute inset-0 z-10 bg-black/50 pointer-events-none" />
       <div className="absolute inset-0 z-20 pointer-events-none karaoke-force-font">
-        <LyricsDisplay
-          lines={lyricsControls.lines}
-          originalLines={lyricsControls.originalLines}
-          currentLine={lyricsControls.currentLine}
-          isLoading={lyricsControls.isLoading}
-          error={lyricsControls.error}
-          visible={true}
-          videoVisible={true}
-          alignment={lyricsAlignment}
-          koreanDisplay={koreanDisplay}
-          japaneseFurigana={japaneseFurigana}
-          fontClassName={lyricsFontClassName}
-          onAdjustOffset={onAdjustOffset}
-          onSwipeUp={() => {
-            if (isOffline) showOfflineStatus();
-            else handleNext();
-          }}
-          onSwipeDown={() => {
-            if (isOffline) showOfflineStatus();
-            else handlePrevious();
-          }}
-          isTranslating={lyricsControls.isTranslating}
-          textSizeClass="karaoke-lyrics-text"
-          gapClass="gap-1"
-          containerStyle={windowContainerStyle}
-          interactive={true}
-          bottomPaddingClass={bottomPadding}
-          furiganaMap={furiganaMap}
-          soramimiMap={soramimiMap}
-          currentTimeMs={currentTimeMs}
-          showInterludeEllipsis
-          onSeekToTime={seekToTime}
-          coverUrl={coverUrl}
-        />
+        <AnimatePresence>
+          {showTitleCard && (
+            <KaraokeTitleCard
+              title={currentTrack.title}
+              artist={currentTrack.artist}
+              album={currentTrack.album}
+              fontClassName={lyricsFontClassName}
+              variant="window"
+              coverUrl={coverUrl}
+            />
+          )}
+        </AnimatePresence>
+        {!showTitleCard && (
+          <LyricsDisplay
+            lines={lyricsControls.lines}
+            originalLines={lyricsControls.originalLines}
+            currentLine={lyricsControls.currentLine}
+            isLoading={lyricsControls.isLoading}
+            error={lyricsControls.error}
+            visible={true}
+            videoVisible={true}
+            alignment={lyricsAlignment}
+            koreanDisplay={koreanDisplay}
+            japaneseFurigana={japaneseFurigana}
+            fontClassName={lyricsFontClassName}
+            onAdjustOffset={onAdjustOffset}
+            onSwipeUp={() => {
+              if (isOffline) showOfflineStatus();
+              else handleNext();
+            }}
+            onSwipeDown={() => {
+              if (isOffline) showOfflineStatus();
+              else handlePrevious();
+            }}
+            isTranslating={lyricsControls.isTranslating}
+            textSizeClass="karaoke-lyrics-text"
+            gapClass="gap-1"
+            containerStyle={windowContainerStyle}
+            interactive={true}
+            bottomPaddingClass={bottomPadding}
+            furiganaMap={furiganaMap}
+            soramimiMap={soramimiMap}
+            currentTimeMs={currentTimeMs}
+            showInterludeEllipsis
+            onSeekToTime={seekToTime}
+            coverUrl={coverUrl}
+          />
+        )}
       </div>
     </>
   );
@@ -399,6 +687,10 @@ export function KaraokeFullscreenLyricsOverlay({
 
   const currentTimeMs =
     (elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000;
+  const showTitleCard = shouldShowKaraokeTitleCard({
+    lines: lyricsControls.originalLines,
+    currentTimeMs,
+  });
 
   const bottomPadding = controlsVisible ? "pb-28" : "pb-16";
 
@@ -408,48 +700,62 @@ export function KaraokeFullscreenLyricsOverlay({
     <>
       <div className="fixed inset-0 bg-black/50 z-10 pointer-events-none" />
       <div className="absolute inset-0 z-20 pointer-events-none" data-lyrics>
-        <LyricsDisplay
-          lines={lyricsControls.lines}
-          originalLines={lyricsControls.originalLines}
-          currentLine={lyricsControls.currentLine}
-          isLoading={lyricsControls.isLoading}
-          error={lyricsControls.error}
-          visible={true}
-          videoVisible={true}
-          alignment={lyricsAlignment}
-          koreanDisplay={koreanDisplay}
-          japaneseFurigana={japaneseFurigana}
-          fontClassName={lyricsFontClassName}
-          onAdjustOffset={onAdjustOffset}
-          onSwipeUp={() => {
-            if (onSwipeUpOverride) {
-              onSwipeUpOverride();
-              return;
-            }
-            if (isOffline) showOfflineStatus();
-            else handleNext();
-          }}
-          onSwipeDown={() => {
-            if (onSwipeDownOverride) {
-              onSwipeDownOverride();
-              return;
-            }
-            if (isOffline) showOfflineStatus();
-            else handlePrevious();
-          }}
-          isTranslating={lyricsControls.isTranslating}
-          textSizeClass="fullscreen-lyrics-text"
-          gapClass="gap-0"
-          containerStyle={buildFullscreenContainerStyle()}
-          interactive={true}
-          bottomPaddingClass={bottomPadding}
-          furiganaMap={furiganaMap}
-          soramimiMap={soramimiMap}
-          currentTimeMs={currentTimeMs}
-          showInterludeEllipsis
-          onSeekToTime={seekToTime}
-          coverUrl={coverUrl}
-        />
+        <AnimatePresence>
+          {showTitleCard && (
+            <KaraokeTitleCard
+              title={currentTrack.title}
+              artist={currentTrack.artist}
+              album={currentTrack.album}
+              fontClassName={lyricsFontClassName}
+              variant="fullscreen"
+              coverUrl={coverUrl}
+            />
+          )}
+        </AnimatePresence>
+        {!showTitleCard && (
+          <LyricsDisplay
+            lines={lyricsControls.lines}
+            originalLines={lyricsControls.originalLines}
+            currentLine={lyricsControls.currentLine}
+            isLoading={lyricsControls.isLoading}
+            error={lyricsControls.error}
+            visible={true}
+            videoVisible={true}
+            alignment={lyricsAlignment}
+            koreanDisplay={koreanDisplay}
+            japaneseFurigana={japaneseFurigana}
+            fontClassName={lyricsFontClassName}
+            onAdjustOffset={onAdjustOffset}
+            onSwipeUp={() => {
+              if (onSwipeUpOverride) {
+                onSwipeUpOverride();
+                return;
+              }
+              if (isOffline) showOfflineStatus();
+              else handleNext();
+            }}
+            onSwipeDown={() => {
+              if (onSwipeDownOverride) {
+                onSwipeDownOverride();
+                return;
+              }
+              if (isOffline) showOfflineStatus();
+              else handlePrevious();
+            }}
+            isTranslating={lyricsControls.isTranslating}
+            textSizeClass="fullscreen-lyrics-text"
+            gapClass="gap-0"
+            containerStyle={buildFullscreenContainerStyle()}
+            interactive={true}
+            bottomPaddingClass={bottomPadding}
+            furiganaMap={furiganaMap}
+            soramimiMap={soramimiMap}
+            currentTimeMs={currentTimeMs}
+            showInterludeEllipsis
+            onSeekToTime={seekToTime}
+            coverUrl={coverUrl}
+          />
+        )}
       </div>
     </>
   );
