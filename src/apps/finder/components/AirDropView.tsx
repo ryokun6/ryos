@@ -3,17 +3,11 @@ import type { DragEvent } from "react";
 import { useAirDropStore } from "@/stores/useAirDropStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useContactsStore } from "@/stores/useContactsStore";
-import { getContactInitials } from "@/utils/contacts";
+import { getContactInitials, getUsernameInitials } from "@/utils/contacts";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { Button } from "@/components/ui/button";
-
-function getUsernameInitials(username: string): string {
-  const base = username.replace(/^@+/, "").trim();
-  if (!base) return "?";
-  return base.slice(0, 2).toUpperCase();
-}
 
 const avatarInitialsTextShadow =
   "0 2px 3px rgba(0, 0, 0, 0.45), 0 0 3px rgba(0, 0, 0, 0.15)";

@@ -41,7 +41,7 @@ import { getTelegramLinkedAccountLabel } from "@/hooks/useTelegramLink";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { useContactsStore } from "@/stores/useContactsStore";
-import { getContactInitials } from "@/utils/contacts";
+import { getContactInitials, getUsernameInitials } from "@/utils/contacts";
 import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -140,12 +140,6 @@ function formatSyncStatus(
   }
 
   return parts.join(" · ");
-}
-
-function getUsernameInitials(username: string): string {
-  const base = username.replace(/^@+/, "").trim();
-  if (!base) return "?";
-  return base.slice(0, 2).toUpperCase();
 }
 
 const AUTO_SYNC_ITEM_ICONS = {

@@ -607,6 +607,12 @@ export function getContactInitials(contact: Contact): string {
     .join("");
 }
 
+export function getUsernameInitials(username: string): string {
+  const base = username.replace(/^@+/, "").trim();
+  if (!base) return "?";
+  return base.slice(0, 2).toUpperCase();
+}
+
 export function getContactSummary(contact: Contact): string {
   const details = dedupeStrings([
     ...contact.emails.map((item) => item.value),

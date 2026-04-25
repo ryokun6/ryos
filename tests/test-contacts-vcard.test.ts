@@ -9,7 +9,22 @@ import {
   normalizeContacts,
   parseVCardText,
   seedDefaultContacts,
+  getUsernameInitials,
 } from "../src/utils/contacts";
+
+describe("contact display helpers", () => {
+  test("formats fallback username initials", () => {
+    expect(getUsernameInitials("ryolu")).toBe("RY");
+    expect(getUsernameInitials("@ryolu")).toBe("RY");
+    expect(getUsernameInitials("  @r  ")).toBe("R");
+  });
+
+  test("uses question mark for empty fallback username initials", () => {
+    expect(getUsernameInitials("")).toBe("?");
+    expect(getUsernameInitials("@@@")).toBe("?");
+    expect(getUsernameInitials("   ")).toBe("?");
+  });
+});
 
 describe("contacts vCard parsing", () => {
   test("parses multiple vcards and captures telegram urls", () => {
