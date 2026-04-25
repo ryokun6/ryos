@@ -951,15 +951,8 @@ export const useSynthLogic = ({
     // Tone.js adds a small scheduling lookAhead (default 0.1 s) which can make the
     // keyboard feel sluggish.  Setting it to 0 removes the intentional delay so
     // that notes are triggered immediately when requested.
-    try {
-      // In some environments Tone.context might not be ready yet, so we wrap in try/catch
-      if (Tone && Tone.context) {
-        // Tone's type defs don't expose lookAhead as writable
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (Tone.context as any).lookAhead = 0;
-      }
-    } catch {
-      // Ignore if Tone isn't available – worst case we keep the default value.
+    if (Tone.context) {
+      (Tone.context as typeof Tone.context & { lookAhead?: number }).lookAhead = 0;
     }
   }, []);
 

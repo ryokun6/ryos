@@ -206,9 +206,6 @@ export function getClientIp(
   }
 }
 
-/** @deprecated Use getClientIp instead */
-export const getClientIpFromVercel = getClientIp;
-
 /**
  * Build a stable key string from key parts.
  */

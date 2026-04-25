@@ -1362,14 +1362,6 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             console.log("[ChatsStore] Migration data:", migratedState);
 
-            // Clean up old keys (Optional - uncomment if desired after confirming migration)
-            // localStorage.removeItem('chats:messages');
-            // localStorage.removeItem('chats:lastOpenedRoomId');
-            // localStorage.removeItem('chats:sidebarVisible');
-            // localStorage.removeItem('chats:cachedRooms');
-            // localStorage.removeItem('chats:cachedRoomMessages');
-            // console.log("[ChatsStore] Old localStorage keys potentially removed.");
-
             const finalMigratedState = {
               ...getInitialState(),
               ...migratedState,

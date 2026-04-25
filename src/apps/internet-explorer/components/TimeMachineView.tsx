@@ -5,9 +5,8 @@ import { X, Sparkle, Export } from "@phosphor-icons/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { Button } from "@/components/ui/button";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
-import GalaxyBackground, {
-  ShaderType,
-} from "@/components/shared/GalaxyBackground";
+import GalaxyBackground from "@/components/shared/GalaxyBackground";
+import { ShaderType } from "@/types/shader";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -392,7 +391,6 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
 
     const determineSource = async () => {
       try {
-        // Local caching removed to save localStorage space
         console.log(
           `[TimeMachine] Determining API source for ${currentUrl} (${previewYear})...`
         );
@@ -479,7 +477,6 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
               setPreviewStatus("success");
               // No iframe involved
               setIsIframeLoaded(true);
-              // Local caching removed to save localStorage space
             } else if (aiResponse.status === 404) {
               console.log(
                 `[TimeMachine] AI Fetch MISS (404) for ${currentUrl} (${previewYear}).`

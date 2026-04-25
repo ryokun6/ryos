@@ -12,7 +12,7 @@ import { validateAuth } from "./auth/index.js";
 // ============================================================================
 
 export { createRedis } from "./redis.js";
-export { getClientIp, getClientIpFromVercel } from "./_rate-limit.js";
+export { getClientIp } from "./_rate-limit.js";
 export { getEffectiveOrigin, isAllowedOrigin, handlePreflight, setCorsHeaders } from "./_cors.js";
 export type { SetCorsHeadersOptions } from "./_cors.js";
 export { extractAuth, extractAuthNormalized } from "./auth/index.js";

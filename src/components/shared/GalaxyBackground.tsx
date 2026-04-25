@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { ShaderType } from "@/types/shader";
 
-// Re-export for backwards compatibility
 export { ShaderType };
 
 interface GalaxyBackgroundProps {
@@ -20,21 +19,7 @@ const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
   const clockRef = useRef(new THREE.Clock()); // Use Clock for time uniform
   const shaderEffectEnabled = useDisplaySettingsStore((state) => state.shaderEffectEnabled);
 
-  // Combined state for rendering condition - removed screen size check
   const shouldRender = forceRender || shaderEffectEnabled;
-
-  // Check initial screen width and add resize listener - REMOVED
-  // useEffect(() => {
-  //   const checkScreenWidth = () => {
-  //     // Use a common breakpoint like 768px (Tailwind 'md') or 640px ('sm')
-  //     setIsLargeScreen(window.innerWidth >= 640); // Update screen size state
-  //   };
-  //
-  //   checkScreenWidth(); // Initial check
-  //   window.addEventListener('resize', checkScreenWidth);
-  //
-  //   return () => window.removeEventListener('resize', checkScreenWidth);
-  // }, []);
 
   useEffect(() => {
     if (!shouldRender || !mountRef.current) return;

@@ -311,7 +311,7 @@ export function useFinderLogic({
     (type: ViewType) => {
       // Persist per-path preference
       setViewTypeForPath(currentPath, type);
-      // Keep instance state in sync for compatibility
+      // Keep this Finder window's view state in sync with the instance store
       if (instanceId) {
         updateFinderInstance(instanceId, { viewType: type });
       }
@@ -419,14 +419,10 @@ export function useFinderLogic({
     [moveToTrash, pushUndoAction]
   );
 
-  // Wrap the original handleFileOpen - now only calls the original without TextEditStore updates
   const handleFileOpen = async (file: FileItem, launchOrigin?: LaunchOriginRect) => {
-    // Call original file open handler from useFileSystem
     originalHandleFileOpen(file, launchOrigin);
-    // TextEditStore updates removed - TextEdit instances now manage their own state
   };
 
-  // Use the original saveFile directly without TextEditStore updates
   const saveFile = originalSaveFile;
 
   // Update storage space periodically
@@ -1397,22 +1393,17 @@ export function useFinderLogic({
     if (currentPath === "/") {
       return t("apps.finder.window.macintoshHd");
     }
-    // Get the last path segment and decode it
     const lastSegment = currentPath.split("/").filter(Boolean).pop() || "";
+    let decodedName = lastSegment;
     try {
-      const decodedName = decodeURIComponent(lastSegment);
-      // Use localized folder name if available
-      return (
-        getTranslatedFolderNameFromName(decodedName) ||
-        t("apps.finder.window.finder")
-      );
+      decodedName = decodeURIComponent(lastSegment);
     } catch {
-      // Use localized folder name even if decode fails
-      return (
-        getTranslatedFolderNameFromName(lastSegment) ||
-        t("apps.finder.window.finder")
-      );
+      decodedName = lastSegment;
     }
+    return (
+      getTranslatedFolderNameFromName(decodedName) ||
+      t("apps.finder.window.finder")
+    );
   }, [currentPath, isAirDropView, t]);
 
   // Drag handlers

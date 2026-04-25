@@ -1381,12 +1381,7 @@ export function useAppletViewerLogic({
         doc?.addEventListener("touchstart", handleInteract, true);
         doc?.addEventListener("keydown", handleInteract, true);
         doc?.addEventListener("focusin", handleInteract, true);
-
-        try {
-          frameWindow?.addEventListener("focus", handleInteract);
-        } catch {
-          // Ignore cross-origin focus attachment errors
-        }
+        frameWindow?.addEventListener("focus", handleInteract);
 
         return () => {
           doc?.removeEventListener("pointerdown", handleInteract, true);
@@ -1394,11 +1389,7 @@ export function useAppletViewerLogic({
           doc?.removeEventListener("touchstart", handleInteract, true);
           doc?.removeEventListener("keydown", handleInteract, true);
           doc?.removeEventListener("focusin", handleInteract, true);
-          try {
-            frameWindow?.removeEventListener("focus", handleInteract);
-          } catch {
-            // Ignore cross-origin focus removal errors
-          }
+          frameWindow?.removeEventListener("focus", handleInteract);
         };
       } catch {
         return;

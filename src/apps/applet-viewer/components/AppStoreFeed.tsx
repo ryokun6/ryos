@@ -384,9 +384,6 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentIndex, applets.length, scrollToIndex]);
 
-  // Note: Removed useEffect hooks that synced refs with state
-  // useLatestRef handles this automatically during render
-
   useImperativeHandle(ref, () => ({
     goToNext: () => {
       if (currentIndexRef.current < appletsLengthRef.current - 1) {

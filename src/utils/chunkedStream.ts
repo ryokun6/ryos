@@ -54,14 +54,6 @@ export interface SoramimiStreamInfo {
   skipReason?: string;
 }
 
-// Legacy type aliases for backwards compatibility
-/** @deprecated Use TranslationStreamInfo instead */
-export type TranslationChunkInfo = TranslationStreamInfo;
-/** @deprecated Use FuriganaStreamInfo instead */
-export type FuriganaChunkInfo = FuriganaStreamInfo;
-/** @deprecated Use SoramimiStreamInfo instead */
-export type SoramimiChunkInfo = SoramimiStreamInfo;
-
 // =============================================================================
 // Translation SSE Processing (Line-by-line streaming)
 // =============================================================================

@@ -72,15 +72,13 @@ interface HelpDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   helpItems: HelpCardProps[];
-  appName?: string; // Deprecated: use appId instead
-  appId?: AppId; // Preferred: will use localized app name
+  appId: AppId;
 }
 
 export function HelpDialog({
   isOpen,
   onOpenChange,
   helpItems = [],
-  appName,
   appId,
 }: HelpDialogProps) {
   const { t } = useTranslation();
@@ -89,14 +87,12 @@ export function HelpDialog({
   const isMacTheme = currentTheme === "macosx";
   const launchApp = useAppStore((state) => state.launchApp);
 
-  // Use localized app name if appId is provided, otherwise fall back to appName
-  const displayAppName = appId ? getTranslatedAppName(appId) : appName || "";
+  const displayAppName = getTranslatedAppName(appId);
 
   const handleViewDocs = () => {
-    // Get the doc name for this app (use mapping or fall back to appId)
-    const docName = appId ? (APP_DOC_NAMES[appId] || appId) : "";
+    const docName = APP_DOC_NAMES[appId] || appId;
     const docsBaseUrl = getDocsBaseUrl();
-    const docsUrl = docName ? `${docsBaseUrl}/${docName}` : docsBaseUrl;
+    const docsUrl = `${docsBaseUrl}/${docName}`;
 
     launchApp("internet-explorer", {
       url: docsUrl,

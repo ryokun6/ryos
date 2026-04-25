@@ -360,17 +360,6 @@ function classifyYear(year: string): NavigationMode {
   return yearNum > currentYear ? "future" : "past";
 }
 
-// Cache related types and functions (removed for localStorage space)
-
-// Define type for iframe check response (copied from component)
-/*
-interface IframeCheckResponse {
-  allowed: boolean;
-  reason?: string;
-  title?: string;
-}
-*/
-
 // Define type for error response (copied from component)
 export interface ErrorResponse {
   // Make exportable if needed elsewhere
@@ -416,8 +405,6 @@ interface InternetExplorerStore {
   isClearHistoryDialogOpen: boolean;
   isResetFavoritesDialogOpen: boolean; // New
   isFutureSettingsDialogOpen: boolean; // New
-
-  // AI caching (removed)
 
   // Timeline settings
   timelineSettings: { [year: string]: string };
@@ -479,8 +466,6 @@ interface InternetExplorerStore {
   setClearHistoryDialogOpen: (isOpen: boolean) => void;
   setResetFavoritesDialogOpen: (isOpen: boolean) => void; // New
   setFutureSettingsDialogOpen: (isOpen: boolean) => void; // New
-
-  // Cache actions (removed)
 
   // Timeline actions
   setTimelineSettings: (settings: { [year: string]: string }) => void;

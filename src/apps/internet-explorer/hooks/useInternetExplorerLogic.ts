@@ -833,8 +833,6 @@ export function useInternetExplorerLogic({
           newMode === "future" ||
           (newMode === "past" && parseInt(targetYearParam) <= 1995)
         ) {
-          // Local caching removed to save localStorage space
-
           let remoteCacheHit = false;
           if (!forceRegenerate) {
             try {
@@ -874,8 +872,6 @@ export function useInternetExplorerLogic({
                   /^<!--\s*TITLE:.*?-->\s*\n?/,
                   ""
                 );
-
-                // Local caching removed to save localStorage space
                 // Refresh cached years to update the count
                 fetchCachedYears(normalizedTargetUrl);
 

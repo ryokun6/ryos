@@ -1,8 +1,6 @@
 import { useRef, useCallback } from "react";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { createAudioFromBase64 } from "@/utils/audio";
-// WaveSurfer import will be removed as it's moving to SoundGrid
-// import type WaveSurfer from "wavesurfer.js";
 
 export const useSoundboard = () => {
   // Selectors from Zustand store
@@ -24,8 +22,6 @@ export const useSoundboard = () => {
   );
 
   const audioRefs = useRef<(HTMLAudioElement | null)[]>(Array(9).fill(null));
-
-  // Removed automatic initialization - now handled by the app component
 
   const activeBoard = boards.find((b) => b.id === activeBoardId);
 
@@ -121,16 +117,11 @@ export const useSoundboard = () => {
     [updateSlotState]
   );
 
-  // Waveform related logic is removed from here
-  // handleWaveformCreate is removed
-  // waveformRefs is removed
-
   return {
     boards,
     activeBoard: activeBoard || (boards.length > 0 ? boards[0] : null), // Fallback for activeBoard
     activeBoardId,
     playbackStates,
-    // waveformRefs removed
     setActiveBoardId: setActiveBoardIdAction,
     addNewBoard,
     updateBoardName,
@@ -139,9 +130,5 @@ export const useSoundboard = () => {
     deleteSlot,
     playSound,
     stopSound,
-    // handleWaveformCreate removed
-    // Expose store setters directly if needed by components, or keep wrapped actions
-    // setBoards: useSoundboardStore((state) => state._setBoards_internal), // Example if needed
-    // setPlaybackStates: useSoundboardStore((state) => state.setPlaybackStates), // Example if needed
   };
 };
