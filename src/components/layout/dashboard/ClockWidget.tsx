@@ -3,7 +3,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type ClockWidgetConfig } from "@/stores/useDashboardStore";
 import { MapPin, MagnifyingGlass, NavigationArrow } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
-import { formatCityLabel, getPopularCities, type CityResult } from "./citySearch";
+import { formatCityLabel, getPopularCities, searchNominatimCities, type CityResult } from "./citySearch";
 
 function getCityFromTimezone(tz?: string): string {
   try {
@@ -216,23 +216,8 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
     }
     setSearching(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const results: CityResult[] = data
-          .filter((r: { type: string; class: string }) =>
-            ["city", "town", "village", "administrative"].includes(r.type) || r.class === "place"
-          )
-          .slice(0, 5)
-          .map((r: { address?: { city?: string; town?: string; village?: string; state?: string; country_code?: string }; display_name?: string; lat: string; lon: string }) => ({
-            name: r.address?.city || r.address?.town || r.address?.village || r.display_name?.split(",")[0] || "",
-            country: (r.address?.country_code || "").toUpperCase(),
-            state: r.address?.state,
-            lat: parseFloat(r.lat),
-            lon: parseFloat(r.lon),
-          }));
+      const results = await searchNominatimCities(query);
+      if (results) {
         setSearchResults(results);
       }
     } catch {

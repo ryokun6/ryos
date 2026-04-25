@@ -9,6 +9,23 @@ export interface CityResult {
   cityKey?: string;
 }
 
+interface NominatimCityResult {
+  type: string;
+  class: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    state?: string;
+    country_code?: string;
+  };
+  display_name?: string;
+  lat: string;
+  lon: string;
+}
+
+const NOMINATIM_CITY_TYPES = ["city", "town", "village", "administrative"];
+
 export function getPopularCities(t: TFunction): CityResult[] {
   return [
     { name: t("apps.dashboard.cities.newYork"), country: "US", state: "NY", lat: 40.7128, lon: -74.006, cityKey: "apps.dashboard.cities.newYork" },
@@ -30,4 +47,35 @@ export function formatCityLabel(city: CityResult): string {
   if (city.state) parts.push(city.state);
   parts.push(city.country);
   return parts.join(", ");
+}
+
+export function mapNominatimCityResults(data: NominatimCityResult[]): CityResult[] {
+  return data
+    .filter((result) => NOMINATIM_CITY_TYPES.includes(result.type) || result.class === "place")
+    .slice(0, 5)
+    .map((result) => ({
+      name:
+        result.address?.city ||
+        result.address?.town ||
+        result.address?.village ||
+        result.display_name?.split(",")[0] ||
+        "",
+      country: (result.address?.country_code || "").toUpperCase(),
+      state: result.address?.state,
+      lat: parseFloat(result.lat),
+      lon: parseFloat(result.lon),
+    }));
+}
+
+export async function searchNominatimCities(query: string): Promise<CityResult[] | null> {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`
+  );
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const data = await res.json();
+  return mapNominatimCityResults(data);
 }

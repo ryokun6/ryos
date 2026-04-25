@@ -32,20 +32,7 @@ import {
   type AdminSection,
 } from "../utils/navigationState";
 import { helpItems } from "..";
-
-/**
- * Format Kugou image URL with size and HTTPS
- * Kugou URLs contain {size} placeholder that needs to be replaced
- */
-function formatKugouImageUrl(
-  imgUrl: string | undefined,
-  size: number = 100
-): string | null {
-  if (!imgUrl) return null;
-  let url = imgUrl.replace("{size}", String(size));
-  url = url.replace(/^http:\/\//, "https://");
-  return url;
-}
+import { formatKugouImageUrl } from "@/utils/kugouImageUrl";
 
 interface User {
   username: string;

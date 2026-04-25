@@ -3,6 +3,7 @@
  */
 
 import { createRedis } from "../../_utils/redis.js";
+import { parseJSON } from "../../_utils/parse-json.js";
 import type { ListenSession } from "./_types.js";
 import {
   LISTEN_SESSION_PREFIX,
@@ -34,19 +35,6 @@ export function generateSessionId(): string {
 
 export function getCurrentTimestamp(): number {
   return Date.now();
-}
-
-export function parseJSON<T>(data: unknown): T | null {
-  if (!data) return null;
-  if (typeof data === "object") return data as T;
-  if (typeof data === "string") {
-    try {
-      return JSON.parse(data) as T;
-    } catch {
-      return null;
-    }
-  }
-  return null;
 }
 
 export function parseSessionData(data: unknown): ListenSession | null {

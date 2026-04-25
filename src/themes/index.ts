@@ -11,10 +11,6 @@ export const themes: Record<OsThemeId, OsTheme> = {
   win98,
 };
 
-export function getTheme(id: OsThemeId): OsTheme {
-  return themes[id];
-}
-
 /**
  * Get theme metadata for layout and conditional rendering decisions.
  * Centralizes theme-based checks like isWindows, hasDock, etc.

@@ -5,6 +5,7 @@
 
 import type { Redis } from "../../_utils/redis.js";
 import { createRedis } from "../../_utils/redis.js";
+import { parseJSON } from "../../_utils/parse-json.js";
 import type { Room, User, Message } from "./_types.js";
 import {
   CHAT_ROOM_PREFIX,
@@ -49,22 +50,6 @@ export function generateId(): string {
  */
 export function getCurrentTimestamp(): number {
   return Date.now();
-}
-
-/**
- * Parse JSON data safely
- */
-export function parseJSON<T>(data: unknown): T | null {
-  if (!data) return null;
-  if (typeof data === "object") return data as T;
-  if (typeof data === "string") {
-    try {
-      return JSON.parse(data) as T;
-    } catch {
-      return null;
-    }
-  }
-  return null;
 }
 
 /**
