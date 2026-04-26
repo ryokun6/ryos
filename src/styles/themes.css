@@ -1785,6 +1785,156 @@
   letter-spacing: 0.05em !important;
 }
 
+/* Interlude ● — smaller in rounded/serif/gold faces (glyph is oversized vs sans/gradient) */
+:root[data-os-theme="macosx"]
+  .karaoke-force-font
+  .karaoke-lyrics-text:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(17px, 0.52em, 45px) !important;
+}
+
+:root[data-os-theme="macosx"]
+  .karaoke-force-font
+  .lyrics-interlude-stack--karaoke:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(17px, 4.15cqw, 45px) !important;
+}
+
+:root[data-os-theme="macosx"]
+  .ipod-force-font
+  .fullscreen-lyrics-text:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .karaoke-force-font
+  .fullscreen-lyrics-text:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(17px, min(5.2vw, 5.2vh), 45px) !important;
+}
+
+:root[data-os-theme="macosx"]
+  .ipod-force-font
+  .fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .karaoke-force-font
+  .fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(17px, min(5.2vw, 5.2vh), 45px) !important;
+}
+
+:root[data-os-theme="macosx"]
+  .lyrics-interlude-stack--ipod:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(15px, min(4vw, 4vh), 28px) !important;
+}
+
+/* Old-school interlude dots: match main lyric stroke thickness (dot font-size < lyric) */
+:root[data-os-theme="macosx"] .lyrics-old-school .karaoke-interlude-circle-dots {
+  --interlude-dot-stroke-scale: 1.212121;
+}
+
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .karaoke-force-font
+  .karaoke-lyrics-text:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .karaoke-force-font
+  .lyrics-interlude-stack--karaoke:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .ipod-force-font
+  .fullscreen-lyrics-text:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .karaoke-force-font
+  .fullscreen-lyrics-text:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .ipod-force-font
+  .fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif-red
+  )
+  .karaoke-interlude-circle-dots,
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .karaoke-force-font
+  .fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif-red
+  )
+  .karaoke-interlude-circle-dots {
+  --interlude-dot-stroke-scale: 1.923077;
+}
+
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .lyrics-interlude-stack--ipod:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots {
+  --interlude-dot-stroke-scale: 1.5625;
+}
+
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .karaoke-interlude-circle-dots
+  .lyrics-word-highlight
+  > .lyrics-word-layer:first-child {
+  -webkit-text-stroke-width: calc(0.12em * var(--interlude-dot-stroke-scale, 1.212121)) !important;
+  -webkit-text-stroke-color: rgba(0, 0, 0, 0.7) !important;
+  paint-order: stroke fill !important;
+}
+
+:root[data-os-theme="macosx"]
+  .lyrics-old-school
+  .karaoke-interlude-circle-dots
+  .lyrics-word-highlight
+  > .lyrics-word-layer:last-child
+  > span {
+  -webkit-text-stroke-width: calc(0.12em * var(--interlude-dot-stroke-scale, 1.212121)) !important;
+  -webkit-text-stroke-color: #fff !important;
+  paint-order: stroke fill !important;
+}
+
 /* Preserve karaoke status text size on macOS theme */
 :root[data-os-theme="macosx"] .karaoke-status-text {
   font-size: clamp(18px, 5cqmin, 48px) !important;

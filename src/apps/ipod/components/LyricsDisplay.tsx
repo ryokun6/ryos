@@ -281,7 +281,6 @@ function makeGlowFromColor(hex: string) {
 const GRADIENT_COLORS = "#00FFFF"; // Cyan starting color (hue-rotate will cycle it)
 const GRADIENT_GLOW_SHADOW = "0 0 6px rgba(0,255,255,0.5), 0 0 12px rgba(0,255,255,0.3), 0 0 4px rgba(0,0,0,0.3)";
 const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 6px rgba(0,255,255,0.5)) drop-shadow(0 0 12px rgba(0,255,255,0.3))";
-const GRADIENT_BASE_COLOR = "#888"; // Flat gray for inactive
 
 // Style category detection
 type StyleCategory = 'outline-blue' | 'outline-red' | 'glow-white' | 'glow-gold' | 'glow-gradient';
@@ -1641,7 +1640,7 @@ function LyricsLineRowContent({
               : "lyrics-interlude-stack--ipod";
           return (
             <div
-              className={`${textSizeClass} lyrics-interlude-inline-with-line lyrics-interlude-stack flex w-full max-w-full flex-col gap-y-0 ${interludeStackItemsClass(lineTextAlign)} ${interludeStackKind}`}
+              className={`${textSizeClass} ${fontClassName} lyrics-interlude-inline-with-line lyrics-interlude-stack flex w-full max-w-full flex-col gap-y-0 ${interludeStackItemsClass(lineTextAlign)} ${interludeStackKind}`}
             >
               <AnimatePresence
                 initial={false}
@@ -2043,11 +2042,10 @@ export function LyricsDisplay({
     }
   };
   
-  // Get base color for colored glow styles (inactive state)
+  // Get base color for colored glow styles (inactive state). Gradient matches glow-white (semi-transparent white + opacity-55 on word layers).
   const getBaseColor = (): string | undefined => {
     switch (styleCategory) {
       case 'glow-gold': return primaryGlow.baseColor;
-      case 'glow-gradient': return GRADIENT_BASE_COLOR;
       default: return undefined;
     }
   };

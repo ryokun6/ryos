@@ -663,6 +663,115 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   letter-spacing: 0.05em !important;
 }
 
+/*
+ * U+25CF is much larger in rounded/serif faces (VAGRounded, Charter, etc.) than in sans/gradient
+ * at the same font-size — scale down so interlude dots match sans/gradient visually.
+ */
+.karaoke-force-font
+  .karaoke-lyrics-text:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(17px, 0.52em, 45px) !important;
+}
+
+.karaoke-force-font
+  .lyrics-interlude-stack--karaoke:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(17px, 4.15cqw, 45px) !important;
+}
+
+.fullscreen-lyrics-text:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(17px, min(5.2vw, 5.2vh), 45px) !important;
+}
+
+.fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(17px, min(5.2vw, 5.2vh), 45px) !important;
+}
+
+.lyrics-interlude-stack--ipod:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif,
+    .font-lyrics-serif-red,
+    .font-lyrics-gold-glow
+  )
+  .karaoke-interlude-circle-dots {
+  font-size: clamp(15px, min(4vw, 4vh), 28px) !important;
+}
+
+/*
+ * Old-school interlude ● uses a smaller font-size than the lyric line; -webkit-text-stroke is em-based
+ * on the dot layer, so compensate so outline thickness matches the main lyric (~0.12em of lyric size).
+ */
+.lyrics-old-school .karaoke-interlude-circle-dots {
+  --interlude-dot-stroke-scale: 1.212121; /* 1/0.825 — default dot/lyric ratio */
+}
+
+.lyrics-old-school
+  .karaoke-force-font
+  .karaoke-lyrics-text:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots,
+.lyrics-old-school
+  .karaoke-force-font
+  .lyrics-interlude-stack--karaoke:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots,
+.lyrics-old-school
+  .fullscreen-lyrics-text:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots,
+.lyrics-old-school
+  .fullscreen-lyrics-text.lyrics-interlude-stack--fullscreen:is(
+    .font-lyrics-rounded,
+    .font-lyrics-serif-red
+  )
+  .karaoke-interlude-circle-dots {
+  --interlude-dot-stroke-scale: 1.923077; /* ~1/0.52 — compact glyph sizing for rounded/serif-red */
+}
+
+.lyrics-old-school
+  .lyrics-interlude-stack--ipod:is(.font-lyrics-rounded, .font-lyrics-serif-red)
+  .karaoke-interlude-circle-dots {
+  --interlude-dot-stroke-scale: 1.5625; /* ~1/0.64 — iPod stack compact dots */
+}
+
+.lyrics-old-school
+  .karaoke-interlude-circle-dots
+  .lyrics-word-highlight
+  > .lyrics-word-layer:first-child {
+  -webkit-text-stroke-width: calc(0.12em * var(--interlude-dot-stroke-scale, 1.212121)) !important;
+  -webkit-text-stroke-color: rgba(0, 0, 0, 0.7) !important;
+  paint-order: stroke fill !important;
+}
+
+.lyrics-old-school
+  .karaoke-interlude-circle-dots
+  .lyrics-word-highlight
+  > .lyrics-word-layer:last-child
+  > span {
+  -webkit-text-stroke-width: calc(0.12em * var(--interlude-dot-stroke-scale, 1.212121)) !important;
+  -webkit-text-stroke-color: #fff !important;
+  paint-order: stroke fill !important;
+}
+
 @keyframes highlight-bg-opacity {
   0%,
   100% {

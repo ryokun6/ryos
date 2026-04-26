@@ -415,12 +415,6 @@ function KaraokeTitleCard({
           filter: "none",
         };
       case "glow-gradient":
-        return {
-          color: "#888",
-          lineHeight: 1,
-          textShadow: TITLE_CARD_BASE_SHADOW,
-          filter: "none",
-        };
       default:
         return {
           color: "rgba(255, 255, 255, 0.78)",
