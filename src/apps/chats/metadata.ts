@@ -45,5 +45,5 @@ export const appMetadata = {
     url: "https://ryo.lu",
   },
   github: "https://github.com/ryokun6/ryos",
-  icon: "/icons/default/question.png",
+  icon: "/icons/default/chats.png",
 };

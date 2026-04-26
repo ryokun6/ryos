@@ -54,7 +54,7 @@ const APP_ICONS: Record<string, string> = {
   finder: "mac.png",
   soundboard: "sound.png",
   "internet-explorer": "ie.png",
-  chats: "question.png",
+  chats: "chats.png",
   textedit: "textedit.png",
   paint: "paint.png",
   "photo-booth": "photo-booth.png",
