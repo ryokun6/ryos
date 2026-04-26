@@ -1010,6 +1010,11 @@
         "toolExecutionFailed": "工具執行失敗",
         "unknownError": "未知錯誤",
         "updatedDocument": "文件已更新：{{path}}",
+        "webFetch": {
+          "fetched": "閱讀 {{siteName}}",
+          "fetchedPage": "閱讀「{{title}}」",
+          "fetching": "正在閱讀 {{hostname}}…"
+        },
         "writingContent": "寫入內容…"
       }
     },
@@ -2194,6 +2199,11 @@
     },
     "karaoke": {
       "description": "附同步歌詞的卡拉OK播放器",
+      "emptyLibrary": {
+        "addSongs": "新增歌曲",
+        "subtitle": "從 YouTube 新增音樂即可開始。",
+        "title": "卡拉OK 中尚無歌曲"
+      },
       "help": {
         "addSearchSongs": {
           "description": "在 YouTube 搜尋歌曲，或貼上網址加入資料庫。",
@@ -2228,11 +2238,6 @@
         "copyFailedDescription": "請選取連結並手動複製。",
         "copyLink": "複製連結",
         "djLabel": "DJ",
-        "playbackBadge": "播放",
-        "playbackOnDevice": "播放裝置",
-        "passPlayback": "轉交播放",
-        "makeHost": "設為主持人",
-        "remoteBadge": "遙控",
         "end": "關閉包房",
         "endSession": "關房",
         "hostLabel": "主持人",
@@ -2251,11 +2256,16 @@
         "listenerPlural": "人",
         "listening": "{{count}} 人在包房",
         "loadingSessions": "正在載入包房...",
+        "makeHost": "設為主持人",
         "noActiveSessions": "目前沒有進行中的包房",
         "nowPlaying": "正在唱",
         "orEnterSessionId": "或輸入房號",
+        "passPlayback": "轉交播放",
         "pasteLinkOrId": "貼上包房連結或房號即可加入。",
+        "playbackBadge": "播放",
+        "playbackOnDevice": "播放裝置",
         "refreshSessions": "重新整理",
+        "remoteBadge": "遙控",
         "sendReaction": "傳送回應",
         "sessionLinkPlaceholder": "包房連結或房號",
         "shareLinkInvite": "分享這個連結，邀請朋友一起進包房。",

@@ -31,6 +31,7 @@ import { KaraokeIosAutoplayWatchdog } from "./KaraokeIosAutoplayWatchdog";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useKaraokeLogic } from "../hooks/useKaraokeLogic";
+import { KaraokeLibraryEmptyState } from "./KaraokeLibraryEmptyState";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
@@ -188,6 +189,8 @@ export function KaraokeAppComponent({
     () => (username && isAuthenticated ? { username, isAuthenticated } : undefined),
     [username, isAuthenticated]
   );
+
+  const showEmptyLibrary = tracks.length === 0 && !currentTrack;
 
   const displayModeOptions = [
     { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
@@ -485,6 +488,10 @@ export function KaraokeAppComponent({
                   }}
                 />
               </div>
+            </div>
+          ) : showEmptyLibrary ? (
+            <div className="absolute inset-0 z-[1]">
+              <KaraokeLibraryEmptyState onAddSongs={handleAddSong} />
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-white/50 font-geneva-12">
@@ -1001,6 +1008,12 @@ export function KaraokeAppComponent({
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                {showEmptyLibrary && (
+                  <div className="absolute inset-0 z-[22] bg-black">
+                    <KaraokeLibraryEmptyState onAddSongs={handleAddSong} />
+                  </div>
+                )}
 
                 <KaraokeFullscreenLyricsOverlay
                   showLyrics={showLyrics}

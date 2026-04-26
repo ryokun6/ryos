@@ -1010,6 +1010,11 @@
         "toolExecutionFailed": "Falha na execução da ferramenta",
         "unknownError": "Erro desconhecido",
         "updatedDocument": "Documento atualizado: {{path}}",
+        "webFetch": {
+          "fetched": "Ler {{siteName}}",
+          "fetchedPage": "Ler \"{{title}}\"",
+          "fetching": "Lendo {{hostname}}…"
+        },
         "writingContent": "Escrevendo conteúdo…"
       }
     },
@@ -2194,6 +2199,11 @@
     },
     "karaoke": {
       "description": "Reprodutor de karaokê com letras sincronizadas",
+      "emptyLibrary": {
+        "addSongs": "Adicionar músicas",
+        "subtitle": "Adicione músicas do YouTube para começar.",
+        "title": "Nenhuma música no Karaoke"
+      },
       "help": {
         "addSearchSongs": {
           "description": "Busque músicas no YouTube ou cole uma URL para adicionar à sua biblioteca.",
@@ -2228,11 +2238,6 @@
         "copyFailedDescription": "Selecione o link e copie manualmente.",
         "copyLink": "Copiar Link",
         "djLabel": "DJ",
-        "playbackBadge": "Repro",
-        "playbackOnDevice": "Dispositivo de reprodução",
-        "passPlayback": "Passar reprodução",
-        "makeHost": "Tornar anfitrião",
-        "remoteBadge": "Remoto",
         "end": "Fechar sala KTV",
         "endSession": "Fechar sala",
         "hostLabel": "Anfitrião",
@@ -2251,11 +2256,16 @@
         "listenerPlural": "pessoas",
         "listening": "{{count}} na sala",
         "loadingSessions": "A carregar salas...",
+        "makeHost": "Tornar anfitrião",
         "noActiveSessions": "Nenhuma sala KTV ativa",
         "nowPlaying": "A cantar agora",
         "orEnterSessionId": "Ou introduza o ID da sala",
+        "passPlayback": "Passar reprodução",
         "pasteLinkOrId": "Cole um link ou ID da sala para entrar.",
+        "playbackBadge": "Repro",
+        "playbackOnDevice": "Dispositivo de reprodução",
         "refreshSessions": "Atualizar",
+        "remoteBadge": "Remoto",
         "sendReaction": "Enviar Reação",
         "sessionLinkPlaceholder": "Link ou ID da sala",
         "shareLinkInvite": "Partilhe este link para convidar amigos para a sala KTV.",

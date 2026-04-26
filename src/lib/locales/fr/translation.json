@@ -1010,6 +1010,11 @@
         "toolExecutionFailed": "Échec de l'exécution de l'outil",
         "unknownError": "Erreur inconnue",
         "updatedDocument": "Document mis à jour : {{path}}",
+        "webFetch": {
+          "fetched": "Lire {{siteName}}",
+          "fetchedPage": "Lire \"{{title}}\"",
+          "fetching": "Lecture de {{hostname}}…"
+        },
         "writingContent": "Écriture du contenu…"
       }
     },
@@ -2194,6 +2199,11 @@
     },
     "karaoke": {
       "description": "Lecteur karaoké avec paroles synchronisées",
+      "emptyLibrary": {
+        "addSongs": "Ajouter des morceaux",
+        "subtitle": "Ajoutez de la musique depuis YouTube pour commencer.",
+        "title": "Aucun morceau dans Karaoké"
+      },
       "help": {
         "addSearchSongs": {
           "description": "Recherchez des chansons sur YouTube ou collez une URL pour ajouter à votre bibliothèque.",
@@ -2228,11 +2238,6 @@
         "copyFailedDescription": "Sélectionnez le lien et copiez-le manuellement.",
         "copyLink": "Copier le lien",
         "djLabel": "DJ",
-        "playbackBadge": "Lecture",
-        "playbackOnDevice": "Appareil de lecture",
-        "passPlayback": "Transférer la lecture",
-        "makeHost": "Nommer hôte",
-        "remoteBadge": "Télécommande",
         "end": "Fermer la salle KTV",
         "endSession": "Fermer la salle",
         "hostLabel": "Hôte",
@@ -2251,11 +2256,16 @@
         "listenerPlural": "personnes",
         "listening": "{{count}} dans la salle",
         "loadingSessions": "Chargement des salles...",
+        "makeHost": "Nommer hôte",
         "noActiveSessions": "Aucune salle KTV active",
         "nowPlaying": "En train de chanter",
         "orEnterSessionId": "Ou saisissez l'ID de la salle",
+        "passPlayback": "Transférer la lecture",
         "pasteLinkOrId": "Collez un lien ou un ID de salle pour rejoindre.",
+        "playbackBadge": "Lecture",
+        "playbackOnDevice": "Appareil de lecture",
         "refreshSessions": "Actualiser",
+        "remoteBadge": "Télécommande",
         "sendReaction": "Envoyer une réaction",
         "sessionLinkPlaceholder": "Lien ou ID de salle",
         "shareLinkInvite": "Partagez ce lien pour inviter des amis dans la salle KTV.",

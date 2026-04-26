@@ -1010,6 +1010,11 @@
         "toolExecutionFailed": "도구 실행 실패",
         "unknownError": "알 수 없는 오류",
         "updatedDocument": "문서 업데이트됨: {{path}}",
+        "webFetch": {
+          "fetched": "{{siteName}} 읽기",
+          "fetchedPage": "\"{{title}}\" 읽기",
+          "fetching": "{{hostname}} 읽는 중…"
+        },
         "writingContent": "내용 쓰는 중…"
       }
     },
@@ -2194,6 +2199,11 @@
     },
     "karaoke": {
       "description": "가사 동기화 노래방 플레이어",
+      "emptyLibrary": {
+        "addSongs": "노래 추가",
+        "subtitle": "YouTube에서 음악을 추가해 시작하세요.",
+        "title": "노래방에 곡이 없습니다"
+      },
       "help": {
         "addSearchSongs": {
           "description": "YouTube에서 노래를 검색하거나 URL을 붙여넣어 라이브러리에 추가하세요.",
@@ -2228,11 +2238,6 @@
         "copyFailedDescription": "링크를 선택하여 수동으로 복사하세요.",
         "copyLink": "링크 복사",
         "djLabel": "DJ",
-        "playbackBadge": "재생",
-        "playbackOnDevice": "재생 기기",
-        "passPlayback": "재생 넘기기",
-        "makeHost": "호스트로 지정",
-        "remoteBadge": "원격",
         "end": "노래방 닫기",
         "endSession": "방 종료",
         "hostLabel": "호스트",
@@ -2251,11 +2256,16 @@
         "listenerPlural": "명",
         "listening": "{{count}}명 입장 중",
         "loadingSessions": "방 불러오는 중...",
+        "makeHost": "호스트로 지정",
         "noActiveSessions": "활성 노래방 없음",
         "nowPlaying": "지금 부르는 곡",
         "orEnterSessionId": "또는 방 ID 입력",
+        "passPlayback": "재생 넘기기",
         "pasteLinkOrId": "입장하려면 방 링크나 ID를 붙여넣으세요.",
+        "playbackBadge": "재생",
+        "playbackOnDevice": "재생 기기",
         "refreshSessions": "새로 고침",
+        "remoteBadge": "원격",
         "sendReaction": "반응 보내기",
         "sessionLinkPlaceholder": "방 링크 또는 ID",
         "shareLinkInvite": "이 링크를 공유해 친구를 노래방에 초대하세요.",

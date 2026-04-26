@@ -1802,6 +1802,11 @@
     "karaoke": {
       "name": "Karaoke",
       "description": "Karaoke player with synced lyrics",
+      "emptyLibrary": {
+        "title": "No songs in Karaoke",
+        "subtitle": "Add music from YouTube to get started.",
+        "addSongs": "Add Songs"
+      },
       "noTrack": "No track loaded. Open iPod to select a song.",
       "liveListen": {
         "start": "Open KTV Room",

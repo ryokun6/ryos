@@ -1010,6 +1010,11 @@
         "toolExecutionFailed": "ツールの実行に失敗しました",
         "unknownError": "不明なエラー",
         "updatedDocument": "ドキュメントを更新しました: {{path}}",
+        "webFetch": {
+          "fetched": "{{siteName}}を読む",
+          "fetchedPage": "「{{title}}」を読む",
+          "fetching": "{{hostname}}を読み込み中…"
+        },
         "writingContent": "コンテンツを書き込み中…"
       }
     },
@@ -2194,6 +2199,11 @@
     },
     "karaoke": {
       "description": "歌詞同期カラオケプレイヤー",
+      "emptyLibrary": {
+        "addSongs": "曲を追加",
+        "subtitle": "YouTube から音楽を追加して始めましょう。",
+        "title": "カラオケに曲がありません"
+      },
       "help": {
         "addSearchSongs": {
           "description": "YouTubeで曲を検索するか、URLを貼り付けてライブラリに追加。",
@@ -2228,11 +2238,6 @@
         "copyFailedDescription": "リンクを選択し、手動でコピーしてください。",
         "copyLink": "リンクをコピー",
         "djLabel": "DJ",
-        "playbackBadge": "再生",
-        "playbackOnDevice": "再生デバイス",
-        "passPlayback": "再生を渡す",
-        "makeHost": "ホストにする",
-        "remoteBadge": "リモート",
         "end": "カラオケルームを閉じる",
         "endSession": "ルームを終了",
         "hostLabel": "ホスト",
@@ -2251,11 +2256,16 @@
         "listenerPlural": "人",
         "listening": "{{count}}人が参加中",
         "loadingSessions": "ルームを読み込み中...",
+        "makeHost": "ホストにする",
         "noActiveSessions": "アクティブなカラオケルームはありません",
         "nowPlaying": "歌唱中",
         "orEnterSessionId": "またはルームIDを入力",
+        "passPlayback": "再生を渡す",
         "pasteLinkOrId": "ルームのリンクまたはIDを貼り付けて参加します。",
+        "playbackBadge": "再生",
+        "playbackOnDevice": "再生デバイス",
         "refreshSessions": "更新",
+        "remoteBadge": "リモート",
         "sendReaction": "リアクションを送信",
         "sessionLinkPlaceholder": "ルームリンクまたはID",
         "shareLinkInvite": "このリンクを共有して、友達をカラオケルームに招待しましょう。",

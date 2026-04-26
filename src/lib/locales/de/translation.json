@@ -1010,6 +1010,11 @@
         "toolExecutionFailed": "Tool-Ausführung fehlgeschlagen",
         "unknownError": "Unbekannter Fehler",
         "updatedDocument": "Dokument aktualisiert: {{path}}",
+        "webFetch": {
+          "fetched": "{{siteName}} lesen",
+          "fetchedPage": "\"{{title}}\" lesen",
+          "fetching": "{{hostname}} wird gelesen…"
+        },
         "writingContent": "Inhalt wird geschrieben…"
       }
     },
@@ -2194,6 +2199,11 @@
     },
     "karaoke": {
       "description": "Karaoke-Player mit synchronisierten Liedtexten",
+      "emptyLibrary": {
+        "addSongs": "Songs hinzufügen",
+        "subtitle": "Füge Musik von YouTube hinzu, um loszulegen.",
+        "title": "Keine Songs in Karaoke"
+      },
       "help": {
         "addSearchSongs": {
           "description": "Suchen Sie auf YouTube nach Songs oder fügen Sie eine URL ein, um sie zur Bibliothek hinzuzufügen.",
@@ -2228,11 +2238,6 @@
         "copyFailedDescription": "Wählen Sie den Link aus und kopieren Sie ihn manuell.",
         "copyLink": "Link kopieren",
         "djLabel": "DJ",
-        "playbackBadge": "Play",
-        "playbackOnDevice": "Wiedergabegerät",
-        "passPlayback": "Wiedergabe übergeben",
-        "makeHost": "Zum Host machen",
-        "remoteBadge": "Remote",
         "end": "KTV-Raum schließen",
         "endSession": "Raum schließen",
         "hostLabel": "Host",
@@ -2251,11 +2256,16 @@
         "listenerPlural": "Personen",
         "listening": "{{count}} im Raum",
         "loadingSessions": "Räume werden geladen...",
+        "makeHost": "Zum Host machen",
         "noActiveSessions": "Keine aktiven KTV-Räume",
         "nowPlaying": "Jetzt singt",
         "orEnterSessionId": "Oder Raum-ID eingeben",
+        "passPlayback": "Wiedergabe übergeben",
         "pasteLinkOrId": "Raumlink oder ID zum Beitreten einfügen.",
+        "playbackBadge": "Play",
+        "playbackOnDevice": "Wiedergabegerät",
         "refreshSessions": "Aktualisieren",
+        "remoteBadge": "Remote",
         "sendReaction": "Reaktion senden",
         "sessionLinkPlaceholder": "Raumlink oder ID",
         "shareLinkInvite": "Diesen Link teilen, um Freunde in den KTV-Raum einzuladen.",

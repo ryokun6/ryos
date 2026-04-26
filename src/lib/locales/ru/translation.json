@@ -1010,6 +1010,11 @@
         "toolExecutionFailed": "Ошибка выполнения инструмента",
         "unknownError": "Неизвестная ошибка",
         "updatedDocument": "Документ обновлен: {{path}}",
+        "webFetch": {
+          "fetched": "Читать {{siteName}}",
+          "fetchedPage": "Читать \"{{title}}\"",
+          "fetching": "Чтение {{hostname}}…"
+        },
         "writingContent": "Запись содержимого…"
       }
     },
@@ -2194,6 +2199,11 @@
     },
     "karaoke": {
       "description": "Караоке-плеер с синхронизированными текстами",
+      "emptyLibrary": {
+        "addSongs": "Добавить песни",
+        "subtitle": "Добавьте музыку с YouTube, чтобы начать.",
+        "title": "В караоке нет песен"
+      },
       "help": {
         "addSearchSongs": {
           "description": "Ищите песни на YouTube или вставьте URL, чтобы добавить в библиотеку.",
@@ -2228,11 +2238,6 @@
         "copyFailedDescription": "Выберите ссылку и скопируйте вручную.",
         "copyLink": "Скопировать ссылку",
         "djLabel": "Диджей",
-        "playbackBadge": "Воспр",
-        "playbackOnDevice": "Устройство воспроизведения",
-        "passPlayback": "Передать воспроизведение",
-        "makeHost": "Сделать хостом",
-        "remoteBadge": "Пульт",
         "end": "Закрыть караоке-комнату",
         "endSession": "Закрыть комнату",
         "hostLabel": "Ведущий",
@@ -2251,11 +2256,16 @@
         "listenerPlural": "чел.",
         "listening": "{{count}} в комнате",
         "loadingSessions": "Загрузка комнат...",
+        "makeHost": "Сделать хостом",
         "noActiveSessions": "Нет активных караоке-комнат",
         "nowPlaying": "Сейчас поют",
         "orEnterSessionId": "Или введите ID комнаты",
+        "passPlayback": "Передать воспроизведение",
         "pasteLinkOrId": "Вставьте ссылку или ID комнаты, чтобы войти.",
+        "playbackBadge": "Воспр",
+        "playbackOnDevice": "Устройство воспроизведения",
         "refreshSessions": "Обновить",
+        "remoteBadge": "Пульт",
         "sendReaction": "Отправить реакцию",
         "sessionLinkPlaceholder": "Ссылка или ID комнаты",
         "shareLinkInvite": "Поделитесь этой ссылкой, чтобы пригласить друзей в караоке-комнату.",
