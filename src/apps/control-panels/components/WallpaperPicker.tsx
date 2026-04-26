@@ -196,7 +196,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return r;
   }, [manifest]);
 
-  /** Leopard-era photo groups shown together before Patterns, then a separator. */
+  /** Leopard-era photo groups shown together, followed by Patterns and the remaining categories. */
   const MACOS9_PHOTO_ORDER = [
     "aqua",
     "nature",
@@ -393,7 +393,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
               <SelectValue placeholder={t("apps.control-panels.selectACategory")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="videos">{t("common.menu.videos")}</SelectItem>
               <SelectItem value="custom">{t("apps.control-panels.custom")}</SelectItem>
               <SelectSeparator
                 className="-mx-1 my-1 h-px"
@@ -409,7 +408,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   {formatCategoryLabel(category)}
                 </SelectItem>
               ))}
-              <SelectItem value="tiles">{t("apps.control-panels.patterns")}</SelectItem>
               {photoCategoriesOther.length > 0 && (
                 <SelectSeparator
                   className="-mx-1 my-1 h-px"
@@ -421,6 +419,8 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   }}
                 />
               )}
+              <SelectItem value="videos">{t("common.menu.videos")}</SelectItem>
+              <SelectItem value="tiles">{t("apps.control-panels.patterns")}</SelectItem>
               {photoCategoriesOther.map((category) => (
                 <SelectItem key={category} value={category}>
                   {formatCategoryLabel(category)}
