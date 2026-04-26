@@ -84,6 +84,8 @@ const finderMetadata = {
   icon: "/icons/mac.png",
 };
 
+let cachedTauriFullscreen: boolean | null = null;
+
 interface MenuBarProps {
   children?: React.ReactNode;
   inWindowFrame?: boolean; // Add prop to indicate if MenuBar is inside a window
@@ -1004,7 +1006,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
   // Tauri fullscreen detection (must be declared before any early returns)
   const isTauriApp = isTauri();
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(
+    () => cachedTauriFullscreen ?? false
+  );
   
   // Track fullscreen state in Tauri
   useEffect(() => {
@@ -1019,11 +1023,13 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         
         // Get initial fullscreen state
         const fullscreen = await win.isFullscreen();
+        cachedTauriFullscreen = fullscreen;
         setIsFullscreen(fullscreen);
         
         // Listen for fullscreen changes
         unlisten = await win.onResized(async () => {
           const fs = await win.isFullscreen();
+          cachedTauriFullscreen = fs;
           setIsFullscreen(fs);
         });
       } catch (error) {
@@ -1464,10 +1470,19 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   }
 
   // Default Mac-style top menubar
-  // In Tauri with titleBarStyle: overlay, add clearance for traffic lights (but not in fullscreen)
+  // In Tauri with titleBarStyle: overlay, add clearance and height for traffic lights
+  // outside fullscreen. Cache fullscreen state so app menubar remounts do not briefly
+  // render with non-fullscreen dimensions while the Tauri API resolves.
   // Don't add clearance on Windows platform (Chromium - no traffic lights), only on Mac (WebKit)
   const isWindowsPlatform = isTauriWindows();
-  const needsTrafficLightClearance = isTauriApp && !isFullscreen && !isWindowsPlatform && (currentTheme === "macosx" || currentTheme === "system7");
+  const isTauriMacMenubar =
+    isTauriApp &&
+    !isWindowsPlatform &&
+    (currentTheme === "macosx" || currentTheme === "system7");
+  const needsTrafficLightClearance = isTauriMacMenubar && !isFullscreen;
+  const menuBarHeight = needsTrafficLightClearance
+    ? "32px"
+    : "var(--os-metrics-menubar-height)";
   
   return (
     <div
@@ -1493,10 +1508,12 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           ? "calc(78px + env(safe-area-inset-left, 0px))" 
           : "calc(0.5rem + env(safe-area-inset-left, 0px))",
         paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
-        // Make menubar taller in Tauri for better traffic light alignment
-        height: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
-        minHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
-        maxHeight: needsTrafficLightClearance ? "32px" : "var(--os-metrics-menubar-height)",
+        // Taller only when Tauri traffic lights overlap the content area.
+        // Fullscreen uses the normal theme height and relies on the cached fullscreen state
+        // above to avoid app/window-switch flicker.
+        height: menuBarHeight,
+        minHeight: menuBarHeight,
+        maxHeight: menuBarHeight,
       }}
     >
       <ScrollableMenuWrapper>
