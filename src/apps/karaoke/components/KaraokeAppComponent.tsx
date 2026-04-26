@@ -215,6 +215,13 @@ export function KaraokeAppComponent({
     [setDisplayMode, showStatus, t]
   );
 
+  const handleOpenCoverFlowFromTitleCard = useCallback(() => {
+    if (tracks.length === 0) return;
+    userHasInteractedRef.current = true;
+    restartAutoHideTimer();
+    setIsCoverFlowOpen(true);
+  }, [restartAutoHideTimer, setIsCoverFlowOpen, tracks.length, userHasInteractedRef]);
+
   const handleFullscreenLyricsSwipeUp = useCallback(() => {
     if (isOffline) {
       showOfflineStatus();
@@ -578,6 +585,7 @@ export function KaraokeAppComponent({
               handleNext={handleNext}
               handlePrevious={handlePrevious}
               seekToTime={seekToTime}
+              onOpenCoverFlow={handleOpenCoverFlowFromTitleCard}
               t={t}
               currentTrack={currentTrack}
               koreanDisplay={koreanDisplay}
