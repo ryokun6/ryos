@@ -1407,7 +1407,10 @@
         "landscapes": "Paysages",
         "nostalgia": "Nostalgie",
         "objects": "Objets",
-        "structures": "Structures"
+        "structures": "Structures",
+        "nature": "Nature",
+        "plants": "Plantes",
+        "black_and_white": "Noir et blanc"
       }
     },
     "dashboard": {

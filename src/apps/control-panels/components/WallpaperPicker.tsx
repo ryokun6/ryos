@@ -195,14 +195,29 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     }
     return r;
   }, [manifest]);
-  const photoCategories = Object.keys(photoWallpapers);
-  const photoCategoriesSorted = useMemo(
-    () =>
-      photoCategories
-        .filter((cat) => cat !== "custom" && cat !== "videos")
-        .sort((a, b) => a.localeCompare(b)),
-    [photoCategories]
-  );
+
+  /** Leopard-era photo groups shown together before Patterns, then a separator. */
+  const MACOS9_PHOTO_ORDER = [
+    "aqua",
+    "nature",
+    "plants",
+    "black_and_white",
+  ] as const;
+
+  const photoCategoriesLeopardPrefix = useMemo(() => {
+    const cats = Object.keys(photoWallpapers).filter(
+      (c) => c !== "custom" && c !== "videos"
+    );
+    return MACOS9_PHOTO_ORDER.filter((c) => cats.includes(c));
+  }, [photoWallpapers]);
+
+  const photoCategoriesOther = useMemo(() => {
+    const cats = Object.keys(photoWallpapers).filter(
+      (c) => c !== "custom" && c !== "videos"
+    );
+    const mac = new Set<string>([...MACOS9_PHOTO_ORDER]);
+    return cats.filter((c) => !mac.has(c)).sort((a, b) => a.localeCompare(b));
+  }, [photoWallpapers]);
 
   const [selectedCategory, setSelectedCategory] = useState<
     "tiles" | PhotoCategory
@@ -379,7 +394,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="videos">{t("common.menu.videos")}</SelectItem>
-              <SelectItem value="tiles">{t("apps.control-panels.patterns")}</SelectItem>
               <SelectItem value="custom">{t("apps.control-panels.custom")}</SelectItem>
               <SelectSeparator
                 className="-mx-1 my-1 h-px"
@@ -390,7 +404,24 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   height: "1px",
                 }}
               />
-              {photoCategoriesSorted.map((category) => (
+              {photoCategoriesLeopardPrefix.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {formatCategoryLabel(category)}
+                </SelectItem>
+              ))}
+              <SelectItem value="tiles">{t("apps.control-panels.patterns")}</SelectItem>
+              {photoCategoriesOther.length > 0 && (
+                <SelectSeparator
+                  className="-mx-1 my-1 h-px"
+                  style={{
+                    backgroundColor: "rgba(0, 0, 0, 0.15)",
+                    border: "none",
+                    margin: "4px 0",
+                    height: "1px",
+                  }}
+                />
+              )}
+              {photoCategoriesOther.map((category) => (
                 <SelectItem key={category} value={category}>
                   {formatCategoryLabel(category)}
                 </SelectItem>

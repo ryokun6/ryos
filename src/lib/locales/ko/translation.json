@@ -1407,7 +1407,10 @@
         "landscapes": "풍경",
         "nostalgia": "향수",
         "objects": "사물",
-        "structures": "구조물"
+        "structures": "구조물",
+        "nature": "자연",
+        "plants": "식물",
+        "black_and_white": "흑백"
       }
     },
     "dashboard": {

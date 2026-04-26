@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2025-07-25T04:19:03.185Z",
+  "generatedAt": "2026-04-26T22:42:54.288Z",
   "tiles": [
     "tiles/azul_dark.png",
     "tiles/azul_extra_light.png",
@@ -63,6 +63,13 @@
       "photos/landscapes/refuge-col_de_la_grasse-alps.jpg",
       "photos/landscapes/zabriskie_point.jpg"
     ],
+    "black_and_white": [
+      "photos/black_and_white/lightning.jpg",
+      "photos/black_and_white/mojave.jpg",
+      "photos/black_and_white/pier.jpg",
+      "photos/black_and_white/sea-mist.jpg",
+      "photos/black_and_white/wave.jpg"
+    ],
     "structures": [
       "photos/structures/gate.jpg",
       "photos/structures/gate_lock.jpg",
@@ -72,6 +79,22 @@
       "photos/structures/shutters.jpg",
       "photos/structures/stone_wall.jpg",
       "photos/structures/wall_of_stones.jpg"
+    ],
+    "plants": [
+      "photos/plants/agave.jpg",
+      "photos/plants/bamboo_grove.jpg",
+      "photos/plants/daisies.jpg",
+      "photos/plants/dandelion.jpg",
+      "photos/plants/dandelion_seeds.jpg",
+      "photos/plants/grass_blades.jpg",
+      "photos/plants/lavender.jpg",
+      "photos/plants/leaf_curl.jpg",
+      "photos/plants/leaves.jpg",
+      "photos/plants/lotus.jpg",
+      "photos/plants/maple.jpg",
+      "photos/plants/peony.jpg",
+      "photos/plants/petals.jpg",
+      "photos/plants/purple_frond.jpg"
     ],
     "objects": [
       "photos/objects/alpine_granite.jpg",
@@ -84,6 +107,27 @@
       "photos/objects/neon.jpg",
       "photos/objects/salt_shaker_top.jpg",
       "photos/objects/shamus.jpg"
+    ],
+    "nature": [
+      "photos/nature/aurora.jpg",
+      "photos/nature/clown_fish.jpg",
+      "photos/nature/dew_drop.jpg",
+      "photos/nature/earth.jpg",
+      "photos/nature/earth_horizon.jpg",
+      "photos/nature/evening_reflections.jpg",
+      "photos/nature/flowing_rock.jpg",
+      "photos/nature/gentle_rapids.jpg",
+      "photos/nature/golden_palace.jpg",
+      "photos/nature/ladybug.jpg",
+      "photos/nature/rock_garden.jpg",
+      "photos/nature/rocks.jpg",
+      "photos/nature/snowy_hills.jpg",
+      "photos/nature/stones.jpg",
+      "photos/nature/sweeping_current.jpg",
+      "photos/nature/tranquil_surface.jpg",
+      "photos/nature/water.jpg",
+      "photos/nature/zebra.jpg",
+      "photos/nature/zen_garden.jpg"
     ],
     "convergency": [
       "photos/convergency/convergence_1.jpg",
@@ -129,6 +173,12 @@
     "aqua": [
       "photos/aqua/0-aqua-blue.jpg",
       "photos/aqua/0-aqua-graphite.jpg",
+      "photos/aqua/0-leopard-aqua_blue.jpg",
+      "photos/aqua/0-leopard-aqua_graphite.jpg",
+      "photos/aqua/0-leopard-jaguar_aqua_blue.jpg",
+      "photos/aqua/0-leopard-jaguar_aqua_graphite.jpg",
+      "photos/aqua/0-leopard-panther_aqua_blue.jpg",
+      "photos/aqua/0-leopard-panther_aqua_graphite.jpg",
       "photos/aqua/abstract-1.jpg",
       "photos/aqua/abstract-2.jpg",
       "photos/aqua/abstract-3.jpg",

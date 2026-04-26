@@ -1407,7 +1407,10 @@
         "landscapes": "風景",
         "nostalgia": "ノスタルジア",
         "objects": "オブジェクト",
-        "structures": "ストラクチャ"
+        "structures": "ストラクチャ",
+        "nature": "自然",
+        "plants": "植物",
+        "black_and_white": "白黒"
       }
     },
     "dashboard": {

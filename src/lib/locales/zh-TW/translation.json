@@ -1407,7 +1407,10 @@
         "landscapes": "風景",
         "nostalgia": "懷舊",
         "objects": "物件",
-        "structures": "建築"
+        "structures": "建築",
+        "nature": "自然",
+        "plants": "植物",
+        "black_and_white": "黑白"
       }
     },
     "dashboard": {

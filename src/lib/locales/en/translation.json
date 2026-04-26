@@ -2539,7 +2539,10 @@
         "nostalgia": "Nostalgia",
         "aqua": "Aqua",
         "foliage": "Foliage",
-        "graphics": "Graphics"
+        "graphics": "Graphics",
+        "nature": "Nature",
+        "plants": "Plants",
+        "black_and_white": "Black & White"
       },
       "alerts": {
         "selectImageFile": "Please select an image file. Videos are not supported.",

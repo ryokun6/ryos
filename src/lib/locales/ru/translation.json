@@ -1407,7 +1407,10 @@
         "landscapes": "Пейзажи",
         "nostalgia": "Ностальгия",
         "objects": "Объекты",
-        "structures": "Структуры"
+        "structures": "Структуры",
+        "nature": "Природа",
+        "plants": "Растения",
+        "black_and_white": "Чёрно-белое"
       }
     },
     "dashboard": {
