@@ -1,9 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import type { LyricLine } from "@/types/lyrics";
 import {
   getFirstLyricStartMs,
   shouldShowKaraokeTitleCard,
 } from "@/apps/karaoke/utils/titleCard";
+
+const readSource = (relativePath: string): string =>
+  readFileSync(resolve(process.cwd(), relativePath), "utf-8");
 
 const line = (startTimeMs: string, words: string): LyricLine => ({
   startTimeMs,
@@ -95,5 +100,16 @@ describe("karaoke title card timing", () => {
         lyricOffsetMs: 2000,
       })
     ).toBe(false);
+  });
+
+  test("wires title card album art click to open cover flow", () => {
+    const lyricsSource = readSource("src/apps/karaoke/components/KaraokeLyricsPlayback.tsx");
+    const appSource = readSource("src/apps/karaoke/components/KaraokeAppComponent.tsx");
+
+    expect(lyricsSource.includes("onOpenCoverFlow?: () => void")).toBe(true);
+    expect(lyricsSource.includes("aria-label={coverFlowLabel}")).toBe(true);
+    expect(lyricsSource.includes("pointer-events-auto")).toBe(true);
+    expect(lyricsSource.includes("onOpenCoverFlow()")).toBe(true);
+    expect(appSource.includes("onOpenCoverFlow={handleOpenCoverFlowFromTitleCard}")).toBe(true);
   });
 });

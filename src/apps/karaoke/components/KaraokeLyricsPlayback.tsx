@@ -335,6 +335,8 @@ function KaraokeTitleCard({
   fontClassName,
   variant,
   coverUrl,
+  onOpenCoverFlow,
+  coverFlowLabel,
   bottomPaddingClass = "pb-12",
 }: {
   title: string;
@@ -343,6 +345,8 @@ function KaraokeTitleCard({
   fontClassName: string;
   variant: "window" | "fullscreen";
   coverUrl?: string | null;
+  onOpenCoverFlow?: () => void;
+  coverFlowLabel?: string;
   bottomPaddingClass?: string;
 }) {
   const styleCategory = getTitleCardStyleCategory(fontClassName);
@@ -454,6 +458,22 @@ function KaraokeTitleCard({
       >
         {coverUrl && (
           <div className="relative shrink-0" style={coverImageStyle}>
+            {onOpenCoverFlow && (
+              <button
+                type="button"
+                aria-label={coverFlowLabel}
+                title={coverFlowLabel}
+                className="absolute inset-0 z-10 p-0 border-0 bg-transparent cursor-pointer pointer-events-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenCoverFlow();
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+              />
+            )}
             <div className="absolute inset-0 overflow-hidden" style={coverSleeveStyle}>
               <img
                 src={coverUrl}
@@ -520,6 +540,7 @@ interface WindowLyricsProps {
   handleNext: () => void;
   handlePrevious: () => void;
   seekToTime: (timeMs: number) => void;
+  onOpenCoverFlow?: () => void;
   t: TFunction;
   currentTrack: Track | null;
   koreanDisplay: KoreanDisplay;
@@ -542,6 +563,7 @@ export function KaraokeWindowLyricsOverlay({
   handleNext,
   handlePrevious,
   seekToTime,
+  onOpenCoverFlow,
   t,
   currentTrack,
   koreanDisplay,
@@ -601,6 +623,8 @@ export function KaraokeWindowLyricsOverlay({
               fontClassName={lyricsFontClassName}
               variant="window"
               coverUrl={coverUrl}
+              onOpenCoverFlow={onOpenCoverFlow}
+              coverFlowLabel={t("apps.ipod.menu.coverFlow")}
               bottomPaddingClass={bottomPadding}
             />
           )}
