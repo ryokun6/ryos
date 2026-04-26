@@ -44,20 +44,35 @@ describe("karaoke title card timing", () => {
     ).toBe(false);
   });
 
-  test("keeps showing during the three-second title card window", () => {
+  test("keeps showing during the title card window", () => {
     expect(
       shouldShowKaraokeTitleCard({
         lines: [line("4500", "First lyric")],
         currentTimeMs: 2500,
       })
     ).toBe(true);
+    expect(
+      shouldShowKaraokeTitleCard({
+        lines: [line("12000", "First lyric")],
+        currentTimeMs: 4999,
+      })
+    ).toBe(true);
   });
 
-  test("does not show after the three-second title card window", () => {
+  test("does not show after the title card max duration when first lyric is still later", () => {
+    expect(
+      shouldShowKaraokeTitleCard({
+        lines: [line("12000", "First lyric")],
+        currentTimeMs: 5000,
+      })
+    ).toBe(false);
+  });
+
+  test("does not show once the first lyric starts (even under max duration)", () => {
     expect(
       shouldShowKaraokeTitleCard({
         lines: [line("4500", "First lyric")],
-        currentTimeMs: 3000,
+        currentTimeMs: 4500,
       })
     ).toBe(false);
   });

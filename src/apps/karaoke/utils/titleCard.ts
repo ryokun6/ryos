@@ -1,7 +1,9 @@
 import type { LyricLine } from "@/types/lyrics";
 
+/** First lyric must start at least this long after the title-card timeline start. */
 export const KARAOKE_TITLE_CARD_MIN_LEAD_MS = 3000;
-export const KARAOKE_TITLE_CARD_DURATION_MS = 3000;
+/** Max time the title card stays up when there is ample room before the first line. */
+export const KARAOKE_TITLE_CARD_DURATION_MS = 5000;
 
 export function getFirstLyricStartMs(lines: LyricLine[]): number | null {
   for (const line of lines) {
