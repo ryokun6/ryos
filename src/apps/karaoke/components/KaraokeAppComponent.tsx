@@ -1017,6 +1017,7 @@ export function KaraokeAppComponent({
 
                 <KaraokeFullscreenLyricsOverlay
                   showLyrics={showLyrics}
+                  isPlaying={isPlaying}
                   currentTrack={currentTrack}
                   coverUrl={coverUrl}
                   isOffline={isOffline}

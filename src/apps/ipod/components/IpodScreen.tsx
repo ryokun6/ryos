@@ -564,12 +564,12 @@ export function IpodScreen({
                       <ScrollingText
                         text={currentTrack.title}
                         isPlaying={isPlaying}
-                        scrollStartDelaySec={1.5}
+                        scrollStartDelaySec={1}
                       />
                       <ScrollingText
                         text={currentTrack.artist || ""}
                         isPlaying={isPlaying}
-                        scrollStartDelaySec={1.5}
+                        scrollStartDelaySec={1}
                       />
                     </div>
                     <div className="mt-auto w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">

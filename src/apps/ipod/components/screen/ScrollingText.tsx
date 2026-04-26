@@ -67,9 +67,14 @@ export function ScrollingText({
     setEdgeFadeActive(true);
   }, []);
 
+  const fadeInset = "0.75em";
   const maskImage =
-    shouldScroll && fadeEdges && edgeFadeActive
-      ? "linear-gradient(to right, transparent 0, black 0.75em, black calc(100% - 0.75em), transparent 100%)"
+    shouldScroll && fadeEdges
+      ? edgeFadeActive
+        ? // Full fade: hides seam at both edges while looping
+          `linear-gradient(to right, transparent 0, black ${fadeInset}, black calc(100% - ${fadeInset}), transparent 100%)`
+        : // Pre-start / idle: keep text crisp on the left, hint overflow on the right
+          `linear-gradient(to right, black 0, black calc(100% - ${fadeInset}), transparent 100%)`
       : undefined;
   const mergedStyle: CSSProperties = {
     ...style,

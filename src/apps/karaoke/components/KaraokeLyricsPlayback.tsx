@@ -338,6 +338,7 @@ function KaraokeTitleCard({
   onOpenCoverFlow,
   coverFlowLabel,
   bottomPaddingClass = "pb-12",
+  isPlaying,
 }: {
   title: string;
   artist?: string;
@@ -348,6 +349,7 @@ function KaraokeTitleCard({
   onOpenCoverFlow?: () => void;
   coverFlowLabel?: string;
   bottomPaddingClass?: string;
+  isPlaying: boolean;
 }) {
   const styleCategory = getTitleCardStyleCategory(fontClassName);
   const palette = useCoverPalette(styleCategory === "glow-gold" ? (coverUrl ?? null) : null);
@@ -507,7 +509,8 @@ function KaraokeTitleCard({
             text={title}
             align="left"
             fadeEdges
-            scrollStartDelaySec={1.5}
+            isPlaying={isPlaying}
+            scrollStartDelaySec={1}
             className={`${titleTextSizeClass} ${fontClassName} w-full max-w-full`}
             style={regularTextStyle}
           />
@@ -627,6 +630,7 @@ export function KaraokeWindowLyricsOverlay({
               onOpenCoverFlow={onOpenCoverFlow}
               coverFlowLabel={t("apps.ipod.menu.coverFlow")}
               bottomPaddingClass={bottomPadding}
+              isPlaying={isPlaying}
             />
           )}
         </AnimatePresence>
@@ -673,6 +677,7 @@ export function KaraokeWindowLyricsOverlay({
 
 interface FullscreenLyricsProps {
   showLyrics: boolean;
+  isPlaying: boolean;
   currentTrack: Track | null;
   coverUrl: string | null;
   isOffline: boolean;
@@ -695,6 +700,7 @@ interface FullscreenLyricsProps {
 
 export function KaraokeFullscreenLyricsOverlay({
   showLyrics,
+  isPlaying,
   currentTrack,
   coverUrl,
   isOffline,
@@ -766,6 +772,7 @@ export function KaraokeFullscreenLyricsOverlay({
               variant="fullscreen"
               coverUrl={coverUrl}
               bottomPaddingClass={bottomPadding}
+              isPlaying={isPlaying}
             />
           )}
         </AnimatePresence>
