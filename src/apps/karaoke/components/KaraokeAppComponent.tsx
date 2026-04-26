@@ -166,6 +166,7 @@ export function KaraokeAppComponent({
     handleSendReaction,
     handlePlayTrack,
     handleToggleCoverFlow,
+    handleOpenCoverFlow,
     handleCoverFlowSelectTrack,
     handleCoverFlowPlayInPlace,
     handleCoverFlowRotation,
@@ -240,6 +241,12 @@ export function KaraokeAppComponent({
     showStatus,
     tracks,
   ]);
+
+  const handleTitleCardCoverClick = useCallback(() => {
+    userHasInteractedRef.current = true;
+    registerActivity();
+    handleOpenCoverFlow();
+  }, [handleOpenCoverFlow, registerActivity]);
 
   const handleFullscreenLyricsSwipeDown = useCallback(() => {
     if (isOffline) {
@@ -583,6 +590,7 @@ export function KaraokeAppComponent({
               koreanDisplay={koreanDisplay}
               japaneseFurigana={japaneseFurigana}
               lyricsAlignment={lyricsAlignment}
+              onTitleCardCoverClick={handleTitleCardCoverClick}
             />
             <KaraokeLyricsActivityIndicator />
             <KaraokeSyncModeWindowPanel
@@ -1013,6 +1021,7 @@ export function KaraokeAppComponent({
                   lyricsAlignment={lyricsAlignment}
                   onSwipeUp={handleFullscreenLyricsSwipeUp}
                   onSwipeDown={handleFullscreenLyricsSwipeDown}
+                  onTitleCardCoverClick={handleTitleCardCoverClick}
                 />
               </div>
             </div>

@@ -336,6 +336,8 @@ function KaraokeTitleCard({
   variant,
   coverUrl,
   bottomPaddingClass = "pb-12",
+  onCoverClick,
+  coverArtAriaLabel,
 }: {
   title: string;
   artist?: string;
@@ -344,6 +346,9 @@ function KaraokeTitleCard({
   variant: "window" | "fullscreen";
   coverUrl?: string | null;
   bottomPaddingClass?: string;
+  /** When set, album art opens Cover Flow (parent handles empty library). */
+  onCoverClick?: () => void;
+  coverArtAriaLabel?: string;
 }) {
   const styleCategory = getTitleCardStyleCategory(fontClassName);
   const palette = useCoverPalette(styleCategory === "glow-gold" ? (coverUrl ?? null) : null);
@@ -454,14 +459,34 @@ function KaraokeTitleCard({
       >
         {coverUrl && (
           <div className="relative shrink-0" style={coverImageStyle}>
-            <div className="absolute inset-0 overflow-hidden" style={coverSleeveStyle}>
-              <img
-                src={coverUrl}
-                alt=""
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
-            </div>
+            {onCoverClick ? (
+              <button
+                type="button"
+                className="absolute inset-0 z-[1] overflow-hidden cursor-pointer p-0 border-0 bg-transparent appearance-none text-left rounded-[1%] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80 pointer-events-auto"
+                style={coverSleeveStyle}
+                aria-label={coverArtAriaLabel}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCoverClick();
+                }}
+              >
+                <img
+                  src={coverUrl}
+                  alt=""
+                  className="w-full h-full object-cover pointer-events-none"
+                  draggable={false}
+                />
+              </button>
+            ) : (
+              <div className="absolute inset-0 overflow-hidden" style={coverSleeveStyle}>
+                <img
+                  src={coverUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              </div>
+            )}
             <div
               className="absolute top-full left-0 w-full pointer-events-none"
               style={{ height: "50%" }}
@@ -525,6 +550,7 @@ interface WindowLyricsProps {
   koreanDisplay: KoreanDisplay;
   japaneseFurigana: JapaneseFurigana;
   lyricsAlignment: LyricsAlignment;
+  onTitleCardCoverClick?: () => void;
 }
 
 export function KaraokeWindowLyricsOverlay({
@@ -547,6 +573,7 @@ export function KaraokeWindowLyricsOverlay({
   koreanDisplay,
   japaneseFurigana,
   lyricsAlignment,
+  onTitleCardCoverClick,
 }: WindowLyricsProps) {
   const {
     lyricsControls,
@@ -602,6 +629,8 @@ export function KaraokeWindowLyricsOverlay({
               variant="window"
               coverUrl={coverUrl}
               bottomPaddingClass={bottomPadding}
+              onCoverClick={onTitleCardCoverClick}
+              coverArtAriaLabel={t("apps.ipod.menu.coverFlow")}
             />
           )}
         </AnimatePresence>
@@ -666,6 +695,7 @@ interface FullscreenLyricsProps {
   /** When set (e.g. fullscreen), replaces default next/previous swipe behavior */
   onSwipeUp?: () => void;
   onSwipeDown?: () => void;
+  onTitleCardCoverClick?: () => void;
 }
 
 export function KaraokeFullscreenLyricsOverlay({
@@ -687,6 +717,7 @@ export function KaraokeFullscreenLyricsOverlay({
   lyricsAlignment,
   onSwipeUp: onSwipeUpOverride,
   onSwipeDown: onSwipeDownOverride,
+  onTitleCardCoverClick,
 }: FullscreenLyricsProps) {
   const {
     lyricsControls,
@@ -741,6 +772,8 @@ export function KaraokeFullscreenLyricsOverlay({
               variant="fullscreen"
               coverUrl={coverUrl}
               bottomPaddingClass={bottomPadding}
+              onCoverClick={onTitleCardCoverClick}
+              coverArtAriaLabel={t("apps.ipod.menu.coverFlow")}
             />
           )}
         </AnimatePresence>

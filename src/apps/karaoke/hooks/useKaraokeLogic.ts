@@ -1287,6 +1287,13 @@ export function useKaraokeLogic({
     }
   }, [isCoverFlowOpen, tracks.length]);
 
+  /** Open Cover Flow without toggling closed (e.g. title card album art). */
+  const handleOpenCoverFlow = useCallback(() => {
+    if (tracks.length > 0) {
+      setIsCoverFlowOpen(true);
+    }
+  }, [tracks.length]);
+
   // CoverFlow track selection handler
   const handleCoverFlowSelectTrack = useCallback(
     (index: number) => {
@@ -1682,6 +1689,7 @@ export function useKaraokeLogic({
     handleAddUrl,
     handlePlayTrack,
     handleToggleCoverFlow,
+    handleOpenCoverFlow,
     handleCoverFlowSelectTrack,
     handleCoverFlowPlayInPlace,
     handleCoverFlowRotation,
