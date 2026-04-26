@@ -355,6 +355,34 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   animation: marquee 2s linear infinite;
 }
 
+/* Seamless horizontal loop: track is two equal segments; -50% = one segment width */
+@keyframes scrolling-text-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.scrolling-text-marquee-track {
+  animation-name: scrolling-text-marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: var(--scrolling-text-duration, 8s);
+  animation-delay: var(--scrolling-text-delay, 0s);
+  animation-fill-mode: backwards;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrolling-text-marquee-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 @layer utilities {
   .font-geneva-12 {
     font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,

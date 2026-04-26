@@ -1,5 +1,11 @@
-import { useState, useRef, useEffect, type CSSProperties } from "react";
-import { motion } from "framer-motion";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type AnimationEvent,
+  type CSSProperties,
+} from "react";
 import { cn } from "@/lib/utils";
 
 interface ScrollingTextProps {
@@ -8,6 +14,8 @@ interface ScrollingTextProps {
   isPlaying?: boolean;
   align?: "center" | "left";
   fadeEdges?: boolean;
+  /** Seconds to wait before the marquee starts (each scroll cycle still runs full duration). */
+  scrollStartDelaySec?: number;
   style?: CSSProperties;
 }
 
@@ -17,13 +25,17 @@ export function ScrollingText({
   isPlaying = true,
   align = "center",
   fadeEdges = false,
+  scrollStartDelaySec = 0,
   style,
 }: ScrollingTextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
-  const [contentWidth, setContentWidth] = useState(0);
+  /** Edge fade only after the marquee actually runs (skips delay + paused-before-start). */
+  const [edgeFadeActive, setEdgeFadeActive] = useState(false);
   const paddingWidth = 20; // Width of padding between text duplicates
+
+  const durationSec = Math.max(text.length * 0.15, 8);
 
   // Check if text needs to scroll (is wider than container)
   useEffect(() => {
@@ -34,7 +46,6 @@ export function ScrollingText({
     const measure = () => {
       const newContainerWidth = container.clientWidth;
       const newContentWidth = textElement.scrollWidth;
-      setContentWidth(newContentWidth);
       setShouldScroll(newContentWidth > newContainerWidth);
     };
 
@@ -45,10 +56,19 @@ export function ScrollingText({
     resizeObserver.observe(textElement);
 
     return () => resizeObserver.disconnect();
-  }, [text, shouldScroll]);
+  }, [text]);
+
+  useEffect(() => {
+    setEdgeFadeActive(false);
+  }, [text, shouldScroll, scrollStartDelaySec, fadeEdges]);
+
+  const handleMarqueeAnimationStart = useCallback((e: AnimationEvent<HTMLDivElement>) => {
+    if (!e.animationName.includes("scrolling-text-marquee")) return;
+    setEdgeFadeActive(true);
+  }, []);
 
   const maskImage =
-    shouldScroll && fadeEdges
+    shouldScroll && fadeEdges && edgeFadeActive
       ? "linear-gradient(to right, transparent 0, black 0.75em, black calc(100% - 0.75em), transparent 100%)"
       : undefined;
   const mergedStyle: CSSProperties = {
@@ -58,6 +78,16 @@ export function ScrollingText({
   };
   const alignClass = align === "left" ? "justify-start" : "justify-center";
   const textAlignClass = align === "left" ? "text-left" : "text-center";
+
+  const marqueeStyle: CSSProperties & {
+    ["--scrolling-text-duration"]?: string;
+    ["--scrolling-text-delay"]?: string;
+  } = {
+    "--scrolling-text-duration": `${durationSec}s`,
+    "--scrolling-text-delay":
+      scrollStartDelaySec > 0 ? `${scrollStartDelaySec}s` : "0s",
+    animationPlayState: isPlaying ? "running" : "paused",
+  };
 
   return (
     <div
@@ -71,23 +101,11 @@ export function ScrollingText({
       style={mergedStyle}
     >
       {shouldScroll ? (
-        <div className="inline-block whitespace-nowrap">
-          <motion.div
-            animate={{
-              x: isPlaying ? [0, -(contentWidth + paddingWidth)] : 0,
-            }}
-            transition={
-              isPlaying
-                ? {
-                    duration: Math.max(text.length * 0.15, 8),
-                    ease: "linear",
-                    repeat: Infinity,
-                  }
-                : {
-                    duration: 0.3,
-                  }
-            }
-            style={{ display: "inline-flex" }}
+        <div className="inline-block min-w-0 max-w-full whitespace-nowrap">
+          <div
+            className="scrolling-text-marquee-track inline-flex"
+            style={marqueeStyle}
+            onAnimationStart={handleMarqueeAnimationStart}
           >
             <span ref={textRef} style={{ paddingRight: `${paddingWidth}px` }}>
               {text}
@@ -95,7 +113,7 @@ export function ScrollingText({
             <span style={{ paddingRight: `${paddingWidth}px` }} aria-hidden>
               {text}
             </span>
-          </motion.div>
+          </div>
         </div>
       ) : (
         <div ref={textRef} className={cn("whitespace-nowrap", textAlignClass)}>

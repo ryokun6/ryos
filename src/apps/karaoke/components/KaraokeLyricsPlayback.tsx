@@ -507,6 +507,7 @@ function KaraokeTitleCard({
             text={title}
             align="left"
             fadeEdges
+            scrollStartDelaySec={1.5}
             className={`${titleTextSizeClass} ${fontClassName} w-full max-w-full`}
             style={regularTextStyle}
           />
