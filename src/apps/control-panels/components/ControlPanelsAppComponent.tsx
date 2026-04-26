@@ -1093,7 +1093,7 @@ export function ControlPanelsAppComponent({
                           </div>
                         </div>
                         <Button
-                          variant="default"
+                          variant="retro"
                           onClick={promptSetUsername}
                           className="h-7"
                         >
