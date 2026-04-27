@@ -11,6 +11,7 @@ import {
   useAudioSettingsStoreShallow,
   useDisplaySettingsStoreShallow,
 } from "@/stores/helpers";
+import { DEFAULT_WALLPAPER_PATH } from "@/stores/useDisplaySettingsStore";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
 import { AI_MODEL_METADATA } from "@/types/aiModels";
@@ -1479,7 +1480,7 @@ export function useControlPanelsLogic({
 
   const performFormat = async () => {
     // Reset wallpaper to default before formatting
-    setCurrentWallpaper("/wallpapers/photos/aqua/water.jpg");
+    setCurrentWallpaper(DEFAULT_WALLPAPER_PATH);
     await formatFileSystem();
     clearPrefetchFlag(); // Force re-prefetch on next boot
     setNextBootMessage(t("common.system.formattingFileSystem"));

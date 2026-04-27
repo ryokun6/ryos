@@ -3,7 +3,10 @@ import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import { getApiUrl } from "@/utils/platform";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
-import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
+import {
+  DEFAULT_WALLPAPER_PATH,
+  useDisplaySettingsStore,
+} from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
@@ -1191,8 +1194,8 @@ async function finalizeCustomWallpaperSync(remoteKeys: Iterable<string>): Promis
       await displayStore.setWallpaper(current);
     } else {
       useDisplaySettingsStore.setState({
-        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-        wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+        currentWallpaper: DEFAULT_WALLPAPER_PATH,
+        wallpaperSource: DEFAULT_WALLPAPER_PATH,
       });
     }
   }

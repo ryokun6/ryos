@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { subscribeToCloudSyncCheckRequests } from "../src/utils/cloudSyncEvents";
+import { subscribeToCloudSyncDomainCheckRequests } from "../src/utils/cloudSyncEvents";
 import { planIndividualBlobDownload } from "../src/utils/cloudSyncIndividualBlobMerge";
 import { shouldApplyRemoteUpdate } from "../src/utils/cloudSyncShared";
 
@@ -95,18 +95,18 @@ describe("wallpaper cloud sync debug reproduction", () => {
     } as unknown as new (type: string, init?: unknown) => unknown;
     browserGlobals.localStorage = new MemoryStorage();
 
-    const { useDisplaySettingsStore } = await import(
+    const { useDisplaySettingsStore, DEFAULT_WALLPAPER_PATH } = await import(
       "../src/stores/useDisplaySettingsStore"
     );
-    let syncChecks = 0;
-    const unsubscribe = subscribeToCloudSyncCheckRequests(() => {
-      syncChecks += 1;
+    let syncDomainChecks: string[] = [];
+    const unsubscribe = subscribeToCloudSyncDomainCheckRequests((domain) => {
+      syncDomainChecks.push(domain);
     });
 
     try {
       useDisplaySettingsStore.setState({
-        currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-        wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+        currentWallpaper: DEFAULT_WALLPAPER_PATH,
+        wallpaperSource: DEFAULT_WALLPAPER_PATH,
         getWallpaperData: async () => null,
       });
 
@@ -118,9 +118,9 @@ describe("wallpaper cloud sync debug reproduction", () => {
         "indexeddb://wallpaper-1"
       );
       expect(useDisplaySettingsStore.getState().wallpaperSource).toBe(
-        "/wallpapers/photos/aqua/water.jpg"
+        DEFAULT_WALLPAPER_PATH
       );
-      expect(syncChecks).toBe(1);
+      expect(syncDomainChecks).toEqual(["custom-wallpapers"]);
     } finally {
       unsubscribe();
       browserGlobals.window = originalWindow;

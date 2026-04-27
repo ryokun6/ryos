@@ -11,6 +11,10 @@ import {
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
+/** Default desktop wallpaper (nature photo). */
+export const DEFAULT_WALLPAPER_PATH =
+  "/wallpapers/photos/nature/earth_horizon.jpg";
+
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.
  * Extracted from useAppStore to reduce complexity and improve separation of concerns.
@@ -129,8 +133,8 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       setSelectedShaderType: (t) => set({ selectedShaderType: t }),
 
       // Wallpaper
-      currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-      wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+      currentWallpaper: DEFAULT_WALLPAPER_PATH,
+      wallpaperSource: DEFAULT_WALLPAPER_PATH,
       setCurrentWallpaper: (p) => set({ currentWallpaper: p, wallpaperSource: p }),
 
       setWallpaper: async (path) => {
@@ -207,8 +211,8 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           }
           if (get().currentWallpaper === reference) {
             set({
-              currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-              wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+              currentWallpaper: DEFAULT_WALLPAPER_PATH,
+              wallpaperSource: DEFAULT_WALLPAPER_PATH,
             });
           }
           get().bumpCustomWallpapersRevision();
