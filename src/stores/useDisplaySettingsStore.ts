@@ -116,7 +116,7 @@ interface DisplaySettingsState {
   bumpCustomWallpapersRevision: () => void;
 }
 
-const STORE_VERSION = 2;
+const STORE_VERSION = 1;
 const initialShaderState = checkShaderPerformance();
 
 export const useDisplaySettingsStore = create<DisplaySettingsState>()(
