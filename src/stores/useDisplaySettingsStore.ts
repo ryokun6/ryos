@@ -11,6 +11,10 @@ import {
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
+/** Default desktop wallpaper (nature photo). */
+export const DEFAULT_WALLPAPER_PATH =
+  "/wallpapers/photos/nature/earth_horizon.jpg";
+
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.
  * Extracted from useAppStore to reduce complexity and improve separation of concerns.
@@ -112,7 +116,8 @@ interface DisplaySettingsState {
   bumpCustomWallpapersRevision: () => void;
 }
 
-const STORE_VERSION = 1;
+const LEGACY_DEFAULT_WALLPAPER_PATH = "/wallpapers/photos/aqua/water.jpg";
+const STORE_VERSION = 2; // default wallpaper → nature earth_horizon
 const initialShaderState = checkShaderPerformance();
 
 export const useDisplaySettingsStore = create<DisplaySettingsState>()(
@@ -129,8 +134,8 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       setSelectedShaderType: (t) => set({ selectedShaderType: t }),
 
       // Wallpaper
-      currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-      wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+      currentWallpaper: DEFAULT_WALLPAPER_PATH,
+      wallpaperSource: DEFAULT_WALLPAPER_PATH,
       setCurrentWallpaper: (p) => set({ currentWallpaper: p, wallpaperSource: p }),
 
       setWallpaper: async (path) => {
@@ -207,8 +212,8 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           }
           if (get().currentWallpaper === reference) {
             set({
-              currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
-              wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+              currentWallpaper: DEFAULT_WALLPAPER_PATH,
+              wallpaperSource: DEFAULT_WALLPAPER_PATH,
             });
           }
           get().bumpCustomWallpapersRevision();
@@ -275,6 +280,24 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
     {
       name: "ryos:display-settings",
       version: STORE_VERSION,
+      migrate: (persistedState, version) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const s = persistedState as any;
+        if (version >= 2) return s;
+        const cw = s.currentWallpaper as string | undefined;
+        const ws = s.wallpaperSource as string | undefined;
+        if (
+          cw === LEGACY_DEFAULT_WALLPAPER_PATH &&
+          ws === LEGACY_DEFAULT_WALLPAPER_PATH
+        ) {
+          return {
+            ...s,
+            currentWallpaper: DEFAULT_WALLPAPER_PATH,
+            wallpaperSource: DEFAULT_WALLPAPER_PATH,
+          };
+        }
+        return s;
+      },
       partialize: (state) => ({
         displayMode: state.displayMode,
         shaderEffectEnabled: state.shaderEffectEnabled,
