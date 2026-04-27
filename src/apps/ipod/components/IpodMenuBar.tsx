@@ -462,7 +462,7 @@ export function IpodMenuBar({
                 {t("apps.ipod.menu.japaneseRomaji")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={romanization?.korean ?? false}
+                checked={romanization?.korean ?? true}
                 onCheckedChange={(checked) =>
                   setRomanization({ korean: checked })
                 }

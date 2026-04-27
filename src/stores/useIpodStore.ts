@@ -209,7 +209,7 @@ const initialIpodData: IpodData = {
     enabled: true,
     japaneseFurigana: true,
     japaneseRomaji: false,
-    korean: false,
+    korean: true,
     chinese: false,
     soramimi: false,
     soramamiTargetLanguage: "zh-TW",
@@ -310,7 +310,7 @@ export interface IpodState extends IpodData {
   setTotalTime: (time: number) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 31; // Default lyrics font to red serif
+const CURRENT_IPOD_STORE_VERSION = 32; // Korean romanization on by default for lyrics
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -1557,14 +1557,13 @@ export const useIpodStore = create<IpodState>()(
           );
           
           // Migrate old romanization settings to new unified format
-          const oldKoreanDisplay = state.koreanDisplay as string | undefined;
           const oldJapaneseFurigana = state.japaneseFurigana as string | undefined;
           
           const romanization: RomanizationSettings = state.romanization ?? {
             enabled: true,
             japaneseFurigana: oldJapaneseFurigana === JapaneseFurigana.On || oldJapaneseFurigana === "on" || oldJapaneseFurigana === undefined,
             japaneseRomaji: false,
-            korean: oldKoreanDisplay === KoreanDisplay.Romanized || oldKoreanDisplay === "romanized",
+            korean: true,
             chinese: false,
             soramimi: false,
             soramamiTargetLanguage: "zh-TW",
@@ -1592,6 +1591,11 @@ export const useIpodStore = create<IpodState>()(
           // Ensure existing romanization settings have pronunciationOnly
           if (state.romanization && state.romanization.pronunciationOnly === undefined) {
             state.romanization.pronunciationOnly = false;
+          }
+
+          // Turn on Korean romanization for all users upgrading to this version (new default)
+          if (state.romanization && state.romanization.korean === false) {
+            state.romanization.korean = true;
           }
 
           const shouldUpgradeLegacyDefaultLyricsFont =
