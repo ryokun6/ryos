@@ -116,8 +116,7 @@ interface DisplaySettingsState {
   bumpCustomWallpapersRevision: () => void;
 }
 
-const LEGACY_DEFAULT_WALLPAPER_PATH = "/wallpapers/photos/aqua/water.jpg";
-const STORE_VERSION = 2; // default wallpaper → nature earth_horizon
+const STORE_VERSION = 2;
 const initialShaderState = checkShaderPerformance();
 
 export const useDisplaySettingsStore = create<DisplaySettingsState>()(
@@ -280,24 +279,6 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
     {
       name: "ryos:display-settings",
       version: STORE_VERSION,
-      migrate: (persistedState, version) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const s = persistedState as any;
-        if (version >= 2) return s;
-        const cw = s.currentWallpaper as string | undefined;
-        const ws = s.wallpaperSource as string | undefined;
-        if (
-          cw === LEGACY_DEFAULT_WALLPAPER_PATH &&
-          ws === LEGACY_DEFAULT_WALLPAPER_PATH
-        ) {
-          return {
-            ...s,
-            currentWallpaper: DEFAULT_WALLPAPER_PATH,
-            wallpaperSource: DEFAULT_WALLPAPER_PATH,
-          };
-        }
-        return s;
-      },
       partialize: (state) => ({
         displayMode: state.displayMode,
         shaderEffectEnabled: state.shaderEffectEnabled,
