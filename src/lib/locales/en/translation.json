@@ -1609,7 +1609,7 @@
         },
         "numbers": {
           "title": "Channel Numbers",
-          "description": "Press 1–6 to jump to a channel, or use CH+ / CH−"
+          "description": "Press a number to jump to a channel, or use CH+ / CH−"
         },
         "shortcuts": {
           "title": "Shortcuts",

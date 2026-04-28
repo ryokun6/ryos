@@ -2993,7 +2993,7 @@
           "title": "Hilfe & Über"
         },
         "numbers": {
-          "description": "Drücken Sie 1–6, um zu einem Kanal zu springen, oder nutzen Sie CH+ / CH−",
+          "description": "Drücken Sie eine Zahl, um zu einem Kanal zu springen, oder nutzen Sie CH+ / CH−",
           "title": "Kanalnummern"
         },
         "playback": {

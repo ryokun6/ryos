@@ -2993,7 +2993,7 @@
           "title": "ヘルプと概要"
         },
         "numbers": {
-          "description": "1〜6キーでチャンネル移動、またはCH+ / CH−を使用",
+          "description": "数字キーでチャンネル移動、またはCH+ / CH−を使用",
           "title": "チャンネル番号"
         },
         "playback": {

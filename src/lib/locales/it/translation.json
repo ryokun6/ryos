@@ -2993,7 +2993,7 @@
           "title": "Aiuto e informazioni"
         },
         "numbers": {
-          "description": "Premi 1–6 per passare a un canale, o usa CH+ / CH−",
+          "description": "Premi un numero per passare a un canale, o usa CH+ / CH−",
           "title": "Numeri dei canali"
         },
         "playback": {

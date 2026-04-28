@@ -2993,7 +2993,7 @@
           "title": "도움말 및 정보"
         },
         "numbers": {
-          "description": "1–6을 눌러 채널로 이동하거나 CH+ / CH−를 사용하세요",
+          "description": "숫자를 눌러 채널로 이동하거나 CH+ / CH−를 사용하세요",
           "title": "채널 번호"
         },
         "playback": {

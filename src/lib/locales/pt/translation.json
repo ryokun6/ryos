@@ -2993,7 +2993,7 @@
           "title": "Ajuda e Sobre"
         },
         "numbers": {
-          "description": "Pressione 1–6 para pular para um canal ou use CH+ / CH−",
+          "description": "Pressione um número para pular para um canal ou use CH+ / CH−",
           "title": "Números dos Canais"
         },
         "playback": {

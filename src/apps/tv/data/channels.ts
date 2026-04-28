@@ -1,10 +1,5 @@
 import type { Video } from "@/stores/useVideoStore";
 import { TAIWAN_PLAYLIST_VIDEOS } from "./taiwanVideos.generated";
-import {
-  APPLE_VIDEOS,
-  CINEMA_VIDEOS,
-  ANIME_VIDEOS,
-} from "./curatedVideos.generated";
 
 export interface Channel {
   id: string;
@@ -59,40 +54,19 @@ export const DEFAULT_CHANNELS: Channel[] = [
     ],
   },
   {
-    id: "apple",
-    number: 2,
-    name: "Apple",
-    description: "Apple keynote highlights and event recaps",
-    videos: APPLE_VIDEOS,
-  },
-  {
     id: "mtv",
-    number: 3,
+    number: 2,
     name: "MTV",
     description: "Plays from your iPod music library",
     videos: [],
   },
   {
-    id: "cinema",
-    number: 4,
-    name: "Cinemax",
-    description: "Official movie trailers",
-    videos: CINEMA_VIDEOS,
-  },
-  {
     id: "taiwan",
-    number: 5,
+    number: 3,
     name: "台視",
     description:
       "https://www.youtube.com/playlist?list=PL0Pdneoq-nmx0FsYKLjFijtcifhPCTylI",
     videos: TAIWAN_PLAYLIST_VIDEOS,
-  },
-  {
-    id: "anime",
-    number: 6,
-    name: "アニメTV",
-    description: "Anime openings and AMVs",
-    videos: ANIME_VIDEOS,
   },
 ];
 

@@ -191,7 +191,7 @@ export function CreateChannelDialog({
             disabled={isLoading}
             onClick={() => setDescription(s)}
             className={cn(
-              "px-2 py-0.5 rounded border text-gray-700",
+              "px-2 py-0.5 rounded-full border text-gray-700",
               "border-gray-300 hover:bg-gray-100 disabled:opacity-50"
             )}
           >
@@ -202,7 +202,7 @@ export function CreateChannelDialog({
 
       {isLoading && (
         <p
-          className={cn("mt-3 text-gray-600", fontClass)}
+          className={cn("mt-3 shimmer-gray", fontClass)}
           style={fontStyle}
           aria-live="polite"
         >

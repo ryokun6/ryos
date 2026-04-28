@@ -2993,7 +2993,7 @@
           "title": "Aide et à propos"
         },
         "numbers": {
-          "description": "Appuyez sur 1–6 pour accéder à une chaîne, ou utilisez CH+ / CH−",
+          "description": "Appuyez sur un chiffre pour accéder à une chaîne, ou utilisez CH+ / CH−",
           "title": "Numéros de chaînes"
         },
         "playback": {

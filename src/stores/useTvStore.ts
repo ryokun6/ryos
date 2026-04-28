@@ -76,11 +76,10 @@ export const useTvStore = create<TvStoreState>()(
       togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
       addCustomChannel: (channel) => {
         const existing = get().customChannels;
-        // Channel numbers start above the built-in lineup (which currently
-        // tops out at 6). Pick the next free integer so newly added
-        // channels keep the "remote keypad" feel.
+        // Channel numbers start above the built-in lineup (currently 3).
+        // Pick the next free integer so the keypad feel stays tight.
         const usedNumbers = new Set(existing.map((c) => c.number));
-        let nextNumber = 7;
+        let nextNumber = 4;
         while (usedNumbers.has(nextNumber)) nextNumber += 1;
 
         const created: CustomChannel = {
@@ -165,7 +164,7 @@ export const useTvStore = create<TvStoreState>()(
           while (existingIds.has(id)) id = generateChannelId();
           existingIds.add(id);
 
-          let nextNumber = 7;
+          let nextNumber = 4;
           while (usedNumbers.has(nextNumber)) nextNumber += 1;
           usedNumbers.add(nextNumber);
 
