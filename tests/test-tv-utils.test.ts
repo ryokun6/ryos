@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   isYouTubeUrl,
   nextIndex,
+  parseYouTubeId,
   prevIndex,
   randomTuneInOffset,
   shuffleArray,
@@ -22,11 +23,77 @@ describe("isYouTubeUrl", () => {
     expect(isYouTubeUrl("file:///Users/me/song.mp3")).toBe(false);
   });
 
+  test("rejects substring-confusable host spoofs", () => {
+    // Hosts that *contain* "youtube.com" but are not actually YouTube
+    // (would have slipped through a `hostname.includes("youtube.com")`
+    // check).
+    expect(isYouTubeUrl("https://evil-youtube.com/watch?v=abc")).toBe(false);
+    expect(isYouTubeUrl("https://youtube.com.attacker.test/watch?v=abc")).toBe(
+      false
+    );
+    expect(isYouTubeUrl("https://fakeyoutube.com/watch?v=abc")).toBe(false);
+    expect(isYouTubeUrl("https://notyoutu.be/abc")).toBe(false);
+  });
+
   test("returns false for malformed / empty inputs without throwing", () => {
     expect(isYouTubeUrl("")).toBe(false);
     expect(isYouTubeUrl(undefined)).toBe(false);
     expect(isYouTubeUrl(null)).toBe(false);
     expect(isYouTubeUrl("not a url")).toBe(false);
+  });
+});
+
+describe("parseYouTubeId", () => {
+  const VID = "dQw4w9WgXcQ";
+
+  test("returns the id for a bare 11-char id", () => {
+    expect(parseYouTubeId(VID)).toBe(VID);
+  });
+
+  test("extracts the id from supported YouTube URL shapes", () => {
+    expect(parseYouTubeId(`https://www.youtube.com/watch?v=${VID}`)).toBe(VID);
+    expect(parseYouTubeId(`https://youtube.com/watch?v=${VID}&t=10`)).toBe(VID);
+    expect(parseYouTubeId(`https://m.youtube.com/watch?v=${VID}`)).toBe(VID);
+    expect(parseYouTubeId(`https://music.youtube.com/watch?v=${VID}`)).toBe(
+      VID
+    );
+    expect(parseYouTubeId(`https://youtu.be/${VID}`)).toBe(VID);
+    expect(parseYouTubeId(`https://youtu.be/${VID}?si=abc`)).toBe(VID);
+    expect(parseYouTubeId(`https://www.youtube.com/embed/${VID}`)).toBe(VID);
+    expect(parseYouTubeId(`https://www.youtube.com/shorts/${VID}`)).toBe(VID);
+    expect(parseYouTubeId(`https://www.youtube.com/v/${VID}`)).toBe(VID);
+  });
+
+  test("rejects substring-confusable host spoofs", () => {
+    // The whole point of this regression coverage: hosts that merely
+    // *contain* a YouTube domain string must NOT be treated as YouTube.
+    expect(
+      parseYouTubeId(`https://evil-youtube.com/watch?v=${VID}`)
+    ).toBeNull();
+    expect(
+      parseYouTubeId(`https://youtube.com.attacker.test/watch?v=${VID}`)
+    ).toBeNull();
+    expect(parseYouTubeId(`https://fakeyoutube.com/watch?v=${VID}`)).toBeNull();
+    expect(parseYouTubeId(`https://notyoutu.be/${VID}`)).toBeNull();
+    expect(
+      parseYouTubeId(`https://userinfo@evil.com/youtube.com/watch?v=${VID}`)
+    ).toBeNull();
+  });
+
+  test("returns null for non-YouTube and malformed inputs", () => {
+    expect(parseYouTubeId("https://vimeo.com/123")).toBeNull();
+    expect(parseYouTubeId("not a url")).toBeNull();
+    expect(parseYouTubeId("")).toBeNull();
+    expect(parseYouTubeId(null)).toBeNull();
+    expect(parseYouTubeId(undefined)).toBeNull();
+  });
+
+  test("returns null for YouTube URLs without a recognizable id", () => {
+    expect(parseYouTubeId("https://www.youtube.com/")).toBeNull();
+    expect(parseYouTubeId("https://www.youtube.com/feed/trending")).toBeNull();
+    // Too short / too long bare ids are rejected.
+    expect(parseYouTubeId("short")).toBeNull();
+    expect(parseYouTubeId("a".repeat(12))).toBeNull();
   });
 });
 

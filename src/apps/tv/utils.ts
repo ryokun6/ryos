@@ -15,13 +15,51 @@ const YOUTUBE_HOSTS = new Set([
  * Returns true iff `url` parses as a YouTube URL embeddable by ReactPlayer's
  * YouTube driver. Handles `youtu.be`, `youtube.com`, mobile / music subdomains,
  * and gracefully returns false for malformed URLs.
+ *
+ * Uses an explicit host allow-list (NOT `hostname.includes("youtube.com")`)
+ * so spoofed hosts like `evil-youtube.com` or `youtube.com.attacker.test`
+ * are rejected.
  */
 export function isYouTubeUrl(url: string | undefined | null): boolean {
   if (!url) return false;
   try {
-    return YOUTUBE_HOSTS.has(new URL(url).hostname);
+    return YOUTUBE_HOSTS.has(new URL(url).hostname.toLowerCase());
   } catch {
     return false;
+  }
+}
+
+/**
+ * Extract a YouTube video id from a raw 11-char id or any supported
+ * YouTube URL (watch, youtu.be, embed, shorts, v/). Returns null for
+ * unsupported hosts or invalid input.
+ *
+ * Host validation uses the same exact-match allow-list as `isYouTubeUrl`,
+ * so substring-confusable hosts like `evil-youtube.com` cannot slip
+ * through.
+ */
+export function parseYouTubeId(input: string | undefined | null): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    const hostname = url.hostname.toLowerCase();
+    if (!YOUTUBE_HOSTS.has(hostname)) return null;
+
+    const v = url.searchParams.get("v");
+    if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
+    if (hostname === "youtu.be") {
+      const id = url.pathname.slice(1).split("/")[0] ?? "";
+      return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+    }
+    const m = url.pathname.match(
+      /\/(?:embed\/|v\/|shorts\/)?([a-zA-Z0-9_-]{11})/
+    );
+    return m ? m[1] : null;
+  } catch {
+    return null;
   }
 }
 

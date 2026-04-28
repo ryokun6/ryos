@@ -20,6 +20,7 @@ import {
   DOCUMENT_WRITE_MODES,
   SONG_LIBRARY_ACTIONS,
   SONG_LIBRARY_SCOPES,
+  TV_ACTIONS,
 } from "./types.js";
 import {
   MAX_KEY_LENGTH,
@@ -966,6 +967,129 @@ export const webFetchSchema = z.object({
       "If omitted, extracts the main content automatically."
     ),
 });
+
+// ============================================================================
+// TV Control Schema
+// ============================================================================
+
+export const tvControlSchema = z
+  .object({
+    action: z
+      .enum(TV_ACTIONS)
+      .describe(
+        "Action to perform: " +
+          "'list' returns the lineup (built-ins + custom channels), include videos when verbose; " +
+          "'tune' switches the TV to a channel by id or number; " +
+          "'createChannel' creates a new custom channel from a one-line theme/prompt — the server AI-plans the name, tagline, and lineup by fanning out YouTube searches; " +
+          "'deleteChannel' removes a custom channel by id; " +
+          "'addVideo' appends a YouTube video to a custom channel; " +
+          "'removeVideo' removes a video from a custom channel."
+      ),
+    channelId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe(
+        "Channel id from a previous 'list' (short id like 'ch3' or full id). Required for 'tune'/'deleteChannel'/'addVideo'/'removeVideo' unless 'channelNumber' is used for 'tune'."
+      ),
+    channelNumber: z
+      .number()
+      .int()
+      .min(1)
+      .max(999)
+      .optional()
+      .describe(
+        "For 'tune': switch by displayed channel number (e.g. 1 = RyoTV, 2 = MTV)."
+      ),
+    prompt: z
+      .preprocess(
+        normalizeOptionalString,
+        z.string().min(2).max(280).optional()
+      )
+      .describe(
+        "For 'createChannel' (REQUIRED): a one-line theme/description (e.g. 'skateboarding tricks', 'lofi beats to study to', '90s anime intros'). The server AI-plans the channel name, tagline, and 2-4 YouTube search queries, fans them out, dedupes, and builds the lineup. Do NOT manually pre-search videos — call createChannel directly with the user's intent as the prompt."
+      ),
+    name: z
+      .preprocess(normalizeOptionalString, z.string().min(1).max(24).optional())
+      .describe(
+        "For 'createChannel' (optional): override the planner's channel name. Omit to let the server pick a punchy 1-3 word name."
+      ),
+    videoId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'addVideo': YouTube video id (11 chars)."),
+    url: z
+      .preprocess(normalizeOptionalString, z.string().max(1000).optional())
+      .describe("For 'addVideo': YouTube URL (alternative to videoId)."),
+    title: z
+      .preprocess(normalizeOptionalString, z.string().max(300).optional())
+      .describe(
+        "For 'addVideo': optional explicit video title (otherwise looked up from YouTube oEmbed)."
+      ),
+    artist: z
+      .preprocess(normalizeOptionalString, z.string().max(300).optional())
+      .describe("For 'addVideo': optional explicit artist/channel name."),
+    removeVideoId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'removeVideo': the YouTube video id to remove from the channel."),
+  })
+  .superRefine((data, ctx) => {
+    if (data.action === "tune") {
+      if (!data.channelId && data.channelNumber === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'tune' action requires 'channelId' or 'channelNumber'.",
+          path: ["channelId"],
+        });
+      }
+    }
+    if (data.action === "createChannel") {
+      if (!data.prompt || !data.prompt.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "The 'createChannel' action requires a 'prompt' (one-line theme/description). The server fans out YouTube searches automatically — do not pre-pick videos.",
+          path: ["prompt"],
+        });
+      }
+    }
+    if (data.action === "deleteChannel" && !data.channelId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'deleteChannel' action requires the 'channelId' parameter.",
+        path: ["channelId"],
+      });
+    }
+    if (data.action === "addVideo") {
+      if (!data.channelId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'addVideo' action requires the 'channelId' parameter.",
+          path: ["channelId"],
+        });
+      }
+      if (!data.videoId && !data.url) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'addVideo' action requires 'videoId' or 'url'.",
+          path: ["videoId"],
+        });
+      }
+    }
+    if (data.action === "removeVideo") {
+      if (!data.channelId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'removeVideo' action requires the 'channelId' parameter.",
+          path: ["channelId"],
+        });
+      }
+      if (!data.removeVideoId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'removeVideo' action requires the 'removeVideoId' parameter.",
+          path: ["removeVideoId"],
+        });
+      }
+    }
+  });
 
 // ============================================================================
 // Unified Memory Tool Schemas
