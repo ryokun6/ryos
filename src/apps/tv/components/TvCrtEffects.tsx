@@ -1,0 +1,338 @@
+import { useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+/**
+ * Animated analog-static canvas. Used both as a brief "channel-switch"
+ * burst and as a sustained "buffering / loading" overlay. Intensity (0..1)
+ * controls how aggressively the noise is drawn; alpha (0..1) controls how
+ * opaque the canvas is layered on top of the picture.
+ *
+ * NOTE: rAF-based; the parent should mount/unmount the canvas via
+ * AnimatePresence or a conditional so the loop only runs while visible.
+ */
+function NoiseCanvas({
+  intensity = 1,
+  className,
+  style,
+}: {
+  intensity?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const intensityRef = useRef(intensity);
+
+  useEffect(() => {
+    intensityRef.current = intensity;
+  }, [intensity]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      // Render at half-res for performance; CSS scales it to full size.
+      const w = Math.max(1, Math.floor(canvas.offsetWidth / 2));
+      const h = Math.max(1, Math.floor(canvas.offsetHeight / 2));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+    };
+
+    const draw = () => {
+      resize();
+      const w = canvas.width;
+      const h = canvas.height;
+      const img = ctx.createImageData(w, h);
+      const data = img.data;
+      const k = intensityRef.current;
+      for (let i = 0; i < data.length; i += 4) {
+        const v = Math.random() * 255 * k;
+        data[i] = v;
+        data[i + 1] = v;
+        data[i + 2] = v;
+        data[i + 3] = 255;
+      }
+      // Subtle scanline darkening on every other row.
+      for (let y = 0; y < h; y += 2) {
+        const rowStart = y * w * 4;
+        const rowEnd = rowStart + w * 4;
+        for (let i = rowStart; i < rowEnd; i += 4) {
+          data[i] *= 0.78;
+          data[i + 1] *= 0.78;
+          data[i + 2] *= 0.78;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+    return () => {
+      ro.disconnect();
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={cn("pointer-events-none", className)}
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        imageRendering: "pixelated",
+        ...style,
+      }}
+    />
+  );
+}
+
+/**
+ * Persistent CRT shader-style overlay: vignette + horizontal scanlines +
+ * a faint RGB phosphor mask. Pure CSS gradients so it composites cheaply
+ * over the YouTube iframe.
+ */
+function CrtShaderOverlay({ active }: { active: boolean }) {
+  return (
+    <div
+      aria-hidden
+      className="absolute inset-0 pointer-events-none z-30"
+      style={{
+        opacity: active ? 1 : 0,
+        transition: "opacity 220ms ease-out",
+        // Layered effects:
+        //  1. Horizontal scanlines (1px on / 2px off)
+        //  2. RGB phosphor mask (vertical R/G/B subpixel stripes)
+        //  3. Soft corner vignette
+        backgroundImage: [
+          "repeating-linear-gradient(to bottom, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px)",
+          "repeating-linear-gradient(to right, rgba(255,0,0,0.04) 0px, rgba(255,0,0,0.04) 1px, rgba(0,255,0,0.04) 1px, rgba(0,255,0,0.04) 2px, rgba(0,0,255,0.04) 2px, rgba(0,0,255,0.04) 3px)",
+          "radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)",
+        ].join(", "),
+        mixBlendMode: "multiply",
+      }}
+    />
+  );
+}
+
+/**
+ * One-shot CRT power-on animation: bright horizontal beam expands from
+ * the middle (vertical squeeze unfolding) into the full picture, then a
+ * quick white flash fades. Mounts when `playKey` changes (any new key
+ * triggers a fresh play); unmounts itself after `duration`.
+ */
+function PowerOnEffect({
+  playKey,
+  onComplete,
+}: {
+  playKey: number;
+  onComplete?: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {playKey > 0 && (
+        <motion.div
+          key={playKey}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="absolute inset-0 pointer-events-none z-40 overflow-hidden bg-black"
+          onAnimationComplete={() => onComplete?.()}
+        >
+          {/* Black mask that vertically squeezes out, revealing the picture
+              from a thin horizontal line outward. */}
+          <motion.div
+            initial={{ scaleY: 1 }}
+            animate={{ scaleY: 0 }}
+            transition={{
+              duration: 0.55,
+              times: [0, 1],
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="absolute inset-0 bg-black origin-center"
+            style={{ transformOrigin: "center" }}
+          />
+          {/* Bright horizontal scanline beam that snaps across the middle. */}
+          <motion.div
+            initial={{ scaleX: 0, opacity: 1 }}
+            animate={{ scaleX: 1, opacity: 0 }}
+            transition={{
+              scaleX: { duration: 0.2, ease: "easeOut" },
+              opacity: { duration: 0.45, delay: 0.1, ease: "easeOut" },
+            }}
+            className="absolute left-0 right-0 top-1/2 -translate-y-1/2"
+            style={{
+              height: "2px",
+              background:
+                "linear-gradient(to right, transparent 0%, rgba(255,255,255,1) 50%, transparent 100%)",
+              boxShadow:
+                "0 0 16px 4px rgba(255,255,255,0.9), 0 0 32px 8px rgba(255,255,255,0.5)",
+              transformOrigin: "center",
+            }}
+          />
+          {/* Final brightness pop. */}
+          <motion.div
+            initial={{ opacity: 0.7 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+            className="absolute inset-0 bg-white"
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/**
+ * One-shot CRT power-off animation: picture squeezes vertically into a
+ * bright horizontal line, then collapses to a center dot and fades. Used
+ * when the user closes the TV window. The component renders an absolute
+ * black overlay with a single white "dying-tube" shape inside.
+ */
+function PowerOffEffect({
+  active,
+  onComplete,
+}: {
+  active: boolean;
+  onComplete?: () => void;
+}) {
+  return (
+    <AnimatePresence onExitComplete={() => onComplete?.()}>
+      {active && (
+        <motion.div
+          key="power-off"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.05 }}
+          className="absolute inset-0 pointer-events-none z-50 bg-black overflow-hidden"
+        >
+          {/* Bright vertical squeeze: full → 2px line → 0px (dot). */}
+          <motion.div
+            initial={{ scaleY: 1, scaleX: 1, opacity: 1 }}
+            animate={{
+              scaleY: [1, 0.02, 0.02],
+              scaleX: [1, 1, 0.0],
+              opacity: [1, 1, 0],
+            }}
+            transition={{
+              duration: 0.55,
+              times: [0, 0.45, 1],
+              ease: "easeIn",
+            }}
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(220,220,255,0.6) 30%, rgba(120,140,180,0.2) 60%, transparent 100%)",
+              transformOrigin: "center",
+            }}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export interface TvCrtEffectsProps {
+  /** Bumped to play a power-on animation. 0 means no animation has played yet. */
+  powerOnKey: number;
+  /** While true, runs the power-off animation. Caller should set it true
+   *  shortly before the window actually closes. */
+  poweringOff: boolean;
+  onPowerOffComplete?: () => void;
+  /** Bumped to play a brief channel-change static burst. */
+  channelSwitchKey: number;
+  /** Whether the player is currently buffering / loading. Drives a
+   *  sustained light static overlay. */
+  buffering: boolean;
+  /** Whether the persistent CRT scanline / vignette overlay is on. */
+  crtActive: boolean;
+}
+
+/**
+ * Combined CRT / shader effects layer for the TV app. Render this as an
+ * absolutely-positioned sibling of the YouTube player so it overlays the
+ * picture without affecting layout.
+ */
+export function TvCrtEffects({
+  powerOnKey,
+  poweringOff,
+  onPowerOffComplete,
+  channelSwitchKey,
+  buffering,
+  crtActive,
+}: TvCrtEffectsProps) {
+  // Transient channel-switch noise burst. Auto-clears via AnimatePresence.
+  return (
+    <>
+      <CrtShaderOverlay active={crtActive} />
+
+      {/* Sustained buffering static — soft, lower opacity. */}
+      <AnimatePresence>
+        {buffering && (
+          <motion.div
+            key="tv-buffering"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.45 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0 z-30 pointer-events-none"
+          >
+            <NoiseCanvas intensity={0.85} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Channel-switch burst — brief, full opacity. Re-keys on every
+          channel change so a new burst plays even mid-fade. */}
+      <AnimatePresence>
+        {channelSwitchKey > 0 && (
+          <motion.div
+            key={`tv-channel-${channelSwitchKey}`}
+            initial={{ opacity: 1 }}
+            animate={{ opacity: [1, 1, 0] }}
+            transition={{
+              duration: 0.5,
+              times: [0, 0.55, 1],
+              ease: "easeOut",
+            }}
+            className="absolute inset-0 z-40 pointer-events-none"
+          >
+            <NoiseCanvas intensity={1} />
+            {/* Quick horizontal tear / RGB shift band sweeping through. */}
+            <motion.div
+              initial={{ y: "-20%" }}
+              animate={{ y: "120%" }}
+              transition={{ duration: 0.45, ease: "easeIn" }}
+              className="absolute left-0 right-0"
+              style={{
+                height: "18%",
+                background:
+                  "linear-gradient(to bottom, transparent 0%, rgba(255,0,80,0.25) 30%, rgba(0,200,255,0.25) 70%, transparent 100%)",
+                mixBlendMode: "screen",
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <PowerOnEffect playKey={powerOnKey} />
+      <PowerOffEffect
+        active={poweringOff}
+        onComplete={onPowerOffComplete}
+      />
+    </>
+  );
+}

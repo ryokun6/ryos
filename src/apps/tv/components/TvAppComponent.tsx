@@ -7,6 +7,7 @@ import { WindowFrame } from "@/components/layout/WindowFrame";
 import { TvMenuBar } from "./TvMenuBar";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 import { ChannelPromptInput } from "./ChannelPromptInput";
+import { TvCrtEffects } from "./TvCrtEffects";
 import { useCreateTvChannel } from "../hooks/useCreateTvChannel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -355,6 +356,13 @@ export function TvAppComponent({
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
+  // CRT shader effect triggers. Bumping these counters re-keys the
+  // animations inside TvCrtEffects so a new burst plays on every event.
+  const [powerOnKey, setPowerOnKey] = useState(0);
+  const [channelSwitchKey, setChannelSwitchKey] = useState(0);
+  const [poweringOff, setPoweringOff] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+
   const customChannels = useTvStore((s) => s.customChannels);
   const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
   const importChannels = useTvStore((s) => s.importChannels);
@@ -450,6 +458,41 @@ export function TvAppComponent({
     setLcdSlot("now");
   }, [currentChannelId, currentVideo?.id]);
 
+  // Power-on shader: play once whenever the window transitions from
+  // closed → open. Reset on close so re-opening triggers a fresh
+  // animation. Skipping when `skipInitialSound` is true keeps the
+  // browser-restore path quiet (matches WindowFrame's open-sound rule).
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (isWindowOpen && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+      if (!skipInitialSound) {
+        setPowerOnKey((k) => k + 1);
+      }
+    } else if (!isWindowOpen && wasOpenRef.current) {
+      wasOpenRef.current = false;
+      setPoweringOff(false);
+    }
+  }, [isWindowOpen, skipInitialSound]);
+
+  // Channel-switch static: fire a brief burst whenever the current
+  // channel changes. Skip the very first mount so opening the TV doesn't
+  // double up with the power-on animation.
+  const channelMountedRef = useRef(false);
+  useEffect(() => {
+    if (!channelMountedRef.current) {
+      channelMountedRef.current = true;
+      return;
+    }
+    setChannelSwitchKey((k) => k + 1);
+  }, [currentChannelId]);
+
+  // Reset the buffering flag whenever the URL changes so a previous
+  // channel's pending-buffer state can't leak into the new picture.
+  useEffect(() => {
+    setIsBuffering(false);
+  }, [currentVideo?.id]);
+
   useEffect(() => {
     if (!isPlaying || !scheduleNextTitle) return;
     const id = window.setInterval(() => {
@@ -486,6 +529,30 @@ export function TvAppComponent({
     />
   );
 
+  // Power-off shader runs *before* the window-frame close animation.
+  // We intercept the close, play the CRT collapse, then dispatch the
+  // standard close-confirmation event WindowFrame listens for.
+  const handleInterceptedClose = () => {
+    if (poweringOff) return;
+    setPoweringOff(true);
+  };
+
+  const handlePowerOffComplete = () => {
+    // Tell WindowFrame to actually run its close animation + cleanup.
+    if (!instanceId) {
+      // Non-instance fallback: just call the prop. (Shouldn't happen
+      // in practice — TV is always instance-mounted — but keep it
+      // safe against legacy mounts.)
+      onClose?.();
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent(`closeWindow-${instanceId}`, {
+        detail: { onComplete: onClose },
+      })
+    );
+  };
+
   if (!isWindowOpen) return null;
 
   const url = currentVideo?.url ?? "";
@@ -504,12 +571,13 @@ export function TvAppComponent({
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
         title={getTranslatedAppName("tv")}
-        onClose={onClose}
+        onClose={handleInterceptedClose}
         isForeground={isForeground}
         appId="tv"
         material={isMacOSTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
+        interceptClose={true}
         menuBar={isXpTheme ? menuBar : undefined}
         onFullscreenToggle={toggleFullScreen}
       >
@@ -546,14 +614,27 @@ export function TvAppComponent({
                     onError={handleError}
                     onProgress={handleProgress}
                     onDuration={handleDuration}
-                    onPlay={() => setIsPlaying(true)}
+                    onPlay={() => {
+                      setIsPlaying(true);
+                      setIsBuffering(false);
+                    }}
                     onPause={() => setIsPlaying(false)}
+                    onBuffer={() => setIsBuffering(true)}
+                    onBufferEnd={() => setIsBuffering(false)}
                     config={{
                       youtube: { playerVars: { fs: 0, autoplay: 1 } },
                     }}
                   />
                 )}
               </div>
+              <TvCrtEffects
+                powerOnKey={powerOnKey}
+                poweringOff={poweringOff}
+                onPowerOffComplete={handlePowerOffComplete}
+                channelSwitchKey={channelSwitchKey}
+                buffering={isBuffering || (!url && isPlaying)}
+                crtActive={true}
+              />
               <AnimatePresence>
                 {statusMessage && (
                   <motion.div
@@ -561,7 +642,7 @@ export function TvAppComponent({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-4 left-4 z-40"
+                    className="absolute top-4 left-4 z-[45]"
                   >
                     <StatusDisplay message={statusMessage} />
                   </motion.div>
