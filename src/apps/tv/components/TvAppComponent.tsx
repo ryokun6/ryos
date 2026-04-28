@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -184,6 +184,101 @@ function AnimatedScheduleLabel({
           {text}
         </motion.div>
       </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * Channel name shown in the LCD's NET column. Truncates when it fits, but
+ * marquee-scrolls (matching the NOW/NEXT title scroll) when the name is
+ * longer than the available width so the viewer can read the whole thing.
+ */
+function ScrollingChannelName({
+  name,
+  isPlaying,
+}: {
+  name: string;
+  isPlaying: boolean;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLSpanElement>(null);
+  const [overflows, setOverflows] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+    const check = () => {
+      setOverflows(content.scrollWidth > container.clientWidth + 1);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [name]);
+
+  const shouldAnimate = overflows && isPlaying;
+
+  return (
+    <div ref={containerRef} className="relative overflow-hidden text-xl">
+      {/* Single copy establishes the column height; hidden once we scroll
+          so it doesn't double up with the marquee copies below. */}
+      <span
+        ref={contentRef}
+        className={cn(
+          "block whitespace-nowrap",
+          overflows ? "invisible" : "truncate"
+        )}
+      >
+        {name}
+      </span>
+      {overflows && (
+        <>
+          <div className="absolute inset-0 flex whitespace-nowrap">
+            <motion.span
+              initial={{ x: "0%" }}
+              animate={{ x: shouldAnimate ? "-100%" : "0%" }}
+              transition={
+                shouldAnimate
+                  ? {
+                      duration: 8,
+                      ease: "linear",
+                      repeat: Infinity,
+                      repeatType: "loop",
+                    }
+                  : { duration: 0.3 }
+              }
+              className="shrink-0 pr-4"
+            >
+              {name}
+            </motion.span>
+            <motion.span
+              initial={{ x: "0%" }}
+              animate={{ x: shouldAnimate ? "-100%" : "0%" }}
+              transition={
+                shouldAnimate
+                  ? {
+                      duration: 8,
+                      ease: "linear",
+                      repeat: Infinity,
+                      repeatType: "loop",
+                    }
+                  : { duration: 0.3 }
+              }
+              className="shrink-0 pr-4"
+              aria-hidden
+            >
+              {name}
+            </motion.span>
+          </div>
+          {shouldAnimate && (
+            <>
+              <div className="absolute left-0 top-0 h-full w-3 bg-gradient-to-r from-black to-transparent videos-lcd-fade-left pointer-events-none" />
+              <div className="absolute right-0 top-0 h-full w-3 bg-gradient-to-l from-black to-transparent videos-lcd-fade-right pointer-events-none" />
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -503,9 +598,10 @@ export function TvAppComponent({
                   )}
                 >
                   <div>{t("apps.tv.status.network")}</div>
-                  <div className="text-xl truncate">
-                    {currentChannel?.name ?? ""}
-                  </div>
+                  <ScrollingChannelName
+                    name={currentChannel?.name ?? ""}
+                    isPlaying={isPlaying}
+                  />
                 </div>
               </div>
               <div className="relative overflow-hidden flex-1 min-w-0 px-2">

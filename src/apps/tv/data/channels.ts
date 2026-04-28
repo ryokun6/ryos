@@ -13,7 +13,7 @@ export const DEFAULT_CHANNELS: Channel[] = [
   {
     id: "ryos-picks",
     number: 1,
-    name: "Ryo TV",
+    name: "RyoTV",
     description: "Plays from your Videos app library",
     videos: [],
   },
