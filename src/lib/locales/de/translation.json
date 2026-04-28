@@ -1401,16 +1401,16 @@
       "viewChangelog": "Änderungsprotokoll anzeigen",
       "wallpaperCategories": {
         "aqua": "Aqua",
+        "black_and_white": "Schwarzweiß",
         "convergency": "Konvergenz",
         "foliage": "Blattwerk",
         "graphics": "Grafiken",
         "landscapes": "Landschaften",
+        "nature": "Natur",
         "nostalgia": "Nostalgie",
         "objects": "Objekte",
-        "structures": "Strukturen",
-        "nature": "Natur",
         "plants": "Pflanzen",
-        "black_and_white": "Schwarzweiß"
+        "structures": "Strukturen"
       }
     },
     "dashboard": {
@@ -2957,6 +2957,95 @@
       "text": "Text",
       "underline": "Unterstreichen",
       "untitled": "Unbenannt"
+    },
+    "tv": {
+      "channelBadge": "CH {{number}} — {{name}}",
+      "create": {
+        "creating": "Wird erstellt...",
+        "description": "Beschreibe einen Kanal und die KI wird ihn mit Videos von YouTube programmieren.",
+        "errorEmpty": "Beschreibe einen Kanal, um loszulegen.",
+        "errorGeneric": "Kanal konnte nicht erstellt werden. Bitte versuche es erneut.",
+        "errorNoVideos": "Keine Videos für diese Idee gefunden. Versuche eine andere Beschreibung.",
+        "errorRateLimit": "Zu viele Kanäle erstellt. Bitte warte kurz und versuche es erneut.",
+        "placeholder": "z. B. Skateboarding-Tricks und Parks",
+        "statusPlanning": "Kanal wird geplant...",
+        "statusSearching": "YouTube wird durchsucht...",
+        "statusTuning": "Einschalten...",
+        "submit": "Kanal erstellen",
+        "title": "Neuer Kanal"
+      },
+      "delete": {
+        "description": "Soll der Kanal „{{name}}“ von deinem Fernseher entfernt werden?",
+        "title": "Kanal löschen"
+      },
+      "description": "Zappe durch YouTube",
+      "help": {
+        "channels": {
+          "description": "Zappe durch kuratierte YouTube-Kanäle wie bei einem Fernseher",
+          "title": "Kanäle"
+        },
+        "fullscreen": {
+          "description": "Im Vollbildmodus über das Steuerungsmenü oder den Fensterrahmen ansehen",
+          "title": "Vollbild"
+        },
+        "helpAbout": {
+          "description": "Öffnen Sie die Hilfe im Hilfe-Menü für weitere Informationen",
+          "title": "Hilfe & Über"
+        },
+        "numbers": {
+          "description": "Drücken Sie 1–6, um zu einem Kanal zu springen, oder nutzen Sie CH+ / CH−",
+          "title": "Kanalnummern"
+        },
+        "playback": {
+          "description": "Videos im aktuellen Kanal abspielen, pausieren und überspringen",
+          "title": "Wiedergabe"
+        },
+        "shortcuts": {
+          "description": "Pfeiltasten: Auf/Ab wechselt den Kanal, Links/Rechts wechselt das Video",
+          "title": "Kurzbefehle"
+        }
+      },
+      "menu": {
+        "about": "Über TV",
+        "channelDown": "Kanal ab",
+        "channelUp": "Kanal auf",
+        "channels": "Kanäle",
+        "controls": "Steuerung",
+        "deleteChannel": "Kanal löschen",
+        "exportChannels": "Kanäle exportieren...",
+        "fullScreen": "Vollbild",
+        "importChannels": "Kanäle importieren...",
+        "newChannel": "Neuer Kanal...",
+        "next": "Weiter",
+        "pause": "Pause",
+        "play": "Wiedergabe",
+        "previous": "Zurück",
+        "tvHelp": "TV-Hilfe"
+      },
+      "name": "TV",
+      "nowPlaying": "CH {{channel}} · {{title}}",
+      "status": {
+        "add": "HINZUFÜGEN",
+        "channel": "CH",
+        "channelDown": "CH−",
+        "channelUp": "CH+",
+        "network": "NET",
+        "next": "WEITER",
+        "noSignal": "KEIN SIGNAL",
+        "now": "JETZT",
+        "time": "ZEIT",
+        "title": "TITEL",
+        "video": "VID"
+      },
+      "title": "TV",
+      "toasts": {
+        "exportFailed": "Sender konnten nicht exportiert werden",
+        "exportSuccess": "Sender exportiert",
+        "importEmpty": "Keine gültigen Sender in dieser Datei gefunden",
+        "importFailed": "Kanäle konnten nicht importiert werden – Datei ist eventuell ungültig",
+        "importSuccess_one": "{{count}} Kanal importiert ({{skipped}} übersprungen)",
+        "importSuccess_other": "{{count}} Kanäle importiert ({{skipped}} übersprungen)"
+      }
     },
     "videos": {
       "description": "Videos ansehen",

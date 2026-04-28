@@ -1401,16 +1401,16 @@
       "viewChangelog": "변경 로그 보기",
       "wallpaperCategories": {
         "aqua": "아쿠아",
+        "black_and_white": "흑백",
         "convergency": "수렴",
         "foliage": "나뭇잎",
         "graphics": "그래픽",
         "landscapes": "풍경",
+        "nature": "자연",
         "nostalgia": "향수",
         "objects": "사물",
-        "structures": "구조물",
-        "nature": "자연",
         "plants": "식물",
-        "black_and_white": "흑백"
+        "structures": "구조물"
       }
     },
     "dashboard": {
@@ -2957,6 +2957,95 @@
       "text": "텍스트",
       "underline": "밑줄",
       "untitled": "제목 없음"
+    },
+    "tv": {
+      "channelBadge": "CH {{number}} — {{name}}",
+      "create": {
+        "creating": "생성 중...",
+        "description": "채널에 대해 설명하면 AI가 YouTube 동영상으로 채널을 편성합니다.",
+        "errorEmpty": "시작하려면 채널에 대해 설명해 주세요.",
+        "errorGeneric": "채널을 생성할 수 없습니다. 다시 시도해 주세요.",
+        "errorNoVideos": "해당 아이디어에 대한 동영상을 찾을 수 없습니다. 다른 설명을 입력해 보세요.",
+        "errorRateLimit": "너무 많은 채널이 생성되었습니다. 잠시 후 다시 시도해 주세요.",
+        "placeholder": "예: 스케이트보드 기술 및 파크",
+        "statusPlanning": "채널 계획 중...",
+        "statusSearching": "YouTube 검색 중...",
+        "statusTuning": "채널 맞추는 중...",
+        "submit": "채널 생성",
+        "title": "새 채널"
+      },
+      "delete": {
+        "description": "TV에서 \"{{name}}\" 채널을 삭제하시겠습니까?",
+        "title": "채널 삭제"
+      },
+      "description": "YouTube 채널 서핑",
+      "help": {
+        "channels": {
+          "description": "TV처럼 큐레이션된 YouTube 채널을 넘겨보세요",
+          "title": "채널"
+        },
+        "fullscreen": {
+          "description": "제어 메뉴 또는 윈도우 크롬에서 전체 화면으로 시청하세요",
+          "title": "전체 화면"
+        },
+        "helpAbout": {
+          "description": "도움말 메뉴에서 도움말을 열어 더 많은 정보를 확인하세요",
+          "title": "도움말 및 정보"
+        },
+        "numbers": {
+          "description": "1–6을 눌러 채널로 이동하거나 CH+ / CH−를 사용하세요",
+          "title": "채널 번호"
+        },
+        "playback": {
+          "description": "현재 채널 내에서 동영상을 재생, 일시 정지 및 건너뜁니다",
+          "title": "재생"
+        },
+        "shortcuts": {
+          "description": "화살표 키: 위/아래는 채널 변경, 왼쪽/오른쪽은 동영상 변경",
+          "title": "단축키"
+        }
+      },
+      "menu": {
+        "about": "TV 정보",
+        "channelDown": "채널 아래로",
+        "channelUp": "채널 위로",
+        "channels": "채널",
+        "controls": "컨트롤",
+        "deleteChannel": "채널 삭제",
+        "exportChannels": "채널 내보내기...",
+        "fullScreen": "전체 화면",
+        "importChannels": "채널 가져오기...",
+        "newChannel": "새 채널...",
+        "next": "다음",
+        "pause": "일시 정지",
+        "play": "재생",
+        "previous": "이전",
+        "tvHelp": "TV 도움말"
+      },
+      "name": "TV",
+      "nowPlaying": "CH {{channel}} · {{title}}",
+      "status": {
+        "add": "추가",
+        "channel": "CH",
+        "channelDown": "CH−",
+        "channelUp": "CH+",
+        "network": "NET",
+        "next": "다음",
+        "noSignal": "신호 없음",
+        "now": "현재",
+        "time": "시간",
+        "title": "제목",
+        "video": "VID"
+      },
+      "title": "TV",
+      "toasts": {
+        "exportFailed": "채널을 내보낼 수 없습니다",
+        "exportSuccess": "채널을 내보냈습니다",
+        "importEmpty": "해당 파일에서 유효한 채널을 찾을 수 없습니다",
+        "importFailed": "채널을 가져올 수 없습니다 — 파일이 유효하지 않을 수 있습니다",
+        "importSuccess_one": "{{count}}개의 채널을 가져왔습니다 ({{skipped}}개 건너뜀)",
+        "importSuccess_other": "{{count}}개의 채널을 가져왔습니다 ({{skipped}}개 건너뜀)"
+      }
     },
     "videos": {
       "description": "동영상 시청",

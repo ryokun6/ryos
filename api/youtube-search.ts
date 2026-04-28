@@ -10,6 +10,9 @@ export const maxDuration = 30;
 const YouTubeSearchRequestSchema = z.object({
   query: z.string().min(1, "Query is required"),
   maxResults: z.number().min(1).max(25).optional().default(10),
+  // "music" preserves karaoke / iPod song-search behavior (videoCategoryId=10);
+  // "all" performs an unrestricted video search (used by TV channel creation).
+  category: z.enum(["music", "all"]).optional().default("music"),
 });
 
 type YouTubeSearchRequest = z.infer<typeof YouTubeSearchRequestSchema>;
@@ -132,8 +135,8 @@ export default apiHandler(
       return;
     }
 
-    const { query, maxResults } = body;
-    logger.info("Searching YouTube", { query, maxResults });
+    const { query, maxResults, category } = body;
+    logger.info("Searching YouTube", { query, maxResults, category });
 
     const isQuotaError = (status: number, data: YouTubeSearchResponse): boolean => {
       if (status === 403) {
@@ -155,7 +158,10 @@ export default apiHandler(
         const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
         searchUrl.searchParams.set("part", "snippet");
         searchUrl.searchParams.set("type", "video");
-        searchUrl.searchParams.set("videoCategoryId", "10");
+        searchUrl.searchParams.set("videoEmbeddable", "true");
+        if (category === "music") {
+          searchUrl.searchParams.set("videoCategoryId", "10");
+        }
         searchUrl.searchParams.set("q", query);
         searchUrl.searchParams.set("maxResults", String(maxResults));
         searchUrl.searchParams.set("key", apiKey);

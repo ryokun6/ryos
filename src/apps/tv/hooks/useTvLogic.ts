@@ -47,6 +47,15 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const isPlaying = useTvStore((s) => s.isPlaying);
   const setIsPlaying = useTvStore((s) => s.setIsPlaying);
   const togglePlayStore = useTvStore((s) => s.togglePlay);
+  const customChannels = useTvStore((s) => s.customChannels);
+
+  // Built-in channels are always shown first; user-created ones appear
+  // after them in the order they were added so channel numbers stay stable
+  // as the user adds/removes custom channels.
+  const channels = useMemo(
+    (): Channel[] => [...DEFAULT_CHANNELS, ...customChannels],
+    [customChannels]
+  );
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -81,8 +90,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
 
   const currentChannel = useMemo((): Channel => {
     const base =
-      DEFAULT_CHANNELS.find((c) => c.id === currentChannelId) ??
-      DEFAULT_CHANNELS[0];
+      channels.find((c) => c.id === currentChannelId) ?? channels[0];
     const rawSource =
       base.id === MTV_CHANNEL_ID
         ? ipodTracks.map(trackToVideo)
@@ -95,7 +103,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
       ...base,
       videos: shuffleArray(source),
     };
-  }, [currentChannelId, ipodTracks]);
+  }, [channels, currentChannelId, ipodTracks]);
 
   const videoIndex = lastVideoIndexByChannel[currentChannelId] ?? 0;
 
@@ -134,7 +142,15 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
 
   const setChannelById = useCallback(
     (id: string) => {
-      const ch = DEFAULT_CHANNELS.find((c) => c.id === id);
+      // Look up via store + defaults instead of the closed-over `channels`
+      // memo. After `addCustomChannel`, the Zustand store is updated
+      // synchronously, but React hasn't re-rendered the parent yet, so a
+      // closure on `channels` would miss a freshly-created channel and
+      // silently no-op when callers tune in to it.
+      const customs = useTvStore.getState().customChannels;
+      const ch =
+        DEFAULT_CHANNELS.find((c) => c.id === id) ??
+        customs.find((c) => c.id === id);
       if (!ch) return;
       // Cancel any in-flight digit buffer so a partial channel number from
       // the keyboard doesn't merge with the next press after a manual switch.
@@ -157,29 +173,25 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
 
   const setChannelByNumber = useCallback(
     (num: number) => {
-      const ch = DEFAULT_CHANNELS.find((c) => c.number === num);
+      const ch = channels.find((c) => c.number === num);
       if (ch) setChannelById(ch.id);
     },
-    [setChannelById]
+    [channels, setChannelById]
   );
 
   const nextChannel = useCallback(() => {
     setAnimationDirection("next");
-    const idx = DEFAULT_CHANNELS.findIndex((c) => c.id === currentChannelId);
-    const next = DEFAULT_CHANNELS[
-      nextIndex(idx, DEFAULT_CHANNELS.length)
-    ] as Channel;
+    const idx = channels.findIndex((c) => c.id === currentChannelId);
+    const next = channels[nextIndex(idx, channels.length)] as Channel;
     setChannelById(next.id);
-  }, [currentChannelId, setChannelById]);
+  }, [channels, currentChannelId, setChannelById]);
 
   const prevChannel = useCallback(() => {
     setAnimationDirection("prev");
-    const idx = DEFAULT_CHANNELS.findIndex((c) => c.id === currentChannelId);
-    const prev = DEFAULT_CHANNELS[
-      prevIndex(idx, DEFAULT_CHANNELS.length)
-    ] as Channel;
+    const idx = channels.findIndex((c) => c.id === currentChannelId);
+    const prev = channels[prevIndex(idx, channels.length)] as Channel;
     setChannelById(prev.id);
-  }, [currentChannelId, setChannelById]);
+  }, [channels, currentChannelId, setChannelById]);
 
   const nextVideo = useCallback(() => {
     const list = currentChannel?.videos ?? [];
@@ -377,7 +389,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     setIsVideoHovered,
     statusMessage,
     showStatus,
-    channels: DEFAULT_CHANNELS,
+    channels,
     animationDirection,
     elapsedTime,
     videoIndex,

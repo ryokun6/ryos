@@ -1,12 +1,15 @@
-import { useState, useEffect, type RefObject } from "react";
+import { useEffect, useMemo, useState, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
 import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { TvMenuBar } from "./TvMenuBar";
+import { CreateChannelDialog } from "./CreateChannelDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { useTvStore } from "@/stores/useTvStore";
 import { appMetadata } from "..";
 import { Button } from "@/components/ui/button";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -14,6 +17,7 @@ import { VideoFullScreenPortal } from "@/components/shared/VideoFullScreenPortal
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { useTvLogic } from "../hooks/useTvLogic";
 import { SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 function AnimatedDigit({
   digit,
@@ -251,6 +255,76 @@ export function TvAppComponent({
   const [scheduleAnimDirection, setScheduleAnimDirection] = useState<
     "next" | "prev"
   >("next");
+  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const customChannels = useTvStore((s) => s.customChannels);
+  const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
+  const importChannels = useTvStore((s) => s.importChannels);
+  const exportChannels = useTvStore((s) => s.exportChannels);
+  const customChannelIds = useMemo(
+    () => new Set(customChannels.map((c) => c.id)),
+    [customChannels]
+  );
+  const pendingDeleteChannel = useMemo(
+    () =>
+      pendingDeleteId
+        ? customChannels.find((c) => c.id === pendingDeleteId) ?? null
+        : null,
+    [pendingDeleteId, customChannels]
+  );
+
+  const handleExportChannels = () => {
+    try {
+      const json = exportChannels();
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tv-channels-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t("apps.tv.toasts.exportSuccess"));
+    } catch (error) {
+      console.error("Failed to export channels:", error);
+      toast.error(t("apps.tv.toasts.exportFailed"));
+    }
+  };
+
+  const handleImportChannels = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const json = event.target?.result;
+          if (typeof json !== "string") throw new Error("empty file");
+          const result = importChannels(json);
+          if (result.added === 0) {
+            toast.error(t("apps.tv.toasts.importEmpty"));
+            return;
+          }
+          toast.success(
+            t("apps.tv.toasts.importSuccess", {
+              count: result.added,
+              skipped: result.skipped,
+            })
+          );
+        } catch (error) {
+          console.error("Failed to import channels:", error);
+          toast.error(t("apps.tv.toasts.importFailed"));
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
 
   useEffect(() => {
     setLcdSlot("now");
@@ -274,8 +348,14 @@ export function TvAppComponent({
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       channels={channels}
+      customChannelIds={customChannelIds}
+      hasCustomChannels={customChannels.length > 0}
       currentChannelId={currentChannelId}
       onSelectChannel={setChannelById}
+      onCreateChannel={() => setIsCreateChannelOpen(true)}
+      onDeleteChannel={(id) => setPendingDeleteId(id)}
+      onImportChannels={handleImportChannels}
+      onExportChannels={handleExportChannels}
       isPlaying={isPlaying}
       onTogglePlay={togglePlay}
       onNextVideo={nextVideo}
@@ -541,41 +621,62 @@ export function TvAppComponent({
 
               <div className="flex items-center gap-2">
                 {isMacOSTheme ? (
-                  <div className="metal-inset-btn-group">
-                    <button
-                      type="button"
-                      className="metal-inset-btn font-geneva-12 !text-[11px]"
-                      onClick={prevChannel}
-                    >
-                      {t("apps.tv.status.channelDown")}
-                    </button>
-                    <button
-                      type="button"
-                      className="metal-inset-btn font-geneva-12 !text-[11px]"
-                      onClick={nextChannel}
-                    >
-                      {t("apps.tv.status.channelUp")}
-                    </button>
-                  </div>
+                  <>
+                    <div className="metal-inset-btn-group">
+                      <button
+                        type="button"
+                        className="metal-inset-btn font-geneva-12 !text-[11px]"
+                        onClick={prevChannel}
+                      >
+                        {t("apps.tv.status.channelDown")}
+                      </button>
+                      <button
+                        type="button"
+                        className="metal-inset-btn font-geneva-12 !text-[11px]"
+                        onClick={nextChannel}
+                      >
+                        {t("apps.tv.status.channelUp")}
+                      </button>
+                    </div>
+                    <div className="metal-inset-btn-group">
+                      <button
+                        type="button"
+                        className="metal-inset-btn font-geneva-12 !text-[11px]"
+                        onClick={() => setIsCreateChannelOpen(true)}
+                      >
+                        {t("apps.tv.status.add")}
+                      </button>
+                    </div>
+                  </>
                 ) : (
-                  <div className="flex gap-0">
+                  <>
+                    <div className="flex gap-0">
+                      <Button
+                        type="button"
+                        onClick={prevChannel}
+                        variant="player"
+                        className="h-[22px] px-2 font-geneva-12"
+                      >
+                        {t("apps.tv.status.channelDown")}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={nextChannel}
+                        variant="player"
+                        className="h-[22px] px-2 font-geneva-12"
+                      >
+                        {t("apps.tv.status.channelUp")}
+                      </Button>
+                    </div>
                     <Button
                       type="button"
-                      onClick={prevChannel}
+                      onClick={() => setIsCreateChannelOpen(true)}
                       variant="player"
                       className="h-[22px] px-2 font-geneva-12"
                     >
-                      {t("apps.tv.status.channelDown")}
+                      {t("apps.tv.status.add")}
                     </Button>
-                    <Button
-                      type="button"
-                      onClick={nextChannel}
-                      variant="player"
-                      className="h-[22px] px-2 font-geneva-12"
-                    >
-                      {t("apps.tv.status.channelUp")}
-                    </Button>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -593,6 +694,32 @@ export function TvAppComponent({
         onOpenChange={setIsAboutDialogOpen}
         metadata={appMetadata}
         appId="tv"
+      />
+      <CreateChannelDialog
+        isOpen={isCreateChannelOpen}
+        onOpenChange={setIsCreateChannelOpen}
+        onChannelCreated={(id) => {
+          // Tune in immediately so the user can see what they got. The
+          // store has already inserted the channel; setChannelById drives
+          // the same status-flash UX as the menu / CH+/CH- buttons.
+          setChannelById(id);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={Boolean(pendingDeleteChannel)}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteId(null);
+        }}
+        onConfirm={() => {
+          if (pendingDeleteId) {
+            removeCustomChannel(pendingDeleteId);
+            setPendingDeleteId(null);
+          }
+        }}
+        title={t("apps.tv.delete.title")}
+        description={t("apps.tv.delete.description", {
+          name: pendingDeleteChannel?.name ?? "",
+        })}
       />
       {isFullScreen && url && (
         <VideoFullScreenPortal

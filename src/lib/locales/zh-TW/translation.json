@@ -1401,16 +1401,16 @@
       "viewChangelog": "查看更新日誌",
       "wallpaperCategories": {
         "aqua": "水藍",
+        "black_and_white": "黑白",
         "convergency": "匯聚",
         "foliage": "綠葉",
         "graphics": "圖形",
         "landscapes": "風景",
+        "nature": "自然",
         "nostalgia": "懷舊",
         "objects": "物件",
-        "structures": "建築",
-        "nature": "自然",
         "plants": "植物",
-        "black_and_white": "黑白"
+        "structures": "建築"
       }
     },
     "dashboard": {
@@ -2957,6 +2957,95 @@
       "text": "文字",
       "underline": "底線",
       "untitled": "未命名"
+    },
+    "tv": {
+      "channelBadge": "CH {{number}} — {{name}}",
+      "create": {
+        "creating": "正在建立...",
+        "description": "描述頻道內容，AI 將會使用 YouTube 影片進行編排。",
+        "errorEmpty": "描述頻道內容以開始。",
+        "errorGeneric": "無法建立頻道。請再試一次。",
+        "errorNoVideos": "找不到與該構想相關的影片。請嘗試不同的描述。",
+        "errorRateLimit": "已建立太多頻道。請稍候再試。",
+        "placeholder": "例如：滑板技巧與公園",
+        "statusPlanning": "正在規劃頻道...",
+        "statusSearching": "正在搜尋 YouTube...",
+        "statusTuning": "正在調頻...",
+        "submit": "建立頻道",
+        "title": "新頻道"
+      },
+      "delete": {
+        "description": "要從您的電視移除「{{name}}」頻道嗎？",
+        "title": "刪除頻道"
+      },
+      "description": "在 YouTube 上轉台",
+      "help": {
+        "channels": {
+          "description": "像看電視一樣切換精選的 YouTube 頻道",
+          "title": "頻道"
+        },
+        "fullscreen": {
+          "description": "可從控制選單或視窗邊框切換至全螢幕收看",
+          "title": "全螢幕"
+        },
+        "helpAbout": {
+          "description": "從「說明」選單中開啟「說明」以取得更多資訊",
+          "title": "說明與關於"
+        },
+        "numbers": {
+          "description": "按 1–6 鍵跳至頻道，或使用 CH+ / CH−",
+          "title": "頻道號碼"
+        },
+        "playback": {
+          "description": "在目前頻道中播放、暫停和跳過影片",
+          "title": "播放"
+        },
+        "shortcuts": {
+          "description": "方向鍵：上/下鍵切換頻道，左/右鍵切換影片",
+          "title": "快速鍵"
+        }
+      },
+      "menu": {
+        "about": "關於 TV",
+        "channelDown": "頻道遞減",
+        "channelUp": "頻道遞增",
+        "channels": "頻道",
+        "controls": "控制",
+        "deleteChannel": "刪除頻道",
+        "exportChannels": "匯出頻道...",
+        "fullScreen": "全螢幕",
+        "importChannels": "匯入頻道...",
+        "newChannel": "新增頻道...",
+        "next": "下一個",
+        "pause": "暫停",
+        "play": "播放",
+        "previous": "上一個",
+        "tvHelp": "電視說明"
+      },
+      "name": "電視",
+      "nowPlaying": "頻道 {{channel}} · {{title}}",
+      "status": {
+        "add": "新增",
+        "channel": "頻道",
+        "channelDown": "頻道−",
+        "channelUp": "頻道+",
+        "network": "網路",
+        "next": "下一個",
+        "noSignal": "無訊號",
+        "now": "現在",
+        "time": "時間",
+        "title": "標題",
+        "video": "視訊"
+      },
+      "title": "電視",
+      "toasts": {
+        "exportFailed": "無法匯出頻道",
+        "exportSuccess": "頻道已匯出",
+        "importEmpty": "該檔案中找不到有效的頻道",
+        "importFailed": "無法匯入頻道 — 檔案可能無效",
+        "importSuccess_one": "已匯入 {{count}} 個頻道 (已跳過 {{skipped}} 個)",
+        "importSuccess_other": "已匯入 {{count}} 個頻道 (已跳過 {{skipped}} 個)"
+      }
     },
     "videos": {
       "description": "觀看影片",

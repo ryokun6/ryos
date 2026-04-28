@@ -17,8 +17,14 @@ interface TvMenuBarProps {
   onShowHelp: () => void;
   onShowAbout: () => void;
   channels: Channel[];
+  customChannelIds: Set<string>;
+  hasCustomChannels: boolean;
   currentChannelId: string;
   onSelectChannel: (id: string) => void;
+  onCreateChannel: () => void;
+  onDeleteChannel: (id: string) => void;
+  onImportChannels: () => void;
+  onExportChannels: () => void;
   isPlaying: boolean;
   onTogglePlay: () => void;
   onNextVideo: () => void;
@@ -33,8 +39,14 @@ export function TvMenuBar({
   onShowHelp,
   onShowAbout,
   channels,
+  customChannelIds,
+  hasCustomChannels,
   currentChannelId,
   onSelectChannel,
+  onCreateChannel,
+  onDeleteChannel,
+  onImportChannels,
+  onExportChannels,
   isPlaying,
   onTogglePlay,
   onNextVideo,
@@ -43,6 +55,7 @@ export function TvMenuBar({
   onPrevChannel,
   onFullScreen,
 }: TvMenuBarProps) {
+  const isCurrentChannelCustom = customChannelIds.has(currentChannelId);
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -55,6 +68,23 @@ export function TvMenuBar({
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem onClick={onCreateChannel} className="text-md h-6 px-3">
+            {t("apps.tv.menu.newChannel")}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
+            onClick={onExportChannels}
+            disabled={!hasCustomChannels}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.tv.menu.exportChannels")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onImportChannels}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.tv.menu.importChannels")}
+          </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onClose} className="text-md h-6 px-3">
             {t("common.menu.close")}
@@ -107,6 +137,17 @@ export function TvMenuBar({
               </MenubarRadioItem>
             ))}
           </MenubarRadioGroup>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem onClick={onCreateChannel} className="text-md h-6 px-3">
+            {t("apps.tv.menu.newChannel")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={() => onDeleteChannel(currentChannelId)}
+            disabled={!isCurrentChannelCustom}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.tv.menu.deleteChannel")}
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>

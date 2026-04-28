@@ -1549,6 +1549,7 @@
         "title": "TITLE",
         "channelDown": "CH−",
         "channelUp": "CH+",
+        "add": "ADD",
         "network": "NET",
         "now": "NOW",
         "next": "NEXT",
@@ -1564,8 +1565,38 @@
         "channelUp": "Channel Up",
         "channelDown": "Channel Down",
         "fullScreen": "Full Screen",
+        "newChannel": "New Channel...",
+        "deleteChannel": "Delete Channel",
+        "importChannels": "Import Channels...",
+        "exportChannels": "Export Channels...",
         "tvHelp": "TV Help",
         "about": "About TV"
+      },
+      "toasts": {
+        "exportSuccess": "Channels exported",
+        "exportFailed": "Couldn't export channels",
+        "importSuccess_one": "Imported {{count}} channel ({{skipped}} skipped)",
+        "importSuccess_other": "Imported {{count}} channels ({{skipped}} skipped)",
+        "importEmpty": "No valid channels found in that file",
+        "importFailed": "Couldn't import channels — file may be invalid"
+      },
+      "create": {
+        "title": "New Channel",
+        "description": "Describe a channel and AI will program it with videos from YouTube.",
+        "placeholder": "e.g. Skateboarding tricks and parks",
+        "submit": "Create Channel",
+        "creating": "Creating...",
+        "statusPlanning": "Planning the channel...",
+        "statusSearching": "Searching YouTube...",
+        "statusTuning": "Tuning in...",
+        "errorEmpty": "Describe a channel to get started.",
+        "errorRateLimit": "Too many channels created. Please wait a bit and try again.",
+        "errorNoVideos": "No videos found for that idea. Try a different description.",
+        "errorGeneric": "Couldn't create the channel. Please try again."
+      },
+      "delete": {
+        "title": "Delete Channel",
+        "description": "Remove the channel \"{{name}}\" from your TV?"
       },
       "help": {
         "channels": {

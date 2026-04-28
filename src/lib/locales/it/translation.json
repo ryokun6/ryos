@@ -1401,16 +1401,16 @@
       "viewChangelog": "Visualizza changelog",
       "wallpaperCategories": {
         "aqua": "Aqua",
+        "black_and_white": "Bianco e nero",
         "convergency": "Convergenza",
         "foliage": "Fogliame",
         "graphics": "Grafica",
         "landscapes": "Paesaggi",
+        "nature": "Natura",
         "nostalgia": "Nostalgia",
         "objects": "Oggetti",
-        "structures": "Strutture",
-        "nature": "Natura",
         "plants": "Piante",
-        "black_and_white": "Bianco e nero"
+        "structures": "Strutture"
       }
     },
     "dashboard": {
@@ -2957,6 +2957,95 @@
       "text": "Testo",
       "underline": "Sottolineato",
       "untitled": "Senza titolo"
+    },
+    "tv": {
+      "channelBadge": "CH {{number}} — {{name}}",
+      "create": {
+        "creating": "Creazione in corso...",
+        "description": "Descrivi un canale e l'IA lo programmerà con video di YouTube.",
+        "errorEmpty": "Descrivi un canale per iniziare.",
+        "errorGeneric": "Impossibile creare il canale. Riprova.",
+        "errorNoVideos": "Nessun video trovato per questa idea. Prova una descrizione diversa.",
+        "errorRateLimit": "Troppi canali creati. Attendi un momento e riprova.",
+        "placeholder": "es. Trick e parchi da skateboard",
+        "statusPlanning": "Pianificazione del canale...",
+        "statusSearching": "Ricerca su YouTube...",
+        "statusTuning": "Sintonizzazione...",
+        "submit": "Crea canale",
+        "title": "Nuovo canale"
+      },
+      "delete": {
+        "description": "Rimuovere il canale \"{{name}}\" dalla tua TV?",
+        "title": "Elimina canale"
+      },
+      "description": "Fai zapping su YouTube",
+      "help": {
+        "channels": {
+          "description": "Sfoglia canali YouTube selezionati come in TV",
+          "title": "Canali"
+        },
+        "fullscreen": {
+          "description": "Guarda a schermo intero dal menu Controlli o dalla cornice della finestra",
+          "title": "Schermo intero"
+        },
+        "helpAbout": {
+          "description": "Apri Aiuto dal menu Aiuto per ulteriori informazioni",
+          "title": "Aiuto e informazioni"
+        },
+        "numbers": {
+          "description": "Premi 1–6 per passare a un canale, o usa CH+ / CH−",
+          "title": "Numeri dei canali"
+        },
+        "playback": {
+          "description": "Riproduci, metti in pausa e salta i video nel canale corrente",
+          "title": "Riproduzione"
+        },
+        "shortcuts": {
+          "description": "Tasti freccia: su/giù cambiano canale, sinistra/destra cambiano video",
+          "title": "Scorciatoie"
+        }
+      },
+      "menu": {
+        "about": "Informazioni su TV",
+        "channelDown": "Canale giù",
+        "channelUp": "Canale su",
+        "channels": "Canali",
+        "controls": "Controlli",
+        "deleteChannel": "Elimina canale",
+        "exportChannels": "Esporta canali...",
+        "fullScreen": "Schermo intero",
+        "importChannels": "Importa canali...",
+        "newChannel": "Nuovo canale...",
+        "next": "Successivo",
+        "pause": "Pausa",
+        "play": "Riproduci",
+        "previous": "Precedente",
+        "tvHelp": "Aiuto TV"
+      },
+      "name": "TV",
+      "nowPlaying": "CH {{channel}} · {{title}}",
+      "status": {
+        "add": "AGGIUNGI",
+        "channel": "CH",
+        "channelDown": "CH−",
+        "channelUp": "CH+",
+        "network": "RETE",
+        "next": "SUCCESSIVO",
+        "noSignal": "NESSUN SEGNALE",
+        "now": "ORA",
+        "time": "ORARIO",
+        "title": "TITOLO",
+        "video": "VID"
+      },
+      "title": "TV",
+      "toasts": {
+        "exportFailed": "Impossibile esportare i canali",
+        "exportSuccess": "Canali esportati",
+        "importEmpty": "Nessun canale valido trovato in quel file",
+        "importFailed": "Impossibile importare i canali — il file potrebbe non essere valido",
+        "importSuccess_one": "Importato {{count}} canale ({{skipped}} ignorati)",
+        "importSuccess_other": "Importati {{count}} canali ({{skipped}} ignorati)"
+      }
     },
     "videos": {
       "description": "Guarda video",

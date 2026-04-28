@@ -1401,16 +1401,16 @@
       "viewChangelog": "Voir les changements",
       "wallpaperCategories": {
         "aqua": "Aqua",
+        "black_and_white": "Noir et blanc",
         "convergency": "Convergence",
         "foliage": "Feuillage",
         "graphics": "Graphiques",
         "landscapes": "Paysages",
+        "nature": "Nature",
         "nostalgia": "Nostalgie",
         "objects": "Objets",
-        "structures": "Structures",
-        "nature": "Nature",
         "plants": "Plantes",
-        "black_and_white": "Noir et blanc"
+        "structures": "Structures"
       }
     },
     "dashboard": {
@@ -2957,6 +2957,95 @@
       "text": "Texte",
       "underline": "Souligner",
       "untitled": "Sans titre"
+    },
+    "tv": {
+      "channelBadge": "CH {{number}} — {{name}}",
+      "create": {
+        "creating": "Création...",
+        "description": "Décrivez une chaîne et l'IA la programmera avec des vidéos de YouTube.",
+        "errorEmpty": "Décrivez une chaîne pour commencer.",
+        "errorGeneric": "Impossible de créer la chaîne. Veuillez réessayer.",
+        "errorNoVideos": "Aucune vidéo trouvée pour cette idée. Essayez une autre description.",
+        "errorRateLimit": "Trop de chaînes créées. Veuillez patienter un instant et réessayer.",
+        "placeholder": "ex. : Figures et parcs de skate",
+        "statusPlanning": "Planification de la chaîne...",
+        "statusSearching": "Recherche sur YouTube...",
+        "statusTuning": "Réglage en cours...",
+        "submit": "Créer une chaîne",
+        "title": "Nouvelle chaîne"
+      },
+      "delete": {
+        "description": "Supprimer la chaîne « {{name}} » de votre téléviseur ?",
+        "title": "Supprimer la chaîne"
+      },
+      "description": "Zappez sur YouTube",
+      "help": {
+        "channels": {
+          "description": "Parcourez des chaînes YouTube sélectionnées comme sur un téléviseur",
+          "title": "Chaînes"
+        },
+        "fullscreen": {
+          "description": "Regardez en plein écran depuis le menu Commandes ou le cadre de la fenêtre",
+          "title": "Plein écran"
+        },
+        "helpAbout": {
+          "description": "Ouvrez l'Aide depuis le menu Aide pour plus d'informations",
+          "title": "Aide et à propos"
+        },
+        "numbers": {
+          "description": "Appuyez sur 1–6 pour accéder à une chaîne, ou utilisez CH+ / CH−",
+          "title": "Numéros de chaînes"
+        },
+        "playback": {
+          "description": "Lecture, pause et saut de vidéos dans la chaîne actuelle",
+          "title": "Lecture"
+        },
+        "shortcuts": {
+          "description": "Touches fléchées : haut/bas changent de chaîne, gauche/droite changent de vidéo",
+          "title": "Raccourcis"
+        }
+      },
+      "menu": {
+        "about": "À propos de TV",
+        "channelDown": "Chaîne précédente",
+        "channelUp": "Chaîne suivante",
+        "channels": "Chaînes",
+        "controls": "Commandes",
+        "deleteChannel": "Supprimer la chaîne",
+        "exportChannels": "Exporter les chaînes...",
+        "fullScreen": "Plein écran",
+        "importChannels": "Importer les chaînes...",
+        "newChannel": "Nouvelle chaîne...",
+        "next": "Suivant",
+        "pause": "Pause",
+        "play": "Lecture",
+        "previous": "Précédent",
+        "tvHelp": "Aide TV"
+      },
+      "name": "TV",
+      "nowPlaying": "CH {{channel}} · {{title}}",
+      "status": {
+        "add": "AJOUTER",
+        "channel": "CH",
+        "channelDown": "CH−",
+        "channelUp": "CH+",
+        "network": "NET",
+        "next": "SUIVANT",
+        "noSignal": "PAS DE SIGNAL",
+        "now": "MAINTENANT",
+        "time": "HEURE",
+        "title": "TITRE",
+        "video": "VID"
+      },
+      "title": "TV",
+      "toasts": {
+        "exportFailed": "Impossible d'exporter les chaînes",
+        "exportSuccess": "Chaînes exportées",
+        "importEmpty": "Aucune chaîne valide trouvée dans ce fichier",
+        "importFailed": "Impossible d’importer les chaînes — le fichier est peut-être non valide",
+        "importSuccess_one": "{{count}} chaîne importée ({{skipped}} ignorée)",
+        "importSuccess_other": "{{count}} chaînes importées ({{skipped}} ignorées)"
+      }
     },
     "videos": {
       "description": "Regarder des vidéos",

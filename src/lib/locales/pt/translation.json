@@ -1401,16 +1401,16 @@
       "viewChangelog": "Ver registro de alterações",
       "wallpaperCategories": {
         "aqua": "Aqua",
+        "black_and_white": "Preto e branco",
         "convergency": "Convergência",
         "foliage": "Folhagem",
         "graphics": "Gráficos",
         "landscapes": "Paisagens",
+        "nature": "Natureza",
         "nostalgia": "Nostalgia",
         "objects": "Objetos",
-        "structures": "Estruturas",
-        "nature": "Natureza",
         "plants": "Plantas",
-        "black_and_white": "Preto e branco"
+        "structures": "Estruturas"
       }
     },
     "dashboard": {
@@ -2957,6 +2957,95 @@
       "text": "Texto",
       "underline": "Sublinhado",
       "untitled": "Sem título"
+    },
+    "tv": {
+      "channelBadge": "CH {{number}} — {{name}}",
+      "create": {
+        "creating": "Criando...",
+        "description": "Descreva um canal e a IA irá programá-lo com vídeos do YouTube.",
+        "errorEmpty": "Descreva um canal para começar.",
+        "errorGeneric": "Não foi possível criar o canal. Tente novamente.",
+        "errorNoVideos": "Nenhum vídeo encontrado para essa ideia. Tente uma descrição diferente.",
+        "errorRateLimit": "Muitos canais criados. Aguarde um pouco e tente novamente.",
+        "placeholder": "ex: Manobras e pistas de skate",
+        "statusPlanning": "Planejando o canal...",
+        "statusSearching": "Pesquisando no YouTube...",
+        "statusTuning": "Sintonizando...",
+        "submit": "Criar Canal",
+        "title": "Novo Canal"
+      },
+      "delete": {
+        "description": "Remover o canal \"{{name}}\" da sua TV?",
+        "title": "Excluir Canal"
+      },
+      "description": "Zapeie pelo YouTube",
+      "help": {
+        "channels": {
+          "description": "Navegue por canais selecionados do YouTube como em uma TV",
+          "title": "Canais"
+        },
+        "fullscreen": {
+          "description": "Assista em tela cheia pelo menu de Controles ou pela borda da janela",
+          "title": "Tela Cheia"
+        },
+        "helpAbout": {
+          "description": "Abra a Ajuda no menu Ajuda para mais informações",
+          "title": "Ajuda e Sobre"
+        },
+        "numbers": {
+          "description": "Pressione 1–6 para pular para um canal ou use CH+ / CH−",
+          "title": "Números dos Canais"
+        },
+        "playback": {
+          "description": "Reproduza, pause e pule vídeos no canal atual",
+          "title": "Reprodução"
+        },
+        "shortcuts": {
+          "description": "Teclas de seta: cima/baixo mudam o canal, esquerda/direita mudam o vídeo",
+          "title": "Atalhos"
+        }
+      },
+      "menu": {
+        "about": "Sobre a TV",
+        "channelDown": "Canal para Baixo",
+        "channelUp": "Canal para Cima",
+        "channels": "Canais",
+        "controls": "Controles",
+        "deleteChannel": "Excluir Canal",
+        "exportChannels": "Exportar Canais...",
+        "fullScreen": "Tela Cheia",
+        "importChannels": "Importar Canais...",
+        "newChannel": "Novo Canal...",
+        "next": "Próximo",
+        "pause": "Pausar",
+        "play": "Reproduzir",
+        "previous": "Anterior",
+        "tvHelp": "Ajuda da TV"
+      },
+      "name": "TV",
+      "nowPlaying": "CH {{channel}} · {{title}}",
+      "status": {
+        "add": "ADICIONAR",
+        "channel": "CH",
+        "channelDown": "CH−",
+        "channelUp": "CH+",
+        "network": "NET",
+        "next": "PRÓXIMO",
+        "noSignal": "SEM SINAL",
+        "now": "AGORA",
+        "time": "HORA",
+        "title": "TÍTULO",
+        "video": "VID"
+      },
+      "title": "TV",
+      "toasts": {
+        "exportFailed": "Não foi possível exportar os canais",
+        "exportSuccess": "Canais exportados",
+        "importEmpty": "Nenhum canal válido encontrado nesse arquivo",
+        "importFailed": "Não foi possível importar os canais — o arquivo pode ser inválido",
+        "importSuccess_one": "Importado {{count}} canal ({{skipped}} ignorado)",
+        "importSuccess_other": "Importados {{count}} canais ({{skipped}} ignorados)"
+      }
     },
     "videos": {
       "description": "Assistir a vídeos",

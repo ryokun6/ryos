@@ -1401,16 +1401,16 @@
       "viewChangelog": "変更履歴を見る",
       "wallpaperCategories": {
         "aqua": "アクア",
+        "black_and_white": "白黒",
         "convergency": "コンバージェンス",
         "foliage": "フォリッジ",
         "graphics": "グラフィックス",
         "landscapes": "風景",
+        "nature": "自然",
         "nostalgia": "ノスタルジア",
         "objects": "オブジェクト",
-        "structures": "ストラクチャ",
-        "nature": "自然",
         "plants": "植物",
-        "black_and_white": "白黒"
+        "structures": "ストラクチャ"
       }
     },
     "dashboard": {
@@ -2957,6 +2957,95 @@
       "text": "テキスト",
       "underline": "下線",
       "untitled": "無題"
+    },
+    "tv": {
+      "channelBadge": "CH {{number}} — {{name}}",
+      "create": {
+        "creating": "作成中...",
+        "description": "チャンネルの内容を入力すると、AIがYouTubeの動画で番組を構成します。",
+        "errorEmpty": "まずはチャンネルの内容を入力してください。",
+        "errorGeneric": "チャンネルを作成できませんでした。もう一度お試しください。",
+        "errorNoVideos": "その内容に一致する動画が見つかりませんでした。別の説明を入力してください。",
+        "errorRateLimit": "作成されたチャンネルが多すぎます。しばらく待ってからもう一度お試しください。",
+        "placeholder": "例：スケートボードのトリックやパーク",
+        "statusPlanning": "チャンネルを構成中...",
+        "statusSearching": "YouTubeを検索中...",
+        "statusTuning": "チャンネルを合わせています...",
+        "submit": "チャンネルを作成",
+        "title": "新規チャンネル"
+      },
+      "delete": {
+        "description": "テレビからチャンネル「{{name}}」を削除しますか？",
+        "title": "チャンネルを削除"
+      },
+      "description": "YouTubeをザッピング",
+      "help": {
+        "channels": {
+          "description": "テレビのように、厳選されたYouTubeチャンネルをザッピングできます。",
+          "title": "チャンネル"
+        },
+        "fullscreen": {
+          "description": "コントロールメニューまたはウィンドウの枠からフルスクリーンで視聴できます。",
+          "title": "フルスクリーン"
+        },
+        "helpAbout": {
+          "description": "詳細についてはヘルプメニューからヘルプを開いてください",
+          "title": "ヘルプと概要"
+        },
+        "numbers": {
+          "description": "1〜6キーでチャンネル移動、またはCH+ / CH−を使用",
+          "title": "チャンネル番号"
+        },
+        "playback": {
+          "description": "現在のチャンネル内のビデオを再生、一時停止、スキップ",
+          "title": "再生"
+        },
+        "shortcuts": {
+          "description": "矢印キー：上下でチャンネル切り替え、左右でビデオ切り替え",
+          "title": "ショートカット"
+        }
+      },
+      "menu": {
+        "about": "TVについて",
+        "channelDown": "チャンネルを下げる",
+        "channelUp": "チャンネルを上げる",
+        "channels": "チャンネル",
+        "controls": "コントロール",
+        "deleteChannel": "チャンネルを削除",
+        "exportChannels": "チャンネルを書き出す...",
+        "fullScreen": "フルスクリーン",
+        "importChannels": "チャンネルを読み込む...",
+        "newChannel": "新規チャンネル...",
+        "next": "次へ",
+        "pause": "一時停止",
+        "play": "再生",
+        "previous": "前へ",
+        "tvHelp": "TVヘルプ"
+      },
+      "name": "TV",
+      "nowPlaying": "CH {{channel}} · {{title}}",
+      "status": {
+        "add": "追加",
+        "channel": "CH",
+        "channelDown": "CH−",
+        "channelUp": "CH+",
+        "network": "NET",
+        "next": "次へ",
+        "noSignal": "信号なし",
+        "now": "現在",
+        "time": "時刻",
+        "title": "タイトル",
+        "video": "VID"
+      },
+      "title": "TV",
+      "toasts": {
+        "exportFailed": "チャンネルを書き出せませんでした",
+        "exportSuccess": "チャンネルを書き出しました",
+        "importEmpty": "そのファイルに有効なチャンネルは見つかりませんでした",
+        "importFailed": "チャンネルをインポートできませんでした — ファイルが無効な可能性があります",
+        "importSuccess_one": "{{count}}個のチャンネルをインポートしました（{{skipped}}個をスキップ）",
+        "importSuccess_other": "{{count}}個のチャンネルをインポートしました（{{skipped}}個をスキップ）"
+      }
     },
     "videos": {
       "description": "動画を視聴",
