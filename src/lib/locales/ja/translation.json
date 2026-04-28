@@ -3052,10 +3052,15 @@
         "pause": "一時停止",
         "play": "再生",
         "previous": "前へ",
+        "resetChannels": "チャンネルをリセット...",
         "tvHelp": "TVヘルプ"
       },
       "name": "TV",
       "nowPlaying": "CH {{channel}} · {{title}}",
+      "reset": {
+        "description": "すべてのカスタムチャンネルを削除して、デフォルトのラインナップに戻しますか?",
+        "title": "チャンネルをリセット"
+      },
       "status": {
         "add": "追加",
         "channel": "CH",
@@ -3076,7 +3081,8 @@
         "importEmpty": "そのファイルに有効なチャンネルは見つかりませんでした",
         "importFailed": "チャンネルをインポートできませんでした — ファイルが無効な可能性があります",
         "importSuccess_one": "{{count}}個のチャンネルをインポートしました（{{skipped}}個をスキップ）",
-        "importSuccess_other": "{{count}}個のチャンネルをインポートしました（{{skipped}}個をスキップ）"
+        "importSuccess_other": "{{count}}個のチャンネルをインポートしました（{{skipped}}個をスキップ）",
+        "resetSuccess": "チャンネルをデフォルトにリセットしました"
       }
     },
     "videos": {

@@ -1595,6 +1595,7 @@
         "fullScreen": "Full Screen",
         "newChannel": "New Channel...",
         "deleteChannel": "Delete Channel",
+        "resetChannels": "Reset Channels...",
         "importChannels": "Import Channels...",
         "exportChannels": "Export Channels...",
         "tvHelp": "TV Help",
@@ -1606,7 +1607,8 @@
         "importSuccess_one": "Imported {{count}} channel ({{skipped}} skipped)",
         "importSuccess_other": "Imported {{count}} channels ({{skipped}} skipped)",
         "importEmpty": "No valid channels found in that file",
-        "importFailed": "Couldn't import channels — file may be invalid"
+        "importFailed": "Couldn't import channels — file may be invalid",
+        "resetSuccess": "Channels reset to defaults"
       },
       "create": {
         "title": "New Channel",
@@ -1629,6 +1631,10 @@
       "delete": {
         "title": "Delete Channel",
         "description": "Remove the channel \"{{name}}\" from your TV?"
+      },
+      "reset": {
+        "title": "Reset Channels",
+        "description": "Remove all custom channels and tune back to the default lineup?"
       },
       "help": {
         "channels": {

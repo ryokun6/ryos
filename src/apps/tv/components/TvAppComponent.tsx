@@ -368,6 +368,7 @@ export function TvAppComponent({
   >("next");
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
   // CRT shader effect triggers. Bumping these counters re-keys the
   // animations inside TvCrtEffects so a new burst plays on every event.
@@ -393,6 +394,7 @@ export function TvAppComponent({
   const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
   const importChannels = useTvStore((s) => s.importChannels);
   const exportChannels = useTvStore((s) => s.exportChannels);
+  const resetChannels = useTvStore((s) => s.resetChannels);
   const { create: createChannel, isCreating: isCreatingChannel } =
     useCreateTvChannel();
 
@@ -736,6 +738,7 @@ export function TvAppComponent({
       onDeleteChannel={(id) => setPendingDeleteId(id)}
       onImportChannels={handleImportChannels}
       onExportChannels={handleExportChannels}
+      onResetChannels={() => setIsResetConfirmOpen(true)}
       isPlaying={isPlaying}
       onTogglePlay={togglePlay}
       onNextVideo={nextVideo}
@@ -824,7 +827,7 @@ export function TvAppComponent({
           )}
         >
           <div
-            className="flex-1 relative overflow-hidden min-h-0"
+            className="flex-1 relative overflow-hidden min-h-0 bg-black"
             style={
               isMacOSTheme
                 ? {
@@ -835,7 +838,7 @@ export function TvAppComponent({
                 : undefined
             }
           >
-            <div className="w-full h-full overflow-hidden relative">
+            <div className="w-full h-full overflow-hidden relative bg-black">
               <div className="w-full h-[calc(100%+300px)] mt-[-150px] relative">
                 {!isFullScreen && url && (
                   <YouTubePlayer
@@ -1156,6 +1159,17 @@ export function TvAppComponent({
         description={t("apps.tv.delete.description", {
           name: pendingDeleteChannel?.name ?? "",
         })}
+      />
+      <ConfirmDialog
+        isOpen={isResetConfirmOpen}
+        onOpenChange={setIsResetConfirmOpen}
+        onConfirm={() => {
+          resetChannels();
+          setIsResetConfirmOpen(false);
+          toast.success(t("apps.tv.toasts.resetSuccess"));
+        }}
+        title={t("apps.tv.reset.title")}
+        description={t("apps.tv.reset.description")}
       />
       <LoginDialog
         initialTab={isVerifyDialogOpen ? "login" : "signup"}

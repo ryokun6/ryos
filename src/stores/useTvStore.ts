@@ -60,6 +60,8 @@ interface TvStoreState {
   importChannels: (json: string) => ImportChannelsResult;
   /** Serialize the user's custom channels to a JSON string. */
   exportChannels: () => string;
+  /** Wipe all user-created channels and tune back to the default channel. */
+  resetChannels: () => void;
 }
 
 function generateChannelId(): string {
@@ -289,6 +291,12 @@ export const useTvStore = create<TvStoreState>()(
         };
         return JSON.stringify(payload, null, 2);
       },
+      resetChannels: () =>
+        set({
+          customChannels: [],
+          currentChannelId: DEFAULT_CHANNEL_ID,
+          lastVideoIndexByChannel: {},
+        }),
     }),
     {
       name: "ryos:tv",

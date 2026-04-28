@@ -3052,10 +3052,15 @@
         "pause": "일시 정지",
         "play": "재생",
         "previous": "이전",
+        "resetChannels": "채널 재설정...",
         "tvHelp": "TV 도움말"
       },
       "name": "TV",
       "nowPlaying": "CH {{channel}} · {{title}}",
+      "reset": {
+        "description": "모든 사용자 지정 채널을 제거하고 기본 채널로 되돌리시겠습니까?",
+        "title": "채널 재설정"
+      },
       "status": {
         "add": "추가",
         "channel": "CH",
@@ -3076,7 +3081,8 @@
         "importEmpty": "해당 파일에서 유효한 채널을 찾을 수 없습니다",
         "importFailed": "채널을 가져올 수 없습니다 — 파일이 유효하지 않을 수 있습니다",
         "importSuccess_one": "{{count}}개의 채널을 가져왔습니다 ({{skipped}}개 건너뜀)",
-        "importSuccess_other": "{{count}}개의 채널을 가져왔습니다 ({{skipped}}개 건너뜀)"
+        "importSuccess_other": "{{count}}개의 채널을 가져왔습니다 ({{skipped}}개 건너뜀)",
+        "resetSuccess": "채널이 기본값으로 재설정되었습니다"
       }
     },
     "videos": {

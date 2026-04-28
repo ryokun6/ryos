@@ -3052,10 +3052,15 @@
         "pause": "Pause",
         "play": "Lecture",
         "previous": "Précédent",
+        "resetChannels": "Réinitialiser les chaînes...",
         "tvHelp": "Aide TV"
       },
       "name": "TV",
       "nowPlaying": "CH {{channel}} · {{title}}",
+      "reset": {
+        "description": "Supprimer toutes les chaînes personnalisées et revenir à la grille par défaut ?",
+        "title": "Réinitialiser les chaînes"
+      },
       "status": {
         "add": "AJOUTER",
         "channel": "CH",
@@ -3076,7 +3081,8 @@
         "importEmpty": "Aucune chaîne valide trouvée dans ce fichier",
         "importFailed": "Impossible d’importer les chaînes — le fichier est peut-être non valide",
         "importSuccess_one": "{{count}} chaîne importée ({{skipped}} ignorée)",
-        "importSuccess_other": "{{count}} chaînes importées ({{skipped}} ignorées)"
+        "importSuccess_other": "{{count}} chaînes importées ({{skipped}} ignorées)",
+        "resetSuccess": "Chaînes réinitialisées par défaut"
       }
     },
     "videos": {

@@ -3052,10 +3052,15 @@
         "pause": "Pausa",
         "play": "Riproduci",
         "previous": "Precedente",
+        "resetChannels": "Ripristina canali...",
         "tvHelp": "Aiuto TV"
       },
       "name": "TV",
       "nowPlaying": "CH {{channel}} · {{title}}",
+      "reset": {
+        "description": "Rimuovere tutti i canali personalizzati e tornare alla lineup predefinita?",
+        "title": "Ripristina canali"
+      },
       "status": {
         "add": "AGGIUNGI",
         "channel": "CH",
@@ -3076,7 +3081,8 @@
         "importEmpty": "Nessun canale valido trovato in quel file",
         "importFailed": "Impossibile importare i canali — il file potrebbe non essere valido",
         "importSuccess_one": "Importato {{count}} canale ({{skipped}} ignorati)",
-        "importSuccess_other": "Importati {{count}} canali ({{skipped}} ignorati)"
+        "importSuccess_other": "Importati {{count}} canali ({{skipped}} ignorati)",
+        "resetSuccess": "Canali ripristinati ai valori predefiniti"
       }
     },
     "videos": {

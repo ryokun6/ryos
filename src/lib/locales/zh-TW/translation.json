@@ -3052,10 +3052,15 @@
         "pause": "暫停",
         "play": "播放",
         "previous": "上一個",
+        "resetChannels": "重設頻道...",
         "tvHelp": "電視說明"
       },
       "name": "電視",
       "nowPlaying": "頻道 {{channel}} · {{title}}",
+      "reset": {
+        "description": "移除所有自訂頻道並切換回預設頻道組合?",
+        "title": "重設頻道"
+      },
       "status": {
         "add": "新增",
         "channel": "頻道",
@@ -3076,7 +3081,8 @@
         "importEmpty": "該檔案中找不到有效的頻道",
         "importFailed": "無法匯入頻道 — 檔案可能無效",
         "importSuccess_one": "已匯入 {{count}} 個頻道 (已跳過 {{skipped}} 個)",
-        "importSuccess_other": "已匯入 {{count}} 個頻道 (已跳過 {{skipped}} 個)"
+        "importSuccess_other": "已匯入 {{count}} 個頻道 (已跳過 {{skipped}} 個)",
+        "resetSuccess": "頻道已重設為預設值"
       }
     },
     "videos": {

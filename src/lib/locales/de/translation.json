@@ -3052,10 +3052,15 @@
         "pause": "Pause",
         "play": "Wiedergabe",
         "previous": "Zurück",
+        "resetChannels": "Kanäle zurücksetzen...",
         "tvHelp": "TV-Hilfe"
       },
       "name": "TV",
       "nowPlaying": "CH {{channel}} · {{title}}",
+      "reset": {
+        "description": "Alle benutzerdefinierten Kanäle entfernen und zur Standardauswahl zurückkehren?",
+        "title": "Kanäle zurücksetzen"
+      },
       "status": {
         "add": "HINZUFÜGEN",
         "channel": "CH",
@@ -3076,7 +3081,8 @@
         "importEmpty": "Keine gültigen Sender in dieser Datei gefunden",
         "importFailed": "Kanäle konnten nicht importiert werden – Datei ist eventuell ungültig",
         "importSuccess_one": "{{count}} Kanal importiert ({{skipped}} übersprungen)",
-        "importSuccess_other": "{{count}} Kanäle importiert ({{skipped}} übersprungen)"
+        "importSuccess_other": "{{count}} Kanäle importiert ({{skipped}} übersprungen)",
+        "resetSuccess": "Kanäle auf Standardwerte zurückgesetzt"
       }
     },
     "videos": {

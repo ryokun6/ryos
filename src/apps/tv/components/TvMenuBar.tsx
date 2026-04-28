@@ -25,6 +25,7 @@ interface TvMenuBarProps {
   onDeleteChannel: (id: string) => void;
   onImportChannels: () => void;
   onExportChannels: () => void;
+  onResetChannels: () => void;
   isPlaying: boolean;
   onTogglePlay: () => void;
   onNextVideo: () => void;
@@ -47,6 +48,7 @@ export function TvMenuBar({
   onDeleteChannel,
   onImportChannels,
   onExportChannels,
+  onResetChannels,
   isPlaying,
   onTogglePlay,
   onNextVideo,
@@ -147,6 +149,14 @@ export function TvMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.tv.menu.deleteChannel")}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem
+            onClick={onResetChannels}
+            disabled={!hasCustomChannels}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.tv.menu.resetChannels")}
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
