@@ -5,9 +5,14 @@ import { cn } from "@/lib/utils";
 /** Total durations for the one-shot CRT animations, in ms. Kept in one
  *  place so completion timers, exit fades, and inner timings stay in
  *  sync. */
-const POWER_ON_DURATION_MS = 700;
+const POWER_ON_DURATION_MS = 800;
 const POWER_OFF_DURATION_MS = 600;
 const CHANNEL_SWITCH_DURATION_MS = 550;
+/** How long the screen stays fully black at the start of the power-on
+ *  before the picture begins unfolding. Gives a clean handoff from the
+ *  paused "screen-off" overlay (or the bare iframe on first open) so the
+ *  unfold visually reads as "the tube warming up". */
+const POWER_ON_HOLD_MS = 90;
 
 /**
  * Animated analog-static canvas. Used both as a brief "channel-switch"
@@ -134,11 +139,17 @@ function CrtShaderOverlay({ active }: { active: boolean }) {
 }
 
 /**
- * One-shot CRT power-on animation: a black mask vertically squeezes out
- * to reveal the picture from a thin horizontal beam, then a quick white
- * flash fades. The component auto-unmounts itself after the animation
- * completes (timer-driven) so it never leaves a `bg-black` overlay
- * sitting on top of the iframe.
+ * One-shot CRT power-on animation. Two black bars cover the picture
+ * (top half + bottom half); after a brief fully-black hold they recede
+ * toward the top and bottom edges, leaving a transparent band that
+ * grows outward from a thin horizontal beam at the vertical center.
+ * That's the classic CRT "tube warming up" reveal. A bright scanline
+ * beam pops across the middle as the bars start receding, and a quick
+ * white flash fades the whole thing into the picture.
+ *
+ * The component auto-unmounts itself after the animation completes
+ * (timer-driven) so it never leaves a `bg-black` overlay sitting on
+ * top of the iframe.
  */
 function PowerOnEffect({ playKey }: { playKey: number }) {
   const [activeKey, setActiveKey] = useState(0);
@@ -153,6 +164,14 @@ function PowerOnEffect({ playKey }: { playKey: number }) {
     return () => window.clearTimeout(id);
   }, [playKey]);
 
+  const holdSec = POWER_ON_HOLD_MS / 1000;
+  const unfoldSec = 0.55;
+  const barTransition = {
+    duration: unfoldSec,
+    delay: holdSec,
+    ease: [0.16, 1, 0.3, 1] as const,
+  };
+
   return (
     <AnimatePresence>
       {activeKey > 0 && (
@@ -161,30 +180,40 @@ function PowerOnEffect({ playKey }: { playKey: number }) {
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
+          transition={{ duration: 0.12 }}
           className="absolute inset-0 pointer-events-none z-40 overflow-hidden"
         >
-          {/* Black mask that vertically squeezes out, revealing the picture
-              from a thin horizontal line outward. The mask itself carries
-              the black, so the parent must NOT have bg-black or the
-              picture stays hidden after scaleY hits 0. */}
+          {/* Top half black bar — full black for POWER_ON_HOLD_MS, then
+              recedes toward the top edge. Together with the bottom bar
+              this makes the transparent band at the vertical center
+              grow outward, revealing the picture from a beam. */}
           <motion.div
             initial={{ scaleY: 1 }}
             animate={{ scaleY: 0 }}
-            transition={{
-              duration: 0.55,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className="absolute inset-0 bg-black"
-            style={{ transformOrigin: "center" }}
+            transition={barTransition}
+            className="absolute left-0 right-0 top-0 bg-black"
+            style={{ height: "50%", transformOrigin: "top center" }}
           />
-          {/* Bright horizontal scanline beam that snaps across the middle. */}
           <motion.div
-            initial={{ scaleX: 0, opacity: 1 }}
-            animate={{ scaleX: 1, opacity: 0 }}
+            initial={{ scaleY: 1 }}
+            animate={{ scaleY: 0 }}
+            transition={barTransition}
+            className="absolute left-0 right-0 bottom-0 bg-black"
+            style={{ height: "50%", transformOrigin: "bottom center" }}
+          />
+          {/* Bright horizontal scanline beam that snaps across the middle
+              right as the bars start receding. */}
+          <motion.div
+            initial={{ scaleX: 0, opacity: 0 }}
+            animate={{ scaleX: 1, opacity: [0, 1, 0] }}
             transition={{
-              scaleX: { duration: 0.2, ease: "easeOut" },
-              opacity: { duration: 0.45, delay: 0.1, ease: "easeOut" },
+              scaleX: { duration: 0.18, delay: holdSec, ease: "easeOut" },
+              opacity: {
+                duration: 0.5,
+                delay: holdSec,
+                ease: "easeOut",
+                times: [0, 0.2, 1],
+              },
             }}
             className="absolute left-0 right-0 top-1/2 -translate-y-1/2"
             style={{
@@ -196,11 +225,17 @@ function PowerOnEffect({ playKey }: { playKey: number }) {
               transformOrigin: "center",
             }}
           />
-          {/* Final brightness pop. */}
+          {/* Final brightness pop, timed so it peaks just after the
+              picture is fully revealed. */}
           <motion.div
-            initial={{ opacity: 0.7 }}
-            animate={{ opacity: 0 }}
-            transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.55, 0] }}
+            transition={{
+              duration: 0.45,
+              delay: holdSec + 0.18,
+              ease: "easeOut",
+              times: [0, 0.25, 1],
+            }}
             className="absolute inset-0 bg-white"
           />
         </motion.div>
