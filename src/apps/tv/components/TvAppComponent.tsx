@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -7,7 +14,14 @@ import { WindowFrame } from "@/components/layout/WindowFrame";
 import { TvMenuBar } from "./TvMenuBar";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 import { ChannelPromptInput } from "./ChannelPromptInput";
-import { useCreateTvChannel } from "../hooks/useCreateTvChannel";
+import { TvCrtEffects } from "./TvCrtEffects";
+import {
+  useCreateTvChannel,
+  TvChannelAuthRequiredError,
+} from "../hooks/useCreateTvChannel";
+import { useTvSoundFx } from "../hooks/useTvSoundFx";
+import { LoginDialog } from "@/components/dialogs/LoginDialog";
+import { useAuth } from "@/hooks/useAuth";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -355,6 +369,26 @@ export function TvAppComponent({
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
+  // CRT shader effect triggers. Bumping these counters re-keys the
+  // animations inside TvCrtEffects so a new burst plays on every event.
+  const [powerOnKey, setPowerOnKey] = useState(0);
+  const [channelSwitchKey, setChannelSwitchKey] = useState(0);
+  const [poweringOff, setPoweringOff] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  // While true, the picture is squeezed away and a black "screen-off"
+  // overlay holds until the user un-pauses. Driven by isPlaying
+  // transitions below.
+  const [screenOff, setScreenOff] = useState(false);
+
+  // Procedural CRT sound effects synced to the shader animations above.
+  const {
+    playPowerOn,
+    playPowerOff,
+    playChannelSwitch,
+    startStatic,
+    stopStatic,
+  } = useTvSoundFx();
+
   const customChannels = useTvStore((s) => s.customChannels);
   const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
   const importChannels = useTvStore((s) => s.importChannels);
@@ -362,26 +396,100 @@ export function TvAppComponent({
   const { create: createChannel, isCreating: isCreatingChannel } =
     useCreateTvChannel();
 
-  const handleInlinePromptSubmit = async (
-    description: string
-  ): Promise<string | null> => {
-    try {
-      const { channel } = await createChannel(description);
-      // Tune in to the freshly-created channel; this also drives the
-      // status-flash via setChannelById -> showStatus.
-      setChannelById(channel.id);
-      toast.success(
-        t("apps.tv.create.toastSuccess", { name: channel.name })
-      );
-      return channel.name;
-    } catch (err) {
-      console.error("Inline create channel failed:", err);
-      toast.error(
-        err instanceof Error ? err.message : t("apps.tv.create.errorGeneric")
-      );
-      return null;
-    }
-  };
+  // Auth state + LoginDialog plumbing. Channel creation requires an
+  // account so the API doesn't burn YouTube quota on anonymous abuse,
+  // and so the user's custom channels are tied to a name they can sign
+  // back into. We surface a toast-with-action (Log In / Sign Up) when
+  // the user tries to create while signed out instead of letting the
+  // API reject them with a generic rate-limit error.
+  const {
+    username,
+    isAuthenticated,
+    promptVerifyToken,
+    promptSetUsername,
+    isUsernameDialogOpen,
+    setIsUsernameDialogOpen,
+    newUsername,
+    setNewUsername,
+    newPassword,
+    setNewPassword,
+    isSettingUsername,
+    usernameError,
+    submitUsernameDialog,
+    isVerifyDialogOpen,
+    setVerifyDialogOpen,
+    verifyPasswordInput,
+    setVerifyPasswordInput,
+    verifyUsernameInput,
+    setVerifyUsernameInput,
+    isVerifyingToken,
+    verifyError,
+    handleVerifyTokenSubmit,
+  } = useAuth();
+  // "Probably logged in" — either auth is confirmed this session OR
+  // we have a recovered username from localStorage (httpOnly auth
+  // cookie is likely still valid; session restore is in flight). If
+  // the API ends up rejecting the request anyway, the catch handlers
+  // below convert TvChannelAuthRequiredError into the same login
+  // toast the up-front gate would have shown. This avoids flashing a
+  // spurious "sign in" toast in the brief window between page load
+  // and the session-restore network request completing.
+  const isProbablyLoggedIn = !!username || isAuthenticated;
+
+  const showLoginRequiredToast = useCallback(() => {
+    toast.error(t("apps.tv.create.signInRequired"), {
+      description: t("apps.tv.create.signInRequiredDescription"),
+      duration: 8000,
+      action: {
+        label: t("common.appleMenu.login"),
+        onClick: () => {
+          promptVerifyToken();
+        },
+      },
+    });
+  }, [t, promptVerifyToken]);
+
+  const ensureLoggedIn = useCallback((): boolean => {
+    if (isProbablyLoggedIn) return true;
+    showLoginRequiredToast();
+    return false;
+  }, [isProbablyLoggedIn, showLoginRequiredToast]);
+
+  const handleInlinePromptSubmit = useCallback(
+    async (description: string): Promise<string | null> => {
+      if (!ensureLoggedIn()) return null;
+      try {
+        const { channel } = await createChannel(description);
+        // Tune in to the freshly-created channel; this also drives the
+        // status-flash via setChannelById -> showStatus.
+        setChannelById(channel.id);
+        toast.success(
+          t("apps.tv.create.toastSuccess", { name: channel.name })
+        );
+        return channel.name;
+      } catch (err) {
+        console.error("Inline create channel failed:", err);
+        // Stale-cookie / not-actually-logged-in case: the server
+        // returned 401 even though we had a recovered username. Show
+        // the same login toast the up-front gate would have shown.
+        if (err instanceof TvChannelAuthRequiredError) {
+          showLoginRequiredToast();
+        } else {
+          toast.error(
+            err instanceof Error ? err.message : t("apps.tv.create.errorGeneric")
+          );
+        }
+        return null;
+      }
+    },
+    [
+      ensureLoggedIn,
+      createChannel,
+      setChannelById,
+      showLoginRequiredToast,
+      t,
+    ]
+  );
   const customChannelIds = useMemo(
     () => new Set(customChannels.map((c) => c.id)),
     [customChannels]
@@ -450,6 +558,135 @@ export function TvAppComponent({
     setLcdSlot("now");
   }, [currentChannelId, currentVideo?.id]);
 
+  // Power-on shader: play once whenever the window transitions from
+  // closed → open. Reset on close so re-opening triggers a fresh
+  // animation. Skipping when `skipInitialSound` is true keeps the
+  // browser-restore path quiet (matches WindowFrame's open-sound rule).
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (isWindowOpen && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+      if (!skipInitialSound) {
+        setPowerOnKey((k) => k + 1);
+        void playPowerOn();
+      }
+    } else if (!isWindowOpen && wasOpenRef.current) {
+      wasOpenRef.current = false;
+      setPoweringOff(false);
+      stopStatic();
+    }
+  }, [isWindowOpen, skipInitialSound, playPowerOn, stopStatic]);
+
+  // Channel-switch static: fire a brief burst whenever the current
+  // channel changes. Skip the very first mount so opening the TV doesn't
+  // double up with the power-on animation.
+  const channelMountedRef = useRef(false);
+  useEffect(() => {
+    if (!channelMountedRef.current) {
+      channelMountedRef.current = true;
+      return;
+    }
+    setChannelSwitchKey((k) => k + 1);
+    void playChannelSwitch();
+  }, [currentChannelId, playChannelSwitch]);
+
+  // Reset the buffering flag whenever the URL changes so a previous
+  // channel's pending-buffer state can't leak into the new picture.
+  useEffect(() => {
+    setIsBuffering(false);
+  }, [currentVideo?.id]);
+
+  // Pause / play "turn the TV off and on". We only fire the off→on
+  // power-on shader after the user has previously paused at least
+  // once (`hasPausedRef`), so the natural autoplay-success transition
+  // right after the window opens doesn't double-trigger the
+  // window-open power-on.
+  //
+  // Suppression rules:
+  //   - Buffering transitions are ignored (YouTube briefly toggles
+  //     play state during buffer events).
+  //   - Channel-switch / video-id transitions are also ignored: when
+  //     the video changes, isBuffering is reset and the new video's
+  //     onBuffer/onPlay/onPause events arrive in an unpredictable
+  //     order. Without this, a switch from paused → new channel
+  //     could double-fire (channel-switch burst + spurious power-on).
+  //   - Powering off / closing: don't react to anything; we're
+  //     tearing down.
+  const prevPlayingRef = useRef(isPlaying);
+  const prevVideoIdRef = useRef(currentVideo?.id);
+  const hasPausedRef = useRef(false);
+  useEffect(() => {
+    const currentVideoId = currentVideo?.id;
+    if (!isWindowOpen || !wasOpenRef.current || poweringOff) {
+      prevPlayingRef.current = isPlaying;
+      prevVideoIdRef.current = currentVideoId;
+      return;
+    }
+    if (isBuffering) {
+      prevPlayingRef.current = isPlaying;
+      prevVideoIdRef.current = currentVideoId;
+      return;
+    }
+    if (prevVideoIdRef.current !== currentVideoId) {
+      // Video just changed; treat the next play/pause flip as the
+      // baseline rather than a transition off the previous video's
+      // state.
+      prevPlayingRef.current = isPlaying;
+      prevVideoIdRef.current = currentVideoId;
+      return;
+    }
+    const prev = prevPlayingRef.current;
+    prevPlayingRef.current = isPlaying;
+    if (prev === isPlaying) return;
+    if (prev && !isPlaying) {
+      // play → pause: turn off
+      hasPausedRef.current = true;
+      setScreenOff(true);
+      stopStatic();
+      void playPowerOff();
+    } else if (!prev && isPlaying && hasPausedRef.current) {
+      // pause → play: turn on (only after at least one explicit pause)
+      setScreenOff(false);
+      setPowerOnKey((k) => k + 1);
+      void playPowerOn();
+    }
+  }, [
+    isPlaying,
+    isWindowOpen,
+    isBuffering,
+    poweringOff,
+    currentVideo?.id,
+    playPowerOff,
+    playPowerOn,
+    stopStatic,
+  ]);
+
+  // Reset pause state when the window closes so the next open starts
+  // clean (otherwise a session-restore could open with a black screen).
+  useEffect(() => {
+    if (!isWindowOpen) {
+      setScreenOff(false);
+      hasPausedRef.current = false;
+    }
+  }, [isWindowOpen]);
+
+  // Drive the looping static-noise bed from the same flag that powers
+  // the visual buffering overlay so audio + picture stay in sync.
+  // Suppress while powering off (closing animation) or while the
+  // screen is off (paused) so we don't "shhhh" through either CRT
+  // shutdown — buffering events that fire just before either state
+  // takes effect would otherwise leak through.
+  const hasUrl = Boolean(currentVideo?.url);
+  const staticBedActive =
+    (isBuffering || (!hasUrl && isPlaying)) && !poweringOff && !screenOff;
+  useEffect(() => {
+    if (staticBedActive) {
+      void startStatic();
+    } else {
+      stopStatic();
+    }
+  }, [staticBedActive, startStatic, stopStatic]);
+
   useEffect(() => {
     if (!isPlaying || !scheduleNextTitle) return;
     const id = window.setInterval(() => {
@@ -472,7 +709,10 @@ export function TvAppComponent({
       hasCustomChannels={customChannels.length > 0}
       currentChannelId={currentChannelId}
       onSelectChannel={setChannelById}
-      onCreateChannel={() => setIsCreateChannelOpen(true)}
+      onCreateChannel={() => {
+        if (!ensureLoggedIn()) return;
+        setIsCreateChannelOpen(true);
+      }}
       onDeleteChannel={(id) => setPendingDeleteId(id)}
       onImportChannels={handleImportChannels}
       onExportChannels={handleExportChannels}
@@ -485,6 +725,32 @@ export function TvAppComponent({
       onFullScreen={toggleFullScreen}
     />
   );
+
+  // Power-off shader runs *before* the window-frame close animation.
+  // We intercept the close, play the CRT collapse, then dispatch the
+  // standard close-confirmation event WindowFrame listens for.
+  const handleInterceptedClose = () => {
+    if (poweringOff) return;
+    setPoweringOff(true);
+    stopStatic();
+    void playPowerOff();
+  };
+
+  const handlePowerOffComplete = () => {
+    // Tell WindowFrame to actually run its close animation + cleanup.
+    if (!instanceId) {
+      // Non-instance fallback: just call the prop. (Shouldn't happen
+      // in practice — TV is always instance-mounted — but keep it
+      // safe against legacy mounts.)
+      onClose?.();
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent(`closeWindow-${instanceId}`, {
+        detail: { onComplete: onClose },
+      })
+    );
+  };
 
   if (!isWindowOpen) return null;
 
@@ -504,12 +770,13 @@ export function TvAppComponent({
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
         title={getTranslatedAppName("tv")}
-        onClose={onClose}
+        onClose={handleInterceptedClose}
         isForeground={isForeground}
         appId="tv"
         material={isMacOSTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
+        interceptClose={true}
         menuBar={isXpTheme ? menuBar : undefined}
         onFullscreenToggle={toggleFullScreen}
       >
@@ -537,7 +804,12 @@ export function TvAppComponent({
                   <YouTubePlayer
                     ref={playerRef}
                     url={url}
-                    playing={isPlaying && !isFullScreen}
+                    // Pause the iframe during the CRT shutdown / paused
+                    // "screen off" overlay so audio doesn't keep
+                    // playing through a black screen.
+                    playing={
+                      isPlaying && !isFullScreen && !poweringOff && !screenOff
+                    }
                     controls={false}
                     width="calc(100% + 1px)"
                     height="calc(100% + 1px)"
@@ -546,14 +818,28 @@ export function TvAppComponent({
                     onError={handleError}
                     onProgress={handleProgress}
                     onDuration={handleDuration}
-                    onPlay={() => setIsPlaying(true)}
+                    onPlay={() => {
+                      setIsPlaying(true);
+                      setIsBuffering(false);
+                    }}
                     onPause={() => setIsPlaying(false)}
+                    onBuffer={() => setIsBuffering(true)}
+                    onBufferEnd={() => setIsBuffering(false)}
                     config={{
                       youtube: { playerVars: { fs: 0, autoplay: 1 } },
                     }}
                   />
                 )}
               </div>
+              <TvCrtEffects
+                powerOnKey={powerOnKey}
+                poweringOff={poweringOff}
+                onPowerOffComplete={handlePowerOffComplete}
+                screenOff={screenOff}
+                channelSwitchKey={channelSwitchKey}
+                buffering={isBuffering || (!url && isPlaying)}
+                crtActive={true}
+              />
               <AnimatePresence>
                 {statusMessage && (
                   <motion.div
@@ -561,7 +847,7 @@ export function TvAppComponent({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-4 left-4 z-40"
+                    className="absolute top-4 left-4 z-[45]"
                   >
                     <StatusDisplay message={statusMessage} />
                   </motion.div>
@@ -833,6 +1119,39 @@ export function TvAppComponent({
         description={t("apps.tv.delete.description", {
           name: pendingDeleteChannel?.name ?? "",
         })}
+      />
+      <LoginDialog
+        initialTab={isVerifyDialogOpen ? "login" : "signup"}
+        isOpen={isUsernameDialogOpen || isVerifyDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsUsernameDialogOpen(false);
+            setVerifyDialogOpen(false);
+          }
+        }}
+        usernameInput={verifyUsernameInput}
+        onUsernameInputChange={setVerifyUsernameInput}
+        passwordInput={verifyPasswordInput}
+        onPasswordInputChange={setVerifyPasswordInput}
+        onLoginSubmit={async () => {
+          await handleVerifyTokenSubmit(verifyPasswordInput, true);
+        }}
+        isLoginLoading={isVerifyingToken}
+        loginError={verifyError}
+        newUsername={newUsername}
+        onNewUsernameChange={setNewUsername}
+        newPassword={newPassword}
+        onNewPasswordChange={setNewPassword}
+        onSignUpSubmit={
+          isVerifyDialogOpen
+            ? async () => {
+                setVerifyDialogOpen(false);
+                promptSetUsername();
+              }
+            : submitUsernameDialog
+        }
+        isSignUpLoading={isSettingUsername}
+        signUpError={usernameError}
       />
       {isFullScreen && url && (
         <VideoFullScreenPortal

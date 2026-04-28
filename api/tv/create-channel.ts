@@ -225,27 +225,33 @@ async function fetchVideoDurations(
 export default apiHandler<CreateChannelRequest>(
   {
     methods: ["POST"],
-    auth: "optional",
+    // Channel creation costs real YouTube + AI quota and writes a
+    // user-visible artifact. Require an authenticated account so quota
+    // abuse is tied to a username we can rate-limit / ban, and so
+    // anonymous IPs can't burn 8 channels/day per IP.
+    auth: "required",
     parseJsonBody: true,
   },
   async ({ req, res, logger, startTime, body, user }) => {
-    // Rate limit: small daily/burst budget per IP since each call burns
-    // ~3 YouTube quota points × 100 = ~300 quota.
+    // Rate limit per username AND per IP. Username limit is the real
+    // cap; IP limit is a backstop against a single account being shared
+    // across many machines or rotating accounts on one box.
     try {
       const ip = getClientIp(req);
+      const username = user?.username;
       const burstKey = RateLimit.makeKey([
         "rl",
         "tv-create-channel",
         "burst",
-        "ip",
-        ip,
+        username ? "user" : "ip",
+        username ?? ip,
       ]);
       const dailyKey = RateLimit.makeKey([
         "rl",
         "tv-create-channel",
         "daily",
-        "ip",
-        ip,
+        username ? "user" : "ip",
+        username ?? ip,
       ]);
       const burst = await RateLimit.checkCounterLimit({
         key: burstKey,
@@ -264,7 +270,7 @@ export default apiHandler<CreateChannelRequest>(
       const daily = await RateLimit.checkCounterLimit({
         key: dailyKey,
         windowSeconds: 60 * 60 * 24,
-        limit: user ? 30 : 8,
+        limit: 30,
       });
       if (!daily.allowed) {
         res.setHeader(

@@ -1622,7 +1622,9 @@
         "errorEmpty": "Describe a channel to get started.",
         "errorRateLimit": "Too many channels created. Please wait a bit and try again.",
         "errorNoVideos": "No videos found for that idea. Try a different description.",
-        "errorGeneric": "Couldn't create the channel. Please try again."
+        "errorGeneric": "Couldn't create the channel. Please try again.",
+        "signInRequired": "Sign in to create channels",
+        "signInRequiredDescription": "Log in or create an account to program your own TV channels."
       },
       "delete": {
         "title": "Delete Channel",

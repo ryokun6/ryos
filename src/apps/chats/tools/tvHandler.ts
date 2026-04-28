@@ -357,8 +357,19 @@ export const handleTvControl = async (
               error?: string;
               scope?: string;
             };
+            const isAuthRequired =
+              response.status === 401 || response.status === 403;
             const isRateLimit = response.status === 429;
-            const errorText = isRateLimit
+            // Surface auth errors with a distinct, actionable message so
+            // the chat AI can suggest the user log in (and so the chat
+            // UI's tool-error renderer can flag it differently from a
+            // generic failure). Falls back to the generic failure text
+            // for unknown statuses.
+            const errorText = isAuthRequired
+              ? i18n.t("apps.tv.create.signInRequired", {
+                  defaultValue: "Sign in to create channels",
+                })
+              : isRateLimit
               ? i18n.t("apps.chats.toolCalls.tv.createRateLimited", {
                   defaultValue:
                     "Channel creation is rate-limited right now. Try again in a bit.",
