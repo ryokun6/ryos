@@ -356,10 +356,15 @@ export interface TvControlInput {
   channelId?: string;
   /** For 'tune': switch by channel number instead of id. */
   channelNumber?: number;
-  /** For 'createChannel': human-readable name (1-24 chars). */
+  /**
+   * For 'createChannel' (REQUIRED): one-line description/theme of the channel
+   * (e.g. "skateboarding tricks", "lofi study"). The server fans out to YouTube
+   * via `/api/tv/create-channel` and AI-plans the name, tagline, and lineup —
+   * do not pass a `videos` list.
+   */
+  prompt?: string;
+  /** For 'createChannel': optional name override (otherwise planner picks one). */
   name?: string;
-  /** For 'createChannel': optional one-line description/tagline. */
-  description?: string;
   /** For 'addVideo': YouTube video id or supported URL. */
   videoId?: string;
   /** For 'addVideo': YouTube URL alternative to videoId. */
@@ -370,19 +375,6 @@ export interface TvControlInput {
   artist?: string;
   /** For 'removeVideo': the video id within the channel. */
   removeVideoId?: string;
-  /**
-   * For 'createChannel': optional list of YouTube videos to seed the channel with.
-   * Each entry may be a videoId, YouTube URL, or {videoId|url, title?, artist?}.
-   */
-  videos?: Array<
-    | string
-    | {
-        videoId?: string;
-        url?: string;
-        title?: string;
-        artist?: string;
-      }
-  >;
 }
 
 export interface TvVideoToolRecord {

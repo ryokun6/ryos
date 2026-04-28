@@ -29,22 +29,19 @@ export interface TvControlInput {
     | "removeVideo";
   channelId?: string;
   channelNumber?: number;
+  /**
+   * For 'createChannel': one-line theme/description. The server fans out
+   * YouTube searches and AI-plans the channel — the AI must NOT pre-search
+   * videos with searchSongs.
+   */
+  prompt?: string;
+  /** For 'createChannel': optional name override (otherwise planner picks one). */
   name?: string;
-  description?: string;
   videoId?: string;
   url?: string;
   title?: string;
   artist?: string;
   removeVideoId?: string;
-  videos?: Array<
-    | string
-    | {
-        videoId?: string;
-        url?: string;
-        title?: string;
-        artist?: string;
-      }
-  >;
 }
 
 interface VideoEntryDescriptor {
@@ -152,20 +149,6 @@ const buildChannelToolRecord = (
   videoCount: ch.videos.length,
   videos: includeVideos ? ch.videos.map(toVideoToolRecord) : undefined,
 });
-
-const normalizeVideoEntry = (
-  entry: string | VideoEntryDescriptor
-): VideoEntryDescriptor | null => {
-  if (typeof entry === "string") {
-    const trimmed = entry.trim();
-    if (!trimmed) return null;
-    return /^https?:\/\//i.test(trimmed)
-      ? { url: trimmed }
-      : { videoId: trimmed };
-  }
-  if (!entry || typeof entry !== "object") return null;
-  return entry;
-};
 
 const resolveVideoFromInput = async (
   entry: VideoEntryDescriptor
@@ -333,66 +316,138 @@ export const handleTvControl = async (
       }
 
       case "createChannel": {
-        const name = input.name?.trim();
-        if (!name) {
+        const prompt = input.prompt?.trim();
+        if (!prompt) {
           context.addToolResult({
             tool: "tvControl",
             toolCallId,
             state: "output-error",
-            errorText: i18n.t("apps.chats.toolCalls.tv.missingName", {
-              defaultValue: "Channel name is required",
+            errorText: i18n.t("apps.chats.toolCalls.tv.missingPrompt", {
+              defaultValue:
+                "createChannel requires a 'prompt' (one-line theme/description). The server fans out YouTube searches automatically — do not pre-pick videos.",
             }),
           });
           return;
         }
 
-        // Resolve seed videos in parallel (best-effort — bad ids are skipped).
-        const seedDescriptors = (input.videos ?? [])
-          .map(normalizeVideoEntry)
-          .filter((d): d is VideoEntryDescriptor => Boolean(d));
-
-        const resolved = await Promise.all(
-          seedDescriptors.map((d) => resolveVideoFromInput(d))
-        );
-
-        const seedVideos: Video[] = [];
-        const seenIds = new Set<string>();
-        const skippedErrors: string[] = [];
-        for (const r of resolved) {
-          if ("video" in r) {
-            if (
-              isYouTubeUrl(r.video.url) &&
-              !seenIds.has(r.video.id)
-            ) {
-              seenIds.add(r.video.id);
-              seedVideos.push(r.video);
+        // Server fanout: /api/tv/create-channel runs the same AI plan +
+        // YouTube fanout the manual TV "Create Channel" dialog uses, so
+        // the AI doesn't need to call searchSongs first or ask the user
+        // for a video list.
+        let planned: {
+          name: string;
+          description: string;
+          queries: string[];
+          videos: Video[];
+        };
+        try {
+          const response = await abortableFetch(
+            getApiUrl("/api/tv/create-channel"),
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ description: prompt }),
+              timeout: 60000,
+              throwOnHttpError: false,
             }
-          } else {
-            skippedErrors.push(r.error);
+          );
+
+          if (!response.ok) {
+            const data = (await response.json().catch(() => ({}))) as {
+              error?: string;
+              scope?: string;
+            };
+            const isRateLimit = response.status === 429;
+            const errorText = isRateLimit
+              ? i18n.t("apps.chats.toolCalls.tv.createRateLimited", {
+                  defaultValue:
+                    "Channel creation is rate-limited right now. Try again in a bit.",
+                })
+              : data?.error ||
+                i18n.t("apps.chats.toolCalls.tv.createFailed", {
+                  defaultValue: "Failed to plan channel",
+                });
+            context.addToolResult({
+              tool: "tvControl",
+              toolCallId,
+              state: "output-error",
+              errorText,
+            });
+            return;
           }
+
+          const raw = (await response.json()) as {
+            name?: string;
+            description?: string;
+            queries?: string[];
+            videos?: Video[];
+          };
+          if (!raw?.videos?.length || !raw?.name) {
+            context.addToolResult({
+              tool: "tvControl",
+              toolCallId,
+              state: "output-error",
+              errorText: i18n.t("apps.chats.toolCalls.tv.createNoVideos", {
+                defaultValue:
+                  "Couldn't find videos for that channel idea. Try a more specific prompt.",
+              }),
+            });
+            return;
+          }
+          planned = {
+            name: raw.name,
+            description: raw.description ?? "",
+            queries: raw.queries ?? [],
+            videos: raw.videos,
+          };
+        } catch (err) {
+          console.error("[tvControl] create-channel API failed:", err);
+          context.addToolResult({
+            tool: "tvControl",
+            toolCallId,
+            state: "output-error",
+            errorText:
+              err instanceof Error
+                ? err.message
+                : i18n.t("apps.chats.toolCalls.tv.createFailed", {
+                    defaultValue: "Failed to plan channel",
+                  }),
+          });
+          return;
+        }
+
+        // Drop any non-YouTube urls (defense in depth — server should already
+        // only return YouTube videos but the user's data ends up in the store).
+        const safeVideos = planned.videos.filter((v) => isYouTubeUrl(v.url));
+        if (safeVideos.length === 0) {
+          context.addToolResult({
+            tool: "tvControl",
+            toolCallId,
+            state: "output-error",
+            errorText: i18n.t("apps.chats.toolCalls.tv.createNoVideos", {
+              defaultValue:
+                "Couldn't find videos for that channel idea. Try a more specific prompt.",
+            }),
+          });
+          return;
         }
 
         ensureTvAppOpen(context);
+        const channelName = (input.name?.trim() || planned.name).slice(0, 24);
         const created = useTvStore.getState().addCustomChannel({
-          name: name.slice(0, 24),
-          description: input.description?.trim() || undefined,
-          videos: seedVideos,
+          name: channelName,
+          description: planned.description || undefined,
+          videos: safeVideos,
+          prompt,
+          queries: planned.queries,
         });
 
         const shortId = `ch${created.number}`;
-        let message = i18n.t("apps.chats.toolCalls.tv.createdChannel", {
-          defaultValue: "Created channel {{label}}",
+        const message = i18n.t("apps.chats.toolCalls.tv.createdChannelWithVideos", {
+          defaultValue: "Created {{label}} ({{count}} videos)",
           label: formatChannelLabel(created),
+          count: safeVideos.length,
         });
-        if (seedVideos.length > 0) {
-          message += ` (${seedVideos.length} video${seedVideos.length === 1 ? "" : "s"})`;
-        }
-        if (skippedErrors.length > 0) {
-          message += `. ${i18n.t("apps.chats.toolCalls.tv.skippedSomeVideos", {
-            defaultValue: "Skipped {{count}} invalid videos",
-            count: skippedErrors.length,
-          })}`;
-        }
 
         context.addToolResult({
           tool: "tvControl",

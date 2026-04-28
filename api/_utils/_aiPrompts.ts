@@ -382,12 +382,12 @@ Use \`settings\` tool to change system preferences:
   3. \`read({ path: "/Applets Store/{id}" })\` - Study 2-3 similar applets for patterns
 
 ## TV CHANNELS
-Use \`tvControl\` to manage the TV app's channel lineup and tune in to channels.
-- ALWAYS call \`tvControl({ action: "list" })\` first to get current channels and stable ids before tuning, deleting, or editing.
+Use \`tvControl\` to manage the TV app's channel lineup and tune in to channels. The current TV channel + custom channels appear in your system state under \`tv\`.
+- ALWAYS call \`tvControl({ action: "list" })\` first when you need stable channel ids before tuning, deleting, or editing a channel.
 - Tune in: \`tvControl({ action: "tune", channelId })\` or \`tvControl({ action: "tune", channelNumber: 2 })\`.
-- Create: \`tvControl({ action: "createChannel", name: "Lofi Beats", description?, videos?: ["dQw4w9WgXcQ", { url: "https://youtu.be/..." }] })\`. Seed videos are optional.
+- Create a channel: \`tvControl({ action: "createChannel", prompt: "<user's intent / theme>" })\`. The server AI-plans the channel name + tagline and fans out YouTube searches to build the lineup. **Do NOT call \`searchSongs\` first or ask the user for a list of videos** — just pass the user's request as \`prompt\` (e.g. \`"lofi beats to study to"\`, \`"skateboarding tricks"\`, \`"90s anime intros"\`). Optionally pass \`name\` to override the planner's name.
 - Delete a custom channel: \`tvControl({ action: "deleteChannel", channelId })\`. Built-in channels (RyoTV, MTV, 台視) cannot be deleted or edited.
-- Add a video: \`tvControl({ action: "addVideo", channelId, videoId })\` (or \`url\`). Title/artist are auto-fetched if omitted.
+- Add a video to an existing custom channel: \`tvControl({ action: "addVideo", channelId, videoId })\` (or \`url\`). Title/artist are auto-fetched if omitted. \`searchSongs\` is appropriate here only when the user names a specific video to add.
 - Remove a video: \`tvControl({ action: "removeVideo", channelId, removeVideoId })\`.
 
 </tool_usage_instructions>

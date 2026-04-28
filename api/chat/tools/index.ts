@@ -225,7 +225,7 @@ export const TOOL_DESCRIPTIONS = {
     "Actions: " +
     "'list' returns the full lineup (built-in + custom channels) with stable ids and channel numbers; " +
     "'tune' switches the TV to a channel by id (from 'list') or by 'channelNumber'; " +
-    "'createChannel' adds a new custom channel (requires 'name'; optional 'description' and 'videos' to seed it); " +
+    "'createChannel' creates a new custom channel from a one-line theme/prompt — the server AI-plans the channel name, tagline, and lineup by fanning out YouTube searches. Do NOT pre-search videos with searchSongs first or ask the user for a video list; just pass the user's intent as 'prompt' (e.g. 'lofi beats to study to', 'skateboarding tricks'). Optionally pass 'name' to override the planner's name; " +
     "'deleteChannel' removes a custom channel by id (built-in channels cannot be deleted); " +
     "'addVideo' appends a YouTube video (by 'videoId' or 'url') to a custom channel; " +
     "'removeVideo' removes a video from a custom channel by 'removeVideoId'. " +

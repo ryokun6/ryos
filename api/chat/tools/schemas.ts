@@ -972,26 +972,6 @@ export const webFetchSchema = z.object({
 // TV Control Schema
 // ============================================================================
 
-const tvVideoEntrySchema = z.union([
-  z
-    .preprocess(normalizeOptionalString, z.string().min(1).max(1000))
-    .describe("YouTube video id (11 chars) or full YouTube URL."),
-  z.object({
-    videoId: z
-      .preprocess(normalizeOptionalString, z.string().max(200).optional())
-      .describe("YouTube video id."),
-    url: z
-      .preprocess(normalizeOptionalString, z.string().max(1000).optional())
-      .describe("YouTube URL (used if videoId is omitted)."),
-    title: z
-      .preprocess(normalizeOptionalString, z.string().max(300).optional())
-      .describe("Optional title (otherwise looked up automatically)."),
-    artist: z
-      .preprocess(normalizeOptionalString, z.string().max(300).optional())
-      .describe("Optional artist/channel."),
-  }),
-]);
-
 export const tvControlSchema = z
   .object({
     action: z
@@ -1000,7 +980,7 @@ export const tvControlSchema = z
         "Action to perform: " +
           "'list' returns the lineup (built-ins + custom channels), include videos when verbose; " +
           "'tune' switches the TV to a channel by id or number; " +
-          "'createChannel' adds a new custom channel (optionally seeded with videos); " +
+          "'createChannel' creates a new custom channel from a one-line theme/prompt — the server AI-plans the name, tagline, and lineup by fanning out YouTube searches; " +
           "'deleteChannel' removes a custom channel by id; " +
           "'addVideo' appends a YouTube video to a custom channel; " +
           "'removeVideo' removes a video from a custom channel."
@@ -1019,15 +999,19 @@ export const tvControlSchema = z
       .describe(
         "For 'tune': switch by displayed channel number (e.g. 1 = RyoTV, 2 = MTV)."
       ),
-    name: z
-      .preprocess(normalizeOptionalString, z.string().min(1).max(24).optional())
-      .describe("For 'createChannel': channel name (1-24 chars, evocative, not generic)."),
-    description: z
+    prompt: z
       .preprocess(
         normalizeOptionalString,
-        z.string().min(1).max(120).optional()
+        z.string().min(2).max(280).optional()
       )
-      .describe("For 'createChannel': optional one-line description/tagline."),
+      .describe(
+        "For 'createChannel' (REQUIRED): a one-line theme/description (e.g. 'skateboarding tricks', 'lofi beats to study to', '90s anime intros'). The server AI-plans the channel name, tagline, and 2-4 YouTube search queries, fans them out, dedupes, and builds the lineup. Do NOT manually pre-search videos — call createChannel directly with the user's intent as the prompt."
+      ),
+    name: z
+      .preprocess(normalizeOptionalString, z.string().min(1).max(24).optional())
+      .describe(
+        "For 'createChannel' (optional): override the planner's channel name. Omit to let the server pick a punchy 1-3 word name."
+      ),
     videoId: z
       .preprocess(normalizeOptionalString, z.string().max(200).optional())
       .describe("For 'addVideo': YouTube video id (11 chars)."),
@@ -1045,13 +1029,6 @@ export const tvControlSchema = z
     removeVideoId: z
       .preprocess(normalizeOptionalString, z.string().max(200).optional())
       .describe("For 'removeVideo': the YouTube video id to remove from the channel."),
-    videos: z
-      .array(tvVideoEntrySchema)
-      .max(50)
-      .optional()
-      .describe(
-        "For 'createChannel' (optional): seed videos for the new channel. Each entry can be a YouTube id/URL string or an object with videoId/url and optional title/artist."
-      ),
   })
   .superRefine((data, ctx) => {
     if (data.action === "tune") {
@@ -1064,11 +1041,12 @@ export const tvControlSchema = z
       }
     }
     if (data.action === "createChannel") {
-      if (!data.name || !data.name.trim()) {
+      if (!data.prompt || !data.prompt.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "The 'createChannel' action requires the 'name' parameter.",
-          path: ["name"],
+          message:
+            "The 'createChannel' action requires a 'prompt' (one-line theme/description). The server fans out YouTube searches automatically — do not pre-pick videos.",
+          path: ["prompt"],
         });
       }
     }

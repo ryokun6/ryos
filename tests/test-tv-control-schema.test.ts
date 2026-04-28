@@ -35,36 +35,40 @@ describe("tvControlSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  test("accepts 'createChannel' with name only", () => {
+  test("accepts 'createChannel' with prompt only", () => {
     const result = tvControlSchema.safeParse({
       action: "createChannel",
+      prompt: "lofi beats to study to",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("accepts 'createChannel' with optional name override", () => {
+    const result = tvControlSchema.safeParse({
+      action: "createChannel",
+      prompt: "lofi beats to study to",
       name: "Lofi Beats",
     });
     expect(result.success).toBe(true);
   });
 
-  test("accepts 'createChannel' with seed videos as strings or objects", () => {
-    const result = tvControlSchema.safeParse({
-      action: "createChannel",
-      name: "Lofi Beats",
-      description: "chill beats to study to",
-      videos: [
-        "dQw4w9WgXcQ",
-        "https://youtu.be/dQw4w9WgXcQ",
-        { videoId: "dQw4w9WgXcQ", title: "Track" },
-      ],
-    });
-    expect(result.success).toBe(true);
-  });
-
-  test("rejects 'createChannel' without name", () => {
+  test("rejects 'createChannel' without prompt", () => {
     const result = tvControlSchema.safeParse({ action: "createChannel" });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects 'createChannel' with empty prompt", () => {
+    const result = tvControlSchema.safeParse({
+      action: "createChannel",
+      prompt: "  ",
+    });
     expect(result.success).toBe(false);
   });
 
   test("rejects 'createChannel' name longer than 24 chars", () => {
     const result = tvControlSchema.safeParse({
       action: "createChannel",
+      prompt: "lofi beats",
       name: "a".repeat(25),
     });
     expect(result.success).toBe(false);
