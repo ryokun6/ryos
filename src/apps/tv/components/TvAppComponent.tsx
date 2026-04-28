@@ -9,6 +9,7 @@ import { CreateChannelDialog } from "./CreateChannelDialog";
 import { ChannelPromptInput } from "./ChannelPromptInput";
 import { TvCrtEffects } from "./TvCrtEffects";
 import { useCreateTvChannel } from "../hooks/useCreateTvChannel";
+import { useTvSoundFx } from "../hooks/useTvSoundFx";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -363,6 +364,15 @@ export function TvAppComponent({
   const [poweringOff, setPoweringOff] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
 
+  // Procedural CRT sound effects synced to the shader animations above.
+  const {
+    playPowerOn,
+    playPowerOff,
+    playChannelSwitch,
+    startStatic,
+    stopStatic,
+  } = useTvSoundFx();
+
   const customChannels = useTvStore((s) => s.customChannels);
   const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
   const importChannels = useTvStore((s) => s.importChannels);
@@ -468,12 +478,14 @@ export function TvAppComponent({
       wasOpenRef.current = true;
       if (!skipInitialSound) {
         setPowerOnKey((k) => k + 1);
+        void playPowerOn();
       }
     } else if (!isWindowOpen && wasOpenRef.current) {
       wasOpenRef.current = false;
       setPoweringOff(false);
+      stopStatic();
     }
-  }, [isWindowOpen, skipInitialSound]);
+  }, [isWindowOpen, skipInitialSound, playPowerOn, stopStatic]);
 
   // Channel-switch static: fire a brief burst whenever the current
   // channel changes. Skip the very first mount so opening the TV doesn't
@@ -485,13 +497,29 @@ export function TvAppComponent({
       return;
     }
     setChannelSwitchKey((k) => k + 1);
-  }, [currentChannelId]);
+    void playChannelSwitch();
+  }, [currentChannelId, playChannelSwitch]);
 
   // Reset the buffering flag whenever the URL changes so a previous
   // channel's pending-buffer state can't leak into the new picture.
   useEffect(() => {
     setIsBuffering(false);
   }, [currentVideo?.id]);
+
+  // Drive the looping static-noise bed from the same flag that powers
+  // the visual buffering overlay so audio + picture stay in sync.
+  // Suppress while powering off so it doesn't "shhhh" through the
+  // closing animation.
+  const hasUrl = Boolean(currentVideo?.url);
+  const staticBedActive =
+    (isBuffering || (!hasUrl && isPlaying)) && !poweringOff;
+  useEffect(() => {
+    if (staticBedActive) {
+      void startStatic();
+    } else {
+      stopStatic();
+    }
+  }, [staticBedActive, startStatic, stopStatic]);
 
   useEffect(() => {
     if (!isPlaying || !scheduleNextTitle) return;
@@ -535,6 +563,8 @@ export function TvAppComponent({
   const handleInterceptedClose = () => {
     if (poweringOff) return;
     setPoweringOff(true);
+    stopStatic();
+    void playPowerOff();
   };
 
   const handlePowerOffComplete = () => {
