@@ -14,7 +14,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
 import { DEFAULT_CHANNELS, type Channel } from "@/apps/tv/data/channels";
 import type { Video } from "@/stores/useVideoStore";
-import { isYouTubeUrl } from "@/apps/tv/utils";
+import { isYouTubeUrl, parseYouTubeId } from "@/apps/tv/utils";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
@@ -65,33 +65,12 @@ const ensureTvAppOpen = (context: ToolContext): void => {
   }
 };
 
-/** Extract a YouTube video id from a raw id or URL. Returns null if invalid. */
-const extractVideoId = (input: string): string | null => {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  try {
-    const url = new URL(trimmed);
-    if (
-      url.hostname.includes("youtube.com") ||
-      url.hostname.includes("youtu.be")
-    ) {
-      const v = url.searchParams.get("v");
-      if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
-      if (url.hostname === "youtu.be") {
-        const id = url.pathname.slice(1).split("/")[0] ?? "";
-        return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
-      }
-      const m = url.pathname.match(
-        /\/(?:embed\/|v\/|shorts\/)?([a-zA-Z0-9_-]{11})/
-      );
-      if (m) return m[1];
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
+/**
+ * Extract a YouTube video id from a raw id or URL. Delegates to the
+ * shared `parseYouTubeId` helper which uses an exact-match host
+ * allow-list (rejecting spoofed hosts like `evil-youtube.com`).
+ */
+const extractVideoId = (input: string): string | null => parseYouTubeId(input);
 
 /**
  * Fetch a YouTube video's title and channel via oEmbed.
