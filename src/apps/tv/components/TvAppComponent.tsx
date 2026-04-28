@@ -605,11 +605,16 @@ export function TvAppComponent({
   // Suppression rules:
   //   - Buffering transitions are ignored (YouTube briefly toggles
   //     play state during buffer events).
-  //   - Channel-switch / video-id transitions are also ignored: when
+  //   - Channel-switch / video-id transitions are mostly ignored: when
   //     the video changes, isBuffering is reset and the new video's
   //     onBuffer/onPlay/onPause events arrive in an unpredictable
-  //     order. Without this, a switch from paused → new channel
-  //     could double-fire (channel-switch burst + spurious power-on).
+  //     order. Without this, a play → channel-switch flow could
+  //     double-fire (channel-switch burst + spurious power-on shader).
+  //     The exception is "screen-off → next/prev/CH+ while paused":
+  //     screenOff stays true unless we explicitly turn it back on, so
+  //     a user-initiated playback action (which sets isPlaying true)
+  //     while screenOff is true must trigger the power-on even though
+  //     the video id also changed.
   //   - Powering off / closing: don't react to anything; we're
   //     tearing down.
   const prevPlayingRef = useRef(isPlaying);
@@ -622,6 +627,20 @@ export function TvAppComponent({
       prevVideoIdRef.current = currentVideoId;
       return;
     }
+
+    // Resume-from-paused via Next/Prev/CH+/CH-: setIsPlaying(true) plus
+    // a video/channel change land in the same render. Power back on
+    // first, then let the channel-switch / buffer logic handle the
+    // rest of the visual choreography.
+    if (screenOff && isPlaying) {
+      setScreenOff(false);
+      setPowerOnKey((k) => k + 1);
+      void playPowerOn();
+      prevPlayingRef.current = isPlaying;
+      prevVideoIdRef.current = currentVideoId;
+      return;
+    }
+
     if (isBuffering) {
       prevPlayingRef.current = isPlaying;
       prevVideoIdRef.current = currentVideoId;
@@ -655,6 +674,7 @@ export function TvAppComponent({
     isWindowOpen,
     isBuffering,
     poweringOff,
+    screenOff,
     currentVideo?.id,
     playPowerOff,
     playPowerOn,
@@ -726,18 +746,10 @@ export function TvAppComponent({
     />
   );
 
-  // Power-off shader runs *before* the window-frame close animation.
-  // We intercept the close, play the CRT collapse, then dispatch the
-  // standard close-confirmation event WindowFrame listens for.
-  const handleInterceptedClose = () => {
-    if (poweringOff) return;
-    setPoweringOff(true);
-    stopStatic();
-    void playPowerOff();
-  };
-
-  const handlePowerOffComplete = () => {
-    // Tell WindowFrame to actually run its close animation + cleanup.
+  // Tell WindowFrame to actually run its close animation + cleanup.
+  // Used both by the natural power-off completion path and the
+  // already-paused short-circuit below.
+  const dispatchWindowClose = () => {
     if (!instanceId) {
       // Non-instance fallback: just call the prop. (Shouldn't happen
       // in practice — TV is always instance-mounted — but keep it
@@ -750,6 +762,31 @@ export function TvAppComponent({
         detail: { onComplete: onClose },
       })
     );
+  };
+
+  // Power-off shader runs *before* the window-frame close animation.
+  // We intercept the close, play the CRT collapse, then dispatch the
+  // standard close-confirmation event WindowFrame listens for.
+  //
+  // Short-circuit: if the screen is already off (user paused the TV
+  // and is now closing), skip the 750ms squeeze + sound — it's
+  // already black, replaying the animation just delays the close
+  // without any visible benefit. Also stops the static bed in case
+  // it was somehow still running.
+  const handleInterceptedClose = () => {
+    if (poweringOff) return;
+    if (screenOff) {
+      stopStatic();
+      dispatchWindowClose();
+      return;
+    }
+    setPoweringOff(true);
+    stopStatic();
+    void playPowerOff();
+  };
+
+  const handlePowerOffComplete = () => {
+    dispatchWindowClose();
   };
 
   if (!isWindowOpen) return null;

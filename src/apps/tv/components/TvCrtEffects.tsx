@@ -334,9 +334,10 @@ function PowerOffEffect({
   const totalSec = POWER_OFF_DURATION_MS / 1000;
   // Phase milestones (as fractions of totalSec):
   //   0.00 .. 0.30  bars close in from top/bottom (cubic ease-in)
-  //   0.20 .. 0.32  beam fades up at the slit
-  //   0.32 .. 0.55  black fill takes over; beam collapses to a dot
-  //   0.55 .. 1.00  dot fades with bloom halo
+  //   0.22 .. 0.44  beam fades up at the slit, holds full width briefly
+  //   0.40 .. 0.55  black fill takes over the rest of the screen
+  //   0.44 .. 0.70  beam collapses horizontally toward center
+  //   0.55 .. 0.94  center dot fades in, holds, then collapses + fades
 
   return (
     <AnimatePresence>
@@ -391,54 +392,66 @@ function PowerOffEffect({
             className="absolute inset-0 bg-black"
           />
 
-          {/* Bright horizontal beam at the slit. scaleX 1 while the
-              slit is still open, then 1 → 0 as the slit collapses
-              toward the center, mimicking the electron beam compressed
-              into a single line and then a point. */}
+          {/* Bright horizontal beam at the slit — the picture's
+              electron beam compressed onto a single line. The whole
+              beam (bright core + bloom halo + vertical falloff) is
+              baked into a radial gradient on a tall (50px) element,
+              so when we scaleX it down the halo shrinks with the
+              core. No box-shadow → no disconnected glow at the end.
+              Animates: fade in as the bars close → hold full width
+              for one breath → collapse horizontally toward the
+              center, where the dot takes over. */}
           <motion.div
             initial={{ opacity: 0, scaleX: 1 }}
             animate={{
-              opacity: [0, 0, 1, 1, 0],
-              scaleX: [1, 1, 1, 0.04, 0],
+              opacity: [0, 0, 1, 1, 1, 0],
+              scaleX: [1, 1, 1, 1, 0.06, 0],
             }}
             transition={{
               duration: totalSec,
-              times: [0, 0.2, 0.32, 0.6, 0.72],
-              ease: [0.6, 0, 0.4, 1],
+              times: [0, 0.22, 0.34, 0.44, 0.62, 0.7],
+              ease: [0.55, 0, 0.35, 1],
             }}
             className="absolute left-0 right-0 top-1/2 -translate-y-1/2"
             style={{
-              height: "3px",
-              background:
-                "linear-gradient(to right, transparent 0%, rgba(255,255,255,1) 50%, transparent 100%)",
-              boxShadow:
-                "0 0 18px 5px rgba(255,255,255,0.95), 0 0 40px 12px rgba(255,255,255,0.5)",
+              height: "50px",
               transformOrigin: "center",
+              // Wide bright horizontal core with vertical glow falloff.
+              // ellipse-50% wide × 9% tall → visible bright band with
+              // soft halo above/below. All transparent at the edges so
+              // there are no harsh seams when the element scales.
+              background:
+                "radial-gradient(ellipse 50% 9% at center, rgba(255,255,255,1) 0%, rgba(240,250,255,0.92) 16%, rgba(200,225,255,0.45) 40%, rgba(140,170,220,0.15) 65%, rgba(80,100,180,0.04) 80%, transparent 100%)",
             }}
           />
 
-          {/* Center afterglow dot. Appears just as the beam collapses,
-              shrinks slightly, and fades — the way phosphor cools after
-              the beam shuts off. */}
+          {/* Center collapse dot. The halo is part of a single radial
+              gradient on an 80px element so when we scale the element
+              down, the bright core *and* the halo shrink together — no
+              disconnected glow at the end. Fades in just as the beam
+              starts collapsing, so the visual energy hands off cleanly
+              from the horizontal beam to the center point. */}
           <motion.div
-            initial={{ opacity: 0, scale: 1 }}
+            initial={{ opacity: 0, scale: 1.2 }}
             animate={{
               opacity: [0, 0, 1, 1, 0],
-              scale: [1, 1, 1, 0.55, 0.25],
+              scale: [1.2, 1.2, 1, 0.55, 0],
             }}
             transition={{
               duration: totalSec,
-              times: [0, 0.55, 0.62, 0.72, 1],
-              ease: "easeOut",
+              times: [0, 0.5, 0.65, 0.78, 0.94],
+              ease: [0.4, 0, 0.6, 1],
             }}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{
-              width: 16,
-              height: 16,
+              width: 80,
+              height: 80,
+              // Tight bright core (0–6%), warm glow falloff (6–35%),
+              // long blue-tinted bloom (35–80%) that fades to fully
+              // transparent. Background = "halo built into the
+              // element", which means scale() shrinks it cleanly.
               background:
-                "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(220,235,255,0.6) 40%, rgba(180,210,255,0.2) 70%, transparent 100%)",
-              boxShadow:
-                "0 0 36px 14px rgba(255,255,255,0.8), 0 0 78px 28px rgba(180,210,255,0.4)",
+                "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(240,250,255,0.9) 6%, rgba(220,235,255,0.45) 18%, rgba(180,210,255,0.18) 38%, rgba(80,100,180,0.05) 60%, transparent 82%)",
             }}
           />
         </motion.div>
