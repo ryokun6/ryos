@@ -312,21 +312,30 @@ function PowerOffEffect({
 }) {
   // Fire onComplete via a real timer rather than AnimatePresence.onExitComplete
   // so it triggers when the animation *finishes playing*, not when the
-  // overlay later unmounts. Without this the close handler was never
-  // dispatched and the TV window never closed after the squeeze played.
-  const firedRef = useRef(false);
+  // overlay later unmounts.
+  //
+  // Pin onComplete in a ref so re-renders that change the callback
+  // identity don't reset the timer. Callers typically pass an inline
+  // closure (recreated on every parent render); without this ref, the
+  // [active, onComplete] dependency cycle would clear the pending
+  // timeout on every re-render and the close event would never fire.
+  const onCompleteRef = useRef(onComplete);
   useEffect(() => {
-    if (!active) {
-      firedRef.current = false;
-      return;
-    }
-    if (firedRef.current) return;
-    firedRef.current = true;
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  // Boolean dep handles the pause → close transition: while paused,
+  // active is true but onComplete is undefined (no timer wanted); when
+  // the user then clicks close, hasOnComplete flips true and a fresh
+  // timer is scheduled.
+  const hasOnComplete = Boolean(onComplete);
+  useEffect(() => {
+    if (!active || !hasOnComplete) return;
     const id = window.setTimeout(() => {
-      onComplete?.();
+      onCompleteRef.current?.();
     }, POWER_OFF_DURATION_MS);
     return () => window.clearTimeout(id);
-  }, [active, onComplete]);
+  }, [active, hasOnComplete]);
 
   const totalSec = POWER_OFF_DURATION_MS / 1000;
   // Phase milestones (as fractions of totalSec):
