@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useTvStore } from "@/stores/useTvStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
-import type { Video } from "@/stores/useVideoStore";
+import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { helpItems } from "..";
@@ -21,6 +21,7 @@ import {
 } from "@/apps/tv/utils";
 
 export const MTV_CHANNEL_ID = "mtv";
+export const RYO_TV_CHANNEL_ID = "ryos-picks";
 
 function trackToVideo(track: Track): Video {
   return {
@@ -85,25 +86,39 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     null
   );
   const hasForcedPlayOnOpenRef = useRef(false);
+  // Whether the next time we learn a video's duration we should jump to a
+  // random offset ("tune in mid-program"). True on initial load + manual
+  // skip + channel switch; flipped to false when a video advances because
+  // it ended naturally, so the *following* video plays from 0.
+  const tuneInRandomlyOnNextDurationRef = useRef(true);
 
   const ipodTracks = useIpodStore((s) => s.tracks);
+  const videosLibrary = useVideoStore((s) => s.videos);
 
   const currentChannel = useMemo((): Channel => {
     const base =
       channels.find((c) => c.id === currentChannelId) ?? channels[0];
-    const rawSource =
-      base.id === MTV_CHANNEL_ID
-        ? ipodTracks.map(trackToVideo)
-        : base.videos;
+    // Built-in channels that mirror another app's library: MTV plays the
+    // iPod tracks, Ryo TV plays the user's Videos app library. Custom and
+    // other built-in channels keep their static `videos` array.
+    let rawSource: Video[];
+    if (base.id === MTV_CHANNEL_ID) {
+      rawSource = ipodTracks.map(trackToVideo);
+    } else if (base.id === RYO_TV_CHANNEL_ID) {
+      rawSource = videosLibrary;
+    } else {
+      rawSource = base.videos;
+    }
     // Only YouTube-embeddable videos are playable through ReactPlayer's
-    // YouTube driver. Filter at the source so MTV (iPod library) and any
-    // future channel can't smuggle in non-YouTube URLs.
+    // YouTube driver. Filter at the source so MTV / Ryo TV (which pull
+    // from other stores) and any future channel can't smuggle in
+    // non-YouTube URLs.
     const source = rawSource.filter((v) => isYouTubeUrl(v.url));
     return {
       ...base,
       videos: shuffleArray(source),
     };
-  }, [channels, currentChannelId, ipodTracks]);
+  }, [channels, currentChannelId, ipodTracks, videosLibrary]);
 
   const videoIndex = lastVideoIndexByChannel[currentChannelId] ?? 0;
 
@@ -159,6 +174,9 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
         clearTimeout(channelDigitTimeoutRef.current);
         channelDigitTimeoutRef.current = null;
       }
+      // Channel changes always tune in mid-program, even right after a
+      // natural end-of-video rollover that flipped the flag off.
+      tuneInRandomlyOnNextDurationRef.current = true;
       setCurrentChannelId(id);
       setIsPlaying(true);
       showStatus(
@@ -193,25 +211,40 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     setChannelById(prev.id);
   }, [channels, currentChannelId, setChannelById]);
 
+  // Internal advancer used by both manual skip (tuneInRandomly=true) and
+  // the natural end-of-video rollover (tuneInRandomly=false). Setting the
+  // ref at the call site avoids races where two transitions overlap and a
+  // stale flag from one would otherwise be picked up by the other.
+  const advanceVideo = useCallback(
+    (direction: "next" | "prev", tuneInRandomly: boolean) => {
+      const list = currentChannel?.videos ?? [];
+      if (list.length === 0) return;
+      setAnimationDirection(direction);
+      tuneInRandomlyOnNextDurationRef.current = tuneInRandomly;
+      const nextIdx =
+        direction === "next"
+          ? nextIndex(videoIndex, list.length)
+          : prevIndex(videoIndex, list.length);
+      setVideoIndex(currentChannelId, nextIdx);
+      setIsPlaying(true);
+    },
+    [currentChannel, videoIndex, currentChannelId, setVideoIndex, setIsPlaying]
+  );
+
   const nextVideo = useCallback(() => {
-    const list = currentChannel?.videos ?? [];
-    if (list.length === 0) return;
-    setAnimationDirection("next");
-    setVideoIndex(currentChannelId, nextIndex(videoIndex, list.length));
-    setIsPlaying(true);
-  }, [currentChannel, videoIndex, currentChannelId, setVideoIndex, setIsPlaying]);
+    advanceVideo("next", true);
+  }, [advanceVideo]);
 
   const prevVideo = useCallback(() => {
-    const list = currentChannel?.videos ?? [];
-    if (list.length === 0) return;
-    setAnimationDirection("prev");
-    setVideoIndex(currentChannelId, prevIndex(videoIndex, list.length));
-    setIsPlaying(true);
-  }, [currentChannel, videoIndex, currentChannelId, setVideoIndex, setIsPlaying]);
+    advanceVideo("prev", true);
+  }, [advanceVideo]);
 
   const handleVideoEnd = useCallback(() => {
-    nextVideo();
-  }, [nextVideo]);
+    // Natural rollover: the broadcast metaphor breaks if every auto-advance
+    // dropped the viewer 30s into the next program, so the upcoming video
+    // should play from the start.
+    advanceVideo("next", false);
+  }, [advanceVideo]);
 
   const togglePlay = useCallback(() => {
     togglePlayStore();
@@ -241,17 +274,21 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     (d: number) => {
       setDuration(d);
       const id = currentVideo?.id;
+      if (!id || lastRandomSeekedIdRef.current === id) return;
+      lastRandomSeekedIdRef.current = id;
+      // Reset the flag for the *next* duration event regardless of which
+      // branch we take, so a future natural rollover won't be inherited.
+      const shouldTuneInRandomly = tuneInRandomlyOnNextDurationRef.current;
+      tuneInRandomlyOnNextDurationRef.current = true;
+      if (!shouldTuneInRandomly) return;
       // Tune in mid-program: seek to a random offset for the first time we
       // learn this video's duration. `randomTuneInOffset` returns null for
       // live streams (Infinity), unknown durations (NaN / 0), and short
       // clips, so we transparently skip in those cases.
-      if (id && lastRandomSeekedIdRef.current !== id) {
-        const start = randomTuneInOffset(d);
-        if (start !== null) {
-          playerRef.current?.seekTo(start, "seconds");
-          fullScreenPlayerRef.current?.seekTo(start, "seconds");
-        }
-        lastRandomSeekedIdRef.current = id;
+      const start = randomTuneInOffset(d);
+      if (start !== null) {
+        playerRef.current?.seekTo(start, "seconds");
+        fullScreenPlayerRef.current?.seekTo(start, "seconds");
       }
     },
     [currentVideo?.id]
