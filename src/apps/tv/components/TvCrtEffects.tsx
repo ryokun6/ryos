@@ -4,15 +4,11 @@ import { cn } from "@/lib/utils";
 
 /** Total durations for the one-shot CRT animations, in ms. Kept in one
  *  place so completion timers, exit fades, and inner timings stay in
- *  sync. */
-const POWER_ON_DURATION_MS = 800;
-const POWER_OFF_DURATION_MS = 600;
+ *  sync. The power-on/off curves are split into named phases below; if
+ *  these change, retune the corresponding `times` arrays. */
+const POWER_ON_DURATION_MS = 900;
+const POWER_OFF_DURATION_MS = 750;
 const CHANNEL_SWITCH_DURATION_MS = 550;
-/** How long the screen stays fully black at the start of the power-on
- *  before the picture begins unfolding. Gives a clean handoff from the
- *  paused "screen-off" overlay (or the bare iframe on first open) so the
- *  unfold visually reads as "the tube warming up". */
-const POWER_ON_HOLD_MS = 90;
 
 /**
  * Animated analog-static canvas. Used both as a brief "channel-switch"
@@ -139,17 +135,21 @@ function CrtShaderOverlay({ active }: { active: boolean }) {
 }
 
 /**
- * One-shot CRT power-on animation. Two black bars cover the picture
- * (top half + bottom half); after a brief fully-black hold they recede
- * toward the top and bottom edges, leaving a transparent band that
- * grows outward from a thin horizontal beam at the vertical center.
- * That's the classic CRT "tube warming up" reveal. A bright scanline
- * beam pops across the middle as the bars start receding, and a quick
- * white flash fades the whole thing into the picture.
+ * One-shot CRT power-on animation, modeled on a real cathode-ray tube
+ * warming up:
  *
- * The component auto-unmounts itself after the animation completes
- * (timer-driven) so it never leaves a `bg-black` overlay sitting on
- * top of the iframe.
+ *   1. Hold full black while the heater warms.
+ *   2. A tiny phosphor dot appears at the exact vertical/horizontal
+ *      center of the screen and brightens.
+ *   3. The dot stretches horizontally into a thin bright scanline.
+ *   4. The two black bars covering the top and bottom recede toward
+ *      their respective outer edges, revealing the picture growing
+ *      outward from the center beam.
+ *   5. A subtle white wash flashes (screen-blend) as the picture
+ *      settles into full brightness.
+ *
+ * The component auto-unmounts via a timer once the animation completes
+ * so it never leaves a black overlay parked on top of the iframe.
  */
 function PowerOnEffect({ playKey }: { playKey: number }) {
   const [activeKey, setActiveKey] = useState(0);
@@ -164,13 +164,13 @@ function PowerOnEffect({ playKey }: { playKey: number }) {
     return () => window.clearTimeout(id);
   }, [playKey]);
 
-  const holdSec = POWER_ON_HOLD_MS / 1000;
-  const unfoldSec = 0.55;
-  const barTransition = {
-    duration: unfoldSec,
-    delay: holdSec,
-    ease: [0.16, 1, 0.3, 1] as const,
-  };
+  // All keyframe `times` are normalized to this total duration so the
+  // beats stay coordinated even if POWER_ON_DURATION_MS is retuned.
+  const totalSec = POWER_ON_DURATION_MS / 1000;
+  // Phase milestones (as fractions of totalSec):
+  //   0.00 .. 0.32  bars hold full black (heater warming, dot brightens)
+  //   0.32 .. 0.82  bars recede; beam peaks then fades
+  //   0.55 .. 0.95  brightness flash settling into the picture
 
   return (
     <AnimatePresence>
@@ -183,60 +183,97 @@ function PowerOnEffect({ playKey }: { playKey: number }) {
           transition={{ duration: 0.12 }}
           className="absolute inset-0 pointer-events-none z-40 overflow-hidden"
         >
-          {/* Top half black bar — full black for POWER_ON_HOLD_MS, then
-              recedes toward the top edge. Together with the bottom bar
-              this makes the transparent band at the vertical center
-              grow outward, revealing the picture from a beam. */}
+          {/* Top half black bar — fully covers initially, holds, then
+              recedes toward the top edge. transform-origin: top means
+              scaleY 0 leaves the bar pinned to the top edge with zero
+              height, so the picture appears to grow downward from a
+              center beam (mirrored by the bottom bar). */}
           <motion.div
             initial={{ scaleY: 1 }}
-            animate={{ scaleY: 0 }}
-            transition={barTransition}
+            animate={{ scaleY: [1, 1, 0] }}
+            transition={{
+              duration: totalSec,
+              times: [0, 0.32, 0.82],
+              ease: [0.16, 1, 0.3, 1],
+            }}
             className="absolute left-0 right-0 top-0 bg-black"
             style={{ height: "50%", transformOrigin: "top center" }}
           />
           <motion.div
             initial={{ scaleY: 1 }}
-            animate={{ scaleY: 0 }}
-            transition={barTransition}
+            animate={{ scaleY: [1, 1, 0] }}
+            transition={{
+              duration: totalSec,
+              times: [0, 0.32, 0.82],
+              ease: [0.16, 1, 0.3, 1],
+            }}
             className="absolute left-0 right-0 bottom-0 bg-black"
             style={{ height: "50%", transformOrigin: "bottom center" }}
           />
-          {/* Bright horizontal scanline beam that snaps across the middle
-              right as the bars start receding. */}
+
+          {/* Phosphor warm-up dot at center: appears during the black
+              hold, brightens, then expands and fades as the beam takes
+              over. Stays visible above the bars (later in DOM order). */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.2 }}
+            animate={{
+              opacity: [0, 0.4, 1, 1, 0],
+              scale: [0.2, 0.4, 0.7, 1.0, 2.6],
+            }}
+            transition={{
+              duration: totalSec,
+              times: [0, 0.12, 0.24, 0.42, 0.72],
+              ease: "easeOut",
+            }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              width: 8,
+              height: 8,
+              background:
+                "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(220,235,255,0.7) 40%, rgba(180,210,255,0.25) 70%, transparent 100%)",
+              boxShadow:
+                "0 0 24px 8px rgba(255,255,255,0.6), 0 0 56px 18px rgba(180,210,255,0.3)",
+            }}
+          />
+
+          {/* Horizontal scanline beam stretches out from the dot, peaks
+              just as the bars start to recede, then fades into the
+              picture. */}
           <motion.div
             initial={{ scaleX: 0, opacity: 0 }}
-            animate={{ scaleX: 1, opacity: [0, 1, 0] }}
+            animate={{
+              scaleX: [0, 0, 1, 1, 1],
+              opacity: [0, 0, 1, 0.6, 0],
+            }}
             transition={{
-              scaleX: { duration: 0.18, delay: holdSec, ease: "easeOut" },
-              opacity: {
-                duration: 0.5,
-                delay: holdSec,
-                ease: "easeOut",
-                times: [0, 0.2, 1],
-              },
+              duration: totalSec,
+              times: [0, 0.2, 0.42, 0.7, 0.92],
+              ease: [0.16, 1, 0.3, 1],
             }}
             className="absolute left-0 right-0 top-1/2 -translate-y-1/2"
             style={{
               height: "2px",
               background:
-                "linear-gradient(to right, transparent 0%, rgba(255,255,255,1) 50%, transparent 100%)",
+                "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.95) 50%, transparent 100%)",
               boxShadow:
-                "0 0 16px 4px rgba(255,255,255,0.9), 0 0 32px 8px rgba(255,255,255,0.5)",
+                "0 0 14px 3px rgba(255,255,255,0.85), 0 0 32px 8px rgba(255,255,255,0.4)",
               transformOrigin: "center",
             }}
           />
-          {/* Final brightness pop, timed so it peaks just after the
-              picture is fully revealed. */}
+
+          {/* Brightness wash that peaks just after the picture is fully
+              revealed, then fades. mix-blend-mode: screen so it brightens
+              the picture rather than washing it out. */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.55, 0] }}
+            animate={{ opacity: [0, 0, 0.5, 0] }}
             transition={{
-              duration: 0.45,
-              delay: holdSec + 0.18,
+              duration: totalSec,
+              times: [0, 0.55, 0.72, 0.95],
               ease: "easeOut",
-              times: [0, 0.25, 1],
             }}
             className="absolute inset-0 bg-white"
+            style={{ mixBlendMode: "screen" }}
           />
         </motion.div>
       )}
@@ -249,6 +286,22 @@ function PowerOnEffect({ playKey }: { playKey: number }) {
  * bright horizontal line, then collapses to a center dot and fades. Used
  * when the user closes the TV window. The component renders an absolute
  * black overlay with a single white "dying-tube" shape inside.
+ */
+/**
+ * One-shot CRT power-off animation, modeled on a real flyback shutdown:
+ *
+ *   1. Top + bottom black bars close inward from the outer edges,
+ *      squeezing the picture into a thin horizontal slit at center.
+ *   2. A bright scanline beam pops at the slit (the electron beam
+ *      compressed onto a single line) and holds briefly.
+ *   3. The beam collapses horizontally toward the center as the slit
+ *      shortens, while a black fill takes over the rest of the screen.
+ *   4. The remaining bright dot lingers, then fades with a soft bloom
+ *      halo as the phosphors cool.
+ *
+ * Used both for closing the window (poweringOff) and for pause
+ * (screenOff) — in the pause case the final keyframes leave a fully
+ * black screen parked indefinitely.
  */
 function PowerOffEffect({
   active,
@@ -275,35 +328,114 @@ function PowerOffEffect({
     return () => window.clearTimeout(id);
   }, [active, onComplete]);
 
+  const totalSec = POWER_OFF_DURATION_MS / 1000;
+  // Phase milestones (as fractions of totalSec):
+  //   0.00 .. 0.30  bars close in from top/bottom (cubic ease-in)
+  //   0.20 .. 0.32  beam fades up at the slit
+  //   0.32 .. 0.55  black fill takes over; beam collapses to a dot
+  //   0.55 .. 1.00  dot fades with bloom halo
+
   return (
     <AnimatePresence>
       {active && (
         <motion.div
           key="power-off"
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.05 }}
-          className="absolute inset-0 pointer-events-none z-50 bg-black overflow-hidden"
+          exit={{ opacity: 0, transition: { duration: 0.12 } }}
+          className="absolute inset-0 pointer-events-none z-50 overflow-hidden"
         >
-          {/* Bright vertical squeeze: full → 2px line → 0px (dot). */}
+          {/* Top + bottom black bars close in from the outer edges with
+              a steep cubic ease-in so the squeeze accelerates the way a
+              real flyback collapse does. scaleY animates to 1 (full
+              coverage); the small overshoot via 0.99 → 1 is what gives
+              the slit a brief moment to be visible before fully
+              closing. */}
           <motion.div
-            initial={{ scaleY: 1, scaleX: 1, opacity: 1 }}
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: [0, 0.99, 1] }}
+            transition={{
+              duration: totalSec,
+              times: [0, 0.3, 0.55],
+              ease: [0.5, 0, 0.75, 0.5],
+            }}
+            className="absolute top-0 left-0 right-0 bg-black"
+            style={{ height: "50%", transformOrigin: "top center" }}
+          />
+          <motion.div
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: [0, 0.99, 1] }}
+            transition={{
+              duration: totalSec,
+              times: [0, 0.3, 0.55],
+              ease: [0.5, 0, 0.75, 0.5],
+            }}
+            className="absolute bottom-0 left-0 right-0 bg-black"
+            style={{ height: "50%", transformOrigin: "bottom center" }}
+          />
+
+          {/* Black background fills the rest of the screen once the
+              bars are nearly closed, so the beam + dot below have
+              something to glow against. */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0, 1] }}
+            transition={{
+              duration: totalSec,
+              times: [0, 0.4, 0.55],
+              ease: "linear",
+            }}
+            className="absolute inset-0 bg-black"
+          />
+
+          {/* Bright horizontal beam at the slit. scaleX 1 while the
+              slit is still open, then 1 → 0 as the slit collapses
+              toward the center, mimicking the electron beam compressed
+              into a single line and then a point. */}
+          <motion.div
+            initial={{ opacity: 0, scaleX: 1 }}
             animate={{
-              scaleY: [1, 0.02, 0.02],
-              scaleX: [1, 1, 0.0],
-              opacity: [1, 1, 0],
+              opacity: [0, 0, 1, 1, 0],
+              scaleX: [1, 1, 1, 0.04, 0],
             }}
             transition={{
-              duration: 0.55,
-              times: [0, 0.45, 1],
-              ease: "easeIn",
+              duration: totalSec,
+              times: [0, 0.2, 0.32, 0.6, 0.72],
+              ease: [0.6, 0, 0.4, 1],
             }}
-            className="absolute inset-0"
+            className="absolute left-0 right-0 top-1/2 -translate-y-1/2"
             style={{
+              height: "3px",
               background:
-                "radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(220,220,255,0.6) 30%, rgba(120,140,180,0.2) 60%, transparent 100%)",
+                "linear-gradient(to right, transparent 0%, rgba(255,255,255,1) 50%, transparent 100%)",
+              boxShadow:
+                "0 0 18px 5px rgba(255,255,255,0.95), 0 0 40px 12px rgba(255,255,255,0.5)",
               transformOrigin: "center",
+            }}
+          />
+
+          {/* Center afterglow dot. Appears just as the beam collapses,
+              shrinks slightly, and fades — the way phosphor cools after
+              the beam shuts off. */}
+          <motion.div
+            initial={{ opacity: 0, scale: 1 }}
+            animate={{
+              opacity: [0, 0, 1, 1, 0],
+              scale: [1, 1, 1, 0.55, 0.25],
+            }}
+            transition={{
+              duration: totalSec,
+              times: [0, 0.55, 0.62, 0.72, 1],
+              ease: "easeOut",
+            }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              width: 16,
+              height: 16,
+              background:
+                "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(220,235,255,0.6) 40%, rgba(180,210,255,0.2) 70%, transparent 100%)",
+              boxShadow:
+                "0 0 36px 14px rgba(255,255,255,0.8), 0 0 78px 28px rgba(180,210,255,0.4)",
             }}
           />
         </motion.div>

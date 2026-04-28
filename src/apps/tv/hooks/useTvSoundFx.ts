@@ -111,55 +111,62 @@ export function useTvSoundFx() {
     const v = volumeRef.current;
     if (v <= 0) return;
 
-    // 1. Rising tube whine: square 80Hz → 600Hz over ~0.45s, fast decay.
-    const osc = ctx.createOscillator();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(80, t);
-    osc.frequency.exponentialRampToValueAtTime(600, t + 0.45);
-    const oscGain = ctx.createGain();
-    oscGain.gain.setValueAtTime(0, t);
-    oscGain.gain.linearRampToValueAtTime(0.08 * v, t + 0.05);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
-    const oscFilter = ctx.createBiquadFilter();
-    oscFilter.type = "lowpass";
-    oscFilter.frequency.value = 1800;
-    osc.connect(oscFilter);
-    oscFilter.connect(oscGain);
-    oscGain.connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + 0.6);
-
-    // 2. Low "thunk" of the chassis snapping on.
+    // Stage 1 (0–60ms): low chassis "thunk" of the power button engaging.
     const thunk = ctx.createOscillator();
     thunk.type = "sine";
-    thunk.frequency.setValueAtTime(140, t);
-    thunk.frequency.exponentialRampToValueAtTime(45, t + 0.18);
+    thunk.frequency.setValueAtTime(160, t);
+    thunk.frequency.exponentialRampToValueAtTime(40, t + 0.22);
     const thunkGain = ctx.createGain();
     thunkGain.gain.setValueAtTime(0.0001, t);
-    thunkGain.gain.exponentialRampToValueAtTime(0.35 * v, t + 0.01);
-    thunkGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    thunkGain.gain.exponentialRampToValueAtTime(0.4 * v, t + 0.012);
+    thunkGain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
     thunk.connect(thunkGain);
     thunkGain.connect(ctx.destination);
     thunk.start(t);
-    thunk.stop(t + 0.3);
+    thunk.stop(t + 0.32);
 
-    // 3. Short noise crack as the picture warms up.
+    // Stage 2 (~140–650ms): rising tube whine — the high-voltage line
+    // ramping up. Slower ramp than before so the pitch follows the
+    // visual unfold rather than racing ahead.
+    const whine = ctx.createOscillator();
+    whine.type = "sawtooth";
+    whine.frequency.setValueAtTime(70, t + 0.12);
+    whine.frequency.exponentialRampToValueAtTime(900, t + 0.62);
+    const whineFilter = ctx.createBiquadFilter();
+    whineFilter.type = "lowpass";
+    whineFilter.frequency.setValueAtTime(900, t + 0.12);
+    whineFilter.frequency.exponentialRampToValueAtTime(2400, t + 0.62);
+    const whineGain = ctx.createGain();
+    whineGain.gain.setValueAtTime(0, t + 0.12);
+    whineGain.gain.linearRampToValueAtTime(0.07 * v, t + 0.22);
+    whineGain.gain.setValueAtTime(0.07 * v, t + 0.55);
+    whineGain.gain.exponentialRampToValueAtTime(0.001, t + 0.78);
+    whine.connect(whineFilter);
+    whineFilter.connect(whineGain);
+    whineGain.connect(ctx.destination);
+    whine.start(t + 0.12);
+    whine.stop(t + 0.82);
+
+    // Stage 3 (~280–820ms): swept noise crack as the picture warms up.
+    // Bandpass sweeps from 800Hz up to 5kHz, mimicking the high-pitched
+    // hiss of a CRT settling in.
     const noise = ctx.createBufferSource();
     noise.buffer = getNoiseBuffer(ctx);
     noise.loop = true;
     const noiseFilter = ctx.createBiquadFilter();
-    noiseFilter.type = "highpass";
-    noiseFilter.frequency.setValueAtTime(800, t);
-    noiseFilter.frequency.exponentialRampToValueAtTime(4000, t + 0.4);
+    noiseFilter.type = "bandpass";
+    noiseFilter.Q.value = 0.6;
+    noiseFilter.frequency.setValueAtTime(800, t + 0.28);
+    noiseFilter.frequency.exponentialRampToValueAtTime(5000, t + 0.7);
     const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0, t);
-    noiseGain.gain.linearRampToValueAtTime(0.18 * v, t + 0.06);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    noiseGain.gain.setValueAtTime(0, t + 0.28);
+    noiseGain.gain.linearRampToValueAtTime(0.16 * v, t + 0.36);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.82);
     noise.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
     noiseGain.connect(ctx.destination);
-    noise.start(t);
-    noise.stop(t + 0.55);
+    noise.start(t + 0.28);
+    noise.stop(t + 0.85);
   }, [ensureContext, getNoiseBuffer]);
 
   const playPowerOff = useCallback(async () => {
@@ -169,40 +176,64 @@ export function useTvSoundFx() {
     const v = volumeRef.current;
     if (v <= 0) return;
 
-    // 1. Falling tube whine: 1200Hz → 60Hz, mimicking the flyback
-    //    transformer winding down.
-    const osc = ctx.createOscillator();
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(1200, t);
-    osc.frequency.exponentialRampToValueAtTime(60, t + 0.45);
-    const oscFilter = ctx.createBiquadFilter();
-    oscFilter.type = "lowpass";
-    oscFilter.frequency.setValueAtTime(2200, t);
-    oscFilter.frequency.exponentialRampToValueAtTime(300, t + 0.5);
-    const oscGain = ctx.createGain();
-    oscGain.gain.setValueAtTime(0.0001, t);
-    oscGain.gain.exponentialRampToValueAtTime(0.1 * v, t + 0.02);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
-    osc.connect(oscFilter);
-    oscFilter.connect(oscGain);
-    oscGain.connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + 0.6);
+    // Stage 1 (0–230ms): "shhk" of the picture squeezing in — short
+    // bandpass noise sweep falling from 4kHz to 600Hz, matching the
+    // visual vertical squeeze.
+    const squeeze = ctx.createBufferSource();
+    squeeze.buffer = getNoiseBuffer(ctx);
+    squeeze.loop = true;
+    const squeezeFilter = ctx.createBiquadFilter();
+    squeezeFilter.type = "bandpass";
+    squeezeFilter.Q.value = 0.7;
+    squeezeFilter.frequency.setValueAtTime(4000, t);
+    squeezeFilter.frequency.exponentialRampToValueAtTime(600, t + 0.23);
+    const squeezeGain = ctx.createGain();
+    squeezeGain.gain.setValueAtTime(0, t);
+    squeezeGain.gain.linearRampToValueAtTime(0.16 * v, t + 0.04);
+    squeezeGain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    squeeze.connect(squeezeFilter);
+    squeezeFilter.connect(squeezeGain);
+    squeezeGain.connect(ctx.destination);
+    squeeze.start(t);
+    squeeze.stop(t + 0.3);
 
-    // 2. Soft "tk" as the dot collapses.
+    // Stage 2 (60–620ms): falling flyback whine — the high-voltage
+    // line winding down. Sawtooth so the harmonics give it that
+    // unmistakable analog-TV decay.
+    const whine = ctx.createOscillator();
+    whine.type = "sawtooth";
+    whine.frequency.setValueAtTime(1400, t + 0.06);
+    whine.frequency.exponentialRampToValueAtTime(40, t + 0.6);
+    const whineFilter = ctx.createBiquadFilter();
+    whineFilter.type = "lowpass";
+    whineFilter.frequency.setValueAtTime(2400, t + 0.06);
+    whineFilter.frequency.exponentialRampToValueAtTime(220, t + 0.62);
+    const whineGain = ctx.createGain();
+    whineGain.gain.setValueAtTime(0.0001, t + 0.06);
+    whineGain.gain.exponentialRampToValueAtTime(0.11 * v, t + 0.1);
+    whineGain.gain.setValueAtTime(0.11 * v, t + 0.45);
+    whineGain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    whine.connect(whineFilter);
+    whineFilter.connect(whineGain);
+    whineGain.connect(ctx.destination);
+    whine.start(t + 0.06);
+    whine.stop(t + 0.72);
+
+    // Stage 3 (~440ms): soft "tk" click as the dot collapses to a
+    // point. Aligns with the beam → dot transition in PowerOffEffect.
     const click = ctx.createOscillator();
     click.type = "sine";
-    click.frequency.setValueAtTime(2400, t + 0.42);
-    click.frequency.exponentialRampToValueAtTime(800, t + 0.5);
+    click.frequency.setValueAtTime(2200, t + 0.44);
+    click.frequency.exponentialRampToValueAtTime(700, t + 0.55);
     const clickGain = ctx.createGain();
-    clickGain.gain.setValueAtTime(0, t + 0.42);
-    clickGain.gain.linearRampToValueAtTime(0.18 * v, t + 0.43);
-    clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    clickGain.gain.setValueAtTime(0, t + 0.44);
+    clickGain.gain.linearRampToValueAtTime(0.2 * v, t + 0.455);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.62);
     click.connect(clickGain);
     clickGain.connect(ctx.destination);
-    click.start(t + 0.42);
-    click.stop(t + 0.6);
-  }, [ensureContext]);
+    click.start(t + 0.44);
+    click.stop(t + 0.65);
+  }, [ensureContext, getNoiseBuffer]);
 
   const playChannelSwitch = useCallback(async () => {
     const ctx = await ensureContext();
