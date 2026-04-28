@@ -11,6 +11,7 @@ export type AppId =
   | "photo-booth"
   | "minesweeper"
   | "videos"
+  | "tv"
   | "ipod"
   | "karaoke"
   | "synth"
@@ -141,6 +142,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     "photo-booth": ["takingPhoto", "quickSnaps", "applyingEffects", "viewingPhotos", "downloadingPhotos", "switchingCameras"],
     minesweeper: ["desktopControls", "mobileControls", "gameRules", "timerCounter", "restart"],
     videos: ["addVideo", "playback", "loop", "shuffle", "playlist", "retroUi"],
+    tv: ["channels", "playback", "numbers", "shortcuts", "fullscreen", "helpAbout"],
     ipod: ["addSongs", "wheelNavigation", "playbackControls", "syncedLyrics", "playbackModes", "displayFullscreen"],
     karaoke: ["addSearchSongs", "syncLyricsTiming", "styleLayout", "syncedWithIpod", "worksWithChats", "keyboardShortcuts"],
     synth: ["virtualKeyboard", "controlsPanel", "presets", "waveform3d", "effects", "midiInput"],

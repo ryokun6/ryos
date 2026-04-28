@@ -1536,6 +1536,64 @@
         "videoItemType": "Video"
       }
     },
+    "tv": {
+      "name": "TV",
+      "description": "Channel surf YouTube",
+      "title": "TV",
+      "channelBadge": "CH {{number}} — {{name}}",
+      "nowPlaying": "CH {{channel}} · {{title}}",
+      "status": {
+        "channel": "CH",
+        "video": "VID",
+        "time": "TIME",
+        "title": "TITLE",
+        "channelDown": "CH−",
+        "channelUp": "CH+",
+        "network": "NET",
+        "now": "NOW",
+        "next": "NEXT",
+        "noSignal": "NO SIGNAL"
+      },
+      "menu": {
+        "controls": "Controls",
+        "channels": "Channels",
+        "play": "Play",
+        "pause": "Pause",
+        "previous": "Previous",
+        "next": "Next",
+        "channelUp": "Channel Up",
+        "channelDown": "Channel Down",
+        "fullScreen": "Full Screen",
+        "tvHelp": "TV Help",
+        "about": "About TV"
+      },
+      "help": {
+        "channels": {
+          "title": "Channels",
+          "description": "Flip through curated YouTube channels like a TV"
+        },
+        "playback": {
+          "title": "Playback",
+          "description": "Play, pause, and skip videos within the current channel"
+        },
+        "numbers": {
+          "title": "Channel Numbers",
+          "description": "Press 1–6 to jump to a channel, or use CH+ / CH−"
+        },
+        "shortcuts": {
+          "title": "Shortcuts",
+          "description": "Arrow keys: up/down change channel, left/right change video"
+        },
+        "fullscreen": {
+          "title": "Full Screen",
+          "description": "Watch in full screen from the Controls menu or window chrome"
+        },
+        "helpAbout": {
+          "title": "Help & About",
+          "description": "Open Help from the Help menu for more info"
+        }
+      }
+    },
     "ipod": {
       "name": "iPod",
       "description": "Music player",

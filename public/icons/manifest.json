@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-26T07:34:33.534Z",
+  "generatedAt": "2026-04-28T05:55:31.746Z",
   "themes": {
     "default": [
       "account-login.png",
@@ -139,6 +139,7 @@
       "textedit.png",
       "trash-empty.png",
       "trash-full.png",
+      "tv.png",
       "video-tape.png",
       "videos.png",
       "warn.png",
@@ -205,6 +206,7 @@
       "textedit.png",
       "trash-empty.png",
       "trash-full.png",
+      "tv.png",
       "video-tape.png",
       "videos.png",
       "warn.png",

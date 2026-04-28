@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import ReactPlayer from "react-player";
+import type ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
+import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 
 interface VideoFullScreenPortalProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface VideoFullScreenPortalProps {
   isPlaying: boolean;
   onPlay: () => void;
   onPause: () => void;
-  onTogglePlay: () => void; // User-initiated toggle (bypasses transition guards)
+  onTogglePlay: () => void;
   onEnded: () => void;
   onProgress: (state: { playedSeconds: number }) => void;
   onDuration: (duration: number) => void;
@@ -57,11 +58,7 @@ export function VideoFullScreenPortal({
   const [showControls, setShowControls] = useState(true);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const hideControlsTimeoutRef = useRef<number | null>(null);
-  
-  // Note: Player time sync is handled by the parent component (VideosAppComponent)
-  // which waits for the player to be ready before seeking
 
-  // Helper function to restart the auto-hide timer
   const restartAutoHideTimer = useCallback(() => {
     setShowControls(true);
     if (hideControlsTimeoutRef.current) {
@@ -74,7 +71,6 @@ export function VideoFullScreenPortal({
     }
   }, [isPlaying]);
 
-  // Effect to request fullscreen when component mounts
   useEffect(() => {
     if (!isOpen) return;
 
@@ -89,7 +85,6 @@ export function VideoFullScreenPortal({
     return () => clearTimeout(timeoutId);
   }, [isOpen]);
 
-  // Handle fullscreen exit
   useEffect(() => {
     if (!isOpen) return;
 
@@ -105,7 +100,6 @@ export function VideoFullScreenPortal({
     };
   }, [isOpen, onClose]);
 
-  // Auto-hide controls after inactivity
   useEffect(() => {
     if (!isOpen) return;
 
@@ -144,7 +138,6 @@ export function VideoFullScreenPortal({
     };
   }, [isOpen, isPlaying]);
 
-  // Keyboard controls
   useEffect(() => {
     if (!isOpen) return;
 
@@ -153,7 +146,6 @@ export function VideoFullScreenPortal({
         onClose();
       } else if (e.key === " ") {
         e.preventDefault();
-        // Use toggle for user-initiated actions (bypasses transition guards)
         onTogglePlay();
         restartAutoHideTimer();
       } else if (e.key === "ArrowLeft") {
@@ -184,7 +176,18 @@ export function VideoFullScreenPortal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isPlaying, onClose, onTogglePlay, onSeek, onNext, onPrevious, showStatus, playerRef, restartAutoHideTimer]);
+  }, [
+    isOpen,
+    isPlaying,
+    onClose,
+    onTogglePlay,
+    onSeek,
+    onNext,
+    onPrevious,
+    showStatus,
+    playerRef,
+    restartAutoHideTimer,
+  ]);
 
   if (!isOpen) return null;
 
@@ -193,12 +196,10 @@ export function VideoFullScreenPortal({
       ref={containerRef}
       className="ipod-force-font fixed inset-0 z-[9999] bg-black select-none flex flex-col"
       onClick={() => {
-        // Use toggle for user-initiated actions (bypasses transition guards)
         onTogglePlay();
         restartAutoHideTimer();
       }}
     >
-      {/* Status Display */}
       <AnimatePresence>
         {statusMessage && (
           <motion.div
@@ -241,7 +242,7 @@ export function VideoFullScreenPortal({
             }}
           >
             <div className="w-full h-full pointer-events-none">
-              <ReactPlayer
+              <YouTubePlayer
                 ref={playerRef}
                 url={url}
                 playing={isPlaying}
@@ -250,7 +251,6 @@ export function VideoFullScreenPortal({
                 height="100%"
                 volume={volume}
                 loop={loop}
-                playsinline={true}
                 progressInterval={100}
                 onEnded={onEnded}
                 onProgress={onProgress}
@@ -260,20 +260,7 @@ export function VideoFullScreenPortal({
                 onReady={onReady}
                 config={{
                   youtube: {
-                    playerVars: {
-                      modestbranding: 1,
-                      rel: 0,
-                      showinfo: 0,
-                      iv_load_policy: 3,
-                      fs: 1,
-                      disablekb: 1,
-                      playsinline: 1,
-                      enablejsapi: 1,
-                      origin: window.location.origin,
-                    },
-                    embedOptions: {
-                      referrerPolicy: "strict-origin-when-cross-origin",
-                    },
+                    playerVars: { fs: 1 },
                   },
                 }}
               />
@@ -282,7 +269,6 @@ export function VideoFullScreenPortal({
         </div>
       </div>
 
-      {/* Toolbar */}
       <div
         data-toolbar
         className={cn(

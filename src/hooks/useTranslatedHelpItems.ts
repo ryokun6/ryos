@@ -60,6 +60,7 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "restart",
   ],
   videos: ["addVideo", "playback", "loop", "shuffle", "playlist", "retroUi"],
+  tv: ["channels", "playback", "numbers", "shortcuts", "fullscreen", "helpAbout"],
   ipod: [
     "addSongs",
     "wheelNavigation",

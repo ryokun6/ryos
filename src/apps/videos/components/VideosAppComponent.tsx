@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
+import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { AppProps, VideosInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { SeekBar } from "./SeekBar";
 import { getTranslatedAppName } from "@/utils/i18n";
-import { VideoFullScreenPortal } from "./VideoFullScreenPortal";
+import { VideoFullScreenPortal } from "@/components/shared/VideoFullScreenPortal";
 import { useVideosLogic } from "../hooks/useVideosLogic";
 import { SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
 
@@ -435,7 +436,7 @@ export function VideosAppComponent({
               >
                 <div className="w-full h-[calc(100%+300px)] mt-[-150px] relative">
                   {!isFullScreen && (
-                    <ReactPlayer
+                    <YouTubePlayer
                       ref={playerRef}
                       url={getCurrentVideo()?.url || ""}
                       playing={isPlaying && !isFullScreen}
@@ -449,27 +450,9 @@ export function VideosAppComponent({
                       onPause={handleMainPlayerPause}
                       onReady={handleReady}
                       loop={loopCurrent}
-                      playsinline
                       config={{
                         youtube: {
-                          playerVars: {
-                            modestbranding: 1,
-                            rel: 0,
-                            showinfo: 0,
-                            iv_load_policy: 3,
-                            fs: 0,
-                            disablekb: 1,
-                            playsinline: 1,
-                            autoplay: 0,
-                            enablejsapi: 1,
-                            // Origin for YouTube postMessage communication
-                            // With tauri-plugin-localhost, Tauri now uses http://localhost which YouTube accepts
-                            origin: window.location.origin,
-                          },
-                          // Required for Tauri: sets referrer policy on iframe to prevent YouTube Error 153
-                          embedOptions: {
-                            referrerPolicy: "strict-origin-when-cross-origin",
-                          },
+                          playerVars: { fs: 0, autoplay: 0 },
                         },
                       }}
                     />
