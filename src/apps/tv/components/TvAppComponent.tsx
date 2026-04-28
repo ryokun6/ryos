@@ -10,6 +10,8 @@ import { ChannelPromptInput } from "./ChannelPromptInput";
 import { TvCrtEffects } from "./TvCrtEffects";
 import { useCreateTvChannel } from "../hooks/useCreateTvChannel";
 import { useTvSoundFx } from "../hooks/useTvSoundFx";
+import { LoginDialog } from "@/components/dialogs/LoginDialog";
+import { useAuth } from "@/hooks/useAuth";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -384,9 +386,57 @@ export function TvAppComponent({
   const { create: createChannel, isCreating: isCreatingChannel } =
     useCreateTvChannel();
 
+  // Auth state + LoginDialog plumbing. Channel creation requires an
+  // account so the API doesn't burn YouTube quota on anonymous abuse,
+  // and so the user's custom channels are tied to a name they can sign
+  // back into. We surface a toast-with-action (Log In / Sign Up) when
+  // the user tries to create while signed out instead of letting the
+  // API reject them with a generic rate-limit error.
+  const {
+    username,
+    isAuthenticated,
+    promptVerifyToken,
+    promptSetUsername,
+    isUsernameDialogOpen,
+    setIsUsernameDialogOpen,
+    newUsername,
+    setNewUsername,
+    newPassword,
+    setNewPassword,
+    isSettingUsername,
+    usernameError,
+    submitUsernameDialog,
+    isVerifyDialogOpen,
+    setVerifyDialogOpen,
+    verifyPasswordInput,
+    setVerifyPasswordInput,
+    verifyUsernameInput,
+    setVerifyUsernameInput,
+    isVerifyingToken,
+    verifyError,
+    handleVerifyTokenSubmit,
+  } = useAuth();
+  const isLoggedIn = !!(username && isAuthenticated);
+
+  const ensureLoggedIn = (): boolean => {
+    if (isLoggedIn) return true;
+    toast.error(t("apps.tv.create.signInRequired"), {
+      description: t("apps.tv.create.signInRequiredDescription"),
+      duration: 8000,
+      action: {
+        label: t("common.appleMenu.login"),
+        onClick: () => {
+          promptVerifyToken();
+        },
+      },
+    });
+    return false;
+  };
+
   const handleInlinePromptSubmit = async (
     description: string
   ): Promise<string | null> => {
+    if (!ensureLoggedIn()) return null;
     try {
       const { channel } = await createChannel(description);
       // Tune in to the freshly-created channel; this also drives the
@@ -599,7 +649,10 @@ export function TvAppComponent({
       hasCustomChannels={customChannels.length > 0}
       currentChannelId={currentChannelId}
       onSelectChannel={setChannelById}
-      onCreateChannel={() => setIsCreateChannelOpen(true)}
+      onCreateChannel={() => {
+        if (!ensureLoggedIn()) return;
+        setIsCreateChannelOpen(true);
+      }}
       onDeleteChannel={(id) => setPendingDeleteId(id)}
       onImportChannels={handleImportChannels}
       onExportChannels={handleExportChannels}
@@ -1001,6 +1054,39 @@ export function TvAppComponent({
         description={t("apps.tv.delete.description", {
           name: pendingDeleteChannel?.name ?? "",
         })}
+      />
+      <LoginDialog
+        initialTab={isVerifyDialogOpen ? "login" : "signup"}
+        isOpen={isUsernameDialogOpen || isVerifyDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsUsernameDialogOpen(false);
+            setVerifyDialogOpen(false);
+          }
+        }}
+        usernameInput={verifyUsernameInput}
+        onUsernameInputChange={setVerifyUsernameInput}
+        passwordInput={verifyPasswordInput}
+        onPasswordInputChange={setVerifyPasswordInput}
+        onLoginSubmit={async () => {
+          await handleVerifyTokenSubmit(verifyPasswordInput, true);
+        }}
+        isLoginLoading={isVerifyingToken}
+        loginError={verifyError}
+        newUsername={newUsername}
+        onNewUsernameChange={setNewUsername}
+        newPassword={newPassword}
+        onNewPasswordChange={setNewPassword}
+        onSignUpSubmit={
+          isVerifyDialogOpen
+            ? async () => {
+                setVerifyDialogOpen(false);
+                promptSetUsername();
+              }
+            : submitUsernameDialog
+        }
+        isSignUpLoading={isSettingUsername}
+        signUpError={usernameError}
       />
       {isFullScreen && url && (
         <VideoFullScreenPortal
