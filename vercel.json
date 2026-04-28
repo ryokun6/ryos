@@ -210,6 +210,7 @@
     { "source": "/photo-booth", "destination": "/" },
     { "source": "/minesweeper", "destination": "/" },
     { "source": "/videos", "destination": "/" },
+    { "source": "/tv", "destination": "/" },
     { "source": "/ipod", "destination": "/" },
     { "source": "/karaoke", "destination": "/" },
     { "source": "/applet-viewer", "destination": "/" },

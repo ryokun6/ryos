@@ -2967,14 +2967,14 @@
         "errorGeneric": "채널을 생성할 수 없습니다. 다시 시도해 주세요.",
         "errorNoVideos": "해당 아이디어에 대한 동영상을 찾을 수 없습니다. 다른 설명을 입력해 보세요.",
         "errorRateLimit": "너무 많은 채널이 생성되었습니다. 잠시 후 다시 시도해 주세요.",
-        "inlinePlaceholder": "[TODO] Describe a new channel...",
+        "inlinePlaceholder": "새 채널 설명...",
         "placeholder": "예: 스케이트보드 기술 및 파크",
         "statusPlanning": "채널 계획 중",
         "statusSearching": "YouTube 검색 중",
         "statusTuning": "채널 맞추는 중",
         "submit": "채널 생성",
         "title": "새 채널",
-        "toastSuccess": "[TODO] Tuned in to {{name}}"
+        "toastSuccess": "{{name}} 청취 중"
       },
       "delete": {
         "description": "TV에서 \"{{name}}\" 채널을 삭제하시겠습니까?",

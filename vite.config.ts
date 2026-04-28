@@ -240,6 +240,7 @@ export default defineConfig({
           /^\/photo-booth$/,
           /^\/minesweeper$/,
           /^\/videos(\/|$)/,
+          /^\/tv$/,
           /^\/ipod(\/|$)/,
           /^\/karaoke(\/|$)/,
           /^\/listen(\/|$)/,

@@ -2967,14 +2967,14 @@
         "errorGeneric": "Не удалось создать канал. Пожалуйста, попробуйте еще раз.",
         "errorNoVideos": "Для этой идеи видео не найдены. Попробуйте другое описание.",
         "errorRateLimit": "Создано слишком много каналов. Пожалуйста, подождите немного и попробуйте еще раз.",
-        "inlinePlaceholder": "[TODO] Describe a new channel...",
+        "inlinePlaceholder": "Опишите новый канал...",
         "placeholder": "напр., Трюки на скейтборде и парки",
         "statusPlanning": "Планирование канала",
         "statusSearching": "Поиск в YouTube",
         "statusTuning": "Настройка",
         "submit": "Создать канал",
         "title": "Новый канал",
-        "toastSuccess": "[TODO] Tuned in to {{name}}"
+        "toastSuccess": "Настроено на {{name}}"
       },
       "delete": {
         "description": "Удалить канал «{{name}}» с вашего телевизора?",

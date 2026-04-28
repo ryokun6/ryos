@@ -2967,14 +2967,14 @@
         "errorGeneric": "Kanal konnte nicht erstellt werden. Bitte versuche es erneut.",
         "errorNoVideos": "Keine Videos für diese Idee gefunden. Versuche eine andere Beschreibung.",
         "errorRateLimit": "Zu viele Kanäle erstellt. Bitte warte kurz und versuche es erneut.",
-        "inlinePlaceholder": "[TODO] Describe a new channel...",
+        "inlinePlaceholder": "Beschreibe einen neuen Kanal...",
         "placeholder": "z. B. Skateboarding-Tricks und Parks",
         "statusPlanning": "Kanal wird geplant",
         "statusSearching": "YouTube wird durchsucht",
         "statusTuning": "Einschalten",
         "submit": "Kanal erstellen",
         "title": "Neuer Kanal",
-        "toastSuccess": "[TODO] Tuned in to {{name}}"
+        "toastSuccess": "Eingestellt auf {{name}}"
       },
       "delete": {
         "description": "Soll der Kanal „{{name}}“ von deinem Fernseher entfernt werden?",
