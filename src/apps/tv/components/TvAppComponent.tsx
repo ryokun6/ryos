@@ -6,6 +6,8 @@ import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { TvMenuBar } from "./TvMenuBar";
 import { CreateChannelDialog } from "./CreateChannelDialog";
+import { ChannelPromptInput } from "./ChannelPromptInput";
+import { useCreateTvChannel } from "../hooks/useCreateTvChannel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -262,6 +264,29 @@ export function TvAppComponent({
   const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
   const importChannels = useTvStore((s) => s.importChannels);
   const exportChannels = useTvStore((s) => s.exportChannels);
+  const { create: createChannel, isCreating: isCreatingChannel } =
+    useCreateTvChannel();
+
+  const handleInlinePromptSubmit = async (
+    description: string
+  ): Promise<string | null> => {
+    try {
+      const { channel } = await createChannel(description);
+      // Tune in to the freshly-created channel; this also drives the
+      // status-flash via setChannelById -> showStatus.
+      setChannelById(channel.id);
+      toast.success(
+        t("apps.tv.create.toastSuccess", { name: channel.name })
+      );
+      return channel.name;
+    } catch (err) {
+      console.error("Inline create channel failed:", err);
+      toast.error(
+        err instanceof Error ? err.message : t("apps.tv.create.errorGeneric")
+      );
+      return null;
+    }
+  };
   const customChannelIds = useMemo(
     () => new Set(customChannels.map((c) => c.id)),
     [customChannels]
@@ -520,8 +545,8 @@ export function TvAppComponent({
               </div>
             </div>
 
-            <div className="flex items-center justify-between videos-player-controls">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 videos-player-controls">
+              <div className="flex items-center gap-2 shrink-0">
                 {isMacOSTheme ? (
                   <div className="metal-inset-btn-group">
                     <button
@@ -619,64 +644,56 @@ export function TvAppComponent({
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <ChannelPromptInput
+                className="flex-1 min-w-0"
+                onSubmit={handleInlinePromptSubmit}
+                isLoading={isCreatingChannel}
+                placeholder={t("apps.tv.create.inlinePlaceholder")}
+                loadingMessages={[
+                  t("apps.tv.create.statusPlanning"),
+                  t("apps.tv.create.statusSearching"),
+                  t("apps.tv.create.statusTuning"),
+                ]}
+                ariaLabel={t("apps.tv.create.title")}
+              />
+
+              <div className="flex items-center gap-2 shrink-0">
                 {isMacOSTheme ? (
-                  <>
-                    <div className="metal-inset-btn-group">
-                      <button
-                        type="button"
-                        className="metal-inset-btn font-geneva-12 !text-[11px]"
-                        onClick={prevChannel}
-                      >
-                        {t("apps.tv.status.channelDown")}
-                      </button>
-                      <button
-                        type="button"
-                        className="metal-inset-btn font-geneva-12 !text-[11px]"
-                        onClick={nextChannel}
-                      >
-                        {t("apps.tv.status.channelUp")}
-                      </button>
-                    </div>
-                    <div className="metal-inset-btn-group">
-                      <button
-                        type="button"
-                        className="metal-inset-btn font-geneva-12 !text-[11px]"
-                        onClick={() => setIsCreateChannelOpen(true)}
-                      >
-                        {t("apps.tv.status.add")}
-                      </button>
-                    </div>
-                  </>
+                  <div className="metal-inset-btn-group">
+                    <button
+                      type="button"
+                      className="metal-inset-btn font-geneva-12 !text-[11px]"
+                      onClick={prevChannel}
+                    >
+                      {t("apps.tv.status.channelDown")}
+                    </button>
+                    <button
+                      type="button"
+                      className="metal-inset-btn font-geneva-12 !text-[11px]"
+                      onClick={nextChannel}
+                    >
+                      {t("apps.tv.status.channelUp")}
+                    </button>
+                  </div>
                 ) : (
-                  <>
-                    <div className="flex gap-0">
-                      <Button
-                        type="button"
-                        onClick={prevChannel}
-                        variant="player"
-                        className="h-[22px] px-2 font-geneva-12"
-                      >
-                        {t("apps.tv.status.channelDown")}
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={nextChannel}
-                        variant="player"
-                        className="h-[22px] px-2 font-geneva-12"
-                      >
-                        {t("apps.tv.status.channelUp")}
-                      </Button>
-                    </div>
+                  <div className="flex gap-0">
                     <Button
                       type="button"
-                      onClick={() => setIsCreateChannelOpen(true)}
+                      onClick={prevChannel}
                       variant="player"
                       className="h-[22px] px-2 font-geneva-12"
                     >
-                      {t("apps.tv.status.add")}
+                      {t("apps.tv.status.channelDown")}
                     </Button>
-                  </>
+                    <Button
+                      type="button"
+                      onClick={nextChannel}
+                      variant="player"
+                      className="h-[22px] px-2 font-geneva-12"
+                    >
+                      {t("apps.tv.status.channelUp")}
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>

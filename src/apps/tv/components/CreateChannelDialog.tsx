@@ -12,23 +12,16 @@ import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
-import { useTvStore } from "@/stores/useTvStore";
-import type { Video } from "@/stores/useVideoStore";
-
-interface CreateChannelResponse {
-  name: string;
-  description: string;
-  queries: string[];
-  videos: Video[];
-}
+import { useCreateTvChannel } from "../hooks/useCreateTvChannel";
+import { AnimatedEllipsis } from "@/apps/terminal/components/AnimatedEllipsis";
 
 interface CreateChannelDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   /** Called with the new channel id once it's been added; usually tunes-in. */
   onChannelCreated?: (channelId: string) => void;
+  /** Optional initial value (e.g. text typed into the inline prompt). */
+  initialDescription?: string;
 }
 
 type DialogStage = "idle" | "loading" | "error";
@@ -46,15 +39,16 @@ export function CreateChannelDialog({
   isOpen,
   onOpenChange,
   onChannelCreated,
+  initialDescription = "",
 }: CreateChannelDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((s) => s.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
 
-  const addCustomChannel = useTvStore((s) => s.addCustomChannel);
+  const { create } = useCreateTvChannel();
 
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(initialDescription);
   const [stage, setStage] = useState<DialogStage>("idle");
   const [error, setError] = useState<string | null>(null);
   const [statusText, setStatusText] = useState<string>("");
@@ -93,60 +87,21 @@ export function CreateChannelDialog({
     if (isOpen) {
       setError(null);
       setStage("idle");
+      setDescription(initialDescription);
     }
-  }, [isOpen]);
+  }, [isOpen, initialDescription]);
 
   const isLoading = stage === "loading";
 
   const handleSubmit = async () => {
-    const trimmed = description.trim();
-    if (!trimmed) {
-      setError(t("apps.tv.create.errorEmpty"));
-      return;
-    }
-
     setError(null);
     setStage("loading");
 
     try {
-      const response = await abortableFetch(
-        getApiUrl("/api/tv/create-channel"),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ description: trimmed }),
-          // AI plan + several YouTube searches; allow generous time before
-          // surfacing a timeout error to the user.
-          timeout: 45000,
-          throwOnHttpError: false,
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        const msg =
-          response.status === 429
-            ? t("apps.tv.create.errorRateLimit")
-            : data?.error || t("apps.tv.create.errorGeneric");
-        throw new Error(msg);
-      }
-
-      const data = (await response.json()) as CreateChannelResponse;
-      if (!data?.videos?.length) {
-        throw new Error(t("apps.tv.create.errorNoVideos"));
-      }
-
-      const created = addCustomChannel({
-        name: data.name,
-        description: data.description,
-        videos: data.videos,
-        prompt: trimmed,
-        queries: data.queries,
-      });
-
+      const { channel } = await create(description);
       setDescription("");
       onOpenChange(false);
-      onChannelCreated?.(created.id);
+      onChannelCreated?.(channel.id);
     } catch (err) {
       console.error("Create channel failed:", err);
       setError(
@@ -207,6 +162,7 @@ export function CreateChannelDialog({
           aria-live="polite"
         >
           {statusText}
+          <AnimatedEllipsis />
         </p>
       )}
       {error && stage !== "loading" && (

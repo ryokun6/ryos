@@ -2967,12 +2967,14 @@
         "errorGeneric": "Impossible de créer la chaîne. Veuillez réessayer.",
         "errorNoVideos": "Aucune vidéo trouvée pour cette idée. Essayez une autre description.",
         "errorRateLimit": "Trop de chaînes créées. Veuillez patienter un instant et réessayer.",
+        "inlinePlaceholder": "[TODO] Describe a new channel...",
         "placeholder": "ex. : Figures et parcs de skate",
-        "statusPlanning": "Planification de la chaîne...",
-        "statusSearching": "Recherche sur YouTube...",
-        "statusTuning": "Réglage en cours...",
+        "statusPlanning": "Planification de la chaîne",
+        "statusSearching": "Recherche sur YouTube",
+        "statusTuning": "Réglage en cours",
         "submit": "Créer une chaîne",
-        "title": "Nouvelle chaîne"
+        "title": "Nouvelle chaîne",
+        "toastSuccess": "[TODO] Tuned in to {{name}}"
       },
       "delete": {
         "description": "Supprimer la chaîne « {{name}} » de votre téléviseur ?",

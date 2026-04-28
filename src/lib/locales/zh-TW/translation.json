@@ -2967,12 +2967,14 @@
         "errorGeneric": "無法建立頻道。請再試一次。",
         "errorNoVideos": "找不到與該構想相關的影片。請嘗試不同的描述。",
         "errorRateLimit": "已建立太多頻道。請稍候再試。",
+        "inlinePlaceholder": "描述新頻道...",
         "placeholder": "例如：滑板技巧與公園",
-        "statusPlanning": "正在規劃頻道...",
-        "statusSearching": "正在搜尋 YouTube...",
-        "statusTuning": "正在調頻...",
+        "statusPlanning": "正在規劃頻道",
+        "statusSearching": "正在搜尋 YouTube",
+        "statusTuning": "正在調頻",
         "submit": "建立頻道",
-        "title": "新頻道"
+        "title": "新頻道",
+        "toastSuccess": "正在收聽 {{name}}"
       },
       "delete": {
         "description": "要從您的電視移除「{{name}}」頻道嗎？",

@@ -2967,12 +2967,14 @@
         "errorGeneric": "Impossibile creare il canale. Riprova.",
         "errorNoVideos": "Nessun video trovato per questa idea. Prova una descrizione diversa.",
         "errorRateLimit": "Troppi canali creati. Attendi un momento e riprova.",
+        "inlinePlaceholder": "[TODO] Describe a new channel...",
         "placeholder": "es. Trick e parchi da skateboard",
-        "statusPlanning": "Pianificazione del canale...",
-        "statusSearching": "Ricerca su YouTube...",
-        "statusTuning": "Sintonizzazione...",
+        "statusPlanning": "Pianificazione del canale",
+        "statusSearching": "Ricerca su YouTube",
+        "statusTuning": "Sintonizzazione",
         "submit": "Crea canale",
-        "title": "Nuovo canale"
+        "title": "Nuovo canale",
+        "toastSuccess": "[TODO] Tuned in to {{name}}"
       },
       "delete": {
         "description": "Rimuovere il canale \"{{name}}\" dalla tua TV?",

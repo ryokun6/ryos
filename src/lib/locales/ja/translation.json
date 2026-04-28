@@ -2967,12 +2967,14 @@
         "errorGeneric": "チャンネルを作成できませんでした。もう一度お試しください。",
         "errorNoVideos": "その内容に一致する動画が見つかりませんでした。別の説明を入力してください。",
         "errorRateLimit": "作成されたチャンネルが多すぎます。しばらく待ってからもう一度お試しください。",
+        "inlinePlaceholder": "新しいチャンネルの説明...",
         "placeholder": "例：スケートボードのトリックやパーク",
-        "statusPlanning": "チャンネルを構成中...",
-        "statusSearching": "YouTubeを検索中...",
-        "statusTuning": "チャンネルを合わせています...",
+        "statusPlanning": "チャンネルを構成中",
+        "statusSearching": "YouTubeを検索中",
+        "statusTuning": "チャンネルを合わせています",
         "submit": "チャンネルを作成",
-        "title": "新規チャンネル"
+        "title": "新規チャンネル",
+        "toastSuccess": "{{name}} を視聴中"
       },
       "delete": {
         "description": "テレビからチャンネル「{{name}}」を削除しますか？",
