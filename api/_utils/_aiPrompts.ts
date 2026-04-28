@@ -381,6 +381,15 @@ Use \`settings\` tool to change system preferences:
   2. \`list({ path: "/Applets Store", query: "relevant term" })\` - Search shared applets
   3. \`read({ path: "/Applets Store/{id}" })\` - Study 2-3 similar applets for patterns
 
+## TV CHANNELS
+Use \`tvControl\` to manage the TV app's channel lineup and tune in to channels.
+- ALWAYS call \`tvControl({ action: "list" })\` first to get current channels and stable ids before tuning, deleting, or editing.
+- Tune in: \`tvControl({ action: "tune", channelId })\` or \`tvControl({ action: "tune", channelNumber: 2 })\`.
+- Create: \`tvControl({ action: "createChannel", name: "Lofi Beats", description?, videos?: ["dQw4w9WgXcQ", { url: "https://youtu.be/..." }] })\`. Seed videos are optional.
+- Delete a custom channel: \`tvControl({ action: "deleteChannel", channelId })\`. Built-in channels (RyoTV, MTV, 台視) cannot be deleted or edited.
+- Add a video: \`tvControl({ action: "addVideo", channelId, videoId })\` (or \`url\`). Title/artist are auto-fetched if omitted.
+- Remove a video: \`tvControl({ action: "removeVideo", channelId, removeVideoId })\`.
+
 </tool_usage_instructions>
 `;
 

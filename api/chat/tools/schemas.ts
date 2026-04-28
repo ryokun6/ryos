@@ -20,6 +20,7 @@ import {
   DOCUMENT_WRITE_MODES,
   SONG_LIBRARY_ACTIONS,
   SONG_LIBRARY_SCOPES,
+  TV_ACTIONS,
 } from "./types.js";
 import {
   MAX_KEY_LENGTH,
@@ -966,6 +967,151 @@ export const webFetchSchema = z.object({
       "If omitted, extracts the main content automatically."
     ),
 });
+
+// ============================================================================
+// TV Control Schema
+// ============================================================================
+
+const tvVideoEntrySchema = z.union([
+  z
+    .preprocess(normalizeOptionalString, z.string().min(1).max(1000))
+    .describe("YouTube video id (11 chars) or full YouTube URL."),
+  z.object({
+    videoId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("YouTube video id."),
+    url: z
+      .preprocess(normalizeOptionalString, z.string().max(1000).optional())
+      .describe("YouTube URL (used if videoId is omitted)."),
+    title: z
+      .preprocess(normalizeOptionalString, z.string().max(300).optional())
+      .describe("Optional title (otherwise looked up automatically)."),
+    artist: z
+      .preprocess(normalizeOptionalString, z.string().max(300).optional())
+      .describe("Optional artist/channel."),
+  }),
+]);
+
+export const tvControlSchema = z
+  .object({
+    action: z
+      .enum(TV_ACTIONS)
+      .describe(
+        "Action to perform: " +
+          "'list' returns the lineup (built-ins + custom channels), include videos when verbose; " +
+          "'tune' switches the TV to a channel by id or number; " +
+          "'createChannel' adds a new custom channel (optionally seeded with videos); " +
+          "'deleteChannel' removes a custom channel by id; " +
+          "'addVideo' appends a YouTube video to a custom channel; " +
+          "'removeVideo' removes a video from a custom channel."
+      ),
+    channelId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe(
+        "Channel id from a previous 'list' (short id like 'ch3' or full id). Required for 'tune'/'deleteChannel'/'addVideo'/'removeVideo' unless 'channelNumber' is used for 'tune'."
+      ),
+    channelNumber: z
+      .number()
+      .int()
+      .min(1)
+      .max(999)
+      .optional()
+      .describe(
+        "For 'tune': switch by displayed channel number (e.g. 1 = RyoTV, 2 = MTV)."
+      ),
+    name: z
+      .preprocess(normalizeOptionalString, z.string().min(1).max(24).optional())
+      .describe("For 'createChannel': channel name (1-24 chars, evocative, not generic)."),
+    description: z
+      .preprocess(
+        normalizeOptionalString,
+        z.string().min(1).max(120).optional()
+      )
+      .describe("For 'createChannel': optional one-line description/tagline."),
+    videoId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'addVideo': YouTube video id (11 chars)."),
+    url: z
+      .preprocess(normalizeOptionalString, z.string().max(1000).optional())
+      .describe("For 'addVideo': YouTube URL (alternative to videoId)."),
+    title: z
+      .preprocess(normalizeOptionalString, z.string().max(300).optional())
+      .describe(
+        "For 'addVideo': optional explicit video title (otherwise looked up from YouTube oEmbed)."
+      ),
+    artist: z
+      .preprocess(normalizeOptionalString, z.string().max(300).optional())
+      .describe("For 'addVideo': optional explicit artist/channel name."),
+    removeVideoId: z
+      .preprocess(normalizeOptionalString, z.string().max(200).optional())
+      .describe("For 'removeVideo': the YouTube video id to remove from the channel."),
+    videos: z
+      .array(tvVideoEntrySchema)
+      .max(50)
+      .optional()
+      .describe(
+        "For 'createChannel' (optional): seed videos for the new channel. Each entry can be a YouTube id/URL string or an object with videoId/url and optional title/artist."
+      ),
+  })
+  .superRefine((data, ctx) => {
+    if (data.action === "tune") {
+      if (!data.channelId && data.channelNumber === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'tune' action requires 'channelId' or 'channelNumber'.",
+          path: ["channelId"],
+        });
+      }
+    }
+    if (data.action === "createChannel") {
+      if (!data.name || !data.name.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'createChannel' action requires the 'name' parameter.",
+          path: ["name"],
+        });
+      }
+    }
+    if (data.action === "deleteChannel" && !data.channelId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The 'deleteChannel' action requires the 'channelId' parameter.",
+        path: ["channelId"],
+      });
+    }
+    if (data.action === "addVideo") {
+      if (!data.channelId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'addVideo' action requires the 'channelId' parameter.",
+          path: ["channelId"],
+        });
+      }
+      if (!data.videoId && !data.url) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'addVideo' action requires 'videoId' or 'url'.",
+          path: ["videoId"],
+        });
+      }
+    }
+    if (data.action === "removeVideo") {
+      if (!data.channelId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'removeVideo' action requires the 'channelId' parameter.",
+          path: ["channelId"],
+        });
+      }
+      if (!data.removeVideoId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "The 'removeVideo' action requires the 'removeVideoId' parameter.",
+          path: ["removeVideoId"],
+        });
+      }
+    }
+  });
 
 // ============================================================================
 // Unified Memory Tool Schemas

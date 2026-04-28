@@ -337,6 +337,85 @@ export interface InfiniteMacControlOutput {
 }
 
 // ============================================================================
+// TV Control Types
+// ============================================================================
+
+export const TV_ACTIONS = [
+  "list",
+  "tune",
+  "createChannel",
+  "deleteChannel",
+  "addVideo",
+  "removeVideo",
+] as const;
+export type TvAction = (typeof TV_ACTIONS)[number];
+
+export interface TvControlInput {
+  action: TvAction;
+  /** For 'tune', 'deleteChannel', 'addVideo', 'removeVideo': the channel id (or short id from 'list'). */
+  channelId?: string;
+  /** For 'tune': switch by channel number instead of id. */
+  channelNumber?: number;
+  /** For 'createChannel': human-readable name (1-24 chars). */
+  name?: string;
+  /** For 'createChannel': optional one-line description/tagline. */
+  description?: string;
+  /** For 'addVideo': YouTube video id or supported URL. */
+  videoId?: string;
+  /** For 'addVideo': YouTube URL alternative to videoId. */
+  url?: string;
+  /** For 'addVideo': optional explicit title (otherwise looked up from oEmbed). */
+  title?: string;
+  /** For 'addVideo': optional explicit artist/channel. */
+  artist?: string;
+  /** For 'removeVideo': the video id within the channel. */
+  removeVideoId?: string;
+  /**
+   * For 'createChannel': optional list of YouTube videos to seed the channel with.
+   * Each entry may be a videoId, YouTube URL, or {videoId|url, title?, artist?}.
+   */
+  videos?: Array<
+    | string
+    | {
+        videoId?: string;
+        url?: string;
+        title?: string;
+        artist?: string;
+      }
+  >;
+}
+
+export interface TvVideoToolRecord {
+  id: string;
+  title: string;
+  artist?: string;
+  url: string;
+}
+
+export interface TvChannelToolRecord {
+  /** Short id used for AI-friendly identification within a single 'list' call. */
+  id: string;
+  /** Stable channel id from the store. */
+  channelId: string;
+  number: number;
+  name: string;
+  description?: string;
+  isCustom: boolean;
+  isCurrent: boolean;
+  videoCount: number;
+  videos?: TvVideoToolRecord[];
+}
+
+export interface TvControlOutput {
+  success: boolean;
+  message: string;
+  channels?: TvChannelToolRecord[];
+  channel?: TvChannelToolRecord | null;
+  /** For 'addVideo' / 'removeVideo'. */
+  video?: TvVideoToolRecord | null;
+}
+
+// ============================================================================
 // Calendar Control Types
 // ============================================================================
 
