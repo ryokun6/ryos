@@ -605,11 +605,16 @@ export function TvAppComponent({
   // Suppression rules:
   //   - Buffering transitions are ignored (YouTube briefly toggles
   //     play state during buffer events).
-  //   - Channel-switch / video-id transitions are also ignored: when
+  //   - Channel-switch / video-id transitions are mostly ignored: when
   //     the video changes, isBuffering is reset and the new video's
   //     onBuffer/onPlay/onPause events arrive in an unpredictable
-  //     order. Without this, a switch from paused → new channel
-  //     could double-fire (channel-switch burst + spurious power-on).
+  //     order. Without this, a play → channel-switch flow could
+  //     double-fire (channel-switch burst + spurious power-on shader).
+  //     The exception is "screen-off → next/prev/CH+ while paused":
+  //     screenOff stays true unless we explicitly turn it back on, so
+  //     a user-initiated playback action (which sets isPlaying true)
+  //     while screenOff is true must trigger the power-on even though
+  //     the video id also changed.
   //   - Powering off / closing: don't react to anything; we're
   //     tearing down.
   const prevPlayingRef = useRef(isPlaying);
@@ -622,6 +627,20 @@ export function TvAppComponent({
       prevVideoIdRef.current = currentVideoId;
       return;
     }
+
+    // Resume-from-paused via Next/Prev/CH+/CH-: setIsPlaying(true) plus
+    // a video/channel change land in the same render. Power back on
+    // first, then let the channel-switch / buffer logic handle the
+    // rest of the visual choreography.
+    if (screenOff && isPlaying) {
+      setScreenOff(false);
+      setPowerOnKey((k) => k + 1);
+      void playPowerOn();
+      prevPlayingRef.current = isPlaying;
+      prevVideoIdRef.current = currentVideoId;
+      return;
+    }
+
     if (isBuffering) {
       prevPlayingRef.current = isPlaying;
       prevVideoIdRef.current = currentVideoId;
@@ -655,6 +674,7 @@ export function TvAppComponent({
     isWindowOpen,
     isBuffering,
     poweringOff,
+    screenOff,
     currentVideo?.id,
     playPowerOff,
     playPowerOn,
