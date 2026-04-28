@@ -1,6 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+/** Total durations for the one-shot CRT animations, in ms. Kept in one
+ *  place so completion timers, exit fades, and inner timings stay in
+ *  sync. */
+const POWER_ON_DURATION_MS = 700;
+const POWER_OFF_DURATION_MS = 600;
+const CHANNEL_SWITCH_DURATION_MS = 550;
 
 /**
  * Animated analog-static canvas. Used both as a brief "channel-switch"
@@ -127,41 +134,48 @@ function CrtShaderOverlay({ active }: { active: boolean }) {
 }
 
 /**
- * One-shot CRT power-on animation: bright horizontal beam expands from
- * the middle (vertical squeeze unfolding) into the full picture, then a
- * quick white flash fades. Mounts when `playKey` changes (any new key
- * triggers a fresh play); unmounts itself after `duration`.
+ * One-shot CRT power-on animation: a black mask vertically squeezes out
+ * to reveal the picture from a thin horizontal beam, then a quick white
+ * flash fades. The component auto-unmounts itself after the animation
+ * completes (timer-driven) so it never leaves a `bg-black` overlay
+ * sitting on top of the iframe.
  */
-function PowerOnEffect({
-  playKey,
-  onComplete,
-}: {
-  playKey: number;
-  onComplete?: () => void;
-}) {
+function PowerOnEffect({ playKey }: { playKey: number }) {
+  const [activeKey, setActiveKey] = useState(0);
+
+  useEffect(() => {
+    if (playKey <= 0) return;
+    setActiveKey(playKey);
+    const id = window.setTimeout(
+      () => setActiveKey(0),
+      POWER_ON_DURATION_MS
+    );
+    return () => window.clearTimeout(id);
+  }, [playKey]);
+
   return (
     <AnimatePresence>
-      {playKey > 0 && (
+      {activeKey > 0 && (
         <motion.div
-          key={playKey}
+          key={activeKey}
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="absolute inset-0 pointer-events-none z-40 overflow-hidden bg-black"
-          onAnimationComplete={() => onComplete?.()}
+          className="absolute inset-0 pointer-events-none z-40 overflow-hidden"
         >
           {/* Black mask that vertically squeezes out, revealing the picture
-              from a thin horizontal line outward. */}
+              from a thin horizontal line outward. The mask itself carries
+              the black, so the parent must NOT have bg-black or the
+              picture stays hidden after scaleY hits 0. */}
           <motion.div
             initial={{ scaleY: 1 }}
             animate={{ scaleY: 0 }}
             transition={{
               duration: 0.55,
-              times: [0, 1],
               ease: [0.16, 1, 0.3, 1],
             }}
-            className="absolute inset-0 bg-black origin-center"
+            className="absolute inset-0 bg-black"
             style={{ transformOrigin: "center" }}
           />
           {/* Bright horizontal scanline beam that snaps across the middle. */}
@@ -208,8 +222,26 @@ function PowerOffEffect({
   active: boolean;
   onComplete?: () => void;
 }) {
+  // Fire onComplete via a real timer rather than AnimatePresence.onExitComplete
+  // so it triggers when the animation *finishes playing*, not when the
+  // overlay later unmounts. Without this the close handler was never
+  // dispatched and the TV window never closed after the squeeze played.
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (!active) {
+      firedRef.current = false;
+      return;
+    }
+    if (firedRef.current) return;
+    firedRef.current = true;
+    const id = window.setTimeout(() => {
+      onComplete?.();
+    }, POWER_OFF_DURATION_MS);
+    return () => window.clearTimeout(id);
+  }, [active, onComplete]);
+
   return (
-    <AnimatePresence onExitComplete={() => onComplete?.()}>
+    <AnimatePresence>
       {active && (
         <motion.div
           key="power-off"
@@ -274,7 +306,21 @@ export function TvCrtEffects({
   buffering,
   crtActive,
 }: TvCrtEffectsProps) {
-  // Transient channel-switch noise burst. Auto-clears via AnimatePresence.
+  // Auto-unmount the channel-switch burst once its animation has played.
+  // We can't gate on `channelSwitchKey > 0` alone because the prop never
+  // resets — that would leave the noise canvas running rAF forever and
+  // would also keep an invisible overlay layered on top of the iframe.
+  const [activeChannelKey, setActiveChannelKey] = useState(0);
+  useEffect(() => {
+    if (channelSwitchKey <= 0) return;
+    setActiveChannelKey(channelSwitchKey);
+    const id = window.setTimeout(
+      () => setActiveChannelKey(0),
+      CHANNEL_SWITCH_DURATION_MS
+    );
+    return () => window.clearTimeout(id);
+  }, [channelSwitchKey]);
+
   return (
     <>
       <CrtShaderOverlay active={crtActive} />
@@ -298,11 +344,12 @@ export function TvCrtEffects({
       {/* Channel-switch burst — brief, full opacity. Re-keys on every
           channel change so a new burst plays even mid-fade. */}
       <AnimatePresence>
-        {channelSwitchKey > 0 && (
+        {activeChannelKey > 0 && (
           <motion.div
-            key={`tv-channel-${channelSwitchKey}`}
+            key={`tv-channel-${activeChannelKey}`}
             initial={{ opacity: 1 }}
             animate={{ opacity: [1, 1, 0] }}
+            exit={{ opacity: 0 }}
             transition={{
               duration: 0.5,
               times: [0, 0.55, 1],
