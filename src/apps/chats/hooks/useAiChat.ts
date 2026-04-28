@@ -13,6 +13,8 @@ import { getApiUrl } from "@/utils/platform";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
+import { useTvStore } from "@/stores/useTvStore";
+import { DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
@@ -333,6 +335,7 @@ const getSystemState = () => {
   const textEditStore = useTextEditStore.getState();
   const chatsStore = useChatsStore.getState();
   const languageStore = useLanguageStore.getState();
+  const tvStore = useTvStore.getState();
 
   const currentVideo = videoStore.getCurrentVideo();
   const currentTrack = ipodStore.currentSongId
@@ -343,6 +346,42 @@ const getSystemState = () => {
   const karaokeCurrentTrack = karaokeStore.currentSongId
     ? ipodStore.tracks.find((t) => t.id === karaokeStore.currentSongId)
     : ipodStore.tracks[0] ?? null;
+
+  // --- TV: current channel + lineup ---
+  // The TV app shuffles channel videos at render time, so a persisted
+  // index doesn't map to a stable "current video". Surface the current
+  // channel + lineup metadata so the AI can reason about the lineup,
+  // tune in, and edit channels via tvControl.
+  const tvChannelLineup = [
+    ...DEFAULT_CHANNELS.map((c) => ({ ch: c, isCustom: false })),
+    ...tvStore.customChannels.map((c) => ({ ch: c, isCustom: true })),
+  ];
+  const tvCurrentEntry =
+    tvChannelLineup.find(({ ch }) => ch.id === tvStore.currentChannelId) ??
+    tvChannelLineup[0] ??
+    null;
+  const tvCurrentChannel = tvCurrentEntry
+    ? {
+        id: tvCurrentEntry.ch.id,
+        number: tvCurrentEntry.ch.number,
+        name: tvCurrentEntry.ch.name,
+        description: tvCurrentEntry.ch.description,
+        isCustom: tvCurrentEntry.isCustom,
+        videoCount:
+          tvCurrentEntry.ch.id === "mtv"
+            ? ipodStore.tracks.length
+            : tvCurrentEntry.ch.id === "ryos-picks"
+            ? videoStore.videos.length
+            : tvCurrentEntry.ch.videos.length,
+      }
+    : null;
+  const tvCustomChannels = tvStore.customChannels.map((c) => ({
+    id: c.id,
+    number: c.number,
+    name: c.name,
+    description: c.description,
+    videoCount: c.videos.length,
+  }));
 
   // Detect user's operating system
   const userOS = detectUserOS();
@@ -491,6 +530,14 @@ const getSystemState = () => {
           }
         : null,
       isPlaying: karaokeStore.isPlaying,
+    },
+    tv: {
+      currentChannel: tvCurrentChannel,
+      isPlaying: tvStore.isPlaying,
+      // Built-in channels are always present (RyoTV, MTV, 台視) and read-only;
+      // only list custom (user-created) channels here so the AI knows what
+      // can be edited / deleted via tvControl.
+      customChannels: tvCustomChannels,
     },
     textEdit: {
       instances: textEditInstancesData,
