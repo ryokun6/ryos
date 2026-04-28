@@ -20,8 +20,28 @@ export interface CreateTvChannelResult {
 }
 
 /**
+ * Sentinel error thrown when the API returns 401 (or 403) on
+ * /api/tv/create-channel. Callers should catch this and surface a
+ * "log in to continue" prompt instead of treating it as a generic
+ * failure. Subclassing Error keeps `instanceof` checks reliable
+ * across the bundle without depending on string-matching message
+ * text.
+ */
+export class TvChannelAuthRequiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TvChannelAuthRequiredError";
+  }
+}
+
+/**
  * Owns the AI channel-create round-trip and store insertion. Shared by the
- * dialog and the inline prompt input so they can't drift in behavior.
+ * dialog, the inline prompt input, and the chat tvControl tool so they
+ * can't drift in behavior.
+ *
+ * Auth handling: the API requires authentication. If the network call
+ * comes back 401 / 403, we throw a TvChannelAuthRequiredError so callers
+ * can show a "log in" toast instead of a generic create failure.
  */
 export function useCreateTvChannel() {
   const { t } = useTranslation();
@@ -50,6 +70,11 @@ export function useCreateTvChannel() {
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
+          if (response.status === 401 || response.status === 403) {
+            throw new TvChannelAuthRequiredError(
+              t("apps.tv.create.signInRequired")
+            );
+          }
           const msg =
             response.status === 429
               ? t("apps.tv.create.errorRateLimit")

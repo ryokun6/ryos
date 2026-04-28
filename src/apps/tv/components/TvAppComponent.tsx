@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -8,7 +15,10 @@ import { TvMenuBar } from "./TvMenuBar";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 import { ChannelPromptInput } from "./ChannelPromptInput";
 import { TvCrtEffects } from "./TvCrtEffects";
-import { useCreateTvChannel } from "../hooks/useCreateTvChannel";
+import {
+  useCreateTvChannel,
+  TvChannelAuthRequiredError,
+} from "../hooks/useCreateTvChannel";
 import { useTvSoundFx } from "../hooks/useTvSoundFx";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -416,10 +426,17 @@ export function TvAppComponent({
     verifyError,
     handleVerifyTokenSubmit,
   } = useAuth();
-  const isLoggedIn = !!(username && isAuthenticated);
+  // "Probably logged in" — either auth is confirmed this session OR
+  // we have a recovered username from localStorage (httpOnly auth
+  // cookie is likely still valid; session restore is in flight). If
+  // the API ends up rejecting the request anyway, the catch handlers
+  // below convert TvChannelAuthRequiredError into the same login
+  // toast the up-front gate would have shown. This avoids flashing a
+  // spurious "sign in" toast in the brief window between page load
+  // and the session-restore network request completing.
+  const isProbablyLoggedIn = !!username || isAuthenticated;
 
-  const ensureLoggedIn = (): boolean => {
-    if (isLoggedIn) return true;
+  const showLoginRequiredToast = useCallback(() => {
     toast.error(t("apps.tv.create.signInRequired"), {
       description: t("apps.tv.create.signInRequiredDescription"),
       duration: 8000,
@@ -430,30 +447,49 @@ export function TvAppComponent({
         },
       },
     });
-    return false;
-  };
+  }, [t, promptVerifyToken]);
 
-  const handleInlinePromptSubmit = async (
-    description: string
-  ): Promise<string | null> => {
-    if (!ensureLoggedIn()) return null;
-    try {
-      const { channel } = await createChannel(description);
-      // Tune in to the freshly-created channel; this also drives the
-      // status-flash via setChannelById -> showStatus.
-      setChannelById(channel.id);
-      toast.success(
-        t("apps.tv.create.toastSuccess", { name: channel.name })
-      );
-      return channel.name;
-    } catch (err) {
-      console.error("Inline create channel failed:", err);
-      toast.error(
-        err instanceof Error ? err.message : t("apps.tv.create.errorGeneric")
-      );
-      return null;
-    }
-  };
+  const ensureLoggedIn = useCallback((): boolean => {
+    if (isProbablyLoggedIn) return true;
+    showLoginRequiredToast();
+    return false;
+  }, [isProbablyLoggedIn, showLoginRequiredToast]);
+
+  const handleInlinePromptSubmit = useCallback(
+    async (description: string): Promise<string | null> => {
+      if (!ensureLoggedIn()) return null;
+      try {
+        const { channel } = await createChannel(description);
+        // Tune in to the freshly-created channel; this also drives the
+        // status-flash via setChannelById -> showStatus.
+        setChannelById(channel.id);
+        toast.success(
+          t("apps.tv.create.toastSuccess", { name: channel.name })
+        );
+        return channel.name;
+      } catch (err) {
+        console.error("Inline create channel failed:", err);
+        // Stale-cookie / not-actually-logged-in case: the server
+        // returned 401 even though we had a recovered username. Show
+        // the same login toast the up-front gate would have shown.
+        if (err instanceof TvChannelAuthRequiredError) {
+          showLoginRequiredToast();
+        } else {
+          toast.error(
+            err instanceof Error ? err.message : t("apps.tv.create.errorGeneric")
+          );
+        }
+        return null;
+      }
+    },
+    [
+      ensureLoggedIn,
+      createChannel,
+      setChannelById,
+      showLoginRequiredToast,
+      t,
+    ]
+  );
   const customChannelIds = useMemo(
     () => new Set(customChannels.map((c) => c.id)),
     [customChannels]
@@ -564,19 +600,39 @@ export function TvAppComponent({
   // power-on shader after the user has previously paused at least
   // once (`hasPausedRef`), so the natural autoplay-success transition
   // right after the window opens doesn't double-trigger the
-  // window-open power-on. Buffering transitions are ignored — YouTube
-  // briefly toggles play state during buffer events.
+  // window-open power-on.
+  //
+  // Suppression rules:
+  //   - Buffering transitions are ignored (YouTube briefly toggles
+  //     play state during buffer events).
+  //   - Channel-switch / video-id transitions are also ignored: when
+  //     the video changes, isBuffering is reset and the new video's
+  //     onBuffer/onPlay/onPause events arrive in an unpredictable
+  //     order. Without this, a switch from paused → new channel
+  //     could double-fire (channel-switch burst + spurious power-on).
+  //   - Powering off / closing: don't react to anything; we're
+  //     tearing down.
   const prevPlayingRef = useRef(isPlaying);
+  const prevVideoIdRef = useRef(currentVideo?.id);
   const hasPausedRef = useRef(false);
   useEffect(() => {
-    if (!isWindowOpen || !wasOpenRef.current) {
+    const currentVideoId = currentVideo?.id;
+    if (!isWindowOpen || !wasOpenRef.current || poweringOff) {
       prevPlayingRef.current = isPlaying;
+      prevVideoIdRef.current = currentVideoId;
       return;
     }
     if (isBuffering) {
-      // Don't react to buffer-driven play/pause flips; remember the
-      // value so we don't lose a real subsequent transition.
       prevPlayingRef.current = isPlaying;
+      prevVideoIdRef.current = currentVideoId;
+      return;
+    }
+    if (prevVideoIdRef.current !== currentVideoId) {
+      // Video just changed; treat the next play/pause flip as the
+      // baseline rather than a transition off the previous video's
+      // state.
+      prevPlayingRef.current = isPlaying;
+      prevVideoIdRef.current = currentVideoId;
       return;
     }
     const prev = prevPlayingRef.current;
@@ -598,6 +654,8 @@ export function TvAppComponent({
     isPlaying,
     isWindowOpen,
     isBuffering,
+    poweringOff,
+    currentVideo?.id,
     playPowerOff,
     playPowerOn,
     stopStatic,
@@ -614,11 +672,13 @@ export function TvAppComponent({
 
   // Drive the looping static-noise bed from the same flag that powers
   // the visual buffering overlay so audio + picture stay in sync.
-  // Suppress while powering off so it doesn't "shhhh" through the
-  // closing animation.
+  // Suppress while powering off (closing animation) or while the
+  // screen is off (paused) so we don't "shhhh" through either CRT
+  // shutdown — buffering events that fire just before either state
+  // takes effect would otherwise leak through.
   const hasUrl = Boolean(currentVideo?.url);
   const staticBedActive =
-    (isBuffering || (!hasUrl && isPlaying)) && !poweringOff;
+    (isBuffering || (!hasUrl && isPlaying)) && !poweringOff && !screenOff;
   useEffect(() => {
     if (staticBedActive) {
       void startStatic();
@@ -744,7 +804,12 @@ export function TvAppComponent({
                   <YouTubePlayer
                     ref={playerRef}
                     url={url}
-                    playing={isPlaying && !isFullScreen}
+                    // Pause the iframe during the CRT shutdown / paused
+                    // "screen off" overlay so audio doesn't keep
+                    // playing through a black screen.
+                    playing={
+                      isPlaying && !isFullScreen && !poweringOff && !screenOff
+                    }
                     controls={false}
                     width="calc(100% + 1px)"
                     height="calc(100% + 1px)"

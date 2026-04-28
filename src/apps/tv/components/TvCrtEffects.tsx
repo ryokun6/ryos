@@ -282,12 +282,6 @@ function PowerOnEffect({ playKey }: { playKey: number }) {
 }
 
 /**
- * One-shot CRT power-off animation: picture squeezes vertically into a
- * bright horizontal line, then collapses to a center dot and fades. Used
- * when the user closes the TV window. The component renders an absolute
- * black overlay with a single white "dying-tube" shape inside.
- */
-/**
  * One-shot CRT power-off animation, modeled on a real flyback shutdown:
  *
  *   1. Top + bottom black bars close inward from the outer edges,
