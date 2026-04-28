@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { DEFAULT_CHANNEL_ID, type Channel } from "@/apps/tv/data/channels";
+import type { Video } from "@/stores/useVideoStore";
 
 export interface CustomChannel extends Channel {
   /** Original user description used to seed AI generation. */
@@ -40,6 +41,21 @@ interface TvStoreState {
     }
   ) => CustomChannel;
   removeCustomChannel: (id: string) => void;
+  /** Patch a custom channel's name/description/etc. by id. */
+  updateCustomChannel: (
+    id: string,
+    patch: Partial<Pick<CustomChannel, "name" | "description" | "videos">>
+  ) => CustomChannel | null;
+  /** Append a video to a custom channel; dedupes by video id. */
+  addVideoToCustomChannel: (
+    id: string,
+    video: Video
+  ) => { channel: CustomChannel | null; added: boolean };
+  /** Remove a video from a custom channel by video id. */
+  removeVideoFromCustomChannel: (
+    id: string,
+    videoId: string
+  ) => { channel: CustomChannel | null; removed: boolean };
   /** Append imported channels to the user's library. Returns a summary. */
   importChannels: (json: string) => ImportChannelsResult;
   /** Serialize the user's custom channels to a JSON string. */
@@ -103,6 +119,74 @@ export const useTvStore = create<TvStoreState>()(
             currentChannelId: fallbackId,
           };
         }),
+      updateCustomChannel: (id, patch) => {
+        let updated: CustomChannel | null = null;
+        set((s) => {
+          const next = s.customChannels.map((c) => {
+            if (c.id !== id) return c;
+            const merged: CustomChannel = {
+              ...c,
+              ...(patch.name !== undefined ? { name: patch.name } : null),
+              ...(patch.description !== undefined
+                ? { description: patch.description }
+                : null),
+              ...(patch.videos !== undefined ? { videos: patch.videos } : null),
+            };
+            updated = merged;
+            return merged;
+          });
+          return { customChannels: next };
+        });
+        return updated;
+      },
+      addVideoToCustomChannel: (id, video) => {
+        let result: { channel: CustomChannel | null; added: boolean } = {
+          channel: null,
+          added: false,
+        };
+        set((s) => {
+          const next = s.customChannels.map((c) => {
+            if (c.id !== id) return c;
+            const exists = c.videos.some((v) => v.id === video.id);
+            if (exists) {
+              result = { channel: c, added: false };
+              return c;
+            }
+            const merged: CustomChannel = {
+              ...c,
+              videos: [...c.videos, video],
+            };
+            result = { channel: merged, added: true };
+            return merged;
+          });
+          return { customChannels: next };
+        });
+        return result;
+      },
+      removeVideoFromCustomChannel: (id, videoId) => {
+        let result: { channel: CustomChannel | null; removed: boolean } = {
+          channel: null,
+          removed: false,
+        };
+        set((s) => {
+          const next = s.customChannels.map((c) => {
+            if (c.id !== id) return c;
+            const filtered = c.videos.filter((v) => v.id !== videoId);
+            if (filtered.length === c.videos.length) {
+              result = { channel: c, removed: false };
+              return c;
+            }
+            const merged: CustomChannel = {
+              ...c,
+              videos: filtered,
+            };
+            result = { channel: merged, removed: true };
+            return merged;
+          });
+          return { customChannels: next };
+        });
+        return result;
+      },
       importChannels: (json) => {
         const parsed = JSON.parse(json) as
           | CustomChannelExport
