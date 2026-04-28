@@ -363,6 +363,10 @@ export function TvAppComponent({
   const [channelSwitchKey, setChannelSwitchKey] = useState(0);
   const [poweringOff, setPoweringOff] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  // While true, the picture is squeezed away and a black "screen-off"
+  // overlay holds until the user un-pauses. Driven by isPlaying
+  // transitions below.
+  const [screenOff, setScreenOff] = useState(false);
 
   // Procedural CRT sound effects synced to the shader animations above.
   const {
@@ -505,6 +509,58 @@ export function TvAppComponent({
   useEffect(() => {
     setIsBuffering(false);
   }, [currentVideo?.id]);
+
+  // Pause / play "turn the TV off and on". We only fire the off→on
+  // power-on shader after the user has previously paused at least
+  // once (`hasPausedRef`), so the natural autoplay-success transition
+  // right after the window opens doesn't double-trigger the
+  // window-open power-on. Buffering transitions are ignored — YouTube
+  // briefly toggles play state during buffer events.
+  const prevPlayingRef = useRef(isPlaying);
+  const hasPausedRef = useRef(false);
+  useEffect(() => {
+    if (!isWindowOpen || !wasOpenRef.current) {
+      prevPlayingRef.current = isPlaying;
+      return;
+    }
+    if (isBuffering) {
+      // Don't react to buffer-driven play/pause flips; remember the
+      // value so we don't lose a real subsequent transition.
+      prevPlayingRef.current = isPlaying;
+      return;
+    }
+    const prev = prevPlayingRef.current;
+    prevPlayingRef.current = isPlaying;
+    if (prev === isPlaying) return;
+    if (prev && !isPlaying) {
+      // play → pause: turn off
+      hasPausedRef.current = true;
+      setScreenOff(true);
+      stopStatic();
+      void playPowerOff();
+    } else if (!prev && isPlaying && hasPausedRef.current) {
+      // pause → play: turn on (only after at least one explicit pause)
+      setScreenOff(false);
+      setPowerOnKey((k) => k + 1);
+      void playPowerOn();
+    }
+  }, [
+    isPlaying,
+    isWindowOpen,
+    isBuffering,
+    playPowerOff,
+    playPowerOn,
+    stopStatic,
+  ]);
+
+  // Reset pause state when the window closes so the next open starts
+  // clean (otherwise a session-restore could open with a black screen).
+  useEffect(() => {
+    if (!isWindowOpen) {
+      setScreenOff(false);
+      hasPausedRef.current = false;
+    }
+  }, [isWindowOpen]);
 
   // Drive the looping static-noise bed from the same flag that powers
   // the visual buffering overlay so audio + picture stay in sync.
@@ -661,6 +717,7 @@ export function TvAppComponent({
                 powerOnKey={powerOnKey}
                 poweringOff={poweringOff}
                 onPowerOffComplete={handlePowerOffComplete}
+                screenOff={screenOff}
                 channelSwitchKey={channelSwitchKey}
                 buffering={isBuffering || (!url && isPlaying)}
                 crtActive={true}

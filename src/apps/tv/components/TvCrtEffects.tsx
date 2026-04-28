@@ -284,6 +284,9 @@ export interface TvCrtEffectsProps {
    *  shortly before the window actually closes. */
   poweringOff: boolean;
   onPowerOffComplete?: () => void;
+  /** While true, plays the power-off squeeze and then holds a permanent
+   *  black "screen off" overlay until set back to false. Used for pause. */
+  screenOff?: boolean;
   /** Bumped to play a brief channel-change static burst. */
   channelSwitchKey: number;
   /** Whether the player is currently buffering / loading. Drives a
@@ -302,6 +305,7 @@ export function TvCrtEffects({
   powerOnKey,
   poweringOff,
   onPowerOffComplete,
+  screenOff = false,
   channelSwitchKey,
   buffering,
   crtActive,
@@ -377,8 +381,10 @@ export function TvCrtEffects({
 
       <PowerOnEffect playKey={powerOnKey} />
       <PowerOffEffect
-        active={poweringOff}
-        onComplete={onPowerOffComplete}
+        active={poweringOff || screenOff}
+        // Only fire onComplete for the close path; pause leaves the
+        // black overlay parked indefinitely until the user resumes.
+        onComplete={poweringOff ? onPowerOffComplete : undefined}
       />
     </>
   );
