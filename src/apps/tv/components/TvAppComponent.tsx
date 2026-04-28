@@ -746,18 +746,10 @@ export function TvAppComponent({
     />
   );
 
-  // Power-off shader runs *before* the window-frame close animation.
-  // We intercept the close, play the CRT collapse, then dispatch the
-  // standard close-confirmation event WindowFrame listens for.
-  const handleInterceptedClose = () => {
-    if (poweringOff) return;
-    setPoweringOff(true);
-    stopStatic();
-    void playPowerOff();
-  };
-
-  const handlePowerOffComplete = () => {
-    // Tell WindowFrame to actually run its close animation + cleanup.
+  // Tell WindowFrame to actually run its close animation + cleanup.
+  // Used both by the natural power-off completion path and the
+  // already-paused short-circuit below.
+  const dispatchWindowClose = () => {
     if (!instanceId) {
       // Non-instance fallback: just call the prop. (Shouldn't happen
       // in practice — TV is always instance-mounted — but keep it
@@ -770,6 +762,31 @@ export function TvAppComponent({
         detail: { onComplete: onClose },
       })
     );
+  };
+
+  // Power-off shader runs *before* the window-frame close animation.
+  // We intercept the close, play the CRT collapse, then dispatch the
+  // standard close-confirmation event WindowFrame listens for.
+  //
+  // Short-circuit: if the screen is already off (user paused the TV
+  // and is now closing), skip the 750ms squeeze + sound — it's
+  // already black, replaying the animation just delays the close
+  // without any visible benefit. Also stops the static bed in case
+  // it was somehow still running.
+  const handleInterceptedClose = () => {
+    if (poweringOff) return;
+    if (screenOff) {
+      stopStatic();
+      dispatchWindowClose();
+      return;
+    }
+    setPoweringOff(true);
+    stopStatic();
+    void playPowerOff();
+  };
+
+  const handlePowerOffComplete = () => {
+    dispatchWindowClose();
   };
 
   if (!isWindowOpen) return null;
