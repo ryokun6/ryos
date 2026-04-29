@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useShallow } from "zustand/react/shallow";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -216,6 +217,21 @@ export function MtvLyricsOverlay({
   const revealed = tokens.slice(0, revealedTokens);
   const unrevealed = tokens.slice(revealedTokens);
 
+  const lineTypography = cn(
+    "font-geneva-12 text-white text-left w-full block",
+    isFullscreen
+      ? "text-[24px] sm:text-[32px] md:text-[40px]"
+      : "text-[20px]"
+  );
+
+  const lineTone = {
+    letterSpacing: 0,
+    lineHeight: 1.35,
+    whiteSpace: "pre-wrap" as const,
+    wordBreak: "break-word" as const,
+    textShadow: "0 1px 0 rgba(0,0,0,0.85)",
+  };
+
   // Per-token dark plates (`box-decoration-break: clone`) so progressive
   // reveals and wrapped lines don’t paint one big rectangle behind the
   // whole caption block.
@@ -236,45 +252,52 @@ export function MtvLyricsOverlay({
       )}
       aria-hidden
     >
-      {/* Keyed swap with no enter animation — caption snaps in like
-          broadcast CCs. The container itself remounts per line so the
-          prior line is replaced instantly. Sizes snap to integer pixel
-          values so the geneva-12 pixel font stays crisp instead of
-          getting fractional-scale blur from clamp()/vw units. */}
-      <div
-        key={lineKey}
-        className={cn(
-          "font-geneva-12 text-white text-left max-w-[92%]",
-          isFullscreen
-            ? "text-[24px] sm:text-[32px] md:text-[40px]"
-            : "text-[20px]"
-        )}
-        style={{
-          letterSpacing: 0,
-          lineHeight: 1.35,
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          textShadow: "0 1px 0 rgba(0,0,0,0.85)",
-        }}
-      >
-        {revealed.map((t, i) => (
-          <span
-            key={`v-${lineKey}-${i}`}
-            className="bg-black/85 text-white px-0.5 rounded-none"
-            style={wordPlateStyle}
-          >
-            {t.text}
-          </span>
-        ))}
-        {unrevealed.map((t, i) => (
-          <span
-            key={`h-${lineKey}-${i}`}
-            aria-hidden
-            className="inline opacity-0"
-          >
-            {t.text}
-          </span>
-        ))}
+      {/* Line change: incoming line slides up from below while the outgoing
+          line is driven upward in the same frame (sync), so it reads as a
+          push. Invisible spacer locks height to the full line for %
+          transforms. */}
+      <div className="relative w-full max-w-[92%]">
+        <div aria-hidden className={cn(lineTypography, "invisible")} style={lineTone}>
+          {fullText}
+        </div>
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <AnimatePresence mode="sync" initial={false}>
+            <motion.div
+              key={lineKey}
+              className={cn(lineTypography, "absolute left-0 top-0 z-[1]")}
+              style={lineTone}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-100%" }}
+              transition={{
+                y: {
+                  type: "tween",
+                  duration: 0.32,
+                  ease: [0.25, 0.1, 0.25, 1],
+                },
+              }}
+            >
+              {revealed.map((t, i) => (
+                <span
+                  key={`v-${lineKey}-${i}`}
+                  className="bg-black/85 text-white px-0.5 rounded-none"
+                  style={wordPlateStyle}
+                >
+                  {t.text}
+                </span>
+              ))}
+              {unrevealed.map((t, i) => (
+                <span
+                  key={`h-${lineKey}-${i}`}
+                  aria-hidden
+                  className="inline opacity-0"
+                >
+                  {t.text}
+                </span>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
