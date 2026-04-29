@@ -33,6 +33,14 @@ const MAX_INTERPOLATE_MS = 500;
  *  cadence from (last line of the song). */
 const FALLBACK_LINE_DURATION_MS = 4000;
 
+interface RevealToken {
+  /** Text to render for this token (includes any trailing whitespace). */
+  text: string;
+  /** Time relative to the line start, in ms, when this token should
+   *  become visible. */
+  revealAtMs: number;
+}
+
 /**
  * Single-line, TV-style closed-caption overlay for the MTV channel.
  *
@@ -40,18 +48,16 @@ const FALLBACK_LINE_DURATION_MS = 4000;
  * `useLyrics` pipeline iPod / Karaoke use — the song id of the current
  * TV video is the same id the iPod uses for lyrics lookups.
  *
- * Reveal timing matches the audio:
- *   - When the LRC has KRC word timings (`wordTimings[]`), each character
- *     is revealed at its true word's `startTimeMs + durationMs` window.
- *   - Otherwise we evenly distribute characters across the line duration
- *     (next-line-start − current-line-start), matching how karaoke /
- *     iPod fall back when KRC data is missing.
+ * Reveal timing matches the audio at *word* granularity:
+ *   - When the LRC has KRC `wordTimings[]`, each token is revealed
+ *     exactly at its word's `startTimeMs` (relative to line start).
+ *   - Otherwise tokens are split on whitespace and distributed evenly
+ *     across the line duration (next-line-start − current-line-start),
+ *     matching the karaoke / `LyricsDisplay` fallback.
  *
- * Smoothness is achieved with the same trick `WordTimingHighlight` uses
- * in `LyricsDisplay`: take the latest prop `currentTimeMs` and
- * extrapolate forward via `performance.now()` per `requestAnimationFrame`
- * tick (capped, so a pause can't drift), instead of being limited by
- * react-player's coarse progress callbacks.
+ * Smoothness comes from extrapolating `performance.now()` forward from
+ * the latest `playedSeconds` prop (capped at 500ms) per `rAF` tick —
+ * same trick `WordTimingHighlight` uses in `LyricsDisplay`.
  */
 export function MtvLyricsOverlay({
   songId,
@@ -88,7 +94,6 @@ export function MtvLyricsOverlay({
     return lyricsState.lines[idx] ?? null;
   }, [visible, lyricsState.currentLine, lyricsState.lines]);
 
-  const fullText = (activeLine?.words ?? "").trim();
   const lineStartMs = activeLine ? parseInt(activeLine.startTimeMs, 10) : NaN;
 
   // Duration of the current line: from this line's start to the next
@@ -106,55 +111,50 @@ export function MtvLyricsOverlay({
     return b - a;
   }, [activeLine, lyricsState.currentLine, lyricsState.lines]);
 
-  // Pre-compute character → reveal-time-ms map for the current line.
-  // When KRC word timings are available, characters reveal at their true
-  // word boundaries (interpolated within a word so the reveal is smooth
-  // across multi-char words). Otherwise we evenly distribute characters
-  // across the line duration.
-  const charRevealMs = useMemo<number[]>(() => {
-    if (!fullText) return [];
-    const wordTimings = activeLine?.wordTimings;
+  // Build the token list for the active line. Each token carries its
+  // reveal time (relative to line start). When KRC word timings exist
+  // we use them verbatim; otherwise we whitespace-split and spread
+  // evenly across the line.
+  const tokens = useMemo<RevealToken[]>(() => {
+    if (!activeLine) return [];
+    const original = activeLine.words ?? "";
+    if (!original) return [];
+
+    const wordTimings = activeLine.wordTimings;
     if (wordTimings && wordTimings.length > 0) {
-      // Walk the original (untrimmed) line so word.text offsets line up,
-      // then map back to indices in the trimmed fullText. Trimming only
-      // strips leading/trailing whitespace, so a single offset shift is
-      // enough.
-      const original = activeLine?.words ?? "";
-      const leadingTrim = original.length - original.trimStart().length;
-      const arr = new Array<number>(fullText.length).fill(0);
-      let charsAssigned = 0;
-      for (let w = 0; w < wordTimings.length; w++) {
-        const word = wordTimings[w];
-        const len = word.text.length;
-        for (let c = 0; c < len; c++) {
-          const idxInOriginal = charsAssigned + c;
-          const idxInTrimmed = idxInOriginal - leadingTrim;
-          if (idxInTrimmed < 0 || idxInTrimmed >= arr.length) continue;
-          // Spread chars evenly within the word's duration so a long
-          // sustained word still drips in instead of snapping.
-          const within =
-            len > 0
-              ? ((c + 1) / len) * Math.max(0, word.durationMs)
-              : word.durationMs;
-          arr[idxInTrimmed] = word.startTimeMs + within;
-        }
-        charsAssigned += len;
-      }
-      // Any trailing chars (e.g. punctuation past final word timing) get
-      // pinned to the last word's end so they reveal at the same moment.
-      const lastWord = wordTimings[wordTimings.length - 1];
-      const lastEnd = lastWord.startTimeMs + lastWord.durationMs;
-      for (let i = 0; i < arr.length; i++) {
-        if (arr[i] === 0 && i > 0) arr[i] = lastEnd;
-      }
-      return arr;
+      // KRC word timings cover the original (untrimmed) line. The text
+      // of each timing already includes its trailing whitespace, so we
+      // can render them in order without extra splitting. We trim the
+      // very first and last tokens' surrounding whitespace so the CC
+      // plate hugs the visible text.
+      const last = wordTimings.length - 1;
+      return wordTimings.map((w, i) => {
+        let text = w.text;
+        if (i === 0) text = text.replace(/^\s+/, "");
+        if (i === last) text = text.replace(/\s+$/, "");
+        return { text, revealAtMs: w.startTimeMs };
+      });
     }
-    // No word timings — distribute evenly across the line's duration.
+
+    // Fallback: split on whitespace, keeping the spaces attached to the
+    // preceding word so the rendered string is identical to the
+    // original. Reveal each word evenly across the line duration.
+    const trimmed = original.trim();
+    if (!trimmed) return [];
+    const parts: string[] = [];
+    const re = /\S+\s*/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(trimmed)) !== null) {
+      parts.push(m[0]);
+    }
     const total = lineDurationMs;
-    return Array.from({ length: fullText.length }, (_, i) =>
-      ((i + 1) / fullText.length) * total
-    );
-  }, [fullText, activeLine, lineDurationMs]);
+    return parts.map((text, i) => ({
+      text,
+      revealAtMs: (i / parts.length) * total,
+    }));
+  }, [activeLine, lineDurationMs]);
+
+  const fullText = useMemo(() => tokens.map((t) => t.text).join(""), [tokens]);
 
   // Track the latest prop time + when we received it so we can
   // extrapolate per-frame for smooth reveal between coarse progress
@@ -168,7 +168,7 @@ export function MtvLyricsOverlay({
     timeRef.current.propTakenAt = performance.now();
   }, [currentTimeMs]);
 
-  const [revealedChars, setRevealedChars] = useState(0);
+  const [revealedTokens, setRevealedTokens] = useState(0);
   const lastRevealedRef = useRef(0);
   const lineKey = activeLine
     ? `${lyricsState.currentLine}:${activeLine.startTimeMs}`
@@ -176,14 +176,14 @@ export function MtvLyricsOverlay({
 
   useEffect(() => {
     lastRevealedRef.current = 0;
-    setRevealedChars(0);
+    setRevealedTokens(0);
   }, [lineKey]);
 
   useEffect(() => {
-    if (!fullText || !Number.isFinite(lineStartMs)) {
+    if (tokens.length === 0 || !Number.isFinite(lineStartMs)) {
       if (lastRevealedRef.current !== 0) {
         lastRevealedRef.current = 0;
-        setRevealedChars(0);
+        setRevealedTokens(0);
       }
       return;
     }
@@ -195,27 +195,26 @@ export function MtvLyricsOverlay({
       );
       const liveTimeMs = timeRef.current.propTimeMs + sinceProp;
       const timeIntoLine = liveTimeMs - lineStartMs;
-      // Binary scan would be overkill for a typical line (<100 chars).
       let count = 0;
-      for (let i = 0; i < charRevealMs.length; i++) {
-        if (charRevealMs[i] <= timeIntoLine) count = i + 1;
+      for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].revealAtMs <= timeIntoLine) count = i + 1;
         else break;
       }
       if (count !== lastRevealedRef.current) {
         lastRevealedRef.current = count;
-        setRevealedChars(count);
+        setRevealedTokens(count);
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [fullText, lineStartMs, charRevealMs]);
+  }, [tokens, lineStartMs]);
 
   if (!visible || !fullText) return null;
 
   const isFullscreen = variant === "fullscreen";
-  const visibleText = fullText.slice(0, revealedChars);
-  const hiddenText = fullText.slice(revealedChars);
+  const visibleText = tokens.slice(0, revealedTokens).map((t) => t.text).join("");
+  const hiddenText = tokens.slice(revealedTokens).map((t) => t.text).join("");
 
   return (
     <div
@@ -226,8 +225,8 @@ export function MtvLyricsOverlay({
       aria-hidden
     >
       {/* Keyed swap with no enter animation — caption snaps in like
-          broadcast CCs. The container itself remounts per line so prior
-          line is replaced instantly. */}
+          broadcast CCs. The container itself remounts per line so the
+          prior line is replaced instantly. */}
       <div
         key={lineKey}
         className={cn(
