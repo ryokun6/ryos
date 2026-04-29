@@ -54,6 +54,15 @@ const WORD_PLATE_STYLE = {
   boxDecorationBreak: "clone" as const,
 };
 
+/** Per-token plate class. Inline horizontal padding (`px-0.5`) adds a
+ *  few px of width per token, so the invisible spacer and the hidden
+ *  unrevealed tokens use the *same* class to keep the visible row width
+ *  matched across the slide transitions. */
+const WORD_PLATE_CLASS_NAME = "bg-black/85 text-white px-0.5 rounded-none";
+/** Same plate but invisible — used for tokens not yet revealed so the
+ *  row's measured width stays constant as words light up. */
+const WORD_PLATE_HIDDEN_CLASS_NAME = `${WORD_PLATE_CLASS_NAME} opacity-0`;
+
 const LINE_TRANSITION = {
   y: {
     type: "tween" as const,
@@ -292,12 +301,28 @@ export function MtvLyricsOverlay({
           push. Invisible spacer locks height to the full line for %
           transforms. */}
       <div className="relative w-full max-w-[92%]">
+        {/* Invisible spacer sets the row height the animated line
+            slides through. It MUST use the same per-token markup and
+            padding as the visible row — `px-0.5` per word adds a few
+            px of width per token, and a row that's even slightly
+            wider than the spacer wraps to a second visual line and
+            gets clipped by the parent's `overflow-hidden` (used for
+            the slide transitions). That manifested as the last word
+            silently disappearing on lines that just barely fit. */}
         <div
           aria-hidden
           className={cn(lineTypography, "invisible")}
           style={LINE_TONE_STYLE}
         >
-          {fullText}
+          {tokens.map((t, i) => (
+            <span
+              key={`s-${lineKey}-${i}`}
+              className={WORD_PLATE_CLASS_NAME}
+              style={WORD_PLATE_STYLE}
+            >
+              {t.text}
+            </span>
+          ))}
         </div>
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <AnimatePresence mode="sync" initial={false}>
@@ -316,12 +341,17 @@ export function MtvLyricsOverlay({
                   <span
                     key={`tok-${lineKey}-${i}`}
                     aria-hidden={!isRevealed}
+                    // Unrevealed tokens use the same plate class as
+                    // revealed ones — only `opacity-0` differs — so
+                    // the row width matches the spacer above. Reusing
+                    // the same DOM node across the reveal boundary
+                    // also lets the browser keep cached layout.
                     className={
                       isRevealed
-                        ? "bg-black/85 text-white px-0.5 rounded-none"
-                        : "inline opacity-0"
+                        ? WORD_PLATE_CLASS_NAME
+                        : WORD_PLATE_HIDDEN_CLASS_NAME
                     }
-                    style={isRevealed ? WORD_PLATE_STYLE : undefined}
+                    style={WORD_PLATE_STYLE}
                   >
                     {t.text}
                   </span>
