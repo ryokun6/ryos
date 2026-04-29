@@ -67,13 +67,18 @@ function NoiseCanvas({
       // of the static is unchanged.
       const w = Math.max(1, Math.floor(canvas.offsetWidth / 1.5));
       const h = Math.max(1, Math.floor(canvas.offsetHeight / 1.5));
-      if (canvas.width !== w || canvas.height !== h) {
+      const sizeChanged = canvas.width !== w || canvas.height !== h;
+      if (sizeChanged) {
         canvas.width = w;
         canvas.height = h;
-        // Allocate (or re-allocate) the reusable buffer. createImageData
-        // here returns a buffer scoped to the new size; we cache both
-        // it and a 32-bit view so the inner loop can write a packed
-        // RGBA value per pixel.
+      }
+      // (Re)allocate the reusable buffer whenever the canvas changed
+      // size OR we don't have one yet. The "yet" branch matters in dev:
+      // React StrictMode mounts → unmounts → re-mounts the effect, and
+      // the second mount sees a canvas that's already the right size.
+      // Without this fallback, `imgData` / `pixels32` would stay null
+      // and the draw loop would silently produce no output.
+      if (sizeChanged || !imgData || !pixels32) {
         imgData = ctx.createImageData(w, h);
         pixels32 = new Uint32Array(imgData.data.buffer);
       }
