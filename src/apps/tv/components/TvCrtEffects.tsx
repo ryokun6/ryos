@@ -24,14 +24,13 @@ const CHANNEL_SWITCH_DURATION_MS = 550;
  *    across frames instead of being allocated each tick. Each pixel is
  *    written with a single 32-bit store and `Math.random()` is called
  *    once per pixel rather than once per channel.
- *  - The redraw rate is capped to ~30 fps so a sustained buffering
- *    overlay doesn't burn the host's full 60 fps frame budget while
- *    the picture behind it is essentially a still YouTube spinner.
+ *  - The redraw runs at the native refresh rate (60 fps on most
+ *    displays) for the most "live" analog-static feel; the per-frame
+ *    fill loop is cheap enough now that we don't need to drop frames
+ *    to keep the overlay smooth.
  *  - When the document is hidden, the rAF loop is paused entirely so
  *    a backgrounded tab stops generating noise frames.
  */
-const NOISE_TARGET_FPS = 30;
-const NOISE_FRAME_INTERVAL_MS = 1000 / NOISE_TARGET_FPS;
 
 function NoiseCanvas({
   intensity = 1,
@@ -84,20 +83,7 @@ function NoiseCanvas({
       }
     };
 
-    let lastFrame = 0;
-
-    const draw = (now: number) => {
-      // Cap the redraw rate. requestAnimationFrame still ticks at 60 fps
-      // (or 120 fps on high-refresh displays); we just skip frames that
-      // arrive faster than NOISE_FRAME_INTERVAL_MS, which roughly halves
-      // the noise CPU cost on standard 60 Hz displays without any
-      // perceptible loss of "analog-static" feel.
-      if (now - lastFrame < NOISE_FRAME_INTERVAL_MS) {
-        rafRef.current = requestAnimationFrame(draw);
-        return;
-      }
-      lastFrame = now;
-
+    const draw = () => {
       if (!imgData || !pixels32) {
         rafRef.current = requestAnimationFrame(draw);
         return;
@@ -143,7 +129,6 @@ function NoiseCanvas({
         if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       } else if (rafRef.current === null) {
-        lastFrame = 0;
         rafRef.current = requestAnimationFrame(draw);
       }
     };
