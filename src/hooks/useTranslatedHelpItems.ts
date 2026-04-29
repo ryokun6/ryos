@@ -1,172 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { AppId } from "@/utils/i18n";
-
-const HELP_KEYS: Record<AppId, string[]> = {
-  finder: [
-    "browseNavigate",
-    "fileManagement",
-    "viewSort",
-    "quickAccess",
-    "storageInfo",
-    "trash",
-  ],
-  soundboard: [
-    "recordSlot",
-    "keyboardPlay",
-    "waveformView",
-    "customizeSlot",
-    "multipleBoards",
-    "importExport",
-  ],
-  "internet-explorer": [
-    "browseWeb",
-    "travelThroughTime",
-    "historyReimagined",
-    "saveFavorites",
-    "exploreTimeNodes",
-    "shareJourney",
-  ],
-  chats: [
-    "chatWithRyo",
-    "createEditFiles",
-    "controlApps",
-    "joinChatRooms",
-    "pushToTalk",
-    "nudgeDjMode",
-  ],
-  textedit: [
-    "richEditing",
-    "formatting",
-    "listsTasks",
-    "fileManagement",
-    "voiceDictation",
-    "slashCommands",
-  ],
-  paint: ["drawingTools", "colors", "undo", "saving", "patterns", "filters"],
-  "photo-booth": [
-    "takingPhoto",
-    "quickSnaps",
-    "applyingEffects",
-    "viewingPhotos",
-    "downloadingPhotos",
-    "switchingCameras",
-  ],
-  minesweeper: [
-    "desktopControls",
-    "mobileControls",
-    "gameRules",
-    "timerCounter",
-    "restart",
-  ],
-  videos: ["addVideo", "playback", "loop", "shuffle", "playlist", "retroUi"],
-  tv: ["channels", "playback", "numbers", "shortcuts", "fullscreen", "helpAbout"],
-  ipod: [
-    "addSongs",
-    "wheelNavigation",
-    "playbackControls",
-    "lyricsPronunciation",
-    "playbackModes",
-    "displayFullscreen",
-  ],
-  karaoke: [
-    "addSearchSongs",
-    "syncLyricsTiming",
-    "stylePronunciation",
-    "syncedWithIpod",
-    "worksWithChats",
-    "keyboardShortcuts",
-  ],
-  synth: [
-    "virtualKeyboard",
-    "controlsPanel",
-    "presets",
-    "waveform3d",
-    "effects",
-    "midiInput",
-  ],
-  pc: [
-    "pcEmulator",
-    "keyboardControls",
-    "mouseCapture",
-    "fullscreenMode",
-    "saveStates",
-    "aspectRatio",
-  ],
-  terminal: [
-    "basicCommands",
-    "navigation",
-    "commandHistory",
-    "aiAssistant",
-    "fileEditing",
-    "terminalSounds",
-  ],
-  "applet-viewer": [
-    "appletStore",
-    "createWithRyosChat",
-    "viewApplets",
-    "shareApplets",
-    "openFromFinder",
-    "keepUpdated",
-  ],
-  "control-panels": [
-    "appearance",
-    "sounds",
-    "aiModel",
-    "shaderEffects",
-    "backupRestore",
-    "sync",
-    "system",
-  ],
-  admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
-  stickies: ["createNote", "colors", "deleteNote", "autoSave"],
-  "infinite-mac": [
-    "classicMacEmulator",
-    "selectSystem",
-    "pauseResume",
-    "backToSystems",
-  ],
-  winamp: [
-    "playMusic",
-    "equalizer",
-    "playlist",
-    "skins",
-    "shuffleRepeat",
-    "controls",
-  ],
-  calendar: [
-    "navigateMonths",
-    "createEvents",
-    "dayView",
-    "colorCoding",
-    "deleteEvents",
-    "autoSave",
-  ],
-  contacts: [
-    "browseContacts",
-    "createContacts",
-    "editDetails",
-    "importVCards",
-    "useWithRyo",
-    "cloudSync",
-  ],
-  dashboard: [
-    "openDashboard",
-    "clockWidget",
-    "calendarWidget",
-    "weatherWidget",
-    "moveWidgets",
-    "closeDashboard",
-  ],
-  candybar: [
-    "browseIconPacks",
-    "iconPackDetails",
-    "applyIconPacks",
-    "favorites",
-    "search",
-    "cloudLibrary",
-  ],
-};
+import { HELP_ITEM_KEYS_BY_APP_ID } from "@/hooks/helpItemKeys";
 
 /**
  * Hook to get translated help items for an app
@@ -179,7 +14,7 @@ export function useTranslatedHelpItems(
   const { t } = useTranslation();
 
   return useMemo(() => {
-    const keys = HELP_KEYS[appId] || [];
+    const keys = HELP_ITEM_KEYS_BY_APP_ID[appId] || [];
     return originalHelpItems.map((item, index) => {
       const key = keys[index];
       if (!key) return item; // Fallback to original if no key
@@ -195,4 +30,3 @@ export function useTranslatedHelpItems(
     });
   }, [appId, originalHelpItems, t]);
 }
-

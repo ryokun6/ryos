@@ -1,4 +1,5 @@
 import i18n from "@/lib/i18n";
+import { HELP_ITEM_KEYS_BY_APP_ID } from "@/hooks/helpItemKeys";
 import { useThemeStore } from "@/stores/useThemeStore";
 
 export type AppId =
@@ -132,35 +133,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
   title: string;
   description: string;
 }> {
-  const helpKeys: Record<AppId, string[]> = {
-    finder: ["browseNavigate", "fileManagement", "viewSort", "quickAccess", "storageInfo", "trash"],
-    soundboard: ["recordSlot", "keyboardPlay", "waveformView", "customizeSlot", "multipleBoards", "importExport"],
-    "internet-explorer": ["browseWeb", "travelThroughTime", "historyReimagined", "saveFavorites", "exploreTimeNodes", "shareJourney"],
-    chats: ["chatWithRyo", "createEditFiles", "controlApps", "joinChatRooms", "pushToTalk", "nudgeDjMode"],
-    textedit: ["richEditing", "formatting", "listsTasks", "fileManagement", "voiceDictation", "slashCommands"],
-    paint: ["drawingTools", "colors", "undo", "saving", "patterns", "filters"],
-    "photo-booth": ["takingPhoto", "quickSnaps", "applyingEffects", "viewingPhotos", "downloadingPhotos", "switchingCameras"],
-    minesweeper: ["desktopControls", "mobileControls", "gameRules", "timerCounter", "restart"],
-    videos: ["addVideo", "playback", "loop", "shuffle", "playlist", "retroUi"],
-    tv: ["channels", "playback", "numbers", "shortcuts", "fullscreen", "helpAbout"],
-    ipod: ["addSongs", "wheelNavigation", "playbackControls", "syncedLyrics", "playbackModes", "displayFullscreen"],
-    karaoke: ["addSearchSongs", "syncLyricsTiming", "styleLayout", "syncedWithIpod", "worksWithChats", "keyboardShortcuts"],
-    synth: ["virtualKeyboard", "controlsPanel", "presets", "waveform3d", "effects", "midiInput"],
-    pc: ["pcEmulator", "keyboardControls", "mouseCapture", "fullscreenMode", "saveStates", "aspectRatio"],
-    terminal: ["basicCommands", "navigation", "commandHistory", "aiAssistant", "fileEditing", "terminalSounds"],
-    "applet-viewer": ["appletStore", "createWithRyosChat", "viewApplets", "shareApplets", "openFromFinder", "keepUpdated"],
-    "control-panels": ["appearance", "sounds", "aiModel", "shaderEffects", "backupRestore", "system"],
-    admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
-    stickies: ["createNote", "colors", "deleteNote", "autoSave"],
-    "infinite-mac": ["classicMacEmulator", "selectSystem", "pauseResume", "backToSystems"],
-    winamp: ["playMusic", "equalizer", "playlist", "skins", "shuffleRepeat", "controls"],
-    calendar: ["navigateMonths", "createEvents", "dayView", "colorCoding", "deleteEvents", "autoSave"],
-    contacts: ["browseContacts", "createContacts", "editDetails", "importVCards", "useWithRyo", "cloudSync"],
-    dashboard: ["openDashboard", "clockWidget", "calendarWidget", "weatherWidget", "moveWidgets", "closeDashboard"],
-    candybar: ["browseIconPacks", "iconPackDetails", "applyIconPacks", "favorites", "search", "cloudLibrary"],
-  };
-
-  const keys = helpKeys[appId] || [];
+  const keys = HELP_ITEM_KEYS_BY_APP_ID[appId] || [];
   return keys.map((key) => {
     const titleKey = `apps.${appId}.help.${key}.title`;
     const descKey = `apps.${appId}.help.${key}.description`;
