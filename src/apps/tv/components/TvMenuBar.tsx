@@ -120,9 +120,6 @@ export function TvMenuBar({
             {t("apps.tv.menu.channelUp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={onFullScreen} className="text-md h-6 px-3">
-            {t("apps.tv.menu.fullScreen")}
-          </MenubarItem>
           <MenubarCheckboxItem
             checked={isLcdFilterOn}
             onCheckedChange={onToggleLcdFilter}
@@ -130,6 +127,10 @@ export function TvMenuBar({
           >
             {t("apps.tv.menu.lcdFilter")}
           </MenubarCheckboxItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem onClick={onFullScreen} className="text-md h-6 px-3">
+            {t("apps.tv.menu.fullScreen")}
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>
