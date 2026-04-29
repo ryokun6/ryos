@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useAppStore, LaunchOriginRect } from "@/stores/useAppStore";
 import { AppId } from "@/config/appRegistry";
 
@@ -10,18 +11,17 @@ export interface LaunchAppOptions {
 }
 
 export const useLaunchApp = () => {
-  // Get the launch method and instances from the store
-  const launchAppInstance = useAppStore((state) => state.launchApp);
-  const instances = useAppStore((state) => state.instances);
-  const bringInstanceToForeground = useAppStore(
-    (state) => state.bringInstanceToForeground
-  );
-  const restoreInstance = useAppStore((state) => state.restoreInstance);
-  const updateInstanceInitialData = useAppStore(
-    (state) => state.updateInstanceInitialData
-  );
+  // Read instances via getState inside the stable callback so opening/minimizing
+  // windows does not re-render every component that only needs launchApp().
+  const launchApp = useCallback((appId: AppId, options?: LaunchAppOptions) => {
+    const {
+      instances,
+      launchApp: launchAppInstance,
+      bringInstanceToForeground,
+      restoreInstance,
+      updateInstanceInitialData,
+    } = useAppStore.getState();
 
-  const launchApp = (appId: AppId, options?: LaunchAppOptions) => {
     console.log(`[useLaunchApp] Launch event received for ${appId}`, options);
 
     // Convert initialPath to proper initialData for Finder
@@ -180,7 +180,7 @@ export const useLaunchApp = () => {
     );
 
     return instanceId;
-  };
+  }, []);
 
   return launchApp;
 };

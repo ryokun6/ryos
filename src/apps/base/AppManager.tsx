@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AnyApp } from "./types";
 import { MenuBar } from "@/components/layout/MenuBar";
@@ -36,6 +36,14 @@ const BASE_Z_INDEX = 1;
 
 export function AppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
+
+  const appsById = useMemo(() => {
+    const map = new Map<AppId, AnyApp>();
+    for (const a of apps) {
+      map.set(a.id, a);
+    }
+    return map;
+  }, [apps]);
 
   // Instance-based state
   const {
@@ -107,41 +115,28 @@ export function AppManager({ apps }: AppManagerProps) {
   const switcherAppsRef = useRef<SwitcherApp[]>([]);
   const switcherIndexRef = useRef(0);
 
+  // Single effect keeps hot-path keyboard handler refs fresh without N separate commit phases.
   useEffect(() => {
     instancesRef.current = instances;
-  }, [instances]);
-
-  useEffect(() => {
     instanceOrderRef.current = instanceOrder;
-  }, [instanceOrder]);
-
-  useEffect(() => {
     launchAppRef.current = launchApp;
-  }, [launchApp]);
-
-  useEffect(() => {
     foregroundInstanceIdRef.current = foregroundInstanceId;
-  }, [foregroundInstanceId]);
-
-  useEffect(() => {
     minimizeInstanceRef.current = minimizeInstance;
-  }, [minimizeInstance]);
-
-  useEffect(() => {
     restoreInstanceRef.current = restoreInstance;
-  }, [restoreInstance]);
-
-  useEffect(() => {
     bringInstanceToForegroundRef.current = bringInstanceToForeground;
-  }, [bringInstanceToForeground]);
-
-  useEffect(() => {
     navigateToNextInstanceRef.current = navigateToNextInstance;
-  }, [navigateToNextInstance]);
-
-  useEffect(() => {
     navigateToPreviousInstanceRef.current = navigateToPreviousInstance;
-  }, [navigateToPreviousInstance]);
+  }, [
+    instances,
+    instanceOrder,
+    launchApp,
+    foregroundInstanceId,
+    minimizeInstance,
+    restoreInstance,
+    bringInstanceToForeground,
+    navigateToNextInstance,
+    navigateToPreviousInstance,
+  ]);
 
   // Prune stale crash state when crashed instances are closed.
   useEffect(() => {
@@ -543,7 +538,7 @@ export function AppManager({ apps }: AppManagerProps) {
         const appId = instance.appId as AppId;
         const zIndex = getZIndexForInstance(instance.instanceId);
         const AppComponent = getAppComponent(appId);
-        const app = apps.find((registeredApp) => registeredApp.id === appId);
+        const app = appsById.get(appId);
         const translatedAppName = getTranslatedAppName(appId);
         const crashDialogAppName =
           translatedAppName !== appId

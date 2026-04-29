@@ -121,7 +121,9 @@ export function WindowFrame({
     updateInstanceTitle: state.updateInstanceTitle,
     exposeMode: state.exposeMode,
     openInstanceCount: state.exposeMode
-      ? Object.values(state.instances).filter(inst => inst.isOpen && !inst.isMinimized).length
+      ? Object.values(state.instances).filter(
+          (inst) => inst.isOpen && !inst.isMinimized
+        ).length
       : 0,
   }));
   

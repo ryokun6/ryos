@@ -23,8 +23,8 @@ import { AirDropListener } from "@/components/AirDropListener";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { ReactScanDebug } from "@/components/ReactScanDebug";
 
-// Convert registry to array
-const apps: AnyApp[] = Object.values(appRegistry);
+// Stable list — avoids new array identity each render (children like AppManager use it in deps/maps).
+const APPS: AnyApp[] = Object.values(appRegistry);
 
 export function App() {
   const { t } = useTranslation();
@@ -193,7 +193,7 @@ export function App() {
     <>
       <ReactScanDebug />
       <DesktopErrorBoundary>
-        <AppManager apps={apps} />
+        <AppManager apps={APPS} />
       </DesktopErrorBoundary>
       <Toaster position={toastConfig.position} offset={toastConfig.offset} />
       <AirDropListener />

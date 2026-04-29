@@ -40,7 +40,7 @@ describe("Error Boundary Wiring Tests", () => {
       const source = readSource("src/App.tsx");
       expect(source.includes("<DesktopErrorBoundary>")).toBe(true);
       expect(
-        /<DesktopErrorBoundary>\s*<AppManager apps=\{apps\} \/>\s*<\/DesktopErrorBoundary>/.test(
+        /<DesktopErrorBoundary>\s*<AppManager apps=\{APPS\} \/>\s*<\/DesktopErrorBoundary>/.test(
           source,
         )
       ).toBe(true);
