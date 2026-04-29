@@ -10,6 +10,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { helpItems } from "..";
 import { buildTvChannelLineup, type Channel } from "@/apps/tv/data/channels";
 import {
+  isShortDuration,
   isYouTubeUrl,
   nextIndex,
   prevIndex,
@@ -93,6 +94,14 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   // skip + channel switch; flipped to false when a video advances because
   // it ended naturally, so the *following* video plays from 0.
   const tuneInRandomlyOnNextDurationRef = useRef(true);
+  // Per-channel set of video ids we've already classified as Shorts and
+  // auto-skipped. Used as a circuit breaker: if we've skipped every video
+  // on the current channel, stop skipping and let the last one play, so a
+  // channel that happens to contain only Shorts (e.g. a user-imported
+  // lineup or a planner that returned all sub-60s videos) doesn't loop
+  // forever. Keyed by channel id so different channels don't pollute
+  // each other's skip state.
+  const skippedShortsByChannelRef = useRef<Map<string, Set<string>>>(new Map());
 
   const ipodTracks = useIpodStore((s) => s.tracks);
   const videosLibrary = useVideoStore((s) => s.videos);
@@ -276,6 +285,40 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
       setDuration(d);
       const id = currentVideo?.id;
       if (!id || lastRandomSeekedIdRef.current === id) return;
+
+      // Auto-skip YouTube Shorts on the client. The server no longer hits
+      // videos.list to filter them out (it's a wasted YouTube quota per
+      // channel build), so we rely on the player reporting duration and
+      // skip forward when it looks like a Short. Mark the id as
+      // already-handled BEFORE advancing so a duplicate `onDuration` for
+      // the same id (ReactPlayer can fire it again on metadata refresh)
+      // can't trigger a second skip and accidentally advance two videos.
+      if (isShortDuration(d)) {
+        const list = currentChannel?.videos ?? [];
+        const channelId = currentChannel?.id ?? currentChannelId;
+        let skipped = skippedShortsByChannelRef.current.get(channelId);
+        if (!skipped) {
+          skipped = new Set();
+          skippedShortsByChannelRef.current.set(channelId, skipped);
+        }
+        // Circuit breaker: if every video on this channel has already
+        // been auto-skipped as a Short at least once, give up skipping
+        // and let this one play. Without this, an all-Shorts channel
+        // would advance forever and never render any video.
+        const everythingSkipped =
+          list.length > 0 && skipped.size >= list.length;
+        if (!everythingSkipped && list.length > 1) {
+          skipped.add(id);
+          lastRandomSeekedIdRef.current = id;
+          // Preserve the "tune in randomly" flag — we're advancing past
+          // a video we never intended to play, not consuming a manual
+          // skip — so the next video still tunes in mid-program.
+          setVideoIndex(currentChannelId, nextIndex(videoIndex, list.length));
+          setIsPlaying(true);
+          return;
+        }
+      }
+
       lastRandomSeekedIdRef.current = id;
       // Reset the flag for the *next* duration event regardless of which
       // branch we take, so a future natural rollover won't be inherited.
@@ -292,7 +335,14 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
         fullScreenPlayerRef.current?.seekTo(start, "seconds");
       }
     },
-    [currentVideo?.id]
+    [
+      currentVideo?.id,
+      currentChannel,
+      currentChannelId,
+      videoIndex,
+      setVideoIndex,
+      setIsPlaying,
+    ]
   );
 
   const handleSeek = useCallback((time: number) => {

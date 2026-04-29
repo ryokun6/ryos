@@ -103,3 +103,26 @@ export function randomTuneInOffset(
   if (!Number.isFinite(d) || d <= minDuration) return null;
   return rng() * d * 0.75;
 }
+
+/**
+ * Threshold (in seconds) at or below which a YouTube video is treated as a
+ * Short and skipped from TV channel playback. Conservative — catches the
+ * vast majority of Shorts without dropping legitimate short music videos.
+ */
+export const SHORTS_MAX_DURATION_SECONDS = 60;
+
+/**
+ * Returns true iff `d` looks like a YouTube Shorts duration: a finite,
+ * positive value at or below `SHORTS_MAX_DURATION_SECONDS`. Live streams
+ * report `Infinity`, and an unknown duration shows up as `0` / `NaN` —
+ * both are treated as "not a short" so we don't drop a video while the
+ * player is still booting up.
+ */
+export function isShortDuration(
+  d: number,
+  threshold = SHORTS_MAX_DURATION_SECONDS
+): boolean {
+  if (!Number.isFinite(d)) return false;
+  if (d <= 0) return false;
+  return d <= threshold;
+}

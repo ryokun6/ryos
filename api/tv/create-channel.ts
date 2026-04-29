@@ -8,8 +8,17 @@
  *      to avoid Shorts-oriented query phrasings.
  *   3. Run each query against the YouTube Data API (rotating across the keys
  *      already configured for /api/youtube-search).
- *   4. De-dup by video id, hydrate durations via videos.list, and drop
- *      YouTube Shorts (≤ 60s) from the lineup before returning.
+ *   4. De-dup by video id and return the lineup.
+ *
+ * Shorts handling: we deliberately do NOT call videos.list to fetch
+ * durations and filter out Shorts server-side. Each channel build only
+ * spends the search.list quota (100 units / query × 2-4 queries) plus the
+ * AI planner — adding videos.list (1 unit) is cheap on quota but costs a
+ * serial round-trip and another HTTP failure mode. The TV player already
+ * receives `onDuration` from ReactPlayer, so the client (`useTvLogic`)
+ * auto-skips Shorts as they come up. Combined with the planner's "no
+ * Shorts" prompt rules, this keeps the build fast and tolerates Shorts
+ * that slip through without an extra API call.
  */
 
 import { google } from "@ai-sdk/google";
@@ -63,43 +72,11 @@ interface YouTubeSearchResponse {
   error?: { code: number; message: string };
 }
 
-interface YouTubeVideoDetailsItem {
-  id: string;
-  contentDetails?: { duration?: string };
-}
-
-interface YouTubeVideosListResponse {
-  items?: YouTubeVideoDetailsItem[];
-  error?: { code: number; message: string };
-}
-
 interface ChannelVideo {
   id: string;
   url: string;
   title: string;
   artist: string;
-}
-
-/**
- * Videos with a non-empty duration ≤ this many seconds are treated as
- * YouTube Shorts and excluded from generated channels. Conservative threshold
- * that catches the vast majority of Shorts without dropping legitimate short
- * music videos / clips.
- */
-const SHORTS_MAX_DURATION_SECONDS = 60;
-
-/**
- * Parse an ISO 8601 duration like "PT1M5S", "PT45S", "PT1H2M3S" into total
- * seconds. Returns null if the input doesn't look like a duration.
- */
-function parseIsoDurationSeconds(value: string | undefined): number | null {
-  if (!value) return null;
-  const match = /^P(?:\d+D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(value);
-  if (!match) return null;
-  const hours = match[1] ? parseInt(match[1], 10) : 0;
-  const minutes = match[2] ? parseInt(match[2], 10) : 0;
-  const seconds = match[3] ? parseInt(match[3], 10) : 0;
-  return hours * 3600 + minutes * 60 + seconds;
 }
 
 const SYSTEM_PROMPT = `You design themed YouTube "TV channels" for a retro desktop OS.
@@ -165,61 +142,6 @@ async function searchOneQuery(
       }));
   }
   return [];
-}
-
-/**
- * Fetch ISO 8601 durations for the given video ids via the YouTube videos.list
- * endpoint. Rotates across keys on quota errors. Returns a Map keyed by video
- * id; ids missing from the response (e.g. removed videos) are absent.
- *
- * Batches up to 50 ids per request, which is the YouTube API max for
- * videos.list.
- */
-async function fetchVideoDurations(
-  videoIds: string[],
-  apiKeys: string[]
-): Promise<Map<string, number>> {
-  const durations = new Map<string, number>();
-  if (videoIds.length === 0) return durations;
-
-  const BATCH_SIZE = 50;
-  for (let start = 0; start < videoIds.length; start += BATCH_SIZE) {
-    const batch = videoIds.slice(start, start + BATCH_SIZE);
-    let fetched: YouTubeVideosListResponse | null = null;
-
-    for (let i = 0; i < apiKeys.length; i++) {
-      const apiKey = apiKeys[i];
-      const url = new URL("https://www.googleapis.com/youtube/v3/videos");
-      url.searchParams.set("part", "contentDetails");
-      url.searchParams.set("id", batch.join(","));
-      url.searchParams.set("key", apiKey);
-
-      const res = await fetch(url.toString());
-      const data = (await res.json()) as YouTubeVideosListResponse;
-
-      if (!res.ok || data.error) {
-        const message = data.error?.message?.toLowerCase() ?? "";
-        const isQuota =
-          res.status === 403 &&
-          (message.includes("quota") ||
-            message.includes("exceeded") ||
-            message.includes("limit"));
-        if (isQuota && i < apiKeys.length - 1) continue;
-        throw new Error(
-          data.error?.message || `YouTube API error (${res.status})`
-        );
-      }
-      fetched = data;
-      break;
-    }
-
-    if (!fetched) continue;
-    for (const item of fetched.items ?? []) {
-      const seconds = parseIsoDurationSeconds(item.contentDetails?.duration);
-      if (seconds !== null) durations.set(item.id, seconds);
-    }
-  }
-  return durations;
 }
 
 export default apiHandler<CreateChannelRequest>(
@@ -349,10 +271,12 @@ export default apiHandler<CreateChannelRequest>(
       queries: plan.queries,
     });
 
-    // Step 2: Fan out YouTube searches.
+    // Step 2: Fan out YouTube searches. We over-fetch a bit per query so
+    // that even if the client auto-skips a few Shorts at playback time,
+    // the channel still has plenty of watchable videos. `maxResults`
+    // doesn't affect search.list quota cost (still 100 units per call),
+    // so over-fetching is free here.
     const TARGET_TOTAL = 24;
-    // Over-fetch a bit so the post-filter (drop YouTube Shorts) still leaves
-    // enough videos to fill the channel.
     const perQuery = Math.max(
       8,
       Math.ceil((TARGET_TOTAL * 1.5) / plan.queries.length)
@@ -363,7 +287,7 @@ export default apiHandler<CreateChannelRequest>(
     );
 
     const seen = new Set<string>();
-    const candidates: ChannelVideo[] = [];
+    const videos: ChannelVideo[] = [];
     for (const result of settled) {
       if (result.status !== "fulfilled") {
         logger.warn("Search query failed", {
@@ -377,47 +301,22 @@ export default apiHandler<CreateChannelRequest>(
       for (const v of result.value) {
         if (seen.has(v.id)) continue;
         seen.add(v.id);
-        candidates.push(v);
+        videos.push(v);
+        if (videos.length >= TARGET_TOTAL) break;
       }
-    }
-
-    // Step 3: Drop YouTube Shorts. We hydrate durations via videos.list and
-    // filter out anything ≤ SHORTS_MAX_DURATION_SECONDS. If we can't determine
-    // a duration (e.g. videos.list fails entirely), fall back to keeping the
-    // candidate so a transient API blip doesn't return an empty channel.
-    let durations: Map<string, number> = new Map();
-    try {
-      durations = await fetchVideoDurations(
-        candidates.map((c) => c.id),
-        apiKeys
-      );
-    } catch (err) {
-      logger.warn("Failed to fetch video durations; skipping shorts filter", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-
-    const videos: ChannelVideo[] = [];
-    let droppedShorts = 0;
-    for (const candidate of candidates) {
-      const seconds = durations.get(candidate.id);
-      if (
-        seconds !== undefined &&
-        seconds > 0 &&
-        seconds <= SHORTS_MAX_DURATION_SECONDS
-      ) {
-        droppedShorts++;
-        continue;
-      }
-      videos.push(candidate);
       if (videos.length >= TARGET_TOTAL) break;
     }
+
+    // Shorts are filtered on the client at playback time via the
+    // `onDuration` callback (see `useTvLogic.handleDuration`). The
+    // planner is also prompted to avoid Shorts-oriented queries
+    // (`SYSTEM_PROMPT` above), so the lineup we ship here is already
+    // mostly Shorts-free; the client just covers the long tail without
+    // an extra videos.list round-trip.
 
     if (videos.length === 0) {
       logger.error("No videos found for any query", {
         queries: plan.queries,
-        droppedShorts,
-        candidateCount: candidates.length,
       });
       logger.response(404, Date.now() - startTime);
       res
@@ -429,7 +328,6 @@ export default apiHandler<CreateChannelRequest>(
     logger.info("Channel created", {
       name: plan.name,
       videoCount: videos.length,
-      droppedShorts,
     });
     logger.response(200, Date.now() - startTime);
     res.status(200).json({
