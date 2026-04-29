@@ -219,7 +219,11 @@ export function MtvLyricsOverlay({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 z-30 flex justify-center px-4",
+        // Sits just above the video iframe but below the TV's transparent
+        // click-capture layer (z-20) and the CRT noise / LCD filter
+        // shaders (z-30+ in TvCrtEffects), so static, scanlines, and the
+        // dim screen-off overlay properly cover the captions.
+        "pointer-events-none absolute inset-x-0 z-[15] flex justify-center px-4",
         isFullscreen ? "bottom-[14%]" : "bottom-6"
       )}
       aria-hidden
