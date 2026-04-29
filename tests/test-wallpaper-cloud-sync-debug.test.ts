@@ -98,7 +98,7 @@ describe("wallpaper cloud sync debug reproduction", () => {
     const { useDisplaySettingsStore, DEFAULT_WALLPAPER_PATH } = await import(
       "../src/stores/useDisplaySettingsStore"
     );
-    let syncDomainChecks: string[] = [];
+    const syncDomainChecks: string[] = [];
     const unsubscribe = subscribeToCloudSyncDomainCheckRequests((domain) => {
       syncDomainChecks.push(domain);
     });
