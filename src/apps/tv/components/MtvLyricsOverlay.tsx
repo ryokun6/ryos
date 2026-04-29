@@ -34,6 +34,49 @@ const MAX_INTERPOLATE_MS = 500;
  *  cadence from (last line of the song). */
 const FALLBACK_LINE_DURATION_MS = 4000;
 
+/** Hoisted to module scope so the rendered spans don't get fresh style
+ *  objects on every re-render — this lets React skip prop-equality bails
+ *  on the per-token plates while a line is being progressively revealed. */
+const LINE_TONE_STYLE = {
+  letterSpacing: 0,
+  lineHeight: 1.35,
+  whiteSpace: "pre-wrap" as const,
+  wordBreak: "break-word" as const,
+  textShadow: "0 1px 0 rgba(0,0,0,0.85)",
+};
+
+/** Per-token dark plates (`box-decoration-break: clone`) so progressive
+ *  reveals and wrapped lines don't paint one big rectangle behind the
+ *  whole caption block. Stable reference is fine — these props never
+ *  change. */
+const WORD_PLATE_STYLE = {
+  WebkitBoxDecorationBreak: "clone" as const,
+  boxDecorationBreak: "clone" as const,
+};
+
+/** Per-token plate class. Inline horizontal padding (`px-0.5`) adds a
+ *  few px of width per token, so the invisible spacer and the hidden
+ *  unrevealed tokens use the *same* class to keep the visible row width
+ *  matched across the slide transitions. */
+const WORD_PLATE_CLASS_NAME = "bg-black/85 text-white px-0.5 rounded-none";
+/** Same plate but invisible — used for tokens not yet revealed so the
+ *  row's measured width stays constant as words light up. */
+const WORD_PLATE_HIDDEN_CLASS_NAME = `${WORD_PLATE_CLASS_NAME} opacity-0`;
+
+const LINE_TRANSITION = {
+  y: {
+    type: "tween" as const,
+    duration: 0.32,
+    ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
+  },
+};
+
+// Stable framer-motion variant objects so the line slide-in/out doesn't
+// receive freshly-allocated prop objects on every render.
+const LINE_INITIAL = { y: "100%" } as const;
+const LINE_ANIMATE = { y: 0 } as const;
+const LINE_EXIT = { y: "-100%" } as const;
+
 interface RevealToken {
   /** Text to render for this token (includes any trailing whitespace). */
   text: string;
@@ -188,6 +231,11 @@ export function MtvLyricsOverlay({
       }
       return;
     }
+    // Pre-resolve the timing curve and the highest reveal time so the
+    // hot loop can short-circuit once every token is on screen rather
+    // than scanning the whole array each frame just to reconfirm.
+    const tokenCount = tokens.length;
+    const lastRevealAtMs = tokens[tokenCount - 1].revealAtMs;
     let raf = 0;
     const tick = () => {
       const sinceProp = Math.min(
@@ -196,10 +244,24 @@ export function MtvLyricsOverlay({
       );
       const liveTimeMs = timeRef.current.propTimeMs + sinceProp;
       const timeIntoLine = liveTimeMs - lineStartMs;
-      let count = 0;
-      for (let i = 0; i < tokens.length; i++) {
-        if (tokens[i].revealAtMs <= timeIntoLine) count = i + 1;
-        else break;
+      let count: number;
+      if (timeIntoLine >= lastRevealAtMs) {
+        count = tokenCount;
+      } else if (timeIntoLine <= 0) {
+        count = 0;
+      } else {
+        // Tokens are time-sorted, so an incremental scan from the
+        // previous reveal point converges in O(1) for the steady
+        // state where the next reveal is just one token ahead. This
+        // replaces the previous full O(n) scan-then-break per frame.
+        let i = lastRevealedRef.current;
+        while (i > 0 && tokens[i - 1].revealAtMs > timeIntoLine) {
+          i--;
+        }
+        while (i < tokenCount && tokens[i].revealAtMs <= timeIntoLine) {
+          i++;
+        }
+        count = i;
       }
       if (count !== lastRevealedRef.current) {
         lastRevealedRef.current = count;
@@ -214,8 +276,6 @@ export function MtvLyricsOverlay({
   if (!visible || !fullText) return null;
 
   const isFullscreen = variant === "fullscreen";
-  const revealed = tokens.slice(0, revealedTokens);
-  const unrevealed = tokens.slice(revealedTokens);
 
   const lineTypography = cn(
     "font-geneva-12 text-white text-left w-full block",
@@ -223,31 +283,6 @@ export function MtvLyricsOverlay({
       ? "text-[24px] sm:text-[32px] md:text-[40px]"
       : "text-[20px]"
   );
-
-  const lineTone = {
-    letterSpacing: 0,
-    lineHeight: 1.35,
-    whiteSpace: "pre-wrap" as const,
-    wordBreak: "break-word" as const,
-    textShadow: "0 1px 0 rgba(0,0,0,0.85)",
-  };
-
-  // Per-token dark plates (`box-decoration-break: clone`) so progressive
-  // reveals and wrapped lines don’t paint one big rectangle behind the
-  // whole caption block.
-  const wordPlateStyle = {
-    WebkitBoxDecorationBreak: "clone" as const,
-    boxDecorationBreak: "clone" as const,
-  };
-
-  // Inline horizontal padding on each visible word adds a few px of width
-  // per token. The invisible spacer below — which sets the row height the
-  // animated line slides through — must use the *same* per-token markup
-  // and padding, otherwise the visible row can be a few px wider than the
-  // spacer, wrap to a second visual line, and get clipped by the parent's
-  // overflow-hidden (used for the slide transitions). That manifested as
-  // the last word silently disappearing on lines that just barely fit.
-  const wordPlateClassName = "bg-black/85 text-white px-0.5 rounded-none";
 
   // z-[15]: below click-capture (z-20), CRT static (z-30+).
   return (
@@ -266,12 +301,24 @@ export function MtvLyricsOverlay({
           push. Invisible spacer locks height to the full line for %
           transforms. */}
       <div className="relative w-full max-w-[92%]">
-        <div aria-hidden className={cn(lineTypography, "invisible")} style={lineTone}>
+        {/* Invisible spacer sets the row height the animated line
+            slides through. It MUST use the same per-token markup and
+            padding as the visible row — `px-0.5` per word adds a few
+            px of width per token, and a row that's even slightly
+            wider than the spacer wraps to a second visual line and
+            gets clipped by the parent's `overflow-hidden` (used for
+            the slide transitions). That manifested as the last word
+            silently disappearing on lines that just barely fit. */}
+        <div
+          aria-hidden
+          className={cn(lineTypography, "invisible")}
+          style={LINE_TONE_STYLE}
+        >
           {tokens.map((t, i) => (
             <span
               key={`s-${lineKey}-${i}`}
-              className={wordPlateClassName}
-              style={wordPlateStyle}
+              className={WORD_PLATE_CLASS_NAME}
+              style={WORD_PLATE_STYLE}
             >
               {t.text}
             </span>
@@ -282,37 +329,34 @@ export function MtvLyricsOverlay({
             <motion.div
               key={lineKey}
               className={cn(lineTypography, "absolute left-0 top-0 z-[1]")}
-              style={lineTone}
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "-100%" }}
-              transition={{
-                y: {
-                  type: "tween",
-                  duration: 0.32,
-                  ease: [0.25, 0.1, 0.25, 1],
-                },
-              }}
+              style={LINE_TONE_STYLE}
+              initial={LINE_INITIAL}
+              animate={LINE_ANIMATE}
+              exit={LINE_EXIT}
+              transition={LINE_TRANSITION}
             >
-              {revealed.map((t, i) => (
-                <span
-                  key={`v-${lineKey}-${i}`}
-                  className={wordPlateClassName}
-                  style={wordPlateStyle}
-                >
-                  {t.text}
-                </span>
-              ))}
-              {unrevealed.map((t, i) => (
-                <span
-                  key={`h-${lineKey}-${i}`}
-                  aria-hidden
-                  className={cn(wordPlateClassName, "opacity-0")}
-                  style={wordPlateStyle}
-                >
-                  {t.text}
-                </span>
-              ))}
+              {tokens.map((t, i) => {
+                const isRevealed = i < revealedTokens;
+                return (
+                  <span
+                    key={`tok-${lineKey}-${i}`}
+                    aria-hidden={!isRevealed}
+                    // Unrevealed tokens use the same plate class as
+                    // revealed ones — only `opacity-0` differs — so
+                    // the row width matches the spacer above. Reusing
+                    // the same DOM node across the reveal boundary
+                    // also lets the browser keep cached layout.
+                    className={
+                      isRevealed
+                        ? WORD_PLATE_CLASS_NAME
+                        : WORD_PLATE_HIDDEN_CLASS_NAME
+                    }
+                    style={WORD_PLATE_STYLE}
+                  >
+                    {t.text}
+                  </span>
+                );
+              })}
             </motion.div>
           </AnimatePresence>
         </div>

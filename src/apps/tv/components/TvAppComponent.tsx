@@ -1,4 +1,5 @@
 import {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -6,7 +7,7 @@ import {
   useState,
   type RefObject,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Transition } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
 import { AppProps } from "@/apps/base/types";
@@ -37,7 +38,50 @@ import { MtvLyricsOverlay } from "./MtvLyricsOverlay";
 import { SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
-function AnimatedDigit({
+// Hoisted transition / animation prop objects so the LCD widgets don't
+// receive freshly-allocated framer-motion props on every parent render
+// (TvAppComponent re-renders on each onProgress tick). Reusing the same
+// references lets framer-motion bail out of unnecessary diff work.
+const SPRING_TRANSITION: Transition = {
+  y: { type: "spring", stiffness: 300, damping: 30 },
+  opacity: { duration: 0.2 },
+};
+
+const STATIC_TRANSITION: Transition = { duration: 0.3 };
+
+const MARQUEE_TITLE_TRANSITION: Transition = {
+  duration: 20,
+  ease: "linear",
+  repeat: Infinity,
+  repeatType: "loop",
+};
+
+const MARQUEE_NAME_TRANSITION: Transition = {
+  duration: 8,
+  ease: "linear",
+  repeat: Infinity,
+  repeatType: "loop",
+};
+
+const STATUS_FADE_TRANSITION: Transition = { duration: 0.2 };
+
+const STATUS_TEXT_STROKE_STYLE: React.CSSProperties = {
+  WebkitTextStroke: "3px black",
+  textShadow: "none",
+};
+
+// Stable framer-motion target objects for marquee variants. Kept at
+// module scope so `motion.div` doesn't see a "new" prop reference each
+// time the parent (TvAppComponent) re-renders for an unrelated state
+// change like onProgress.
+const MARQUEE_INITIAL = { x: "0%" } as const;
+const MARQUEE_TITLE_ANIMATE = { x: "-100%" } as const;
+const MARQUEE_TITLE_ANIMATE_STATIC = { x: "0%" } as const;
+
+const STATUS_OPACITY_INITIAL = { opacity: 0 } as const;
+const STATUS_OPACITY_ANIMATE = { opacity: 1 } as const;
+
+const AnimatedDigit = memo(function AnimatedDigit({
   digit,
   direction,
 }: {
@@ -54,10 +98,7 @@ function AnimatedDigit({
           initial={{ y: yOffset, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: yOffset, opacity: 0 }}
-          transition={{
-            y: { type: "spring", stiffness: 300, damping: 30 },
-            opacity: { duration: 0.2 },
-          }}
+          transition={SPRING_TRANSITION}
           className="absolute inset-0 flex justify-center"
         >
           {digit}
@@ -65,9 +106,13 @@ function AnimatedDigit({
       </AnimatePresence>
     </div>
   );
-}
+});
 
-function AnimatedNumber({ number }: { number: number }) {
+const AnimatedNumber = memo(function AnimatedNumber({
+  number,
+}: {
+  number: number;
+}) {
   const [prevNumber, setPrevNumber] = useState(number);
   const direction = number > prevNumber ? "next" : "prev";
 
@@ -83,9 +128,9 @@ function AnimatedNumber({ number }: { number: number }) {
       ))}
     </div>
   );
-}
+});
 
-function AnimatedTitle({
+const AnimatedTitle = memo(function AnimatedTitle({
   title,
   direction,
   isPlaying,
@@ -95,6 +140,17 @@ function AnimatedTitle({
   isPlaying: boolean;
 }) {
   const yOffset = direction === "next" ? 30 : -30;
+  const marqueeAnimate = isPlaying
+    ? MARQUEE_TITLE_ANIMATE
+    : MARQUEE_TITLE_ANIMATE_STATIC;
+  const marqueeTransition = isPlaying
+    ? MARQUEE_TITLE_TRANSITION
+    : STATIC_TRANSITION;
+  const titleClass = cn(
+    "shrink-0 font-geneva-12 text-xl px-2 transition-colors duration-300 -mt-1 animated-title-text",
+    isPlaying ? "text-[#ff00ff]" : "text-neutral-600",
+    !isPlaying && "opacity-50"
+  );
 
   return (
     <div className="relative h-[22px] mb-[3px] overflow-hidden">
@@ -104,51 +160,22 @@ function AnimatedTitle({
           initial={{ y: yOffset, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: yOffset, opacity: 0 }}
-          transition={{
-            y: { type: "spring", stiffness: 300, damping: 30 },
-            opacity: { duration: 0.2 },
-          }}
+          transition={SPRING_TRANSITION}
           className="absolute inset-0 flex whitespace-nowrap"
         >
           <motion.div
-            initial={{ x: "0%" }}
-            animate={{ x: isPlaying ? "-100%" : "0%" }}
-            transition={
-              isPlaying
-                ? {
-                    duration: 20,
-                    ease: "linear",
-                    repeat: Infinity,
-                    repeatType: "loop",
-                  }
-                : { duration: 0.3 }
-            }
-            className={cn(
-              "shrink-0 font-geneva-12 text-xl px-2 transition-colors duration-300 -mt-1 animated-title-text",
-              isPlaying ? "text-[#ff00ff]" : "text-neutral-600",
-              !isPlaying && "opacity-50"
-            )}
+            initial={MARQUEE_INITIAL}
+            animate={marqueeAnimate}
+            transition={marqueeTransition}
+            className={titleClass}
           >
             {title}
           </motion.div>
           <motion.div
-            initial={{ x: "0%" }}
-            animate={{ x: isPlaying ? "-100%" : "0%" }}
-            transition={
-              isPlaying
-                ? {
-                    duration: 20,
-                    ease: "linear",
-                    repeat: Infinity,
-                    repeatType: "loop",
-                  }
-                : { duration: 0.3 }
-            }
-            className={cn(
-              "shrink-0 font-geneva-12 text-xl px-2 transition-colors duration-300 -mt-1 animated-title-text",
-              isPlaying ? "text-[#ff00ff]" : "text-neutral-600",
-              !isPlaying && "opacity-50"
-            )}
+            initial={MARQUEE_INITIAL}
+            animate={marqueeAnimate}
+            transition={marqueeTransition}
+            className={titleClass}
             aria-hidden
           >
             {title}
@@ -157,7 +184,7 @@ function AnimatedTitle({
       </AnimatePresence>
     </div>
   );
-}
+});
 
 /**
  * NOW/NEXT label that swaps with the same vertical spring used by the Videos
@@ -166,7 +193,7 @@ function AnimatedTitle({
  * labels — an invisible spacer locks the natural line height while the
  * animated copies are absolutely positioned and clipped by overflow-hidden.
  */
-function AnimatedScheduleLabel({
+const AnimatedScheduleLabel = memo(function AnimatedScheduleLabel({
   slotKey,
   text,
   direction,
@@ -191,10 +218,7 @@ function AnimatedScheduleLabel({
           initial={{ y: yOffset, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: yOffset, opacity: 0 }}
-          transition={{
-            y: { type: "spring", stiffness: 300, damping: 30 },
-            opacity: { duration: 0.2 },
-          }}
+          transition={SPRING_TRANSITION}
           className="absolute inset-0"
         >
           {text}
@@ -202,14 +226,14 @@ function AnimatedScheduleLabel({
       </AnimatePresence>
     </div>
   );
-}
+});
 
 /**
  * Channel name shown in the LCD's NET column. Truncates when it fits, but
  * marquee-scrolls (matching the NOW/NEXT title scroll) when the name is
  * longer than the available width so the viewer can read the whole thing.
  */
-function ScrollingChannelName({
+const ScrollingChannelName = memo(function ScrollingChannelName({
   name,
   isPlaying,
 }: {
@@ -234,6 +258,12 @@ function ScrollingChannelName({
   }, [name]);
 
   const shouldAnimate = overflows && isPlaying;
+  const marqueeAnimate = shouldAnimate
+    ? MARQUEE_TITLE_ANIMATE
+    : MARQUEE_TITLE_ANIMATE_STATIC;
+  const marqueeTransition = shouldAnimate
+    ? MARQUEE_NAME_TRANSITION
+    : STATIC_TRANSITION;
 
   return (
     <div ref={containerRef} className="relative overflow-hidden text-xl">
@@ -252,35 +282,17 @@ function ScrollingChannelName({
         <>
           <div className="absolute inset-0 flex whitespace-nowrap">
             <motion.span
-              initial={{ x: "0%" }}
-              animate={{ x: shouldAnimate ? "-100%" : "0%" }}
-              transition={
-                shouldAnimate
-                  ? {
-                      duration: 8,
-                      ease: "linear",
-                      repeat: Infinity,
-                      repeatType: "loop",
-                    }
-                  : { duration: 0.3 }
-              }
+              initial={MARQUEE_INITIAL}
+              animate={marqueeAnimate}
+              transition={marqueeTransition}
               className="shrink-0 pr-4"
             >
               {name}
             </motion.span>
             <motion.span
-              initial={{ x: "0%" }}
-              animate={{ x: shouldAnimate ? "-100%" : "0%" }}
-              transition={
-                shouldAnimate
-                  ? {
-                      duration: 8,
-                      ease: "linear",
-                      repeat: Infinity,
-                      repeatType: "loop",
-                    }
-                  : { duration: 0.3 }
-              }
+              initial={MARQUEE_INITIAL}
+              animate={marqueeAnimate}
+              transition={marqueeTransition}
               className="shrink-0 pr-4"
               aria-hidden
             >
@@ -297,9 +309,13 @@ function ScrollingChannelName({
       )}
     </div>
   );
-}
+});
 
-function StatusDisplay({ message }: { message: string }) {
+const StatusDisplay = memo(function StatusDisplay({
+  message,
+}: {
+  message: string;
+}) {
   return (
     <div className="relative videos-status">
       <div className="font-geneva-12 text-white text-xl relative z-10">
@@ -307,13 +323,13 @@ function StatusDisplay({ message }: { message: string }) {
       </div>
       <div
         className="font-geneva-12 text-black text-xl absolute inset-0"
-        style={{ WebkitTextStroke: "3px black", textShadow: "none" }}
+        style={STATUS_TEXT_STROKE_STYLE}
       >
         {message}
       </div>
     </div>
   );
-}
+});
 
 export function TvAppComponent({
   isWindowOpen,
@@ -642,6 +658,29 @@ export function TvAppComponent({
     setIsBuffering(false);
   }, [currentVideo?.id]);
 
+  // Suppress the CC overlay during channel/clip transitions so the
+  // previous song's captions don't briefly show through the static
+  // burst before the new video's lyrics load. Cleared after a short
+  // timeout that's a touch longer than the channel-switch animation
+  // so the overlay doesn't pop back in mid-burst.
+  const [isTransitioningCc, setIsTransitioningCc] = useState(false);
+  const ccTransitionMountedRef = useRef(false);
+  useEffect(() => {
+    if (!ccTransitionMountedRef.current) {
+      ccTransitionMountedRef.current = true;
+      return;
+    }
+    setIsTransitioningCc(true);
+    const id = window.setTimeout(
+      () => setIsTransitioningCc(false),
+      // Match the visible end of the channel-switch / clip-change
+      // animation; a slight buffer keeps the overlay hidden until
+      // after the static fades out.
+      700
+    );
+    return () => window.clearTimeout(id);
+  }, [currentChannelId, currentVideo?.id]);
+
   // Pause / play "turn the TV off and on". We only fire the off→on
   // power-on shader after the user has previously paused at least
   // once (`hasPausedRef`), so the natural autoplay-success transition
@@ -959,17 +998,21 @@ export function TvAppComponent({
                   artist={currentVideo?.artist}
                   playedSeconds={playedSeconds}
                   visible={
-                    !screenOff && !poweringOff && Boolean(url)
+                    !screenOff &&
+                    !poweringOff &&
+                    !isBuffering &&
+                    !isTransitioningCc &&
+                    Boolean(url)
                   }
                 />
               )}
               <AnimatePresence>
                 {statusMessage && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    initial={STATUS_OPACITY_INITIAL}
+                    animate={STATUS_OPACITY_ANIMATE}
+                    exit={STATUS_OPACITY_INITIAL}
+                    transition={STATUS_FADE_TRANSITION}
                     className="absolute top-4 left-4 z-[45]"
                   >
                     <StatusDisplay message={statusMessage} />
@@ -1316,7 +1359,11 @@ export function TvAppComponent({
                 artist={currentVideo?.artist}
                 playedSeconds={playedSeconds}
                 visible={
-                  !screenOff && !poweringOff && Boolean(url)
+                  !screenOff &&
+                  !poweringOff &&
+                  !isBuffering &&
+                  !isTransitioningCc &&
+                  Boolean(url)
                 }
                 variant="fullscreen"
               />

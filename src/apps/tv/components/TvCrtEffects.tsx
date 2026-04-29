@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,20 @@ const CHANNEL_SWITCH_DURATION_MS = 550;
  *
  * NOTE: rAF-based; the parent should mount/unmount the canvas via
  * AnimatePresence or a conditional so the loop only runs while visible.
+ *
+ * Performance notes:
+ *  - The internal `ImageData` (and its `Uint32Array` view) is reused
+ *    across frames instead of being allocated each tick. Each pixel is
+ *    written with a single 32-bit store and `Math.random()` is called
+ *    once per pixel rather than once per channel.
+ *  - The redraw runs at the native refresh rate (60 fps on most
+ *    displays) for the most "live" analog-static feel; the per-frame
+ *    fill loop is cheap enough now that we don't need to drop frames
+ *    to keep the overlay smooth.
+ *  - When the document is hidden, the rAF loop is paused entirely so
+ *    a backgrounded tab stops generating noise frames.
  */
+
 function NoiseCanvas({
   intensity = 1,
   className,
@@ -39,56 +52,95 @@ function NoiseCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
+
+    let imgData: ImageData | null = null;
+    let pixels32: Uint32Array | null = null;
 
     const resize = () => {
       // Render at 1/1.5 CSS resolution; the browser upscales each canvas
       // pixel ~1.5× on screen, giving slightly chunky analog-style grain
       // without the blockiness of half-res or the cost of full-res.
+      // Matches the visual size used before this perf pass so the look
+      // of the static is unchanged.
       const w = Math.max(1, Math.floor(canvas.offsetWidth / 1.5));
       const h = Math.max(1, Math.floor(canvas.offsetHeight / 1.5));
-      if (canvas.width !== w || canvas.height !== h) {
+      const sizeChanged = canvas.width !== w || canvas.height !== h;
+      if (sizeChanged) {
         canvas.width = w;
         canvas.height = h;
+      }
+      // (Re)allocate the reusable buffer whenever the canvas changed
+      // size OR we don't have one yet. The "yet" branch matters in dev:
+      // React StrictMode mounts → unmounts → re-mounts the effect, and
+      // the second mount sees a canvas that's already the right size.
+      // Without this fallback, `imgData` / `pixels32` would stay null
+      // and the draw loop would silently produce no output.
+      if (sizeChanged || !imgData || !pixels32) {
+        imgData = ctx.createImageData(w, h);
+        pixels32 = new Uint32Array(imgData.data.buffer);
       }
     };
 
     const draw = () => {
-      resize();
+      if (!imgData || !pixels32) {
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
       const w = canvas.width;
       const h = canvas.height;
-      const img = ctx.createImageData(w, h);
-      const data = img.data;
       const k = intensityRef.current;
-      for (let i = 0; i < data.length; i += 4) {
-        const v = Math.random() * 255 * k;
-        data[i] = v;
-        data[i + 1] = v;
-        data[i + 2] = v;
-        data[i + 3] = 255;
+      // Fill RGBA in a single 32-bit write per pixel. Endianness only
+      // matters when the channels differ; here R=G=B and A=0xff so the
+      // packed value is identical on little- and big-endian hosts.
+      const len = pixels32.length;
+      for (let i = 0; i < len; i++) {
+        const v = (Math.random() * 255 * k) | 0;
+        pixels32[i] = 0xff000000 | (v << 16) | (v << 8) | v;
       }
-      // Subtle scanline darkening on every other row.
+      // Subtle scanline darkening on every other row. Operate on the
+      // packed 32-bit view so the inner loop is one read/write per
+      // pixel instead of three byte updates. Multiply by 200/256 ≈
+      // 0.781 to closely match the original 0.78 factor without
+      // floating-point math.
       for (let y = 0; y < h; y += 2) {
-        const rowStart = y * w * 4;
-        const rowEnd = rowStart + w * 4;
-        for (let i = rowStart; i < rowEnd; i += 4) {
-          data[i] *= 0.78;
-          data[i + 1] *= 0.78;
-          data[i + 2] *= 0.78;
+        const rowStart = y * w;
+        const rowEnd = rowStart + w;
+        for (let i = rowStart; i < rowEnd; i++) {
+          const v = ((pixels32[i] & 0xff) * 200) >> 8;
+          pixels32[i] = 0xff000000 | (v << 16) | (v << 8) | v;
         }
       }
-      ctx.putImageData(img, 0, 0);
+      ctx.putImageData(imgData, 0, 0);
       rafRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    resize();
+    rafRef.current = requestAnimationFrame(draw);
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
+
+    // Pause when the document is hidden so a backgrounded tab doesn't
+    // continue chewing through noise frames. rAF already throttles
+    // backgrounded tabs heavily, but explicitly stopping is cheaper.
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      } else if (rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(draw);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       ro.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+      imgData = null;
+      pixels32 = null;
     };
   }, []);
 
@@ -111,29 +163,56 @@ function NoiseCanvas({
  * Persistent CRT shader-style overlay: vignette + horizontal scanlines +
  * a faint RGB phosphor mask. Pure CSS gradients so it composites cheaply
  * over the YouTube iframe.
+ *
+ * The gradient stack is heavy for the layout engine to parse on each
+ * render, so the (constant) inline style is hoisted to module scope and
+ * the component is memoized. Only the on/off opacity actually changes,
+ * which lets the browser keep the painted layer cached across the
+ * frequent `playedSeconds`-driven parent re-renders.
  */
-function CrtShaderOverlay({ active }: { active: boolean }) {
+const CRT_SHADER_BACKGROUND_IMAGE = [
+  // Layered effects:
+  //  1. Horizontal scanlines (1px on / 2px off)
+  //  2. RGB phosphor mask (vertical R/G/B subpixel stripes)
+  //  3. Soft corner vignette
+  "repeating-linear-gradient(to bottom, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px)",
+  "repeating-linear-gradient(to right, rgba(255,0,0,0.04) 0px, rgba(255,0,0,0.04) 1px, rgba(0,255,0,0.04) 1px, rgba(0,255,0,0.04) 2px, rgba(0,0,255,0.04) 2px, rgba(0,0,255,0.04) 3px)",
+  "radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)",
+].join(", ");
+
+const CRT_SHADER_BASE_STYLE: React.CSSProperties = {
+  transition: "opacity 220ms ease-out",
+  backgroundImage: CRT_SHADER_BACKGROUND_IMAGE,
+  mixBlendMode: "multiply",
+  // Promote to its own compositor layer so the (expensive) gradient
+  // stack is rasterised once and only the opacity flip is animated.
+  willChange: "opacity",
+  transform: "translateZ(0)",
+};
+
+const CRT_SHADER_ON_STYLE: React.CSSProperties = {
+  ...CRT_SHADER_BASE_STYLE,
+  opacity: 1,
+};
+
+const CRT_SHADER_OFF_STYLE: React.CSSProperties = {
+  ...CRT_SHADER_BASE_STYLE,
+  opacity: 0,
+};
+
+const CrtShaderOverlay = memo(function CrtShaderOverlay({
+  active,
+}: {
+  active: boolean;
+}) {
   return (
     <div
       aria-hidden
       className="absolute inset-0 pointer-events-none z-30"
-      style={{
-        opacity: active ? 1 : 0,
-        transition: "opacity 220ms ease-out",
-        // Layered effects:
-        //  1. Horizontal scanlines (1px on / 2px off)
-        //  2. RGB phosphor mask (vertical R/G/B subpixel stripes)
-        //  3. Soft corner vignette
-        backgroundImage: [
-          "repeating-linear-gradient(to bottom, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px)",
-          "repeating-linear-gradient(to right, rgba(255,0,0,0.04) 0px, rgba(255,0,0,0.04) 1px, rgba(0,255,0,0.04) 1px, rgba(0,255,0,0.04) 2px, rgba(0,0,255,0.04) 2px, rgba(0,0,255,0.04) 3px)",
-          "radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)",
-        ].join(", "),
-        mixBlendMode: "multiply",
-      }}
+      style={active ? CRT_SHADER_ON_STYLE : CRT_SHADER_OFF_STYLE}
     />
   );
-}
+});
 
 /**
  * One-shot CRT power-on animation, modeled on a real cathode-ray tube
@@ -484,8 +563,14 @@ export interface TvCrtEffectsProps {
  * Combined CRT / shader effects layer for the TV app. Render this as an
  * absolutely-positioned sibling of the YouTube player so it overlays the
  * picture without affecting layout.
+ *
+ * Memoized: the parent re-renders ~5 times/sec while a video is playing
+ * (driven by `onProgress` updates feeding the LCD ticker), but none of
+ * those updates affect the overlay's inputs. Skipping the reconcile
+ * entirely keeps framer-motion's animation work and the gradient
+ * style objects from being thrashed every frame.
  */
-export function TvCrtEffects({
+export const TvCrtEffects = memo(function TvCrtEffects({
   powerOnKey,
   poweringOff,
   onPowerOffComplete,
@@ -572,4 +657,4 @@ export function TvCrtEffects({
       />
     </>
   );
-}
+});
