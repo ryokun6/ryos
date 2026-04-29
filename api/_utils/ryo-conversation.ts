@@ -153,6 +153,12 @@ export interface PrepareRyoConversationOptions {
   toolProfile?: ChatToolProfile;
   toolContextOverrides?: Partial<ChatToolsContext>;
   preloadedMemoryContext?: LoadedRyoMemoryContext;
+  /** Telegram webhook: notify this DM when async Cursor repo agent runs complete */
+  telegramCursorRunNotify?: {
+    botToken: string;
+    chatId: string;
+    replyToMessageId: number;
+  };
 }
 
 export interface PreparedRyoConversation {
@@ -706,6 +712,7 @@ export async function prepareRyoConversationModelInput(
     toolProfile = CHANNEL_TOOL_PROFILES[channel],
     toolContextOverrides,
     preloadedMemoryContext,
+    telegramCursorRunNotify,
   } = options;
 
   const userTimeZone = systemState?.userLocalTime?.timeZone || timeZone;
@@ -727,8 +734,8 @@ export async function prepareRyoConversationModelInput(
     username === CURSOR_REPO_AGENT_OWNER && !!cursorApiKey;
 
   const cursorSdkAddon =
-    enableCursorRepoTool && channel === "chat"
-      ? `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub.`
+    enableCursorRepoTool && (channel === "chat" || channel === "telegram")
+      ? `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub. On Telegram, mention that progress/completion updates also arrive in this chat (not only in ryOS Chats).`
       : "";
 
   const staticSystemPrompt = staticPrompts.join("\n") + cursorSdkAddon;
@@ -767,7 +774,9 @@ export async function prepareRyoConversationModelInput(
   );
 
   const cursorRepoTools: ToolSet =
-    enableCursorRepoTool && cursorApiKey && toolProfile === "all"
+    enableCursorRepoTool &&
+    cursorApiKey &&
+    (toolProfile === "all" || toolProfile === "telegram")
       ? {
           cursorRyOsRepoAgent: {
             description: CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
@@ -784,6 +793,9 @@ export async function prepareRyoConversationModelInput(
                 redis,
                 timeZone: userTimeZone,
                 apiKey: cursorApiKey,
+                ...(telegramCursorRunNotify
+                  ? { telegramCursorRunNotify }
+                  : {}),
                 ...toolContextOverrides,
               }),
           },

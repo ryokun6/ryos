@@ -1209,6 +1209,12 @@ export interface MemoryToolContext extends ServerToolContext {
   username?: string | null;
   redis?: Redis;
   timeZone?: string;
+  /** When set, Cursor repo agent completion is reported to this Telegram DM (server-side follow-up). */
+  telegramCursorRunNotify?: {
+    botToken: string;
+    chatId: string;
+    replyToMessageId: number;
+  };
 }
 
 /**

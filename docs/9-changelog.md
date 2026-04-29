@@ -13,6 +13,7 @@ A summary of changes and updates to ryOS, organized by month.
 - Refine wallpaper system with Leopard sets, picker layout improvements, category ordering, and a new default `nature earth horizon` wallpaper; persist display settings at version 1.
 - Refine themed desktop: System 7 shows Chats, IE, Karaoke after iPod; Applications shortcut on non-macOS X themes (Applet Store hidden there); themed Chats icons across System 7, macOSX, XP 48px, and Win98.
 - Optimize system prompts for static caching with tiered dynamic context.
+- Telegram: expose Cursor Cloud repo agent (`cursorRyOsRepoAgent`) for the owner account with queued DM updates until completion (plus PR link when available).
 
 <details>
 <summary>Minor changes (11)</summary>
