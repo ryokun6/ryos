@@ -145,6 +145,8 @@ export interface PrepareRyoConversationOptions {
   timeZone?: string;
   toolProfile?: ChatToolProfile;
   toolContextOverrides?: Partial<ChatToolsContext>;
+  /** Passed into createChatTools for Telegram Cursor Cloud Agent routing */
+  telegramRepoAgentOverrides?: Partial<Pick<ChatToolsContext, "telegramRepoAgent">>;
   preloadedMemoryContext?: LoadedRyoMemoryContext;
 }
 
@@ -698,6 +700,7 @@ export async function prepareRyoConversationModelInput(
     timeZone,
     toolProfile = CHANNEL_TOOL_PROFILES[channel],
     toolContextOverrides,
+    telegramRepoAgentOverrides,
     preloadedMemoryContext,
   } = options;
 
@@ -740,11 +743,16 @@ export async function prepareRyoConversationModelInput(
       env: {
         YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
         YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
+        CURSOR_API_KEY: process.env.CURSOR_API_KEY,
+        CURSOR_RYOS_REPO_URLS: process.env.CURSOR_RYOS_REPO_URLS,
+        CURSOR_CLOUD_API_BASE_URL: process.env.CURSOR_CLOUD_API_BASE_URL,
+        ...toolContextOverrides?.env,
       },
       username: username ?? null,
       redis,
       timeZone: userTimeZone,
       ...toolContextOverrides,
+      ...(telegramRepoAgentOverrides ?? {}),
     },
     { profile: toolProfile }
   );

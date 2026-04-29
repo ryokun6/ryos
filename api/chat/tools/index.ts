@@ -38,6 +38,7 @@ import type {
   MemoryReadInput,
   MemoryDeleteInput,
   WebFetchInput,
+  CursorRepoAgentInput,
 } from "./types.js";
 import * as schemas from "./schemas.js";
 import type {
@@ -59,6 +60,7 @@ import {
   executeStickiesControl,
   executeContactsControl,
   executeWebFetch,
+  executeCursorRepoAgent,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -77,6 +79,7 @@ export {
   executeStickiesControl,
   executeContactsControl,
   executeWebFetch,
+  executeCursorRepoAgent,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -95,6 +98,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "stickiesControl",
   "contactsControl",
   "songLibraryControl",
+  "cursorRepoAgent",
 ] as const;
 
 export type ChatToolProfile = "all" | "memory" | "telegram";
@@ -241,6 +245,13 @@ export const TOOL_DESCRIPTIONS = {
     "works best with server-rendered content (most sites). " +
     "For JS-heavy single-page apps, content may be limited. " +
     "Optionally pass a CSS selector to extract a specific section.",
+
+  cursorRepoAgent:
+    "Launch a Cursor Cloud Agent on the real ryOS GitHub repository (background coding run). " +
+    "Use when the user explicitly wants code changes, a PR, or repo work that should run in Cursor Cloud — not for browser/VFS tasks. " +
+    "Requires repoUrl (GitHub HTTPS, allowlisted by the server, default public ryOS repo). " +
+    "Optionally pass startingRef (branch/commit) and autoCreatePR. " +
+    "The run is async: you will get a short acknowledgment in-tool; progress completes in Telegram separately.",
 
   // Unified Memory Tools
   memoryWrite:
@@ -534,6 +545,13 @@ export function createChatTools(
         inputSchema: schemas.songLibraryControlSchema,
         execute: async (input: SongLibraryControlInput) => {
           return executeSongLibraryControl(input, context);
+        },
+      },
+      cursorRepoAgent: {
+        description: TOOL_DESCRIPTIONS.cursorRepoAgent,
+        inputSchema: schemas.cursorRepoAgentSchema,
+        execute: async (input: CursorRepoAgentInput) => {
+          return executeCursorRepoAgent(input, context);
         },
       },
     } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;

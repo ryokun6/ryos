@@ -41,7 +41,25 @@ import type {
   SongLibraryLyricsSource,
   WebFetchInput,
   WebFetchOutput,
+  CursorRepoAgentInput,
+  CursorRepoAgentOutput,
 } from "./types.js";
+import {
+  createCursorAgentRun,
+  getAllowedRyosRepoUrls,
+  getCursorAgent,
+  getCursorApiKey,
+  getCursorRun,
+  isRepoAllowed,
+  normalizeGithubRepoHttpsUrl,
+  pollUntilTerminal,
+  streamCursorAgentRun,
+  summarizeTerminalRunStatus,
+  type CursorAgentCreateResponse,
+  type CursorRunResponse,
+} from "../../_utils/cursor-cloud-agent.js";
+import { sendTelegramMessage } from "../../_utils/telegram.js";
+import { waitUntil } from "@vercel/functions";
 import { stateKey, writeRedisSyncDomainFromServerTool } from "../../sync/_state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
 import { readSongsState, writeSongsState } from "../../_utils/song-library-state.js";
@@ -1209,6 +1227,311 @@ export interface MemoryToolContext extends ServerToolContext {
   username?: string | null;
   redis?: Redis;
   timeZone?: string;
+  telegramRepoAgent?: {
+    botToken: string;
+    chatId: string;
+    replyToMessageId?: number;
+  };
+}
+
+const CURSOR_REPO_AGENT_TRUNCATE = 3800;
+
+function truncateTelegramRepoAgentText(text: string, max = CURSOR_REPO_AGENT_TRUNCATE): string {
+  const t = text.trim();
+  return t.length > max ? `${t.slice(0, max - 20)}… [truncated]` : t;
+}
+
+async function telegramCursorRepoAgentNotifyStatus(
+  context: MemoryToolContext,
+  line: string
+): Promise<void> {
+  const tg = context.telegramRepoAgent;
+  if (!tg?.botToken) return;
+  try {
+    await sendTelegramMessage({
+      botToken: tg.botToken,
+      chatId: tg.chatId,
+      text: truncateTelegramRepoAgentText(line),
+      replyToMessageId: tg.replyToMessageId,
+      disableNotification: true,
+    });
+  } catch (e) {
+    context.logError?.(
+      "[cursorRepoAgent] telegram status notify failed",
+      e instanceof Error ? e.message : String(e)
+    );
+  }
+}
+
+async function runTelegramCursorAgentFollowUp(
+  context: MemoryToolContext,
+  args: {
+    env: NodeJS.ProcessEnv;
+    apiKey: string;
+    agentId: string;
+    runId: string;
+    agentUrlHint?: string;
+    repoUrl: string;
+  }
+): Promise<void> {
+  const baseLog = (m: string) => context.log(`[cursorRepoAgent:follow-up] ${m}`);
+  await telegramCursorRepoAgentNotifyStatus(
+    context,
+    `cursor agent queued — streaming updates for run ${args.runId}…`
+  );
+
+  let assistantBuffer = "";
+  let lastAssistFlush = 0;
+  const flushAssist = async (): Promise<void> => {
+    const now = Date.now();
+    if (now - lastAssistFlush < 15_000) return;
+    const trimmed = assistantBuffer.trim();
+    if (trimmed.length < 60) return;
+    lastAssistFlush = now;
+    assistantBuffer = "";
+    await telegramCursorRepoAgentNotifyStatus(
+      context,
+      `cursor agent update:\n${truncateTelegramRepoAgentText(trimmed)}`
+    );
+  };
+
+  let lastStatusBump = "";
+  try {
+    await streamCursorAgentRun(
+      args.env,
+      args.apiKey,
+      args.agentId,
+      args.runId,
+      {
+        onStatus: async (payload) => {
+          let st = "";
+          if (
+            payload &&
+            typeof payload === "object" &&
+            "status" in payload &&
+            typeof (payload as { status?: unknown }).status === "string"
+          ) {
+            st = (payload as { status: string }).status;
+          }
+          if (
+            typeof st !== "string" ||
+            !st.trim() ||
+            st === lastStatusBump
+          ) {
+            return;
+          }
+          lastStatusBump = st;
+          baseLog(`status ${st}`);
+          await telegramCursorRepoAgentNotifyStatus(
+            context,
+            `cursor agent: ${args.repoUrl} — ${st}`
+          );
+        },
+        onAssistantDelta: async (txt) => {
+          assistantBuffer += txt;
+          await flushAssist();
+        },
+        onThinkingDelta: async (txt) => {
+          assistantBuffer += txt;
+          await flushAssist();
+        },
+        onError: (code, msg) => {
+          baseLog(`stream note: ${String(code)} ${msg}`);
+        },
+      }
+    );
+  } catch (err) {
+    context.logError("[cursorRepoAgent] SSE stream ended with error", err);
+  }
+
+  let finalRun: CursorRunResponse | null = await getCursorRun(
+    args.env,
+    args.apiKey,
+    args.agentId,
+    args.runId
+  ).catch(() => null);
+
+  if (!finalRun?.status || !isTerminalCursorRunStatus(finalRun.status)) {
+    await pollUntilTerminal(args.env, args.apiKey, args.agentId, args.runId, {
+      onStatus: () => undefined,
+      onResult: () => undefined,
+    });
+    finalRun = await getCursorRun(
+      args.env,
+      args.apiKey,
+      args.agentId,
+      args.runId
+    ).catch(() => finalRun);
+  }
+
+  let agentUrl = args.agentUrlHint?.trim() || "";
+  try {
+    const meta = await getCursorAgent(args.env, args.apiKey, args.agentId);
+    if (typeof meta.url === "string" && meta.url.trim()) {
+      agentUrl = meta.url.trim();
+    }
+    if (
+      typeof meta.branchName === "string" &&
+      meta.branchName.trim()
+    ) {
+      baseLog(`branch ${meta.branchName}`);
+    }
+  } catch {
+    /* meta optional */
+  }
+
+  const term = summarizeTerminalRunStatus(finalRun);
+  await telegramCursorRepoAgentNotifyStatus(
+    context,
+    truncateTelegramRepoAgentText(
+      [
+        `cursor agent finished: ${term}`,
+        agentUrl ? `open: ${agentUrl}` : "",
+        `repo: ${args.repoUrl}`,
+        `run: ${args.runId}`,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    )
+  );
+}
+
+function isTerminalCursorRunStatus(s: string): boolean {
+  const u = (s || "").toUpperCase();
+  return ["FINISHED", "FAILED", "ERROR", "CANCELLED", "CANCELED"].includes(
+    u
+  );
+}
+
+export async function executeCursorRepoAgent(
+  input: CursorRepoAgentInput,
+  context: MemoryToolContext
+): Promise<CursorRepoAgentOutput> {
+  const tg = context.telegramRepoAgent;
+
+  context.log("[cursorRepoAgent] invoked");
+  context.log("[cursorRepoAgent]", {
+    repoUrlHint: normalizeGithubRepoHttpsUrl(input.repoUrl),
+    telegram: Boolean(tg?.botToken && tg.chatId),
+    username: context.username,
+  });
+
+  if (!tg?.botToken || !tg.chatId) {
+    context.log("[cursorRepoAgent] Missing Telegram routing context — abort");
+    return {
+      success: false,
+      message:
+        "the Cursor repo agent is only available from the linked Telegram chat.",
+      queued: false,
+    };
+  }
+
+  const apiKey = getCursorApiKey(context.env as NodeJS.ProcessEnv);
+  if (!apiKey) {
+    return {
+      success: false,
+      message:
+        "CURSOR_API_KEY is not configured on this server — ask your admin.",
+      queued: false,
+    };
+  }
+
+  const env = context.env as NodeJS.ProcessEnv;
+  const normalizedRepo = normalizeGithubRepoHttpsUrl(input.repoUrl.trim());
+  if (!normalizedRepo) {
+    return {
+      success: false,
+      message:
+        "invalid repo URL. use a github https url like https://github.com/org/repo.",
+      queued: false,
+      repoUrl: input.repoUrl,
+    };
+  }
+
+  const allowed = getAllowedRyosRepoUrls(env);
+  if (!isRepoAllowed(normalizedRepo, allowed)) {
+    context.log("[cursorRepoAgent] Repo denied by CURSOR_RYOS_REPO_URLS", {
+      requested: normalizedRepo,
+      allowed,
+    });
+    return {
+      success: false,
+      message: `repo not allowed here. permitted: ${allowed.join(", ") || "(none configured)"}`,
+      queued: false,
+      repoUrl: normalizedRepo,
+    };
+  }
+
+  const promptEnvelope = `[ryOS telegram @${context.username || "unknown"}]\n${input.instructions.trim()}`;
+
+  let createRes: CursorAgentCreateResponse;
+  try {
+    createRes = await createCursorAgentRun(env, apiKey, {
+      promptText: promptEnvelope,
+      repoUrl: normalizedRepo,
+      startingRef: input.startingRef?.trim(),
+      autoCreatePR: input.autoCreatePR,
+    });
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : "failed to launch Cursor Cloud Agent";
+    context.logError("[cursorRepoAgent] create failed", e);
+    return {
+      success: false,
+      message: msg,
+      queued: false,
+      repoUrl: normalizedRepo,
+    };
+  }
+
+  const agentId = createRes.agent?.id;
+  const runId = createRes.run?.id || createRes.agent?.latestRunId;
+  const agentUrl =
+    typeof createRes.agent?.url === "string" ? createRes.agent.url : "";
+  const runStatus = createRes.run?.status;
+
+  if (!agentId || !runId) {
+    context.logError(
+      "[cursorRepoAgent] unexpected API response",
+      JSON.stringify(createRes)
+    );
+    return {
+      success: false,
+      message: "Cursor API returned no agent/run id.",
+      queued: false,
+      repoUrl: normalizedRepo,
+    };
+  }
+
+  waitUntil(
+    runTelegramCursorAgentFollowUp(context, {
+      env,
+      apiKey,
+      agentId,
+      runId,
+      agentUrlHint: agentUrl,
+      repoUrl: normalizedRepo,
+    })
+  );
+
+  return {
+    success: true,
+    queued: true,
+    agentId,
+    runId,
+    ...(agentUrl ? { agentUrl } : {}),
+    repoUrl: normalizedRepo,
+    message: truncateTelegramRepoAgentText(
+      [
+        "started Cursor Cloud Agent.",
+        `(run ${runId}, status ${runStatus ?? "started"})`,
+        agentUrl ? `open ${agentUrl}` : "",
+        "streaming progress in this chat shortly.",
+      ]
+        .filter(Boolean)
+        .join(" ")
+    ),
+  };
 }
 
 /**

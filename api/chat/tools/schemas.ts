@@ -1209,3 +1209,32 @@ export const memoryDeleteSchema = z.object({
     .max(MAX_KEY_LENGTH)
     .describe("The long-term memory key to delete."),
 });
+
+/**
+ * Cursor Cloud Agent — run an async coding task against an allowlisted ryOS GitHub repo.
+ */
+export const cursorRepoAgentSchema = z.object({
+  instructions: z
+    .string()
+    .min(1)
+    .max(16_000)
+    .describe("What you want the Cursor Cloud Agent to do in the ryOS repo."),
+  repoUrl: z
+    .string()
+    .min(1)
+    .max(500)
+    .describe(
+      "GitHub HTTPS URL (e.g. https://github.com/ryokun6/ryos). Must match the server allowlist."
+    ),
+  startingRef: z
+    .string()
+    .max(256)
+    .optional()
+    .describe(
+      "Branch, tag, or commit to start from (omit to use repo default)."
+    ),
+  autoCreatePR: z
+    .boolean()
+    .optional()
+    .describe("If true, ask Cursor to open a PR when the run completes."),
+});

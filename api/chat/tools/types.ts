@@ -37,6 +37,12 @@ export interface ServerToolContext {
   env: {
     YOUTUBE_API_KEY?: string;
     YOUTUBE_API_KEY_2?: string;
+    /** Cursor Dashboard → Integrations API key for Cloud Agents (Telegram repo agent). */
+    CURSOR_API_KEY?: string;
+    /** Comma-separated GitHub HTTPS repo URLs allowed when launching Cursor Cloud Agents */
+    CURSOR_RYOS_REPO_URLS?: string;
+    /** Override default https://api.cursor.com if needed */
+    CURSOR_CLOUD_API_BASE_URL?: string;
   };
 }
 
@@ -641,6 +647,27 @@ export interface MemoryDeleteOutput {
 // ============================================================================
 // Web Fetch Tool Types
 // ============================================================================
+
+// ============================================================================
+// Cursor Cloud Agent — Telegram-linked repo automation
+// ============================================================================
+
+export interface CursorRepoAgentInput {
+  instructions: string;
+  repoUrl: string;
+  startingRef?: string;
+  autoCreatePR?: boolean;
+}
+
+export interface CursorRepoAgentOutput {
+  success: boolean;
+  message: string;
+  queued?: boolean;
+  agentId?: string;
+  runId?: string;
+  agentUrl?: string;
+  repoUrl?: string;
+}
 
 export interface WebFetchInput {
   url: string;

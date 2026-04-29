@@ -456,6 +456,7 @@ describe("telegram heartbeat helpers", () => {
     expect("memoryWrite" in prepared.tools).toBe(true);
     expect("calendarControl" in prepared.tools).toBe(true);
     expect("stickiesControl" in prepared.tools).toBe(true);
+    expect("cursorRepoAgent" in prepared.tools).toBe(true);
     expect("web_search" in prepared.tools).toBe(true);
   });
 

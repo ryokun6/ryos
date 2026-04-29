@@ -30,6 +30,8 @@ export function getTelegramToolStatusText(
       return getTelegramContactsStatusText(input);
     case "songLibraryControl":
       return getTelegramSongLibraryStatusText(input);
+    case "cursorRepoAgent":
+      return getTelegramCursorRepoAgentStatusText(input);
     default:
       return "Using a tool...";
   }
@@ -121,6 +123,19 @@ function getTelegramContactsStatusText(input: unknown): string {
     default:
       return "Using contacts...";
   }
+}
+
+function getTelegramCursorRepoAgentStatusText(input: unknown): string {
+  if (!input || typeof input !== "object") {
+    return "Starting Cursor Cloud Agent…";
+  }
+  const repo =
+    "repoUrl" in input && typeof (input as { repoUrl?: unknown }).repoUrl === "string"
+      ? String((input as { repoUrl: string }).repoUrl).trim()
+      : "";
+  return repo
+    ? `Running Cursor repo agent on ${repo}…`
+    : "Running Cursor repo agent…";
 }
 
 function getTelegramSongLibraryStatusText(input: unknown): string {

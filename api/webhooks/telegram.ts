@@ -642,6 +642,13 @@ export default async function handler(
       logger.info(`[Telegram:${linkedAccount.username}]`, args),
     logError: (...args: unknown[]) =>
       logger.error(`[Telegram:${linkedAccount.username}]`, args),
+    telegramRepoAgentOverrides: {
+      telegramRepoAgent: {
+        botToken,
+        chatId: parsedUpdate.chatId,
+        replyToMessageId: parsedUpdate.messageId,
+      },
+    },
   });
 
   logger.info("Telegram prompt sections loaded", {

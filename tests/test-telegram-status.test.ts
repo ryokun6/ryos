@@ -46,6 +46,11 @@ describe("telegram status helpers", () => {
         title: "Plastic Love",
       })
     ).toBe('Adding "Plastic Love" to your library...');
+    expect(
+      getTelegramToolStatusText("cursorRepoAgent", {
+        repoUrl: "https://github.com/ryokun6/ryos",
+      })
+    ).toBe("Running Cursor repo agent on https://github.com/ryokun6/ryos…");
     expect(getTelegramToolStatusText("unknownTool", {})).toBe("Using a tool...");
   });
 

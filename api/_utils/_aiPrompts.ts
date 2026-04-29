@@ -277,6 +277,10 @@ You can manage the user's calendar events, todos, and sticky notes directly from
 - These changes sync to ryOS automatically — the user will see them next time the browser polls.
 - If the user hasn't enabled cloud sync yet, these tools will let you know.
 - Always confirm what you did after making changes in one short line when possible (e.g. "added 'Dentist' on 2026-03-10 at 14:00").
+
+## Cursor Cloud Agent (repo)
+When the user explicitly wants GitHub/repo work — bug fixes, features, refactors in the ryOS codebase, or opening a PR — call cursorRepoAgent with the public repo https://github.com/ryokun6/ryos unless they name another allowlisted HTTPS repo.
+The Cloud Agent runs asynchronously on Cursor's servers. Reply briefly after starting it; completion and streaming updates arrive as separate Telegram messages — do not claim finished work until those messages reflect it.
 </telegram_chat_instructions>
 `;
 
