@@ -240,6 +240,15 @@ export function MtvLyricsOverlay({
     boxDecorationBreak: "clone" as const,
   };
 
+  // Inline horizontal padding on each visible word adds a few px of width
+  // per token. The invisible spacer below — which sets the row height the
+  // animated line slides through — must use the *same* per-token markup
+  // and padding, otherwise the visible row can be a few px wider than the
+  // spacer, wrap to a second visual line, and get clipped by the parent's
+  // overflow-hidden (used for the slide transitions). That manifested as
+  // the last word silently disappearing on lines that just barely fit.
+  const wordPlateClassName = "bg-black/85 text-white px-0.5 rounded-none";
+
   // z-[15]: below click-capture (z-20), CRT static (z-30+).
   return (
     <div
@@ -258,7 +267,15 @@ export function MtvLyricsOverlay({
           transforms. */}
       <div className="relative w-full max-w-[92%]">
         <div aria-hidden className={cn(lineTypography, "invisible")} style={lineTone}>
-          {fullText}
+          {tokens.map((t, i) => (
+            <span
+              key={`s-${lineKey}-${i}`}
+              className={wordPlateClassName}
+              style={wordPlateStyle}
+            >
+              {t.text}
+            </span>
+          ))}
         </div>
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <AnimatePresence mode="sync" initial={false}>
@@ -280,7 +297,7 @@ export function MtvLyricsOverlay({
               {revealed.map((t, i) => (
                 <span
                   key={`v-${lineKey}-${i}`}
-                  className="bg-black/85 text-white px-0.5 rounded-none"
+                  className={wordPlateClassName}
                   style={wordPlateStyle}
                 >
                   {t.text}
@@ -290,7 +307,8 @@ export function MtvLyricsOverlay({
                 <span
                   key={`h-${lineKey}-${i}`}
                   aria-hidden
-                  className="inline opacity-0"
+                  className={cn(wordPlateClassName, "opacity-0")}
+                  style={wordPlateStyle}
                 >
                   {t.text}
                 </span>
