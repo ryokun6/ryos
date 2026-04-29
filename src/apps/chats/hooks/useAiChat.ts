@@ -14,7 +14,7 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useTvStore } from "@/stores/useTvStore";
-import { DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
+import { buildTvChannelLineup, DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
@@ -352,10 +352,12 @@ const getSystemState = () => {
   // index doesn't map to a stable "current video". Surface the current
   // channel + lineup metadata so the AI can reason about the lineup,
   // tune in, and edit channels via tvControl.
-  const tvChannelLineup = [
-    ...DEFAULT_CHANNELS.map((c) => ({ ch: c, isCustom: false })),
-    ...tvStore.customChannels.map((c) => ({ ch: c, isCustom: true })),
-  ];
+  const tvChannelLineup = buildTvChannelLineup(tvStore.customChannels).map(
+    (ch) => ({
+      ch,
+      isCustom: !DEFAULT_CHANNELS.some((d) => d.id === ch.id),
+    })
+  );
   const tvCurrentEntry =
     tvChannelLineup.find(({ ch }) => ch.id === tvStore.currentChannelId) ??
     tvChannelLineup[0] ??
@@ -375,13 +377,15 @@ const getSystemState = () => {
             : tvCurrentEntry.ch.videos.length,
       }
     : null;
-  const tvCustomChannels = tvStore.customChannels.map((c) => ({
-    id: c.id,
-    number: c.number,
-    name: c.name,
-    description: c.description,
-    videoCount: c.videos.length,
-  }));
+  const tvCustomChannels = buildTvChannelLineup(tvStore.customChannels)
+    .filter((ch) => !DEFAULT_CHANNELS.some((d) => d.id === ch.id))
+    .map((c) => ({
+      id: c.id,
+      number: c.number,
+      name: c.name,
+      description: c.description,
+      videoCount: c.videos.length,
+    }));
 
   // Detect user's operating system
   const userOS = detectUserOS();

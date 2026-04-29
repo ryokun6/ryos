@@ -3,7 +3,8 @@ import { persist } from "zustand/middleware";
 import { DEFAULT_CHANNEL_ID, type Channel } from "@/apps/tv/data/channels";
 import type { Video } from "@/stores/useVideoStore";
 
-export interface CustomChannel extends Channel {
+/** Persisted custom channel; `number` is assigned at runtime from lineup order. */
+export interface CustomChannel extends Omit<Channel, "number"> {
   /** Original user description used to seed AI generation. */
   prompt?: string;
   /** Search queries returned by the planner — handy for "regenerate". */
@@ -35,10 +36,7 @@ interface TvStoreState {
   setIsPlaying: (playing: boolean) => void;
   togglePlay: () => void;
   addCustomChannel: (
-    channel: Omit<CustomChannel, "id" | "number" | "createdAt"> & {
-      id?: string;
-      number?: number;
-    }
+    channel: Omit<CustomChannel, "id" | "createdAt"> & { id?: string }
   ) => CustomChannel;
   removeCustomChannel: (id: string) => void;
   /** Patch a custom channel's name/description/etc. by id. */
@@ -94,16 +92,9 @@ export const useTvStore = create<TvStoreState>()(
       togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
       addCustomChannel: (channel) => {
         const existing = get().customChannels;
-        // Channel numbers start above the built-in lineup (currently 3).
-        // Pick the next free integer so the keypad feel stays tight.
-        const usedNumbers = new Set(existing.map((c) => c.number));
-        let nextNumber = 4;
-        while (usedNumbers.has(nextNumber)) nextNumber += 1;
-
         const created: CustomChannel = {
           ...channel,
           id: channel.id ?? generateChannelId(),
-          number: channel.number ?? nextNumber,
           createdAt: Date.now(),
         };
         set({ customChannels: [...existing, created] });
@@ -205,7 +196,6 @@ export const useTvStore = create<TvStoreState>()(
 
         const existing = get().customChannels;
         const existingIds = new Set(existing.map((c) => c.id));
-        const usedNumbers = new Set(existing.map((c) => c.number));
 
         const merged: CustomChannel[] = [...existing];
         let added = 0;
@@ -250,13 +240,8 @@ export const useTvStore = create<TvStoreState>()(
           while (existingIds.has(id)) id = generateChannelId();
           existingIds.add(id);
 
-          let nextNumber = 4;
-          while (usedNumbers.has(nextNumber)) nextNumber += 1;
-          usedNumbers.add(nextNumber);
-
           merged.push({
             id,
-            number: nextNumber,
             name: candidate.name.trim().slice(0, 24),
             description:
               typeof candidate.description === "string"
@@ -300,7 +285,19 @@ export const useTvStore = create<TvStoreState>()(
     }),
     {
       name: "ryos:tv",
-      version: 3,
+      version: 4,
+      migrate: (persisted, version) => {
+        const state = persisted as { customChannels?: CustomChannel[] };
+        if (version < 4 && Array.isArray(state.customChannels)) {
+          state.customChannels = state.customChannels.map((entry) => {
+            const { number: _n, ...rest } = entry as CustomChannel & {
+              number?: number;
+            };
+            return rest as CustomChannel;
+          });
+        }
+        return state as typeof persisted;
+      },
       // The video order is freshly shuffled each time a channel is tuned
       // (see `useTvLogic`'s `currentChannel` memo), so a persisted index
       // would point at an unrelated video on reload. Persist channel

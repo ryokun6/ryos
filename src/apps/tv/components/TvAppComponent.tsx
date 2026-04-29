@@ -804,6 +804,14 @@ export function TvAppComponent({
     dispatchWindowClose();
   };
 
+  const windowTitle = useMemo(() => {
+    if (!currentChannel) return getTranslatedAppName("tv");
+    return t("apps.tv.channelBadge", {
+      number: String(currentChannel.number).padStart(2, "0"),
+      name: currentChannel.name,
+    });
+  }, [currentChannel, t]);
+
   if (!isWindowOpen) return null;
 
   const url = currentVideo?.url ?? "";
@@ -821,7 +829,7 @@ export function TvAppComponent({
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title={getTranslatedAppName("tv")}
+        title={windowTitle}
         onClose={handleInterceptedClose}
         isForeground={isForeground}
         appId="tv"

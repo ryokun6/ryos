@@ -8,10 +8,7 @@ import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { helpItems } from "..";
-import {
-  DEFAULT_CHANNELS,
-  type Channel,
-} from "@/apps/tv/data/channels";
+import { buildTvChannelLineup, type Channel } from "@/apps/tv/data/channels";
 import {
   isYouTubeUrl,
   nextIndex,
@@ -51,11 +48,9 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const togglePlayStore = useTvStore((s) => s.togglePlay);
   const customChannels = useTvStore((s) => s.customChannels);
 
-  // Built-in channels are always shown first; user-created ones appear
-  // after them in the order they were added so channel numbers stay stable
-  // as the user adds/removes custom channels.
+  // Built-in channels first, then customs; numbers follow list order (1-based).
   const channels = useMemo(
-    (): Channel[] => [...DEFAULT_CHANNELS, ...customChannels],
+    (): Channel[] => buildTvChannelLineup(customChannels),
     [customChannels]
   );
 
@@ -169,10 +164,9 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
       // synchronously, but React hasn't re-rendered the parent yet, so a
       // closure on `channels` would miss a freshly-created channel and
       // silently no-op when callers tune in to it.
-      const customs = useTvStore.getState().customChannels;
-      const ch =
-        DEFAULT_CHANNELS.find((c) => c.id === id) ??
-        customs.find((c) => c.id === id);
+      const ch = buildTvChannelLineup(
+        useTvStore.getState().customChannels
+      ).find((c) => c.id === id);
       if (!ch) return;
       // Cancel any in-flight digit buffer so a partial channel number from
       // the keyboard doesn't merge with the next press after a manual switch.

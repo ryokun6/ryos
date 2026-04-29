@@ -12,7 +12,11 @@ import type { ToolContext } from "./types";
 import i18n from "@/lib/i18n";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
-import { DEFAULT_CHANNELS, type Channel } from "@/apps/tv/data/channels";
+import {
+  buildTvChannelLineup,
+  DEFAULT_CHANNELS,
+  type Channel,
+} from "@/apps/tv/data/channels";
 import type { Video } from "@/stores/useVideoStore";
 import { isYouTubeUrl, parseYouTubeId } from "@/apps/tv/utils";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -194,9 +198,8 @@ const findCustomChannel = (channelId: string): CustomChannel | undefined => {
 };
 
 const findChannel = (channelId: string): Channel | undefined => {
-  return (
-    DEFAULT_CHANNELS.find((c) => c.id === channelId) ??
-    findCustomChannel(channelId)
+  return buildTvChannelLineup(useTvStore.getState().customChannels).find(
+    (c) => c.id === channelId
   );
 };
 
@@ -218,12 +221,15 @@ export const handleTvControl = async (
   try {
     switch (action) {
       case "list": {
-        const customChannels = useTvStore.getState().customChannels;
-        const currentChannelId = useTvStore.getState().currentChannelId;
-        const all: Array<{ ch: Channel; isCustom: boolean }> = [
-          ...DEFAULT_CHANNELS.map((ch) => ({ ch, isCustom: false })),
-          ...customChannels.map((ch) => ({ ch, isCustom: true })),
-        ];
+        const tvStoreList = useTvStore.getState();
+        const lineup = buildTvChannelLineup(tvStoreList.customChannels);
+        const currentChannelId = tvStoreList.currentChannelId;
+        const all: Array<{ ch: Channel; isCustom: boolean }> = lineup.map(
+          (ch) => ({
+            ch,
+            isCustom: !DEFAULT_CHANNELS.some((d) => d.id === ch.id),
+          })
+        );
 
         // Build a fresh short-id mapping so subsequent actions can use the
         // shorter "ch1"/"ch2" ids returned in this list output.
@@ -261,10 +267,7 @@ export const handleTvControl = async (
 
       case "tune": {
         const tvStore = useTvStore.getState();
-        const channels: Channel[] = [
-          ...DEFAULT_CHANNELS,
-          ...tvStore.customChannels,
-        ];
+        const channels = buildTvChannelLineup(tvStore.customChannels);
 
         let target: Channel | undefined;
         if (input.channelNumber !== undefined) {
@@ -453,10 +456,25 @@ export const handleTvControl = async (
           queries: planned.queries,
         });
 
-        const shortId = `ch${created.number}`;
+        const createdListed = buildTvChannelLineup(
+          useTvStore.getState().customChannels
+        ).find((c) => c.id === created.id);
+        if (!createdListed) {
+          context.addToolResult({
+            tool: "tvControl",
+            toolCallId,
+            state: "output-error",
+            errorText: i18n.t("apps.chats.toolCalls.tv.createFailed", {
+              defaultValue: "Failed to plan channel",
+            }),
+          });
+          return;
+        }
+
+        const shortId = `ch${createdListed.number}`;
         const message = i18n.t("apps.chats.toolCalls.tv.createdChannelWithVideos", {
           defaultValue: "Created {{label}} ({{count}} videos)",
-          label: formatChannelLabel(created),
+          label: formatChannelLabel(createdListed),
           count: safeVideos.length,
         });
 
@@ -466,7 +484,13 @@ export const handleTvControl = async (
           output: {
             success: true,
             message,
-            channel: buildChannelToolRecord(created, shortId, false, true, true),
+            channel: buildChannelToolRecord(
+              createdListed,
+              shortId,
+              false,
+              true,
+              true
+            ),
           },
         });
         return;
@@ -496,8 +520,8 @@ export const handleTvControl = async (
           });
           return;
         }
-        const target = findCustomChannel(resolvedId);
-        if (!target) {
+        const targetListed = findChannel(resolvedId);
+        if (!targetListed || !findCustomChannel(resolvedId)) {
           context.addToolResult({
             tool: "tvControl",
             toolCallId,
@@ -516,7 +540,7 @@ export const handleTvControl = async (
             success: true,
             message: i18n.t("apps.chats.toolCalls.tv.deletedChannel", {
               defaultValue: "Deleted channel {{label}}",
-              label: formatChannelLabel(target),
+              label: formatChannelLabel(targetListed),
             }),
           },
         });
