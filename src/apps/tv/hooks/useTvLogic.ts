@@ -19,6 +19,7 @@ import {
   randomTuneInOffset,
   shuffleArray,
 } from "@/apps/tv/utils";
+import { isMobileSafari } from "@/utils/device";
 
 export const MTV_CHANNEL_ID = "mtv";
 export const RYO_TV_CHANNEL_ID = "ryos-picks";
@@ -76,6 +77,12 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isDraggingSeek, setIsDraggingSeek] = useState(false);
   const [dragSeekTime, setDragSeekTime] = useState(0);
+
+  // Mobile Safari blocks autoplay until the user explicitly taps. Detect
+  // once on mount so we can leave the TV "powered off" on open and let the
+  // user wake it up via the play button (mirrors the iPod / Karaoke
+  // pattern in `useIpodLogic` / `useKaraokeLogic`).
+  const isMobileSafariDevice = useRef(isMobileSafari()).current;
 
   const playerRef = useRef<ReactPlayer | null>(null);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
@@ -309,7 +316,11 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   }, [currentChannel, videoIndex, currentChannelId, setVideoIndex, setIsPlaying]);
 
   // Force-play once per window-open, not on every render where it stays open,
-  // so a user's manual pause survives until the window is closed.
+  // so a user's manual pause survives until the window is closed. Skip on
+  // mobile Safari, which blocks autoplay until the user explicitly taps —
+  // forcing isPlaying=true there just produces a paused-but-claiming-to-
+  // play UI; instead we leave the TV powered off and let the user wake it
+  // up via the play button.
   useEffect(() => {
     if (!isWindowOpen) {
       hasForcedPlayOnOpenRef.current = false;
@@ -317,8 +328,12 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     }
     if (hasForcedPlayOnOpenRef.current) return;
     hasForcedPlayOnOpenRef.current = true;
+    if (isMobileSafariDevice) {
+      setIsPlaying(false);
+      return;
+    }
     setIsPlaying(true);
-  }, [isWindowOpen, setIsPlaying]);
+  }, [isWindowOpen, setIsPlaying, isMobileSafariDevice]);
 
   // Clear any pending status / digit-buffer timers when the hook unmounts so
   // they don't try to set state on an unmounted tree.

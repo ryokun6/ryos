@@ -26,6 +26,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTvStore } from "@/stores/useTvStore";
+import { isMobileSafari } from "@/utils/device";
 import { appMetadata } from "..";
 import { Button } from "@/components/ui/button";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -379,7 +380,13 @@ export function TvAppComponent({
   // While true, the picture is squeezed away and a black "screen-off"
   // overlay holds until the user un-pauses. Driven by isPlaying
   // transitions below.
-  const [screenOff, setScreenOff] = useState(false);
+  // On mobile Safari, autoplay is blocked until the user explicitly taps,
+  // so we open the TV powered off (mirrors the iPod / Karaoke pattern in
+  // their hooks). The user wakes it up by tapping play, which flips
+  // `isPlaying` true and routes through the existing
+  // `screenOff && isPlaying` resume path below.
+  const isMobileSafariDevice = useRef(isMobileSafari()).current;
+  const [screenOff, setScreenOff] = useState(isMobileSafariDevice);
 
   // Procedural CRT sound effects synced to the shader animations above.
   const {
@@ -564,11 +571,14 @@ export function TvAppComponent({
   // closed → open. Reset on close so re-opening triggers a fresh
   // animation. Skipping when `skipInitialSound` is true keeps the
   // browser-restore path quiet (matches WindowFrame's open-sound rule).
+  // Also skip on mobile Safari, which blocks autoplay until the user
+  // taps — there the TV opens "powered off" and the power-on shader
+  // fires on the first explicit play instead.
   const wasOpenRef = useRef(false);
   useEffect(() => {
     if (isWindowOpen && !wasOpenRef.current) {
       wasOpenRef.current = true;
-      if (!skipInitialSound) {
+      if (!skipInitialSound && !isMobileSafariDevice) {
         setPowerOnKey((k) => k + 1);
         void playPowerOn();
       }
@@ -577,7 +587,7 @@ export function TvAppComponent({
       setPoweringOff(false);
       stopStatic();
     }
-  }, [isWindowOpen, skipInitialSound, playPowerOn, stopStatic]);
+  }, [isWindowOpen, skipInitialSound, playPowerOn, stopStatic, isMobileSafariDevice]);
 
   // Channel-switch static: fire a brief burst whenever the current
   // channel changes. Skip the very first mount so opening the TV doesn't
@@ -685,12 +695,14 @@ export function TvAppComponent({
 
   // Reset pause state when the window closes so the next open starts
   // clean (otherwise a session-restore could open with a black screen).
+  // On mobile Safari we re-arm `screenOff` on every reopen so the TV
+  // always opens "powered off" until the user taps play.
   useEffect(() => {
     if (!isWindowOpen) {
-      setScreenOff(false);
+      setScreenOff(isMobileSafariDevice);
       hasPausedRef.current = false;
     }
-  }, [isWindowOpen]);
+  }, [isWindowOpen, isMobileSafariDevice]);
 
   // Drive the looping static-noise bed from the same flag that powers
   // the visual buffering overlay so audio + picture stay in sync.
