@@ -3047,6 +3047,7 @@
         "exportChannels": "チャンネルを書き出す...",
         "fullScreen": "フルスクリーン",
         "importChannels": "チャンネルを読み込む...",
+        "lcdFilter": "LCDフィルター",
         "newChannel": "新規チャンネル...",
         "next": "次へ",
         "pause": "一時停止",

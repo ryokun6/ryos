@@ -1593,6 +1593,7 @@
         "channelUp": "Channel Up",
         "channelDown": "Channel Down",
         "fullScreen": "Full Screen",
+        "lcdFilter": "LCD Filter",
         "newChannel": "New Channel...",
         "deleteChannel": "Delete Channel",
         "resetChannels": "Reset Channels...",

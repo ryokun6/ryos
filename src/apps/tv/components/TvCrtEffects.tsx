@@ -43,10 +43,11 @@ function NoiseCanvas({
     if (!ctx) return;
 
     const resize = () => {
-      // Render at full CSS resolution so each pixel is one noise sample,
-      // matching the finer grain used by the Videos app's static.
-      const w = Math.max(1, Math.floor(canvas.offsetWidth));
-      const h = Math.max(1, Math.floor(canvas.offsetHeight));
+      // Render at 1/1.5 CSS resolution; the browser upscales each canvas
+      // pixel ~1.5× on screen, giving slightly chunky analog-style grain
+      // without the blockiness of half-res or the cost of full-res.
+      const w = Math.max(1, Math.floor(canvas.offsetWidth / 1.5));
+      const h = Math.max(1, Math.floor(canvas.offsetHeight / 1.5));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;

@@ -4,6 +4,7 @@ import {
   MenubarTrigger,
   MenubarContent,
   MenubarItem,
+  MenubarCheckboxItem,
   MenubarSeparator,
   MenubarRadioGroup,
   MenubarRadioItem,
@@ -33,6 +34,8 @@ interface TvMenuBarProps {
   onNextChannel: () => void;
   onPrevChannel: () => void;
   onFullScreen: () => void;
+  isLcdFilterOn: boolean;
+  onToggleLcdFilter: () => void;
 }
 
 export function TvMenuBar({
@@ -56,6 +59,8 @@ export function TvMenuBar({
   onNextChannel,
   onPrevChannel,
   onFullScreen,
+  isLcdFilterOn,
+  onToggleLcdFilter,
 }: TvMenuBarProps) {
   const isCurrentChannelCustom = customChannelIds.has(currentChannelId);
   const { t } = useTranslation();
@@ -118,6 +123,13 @@ export function TvMenuBar({
           <MenubarItem onClick={onFullScreen} className="text-md h-6 px-3">
             {t("apps.tv.menu.fullScreen")}
           </MenubarItem>
+          <MenubarCheckboxItem
+            checked={isLcdFilterOn}
+            onCheckedChange={onToggleLcdFilter}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.tv.menu.lcdFilter")}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>

@@ -31,10 +31,14 @@ interface TvStoreState {
   lastVideoIndexByChannel: Record<string, number>;
   isPlaying: boolean;
   customChannels: CustomChannel[];
+  /** Whether the persistent CRT scanline / vignette overlay is on. */
+  lcdFilterOn: boolean;
   setCurrentChannelId: (id: string) => void;
   setVideoIndex: (channelId: string, index: number) => void;
   setIsPlaying: (playing: boolean) => void;
   togglePlay: () => void;
+  toggleLcdFilter: () => void;
+  setLcdFilterOn: (on: boolean) => void;
   addCustomChannel: (
     channel: Omit<CustomChannel, "id" | "createdAt"> & { id?: string }
   ) => CustomChannel;
@@ -80,6 +84,7 @@ export const useTvStore = create<TvStoreState>()(
       lastVideoIndexByChannel: {},
       isPlaying: false,
       customChannels: [],
+      lcdFilterOn: true,
       setCurrentChannelId: (id) => set({ currentChannelId: id }),
       setVideoIndex: (channelId, index) =>
         set((s) => ({
@@ -90,6 +95,9 @@ export const useTvStore = create<TvStoreState>()(
         })),
       setIsPlaying: (isPlaying) => set({ isPlaying }),
       togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
+      toggleLcdFilter: () =>
+        set((s) => ({ lcdFilterOn: !s.lcdFilterOn })),
+      setLcdFilterOn: (on) => set({ lcdFilterOn: on }),
       addCustomChannel: (channel) => {
         const existing = get().customChannels;
         const created: CustomChannel = {
@@ -306,6 +314,7 @@ export const useTvStore = create<TvStoreState>()(
       partialize: (s) => ({
         currentChannelId: s.currentChannelId,
         customChannels: s.customChannels,
+        lcdFilterOn: s.lcdFilterOn,
       }),
     }
   )

@@ -196,8 +196,11 @@ function WhiteNoiseEffect() {
     };
 
     const resizeCanvas = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      // Render at 1/1.5× CSS resolution; the browser upscales each
+      // canvas pixel ~1.5× on screen, giving slightly chunky analog
+      // grain without the per-frame fill cost of full-res.
+      canvas.width = Math.max(1, Math.floor(canvas.offsetWidth / 1.5));
+      canvas.height = Math.max(1, Math.floor(canvas.offsetHeight / 1.5));
     };
 
     resizeCanvas();

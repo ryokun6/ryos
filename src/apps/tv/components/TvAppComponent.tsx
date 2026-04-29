@@ -402,6 +402,8 @@ export function TvAppComponent({
   const importChannels = useTvStore((s) => s.importChannels);
   const exportChannels = useTvStore((s) => s.exportChannels);
   const resetChannels = useTvStore((s) => s.resetChannels);
+  const lcdFilterOn = useTvStore((s) => s.lcdFilterOn);
+  const toggleLcdFilter = useTvStore((s) => s.toggleLcdFilter);
   const { create: createChannel, isCreating: isCreatingChannel } =
     useCreateTvChannel();
 
@@ -751,6 +753,8 @@ export function TvAppComponent({
       onImportChannels={handleImportChannels}
       onExportChannels={handleExportChannels}
       onResetChannels={() => setIsResetConfirmOpen(true)}
+      isLcdFilterOn={lcdFilterOn}
+      onToggleLcdFilter={toggleLcdFilter}
       isPlaying={isPlaying}
       onTogglePlay={togglePlay}
       onNextVideo={nextVideo}
@@ -910,7 +914,7 @@ export function TvAppComponent({
                 screenOff={screenOff}
                 channelSwitchKey={channelSwitchKey}
                 buffering={isBuffering || (!url && isPlaying)}
-                crtActive={true}
+                crtActive={lcdFilterOn}
               />
               <AnimatePresence>
                 {statusMessage && (
