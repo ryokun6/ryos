@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
+  isShortDuration,
   isYouTubeUrl,
   nextIndex,
   parseYouTubeId,
   prevIndex,
   randomTuneInOffset,
+  SHORTS_MAX_DURATION_SECONDS,
   shuffleArray,
 } from "../src/apps/tv/utils";
 
@@ -170,5 +172,36 @@ describe("randomTuneInOffset", () => {
   test("custom threshold lets callers tune in to shorter clips", () => {
     const out = randomTuneInOffset(20, () => 0.5, 10);
     expect(out).toBeCloseTo(7.5);
+  });
+});
+
+describe("isShortDuration", () => {
+  test("flags durations at or below the default 60s threshold as Shorts", () => {
+    expect(isShortDuration(15)).toBe(true);
+    expect(isShortDuration(45)).toBe(true);
+    expect(isShortDuration(SHORTS_MAX_DURATION_SECONDS)).toBe(true);
+  });
+
+  test("does not flag durations above the threshold", () => {
+    expect(isShortDuration(SHORTS_MAX_DURATION_SECONDS + 0.5)).toBe(false);
+    expect(isShortDuration(120)).toBe(false);
+    expect(isShortDuration(3600)).toBe(false);
+  });
+
+  test("treats unknown / not-yet-loaded durations as not-Shorts", () => {
+    // Don't drop a video while the player is still bootstrapping — duration
+    // shows up as 0 (not loaded) or NaN (driver glitch) before the video
+    // actually starts playing.
+    expect(isShortDuration(0)).toBe(false);
+    expect(isShortDuration(NaN)).toBe(false);
+  });
+
+  test("treats live streams (Infinity) as not-Shorts", () => {
+    expect(isShortDuration(Infinity)).toBe(false);
+  });
+
+  test("custom threshold lets callers tune the cutoff", () => {
+    expect(isShortDuration(90, 120)).toBe(true);
+    expect(isShortDuration(150, 120)).toBe(false);
   });
 });
