@@ -434,6 +434,8 @@ export function TvAppComponent({
   const resetChannels = useTvStore((s) => s.resetChannels);
   const lcdFilterOn = useTvStore((s) => s.lcdFilterOn);
   const toggleLcdFilter = useTvStore((s) => s.toggleLcdFilter);
+  const closedCaptionsOn = useTvStore((s) => s.closedCaptionsOn);
+  const toggleClosedCaptions = useTvStore((s) => s.toggleClosedCaptions);
   const { create: createChannel, isCreating: isCreatingChannel } =
     useCreateTvChannel();
 
@@ -785,6 +787,8 @@ export function TvAppComponent({
       onResetChannels={() => setIsResetConfirmOpen(true)}
       isLcdFilterOn={lcdFilterOn}
       onToggleLcdFilter={toggleLcdFilter}
+      closedCaptionsOn={closedCaptionsOn}
+      onToggleClosedCaptions={toggleClosedCaptions}
       isPlaying={isPlaying}
       onTogglePlay={handleTogglePlay}
       onNextVideo={nextVideo}
@@ -946,13 +950,17 @@ export function TvAppComponent({
                 buffering={isBuffering || (!url && isPlaying)}
                 crtActive={lcdFilterOn}
               />
-              {currentChannelId === MTV_CHANNEL_ID && !isFullScreen && (
+              {currentChannelId === MTV_CHANNEL_ID &&
+                closedCaptionsOn &&
+                !isFullScreen && (
                 <MtvLyricsOverlay
                   songId={currentVideo?.id}
                   title={currentVideo?.title}
                   artist={currentVideo?.artist}
                   playedSeconds={playedSeconds}
-                  visible={!screenOff && !poweringOff && Boolean(url)}
+                  visible={
+                    !screenOff && !poweringOff && Boolean(url)
+                  }
                 />
               )}
               <AnimatePresence>
@@ -1301,13 +1309,15 @@ export function TvAppComponent({
           showStatus={showStatus}
           statusMessage={statusMessage}
           videoOverlay={
-            currentChannelId === MTV_CHANNEL_ID ? (
+            currentChannelId === MTV_CHANNEL_ID && closedCaptionsOn ? (
               <MtvLyricsOverlay
                 songId={currentVideo?.id}
                 title={currentVideo?.title}
                 artist={currentVideo?.artist}
                 playedSeconds={playedSeconds}
-                visible
+                visible={
+                  !screenOff && !poweringOff && Boolean(url)
+                }
                 variant="fullscreen"
               />
             ) : null

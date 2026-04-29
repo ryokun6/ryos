@@ -33,12 +33,16 @@ interface TvStoreState {
   customChannels: CustomChannel[];
   /** Whether the persistent CRT scanline / vignette overlay is on. */
   lcdFilterOn: boolean;
+  /** MTV (and similar) word-timed lyric captions over the picture. */
+  closedCaptionsOn: boolean;
   setCurrentChannelId: (id: string) => void;
   setVideoIndex: (channelId: string, index: number) => void;
   setIsPlaying: (playing: boolean) => void;
   togglePlay: () => void;
   toggleLcdFilter: () => void;
   setLcdFilterOn: (on: boolean) => void;
+  toggleClosedCaptions: () => void;
+  setClosedCaptionsOn: (on: boolean) => void;
   addCustomChannel: (
     channel: Omit<CustomChannel, "id" | "createdAt"> & { id?: string }
   ) => CustomChannel;
@@ -85,6 +89,7 @@ export const useTvStore = create<TvStoreState>()(
       isPlaying: false,
       customChannels: [],
       lcdFilterOn: true,
+      closedCaptionsOn: true,
       setCurrentChannelId: (id) => set({ currentChannelId: id }),
       setVideoIndex: (channelId, index) =>
         set((s) => ({
@@ -98,6 +103,9 @@ export const useTvStore = create<TvStoreState>()(
       toggleLcdFilter: () =>
         set((s) => ({ lcdFilterOn: !s.lcdFilterOn })),
       setLcdFilterOn: (on) => set({ lcdFilterOn: on }),
+      toggleClosedCaptions: () =>
+        set((s) => ({ closedCaptionsOn: !s.closedCaptionsOn })),
+      setClosedCaptionsOn: (on) => set({ closedCaptionsOn: on }),
       addCustomChannel: (channel) => {
         const existing = get().customChannels;
         const created: CustomChannel = {
@@ -315,6 +323,7 @@ export const useTvStore = create<TvStoreState>()(
         currentChannelId: s.currentChannelId,
         customChannels: s.customChannels,
         lcdFilterOn: s.lcdFilterOn,
+        closedCaptionsOn: s.closedCaptionsOn,
       }),
     }
   )

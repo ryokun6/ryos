@@ -760,11 +760,11 @@
 
 /* Ensure all UI elements in macOS theme use proper antialiasing */
 /* :where() wraps ancestry exclusions to avoid specificity inflation */
-:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
-:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
-:root[data-os-theme="macosx"] button:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
-:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
-:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
+:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
+:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
+:root[data-os-theme="macosx"] button:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
+:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
 :root[data-os-theme="macosx"] .menubar,
 :root[data-os-theme="macosx"] .window,
 :root[data-os-theme="macosx"] .title-bar {
@@ -823,7 +823,7 @@
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
+:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
   font-size: 13px !important;
   font-weight: normal !important;
 }
@@ -833,13 +833,13 @@
   font-weight: bold !important;
 }
 
-:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
-:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
-:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)) {
+:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
+:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)) {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
+:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
   font-size: 11px !important;
 }
 
@@ -847,8 +847,8 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] p:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)),
-:root[data-os-theme="macosx"] div:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *)) {
+:root[data-os-theme="macosx"] p:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)),
+:root[data-os-theme="macosx"] div:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
   font-size: 13px !important;
 }
 
@@ -1044,7 +1044,7 @@
 }
 
 /* macOS select styling - similar to aqua buttons */
-:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)) {
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)) {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
@@ -1512,6 +1512,53 @@
   font-size: unset !important;
 }
 
+/* TV app (MTV) closed captions: beat macOSX Lucida/global 13px div rule */
+:root[data-os-theme="macosx"] .tv-cc-force-font {
+  font-family: inherit !important;
+  font-size: 16px !important;
+}
+
+:root[data-os-theme="macosx"] .tv-cc-force-font * {
+  font-family: inherit !important;
+  font-size: unset !important;
+}
+
+:root[data-os-theme="macosx"] .tv-cc-force-font div,
+:root[data-os-theme="macosx"] .tv-cc-force-font p {
+  font-size: unset !important;
+}
+
+:root[data-os-theme="macosx"] .tv-cc-force-font .font-geneva-12 {
+  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
+    -apple-system, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: always !important;
+}
+
+:root[data-os-theme="macosx"] .tv-cc-force-font .font-geneva-12.text-\[20px\] {
+  font-size: 20px !important;
+}
+
+:root[data-os-theme="macosx"] .tv-cc-force-font .font-geneva-12.text-\[24px\] {
+  font-size: 24px !important;
+}
+
+@media (min-width: 640px) {
+  :root[data-os-theme="macosx"]
+    .tv-cc-force-font
+    .font-geneva-12.sm\:text-\[32px\] {
+    font-size: 32px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  :root[data-os-theme="macosx"]
+    .tv-cc-force-font
+    .font-geneva-12.md\:text-\[40px\] {
+    font-size: 40px !important;
+  }
+}
+
 :root[data-os-theme="macosx"] .ipod-force-font .font-chicago,
 :root[data-os-theme="macosx"] .font-chicago {
   font-family: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
@@ -1952,7 +1999,9 @@
     .karaoke-force-font .font-geneva-12
   ):not(.videos-lcd .font-geneva-12):not(
     .videos-player-controls .font-geneva-12
-  ):not(.synth-force-font .font-geneva-12):not(.videos-status .font-geneva-12) {
+  ):not(.synth-force-font .font-geneva-12):not(.videos-status .font-geneva-12):not(
+    .tv-cc-force-font .font-geneva-12
+  ) {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;

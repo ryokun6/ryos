@@ -36,6 +36,8 @@ interface TvMenuBarProps {
   onFullScreen: () => void;
   isLcdFilterOn: boolean;
   onToggleLcdFilter: () => void;
+  closedCaptionsOn: boolean;
+  onToggleClosedCaptions: () => void;
 }
 
 export function TvMenuBar({
@@ -61,6 +63,8 @@ export function TvMenuBar({
   onFullScreen,
   isLcdFilterOn,
   onToggleLcdFilter,
+  closedCaptionsOn,
+  onToggleClosedCaptions,
 }: TvMenuBarProps) {
   const isCurrentChannelCustom = customChannelIds.has(currentChannelId);
   const { t } = useTranslation();
@@ -126,6 +130,13 @@ export function TvMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.tv.menu.lcdFilter")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={closedCaptionsOn}
+            onCheckedChange={onToggleClosedCaptions}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.tv.menu.closedCaptions")}
           </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onFullScreen} className="text-md h-6 px-3">

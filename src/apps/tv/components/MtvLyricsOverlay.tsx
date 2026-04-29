@@ -213,45 +213,68 @@ export function MtvLyricsOverlay({
   if (!visible || !fullText) return null;
 
   const isFullscreen = variant === "fullscreen";
-  const visibleText = tokens.slice(0, revealedTokens).map((t) => t.text).join("");
-  const hiddenText = tokens.slice(revealedTokens).map((t) => t.text).join("");
+  const revealed = tokens.slice(0, revealedTokens);
+  const unrevealed = tokens.slice(revealedTokens);
 
+  // Per-token dark plates (`box-decoration-break: clone`) so progressive
+  // reveals and wrapped lines don’t paint one big rectangle behind the
+  // whole caption block.
+  const wordPlateStyle = {
+    WebkitBoxDecorationBreak: "clone" as const,
+    boxDecorationBreak: "clone" as const,
+  };
+
+  // z-[15]: below click-capture (z-20), CRT static (z-30+).
   return (
     <div
       className={cn(
-        // Sits just above the video iframe but below the TV's transparent
-        // click-capture layer (z-20) and the CRT noise / LCD filter
-        // shaders (z-30+ in TvCrtEffects), so static, scanlines, and the
-        // dim screen-off overlay properly cover the captions.
-        "pointer-events-none absolute inset-x-0 z-[15] flex justify-center px-4",
-        isFullscreen ? "bottom-[14%]" : "bottom-6"
+        // `tv-cc-force-font` escapes macOSX theme Lucida/global 13px div
+        // rules — see themes.css alongside ipod-force-font /
+        // karaoke-force-font.
+        "tv-cc-force-font pointer-events-none absolute inset-x-0 z-[15] flex justify-start pl-8 pr-4 sm:pl-10",
+        isFullscreen ? "bottom-[18%] sm:bottom-[17%]" : "bottom-10 sm:bottom-11"
       )}
       aria-hidden
     >
       {/* Keyed swap with no enter animation — caption snaps in like
           broadcast CCs. The container itself remounts per line so the
-          prior line is replaced instantly. */}
+          prior line is replaced instantly. Sizes snap to integer pixel
+          values so the geneva-12 pixel font stays crisp instead of
+          getting fractional-scale blur from clamp()/vw units. */}
       <div
         key={lineKey}
         className={cn(
-          "font-geneva-12 text-white text-center leading-none bg-black/85 max-w-[92%]",
+          "font-geneva-12 text-white text-left max-w-[92%]",
           isFullscreen
-            ? "text-[clamp(18px,3.2vw,36px)] px-3 py-2"
-            : "text-[18px] sm:text-[20px] px-2 py-1"
+            ? "text-[24px] sm:text-[32px] md:text-[40px]"
+            : "text-[20px]"
         )}
         style={{
-          letterSpacing: "0.01em",
-          lineHeight: 1.15,
+          letterSpacing: 0,
+          lineHeight: 1.35,
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
+          textShadow: "0 1px 0 rgba(0,0,0,0.85)",
         }}
       >
-        <span>{visibleText}</span>
-        {hiddenText ? (
-          <span aria-hidden className="opacity-0">
-            {hiddenText}
+        {revealed.map((t, i) => (
+          <span
+            key={`v-${lineKey}-${i}`}
+            className="bg-black/85 text-white px-0.5 rounded-none"
+            style={wordPlateStyle}
+          >
+            {t.text}
           </span>
-        ) : null}
+        ))}
+        {unrevealed.map((t, i) => (
+          <span
+            key={`h-${lineKey}-${i}`}
+            aria-hidden
+            className="inline opacity-0"
+          >
+            {t.text}
+          </span>
+        ))}
       </div>
     </div>
   );
