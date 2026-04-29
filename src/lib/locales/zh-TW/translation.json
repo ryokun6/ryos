@@ -3380,6 +3380,7 @@
       "reloadDesktop": "重新載入桌面"
     },
     "errors": {
+      "unknownError": "未知錯誤",
       "failedToAccessCamera": "無法存取相機",
       "failedToFetchFurigana": "無法取得假名",
       "failedToFetchSoramimi": "無法取得空耳"

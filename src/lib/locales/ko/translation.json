@@ -3380,6 +3380,7 @@
       "reloadDesktop": "데스크탑 다시 로드"
     },
     "errors": {
+      "unknownError": "알 수 없는 오류",
       "failedToAccessCamera": "카메라 접근에 실패했습니다",
       "failedToFetchFurigana": "후리가나 가져오기 실패",
       "failedToFetchSoramimi": "소라미미 가져오기 실패"

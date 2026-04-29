@@ -3380,6 +3380,7 @@
       "reloadDesktop": "Schreibtisch neu laden"
     },
     "errors": {
+      "unknownError": "Unbekannter Fehler",
       "failedToAccessCamera": "Fehler beim Zugriff auf die Kamera",
       "failedToFetchFurigana": "Abrufen von Furigana fehlgeschlagen",
       "failedToFetchSoramimi": "Abrufen von Soramimi fehlgeschlagen"

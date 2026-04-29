@@ -3380,6 +3380,7 @@
       "reloadDesktop": "Перезагрузить Рабочий стол"
     },
     "errors": {
+      "unknownError": "Неизвестная ошибка",
       "failedToAccessCamera": "Не удалось получить доступ к камере",
       "failedToFetchFurigana": "Не удалось получить фуригану",
       "failedToFetchSoramimi": "Не удалось получить сорамими"

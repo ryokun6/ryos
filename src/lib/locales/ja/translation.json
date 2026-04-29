@@ -3380,6 +3380,7 @@
       "reloadDesktop": "デスクトップを再読み込み"
     },
     "errors": {
+      "unknownError": "不明なエラー",
       "failedToAccessCamera": "カメラにアクセスできませんでした",
       "failedToFetchFurigana": "フリガナの取得に失敗しました",
       "failedToFetchSoramimi": "ソラミミの取得に失敗しました"

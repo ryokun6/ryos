@@ -1436,7 +1436,7 @@ export function useIpodLogic({
         await handleAddTrack(url);
       } catch (error) {
         console.error("Error adding track from search:", error);
-        showStatus(`❌ ${t("apps.ipod.dialogs.errorAdding")} ${error instanceof Error ? error.message : "Unknown error"}`);
+        showStatus(`❌ ${t("apps.ipod.dialogs.errorAdding")} ${error instanceof Error ? error.message : t("common.errors.unknownError")}`);
       }
     },
     [handleAddTrack, showStatus, t]

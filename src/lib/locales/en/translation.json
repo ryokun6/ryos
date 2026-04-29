@@ -116,6 +116,7 @@
       }
     },
     "errors": {
+      "unknownError": "Unknown error",
       "failedToAccessCamera": "Failed to access camera",
       "failedToFetchFurigana": "Failed to fetch furigana",
       "failedToFetchSoramimi": "Failed to fetch soramimi"

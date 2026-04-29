@@ -3380,6 +3380,7 @@
       "reloadDesktop": "Ricarica Desktop"
     },
     "errors": {
+      "unknownError": "Errore sconosciuto",
       "failedToAccessCamera": "Impossibile accedere alla fotocamera",
       "failedToFetchFurigana": "Impossibile recuperare furigana",
       "failedToFetchSoramimi": "Impossibile recuperare soramimi"

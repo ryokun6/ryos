@@ -3380,6 +3380,7 @@
       "reloadDesktop": "Recarregar Mesa"
     },
     "errors": {
+      "unknownError": "Erro desconhecido",
       "failedToAccessCamera": "Falha ao acessar a câmera",
       "failedToFetchFurigana": "Falha ao buscar furigana",
       "failedToFetchSoramimi": "Falha ao buscar soramimi"
