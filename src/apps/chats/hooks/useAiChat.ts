@@ -824,6 +824,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = "";
             break;
           }
+          case "cursorAgentsList": {
+            console.log("[ToolCall] cursorAgentsList (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
           // === Unified VFS Tools ===
           case "list": {
             const { path, query, limit } = toolCall.input as {
@@ -1846,6 +1852,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           "memoryDelete",
           "webFetch",
           "cursorRyOsRepoAgent",
+          "cursorAgentsList",
         ];
         const toolParts = lastMsg.parts.filter(
           (part: { type?: string; state?: string }) =>

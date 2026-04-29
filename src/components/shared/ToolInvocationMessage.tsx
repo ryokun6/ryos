@@ -185,6 +185,14 @@ export function ToolInvocationMessage({
       case "cursorRyOsRepoAgent":
         displayCallMessage = t("apps.chats.toolCalls.cursorRyOsRepoAgent.starting");
         break;
+      case "cursorAgentsList": {
+        const action = input?.action;
+        displayCallMessage =
+          action === "listRuns"
+            ? t("apps.chats.toolCalls.cursorAgentsList.listingRuns")
+            : t("apps.chats.toolCalls.cursorAgentsList.listingAgents");
+        break;
+      }
       case "web_search":
       case "google_search":
         displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
@@ -609,6 +617,50 @@ export function ToolInvocationMessage({
         } else if (out.message) {
           displayResultMessage = out.message;
         }
+      }
+    } else if (toolName === "cursorAgentsList") {
+      const out = output as
+        | {
+            success?: boolean;
+            action?: "listAgents" | "listRuns";
+            agents?: unknown[];
+            runs?: unknown[];
+            message?: string;
+            error?: string;
+          }
+        | undefined;
+      if (out?.success && out.action === "listAgents") {
+        const count = Array.isArray(out.agents) ? out.agents.length : 0;
+        if (count === 0) {
+          displayResultMessage = t(
+            "apps.chats.toolCalls.cursorAgentsList.noAgents"
+          );
+        } else {
+          displayResultMessage = t(
+            count === 1
+              ? "apps.chats.toolCalls.cursorAgentsList.foundAgents"
+              : "apps.chats.toolCalls.cursorAgentsList.foundAgentsPlural",
+            { count }
+          );
+        }
+      } else if (out?.success && out.action === "listRuns") {
+        const count = Array.isArray(out.runs) ? out.runs.length : 0;
+        if (count === 0) {
+          displayResultMessage = t(
+            "apps.chats.toolCalls.cursorAgentsList.noRuns"
+          );
+        } else {
+          displayResultMessage = t(
+            count === 1
+              ? "apps.chats.toolCalls.cursorAgentsList.foundRuns"
+              : "apps.chats.toolCalls.cursorAgentsList.foundRunsPlural",
+            { count }
+          );
+        }
+      } else if (out?.error) {
+        displayResultMessage = out.error;
+      } else if (out?.message) {
+        displayResultMessage = out.message;
       }
     } else if (toolName === "webFetch") {
       const out = output as { success?: boolean; message?: string; title?: string; siteName?: string } | undefined;

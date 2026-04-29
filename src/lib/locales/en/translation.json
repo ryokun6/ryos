@@ -993,6 +993,16 @@
             "emptyAssistant": "(No message content)"
           }
         },
+        "cursorAgentsList": {
+          "listingAgents": "Listing Cursor Cloud agents…",
+          "listingRuns": "Listing Cursor Cloud runs…",
+          "foundAgents": "Found {{count}} Cursor Cloud agent",
+          "foundAgentsPlural": "Found {{count}} Cursor Cloud agents",
+          "noAgents": "No Cursor Cloud agents found",
+          "foundRuns": "Found {{count}} run",
+          "foundRunsPlural": "Found {{count}} runs",
+          "noRuns": "No Cursor Cloud runs found"
+        },
         "searchedWebFor": "Searched the web for {{query}}",
         "foundVideos": "Found {{count}} videos",
         "settingsNoChanges": "No changes made",
