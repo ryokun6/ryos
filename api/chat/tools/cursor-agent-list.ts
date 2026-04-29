@@ -1,24 +1,26 @@
 /**
- * Cursor SDK (@cursor/sdk) — list Cursor Cloud agents and runs against the
- * authenticated CURSOR_API_KEY workspace.
+ * `cursorAgentList` tool — read-only inspection of Cursor Cloud agents and
+ * their runs on the authenticated CURSOR_API_KEY workspace.
  *
- * Owner-gated: this tool is scoped to the same account as `cursorRyOsRepoAgent`
- * because it surfaces agents/runs across the entire Cursor Cloud workspace.
+ * Companion to `cursorAgentStart`: that tool kicks off new runs, this one
+ * surfaces what's currently running, what finished, and the latest results.
+ *
+ * Owner-gated: scoped to the same account as `cursorAgentStart` because it
+ * exposes every agent on the workspace.
  */
 
 import { z } from "zod";
 import type { MemoryToolContext } from "./executors.js";
-import { CURSOR_REPO_AGENT_OWNER } from "./cursor-repo-agent.js";
+import { CURSOR_AGENT_OWNER } from "./cursor-agent-start.js";
 
-export const CURSOR_AGENTS_LIST_DESCRIPTION =
-  "List Cursor Cloud agents (and their runs) on the authenticated CURSOR_API_KEY workspace. " +
-  "Use when the user asks 'what Cursor agents are done / running', 'show my recent Cursor runs', " +
-  "or wants to follow up on background work spawned by `cursorRyOsRepoAgent`. " +
-  "Actions: 'listAgents' returns recent agents (filterable by status: running/finished/error or archived); " +
-  "'listRuns' returns recent runs for a given agentId. " +
-  "Status reflects the most recent run for each agent. Status filtering happens after the page is " +
-  "fetched, so use 'limit' generously (up to 50) when filtering. The agent's `url` is included so the " +
-  "user can open it in Cursor's web dashboard.";
+export const CURSOR_AGENT_LIST_DESCRIPTION =
+  "List Cursor Cloud agents and their runs on the authenticated CURSOR_API_KEY workspace. " +
+  "Use when the user asks 'which Cursor agents are done / running', 'show my recent Cursor runs', " +
+  "or wants to follow up on background work spawned by `cursorAgentStart`. " +
+  "Actions: 'listAgents' returns recent agents (each item's status reflects its latest run); " +
+  "'listRuns' returns recent runs for a given agentId (includes a result preview and PR/branch info). " +
+  "The optional 'status' filter is applied client-side, so use 'limit' generously (up to 50) when filtering. " +
+  "Each agent includes a `url` to open it in Cursor's web dashboard.";
 
 const STATUS_FILTERS = [
   "any",
@@ -28,7 +30,7 @@ const STATUS_FILTERS = [
   "cancelled",
 ] as const;
 
-export const cursorAgentsListSchema = z
+export const cursorAgentListSchema = z
   .object({
     action: z
       .enum(["listAgents", "listRuns"])
@@ -97,9 +99,9 @@ export const cursorAgentsListSchema = z
     }
   });
 
-export type CursorAgentsListInput = z.infer<typeof cursorAgentsListSchema>;
+export type CursorAgentListInput = z.infer<typeof cursorAgentListSchema>;
 
-export interface CursorAgentsListContext extends MemoryToolContext {
+export interface CursorAgentListContext extends MemoryToolContext {
   apiKey: string;
 }
 
@@ -135,7 +137,7 @@ export interface CursorRunSummary {
   createdAt?: number;
 }
 
-export type CursorAgentsListOutput =
+export type CursorAgentListOutput =
   | {
       success: true;
       action: "listAgents";
@@ -179,14 +181,14 @@ function cursorAgentWebUrl(agentId: string): string | undefined {
   return `https://cursor.com/agents?id=${encodeURIComponent(agentId)}`;
 }
 
-export async function executeCursorAgentsList(
-  input: CursorAgentsListInput,
-  context: CursorAgentsListContext
-): Promise<CursorAgentsListOutput> {
+export async function executeCursorAgentList(
+  input: CursorAgentListInput,
+  context: CursorAgentListContext
+): Promise<CursorAgentListOutput> {
   const action = input.action;
 
-  if (context.username !== CURSOR_REPO_AGENT_OWNER) {
-    context.log("[cursorAgentsList] denied: not owner account");
+  if (context.username !== CURSOR_AGENT_OWNER) {
+    context.log("[cursorAgentList] denied: not owner account");
     return {
       success: false,
       action,
@@ -195,7 +197,7 @@ export async function executeCursorAgentsList(
   }
 
   context.log(
-    `[cursorAgentsList] action=${action} status=${input.status} limit=${input.limit} includeArchived=${input.includeArchived} agentId=${input.agentId ?? "-"}`
+    `[cursorAgentList] action=${action} status=${input.status} limit=${input.limit} includeArchived=${input.includeArchived} agentId=${input.agentId ?? "-"}`
   );
 
   try {
@@ -312,7 +314,7 @@ export async function executeCursorAgentsList(
         : { filtered: { status: filterStatus, total: allRuns.length } }),
     };
   } catch (error) {
-    context.logError("[cursorAgentsList] failed", error);
+    context.logError("[cursorAgentList] failed", error);
     const message =
       error instanceof Error ? error.message : String(error);
     return {

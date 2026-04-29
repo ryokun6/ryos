@@ -4,10 +4,10 @@
  */
 
 import {
-  CURSOR_REPO_AGENT_OWNER,
+  CURSOR_AGENT_OWNER,
   cursorSdkEventsKey,
   cursorSdkMetaKey,
-} from "../chat/tools/cursor-repo-agent.js";
+} from "../chat/tools/cursor-agent-start.js";
 import { apiHandler } from "../_utils/api-handler.js";
 
 export const runtime = "nodejs";
@@ -59,7 +59,7 @@ export default apiHandler(
   },
   async ({ req, res, user, redis, logger, startTime }) => {
     const username = user?.username ?? "";
-    if (username !== CURSOR_REPO_AGENT_OWNER) {
+    if (username !== CURSOR_AGENT_OWNER) {
       logger.response(403, Date.now() - startTime);
       res.status(403).json({ error: "Forbidden" });
       return;

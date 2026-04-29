@@ -972,9 +972,9 @@
           "fetched": "Read {{siteName}}",
           "fetchedPage": "Read \"{{title}}\""
         },
-        "cursorRyOsRepoAgent": {
+        "cursorAgentStart": {
           "starting": "Starting Cursor Cloud agent…",
-          "panelTitle": "Cursor repo agent",
+          "panelTitle": "Cursor agent",
           "running": "Running",
           "finished": "Finished",
           "noEventsYet": "Waiting for stream events…",
@@ -993,7 +993,7 @@
             "emptyAssistant": "(No message content)"
           }
         },
-        "cursorAgentsList": {
+        "cursorAgentList": {
           "listingAgents": "Listing Cursor Cloud agents…",
           "listingRuns": "Listing Cursor Cloud runs…",
           "foundAgents": "Found {{count}} Cursor Cloud agent",

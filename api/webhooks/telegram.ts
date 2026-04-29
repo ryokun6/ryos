@@ -638,7 +638,7 @@ export default async function handler(
     username: linkedAccount.username,
     redis,
     model: telegramModel,
-    cursorRepoAgentNotifyTelegram: {
+    cursorAgentNotifyTelegram: {
       botToken,
       chatId: parsedUpdate.chatId,
     },

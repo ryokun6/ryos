@@ -1,7 +1,13 @@
 /**
- * Cursor SDK (@cursor/sdk) — Cursor Cloud Agents against ryokun6/ryos.
- * Async mode (Redis): starts run and returns immediately; events stream to Redis for polling.
- * Fallback (no Redis): blocking Agent.prompt (legacy).
+ * `cursorAgentStart` tool — kicks off a new Cursor Cloud agent run against the
+ * ryokun6/ryos GitHub repo via @cursor/sdk.
+ *
+ * Async mode (Redis): starts the run and returns immediately; events stream
+ * into Redis for the chat UI / `/api/ai/cursor-run-status` poller.
+ * Fallback (no Redis): blocking `Agent.prompt`.
+ *
+ * To inspect or follow up on running/finished agents, use the companion
+ * `cursorAgentList` tool.
  */
 
 import type { Redis } from "../../_utils/redis.js";
@@ -9,7 +15,8 @@ import { z } from "zod";
 import type { MemoryToolContext } from "./executors.js";
 import { sendTelegramMessage } from "../../_utils/telegram.js";
 
-export const CURSOR_REPO_AGENT_OWNER = "ryo";
+/** Username allowed to invoke any cursorAgent* tool. */
+export const CURSOR_AGENT_OWNER = "ryo";
 
 export const CURSOR_SDK_RUN_TTL_SEC = 86_400;
 
@@ -26,10 +33,16 @@ export function cursorSdkMetaKey(runId: string): string {
 export const DEFAULT_RYOS_GITHUB_REPO_URL = "https://github.com/ryokun6/ryos";
 
 /** Shown to the model when this tool is enabled */
-export const CURSOR_RYOS_REPO_AGENT_DESCRIPTION =
-  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram).";
+export const CURSOR_AGENT_START_DESCRIPTION =
+  "Start a new Cursor Cloud coding-agent run against the GitHub repo ryokun6/ryos (not the in-browser VFS). " +
+  "Use when the user wants to implement, debug, or refactor the real ryOS product source on GitHub. " +
+  "Do NOT use for virtual filesystem paths like /Documents or /Applets — those use the read/write/edit tools. " +
+  "Give clear instructions and acceptance criteria. Runs on CURSOR_API_KEY billing. " +
+  "The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified " +
+  "when it completes (live stream in web chat, follow-up message on Telegram). " +
+  "To check on this run later or list other running/finished agents, use `cursorAgentList`.";
 
-export const cursorRyOsRepoAgentSchema = z.object({
+export const cursorAgentStartSchema = z.object({
   prompt: z
     .string()
     .min(1)
@@ -47,19 +60,19 @@ export const cursorRyOsRepoAgentSchema = z.object({
     ),
 });
 
-export type CursorRyOsRepoAgentInput = z.infer<typeof cursorRyOsRepoAgentSchema>;
+export type CursorAgentStartInput = z.infer<typeof cursorAgentStartSchema>;
 
-export interface CursorRepoAgentTelegramNotify {
+export interface CursorAgentTelegramNotify {
   botToken: string;
   chatId: string;
   /** Optional: message to reply-to (typically the user message that started the run). */
   replyToMessageId?: number;
 }
 
-export interface CursorRyOsRepoAgentContext extends MemoryToolContext {
+export interface CursorAgentStartContext extends MemoryToolContext {
   apiKey: string;
   /** When set, send a Telegram message to this chat once the run terminates. */
-  notifyTelegram?: CursorRepoAgentTelegramNotify;
+  notifyTelegram?: CursorAgentTelegramNotify;
 }
 
 const TELEGRAM_NOTIFY_MAX_BODY_CHARS = 3500;
@@ -97,7 +110,7 @@ export function formatCursorRunCompletionTelegramMessage(input: {
 }
 
 async function notifyTelegramRunComplete(
-  notifyTelegram: CursorRepoAgentTelegramNotify | undefined,
+  notifyTelegram: CursorAgentTelegramNotify | undefined,
   text: string,
   logError: (...args: unknown[]) => void
 ): Promise<void> {
@@ -109,11 +122,11 @@ async function notifyTelegramRunComplete(
       text,
     });
   } catch (err) {
-    logError("[cursorRyOsRepoAgent] telegram notify failed", err);
+    logError("[cursorAgentStart] telegram notify failed", err);
   }
 }
 
-export type CursorRyOsRepoAgentToolOutput =
+export type CursorAgentStartToolOutput =
   | {
       async: true;
       runId: string;
@@ -152,15 +165,15 @@ async function safePushEvent(
 }
 
 async function executeBlockingPrompt(
-  input: CursorRyOsRepoAgentInput,
-  context: CursorRyOsRepoAgentContext,
+  input: CursorAgentStartInput,
+  context: CursorAgentStartContext,
   cloudOpts: {
     repoUrl: string;
     startingRef: string;
     autoCreatePR: boolean;
     modelId: string;
   }
-): Promise<CursorRyOsRepoAgentToolOutput> {
+): Promise<CursorAgentStartToolOutput> {
   const { Agent } = await import("@cursor/sdk");
   const result = await Agent.prompt(input.prompt, {
     apiKey: context.apiKey,
@@ -199,7 +212,7 @@ function spawnBackgroundCursorRun(input: {
   logError: (...args: unknown[]) => void;
   agent: import("@cursor/sdk").SDKAgent;
   run: import("@cursor/sdk").Run;
-  notifyTelegram?: CursorRepoAgentTelegramNotify;
+  notifyTelegram?: CursorAgentTelegramNotify;
 }): void {
   const {
     redis,
@@ -233,7 +246,7 @@ function spawnBackgroundCursorRun(input: {
         summary = awaited.result ?? "";
         status = awaited.status;
       } catch (waitErr) {
-        logError("[cursorRyOsRepoAgent] run.wait failed", waitErr);
+        logError("[cursorAgentStart] run.wait failed", waitErr);
       }
 
       await safePushEvent(redis, eventsKey, {
@@ -274,7 +287,7 @@ function spawnBackgroundCursorRun(input: {
         logError
       );
     } catch (e) {
-      logError("[cursorRyOsRepoAgent] background run failed", e);
+      logError("[cursorAgentStart] background run failed", e);
       const errorText = e instanceof Error ? e.message : String(e);
       await safePushEvent(redis, eventsKey, {
         ts: Date.now(),
@@ -313,20 +326,20 @@ function spawnBackgroundCursorRun(input: {
           await dispose.call(agent);
         }
       } catch (disposeErr) {
-        logError("[cursorRyOsRepoAgent] agent dispose failed", disposeErr);
+        logError("[cursorAgentStart] agent dispose failed", disposeErr);
       }
     }
   })();
 
-  log("[cursorRyOsRepoAgent] background consumer spawned", { runId, agentId });
+  log("[cursorAgentStart] background consumer spawned", { runId, agentId });
 }
 
-export async function executeCursorRyOsRepoAgent(
-  input: CursorRyOsRepoAgentInput,
-  context: CursorRyOsRepoAgentContext
-): Promise<CursorRyOsRepoAgentToolOutput> {
-  if (context.username !== CURSOR_REPO_AGENT_OWNER) {
-    context.log("[cursorRyOsRepoAgent] denied: not owner account");
+export async function executeCursorAgentStart(
+  input: CursorAgentStartInput,
+  context: CursorAgentStartContext
+): Promise<CursorAgentStartToolOutput> {
+  if (context.username !== CURSOR_AGENT_OWNER) {
+    context.log("[cursorAgentStart] denied: not owner account");
     return {
       success: false,
       error: "This tool is restricted to the owner account.",
@@ -350,11 +363,11 @@ export async function executeCursorRyOsRepoAgent(
     autoCreatePREnv !== "off";
 
   context.log(
-    `[cursorRyOsRepoAgent] repo=${repoUrl} ref=${startingRef} model=${modelId} autoCreatePR=${autoCreatePR}`
+    `[cursorAgentStart] repo=${repoUrl} ref=${startingRef} model=${modelId} autoCreatePR=${autoCreatePR}`
   );
 
   if (!context.redis) {
-    context.log("[cursorRyOsRepoAgent] no Redis — falling back to blocking Agent.prompt");
+    context.log("[cursorAgentStart] no Redis — falling back to blocking Agent.prompt");
     try {
       return await executeBlockingPrompt(input, context, {
         repoUrl,
@@ -363,7 +376,7 @@ export async function executeCursorRyOsRepoAgent(
         modelId,
       });
     } catch (e) {
-      context.logError("[cursorRyOsRepoAgent] Agent.prompt failed", e);
+      context.logError("[cursorAgentStart] Agent.prompt failed", e);
       return {
         success: false,
         error: e instanceof Error ? e.message : String(e),
@@ -404,7 +417,7 @@ export async function executeCursorRyOsRepoAgent(
           : "";
       agentTitle = namePart || fromSummary || undefined;
     } catch (e) {
-      context.log("[cursorRyOsRepoAgent] Agent.get (title) skipped", e);
+      context.log("[cursorAgentStart] Agent.get (title) skipped", e);
     }
 
     const eventsKey = cursorSdkEventsKey(runId);
@@ -456,7 +469,7 @@ export async function executeCursorRyOsRepoAgent(
         "Poll GET /api/ai/cursor-run-status?runId=… for events until a terminal entry appears.",
     };
   } catch (e) {
-    context.logError("[cursorRyOsRepoAgent] Agent.create/send failed", e);
+    context.logError("[cursorAgentStart] Agent.create/send failed", e);
     return {
       success: false,
       error: e instanceof Error ? e.message : String(e),

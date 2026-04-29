@@ -1,7 +1,7 @@
 import { Check } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
-import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
+import { CursorAgentRunCard } from "@/components/shared/CursorAgentRunCard";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   getSongLibraryCallSummary,
@@ -182,15 +182,15 @@ export function ToolInvocationMessage({
         displayCallMessage = t("apps.chats.toolCalls.webFetch.fetching", { hostname: hostname || url });
         break;
       }
-      case "cursorRyOsRepoAgent":
-        displayCallMessage = t("apps.chats.toolCalls.cursorRyOsRepoAgent.starting");
+      case "cursorAgentStart":
+        displayCallMessage = t("apps.chats.toolCalls.cursorAgentStart.starting");
         break;
-      case "cursorAgentsList": {
+      case "cursorAgentList": {
         const action = input?.action;
         displayCallMessage =
           action === "listRuns"
-            ? t("apps.chats.toolCalls.cursorAgentsList.listingRuns")
-            : t("apps.chats.toolCalls.cursorAgentsList.listingAgents");
+            ? t("apps.chats.toolCalls.cursorAgentList.listingRuns")
+            : t("apps.chats.toolCalls.cursorAgentList.listingAgents");
         break;
       }
       case "web_search":
@@ -618,7 +618,7 @@ export function ToolInvocationMessage({
           displayResultMessage = out.message;
         }
       }
-    } else if (toolName === "cursorAgentsList") {
+    } else if (toolName === "cursorAgentList") {
       const out = output as
         | {
             success?: boolean;
@@ -633,13 +633,13 @@ export function ToolInvocationMessage({
         const count = Array.isArray(out.agents) ? out.agents.length : 0;
         if (count === 0) {
           displayResultMessage = t(
-            "apps.chats.toolCalls.cursorAgentsList.noAgents"
+            "apps.chats.toolCalls.cursorAgentList.noAgents"
           );
         } else {
           displayResultMessage = t(
             count === 1
-              ? "apps.chats.toolCalls.cursorAgentsList.foundAgents"
-              : "apps.chats.toolCalls.cursorAgentsList.foundAgentsPlural",
+              ? "apps.chats.toolCalls.cursorAgentList.foundAgents"
+              : "apps.chats.toolCalls.cursorAgentList.foundAgentsPlural",
             { count }
           );
         }
@@ -647,13 +647,13 @@ export function ToolInvocationMessage({
         const count = Array.isArray(out.runs) ? out.runs.length : 0;
         if (count === 0) {
           displayResultMessage = t(
-            "apps.chats.toolCalls.cursorAgentsList.noRuns"
+            "apps.chats.toolCalls.cursorAgentList.noRuns"
           );
         } else {
           displayResultMessage = t(
             count === 1
-              ? "apps.chats.toolCalls.cursorAgentsList.foundRuns"
-              : "apps.chats.toolCalls.cursorAgentsList.foundRunsPlural",
+              ? "apps.chats.toolCalls.cursorAgentList.foundRuns"
+              : "apps.chats.toolCalls.cursorAgentList.foundRunsPlural",
             { count }
           );
         }
@@ -740,7 +740,7 @@ export function ToolInvocationMessage({
   // Async Cursor Cloud agent — server streams events to Redis; UI polls /api/ai/cursor-run-status
   if (
     state === "output-available" &&
-    toolName === "cursorRyOsRepoAgent" &&
+    toolName === "cursorAgentStart" &&
     output &&
     typeof output === "object" &&
     "async" in output &&
@@ -757,10 +757,10 @@ export function ToolInvocationMessage({
     const headerTitle =
       typeof out.agentTitle === "string" && out.agentTitle.trim().length > 0
         ? out.agentTitle.trim()
-        : t("apps.chats.toolCalls.cursorRyOsRepoAgent.panelTitle");
+        : t("apps.chats.toolCalls.cursorAgentStart.panelTitle");
 
     return (
-      <CursorRepoAgentChatCard
+      <CursorAgentRunCard
         key={partKey}
         runId={out.runId}
         headerTitle={headerTitle}

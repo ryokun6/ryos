@@ -34,19 +34,19 @@ import {
   type ChatToolsContext,
 } from "../chat/tools/index.js";
 import {
-  CURSOR_REPO_AGENT_OWNER,
-  CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
-  cursorRyOsRepoAgentSchema,
-  executeCursorRyOsRepoAgent,
-  type CursorRepoAgentTelegramNotify,
-  type CursorRyOsRepoAgentInput,
-} from "../chat/tools/cursor-repo-agent.js";
+  CURSOR_AGENT_OWNER,
+  CURSOR_AGENT_START_DESCRIPTION,
+  cursorAgentStartSchema,
+  executeCursorAgentStart,
+  type CursorAgentTelegramNotify,
+  type CursorAgentStartInput,
+} from "../chat/tools/cursor-agent-start.js";
 import {
-  CURSOR_AGENTS_LIST_DESCRIPTION,
-  cursorAgentsListSchema,
-  executeCursorAgentsList,
-  type CursorAgentsListInput,
-} from "../chat/tools/cursor-agents-list.js";
+  CURSOR_AGENT_LIST_DESCRIPTION,
+  cursorAgentListSchema,
+  executeCursorAgentList,
+  type CursorAgentListInput,
+} from "../chat/tools/cursor-agent-list.js";
 
 export interface RyoConversationSystemState {
   username?: string | null;
@@ -161,10 +161,10 @@ export interface PrepareRyoConversationOptions {
   toolContextOverrides?: Partial<ChatToolsContext>;
   preloadedMemoryContext?: LoadedRyoMemoryContext;
   /**
-   * When set (typically by the Telegram webhook), the cursorRyOsRepoAgent tool
+   * When set (typically by the Telegram webhook), the `cursorAgentStart` tool
    * will send a Telegram message to this chat once a background run completes.
    */
-  cursorRepoAgentNotifyTelegram?: CursorRepoAgentTelegramNotify;
+  cursorAgentNotifyTelegram?: CursorAgentTelegramNotify;
 }
 
 export interface PreparedRyoConversation {
@@ -718,7 +718,7 @@ export async function prepareRyoConversationModelInput(
     toolProfile = CHANNEL_TOOL_PROFILES[channel],
     toolContextOverrides,
     preloadedMemoryContext,
-    cursorRepoAgentNotifyTelegram,
+    cursorAgentNotifyTelegram,
   } = options;
 
   const userTimeZone = systemState?.userLocalTime?.timeZone || timeZone;
@@ -736,13 +736,13 @@ export async function prepareRyoConversationModelInput(
     buildContextAwarePrompts(channel);
 
   const cursorApiKey = process.env.CURSOR_API_KEY?.trim();
-  const enableCursorRepoTool =
-    username === CURSOR_REPO_AGENT_OWNER && !!cursorApiKey;
+  const enableCursorAgentTools =
+    username === CURSOR_AGENT_OWNER && !!cursorApiKey;
 
-  const cursorSdkAddon = enableCursorRepoTool
+  const cursorSdkAddon = enableCursorAgentTools
     ? channel === "telegram"
-      ? `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge it briefly to the user — they will receive a follow-up Telegram message with the result when the run completes.\n\nYou also have access to \`cursorAgentsList\` to inspect Cursor Cloud agents and their runs (action 'listAgents' or 'listRuns'). Use it when the user asks which Cursor agents are done/running or wants the latest results from a previous run.`
-      : `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub.\n\nYou also have access to \`cursorAgentsList\` to inspect Cursor Cloud agents and their runs (action 'listAgents' or 'listRuns'). Use it when the user asks which Cursor agents are done/running or wants the latest results from a previous run.`
+      ? `\n\n## CURSOR CLOUD AGENTS\nYou have two paired tools backed by Cursor Cloud against ryokun6/ryos:\n- \`cursorAgentStart\`: kick off a new coding-agent run. Use for substantive edits to the real ryOS GitHub source. Do NOT use for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). The run is asynchronous: acknowledge it briefly — the user will receive a follow-up Telegram message with the result when the run completes.\n- \`cursorAgentList\`: read-only inspection of agents and runs already on the workspace. Use when the user asks which agents are done/running or wants the latest results from a previous run.`
+      : `\n\n## CURSOR CLOUD AGENTS\nYou have two paired tools backed by Cursor Cloud against ryokun6/ryos:\n- \`cursorAgentStart\`: kick off a new coding-agent run. Use for substantive edits to the real ryOS GitHub source. Do NOT use for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.).\n- \`cursorAgentList\`: read-only inspection of agents and runs already on the workspace. Use when the user asks which agents are done/running or wants the latest results from a previous run.`
     : "";
 
   const staticSystemPrompt = staticPrompts.join("\n") + cursorSdkAddon;
@@ -780,16 +780,16 @@ export async function prepareRyoConversationModelInput(
     { profile: toolProfile }
   );
 
-  const cursorRepoTools: ToolSet =
-    enableCursorRepoTool &&
+  const cursorAgentTools: ToolSet =
+    enableCursorAgentTools &&
     cursorApiKey &&
     (toolProfile === "all" || toolProfile === "telegram")
       ? {
-          cursorRyOsRepoAgent: {
-            description: CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
-            inputSchema: cursorRyOsRepoAgentSchema,
-            execute: async (input: CursorRyOsRepoAgentInput) =>
-              executeCursorRyOsRepoAgent(input, {
+          cursorAgentStart: {
+            description: CURSOR_AGENT_START_DESCRIPTION,
+            inputSchema: cursorAgentStartSchema,
+            execute: async (input: CursorAgentStartInput) =>
+              executeCursorAgentStart(input, {
                 log,
                 logError,
                 env: {
@@ -800,17 +800,17 @@ export async function prepareRyoConversationModelInput(
                 redis,
                 timeZone: userTimeZone,
                 apiKey: cursorApiKey,
-                ...(cursorRepoAgentNotifyTelegram
-                  ? { notifyTelegram: cursorRepoAgentNotifyTelegram }
+                ...(cursorAgentNotifyTelegram
+                  ? { notifyTelegram: cursorAgentNotifyTelegram }
                   : {}),
                 ...toolContextOverrides,
               }),
           },
-          cursorAgentsList: {
-            description: CURSOR_AGENTS_LIST_DESCRIPTION,
-            inputSchema: cursorAgentsListSchema,
-            execute: async (input: CursorAgentsListInput) =>
-              executeCursorAgentsList(input, {
+          cursorAgentList: {
+            description: CURSOR_AGENT_LIST_DESCRIPTION,
+            inputSchema: cursorAgentListSchema,
+            execute: async (input: CursorAgentListInput) =>
+              executeCursorAgentList(input, {
                 log,
                 logError,
                 env: {
@@ -829,7 +829,7 @@ export async function prepareRyoConversationModelInput(
 
   const tools: ToolSet = {
     ...baseTools,
-    ...cursorRepoTools,
+    ...cursorAgentTools,
     ...(shouldEnableOpenAIWebSearch({ model, username })
       ? {
           web_search: createOpenAIWebSearchTool(systemState),

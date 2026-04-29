@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import {
-  cursorAgentsListSchema,
-  executeCursorAgentsList,
-} from "../api/chat/tools/cursor-agents-list.js";
+  cursorAgentListSchema,
+  executeCursorAgentList,
+} from "../api/chat/tools/cursor-agent-list.js";
 
 const SDK_PATH = "@cursor/sdk";
 
@@ -33,9 +33,9 @@ afterEach(() => {
   mock.restore();
 });
 
-describe("cursorAgentsListSchema", () => {
+describe("cursorAgentListSchema", () => {
   test("requires agentId for listRuns", () => {
-    const parsed = cursorAgentsListSchema.safeParse({
+    const parsed = cursorAgentListSchema.safeParse({
       action: "listRuns",
     });
     expect(parsed.success).toBe(false);
@@ -47,7 +47,7 @@ describe("cursorAgentsListSchema", () => {
   });
 
   test("listAgents has sensible defaults", () => {
-    const parsed = cursorAgentsListSchema.safeParse({});
+    const parsed = cursorAgentListSchema.safeParse({});
     expect(parsed.success).toBe(true);
     if (parsed.success) {
       expect(parsed.data.action).toBe("listAgents");
@@ -58,9 +58,9 @@ describe("cursorAgentsListSchema", () => {
   });
 });
 
-describe("executeCursorAgentsList owner gate", () => {
+describe("executeCursorAgentList owner gate", () => {
   test("rejects callers whose username is not the repo owner", async () => {
-    const result = await executeCursorAgentsList(
+    const result = await executeCursorAgentList(
       {
         action: "listAgents",
         status: "any",
@@ -80,7 +80,7 @@ describe("executeCursorAgentsList owner gate", () => {
   });
 });
 
-describe("executeCursorAgentsList listAgents", () => {
+describe("executeCursorAgentList listAgents", () => {
   test("returns mapped agents with web URLs and applies status filter", async () => {
     listMock.mockImplementation(async () => ({
       items: [
@@ -107,7 +107,7 @@ describe("executeCursorAgentsList listAgents", () => {
       nextCursor: "cursor-abc",
     }));
 
-    const result = await executeCursorAgentsList(
+    const result = await executeCursorAgentList(
       {
         action: "listAgents",
         status: "finished",
@@ -153,7 +153,7 @@ describe("executeCursorAgentsList listAgents", () => {
       ],
     }));
 
-    const result = await executeCursorAgentsList(
+    const result = await executeCursorAgentList(
       {
         action: "listAgents",
         status: "any",
@@ -172,7 +172,7 @@ describe("executeCursorAgentsList listAgents", () => {
   });
 });
 
-describe("executeCursorAgentsList listRuns", () => {
+describe("executeCursorAgentList listRuns", () => {
   test("maps runs with truncated result preview", async () => {
     listRunsMock.mockImplementation(async () => ({
       items: [
@@ -200,7 +200,7 @@ describe("executeCursorAgentsList listRuns", () => {
       ],
     }));
 
-    const result = await executeCursorAgentsList(
+    const result = await executeCursorAgentList(
       {
         action: "listRuns",
         agentId: "bc-aaa",

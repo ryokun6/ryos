@@ -12,7 +12,7 @@ import {
 import { coalesceCursorRunRows } from "@/lib/cursorSdkRunCoalesce";
 import { useCursorAgentRunPoll } from "@/components/shared/useCursorAgentRunPoll";
 
-interface CursorRepoAgentChatCardProps {
+interface CursorAgentRunCardProps {
   runId: string;
   /** Banner title (agent catalog name or default i18n label) */
   headerTitle: string;
@@ -21,14 +21,15 @@ interface CursorRepoAgentChatCardProps {
 }
 
 /**
- * Cursor Cloud async tool: intro sits above the frame; banner shows resolved agent title + status badge;
- * body streams agent messages (HtmlPreview-like).
+ * Cursor Cloud async run card for `cursorAgentStart`: intro sits above the
+ * frame; banner shows resolved agent title + status badge; body streams agent
+ * messages (HtmlPreview-like).
  */
-export function CursorRepoAgentChatCard({
+export function CursorAgentRunCard({
   runId,
   headerTitle,
   introMessage,
-}: CursorRepoAgentChatCardProps) {
+}: CursorAgentRunCardProps) {
   const { t } = useTranslation();
   const { events, done, error, metaAgentTitle } = useCursorAgentRunPoll(runId);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -86,12 +87,12 @@ export function CursorRepoAgentChatCard({
             {!done ? (
               <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-amber-900 dark:text-amber-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
-                {t("apps.chats.toolCalls.cursorRyOsRepoAgent.running")}
+                {t("apps.chats.toolCalls.cursorAgentStart.running")}
               </span>
             ) : (
               <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-emerald-900 dark:text-emerald-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
-                {t("apps.chats.toolCalls.cursorRyOsRepoAgent.finished")}
+                {t("apps.chats.toolCalls.cursorAgentStart.finished")}
               </span>
             )}
           </div>
@@ -109,7 +110,7 @@ export function CursorRepoAgentChatCard({
           >
             {events.length === 0 ? (
               <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                {t("apps.chats.toolCalls.cursorRyOsRepoAgent.noEventsYet")}
+                {t("apps.chats.toolCalls.cursorAgentStart.noEventsYet")}
               </span>
             ) : (
               coalesceCursorRunRows(events)

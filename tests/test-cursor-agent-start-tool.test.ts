@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import {
   DEFAULT_RYOS_GITHUB_REPO_URL,
-  executeCursorRyOsRepoAgent,
+  executeCursorAgentStart,
   formatCursorRunCompletionTelegramMessage,
-} from "../api/chat/tools/cursor-repo-agent.js";
+} from "../api/chat/tools/cursor-agent-start.js";
 
-describe("cursorRyOsRepoAgent gate", () => {
+describe("cursorAgentStart gate", () => {
   test("rejects callers whose username is not the repo owner", async () => {
-    const result = await executeCursorRyOsRepoAgent(
+    const result = await executeCursorAgentStart(
       { prompt: "touch foo" },
       {
         username: "alice",

@@ -30,16 +30,16 @@ export function getTelegramToolStatusText(
       return getTelegramContactsStatusText(input);
     case "songLibraryControl":
       return getTelegramSongLibraryStatusText(input);
-    case "cursorRyOsRepoAgent":
+    case "cursorAgentStart":
       return "Starting Cursor cloud agent...";
-    case "cursorAgentsList":
-      return getTelegramCursorAgentsListStatusText(input);
+    case "cursorAgentList":
+      return getTelegramCursorAgentListStatusText(input);
     default:
       return "Using a tool...";
   }
 }
 
-function getTelegramCursorAgentsListStatusText(input: unknown): string {
+function getTelegramCursorAgentListStatusText(input: unknown): string {
   const action =
     input && typeof input === "object" && "action" in input
       ? String((input as { action?: unknown }).action || "")
