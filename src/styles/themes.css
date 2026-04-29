@@ -969,17 +969,17 @@
   font-smooth: auto !important;
 }
 :root[data-os-theme="macosx"] .videos-lcd .font-geneva-12.text-\[10px\] {
-  font-family: Geneva-12, monospace !important;
+  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", monospace !important;
 }
 
 :root[data-os-theme="macosx"] .videos-lcd .font-geneva-12 .text-xl {
   font-size: 1.25rem !important;
-  font-family: Geneva-12, monospace !important;
+  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", monospace !important;
 }
 
 :root[data-os-theme="macosx"] .videos-lcd .text-xl {
   font-size: 1.25rem !important;
-  font-family: Geneva-12, monospace !important;
+  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", monospace !important;
 }
 
 /* Ensure AnimatedNumber components inherit correct size */
@@ -990,7 +990,7 @@
 
 :root[data-os-theme="macosx"] .videos-lcd .font-geneva-12.text-\[18px\] {
   font-size: 18px !important;
-  font-family: Geneva-12, monospace !important;
+  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", monospace !important;
 }
 
 /* Videos LCD macOS X color scheme (inspired by Minesweeper LCD) */
