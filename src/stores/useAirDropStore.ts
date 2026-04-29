@@ -7,6 +7,7 @@ import {
 } from "@/lib/pusherClient";
 import type { PusherChannel } from "@/lib/pusherClient";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 
 const AIRDROP_PRESENCE_TTL_MS = 60_000;
 const AIRDROP_LOBBY_CHANNEL = "airdrop-lobby";
@@ -187,14 +188,16 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
         body: JSON.stringify({ recipient, fileName, fileType, content }),
       });
       if (res.ok) {
-        toast.success(`Sent "${fileName}" to @${recipient}`);
+        toast.success(
+          i18n.t("common.airdrop.sentFileTo", { fileName, recipient })
+        );
         return true;
       }
-      const err = await res.json().catch(() => ({ error: "Send failed" }));
-      toast.error(err.error || "Failed to send file");
+      const err = await res.json().catch(() => ({ error: i18n.t("common.airdrop.sendFailed") }));
+      toast.error(err.error || i18n.t("common.airdrop.failedToSendFile"));
       return false;
     } catch {
-      toast.error("Failed to send file");
+      toast.error(i18n.t("common.airdrop.failedToSendFile"));
       return false;
     } finally {
       set({ isSending: false });
@@ -250,7 +253,9 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
         fileName: string;
         recipient: string;
       };
-      toast.success(`@${recipient} accepted "${fileName}"`);
+      toast.success(
+        i18n.t("common.airdrop.acceptedFile", { fileName, recipient })
+      );
     });
 
     channel.bind("airdrop-declined", (data: unknown) => {
@@ -258,7 +263,9 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
         fileName: string;
         recipient: string;
       };
-      toast.error(`@${recipient} declined "${fileName}"`);
+      toast.error(
+        i18n.t("common.airdrop.declinedFile", { fileName, recipient })
+      );
     });
 
     set({ pusherChannel: channel, subscribedUsername: username });

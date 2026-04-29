@@ -481,7 +481,7 @@ export function useKaraokeLogic({
       showOfflineStatus();
     } else if (listenRemoteOnly) {
       void sendRemotePlaybackCommand({ action: "previous" }).then((r) => {
-        if (!r.ok) toast.error(r.error ?? "Could not skip");
+        if (!r.ok) toast.error(r.error ?? t("common.listenAlong.couldNotSkip"));
       });
       showStatus("⏮");
     } else {
@@ -497,6 +497,7 @@ export function useKaraokeLogic({
     showOfflineStatus,
     showStatus,
     startTrackSwitch,
+    t,
   ]);
 
   const handlePlayPause = useCallback(() => {
@@ -508,7 +509,7 @@ export function useKaraokeLogic({
       const positionMs = Math.round(useKaraokeStore.getState().elapsedTime * 1000);
       const action = isPlaying ? "pause" : "play";
       void sendRemotePlaybackCommand({ action, positionMs }).then((r) => {
-        if (!r.ok) toast.error(r.error ?? "Remote control failed");
+        if (!r.ok) toast.error(r.error ?? t("common.listenAlong.remoteControlFailed"));
       });
       showStatus(isPlaying ? "⏸" : "▶");
     } else {
@@ -523,6 +524,7 @@ export function useKaraokeLogic({
     showOfflineStatus,
     togglePlay,
     showStatus,
+    t,
   ]);
 
   const handleNext = useCallback(() => {
@@ -530,7 +532,7 @@ export function useKaraokeLogic({
       showOfflineStatus();
     } else if (listenRemoteOnly) {
       void sendRemotePlaybackCommand({ action: "next" }).then((r) => {
-        if (!r.ok) toast.error(r.error ?? "Could not skip");
+        if (!r.ok) toast.error(r.error ?? t("common.listenAlong.couldNotSkip"));
       });
       showStatus("⏭");
     } else {
@@ -546,6 +548,7 @@ export function useKaraokeLogic({
     showOfflineStatus,
     showStatus,
     startTrackSwitch,
+    t,
   ]);
 
   useEffect(() => {
@@ -814,7 +817,7 @@ export function useKaraokeLogic({
 
       return true;
     },
-    [getActivePlayer, isPlaying, setIsPlaying]
+    [getActivePlayer, isPlaying, setIsPlaying, listenRemoteOnly, sendRemotePlaybackCommand, showStatus, t]
   );
 
   // Seek to absolute time (in ms) and start playing
@@ -827,7 +830,7 @@ export function useKaraokeLogic({
 
       if (listenRemoteOnly) {
         void sendRemotePlaybackCommand({ action: "seek", positionMs: playerTimeMs }).then((r) => {
-          if (!r.ok) toast.error(r.error ?? "Could not seek");
+          if (!r.ok) toast.error(r.error ?? t("common.listenAlong.couldNotSeek"));
         });
         showStatus(
           `▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`
@@ -847,6 +850,7 @@ export function useKaraokeLogic({
       seekActivePlayerToMs,
       showStatus,
       currentTrack?.lyricOffset,
+      t,
     ]
   );
 
@@ -958,72 +962,74 @@ export function useKaraokeLogic({
 
   const handleStartListenSession = useCallback(async () => {
     if (!username) {
-      toast.error("Login required", {
-        description: "Set a username in Chats to start a session.",
+      toast.error(t("common.listenAlong.loginRequired"), {
+        description: t("common.listenAlong.loginRequiredDescription"),
       });
       return;
     }
     const result = await createListenSession(username);
     if (!result.ok) {
-      toast.error("Failed to start session", {
-        description: result.error || "Please try again.",
+      toast.error(t("common.listenAlong.failedToStartSession"), {
+        description: result.error || t("common.errors.pleaseTryAgain"),
       });
       return;
     }
     setIsListenInviteOpen(true);
-  }, [createListenSession, username]);
+  }, [createListenSession, username, t]);
 
   const handleJoinListenSession = useCallback(
     async (sessionId: string) => {
       // Allow anonymous users to join (username will be undefined)
       const result = await joinListenSession(sessionId, username || undefined);
       if (!result.ok) {
-        toast.error("Failed to join session", {
-          description: result.error || "Please try again.",
+        toast.error(t("common.listenAlong.failedToJoinSession"), {
+          description: result.error || t("common.errors.pleaseTryAgain"),
         });
         return;
       }
     },
-    [joinListenSession, username]
+    [joinListenSession, username, t]
   );
 
   const handleLeaveListenSession = useCallback(async () => {
     const result = await leaveListenSession();
     if (!result.ok) {
-      toast.error("Failed to leave session", {
-        description: result.error || "Please try again.",
+      toast.error(t("common.listenAlong.failedToLeaveSession"), {
+        description: result.error || t("common.errors.pleaseTryAgain"),
       });
       return;
     }
     setIsListenInviteOpen(false);
-  }, [leaveListenSession]);
+  }, [leaveListenSession, t]);
 
   const handleAssignPlaybackDevice = useCallback(
     async (nextDj: string, nextDjClientInstanceId: string) => {
       const result = await assignListenDj(nextDj, nextDjClientInstanceId);
       if (!result.ok) {
-        toast.error("Could not set playback device", {
-          description: result.error || "Please try again.",
+        toast.error(t("common.listenAlong.couldNotSetPlaybackDevice"), {
+          description: result.error || t("common.errors.pleaseTryAgain"),
         });
       } else {
-        toast.success("Playback device updated", {
-          description: `@${nextDj} plays audio for the group.`,
+        toast.success(t("common.listenAlong.playbackDeviceUpdated"), {
+          description: t("common.listenAlong.playbackDeviceUpdatedDescription", {
+            username: nextDj,
+          }),
         });
       }
     },
-    [assignListenDj]
+    [assignListenDj, t]
   );
 
   const handleTransferSessionHost = useCallback(
     async (nextHost: string, nextHostClientInstanceId: string) => {
       const result = await transferListenHost(nextHost, nextHostClientInstanceId);
       if (!result.ok) {
-        toast.error("Could not transfer host", {
-          description: result.error || "Please try again.",
+        toast.error(t("common.listenAlong.couldNotTransferHost"), {
+          description: result.error || t("common.errors.pleaseTryAgain"),
         });
       }
     },
-    [transferListenHost]
+    [transferListenHost, t]
   );
 
   const handlePassDj = useCallback(
@@ -1043,12 +1049,14 @@ export function useKaraokeLogic({
         djClientInstanceId: nextDjClientInstanceId,
       });
       if (!result.ok) {
-        toast.error("Failed to pass DJ", {
-          description: result.error || "Please try again.",
+        toast.error(t("common.listenAlong.failedToPassDj"), {
+          description: result.error || t("common.errors.pleaseTryAgain"),
         });
       } else {
-        toast.success("DJ passed", {
-          description: `@${nextDj} is now the DJ.`,
+        toast.success(t("common.listenAlong.djPassed"), {
+          description: t("common.listenAlong.djPassedDescription", {
+            username: nextDj,
+          }),
         });
       }
     },
@@ -1060,6 +1068,7 @@ export function useKaraokeLogic({
       isListenSessionHost,
       isPlaying,
       syncListenSession,
+      t,
     ]
   );
 
@@ -1133,7 +1142,7 @@ export function useKaraokeLogic({
         }
         void pushListenState().then((r) => {
           if (!r.ok) {
-            toast.error("Could not sync after remote control", {
+            toast.error(t("common.listenAlong.couldNotSyncAfterRemoteControl"), {
               description: r.error ?? undefined,
             });
           }
@@ -1153,18 +1162,19 @@ export function useKaraokeLogic({
     setIsPlaying,
     startTrackSwitch,
     takeRemoteCommands,
+    t,
   ]);
 
   const handleSendReaction = useCallback(
     async (emoji: string) => {
       const result = await sendListenReaction(emoji);
       if (!result.ok) {
-        toast.error("Failed to send reaction", {
-          description: result.error || "Please try again.",
+        toast.error(t("common.listenAlong.failedToSendReaction"), {
+          description: result.error || t("common.errors.pleaseTryAgain"),
         });
       }
     },
-    [sendListenReaction]
+    [sendListenReaction, t]
   );
 
   // Generate share URL for song
@@ -1215,7 +1225,7 @@ export function useKaraokeLogic({
               cover: result.thumbnail,
             },
           });
-          if (!r.ok) toast.error(r.error ?? "Could not queue track");
+          if (!r.ok) toast.error(r.error ?? t("common.listenAlong.couldNotQueueTrack"));
           showStatus(t("apps.ipod.status.added"));
           return;
         }
@@ -1234,16 +1244,16 @@ export function useKaraokeLogic({
       if (listenRemoteOnly) {
         const id = getYouTubeVideoId(url);
         if (!id) {
-          toast.error("Only YouTube links can be queued remotely");
+          toast.error(t("common.listenAlong.youtubeOnlyRemoteQueue"));
           return;
         }
         const r = await sendRemotePlaybackCommand({ action: "playTrack", trackId: id });
-        if (!r.ok) toast.error(r.error ?? "Could not queue track");
+        if (!r.ok) toast.error(r.error ?? t("common.listenAlong.couldNotQueueTrack"));
         return;
       }
       await handleAddTrack(url);
     },
-    [handleAddTrack, listenRemoteOnly, sendRemotePlaybackCommand]
+    [handleAddTrack, listenRemoteOnly, sendRemotePlaybackCommand, t]
   );
 
   // Play track handler for Library menu
@@ -1260,7 +1270,7 @@ export function useKaraokeLogic({
             ? { title: tr.title, artist: tr.artist, cover: tr.cover }
             : undefined,
         }).then((r) => {
-          if (!r.ok) toast.error(r.error ?? "Could not queue track");
+          if (!r.ok) toast.error(r.error ?? t("common.listenAlong.couldNotQueueTrack"));
         });
         return;
       }
@@ -1301,7 +1311,7 @@ export function useKaraokeLogic({
             ? { title: tr.title, artist: tr.artist, cover: tr.cover }
             : undefined,
         }).then((r) => {
-          if (!r.ok) toast.error(r.error ?? "Could not queue track");
+          if (!r.ok) toast.error(r.error ?? t("common.listenAlong.couldNotQueueTrack"));
         });
         setIsCoverFlowOpen(false);
         return;
@@ -1336,7 +1346,7 @@ export function useKaraokeLogic({
             ? { title: tr.title, artist: tr.artist, cover: tr.cover }
             : undefined,
         }).then((r) => {
-          if (!r.ok) toast.error(r.error ?? "Could not queue track");
+          if (!r.ok) toast.error(r.error ?? t("common.listenAlong.couldNotQueueTrack"));
         });
         return;
       }
@@ -1482,8 +1492,8 @@ export function useKaraokeLogic({
         joinListenSession(sessionIdToProcess, username || undefined)
           .then((result) => {
             if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
+              toast.error(t("common.listenAlong.failedToJoinSession"), {
+                description: result.error || t("common.errors.pleaseTryAgain"),
               });
             }
             if (instanceId) clearInstanceInitialData(instanceId);
@@ -1494,7 +1504,7 @@ export function useKaraokeLogic({
       }, 100);
       lastProcessedListenSessionRef.current = initialData.listenSessionId;
     }
-  }, [isWindowOpen, initialData, joinListenSession, username, clearInstanceInitialData, instanceId]);
+  }, [isWindowOpen, initialData, joinListenSession, username, clearInstanceInitialData, instanceId, t]);
 
   // Handle updateApp event for when app is already open and receives new video
   useEffect(() => {
@@ -1516,7 +1526,9 @@ export function useKaraokeLogic({
         }
         processVideoId(videoId).catch((error) => {
           console.error(`[Karaoke] Error processing videoId ${videoId}:`, error);
-          toast.error("Failed to load shared track", { description: `Video ID: ${videoId}` });
+          toast.error(t("common.listenAlong.failedToLoadSharedTrack"), {
+            description: t("common.listenAlong.videoIdLabel", { videoId }),
+          });
         });
         lastProcessedInitialDataRef.current = updateInitialData;
       }
@@ -1534,8 +1546,8 @@ export function useKaraokeLogic({
         joinListenSession(sessionId, username || undefined)
           .then((result) => {
             if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
+              toast.error(t("common.listenAlong.failedToJoinSession"), {
+                description: result.error || t("common.errors.pleaseTryAgain"),
               });
             }
           })
@@ -1547,7 +1559,7 @@ export function useKaraokeLogic({
     };
 
     return onAppUpdate(handleUpdateApp);
-  }, [processVideoId, bringInstanceToForeground, joinListenSession, username, instanceId]);
+  }, [processVideoId, bringInstanceToForeground, joinListenSession, username, instanceId, t]);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";

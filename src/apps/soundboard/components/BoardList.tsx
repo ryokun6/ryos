@@ -86,7 +86,9 @@ export function BoardList({
           >
             <Select value={selectedDeviceId} onValueChange={onDeviceSelect}>
               <SelectTrigger className="w-full h-7 text-xs">
-                <SelectValue placeholder="Select microphone" />
+                <SelectValue
+                  placeholder={t("apps.soundboard.selectMicrophone")}
+                />
               </SelectTrigger>
               <SelectContent>
                 {audioDevices.map((device) => (
@@ -96,7 +98,9 @@ export function BoardList({
                     className="text-xs"
                   >
                     {device.label ||
-                      `Microphone ${device.deviceId.slice(0, 4)}...`}
+                      t("apps.soundboard.defaultMicrophoneLabel", {
+                        id: device.deviceId.slice(0, 4),
+                      })}
                   </SelectItem>
                 ))}
               </SelectContent>

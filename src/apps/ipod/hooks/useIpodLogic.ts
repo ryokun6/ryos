@@ -926,8 +926,8 @@ export function useIpodLogic({
         joinListenSession(sessionIdToProcess, username || undefined)
           .then((result) => {
             if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
+              toast.error(t("common.listenAlong.failedToJoinSession"), {
+                description: result.error || t("common.errors.pleaseTryAgain"),
               });
             }
             if (instanceId) clearIpodInitialData(instanceId);
@@ -945,6 +945,7 @@ export function useIpodLogic({
     username,
     clearIpodInitialData,
     instanceId,
+    t,
   ]);
 
   // Update app event handling
@@ -967,8 +968,8 @@ export function useIpodLogic({
         }
         processVideoId(videoId).catch((error) => {
           console.error(`Error processing videoId ${videoId}:`, error);
-          toast.error("Failed to load shared track", {
-            description: `Video ID: ${videoId}`,
+          toast.error(t("common.listenAlong.failedToLoadSharedTrack"), {
+            description: t("common.listenAlong.videoIdLabel", { videoId }),
           });
         });
         lastProcessedInitialDataRef.current = updateInitialData;
@@ -987,8 +988,8 @@ export function useIpodLogic({
         joinListenSession(sessionId, username || undefined)
           .then((result) => {
             if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
+              toast.error(t("common.listenAlong.failedToJoinSession"), {
+                description: result.error || t("common.errors.pleaseTryAgain"),
               });
             }
           })
@@ -998,7 +999,7 @@ export function useIpodLogic({
         lastProcessedListenSessionRef.current = sessionId;
       }
     });
-  }, [bringInstanceToForeground, instanceId, joinListenSession, processVideoId, username]);
+  }, [bringInstanceToForeground, instanceId, joinListenSession, processVideoId, username, t]);
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {

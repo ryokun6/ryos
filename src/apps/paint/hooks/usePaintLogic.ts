@@ -270,10 +270,10 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
       setLastFilePath(filePath);
       setHasUnsavedChanges(false);
       setIsSaveDialogOpen(false);
-      toast.success("Image saved successfully");
+      toast.success(t("apps.paint.dialogs.imageSavedSuccessfully"));
     } catch (err) {
       console.error("Error saving file:", err);
-      toast.error("Failed to save image");
+      toast.error(t("apps.paint.dialogs.failedToSaveImage"));
     }
   };
 

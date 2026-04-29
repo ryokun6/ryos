@@ -1,11 +1,13 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { loginWithPassword, verifyAuthToken } from "@/api/auth";
 
 export function useAuth() {
+  const { t } = useTranslation();
   const {
     username,
     isAuthenticated,
@@ -57,7 +59,7 @@ export function useAuth() {
 
     const trimmedUsername = newUsername.trim();
     if (!trimmedUsername) {
-      setUsernameError("Username cannot be empty.");
+      setUsernameError(t("common.auth.validation.usernameCannotBeEmpty"));
       setIsSettingUsername(false);
       return;
     }
@@ -67,13 +69,13 @@ export function useAuth() {
     }
 
     if (!newPassword.trim()) {
-      setUsernameError("Password is required.");
+      setUsernameError(t("common.auth.validation.passwordRequired"));
       setIsSettingUsername(false);
       return;
     }
 
     if (newPassword.length < 8) {
-      setUsernameError("Password must be at least 8 characters.");
+      setUsernameError(t("common.auth.validation.passwordMinLength"));
       setIsSettingUsername(false);
       return;
     }
@@ -84,15 +86,15 @@ export function useAuth() {
       setIsUsernameDialogOpen(false);
       setNewUsername("");
       setNewPassword("");
-      toast.success("Logged In", {
-        description: `Welcome, ${trimmedUsername}!`,
+      toast.success(t("common.auth.toast.loggedIn"), {
+        description: t("common.auth.toast.welcomeUser", { username: trimmedUsername }),
       });
     } else {
-      setUsernameError(result.error || "Failed to set username");
+      setUsernameError(result.error || t("common.auth.toast.failedToSetUsername"));
     }
 
     setIsSettingUsername(false);
-  }, [newUsername, newPassword, createUser, username, logout]);
+  }, [newUsername, newPassword, createUser, username, logout, t]);
 
   const promptVerifyToken = useCallback(() => {
     setVerifyTokenInput("");
@@ -105,7 +107,7 @@ export function useAuth() {
   const handleVerifyTokenSubmit = useCallback(
     async (input: string, isPassword: boolean = false) => {
       if (!input.trim()) {
-        setVerifyError(isPassword ? "Password required" : "Token required");
+        setVerifyError(isPassword ? t("common.auth.validation.passwordFieldRequired") : t("common.auth.validation.tokenRequired"));
         return;
       }
 
@@ -130,8 +132,8 @@ export function useAuth() {
             track(APP_ANALYTICS.USER_LOGIN_PASSWORD, {
               username: result.username,
             });
-            toast.success("Success", {
-              description: "Logged in successfully with password",
+            toast.success(t("common.auth.toast.success"), {
+              description: t("common.auth.toast.loggedInWithPassword"),
             });
             setVerifyDialogOpen(false);
             setVerifyPasswordInput("");
@@ -153,8 +155,8 @@ export function useAuth() {
             track(APP_ANALYTICS.USER_LOGIN_TOKEN, {
               username: result.username,
             });
-            toast.success("Success", {
-              description: "Token verified and set successfully",
+            toast.success(t("common.auth.toast.success"), {
+              description: t("common.auth.toast.tokenVerified"),
             });
             setVerifyDialogOpen(false);
             setVerifyTokenInput("");
@@ -164,13 +166,13 @@ export function useAuth() {
       } catch (err) {
         console.error("[useAuth] Error verifying:", err);
         const message =
-          err instanceof Error ? err.message : "Network error while verifying";
+          err instanceof Error ? err.message : t("common.auth.toast.networkErrorVerifying");
         setVerifyError(message);
       } finally {
         setIsVerifyingToken(false);
       }
     },
-    [setAuthenticated, setUsername, username, verifyUsernameInput, isAuthenticated, logout]
+    [setAuthenticated, setUsername, username, verifyUsernameInput, isAuthenticated, logout, t]
   );
 
   const checkHasPassword = useCallback(async () => {
@@ -198,10 +200,10 @@ export function useAuth() {
 
     await logout();
 
-    toast.success("Logged Out", {
-      description: "You have been successfully logged out.",
+    toast.success(t("common.auth.toast.loggedOut"), {
+      description: t("common.auth.toast.loggedOutDescription"),
     });
-  }, [logout]);
+  }, [logout, t]);
 
   const promptLogout = useCallback(async () => {
     setIsLogoutConfirmDialogOpen(true);

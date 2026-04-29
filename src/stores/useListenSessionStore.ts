@@ -3,6 +3,7 @@ import type { PusherChannel } from "@/lib/pusherClient";
 import { getPusherClient } from "@/lib/pusherClient";
 import { toast } from "@/hooks/useToast";
 import { useChatsStore } from "@/stores/useChatsStore";
+import i18n from "@/lib/i18n";
 import {
   assignListenSessionDj,
   createListenSession,
@@ -550,8 +551,8 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     });
 
     channelRef.bind("session-ended", () => {
-      toast("Session ended", {
-        description: "The host ended the listening session.",
+      toast(i18n.t("common.listenSession.sessionEnded"), {
+        description: i18n.t("common.listenSession.sessionEndedDescription"),
       });
       unsubscribeFromSession();
       set({
@@ -566,8 +567,10 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       ({ djUsername }: { djUsername: string }) => {
         const state = get();
         if (!state.currentSession || state.isDj) return;
-        toast.warning("DJ disconnected", {
-          description: `@${djUsername} appears to have disconnected.`,
+        toast.warning(i18n.t("common.listenSession.djDisconnected"), {
+          description: i18n.t("common.listenSession.djDisconnectedDescription", {
+            username: djUsername,
+          }),
           duration: 8000,
         });
       }

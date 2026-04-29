@@ -283,17 +283,18 @@ export function InternetExplorerAppComponent({
     // Map ErrorResponse to ErrorPageProps
     const title =
       errorDetails.type === "network"
-        ? "Cannot find server or DNS Error"
-        : "Error";
-    const primaryMessage = errorDetails.message || "An error occurred";
+        ? t("apps.internet-explorer.cannotFindServerOrDnsError")
+        : t("apps.internet-explorer.error");
+    const primaryMessage =
+      errorDetails.message || t("apps.internet-explorer.anErrorOccurred");
     const secondaryMessage = errorDetails.details;
     const suggestions = [
-      "Check the web address you typed and try again.",
-      "Go back to the previous page.",
-      "Try refreshing the page.",
+      t("apps.internet-explorer.checkWebAddressAndTryAgain"),
+      t("apps.internet-explorer.goBackToPreviousPage"),
+      t("apps.internet-explorer.tryRefreshingThePage"),
     ];
     const footerText = errorDetails.hostname
-      ? `Host: ${errorDetails.hostname}`
+      ? t("apps.internet-explorer.host", { hostname: errorDetails.hostname })
       : "";
 
     return (
@@ -414,13 +415,13 @@ export function InternetExplorerAppComponent({
                         size="icon"
                         onClick={handleSharePage}
                         className="h-8 w-8 focus-visible:ring-0 focus-visible:ring-offset-0"
-                        aria-label="Share this page"
+                        aria-label={t("apps.internet-explorer.shareThisPage")}
                       >
                         <Export size={14} weight="bold" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      <p>Share this page</p>
+                      <p>{t("apps.internet-explorer.shareThisPage")}</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -439,7 +440,7 @@ export function InternetExplorerAppComponent({
                     onKeyDown={(e) => {
                       if (isOffline && e.key === "Enter") {
                         checkOfflineAndShowError(
-                          "Internet Explorer requires an internet connection to navigate"
+                          t("apps.internet-explorer.requiresInternetConnection")
                         );
                         return;
                       }
@@ -555,7 +556,7 @@ export function InternetExplorerAppComponent({
                           }
                         : undefined
                     }
-                    placeholder="Enter URL"
+                    placeholder={t("apps.internet-explorer.enterUrl")}
                     spellCheck="false"
                     autoComplete="off"
                     autoCapitalize="off"
@@ -747,7 +748,7 @@ export function InternetExplorerAppComponent({
                           : "!text-[16px]"
                       }
                     >
-                      <SelectValue placeholder="Year" />
+                      <SelectValue placeholder={t("apps.internet-explorer.year")} />
                     </SelectTrigger>
                     <SelectContent className="px-0">
                       {futureYears.map((y) => (

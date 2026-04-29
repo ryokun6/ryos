@@ -1424,12 +1424,17 @@ export function useInternetExplorerLogic({
           console.log(
             `[IE] Decoded share link from initialData prop: ${decodedData.url} (${decodedData.year})`
           );
-          toast.info(`Opening shared page`, {
-            description: `${decodedData.url}${
-              decodedData.year && decodedData.year !== "current"
-                ? ` from ${decodedData.year}`
-                : ""
-            }`,
+          toast.info(t("apps.internet-explorer.openingSharedPage"), {
+            description: t("apps.internet-explorer.sharedPageToastDescription", {
+              url: decodedData.url,
+              yearPart:
+                decodedData.year && decodedData.year !== "current"
+                  ? t("apps.internet-explorer.sharedPageToastYearPart", {
+                      from: t("apps.internet-explorer.from"),
+                      year: decodedData.year,
+                    })
+                  : "",
+            }),
             duration: 4000,
           });
           // Navigate using decoded data
@@ -1451,8 +1456,8 @@ export function useInternetExplorerLogic({
           console.warn(
             "[IE] Failed to decode share link code from initialData prop."
           );
-          toast.error("Invalid Share Link", {
-            description: "The share link provided is invalid or corrupted.",
+          toast.error(t("apps.internet-explorer.invalidShareLink"), {
+            description: t("apps.internet-explorer.shareLinkInvalidOrCorrupted"),
             duration: 5000,
           });
           // Fall through to check for direct url/year or default navigation
@@ -1532,12 +1537,17 @@ export function useInternetExplorerLogic({
           console.log(
             `[IE] Navigating to shared link: ${decodedData.url} (${decodedData.year})`
           );
-          toast.info(`Opening shared page`, {
-            description: `${decodedData.url}${
-              decodedData.year && decodedData.year !== "current"
-                ? ` from ${decodedData.year}`
-                : ""
-            }`,
+          toast.info(t("apps.internet-explorer.openingSharedPage"), {
+            description: t("apps.internet-explorer.sharedPageToastDescription", {
+              url: decodedData.url,
+              yearPart:
+                decodedData.year && decodedData.year !== "current"
+                  ? t("apps.internet-explorer.sharedPageToastYearPart", {
+                      from: t("apps.internet-explorer.from"),
+                      year: decodedData.year,
+                    })
+                  : "",
+            }),
             duration: 4000,
           });
           setTimeout(() => {
@@ -1625,12 +1635,17 @@ export function useInternetExplorerLogic({
             );
 
             // Show toast and navigate
-            toast.info(`Opening shared page`, {
-              description: `${decodedData.url}${
-                decodedData.year && decodedData.year !== "current"
-                  ? ` from ${decodedData.year}`
-                  : ""
-              }`,
+            toast.info(t("apps.internet-explorer.openingSharedPage"), {
+              description: t("apps.internet-explorer.sharedPageToastDescription", {
+                url: decodedData.url,
+                yearPart:
+                  decodedData.year && decodedData.year !== "current"
+                    ? t("apps.internet-explorer.sharedPageToastYearPart", {
+                        from: t("apps.internet-explorer.from"),
+                        year: decodedData.year,
+                      })
+                    : "",
+              }),
               duration: 4000,
             });
             // Use timeout to allow potential state updates (like foreground) to settle
@@ -1647,8 +1662,8 @@ export function useInternetExplorerLogic({
             console.warn(
               "[IE] Failed to decode share link code from updateApp event."
             );
-            toast.error("Invalid Share Link", {
-              description: "The share link provided is invalid or corrupted.",
+            toast.error(t("apps.internet-explorer.invalidShareLink"), {
+              description: t("apps.internet-explorer.shareLinkInvalidOrCorrupted"),
               duration: 5000,
             });
           }
@@ -1674,7 +1689,7 @@ export function useInternetExplorerLogic({
 
     return onAppUpdate(handleUpdateApp);
     // Add isForeground to dependencies to refresh navigation when focus changes
-  }, [handleNavigate, isForeground, instanceId]);
+  }, [handleNavigate, isForeground, instanceId, t]);
   // --- End updateApp listener ---
 
   useEffect(() => {

@@ -6,6 +6,7 @@ import {
   type ListenTrackMeta,
 } from "@/stores/useListenSessionStore";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 
 interface ListenSyncOptions {
   currentTrackId: string | null;
@@ -315,16 +316,20 @@ export function useListenSync({
 
       if (timeSinceLastSync > DJ_DISCONNECT_PROMOTE_MS) {
         if (!djDisconnectWarningShownRef.current) {
-          toast.warning("Playback device may be offline", {
-            description: "Waiting for the device that plays audio to reconnect.",
+          toast.warning(i18n.t("common.listenSession.playbackDeviceOffline"), {
+            description: i18n.t(
+              "common.listenSession.playbackDeviceOfflineDescription"
+            ),
             duration: 10000,
           });
           djDisconnectWarningShownRef.current = true;
         }
       } else if (timeSinceLastSync > DJ_DISCONNECT_WARNING_MS) {
         if (!djDisconnectWarningShownRef.current) {
-          toast.info("Connection unstable", {
-            description: "Haven't received updates from the playback device in a while.",
+          toast.info(i18n.t("common.listenSession.connectionUnstable"), {
+            description: i18n.t(
+              "common.listenSession.connectionUnstableDescription"
+            ),
             duration: 5000,
           });
           djDisconnectWarningShownRef.current = true;

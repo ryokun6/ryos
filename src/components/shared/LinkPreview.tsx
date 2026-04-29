@@ -119,11 +119,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       if (videoId) {
         launchApp("ipod", { initialData: { videoId } });
       } else {
-        toast.error("Could not extract video ID from this YouTube URL");
+        toast.error(t("components.linkPreview.couldNotExtractYouTubeVideoId"));
         console.warn("Could not extract video ID from YouTube URL:", url);
       }
     } catch (error) {
-      toast.error("Failed to open video in iPod app");
+      toast.error(t("components.linkPreview.failedToOpenInIpod"));
       console.error("Error launching iPod app:", error);
     }
   };
@@ -136,11 +136,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       if (videoId) {
         launchApp("karaoke", { initialData: { videoId } });
       } else {
-        toast.error("Could not extract video ID from this URL");
+        toast.error(t("components.linkPreview.couldNotExtractVideoId"));
         console.warn("Could not extract video ID from URL:", url);
       }
     } catch (error) {
-      toast.error("Failed to open video in Karaoke app");
+      toast.error(t("components.linkPreview.failedToOpenInKaraoke"));
       console.error("Error launching Karaoke app:", error);
     }
   };
@@ -345,11 +345,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             );
             launchApp("ipod", { initialData: { videoId } });
           } else {
-            toast.error("Could not extract video ID from this iPod URL");
+            toast.error(t("components.linkPreview.couldNotExtractVideoIdFromIpodUrl"));
             console.warn("Could not extract video ID from iPod URL:", url);
           }
         } catch (error) {
-          toast.error("Failed to open video in iPod app");
+          toast.error(t("components.linkPreview.failedToOpenInIpod"));
           console.error("Error launching iPod app:", error);
         }
       } else if (url.includes("/karaoke/")) {
@@ -362,11 +362,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             );
             launchApp("karaoke", { initialData: { videoId } });
           } else {
-            toast.error("Could not extract video ID from this Karaoke URL");
+            toast.error(t("components.linkPreview.couldNotExtractVideoIdFromKaraokeUrl"));
             console.warn("Could not extract video ID from Karaoke URL:", url);
           }
         } catch (error) {
-          toast.error("Failed to open video in Karaoke app");
+          toast.error(t("components.linkPreview.failedToOpenInKaraoke"));
           console.error("Error launching Karaoke app:", error);
         }
       } else {

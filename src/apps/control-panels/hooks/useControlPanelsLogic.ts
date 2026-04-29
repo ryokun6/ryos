@@ -417,7 +417,7 @@ export function useControlPanelsLogic({
     setPasswordError(null);
 
     if (!password || password.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
+      setPasswordError(t("apps.control-panels.dialogs.passwordMinLength"));
       setIsSettingPassword(false);
       return;
     }
@@ -425,13 +425,13 @@ export function useControlPanelsLogic({
     const result = await setPassword(password);
 
     if (result.ok) {
-      toast.success("Password Set", {
-        description: "You can now use your password to recover your account",
+      toast.success(t("apps.chats.dialogs.passwordSetSuccess"), {
+        description: t("apps.chats.dialogs.passwordSetSuccessDescription"),
       });
       setIsPasswordDialogOpen(false);
       setPasswordInput("");
     } else {
-      setPasswordError(result.error || "Failed to set password");
+      setPasswordError(result.error || t("apps.chats.dialogs.passwordSetFailed"));
     }
 
     setIsSettingPassword(false);
@@ -443,8 +443,8 @@ export function useControlPanelsLogic({
     try {
       // Ensure we have auth info from the auth hook
       if (!isAuthenticated || !username) {
-        toast.error("Authentication Error", {
-          description: "Not authenticated",
+        toast.error(t("common.auth.logoutAllDevices.authenticationError"), {
+          description: t("common.auth.logoutAllDevices.notAuthenticated"),
         });
         return;
       }
@@ -462,8 +462,10 @@ export function useControlPanelsLogic({
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Logged Out", {
-          description: data.message || "Logged out from all devices",
+        toast.success(t("common.auth.logoutAllDevices.loggedOut"), {
+          description:
+            data.message ||
+            t("common.auth.logoutAllDevices.loggedOutFromAllDevices"),
         });
 
         // Immediately clear auth via store logout (bypass confirmation)
@@ -471,14 +473,16 @@ export function useControlPanelsLogic({
 
         // No full page reload needed – UI will update via store reset
       } else {
-        toast.error("Logout Failed", {
-          description: data.error || "Failed to logout from all devices",
+        toast.error(t("common.auth.logoutAllDevices.logoutFailed"), {
+          description:
+            data.error ||
+            t("common.auth.logoutAllDevices.logoutFromAllDevicesFailed"),
         });
       }
     } catch (error) {
       console.error("Error logging out all devices:", error);
-      toast.error("Network Error", {
-        description: "Failed to connect to server",
+      toast.error(t("common.auth.logoutAllDevices.networkError"), {
+        description: t("common.auth.logoutAllDevices.failedToConnect"),
       });
     } finally {
       setIsLoggingOutAllDevices(false);

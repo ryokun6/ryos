@@ -216,12 +216,12 @@ export function CreateRoomDialog({
       setServersError(
         err instanceof ApiRequestError
           ? err.message
-          : "Failed to load IRC servers"
+          : t("apps.chats.dialogs.createRoomIrc.failedToLoadServers")
       );
     } finally {
       setIsLoadingServers(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -258,7 +258,7 @@ export function CreateRoomDialog({
         setChannelsError(
           err instanceof ApiRequestError
             ? err.message
-            : "Failed to load IRC channels"
+            : t("apps.chats.dialogs.createRoomIrc.failedToLoadChannels")
         );
       } finally {
         if (requestId === channelRequestIdRef.current) {
@@ -266,7 +266,7 @@ export function CreateRoomDialog({
         }
       }
     },
-    []
+    [t]
   );
 
   useEffect(() => {
@@ -284,7 +284,7 @@ export function CreateRoomDialog({
     setAddServerError(null);
     const trimmedHost = newServerHost.trim();
     if (!trimmedHost) {
-      setAddServerError("Server host is required");
+      setAddServerError(t("apps.chats.dialogs.createRoomIrc.serverHostRequired"));
       return;
     }
     setIsAddingServer(true);
@@ -316,12 +316,12 @@ export function CreateRoomDialog({
       setAddServerError(
         err instanceof ApiRequestError
           ? err.message
-          : "Failed to add IRC server"
+          : t("apps.chats.dialogs.createRoomIrc.failedToAddServer")
       );
     } finally {
       setIsAddingServer(false);
     }
-  }, [newServerHost, newServerPort, newServerTls, newServerLabel]);
+  }, [newServerHost, newServerPort, newServerTls, newServerLabel, t]);
 
   const handleDeleteIrcServer = useCallback(
     async (server: IrcServerSummary) => {
@@ -338,11 +338,11 @@ export function CreateRoomDialog({
         setServersError(
           err instanceof ApiRequestError
             ? err.message
-            : "Failed to delete IRC server"
+            : t("apps.chats.dialogs.createRoomIrc.failedToDeleteServer")
         );
       }
     },
-    [ircServers]
+    [ircServers, t]
   );
 
   const filteredChannels = (() => {
@@ -382,7 +382,7 @@ export function CreateRoomDialog({
       if (activeTab === "irc") {
         const server = selectedServer;
         if (!server) {
-          setError("Please pick an IRC server first.");
+          setError(t("apps.chats.dialogs.createRoomIrc.pickServerFirst"));
           setIsLoading(false);
           return;
         }
@@ -394,8 +394,8 @@ export function CreateRoomDialog({
         if (!rawChannel) {
           setError(
             isAdmin
-              ? "Please pick or enter an IRC channel."
-              : "Please pick a channel from the list."
+              ? t("apps.chats.dialogs.createRoomIrc.pickChannel")
+              : t("apps.chats.dialogs.createRoomIrc.pickChannelFromList")
           );
           setIsLoading(false);
           return;
@@ -528,7 +528,7 @@ export function CreateRoomDialog({
                   className={cn("text-gray-700", themeFont)}
                   style={themeFontStyle}
                 >
-                  Server
+                  {t("apps.chats.dialogs.createRoomIrc.server")}
                 </Label>
                 <div className="flex items-center gap-1">
                   <div className="flex-1 min-w-0">
@@ -550,7 +550,11 @@ export function CreateRoomDialog({
                       >
                         <SelectValue
                           placeholder={
-                            isLoadingServers ? "Loading…" : "Pick a server"
+                            isLoadingServers
+                              ? t(
+                                  "apps.chats.dialogs.createRoomIrc.pickServerLoading"
+                                )
+                              : t("apps.chats.dialogs.createRoomIrc.pickServer")
                           }
                         />
                       </SelectTrigger>
@@ -565,12 +569,14 @@ export function CreateRoomDialog({
                               <span>{server.label}</span>
                               {server.isDefault && (
                                 <span className="text-[9px] uppercase tracking-wider text-purple-600/70">
-                                  default
+                                  {t(
+                                    "apps.chats.dialogs.createRoomIrc.badgeDefault"
+                                  )}
                                 </span>
                               )}
                               {server.tls && (
                                 <span className="text-[9px] uppercase tracking-wider text-emerald-600/70">
-                                  tls
+                                  {t("apps.chats.dialogs.createRoomIrc.badgeTls")}
                                 </span>
                               )}
                             </span>
@@ -583,7 +589,9 @@ export function CreateRoomDialog({
                           >
                             <span className="inline-flex items-center gap-1">
                               <Plus className="h-3 w-3" weight="bold" />
-                              Add new server…
+                              {t(
+                                "apps.chats.dialogs.createRoomIrc.addNewServer"
+                              )}
                             </span>
                           </SelectItem>
                         )}
@@ -600,8 +608,12 @@ export function CreateRoomDialog({
                       onClick={() => handleDeleteIrcServer(selectedServer)}
                       disabled={isLoading}
                       className="h-8 w-8 p-0"
-                      title="Remove server"
-                      aria-label="Remove server"
+                      title={t(
+                        "apps.chats.dialogs.createRoomIrc.removeServerTitle"
+                      )}
+                      aria-label={t(
+                        "apps.chats.dialogs.createRoomIrc.removeServerAria"
+                      )}
                     >
                       <Trash className="h-3 w-3" weight="bold" />
                     </Button>
@@ -624,10 +636,12 @@ export function CreateRoomDialog({
                     className={cn("text-gray-700 font-semibold", themeFont)}
                     style={themeFontStyle}
                   >
-                    Add a server
+                    {t("apps.chats.dialogs.createRoomIrc.addAServer")}
                   </Label>
                   <Input
-                    placeholder="irc.example.com"
+                    placeholder={t(
+                      "apps.chats.dialogs.createRoomIrc.hostPlaceholder"
+                    )}
                     value={newServerHost}
                     onChange={(e) => setNewServerHost(e.target.value)}
                     className={cn("shadow-none h-8", themeFont)}
@@ -635,7 +649,9 @@ export function CreateRoomDialog({
                     disabled={isAddingServer}
                   />
                   <Input
-                    placeholder="Optional label"
+                    placeholder={t(
+                      "apps.chats.dialogs.createRoomIrc.optionalLabelPlaceholder"
+                    )}
                     value={newServerLabel}
                     onChange={(e) => setNewServerLabel(e.target.value)}
                     className={cn("shadow-none h-8", themeFont)}
@@ -646,7 +662,9 @@ export function CreateRoomDialog({
                     <div className="flex-1">
                       <Input
                         type="number"
-                        placeholder="6667"
+                        placeholder={t(
+                          "apps.chats.dialogs.createRoomIrc.portPlaceholder"
+                        )}
                         value={String(newServerPort)}
                         onChange={(e) =>
                           setNewServerPort(Number(e.target.value) || 6667)
@@ -671,7 +689,7 @@ export function CreateRoomDialog({
                         className="h-4 w-4"
                         disabled={isAddingServer}
                       />
-                      <span>TLS</span>
+                      <span>{t("apps.chats.dialogs.createRoomIrc.tls")}</span>
                     </Label>
                   </div>
                   {addServerError && (
@@ -695,7 +713,7 @@ export function CreateRoomDialog({
                       className={cn("h-7", themeFont)}
                       style={themeFontStyle}
                     >
-                      Cancel
+                      {t("apps.chats.dialogs.cancel")}
                     </Button>
                     <Button
                       type="button"
@@ -706,7 +724,9 @@ export function CreateRoomDialog({
                       className={cn("h-7", themeFont)}
                       style={themeFontStyle}
                     >
-                      {isAddingServer ? "Adding…" : "Add server"}
+                      {isAddingServer
+                        ? t("apps.chats.dialogs.createRoomIrc.addingServer")
+                        : t("apps.chats.dialogs.createRoomIrc.addServer")}
                     </Button>
                   </div>
                 </div>
@@ -720,8 +740,9 @@ export function CreateRoomDialog({
                       className={cn("text-gray-500 text-[11px]", themeFont)}
                       style={themeFontStyle}
                     >
-                      IRC servers are managed by an admin. Choose a channel
-                      from the list to join.
+                      {t(
+                        "apps.chats.dialogs.createRoomIrc.ircServersAdminHint"
+                      )}
                     </p>
                   )}
                   <div className="flex items-center justify-between">
@@ -730,7 +751,7 @@ export function CreateRoomDialog({
                       className={cn("text-gray-700", themeFont)}
                       style={themeFontStyle}
                     >
-                      Channel
+                      {t("apps.chats.dialogs.createRoomIrc.channel")}
                     </Label>
                     <Button
                       type="button"
@@ -739,8 +760,12 @@ export function CreateRoomDialog({
                       onClick={() => loadIrcChannels(selectedServerId)}
                       disabled={isLoadingChannels || isLoading}
                       className="h-7 px-2"
-                      title="Refresh channel list"
-                      aria-label="Refresh channel list"
+                      title={t(
+                        "apps.chats.dialogs.createRoomIrc.refreshChannelsTitle"
+                      )}
+                      aria-label={t(
+                        "apps.chats.dialogs.createRoomIrc.refreshChannelsAria"
+                      )}
                     >
                       <ArrowClockwise
                         className={cn(
@@ -757,8 +782,12 @@ export function CreateRoomDialog({
                         id="irc-channel-filter"
                         placeholder={
                           isLoadingChannels
-                            ? "Loading channels…"
-                            : "Filter channels or type a new one"
+                            ? t(
+                                "apps.chats.dialogs.createRoomIrc.loadingChannels"
+                              )
+                            : t(
+                                "apps.chats.dialogs.createRoomIrc.filterChannelsTyping"
+                              )
                         }
                         value={channelFilter || customChannel}
                         onChange={(e) => {
@@ -794,8 +823,10 @@ export function CreateRoomDialog({
                         id="irc-channel-filter"
                         placeholder={
                           isLoadingChannels
-                            ? "Loading channels…"
-                            : "Filter channels"
+                            ? t(
+                                "apps.chats.dialogs.createRoomIrc.loadingChannels"
+                              )
+                            : t("apps.chats.dialogs.createRoomIrc.filterChannels")
                         }
                         value={channelListFilter}
                         onChange={(e) => {
@@ -834,8 +865,12 @@ export function CreateRoomDialog({
                               style={themeFontStyle}
                             >
                               {isAdmin
-                                ? "No channels available. Type a channel name above to join one anyway."
-                                : "No channels match this filter."}
+                                ? t(
+                                    "apps.chats.dialogs.createRoomIrc.noChannelsHint"
+                                  )
+                                : t(
+                                    "apps.chats.dialogs.createRoomIrc.noChannelsMatch"
+                                  )}
                             </p>
                           )}
                         {filteredChannels.map((entry, index) => {

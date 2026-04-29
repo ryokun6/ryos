@@ -317,7 +317,7 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
   if (result.action === 'none') {
     if (isManual) {
       const stored = getStoredVersion();
-      toast.success('Already running the latest version', {
+      toast.success(i18n.t("common.toast.alreadyLatestVersion"), {
         description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
       });
     }
@@ -369,7 +369,7 @@ export async function forceRefreshCache(): Promise<void> {
   const serverVersion = await fetchServerVersion();
   
   if (!serverVersion) {
-    toast.error('Could not check for updates');
+    toast.error(i18n.t("common.toast.couldNotCheckUpdates"));
     return;
   }
   
@@ -378,7 +378,7 @@ export async function forceRefreshCache(): Promise<void> {
   
   // If already on latest version, just show success message without reboot
   if (!isNewVersion) {
-    toast.success('Already running the latest version', {
+    toast.success(i18n.t("common.toast.alreadyLatestVersion"), {
       description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
     });
     return;
@@ -417,7 +417,7 @@ async function runPrefetchWithToast(
   // Fetch manifest first
   const manifest = await fetchIconManifest();
   if (!manifest) {
-    toast.error('Failed to load asset manifest');
+    toast.error(i18n.t("common.toast.failedToLoadAssetManifest"));
     console.log('[Prefetch] Could not fetch manifest');
     return;
   }
@@ -431,7 +431,7 @@ async function runPrefetchWithToast(
   const totalItems = iconUrls.length + soundUrls.length + jsUrls.length + assetUrls.length;
   
   if (totalItems === 0) {
-    toast.info('No assets to cache');
+    toast.info(i18n.t("common.toast.noAssetsToCache"));
     console.log('[Prefetch] No assets to prefetch');
     return;
   }
@@ -538,7 +538,7 @@ async function runPrefetchWithToast(
     
   } catch (error) {
     console.error('[Prefetch] Error during prefetch:', error);
-    toast.error('Failed to cache assets', { id: toastId });
+    toast.error(i18n.t("common.toast.failedToCacheAssets"), { id: toastId });
   }
 }
 

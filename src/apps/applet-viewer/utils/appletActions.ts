@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -41,6 +42,7 @@ export const extractEmojiIcon = (
 };
 
 export const useAppletActions = () => {
+  const { t } = useTranslation();
   const { saveFile, files, handleFileOpen } = useFileSystem("/Applets");
   const launchApp = useLaunchApp();
   const getFileItem = useFilesStore((state) => state.getItem);
@@ -134,7 +136,7 @@ export const useAppletActions = () => {
           await handleFileOpen(installedApplet);
         } catch (error) {
           console.error("Error launching applet from disk:", error);
-          toast.error("Failed to launch applet");
+          toast.error(t("apps.applet-viewer.dialogs.failedToLaunchApplet"));
         }
       }
     } else {
@@ -226,21 +228,28 @@ export const useAppletActions = () => {
         });
       }
       
-      toast.success(isUpdate ? "Applet updated" : "Applet installed", {
-        description: `Saved to /Applets/${finalName}`,
-        duration: 3000,
-        action: {
-          label: "Open",
-          onClick: () => {
-            launchApp("applet-viewer", {
-              initialData: {
-                path: finalPath,
-                content: data.content,
-              },
-            });
+      toast.success(
+        isUpdate
+          ? t("apps.applet-viewer.dialogs.appletUpdated")
+          : t("apps.applet-viewer.dialogs.appletInstalledToast"),
+        {
+          description: t("apps.applet-viewer.dialogs.savedToAppletsPath", {
+            fileName: finalName,
+          }),
+          duration: 3000,
+          action: {
+            label: t("common.htmlPreview.toastOpenAction"),
+            onClick: () => {
+              launchApp("applet-viewer", {
+                initialData: {
+                  path: finalPath,
+                  content: data.content,
+                },
+              });
+            },
           },
-        },
-      });
+        }
+      );
       
       // Automatically open the applet in a new window instance (only for new installs, not updates)
       if (!isUpdate) {
@@ -258,8 +267,11 @@ export const useAppletActions = () => {
       }
     } catch (error) {
       console.error("Error installing applet:", error);
-      toast.error("Failed to install applet", {
-        description: error instanceof Error ? error.message : "Please try again later.",
+      toast.error(t("apps.applet-viewer.dialogs.failedToInstallApplet"), {
+        description:
+          error instanceof Error
+            ? error.message
+            : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
       });
     }
   };

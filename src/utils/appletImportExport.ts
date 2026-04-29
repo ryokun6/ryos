@@ -7,6 +7,7 @@ import { extractMetadataFromHtml, injectMetadataIntoHtml, type AppletMetadata } 
 import { extractEmojiIcon } from "@/apps/applet-viewer/utils/appletActions";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 
 export interface ImportedAppletData {
   content: string;
@@ -177,8 +178,8 @@ export async function exportAppletAsApp(
     ? appletPath
         .split("/")
         .pop()
-        ?.replace(/\.(html|app)$/i, "") || "Untitled"
-    : "Untitled");
+        ?.replace(/\.(html|app)$/i, "") || i18n.t("apps.applet-viewer.dialogs.untitled")
+    : i18n.t("apps.applet-viewer.dialogs.untitled"));
 
   // Get file metadata from the filesystem
   const fileStore = useFilesStore.getState();
@@ -255,15 +256,17 @@ export async function exportAppletAsApp(
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast.success("Applet exported!", {
-      description: `${finalFilename}.app exported successfully.`,
+    toast.success(i18n.t("apps.applet-viewer.dialogs.appletExported"), {
+      description: i18n.t("apps.applet-viewer.dialogs.appletExportedDescription", {
+        fileName: finalFilename,
+      }),
     });
   } catch (compressionError) {
     console.error("Compression failed:", compressionError);
-    toast.error("Export failed", {
+    toast.error(i18n.t("apps.applet-viewer.dialogs.exportFailed"), {
       description: compressionError instanceof Error
         ? compressionError.message
-        : "Could not compress the applet file.",
+        : i18n.t("apps.applet-viewer.dialogs.couldNotCompressAppletFile"),
     });
     throw compressionError;
   }
@@ -282,8 +285,8 @@ export function exportAppletAsHtml(
     ? appletPath
         .split("/")
         .pop()
-        ?.replace(/\.(html|app)$/i, "") || "Untitled"
-    : "Untitled");
+        ?.replace(/\.(html|app)$/i, "") || i18n.t("apps.applet-viewer.dialogs.untitled")
+    : i18n.t("apps.applet-viewer.dialogs.untitled"));
 
   // Get file metadata from the filesystem
   const fileStore = useFilesStore.getState();
@@ -314,8 +317,10 @@ export function exportAppletAsHtml(
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
-  toast.success("HTML exported!", {
-    description: `${baseFilename}.html exported successfully.`,
+  toast.success(i18n.t("apps.applet-viewer.dialogs.htmlExported"), {
+    description: i18n.t("apps.applet-viewer.dialogs.htmlExportedDescription", {
+      fileName: baseFilename,
+    }),
   });
 }
 

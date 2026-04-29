@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 
 /**
  * Check if the browser is currently offline
@@ -15,7 +16,7 @@ export function isOffline(): boolean {
  * Uses a unique ID to prevent duplicate toasts
  */
 export function showOfflineError(message?: string): void {
-  toast.error(message || "This feature requires an internet connection", {
+  toast.error(message || i18n.t("common.network.featureRequiresInternet"), {
     id: "offline-error",
     duration: 3000,
   });

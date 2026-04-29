@@ -118,7 +118,8 @@
     "errors": {
       "failedToAccessCamera": "Failed to access camera",
       "failedToFetchFurigana": "Failed to fetch furigana",
-      "failedToFetchSoramimi": "Failed to fetch soramimi"
+      "failedToFetchSoramimi": "Failed to fetch soramimi",
+      "pleaseTryAgain": "Please try again."
     },
     "system": {
       "systemRestoring": "System Restoring...",
@@ -229,6 +230,52 @@
       "alreadyLatestVersion": "Already running the latest version",
       "couldNotCheckUpdates": "Could not check for updates"
     },
+    "network": {
+      "featureRequiresInternet": "This feature requires an internet connection"
+    },
+    "airdrop": {
+      "sentFileTo": "Sent \"{{fileName}}\" to @{{recipient}}",
+      "failedToSendFile": "Failed to send file",
+      "sendFailed": "Send failed",
+      "acceptedFile": "@{{recipient}} accepted \"{{fileName}}\"",
+      "declinedFile": "@{{recipient}} declined \"{{fileName}}\""
+    },
+    "listenSession": {
+      "sessionEnded": "Session ended",
+      "sessionEndedDescription": "The host ended the listening session.",
+      "djDisconnected": "DJ disconnected",
+      "djDisconnectedDescription": "@{{username}} appears to have disconnected.",
+      "playbackDeviceOffline": "Playback device may be offline",
+      "playbackDeviceOfflineDescription": "Waiting for the device that plays audio to reconnect.",
+      "connectionUnstable": "Connection unstable",
+      "connectionUnstableDescription": "Haven't received updates from the playback device in a while.",
+      "failedToJoinSession": "Failed to join session",
+      "failedToLoadSharedTrack": "Failed to load shared track",
+      "videoIdLabel": "Video ID: {{videoId}}"
+    },
+    "listenAlong": {
+      "loginRequired": "Login required",
+      "loginRequiredDescription": "Set a username in Chats to start a session.",
+      "failedToStartSession": "Failed to start session",
+      "failedToJoinSession": "Failed to join session",
+      "failedToLeaveSession": "Failed to leave session",
+      "couldNotSetPlaybackDevice": "Could not set playback device",
+      "playbackDeviceUpdated": "Playback device updated",
+      "playbackDeviceUpdatedDescription": "@{{username}} plays audio for the group.",
+      "couldNotTransferHost": "Could not transfer host",
+      "failedToPassDj": "Failed to pass DJ",
+      "djPassed": "DJ passed",
+      "djPassedDescription": "@{{username}} is now the DJ.",
+      "couldNotSyncAfterRemoteControl": "Could not sync after remote control",
+      "failedToSendReaction": "Failed to send reaction",
+      "youtubeOnlyRemoteQueue": "Only YouTube links can be queued remotely",
+      "couldNotSkip": "Could not skip",
+      "remoteControlFailed": "Remote control failed",
+      "couldNotSeek": "Could not seek",
+      "couldNotQueueTrack": "Could not queue track",
+      "failedToLoadSharedTrack": "Failed to load shared track",
+      "videoIdLabel": "Video ID: {{videoId}}"
+    },
     "auth": {
       "dialogTitle": "ryOS Login",
       "username": "Username",
@@ -242,7 +289,35 @@
       "setPasswordRequired": "Set Password Required",
       "setPasswordRequiredDescription": "You need to set a password before logging out to ensure you can recover your account. Would you like to set a password now?",
       "logOut": "Log Out",
-      "logOutDescription": "Are you sure you want to log out? You will be signed out of your account."
+      "logOutDescription": "Are you sure you want to log out? You will be signed out of your account.",
+      "validation": {
+        "usernameCannotBeEmpty": "Username cannot be empty.",
+        "passwordRequired": "Password is required.",
+        "passwordMinLength": "Password must be at least 8 characters.",
+        "passwordFieldRequired": "Password required",
+        "tokenRequired": "Token required"
+      },
+      "toast": {
+        "loggedIn": "Logged In",
+        "welcomeUser": "Welcome, {{username}}!",
+        "failedToSetUsername": "Failed to set username",
+        "success": "Success",
+        "loggedInWithPassword": "Logged in successfully with password",
+        "tokenVerified": "Token verified and set successfully",
+        "networkErrorVerifying": "Network error while verifying",
+        "loggedOut": "Logged Out",
+        "loggedOutDescription": "You have been successfully logged out."
+      },
+      "logoutAllDevices": {
+        "authenticationError": "Authentication Error",
+        "notAuthenticated": "Not authenticated",
+        "loggedOut": "Logged Out",
+        "loggedOutFromAllDevices": "Logged out from all devices",
+        "logoutFailed": "Logout Failed",
+        "logoutFromAllDevicesFailed": "Failed to logout from all devices",
+        "networkError": "Network Error",
+        "failedToConnect": "Failed to connect to server"
+      }
     },
     "htmlPreview": {
       "toastSaved": "Applet saved successfully",
@@ -473,6 +548,8 @@
       "name": "Soundboard",
       "description": "Play sound effects",
       "soundboards": "Soundboards",
+      "selectMicrophone": "Select microphone",
+      "defaultMicrophoneLabel": "Microphone {{id}}",
       "newSoundboardDefault": "New Soundboard",
       "importedSoundboard": "Imported Soundboard",
       "menu": {
@@ -567,6 +644,8 @@
       "cannotAccessWebsite": "Cannot access {{url}}. The website might be blocking access or requires authentication.",
       "pageCouldNotBeLoadedInIframe": "The page could not be loaded in the iframe. This could be due to security restrictions or network issues.",
       "openingSharedPage": "Opening shared page",
+      "sharedPageToastDescription": "{{url}}{{yearPart}}",
+      "sharedPageToastYearPart": " {{from}} {{year}}",
       "from": "from",
       "invalidShareLink": "Invalid Share Link",
       "shareLinkInvalidOrCorrupted": "The share link provided is invalid or corrupted.",
@@ -781,7 +860,53 @@
         "creating": "Creating...",
         "cancel": "Cancel",
         "create": "Create",
-        "failedToCreateRoom": "Failed to create room"
+        "failedToCreateRoom": "Failed to create room",
+        "createRoomIrc": {
+          "failedToLoadServers": "Failed to load IRC servers",
+          "failedToLoadChannels": "Failed to load IRC channels",
+          "serverHostRequired": "Server host is required",
+          "failedToAddServer": "Failed to add IRC server",
+          "failedToDeleteServer": "Failed to delete IRC server",
+          "pickServerFirst": "Please pick an IRC server first.",
+          "pickChannel": "Please pick or enter an IRC channel.",
+          "pickChannelFromList": "Please pick a channel from the list.",
+          "pickServerLoading": "Loading…",
+          "pickServer": "Pick a server",
+          "removeServerTitle": "Remove server",
+          "removeServerAria": "Remove server",
+          "hostPlaceholder": "irc.example.com",
+          "optionalLabelPlaceholder": "Optional label",
+          "portPlaceholder": "6667",
+          "addingServer": "Adding…",
+          "addServer": "Add server",
+          "refreshChannelsTitle": "Refresh channel list",
+          "refreshChannelsAria": "Refresh channel list",
+          "filterChannelsTyping": "Filter channels or type a new one",
+          "filterChannels": "Filter channels",
+          "noChannelsHint": "No channels available. Type a channel name above to join one anyway.",
+          "noChannelsMatch": "No channels match this filter.",
+          "server": "Server",
+          "channel": "Channel",
+          "addNewServer": "Add new server…",
+          "badgeDefault": "default",
+          "badgeTls": "tls",
+          "addAServer": "Add a server",
+          "tls": "TLS",
+          "ircServersAdminHint": "IRC servers are managed by an admin. Choose a channel from the list to join.",
+          "loadingChannels": "Loading channels…"
+        }
+      },
+      "toasts": {
+        "transcriptSaved": "Transcript saved",
+        "transcriptUpdated": "Transcript updated",
+        "transcriptSavedDescription": "Saved to {{fileName}}",
+        "failedToSaveTranscript": "Failed to save transcript",
+        "unknownError": "Unknown error",
+        "aiError": "AI Error",
+        "rateLimitExceeded": "Rate Limit Exceeded",
+        "rateLimitDescription": "You've reached the message limit. Please login to continue.",
+        "sessionExpiredDescription": "Your session has expired. Please login again.",
+        "failedToGetAiResponse": "Failed to get response."
       },
       "status": {
         "loginToRyOS": "Login to ryOS",
@@ -845,7 +970,8 @@
         "you": "You",
         "ryo": "Ryo",
         "delete": "Delete",
-        "greeting": "👋 hey! i'm ryo. ask me anything!"
+        "greeting": "👋 hey! i'm ryo. ask me anything!",
+        "describeThisImage": "Describe this image"
       },
       "toolCalls": {
         "loadingMusicLibrary": "Loading music library…",
@@ -2341,6 +2467,8 @@
         "couldNotImportFile": "Could not import the file.",
         "appletExported": "Applet exported!",
         "appletExportedDescription": "{{fileName}}.app exported successfully.",
+        "htmlExported": "HTML exported!",
+        "htmlExportedDescription": "{{fileName}}.html exported successfully.",
         "exportFailed": "Export failed",
         "couldNotCompressAppletFile": "Could not compress the applet file.",
         "noAppletToShare": "No applet to share",
@@ -2354,6 +2482,10 @@
         "shareLinkUpdatedSuccessfully": "Share link updated successfully.",
         "shareLinkGeneratedSuccessfully": "Share link generated successfully.",
         "failedToShareApplet": "Failed to share applet",
+        "failedToLaunchApplet": "Failed to launch applet",
+        "appletInstalledToast": "Applet installed",
+        "savedToAppletsPath": "Saved to /Applets/{{fileName}}",
+        "failedToInstallApplet": "Failed to install applet",
         "appletNotFound": "Applet not found",
         "appletNotFoundDescription": "The shared applet may have been deleted or the link is invalid.",
         "failedToFetchSharedApplet": "Failed to fetch shared applet",
@@ -2412,6 +2544,10 @@
         "controlPanelsHelpForMacosX": "System Preferences Help",
         "aboutControlPanels": "About Control Panels",
         "aboutControlPanelsForMacosX": "About System Preferences"
+      },
+      "dialogs": {
+        "passwordMinLength": "Password must be at least 8 characters",
+        "failedToSetPassword": "Failed to set password"
       },
       "masterVolume": "Master Volume",
       "master": "Master",
@@ -3546,7 +3682,13 @@
       "openIpod": "Open iPod",
       "openKaraoke": "Open Karaoke",
       "openYouTube": "Open YouTube",
-      "addToIpod": "Add to iPod"
+      "addToIpod": "Add to iPod",
+      "couldNotExtractYouTubeVideoId": "Could not extract video ID from this YouTube URL",
+      "failedToOpenInIpod": "Failed to open video in iPod app",
+      "couldNotExtractVideoId": "Could not extract video ID from this URL",
+      "failedToOpenInKaraoke": "Failed to open video in Karaoke app",
+      "couldNotExtractVideoIdFromIpodUrl": "Could not extract video ID from this iPod URL",
+      "couldNotExtractVideoIdFromKaraokeUrl": "Could not extract video ID from this Karaoke URL"
     }
   },
   "settings": {

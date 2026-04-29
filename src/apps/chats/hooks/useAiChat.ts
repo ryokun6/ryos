@@ -1954,12 +1954,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         useChatsStore.getState().setAuthenticated(false);
 
         // Show user-friendly error message with action button
-        toast.error("Login Required", {
-          description: message || "Please login to continue chatting.",
+        toast.error(t("apps.chats.status.loginRequired"), {
+          description:
+            message || t("apps.chats.status.pleaseLoginToSendMessages"),
           duration: 5000,
           action: onPromptSetUsername
             ? {
-                label: "Login",
+                label: t("apps.chats.status.loginButton"),
                 onClick: onPromptSetUsername,
               }
             : undefined,
@@ -1999,7 +2000,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               errorData.error === "unauthorized" ||
               errorData.error === "username mismatch"
             ) {
-              handleAuthError("Your session has expired. Please login again.");
+              handleAuthError(t("apps.chats.toasts.sessionExpiredDescription"));
               return; // Exit early to prevent showing generic error toast
             }
           } catch (parseError) {
@@ -2014,13 +2015,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         ) {
           // Generic rate limit message if we couldn't parse the details
           setNeedsUsername(true);
-          toast.error("Rate Limit Exceeded", {
-            description:
-              "You've reached the message limit. Please login to continue.",
+          toast.error(t("apps.chats.toasts.rateLimitExceeded"), {
+            description: t("apps.chats.toasts.rateLimitDescription"),
             duration: 5000,
             action: onPromptSetUsername
               ? {
-                  label: "Login",
+                  label: t("apps.chats.status.loginButton"),
                   onClick: onPromptSetUsername,
                 }
               : undefined,
@@ -2045,8 +2045,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
 
       // For non-rate-limit errors, show the generic error toast
-      toast.error("AI Error", {
-        description: err.message || "Failed to get response.",
+      toast.error(t("apps.chats.toasts.aiError"), {
+        description:
+          err.message || t("apps.chats.toasts.failedToGetAiResponse"),
       });
     },
   });
@@ -2181,8 +2182,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Check if user needs to set username before submitting
       if (needsUsername && !username) {
-        toast.error("Login Required", {
-          description: "Please login to continue chatting.",
+        toast.error(t("apps.chats.status.loginRequired"), {
+          description: t("apps.chats.status.pleaseLoginToSendMessages"),
           duration: 3000,
         });
         return;
@@ -2190,8 +2191,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Check if user is authenticated (cookies handle auth automatically)
       if (username && !isAuthenticated) {
-        toast.error("Login Required", {
-          description: "Please login to continue chatting.",
+        toast.error(t("apps.chats.status.loginRequired"), {
+          description: t("apps.chats.status.pleaseLoginToSendMessages"),
           duration: 3000,
         });
         return;
@@ -2227,7 +2228,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         // Send message with image attachment using files array
         sendMessage(
           {
-            text: messageContent.trim() || "Describe this image",
+            text: messageContent.trim() || t("apps.chats.messages.describeThisImage"),
             files: [
               {
                 type: "file" as const,
@@ -2275,6 +2276,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       isAuthenticated,
       aiModel,
       setInput,
+      t,
     ],
   );
 
@@ -2284,8 +2286,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Check if user needs to set username before submitting
       if (needsUsername && !username) {
-        toast.error("Login Required", {
-          description: "Please login to continue chatting.",
+        toast.error(t("apps.chats.status.loginRequired"), {
+          description: t("apps.chats.status.pleaseLoginToSendMessages"),
           duration: 3000,
         });
         return;
@@ -2293,8 +2295,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Check if user is authenticated (cookies handle auth automatically)
       if (username && !isAuthenticated) {
-        toast.error("Login Required", {
-          description: "Please login to continue chatting.",
+        toast.error(t("apps.chats.status.loginRequired"), {
+          description: t("apps.chats.status.pleaseLoginToSendMessages"),
           duration: 3000,
         });
         return;
@@ -2486,12 +2488,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
 
         setIsSaveDialogOpen(false);
-        toast.success(isUpdate ? "Transcript updated" : "Transcript saved", {
-          description: `Saved to ${finalFileName}`,
-          duration: 5000,
-          action: {
-            label: "Open",
-            onClick: () => {
+        toast.success(
+          isUpdate
+            ? t("apps.chats.toasts.transcriptUpdated")
+            : t("apps.chats.toasts.transcriptSaved"),
+          {
+            description: t("apps.chats.toasts.transcriptSavedDescription", {
+              fileName: finalFileName,
+            }),
+            duration: 5000,
+            action: {
+              label: t("common.htmlPreview.toastOpenAction"),
+              onClick: () => {
               // Check if this file is already open in a TextEdit instance
               const textEditStore = useTextEditStore.getState();
               const existingInstanceId = textEditStore.getInstanceIdByPath(filePath);
@@ -2526,12 +2534,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
       } catch (error) {
         console.error("Error saving transcript:", error);
-        toast.error("Failed to save transcript", {
-          description: error instanceof Error ? error.message : "Unknown error",
+        toast.error(t("apps.chats.toasts.failedToSaveTranscript"), {
+          description:
+            error instanceof Error
+              ? error.message
+              : t("apps.chats.toasts.unknownError"),
         });
       }
     },
-    [username, saveFile, launchApp],
+    [username, saveFile, launchApp, t],
   );
 
   // Stop both chat streaming and TTS queue
