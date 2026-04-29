@@ -20,7 +20,7 @@ export const maxDuration = 30;
 
 export default apiHandler(
   { methods: ["GET"], auth: "required" },
-  async ({ req, res, logger, startTime, user }) => {
+  async ({ req, res, logger, startTime }) => {
     const id = (req.query.id as string | undefined)?.trim();
     if (!id) {
       logger.response(400, Date.now() - startTime);
