@@ -658,6 +658,29 @@ export function TvAppComponent({
     setIsBuffering(false);
   }, [currentVideo?.id]);
 
+  // Suppress the CC overlay during channel/clip transitions so the
+  // previous song's captions don't briefly show through the static
+  // burst before the new video's lyrics load. Cleared after a short
+  // timeout that's a touch longer than the channel-switch animation
+  // so the overlay doesn't pop back in mid-burst.
+  const [isTransitioningCc, setIsTransitioningCc] = useState(false);
+  const ccTransitionMountedRef = useRef(false);
+  useEffect(() => {
+    if (!ccTransitionMountedRef.current) {
+      ccTransitionMountedRef.current = true;
+      return;
+    }
+    setIsTransitioningCc(true);
+    const id = window.setTimeout(
+      () => setIsTransitioningCc(false),
+      // Match the visible end of the channel-switch / clip-change
+      // animation; a slight buffer keeps the overlay hidden until
+      // after the static fades out.
+      700
+    );
+    return () => window.clearTimeout(id);
+  }, [currentChannelId, currentVideo?.id]);
+
   // Pause / play "turn the TV off and on". We only fire the off→on
   // power-on shader after the user has previously paused at least
   // once (`hasPausedRef`), so the natural autoplay-success transition
@@ -975,7 +998,11 @@ export function TvAppComponent({
                   artist={currentVideo?.artist}
                   playedSeconds={playedSeconds}
                   visible={
-                    !screenOff && !poweringOff && Boolean(url)
+                    !screenOff &&
+                    !poweringOff &&
+                    !isBuffering &&
+                    !isTransitioningCc &&
+                    Boolean(url)
                   }
                 />
               )}
@@ -1332,7 +1359,11 @@ export function TvAppComponent({
                 artist={currentVideo?.artist}
                 playedSeconds={playedSeconds}
                 visible={
-                  !screenOff && !poweringOff && Boolean(url)
+                  !screenOff &&
+                  !poweringOff &&
+                  !isBuffering &&
+                  !isTransitioningCc &&
+                  Boolean(url)
                 }
                 variant="fullscreen"
               />
