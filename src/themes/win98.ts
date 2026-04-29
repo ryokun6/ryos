@@ -53,6 +53,6 @@ export const win98: OsTheme = {
     windowShadow: "none",
   },
   wallpaperDefaults: {
-    tile: "/wallpapers/tiles/bondi.png",
+    tile: "/wallpapers/tiles/ripple_bondi.png",
   },
 };

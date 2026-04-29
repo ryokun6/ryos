@@ -65,6 +65,6 @@ export const macosx: OsTheme = {
     windowShadow: "0 8px 25px rgba(0,0,0,0.5)",
   },
   wallpaperDefaults: {
-    photo: "/wallpapers/photos/aqua/abstract-7.jpg",
+    photo: "/wallpapers/photos/aqua/water.jpg",
   },
 };

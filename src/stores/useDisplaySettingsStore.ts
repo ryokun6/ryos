@@ -11,9 +11,9 @@ import {
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
-/** Default desktop wallpaper (nature photo). */
+/** Default desktop wallpaper (calm water — bundled under public/wallpapers). */
 export const DEFAULT_WALLPAPER_PATH =
-  "/wallpapers/photos/nature/earth_horizon.jpg";
+  "/wallpapers/photos/nature/tranquil_surface.jpg";
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.

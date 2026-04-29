@@ -53,6 +53,6 @@ export const system7: OsTheme = {
     windowShadow: "2px 2px 0px 0px rgba(0,0,0,0.5)",
   },
   wallpaperDefaults: {
-    tile: "/wallpapers/tiles/Property 1=1.svg",
+    tile: "/wallpapers/tiles/waves_bondi.png",
   },
 };
