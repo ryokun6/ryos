@@ -70,7 +70,6 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const [animationDirection, setAnimationDirection] = useState<"next" | "prev">(
     "next"
   );
-  const [elapsedTime, setElapsedTime] = useState(0);
   const [isDraggingSeek, setIsDraggingSeek] = useState(false);
   const [dragSeekTime, setDragSeekTime] = useState(0);
 
@@ -275,7 +274,6 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const handleProgress = useCallback(
     (state: { playedSeconds: number }) => {
       setPlayedSeconds(state.playedSeconds);
-      setElapsedTime(Math.floor(state.playedSeconds));
     },
     []
   );
@@ -487,7 +485,6 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     showStatus,
     channels,
     animationDirection,
-    elapsedTime,
     videoIndex,
     formatTime,
     isDraggingSeek,
