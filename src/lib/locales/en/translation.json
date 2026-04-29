@@ -972,6 +972,27 @@
           "fetched": "Read {{siteName}}",
           "fetchedPage": "Read \"{{title}}\""
         },
+        "cursorRyOsRepoAgent": {
+          "starting": "Starting Cursor Cloud agent…",
+          "panelTitle": "Cursor repo agent",
+          "running": "Running",
+          "finished": "Finished",
+          "noEventsYet": "Waiting for stream events…",
+          "stream": {
+            "toolUse": "Tool request · {{name}}",
+            "toolCall": "Tool · {{name}}",
+            "args": "Arguments",
+            "result": "Result",
+            "truncated": "truncated",
+            "thinking": "Thinking",
+            "userPrompt": "Prompt",
+            "status": "Status",
+            "system": "Session started",
+            "runEnded": "Run finished · {{status}}",
+            "runEndedError": "Run ended with an error",
+            "emptyAssistant": "(No message content)"
+          }
+        },
         "searchedWebFor": "Searched the web for {{query}}",
         "foundVideos": "Found {{count}} videos",
         "settingsNoChanges": "No changes made",

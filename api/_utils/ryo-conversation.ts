@@ -33,6 +33,13 @@ import {
   type ChatToolProfile,
   type ChatToolsContext,
 } from "../chat/tools/index.js";
+import {
+  CURSOR_REPO_AGENT_OWNER,
+  CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
+  cursorRyOsRepoAgentSchema,
+  executeCursorRyOsRepoAgent,
+  type CursorRyOsRepoAgentInput,
+} from "../chat/tools/cursor-repo-agent.js";
 
 export interface RyoConversationSystemState {
   username?: string | null;
@@ -714,7 +721,17 @@ export async function prepareRyoConversationModelInput(
 
   const { prompts: staticPrompts, loadedSections } =
     buildContextAwarePrompts(channel);
-  const staticSystemPrompt = staticPrompts.join("\n");
+
+  const cursorApiKey = process.env.CURSOR_API_KEY?.trim();
+  const enableCursorRepoTool =
+    username === CURSOR_REPO_AGENT_OWNER && !!cursorApiKey;
+
+  const cursorSdkAddon =
+    enableCursorRepoTool && channel === "chat"
+      ? `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub.`
+      : "";
+
+  const staticSystemPrompt = staticPrompts.join("\n") + cursorSdkAddon;
 
   const memoryContextPrompt = buildMemoryContextPrompt({
     username,
@@ -748,8 +765,34 @@ export async function prepareRyoConversationModelInput(
     },
     { profile: toolProfile }
   );
+
+  const cursorRepoTools: ToolSet =
+    enableCursorRepoTool && cursorApiKey && toolProfile === "all"
+      ? {
+          cursorRyOsRepoAgent: {
+            description: CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
+            inputSchema: cursorRyOsRepoAgentSchema,
+            execute: async (input: CursorRyOsRepoAgentInput) =>
+              executeCursorRyOsRepoAgent(input, {
+                log,
+                logError,
+                env: {
+                  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+                  YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
+                },
+                username: username ?? null,
+                redis,
+                timeZone: userTimeZone,
+                apiKey: cursorApiKey,
+                ...toolContextOverrides,
+              }),
+          },
+        }
+      : {};
+
   const tools: ToolSet = {
     ...baseTools,
+    ...cursorRepoTools,
     ...(shouldEnableOpenAIWebSearch({ model, username })
       ? {
           web_search: createOpenAIWebSearchTool(systemState),

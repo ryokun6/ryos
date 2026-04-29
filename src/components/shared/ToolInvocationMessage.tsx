@@ -1,6 +1,7 @@
 import { Check } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
+import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   getSongLibraryCallSummary,
@@ -181,6 +182,9 @@ export function ToolInvocationMessage({
         displayCallMessage = t("apps.chats.toolCalls.webFetch.fetching", { hostname: hostname || url });
         break;
       }
+      case "cursorRyOsRepoAgent":
+        displayCallMessage = t("apps.chats.toolCalls.cursorRyOsRepoAgent.starting");
+        break;
       case "web_search":
       case "google_search":
         displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
@@ -679,6 +683,38 @@ export function ToolInvocationMessage({
   // Handle error states
   if (state === "output-error" && errorText) {
     displayResultMessage = t("apps.chats.toolCalls.error", { errorText });
+  }
+
+  // Async Cursor Cloud agent — server streams events to Redis; UI polls /api/ai/cursor-run-status
+  if (
+    state === "output-available" &&
+    toolName === "cursorRyOsRepoAgent" &&
+    output &&
+    typeof output === "object" &&
+    "async" in output &&
+    (output as { async?: boolean }).async === true &&
+    typeof (output as { runId?: string }).runId === "string"
+  ) {
+    const out = output as {
+      async: boolean;
+      runId: string;
+      agentId?: string;
+      agentTitle?: string;
+      message?: string;
+    };
+    const headerTitle =
+      typeof out.agentTitle === "string" && out.agentTitle.trim().length > 0
+        ? out.agentTitle.trim()
+        : t("apps.chats.toolCalls.cursorRyOsRepoAgent.panelTitle");
+
+    return (
+      <CursorRepoAgentChatCard
+        key={partKey}
+        runId={out.runId}
+        headerTitle={headerTitle}
+        introMessage={out.message}
+      />
+    );
   }
 
   // Special handling for generateHtml
