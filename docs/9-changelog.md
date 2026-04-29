@@ -4,6 +4,33 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
+## April 2026
+
+- Add **Ryo TV** app: channel-surfing UI with CRT shader effects (power on/off, channel switch, buffering), procedural CRT sound effects, AI-generated channels with import/export, MTV music-video channel with per-word KRC-timed Geneva CC plate captions, `/tv` route, OG card, and full localization.
+- Add **tvControl** chat tool: server-side fanout for `createChannel`, expose current TV channel and custom lineup in system state, client handler with invocation UI; gate channel creation on login with toast and login dialog.
+- Add **IRC chat** support: `irc.pieter.com` default, IRC server registry, channel browser in New Chat IRC tab, authenticated-user join via registered servers, `IRC_BRIDGE_DISABLED` env opt-out, and IRC bridge wiring tests.
+- Add intro title card to Karaoke (5s with lead time, scaling, marquee scroll, paused marquee on pause), empty library state with Add Songs CTA, and smoother ScrollingText marquee for iPod/Karaoke.
+- Refine wallpaper system with Leopard sets, picker layout improvements, category ordering, and a new default `nature earth horizon` wallpaper; persist display settings at version 1.
+- Refine themed desktop: System 7 shows Chats, IE, Karaoke after iPod; Applications shortcut on non-macOS X themes (Applet Store hidden there); themed Chats icons across System 7, macOSX, XP 48px, and Win98.
+- Optimize system prompts for static caching with tiered dynamic context.
+
+<details>
+<summary>Minor changes (11)</summary>
+
+- TV: opaque static, finer noise grain, native-refresh-rate noise canvas, lineup-based channel numbers and dynamic window title, reset-channels item, mobile Safari sync play, hide CC during channel/clip transitions, LCD Filter toggle.
+- TV: rebuilt multi-stage CRT power-on/off (center-beam unfold, scale-coupled glow), close window after power-off, screen on/off on play/pause, power back on for Next/Prev/CH.
+- TV: marquee-scroll long NET channel names, inline AI channel creation prompt with shimmer loading, exclude YouTube Shorts from AI channels and via client `onDuration`, Ryo TV pulls from Videos library, reject substring-confusable YouTube hosts (CodeQL).
+- macOSX: include CJK and emoji pixel fonts in LCD font stack.
+- Karaoke: default Korean romanization on, gradient inactive lyrics match sans, tune interlude dots and outlines, open Karaoke cover flow from title art.
+- Karaoke perf: isolate lyrics subtree from playback-tick rerenders; enable react-scan when display debug mode is on.
+- Tauri: fix fullscreen menubar flicker.
+- Control Panels: retro Login button on System 7.
+- Chats: 400px max width on new chat dialog, align IRC channel list with lyrics search dialog, constrain dialogs and tab content for long-text truncation, stabilize new chat dialog on IRC tab, delegate to parent `StartGrindPlanning` when embedded.
+- Files: sparse default desktop shortcuts on System 7 and Windows themes; guard optional `aliasTarget` in System 7 desktop migration.
+- IRC: use `crypto.randomInt` for bridge IRC nick suffix.
+
+</details>
+
 ## March 2026
 
 - Add Calendar app with iCal support, Dashboard widget overlay, and AI integration; redesign Dashboard with widget strip, Stocks, Dictionary, Translator, and smarter placement.
@@ -376,4 +403,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-03-17*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-04-29*
