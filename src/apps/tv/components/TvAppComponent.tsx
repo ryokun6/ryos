@@ -32,7 +32,8 @@ import { Button } from "@/components/ui/button";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { VideoFullScreenPortal } from "@/components/shared/VideoFullScreenPortal";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
-import { useTvLogic } from "../hooks/useTvLogic";
+import { useTvLogic, MTV_CHANNEL_ID } from "../hooks/useTvLogic";
+import { MtvLyricsOverlay } from "./MtvLyricsOverlay";
 import { SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -357,6 +358,7 @@ export function TvAppComponent({
     animationDirection,
     scheduleNowTitle,
     scheduleNextTitle,
+    playedSeconds,
   } = useTvLogic({ isWindowOpen, isForeground });
 
   // NOTE: All hooks must be called unconditionally on every render. The
@@ -944,6 +946,15 @@ export function TvAppComponent({
                 buffering={isBuffering || (!url && isPlaying)}
                 crtActive={lcdFilterOn}
               />
+              {currentChannelId === MTV_CHANNEL_ID && !isFullScreen && (
+                <MtvLyricsOverlay
+                  songId={currentVideo?.id}
+                  title={currentVideo?.title}
+                  artist={currentVideo?.artist}
+                  playedSeconds={playedSeconds}
+                  visible={!screenOff && !poweringOff && Boolean(url)}
+                />
+              )}
               <AnimatePresence>
                 {statusMessage && (
                   <motion.div
@@ -1289,6 +1300,18 @@ export function TvAppComponent({
           onPrevious={prevVideo}
           showStatus={showStatus}
           statusMessage={statusMessage}
+          videoOverlay={
+            currentChannelId === MTV_CHANNEL_ID ? (
+              <MtvLyricsOverlay
+                songId={currentVideo?.id}
+                title={currentVideo?.title}
+                artist={currentVideo?.artist}
+                playedSeconds={playedSeconds}
+                visible
+                variant="fullscreen"
+              />
+            ) : null
+          }
         />
       )}
     </>

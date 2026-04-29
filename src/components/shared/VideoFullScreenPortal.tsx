@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import type ReactPlayer from "react-player";
@@ -29,6 +29,13 @@ interface VideoFullScreenPortalProps {
   statusMessage?: string | null;
   isShuffled?: boolean;
   onToggleShuffle?: () => void;
+  /**
+   * Optional content rendered above the video but below the on-screen
+   * status / toolbar overlays. Used by callers (e.g. TV's MTV channel) to
+   * draw a single-line lyric ticker without coupling that logic to the
+   * shared portal.
+   */
+  videoOverlay?: ReactNode;
 }
 
 export function VideoFullScreenPortal({
@@ -53,6 +60,7 @@ export function VideoFullScreenPortal({
   statusMessage,
   isShuffled,
   onToggleShuffle,
+  videoOverlay,
 }: VideoFullScreenPortalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
@@ -233,6 +241,11 @@ export function VideoFullScreenPortal({
       </AnimatePresence>
 
       <div className="flex-1 min-h-0 relative overflow-hidden">
+        {videoOverlay ? (
+          <div className="pointer-events-none absolute inset-0 z-30">
+            {videoOverlay}
+          </div>
+        ) : null}
         <div className="absolute inset-0 w-full h-full">
           <div
             className="w-full absolute"
