@@ -397,6 +397,34 @@ export function TvAppComponent({
     stopStatic,
   } = useTvSoundFx();
 
+  // Mobile Safari blocks YouTube's autoplay until a user gesture. The
+  // toggle-play state path (Zustand flip → re-render → effect updates
+  // screenOff → re-render → react-player asks YT to play) is fully
+  // async, so by the time `playVideo()` is invoked the gesture token
+  // is gone and iOS rejects the play. Mirror the iPod / Karaoke pattern
+  // and call `playVideo()` *synchronously* inside the click handler so
+  // the call still rides on the user gesture. Once YouTube is playing
+  // the later state-driven `playing` prop update is a no-op.
+  const handleTogglePlay = useCallback(() => {
+    if (!isPlaying) {
+      const playYt = (player: ReactPlayer | null) => {
+        const internal = player?.getInternalPlayer?.();
+        if (internal && typeof internal.playVideo === "function") {
+          try {
+            internal.playVideo();
+          } catch {
+            // Defensive: YT iframe may not be ready yet on first open.
+            // The state-driven path will still attempt playback once
+            // the iframe finishes its initial handshake.
+          }
+        }
+      };
+      playYt(playerRef.current);
+      playYt(fullScreenPlayerRef.current);
+    }
+    togglePlay();
+  }, [isPlaying, togglePlay, playerRef, fullScreenPlayerRef]);
+
   const customChannels = useTvStore((s) => s.customChannels);
   const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
   const importChannels = useTvStore((s) => s.importChannels);
@@ -756,7 +784,7 @@ export function TvAppComponent({
       isLcdFilterOn={lcdFilterOn}
       onToggleLcdFilter={toggleLcdFilter}
       isPlaying={isPlaying}
-      onTogglePlay={togglePlay}
+      onTogglePlay={handleTogglePlay}
       onNextVideo={nextVideo}
       onPrevVideo={prevVideo}
       onNextChannel={nextChannel}
@@ -905,7 +933,7 @@ export function TvAppComponent({
               <div
                 className="absolute inset-0 z-20"
                 aria-hidden
-                onClick={togglePlay}
+                onClick={handleTogglePlay}
               />
               <TvCrtEffects
                 powerOnKey={powerOnKey}
@@ -1018,7 +1046,7 @@ export function TvAppComponent({
                     <button
                       type="button"
                       className="metal-inset-btn metal-inset-icon"
-                      onClick={togglePlay}
+                      onClick={handleTogglePlay}
                       disabled={!hasVideos}
                       style={{ minWidth: 32 }}
                     >
@@ -1058,7 +1086,7 @@ export function TvAppComponent({
                     </button>
                     <button
                       type="button"
-                      onClick={togglePlay}
+                      onClick={handleTogglePlay}
                       className={cn(
                         "flex items-center justify-center disabled:opacity-50 focus:outline-none",
                         "hover:brightness-75 active:brightness-50"
@@ -1248,7 +1276,7 @@ export function TvAppComponent({
           isPlaying={isPlaying}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          onTogglePlay={togglePlay}
+          onTogglePlay={handleTogglePlay}
           onEnded={handleVideoEnd}
           onProgress={handleProgress}
           onDuration={handleDuration}
