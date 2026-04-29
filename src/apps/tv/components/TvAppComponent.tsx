@@ -891,6 +891,18 @@ export function TvAppComponent({
                   />
                 )}
               </div>
+              {/* Transparent capture layer that swallows mouse/pointer
+                  events so they never reach the YouTube iframe. This
+                  prevents the iframe from showing its own hover UI
+                  (title overlay, watch-on-YouTube link, etc.) inside
+                  the broadcast-TV experience. Sits above the iframe
+                  but below the status overlay so the channel-flash
+                  is unaffected. */}
+              <div
+                className="absolute inset-0 z-20"
+                aria-hidden
+                onClick={togglePlay}
+              />
               <TvCrtEffects
                 powerOnKey={powerOnKey}
                 poweringOff={poweringOff}

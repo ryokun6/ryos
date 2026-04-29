@@ -43,9 +43,10 @@ function NoiseCanvas({
     if (!ctx) return;
 
     const resize = () => {
-      // Render at half-res for performance; CSS scales it to full size.
-      const w = Math.max(1, Math.floor(canvas.offsetWidth / 2));
-      const h = Math.max(1, Math.floor(canvas.offsetHeight / 2));
+      // Render at full CSS resolution so each pixel is one noise sample,
+      // matching the finer grain used by the Videos app's static.
+      const w = Math.max(1, Math.floor(canvas.offsetWidth));
+      const h = Math.max(1, Math.floor(canvas.offsetHeight));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
@@ -99,7 +100,6 @@ function NoiseCanvas({
         inset: 0,
         width: "100%",
         height: "100%",
-        imageRendering: "pixelated",
         ...style,
       }}
     />
@@ -512,36 +512,36 @@ export function TvCrtEffects({
     <>
       <CrtShaderOverlay active={crtActive} />
 
-      {/* Sustained buffering static — soft, lower opacity. */}
+      {/* Sustained buffering static — fully opaque so the loading
+          iframe doesn't bleed through. Only the cross-fade in/out is
+          partially transparent. */}
       <AnimatePresence>
         {buffering && (
           <motion.div
             key="tv-buffering"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.45 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="absolute inset-0 z-30 pointer-events-none"
           >
-            <NoiseCanvas intensity={0.85} />
+            <NoiseCanvas intensity={1} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Channel-switch burst — brief, full opacity. Re-keys on every
-          channel change so a new burst plays even mid-fade. */}
+      {/* Channel-switch burst — fully opaque while active, briefly
+          fades out on exit so the new picture isn't visible through
+          the static. Re-keys on every channel change so a new burst
+          plays even mid-fade. */}
       <AnimatePresence>
         {activeChannelKey > 0 && (
           <motion.div
             key={`tv-channel-${activeChannelKey}`}
             initial={{ opacity: 1 }}
-            animate={{ opacity: [1, 1, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{
-              duration: 0.5,
-              times: [0, 0.55, 1],
-              ease: "easeOut",
-            }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.18 } }}
+            transition={{ duration: 0.2 }}
             className="absolute inset-0 z-40 pointer-events-none"
           >
             <NoiseCanvas intensity={1} />
