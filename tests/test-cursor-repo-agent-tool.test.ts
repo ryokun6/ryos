@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   DEFAULT_RYOS_GITHUB_REPO_URL,
   executeCursorRyOsRepoAgent,
+  formatCursorRunCompletionTelegramMessage,
 } from "../api/chat/tools/cursor-repo-agent.js";
 
 describe("cursorRyOsRepoAgent gate", () => {
@@ -24,5 +25,50 @@ describe("cursorRyOsRepoAgent gate", () => {
     expect(DEFAULT_RYOS_GITHUB_REPO_URL).toBe(
       "https://github.com/ryokun6/ryos"
     );
+  });
+});
+
+describe("formatCursorRunCompletionTelegramMessage", () => {
+  test("includes title and summary on success", () => {
+    const text = formatCursorRunCompletionTelegramMessage({
+      ok: true,
+      agentTitle: "Add dark mode",
+      status: "finished",
+      summary: "Added a system-wide dark mode toggle.",
+    });
+    expect(text.startsWith("Cursor agent done — Add dark mode")).toBe(true);
+    expect(text).toContain("Added a system-wide dark mode toggle.");
+  });
+
+  test("falls back when summary is empty on success", () => {
+    const text = formatCursorRunCompletionTelegramMessage({
+      ok: true,
+      agentTitle: "Refactor",
+      status: "finished",
+      summary: "",
+    });
+    expect(text).toContain("Cursor agent done — Refactor");
+    expect(text).toContain("(no summary returned, status: finished)");
+  });
+
+  test("uses error body on failure and prefixes failed", () => {
+    const text = formatCursorRunCompletionTelegramMessage({
+      ok: false,
+      agentTitle: "Try thing",
+      status: "error",
+      error: "boom",
+    });
+    expect(text.startsWith("Cursor agent failed — Try thing")).toBe(true);
+    expect(text).toContain("boom");
+  });
+
+  test("truncates very long bodies", () => {
+    const longSummary = "x".repeat(5000);
+    const text = formatCursorRunCompletionTelegramMessage({
+      ok: true,
+      summary: longSummary,
+    });
+    expect(text.length).toBeLessThanOrEqual(3700);
+    expect(text).toContain("…(truncated)");
   });
 });

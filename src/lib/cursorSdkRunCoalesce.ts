@@ -286,6 +286,13 @@ export function coalesceCursorRunRows(events: unknown[]): CoalescedCursorRow[] {
   if (!Array.isArray(events)) return [];
 
   const out: CoalescedCursorRow[] = [];
+  // Tracks where a tool call key was first emitted so later lifecycle rows
+  // (interleaved with thinking/assistant/etc.) update that entry in-place
+  // instead of being rendered as a duplicate.
+  const toolKeyToLocation = new Map<
+    string,
+    { outIndex: number; rowIndex: number }
+  >();
   let i = 0;
 
   while (i < events.length) {
@@ -392,8 +399,10 @@ export function coalesceCursorRunRows(events: unknown[]): CoalescedCursorRow[] {
 
     if (isToolCallRow(row)) {
       const name = toolCallName(row);
-      const allRows: Record<string, unknown>[] = [];
-      const latestRows: Record<string, unknown>[] = [];
+      const newRows: Record<string, unknown>[] = [];
+      const localKeyToIndex = new Map<string, number>();
+      let batchTsStart: number | null = null;
+      let batchTsEnd: number | null = null;
 
       while (i < events.length) {
         const next = events[i];
@@ -406,19 +415,65 @@ export function coalesceCursorRunRows(events: unknown[]): CoalescedCursorRow[] {
         if (toolCallName(nextRecord) !== name) break;
 
         const lifecycle = collectToolCallLifecycle(events, i);
-        allRows.push(...lifecycle.group);
-        latestRows.push(lifecycle.group[lifecycle.group.length - 1]!);
+        const latest = lifecycle.group[lifecycle.group.length - 1]!;
+        const key = toolCallKey(latest);
         i = lifecycle.nextIndex;
+
+        // Same-id tool call already emitted earlier in `out` — mutate in place
+        // so the running entry updates to its final state instead of duplicating.
+        const globalLoc = key ? toolKeyToLocation.get(key) : undefined;
+        if (globalLoc) {
+          const existing = out[globalLoc.outIndex];
+          if (existing && existing.kind === "merged_tool_call") {
+            existing.rows[globalLoc.rowIndex] = latest;
+            existing.row = existing.rows[existing.rows.length - 1]!;
+            for (const r of lifecycle.group) {
+              const ts = typeof r.ts === "number" ? r.ts : null;
+              if (
+                ts !== null &&
+                (existing.tsEnd === null || ts > existing.tsEnd)
+              ) {
+                existing.tsEnd = ts;
+              }
+            }
+          }
+          continue;
+        }
+
+        for (const r of lifecycle.group) {
+          const ts = typeof r.ts === "number" ? r.ts : null;
+          if (ts !== null) {
+            if (batchTsStart === null || ts < batchTsStart) batchTsStart = ts;
+            if (batchTsEnd === null || ts > batchTsEnd) batchTsEnd = ts;
+          }
+        }
+
+        // Same-id tool call already in this batch — update local entry.
+        const localIdx = key ? localKeyToIndex.get(key) : undefined;
+        if (localIdx !== undefined) {
+          newRows[localIdx] = latest;
+          continue;
+        }
+
+        if (key) localKeyToIndex.set(key, newRows.length);
+        newRows.push(latest);
       }
 
-      const { tsStart, tsEnd } = collectTsRange(allRows);
-      out.push({
-        kind: "merged_tool_call",
-        tsStart,
-        tsEnd,
-        row: latestRows[latestRows.length - 1]!,
-        rows: latestRows,
-      });
+      if (newRows.length > 0) {
+        const outIndex = out.length;
+        out.push({
+          kind: "merged_tool_call",
+          tsStart: batchTsStart,
+          tsEnd: batchTsEnd,
+          row: newRows[newRows.length - 1]!,
+          rows: newRows,
+        });
+
+        newRows.forEach((r, idx) => {
+          const k = toolCallKey(r);
+          if (k) toolKeyToLocation.set(k, { outIndex, rowIndex: idx });
+        });
+      }
       continue;
     }
 

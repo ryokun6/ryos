@@ -7,6 +7,7 @@
 import type { Redis } from "../../_utils/redis.js";
 import { z } from "zod";
 import type { MemoryToolContext } from "./executors.js";
+import { sendTelegramMessage } from "../../_utils/telegram.js";
 
 export const CURSOR_REPO_AGENT_OWNER = "ryo";
 
@@ -26,7 +27,7 @@ export const DEFAULT_RYOS_GITHUB_REPO_URL = "https://github.com/ryokun6/ryos";
 
 /** Shown to the model when this tool is enabled */
 export const CURSOR_RYOS_REPO_AGENT_DESCRIPTION =
-  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues; the user opens the run panel in chat to watch live stream events.";
+  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram).";
 
 export const cursorRyOsRepoAgentSchema = z.object({
   prompt: z
@@ -48,8 +49,68 @@ export const cursorRyOsRepoAgentSchema = z.object({
 
 export type CursorRyOsRepoAgentInput = z.infer<typeof cursorRyOsRepoAgentSchema>;
 
+export interface CursorRepoAgentTelegramNotify {
+  botToken: string;
+  chatId: string;
+  /** Optional: message to reply-to (typically the user message that started the run). */
+  replyToMessageId?: number;
+}
+
 export interface CursorRyOsRepoAgentContext extends MemoryToolContext {
   apiKey: string;
+  /** When set, send a Telegram message to this chat once the run terminates. */
+  notifyTelegram?: CursorRepoAgentTelegramNotify;
+}
+
+const TELEGRAM_NOTIFY_MAX_BODY_CHARS = 3500;
+
+export function formatCursorRunCompletionTelegramMessage(input: {
+  ok: boolean;
+  agentTitle?: string;
+  status?: string;
+  summary?: string;
+  error?: string;
+}): string {
+  const { ok, agentTitle, status, summary, error } = input;
+  const titleSuffix = agentTitle ? ` — ${agentTitle}` : "";
+  const headline = ok
+    ? `Cursor agent done${titleSuffix}`
+    : `Cursor agent failed${titleSuffix}`;
+
+  const rawBody = ok
+    ? (summary?.trim() ?? "")
+    : (error?.trim() || summary?.trim() || "");
+
+  const fallback = ok
+    ? `(no summary returned${status ? `, status: ${status}` : ""})`
+    : status
+      ? `failed: ${status}`
+      : "failed";
+
+  const body = rawBody.length > 0 ? rawBody : fallback;
+  const truncated =
+    body.length > TELEGRAM_NOTIFY_MAX_BODY_CHARS
+      ? `${body.slice(0, TELEGRAM_NOTIFY_MAX_BODY_CHARS)}\n…(truncated)`
+      : body;
+
+  return `${headline}\n\n${truncated}`;
+}
+
+async function notifyTelegramRunComplete(
+  notifyTelegram: CursorRepoAgentTelegramNotify | undefined,
+  text: string,
+  logError: (...args: unknown[]) => void
+): Promise<void> {
+  if (!notifyTelegram) return;
+  try {
+    await sendTelegramMessage({
+      botToken: notifyTelegram.botToken,
+      chatId: notifyTelegram.chatId,
+      text,
+    });
+  } catch (err) {
+    logError("[cursorRyOsRepoAgent] telegram notify failed", err);
+  }
 }
 
 export type CursorRyOsRepoAgentToolOutput =
@@ -138,6 +199,7 @@ function spawnBackgroundCursorRun(input: {
   logError: (...args: unknown[]) => void;
   agent: import("@cursor/sdk").SDKAgent;
   run: import("@cursor/sdk").Run;
+  notifyTelegram?: CursorRepoAgentTelegramNotify;
 }): void {
   const {
     redis,
@@ -155,6 +217,7 @@ function spawnBackgroundCursorRun(input: {
     logError,
     agent,
     run,
+    notifyTelegram,
   } = input;
 
   void (async () => {
@@ -199,13 +262,25 @@ function spawnBackgroundCursorRun(input: {
         }),
         { ex: CURSOR_SDK_RUN_TTL_SEC }
       );
+
+      await notifyTelegramRunComplete(
+        notifyTelegram,
+        formatCursorRunCompletionTelegramMessage({
+          ok: status === "finished",
+          agentTitle,
+          status,
+          summary,
+        }),
+        logError
+      );
     } catch (e) {
       logError("[cursorRyOsRepoAgent] background run failed", e);
+      const errorText = e instanceof Error ? e.message : String(e);
       await safePushEvent(redis, eventsKey, {
         ts: Date.now(),
         type: "terminal",
         status: "error",
-        error: e instanceof Error ? e.message : String(e),
+        error: errorText,
       });
       await redis.set(
         metaKey,
@@ -216,9 +291,20 @@ function spawnBackgroundCursorRun(input: {
           ...(agentTitle ? { agentTitle } : {}),
           finishedAt: Date.now(),
           terminalStatus: "error",
-          error: e instanceof Error ? e.message : String(e),
+          error: errorText,
         }),
         { ex: CURSOR_SDK_RUN_TTL_SEC }
+      );
+
+      await notifyTelegramRunComplete(
+        notifyTelegram,
+        formatCursorRunCompletionTelegramMessage({
+          ok: false,
+          agentTitle,
+          status: "error",
+          error: errorText,
+        }),
+        logError
       );
     } finally {
       try {
@@ -357,6 +443,7 @@ export async function executeCursorRyOsRepoAgent(
       logError: context.logError,
       agent,
       run,
+      notifyTelegram: context.notifyTelegram,
     });
 
     return {

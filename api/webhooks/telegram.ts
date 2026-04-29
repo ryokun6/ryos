@@ -638,6 +638,10 @@ export default async function handler(
     username: linkedAccount.username,
     redis,
     model: telegramModel,
+    cursorRepoAgentNotifyTelegram: {
+      botToken,
+      chatId: parsedUpdate.chatId,
+    },
     log: (...args: unknown[]) =>
       logger.info(`[Telegram:${linkedAccount.username}]`, args),
     logError: (...args: unknown[]) =>

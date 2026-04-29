@@ -38,6 +38,7 @@ import {
   CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
   cursorRyOsRepoAgentSchema,
   executeCursorRyOsRepoAgent,
+  type CursorRepoAgentTelegramNotify,
   type CursorRyOsRepoAgentInput,
 } from "../chat/tools/cursor-repo-agent.js";
 
@@ -153,6 +154,11 @@ export interface PrepareRyoConversationOptions {
   toolProfile?: ChatToolProfile;
   toolContextOverrides?: Partial<ChatToolsContext>;
   preloadedMemoryContext?: LoadedRyoMemoryContext;
+  /**
+   * When set (typically by the Telegram webhook), the cursorRyOsRepoAgent tool
+   * will send a Telegram message to this chat once a background run completes.
+   */
+  cursorRepoAgentNotifyTelegram?: CursorRepoAgentTelegramNotify;
 }
 
 export interface PreparedRyoConversation {
@@ -706,6 +712,7 @@ export async function prepareRyoConversationModelInput(
     toolProfile = CHANNEL_TOOL_PROFILES[channel],
     toolContextOverrides,
     preloadedMemoryContext,
+    cursorRepoAgentNotifyTelegram,
   } = options;
 
   const userTimeZone = systemState?.userLocalTime?.timeZone || timeZone;
@@ -726,10 +733,11 @@ export async function prepareRyoConversationModelInput(
   const enableCursorRepoTool =
     username === CURSOR_REPO_AGENT_OWNER && !!cursorApiKey;
 
-  const cursorSdkAddon =
-    enableCursorRepoTool && channel === "chat"
-      ? `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub.`
-      : "";
+  const cursorSdkAddon = enableCursorRepoTool
+    ? channel === "telegram"
+      ? `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge it briefly to the user — they will receive a follow-up Telegram message with the result when the run completes.`
+      : `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub.`
+    : "";
 
   const staticSystemPrompt = staticPrompts.join("\n") + cursorSdkAddon;
 
@@ -767,7 +775,9 @@ export async function prepareRyoConversationModelInput(
   );
 
   const cursorRepoTools: ToolSet =
-    enableCursorRepoTool && cursorApiKey && toolProfile === "all"
+    enableCursorRepoTool &&
+    cursorApiKey &&
+    (toolProfile === "all" || toolProfile === "telegram")
       ? {
           cursorRyOsRepoAgent: {
             description: CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
@@ -784,6 +794,9 @@ export async function prepareRyoConversationModelInput(
                 redis,
                 timeZone: userTimeZone,
                 apiKey: cursorApiKey,
+                ...(cursorRepoAgentNotifyTelegram
+                  ? { notifyTelegram: cursorRepoAgentNotifyTelegram }
+                  : {}),
                 ...toolContextOverrides,
               }),
           },

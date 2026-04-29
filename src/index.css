@@ -830,6 +830,100 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   animation: shimmer 2s infinite linear;
 }
 
+/* Cursor agent stream markdown — compact rhythm aligned with tool-call rows */
+.cursor-stream-md > *:first-child {
+  margin-top: 0;
+}
+.cursor-stream-md > *:last-child {
+  margin-bottom: 0;
+}
+.cursor-stream-md p {
+  margin: 0 0 0.6rem 0;
+}
+.cursor-stream-md h1,
+.cursor-stream-md h2,
+.cursor-stream-md h3,
+.cursor-stream-md h4 {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 12px;
+  font-weight: 600;
+}
+.cursor-stream-md ul,
+.cursor-stream-md ol {
+  margin: 0 0 0.6rem 0;
+  padding-left: 1rem;
+}
+.cursor-stream-md ul {
+  list-style: disc;
+}
+.cursor-stream-md ol {
+  list-style: decimal;
+}
+.cursor-stream-md li {
+  margin: 0;
+}
+.cursor-stream-md a {
+  text-decoration: underline;
+}
+.cursor-stream-md strong {
+  font-weight: 600;
+}
+.cursor-stream-md em {
+  font-style: italic;
+}
+.cursor-stream-md blockquote {
+  margin: 0 0 0.6rem 0;
+  border-left: 2px solid rgb(212 212 216);
+  padding-left: 0.5rem;
+  color: rgb(82 82 91);
+}
+.cursor-stream-md code {
+  font-family: var(--font-geneva-12);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0 3px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.cursor-stream-md pre {
+  margin: 0 0 0.6rem 0;
+  padding: 0.4rem 0.5rem;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 11px;
+}
+.cursor-stream-md pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+.cursor-stream-md table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 0.6rem 0;
+}
+.cursor-stream-md th,
+.cursor-stream-md td {
+  border: 1px solid rgb(228 228 231);
+  padding: 2px 4px;
+}
+:root.dark .cursor-stream-md code,
+:root[data-theme="dark"] .cursor-stream-md code,
+.dark .cursor-stream-md code {
+  background: rgba(255, 255, 255, 0.08);
+}
+:root.dark .cursor-stream-md pre,
+:root[data-theme="dark"] .cursor-stream-md pre,
+.dark .cursor-stream-md pre {
+  background: rgba(255, 255, 255, 0.06);
+}
+:root.dark .cursor-stream-md th,
+:root.dark .cursor-stream-md td,
+.dark .cursor-stream-md th,
+.dark .cursor-stream-md td {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
 .crt-effect::before {
   content: "";
   position: fixed;
