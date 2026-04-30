@@ -978,6 +978,12 @@
           "running": "Running",
           "finished": "Finished",
           "noEventsYet": "Waiting for stream events…",
+          "openPr": "Open PR",
+          "followupPlaceholder": "Reply to the agent…",
+          "followupBusy": "Agent is still running…",
+          "followupSending": "Sending follow-up…",
+          "followupSend": "Send follow-up",
+          "followupAriaLabel": "Follow-up message to the Cursor agent",
           "stream": {
             "toolUse": "Tool request · {{name}}",
             "toolCall": "Tool · {{name}}",
