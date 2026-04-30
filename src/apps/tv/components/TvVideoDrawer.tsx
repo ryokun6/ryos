@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import type { Channel } from "@/apps/tv/data/channels";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { Trash } from "@phosphor-icons/react";
 
 const DRAWER_WIDTH = 240;
 
@@ -48,6 +50,11 @@ interface TvVideoDrawerProps {
   currentVideoIndex: number;
   /** Plays the picked video on the current channel. */
   onSelectVideo: (index: number) => void;
+  /**
+   * When set (editable channels only), rows show a remove control.
+   * Deletes from the backing library (Videos / iPod / custom channel).
+   */
+  onRemoveVideo?: (videoId: string) => void;
 }
 
 /**
@@ -69,9 +76,12 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
   channel,
   currentVideoIndex,
   onSelectVideo,
+  onRemoveVideo,
 }: TvVideoDrawerProps) {
   const { t } = useTranslation();
   const isCompactDrawer = useMediaQuery(COMPACT_DRAWER_MEDIA);
+  const isMobileUi = useIsMobile();
+  const showTrashAlways = isMobileUi;
   const currentTheme = useThemeStore((s) => s.current);
   const isMacOSTheme = currentTheme === "macosx";
   const isSystem7 = currentTheme === "system7";
@@ -204,6 +214,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                       <li
                         key={`${video.id}-${index}`}
                         ref={isActive ? activeItemRef : undefined}
+                        className="group relative min-w-0"
                       >
                         <button
                           type="button"
@@ -227,6 +238,38 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                             {video.title}
                           </span>
                         </button>
+                        {onRemoveVideo && (
+                          <button
+                            type="button"
+                            aria-label={t("apps.tv.drawer.removeVideo")}
+                            title={t("apps.tv.drawer.removeVideo")}
+                            className={cn(
+                              "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center rounded-[4px] p-1 transition-opacity duration-150",
+                              "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#3875D7]/60",
+                              showTrashAlways
+                                ? "pointer-events-auto opacity-100"
+                                : cn(
+                                    "pointer-events-none opacity-0",
+                                    "group-hover:pointer-events-auto group-hover:opacity-100",
+                                    "group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                                  ),
+                              "text-black/45 hover:bg-red-600/14 hover:text-red-700",
+                              isActive &&
+                                "text-white/75 hover:text-white hover:bg-white/18"
+                            )}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onRemoveVideo(video.id);
+                            }}
+                          >
+                            <Trash
+                              size={14}
+                              weight="regular"
+                              className="pointer-events-none shrink-0"
+                            />
+                          </button>
+                        )}
                       </li>
                     );
                   })
@@ -258,6 +301,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                     <li
                       key={`${video.id}-${index}`}
                       ref={isActive ? activeItemRef : undefined}
+                      className="group relative min-w-0"
                     >
                       <button
                         type="button"
@@ -289,6 +333,52 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                           {video.title}
                         </span>
                       </button>
+                      {onRemoveVideo && (
+                        <button
+                          type="button"
+                          aria-label={t("apps.tv.drawer.removeVideo")}
+                          title={t("apps.tv.drawer.removeVideo")}
+                          className={cn(
+                            "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center p-1 transition-opacity duration-150",
+                            "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-1",
+                            showTrashAlways
+                              ? "pointer-events-auto opacity-100"
+                              : cn(
+                                  "pointer-events-none opacity-0",
+                                  "group-hover:pointer-events-auto group-hover:opacity-100",
+                                  "group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                                ),
+                            isSystem7 &&
+                              cn(
+                                "rounded-none border border-transparent",
+                                isActive
+                                  ? "text-white/75 hover:text-white hover:bg-white/15 hover:border-white/25 focus-visible:ring-white/60"
+                                  : "text-black/55 hover:text-red-700 hover:bg-black/[0.06] hover:border-black/15"
+                              ),
+                            isXpTheme &&
+                              !isWin98 &&
+                              cn(
+                                "rounded-sm",
+                                isActive
+                                  ? "text-white/85 hover:text-white hover:bg-white/18 focus-visible:ring-white/70"
+                                  : "text-black/50 hover:text-red-700 hover:bg-red-500/12 focus-visible:ring-[#316AC5]/50"
+                              ),
+                            isWin98 &&
+                              "rounded-none border border-transparent text-[#303030] hover:text-[#c00000] hover:bg-[#c0c0c0] hover:border-[#808080] focus-visible:ring-[#000080]/40"
+                          )}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onRemoveVideo(video.id);
+                          }}
+                        >
+                          <Trash
+                            size={14}
+                            weight="regular"
+                            className="pointer-events-none shrink-0"
+                          />
+                        </button>
+                      )}
                     </li>
                   );
                 })

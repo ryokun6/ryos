@@ -1,13 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import {
+  hashStringToSeed,
   isShortDuration,
   isYouTubeUrl,
+  mulberry32,
   nextIndex,
   parseYouTubeId,
   prevIndex,
   randomTuneInOffset,
-  SHORTS_MAX_DURATION_SECONDS,
   shuffleArray,
+  shufflePlaylistWithSeed,
+  SHORTS_MAX_DURATION_SECONDS,
 } from "../src/apps/tv/utils";
 
 describe("isYouTubeUrl", () => {
@@ -146,6 +149,39 @@ describe("shuffleArray", () => {
   test("empty / single-element arrays are stable", () => {
     expect(shuffleArray([])).toEqual([]);
     expect(shuffleArray(["only"])).toEqual(["only"]);
+  });
+});
+
+describe("shufflePlaylistWithSeed", () => {
+  const ids = (items: { id: string }[]) => items.map((i) => i.id).join(",");
+
+  test("same seedKey yields identical order on repeated calls", () => {
+    const items = [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }];
+    const key = "mtv:a\0b\0c\0d";
+    expect(ids(shufflePlaylistWithSeed(items, key))).toBe(
+      ids(shufflePlaylistWithSeed(items, key))
+    );
+  });
+
+  test("order differs when seedKey differs (same items)", () => {
+    const items = [
+      { id: "a" },
+      { id: "b" },
+      { id: "c" },
+      { id: "d" },
+      { id: "e" },
+    ];
+    expect(ids(shufflePlaylistWithSeed(items, "ch-a"))).not.toBe(
+      ids(shufflePlaylistWithSeed(items, "ch-b"))
+    );
+  });
+});
+
+describe("hashStringToSeed / mulberry32", () => {
+  test("deterministic outputs", () => {
+    expect(hashStringToSeed("hello")).toBe(hashStringToSeed("hello"));
+    const r = mulberry32(hashStringToSeed("x"));
+    expect(r()).toBeCloseTo(mulberry32(hashStringToSeed("x"))(), 10);
   });
 });
 

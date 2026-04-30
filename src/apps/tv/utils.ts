@@ -77,6 +77,40 @@ export function shuffleArray<T>(arr: T[], rng: () => number = Math.random): T[] 
   return a;
 }
 
+/** 32-bit seed from a string (stable across runs for playlist ordering). */
+export function hashStringToSeed(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Mulberry32 PRNG; each invocation returns a float in [0, 1). */
+export function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Fisher–Yates shuffle driven only by `seedKey`. Same key + same items ⇒
+ * identical order on every call, so UI indices (drawer, store) stay aligned
+ * when React recomputes `useTvLogic`'s channel memo.
+ */
+export function shufflePlaylistWithSeed<T extends { id: string }>(
+  items: T[],
+  seedKey: string
+): T[] {
+  const rng = mulberry32(hashStringToSeed(seedKey));
+  return shuffleArray(items, rng);
+}
+
 /** Wrap-around index helper: returns the next index, looping at `length`. */
 export function nextIndex(idx: number, length: number): number {
   if (length <= 0) return 0;

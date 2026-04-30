@@ -256,6 +256,8 @@ export interface IpodState extends IpodData {
   toggleFullScreen: () => void;
   setTheme: (theme: "classic" | "black" | "u2") => void;
   addTrack: (track: Track) => void;
+  /** Remove one track from the library by id (e.g. TV playlist trash). */
+  removeTrackById: (trackId: string) => void;
   clearLibrary: () => void;
   resetLibrary: () => Promise<void>;
   nextTrack: () => void;
@@ -669,6 +671,31 @@ export const useIpodStore = create<IpodState>()(
           playbackHistory: [], // Clear playback history when adding new tracks
           historyPosition: -1,
         })),
+      removeTrackById: (trackId) =>
+        set((state) => {
+          const idx = state.tracks.findIndex((t) => t.id === trackId);
+          if (idx < 0) return {};
+          const filtered = state.tracks.filter((t) => t.id !== trackId);
+          let nextSongId = state.currentSongId;
+          if (state.currentSongId === trackId) {
+            if (filtered.length === 0) {
+              nextSongId = null;
+            } else {
+              nextSongId = filtered[Math.min(idx, filtered.length - 1)]!.id;
+            }
+          }
+          return {
+            tracks: filtered,
+            currentSongId: nextSongId,
+            currentLyrics: null,
+            currentFuriganaMap: null,
+            isPlaying: filtered.length === 0 ? false : state.isPlaying,
+            playbackHistory:
+              filtered.length === 0
+                ? []
+                : state.playbackHistory.filter((id) => id !== trackId),
+          };
+        }),
       clearLibrary: () =>
         set({
           tracks: [],

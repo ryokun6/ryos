@@ -314,11 +314,8 @@ export const useTvStore = create<TvStoreState>()(
         }
         return state as typeof persisted;
       },
-      // The video order is freshly shuffled each time a channel is tuned
-      // (see `useTvLogic`'s `currentChannel` memo), so a persisted index
-      // would point at an unrelated video on reload. Persist channel
-      // selection + user-created channels; in-session position is tracked
-      // in memory.
+      // Channel lineup rotation uses an in-memory per-channel shuffle (see
+      // `useTvLogic`); persisted indices would drift after reload.
       partialize: (s) => ({
         currentChannelId: s.currentChannelId,
         customChannels: s.customChannels,

@@ -1659,7 +1659,8 @@
       "drawer": {
         "title": "Schedule",
         "empty": "No videos on this channel yet.",
-        "close": "Hide videos"
+        "close": "Hide videos",
+        "removeVideo": "Remove from channel"
       },
       "reset": {
         "title": "Reset Channels",

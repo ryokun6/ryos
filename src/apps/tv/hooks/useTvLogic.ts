@@ -48,6 +48,9 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const setIsPlaying = useTvStore((s) => s.setIsPlaying);
   const togglePlayStore = useTvStore((s) => s.togglePlay);
   const customChannels = useTvStore((s) => s.customChannels);
+  const removeVideoFromCustomChannel = useTvStore(
+    (s) => s.removeVideoFromCustomChannel
+  );
 
   // Built-in channels first, then customs; numbers follow list order (1-based).
   const channels = useMemo(
@@ -104,6 +107,14 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
 
   const ipodTracks = useIpodStore((s) => s.tracks);
   const videosLibrary = useVideoStore((s) => s.videos);
+  const setVideos = useVideoStore((s) => s.setVideos);
+  const removeTrackById = useIpodStore((s) => s.removeTrackById);
+
+  // Randomized lineup per channel, but stable across React re-renders so
+  // drawer indices and store indices stay aligned (see playlist cache below).
+  const shuffledPlaylistByChannelRef = useRef<
+    Map<string, { fingerprint: string; videos: Video[] }>
+  >(new Map());
 
   const currentChannel = useMemo((): Channel => {
     const base =
@@ -124,13 +135,31 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     // from other stores) and any future channel can't smuggle in
     // non-YouTube URLs.
     const source = rawSource.filter((v) => isYouTubeUrl(v.url));
-    return {
-      ...base,
-      videos: shuffleArray(source),
-    };
+    const fingerprint = source
+      .map((v) => v.id)
+      .sort()
+      .join("\0");
+
+    const cache = shuffledPlaylistByChannelRef.current;
+    const cached = cache.get(base.id);
+    if (cached && cached.fingerprint === fingerprint) {
+      return { ...base, videos: cached.videos };
+    }
+
+    const videos = shuffleArray(source);
+    cache.set(base.id, { fingerprint, videos });
+    return { ...base, videos };
   }, [channels, currentChannelId, ipodTracks, videosLibrary]);
 
   const videoIndex = lastVideoIndexByChannel[currentChannelId] ?? 0;
+
+  const canRemoveVideosFromDrawer = useMemo(() => {
+    return (
+      currentChannelId === RYO_TV_CHANNEL_ID ||
+      currentChannelId === MTV_CHANNEL_ID ||
+      customChannels.some((c) => c.id === currentChannelId)
+    );
+  }, [currentChannelId, customChannels]);
 
   const currentVideo = useMemo(() => {
     const list = currentChannel?.videos ?? [];
@@ -262,6 +291,55 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const toggleFullScreen = useCallback(() => {
     setIsFullScreen((v) => !v);
   }, []);
+
+  /** Explicit playlist / drawer pick: stable index + play from the start. */
+  const selectVideoFromPlaylist = useCallback(
+    (index: number) => {
+      tuneInRandomlyOnNextDurationRef.current = false;
+      setVideoIndex(currentChannelId, index);
+      setIsPlaying(true);
+    },
+    [currentChannelId, setVideoIndex, setIsPlaying]
+  );
+
+  const removeVideoFromDrawer = useCallback(
+    (videoId: string) => {
+      const list = currentChannel?.videos ?? [];
+      const removeIdx = list.findIndex((v) => v.id === videoId);
+      if (removeIdx < 0) return;
+
+      const newLen = list.length - 1;
+      const isCustom = customChannels.some((c) => c.id === currentChannelId);
+      if (isCustom) {
+        removeVideoFromCustomChannel(currentChannelId, videoId);
+      } else if (currentChannelId === RYO_TV_CHANNEL_ID) {
+        setVideos((prev) => prev.filter((v) => v.id !== videoId));
+      } else if (currentChannelId === MTV_CHANNEL_ID) {
+        removeTrackById(videoId);
+      } else {
+        return;
+      }
+
+      let nextIdx = videoIndex;
+      if (removeIdx < videoIndex) nextIdx = videoIndex - 1;
+      else if (removeIdx === videoIndex)
+        nextIdx = newLen === 0 ? 0 : Math.min(removeIdx, newLen - 1);
+      if (newLen === 0) nextIdx = 0;
+      else nextIdx = Math.min(Math.max(0, nextIdx), newLen - 1);
+
+      setVideoIndex(currentChannelId, nextIdx);
+    },
+    [
+      currentChannel,
+      currentChannelId,
+      videoIndex,
+      customChannels,
+      removeVideoFromCustomChannel,
+      setVideos,
+      removeTrackById,
+      setVideoIndex,
+    ]
+  );
 
   const formatTime = useCallback((seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -471,6 +549,10 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     prevVideo,
     handleVideoEnd,
     handleError,
+    selectVideoFromPlaylist,
+    playlistRemoveVideo: canRemoveVideosFromDrawer
+      ? removeVideoFromDrawer
+      : undefined,
     playerRef,
     fullScreenPlayerRef,
     masterVolume,

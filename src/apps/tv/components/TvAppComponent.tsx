@@ -369,6 +369,8 @@ export function TvAppComponent({
     prevVideo,
     handleVideoEnd,
     handleError,
+    selectVideoFromPlaylist,
+    playlistRemoveVideo,
     playerRef,
     fullScreenPlayerRef,
     masterVolume,
@@ -464,20 +466,6 @@ export function TvAppComponent({
   const toggleLcdFilter = useTvStore((s) => s.toggleLcdFilter);
   const closedCaptionsOn = useTvStore((s) => s.closedCaptionsOn);
   const toggleClosedCaptions = useTvStore((s) => s.toggleClosedCaptions);
-  const setVideoIndexInStore = useTvStore((s) => s.setVideoIndex);
-
-  const handleSelectVideoFromDrawer = useCallback(
-    (index: number) => {
-      // Picking from the list always plays the chosen clip from the
-      // top — bypassing the random tune-in offset that channel/clip
-      // skips use, since the user just expressed an explicit intent
-      // to watch *this* video.
-      setVideoIndexInStore(currentChannelId, index);
-      setIsPlaying(true);
-    },
-    [currentChannelId, setVideoIndexInStore, setIsPlaying]
-  );
-
   const toggleDrawer = useCallback(() => {
     setIsDrawerOpen((v) => !v);
   }, []);
@@ -952,7 +940,8 @@ export function TvAppComponent({
             isOpen={isDrawerOpen && !isFullScreen}
             channel={currentChannel ?? null}
             currentVideoIndex={videoIndex}
-            onSelectVideo={handleSelectVideoFromDrawer}
+            onSelectVideo={selectVideoFromPlaylist}
+            onRemoveVideo={playlistRemoveVideo}
           />
         }
       >
