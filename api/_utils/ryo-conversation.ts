@@ -41,6 +41,12 @@ import {
   type CursorRepoAgentTelegramNotify,
   type CursorRyOsRepoAgentInput,
 } from "../chat/tools/cursor-repo-agent.js";
+import {
+  LIST_RECENT_CURSOR_AGENTS_DESCRIPTION,
+  listRecentCursorAgentsSchema,
+  executeListRecentCursorAgents,
+  type ListRecentCursorAgentsInput,
+} from "../chat/tools/list-recent-cursor-agents.js";
 
 export interface RyoConversationSystemState {
   username?: string | null;
@@ -735,8 +741,8 @@ export async function prepareRyoConversationModelInput(
 
   const cursorSdkAddon = enableCursorRepoTool
     ? channel === "telegram"
-      ? `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge it briefly to the user — they will receive a follow-up Telegram message with the result when the run completes.`
-      : `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub.`
+      ? `\n\n## CURSOR CLOUD AGENTS (ryOS REPO)\n- \`cursorRyOsRepoAgent\`: substantive edits via Cursor Cloud on GitHub ryokun6/ryos—not virtual paths (\`/Documents\`, etc.). Runs are asynchronous; on Telegram they get a completion message.\n- \`listRecentCursorAgents\`: read-only list of recent Cloud agents/latest run status for that repo (no new run). Use when the user asks what's running or for recent Cursor agent activity.`
+      : `\n\n## CURSOR CLOUD AGENTS (ryOS REPO)\n- \`cursorRyOsRepoAgent\`: substantive edits via Cursor Cloud on GitHub ryokun6/ryos—not virtual paths (\`/Documents\`, etc.).\n- \`listRecentCursorAgents\`: read-only list of recent agents and latest run statuses for that repo; use when the user asks about recent Cursor Cloud runs without starting one.`
     : "";
 
   const staticSystemPrompt = staticPrompts.join("\n") + cursorSdkAddon;
@@ -797,6 +803,24 @@ export async function prepareRyoConversationModelInput(
                 ...(cursorRepoAgentNotifyTelegram
                   ? { notifyTelegram: cursorRepoAgentNotifyTelegram }
                   : {}),
+                ...toolContextOverrides,
+              }),
+          },
+          listRecentCursorAgents: {
+            description: LIST_RECENT_CURSOR_AGENTS_DESCRIPTION,
+            inputSchema: listRecentCursorAgentsSchema,
+            execute: async (input: ListRecentCursorAgentsInput) =>
+              executeListRecentCursorAgents(input, {
+                log,
+                logError,
+                env: {
+                  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+                  YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
+                },
+                username: username ?? null,
+                redis,
+                timeZone: userTimeZone,
+                apiKey: cursorApiKey,
                 ...toolContextOverrides,
               }),
           },

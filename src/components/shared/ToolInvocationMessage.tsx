@@ -185,6 +185,11 @@ export function ToolInvocationMessage({
       case "cursorRyOsRepoAgent":
         displayCallMessage = t("apps.chats.toolCalls.cursorRyOsRepoAgent.starting");
         break;
+      case "listRecentCursorAgents":
+        displayCallMessage = t(
+          "apps.chats.toolCalls.listRecentCursorAgents.querying",
+        );
+        break;
       case "web_search":
       case "google_search":
         displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
@@ -618,6 +623,27 @@ export function ToolInvocationMessage({
           : t("apps.chats.toolCalls.webFetch.fetched", { siteName: out.siteName || out.message || "" });
       } else if (out?.message) {
         displayResultMessage = out.message;
+      }
+    } else if (toolName === "listRecentCursorAgents") {
+      const out = output as {
+        ok?: boolean;
+        items?: unknown[];
+        error?: string;
+        hint?: string;
+      } | undefined;
+      if (out?.ok && Array.isArray(out.items)) {
+        displayResultMessage =
+          out.items.length === 0
+            ? t("apps.chats.toolCalls.listRecentCursorAgents.none")
+            : out.items.length === 1
+              ? t("apps.chats.toolCalls.listRecentCursorAgents.one")
+              : t("apps.chats.toolCalls.listRecentCursorAgents.many", {
+                  count: out.items.length,
+                });
+      } else if (out?.error) {
+        displayResultMessage = out.hint
+          ? `${out.error} ${out.hint}`
+          : out.error;
       }
     } else if (toolName === "infiniteMacControl") {
       const action = input?.action;

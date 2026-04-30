@@ -993,6 +993,12 @@
             "emptyAssistant": "(No message content)"
           }
         },
+        "listRecentCursorAgents": {
+          "querying": "Checking recent Cursor Cloud agents…",
+          "none": "No matching recent Cursor agents for this repo.",
+          "one": "Found 1 recent Cursor agent run",
+          "many": "Found {{count}} recent Cursor agent runs"
+        },
         "searchedWebFor": "Searched the web for {{query}}",
         "foundVideos": "Found {{count}} videos",
         "settingsNoChanges": "No changes made",

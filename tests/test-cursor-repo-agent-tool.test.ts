@@ -4,6 +4,10 @@ import {
   executeCursorRyOsRepoAgent,
   formatCursorRunCompletionTelegramMessage,
 } from "../api/chat/tools/cursor-repo-agent.js";
+import {
+  executeListRecentCursorAgents,
+  githubRepoSlug,
+} from "../api/chat/tools/list-recent-cursor-agents.js";
 
 describe("cursorRyOsRepoAgent gate", () => {
   test("rejects callers whose username is not the repo owner", async () => {
@@ -70,5 +74,48 @@ describe("formatCursorRunCompletionTelegramMessage", () => {
     });
     expect(text.length).toBeLessThanOrEqual(3700);
     expect(text).toContain("…(truncated)");
+  });
+});
+
+describe("listRecentCursorAgents gate", () => {
+  test("rejects callers whose username is not the repo owner", async () => {
+    const result = await executeListRecentCursorAgents(
+      {},
+      {
+        username: "alice",
+        log: () => {},
+        logError: () => {},
+        env: {},
+        apiKey: "test-key",
+      }
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("restricted");
+    }
+  });
+
+  test("reports missing api key clearly", async () => {
+    const result = await executeListRecentCursorAgents(
+      {},
+      {
+        username: "ryo",
+        log: () => {},
+        logError: () => {},
+        env: {},
+        apiKey: "   ",
+      }
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("CURSOR_API_KEY");
+    }
+  });
+});
+
+describe("githubRepoSlug helper", () => {
+  test("parses https github urls to owner/repo", () => {
+    expect(githubRepoSlug("https://github.com/ryokun6/ryos")).toBe("ryokun6/ryos");
+    expect(githubRepoSlug("https://github.com/Acme/RePo.git")).toBe("acme/repo");
   });
 });

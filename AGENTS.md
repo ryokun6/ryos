@@ -72,6 +72,7 @@ The following environment variables are required for full functionality:
 - `YOUTUBE_API_KEY` - YouTube Data API (for video metadata)
 - `YOUTUBE_API_KEY_2` - YouTube Data API fallback key
 - `OPENAI_API_KEY` - OpenAI API (for audio transcription)
+- `CURSOR_API_KEY` - Cursor Cloud Agents API (owner-only chat tools: `cursorRyOsRepoAgent`, `listRecentCursorAgents` against `ryokun6/ryos`; optional `CURSOR_CLOUD_REPO_URL` / `CURSOR_API_BASE_URL` overrides)
 
 ### Localization / Scripts
 - `GOOGLE_GENERATIVE_AI_API_KEY` - Google Generative AI (for machine translation of locale files)
