@@ -54,6 +54,14 @@ interface WindowFrameProps {
   disableTitlebarAutoHide?: boolean;
   // Custom content for the right side of the titlebar (replaces fullscreen button if provided)
   titleBarRightContent?: React.ReactNode;
+  /**
+   * Optional classic-Mac-OS-X-style drawer rendered attached to the
+   * window's right edge. The drawer is positioned inside the same
+   * coordinate space as the window content so it pins to the window
+   * during drag/resize. The component is responsible for its own
+   * open/closed animation; WindowFrame just provides the slot.
+   */
+  drawer?: React.ReactNode;
 }
 
 export function WindowFrame({
@@ -75,6 +83,7 @@ export function WindowFrame({
   onFullscreenToggle,
   disableTitlebarAutoHide = false,
   titleBarRightContent,
+  drawer,
 }: WindowFrameProps) {
   const { t } = useTranslation();
   const config = getWindowConfig(appId);
@@ -993,6 +1002,11 @@ export function WindowFrame({
           }}
         >
       <div className="relative w-full h-full">
+        {/* Drawer slot — rendered first so the window paints over it
+            when collapsed. The drawer itself is responsible for sliding
+            out from behind the right edge via transform. */}
+        {drawer}
+
         {/* Resize handles - positioned outside main content */}
         <div
           className={cn(

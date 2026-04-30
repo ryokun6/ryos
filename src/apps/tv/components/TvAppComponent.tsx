@@ -16,6 +16,7 @@ import { TvMenuBar } from "./TvMenuBar";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 import { ChannelPromptInput } from "./ChannelPromptInput";
 import { TvCrtEffects } from "./TvCrtEffects";
+import { TvVideoDrawer } from "./TvVideoDrawer";
 import {
   useCreateTvChannel,
   TvChannelAuthRequiredError,
@@ -35,7 +36,13 @@ import { VideoFullScreenPortal } from "@/components/shared/VideoFullScreenPortal
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { useTvLogic, MTV_CHANNEL_ID } from "../hooks/useTvLogic";
 import { MtvLyricsOverlay } from "./MtvLyricsOverlay";
-import { SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
+import {
+  SkipBack,
+  SkipForward,
+  Play,
+  Pause,
+  List,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 // Hoisted transition / animation prop objects so the LCD widgets don't
@@ -375,6 +382,7 @@ export function TvAppComponent({
     scheduleNowTitle,
     scheduleNextTitle,
     playedSeconds,
+    videoIndex,
   } = useTvLogic({ isWindowOpen, isForeground });
 
   // NOTE: All hooks must be called unconditionally on every render. The
@@ -388,6 +396,10 @@ export function TvAppComponent({
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  // Classic-Mac-OS-X-style drawer that lists every video on the
+  // current channel. Closed by default so the picture-and-LCD layout
+  // stays the focal point on first open.
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // CRT shader effect triggers. Bumping these counters re-keys the
   // animations inside TvCrtEffects so a new burst plays on every event.
@@ -452,6 +464,23 @@ export function TvAppComponent({
   const toggleLcdFilter = useTvStore((s) => s.toggleLcdFilter);
   const closedCaptionsOn = useTvStore((s) => s.closedCaptionsOn);
   const toggleClosedCaptions = useTvStore((s) => s.toggleClosedCaptions);
+  const setVideoIndexInStore = useTvStore((s) => s.setVideoIndex);
+
+  const handleSelectVideoFromDrawer = useCallback(
+    (index: number) => {
+      // Picking from the list always plays the chosen clip from the
+      // top — bypassing the random tune-in offset that channel/clip
+      // skips use, since the user just expressed an explicit intent
+      // to watch *this* video.
+      setVideoIndexInStore(currentChannelId, index);
+      setIsPlaying(true);
+    },
+    [currentChannelId, setVideoIndexInStore, setIsPlaying]
+  );
+
+  const toggleDrawer = useCallback(() => {
+    setIsDrawerOpen((v) => !v);
+  }, []);
   const { create: createChannel, isCreating: isCreatingChannel } =
     useCreateTvChannel();
 
@@ -828,6 +857,8 @@ export function TvAppComponent({
       onToggleLcdFilter={toggleLcdFilter}
       closedCaptionsOn={closedCaptionsOn}
       onToggleClosedCaptions={toggleClosedCaptions}
+      isDrawerOpen={isDrawerOpen}
+      onToggleDrawer={toggleDrawer}
       isPlaying={isPlaying}
       onTogglePlay={handleTogglePlay}
       onNextVideo={nextVideo}
@@ -916,6 +947,14 @@ export function TvAppComponent({
         interceptClose={true}
         menuBar={isXpTheme ? menuBar : undefined}
         onFullscreenToggle={toggleFullScreen}
+        drawer={
+          <TvVideoDrawer
+            isOpen={isDrawerOpen && !isFullScreen}
+            channel={currentChannel ?? null}
+            currentVideoIndex={videoIndex}
+            onSelectVideo={handleSelectVideoFromDrawer}
+          />
+        }
       >
         <div
           className={cn(
@@ -1207,41 +1246,79 @@ export function TvAppComponent({
 
               <div className="flex items-center gap-2 shrink-0">
                 {isMacOSTheme ? (
-                  <div className="metal-inset-btn-group">
-                    <button
-                      type="button"
-                      className="metal-inset-btn font-geneva-12 !text-[11px]"
-                      onClick={prevChannel}
-                    >
-                      {t("apps.tv.status.channelDown")}
-                    </button>
-                    <button
-                      type="button"
-                      className="metal-inset-btn font-geneva-12 !text-[11px]"
-                      onClick={nextChannel}
-                    >
-                      {t("apps.tv.status.channelUp")}
-                    </button>
-                  </div>
+                  <>
+                    <div className="metal-inset-btn-group">
+                      <button
+                        type="button"
+                        className="metal-inset-btn font-geneva-12 !text-[11px]"
+                        onClick={prevChannel}
+                      >
+                        {t("apps.tv.status.channelDown")}
+                      </button>
+                      <button
+                        type="button"
+                        className="metal-inset-btn font-geneva-12 !text-[11px]"
+                        onClick={nextChannel}
+                      >
+                        {t("apps.tv.status.channelUp")}
+                      </button>
+                    </div>
+                    <div className="metal-inset-btn-group">
+                      <button
+                        type="button"
+                        className="metal-inset-btn metal-inset-icon"
+                        onClick={toggleDrawer}
+                        aria-pressed={isDrawerOpen}
+                        aria-label={t("apps.tv.menu.showVideos")}
+                        title={t("apps.tv.menu.showVideos")}
+                        data-state={isDrawerOpen ? "on" : undefined}
+                      >
+                        <List size={10} weight="regular" />
+                      </button>
+                    </div>
+                  </>
                 ) : (
-                  <div className="flex gap-0">
-                    <Button
-                      type="button"
-                      onClick={prevChannel}
-                      variant="player"
-                      className="h-[22px] px-2 font-geneva-12"
-                    >
-                      {t("apps.tv.status.channelDown")}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={nextChannel}
-                      variant="player"
-                      className="h-[22px] px-2 font-geneva-12"
-                    >
-                      {t("apps.tv.status.channelUp")}
-                    </Button>
-                  </div>
+                  <>
+                    <div className="flex gap-0">
+                      <Button
+                        type="button"
+                        onClick={prevChannel}
+                        variant="player"
+                        className="h-[22px] px-2 font-geneva-12"
+                      >
+                        {t("apps.tv.status.channelDown")}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={nextChannel}
+                        variant="player"
+                        className="h-[22px] px-2 font-geneva-12"
+                      >
+                        {t("apps.tv.status.channelUp")}
+                      </Button>
+                    </div>
+                    <div className="flex gap-0">
+                      <Button
+                        type="button"
+                        onClick={toggleDrawer}
+                        variant="player"
+                        className={cn(
+                          "h-[22px] px-2 font-geneva-12 flex items-center justify-center min-w-[28px]",
+                          isDrawerOpen &&
+                            "brightness-90 ring-1 ring-inset ring-black/25"
+                        )}
+                        aria-pressed={isDrawerOpen}
+                        aria-label={t("apps.tv.menu.showVideos")}
+                        title={t("apps.tv.menu.showVideos")}
+                      >
+                        <List
+                          size={14}
+                          weight="regular"
+                          className="pointer-events-none"
+                        />
+                      </Button>
+                    </div>
+                  </>
                 )}
               </div>
             </div>

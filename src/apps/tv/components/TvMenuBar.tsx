@@ -38,6 +38,8 @@ interface TvMenuBarProps {
   onToggleLcdFilter: () => void;
   closedCaptionsOn: boolean;
   onToggleClosedCaptions: () => void;
+  isDrawerOpen: boolean;
+  onToggleDrawer: () => void;
 }
 
 export function TvMenuBar({
@@ -65,6 +67,8 @@ export function TvMenuBar({
   onToggleLcdFilter,
   closedCaptionsOn,
   onToggleClosedCaptions,
+  isDrawerOpen,
+  onToggleDrawer,
 }: TvMenuBarProps) {
   const isCurrentChannelCustom = customChannelIds.has(currentChannelId);
   const { t } = useTranslation();
@@ -124,6 +128,13 @@ export function TvMenuBar({
             {t("apps.tv.menu.channelUp")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarCheckboxItem
+            checked={isDrawerOpen}
+            onCheckedChange={onToggleDrawer}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.tv.menu.showVideos")}
+          </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={isLcdFilterOn}
             onCheckedChange={onToggleLcdFilter}

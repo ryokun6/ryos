@@ -1614,6 +1614,7 @@
         "channelUp": "Channel Up",
         "channelDown": "Channel Down",
         "fullScreen": "Full Screen",
+        "showVideos": "Show Videos",
         "lcdFilter": "LCD Filter",
         "closedCaptions": "Closed Captions",
         "newChannel": "New Channel...",
@@ -1654,6 +1655,11 @@
       "delete": {
         "title": "Delete Channel",
         "description": "Remove the channel \"{{name}}\" from your TV?"
+      },
+      "drawer": {
+        "title": "Schedule",
+        "empty": "No videos on this channel yet.",
+        "close": "Hide videos"
       },
       "reset": {
         "title": "Reset Channels",
