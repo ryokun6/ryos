@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLyrics } from "@/hooks/useLyrics";
@@ -85,6 +86,8 @@ export function KaraokeLyricsPlaybackProvider({
   auth,
   lyricsPlaybackSyncRef,
 }: ProviderProps) {
+  const { i18n } = useTranslation();
+  const appLanguage = i18n.resolvedLanguage ?? i18n.language;
   const elapsedTime = useKaraokeStore(useShallow((s) => s.elapsedTime));
 
   const lyricsFontClassName = getLyricsFontClassName(lyricsFont ?? LyricsFontEnum.SerifRed);
@@ -102,7 +105,7 @@ export function KaraokeLyricsPlaybackProvider({
 
   const effectiveTranslationLanguage = useMemo(
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
-    [lyricsTranslationLanguage]
+    [lyricsTranslationLanguage, appLanguage]
   );
 
   const lyricsControls = useLyrics({
