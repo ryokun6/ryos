@@ -320,6 +320,22 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
         return;
       }
 
+      // Keep the existing shuffle order; only dropping this id (a fresh
+      // fingerprint would otherwise miss the cache and reshuffle everything).
+      const cache = shuffledPlaylistByChannelRef.current;
+      const entry = cache.get(currentChannelId);
+      if (entry) {
+        const nextVideos = entry.videos.filter((v) => v.id !== videoId);
+        if (nextVideos.length !== entry.videos.length) {
+          cache.set(currentChannelId, {
+            fingerprint: nextVideos.map((v) => v.id).sort().join("\0"),
+            videos: nextVideos,
+          });
+        } else {
+          cache.delete(currentChannelId);
+        }
+      }
+
       let nextIdx = videoIndex;
       if (removeIdx < videoIndex) nextIdx = videoIndex - 1;
       else if (removeIdx === videoIndex)
