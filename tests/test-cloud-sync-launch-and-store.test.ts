@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { shouldRequestCloudSyncOnAppLaunch } from "../src/utils/cloudSyncLaunch";
 import {
   beginApplyingRemoteDomain,
@@ -41,6 +41,7 @@ type IpodStoreModule = typeof import("../src/stores/useIpodStore");
 
 const browserGlobals = globalThis as typeof globalThis & {
   localStorage?: Storage;
+  window?: typeof globalThis;
 };
 
 let storeModulePromise: Promise<StoreModule> | null = null;
@@ -324,5 +325,67 @@ describe("cloud sync store download audit timestamps", () => {
     expect(useCloudSyncStore.getState().domainStatus.settings.lastFetchedAt).toBe(
       metadata.updatedAt
     );
+  });
+});
+
+describe("getEffectiveTranslationLanguage", () => {
+  let ensureLanguageResources: (language: string) => Promise<void>;
+  let i18nDefault: typeof import("../src/lib/i18n").default;
+
+  beforeAll(async () => {
+    browserGlobals.window = globalThis as typeof globalThis;
+    if (!globalThis.navigator?.language) {
+      Object.defineProperty(globalThis, "navigator", {
+        value: { languages: ["en-US"], language: "en-US" },
+        configurable: true,
+      });
+    }
+    const i18nMod = await import("../src/lib/i18n");
+    ensureLanguageResources = i18nMod.ensureLanguageResources;
+    i18nDefault = i18nMod.default;
+    const storage = browserGlobals.localStorage ?? new MemoryStorage();
+    browserGlobals.localStorage = storage;
+    Object.defineProperty(browserGlobals.window, "localStorage", {
+      value: storage,
+      configurable: true,
+    });
+    await i18nMod.initializeI18n();
+  });
+
+  beforeEach(() => {
+    if (browserGlobals.window && browserGlobals.localStorage) {
+      Object.defineProperty(browserGlobals.window, "localStorage", {
+        value: browserGlobals.localStorage,
+        configurable: true,
+      });
+    }
+  });
+
+  afterAll(async () => {
+    await ensureLanguageResources("en");
+    await i18nDefault.changeLanguage("en");
+  });
+
+  test('"auto" resolves to the current i18n language after changeLanguage', async () => {
+    const { getEffectiveTranslationLanguage, LYRICS_TRANSLATION_AUTO } =
+      await getIpodStoreModule();
+    const before = i18nDefault.resolvedLanguage || i18nDefault.language;
+    expect(getEffectiveTranslationLanguage(LYRICS_TRANSLATION_AUTO)).toBe(before);
+
+    await ensureLanguageResources("ja");
+    await i18nDefault.changeLanguage("ja");
+    expect(getEffectiveTranslationLanguage(LYRICS_TRANSLATION_AUTO)).toBe("ja");
+  });
+
+  test("null stays off (original lyrics)", async () => {
+    const { getEffectiveTranslationLanguage } = await getIpodStoreModule();
+    expect(getEffectiveTranslationLanguage(null)).toBeNull();
+  });
+
+  test("explicit codes are unaffected by app locale", async () => {
+    const { getEffectiveTranslationLanguage } = await getIpodStoreModule();
+    await ensureLanguageResources("ja");
+    await i18nDefault.changeLanguage("ja");
+    expect(getEffectiveTranslationLanguage("de")).toBe("de");
   });
 });
