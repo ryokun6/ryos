@@ -333,6 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app erfolgreich exportiert.",
         "appletImported": "Applet importiert!",
         "appletImportedDescription": "{{fileName}} in /Applets{{iconText}} gespeichert",
+        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
         "appletNotFound": "Applet nicht gefunden",
         "appletNotFoundDescription": "Das geteilte Applet wurde möglicherweise gelöscht oder der Link ist ungültig.",
         "appletSaved": "Applet gespeichert",
@@ -713,6 +714,7 @@
         "clear": "Leeren",
         "createAccountToContinue": "Konto erstellen, um fortzufahren...",
         "dailyLimitReached": "Tägliches KI-Nachrichtenlimit erreicht.",
+        "describeThisImage": "[TODO] Describe this image",
         "editing": "bearbeitet...",
         "leave": "Verlassen",
         "listening": "Hören",
@@ -738,6 +740,22 @@
         "typeMessage": "Nachricht eingeben...",
         "typeOrPushSpace": "Tippen oder 'Leertaste' drücken, um zu sprechen...",
         "usingModel": "Verwende {{model}}"
+      },
+      "toasts": {
+        "aiError": "[TODO] AI Error",
+        "failedToGetResponse": "[TODO] Failed to get response.",
+        "failedToSaveTranscript": "[TODO] Failed to save transcript",
+        "loginButton": "[TODO] Login",
+        "loginRequired": "[TODO] Login Required",
+        "open": "[TODO] Open",
+        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
+        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
+        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
+        "savedToFileName": "[TODO] Saved to {{fileName}}",
+        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
+        "transcriptSaved": "[TODO] Transcript saved",
+        "transcriptUpdated": "[TODO] Transcript updated",
+        "unknownError": "[TODO] Unknown error"
       },
       "tokenStatus": {
         "authenticated": "Angemeldet",
@@ -3033,18 +3051,17 @@
         "title": "Neuer Kanal",
         "toastSuccess": "Eingestellt auf {{name}}"
       },
-      "youtubePaste": {
-        "added": "„{{title}}“ zu diesem Kanal hinzugefügt",
-        "alreadyInChannel": "Dieses Video ist bereits auf diesem Kanal",
-        "alreadyInLibrary": "Dieses Video ist bereits in Ihrer Mediathek",
-        "needsEditableChannel": "Stellen Sie auf Ryo TV, MTV oder einen eigenen Kanal ein, um Videos per Link hinzuzufügen",
-        "fetchFailed": "Dieses YouTube-Video konnte nicht geladen werden"
-      },
       "delete": {
         "description": "Soll der Kanal „{{name}}“ von deinem Fernseher entfernt werden?",
         "title": "Kanal löschen"
       },
       "description": "Zappe durch YouTube",
+      "drawer": {
+        "close": "[TODO] Hide videos",
+        "empty": "[TODO] No videos on this channel yet.",
+        "removeVideo": "[TODO] Remove from channel",
+        "title": "[TODO] Schedule"
+      },
       "help": {
         "channels": {
           "description": "Zappe durch kuratierte YouTube-Kanäle wie bei einem Fernseher",
@@ -3089,6 +3106,7 @@
         "play": "Wiedergabe",
         "previous": "Zurück",
         "resetChannels": "Kanäle zurücksetzen...",
+        "showVideos": "[TODO] Show Videos",
         "tvHelp": "TV-Hilfe"
       },
       "name": "TV",
@@ -3119,6 +3137,13 @@
         "importSuccess_one": "{{count}} Kanal importiert ({{skipped}} übersprungen)",
         "importSuccess_other": "{{count}} Kanäle importiert ({{skipped}} übersprungen)",
         "resetSuccess": "Kanäle auf Standardwerte zurückgesetzt"
+      },
+      "youtubePaste": {
+        "added": "„{{title}}“ zu diesem Kanal hinzugefügt",
+        "alreadyInChannel": "Dieses Video ist bereits auf diesem Kanal",
+        "alreadyInLibrary": "Dieses Video ist bereits in Ihrer Mediathek",
+        "fetchFailed": "Dieses YouTube-Video konnte nicht geladen werden",
+        "needsEditableChannel": "Stellen Sie auf Ryo TV, MTV oder einen eigenen Kanal ein, um Videos per Link hinzuzufügen"
       }
     },
     "videos": {

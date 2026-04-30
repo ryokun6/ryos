@@ -84,6 +84,7 @@ interface ListRowItemProps {
   getIconPath: (file: FileItem) => string;
   getDisplayName: (file: FileItem) => string;
   getFileType: (file: FileItem) => string;
+  getListIconAlt: (file: FileItem) => string;
   shouldShowThumbnail: (file: FileItem) => boolean;
   isImageFile: (file: FileItem) => boolean;
 }
@@ -103,6 +104,7 @@ const ListRowItem = memo(function ListRowItem({
   getIconPath,
   getDisplayName,
   getFileType,
+  getListIconAlt,
   shouldShowThumbnail,
   isImageFile,
 }: ListRowItemProps) {
@@ -220,7 +222,7 @@ const ListRowItem = memo(function ListRowItem({
         ) : (
           <ThemedIcon
             name={getIconPath(file)}
-            alt={file.isDirectory ? "Directory" : "File"}
+            alt={getListIconAlt(file)}
             className="w-4 h-4"
             style={{ imageRendering: "pixelated" }}
             data-legacy-aware="true"
@@ -852,6 +854,10 @@ export function FileList({
   // Also hide extensions for desktop shortcuts
   // For folders, use translated names
   const getDisplayName = (file: FileItem): string => getFinderDisplayName(file);
+  const getListIconAlt = (file: FileItem): string =>
+    file.isDirectory
+      ? t("apps.finder.fileTypes.directory")
+      : t("apps.finder.fileTypes.file");
   const renderedSelectionRect =
     selectionRect &&
     containerRef.current &&
@@ -905,6 +911,7 @@ export function FileList({
                 getIconPath={getIconPath}
                 getDisplayName={getDisplayName}
                 getFileType={getFileType}
+                getListIconAlt={getListIconAlt}
                 shouldShowThumbnail={shouldShowThumbnail}
                 isImageFile={isImageFile}
               />

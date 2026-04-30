@@ -122,20 +122,31 @@ export function useAppletViewerLogic({
     const result = await checkForUpdates();
     if (result.count > 0) {
       const appletNames = result.updates
-        .map((applet) => applet.title || applet.name || "Untitled Applet")
+        .map((applet) =>
+          applet.title ||
+          applet.name ||
+          t("apps.applet-viewer.dialogs.untitledApplet")
+        )
         .join(", ");
       toast.info(
-        `${result.count} new applet update${result.count > 1 ? "s" : ""}`,
+        t(
+          result.count !== 1
+            ? "apps.applet-viewer.dialogs.newAppletUpdatesPlural"
+            : "apps.applet-viewer.dialogs.newAppletUpdates",
+          { count: result.count }
+        ),
         {
           description: appletNames,
           action: {
-            label: "Update",
+            label: t("apps.applet-viewer.status.update"),
             onClick: async () => {
               const updateCount = result.updates.length;
               const loadingMessage =
                 updateCount === 1
-                  ? "Updating 1 applet..."
-                  : `Updating ${updateCount} applets...`;
+                  ? t("apps.applet-viewer.dialogs.updatingAppletSingle")
+                  : t("apps.applet-viewer.dialogs.updatingAppletsPlural", {
+                      count: updateCount,
+                    });
               const loadingToastId = toast.loading(loadingMessage, {
                 duration: Infinity,
               });
@@ -149,8 +160,10 @@ export function useAppletViewerLogic({
 
                 toast.success(
                   updateCount === 1
-                    ? "Applet updated"
-                    : `${updateCount} applets updated`,
+                    ? t("apps.applet-viewer.dialogs.appletUpdated")
+                    : t("apps.applet-viewer.dialogs.appletsUpdated", {
+                        count: updateCount,
+                      }),
                   {
                     id: loadingToastId,
                     duration: 3000,
@@ -158,11 +171,11 @@ export function useAppletViewerLogic({
                 );
               } catch (error) {
                 console.error("Error updating applets:", error);
-                toast.error("Failed to update applets", {
+                toast.error(t("apps.applet-viewer.dialogs.failedToUpdateApplets"), {
                   description:
                     error instanceof Error
                       ? error.message
-                      : "Please try again later.",
+                      : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
                   id: loadingToastId,
                 });
               }
@@ -172,9 +185,9 @@ export function useAppletViewerLogic({
         }
       );
     } else {
-      toast.success("All applets are up to date");
+      toast.success(t("apps.applet-viewer.dialogs.allAppletsUpToDate"));
     }
-  }, [checkForUpdates, actions]);
+  }, [checkForUpdates, actions, t]);
 
   const handleUpdateAll = useCallback(async () => {
     if (updatesAvailable.length === 0) return;
@@ -182,8 +195,10 @@ export function useAppletViewerLogic({
     const updateCount = updatesAvailable.length;
     const loadingMessage =
       updateCount === 1
-        ? "Updating 1 applet..."
-        : `Updating ${updateCount} applets...`;
+        ? t("apps.applet-viewer.dialogs.updatingAppletSingle")
+        : t("apps.applet-viewer.dialogs.updatingAppletsPlural", {
+            count: updateCount,
+          });
     const loadingToastId = toast.loading(loadingMessage, {
       duration: Infinity,
     });
@@ -197,8 +212,8 @@ export function useAppletViewerLogic({
 
       toast.success(
         updateCount === 1
-          ? "Applet updated"
-          : `${updateCount} applets updated`,
+          ? t("apps.applet-viewer.dialogs.appletUpdated")
+          : t("apps.applet-viewer.dialogs.appletsUpdated", { count: updateCount }),
         {
           id: loadingToastId,
           duration: 3000,
@@ -206,13 +221,15 @@ export function useAppletViewerLogic({
       );
     } catch (error) {
       console.error("Error updating applets:", error);
-      toast.error("Failed to update applets", {
+      toast.error(t("apps.applet-viewer.dialogs.failedToUpdateApplets"), {
         description:
-          error instanceof Error ? error.message : "Please try again later.",
+          error instanceof Error
+            ? error.message
+            : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
         id: loadingToastId,
       });
     }
-  }, [updatesAvailable, actions, checkForUpdates]);
+  }, [updatesAvailable, actions, checkForUpdates, t]);
 
   const sendAuthPayload = useCallback(
     (target: Window | null | undefined) => {
@@ -990,15 +1007,20 @@ export function useAppletViewerLogic({
           },
         });
 
-        toast.success("Applet imported!", {
-          description: `${importFileName} saved to /Applets${
-            icon ? ` with ${icon} icon` : ""
-          }`,
+        toast.success(t("apps.applet-viewer.dialogs.appletImported"), {
+          description: t("apps.applet-viewer.dialogs.appletImportedDescription", {
+            fileName: importFileName,
+            iconText: icon
+              ? t("apps.applet-viewer.dialogs.appletImportedIconSuffix", {
+                  icon,
+                })
+              : "",
+          }),
         });
       } catch (error) {
         console.error("Import failed:", error);
-        toast.error("Import failed", {
-          description: "Could not import the file.",
+        toast.error(t("apps.applet-viewer.dialogs.importFailed"), {
+          description: t("apps.applet-viewer.dialogs.couldNotImportFile"),
         });
       }
     }
@@ -1084,16 +1106,18 @@ export function useAppletViewerLogic({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success("Applet exported!", {
-        description: `${filename}.app exported successfully.`,
+      toast.success(t("apps.applet-viewer.dialogs.appletExported"), {
+        description: t("apps.applet-viewer.dialogs.appletExportedDescription", {
+          fileName: filename,
+        }),
       });
     } catch (compressionError) {
       console.error("Compression failed:", compressionError);
-      toast.error("Export failed", {
+      toast.error(t("apps.applet-viewer.dialogs.exportFailed"), {
         description:
           compressionError instanceof Error
             ? compressionError.message
-            : "Could not compress the applet file.",
+            : t("apps.applet-viewer.dialogs.couldNotCompressAppletFile"),
       });
     }
   };
@@ -1105,15 +1129,15 @@ export function useAppletViewerLogic({
 
   const handleShareApplet = async () => {
     if (!hasAppletContent) {
-      toast.error("No applet to share", {
-        description: "Please open an applet first.",
+      toast.error(t("apps.applet-viewer.dialogs.noAppletToShare"), {
+        description: t("apps.applet-viewer.dialogs.pleaseOpenAppletFirst"),
       });
       return;
     }
 
     if (!username || !isAuthenticated) {
-      toast.error("Login required", {
-        description: "You must be logged in to share applets.",
+      toast.error(t("apps.applet-viewer.dialogs.loginRequired"), {
+        description: t("apps.applet-viewer.dialogs.mustBeLoggedInToShare"),
       });
       return;
     }
@@ -1132,8 +1156,8 @@ export function useAppletViewerLogic({
       if (existingShareId && !isAuthor) {
         setShareId(existingShareId);
         setIsShareDialogOpen(true);
-        toast.success("Applet already shared", {
-          description: "Showing existing share link.",
+        toast.success(t("apps.applet-viewer.dialogs.appletAlreadyShared"), {
+          description: t("apps.applet-viewer.dialogs.showingExistingShareLink"),
         });
         return;
       }
@@ -1189,17 +1213,24 @@ export function useAppletViewerLogic({
         }
       }
 
-      toast.success(data.updated ? "Applet updated!" : "Applet shared!", {
-        description: data.updated
-          ? "Share link updated successfully."
-          : "Share link generated successfully.",
-        duration: 3000,
-      });
+      toast.success(
+        data.updated
+          ? t("apps.applet-viewer.dialogs.appletUpdatedShare")
+          : t("apps.applet-viewer.dialogs.appletShared"),
+        {
+          description: data.updated
+            ? t("apps.applet-viewer.dialogs.shareLinkUpdatedSuccessfully")
+            : t("apps.applet-viewer.dialogs.shareLinkGeneratedSuccessfully"),
+          duration: 3000,
+        }
+      );
     } catch (error) {
       console.error("Error sharing applet:", error);
-      toast.error("Failed to share applet", {
+      toast.error(t("apps.applet-viewer.dialogs.failedToShareApplet"), {
         description:
-          error instanceof Error ? error.message : "Please try again later.",
+          error instanceof Error
+            ? error.message
+            : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
       });
     }
   };
@@ -1257,11 +1288,11 @@ export function useAppletViewerLogic({
             }
           }
 
-          const displayName = data.title || data.name || "Shared Applet";
-          toast.success("Shared applet loaded", {
+          const displayName = data.title || data.name || t("apps.applet-viewer.dialogs.sharedApplet");
+          toast.success(t("apps.applet-viewer.dialogs.sharedAppletLoaded"), {
             description: displayName,
             action: {
-              label: "Save",
+              label: t("apps.applet-viewer.status.save"),
               onClick: async () => {
                 try {
                   let defaultName = data.name || data.title || "shared-applet";
@@ -1309,16 +1340,18 @@ export function useAppletViewerLogic({
                     icon: data.icon || undefined,
                   });
 
-                  toast.success("Applet saved", {
-                    description: `Saved to /Applets/${finalName}`,
+                  toast.success(t("apps.applet-viewer.dialogs.appletSaved"), {
+                    description: t("apps.applet-viewer.dialogs.appletSavedDescription", {
+                      fileName: finalName,
+                    }),
                   });
                 } catch (error) {
                   console.error("Error saving shared applet:", error);
-                  toast.error("Failed to save applet", {
+                  toast.error(t("apps.applet-viewer.dialogs.failedToSaveApplet"), {
                     description:
                       error instanceof Error
                         ? error.message
-                        : "Please try again.",
+                        : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
                   });
                 }
               },
@@ -1332,14 +1365,13 @@ export function useAppletViewerLogic({
           if (!isActive || controller.signal.aborted) return;
           console.error("Error fetching shared applet:", error);
           if (error instanceof Error && error.message.includes("404")) {
-            toast.error("Applet not found", {
-              description:
-                "The shared applet may have been deleted or the link is invalid.",
+            toast.error(t("apps.applet-viewer.dialogs.appletNotFound"), {
+              description: t("apps.applet-viewer.dialogs.appletNotFoundDescription"),
             });
             return;
           }
-          toast.error("Failed to load shared applet", {
-            description: "Please check your connection and try again.",
+          toast.error(t("apps.applet-viewer.dialogs.failedToLoadSharedApplet"), {
+            description: t("apps.applet-viewer.dialogs.pleaseCheckConnection"),
           });
         }
       };
@@ -1362,6 +1394,7 @@ export function useAppletViewerLogic({
     instanceId,
     saveFile,
     updateFileItemMetadata,
+    t,
   ]);
 
   useEffect(() => {

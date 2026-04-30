@@ -333,6 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app успешно экспортирован.",
         "appletImported": "Апплет импортирован!",
         "appletImportedDescription": "{{fileName}} сохранен в /Applets{{iconText}}",
+        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
         "appletNotFound": "Апплет не найден",
         "appletNotFoundDescription": "Общий апплет, возможно, был удален, или ссылка недействительна.",
         "appletSaved": "Апплет сохранен",
@@ -713,6 +714,7 @@
         "clear": "Очистить",
         "createAccountToContinue": "Создайте аккаунт, чтобы продолжить...",
         "dailyLimitReached": "Достигнут дневной лимит сообщений ИИ.",
+        "describeThisImage": "[TODO] Describe this image",
         "editing": "редактирование...",
         "leave": "Покинуть",
         "listening": "Слушаю",
@@ -738,6 +740,22 @@
         "typeMessage": "Введите сообщение...",
         "typeOrPushSpace": "Наберите текст или нажмите 'пробел', чтобы говорить...",
         "usingModel": "Используется {{model}}"
+      },
+      "toasts": {
+        "aiError": "[TODO] AI Error",
+        "failedToGetResponse": "[TODO] Failed to get response.",
+        "failedToSaveTranscript": "[TODO] Failed to save transcript",
+        "loginButton": "[TODO] Login",
+        "loginRequired": "[TODO] Login Required",
+        "open": "[TODO] Open",
+        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
+        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
+        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
+        "savedToFileName": "[TODO] Saved to {{fileName}}",
+        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
+        "transcriptSaved": "[TODO] Transcript saved",
+        "transcriptUpdated": "[TODO] Transcript updated",
+        "unknownError": "[TODO] Unknown error"
       },
       "tokenStatus": {
         "authenticated": "Выполнен вход",
@@ -3033,18 +3051,17 @@
         "title": "Новый канал",
         "toastSuccess": "Настроено на {{name}}"
       },
-      "youtubePaste": {
-        "added": "Добавлено «{{title}}» на этот канал",
-        "alreadyInChannel": "Это видео уже есть на этом канале",
-        "alreadyInLibrary": "Это видео уже есть в вашей библиотеке",
-        "needsEditableChannel": "Переключитесь на Ryo TV, MTV или свой канал, чтобы добавить видео по ссылке",
-        "fetchFailed": "Не удалось загрузить это видео с YouTube"
-      },
       "delete": {
         "description": "Удалить канал «{{name}}» с вашего телевизора?",
         "title": "Удалить канал"
       },
       "description": "Сёрфинг по каналам YouTube",
+      "drawer": {
+        "close": "[TODO] Hide videos",
+        "empty": "[TODO] No videos on this channel yet.",
+        "removeVideo": "[TODO] Remove from channel",
+        "title": "[TODO] Schedule"
+      },
       "help": {
         "channels": {
           "description": "Листайте тематические каналы YouTube, как на телевизоре",
@@ -3089,6 +3106,7 @@
         "play": "Воспроизвести",
         "previous": "Предыдущий",
         "resetChannels": "Сбросить каналы...",
+        "showVideos": "[TODO] Show Videos",
         "tvHelp": "Справка ТВ"
       },
       "name": "ТВ",
@@ -3119,6 +3137,13 @@
         "importSuccess_one": "Импортирован {{count}} канал ({{skipped}} пропущено)",
         "importSuccess_other": "Импортировано {{count}} каналов ({{skipped}} пропущено)",
         "resetSuccess": "Каналы сброшены к значениям по умолчанию"
+      },
+      "youtubePaste": {
+        "added": "Добавлено «{{title}}» на этот канал",
+        "alreadyInChannel": "Это видео уже есть на этом канале",
+        "alreadyInLibrary": "Это видео уже есть в вашей библиотеке",
+        "fetchFailed": "Не удалось загрузить это видео с YouTube",
+        "needsEditableChannel": "Переключитесь на Ryo TV, MTV или свой канал, чтобы добавить видео по ссылке"
       }
     },
     "videos": {

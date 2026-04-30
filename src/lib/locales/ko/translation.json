@@ -333,6 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app이 성공적으로 내보내졌습니다.",
         "appletImported": "애플릿 가져오기 완료!",
         "appletImportedDescription": "{{fileName}}이(가) /Applets{{iconText}}에 저장되었습니다",
+        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
         "appletNotFound": "애플릿을 찾을 수 없습니다",
         "appletNotFoundDescription": "공유된 애플릿이 삭제되었거나 링크가 유효하지 않을 수 있습니다.",
         "appletSaved": "애플릿 저장됨",
@@ -713,6 +714,7 @@
         "clear": "지우기",
         "createAccountToContinue": "계속하려면 계정을 만드세요...",
         "dailyLimitReached": "일일 AI 메시지 한도에 도달했습니다.",
+        "describeThisImage": "[TODO] Describe this image",
         "editing": "편집 중...",
         "leave": "나가기",
         "listening": "듣는 중",
@@ -738,6 +740,22 @@
         "typeMessage": "메시지를 입력하세요...",
         "typeOrPushSpace": "입력하거나 '스페이스'를 눌러 말하세요...",
         "usingModel": "{{model}} 사용 중"
+      },
+      "toasts": {
+        "aiError": "[TODO] AI Error",
+        "failedToGetResponse": "[TODO] Failed to get response.",
+        "failedToSaveTranscript": "[TODO] Failed to save transcript",
+        "loginButton": "[TODO] Login",
+        "loginRequired": "[TODO] Login Required",
+        "open": "[TODO] Open",
+        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
+        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
+        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
+        "savedToFileName": "[TODO] Saved to {{fileName}}",
+        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
+        "transcriptSaved": "[TODO] Transcript saved",
+        "transcriptUpdated": "[TODO] Transcript updated",
+        "unknownError": "[TODO] Unknown error"
       },
       "tokenStatus": {
         "authenticated": "로그인됨",
@@ -3033,18 +3051,17 @@
         "title": "새 채널",
         "toastSuccess": "{{name}} 청취 중"
       },
-      "youtubePaste": {
-        "added": "이 채널에 \"{{title}}\"을(를) 추가했습니다",
-        "alreadyInChannel": "해당 영상은 이미 이 채널에 있습니다",
-        "alreadyInLibrary": "해당 영상은 이미 라이브러리에 있습니다",
-        "needsEditableChannel": "링크로 영상을 추가하려면 Ryo TV, MTV 또는 사용자 지정 채널로 맞추세요",
-        "fetchFailed": "해당 YouTube 영상을 불러올 수 없습니다"
-      },
       "delete": {
         "description": "TV에서 \"{{name}}\" 채널을 삭제하시겠습니까?",
         "title": "채널 삭제"
       },
       "description": "YouTube 채널 서핑",
+      "drawer": {
+        "close": "[TODO] Hide videos",
+        "empty": "[TODO] No videos on this channel yet.",
+        "removeVideo": "[TODO] Remove from channel",
+        "title": "[TODO] Schedule"
+      },
       "help": {
         "channels": {
           "description": "TV처럼 큐레이션된 YouTube 채널을 넘겨보세요",
@@ -3089,6 +3106,7 @@
         "play": "재생",
         "previous": "이전",
         "resetChannels": "채널 재설정...",
+        "showVideos": "[TODO] Show Videos",
         "tvHelp": "TV 도움말"
       },
       "name": "TV",
@@ -3119,6 +3137,13 @@
         "importSuccess_one": "{{count}}개의 채널을 가져왔습니다 ({{skipped}}개 건너뜀)",
         "importSuccess_other": "{{count}}개의 채널을 가져왔습니다 ({{skipped}}개 건너뜀)",
         "resetSuccess": "채널이 기본값으로 재설정되었습니다"
+      },
+      "youtubePaste": {
+        "added": "이 채널에 \"{{title}}\"을(를) 추가했습니다",
+        "alreadyInChannel": "해당 영상은 이미 이 채널에 있습니다",
+        "alreadyInLibrary": "해당 영상은 이미 라이브러리에 있습니다",
+        "fetchFailed": "해당 YouTube 영상을 불러올 수 없습니다",
+        "needsEditableChannel": "링크로 영상을 추가하려면 Ryo TV, MTV 또는 사용자 지정 채널로 맞추세요"
       }
     },
     "videos": {

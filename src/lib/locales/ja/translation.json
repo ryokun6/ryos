@@ -333,6 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app をエクスポートしました。",
         "appletImported": "アプレットをインポートしました！",
         "appletImportedDescription": "{{fileName}} を /Applets{{iconText}} に保存しました",
+        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
         "appletNotFound": "アプレットが見つかりません",
         "appletNotFoundDescription": "共有されたアプレットが削除されたか、リンクが無効な可能性があります。",
         "appletSaved": "アプレットを保存しました",
@@ -713,6 +714,7 @@
         "clear": "クリア",
         "createAccountToContinue": "続けるにはアカウントを作成してください...",
         "dailyLimitReached": "1日のAIメッセージ制限に達しました。",
+        "describeThisImage": "[TODO] Describe this image",
         "editing": "編集中...",
         "leave": "退出",
         "listening": "聴取中",
@@ -738,6 +740,22 @@
         "typeMessage": "メッセージを入力...",
         "typeOrPushSpace": "入力または「スペース」を押して話す...",
         "usingModel": "{{model}}を使用中"
+      },
+      "toasts": {
+        "aiError": "[TODO] AI Error",
+        "failedToGetResponse": "[TODO] Failed to get response.",
+        "failedToSaveTranscript": "[TODO] Failed to save transcript",
+        "loginButton": "[TODO] Login",
+        "loginRequired": "[TODO] Login Required",
+        "open": "[TODO] Open",
+        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
+        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
+        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
+        "savedToFileName": "[TODO] Saved to {{fileName}}",
+        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
+        "transcriptSaved": "[TODO] Transcript saved",
+        "transcriptUpdated": "[TODO] Transcript updated",
+        "unknownError": "[TODO] Unknown error"
       },
       "tokenStatus": {
         "authenticated": "ログイン済み",
@@ -3033,18 +3051,17 @@
         "title": "新規チャンネル",
         "toastSuccess": "{{name}} を視聴中"
       },
-      "youtubePaste": {
-        "added": "「{{title}}」をこのチャンネルに追加しました",
-        "alreadyInChannel": "その動画はすでにこのチャンネルにあります",
-        "alreadyInLibrary": "その動画はすでにライブラリにあります",
-        "needsEditableChannel": "リンクから追加するには、Ryo TV、MTV、またはカスタムチャンネルに合わせてください",
-        "fetchFailed": "そのYouTube動画を読み込めませんでした"
-      },
       "delete": {
         "description": "テレビからチャンネル「{{name}}」を削除しますか？",
         "title": "チャンネルを削除"
       },
       "description": "YouTubeをザッピング",
+      "drawer": {
+        "close": "[TODO] Hide videos",
+        "empty": "[TODO] No videos on this channel yet.",
+        "removeVideo": "[TODO] Remove from channel",
+        "title": "[TODO] Schedule"
+      },
       "help": {
         "channels": {
           "description": "テレビのように、厳選されたYouTubeチャンネルをザッピングできます。",
@@ -3089,6 +3106,7 @@
         "play": "再生",
         "previous": "前へ",
         "resetChannels": "チャンネルをリセット...",
+        "showVideos": "[TODO] Show Videos",
         "tvHelp": "TVヘルプ"
       },
       "name": "TV",
@@ -3119,6 +3137,13 @@
         "importSuccess_one": "{{count}}個のチャンネルをインポートしました（{{skipped}}個をスキップ）",
         "importSuccess_other": "{{count}}個のチャンネルをインポートしました（{{skipped}}個をスキップ）",
         "resetSuccess": "チャンネルをデフォルトにリセットしました"
+      },
+      "youtubePaste": {
+        "added": "「{{title}}」をこのチャンネルに追加しました",
+        "alreadyInChannel": "その動画はすでにこのチャンネルにあります",
+        "alreadyInLibrary": "その動画はすでにライブラリにあります",
+        "fetchFailed": "そのYouTube動画を読み込めませんでした",
+        "needsEditableChannel": "リンクから追加するには、Ryo TV、MTV、またはカスタムチャンネルに合わせてください"
       }
     },
     "videos": {

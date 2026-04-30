@@ -333,6 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app 已成功匯出。",
         "appletImported": "小程式已匯入！",
         "appletImportedDescription": "{{fileName}} 已儲存至 /Applets{{iconText}}",
+        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
         "appletNotFound": "找不到小程式",
         "appletNotFoundDescription": "該分享的小程式可能已被刪除或連結無效。",
         "appletSaved": "小程式已儲存",
@@ -713,6 +714,7 @@
         "clear": "清除",
         "createAccountToContinue": "建立帳戶以繼續...",
         "dailyLimitReached": "已達每日 AI 訊息限制。",
+        "describeThisImage": "[TODO] Describe this image",
         "editing": "正在編輯...",
         "leave": "離開",
         "listening": "聆聽中",
@@ -738,6 +740,22 @@
         "typeMessage": "輸入訊息...",
         "typeOrPushSpace": "輸入或按空白鍵說話...",
         "usingModel": "使用 {{model}}"
+      },
+      "toasts": {
+        "aiError": "[TODO] AI Error",
+        "failedToGetResponse": "[TODO] Failed to get response.",
+        "failedToSaveTranscript": "[TODO] Failed to save transcript",
+        "loginButton": "[TODO] Login",
+        "loginRequired": "[TODO] Login Required",
+        "open": "[TODO] Open",
+        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
+        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
+        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
+        "savedToFileName": "[TODO] Saved to {{fileName}}",
+        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
+        "transcriptSaved": "[TODO] Transcript saved",
+        "transcriptUpdated": "[TODO] Transcript updated",
+        "unknownError": "[TODO] Unknown error"
       },
       "tokenStatus": {
         "authenticated": "已登入",
@@ -3033,18 +3051,17 @@
         "title": "新頻道",
         "toastSuccess": "正在收聽 {{name}}"
       },
-      "youtubePaste": {
-        "added": "已將「{{title}}」加入此頻道",
-        "alreadyInChannel": "該影片已在此頻道中",
-        "alreadyInLibrary": "該影片已在您的媒體庫中",
-        "needsEditableChannel": "請切換到 Ryo TV、MTV 或自訂頻道，才能透過連結新增影片",
-        "fetchFailed": "無法載入該 YouTube 影片"
-      },
       "delete": {
         "description": "要從您的電視移除「{{name}}」頻道嗎？",
         "title": "刪除頻道"
       },
       "description": "在 YouTube 上轉台",
+      "drawer": {
+        "close": "[TODO] Hide videos",
+        "empty": "[TODO] No videos on this channel yet.",
+        "removeVideo": "[TODO] Remove from channel",
+        "title": "[TODO] Schedule"
+      },
       "help": {
         "channels": {
           "description": "像看電視一樣切換精選的 YouTube 頻道",
@@ -3089,6 +3106,7 @@
         "play": "播放",
         "previous": "上一個",
         "resetChannels": "重設頻道...",
+        "showVideos": "[TODO] Show Videos",
         "tvHelp": "電視說明"
       },
       "name": "電視",
@@ -3119,6 +3137,13 @@
         "importSuccess_one": "已匯入 {{count}} 個頻道 (已跳過 {{skipped}} 個)",
         "importSuccess_other": "已匯入 {{count}} 個頻道 (已跳過 {{skipped}} 個)",
         "resetSuccess": "頻道已重設為預設值"
+      },
+      "youtubePaste": {
+        "added": "已將「{{title}}」加入此頻道",
+        "alreadyInChannel": "該影片已在此頻道中",
+        "alreadyInLibrary": "該影片已在您的媒體庫中",
+        "fetchFailed": "無法載入該 YouTube 影片",
+        "needsEditableChannel": "請切換到 Ryo TV、MTV 或自訂頻道，才能透過連結新增影片"
       }
     },
     "videos": {
