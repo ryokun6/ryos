@@ -1,4 +1,5 @@
 import type { Video } from "@/stores/useVideoStore";
+import { PREPOPULATED_TV_CHANNELS } from "./prepopulatedChannels.generated";
 import { TAIWAN_PLAYLIST_VIDEOS } from "./taiwanVideos.generated";
 
 export interface Channel {
@@ -32,6 +33,10 @@ export const DEFAULT_CHANNELS: Channel[] = [
       "https://www.youtube.com/playlist?list=PL0Pdneoq-nmx0FsYKLjFijtcifhPCTylI",
     videos: TAIWAN_PLAYLIST_VIDEOS,
   },
+  ...PREPOPULATED_TV_CHANNELS.map((channel, index) => ({
+    ...channel,
+    number: index + 4,
+  })),
 ];
 
 export const DEFAULT_CHANNEL_ID = DEFAULT_CHANNELS[0]?.id ?? "ryos-picks";
