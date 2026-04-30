@@ -12,6 +12,7 @@ describe("logical cloud sync helpers", () => {
   test("validates logical domains", () => {
     expect(isLogicalCloudSyncDomain("settings")).toBe(true);
     expect(isLogicalCloudSyncDomain("files")).toBe(true);
+    expect(isLogicalCloudSyncDomain("tv")).toBe(true);
     expect(isLogicalCloudSyncDomain("contacts")).toBe(true);
     expect(isLogicalCloudSyncDomain("files-images")).toBe(false);
     expect(isLogicalCloudSyncDomain("widgets")).toBe(false);
@@ -25,6 +26,7 @@ describe("logical cloud sync helpers", () => {
     expect(getLogicalCloudSyncDomainPhysicalParts("settings")).toEqual([
       "settings",
     ]);
+    expect(getLogicalCloudSyncDomainPhysicalParts("tv")).toEqual(["tv"]);
     expect(getLogicalCloudSyncDomainPhysicalParts("files")).toEqual([
       "files-images",
       "files-trash",
@@ -40,6 +42,7 @@ describe("logical cloud sync helpers", () => {
       files: null,
       songs: null,
       videos: null,
+      tv: null,
       stickies: null,
       calendar: null,
       contacts: null,
@@ -76,6 +79,13 @@ describe("logical cloud sync helpers", () => {
       totalSize: 500,
       syncVersion: null,
     };
+    metadata.tv = {
+      updatedAt: "2026-03-15T10:10:00.000Z",
+      createdAt: "2026-03-15T09:05:00.000Z",
+      version: 1,
+      totalSize: 40,
+      syncVersion: null,
+    };
 
     const aggregated = aggregateLogicalCloudSyncMetadata(metadata);
 
@@ -98,6 +108,13 @@ describe("logical cloud sync helpers", () => {
       "files-images",
       "files-metadata",
     ]);
+
+    expect(aggregated.tv).toMatchObject({
+      updatedAt: "2026-03-15T10:10:00.000Z",
+      createdAt: "2026-03-15T09:05:00.000Z",
+      totalSize: 40,
+    });
+    expect(Object.keys(aggregated.tv?.parts || {})).toEqual(["tv"]);
   });
 });
 

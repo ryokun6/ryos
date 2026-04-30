@@ -22,6 +22,7 @@ import {
 import {
   createEmptyCloudSyncMetadataMap,
   isBlobSyncDomain,
+  isRedisSyncDomain,
   type CloudSyncDomain,
   type CloudSyncDomainMetadata,
 } from "@/utils/cloudSyncShared";
@@ -131,11 +132,10 @@ export async function uploadLogicalCloudSyncDomain(
 
     if (!response.ok) {
       if (response.status === 409) {
-        if (writes["files-metadata"]) {
-          invalidateRedisStateSnapshotForUpload(auth.username, "files-metadata");
-        }
-        if (writes["settings"]) {
-          invalidateRedisStateSnapshotForUpload(auth.username, "settings");
+        for (const partDomain of Object.keys(writes) as CloudSyncDomain[]) {
+          if (isRedisSyncDomain(partDomain)) {
+            invalidateRedisStateSnapshotForUpload(auth.username, partDomain);
+          }
         }
       }
       const errorData = await response.json().catch(() => ({}));

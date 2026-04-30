@@ -92,6 +92,7 @@ describe("cloud sync app launch checks", () => {
     expect(shouldRequestCloudSyncOnAppLaunch("finder")).toBe(true);
     expect(shouldRequestCloudSyncOnAppLaunch("ipod")).toBe(true);
     expect(shouldRequestCloudSyncOnAppLaunch("videos")).toBe(true);
+    expect(shouldRequestCloudSyncOnAppLaunch("tv")).toBe(true);
   });
 
   test("skips launch-time sync checks for unrelated apps", () => {

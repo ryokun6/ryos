@@ -69,6 +69,7 @@ interface CloudSyncStoreState {
   syncSettings: boolean;
   syncSongs: boolean;
   syncVideos: boolean;
+  syncTv: boolean;
   syncStickies: boolean;
   syncCalendar: boolean;
   syncContacts: boolean;
@@ -139,6 +140,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
     "files-applets": empty(),
     songs: empty(),
     videos: empty(),
+    tv: empty(),
     stickies: empty(),
     calendar: empty(),
     contacts: empty(),
@@ -176,7 +178,7 @@ export function mergePersistedCloudSyncDomainStatus(
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 10;
+const STORE_VERSION = 11;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -186,6 +188,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       syncSettings: true,
       syncSongs: true,
       syncVideos: true,
+      syncTv: true,
       syncStickies: true,
       syncCalendar: true,
       syncContacts: true,
@@ -220,6 +223,9 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           case "videos":
             set({ syncVideos: enabled });
             return;
+          case "tv":
+            set({ syncTv: enabled });
+            return;
           case "stickies":
             set({ syncStickies: enabled });
             return;
@@ -243,6 +249,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             return state.syncSongs;
           case "videos":
             return state.syncVideos;
+          case "tv":
+            return state.syncTv;
           case "stickies":
             return state.syncStickies;
           case "calendar":
@@ -470,6 +478,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncSettings: state.syncSettings,
         syncSongs: state.syncSongs,
         syncVideos: state.syncVideos,
+        syncTv: state.syncTv,
         syncStickies: state.syncStickies,
         syncCalendar: state.syncCalendar,
         syncContacts: state.syncContacts,
@@ -559,6 +568,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncSettings: candidate.syncSettings ?? true,
           syncSongs: candidate.syncSongs ?? true,
           syncVideos: (candidate as Record<string, unknown>).syncVideos as boolean ?? true,
+          syncTv: (candidate as Record<string, unknown>).syncTv as boolean ?? true,
           syncStickies: (candidate as Record<string, unknown>).syncStickies as boolean ?? true,
           syncCalendar: candidate.syncCalendar ?? true,
           syncContacts: (candidate as Record<string, unknown>).syncContacts as boolean ?? true,

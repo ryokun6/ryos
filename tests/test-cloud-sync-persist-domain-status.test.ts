@@ -25,6 +25,7 @@ describe("mergePersistedCloudSyncDomainStatus", () => {
     const merged = mergePersistedCloudSyncDomainStatus(partial);
 
     expect(merged["custom-wallpapers"]).toBeDefined();
+    expect(merged.tv).toBeDefined();
     expect(merged["custom-wallpapers"].lastUploadedAt).toBeNull();
     expect(merged.settings.lastUploadedAt).toBe("2025-01-01T00:00:00.000Z");
   });
@@ -32,6 +33,7 @@ describe("mergePersistedCloudSyncDomainStatus", () => {
   test("returns full defaults for empty partial", () => {
     const merged = mergePersistedCloudSyncDomainStatus(undefined);
     expect(merged["custom-wallpapers"]).toBeDefined();
+    expect(merged.tv).toBeDefined();
     expect(merged.contacts).toBeDefined();
   });
 });

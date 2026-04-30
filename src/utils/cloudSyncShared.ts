@@ -12,6 +12,7 @@ export const CLOUD_SYNC_DOMAINS = [
   "files-applets",
   "songs",
   "videos",
+  "tv",
   "stickies",
   "calendar",
   "contacts",
@@ -47,6 +48,7 @@ export type CloudSyncCategory =
   | "settings"
   | "songs"
   | "videos"
+  | "tv"
   | "stickies"
   | "calendar"
   | "contacts";
@@ -66,6 +68,7 @@ export const REDIS_SYNC_DOMAINS = [
   "files-metadata",
   "songs",
   "videos",
+  "tv",
   "stickies",
   "calendar",
   "contacts",
@@ -187,6 +190,8 @@ export function getCloudSyncCategory(
       return "songs";
     case "videos":
       return "videos";
+    case "tv":
+      return "tv";
     case "stickies":
       return "stickies";
     case "calendar":
@@ -205,6 +210,7 @@ export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
     "files-applets": null,
     songs: null,
     videos: null,
+    tv: null,
     stickies: null,
     calendar: null,
     contacts: null,

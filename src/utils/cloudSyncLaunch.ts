@@ -8,6 +8,7 @@ const APP_CLOUD_SYNC_DOMAINS: Partial<Record<AppId, CloudSyncDomain[]>> = {
   ipod: ["songs", "settings"],
   karaoke: ["songs", "settings"],
   videos: ["videos"],
+  tv: ["tv"],
 };
 
 const APPS_THAT_TRIGGER_CLOUD_SYNC_CHECK_ON_LAUNCH = new Set<AppId>([
@@ -22,6 +23,7 @@ const APPS_THAT_TRIGGER_CLOUD_SYNC_CHECK_ON_LAUNCH = new Set<AppId>([
   "ipod",
   "karaoke",
   "videos",
+  "tv",
   "dashboard",
 ]);
 

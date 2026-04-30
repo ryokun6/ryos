@@ -9,6 +9,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useVideoStore } from "@/stores/useVideoStore";
+import { useTvStore } from "@/stores/useTvStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useStickiesStore } from "@/stores/useStickiesStore";
@@ -96,6 +97,7 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   "files-applets": 8000,
   songs: 4000,
   videos: 4000,
+  tv: 3000,
   stickies: 3000,
   calendar: 4000,
   contacts: 3000,
@@ -110,6 +112,7 @@ const MAX_UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   "files-applets": 15_000,
   songs: 10_000,
   videos: 10_000,
+  tv: 8_000,
   stickies: 8_000,
   calendar: 10_000,
   contacts: 8_000,
@@ -127,6 +130,7 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
     "files-applets": initialValue,
     songs: initialValue,
     videos: initialValue,
+    tv: initialValue,
     stickies: initialValue,
     calendar: initialValue,
     contacts: initialValue,
@@ -142,6 +146,7 @@ function createLogicalDomainNumberMap(
     settings: initialValue,
     songs: initialValue,
     videos: initialValue,
+    tv: initialValue,
     stickies: initialValue,
     calendar: initialValue,
     contacts: initialValue,
@@ -156,6 +161,7 @@ function createLogicalDomainBooleanMap(
     settings: initialValue,
     songs: initialValue,
     videos: initialValue,
+    tv: initialValue,
     stickies: initialValue,
     calendar: initialValue,
     contacts: initialValue,
@@ -174,6 +180,7 @@ function createDomainPendingRemoteUpdateMap(): Record<
     "files-applets": null,
     songs: null,
     videos: null,
+    tv: null,
     stickies: null,
     calendar: null,
     contacts: null,
@@ -194,6 +201,7 @@ function createLogicalPendingRemoteUpdateMap(): Record<
     settings: null,
     songs: null,
     videos: null,
+    tv: null,
     stickies: null,
     calendar: null,
     contacts: null,
@@ -280,6 +288,7 @@ export function useAutoCloudSync() {
   const syncSettings = useCloudSyncStore((state) => state.syncSettings);
   const syncSongs = useCloudSyncStore((state) => state.syncSongs);
   const syncVideos = useCloudSyncStore((state) => state.syncVideos);
+  const syncTv = useCloudSyncStore((state) => state.syncTv);
   const syncStickies = useCloudSyncStore((state) => state.syncStickies);
   const syncCalendar = useCloudSyncStore((state) => state.syncCalendar);
   const syncContacts = useCloudSyncStore((state) => state.syncContacts);
@@ -298,6 +307,7 @@ export function useAutoCloudSync() {
     "files-applets": 0,
     songs: 0,
     videos: 0,
+    tv: 0,
     stickies: 0,
     calendar: 0,
     contacts: 0,
@@ -336,6 +346,7 @@ export function useAutoCloudSync() {
   const lastVisibilityCheckRef = useRef(0);
   const wallpaperSeedDoneRef = useRef(false);
   const contactsSeedDoneRef = useRef(false);
+  const tvSeedDoneRef = useRef(false);
 
   const isSyncActive = Boolean(username && isAuthenticated && autoSyncEnabled);
 
@@ -369,6 +380,7 @@ export function useAutoCloudSync() {
         syncFiles ? "1" : "0",
         syncSongs ? "1" : "0",
         syncVideos ? "1" : "0",
+        syncTv ? "1" : "0",
         syncStickies ? "1" : "0",
         syncCalendar ? "1" : "0",
         syncContacts ? "1" : "0",
@@ -380,6 +392,7 @@ export function useAutoCloudSync() {
       syncSettings,
       syncSongs,
       syncStickies,
+      syncTv,
       syncVideos,
     ]
   );
@@ -1062,6 +1075,26 @@ export function useAutoCloudSync() {
           }
         }
       }
+
+      if (!tvSeedDoneRef.current && isDomainEnabled("tv")) {
+        tvSeedDoneRef.current = true;
+        if (!metadataMap.tv?.updatedAt) {
+          const tvState = useTvStore.getState();
+          const hasLocalTvState =
+            tvState.customChannels.length > 0 ||
+            tvState.lcdFilterOn !== true ||
+            tvState.closedCaptionsOn !== true;
+          if (hasLocalTvState) {
+            console.log(
+              `[CloudSync] Seed upload: ${tvState.customChannels.length} local TV channels, no remote data`
+            );
+            setTimeout(
+              () => queueUpload("tv"),
+              REMOTE_APPLY_SUPPRESSION_MS + 1000
+            );
+          }
+        }
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to check cloud sync.";
@@ -1426,6 +1459,18 @@ export function useAutoCloudSync() {
       }
     });
 
+    const tvSettingsUnsubscribe = useTvStore.subscribe((state, prevState) => {
+      if (
+        state.customChannels !== prevState.customChannels ||
+        state.lcdFilterOn !== prevState.lcdFilterOn ||
+        state.closedCaptionsOn !== prevState.closedCaptionsOn
+      ) {
+        if (!useTvStore.persist.hasHydrated()) return;
+        if (isApplyingRemoteDomain("tv")) return;
+        queueUpload("tv");
+      }
+    });
+
     const dockUnsubscribe = useDockStore.subscribe((state, prevState) => {
       if (
         state.pinnedItems !== prevState.pinnedItems ||
@@ -1565,6 +1610,7 @@ export function useAutoCloudSync() {
       ipodSettingsUnsubscribe();
       songsUnsubscribe();
       videosUnsubscribe();
+      tvSettingsUnsubscribe();
       dockUnsubscribe();
       dashboardUnsubscribe();
       stickiesUnsubscribe();

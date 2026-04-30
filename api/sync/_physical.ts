@@ -37,6 +37,7 @@ export async function getPhysicalSyncDomainPayload(
       domain === "files-metadata" ||
       domain === "songs" ||
       domain === "videos" ||
+      domain === "tv" ||
       domain === "stickies" ||
       domain === "calendar" ||
       domain === "contacts") {
@@ -57,6 +58,7 @@ export async function putPhysicalSyncDomain(
       domain === "files-metadata" ||
       domain === "songs" ||
       domain === "videos" ||
+      domain === "tv" ||
       domain === "stickies" ||
       domain === "calendar" ||
       domain === "contacts") {

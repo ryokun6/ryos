@@ -55,6 +55,7 @@ describe("logical cloud sync domain API", () => {
       "settings",
       "songs",
       "stickies",
+      "tv",
       "videos",
     ]);
     expect(Object.keys(data.physicalMetadata).sort()).toEqual([
@@ -68,6 +69,7 @@ describe("logical cloud sync domain API", () => {
       "settings",
       "songs",
       "stickies",
+      "tv",
       "videos",
     ]);
   });

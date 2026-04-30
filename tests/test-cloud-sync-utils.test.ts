@@ -81,6 +81,7 @@ describe("cloud sync shared helpers", () => {
     expect(isCloudSyncDomain("files-trash")).toBe(true);
     expect(isCloudSyncDomain("files-applets")).toBe(true);
     expect(isCloudSyncDomain("songs")).toBe(true);
+    expect(isCloudSyncDomain("tv")).toBe(true);
     expect(isCloudSyncDomain("calendar")).toBe(true);
     expect(isCloudSyncDomain("custom-wallpapers")).toBe(true);
     expect(isCloudSyncDomain("files")).toBe(false);
@@ -103,6 +104,7 @@ describe("cloud sync shared helpers", () => {
     expect(isRedisSyncDomain("stickies")).toBe(true);
     expect(isRedisSyncDomain("songs")).toBe(true);
     expect(isRedisSyncDomain("videos")).toBe(true);
+    expect(isRedisSyncDomain("tv")).toBe(true);
     expect(isRedisSyncDomain("files-metadata")).toBe(true);
     expect(isRedisSyncDomain(invalidRedisDomain)).toBe(false);
     expect(isRedisSyncDomain(invalidWallpaperDomain)).toBe(false);
@@ -128,6 +130,7 @@ describe("cloud sync shared helpers", () => {
     expect(map["files-applets"]).toBeNull();
     expect(map.songs).toBeNull();
     expect(map.videos).toBeNull();
+    expect(map.tv).toBeNull();
     expect(map.stickies).toBeNull();
     expect(map.calendar).toBeNull();
     expect(map["custom-wallpapers"]).toBeNull();
@@ -163,6 +166,7 @@ describe("cloud sync shared helpers", () => {
     expect(getCloudSyncCategory("settings")).toBe("settings");
     expect(getCloudSyncCategory("custom-wallpapers")).toBe("files");
     expect(getCloudSyncCategory("songs")).toBe("songs");
+    expect(getCloudSyncCategory("tv")).toBe("tv");
     expect(getCloudSyncCategory("calendar")).toBe("calendar");
   });
 

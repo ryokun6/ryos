@@ -13,6 +13,7 @@ import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
+import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
@@ -149,6 +150,12 @@ interface VideosSnapshotData {
   videos: Video[];
 }
 
+interface TvSnapshotData {
+  customChannels: CustomChannel[];
+  lcdFilterOn: boolean;
+  closedCaptionsOn: boolean;
+}
+
 interface StickiesSnapshotData {
   notes: StickyNote[];
   deletedNoteIds?: DeletionMarkerMap;
@@ -175,6 +182,7 @@ type AnySnapshotData =
   | FilesStoreSnapshotData
   | SongsSnapshotData
   | VideosSnapshotData
+  | TvSnapshotData
   | StickiesSnapshotData
   | CalendarSnapshotData
   | ContactsSnapshotData
@@ -682,6 +690,15 @@ function serializeVideosSnapshot(): VideosSnapshotData {
   };
 }
 
+function serializeTvSnapshot(): TvSnapshotData {
+  const tvState = useTvStore.getState();
+  return {
+    customChannels: tvState.customChannels,
+    lcdFilterOn: tvState.lcdFilterOn,
+    closedCaptionsOn: tvState.closedCaptionsOn,
+  };
+}
+
 function serializeStickiesSnapshot(): StickiesSnapshotData {
   const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
   return {
@@ -768,6 +785,13 @@ async function createCloudSyncEnvelope(
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
         data: serializeVideosSnapshot(),
+      };
+    case "tv":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: serializeTvSnapshot(),
       };
     case "stickies":
       return {
@@ -1083,6 +1107,14 @@ function applyVideosSnapshot(data: VideosSnapshotData): void {
   });
 }
 
+function applyTvSnapshot(data: TvSnapshotData): void {
+  useTvStore.setState({
+    customChannels: Array.isArray(data.customChannels) ? data.customChannels : [],
+    lcdFilterOn: data.lcdFilterOn ?? true,
+    closedCaptionsOn: data.closedCaptionsOn ?? true,
+  });
+}
+
 function applyStickiesSnapshot(data: StickiesSnapshotData): void {
   const remoteDeletedNoteIds = normalizeDeletionMarkerMap(data.deletedNoteIds);
   const cloudSyncState = useCloudSyncStore.getState();
@@ -1289,6 +1321,9 @@ async function applyCloudSyncEnvelope(
         return;
       case "videos":
         applyVideosSnapshot(envelope.data as VideosSnapshotData);
+        return;
+      case "tv":
+        applyTvSnapshot(envelope.data as TvSnapshotData);
         return;
       case "stickies":
         applyStickiesSnapshot(envelope.data as StickiesSnapshotData);
@@ -1516,6 +1551,20 @@ function mergeVideosSnapshots(
   };
 }
 
+function mergeTvSnapshots(
+  local: TvSnapshotData,
+  remote: TvSnapshotData
+): TvSnapshotData {
+  return {
+    customChannels: mergeItemsById(
+      local.customChannels || [],
+      remote.customChannels || []
+    ),
+    lcdFilterOn: local.lcdFilterOn,
+    closedCaptionsOn: local.closedCaptionsOn,
+  };
+}
+
 function mergeRedisStateConflict(
   domain: RedisSyncDomain,
   localData: AnySnapshotData,
@@ -1559,6 +1608,11 @@ function mergeRedisStateConflict(
       return mergeVideosSnapshots(
         localData as VideosSnapshotData,
         remoteData as VideosSnapshotData
+      );
+    case "tv":
+      return mergeTvSnapshots(
+        localData as TvSnapshotData,
+        remoteData as TvSnapshotData
       );
     default:
       return null;
@@ -1867,6 +1921,8 @@ export async function applyResolvedRedisUploadLocally(
 ): Promise<void> {
   if (domain === "settings") {
     await applySettingsSnapshot(data as SettingsSnapshotData, updatedAt);
+  } else if (domain === "tv") {
+    applyTvSnapshot(data as TvSnapshotData);
   }
 }
 

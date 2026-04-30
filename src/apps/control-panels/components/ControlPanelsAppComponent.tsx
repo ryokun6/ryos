@@ -155,6 +155,7 @@ const AUTO_SYNC_ITEM_ICONS = {
   contacts: "contacts",
   songs: "ipod",
   videos: "videos",
+  tv: "tv",
   stickies: "stickies",
 } as const;
 
@@ -364,6 +365,7 @@ export function ControlPanelsAppComponent({
     syncSettings,
     syncSongs,
     syncVideos,
+    syncTv,
     syncStickies,
     syncCalendar,
     syncContacts,
@@ -371,6 +373,7 @@ export function ControlPanelsAppComponent({
     setSyncSettings,
     setSyncSongs,
     setSyncVideos,
+    setSyncTv,
     setSyncStickies,
     setSyncCalendar,
     setSyncContacts,
@@ -783,6 +786,17 @@ export function ControlPanelsAppComponent({
                           status={formatSyncStatus(autoSyncDomainStatus.videos, t)}
                           checked={syncVideos}
                           onCheckedChange={setSyncVideos}
+                        />
+
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.tv}
+                          label={t(
+                            "apps.control-panels.autoSync.tvChannels",
+                            "TV Channels"
+                          )}
+                          status={formatSyncStatus(autoSyncDomainStatus.tv, t)}
+                          checked={syncTv}
+                          onCheckedChange={setSyncTv}
                         />
 
                         <SyncDomainRow
