@@ -810,6 +810,7 @@
         "transcribing": "Transcribing...",
         "createAccountToContinue": "Create account to continue...",
         "typeMessage": "Type a message...",
+        "describeThisImage": "Describe this image",
         "typeOrPushSpace": "Type or push 'space' to talk...",
         "scrollToBottom": "Scroll to bottom",
         "nudgeSent": "👋 *nudge sent*"
@@ -846,6 +847,22 @@
         "ryo": "Ryo",
         "delete": "Delete",
         "greeting": "👋 hey! i'm ryo. ask me anything!"
+      },
+      "toasts": {
+        "loginRequired": "Login Required",
+        "pleaseLoginToContinueChatting": "Please login to continue chatting.",
+        "loginButton": "Login",
+        "rateLimitExceeded": "Rate Limit Exceeded",
+        "rateLimitMessageLimitLogin": "You've reached the message limit. Please login to continue.",
+        "sessionExpiredLoginAgain": "Your session has expired. Please login again.",
+        "aiError": "AI Error",
+        "failedToGetResponse": "Failed to get response.",
+        "transcriptUpdated": "Transcript updated",
+        "transcriptSaved": "Transcript saved",
+        "savedToFileName": "Saved to {{fileName}}",
+        "open": "Open",
+        "failedToSaveTranscript": "Failed to save transcript",
+        "unknownError": "Unknown error"
       },
       "toolCalls": {
         "loadingMusicLibrary": "Loading music library…",
@@ -2378,6 +2395,7 @@
         "pleaseTryAgainLater": "Please try again later.",
         "appletImported": "Applet imported!",
         "appletImportedDescription": "{{fileName}} saved to /Applets{{iconText}}",
+        "appletImportedIconSuffix": " with {{icon}} icon",
         "importFailed": "Import failed",
         "couldNotImportFile": "Could not import the file.",
         "appletExported": "Applet exported!",

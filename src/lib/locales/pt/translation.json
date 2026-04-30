@@ -333,6 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app exportado com sucesso.",
         "appletImported": "Applet importado!",
         "appletImportedDescription": "{{fileName}} salvo em /Applets{{iconText}}",
+        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
         "appletNotFound": "Applet não encontrado",
         "appletNotFoundDescription": "O applet compartilhado pode ter sido excluído ou o link é inválido.",
         "appletSaved": "Applet salvo",
@@ -713,6 +714,7 @@
         "clear": "Limpar",
         "createAccountToContinue": "Crie uma conta para continuar...",
         "dailyLimitReached": "Limite diário de mensagens da IA atingido.",
+        "describeThisImage": "[TODO] Describe this image",
         "editing": "editando...",
         "leave": "Sair",
         "listening": "Ouvindo",
@@ -738,6 +740,22 @@
         "typeMessage": "Digite uma mensagem...",
         "typeOrPushSpace": "Digite ou pressione 'espaço' para falar...",
         "usingModel": "Usando {{model}}"
+      },
+      "toasts": {
+        "aiError": "[TODO] AI Error",
+        "failedToGetResponse": "[TODO] Failed to get response.",
+        "failedToSaveTranscript": "[TODO] Failed to save transcript",
+        "loginButton": "[TODO] Login",
+        "loginRequired": "[TODO] Login Required",
+        "open": "[TODO] Open",
+        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
+        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
+        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
+        "savedToFileName": "[TODO] Saved to {{fileName}}",
+        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
+        "transcriptSaved": "[TODO] Transcript saved",
+        "transcriptUpdated": "[TODO] Transcript updated",
+        "unknownError": "[TODO] Unknown error"
       },
       "tokenStatus": {
         "authenticated": "Sessão iniciada",
@@ -3033,18 +3051,17 @@
         "title": "Novo Canal",
         "toastSuccess": "Sintonizado em {{name}}"
       },
-      "youtubePaste": {
-        "added": "«{{title}}» adicionado a este canal",
-        "alreadyInChannel": "Esse vídeo já está neste canal",
-        "alreadyInLibrary": "Esse vídeo já está na sua biblioteca",
-        "needsEditableChannel": "Sintonize Ryo TV, MTV ou um canal personalizado para adicionar vídeos por link",
-        "fetchFailed": "Não foi possível carregar esse vídeo do YouTube"
-      },
       "delete": {
         "description": "Remover o canal \"{{name}}\" da sua TV?",
         "title": "Excluir Canal"
       },
       "description": "Zapeie pelo YouTube",
+      "drawer": {
+        "close": "[TODO] Hide videos",
+        "empty": "[TODO] No videos on this channel yet.",
+        "removeVideo": "[TODO] Remove from channel",
+        "title": "[TODO] Schedule"
+      },
       "help": {
         "channels": {
           "description": "Navegue por canais selecionados do YouTube como em uma TV",
@@ -3089,6 +3106,7 @@
         "play": "Reproduzir",
         "previous": "Anterior",
         "resetChannels": "Redefinir canais...",
+        "showVideos": "[TODO] Show Videos",
         "tvHelp": "Ajuda da TV"
       },
       "name": "TV",
@@ -3119,6 +3137,13 @@
         "importSuccess_one": "Importado {{count}} canal ({{skipped}} ignorado)",
         "importSuccess_other": "Importados {{count}} canais ({{skipped}} ignorados)",
         "resetSuccess": "Canais redefinidos para os padrões"
+      },
+      "youtubePaste": {
+        "added": "«{{title}}» adicionado a este canal",
+        "alreadyInChannel": "Esse vídeo já está neste canal",
+        "alreadyInLibrary": "Esse vídeo já está na sua biblioteca",
+        "fetchFailed": "Não foi possível carregar esse vídeo do YouTube",
+        "needsEditableChannel": "Sintonize Ryo TV, MTV ou um canal personalizado para adicionar vídeos por link"
       }
     },
     "videos": {
