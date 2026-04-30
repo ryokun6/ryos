@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   buildTvChannelLineup,
   DEFAULT_CHANNELS,
+  isDefaultChannelId,
 } from "../src/apps/tv/data/channels";
 import { isYouTubeUrl } from "../src/apps/tv/utils";
 
@@ -26,9 +27,20 @@ describe("TV default channels", () => {
   test("has unique built-in ids and sequential lineup numbers", () => {
     const ids = DEFAULT_CHANNELS.map((channel) => channel.id);
     expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.every((id) => isDefaultChannelId(id))).toBe(true);
 
     expect(buildTvChannelLineup([]).map((channel) => channel.number)).toEqual(
       DEFAULT_CHANNELS.map((_, index) => index + 1)
+    );
+  });
+
+  test("can hide default channels and renumber remaining channels", () => {
+    const lineup = buildTvChannelLineup([], ["taiwan", "tokki-mix"]);
+
+    expect(lineup.some((channel) => channel.id === "taiwan")).toBe(false);
+    expect(lineup.some((channel) => channel.id === "tokki-mix")).toBe(false);
+    expect(lineup.map((channel) => channel.number)).toEqual(
+      lineup.map((_, index) => index + 1)
     );
   });
 

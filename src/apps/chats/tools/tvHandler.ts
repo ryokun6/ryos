@@ -2,10 +2,10 @@
  * TV Control Tool Handler
  *
  * Manages the TV app's channel lineup: lists channels, tunes in, creates and
- * deletes custom channels, and adds/removes videos within custom channels.
+ * deletes channels, and adds/removes videos within custom channels.
  *
- * Built-in channels (RyoTV, MTV, 台視) are read-only — only custom channels
- * can be edited.
+ * Built-in channels can be hidden from the lineup and restored with TV reset;
+ * only custom channels can have their video lists edited.
  */
 
 import type { ToolContext } from "./types";
@@ -198,9 +198,11 @@ const findCustomChannel = (channelId: string): CustomChannel | undefined => {
 };
 
 const findChannel = (channelId: string): Channel | undefined => {
-  return buildTvChannelLineup(useTvStore.getState().customChannels).find(
-    (c) => c.id === channelId
-  );
+  const tvStore = useTvStore.getState();
+  return buildTvChannelLineup(
+    tvStore.customChannels,
+    tvStore.hiddenDefaultChannelIds
+  ).find((c) => c.id === channelId);
 };
 
 /** Resolve user-provided channelId — accepts short id from 'list' or full store id. */
@@ -222,7 +224,10 @@ export const handleTvControl = async (
     switch (action) {
       case "list": {
         const tvStoreList = useTvStore.getState();
-        const lineup = buildTvChannelLineup(tvStoreList.customChannels);
+        const lineup = buildTvChannelLineup(
+          tvStoreList.customChannels,
+          tvStoreList.hiddenDefaultChannelIds
+        );
         const currentChannelId = tvStoreList.currentChannelId;
         const all: Array<{ ch: Channel; isCustom: boolean }> = lineup.map(
           (ch) => ({
@@ -267,7 +272,10 @@ export const handleTvControl = async (
 
       case "tune": {
         const tvStore = useTvStore.getState();
-        const channels = buildTvChannelLineup(tvStore.customChannels);
+        const channels = buildTvChannelLineup(
+          tvStore.customChannels,
+          tvStore.hiddenDefaultChannelIds
+        );
 
         let target: Channel | undefined;
         if (input.channelNumber !== undefined) {
@@ -457,7 +465,8 @@ export const handleTvControl = async (
         });
 
         const createdListed = buildTvChannelLineup(
-          useTvStore.getState().customChannels
+          useTvStore.getState().customChannels,
+          useTvStore.getState().hiddenDefaultChannelIds
         ).find((c) => c.id === created.id);
         if (!createdListed) {
           context.addToolResult({
@@ -509,19 +518,8 @@ export const handleTvControl = async (
           return;
         }
         const resolvedId = resolveChannelId(input.channelId);
-        if (DEFAULT_CHANNELS.some((c) => c.id === resolvedId)) {
-          context.addToolResult({
-            tool: "tvControl",
-            toolCallId,
-            state: "output-error",
-            errorText: i18n.t("apps.chats.toolCalls.tv.cannotDeleteBuiltin", {
-              defaultValue: "Cannot delete built-in channels",
-            }),
-          });
-          return;
-        }
         const targetListed = findChannel(resolvedId);
-        if (!targetListed || !findCustomChannel(resolvedId)) {
+        if (!targetListed) {
           context.addToolResult({
             tool: "tvControl",
             toolCallId,
@@ -532,7 +530,7 @@ export const handleTvControl = async (
           });
           return;
         }
-        useTvStore.getState().removeCustomChannel(resolvedId);
+        useTvStore.getState().removeChannel(resolvedId);
         context.addToolResult({
           tool: "tvControl",
           toolCallId,

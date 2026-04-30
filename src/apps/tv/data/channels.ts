@@ -41,13 +41,22 @@ export const DEFAULT_CHANNELS: Channel[] = [
 
 export const DEFAULT_CHANNEL_ID = DEFAULT_CHANNELS[0]?.id ?? "ryos-picks";
 
+export function isDefaultChannelId(id: string): boolean {
+  return DEFAULT_CHANNELS.some((channel) => channel.id === id);
+}
+
 /** Built-ins first, then custom channels; channel numbers are list order (1-based). */
 export function buildTvChannelLineup(
   customChannels: ReadonlyArray<
     Omit<Channel, "number"> & Partial<Pick<Channel, "number">>
-  >
+  >,
+  hiddenDefaultChannelIds: ReadonlyArray<string> = []
 ): Channel[] {
-  return [...DEFAULT_CHANNELS, ...customChannels].map((ch, index) => ({
+  const hiddenDefaults = new Set(hiddenDefaultChannelIds);
+  return [
+    ...DEFAULT_CHANNELS.filter((ch) => !hiddenDefaults.has(ch.id)),
+    ...customChannels,
+  ].map((ch, index) => ({
     ...ch,
     number: index + 1,
   }));

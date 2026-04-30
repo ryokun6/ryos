@@ -18,7 +18,7 @@ interface TvMenuBarProps {
   onShowHelp: () => void;
   onShowAbout: () => void;
   channels: Channel[];
-  customChannelIds: Set<string>;
+  canResetChannels: boolean;
   hasCustomChannels: boolean;
   currentChannelId: string;
   onSelectChannel: (id: string) => void;
@@ -47,7 +47,7 @@ export function TvMenuBar({
   onShowHelp,
   onShowAbout,
   channels,
-  customChannelIds,
+  canResetChannels,
   hasCustomChannels,
   currentChannelId,
   onSelectChannel,
@@ -70,7 +70,6 @@ export function TvMenuBar({
   isDrawerOpen,
   onToggleDrawer,
 }: TvMenuBarProps) {
-  const isCurrentChannelCustom = customChannelIds.has(currentChannelId);
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -180,7 +179,7 @@ export function TvMenuBar({
           </MenubarItem>
           <MenubarItem
             onClick={() => onDeleteChannel(currentChannelId)}
-            disabled={!isCurrentChannelCustom}
+            disabled={channels.length <= 1}
             className="text-md h-6 px-3"
           >
             {t("apps.tv.menu.deleteChannel")}
@@ -188,7 +187,7 @@ export function TvMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onResetChannels}
-            disabled={!hasCustomChannels}
+            disabled={!canResetChannels}
             className="text-md h-6 px-3"
           >
             {t("apps.tv.menu.resetChannels")}

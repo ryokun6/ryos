@@ -465,8 +465,9 @@ export function TvAppComponent({
   }, [isPlaying, togglePlay, playerRef, fullScreenPlayerRef]);
 
   const customChannels = useTvStore((s) => s.customChannels);
+  const hiddenDefaultChannelIds = useTvStore((s) => s.hiddenDefaultChannelIds);
   const addVideoToCustomChannel = useTvStore((s) => s.addVideoToCustomChannel);
-  const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
+  const removeChannel = useTvStore((s) => s.removeChannel);
   const importChannels = useTvStore((s) => s.importChannels);
   const exportChannels = useTvStore((s) => s.exportChannels);
   const resetChannels = useTvStore((s) => s.resetChannels);
@@ -650,10 +651,12 @@ export function TvAppComponent({
   const pendingDeleteChannel = useMemo(
     () =>
       pendingDeleteId
-        ? customChannels.find((c) => c.id === pendingDeleteId) ?? null
+        ? channels.find((c) => c.id === pendingDeleteId) ?? null
         : null,
-    [pendingDeleteId, customChannels]
+    [pendingDeleteId, channels]
   );
+  const hasResettableChannelChanges =
+    customChannels.length > 0 || hiddenDefaultChannelIds.length > 0;
 
   const handleExportChannels = () => {
     try {
@@ -906,8 +909,8 @@ export function TvAppComponent({
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       channels={channels}
-      customChannelIds={customChannelIds}
       hasCustomChannels={customChannels.length > 0}
+      canResetChannels={hasResettableChannelChanges}
       currentChannelId={currentChannelId}
       onSelectChannel={setChannelById}
       onCreateChannel={() => {
@@ -1420,7 +1423,7 @@ export function TvAppComponent({
         }}
         onConfirm={() => {
           if (pendingDeleteId) {
-            removeCustomChannel(pendingDeleteId);
+            removeChannel(pendingDeleteId);
             setPendingDeleteId(null);
           }
         }}
