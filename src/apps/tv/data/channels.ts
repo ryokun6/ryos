@@ -1,6 +1,5 @@
 import type { Video } from "@/stores/useVideoStore";
 import { PREPOPULATED_TV_CHANNELS } from "./prepopulatedChannels.generated";
-import { TAIWAN_PLAYLIST_VIDEOS } from "./taiwanVideos.generated";
 
 export interface Channel {
   id: string;
@@ -25,17 +24,9 @@ export const DEFAULT_CHANNELS: Channel[] = [
     description: "Plays from your iPod music library",
     videos: [],
   },
-  {
-    id: "taiwan",
-    number: 3,
-    name: "台視",
-    description:
-      "https://www.youtube.com/playlist?list=PL0Pdneoq-nmx0FsYKLjFijtcifhPCTylI",
-    videos: TAIWAN_PLAYLIST_VIDEOS,
-  },
   ...PREPOPULATED_TV_CHANNELS.map((channel, index) => ({
     ...channel,
-    number: index + 4,
+    number: index + 3,
   })),
 ];
 

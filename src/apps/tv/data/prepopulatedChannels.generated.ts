@@ -1,4 +1,5 @@
 import type { Video } from "@/stores/useVideoStore";
+import { TAIWAN_PLAYLIST_VIDEOS } from "./taiwanVideos.generated";
 
 export interface PrepopulatedTvChannel {
   id: string;
@@ -9,6 +10,13 @@ export interface PrepopulatedTvChannel {
 
 /** Generated from tv-channels-2026-04-30.json. */
 export const PREPOPULATED_TV_CHANNELS: PrepopulatedTvChannel[] = [
+  {
+    id: "taiwan",
+    name: "台視",
+    description:
+      "https://www.youtube.com/playlist?list=PL0Pdneoq-nmx0FsYKLjFijtcifhPCTylI",
+    videos: TAIWAN_PLAYLIST_VIDEOS,
+  },
   {
     id: "cctv-archives",
     name: "央視舊影",

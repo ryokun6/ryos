@@ -7,19 +7,20 @@ import {
 import { isYouTubeUrl } from "../src/apps/tv/utils";
 
 describe("TV default channels", () => {
-  test("keeps the original three channels first", () => {
-    expect(DEFAULT_CHANNELS.slice(0, 3).map((channel) => channel.id)).toEqual([
+  test("keeps the library-backed channels first, then static defaults", () => {
+    expect(DEFAULT_CHANNELS.slice(0, 4).map((channel) => channel.id)).toEqual([
       "ryos-picks",
       "mtv",
       "taiwan",
+      "cctv-archives",
     ]);
   });
 
-  test("prepopulates exported channel library as built-ins", () => {
-    const prepopulated = DEFAULT_CHANNELS.slice(3);
-    expect(prepopulated).toHaveLength(13);
+  test("prepopulates static default channel library as built-ins", () => {
+    const prepopulated = DEFAULT_CHANNELS.slice(2);
+    expect(prepopulated).toHaveLength(14);
     expect(prepopulated.reduce((sum, channel) => sum + channel.videos.length, 0))
-      .toBe(220);
+      .toBe(326);
     expect(prepopulated.every((channel) => !channel.id.startsWith("custom-")))
       .toBe(true);
   });
@@ -45,7 +46,7 @@ describe("TV default channels", () => {
   });
 
   test("only includes YouTube videos in prepopulated built-ins", () => {
-    const seededVideos = DEFAULT_CHANNELS.slice(3).flatMap(
+    const seededVideos = DEFAULT_CHANNELS.slice(2).flatMap(
       (channel) => channel.videos
     );
     expect(seededVideos).not.toHaveLength(0);
