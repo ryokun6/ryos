@@ -1922,7 +1922,12 @@ export async function applyResolvedRedisUploadLocally(
   if (domain === "settings") {
     await applySettingsSnapshot(data as SettingsSnapshotData, updatedAt);
   } else if (domain === "tv") {
-    applyTvSnapshot(data as TvSnapshotData);
+    beginApplyingRemoteDomain(domain);
+    try {
+      applyTvSnapshot(data as TvSnapshotData);
+    } finally {
+      endApplyingRemoteDomain(domain);
+    }
   }
 }
 
