@@ -3006,6 +3006,13 @@
         "title": "新規チャンネル",
         "toastSuccess": "{{name}} を視聴中"
       },
+      "youtubePaste": {
+        "added": "「{{title}}」をこのチャンネルに追加しました",
+        "alreadyInChannel": "その動画はすでにこのチャンネルにあります",
+        "alreadyInLibrary": "その動画はすでにライブラリにあります",
+        "needsEditableChannel": "リンクから追加するには、Ryo TV、MTV、またはカスタムチャンネルに合わせてください",
+        "fetchFailed": "そのYouTube動画を読み込めませんでした"
+      },
       "delete": {
         "description": "テレビからチャンネル「{{name}}」を削除しますか？",
         "title": "チャンネルを削除"

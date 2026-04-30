@@ -3006,6 +3006,13 @@
         "title": "Nuovo canale",
         "toastSuccess": "Sintonizzato su {{name}}"
       },
+      "youtubePaste": {
+        "added": "Aggiunto «{{title}}» a questo canale",
+        "alreadyInChannel": "Questo video è già su questo canale",
+        "alreadyInLibrary": "Questo video è già nella tua libreria",
+        "needsEditableChannel": "Sintonizza Ryo TV, MTV o un canale personalizzato per aggiungere video da un link",
+        "fetchFailed": "Impossibile caricare quel video di YouTube"
+      },
       "delete": {
         "description": "Rimuovere il canale \"{{name}}\" dalla tua TV?",
         "title": "Elimina canale"

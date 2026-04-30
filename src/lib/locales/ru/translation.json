@@ -3006,6 +3006,13 @@
         "title": "Новый канал",
         "toastSuccess": "Настроено на {{name}}"
       },
+      "youtubePaste": {
+        "added": "Добавлено «{{title}}» на этот канал",
+        "alreadyInChannel": "Это видео уже есть на этом канале",
+        "alreadyInLibrary": "Это видео уже есть в вашей библиотеке",
+        "needsEditableChannel": "Переключитесь на Ryo TV, MTV или свой канал, чтобы добавить видео по ссылке",
+        "fetchFailed": "Не удалось загрузить это видео с YouTube"
+      },
       "delete": {
         "description": "Удалить канал «{{name}}» с вашего телевизора?",
         "title": "Удалить канал"

@@ -3006,6 +3006,13 @@
         "title": "Nouvelle chaîne",
         "toastSuccess": "À l'écoute de {{name}}"
       },
+      "youtubePaste": {
+        "added": "« {{title}} » ajouté à cette chaîne",
+        "alreadyInChannel": "Cette vidéo est déjà sur cette chaîne",
+        "alreadyInLibrary": "Cette vidéo est déjà dans votre bibliothèque",
+        "needsEditableChannel": "Accordez-vous sur Ryo TV, MTV ou une chaîne personnalisée pour ajouter une vidéo depuis un lien",
+        "fetchFailed": "Impossible de charger cette vidéo YouTube"
+      },
       "delete": {
         "description": "Supprimer la chaîne « {{name}} » de votre téléviseur ?",
         "title": "Supprimer la chaîne"

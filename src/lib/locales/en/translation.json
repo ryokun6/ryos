@@ -1652,6 +1652,13 @@
         "signInRequired": "Sign in to create channels",
         "signInRequiredDescription": "Log in or create an account to program your own TV channels."
       },
+      "youtubePaste": {
+        "added": "Added \"{{title}}\" to this channel",
+        "alreadyInChannel": "That video is already on this channel",
+        "alreadyInLibrary": "That video is already in your library",
+        "needsEditableChannel": "Tune to Ryo TV, MTV, or a custom channel to add videos from a link",
+        "fetchFailed": "Couldn't load that YouTube video"
+      },
       "delete": {
         "title": "Delete Channel",
         "description": "Remove the channel \"{{name}}\" from your TV?"

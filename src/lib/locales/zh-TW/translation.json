@@ -3006,6 +3006,13 @@
         "title": "新頻道",
         "toastSuccess": "正在收聽 {{name}}"
       },
+      "youtubePaste": {
+        "added": "已將「{{title}}」加入此頻道",
+        "alreadyInChannel": "該影片已在此頻道中",
+        "alreadyInLibrary": "該影片已在您的媒體庫中",
+        "needsEditableChannel": "請切換到 Ryo TV、MTV 或自訂頻道，才能透過連結新增影片",
+        "fetchFailed": "無法載入該 YouTube 影片"
+      },
       "delete": {
         "description": "要從您的電視移除「{{name}}」頻道嗎？",
         "title": "刪除頻道"

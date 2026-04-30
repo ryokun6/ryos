@@ -21,6 +21,10 @@ import {
   useCreateTvChannel,
   TvChannelAuthRequiredError,
 } from "../hooks/useCreateTvChannel";
+import {
+  fetchYoutubeVideoForTvPrompt,
+  parseYoutubePasteInput,
+} from "../utils/youtubeFromPrompt";
 import { useTvSoundFx } from "../hooks/useTvSoundFx";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,13 +32,15 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTvStore } from "@/stores/useTvStore";
+import { useIpodStore } from "@/stores/useIpodStore";
+import { useVideoStore } from "@/stores/useVideoStore";
 import { isMobileSafari } from "@/utils/device";
 import { appMetadata } from "..";
 import { Button } from "@/components/ui/button";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { VideoFullScreenPortal } from "@/components/shared/VideoFullScreenPortal";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
-import { useTvLogic, MTV_CHANNEL_ID } from "../hooks/useTvLogic";
+import { useTvLogic, MTV_CHANNEL_ID, RYO_TV_CHANNEL_ID } from "../hooks/useTvLogic";
 import { MtvLyricsOverlay } from "./MtvLyricsOverlay";
 import {
   SkipBack,
@@ -402,6 +408,7 @@ export function TvAppComponent({
   // current channel. Closed by default so the picture-and-LCD layout
   // stays the focal point on first open.
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isYoutubePasteLoading, setIsYoutubePasteLoading] = useState(false);
 
   // CRT shader effect triggers. Bumping these counters re-keys the
   // animations inside TvCrtEffects so a new burst plays on every event.
@@ -458,6 +465,7 @@ export function TvAppComponent({
   }, [isPlaying, togglePlay, playerRef, fullScreenPlayerRef]);
 
   const customChannels = useTvStore((s) => s.customChannels);
+  const addVideoToCustomChannel = useTvStore((s) => s.addVideoToCustomChannel);
   const removeCustomChannel = useTvStore((s) => s.removeCustomChannel);
   const importChannels = useTvStore((s) => s.importChannels);
   const exportChannels = useTvStore((s) => s.exportChannels);
@@ -469,6 +477,10 @@ export function TvAppComponent({
   const toggleDrawer = useCallback(() => {
     setIsDrawerOpen((v) => !v);
   }, []);
+  const customChannelIds = useMemo(
+    () => new Set(customChannels.map((c) => c.id)),
+    [customChannels]
+  );
   const { create: createChannel, isCreating: isCreatingChannel } =
     useCreateTvChannel();
 
@@ -533,6 +545,72 @@ export function TvAppComponent({
 
   const handleInlinePromptSubmit = useCallback(
     async (description: string): Promise<string | null> => {
+      const trimmed = description.trim();
+      const youtubeRef = parseYoutubePasteInput(trimmed);
+
+      if (youtubeRef) {
+        setIsYoutubePasteLoading(true);
+        try {
+          const video = await fetchYoutubeVideoForTvPrompt(youtubeRef);
+          if (!video) {
+            toast.error(t("apps.tv.youtubePaste.fetchFailed"));
+            return null;
+          }
+
+          if (currentChannelId === RYO_TV_CHANNEL_ID) {
+            const had = useVideoStore
+              .getState()
+              .videos.some((v) => v.id === video.id);
+            if (had) {
+              toast.success(t("apps.tv.youtubePaste.alreadyInLibrary"));
+            } else {
+              useVideoStore.getState().setVideos((prev) => [...prev, video]);
+              toast.success(
+                t("apps.tv.youtubePaste.added", { title: video.title })
+              );
+            }
+            return video.title;
+          }
+
+          if (currentChannelId === MTV_CHANNEL_ID) {
+            const hadTrack = useIpodStore
+              .getState()
+              .tracks.some((tr) => tr.id === video.id);
+            await useIpodStore
+              .getState()
+              .addTrackFromVideoId(video.url, false);
+            if (hadTrack) {
+              toast.success(t("apps.tv.youtubePaste.alreadyInLibrary"));
+            } else {
+              toast.success(
+                t("apps.tv.youtubePaste.added", { title: video.title })
+              );
+            }
+            return video.title;
+          }
+
+          if (customChannelIds.has(currentChannelId)) {
+            const { added } = addVideoToCustomChannel(
+              currentChannelId,
+              video
+            );
+            if (added) {
+              toast.success(
+                t("apps.tv.youtubePaste.added", { title: video.title })
+              );
+            } else {
+              toast.success(t("apps.tv.youtubePaste.alreadyInChannel"));
+            }
+            return video.title;
+          }
+
+          toast.error(t("apps.tv.youtubePaste.needsEditableChannel"));
+          return null;
+        } finally {
+          setIsYoutubePasteLoading(false);
+        }
+      }
+
       if (!ensureLoggedIn()) return null;
       try {
         const { channel } = await createChannel(description);
@@ -559,16 +637,15 @@ export function TvAppComponent({
       }
     },
     [
+      addVideoToCustomChannel,
+      currentChannelId,
+      customChannelIds,
       ensureLoggedIn,
       createChannel,
       setChannelById,
       showLoginRequiredToast,
       t,
     ]
-  );
-  const customChannelIds = useMemo(
-    () => new Set(customChannels.map((c) => c.id)),
-    [customChannels]
   );
   const pendingDeleteChannel = useMemo(
     () =>
@@ -1223,7 +1300,7 @@ export function TvAppComponent({
               <ChannelPromptInput
                 className="flex-1 min-w-0"
                 onSubmit={handleInlinePromptSubmit}
-                isLoading={isCreatingChannel}
+                isLoading={isCreatingChannel || isYoutubePasteLoading}
                 placeholder={t("apps.tv.create.inlinePlaceholder")}
                 loadingMessages={[
                   t("apps.tv.create.statusPlanning"),
