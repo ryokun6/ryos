@@ -185,6 +185,9 @@ export function ToolInvocationMessage({
       case "cursorRyOsRepoAgent":
         displayCallMessage = t("apps.chats.toolCalls.cursorRyOsRepoAgent.starting");
         break;
+      case "listRecentCursorAgents":
+        displayCallMessage = t("apps.chats.toolCalls.listRecentCursorAgents.loading");
+        break;
       case "web_search":
       case "google_search":
         displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
@@ -714,6 +717,29 @@ export function ToolInvocationMessage({
         headerTitle={headerTitle}
         introMessage={out.message}
       />
+    );
+  }
+
+  if (
+    state === "output-available" &&
+    toolName === "listRecentCursorAgents" &&
+    output &&
+    typeof output === "object" &&
+    output !== null
+  ) {
+    let text: string;
+    try {
+      text = JSON.stringify(output, null, 2);
+    } catch {
+      text = String(output);
+    }
+    return (
+      <div
+        key={partKey}
+        className="mb-1 max-h-64 overflow-auto rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-[11px] font-mono text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+      >
+        <pre className="whitespace-pre-wrap break-words">{text}</pre>
+      </div>
     );
   }
 

@@ -972,6 +972,9 @@
           "fetched": "Read {{siteName}}",
           "fetchedPage": "Read \"{{title}}\""
         },
+        "listRecentCursorAgents": {
+          "loading": "Fetching recent Cursor agents…"
+        },
         "cursorRyOsRepoAgent": {
           "starting": "Starting Cursor Cloud agent…",
           "panelTitle": "Cursor repo agent",
