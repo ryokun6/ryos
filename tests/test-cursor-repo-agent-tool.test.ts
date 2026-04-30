@@ -1,9 +1,29 @@
 import { describe, expect, test } from "bun:test";
 import {
+  cursorSdkMetaKey,
   DEFAULT_RYOS_GITHUB_REPO_URL,
   executeCursorRyOsRepoAgent,
   formatCursorRunCompletionTelegramMessage,
+  pickPrUrlFromRunGit,
+  sendCursorAgentFollowup,
 } from "../api/chat/tools/cursor-repo-agent.js";
+import type { Redis } from "../api/_utils/redis.js";
+
+/**
+ * Minimal Redis stand-in: only implements `get` so we can exercise the
+ * pre-Agent.resume validation paths in `sendCursorAgentFollowup`.
+ */
+function makeFakeRedis(initial: Record<string, unknown>): Redis {
+  const store = new Map<string, unknown>(Object.entries(initial));
+  const stub = {
+    get: async (key: string) => store.get(key) ?? null,
+    set: async (key: string, value: unknown) => {
+      store.set(key, value);
+      return "OK";
+    },
+  } as unknown as Redis;
+  return stub;
+}
 
 describe("cursorRyOsRepoAgent gate", () => {
   test("rejects callers whose username is not the repo owner", async () => {
@@ -70,5 +90,151 @@ describe("formatCursorRunCompletionTelegramMessage", () => {
     });
     expect(text.length).toBeLessThanOrEqual(3700);
     expect(text).toContain("…(truncated)");
+  });
+});
+
+describe("pickPrUrlFromRunGit", () => {
+  test("returns the first branch's prUrl when present", () => {
+    const url = pickPrUrlFromRunGit({
+      branches: [
+        { repoUrl: "https://github.com/x/y", branch: "main" },
+        { repoUrl: "https://github.com/x/y", prUrl: "https://github.com/x/y/pull/42" },
+      ],
+    });
+    expect(url).toBe("https://github.com/x/y/pull/42");
+  });
+
+  test("returns undefined when git info is malformed", () => {
+    expect(pickPrUrlFromRunGit(undefined)).toBeUndefined();
+    expect(pickPrUrlFromRunGit({})).toBeUndefined();
+    expect(pickPrUrlFromRunGit({ branches: [] })).toBeUndefined();
+    expect(
+      pickPrUrlFromRunGit({ branches: [{ repoUrl: "https://github.com/x/y" }] })
+    ).toBeUndefined();
+  });
+});
+
+describe("sendCursorAgentFollowup pre-checks", () => {
+  const baseContext = {
+    apiKey: "test-key",
+    username: "ryo",
+    log: () => {},
+    logError: () => {},
+  };
+
+  test("rejects non-owner usernames", async () => {
+    const result = await sendCursorAgentFollowup({
+      previousRunId: "run-1",
+      prompt: "do thing",
+      context: { ...baseContext, username: "alice", redis: makeFakeRedis({}) },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(403);
+    }
+  });
+
+  test("requires a non-empty prompt", async () => {
+    const result = await sendCursorAgentFollowup({
+      previousRunId: "run-1",
+      prompt: "   ",
+      context: { ...baseContext, redis: makeFakeRedis({}) },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(400);
+    }
+  });
+
+  test("returns 404 when previous run is unknown", async () => {
+    const result = await sendCursorAgentFollowup({
+      previousRunId: "missing",
+      prompt: "do thing",
+      context: { ...baseContext, redis: makeFakeRedis({}) },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(404);
+    }
+  });
+
+  test("returns 403 when previous run belongs to another user", async () => {
+    const redis = makeFakeRedis({
+      [cursorSdkMetaKey("run-foreign")]: JSON.stringify({
+        username: "someone-else",
+        agentId: "bc-abc",
+        terminalStatus: "finished",
+      }),
+    });
+    const result = await sendCursorAgentFollowup({
+      previousRunId: "run-foreign",
+      prompt: "do thing",
+      context: { ...baseContext, redis },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(403);
+    }
+  });
+
+  test("returns 409 when the previous run is still in progress", async () => {
+    const redis = makeFakeRedis({
+      [cursorSdkMetaKey("run-busy")]: JSON.stringify({
+        username: "ryo",
+        agentId: "bc-abc",
+        // terminalStatus omitted -> still in flight
+      }),
+    });
+    const result = await sendCursorAgentFollowup({
+      previousRunId: "run-busy",
+      prompt: "do thing",
+      context: { ...baseContext, redis },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(409);
+      expect(result.error).toContain("in progress");
+    }
+  });
+
+  test("returns 409 when another follow-up is already mid-flight", async () => {
+    const redis = makeFakeRedis({
+      [cursorSdkMetaKey("run-prev")]: JSON.stringify({
+        username: "ryo",
+        agentId: "bc-abc",
+        terminalStatus: "finished",
+        // a concurrent followup has been queued and not yet finished
+        activeRunId: "run-other",
+      }),
+    });
+    const result = await sendCursorAgentFollowup({
+      previousRunId: "run-prev",
+      prompt: "do thing",
+      context: { ...baseContext, redis },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(409);
+      expect(result.error).toContain("busy");
+    }
+  });
+
+  test("returns 409 when previous run has no agent id", async () => {
+    const redis = makeFakeRedis({
+      [cursorSdkMetaKey("run-noagent")]: JSON.stringify({
+        username: "ryo",
+        terminalStatus: "finished",
+      }),
+    });
+    const result = await sendCursorAgentFollowup({
+      previousRunId: "run-noagent",
+      prompt: "do thing",
+      context: { ...baseContext, redis },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(409);
+      expect(result.error).toContain("agent id");
+    }
   });
 });
