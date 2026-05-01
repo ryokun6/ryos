@@ -191,8 +191,6 @@ export function KaraokeAppComponent({
   );
 
   const showEmptyLibrary = tracks.length === 0 && !currentTrack;
-  const visualBackgroundActive =
-    shouldAnimateVisuals && effectiveDisplayMode !== DisplayMode.Video;
 
   const displayModeOptions = [
     { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
@@ -323,6 +321,8 @@ export function KaraokeAppComponent({
   const effectiveDisplayMode = isListenSessionRemoteOnly
     ? DisplayMode.Cover
     : displayMode;
+  const visualBackgroundActive =
+    shouldAnimateVisuals && effectiveDisplayMode !== DisplayMode.Video;
 
   if (!isWindowOpen) return null;
 
