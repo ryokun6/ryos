@@ -1,4 +1,4 @@
-import { ArrowSquareOut, Check, PaperPlaneRight } from "@phosphor-icons/react";
+import { ArrowSquareOut, ArrowUp, Check } from "@phosphor-icons/react";
 import {
   KeyboardEvent,
   useCallback,
@@ -248,7 +248,7 @@ export function CursorRepoAgentChatCard({
                 e.preventDefault();
                 if (canFollowup) void submitFollowup();
               }}
-              className="flex items-end gap-1"
+              className="flex items-stretch gap-1"
             >
               <textarea
                 ref={inputRef}
@@ -284,9 +284,9 @@ export function CursorRepoAgentChatCard({
                 title={t(
                   "apps.chats.toolCalls.cursorRyOsRepoAgent.followupSend"
                 )}
-                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-blue-500 bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-500 dark:disabled:border-neutral-700 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
+                className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center self-end rounded border border-blue-500 bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-500 dark:disabled:border-neutral-700 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
               >
-                <PaperPlaneRight className="h-3 w-3" weight="bold" />
+                <ArrowUp className="h-3.5 w-3.5" weight="bold" />
               </button>
             </form>
           </div>
