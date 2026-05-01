@@ -20,7 +20,7 @@ export function MeshGradientBackground({
   isActive = true,
   className = "",
 }: MeshGradientBackgroundProps) {
-  const colors = useCoverPalette(coverUrl ?? null);
+  const colors = useCoverPalette(isActive ? coverUrl ?? null : null);
 
   if (!isActive) return null;
 

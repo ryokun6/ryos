@@ -195,6 +195,8 @@ export function IpodAppComponent({
     />
   );
   const shouldAnimateFullScreenVisuals = isPlaying && (isForeground ?? true);
+  const shouldRenderFullScreenAnimatedVisuals =
+    shouldAnimateFullScreenVisuals && displayMode !== DisplayMode.Video;
 
   if (!isWindowOpen) return null;
 
@@ -538,37 +540,45 @@ export function IpodAppComponent({
                   </div>
 
                   {/* Landscape video background (fullscreen) */}
-                  {displayMode === DisplayMode.Landscapes && tracks[currentIndex] && (
+                  {displayMode === DisplayMode.Landscapes &&
+                    shouldRenderFullScreenAnimatedVisuals &&
+                    tracks[currentIndex] && (
                     <LandscapeVideoBackground
-                      isActive={shouldAnimateFullScreenVisuals}
+                      isActive={shouldRenderFullScreenAnimatedVisuals}
                       className="fixed inset-0 z-[5]"
                     />
                   )}
 
                   {/* Warp shader background (fullscreen) */}
-                  {displayMode === DisplayMode.Shader && tracks[currentIndex] && (
+                  {displayMode === DisplayMode.Shader &&
+                    shouldRenderFullScreenAnimatedVisuals &&
+                    tracks[currentIndex] && (
                     <AmbientBackground
                       coverUrl={fullscreenCoverUrl}
                       variant="warp"
-                      isActive={shouldAnimateFullScreenVisuals}
+                      isActive={shouldRenderFullScreenAnimatedVisuals}
                       className="fixed inset-0 z-[5]"
                     />
                   )}
 
                   {/* Mesh gradient background (fullscreen) */}
-                  {displayMode === DisplayMode.Mesh && tracks[currentIndex] && (
+                  {displayMode === DisplayMode.Mesh &&
+                    shouldRenderFullScreenAnimatedVisuals &&
+                    tracks[currentIndex] && (
                     <MeshGradientBackground
                       coverUrl={fullscreenCoverUrl}
-                      isActive={shouldAnimateFullScreenVisuals}
+                      isActive={shouldRenderFullScreenAnimatedVisuals}
                       className="fixed inset-0 z-[5]"
                     />
                   )}
 
                   {/* Water shader background (fullscreen) */}
-                  {displayMode === DisplayMode.Water && tracks[currentIndex] && (
+                  {displayMode === DisplayMode.Water &&
+                    shouldRenderFullScreenAnimatedVisuals &&
+                    tracks[currentIndex] && (
                     <WaterBackground
                       coverUrl={fullscreenCoverUrl}
-                      isActive={shouldAnimateFullScreenVisuals}
+                      isActive={shouldRenderFullScreenAnimatedVisuals}
                       className="fixed inset-0 z-[5]"
                     />
                   )}

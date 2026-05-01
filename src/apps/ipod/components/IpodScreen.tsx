@@ -304,7 +304,7 @@ export function IpodScreen({
             </div>
 
             {/* Landscape video background */}
-            {displayMode === DisplayMode.Landscapes && (
+            {displayMode === DisplayMode.Landscapes && shouldAnimateVisuals && (
               <LandscapeVideoBackground
                 isActive={shouldAnimateVisuals}
                 className="absolute inset-0 z-[5]"
@@ -312,7 +312,7 @@ export function IpodScreen({
             )}
 
             {/* Warp shader background */}
-            {displayMode === DisplayMode.Shader && (
+            {displayMode === DisplayMode.Shader && shouldAnimateVisuals && (
               <AmbientBackground
                 coverUrl={coverUrl}
                 variant="warp"
@@ -322,7 +322,7 @@ export function IpodScreen({
             )}
 
             {/* Mesh gradient background */}
-            {displayMode === DisplayMode.Mesh && (
+            {displayMode === DisplayMode.Mesh && shouldAnimateVisuals && (
               <MeshGradientBackground
                 coverUrl={coverUrl}
                 isActive={shouldAnimateVisuals}
@@ -331,7 +331,7 @@ export function IpodScreen({
             )}
 
             {/* Water shader background */}
-            {displayMode === DisplayMode.Water && (
+            {displayMode === DisplayMode.Water && shouldAnimateVisuals && (
               <WaterBackground
                 coverUrl={coverUrl}
                 isActive={shouldAnimateVisuals}

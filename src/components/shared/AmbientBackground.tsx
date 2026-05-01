@@ -222,6 +222,7 @@ export function AmbientBackground({
   // ---------- react to cover URL changes ----------
 
   useEffect(() => {
+    if (!isActive) return;
     if (!coverUrl || coverUrl === currentUrlRef.current) return;
     currentUrlRef.current = coverUrl;
 
@@ -244,7 +245,7 @@ export function AmbientBackground({
         showingBRef.current = !showingBRef.current;
       })
       .catch(() => {});
-  }, [coverUrl, loadTexture]);
+  }, [coverUrl, isActive, loadTexture]);
 
   // ---------- Three.js setup & animation ----------
 
