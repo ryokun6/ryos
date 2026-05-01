@@ -33,7 +33,7 @@ const COMPACT_DRAWER_INSET_PX = 12;
 const COMPACT_DRAWER_OVERLAP_TOP_PX = -8;
 
 /** Compact drawer height cap — scroll inside for long playlists. */
-const COMPACT_DRAWER_MAX_HEIGHT = "min(28dvh, 200px)";
+const COMPACT_DRAWER_MAX_HEIGHT = "min(30dvh, 216px)";
 
 // Slow enough to read as a real "panel sliding out" but fast enough to
 // not feel laggy. Matches the cadence of the channel-switch animation
