@@ -1024,7 +1024,10 @@ export function TvAppComponent({
           <TvVideoDrawer
             isOpen={isDrawerOpen && !isFullScreen}
             channel={currentChannel ?? null}
+            channels={channels}
+            currentChannelId={currentChannelId}
             currentVideoIndex={videoIndex}
+            onSelectChannel={setChannelById}
             onSelectVideo={selectVideoFromPlaylist}
             onRemoveVideo={playlistRemoveVideo}
           />

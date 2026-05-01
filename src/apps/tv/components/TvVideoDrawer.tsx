@@ -2,7 +2,7 @@ import { memo, useEffect, useMemo, useRef } from "react";
 import { motion, type Transition } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import type { Channel } from "@/apps/tv/data/channels";
+import { getChannelLogo, type Channel } from "@/apps/tv/data/channels";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -47,7 +47,11 @@ const DRAWER_TRANSITION: Transition = {
 interface TvVideoDrawerProps {
   isOpen: boolean;
   channel: Channel | null;
+  channels: Channel[];
+  currentChannelId: string;
   currentVideoIndex: number;
+  /** Tunes the TV to the picked channel. */
+  onSelectChannel: (channelId: string) => void;
   /** Plays the picked video on the current channel. */
   onSelectVideo: (index: number) => void;
   /**
@@ -56,6 +60,135 @@ interface TvVideoDrawerProps {
    */
   onRemoveVideo?: (videoId: string) => void;
 }
+
+function getChannelInitials(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return "TV";
+  const words = trimmed.split(/\s+/);
+  const chars =
+    words.length > 1
+      ? words.slice(0, 2).map((word) => word[0])
+      : Array.from(trimmed.replace(/\s+/g, "")).slice(0, 2);
+  return chars.join("").toUpperCase() || "TV";
+}
+
+interface TvChannelLogoStripProps {
+  isOpen: boolean;
+  channels: Channel[];
+  currentChannelId: string;
+  onSelectChannel: (channelId: string) => void;
+  isMacOSTheme: boolean;
+  isSystem7: boolean;
+  isXpTheme: boolean;
+  isWin98: boolean;
+}
+
+const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
+  isOpen,
+  channels,
+  currentChannelId,
+  onSelectChannel,
+  isMacOSTheme,
+  isSystem7,
+  isXpTheme,
+  isWin98,
+}: TvChannelLogoStripProps) {
+  const { t } = useTranslation();
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  useEffect(() => {
+    if (!isOpen) return;
+    buttonRefs.current
+      .get(currentChannelId)
+      ?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+  }, [currentChannelId, isOpen]);
+
+  return (
+    <div
+      className={cn(
+        "sticky top-0 z-10 shrink-0 border-b",
+        isMacOSTheme && "bg-[#f7f7f7]/95 border-black/15",
+        isSystem7 && "bg-white border-black",
+        isXpTheme && !isWin98 && "bg-[#ECE9D8] border-[#ACA899]",
+        isWin98 && "bg-[#C0C0C0] border-[#808080]"
+      )}
+    >
+      <div
+        ref={scrollerRef}
+        className="flex gap-2 overflow-x-auto overscroll-x-contain px-2 py-2 [scrollbar-width:thin]"
+      >
+        {channels.map((channel) => {
+          const logo = getChannelLogo(channel.id);
+          const isActive = channel.id === currentChannelId;
+          const channelLabel = t("apps.tv.channelBadge", {
+            number: String(channel.number).padStart(2, "0"),
+            name: channel.name,
+          });
+
+          return (
+            <button
+              key={channel.id}
+              ref={(node) => {
+                if (node) buttonRefs.current.set(channel.id, node);
+                else buttonRefs.current.delete(channel.id);
+              }}
+              type="button"
+              onClick={() => onSelectChannel(channel.id)}
+              aria-label={channelLabel}
+              aria-current={isActive ? "true" : undefined}
+              title={channelLabel}
+              className={cn(
+                "relative flex h-11 w-12 shrink-0 items-center justify-center overflow-hidden p-1 transition focus:outline-none focus-visible:ring-2",
+                isMacOSTheme &&
+                  "rounded-[5px] border border-black/20 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.18)] hover:bg-white",
+                isMacOSTheme &&
+                  isActive &&
+                  "border-[#2f6fd6] bg-[#dbeaff] ring-2 ring-[#3d84e5]/70",
+                isSystem7 &&
+                  "rounded-none border border-black bg-white hover:bg-black hover:text-white",
+                isSystem7 && isActive && "outline outline-2 outline-black outline-offset-[-4px]",
+                isXpTheme &&
+                  !isWin98 &&
+                  "rounded-[4px] border border-[#7f9db9] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] hover:bg-[#f4f8ff]",
+                isXpTheme &&
+                  !isWin98 &&
+                  isActive &&
+                  "border-[#0054E3] bg-[#dce9ff] ring-2 ring-[#316AC5]/50",
+                isWin98 &&
+                  "rounded-none border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] bg-[#C0C0C0]",
+                isWin98 &&
+                  isActive &&
+                  "border-t-[#808080] border-l-[#808080] border-b-white border-r-white bg-[#d8d8d8]"
+              )}
+            >
+              {logo ? (
+                <img
+                  src={logo}
+                  alt=""
+                  aria-hidden
+                  className="max-h-full max-w-full object-contain drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]"
+                />
+              ) : (
+                <span
+                  className={cn(
+                    "font-geneva-12 text-[10px] font-bold leading-none",
+                    isMacOSTheme && "text-black/70",
+                    isSystem7 && "font-chicago text-black",
+                    isXpTheme && "font-tahoma text-[#1f3f77]",
+                    isWin98 && "text-[#202020]"
+                  )}
+                >
+                  {getChannelInitials(channel.name)}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
 
 /**
  * Classic Mac-OS-X-style drawer attached to the right edge of the TV
@@ -74,7 +207,10 @@ interface TvVideoDrawerProps {
 export const TvVideoDrawer = memo(function TvVideoDrawer({
   isOpen,
   channel,
+  channels,
+  currentChannelId,
   currentVideoIndex,
+  onSelectChannel,
   onSelectVideo,
   onRemoveVideo,
 }: TvVideoDrawerProps) {
@@ -110,6 +246,19 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       name: channel.name,
     });
   }, [channel, t]);
+
+  const channelLogoStrip = (
+    <TvChannelLogoStrip
+      isOpen={isOpen}
+      channels={channels}
+      currentChannelId={currentChannelId}
+      onSelectChannel={onSelectChannel}
+      isMacOSTheme={isMacOSTheme}
+      isSystem7={isSystem7}
+      isXpTheme={isXpTheme}
+      isWin98={isWin98}
+    />
+  );
 
   const wrapperClass = cn(
     "absolute select-none flex flex-col"
@@ -198,6 +347,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
         {isMacOSTheme ? (
           <div className="tv-drawer-metal-inner flex flex-1 min-h-0 flex-col p-2">
             <div className="tv-drawer-mac-list-well flex flex-1 min-h-0 flex-col overflow-hidden">
+              {channelLogoStrip}
               <ul
                 ref={listRef}
                 className={listUlClass}
@@ -279,6 +429,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
           </div>
         ) : (
           <div className="flex flex-1 min-h-0 flex-col overflow-hidden p-2">
+            {channelLogoStrip}
             <ul
               ref={listRef}
               className={listUlClass}
