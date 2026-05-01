@@ -37,6 +37,7 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "fileAppletKeys",
   "customWallpaperKeys",
   "songTrackIds",
+  "tvCustomChannelIds",
 ] as const;
 
 export type CloudSyncDeletionBucket =
@@ -60,6 +61,7 @@ function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     fileAppletKeys: {},
     customWallpaperKeys: {},
     songTrackIds: {},
+    tvCustomChannelIds: {},
   };
 }
 
@@ -178,7 +180,7 @@ export function mergePersistedCloudSyncDomainStatus(
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 11;
+const STORE_VERSION = 12;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(

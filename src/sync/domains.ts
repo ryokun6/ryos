@@ -153,6 +153,7 @@ interface VideosSnapshotData {
 interface TvSnapshotData {
   customChannels: CustomChannel[];
   hiddenDefaultChannelIds?: string[];
+  deletedCustomChannelIds?: DeletionMarkerMap;
   lcdFilterOn: boolean;
   closedCaptionsOn: boolean;
 }
@@ -693,9 +694,11 @@ function serializeVideosSnapshot(): VideosSnapshotData {
 
 function serializeTvSnapshot(): TvSnapshotData {
   const tvState = useTvStore.getState();
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
   return {
     customChannels: tvState.customChannels,
     hiddenDefaultChannelIds: tvState.hiddenDefaultChannelIds,
+    deletedCustomChannelIds: deletionMarkers.tvCustomChannelIds,
     lcdFilterOn: tvState.lcdFilterOn,
     closedCaptionsOn: tvState.closedCaptionsOn,
   };
@@ -1110,8 +1113,23 @@ function applyVideosSnapshot(data: VideosSnapshotData): void {
 }
 
 function applyTvSnapshot(data: TvSnapshotData): void {
+  const remoteDeletedChannelIds = normalizeDeletionMarkerMap(
+    data.deletedCustomChannelIds
+  );
+  const cloudSyncState = useCloudSyncStore.getState();
+  const effectiveDeletedChannelIds = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.tvCustomChannelIds,
+    remoteDeletedChannelIds
+  );
+
+  cloudSyncState.mergeDeletedKeys("tvCustomChannelIds", remoteDeletedChannelIds);
+
   useTvStore.setState({
-    customChannels: Array.isArray(data.customChannels) ? data.customChannels : [],
+    customChannels: filterDeletedIds(
+      Array.isArray(data.customChannels) ? data.customChannels : [],
+      effectiveDeletedChannelIds,
+      (channel) => channel.id
+    ),
     hiddenDefaultChannelIds: Array.isArray(data.hiddenDefaultChannelIds)
       ? data.hiddenDefaultChannelIds
       : [],
@@ -1560,10 +1578,14 @@ function mergeTvSnapshots(
   local: TvSnapshotData,
   remote: TvSnapshotData
 ): TvSnapshotData {
+  const mergedDeleted = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(local.deletedCustomChannelIds),
+    normalizeDeletionMarkerMap(remote.deletedCustomChannelIds)
+  );
   return {
     customChannels: mergeItemsById(
-      local.customChannels || [],
-      remote.customChannels || []
+      filterDeletedIds(local.customChannels || [], mergedDeleted, (channel) => channel.id),
+      filterDeletedIds(remote.customChannels || [], mergedDeleted, (channel) => channel.id)
     ),
     hiddenDefaultChannelIds: Array.from(
       new Set([
@@ -1571,6 +1593,7 @@ function mergeTvSnapshots(
         ...(remote.hiddenDefaultChannelIds || []),
       ])
     ),
+    deletedCustomChannelIds: mergedDeleted,
     lcdFilterOn: local.lcdFilterOn,
     closedCaptionsOn: local.closedCaptionsOn,
   };

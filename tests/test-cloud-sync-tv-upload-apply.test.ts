@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { CustomChannel } from "../src/stores/useTvStore";
+import type { DeletionMarkerMap } from "../src/utils/cloudSyncDeletionMarkers";
 import type { CloudSyncDomainMetadata } from "../src/utils/cloudSyncShared";
 
 class MemoryStorage implements Storage {
@@ -180,7 +181,7 @@ beforeAll(() => {
   createBrowserTestEnvironment();
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   createBrowserTestEnvironment();
   browserGlobals.localStorage.setItem(
     "ryos:tv",
@@ -194,6 +195,13 @@ beforeEach(() => {
       version: 4,
     })
   );
+  const { useCloudSyncStore } = await import("../src/stores/useCloudSyncStore");
+  useCloudSyncStore.setState((state) => ({
+    deletionMarkers: {
+      ...state.deletionMarkers,
+      tvCustomChannelIds: {},
+    },
+  }));
 });
 
 afterAll(() => {
@@ -278,6 +286,7 @@ describe("cloud sync TV upload apply", () => {
         data: {
           customChannels: CustomChannel[];
           hiddenDefaultChannelIds: string[];
+          deletedCustomChannelIds?: Record<string, string>;
           lcdFilterOn: boolean;
           closedCaptionsOn: boolean;
         };
@@ -290,6 +299,7 @@ describe("cloud sync TV upload apply", () => {
         "taiwan",
         "tokki-mix",
       ]);
+      expect(payload.data.deletedCustomChannelIds ?? {}).toEqual({});
       expect(payload.data.lcdFilterOn).toBe(true);
       expect(payload.data.closedCaptionsOn).toBe(true);
 
@@ -301,6 +311,81 @@ describe("cloud sync TV upload apply", () => {
       expect(queuedDuringApply).toEqual([]);
     } finally {
       unsubscribe();
+      globalThis.fetch = originalFetch;
+      invalidateRedisStateSnapshotForUpload(username, "tv");
+    }
+  });
+
+  test("TV upload merge respects existing custom channel deletion markers", async () => {
+    const { useTvStore } = await import("../src/stores/useTvStore");
+    const { useCloudSyncStore } = await import("../src/stores/useCloudSyncStore");
+    const { prepareCloudSyncDomainWrite, invalidateRedisStateSnapshotForUpload } =
+      await import("../src/sync/domains");
+
+    const username = `tv-reset-deleted-${Date.now()}`;
+    invalidateRedisStateSnapshotForUpload(username, "tv");
+    useTvStore.setState({
+      currentChannelId: "ryos-picks",
+      customChannels: [makeChannel("remote")],
+      hiddenDefaultChannelIds: [],
+      lcdFilterOn: true,
+      closedCaptionsOn: true,
+    });
+    useTvStore.getState().resetChannels();
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      if (url.endsWith("/api/sync/domains/tv")) {
+        return new Response(
+          JSON.stringify({
+            parts: {
+              tv: {
+                metadata: makeMetadata("2026-03-22T09:55:00.000Z"),
+                data: {
+                  customChannels: [makeChannel("remote")],
+                  hiddenDefaultChannelIds: [],
+                  lcdFilterOn: false,
+                  closedCaptionsOn: false,
+                },
+              },
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      throw new Error(`Unexpected fetch in test: ${url}`);
+    }) as typeof fetch;
+
+    try {
+      const prepared = await prepareCloudSyncDomainWrite("tv", {
+        username,
+        isAuthenticated: true,
+      });
+      const payload = prepared.payload as {
+        data: {
+          customChannels: CustomChannel[];
+          deletedCustomChannelIds: DeletionMarkerMap;
+        };
+      };
+
+      expect(payload.data.customChannels).toEqual([]);
+      expect(payload.data.deletedCustomChannelIds.remote).toBeString();
+
+      await prepared.onCommitted?.(makeMetadata("2026-03-22T10:00:00.000Z"));
+      expect(useTvStore.getState().customChannels).toEqual([]);
+      expect(
+        useCloudSyncStore.getState().deletionMarkers.tvCustomChannelIds.remote
+      ).toBeString();
+    } finally {
       globalThis.fetch = originalFetch;
       invalidateRedisStateSnapshotForUpload(username, "tv");
     }
