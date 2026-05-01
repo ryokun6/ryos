@@ -333,7 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app exportado correctamente.",
         "appletImported": "Applet importado!",
         "appletImportedDescription": "{{fileName}} guardado en /Applets{{iconText}}",
-        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
+        "appletImportedIconSuffix": " con el icono {{icon}}",
         "appletNotFound": "Applet no encontrado",
         "appletNotFoundDescription": "El applet compartido puede haber sido eliminado o el enlace es inválido.",
         "appletSaved": "Applet guardado",
@@ -714,7 +714,7 @@
         "clear": "Borrar",
         "createAccountToContinue": "Crea una cuenta para continuar...",
         "dailyLimitReached": "Límite diario de mensajes de IA alcanzado.",
-        "describeThisImage": "[TODO] Describe this image",
+        "describeThisImage": "Describe esta imagen",
         "editing": "editando...",
         "leave": "Salir",
         "listening": "Escuchando",
@@ -742,20 +742,20 @@
         "usingModel": "Usando {{model}}"
       },
       "toasts": {
-        "aiError": "[TODO] AI Error",
-        "failedToGetResponse": "[TODO] Failed to get response.",
-        "failedToSaveTranscript": "[TODO] Failed to save transcript",
-        "loginButton": "[TODO] Login",
-        "loginRequired": "[TODO] Login Required",
-        "open": "[TODO] Open",
-        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
-        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
-        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
-        "savedToFileName": "[TODO] Saved to {{fileName}}",
-        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
-        "transcriptSaved": "[TODO] Transcript saved",
-        "transcriptUpdated": "[TODO] Transcript updated",
-        "unknownError": "[TODO] Unknown error"
+        "aiError": "Error de IA",
+        "failedToGetResponse": "Error al obtener la respuesta.",
+        "failedToSaveTranscript": "Error al guardar la transcripción",
+        "loginButton": "Iniciar sesión",
+        "loginRequired": "Inicio de sesión requerido",
+        "open": "Abrir",
+        "pleaseLoginToContinueChatting": "Inicia sesión para continuar chateando.",
+        "rateLimitExceeded": "Límite de frecuencia excedido",
+        "rateLimitMessageLimitLogin": "Has alcanzado el límite de mensajes. Inicia sesión para continuar.",
+        "savedToFileName": "Guardado en {{fileName}}",
+        "sessionExpiredLoginAgain": "Tu sesión ha caducado. Inicia sesión de nuevo.",
+        "transcriptSaved": "Transcripción guardada",
+        "transcriptUpdated": "Transcripción actualizada",
+        "unknownError": "Error desconocido"
       },
       "tokenStatus": {
         "authenticated": "Sesión iniciada",
@@ -3057,10 +3057,10 @@
       },
       "description": "Haz zapping en YouTube",
       "drawer": {
-        "close": "[TODO] Hide videos",
-        "empty": "[TODO] No videos on this channel yet.",
-        "removeVideo": "[TODO] Remove from channel",
-        "title": "[TODO] Schedule"
+        "close": "Ocultar videos",
+        "empty": "Aún no hay videos en este canal.",
+        "removeVideo": "Eliminar del canal",
+        "title": "Programar"
       },
       "help": {
         "channels": {
@@ -3106,7 +3106,7 @@
         "play": "Reproducir",
         "previous": "Anterior",
         "resetChannels": "Restablecer canales...",
-        "showVideos": "[TODO] Show Videos",
+        "showVideos": "Mostrar vídeos",
         "tvHelp": "Ayuda de TV"
       },
       "name": "TV",

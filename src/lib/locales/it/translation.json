@@ -333,7 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app esportato correttamente.",
         "appletImported": "Applet importata!",
         "appletImportedDescription": "{{fileName}} salvato in /Applets{{iconText}}",
-        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
+        "appletImportedIconSuffix": " con l'icona {{icon}}",
         "appletNotFound": "Applet non trovata",
         "appletNotFoundDescription": "L'applet condivisa potrebbe essere stata eliminata o il link non è valido.",
         "appletSaved": "Applet salvata",
@@ -714,7 +714,7 @@
         "clear": "Cancella",
         "createAccountToContinue": "Crea un account per continuare...",
         "dailyLimitReached": "Limite giornaliero di messaggi IA raggiunto.",
-        "describeThisImage": "[TODO] Describe this image",
+        "describeThisImage": "Descrivi questa immagine",
         "editing": "modifica in corso...",
         "leave": "Esci",
         "listening": "In ascolto",
@@ -742,20 +742,20 @@
         "usingModel": "Utilizzo di {{model}}"
       },
       "toasts": {
-        "aiError": "[TODO] AI Error",
-        "failedToGetResponse": "[TODO] Failed to get response.",
-        "failedToSaveTranscript": "[TODO] Failed to save transcript",
-        "loginButton": "[TODO] Login",
-        "loginRequired": "[TODO] Login Required",
-        "open": "[TODO] Open",
-        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
-        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
-        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
-        "savedToFileName": "[TODO] Saved to {{fileName}}",
-        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
-        "transcriptSaved": "[TODO] Transcript saved",
-        "transcriptUpdated": "[TODO] Transcript updated",
-        "unknownError": "[TODO] Unknown error"
+        "aiError": "Errore IA",
+        "failedToGetResponse": "Impossibile ottenere una risposta.",
+        "failedToSaveTranscript": "Impossibile salvare la trascrizione",
+        "loginButton": "Accedi",
+        "loginRequired": "Accesso richiesto",
+        "open": "Apri",
+        "pleaseLoginToContinueChatting": "Accedi per continuare a chattare.",
+        "rateLimitExceeded": "Limite di richieste superato",
+        "rateLimitMessageLimitLogin": "Hai raggiunto il limite di messaggi. Accedi per continuare.",
+        "savedToFileName": "Salvato in {{fileName}}",
+        "sessionExpiredLoginAgain": "La sessione è scaduta. Effettua di nuovo l'accesso.",
+        "transcriptSaved": "Trascrizione salvata",
+        "transcriptUpdated": "Trascrizione aggiornata",
+        "unknownError": "Errore sconosciuto"
       },
       "tokenStatus": {
         "authenticated": "Accesso effettuato",
@@ -3057,10 +3057,10 @@
       },
       "description": "Fai zapping su YouTube",
       "drawer": {
-        "close": "[TODO] Hide videos",
-        "empty": "[TODO] No videos on this channel yet.",
-        "removeVideo": "[TODO] Remove from channel",
-        "title": "[TODO] Schedule"
+        "close": "Nascondi video",
+        "empty": "Ancora nessun video su questo canale.",
+        "removeVideo": "Rimuovi dal canale",
+        "title": "Programma"
       },
       "help": {
         "channels": {
@@ -3106,7 +3106,7 @@
         "play": "Riproduci",
         "previous": "Precedente",
         "resetChannels": "Ripristina canali...",
-        "showVideos": "[TODO] Show Videos",
+        "showVideos": "Mostra video",
         "tvHelp": "Aiuto TV"
       },
       "name": "TV",
