@@ -3060,6 +3060,7 @@
         "close": "Masquer les vidéos",
         "empty": "Aucune vidéo sur cette chaîne pour le moment.",
         "removeVideo": "Retirer de la chaîne",
+        "resizeHandle": "[TODO] Resize playlist height",
         "title": "Programmer"
       },
       "help": {

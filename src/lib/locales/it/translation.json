@@ -3060,6 +3060,7 @@
         "close": "Nascondi video",
         "empty": "Ancora nessun video su questo canale.",
         "removeVideo": "Rimuovi dal canale",
+        "resizeHandle": "[TODO] Resize playlist height",
         "title": "Programma"
       },
       "help": {

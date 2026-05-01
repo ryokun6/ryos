@@ -3060,6 +3060,7 @@
         "close": "動画を非表示にする",
         "empty": "このチャンネルにはまだ動画がありません。",
         "removeVideo": "チャンネルから削除",
+        "resizeHandle": "[TODO] Resize playlist height",
         "title": "スケジュール"
       },
       "help": {

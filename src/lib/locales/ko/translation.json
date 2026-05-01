@@ -3060,6 +3060,7 @@
         "close": "동영상 숨기기",
         "empty": "이 채널에 아직 동영상이 없습니다.",
         "removeVideo": "채널에서 제거",
+        "resizeHandle": "[TODO] Resize playlist height",
         "title": "예약"
       },
       "help": {

@@ -1690,7 +1690,8 @@
         "title": "Schedule",
         "empty": "No videos on this channel yet.",
         "close": "Hide videos",
-        "removeVideo": "Remove from channel"
+        "removeVideo": "Remove from channel",
+        "resizeHandle": "Resize playlist height"
       },
       "reset": {
         "title": "Reset Channels",

@@ -3060,6 +3060,7 @@
         "close": "Videos ausblenden",
         "empty": "Noch keine Videos auf diesem Kanal.",
         "removeVideo": "Vom Kanal entfernen",
+        "resizeHandle": "[TODO] Resize playlist height",
         "title": "Planen"
       },
       "help": {

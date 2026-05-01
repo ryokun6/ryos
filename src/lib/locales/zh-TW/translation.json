@@ -3060,6 +3060,7 @@
         "close": "隱藏影片",
         "empty": "此頻道尚無影片。",
         "removeVideo": "從頻道中移除",
+        "resizeHandle": "[TODO] Resize playlist height",
         "title": "排程"
       },
       "help": {

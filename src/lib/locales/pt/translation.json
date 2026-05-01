@@ -3060,6 +3060,7 @@
         "close": "Ocultar vídeos",
         "empty": "Ainda não há vídeos neste canal.",
         "removeVideo": "Remover do canal",
+        "resizeHandle": "[TODO] Resize playlist height",
         "title": "Agendar"
       },
       "help": {

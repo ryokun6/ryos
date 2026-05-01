@@ -3060,6 +3060,7 @@
         "close": "Скрыть видео",
         "empty": "На этом канале пока нет видео.",
         "removeVideo": "Удалить с канала",
+        "resizeHandle": "[TODO] Resize playlist height",
         "title": "Запланировать"
       },
       "help": {

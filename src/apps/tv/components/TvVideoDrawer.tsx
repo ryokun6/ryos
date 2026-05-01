@@ -1,13 +1,27 @@
-import { memo, useEffect, useMemo, useRef } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { motion, type Transition } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getChannelLogo, type Channel } from "@/apps/tv/data/channels";
+import {
+  clampTvCompactDrawerHeightPx,
+  defaultTvCompactDrawerHeightPx,
+  getTvCompactDrawerHeightBounds,
+  TV_COMPACT_DRAWER_HEIGHT_LS_KEY,
+} from "@/apps/tv/utils/compactDrawerHeight";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { Trash } from "@phosphor-icons/react";
+import { DotsSixVertical, Trash } from "@phosphor-icons/react";
 
 const DRAWER_WIDTH = 240;
 
@@ -31,9 +45,6 @@ const COMPACT_DRAWER_INSET_PX = 12;
  * Matches macOS brushed-metal `mb-[8px]` on the TV window content in WindowFrame.
  */
 const COMPACT_DRAWER_OVERLAP_TOP_PX = -8;
-
-/** Compact drawer height cap — scroll inside for long playlists. */
-const COMPACT_DRAWER_MAX_HEIGHT = "min(28dvh, 200px)";
 
 // Slow enough to read as a real "panel sliding out" but fast enough to
 // not feel laggy. Matches the cadence of the channel-switch animation
@@ -60,6 +71,27 @@ interface TvVideoDrawerProps {
    * Deletes from the backing library (Videos / iPod / custom channel).
    */
   onRemoveVideo?: (videoId: string) => void;
+}
+
+function readStoredCompactDrawerHeightPx(): number | null {
+  try {
+    const raw = window.localStorage.getItem(TV_COMPACT_DRAWER_HEIGHT_LS_KEY);
+    if (!raw) return null;
+    const n = Number.parseInt(raw, 10);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function getViewportHeightForClamp(): number {
+  if (typeof window === "undefined") return 600;
+  return (
+    window.visualViewport?.height ??
+    window.innerHeight ??
+    document.documentElement?.clientHeight ??
+    600
+  );
 }
 
 function getChannelInitials(name: string): string {
@@ -229,6 +261,199 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
   const listRef = useRef<HTMLUListElement>(null);
   const activeItemRef = useRef<HTMLLIElement>(null);
 
+  /** Viewport height for clamping compact drawer resize (tracks visual viewport on mobile). */
+  const [compactViewportH, setCompactViewportH] = useState(
+    typeof window !== "undefined" ? getViewportHeightForClamp() : 600
+  );
+  /** User-resizable playlist height on compact layout; persists in localStorage */
+  const [compactDrawerHeightPx, setCompactDrawerHeightPx] = useState(() =>
+    typeof window !== "undefined"
+      ? defaultTvCompactDrawerHeightPx(window.innerHeight)
+      : 200
+  );
+
+  useEffect(() => {
+    if (!isCompactDrawer) return;
+
+    const syncViewport = () => {
+      const vh = getViewportHeightForClamp();
+      setCompactViewportH(vh);
+      setCompactDrawerHeightPx((prev) =>
+        clampTvCompactDrawerHeightPx(prev, vh)
+      );
+    };
+
+    const vh = getViewportHeightForClamp();
+    const stored = readStoredCompactDrawerHeightPx();
+    const initialPx =
+      stored != null ? clampTvCompactDrawerHeightPx(stored, vh) :
+        defaultTvCompactDrawerHeightPx(vh);
+
+    setCompactViewportH(vh);
+    setCompactDrawerHeightPx(initialPx);
+
+    window.visualViewport?.addEventListener("resize", syncViewport);
+    window.visualViewport?.addEventListener("scroll", syncViewport);
+    window.addEventListener("resize", syncViewport);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("scroll", syncViewport);
+      window.removeEventListener("resize", syncViewport);
+    };
+  }, [isCompactDrawer]);
+
+  const compactResizeGestureRef = useRef<{
+    startY: number;
+    startHeight: number;
+    pointerId: number;
+    moveListener: ((e: PointerEvent) => void) | null;
+    upListener: (() => void) | null;
+  } | null>(null);
+
+  const persistCompactDrawerHeight = useCallback((px: number) => {
+    try {
+      window.localStorage.setItem(
+        TV_COMPACT_DRAWER_HEIGHT_LS_KEY,
+        String(px)
+      );
+    } catch {
+      /* ignore quota / privacy mode */
+    }
+  }, []);
+
+  const teardownCompactDrawerPointerResize = useCallback(() => {
+    const g = compactResizeGestureRef.current;
+    if (!g) return;
+    if (g.moveListener) {
+      window.removeEventListener("pointermove", g.moveListener);
+    }
+    if (g.upListener) {
+      window.removeEventListener("pointerup", g.upListener);
+      window.removeEventListener("pointercancel", g.upListener);
+    }
+    compactResizeGestureRef.current = null;
+  }, []);
+
+  const handleCompactDrawerResizePointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLButtonElement>) => {
+      if (!isCompactDrawer || !isMobileUi) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const el = e.currentTarget;
+      if (el.setPointerCapture) {
+        el.setPointerCapture(e.pointerId);
+      }
+
+      const startedAt = compactDrawerHeightPx;
+      teardownCompactDrawerPointerResize();
+      compactResizeGestureRef.current = {
+        pointerId: e.pointerId,
+        startY: e.clientY,
+        startHeight: startedAt,
+        moveListener: null,
+        upListener: null,
+      };
+
+      const onMove = (pe: PointerEvent) => {
+        const state = compactResizeGestureRef.current;
+        if (!state || pe.pointerId !== state.pointerId) return;
+        if (pe.pointerType === "mouse" && (pe.buttons & 1) === 0) return;
+        const dy = pe.clientY - state.startY;
+        const innerH = state.startHeight + dy;
+        const vh = getViewportHeightForClamp();
+        setCompactViewportH(vh);
+        const next = clampTvCompactDrawerHeightPx(innerH, vh);
+        setCompactDrawerHeightPx(next);
+      };
+
+      const onUp = () => {
+        teardownCompactDrawerPointerResize();
+        setCompactDrawerHeightPx((prev) => {
+          const vh = getViewportHeightForClamp();
+          const next = clampTvCompactDrawerHeightPx(prev, vh);
+          persistCompactDrawerHeight(next);
+          return next;
+        });
+        if (
+          typeof el.releasePointerCapture === "function"
+        ) {
+          try {
+            el.releasePointerCapture(e.pointerId);
+          } catch {
+            /* noop */
+          }
+        }
+      };
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
+
+      if (compactResizeGestureRef.current) {
+        compactResizeGestureRef.current.moveListener = onMove;
+        compactResizeGestureRef.current.upListener = onUp;
+      }
+    },
+    [
+      compactDrawerHeightPx,
+      isCompactDrawer,
+      isMobileUi,
+      persistCompactDrawerHeight,
+      teardownCompactDrawerPointerResize,
+    ]
+  );
+
+  useEffect(
+    () => () => teardownCompactDrawerPointerResize(),
+    [teardownCompactDrawerPointerResize]
+  );
+
+  const { maxPx: compactMaxPx } = useMemo(
+    () =>
+      getTvCompactDrawerHeightBounds(
+        compactViewportH > 0 ? compactViewportH : getViewportHeightForClamp()
+      ),
+    [compactViewportH]
+  );
+
+  const compactDrawerResizeGrip = (
+    isCompactDrawer &&
+    isMobileUi && (
+      <button
+        type="button"
+        data-testid="tv-compact-drawer-resize-handle"
+        aria-label={t("apps.tv.drawer.resizeHandle")}
+        className={cn(
+          "tv-compact-drawer-resize-handle shrink-0 flex w-full items-center justify-center py-2 touch-none outline-none cursor-ns-resize select-none",
+          isMacOSTheme &&
+            "border-t border-black/12 bg-black/[0.06] hover:bg-black/10 active:bg-black/[0.14]",
+          isSystem7 &&
+            "border-t border-black bg-neutral-100 hover:bg-neutral-200 active:bg-neutral-300",
+          isXpTheme &&
+            !isWin98 &&
+            "border-t border-[#ACA899] bg-[#ECE9D8] hover:bg-[#dcd8ce] active:bg-[#d0cbc0]",
+          isWin98 &&
+            "border-t border-[#808080] bg-[#C0C0C0] hover:bg-[#b8b8b8]"
+        )}
+        style={{ touchAction: "none" }}
+        onPointerDown={handleCompactDrawerResizePointerDown}
+      >
+        <DotsSixVertical
+          size={22}
+          weight="bold"
+          className={cn(
+            "pointer-events-none opacity-45",
+            isMacOSTheme && "text-black/55",
+            isSystem7 && "text-black",
+            isXpTheme && !isWin98 && "text-[#1f3f77]/70",
+            isWin98 && "text-[#303030]"
+          )}
+          aria-hidden
+        />
+      </button>
+    )
+  );
+
   // Auto-scroll the now-playing entry into view when the drawer opens
   // or the channel/index changes. Without this, opening the drawer on a
   // long playlist could land miles away from the actively-playing clip.
@@ -324,8 +549,9 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
         right: COMPACT_DRAWER_INSET_PX,
         top: "100%",
         bottom: "auto",
-        maxHeight: COMPACT_DRAWER_MAX_HEIGHT,
-        height: "auto",
+        height: compactDrawerHeightPx,
+        minHeight: compactDrawerHeightPx,
+        maxHeight: compactMaxPx,
         zIndex: 0,
         marginTop: COMPACT_DRAWER_OVERLAP_TOP_PX,
         paddingBottom: "max(0px, env(safe-area-inset-bottom, 0px))",
@@ -446,6 +672,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                   })
                 )}
               </ul>
+              {compactDrawerResizeGrip}
             </div>
           </div>
         ) : (
@@ -556,6 +783,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                 })
               )}
             </ul>
+            {compactDrawerResizeGrip}
           </div>
         )}
       </div>
