@@ -6,6 +6,7 @@ import { getChannelLogo, type Channel } from "@/apps/tv/data/channels";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useSound, Sounds } from "@/hooks/useSound";
 import { Trash } from "@phosphor-icons/react";
 
 const DRAWER_WIDTH = 240;
@@ -139,7 +140,7 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
               aria-current={isActive ? "true" : undefined}
               title={channelLabel}
               className={cn(
-                "relative flex h-11 w-12 shrink-0 items-center justify-center overflow-hidden p-1 transition focus:outline-none focus-visible:ring-2",
+                "relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden p-1 transition focus:outline-none focus-visible:ring-2",
                 isMacOSTheme &&
                   "rounded-[5px] border border-black/20 bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.18)] hover:bg-white",
                 isMacOSTheme &&
@@ -237,6 +238,26 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
     if (!el) return;
     el.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [isOpen, channel?.id, currentVideoIndex]);
+
+  // Drawer slide-out / slide-in feedback. Reuses the OS window
+  // expand/collapse SFX so the drawer feels of a piece with the rest
+  // of WindowFrame's chrome. Skip the initial mount so opening the TV
+  // app doesn't fire a phantom drawer sound when the prop defaults to
+  // its starting value.
+  const { play: playDrawerOpen } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE);
+  const { play: playDrawerClose } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE);
+  const drawerSoundMountedRef = useRef(false);
+  useEffect(() => {
+    if (!drawerSoundMountedRef.current) {
+      drawerSoundMountedRef.current = true;
+      return;
+    }
+    if (isOpen) {
+      void playDrawerOpen();
+    } else {
+      void playDrawerClose();
+    }
+  }, [isOpen, playDrawerOpen, playDrawerClose]);
 
   // Visible chrome is playlist-only; expose channel context to AT.
   const listAriaLabel = useMemo(() => {
