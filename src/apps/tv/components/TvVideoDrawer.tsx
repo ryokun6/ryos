@@ -23,7 +23,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Trash } from "@phosphor-icons/react";
 
-/** Narrow invisible resize strip along the drawer’s top rim (toward TV window overlap). */
+/** Narrow invisible resize strip along the compact drawer bottom rim. */
 const COMPACT_DRAWER_RESIZE_EDGE_PX = 12;
 
 const DRAWER_WIDTH = 240;
@@ -419,7 +419,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
     [compactViewportH]
   );
 
-  /** Invisible rim hit target — avoids an extra chrome row and keeps taps on channel logos. */
+  /** Invisible bottom rim hit target — avoids extra chrome; drag up/down adjusts height from the footer edge. */
   const compactDrawerResizeEdgeOverlay =
     isCompactDrawer &&
     isMobileUi && (
@@ -427,7 +427,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
         type="button"
         data-testid="tv-compact-drawer-resize-handle"
         aria-label={t("apps.tv.drawer.resizeHandle")}
-        className="absolute inset-x-0 top-[-4px] z-20 shrink-0 touch-none bg-transparent outline-none cursor-ns-resize select-none border-0 p-0 m-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-black/25"
+        className="absolute inset-x-0 bottom-0 z-20 shrink-0 touch-none bg-transparent outline-none cursor-ns-resize select-none border-0 p-0 m-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-black/25"
         style={{
           touchAction: "none",
           height: COMPACT_DRAWER_RESIZE_EDGE_PX,
