@@ -18,11 +18,19 @@ describe("TV default channels", () => {
 
   test("prepopulates static default channel library as built-ins", () => {
     const prepopulated = DEFAULT_CHANNELS.slice(2);
-    expect(prepopulated).toHaveLength(14);
+    expect(prepopulated).toHaveLength(17);
     expect(prepopulated.reduce((sum, channel) => sum + channel.videos.length, 0))
-      .toBe(326);
+      .toBe(381);
     expect(prepopulated.every((channel) => !channel.id.startsWith("custom-")))
       .toBe(true);
+  });
+
+  test("includes the latest attached default channel export", () => {
+    expect(DEFAULT_CHANNELS.map((channel) => channel.id)).toContainAllValues([
+      "hallyu-origin",
+      "sim-grid",
+      "mandopop-jukebox",
+    ]);
   });
 
   test("has unique built-in ids and sequential lineup numbers", () => {
