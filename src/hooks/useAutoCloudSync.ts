@@ -1086,6 +1086,9 @@ export function useAutoCloudSync() {
           const tvState = useTvStore.getState();
           const hasLocalTvState =
             tvState.customChannels.length > 0 ||
+            tvState.hiddenDefaultChannelIds.length > 0 ||
+            Boolean(tvState.hiddenDefaultChannelIdsUpdatedAt) ||
+            Boolean(tvState.hiddenDefaultChannelIdsResetAt) ||
             tvState.lcdFilterOn !== true ||
             tvState.closedCaptionsOn !== true;
           if (hasLocalTvState) {
@@ -1467,6 +1470,10 @@ export function useAutoCloudSync() {
       if (
         state.customChannels !== prevState.customChannels ||
         state.hiddenDefaultChannelIds !== prevState.hiddenDefaultChannelIds ||
+        state.hiddenDefaultChannelIdsUpdatedAt !==
+          prevState.hiddenDefaultChannelIdsUpdatedAt ||
+        state.hiddenDefaultChannelIdsResetAt !==
+          prevState.hiddenDefaultChannelIdsResetAt ||
         state.lcdFilterOn !== prevState.lcdFilterOn ||
         state.closedCaptionsOn !== prevState.closedCaptionsOn
       ) {
