@@ -25,6 +25,32 @@ import { preprocessImage } from "@/utils/imagePreprocessing";
 // Number of frequency bands for the full-width waveform
 const WAVEFORM_BANDS = 48;
 
+/** True when keyboard focus is in a text field other than this component's main input (e.g. tool cards). */
+function focusIsInOtherTextField(mainInputEl: HTMLInputElement | null): boolean {
+  const active = document.activeElement;
+  if (!active || !(active instanceof HTMLElement)) return false;
+  if (mainInputEl && active === mainInputEl) return false;
+  if (active.isContentEditable) return true;
+  const tag = active.tagName;
+  if (tag === "TEXTAREA") return true;
+  if (tag === "INPUT") {
+    const input = active as HTMLInputElement;
+    if (input.readOnly || input.disabled) return false;
+    const textLikeTypes = new Set([
+      "text",
+      "search",
+      "email",
+      "password",
+      "url",
+      "tel",
+      "number",
+      "",
+    ]);
+    return textLikeTypes.has(input.type);
+  }
+  return Boolean(active.closest("[contenteditable=true]"));
+}
+
 // Animated ellipsis component (copied from TerminalAppComponent)
 function AnimatedEllipsis() {
   const [dots, setDots] = useState("");
@@ -392,6 +418,7 @@ export function ChatInput({
         !e.repeat &&
         isForeground &&
         !isFocused &&
+        !focusIsInOtherTextField(inputRef.current) &&
         !isTranscribing
       ) {
         e.preventDefault();
@@ -400,7 +427,13 @@ export function ChatInput({
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space" && isForeground && !isFocused && isTranscribing) {
+      if (
+        e.code === "Space" &&
+        isForeground &&
+        !isFocused &&
+        !focusIsInOtherTextField(inputRef.current) &&
+        isTranscribing
+      ) {
         e.preventDefault();
         audioButtonRef.current?.click();
       }
