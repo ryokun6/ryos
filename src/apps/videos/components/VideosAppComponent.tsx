@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type RefObject } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useIsPresent } from "framer-motion";
 import ReactPlayer from "react-player";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { cn } from "@/lib/utils";
@@ -157,50 +157,72 @@ function AnimatedTitle({
   );
 }
 
-function WhiteNoiseEffect() {
+function WhiteNoiseEffect({ active }: { active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const [brightness, setBrightness] = useState(0);
+  const brightnessAnimationFrameRef = useRef<number | null>(null);
+  const brightnessRef = useRef(0);
 
   useEffect(() => {
+    if (!active) {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
-    const drawNoise = () => {
-      const imageData = ctx.createImageData(canvas.width, canvas.height);
-      const data = imageData.data;
+    let imageData: ImageData | null = null;
+    let pixels32: Uint32Array | null = null;
 
-      for (let i = 0; i < data.length; i += 4) {
-        const value = Math.random() * 255 * brightness;
-        data[i] = value; // R
-        data[i + 1] = value; // G
-        data[i + 2] = value; // B
-        data[i + 3] = 255; // A
+    const resizeCanvas = () => {
+      // Render at 1/1.5x CSS resolution; the browser upscales each
+      // canvas pixel ~1.5x on screen, giving slightly chunky analog
+      // grain without the per-frame fill cost of full-res.
+      const width = Math.max(1, Math.floor(canvas.offsetWidth / 1.5));
+      const height = Math.max(1, Math.floor(canvas.offsetHeight / 1.5));
+      const sizeChanged = canvas.width !== width || canvas.height !== height;
+      if (sizeChanged) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      if (sizeChanged || !imageData || !pixels32) {
+        imageData = ctx.createImageData(width, height);
+        pixels32 = new Uint32Array(imageData.data.buffer);
+      }
+    };
+
+    const drawNoise = () => {
+      if (!imageData || !pixels32) {
+        animationFrameRef.current = requestAnimationFrame(drawNoise);
+        return;
       }
 
-      // Add scan lines
+      const brightness = brightnessRef.current;
+      const len = pixels32.length;
+      for (let i = 0; i < len; i++) {
+        const value = (Math.random() * 255 * brightness) | 0;
+        pixels32[i] = 0xff000000 | (value << 16) | (value << 8) | value;
+      }
+
+      // Add scan lines using the packed pixel view to keep the frame loop cheap.
       for (let y = 0; y < canvas.height; y += 2) {
-        for (let x = 0; x < canvas.width; x++) {
-          const i = (y * canvas.width + x) * 4;
-          data[i] *= 0.8; // R
-          data[i + 1] *= 0.8; // G
-          data[i + 2] *= 0.8; // B
+        const rowStart = y * canvas.width;
+        const rowEnd = rowStart + canvas.width;
+        for (let i = rowStart; i < rowEnd; i++) {
+          const value = ((pixels32[i] & 0xff) * 205) >> 8;
+          pixels32[i] = 0xff000000 | (value << 16) | (value << 8) | value;
         }
       }
 
       ctx.putImageData(imageData, 0, 0);
       animationFrameRef.current = requestAnimationFrame(drawNoise);
-    };
-
-    const resizeCanvas = () => {
-      // Render at 1/1.5× CSS resolution; the browser upscales each
-      // canvas pixel ~1.5× on screen, giving slightly chunky analog
-      // grain without the per-frame fill cost of full-res.
-      canvas.width = Math.max(1, Math.floor(canvas.offsetWidth / 1.5));
-      canvas.height = Math.max(1, Math.floor(canvas.offsetHeight / 1.5));
     };
 
     resizeCanvas();
@@ -214,31 +236,50 @@ function WhiteNoiseEffect() {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
+      imageData = null;
+      pixels32 = null;
     };
-  }, [brightness]);
+  }, [active]);
 
   // Animate brightness
   useEffect(() => {
+    if (!active) {
+      if (brightnessAnimationFrameRef.current !== null) {
+        cancelAnimationFrame(brightnessAnimationFrameRef.current);
+        brightnessAnimationFrameRef.current = null;
+      }
+      brightnessRef.current = 0;
+      return;
+    }
+
     const duration = 1000; // 1 second animation
-    const startTime = Date.now();
+    const startTime = performance.now();
     const startBrightness = 0;
     const targetBrightness = 1;
+    brightnessRef.current = startBrightness;
 
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const easeOut = 1 - Math.pow(1 - progress, 3); // Cubic ease out
-      setBrightness(
-        startBrightness + (targetBrightness - startBrightness) * easeOut
-      );
+      brightnessRef.current = startBrightness + (targetBrightness - startBrightness) * easeOut;
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        brightnessAnimationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        brightnessAnimationFrameRef.current = null;
       }
     };
 
-    animate();
-  }, []);
+    brightnessAnimationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (brightnessAnimationFrameRef.current !== null) {
+        cancelAnimationFrame(brightnessAnimationFrameRef.current);
+        brightnessAnimationFrameRef.current = null;
+      }
+    };
+  }, [active]);
 
   return (
     <canvas
@@ -255,6 +296,12 @@ function WhiteNoiseEffect() {
       }}
     />
   );
+}
+
+function WhiteNoiseOverlay() {
+  const isPresent = useIsPresent();
+
+  return <WhiteNoiseEffect active={isPresent} />;
 }
 
 function StatusDisplay({ message }: { message: string }) {
@@ -367,6 +414,8 @@ export function VideosAppComponent({
     instanceId,
   });
 
+  const shouldShowWhiteNoise = videos.length > 0 && !isPlaying && !isFullScreen;
+
   const menuBar = (
     <VideosMenuBar
       onClose={onClose}
@@ -462,7 +511,7 @@ export function VideosAppComponent({
                   )}
                   {/* White noise effect (z-10) */}
                   <AnimatePresence>
-                    {!isPlaying && (
+                    {shouldShowWhiteNoise && (
                       <motion.div
                         initial={{ opacity: 0, scale: 1.15 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -482,7 +531,7 @@ export function VideosAppComponent({
                           height: "calc(100% + 1px)",
                         }}
                       >
-                        <WhiteNoiseEffect />
+                        <WhiteNoiseOverlay />
                       </motion.div>
                     )}
                   </AnimatePresence>

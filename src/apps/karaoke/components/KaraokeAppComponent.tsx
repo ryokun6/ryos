@@ -321,6 +321,8 @@ export function KaraokeAppComponent({
   const effectiveDisplayMode = isListenSessionRemoteOnly
     ? DisplayMode.Cover
     : displayMode;
+  const visualBackgroundActive =
+    shouldAnimateVisuals && effectiveDisplayMode !== DisplayMode.Video;
 
   if (!isWindowOpen) return null;
 
@@ -500,37 +502,45 @@ export function KaraokeAppComponent({
           )}
 
           {/* Landscape video background */}
-          {effectiveDisplayMode === DisplayMode.Landscapes && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Landscapes &&
+            visualBackgroundActive &&
+            currentTrack && (
             <LandscapeVideoBackground
-              isActive={shouldAnimateVisuals}
+              isActive={visualBackgroundActive}
               className="absolute inset-0 z-[5]"
             />
           )}
 
           {/* Warp shader background */}
-          {effectiveDisplayMode === DisplayMode.Shader && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Shader &&
+            visualBackgroundActive &&
+            currentTrack && (
             <AmbientBackground
               coverUrl={coverUrl}
               variant="warp"
-              isActive={shouldAnimateVisuals}
+              isActive={visualBackgroundActive}
               className="absolute inset-0 z-[5]"
             />
           )}
 
           {/* Mesh gradient background */}
-          {effectiveDisplayMode === DisplayMode.Mesh && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Mesh &&
+            visualBackgroundActive &&
+            currentTrack && (
             <MeshGradientBackground
               coverUrl={coverUrl}
-              isActive={shouldAnimateVisuals}
+              isActive={visualBackgroundActive}
               className="absolute inset-0 z-[5]"
             />
           )}
 
           {/* Water shader background */}
-          {effectiveDisplayMode === DisplayMode.Water && currentTrack && (
+          {effectiveDisplayMode === DisplayMode.Water &&
+            visualBackgroundActive &&
+            currentTrack && (
             <WaterBackground
               coverUrl={coverUrl}
-              isActive={shouldAnimateVisuals}
+              isActive={visualBackgroundActive}
               className="absolute inset-0 z-[5]"
             />
           )}
@@ -945,37 +955,45 @@ export function KaraokeAppComponent({
                 </div>
 
                 {/* Landscape video background (fullscreen) */}
-                {effectiveDisplayMode === DisplayMode.Landscapes && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Landscapes &&
+                  visualBackgroundActive &&
+                  currentTrack && (
                   <LandscapeVideoBackground
-                    isActive={shouldAnimateVisuals}
+                    isActive={visualBackgroundActive}
                     className="fixed inset-0 z-[5]"
                   />
                 )}
 
                 {/* Warp shader background (fullscreen) */}
-                {effectiveDisplayMode === DisplayMode.Shader && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Shader &&
+                  visualBackgroundActive &&
+                  currentTrack && (
                   <AmbientBackground
                     coverUrl={coverUrl}
                     variant="warp"
-                    isActive={shouldAnimateVisuals}
+                    isActive={visualBackgroundActive}
                     className="fixed inset-0 z-[5]"
                   />
                 )}
 
                 {/* Mesh gradient background (fullscreen) */}
-                {effectiveDisplayMode === DisplayMode.Mesh && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Mesh &&
+                  visualBackgroundActive &&
+                  currentTrack && (
                   <MeshGradientBackground
                     coverUrl={coverUrl}
-                    isActive={shouldAnimateVisuals}
+                    isActive={visualBackgroundActive}
                     className="fixed inset-0 z-[5]"
                   />
                 )}
 
                 {/* Water shader background (fullscreen) */}
-                {effectiveDisplayMode === DisplayMode.Water && currentTrack && (
+                {effectiveDisplayMode === DisplayMode.Water &&
+                  visualBackgroundActive &&
+                  currentTrack && (
                   <WaterBackground
                     coverUrl={coverUrl}
-                    isActive={shouldAnimateVisuals}
+                    isActive={visualBackgroundActive}
                     className="fixed inset-0 z-[5]"
                   />
                 )}
