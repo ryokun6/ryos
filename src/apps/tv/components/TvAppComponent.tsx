@@ -465,10 +465,6 @@ function pickChannelBugBurst(): ChannelBugBurst {
 }
 
 const CHANNEL_BUG_FADE_IN_TRANSITION = { duration: 0.25 } as const;
-const CHANNEL_BUG_EXIT = {
-  opacity: 0,
-  transition: { duration: 0.2 },
-} as const;
 const CHANNEL_BUG_INITIAL = { opacity: 0 } as const;
 
 const CHANNEL_BUG_CORNER_CLASS: Record<ChannelLogoCorner, string> = {
@@ -526,6 +522,16 @@ const ChannelBug = memo(function ChannelBug({
     return () => {
       cancelled = true;
       if (timeoutId !== null) window.clearTimeout(timeoutId);
+      // Hard-stop any in-flight burst (spin / watermark / shimmer)
+      // so the old bug doesn't keep spinning or shimmering during
+      // the channel-switch CRT static burst that's covering the
+      // picture right now. Without these, an in-progress controls
+      // animation would continue running until the (cancelled)
+      // promise rejection unwinds, which can outlast the
+      // unmount commit when the parent isn't keyed for an instant
+      // tear-down.
+      controls.stop();
+      shineControls.stop();
     };
   }, [controls, shineControls]);
 
@@ -548,7 +554,11 @@ const ChannelBug = memo(function ChannelBug({
     <motion.div
       initial={CHANNEL_BUG_INITIAL}
       animate={controls}
-      exit={CHANNEL_BUG_EXIT}
+      // No exit prop: when currentChannelId changes the bug should
+      // be killed instantly (along with its in-progress burst) and
+      // the new channel's bug should mount fresh. The disappearance
+      // is hidden by the CRT channel-switch static burst that's
+      // already covering the picture during the same frame.
       // `transformPerspective` adds the missing 3D depth so the
       // rotateY flip reads as a card spinning in place rather than
       // squashing horizontally with no foreshortening. Backface is
@@ -1403,18 +1413,22 @@ export function TvAppComponent({
                   custom channels return undefined and render nothing.
                   Hidden while the CRT is "off" or collapsing so it
                   doesn't float over a black screen during pause /
-                  power-off transitions. */}
-              <AnimatePresence>
-                {!screenOff &&
-                  !poweringOff &&
-                  getChannelLogo(currentChannelId) && (
-                    <ChannelBug
-                      key={currentChannelId}
-                      src={getChannelLogo(currentChannelId)!}
-                      corner={getChannelLogoCorner(currentChannelId)}
-                    />
-                  )}
-              </AnimatePresence>
+                  power-off transitions. Keyed by currentChannelId so
+                  channel switches unmount the old bug instantly
+                  (killing its in-progress burst) and mount a fresh
+                  one — the channel-switch CRT static burst covers the
+                  swap. No AnimatePresence wrapper because we don't
+                  want a lingering exit fade competing with the new
+                  bug's mount fade-in. */}
+              {!screenOff &&
+                !poweringOff &&
+                getChannelLogo(currentChannelId) && (
+                  <ChannelBug
+                    key={currentChannelId}
+                    src={getChannelLogo(currentChannelId)!}
+                    corner={getChannelLogoCorner(currentChannelId)}
+                  />
+                )}
             </div>
           </div>
 
