@@ -23,8 +23,10 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Trash } from "@phosphor-icons/react";
 
-/** Narrow invisible resize strip along the compact drawer bottom rim. */
-const COMPACT_DRAWER_RESIZE_EDGE_PX = 12;
+/** Invisible drawer resize strip: extends below the bottom edge like window resizers (mobile bottom handle is h-6). */
+const COMPACT_DRAWER_RESIZE_EDGE_PX = 24;
+/** How far past the drawer bottom the hit target hangs (negative `bottom` in CSS). */
+const COMPACT_DRAWER_RESIZE_BELOW_EDGE_PX = 8;
 
 const DRAWER_WIDTH = 240;
 
@@ -427,10 +429,11 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
         type="button"
         data-testid="tv-compact-drawer-resize-handle"
         aria-label={t("apps.tv.drawer.resizeHandle")}
-        className="absolute inset-x-0 bottom-0 z-20 shrink-0 touch-none bg-transparent outline-none cursor-ns-resize select-none border-0 p-0 m-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-black/25"
+        className="absolute inset-x-0 z-20 shrink-0 touch-none bg-transparent outline-none cursor-ns-resize select-none border-0 p-0 m-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-black/25"
         style={{
           touchAction: "none",
           height: COMPACT_DRAWER_RESIZE_EDGE_PX,
+          bottom: -COMPACT_DRAWER_RESIZE_BELOW_EDGE_PX,
         }}
         onPointerDown={handleCompactDrawerResizePointerDown}
       />
@@ -564,7 +567,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       className={cn(
         wrapperClass,
         !isOpen && "pointer-events-none",
-        isCompactDrawer && isMobileUi && "relative"
+        isCompactDrawer && isMobileUi && "relative overflow-visible"
       )}
       style={positionStyle}
       initial={false}
