@@ -1,9 +1,9 @@
 /** localStorage key for compact (mobile) TV playlist drawer pixel height */
-export const TV_COMPACT_DRAWER_HEIGHT_LS_KEY = "ryos_tv_compact_drawer_height_px_v1";
+export const TV_COMPACT_DRAWER_HEIGHT_LS_KEY = "ryos_tv_compact_drawer_height_px_v2";
 
-/** Matches the former CSS cap roughly: min(28dvh, 200px) */
+/** Default compact drawer height (slightly taller than the old ~200px cap). */
 export function defaultTvCompactDrawerHeightPx(innerHeight: number): number {
-  return Math.round(Math.min(innerHeight * 0.28, 200));
+  return Math.round(Math.min(innerHeight * 0.34, 236));
 }
 
 /**

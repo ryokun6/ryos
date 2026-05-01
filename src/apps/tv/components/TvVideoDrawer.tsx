@@ -21,7 +21,10 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { DotsSixVertical, Trash } from "@phosphor-icons/react";
+import { Trash } from "@phosphor-icons/react";
+
+/** Narrow invisible resize strip along the drawer’s top rim (toward TV window overlap). */
+const COMPACT_DRAWER_RESIZE_EDGE_PX = 12;
 
 const DRAWER_WIDTH = 240;
 
@@ -416,43 +419,22 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
     [compactViewportH]
   );
 
-  const compactDrawerResizeGrip = (
+  /** Invisible rim hit target — avoids an extra chrome row and keeps taps on channel logos. */
+  const compactDrawerResizeEdgeOverlay =
     isCompactDrawer &&
     isMobileUi && (
       <button
         type="button"
         data-testid="tv-compact-drawer-resize-handle"
         aria-label={t("apps.tv.drawer.resizeHandle")}
-        className={cn(
-          "tv-compact-drawer-resize-handle shrink-0 flex w-full items-center justify-center py-2 touch-none outline-none cursor-ns-resize select-none",
-          isMacOSTheme &&
-            "border-t border-black/12 bg-black/[0.06] hover:bg-black/10 active:bg-black/[0.14]",
-          isSystem7 &&
-            "border-t border-black bg-neutral-100 hover:bg-neutral-200 active:bg-neutral-300",
-          isXpTheme &&
-            !isWin98 &&
-            "border-t border-[#ACA899] bg-[#ECE9D8] hover:bg-[#dcd8ce] active:bg-[#d0cbc0]",
-          isWin98 &&
-            "border-t border-[#808080] bg-[#C0C0C0] hover:bg-[#b8b8b8]"
-        )}
-        style={{ touchAction: "none" }}
+        className="absolute inset-x-0 top-[-4px] z-20 shrink-0 touch-none bg-transparent outline-none cursor-ns-resize select-none border-0 p-0 m-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-[#3875D7]/50"
+        style={{
+          touchAction: "none",
+          height: COMPACT_DRAWER_RESIZE_EDGE_PX,
+        }}
         onPointerDown={handleCompactDrawerResizePointerDown}
-      >
-        <DotsSixVertical
-          size={22}
-          weight="bold"
-          className={cn(
-            "pointer-events-none opacity-45",
-            isMacOSTheme && "text-black/55",
-            isSystem7 && "text-black",
-            isXpTheme && !isWin98 && "text-[#1f3f77]/70",
-            isWin98 && "text-[#303030]"
-          )}
-          aria-hidden
-        />
-      </button>
-    )
-  );
+      />
+    );
 
   // Auto-scroll the now-playing entry into view when the drawer opens
   // or the channel/index changes. Without this, opening the drawer on a
@@ -579,7 +561,11 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
 
   return (
     <motion.div
-      className={cn(wrapperClass, !isOpen && "pointer-events-none")}
+      className={cn(
+        wrapperClass,
+        !isOpen && "pointer-events-none",
+        isCompactDrawer && isMobileUi && "relative"
+      )}
       style={positionStyle}
       initial={false}
       animate={animateProps}
@@ -590,6 +576,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       data-tv-drawer
       data-tv-drawer-layout={isCompactDrawer ? "bottom" : "side"}
     >
+      {compactDrawerResizeEdgeOverlay}
       <div className={panelOuterClass}>
         {isMacOSTheme ? (
           <div className="tv-drawer-metal-inner flex flex-1 min-h-0 flex-col p-2">
@@ -672,7 +659,6 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                   })
                 )}
               </ul>
-              {compactDrawerResizeGrip}
             </div>
           </div>
         ) : (
@@ -783,7 +769,6 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
                 })
               )}
             </ul>
-            {compactDrawerResizeGrip}
           </div>
         )}
       </div>

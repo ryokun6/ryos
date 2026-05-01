@@ -6,9 +6,9 @@ import {
 } from "../src/apps/tv/utils/compactDrawerHeight";
 
 describe("defaultTvCompactDrawerHeightPx", () => {
-  test("matches min(28% inner height, 200px)", () => {
-    expect(defaultTvCompactDrawerHeightPx(500)).toBe(Math.round(Math.min(500 * 0.28, 200)));
-    expect(defaultTvCompactDrawerHeightPx(1000)).toBe(200);
+  test("uses min(34% inner height, 236px)", () => {
+    expect(defaultTvCompactDrawerHeightPx(500)).toBe(Math.round(Math.min(500 * 0.34, 236)));
+    expect(defaultTvCompactDrawerHeightPx(1000)).toBe(236);
   });
 });
 
