@@ -586,7 +586,12 @@ const ChannelBug = memo(function ChannelBug({
           className="absolute top-0 left-0 h-full w-[45%]"
           style={{
             background:
-              "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.85) 50%, transparent 100%)",
+              "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.95) 50%, transparent 100%)",
+            // `overlay` blend so the stripe brightens light areas of
+            // the logo and tints darker ones — gives that glossy
+            // "card catching the light" feel instead of a flat white
+            // bar painted on top.
+            mixBlendMode: "overlay",
             filter: "blur(2px)",
           }}
         />
