@@ -38,6 +38,8 @@ interface TvStoreState {
   isPlaying: boolean;
   customChannels: CustomChannel[];
   hiddenDefaultChannelIds: string[];
+  hiddenDefaultChannelIdsUpdatedAt: string | null;
+  hiddenDefaultChannelIdsResetAt: string | null;
   /** Whether the persistent CRT scanline / vignette overlay is on. */
   lcdFilterOn: boolean;
   /** MTV (and similar) word-timed lyric captions over the picture. */
@@ -97,6 +99,8 @@ export const useTvStore = create<TvStoreState>()(
       isPlaying: false,
       customChannels: [],
       hiddenDefaultChannelIds: [],
+      hiddenDefaultChannelIdsUpdatedAt: null,
+      hiddenDefaultChannelIdsResetAt: null,
       lcdFilterOn: true,
       closedCaptionsOn: true,
       setCurrentChannelId: (id) => set({ currentChannelId: id }),
@@ -134,10 +138,11 @@ export const useTvStore = create<TvStoreState>()(
           const customChannels = isDefault
             ? s.customChannels
             : s.customChannels.filter((c) => c.id !== id);
-          const hiddenDefaultChannelIds =
-            isDefault && !s.hiddenDefaultChannelIds.includes(id)
-              ? [...s.hiddenDefaultChannelIds, id]
-              : s.hiddenDefaultChannelIds;
+          const isNewlyHiddenDefault =
+            isDefault && !s.hiddenDefaultChannelIds.includes(id);
+          const hiddenDefaultChannelIds = isNewlyHiddenDefault
+            ? [...s.hiddenDefaultChannelIds, id]
+            : s.hiddenDefaultChannelIds;
           if (!isDefault && s.customChannels.some((c) => c.id === id)) {
             useCloudSyncStore
               .getState()
@@ -151,6 +156,9 @@ export const useTvStore = create<TvStoreState>()(
           return {
             customChannels,
             hiddenDefaultChannelIds,
+            hiddenDefaultChannelIdsUpdatedAt: isNewlyHiddenDefault
+              ? new Date().toISOString()
+              : s.hiddenDefaultChannelIdsUpdatedAt,
             currentChannelId: fallbackId,
           };
         }),
@@ -324,6 +332,7 @@ export const useTvStore = create<TvStoreState>()(
       },
       resetChannels: () => {
         const customChannelIds = get().customChannels.map((channel) => channel.id);
+        const hiddenDefaultChannelIdsResetAt = new Date().toISOString();
         if (customChannelIds.length > 0) {
           useCloudSyncStore
             .getState()
@@ -332,6 +341,8 @@ export const useTvStore = create<TvStoreState>()(
         set({
           customChannels: [],
           hiddenDefaultChannelIds: [],
+          hiddenDefaultChannelIdsUpdatedAt: hiddenDefaultChannelIdsResetAt,
+          hiddenDefaultChannelIdsResetAt,
           currentChannelId: DEFAULT_CHANNEL_ID,
           lastVideoIndexByChannel: {},
         });
@@ -339,7 +350,7 @@ export const useTvStore = create<TvStoreState>()(
     }),
     {
       name: "ryos:tv",
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
         if (!persisted || typeof persisted !== "object") {
           return persisted as typeof persisted;
@@ -347,6 +358,8 @@ export const useTvStore = create<TvStoreState>()(
         const state = persisted as {
           customChannels?: CustomChannel[];
           hiddenDefaultChannelIds?: unknown;
+          hiddenDefaultChannelIdsUpdatedAt?: unknown;
+          hiddenDefaultChannelIdsResetAt?: unknown;
         };
         if (version < 4 && Array.isArray(state.customChannels)) {
           state.customChannels = state.customChannels.map((entry) => {
@@ -359,6 +372,12 @@ export const useTvStore = create<TvStoreState>()(
         if (!Array.isArray(state.hiddenDefaultChannelIds)) {
           state.hiddenDefaultChannelIds = [];
         }
+        if (typeof state.hiddenDefaultChannelIdsUpdatedAt !== "string") {
+          state.hiddenDefaultChannelIdsUpdatedAt = null;
+        }
+        if (typeof state.hiddenDefaultChannelIdsResetAt !== "string") {
+          state.hiddenDefaultChannelIdsResetAt = null;
+        }
         return state as typeof persisted;
       },
       // Channel lineup rotation uses an in-memory per-channel shuffle (see
@@ -367,6 +386,8 @@ export const useTvStore = create<TvStoreState>()(
         currentChannelId: s.currentChannelId,
         customChannels: s.customChannels,
         hiddenDefaultChannelIds: s.hiddenDefaultChannelIds,
+        hiddenDefaultChannelIdsUpdatedAt: s.hiddenDefaultChannelIdsUpdatedAt,
+        hiddenDefaultChannelIdsResetAt: s.hiddenDefaultChannelIdsResetAt,
         lcdFilterOn: s.lcdFilterOn,
         closedCaptionsOn: s.closedCaptionsOn,
       }),

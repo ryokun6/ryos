@@ -14,6 +14,8 @@ describe("TV store default channel removal", () => {
       isPlaying: false,
       customChannels: [],
       hiddenDefaultChannelIds: [],
+      hiddenDefaultChannelIdsUpdatedAt: null,
+      hiddenDefaultChannelIdsResetAt: null,
       lcdFilterOn: true,
       closedCaptionsOn: true,
     });

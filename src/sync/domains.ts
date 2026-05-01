@@ -153,6 +153,8 @@ interface VideosSnapshotData {
 interface TvSnapshotData {
   customChannels: CustomChannel[];
   hiddenDefaultChannelIds?: string[];
+  hiddenDefaultChannelIdsUpdatedAt?: string | null;
+  hiddenDefaultChannelIdsResetAt?: string | null;
   deletedCustomChannelIds?: DeletionMarkerMap;
   lcdFilterOn: boolean;
   closedCaptionsOn: boolean;
@@ -189,6 +191,15 @@ type AnySnapshotData =
   | CalendarSnapshotData
   | ContactsSnapshotData
   | CustomWallpapersSnapshotData;
+
+function parseSyncTimestamp(value: string | null | undefined): number {
+  if (!value) {
+    return 0;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 interface SerializedStoreItemRecord {
   item: StoreItemWithKey;
@@ -698,6 +709,8 @@ function serializeTvSnapshot(): TvSnapshotData {
   return {
     customChannels: tvState.customChannels,
     hiddenDefaultChannelIds: tvState.hiddenDefaultChannelIds,
+    hiddenDefaultChannelIdsUpdatedAt: tvState.hiddenDefaultChannelIdsUpdatedAt,
+    hiddenDefaultChannelIdsResetAt: tvState.hiddenDefaultChannelIdsResetAt,
     deletedCustomChannelIds: deletionMarkers.tvCustomChannelIds,
     lcdFilterOn: tvState.lcdFilterOn,
     closedCaptionsOn: tvState.closedCaptionsOn,
@@ -1133,6 +1146,14 @@ function applyTvSnapshot(data: TvSnapshotData): void {
     hiddenDefaultChannelIds: Array.isArray(data.hiddenDefaultChannelIds)
       ? data.hiddenDefaultChannelIds
       : [],
+    hiddenDefaultChannelIdsUpdatedAt:
+      typeof data.hiddenDefaultChannelIdsUpdatedAt === "string"
+        ? data.hiddenDefaultChannelIdsUpdatedAt
+        : null,
+    hiddenDefaultChannelIdsResetAt:
+      typeof data.hiddenDefaultChannelIdsResetAt === "string"
+        ? data.hiddenDefaultChannelIdsResetAt
+        : null,
     lcdFilterOn: data.lcdFilterOn ?? true,
     closedCaptionsOn: data.closedCaptionsOn ?? true,
   });
@@ -1582,17 +1603,41 @@ function mergeTvSnapshots(
     normalizeDeletionMarkerMap(local.deletedCustomChannelIds),
     normalizeDeletionMarkerMap(remote.deletedCustomChannelIds)
   );
+  const localHiddenUpdatedAt = parseSyncTimestamp(
+    local.hiddenDefaultChannelIdsUpdatedAt
+  );
+  const remoteHiddenUpdatedAt = parseSyncTimestamp(
+    remote.hiddenDefaultChannelIdsUpdatedAt
+  );
+  const localResetAt = parseSyncTimestamp(local.hiddenDefaultChannelIdsResetAt);
+  const remoteResetAt = parseSyncTimestamp(remote.hiddenDefaultChannelIdsResetAt);
+  const hiddenDefaultChannelIds =
+    localResetAt > remoteHiddenUpdatedAt && localResetAt >= remoteResetAt
+      ? local.hiddenDefaultChannelIds || []
+      : remoteResetAt > localHiddenUpdatedAt && remoteResetAt > localResetAt
+        ? remote.hiddenDefaultChannelIds || []
+        : Array.from(
+            new Set([
+              ...(local.hiddenDefaultChannelIds || []),
+              ...(remote.hiddenDefaultChannelIds || []),
+            ])
+          );
+  const hiddenDefaultChannelIdsUpdatedAt =
+    localHiddenUpdatedAt >= remoteHiddenUpdatedAt
+      ? local.hiddenDefaultChannelIdsUpdatedAt ?? null
+      : remote.hiddenDefaultChannelIdsUpdatedAt ?? null;
+  const hiddenDefaultChannelIdsResetAt =
+    localResetAt >= remoteResetAt
+      ? local.hiddenDefaultChannelIdsResetAt ?? null
+      : remote.hiddenDefaultChannelIdsResetAt ?? null;
   return {
     customChannels: mergeItemsById(
       filterDeletedIds(local.customChannels || [], mergedDeleted, (channel) => channel.id),
       filterDeletedIds(remote.customChannels || [], mergedDeleted, (channel) => channel.id)
     ),
-    hiddenDefaultChannelIds: Array.from(
-      new Set([
-        ...(local.hiddenDefaultChannelIds || []),
-        ...(remote.hiddenDefaultChannelIds || []),
-      ])
-    ),
+    hiddenDefaultChannelIds,
+    hiddenDefaultChannelIdsUpdatedAt,
+    hiddenDefaultChannelIdsResetAt,
     deletedCustomChannelIds: mergedDeleted,
     lcdFilterOn: local.lcdFilterOn,
     closedCaptionsOn: local.closedCaptionsOn,
