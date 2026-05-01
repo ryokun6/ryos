@@ -427,7 +427,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
         type="button"
         data-testid="tv-compact-drawer-resize-handle"
         aria-label={t("apps.tv.drawer.resizeHandle")}
-        className="absolute inset-x-0 top-[-4px] z-20 shrink-0 touch-none bg-transparent outline-none cursor-ns-resize select-none border-0 p-0 m-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-[#3875D7]/50"
+        className="absolute inset-x-0 top-[-4px] z-20 shrink-0 touch-none bg-transparent outline-none cursor-ns-resize select-none border-0 p-0 m-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-black/25"
         style={{
           touchAction: "none",
           height: COMPACT_DRAWER_RESIZE_EDGE_PX,
