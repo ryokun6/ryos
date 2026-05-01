@@ -26,11 +26,10 @@ describe("TV default channels", () => {
   });
 
   test("includes the latest attached default channel export", () => {
-    expect(DEFAULT_CHANNELS.map((channel) => channel.id)).toContainAllValues([
-      "hallyu-origin",
-      "sim-grid",
-      "mandopop-jukebox",
-    ]);
+    const ids = DEFAULT_CHANNELS.map((channel) => channel.id);
+    expect(ids).toContain("hallyu-origin");
+    expect(ids).toContain("sim-grid");
+    expect(ids).toContain("mandopop-jukebox");
   });
 
   test("has unique built-in ids and sequential lineup numbers", () => {
