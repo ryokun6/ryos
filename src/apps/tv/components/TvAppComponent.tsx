@@ -742,9 +742,10 @@ export function TvAppComponent({
       channelMountedRef.current = true;
       return;
     }
+    if (isFullScreen) return;
     setChannelSwitchKey((k) => k + 1);
     void playChannelSwitch();
-  }, [currentChannelId, playChannelSwitch]);
+  }, [currentChannelId, playChannelSwitch, isFullScreen]);
 
   // Reset the buffering flag whenever the URL changes so a previous
   // channel's pending-buffer state can't leak into the new picture.
@@ -879,7 +880,10 @@ export function TvAppComponent({
   // takes effect would otherwise leak through.
   const hasUrl = Boolean(currentVideo?.url);
   const staticBedActive =
-    (isBuffering || (!hasUrl && isPlaying)) && !poweringOff && !screenOff;
+    (isBuffering || (!hasUrl && isPlaying)) &&
+    !poweringOff &&
+    !screenOff &&
+    !isFullScreen;
   useEffect(() => {
     if (staticBedActive) {
       void startStatic();
@@ -1086,6 +1090,7 @@ export function TvAppComponent({
                 onClick={handleTogglePlay}
               />
               <TvCrtEffects
+                suppressAnalogNoise={isFullScreen}
                 powerOnKey={powerOnKey}
                 poweringOff={poweringOff}
                 onPowerOffComplete={handlePowerOffComplete}
@@ -1492,6 +1497,8 @@ export function TvAppComponent({
           onSeek={handleSeek}
           onNext={nextVideo}
           onPrevious={prevVideo}
+          onChannelNext={nextChannel}
+          onChannelPrev={prevChannel}
           showStatus={showStatus}
           statusMessage={statusMessage}
           videoOverlay={

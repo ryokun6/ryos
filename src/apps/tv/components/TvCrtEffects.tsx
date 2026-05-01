@@ -541,6 +541,12 @@ function PowerOffEffect({
 }
 
 export interface TvCrtEffectsProps {
+  /**
+   * When true, skip analog static layers (NoiseCanvas) for buffering and
+   * channel-change bursts. Used in fullscreen so we do not run rAF noise
+   * while the picture is in a portal.
+   */
+  suppressAnalogNoise?: boolean;
   /** Bumped to play a power-on animation. 0 means no animation has played yet. */
   powerOnKey: number;
   /** While true, runs the power-off animation. Caller should set it true
@@ -571,6 +577,7 @@ export interface TvCrtEffectsProps {
  * style objects from being thrashed every frame.
  */
 export const TvCrtEffects = memo(function TvCrtEffects({
+  suppressAnalogNoise = false,
   powerOnKey,
   poweringOff,
   onPowerOffComplete,
@@ -602,7 +609,7 @@ export const TvCrtEffects = memo(function TvCrtEffects({
           iframe doesn't bleed through. Only the cross-fade in/out is
           partially transparent. */}
       <AnimatePresence>
-        {buffering && (
+        {buffering && !suppressAnalogNoise && (
           <motion.div
             key="tv-buffering"
             initial={{ opacity: 0 }}
@@ -621,7 +628,7 @@ export const TvCrtEffects = memo(function TvCrtEffects({
           the static. Re-keys on every channel change so a new burst
           plays even mid-fade. */}
       <AnimatePresence>
-        {activeChannelKey > 0 && (
+        {!suppressAnalogNoise && activeChannelKey > 0 && (
           <motion.div
             key={`tv-channel-${activeChannelKey}`}
             initial={{ opacity: 1 }}

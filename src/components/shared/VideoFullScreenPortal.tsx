@@ -4,8 +4,10 @@ import { createPortal } from "react-dom";
 import type ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
+import { FullscreenMobileDismiss } from "@/components/shared/FullscreenMobileDismiss";
 import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
+import { useTranslation } from "react-i18next";
 
 interface VideoFullScreenPortalProps {
   isOpen: boolean;
@@ -25,6 +27,9 @@ interface VideoFullScreenPortalProps {
   onSeek: (time: number) => void;
   onNext?: () => void;
   onPrevious?: () => void;
+  /** When set (e.g. TV), Arrow Up/Down step the broadcast channel instead of playlist items. */
+  onChannelNext?: () => void;
+  onChannelPrev?: () => void;
   showStatus?: (message: string) => void;
   statusMessage?: string | null;
   isShuffled?: boolean;
@@ -56,28 +61,41 @@ export function VideoFullScreenPortal({
   onSeek,
   onNext,
   onPrevious,
+  onChannelNext,
+  onChannelPrev,
   showStatus,
   statusMessage,
   isShuffled,
   onToggleShuffle,
   videoOverlay,
 }: VideoFullScreenPortalProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const hideControlsTimeoutRef = useRef<number | null>(null);
+
+  const getActualPlayerState = useCallback(() => {
+    const internalPlayer = playerRef.current?.getInternalPlayer?.();
+    if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
+      const playerState = internalPlayer.getPlayerState();
+      return playerState === 1;
+    }
+    return isPlaying;
+  }, [playerRef, isPlaying]);
 
   const restartAutoHideTimer = useCallback(() => {
     setShowControls(true);
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current);
     }
-    if (isPlaying) {
+    const actuallyPlaying = getActualPlayerState();
+    if (actuallyPlaying && !isLangMenuOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
         setShowControls(false);
-      }, 3000);
+      }, 2000);
     }
-  }, [isPlaying]);
+  }, [getActualPlayerState, isLangMenuOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -116,10 +134,11 @@ export function VideoFullScreenPortal({
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
       }
-      if (isPlaying) {
+      const actuallyPlaying = getActualPlayerState();
+      if (actuallyPlaying && !isLangMenuOpen) {
         hideControlsTimeoutRef.current = window.setTimeout(() => {
           setShowControls(false);
-        }, 3000);
+        }, 2000);
       }
     };
 
@@ -128,10 +147,11 @@ export function VideoFullScreenPortal({
     window.addEventListener("touchstart", handleActivity, { passive: true });
     window.addEventListener("click", handleActivity, { passive: true });
 
-    if (isPlaying) {
+    const actuallyPlayingOnMount = getActualPlayerState();
+    if (actuallyPlayingOnMount && !isLangMenuOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
         setShowControls(false);
-      }, 3000);
+      }, 2000);
     }
 
     return () => {
@@ -144,7 +164,7 @@ export function VideoFullScreenPortal({
         hideControlsTimeoutRef.current = null;
       }
     };
-  }, [isOpen, isPlaying]);
+  }, [isOpen, isLangMenuOpen, getActualPlayerState]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -173,12 +193,20 @@ export function VideoFullScreenPortal({
           onSeek(newTime);
           showStatus?.("⏩ +10s");
         }
-      } else if (e.key === "ArrowUp" && onPrevious) {
+      } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        onPrevious();
-      } else if (e.key === "ArrowDown" && onNext) {
+        if (onChannelPrev && onChannelNext) {
+          onChannelPrev();
+        } else if (onPrevious) {
+          onPrevious();
+        }
+      } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        onNext();
+        if (onChannelPrev && onChannelNext) {
+          onChannelNext();
+        } else if (onNext) {
+          onNext();
+        }
       }
     };
 
@@ -186,12 +214,13 @@ export function VideoFullScreenPortal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     isOpen,
-    isPlaying,
     onClose,
     onTogglePlay,
     onSeek,
     onNext,
     onPrevious,
+    onChannelNext,
+    onChannelPrev,
     showStatus,
     playerRef,
     restartAutoHideTimer,
@@ -199,11 +228,18 @@ export function VideoFullScreenPortal({
 
   if (!isOpen) return null;
 
+  const controlsVisible =
+    showControls || isLangMenuOpen || !getActualPlayerState();
+
   return createPortal(
     <div
       ref={containerRef}
       className="ipod-force-font fixed inset-0 z-[9999] bg-black select-none flex flex-col"
-      onClick={() => {
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("[data-toolbar]")) {
+          return;
+        }
         onTogglePlay();
         restartAutoHideTimer();
       }}
@@ -239,6 +275,13 @@ export function VideoFullScreenPortal({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <FullscreenMobileDismiss
+        visible={controlsVisible}
+        forceVisible={isLangMenuOpen}
+        onDismiss={onClose}
+        onInteraction={restartAutoHideTimer}
+      />
 
       <div className="flex-1 min-h-0 relative overflow-hidden">
         {videoOverlay ? (
@@ -286,9 +329,7 @@ export function VideoFullScreenPortal({
         data-toolbar
         className={cn(
           "fixed bottom-0 left-0 right-0 flex justify-center z-[10001] transition-opacity duration-200",
-          showControls || isLangMenuOpen || !isPlaying
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          controlsVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         style={{
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)",
@@ -299,12 +340,18 @@ export function VideoFullScreenPortal({
         }}
       >
         <FullscreenPlayerControls
-          isPlaying={isPlaying}
+          isPlaying={getActualPlayerState()}
           onPrevious={onPrevious || (() => {})}
           onPlayPause={onTogglePlay}
           onNext={onNext || (() => {})}
           isShuffled={isShuffled}
           onToggleShuffle={onToggleShuffle}
+          onChannelUp={onChannelNext}
+          onChannelDown={onChannelPrev}
+          channelUpLabel={t("apps.tv.status.channelUp")}
+          channelDownLabel={t("apps.tv.status.channelDown")}
+          channelUpTitle={t("apps.tv.menu.channelUp")}
+          channelDownTitle={t("apps.tv.menu.channelDown")}
           currentAlignment={LyricsAlignment.Center}
           onAlignmentCycle={() => {}}
           currentFont={LyricsFont.SansSerif}

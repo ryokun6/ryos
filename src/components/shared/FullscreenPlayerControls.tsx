@@ -85,7 +85,14 @@ export interface FullscreenPlayerControlsProps {
   isLangMenuOpen: boolean;
   setIsLangMenuOpen: (open: boolean) => void;
 
-  // Optional close button (for fullscreen mode)
+  // Optional TV-style channel step (after transport, same visual language as other islands)
+  onChannelUp?: () => void;
+  onChannelDown?: () => void;
+  channelUpTitle?: string;
+  channelDownTitle?: string;
+  channelUpLabel?: string;
+  channelDownLabel?: string;
+
   onClose?: () => void;
 
   // Styling variants
@@ -126,6 +133,12 @@ export function FullscreenPlayerControls({
   translationLanguages,
   isLangMenuOpen,
   setIsLangMenuOpen,
+  onChannelUp,
+  onChannelDown,
+  channelUpTitle,
+  channelDownTitle,
+  channelUpLabel,
+  channelDownLabel,
   onClose,
   variant = "responsive",
   bgOpacity = "35",
@@ -219,6 +232,20 @@ export function FullscreenPlayerControls({
 
   const svgClasses = (baseClass?: string) =>
     cn(baseClass, isMacTheme && "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]");
+
+  const channelStepButtonClasses = isMacTheme
+    ? cn(
+        variant === "compact"
+          ? "h-8 shrink-0 w-max min-w-8 px-2"
+          : "h-9 md:h-12 shrink-0 w-max min-w-9 md:min-w-12 px-2.5 md:px-4",
+        "flex items-center justify-center rounded-full transition-colors focus:outline-none relative z-10"
+      )
+    : cn(
+        variant === "compact"
+          ? "h-8 shrink-0 w-max min-w-8 px-2"
+          : "h-9 md:h-12 shrink-0 w-max min-w-9 md:min-w-12 px-2.5 md:px-4",
+        "flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none whitespace-nowrap"
+      );
 
   return (
     <div className={cn(
@@ -317,6 +344,49 @@ export function FullscreenPlayerControls({
           );
         })()}
       </div>
+
+      {onChannelUp &&
+        onChannelDown &&
+        channelUpLabel &&
+        channelDownLabel && (
+          <div className={segmentClasses} style={aquaSegmentStyle}>
+            {isMacTheme && <AquaShineOverlays variant={variant} />}
+            <button
+              type="button"
+              onClick={handleClick(onChannelDown)}
+              aria-label={channelDownTitle ?? channelDownLabel}
+              className={channelStepButtonClasses}
+              title={channelDownTitle ?? channelDownLabel}
+            >
+              <span
+                className={cn(
+                  smallIconSize,
+                  "font-semibold tabular-nums tracking-tight whitespace-nowrap",
+                  iconClasses
+                )}
+              >
+                {channelDownLabel}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleClick(onChannelUp)}
+              aria-label={channelUpTitle ?? channelUpLabel}
+              className={channelStepButtonClasses}
+              title={channelUpTitle ?? channelUpLabel}
+            >
+              <span
+                className={cn(
+                  smallIconSize,
+                  "font-semibold tabular-nums tracking-tight whitespace-nowrap",
+                  iconClasses
+                )}
+              >
+                {channelUpLabel}
+              </span>
+            </button>
+          </div>
+        )}
 
       {/* Lyrics controls island */}
       {!hideLyricsControls && (
