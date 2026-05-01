@@ -344,10 +344,6 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       if (!isCompactDrawer || !isMobileUi) return;
       e.preventDefault();
       e.stopPropagation();
-      const el = e.currentTarget;
-      if (el.setPointerCapture) {
-        el.setPointerCapture(e.pointerId);
-      }
 
       const startedAt = compactDrawerHeightPx;
       teardownCompactDrawerPointerResize();
@@ -379,15 +375,6 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
           persistCompactDrawerHeight(next);
           return next;
         });
-        if (
-          typeof el.releasePointerCapture === "function"
-        ) {
-          try {
-            el.releasePointerCapture(e.pointerId);
-          } catch {
-            /* noop */
-          }
-        }
       };
 
       window.addEventListener("pointermove", onMove);
@@ -421,22 +408,30 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
     [compactViewportH]
   );
 
-  /** Invisible bottom rim hit target — avoids extra chrome; drag up/down adjusts height from the footer edge. */
-  const compactDrawerResizeEdgeOverlay =
+  /** In-flow bottom bumper: extends past the drawer’s rounded chrome so it’s grabbable
+   * without sitting above WindowFrame resize handles (`z-[60]` on macOS TV). */
+  const compactDrawerResizeEdgeStrip =
     isCompactDrawer &&
     isMobileUi && (
-      <button
-        type="button"
-        data-testid="tv-compact-drawer-resize-handle"
-        aria-label={t("apps.tv.drawer.resizeHandle")}
-        className="absolute inset-x-0 z-20 shrink-0 touch-none bg-transparent outline-none cursor-ns-resize select-none border-0 p-0 m-0 hover:bg-transparent focus-visible:ring-2 focus-visible:ring-black/25"
-        style={{
-          touchAction: "none",
-          height: COMPACT_DRAWER_RESIZE_EDGE_PX,
-          bottom: -COMPACT_DRAWER_RESIZE_BELOW_EDGE_PX,
-        }}
-        onPointerDown={handleCompactDrawerResizePointerDown}
-      />
+      <div className="relative z-0 shrink-0 flex justify-stretch">
+        <button
+          type="button"
+          data-testid="tv-compact-drawer-resize-handle"
+          aria-label={t("apps.tv.drawer.resizeHandle")}
+          className="touch-none cursor-ns-resize select-none rounded-none border-0 bg-transparent p-0 outline-none hover:bg-transparent focus-visible:ring-2 focus-visible:ring-black/25"
+          style={{
+            touchAction: "none",
+            marginLeft: -COMPACT_DRAWER_INSET_PX,
+            marginRight: -COMPACT_DRAWER_INSET_PX,
+            marginBottom: -COMPACT_DRAWER_RESIZE_BELOW_EDGE_PX,
+            width: `calc(100% + ${2 * COMPACT_DRAWER_INSET_PX}px)`,
+            height:
+              COMPACT_DRAWER_RESIZE_EDGE_PX -
+              COMPACT_DRAWER_RESIZE_BELOW_EDGE_PX,
+          }}
+          onPointerDown={handleCompactDrawerResizePointerDown}
+        />
+      </div>
     );
 
   // Auto-scroll the now-playing entry into view when the drawer opens
@@ -567,7 +562,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       className={cn(
         wrapperClass,
         !isOpen && "pointer-events-none",
-        isCompactDrawer && isMobileUi && "relative overflow-visible"
+        isCompactDrawer && isMobileUi && "relative"
       )}
       style={positionStyle}
       initial={false}
@@ -579,13 +574,13 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       data-tv-drawer
       data-tv-drawer-layout={isCompactDrawer ? "bottom" : "side"}
     >
-      {compactDrawerResizeEdgeOverlay}
       <div className={panelOuterClass}>
         {isMacOSTheme ? (
-          <div className="tv-drawer-metal-inner flex flex-1 min-h-0 flex-col p-2">
-            <div className="tv-drawer-mac-list-well flex flex-1 min-h-0 flex-col overflow-hidden">
-              {channelLogoStrip}
-              <ul
+          <>
+            <div className="tv-drawer-metal-inner flex flex-1 min-h-0 flex-col p-2">
+              <div className="tv-drawer-mac-list-well flex flex-1 min-h-0 flex-col overflow-hidden">
+                {channelLogoStrip}
+                <ul
                 ref={listRef}
                 className={listUlClass}
                 aria-label={listAriaLabel}
@@ -664,8 +659,11 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
               </ul>
             </div>
           </div>
+          {compactDrawerResizeEdgeStrip}
+          </>
         ) : (
-          <div className="flex flex-1 min-h-0 flex-col overflow-hidden p-2">
+          <>
+            <div className="flex flex-1 min-h-0 flex-col overflow-hidden p-2">
             {channelLogoStrip}
             <ul
               ref={listRef}
@@ -773,6 +771,8 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
               )}
             </ul>
           </div>
+          {compactDrawerResizeEdgeStrip}
+          </>
         )}
       </div>
     </motion.div>
