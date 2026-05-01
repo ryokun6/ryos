@@ -333,7 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app이 성공적으로 내보내졌습니다.",
         "appletImported": "애플릿 가져오기 완료!",
         "appletImportedDescription": "{{fileName}}이(가) /Applets{{iconText}}에 저장되었습니다",
-        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
+        "appletImportedIconSuffix": " {{icon}} 아이콘 포함",
         "appletNotFound": "애플릿을 찾을 수 없습니다",
         "appletNotFoundDescription": "공유된 애플릿이 삭제되었거나 링크가 유효하지 않을 수 있습니다.",
         "appletSaved": "애플릿 저장됨",
@@ -714,7 +714,7 @@
         "clear": "지우기",
         "createAccountToContinue": "계속하려면 계정을 만드세요...",
         "dailyLimitReached": "일일 AI 메시지 한도에 도달했습니다.",
-        "describeThisImage": "[TODO] Describe this image",
+        "describeThisImage": "이 이미지 설명하기",
         "editing": "편집 중...",
         "leave": "나가기",
         "listening": "듣는 중",
@@ -742,20 +742,20 @@
         "usingModel": "{{model}} 사용 중"
       },
       "toasts": {
-        "aiError": "[TODO] AI Error",
-        "failedToGetResponse": "[TODO] Failed to get response.",
-        "failedToSaveTranscript": "[TODO] Failed to save transcript",
-        "loginButton": "[TODO] Login",
-        "loginRequired": "[TODO] Login Required",
-        "open": "[TODO] Open",
-        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
-        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
-        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
-        "savedToFileName": "[TODO] Saved to {{fileName}}",
-        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
-        "transcriptSaved": "[TODO] Transcript saved",
-        "transcriptUpdated": "[TODO] Transcript updated",
-        "unknownError": "[TODO] Unknown error"
+        "aiError": "AI 오류",
+        "failedToGetResponse": "응답을 가져오지 못했습니다.",
+        "failedToSaveTranscript": "트랜스크립트를 저장하지 못했습니다",
+        "loginButton": "로그인",
+        "loginRequired": "로그인 필요",
+        "open": "열기",
+        "pleaseLoginToContinueChatting": "대화를 계속하려면 로그인하세요.",
+        "rateLimitExceeded": "요청 제한 초과",
+        "rateLimitMessageLimitLogin": "메시지 한도에 도달했습니다. 계속하려면 로그인하세요.",
+        "savedToFileName": "{{fileName}}에 저장됨",
+        "sessionExpiredLoginAgain": "세션이 만료되었습니다. 다시 로그인해 주세요.",
+        "transcriptSaved": "트랜스크립트 저장됨",
+        "transcriptUpdated": "트랜스크립트 업데이트됨",
+        "unknownError": "알 수 없는 오류"
       },
       "tokenStatus": {
         "authenticated": "로그인됨",
@@ -3057,10 +3057,10 @@
       },
       "description": "YouTube 채널 서핑",
       "drawer": {
-        "close": "[TODO] Hide videos",
-        "empty": "[TODO] No videos on this channel yet.",
-        "removeVideo": "[TODO] Remove from channel",
-        "title": "[TODO] Schedule"
+        "close": "동영상 숨기기",
+        "empty": "이 채널에 아직 동영상이 없습니다.",
+        "removeVideo": "채널에서 제거",
+        "title": "예약"
       },
       "help": {
         "channels": {
@@ -3106,7 +3106,7 @@
         "play": "재생",
         "previous": "이전",
         "resetChannels": "채널 재설정...",
-        "showVideos": "[TODO] Show Videos",
+        "showVideos": "동영상 보기",
         "tvHelp": "TV 도움말"
       },
       "name": "TV",

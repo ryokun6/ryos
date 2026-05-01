@@ -333,7 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app успешно экспортирован.",
         "appletImported": "Апплет импортирован!",
         "appletImportedDescription": "{{fileName}} сохранен в /Applets{{iconText}}",
-        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
+        "appletImportedIconSuffix": " с иконкой {{icon}}",
         "appletNotFound": "Апплет не найден",
         "appletNotFoundDescription": "Общий апплет, возможно, был удален, или ссылка недействительна.",
         "appletSaved": "Апплет сохранен",
@@ -714,7 +714,7 @@
         "clear": "Очистить",
         "createAccountToContinue": "Создайте аккаунт, чтобы продолжить...",
         "dailyLimitReached": "Достигнут дневной лимит сообщений ИИ.",
-        "describeThisImage": "[TODO] Describe this image",
+        "describeThisImage": "Опишите это изображение",
         "editing": "редактирование...",
         "leave": "Покинуть",
         "listening": "Слушаю",
@@ -742,20 +742,20 @@
         "usingModel": "Используется {{model}}"
       },
       "toasts": {
-        "aiError": "[TODO] AI Error",
-        "failedToGetResponse": "[TODO] Failed to get response.",
-        "failedToSaveTranscript": "[TODO] Failed to save transcript",
-        "loginButton": "[TODO] Login",
-        "loginRequired": "[TODO] Login Required",
-        "open": "[TODO] Open",
-        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
-        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
-        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
-        "savedToFileName": "[TODO] Saved to {{fileName}}",
-        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
-        "transcriptSaved": "[TODO] Transcript saved",
-        "transcriptUpdated": "[TODO] Transcript updated",
-        "unknownError": "[TODO] Unknown error"
+        "aiError": "Ошибка ИИ",
+        "failedToGetResponse": "Не удалось получить ответ.",
+        "failedToSaveTranscript": "Не удалось сохранить транскрипт",
+        "loginButton": "Войти",
+        "loginRequired": "Требуется вход",
+        "open": "Открыть",
+        "pleaseLoginToContinueChatting": "Пожалуйста, войдите, чтобы продолжить общение.",
+        "rateLimitExceeded": "Превышен лимит запросов",
+        "rateLimitMessageLimitLogin": "Вы достигли лимита сообщений. Пожалуйста, войдите, чтобы продолжить.",
+        "savedToFileName": "Сохранено в {{fileName}}",
+        "sessionExpiredLoginAgain": "Срок действия сессии истек. Пожалуйста, войдите снова.",
+        "transcriptSaved": "Транскрипт сохранен",
+        "transcriptUpdated": "Транскрипт обновлен",
+        "unknownError": "Неизвестная ошибка"
       },
       "tokenStatus": {
         "authenticated": "Выполнен вход",
@@ -3057,10 +3057,10 @@
       },
       "description": "Сёрфинг по каналам YouTube",
       "drawer": {
-        "close": "[TODO] Hide videos",
-        "empty": "[TODO] No videos on this channel yet.",
-        "removeVideo": "[TODO] Remove from channel",
-        "title": "[TODO] Schedule"
+        "close": "Скрыть видео",
+        "empty": "На этом канале пока нет видео.",
+        "removeVideo": "Удалить с канала",
+        "title": "Запланировать"
       },
       "help": {
         "channels": {
@@ -3106,7 +3106,7 @@
         "play": "Воспроизвести",
         "previous": "Предыдущий",
         "resetChannels": "Сбросить каналы...",
-        "showVideos": "[TODO] Show Videos",
+        "showVideos": "Показать видео",
         "tvHelp": "Справка ТВ"
       },
       "name": "ТВ",

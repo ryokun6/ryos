@@ -333,7 +333,7 @@
         "appletExportedDescription": "{{fileName}}.app をエクスポートしました。",
         "appletImported": "アプレットをインポートしました！",
         "appletImportedDescription": "{{fileName}} を /Applets{{iconText}} に保存しました",
-        "appletImportedIconSuffix": "[TODO]  with {{icon}} icon",
+        "appletImportedIconSuffix": "（{{icon}}アイコン付き）",
         "appletNotFound": "アプレットが見つかりません",
         "appletNotFoundDescription": "共有されたアプレットが削除されたか、リンクが無効な可能性があります。",
         "appletSaved": "アプレットを保存しました",
@@ -714,7 +714,7 @@
         "clear": "クリア",
         "createAccountToContinue": "続けるにはアカウントを作成してください...",
         "dailyLimitReached": "1日のAIメッセージ制限に達しました。",
-        "describeThisImage": "[TODO] Describe this image",
+        "describeThisImage": "この画像を説明する",
         "editing": "編集中...",
         "leave": "退出",
         "listening": "聴取中",
@@ -742,20 +742,20 @@
         "usingModel": "{{model}}を使用中"
       },
       "toasts": {
-        "aiError": "[TODO] AI Error",
-        "failedToGetResponse": "[TODO] Failed to get response.",
-        "failedToSaveTranscript": "[TODO] Failed to save transcript",
-        "loginButton": "[TODO] Login",
-        "loginRequired": "[TODO] Login Required",
-        "open": "[TODO] Open",
-        "pleaseLoginToContinueChatting": "[TODO] Please login to continue chatting.",
-        "rateLimitExceeded": "[TODO] Rate Limit Exceeded",
-        "rateLimitMessageLimitLogin": "[TODO] You've reached the message limit. Please login to continue.",
-        "savedToFileName": "[TODO] Saved to {{fileName}}",
-        "sessionExpiredLoginAgain": "[TODO] Your session has expired. Please login again.",
-        "transcriptSaved": "[TODO] Transcript saved",
-        "transcriptUpdated": "[TODO] Transcript updated",
-        "unknownError": "[TODO] Unknown error"
+        "aiError": "AIエラー",
+        "failedToGetResponse": "応答の取得に失敗しました。",
+        "failedToSaveTranscript": "文字起こしの保存に失敗しました",
+        "loginButton": "ログイン",
+        "loginRequired": "ログインが必要です",
+        "open": "開く",
+        "pleaseLoginToContinueChatting": "チャットを続けるにはログインしてください。",
+        "rateLimitExceeded": "レート制限を超過しました",
+        "rateLimitMessageLimitLogin": "メッセージの上限に達しました。続行するにはログインしてください。",
+        "savedToFileName": "{{fileName}}に保存されました",
+        "sessionExpiredLoginAgain": "セッションの期限が切れました。再度ログインしてください。",
+        "transcriptSaved": "文字起こしを保存しました",
+        "transcriptUpdated": "文字起こしを更新しました",
+        "unknownError": "不明なエラー"
       },
       "tokenStatus": {
         "authenticated": "ログイン済み",
@@ -3057,10 +3057,10 @@
       },
       "description": "YouTubeをザッピング",
       "drawer": {
-        "close": "[TODO] Hide videos",
-        "empty": "[TODO] No videos on this channel yet.",
-        "removeVideo": "[TODO] Remove from channel",
-        "title": "[TODO] Schedule"
+        "close": "動画を非表示にする",
+        "empty": "このチャンネルにはまだ動画がありません。",
+        "removeVideo": "チャンネルから削除",
+        "title": "スケジュール"
       },
       "help": {
         "channels": {
@@ -3106,7 +3106,7 @@
         "play": "再生",
         "previous": "前へ",
         "resetChannels": "チャンネルをリセット...",
-        "showVideos": "[TODO] Show Videos",
+        "showVideos": "ビデオを表示",
         "tvHelp": "TVヘルプ"
       },
       "name": "TV",
