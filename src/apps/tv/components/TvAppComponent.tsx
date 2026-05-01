@@ -42,6 +42,7 @@ import { VideoFullScreenPortal } from "@/components/shared/VideoFullScreenPortal
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
 import { useTvLogic, MTV_CHANNEL_ID, RYO_TV_CHANNEL_ID } from "../hooks/useTvLogic";
 import { MtvLyricsOverlay } from "./MtvLyricsOverlay";
+import { getChannelLogo, getChannelLogoCorner } from "../data/channels";
 import {
   SkipBack,
   SkipForward,
@@ -1131,6 +1132,49 @@ export function TvAppComponent({
                     <StatusDisplay message={statusMessage} />
                   </motion.div>
                 )}
+              </AnimatePresence>
+              {/* Channel-bug logo. Sits at z-[25] — above the YouTube
+                  iframe and click-capture layer (z-20) but BELOW the
+                  persistent CRT shader overlay (z-30) — so the
+                  scanlines / vignette / phosphor mask composite over
+                  the logo just like they do over the picture. Corner
+                  is hashed from the channel id (top-left, top-right,
+                  or bottom-right) so each channel always lands in the
+                  same corner but corners vary across channels. Only
+                  the built-in channels ship with branded artwork;
+                  custom channels return undefined and render nothing.
+                  Hidden while the CRT is "off" or collapsing so it
+                  doesn't float over a black screen during pause /
+                  power-off transitions. */}
+              <AnimatePresence>
+                {!screenOff &&
+                  !poweringOff &&
+                  getChannelLogo(currentChannelId) && (
+                    <motion.img
+                      key={currentChannelId}
+                      src={getChannelLogo(currentChannelId)}
+                      alt=""
+                      aria-hidden
+                      initial={STATUS_OPACITY_INITIAL}
+                      animate={STATUS_OPACITY_ANIMATE}
+                      exit={STATUS_OPACITY_INITIAL}
+                      transition={STATUS_FADE_TRANSITION}
+                      className={cn(
+                        "absolute z-[25] w-[20%] aspect-square min-w-[64px] max-w-[240px] object-contain pointer-events-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] opacity-90",
+                        {
+                          "top-[1.5%] left-[4%]":
+                            getChannelLogoCorner(currentChannelId) ===
+                            "top-left",
+                          "top-[1.5%] right-[4%]":
+                            getChannelLogoCorner(currentChannelId) ===
+                            "top-right",
+                          "bottom-[1.5%] right-[4%]":
+                            getChannelLogoCorner(currentChannelId) ===
+                            "bottom-right",
+                        }
+                      )}
+                    />
+                  )}
               </AnimatePresence>
             </div>
           </div>
