@@ -6,6 +6,7 @@ import {
   isDefaultChannelId,
   type Channel,
 } from "@/apps/tv/data/channels";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import type { Video } from "@/stores/useVideoStore";
 
 /** Persisted custom channel; `number` is assigned at runtime from lineup order. */
@@ -121,6 +122,9 @@ export const useTvStore = create<TvStoreState>()(
           id: channel.id ?? generateChannelId(),
           createdAt: Date.now(),
         };
+        useCloudSyncStore
+          .getState()
+          .clearDeletedKeys("tvCustomChannelIds", [created.id]);
         set({ customChannels: [...existing, created] });
         return created;
       },
@@ -134,6 +138,11 @@ export const useTvStore = create<TvStoreState>()(
             isDefault && !s.hiddenDefaultChannelIds.includes(id)
               ? [...s.hiddenDefaultChannelIds, id]
               : s.hiddenDefaultChannelIds;
+          if (!isDefault && s.customChannels.some((c) => c.id === id)) {
+            useCloudSyncStore
+              .getState()
+              .markDeletedKeys("tvCustomChannelIds", [id]);
+          }
           const fallbackId =
             s.currentChannelId === id
               ? buildTvChannelLineup(customChannels, hiddenDefaultChannelIds)[0]
@@ -299,6 +308,9 @@ export const useTvStore = create<TvStoreState>()(
           added += 1;
         }
 
+        useCloudSyncStore
+          .getState()
+          .clearDeletedKeys("tvCustomChannelIds", merged.map((c) => c.id));
         set({ customChannels: merged });
         return { added, skipped };
       },
@@ -310,13 +322,20 @@ export const useTvStore = create<TvStoreState>()(
         };
         return JSON.stringify(payload, null, 2);
       },
-      resetChannels: () =>
+      resetChannels: () => {
+        const customChannelIds = get().customChannels.map((channel) => channel.id);
+        if (customChannelIds.length > 0) {
+          useCloudSyncStore
+            .getState()
+            .markDeletedKeys("tvCustomChannelIds", customChannelIds);
+        }
         set({
           customChannels: [],
           hiddenDefaultChannelIds: [],
           currentChannelId: DEFAULT_CHANNEL_ID,
           lastVideoIndexByChannel: {},
-        }),
+        });
+      },
     }),
     {
       name: "ryos:tv",

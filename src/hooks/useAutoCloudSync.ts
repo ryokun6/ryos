@@ -251,6 +251,10 @@ function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
       return getLatestCloudSyncTimestamp(
         Object.values(deletionMarkers.contactIds)
       );
+    case "tv":
+      return getLatestCloudSyncTimestamp(
+        Object.values(deletionMarkers.tvCustomChannelIds)
+      );
     case "files-metadata":
       return getLatestCloudSyncTimestamp(
         Object.values(deletionMarkers.fileMetadataPaths)
@@ -1462,6 +1466,7 @@ export function useAutoCloudSync() {
     const tvSettingsUnsubscribe = useTvStore.subscribe((state, prevState) => {
       if (
         state.customChannels !== prevState.customChannels ||
+        state.hiddenDefaultChannelIds !== prevState.hiddenDefaultChannelIds ||
         state.lcdFilterOn !== prevState.lcdFilterOn ||
         state.closedCaptionsOn !== prevState.closedCaptionsOn
       ) {

@@ -3,6 +3,7 @@ import {
   buildTvChannelLineup,
   DEFAULT_CHANNEL_ID,
 } from "../src/apps/tv/data/channels";
+import { useCloudSyncStore } from "../src/stores/useCloudSyncStore";
 import { useTvStore } from "../src/stores/useTvStore";
 
 describe("TV store default channel removal", () => {
@@ -16,6 +17,12 @@ describe("TV store default channel removal", () => {
       lcdFilterOn: true,
       closedCaptionsOn: true,
     });
+    useCloudSyncStore.setState((state) => ({
+      deletionMarkers: {
+        ...state.deletionMarkers,
+        tvCustomChannelIds: {},
+      },
+    }));
   });
 
   test("hides a default channel until reset", () => {
@@ -59,5 +66,38 @@ describe("TV store default channel removal", () => {
     const state = useTvStore.getState();
     expect(state.customChannels).toHaveLength(0);
     expect(state.hiddenDefaultChannelIds).toEqual([]);
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.tvCustomChannelIds[custom.id]
+    ).toBeString();
+  });
+
+  test("marks reset custom channels as deleted for sync", () => {
+    const first = useTvStore.getState().addCustomChannel({
+      name: "First",
+      videos: [
+        {
+          id: "first-video",
+          url: "https://youtu.be/first-video",
+          title: "First",
+        },
+      ],
+    });
+    const second = useTvStore.getState().addCustomChannel({
+      name: "Second",
+      videos: [
+        {
+          id: "second-video",
+          url: "https://youtu.be/second-video",
+          title: "Second",
+        },
+      ],
+    });
+
+    useTvStore.getState().resetChannels();
+
+    const state = useTvStore.getState();
+    const deleted = useCloudSyncStore.getState().deletionMarkers.tvCustomChannelIds;
+    expect(state.customChannels).toEqual([]);
+    expect(Object.keys(deleted).sort()).toEqual([first.id, second.id].sort());
   });
 });
