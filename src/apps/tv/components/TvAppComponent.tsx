@@ -1492,6 +1492,8 @@ export function TvAppComponent({
           onSeek={handleSeek}
           onNext={nextVideo}
           onPrevious={prevVideo}
+          onChannelNext={nextChannel}
+          onChannelPrev={prevChannel}
           showStatus={showStatus}
           statusMessage={statusMessage}
           videoOverlay={

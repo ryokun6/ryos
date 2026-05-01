@@ -85,7 +85,14 @@ export interface FullscreenPlayerControlsProps {
   isLangMenuOpen: boolean;
   setIsLangMenuOpen: (open: boolean) => void;
 
-  // Optional close button (for fullscreen mode)
+  // Optional TV-style channel step (after transport, same visual language as other islands)
+  onChannelUp?: () => void;
+  onChannelDown?: () => void;
+  channelUpTitle?: string;
+  channelDownTitle?: string;
+  channelUpLabel?: string;
+  channelDownLabel?: string;
+
   onClose?: () => void;
 
   // Styling variants
@@ -126,6 +133,12 @@ export function FullscreenPlayerControls({
   translationLanguages,
   isLangMenuOpen,
   setIsLangMenuOpen,
+  onChannelUp,
+  onChannelDown,
+  channelUpTitle,
+  channelDownTitle,
+  channelUpLabel,
+  channelDownLabel,
   onClose,
   variant = "responsive",
   bgOpacity = "35",
@@ -317,6 +330,49 @@ export function FullscreenPlayerControls({
           );
         })()}
       </div>
+
+      {onChannelUp &&
+        onChannelDown &&
+        channelUpLabel &&
+        channelDownLabel && (
+          <div className={segmentClasses} style={aquaSegmentStyle}>
+            {isMacTheme && <AquaShineOverlays variant={variant} />}
+            <button
+              type="button"
+              onClick={handleClick(onChannelDown)}
+              aria-label={channelDownTitle ?? channelDownLabel}
+              className={buttonClasses}
+              title={channelDownTitle ?? channelDownLabel}
+            >
+              <span
+                className={cn(
+                  smallIconSize,
+                  "font-semibold tabular-nums tracking-tight",
+                  iconClasses
+                )}
+              >
+                {channelDownLabel}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleClick(onChannelUp)}
+              aria-label={channelUpTitle ?? channelUpLabel}
+              className={buttonClasses}
+              title={channelUpTitle ?? channelUpLabel}
+            >
+              <span
+                className={cn(
+                  smallIconSize,
+                  "font-semibold tabular-nums tracking-tight",
+                  iconClasses
+                )}
+              >
+                {channelUpLabel}
+              </span>
+            </button>
+          </div>
+        )}
 
       {/* Lyrics controls island */}
       {!hideLyricsControls && (
