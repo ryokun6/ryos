@@ -48,14 +48,16 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
   const setIsPlaying = useTvStore((s) => s.setIsPlaying);
   const togglePlayStore = useTvStore((s) => s.togglePlay);
   const customChannels = useTvStore((s) => s.customChannels);
+  const hiddenDefaultChannelIds = useTvStore((s) => s.hiddenDefaultChannelIds);
   const removeVideoFromCustomChannel = useTvStore(
     (s) => s.removeVideoFromCustomChannel
   );
 
   // Built-in channels first, then customs; numbers follow list order (1-based).
   const channels = useMemo(
-    (): Channel[] => buildTvChannelLineup(customChannels),
-    [customChannels]
+    (): Channel[] =>
+      buildTvChannelLineup(customChannels, hiddenDefaultChannelIds),
+    [customChannels, hiddenDefaultChannelIds]
   );
 
   const currentTheme = useThemeStore((state) => state.current);
@@ -202,7 +204,8 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
       // closure on `channels` would miss a freshly-created channel and
       // silently no-op when callers tune in to it.
       const ch = buildTvChannelLineup(
-        useTvStore.getState().customChannels
+        useTvStore.getState().customChannels,
+        useTvStore.getState().hiddenDefaultChannelIds
       ).find((c) => c.id === id);
       if (!ch) return;
       // Cancel any in-flight digit buffer so a partial channel number from

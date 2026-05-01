@@ -205,6 +205,107 @@ afterAll(() => {
 });
 
 describe("cloud sync TV upload apply", () => {
+  test("TV upload merge preserves hidden default channels from local and remote", async () => {
+    const { useTvStore } = await import("../src/stores/useTvStore");
+    const { prepareCloudSyncDomainWrite, invalidateRedisStateSnapshotForUpload } =
+      await import("../src/sync/domains");
+    const { isApplyingRemoteDomain } = await import(
+      "../src/utils/cloudSyncRemoteApplyState"
+    );
+
+    const username = `tv-hidden-defaults-${Date.now()}`;
+    invalidateRedisStateSnapshotForUpload(username, "tv");
+    useTvStore.setState({
+      currentChannelId: "ryos-picks",
+      customChannels: [makeChannel("local")],
+      hiddenDefaultChannelIds: ["taiwan"],
+      lcdFilterOn: true,
+      closedCaptionsOn: true,
+    });
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      if (url.endsWith("/api/sync/domains/tv")) {
+        return new Response(
+          JSON.stringify({
+            parts: {
+              tv: {
+                metadata: makeMetadata("2026-03-22T09:55:00.000Z"),
+                data: {
+                  customChannels: [makeChannel("remote")],
+                  hiddenDefaultChannelIds: ["tokki-mix"],
+                  lcdFilterOn: false,
+                  closedCaptionsOn: false,
+                },
+              },
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      throw new Error(`Unexpected fetch in test: ${url}`);
+    }) as typeof fetch;
+
+    const queuedDuringApply: boolean[] = [];
+    const unsubscribe = useTvStore.subscribe((state, prevState) => {
+      if (
+        state.customChannels !== prevState.customChannels ||
+        state.hiddenDefaultChannelIds !== prevState.hiddenDefaultChannelIds ||
+        state.lcdFilterOn !== prevState.lcdFilterOn ||
+        state.closedCaptionsOn !== prevState.closedCaptionsOn
+      ) {
+        if (useTvStore.persist && !useTvStore.persist.hasHydrated()) return;
+        if (isApplyingRemoteDomain("tv")) return;
+        queuedDuringApply.push(true);
+      }
+    });
+
+    try {
+      const prepared = await prepareCloudSyncDomainWrite("tv", {
+        username,
+        isAuthenticated: true,
+      });
+      const payload = prepared.payload as {
+        data: {
+          customChannels: CustomChannel[];
+          hiddenDefaultChannelIds: string[];
+          lcdFilterOn: boolean;
+          closedCaptionsOn: boolean;
+        };
+      };
+
+      expect(
+        payload.data.customChannels.map((channel) => channel.id).sort()
+      ).toEqual(["local", "remote"]);
+      expect(payload.data.hiddenDefaultChannelIds).toEqual([
+        "taiwan",
+        "tokki-mix",
+      ]);
+      expect(payload.data.lcdFilterOn).toBe(true);
+      expect(payload.data.closedCaptionsOn).toBe(true);
+
+      await prepared.onCommitted?.(makeMetadata("2026-03-22T10:00:00.000Z"));
+      expect(useTvStore.getState().hiddenDefaultChannelIds).toEqual([
+        "taiwan",
+        "tokki-mix",
+      ]);
+      expect(queuedDuringApply).toEqual([]);
+    } finally {
+      unsubscribe();
+      globalThis.fetch = originalFetch;
+      invalidateRedisStateSnapshotForUpload(username, "tv");
+    }
+  });
+
   test("resolved TV upload apply is treated as remote so it does not queue another TV upload", async () => {
     const { useTvStore } = await import("../src/stores/useTvStore");
     const { applyResolvedRedisUploadLocally } = await import("../src/sync/domains");
@@ -215,6 +316,7 @@ describe("cloud sync TV upload apply", () => {
     useTvStore.setState({
       currentChannelId: "ryos-picks",
       customChannels: [],
+      hiddenDefaultChannelIds: [],
       lcdFilterOn: true,
       closedCaptionsOn: true,
     });
@@ -223,10 +325,11 @@ describe("cloud sync TV upload apply", () => {
     const unsubscribe = useTvStore.subscribe((state, prevState) => {
       if (
         state.customChannels !== prevState.customChannels ||
+        state.hiddenDefaultChannelIds !== prevState.hiddenDefaultChannelIds ||
         state.lcdFilterOn !== prevState.lcdFilterOn ||
         state.closedCaptionsOn !== prevState.closedCaptionsOn
       ) {
-        if (!useTvStore.persist.hasHydrated()) return;
+        if (useTvStore.persist && !useTvStore.persist.hasHydrated()) return;
         if (isApplyingRemoteDomain("tv")) return;
         queuedDuringApply.push(true);
       }
@@ -237,6 +340,7 @@ describe("cloud sync TV upload apply", () => {
         "tv",
         {
           customChannels: [makeChannel("local"), makeChannel("remote")],
+          hiddenDefaultChannelIds: ["taiwan"],
           lcdFilterOn: true,
           closedCaptionsOn: true,
         },
@@ -247,6 +351,7 @@ describe("cloud sync TV upload apply", () => {
         "local",
         "remote",
       ]);
+      expect(useTvStore.getState().hiddenDefaultChannelIds).toEqual(["taiwan"]);
       expect(queuedDuringApply).toEqual([]);
     } finally {
       unsubscribe();
@@ -265,6 +370,7 @@ describe("cloud sync TV upload apply", () => {
     useTvStore.setState({
       currentChannelId: "ryos-picks",
       customChannels: [],
+      hiddenDefaultChannelIds: [],
       lcdFilterOn: true,
       closedCaptionsOn: true,
     });
@@ -273,10 +379,11 @@ describe("cloud sync TV upload apply", () => {
     const unsubscribe = useTvStore.subscribe((state, prevState) => {
       if (
         state.customChannels !== prevState.customChannels ||
+        state.hiddenDefaultChannelIds !== prevState.hiddenDefaultChannelIds ||
         state.lcdFilterOn !== prevState.lcdFilterOn ||
         state.closedCaptionsOn !== prevState.closedCaptionsOn
       ) {
-        if (!useTvStore.persist.hasHydrated()) return;
+        if (useTvStore.persist && !useTvStore.persist.hasHydrated()) return;
         if (isApplyingRemoteDomain("tv")) return;
         queuedDuringApply.push(true);
       }
@@ -287,6 +394,7 @@ describe("cloud sync TV upload apply", () => {
         metadata: makeMetadata("2026-03-22T10:05:00.000Z"),
         data: {
           customChannels: [makeChannel("downloaded")],
+          hiddenDefaultChannelIds: ["taiwan"],
           lcdFilterOn: true,
           closedCaptionsOn: true,
         },
@@ -295,6 +403,7 @@ describe("cloud sync TV upload apply", () => {
       expect(useTvStore.getState().customChannels.map((channel) => channel.id)).toEqual([
         "downloaded",
       ]);
+      expect(useTvStore.getState().hiddenDefaultChannelIds).toEqual(["taiwan"]);
       expect(queuedDuringApply).toEqual([]);
     } finally {
       unsubscribe();

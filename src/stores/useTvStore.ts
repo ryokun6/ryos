@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_CHANNEL_ID, type Channel } from "@/apps/tv/data/channels";
+import {
+  buildTvChannelLineup,
+  DEFAULT_CHANNEL_ID,
+  isDefaultChannelId,
+  type Channel,
+} from "@/apps/tv/data/channels";
 import type { Video } from "@/stores/useVideoStore";
 
 /** Persisted custom channel; `number` is assigned at runtime from lineup order. */
@@ -31,6 +36,7 @@ interface TvStoreState {
   lastVideoIndexByChannel: Record<string, number>;
   isPlaying: boolean;
   customChannels: CustomChannel[];
+  hiddenDefaultChannelIds: string[];
   /** Whether the persistent CRT scanline / vignette overlay is on. */
   lcdFilterOn: boolean;
   /** MTV (and similar) word-timed lyric captions over the picture. */
@@ -46,6 +52,7 @@ interface TvStoreState {
   addCustomChannel: (
     channel: Omit<CustomChannel, "id" | "createdAt"> & { id?: string }
   ) => CustomChannel;
+  removeChannel: (id: string) => void;
   removeCustomChannel: (id: string) => void;
   /** Patch a custom channel's name/description/etc. by id. */
   updateCustomChannel: (
@@ -88,6 +95,7 @@ export const useTvStore = create<TvStoreState>()(
       lastVideoIndexByChannel: {},
       isPlaying: false,
       customChannels: [],
+      hiddenDefaultChannelIds: [],
       lcdFilterOn: true,
       closedCaptionsOn: true,
       setCurrentChannelId: (id) => set({ currentChannelId: id }),
@@ -116,18 +124,28 @@ export const useTvStore = create<TvStoreState>()(
         set({ customChannels: [...existing, created] });
         return created;
       },
-      removeCustomChannel: (id) =>
+      removeChannel: (id) =>
         set((s) => {
-          const next = s.customChannels.filter((c) => c.id !== id);
-          // If the deleted channel was selected, fall back to the first
-          // built-in channel so the player doesn't render an empty state.
+          const isDefault = isDefaultChannelId(id);
+          const customChannels = isDefault
+            ? s.customChannels
+            : s.customChannels.filter((c) => c.id !== id);
+          const hiddenDefaultChannelIds =
+            isDefault && !s.hiddenDefaultChannelIds.includes(id)
+              ? [...s.hiddenDefaultChannelIds, id]
+              : s.hiddenDefaultChannelIds;
           const fallbackId =
-            s.currentChannelId === id ? DEFAULT_CHANNEL_ID : s.currentChannelId;
+            s.currentChannelId === id
+              ? buildTvChannelLineup(customChannels, hiddenDefaultChannelIds)[0]
+                  ?.id ?? DEFAULT_CHANNEL_ID
+              : s.currentChannelId;
           return {
-            customChannels: next,
+            customChannels,
+            hiddenDefaultChannelIds,
             currentChannelId: fallbackId,
           };
         }),
+      removeCustomChannel: (id) => get().removeChannel(id),
       updateCustomChannel: (id, patch) => {
         let updated: CustomChannel | null = null;
         set((s) => {
@@ -295,6 +313,7 @@ export const useTvStore = create<TvStoreState>()(
       resetChannels: () =>
         set({
           customChannels: [],
+          hiddenDefaultChannelIds: [],
           currentChannelId: DEFAULT_CHANNEL_ID,
           lastVideoIndexByChannel: {},
         }),
@@ -303,7 +322,13 @@ export const useTvStore = create<TvStoreState>()(
       name: "ryos:tv",
       version: 4,
       migrate: (persisted, version) => {
-        const state = persisted as { customChannels?: CustomChannel[] };
+        if (!persisted || typeof persisted !== "object") {
+          return persisted as typeof persisted;
+        }
+        const state = persisted as {
+          customChannels?: CustomChannel[];
+          hiddenDefaultChannelIds?: unknown;
+        };
         if (version < 4 && Array.isArray(state.customChannels)) {
           state.customChannels = state.customChannels.map((entry) => {
             const { number: _n, ...rest } = entry as CustomChannel & {
@@ -312,6 +337,9 @@ export const useTvStore = create<TvStoreState>()(
             return rest as CustomChannel;
           });
         }
+        if (!Array.isArray(state.hiddenDefaultChannelIds)) {
+          state.hiddenDefaultChannelIds = [];
+        }
         return state as typeof persisted;
       },
       // Channel lineup rotation uses an in-memory per-channel shuffle (see
@@ -319,6 +347,7 @@ export const useTvStore = create<TvStoreState>()(
       partialize: (s) => ({
         currentChannelId: s.currentChannelId,
         customChannels: s.customChannels,
+        hiddenDefaultChannelIds: s.hiddenDefaultChannelIds,
         lcdFilterOn: s.lcdFilterOn,
         closedCaptionsOn: s.closedCaptionsOn,
       }),

@@ -352,12 +352,13 @@ const getSystemState = () => {
   // index doesn't map to a stable "current video". Surface the current
   // channel + lineup metadata so the AI can reason about the lineup,
   // tune in, and edit channels via tvControl.
-  const tvChannelLineup = buildTvChannelLineup(tvStore.customChannels).map(
-    (ch) => ({
-      ch,
-      isCustom: !DEFAULT_CHANNELS.some((d) => d.id === ch.id),
-    })
-  );
+  const tvChannelLineup = buildTvChannelLineup(
+    tvStore.customChannels,
+    tvStore.hiddenDefaultChannelIds
+  ).map((ch) => ({
+    ch,
+    isCustom: !DEFAULT_CHANNELS.some((d) => d.id === ch.id),
+  }));
   const tvCurrentEntry =
     tvChannelLineup.find(({ ch }) => ch.id === tvStore.currentChannelId) ??
     tvChannelLineup[0] ??
@@ -377,7 +378,10 @@ const getSystemState = () => {
             : tvCurrentEntry.ch.videos.length,
       }
     : null;
-  const tvCustomChannels = buildTvChannelLineup(tvStore.customChannels)
+  const tvCustomChannels = buildTvChannelLineup(
+    tvStore.customChannels,
+    tvStore.hiddenDefaultChannelIds
+  )
     .filter((ch) => !DEFAULT_CHANNELS.some((d) => d.id === ch.id))
     .map((c) => ({
       id: c.id,
@@ -538,9 +542,8 @@ const getSystemState = () => {
     tv: {
       currentChannel: tvCurrentChannel,
       isPlaying: tvStore.isPlaying,
-      // Built-in channels are always present (RyoTV, MTV, 台視) and read-only;
-      // only list custom (user-created) channels here so the AI knows what
-      // can be edited / deleted via tvControl.
+      // Custom channels can be edited; default channels can be deleted from
+      // the visible lineup and restored via TV's reset action.
       customChannels: tvCustomChannels,
     },
     textEdit: {

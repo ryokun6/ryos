@@ -152,6 +152,7 @@ interface VideosSnapshotData {
 
 interface TvSnapshotData {
   customChannels: CustomChannel[];
+  hiddenDefaultChannelIds?: string[];
   lcdFilterOn: boolean;
   closedCaptionsOn: boolean;
 }
@@ -694,6 +695,7 @@ function serializeTvSnapshot(): TvSnapshotData {
   const tvState = useTvStore.getState();
   return {
     customChannels: tvState.customChannels,
+    hiddenDefaultChannelIds: tvState.hiddenDefaultChannelIds,
     lcdFilterOn: tvState.lcdFilterOn,
     closedCaptionsOn: tvState.closedCaptionsOn,
   };
@@ -1110,6 +1112,9 @@ function applyVideosSnapshot(data: VideosSnapshotData): void {
 function applyTvSnapshot(data: TvSnapshotData): void {
   useTvStore.setState({
     customChannels: Array.isArray(data.customChannels) ? data.customChannels : [],
+    hiddenDefaultChannelIds: Array.isArray(data.hiddenDefaultChannelIds)
+      ? data.hiddenDefaultChannelIds
+      : [],
     lcdFilterOn: data.lcdFilterOn ?? true,
     closedCaptionsOn: data.closedCaptionsOn ?? true,
   });
@@ -1559,6 +1564,12 @@ function mergeTvSnapshots(
     customChannels: mergeItemsById(
       local.customChannels || [],
       remote.customChannels || []
+    ),
+    hiddenDefaultChannelIds: Array.from(
+      new Set([
+        ...(local.hiddenDefaultChannelIds || []),
+        ...(remote.hiddenDefaultChannelIds || []),
+      ])
     ),
     lcdFilterOn: local.lcdFilterOn,
     closedCaptionsOn: local.closedCaptionsOn,
