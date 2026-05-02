@@ -2613,7 +2613,7 @@
         "toggleMouseCapture": "Переключить захват мыши",
         "virtualPcHelp": "Справка Virtual PC"
       },
-      "name": "Virtual PC",
+      "name": "Виртуальный ПК",
       "presets": {
         "archlinux": {
           "description": "Rolling-release Linux с оконным менеджером i3",
@@ -2781,7 +2781,7 @@
         "games": "Игры",
         "os": "ОС"
       },
-      "title": "Virtual PC",
+      "title": "Виртуальный ПК",
       "virtualPc": "Виртуальный ПК"
     },
     "photo-booth": {

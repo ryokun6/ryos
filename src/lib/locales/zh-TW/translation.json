@@ -2543,7 +2543,7 @@
         "AsIs": "原始比例",
         "Fit": "適應螢幕"
       },
-      "description": "3D PC 模擬",
+      "description": "x86 作業系統模擬 (v86) 與經典 DOS 遊戲",
       "dialogs": {
         "resetVirtualPcDescription": "您確定要重設此 PC 嗎？這將清除所有目前的狀態。",
         "resetVirtualPcTitle": "重設虛擬 PC"
@@ -2598,7 +2598,7 @@
       "loadingGame": "載入 {{gameName}}...",
       "loadingSystem": "正在載入 {{name}}...",
       "menu": {
-        "aboutVirtualPc": "關於虛擬PC",
+        "aboutVirtualPc": "關於虛擬 PC",
         "aspectRatio": "長寬比",
         "backToBrowse": "返回",
         "backToPresets": "返回系統列表",
@@ -2611,7 +2611,7 @@
         "reset": "重設",
         "saveState": "儲存狀態",
         "toggleMouseCapture": "切換滑鼠擷取",
-        "virtualPcHelp": "虛擬PC輔助說明"
+        "virtualPcHelp": "虛擬 PC 輔助說明"
       },
       "name": "虛擬 PC",
       "presets": {
@@ -2781,7 +2781,7 @@
         "games": "遊戲",
         "os": "作業系統"
       },
-      "title": "虛擬電腦",
+      "title": "虛擬 PC",
       "virtualPc": "虛擬 PC"
     },
     "photo-booth": {
