@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 24 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 25 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 ## App Overview
 
@@ -13,6 +13,7 @@ ryOS includes 24 built-in applications, each designed to replicate classic deskt
 | [iPod](/docs/ipod) | Music player with YouTube integration & synced lyrics | Media |
 | [Karaoke](/docs/karaoke) | Karaoke player with synced lyrics display | Media |
 | [Videos](/docs/videos) | Video player for watching media | Media |
+| [TV](/docs/tv) | Channel-surfing TV with CRT shader effects, MTV music videos with synced captions, and AI-generated channels | Media |
 | [Winamp](/docs/winamp) | Classic Winamp media player | Media |
 | [Soundboard](/docs/soundboard) | Record and play sound effects | Audio |
 | [Synth](/docs/synth) | Virtual synthesizer with 3D waveform visualization | Audio |
@@ -22,7 +23,7 @@ ryOS includes 24 built-in applications, each designed to replicate classic deskt
 | [Applet Store](/docs/applet-store) | Browse and run user-created HTML applets | Utilities |
 | [Control Panels](/docs/control-panels) | System settings for themes, wallpapers, audio, AI models, and cloud sync | System |
 | [Minesweeper](/docs/minesweeper) | Classic puzzle game | Games |
-| [Virtual PC](/docs/virtual-pc) | 3D PC simulation experience | Entertainment |
+| [Virtual PC](/docs/virtual-pc) | x86 emulator powered by v86 with classic OS presets, plus a DOS games library via js-dos | Entertainment |
 | [Infinite Mac](/docs/infinite-mac) | Classic Mac OS emulators | Entertainment |
 | [Stickies](/docs/stickies) | Sticky notes for quick reminders | Productivity |
 | [Calendar](/docs/calendar) | iCal-style calendar with month, week, and day views, todos, and cloud sync | Productivity |
