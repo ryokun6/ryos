@@ -24,6 +24,7 @@ interface DashboardMenuBarProps {
   onAddTranslation: () => void;
   onAddStickyNote: () => void;
   onAddDictionary: () => void;
+  onAddAquarium: () => void;
   onResetWidgets: () => void;
 }
 
@@ -39,6 +40,7 @@ export function DashboardMenuBar({
   onAddTranslation,
   onAddStickyNote,
   onAddDictionary,
+  onAddAquarium,
   onResetWidgets,
 }: DashboardMenuBarProps) {
   const { t } = useTranslation();
@@ -82,6 +84,9 @@ export function DashboardMenuBar({
               </MenubarItem>
               <MenubarItem onClick={onAddDictionary} className="text-md h-6 px-3">
                 📖 {t("apps.dashboard.widgets.dictionary", "Dictionary")}
+              </MenubarItem>
+              <MenubarItem onClick={onAddAquarium} className="text-md h-6 px-3">
+                🐠 {t("apps.dashboard.widgets.aquarium", "Aquarium")}
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>

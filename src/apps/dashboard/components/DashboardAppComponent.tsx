@@ -15,6 +15,7 @@ import { IpodWidget, IpodBackPanel } from "@/components/layout/dashboard/IpodWid
 import { TranslationWidget, TranslationBackPanel } from "@/components/layout/dashboard/TranslationWidget";
 import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
 import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
+import { AquariumWidget } from "@/components/layout/dashboard/AquariumWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -39,6 +40,8 @@ function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: 
       return <StickyNoteWidget widgetId={widgetId} />;
     case "dictionary":
       return <DictionaryWidget widgetId={widgetId} />;
+    case "aquarium":
+      return <AquariumWidget widgetId={widgetId} />;
     default:
       return null;
   }
@@ -81,6 +84,7 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
   translation: "🌐",
   stickynote: "📝",
   dictionary: "📖",
+  aquarium: "🐠",
 };
 
 function WidgetStrip({
@@ -118,6 +122,7 @@ function WidgetStrip({
     { type: "translation", label: t("apps.dashboard.widgets.translation", "Translation") },
     { type: "stickynote", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
     { type: "dictionary", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
+    { type: "aquarium", label: t("apps.dashboard.widgets.aquarium", "Aquarium") },
   ];
 
   return (
@@ -294,6 +299,7 @@ export function DashboardAppComponent({
       onAddTranslation={() => handleAddWidget("translation")}
       onAddStickyNote={() => handleAddWidget("stickynote")}
       onAddDictionary={() => handleAddWidget("dictionary")}
+      onAddAquarium={() => handleAddWidget("aquarium")}
       onResetWidgets={resetToDefaults}
     />
   );

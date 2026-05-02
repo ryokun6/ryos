@@ -10,6 +10,7 @@ interface EmojiAquariumProps {
   density?: AquariumDensity;
   seed?: string;
   className?: string;
+  variant?: "chat" | "widget";
 }
 
 function useSeededRandom(seed?: string) {
@@ -29,7 +30,7 @@ function useSeededRandom(seed?: string) {
   };
 }
 
-export function EmojiAquarium({ seed, className }: EmojiAquariumProps) {
+export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquariumProps) {
   // Create a stable seed once so re-renders (e.g., hover) don't change layout.
   const seedRef = useRef<string | undefined>(seed);
   if (seedRef.current === undefined) {
@@ -44,13 +45,18 @@ export function EmojiAquarium({ seed, className }: EmojiAquariumProps) {
 
   const rand = useSeededRandom(seedRef.current);
 
-  // Responsive: fill the container width and compute height via aspect ratio.
+  // Responsive: chat uses an aspect ratio, dashboard widgets fill their frame.
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState<number>(420);
+  const [containerSize, setContainerSize] = useState({ width: 420, height: 0 });
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const update = () => setContainerWidth(el.clientWidth || 420);
+    const update = () => {
+      setContainerSize({
+        width: el.clientWidth || 420,
+        height: el.clientHeight || 0,
+      });
+    };
     update();
     const ro = new ResizeObserver(() => update());
     ro.observe(el);
@@ -58,8 +64,12 @@ export function EmojiAquarium({ seed, className }: EmojiAquariumProps) {
   }, []);
 
   const aspect = 236 / 420; // ~16:9
-  const width = containerWidth;
-  const height = Math.max(120, Math.round(containerWidth * aspect));
+  const width = containerSize.width;
+  const aspectHeight = Math.round(containerSize.width * aspect);
+  const height =
+    variant === "widget"
+      ? Math.max(120, containerSize.height || aspectHeight)
+      : Math.max(120, aspectHeight);
   // Scale sand height with container for a larger, responsive base
   const sandHeight = Math.max(24, Math.round(height * 0.35));
 
@@ -103,13 +113,15 @@ export function EmojiAquarium({ seed, className }: EmojiAquariumProps) {
     <MotionConfig reducedMotion="never">
       <div
         className={cn(
-          "chat-bubble bg-blue-300 text-black !p-0 mb-2 w-full max-w-[420px] rounded",
+          variant === "chat"
+            ? "chat-bubble bg-blue-300 text-black !p-0 mb-2 w-full max-w-[420px] rounded"
+            : "h-full min-h-[inherit] bg-blue-300 text-black w-full overflow-hidden rounded-[inherit]",
           className
         )}
+        ref={containerRef}
       >
         <div
-          ref={containerRef}
-          className={cn("relative z-0 overflow-hidden rounded")}
+          className={cn("relative z-0 overflow-hidden rounded-[inherit]")}
           style={{ width: "100%", height }}
         >
           {/* small fish */}
