@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   cursorSdkMetaKey,
   DEFAULT_RYOS_GITHUB_REPO_URL,
-  executeCursorRyOsRepoAgent,
+  executeCursorCloudAgent,
+  executeListCursorCloudAgentRuns,
   formatCursorRunCompletionTelegramMessage,
+  listCursorSdkRunsFromRedis,
   pickPrUrlFromRunGit,
   sendCursorAgentFollowup,
 } from "../api/chat/tools/cursor-repo-agent.js";
@@ -25,9 +27,9 @@ function makeFakeRedis(initial: Record<string, unknown>): Redis {
   return stub;
 }
 
-describe("cursorRyOsRepoAgent gate", () => {
+describe("cursorCloudAgent gate", () => {
   test("rejects callers whose username is not the repo owner", async () => {
-    const result = await executeCursorRyOsRepoAgent(
+    const result = await executeCursorCloudAgent(
       { prompt: "touch foo" },
       {
         username: "alice",
@@ -235,6 +237,119 @@ describe("sendCursorAgentFollowup pre-checks", () => {
     if (!result.ok) {
       expect(result.status).toBe(409);
       expect(result.error).toContain("agent id");
+    }
+  });
+});
+
+function makeListTestRedis(
+  entries: Record<string, string>
+): Redis {
+  const store = new Map(Object.entries(entries));
+  return {
+    scan: async (_cursor: string | number) => {
+      const keys = [...store.keys()].filter(
+        (k) => k.startsWith("cursor-sdk-run:") && k.endsWith(":meta")
+      );
+      return [0, keys];
+    },
+    mget: async (...keys: string[]) =>
+      keys.map((k) => store.get(k) ?? null),
+  } as unknown as Redis;
+}
+
+describe("listCursorSdkRunsFromRedis", () => {
+  test("dedupes, sorts running first, and exposes nextRunId when present", async () => {
+    const redis = makeListTestRedis({
+      "cursor-sdk-run:abc:meta": JSON.stringify({
+        runId: "abc",
+        agentId: "ag1",
+        createdAt: 100,
+        activeRunId: "abc",
+        promptPreview: "hello",
+      }),
+      "cursor-sdk-run:done:meta": JSON.stringify({
+        runId: "done",
+        agentId: "ag1",
+        createdAt: 50,
+        finishedAt: 200,
+        terminalStatus: "finished",
+        summary: "All good",
+        prUrl: "https://github.com/x/y/pull/1",
+        nextRunId: "abc",
+      }),
+    });
+    const { runs, scanIncomplete } = await listCursorSdkRunsFromRedis(
+      redis,
+      10
+    );
+    expect(scanIncomplete).toBe(false);
+    expect(runs.length).toBe(2);
+    expect(runs[0].status).toBe("running");
+    expect(runs[0].runId).toBe("abc");
+    expect(runs[1].prUrl).toBe("https://github.com/x/y/pull/1");
+    expect(runs[1].nextRunId).toBe("abc");
+    expect(runs[1].summaryPreview).toContain("All good");
+  });
+});
+
+describe("executeListCursorCloudAgentRuns", () => {
+  test("rejects non-owner", async () => {
+    const result = await executeListCursorCloudAgentRuns(
+      {},
+      {
+        username: "alice",
+        redis: makeListTestRedis({}),
+        log: () => {},
+        logError: () => {},
+        env: {},
+      }
+    );
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain("restricted");
+    }
+  });
+
+  test("requires Redis", async () => {
+    const result = await executeListCursorCloudAgentRuns(
+      {},
+      {
+        username: "ryo",
+        log: () => {},
+        logError: () => {},
+        env: {},
+      }
+    );
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain("Redis");
+    }
+  });
+
+  test("returns pollUrl for each run", async () => {
+    const redis = makeListTestRedis({
+      "cursor-sdk-run:x:meta": JSON.stringify({
+        runId: "x",
+        agentId: "a",
+        createdAt: 1,
+        activeRunId: "x",
+      }),
+    });
+    const result = await executeListCursorCloudAgentRuns(
+      { limit: 5 },
+      {
+        username: "ryo",
+        redis,
+        log: () => {},
+        logError: () => {},
+        env: {},
+      }
+    );
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.runs.length).toBe(1);
+      expect(result.runs[0].pollUrl).toContain("/api/ai/cursor-run-status");
+      expect(result.runs[0].pollUrl).toContain(encodeURIComponent("x"));
     }
   });
 });

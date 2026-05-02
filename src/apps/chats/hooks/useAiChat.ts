@@ -821,9 +821,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = "";
             break;
           }
+          case "cursorCloudAgent":
           case "cursorRyOsRepoAgent": {
-            console.log("[ToolCall] cursorRyOsRepoAgent (server-side):", toolCall.input);
+            console.log("[ToolCall] cursorCloudAgent (server-side):", toolCall.input);
             // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "listCursorCloudAgentRuns": {
+            console.log(
+              "[ToolCall] listCursorCloudAgentRuns (server-side):",
+              toolCall.input
+            );
             result = "";
             break;
           }
@@ -1848,7 +1857,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           "memoryRead",
           "memoryDelete",
           "webFetch",
+          "cursorCloudAgent",
           "cursorRyOsRepoAgent",
+          "listCursorCloudAgentRuns",
         ];
         const toolParts = lastMsg.parts.filter(
           (part: { type?: string; state?: string }) =>

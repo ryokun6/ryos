@@ -34,12 +34,14 @@ import {
   type ChatToolsContext,
 } from "../chat/tools/index.js";
 import {
+  CURSOR_CLOUD_AGENT_DESCRIPTION,
   CURSOR_REPO_AGENT_OWNER,
-  CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
-  cursorRyOsRepoAgentSchema,
-  executeCursorRyOsRepoAgent,
+  cursorCloudAgentSchema,
+  executeCursorCloudAgent,
+  executeListCursorCloudAgentRuns,
+  listCursorCloudAgentRunsSchema,
+  type CursorCloudAgentInput,
   type CursorRepoAgentTelegramNotify,
-  type CursorRyOsRepoAgentInput,
 } from "../chat/tools/cursor-repo-agent.js";
 
 export interface RyoConversationSystemState {
@@ -155,7 +157,7 @@ export interface PrepareRyoConversationOptions {
   toolContextOverrides?: Partial<ChatToolsContext>;
   preloadedMemoryContext?: LoadedRyoMemoryContext;
   /**
-   * When set (typically by the Telegram webhook), the cursorRyOsRepoAgent tool
+   * When set (typically by the Telegram webhook), the Cursor Cloud agent tool
    * will send a Telegram message to this chat once a background run completes.
    */
   cursorRepoAgentNotifyTelegram?: CursorRepoAgentTelegramNotify;
@@ -735,8 +737,8 @@ export async function prepareRyoConversationModelInput(
 
   const cursorSdkAddon = enableCursorRepoTool
     ? channel === "telegram"
-      ? `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge it briefly to the user — they will receive a follow-up Telegram message with the result when the run completes.`
-      : `\n\n## CURSOR REPOSITORY AGENT\nYou have access to \`cursorRyOsRepoAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos. Do not use it for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use it only when the user wants changes to this product's source code on GitHub.`
+      ? `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs with status and PR links. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge it briefly to the user — they will receive a follow-up Telegram message with the result when the run completes.`
+      : `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs with status and PR links. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub.`
     : "";
 
   const staticSystemPrompt = staticPrompts.join("\n") + cursorSdkAddon;
@@ -779,11 +781,11 @@ export async function prepareRyoConversationModelInput(
     cursorApiKey &&
     (toolProfile === "all" || toolProfile === "telegram")
       ? {
-          cursorRyOsRepoAgent: {
-            description: CURSOR_RYOS_REPO_AGENT_DESCRIPTION,
-            inputSchema: cursorRyOsRepoAgentSchema,
-            execute: async (input: CursorRyOsRepoAgentInput) =>
-              executeCursorRyOsRepoAgent(input, {
+          cursorCloudAgent: {
+            description: CURSOR_CLOUD_AGENT_DESCRIPTION,
+            inputSchema: cursorCloudAgentSchema,
+            execute: async (input: CursorCloudAgentInput) =>
+              executeCursorCloudAgent(input, {
                 log,
                 logError,
                 env: {
@@ -797,6 +799,46 @@ export async function prepareRyoConversationModelInput(
                 ...(cursorRepoAgentNotifyTelegram
                   ? { notifyTelegram: cursorRepoAgentNotifyTelegram }
                   : {}),
+                ...toolContextOverrides,
+              }),
+          },
+          /** @deprecated Prefer cursorCloudAgent — same execute; kept for backward compatibility */
+          cursorRyOsRepoAgent: {
+            description: CURSOR_CLOUD_AGENT_DESCRIPTION,
+            inputSchema: cursorCloudAgentSchema,
+            execute: async (input: CursorCloudAgentInput) =>
+              executeCursorCloudAgent(input, {
+                log,
+                logError,
+                env: {
+                  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+                  YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
+                },
+                username: username ?? null,
+                redis,
+                timeZone: userTimeZone,
+                apiKey: cursorApiKey,
+                ...(cursorRepoAgentNotifyTelegram
+                  ? { notifyTelegram: cursorRepoAgentNotifyTelegram }
+                  : {}),
+                ...toolContextOverrides,
+              }),
+          },
+          listCursorCloudAgentRuns: {
+            description:
+              "List recent Cursor Cloud coding-agent runs against ryokun6/ryos (real product repo, not the browser VFS). Returns stable run ids, status, timestamps, prompt/summary previews, PR URLs when known, and poll URLs for live events. Use when the user asks what jobs are running or to see recent agent activity.",
+            inputSchema: listCursorCloudAgentRunsSchema,
+            execute: async (input) =>
+              executeListCursorCloudAgentRuns(input, {
+                log,
+                logError,
+                env: {
+                  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+                  YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
+                },
+                username: username ?? null,
+                redis,
+                timeZone: userTimeZone,
                 ...toolContextOverrides,
               }),
           },

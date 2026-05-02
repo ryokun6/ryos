@@ -1088,7 +1088,39 @@
           "fetchedPage": "「{{title}}」を読む",
           "fetching": "{{hostname}}を読み込み中…"
         },
-        "writingContent": "コンテンツを書き込み中…"
+        "writingContent": "コンテンツを書き込み中…",
+        "cursorCloudAgent": {
+          "finished": "完了",
+          "followupAriaLabel": "Cursorエージェントへのフォローアップメッセージ",
+          "followupBusy": "エージェントが実行中…",
+          "followupPlaceholder": "エージェントに返信…",
+          "followupSend": "フォローアップを送信",
+          "followupSending": "フォローアップを送信中…",
+          "noEventsYet": "ストリームイベントを待機中…",
+          "openPr": "PRを開く",
+          "panelTitle": "Cursorリポジトリエージェント",
+          "running": "実行中",
+          "starting": "Cursor Cloudエージェントを起動中…",
+          "stream": {
+            "args": "引数",
+            "emptyAssistant": "(メッセージ内容なし)",
+            "result": "結果",
+            "runEnded": "実行完了 · {{status}}",
+            "runEndedError": "エラーで終了",
+            "status": "ステータス",
+            "system": "セッション開始",
+            "thinking": "思考中",
+            "toolCall": "ツール · {{name}}",
+            "toolUse": "ツールリクエスト · {{name}}",
+            "truncated": "切り捨て",
+            "userPrompt": "プロンプト"
+          }
+        },
+        "listCursorCloudAgentRuns": {
+          "loading": "Listing Cursor Cloud agent runs…",
+          "listed": "Listed {{count}} recent run(s).",
+          "truncatedHint": "(list may be truncated)"
+        }
       }
     },
     "contacts": {

@@ -17,7 +17,16 @@ export type WebSearchToolOutput = {
   >;
 };
 
+/** Friendly labels for tools where word-splitting would be awkward */
+const TOOL_DISPLAY_LABELS: Record<string, string> = {
+  cursorCloudAgent: "Cursor Cloud agent",
+  cursorRyOsRepoAgent: "Cursor Cloud agent",
+  listCursorCloudAgentRuns: "Cursor agent runs",
+};
+
 export function formatToolName(name: string): string {
+  const override = TOOL_DISPLAY_LABELS[name];
+  if (override) return override;
   return name
     .replace(/[_-]+/g, " ")
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")

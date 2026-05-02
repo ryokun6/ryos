@@ -225,7 +225,7 @@ function AssistantSegmentsBody({ segments }: { segments: AssistantStreamSegment[
   if (segments.length === 0) {
     return (
       <p className="text-[10px] italic text-neutral-400 dark:text-neutral-500">
-        {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.emptyAssistant")}
+        {t("apps.chats.toolCalls.cursorCloudAgent.stream.emptyAssistant")}
       </p>
     );
   }
@@ -255,7 +255,7 @@ function UserPromptBlock({ children }: { children: ReactNode }) {
   return (
     <div className="rounded-md border border-sky-200/85 bg-sky-50/75 px-2 py-1.5 shadow-sm dark:border-sky-900/40 dark:bg-sky-950/35">
       <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-sky-900 dark:text-sky-100/95">
-        {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.userPrompt")}
+        {t("apps.chats.toolCalls.cursorCloudAgent.stream.userPrompt")}
       </div>
       <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-neutral-900 dark:text-neutral-100">
         {children}
@@ -276,7 +276,7 @@ function UserParts({
   if (!joined) {
     return (
       <p className="text-[10px] italic text-neutral-400 dark:text-neutral-500">
-        {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.emptyAssistant")}
+        {t("apps.chats.toolCalls.cursorCloudAgent.stream.emptyAssistant")}
       </p>
     );
   }
@@ -297,7 +297,7 @@ function ThinkingCollapsible({ text }: { text: string }) {
   if (!display) {
     return (
       <p className="text-[10px] italic text-neutral-400 dark:text-neutral-500">
-        {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.emptyAssistant")}
+        {t("apps.chats.toolCalls.cursorCloudAgent.stream.emptyAssistant")}
       </p>
     );
   }
@@ -359,7 +359,7 @@ function ThinkingBody({
       {showInlineTitle ? (
         <>
           <span className="font-semibold not-italic text-neutral-500 dark:text-neutral-500">
-            {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.thinking")}
+            {t("apps.chats.toolCalls.cursorCloudAgent.stream.thinking")}
           </span>{" "}
         </>
       ) : null}
@@ -427,8 +427,8 @@ function TerminalBanner({
     return (
       <p className="text-[11px] leading-snug text-neutral-700 dark:text-neutral-300">
         {bad
-          ? t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.runEndedError")
-          : t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.runEnded", {
+          ? t("apps.chats.toolCalls.cursorCloudAgent.stream.runEndedError")
+          : t("apps.chats.toolCalls.cursorCloudAgent.stream.runEnded", {
               status: status?.trim() ? status : "—",
             })}
       </p>
@@ -445,8 +445,8 @@ function TerminalBanner({
     >
       <div className="font-semibold">
         {bad
-          ? t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.runEndedError")
-          : t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.runEnded", {
+          ? t("apps.chats.toolCalls.cursorCloudAgent.stream.runEndedError")
+          : t("apps.chats.toolCalls.cursorCloudAgent.stream.runEnded", {
               status: status?.trim() ? status : "—",
             })}
       </div>
@@ -551,7 +551,7 @@ export function CursorRunEventView({
         ) : (
           <div className="flex flex-wrap items-center gap-2 text-[10px] text-neutral-600 dark:text-neutral-400">
             <span className="rounded bg-neutral-200/90 px-1.5 py-px font-mono text-[9px] font-semibold uppercase dark:bg-neutral-700">
-              {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.status")}
+              {t("apps.chats.toolCalls.cursorCloudAgent.stream.status")}
             </span>
             <span className="font-mono">{st}</span>
             {msg ? <span>{msg}</span> : null}
@@ -566,7 +566,7 @@ export function CursorRunEventView({
           : "";
       body = (
         <div className="text-[10px] text-neutral-500 dark:text-neutral-500">
-          {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.system")}
+          {t("apps.chats.toolCalls.cursorCloudAgent.stream.system")}
           {modelId ? ` · ${modelId}` : ""}
         </div>
       );
@@ -709,7 +709,7 @@ export function MergedUserStreamBlock({
           <UserPromptBlock>{trimmed}</UserPromptBlock>
         ) : (
           <p className="text-[10px] italic text-neutral-400 dark:text-neutral-500">
-            {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.emptyAssistant")}
+            {t("apps.chats.toolCalls.cursorCloudAgent.stream.emptyAssistant")}
           </p>
         )}
       </div>
@@ -718,7 +718,7 @@ export function MergedUserStreamBlock({
   return (
     <StreamBlockChrome plain={false} tsStart={tsStart} tsEnd={tsEnd} label="user">
       <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-200">
-        {trimmed.length ? trimmed : t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.emptyAssistant")}
+        {trimmed.length ? trimmed : t("apps.chats.toolCalls.cursorCloudAgent.stream.emptyAssistant")}
       </p>
     </StreamBlockChrome>
   );
@@ -777,7 +777,7 @@ export function MergedStatusStreamBlock({
     <StreamBlockChrome plain={false} tsStart={tsStart} tsEnd={tsEnd} label="status">
       <div className="flex flex-wrap items-center gap-2 text-[10px] text-neutral-600 dark:text-neutral-400">
         <span className="rounded bg-neutral-200/90 px-1.5 py-px font-mono text-[9px] font-semibold uppercase dark:bg-neutral-700">
-          {t("apps.chats.toolCalls.cursorRyOsRepoAgent.stream.status")}
+          {t("apps.chats.toolCalls.cursorCloudAgent.stream.status")}
         </span>
         <span className="font-mono">{status}</span>
         {message ? <span>{message}</span> : null}

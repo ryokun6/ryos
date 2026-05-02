@@ -182,8 +182,14 @@ export function ToolInvocationMessage({
         displayCallMessage = t("apps.chats.toolCalls.webFetch.fetching", { hostname: hostname || url });
         break;
       }
+      case "cursorCloudAgent":
       case "cursorRyOsRepoAgent":
-        displayCallMessage = t("apps.chats.toolCalls.cursorRyOsRepoAgent.starting");
+        displayCallMessage = t("apps.chats.toolCalls.cursorCloudAgent.starting");
+        break;
+      case "listCursorCloudAgentRuns":
+        displayCallMessage = t(
+          "apps.chats.toolCalls.listCursorCloudAgentRuns.loading"
+        );
         break;
       case "web_search":
       case "google_search":
@@ -296,6 +302,25 @@ export function ToolInvocationMessage({
 
   // Handle success states
   if (state === "output-available") {
+    if (toolName === "listCursorCloudAgentRuns" && output && typeof output === "object") {
+      const o = output as {
+        success?: boolean;
+        runs?: unknown[];
+        truncated?: boolean;
+        error?: string;
+      };
+      if (o.success === false && typeof o.error === "string") {
+        displayResultMessage = o.error;
+      } else if (o.success === true && Array.isArray(o.runs)) {
+        const more = o.truncated
+          ? ` ${t("apps.chats.toolCalls.listCursorCloudAgentRuns.truncatedHint")}`
+          : "";
+        displayResultMessage = `${t(
+          "apps.chats.toolCalls.listCursorCloudAgentRuns.listed",
+          { count: o.runs.length }
+        )}${more}`;
+      }
+    }
     // Unified VFS tools
     if (toolName === "list") {
       if (typeof output === "string") {
@@ -688,7 +713,7 @@ export function ToolInvocationMessage({
   // Async Cursor Cloud agent — server streams events to Redis; UI polls /api/ai/cursor-run-status
   if (
     state === "output-available" &&
-    toolName === "cursorRyOsRepoAgent" &&
+    (toolName === "cursorCloudAgent" || toolName === "cursorRyOsRepoAgent") &&
     output &&
     typeof output === "object" &&
     "async" in output &&
@@ -705,7 +730,7 @@ export function ToolInvocationMessage({
     const headerTitle =
       typeof out.agentTitle === "string" && out.agentTitle.trim().length > 0
         ? out.agentTitle.trim()
-        : t("apps.chats.toolCalls.cursorRyOsRepoAgent.panelTitle");
+        : t("apps.chats.toolCalls.cursorCloudAgent.panelTitle");
 
     return (
       <CursorRepoAgentChatCard

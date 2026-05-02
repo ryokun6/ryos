@@ -1088,7 +1088,39 @@
           "fetchedPage": "Читать \"{{title}}\"",
           "fetching": "Чтение {{hostname}}…"
         },
-        "writingContent": "Запись содержимого…"
+        "writingContent": "Запись содержимого…",
+        "cursorCloudAgent": {
+          "finished": "Завершено",
+          "followupAriaLabel": "Уточняющее сообщение для агента Cursor",
+          "followupBusy": "Агент всё ещё работает…",
+          "followupPlaceholder": "Ответить агенту…",
+          "followupSend": "Отправить уточнение",
+          "followupSending": "Отправка уточнения…",
+          "noEventsYet": "Ожидание событий потока…",
+          "openPr": "Открыть PR",
+          "panelTitle": "Агент репозитория Cursor",
+          "running": "Выполняется",
+          "starting": "Запуск облачного агента Cursor…",
+          "stream": {
+            "args": "Аргументы",
+            "emptyAssistant": "(Нет содержимого сообщения)",
+            "result": "Результат",
+            "runEnded": "Выполнение завершено · {{status}}",
+            "runEndedError": "Выполнение завершилось ошибкой",
+            "status": "Статус",
+            "system": "Сессия начата",
+            "thinking": "Размышление",
+            "toolCall": "Инструмент · {{name}}",
+            "toolUse": "Запрос инструмента · {{name}}",
+            "truncated": "обрезано",
+            "userPrompt": "Промпт"
+          }
+        },
+        "listCursorCloudAgentRuns": {
+          "loading": "Listing Cursor Cloud agent runs…",
+          "listed": "Listed {{count}} recent run(s).",
+          "truncatedHint": "(list may be truncated)"
+        }
       }
     },
     "contacts": {

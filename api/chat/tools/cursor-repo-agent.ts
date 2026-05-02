@@ -27,6 +27,13 @@ export function cursorSdkAgentLatestRunKey(agentId: string): string {
   return `cursor-sdk-agent:${agentId}:latestRun`;
 }
 
+/** Redis SCAN pattern for run metadata keys — keep in sync with api/admin.ts */
+export const CURSOR_SDK_META_KEY_PATTERN = "cursor-sdk-run:*:meta";
+
+const META_RUN_ID_REGEX = /^cursor-sdk-run:([^:]+):meta$/;
+
+const TOOL_LOG_PREFIX = "[cursorCloudAgent]";
+
 /** Best-effort PR URL extractor for `Run.git.branches[]`. */
 export function pickPrUrlFromRunGit(git: unknown): string | undefined {
   if (!git || typeof git !== "object") return undefined;
@@ -45,10 +52,13 @@ export function pickPrUrlFromRunGit(git: unknown): string | undefined {
 export const DEFAULT_RYOS_GITHUB_REPO_URL = "https://github.com/ryokun6/ryos";
 
 /** Shown to the model when this tool is enabled */
-export const CURSOR_RYOS_REPO_AGENT_DESCRIPTION =
-  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram). The chat card exposes a reply input that resumes the same Cursor agent for follow-up turns and a button that opens the auto-created GitHub PR.";
+export const CURSOR_CLOUD_AGENT_DESCRIPTION =
+  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram). The chat card exposes a reply input that resumes the same Cursor agent for follow-up turns and a button that opens the auto-created GitHub PR. To show recent runs in chat, use `listCursorCloudAgentRuns`.";
 
-export const cursorRyOsRepoAgentSchema = z.object({
+/** @deprecated Use CURSOR_CLOUD_AGENT_DESCRIPTION */
+export const CURSOR_RYOS_REPO_AGENT_DESCRIPTION = CURSOR_CLOUD_AGENT_DESCRIPTION;
+
+export const cursorCloudAgentSchema = z.object({
   prompt: z
     .string()
     .min(1)
@@ -66,7 +76,27 @@ export const cursorRyOsRepoAgentSchema = z.object({
     ),
 });
 
-export type CursorRyOsRepoAgentInput = z.infer<typeof cursorRyOsRepoAgentSchema>;
+/** @deprecated Use cursorCloudAgentSchema — same shape, kept for external callers */
+export const cursorRyOsRepoAgentSchema = cursorCloudAgentSchema;
+
+export type CursorCloudAgentInput = z.infer<typeof cursorCloudAgentSchema>;
+
+/** @deprecated Use CursorCloudAgentInput */
+export type CursorRyOsRepoAgentInput = CursorCloudAgentInput;
+
+export const listCursorCloudAgentRunsSchema = z.object({
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .optional()
+    .describe("Max runs to return (default 20, max 50)."),
+});
+
+export type ListCursorCloudAgentRunsInput = z.infer<
+  typeof listCursorCloudAgentRunsSchema
+>;
 
 export interface CursorRepoAgentTelegramNotify {
   botToken: string;
@@ -75,11 +105,14 @@ export interface CursorRepoAgentTelegramNotify {
   replyToMessageId?: number;
 }
 
-export interface CursorRyOsRepoAgentContext extends MemoryToolContext {
+export interface CursorCloudAgentContext extends MemoryToolContext {
   apiKey: string;
   /** When set, send a Telegram message to this chat once the run terminates. */
   notifyTelegram?: CursorRepoAgentTelegramNotify;
 }
+
+/** @deprecated Use CursorCloudAgentContext */
+export type CursorRyOsRepoAgentContext = CursorCloudAgentContext;
 
 const TELEGRAM_NOTIFY_MAX_BODY_CHARS = 3500;
 
@@ -128,11 +161,11 @@ async function notifyTelegramRunComplete(
       text,
     });
   } catch (err) {
-    logError("[cursorRyOsRepoAgent] telegram notify failed", err);
+    logError(`${TOOL_LOG_PREFIX} telegram notify failed`, err);
   }
 }
 
-export type CursorRyOsRepoAgentToolOutput =
+export type CursorCloudAgentToolOutput =
   | {
       async: true;
       runId: string;
@@ -150,6 +183,247 @@ export type CursorRyOsRepoAgentToolOutput =
       durationMs?: number;
       error?: string;
     };
+
+/** @deprecated Use CursorCloudAgentToolOutput */
+export type CursorRyOsRepoAgentToolOutput = CursorCloudAgentToolOutput;
+
+export interface CursorSdkRunListRow {
+  runId: string;
+  agentId: string;
+  status: string;
+  createdAt: number | null;
+  updatedAt: number | null;
+  promptPreview?: string;
+  agentTitle?: string;
+  modelId?: string;
+  prUrl?: string;
+  terminalStatus?: string;
+  summaryPreview?: string;
+  errorPreview?: string;
+  isFollowup?: boolean;
+  previousRunId?: string;
+  nextRunId?: string;
+  /** Relative path — prepend API origin in clients if needed */
+  pollUrl: string;
+}
+
+function parseStoredRecordForRunList(
+  raw: unknown
+): Record<string, unknown> | null {
+  if (!raw || typeof raw !== "object") {
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        return parsed && typeof parsed === "object"
+          ? (parsed as Record<string, unknown>)
+          : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+  return raw as Record<string, unknown>;
+}
+
+function strFieldRunList(
+  rec: Record<string, unknown>,
+  key: string
+): string | undefined {
+  const v = rec[key];
+  return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
+function numFieldRunList(
+  rec: Record<string, unknown>,
+  key: string
+): number | null {
+  const v = rec[key];
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+function previewFromRunSummary(
+  summary: string | undefined,
+  max = 160
+): string | undefined {
+  if (!summary || summary.trim().length === 0) return undefined;
+  const t = summary.trim().replace(/\s+/g, " ");
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+}
+
+/**
+ * Lists Cursor Cloud agent runs from Redis metadata keys (same source as admin panel).
+ */
+export async function listCursorSdkRunsFromRedis(
+  redis: Redis,
+  limit: number
+): Promise<{ runs: Omit<CursorSdkRunListRow, "pollUrl">[]; scanIncomplete: boolean }> {
+  const metaKeys = new Set<string>();
+  let cursor: string | number = 0;
+  let iterations = 0;
+  const maxIterations = 200;
+
+  try {
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: CURSOR_SDK_META_KEY_PATTERN,
+        count: 500,
+      });
+      cursor = nextCursor;
+      iterations++;
+      for (const k of keys) {
+        if (typeof k === "string") metaKeys.add(k);
+      }
+    } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
+  } catch (e) {
+    console.error(`${TOOL_LOG_PREFIX} listCursorSdkRunsFromRedis scan failed`, e);
+    return { runs: [], scanIncomplete: false };
+  }
+
+  const scanIncomplete =
+    iterations >= maxIterations && cursor !== 0 && cursor !== "0";
+
+  const keyList = [...metaKeys];
+  const rows: Omit<CursorSdkRunListRow, "pollUrl">[] = [];
+  const batchSize = 40;
+
+  for (let i = 0; i < keyList.length; i += batchSize) {
+    const batch = keyList.slice(i, i + batchSize);
+    let values: unknown[];
+    try {
+      values = await redis.mget<unknown[]>(...batch);
+    } catch (e) {
+      console.error(`${TOOL_LOG_PREFIX} listCursorSdkRunsFromRedis mget failed`, e);
+      continue;
+    }
+
+    for (let j = 0; j < batch.length; j++) {
+      const key = batch[j]!;
+      const rec = parseStoredRecordForRunList(values[j]);
+      if (!rec) continue;
+
+      const fromKey = META_RUN_ID_REGEX.exec(key)?.[1];
+      const runId = strFieldRunList(rec, "runId") ?? fromKey;
+      if (!runId) continue;
+
+      const agentId = strFieldRunList(rec, "agentId") ?? "";
+      const terminalStatus = strFieldRunList(rec, "terminalStatus");
+      const finishedAt = numFieldRunList(rec, "finishedAt");
+      const createdAt = numFieldRunList(rec, "createdAt");
+      const updatedAt = finishedAt ?? createdAt;
+      const activeRunId = rec["activeRunId"];
+      const isRunning =
+        !terminalStatus &&
+        (activeRunId === runId ||
+          activeRunId === null ||
+          activeRunId === undefined);
+
+      let status: string;
+      if (isRunning) {
+        status = "running";
+      } else if (terminalStatus === "finished") {
+        status = "finished";
+      } else if (terminalStatus) {
+        status = terminalStatus;
+      } else {
+        status = "unknown";
+      }
+
+      const summaryRaw = strFieldRunList(rec, "summary");
+      const errorRaw = strFieldRunList(rec, "error");
+
+      rows.push({
+        runId,
+        agentId,
+        status,
+        createdAt,
+        updatedAt,
+        promptPreview: strFieldRunList(rec, "promptPreview"),
+        agentTitle: strFieldRunList(rec, "agentTitle"),
+        modelId: strFieldRunList(rec, "modelId"),
+        prUrl: strFieldRunList(rec, "prUrl"),
+        terminalStatus,
+        summaryPreview: previewFromRunSummary(summaryRaw),
+        errorPreview: previewFromRunSummary(errorRaw, 120),
+        isFollowup: rec.isFollowup === true,
+        previousRunId: strFieldRunList(rec, "previousRunId"),
+        nextRunId: strFieldRunList(rec, "nextRunId"),
+      });
+    }
+  }
+
+  const dedup = new Map<string, Omit<CursorSdkRunListRow, "pollUrl">>();
+  for (const r of rows) {
+    dedup.set(r.runId, r);
+  }
+
+  const list = [...dedup.values()];
+  list.sort((a, b) => {
+    const ar = a.status === "running" ? 1 : 0;
+    const br = b.status === "running" ? 1 : 0;
+    if (ar !== br) return br - ar;
+    const at = a.updatedAt ?? a.createdAt ?? 0;
+    const bt = b.updatedAt ?? b.createdAt ?? 0;
+    return bt - at;
+  });
+
+  return {
+    runs: list.slice(0, limit),
+    scanIncomplete,
+  };
+}
+
+export async function executeListCursorCloudAgentRuns(
+  input: ListCursorCloudAgentRunsInput,
+  context: MemoryToolContext & { username: string | null }
+): Promise<
+  | {
+      success: true;
+      runs: CursorSdkRunListRow[];
+      truncated: boolean;
+      scanIncomplete: boolean;
+    }
+  | { success: false; error: string }
+> {
+  if (context.username !== CURSOR_REPO_AGENT_OWNER) {
+    context.log?.(`${TOOL_LOG_PREFIX} list runs denied: not owner account`);
+    return {
+      success: false,
+      error: "This tool is restricted to the owner account.",
+    };
+  }
+
+  if (!context.redis) {
+    return {
+      success: false,
+      error: "Run listing requires Redis (async agent mode).",
+    };
+  }
+
+  const limit = Math.min(Math.max(input.limit ?? 20, 1), 50);
+  const { runs, scanIncomplete } = await listCursorSdkRunsFromRedis(
+    context.redis,
+    limit
+  );
+  const sliceTruncated = runs.length >= limit;
+
+  const withPoll: CursorSdkRunListRow[] = runs.map((r) => ({
+    ...r,
+    pollUrl: `/api/ai/cursor-run-status?runId=${encodeURIComponent(r.runId)}`,
+  }));
+
+  return {
+    success: true,
+    runs: withPoll,
+    truncated: sliceTruncated || scanIncomplete,
+    scanIncomplete,
+  };
+}
 
 async function safePushEvent(
   redis: Redis,
@@ -171,15 +445,15 @@ async function safePushEvent(
 }
 
 async function executeBlockingPrompt(
-  input: CursorRyOsRepoAgentInput,
-  context: CursorRyOsRepoAgentContext,
+  input: CursorCloudAgentInput,
+  context: CursorCloudAgentContext,
   cloudOpts: {
     repoUrl: string;
     startingRef: string;
     autoCreatePR: boolean;
     modelId: string;
   }
-): Promise<CursorRyOsRepoAgentToolOutput> {
+): Promise<CursorCloudAgentToolOutput> {
   const { Agent } = await import("@cursor/sdk");
   const result = await Agent.prompt(input.prompt, {
     apiKey: context.apiKey,
@@ -255,7 +529,7 @@ async function writeMergedMeta(
   const existing = await readRunMeta(redis, metaKey);
   const merged: Record<string, unknown> = { ...(existing ?? {}), ...patch };
   await redis.set(metaKey, JSON.stringify(merged), { ex: CURSOR_SDK_RUN_TTL_SEC });
-  log("[cursorRyOsRepoAgent] meta updated", {
+  log("[cursorCloudAgent] meta updated", {
     metaKey,
     keys: Object.keys(merged),
   });
@@ -296,7 +570,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
         summary = awaited.result ?? "";
         status = awaited.status;
       } catch (waitErr) {
-        logError("[cursorRyOsRepoAgent] run.wait failed", waitErr);
+        logError("[cursorCloudAgent] run.wait failed", waitErr);
       }
 
       const prUrl = pickPrUrlFromRunGit(run.git) ?? inheritedPrUrl;
@@ -343,7 +617,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
         logError
       );
     } catch (e) {
-      logError("[cursorRyOsRepoAgent] background run failed", e);
+      logError("[cursorCloudAgent] background run failed", e);
       const errorText = e instanceof Error ? e.message : String(e);
       await safePushEvent(redis, eventsKey, {
         ts: Date.now(),
@@ -385,21 +659,21 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
             await dispose.call(agent);
           }
         } catch (disposeErr) {
-          logError("[cursorRyOsRepoAgent] agent dispose failed", disposeErr);
+          logError("[cursorCloudAgent] agent dispose failed", disposeErr);
         }
       }
     }
   })();
 
-  log("[cursorRyOsRepoAgent] background consumer spawned", { runId, agentId });
+  log("[cursorCloudAgent] background consumer spawned", { runId, agentId });
 }
 
-export async function executeCursorRyOsRepoAgent(
-  input: CursorRyOsRepoAgentInput,
-  context: CursorRyOsRepoAgentContext
-): Promise<CursorRyOsRepoAgentToolOutput> {
+export async function executeCursorCloudAgent(
+  input: CursorCloudAgentInput,
+  context: CursorCloudAgentContext
+): Promise<CursorCloudAgentToolOutput> {
   if (context.username !== CURSOR_REPO_AGENT_OWNER) {
-    context.log("[cursorRyOsRepoAgent] denied: not owner account");
+    context.log("[cursorCloudAgent] denied: not owner account");
     return {
       success: false,
       error: "This tool is restricted to the owner account.",
@@ -423,11 +697,11 @@ export async function executeCursorRyOsRepoAgent(
     autoCreatePREnv !== "off";
 
   context.log(
-    `[cursorRyOsRepoAgent] repo=${repoUrl} ref=${startingRef} model=${modelId} autoCreatePR=${autoCreatePR}`
+    `[cursorCloudAgent] repo=${repoUrl} ref=${startingRef} model=${modelId} autoCreatePR=${autoCreatePR}`
   );
 
   if (!context.redis) {
-    context.log("[cursorRyOsRepoAgent] no Redis — falling back to blocking Agent.prompt");
+    context.log("[cursorCloudAgent] no Redis — falling back to blocking Agent.prompt");
     try {
       return await executeBlockingPrompt(input, context, {
         repoUrl,
@@ -436,7 +710,7 @@ export async function executeCursorRyOsRepoAgent(
         modelId,
       });
     } catch (e) {
-      context.logError("[cursorRyOsRepoAgent] Agent.prompt failed", e);
+      context.logError("[cursorCloudAgent] Agent.prompt failed", e);
       return {
         success: false,
         error: e instanceof Error ? e.message : String(e),
@@ -477,7 +751,7 @@ export async function executeCursorRyOsRepoAgent(
           : "";
       agentTitle = namePart || fromSummary || undefined;
     } catch (e) {
-      context.log("[cursorRyOsRepoAgent] Agent.get (title) skipped", e);
+      context.log("[cursorCloudAgent] Agent.get (title) skipped", e);
     }
 
     const eventsKey = cursorSdkEventsKey(runId);
@@ -540,7 +814,7 @@ export async function executeCursorRyOsRepoAgent(
         "Poll GET /api/ai/cursor-run-status?runId=… for events until a terminal entry appears.",
     };
   } catch (e) {
-    context.logError("[cursorRyOsRepoAgent] Agent.create/send failed", e);
+    context.logError("[cursorCloudAgent] Agent.create/send failed", e);
     return {
       success: false,
       error: e instanceof Error ? e.message : String(e),
@@ -613,7 +887,7 @@ export async function sendCursorAgentFollowup(input: {
     typeof prevMeta.activeRunId === "string" ? prevMeta.activeRunId : "";
   if (activeRunId && activeRunId !== previousRunId) {
     log(
-      "[cursorRyOsRepoAgent] follow-up requested but agent already busy",
+      "[cursorCloudAgent] follow-up requested but agent already busy",
       { agentId, activeRunId }
     );
     return {
@@ -660,7 +934,7 @@ export async function sendCursorAgentFollowup(input: {
     };
     agent = await Agent.resume(agentId, resumeOptions);
   } catch (e) {
-    logError("[cursorRyOsRepoAgent] Agent.resume failed", e);
+    logError("[cursorCloudAgent] Agent.resume failed", e);
     return {
       ok: false,
       status: 502,
@@ -672,13 +946,13 @@ export async function sendCursorAgentFollowup(input: {
   try {
     run = await agent.send(prompt);
   } catch (e) {
-    logError("[cursorRyOsRepoAgent] follow-up send failed", e);
+    logError("[cursorCloudAgent] follow-up send failed", e);
     try {
       const dispose = agent[Symbol.asyncDispose];
       if (typeof dispose === "function") await dispose.call(agent);
     } catch (disposeErr) {
       logError(
-        "[cursorRyOsRepoAgent] agent dispose failed (after send error)",
+        "[cursorCloudAgent] agent dispose failed (after send error)",
         disposeErr
       );
     }
@@ -762,3 +1036,6 @@ export async function sendCursorAgentFollowup(input: {
     message: "Cursor Cloud agent follow-up started.",
   };
 }
+
+/** @deprecated Use executeCursorCloudAgent */
+export const executeCursorRyOsRepoAgent = executeCursorCloudAgent;
