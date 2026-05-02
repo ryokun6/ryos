@@ -73,6 +73,18 @@ function AnimatedNumber({ number }: { number: number }) {
   );
 }
 
+// Right-edge fade applied to the LCD title marquee when it overflows but
+// is not actively scrolling (e.g. when playback is paused). Uses
+// mask-image so the fade is theme-agnostic — transparent at the right
+// edge regardless of the LCD background color (black on most themes,
+// sage green on macOS X).
+const STATIC_OVERFLOW_MASK_STYLE: React.CSSProperties = {
+  maskImage:
+    "linear-gradient(to right, black calc(100% - 32px), transparent)",
+  WebkitMaskImage:
+    "linear-gradient(to right, black calc(100% - 32px), transparent)",
+};
+
 function AnimatedTitle({
   title,
   direction,
@@ -84,8 +96,41 @@ function AnimatedTitle({
 }) {
   const yOffset = direction === "next" ? 30 : -30;
 
+  // Detect when the (paused) title is wider than its viewport so we can
+  // soften the hard right-edge clip with a fade mask. We measure an
+  // invisible copy that mirrors the rendered padding/font of the real
+  // marquee text.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [overflows, setOverflows] = useState(false);
+  useEffect(() => {
+    const container = containerRef.current;
+    const measure = measureRef.current;
+    if (!container || !measure) return;
+    const check = () => {
+      setOverflows(measure.scrollWidth > container.clientWidth + 1);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [title]);
+
+  const showStaticFade = overflows && !isPlaying;
+
   return (
-    <div className="relative h-[22px] mb-[3px] overflow-hidden">
+    <div
+      ref={containerRef}
+      className="relative h-[22px] mb-[3px] overflow-hidden"
+      style={showStaticFade ? STATIC_OVERFLOW_MASK_STYLE : undefined}
+    >
+      <span
+        ref={measureRef}
+        aria-hidden
+        className="invisible absolute font-geneva-12 text-xl px-2 whitespace-nowrap pointer-events-none"
+      >
+        {title}
+      </span>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.div
           key={title}
