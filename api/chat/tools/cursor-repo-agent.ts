@@ -11,7 +11,7 @@ import { sendTelegramMessage } from "../../_utils/telegram.js";
 
 export const CURSOR_REPO_AGENT_OWNER = "ryo";
 
-export const CURSOR_SDK_RUN_TTL_SEC = 86_400;
+export const CURSOR_SDK_RUN_TTL_SEC = 90 * 86_400;
 
 /** Redis key prefixes — keep in sync with api/ai/cursor-run-status.ts */
 export function cursorSdkEventsKey(runId: string): string {
