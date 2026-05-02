@@ -341,6 +341,8 @@ export function KaraokeAppComponent({
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
         onFullscreenToggle={toggleFullScreen}
+        onCoverFlowToggle={handleToggleCoverFlow}
+        isCoverFlowActive={isCoverFlowOpen}
       >
         <div
           className="relative w-full h-full bg-black select-none overflow-hidden @container"

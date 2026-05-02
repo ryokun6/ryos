@@ -20,7 +20,7 @@ import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { calculateExposeGrid, getExposeTransform } from "./exposeUtils";
 import { useTranslation } from "react-i18next";
-import { ArrowsOutSimple } from "@phosphor-icons/react";
+import { ArrowsOutSimple, CardsThree } from "@phosphor-icons/react";
 import { selectExposeWindow } from "@/utils/appEventBus";
 
 interface WindowFrameProps {
@@ -50,6 +50,9 @@ interface WindowFrameProps {
   keepMountedWhenMinimized?: boolean;
   // Fullscreen toggle callback (for apps like iPod and Karaoke that support fullscreen)
   onFullscreenToggle?: () => void;
+  /** Cover Flow toggle (shown left of fullscreen when set; iPod / Karaoke). */
+  onCoverFlowToggle?: () => void;
+  isCoverFlowActive?: boolean;
   // Disable auto-hide for notitlebar material (keeps titlebar always visible)
   disableTitlebarAutoHide?: boolean;
   // Custom content for the right side of the titlebar (replaces fullscreen button if provided)
@@ -81,11 +84,14 @@ export function WindowFrame({
   menuBar, // Add menuBar to destructured props
   keepMountedWhenMinimized = false,
   onFullscreenToggle,
+  onCoverFlowToggle,
+  isCoverFlowActive = false,
   disableTitlebarAutoHide = false,
   titleBarRightContent,
   drawer,
 }: WindowFrameProps) {
   const { t } = useTranslation();
+  const coverFlowLabel = t("apps.ipod.menu.coverFlow");
   const config = getWindowConfig(appId);
   const defaultConstraints = useMemo(
     () => ({
@@ -522,6 +528,93 @@ export function WindowFrame({
     if (el.closest(".title-bar-controls")) return true; // XP/98
     if (el.closest('button,[role="button"]')) return true;
     return false;
+  };
+
+  const renderTrailingTitlebarControls = (
+    variant: "aqua" | "system7"
+  ): React.ReactNode => {
+    if (titleBarRightContent) {
+      return titleBarRightContent;
+    }
+
+    const isAquaNoTitlebar = variant === "aqua" && isNoTitlebar;
+    const buttonClass = cn(
+      variant === "aqua" ? "w-5 h-5" : "mr-2 w-5 h-5",
+      "flex items-center justify-center",
+      isAquaNoTitlebar
+        ? "text-white/80"
+        : variant === "aqua"
+          ? isForeground
+            ? "text-gray-500"
+            : "text-gray-400"
+          : isForeground
+            ? "text-gray-600"
+            : "text-gray-400",
+      onCoverFlowToggle &&
+        isCoverFlowActive &&
+        (isAquaNoTitlebar ? "text-white" : "text-os-titlebar-active-text")
+    );
+    const iconSize = variant === "aqua" ? 14 : 12;
+    const buttonStyle =
+      variant === "aqua"
+        ? {
+            filter: isAquaNoTitlebar
+              ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))"
+              : isForeground
+                ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))"
+                : "none",
+          }
+        : undefined;
+
+    if (!onCoverFlowToggle && !onFullscreenToggle) {
+      return variant === "aqua" ? <div style={{ width: 52 }} /> : <div className="mr-2 w-4 h-4" />;
+    }
+
+    return (
+      <div
+        className={cn(
+          "flex items-center shrink-0",
+          variant === "aqua" ? "gap-0.5" : "gap-0.5 mr-2"
+        )}
+      >
+        {onCoverFlowToggle ? (
+          <button
+            type="button"
+            aria-label={coverFlowLabel}
+            title={coverFlowLabel}
+            aria-pressed={isCoverFlowActive}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCoverFlowToggle();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            data-titlebar-controls
+            className={buttonClass}
+            style={buttonStyle}
+          >
+            <CardsThree size={iconSize} weight="bold" />
+          </button>
+        ) : null}
+        {onFullscreenToggle ? (
+          <button
+            type="button"
+            aria-label={t("common.window.fullscreen")}
+            onClick={(e) => {
+              e.stopPropagation();
+              onFullscreenToggle();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            data-titlebar-controls
+            className={buttonClass}
+            style={buttonStyle}
+          >
+            <ArrowsOutSimple size={iconSize} weight="bold" />
+          </button>
+        ) : null}
+      </div>
+    );
   };
 
   // This function only maximizes height (for bottom resize handle)
@@ -1320,20 +1413,40 @@ export function WindowFrame({
                 />
                 <span className="truncate">{title}</span>
               </div>
-              <div className="title-bar-controls" data-titlebar-controls>
-                {(titleBarRightContent || onFullscreenToggle) &&
-                  (titleBarRightContent ?? (
-                    <button
-                      aria-label={t("common.window.fullscreen")}
-                      data-action="fullscreen"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onFullscreenToggle!();
-                      }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onTouchStart={(e) => e.stopPropagation()}
-                    />
-                  ))}
+              <div className="title-bar-controls flex items-center gap-0.5" data-titlebar-controls>
+                {titleBarRightContent ? (
+                  titleBarRightContent
+                ) : (
+                  <>
+                    {onCoverFlowToggle ? (
+                      <button
+                        type="button"
+                        aria-label={coverFlowLabel}
+                        title={coverFlowLabel}
+                        aria-pressed={isCoverFlowActive}
+                        data-action="cover-flow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCoverFlowToggle();
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                      />
+                    ) : null}
+                    {onFullscreenToggle ? (
+                      <button
+                        aria-label={t("common.window.fullscreen")}
+                        data-action="fullscreen"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFullscreenToggle();
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                      />
+                    ) : null}
+                  </>
+                )}
                 <button
                   aria-label={t("common.window.minimize")}
                   data-action="minimize"
@@ -1495,40 +1608,11 @@ export function WindowFrame({
               </span>
 
 {/* Titlebar right content, fullscreen button, or spacer to balance the traffic lights */}
-                              <div className="flex items-center justify-end ml-auto mr-1" data-titlebar-controls>
-                                {titleBarRightContent ? (
-                                  titleBarRightContent
-                                ) : onFullscreenToggle ? (
-                                  <button
-                                    aria-label={t("common.window.fullscreen")}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onFullscreenToggle();
-                                    }}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onTouchStart={(e) => e.stopPropagation()}
-                                    data-titlebar-controls
-                                    className={cn(
-                                      "w-5 h-5 flex items-center justify-center",
-                                      isNoTitlebar
-                                        ? "text-white/80"
-                                        : isForeground
-                                        ? "text-gray-500"
-                                        : "text-gray-400"
-                                    )}
-                                    style={{
-                                      filter: isNoTitlebar
-                                        ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))"
-                                        : isForeground
-                                        ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))"
-                                        : "none",
-                                    }}
-                                  >
-                                    <ArrowsOutSimple size={14} weight="bold" />
-                                  </button>
-                                ) : (
-                                  <div style={{ width: 52 }} />
-                                )}
+                              <div
+                                className="ml-auto mr-1 flex items-center justify-end"
+                                data-titlebar-controls
+                              >
+                                {renderTrailingTitlebarControls("aqua")}
                               </div>
             </div>
           ) : (
@@ -1602,30 +1686,7 @@ export function WindowFrame({
               >
 <span className="truncate">{title}</span>
                               </span>
-                              {titleBarRightContent ? (
-                                <span className="mr-2 flex items-center shrink-0">{titleBarRightContent}</span>
-                              ) : onFullscreenToggle ? (
-                                <button
-                                  aria-label={t("common.window.fullscreen")}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onFullscreenToggle();
-                                  }}
-                                  onMouseDown={(e) => e.stopPropagation()}
-                                  onTouchStart={(e) => e.stopPropagation()}
-                                  data-titlebar-controls
-                                  className={cn(
-                                    "mr-2 w-5 h-5 flex items-center justify-center",
-                                    isForeground
-                                      ? "text-gray-600"
-                                      : "text-gray-400"
-                                  )}
-                                >
-                                  <ArrowsOutSimple size={12} weight="bold" />
-                                </button>
-                              ) : (
-                                <div className="mr-2 w-4 h-4" />
-                              )}
+                              {renderTrailingTitlebarControls("system7")}
                             </div>
           )}
 

@@ -216,6 +216,8 @@ export function IpodAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
         keepMountedWhenMinimized
         onFullscreenToggle={toggleFullScreen}
+        onCoverFlowToggle={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
+        isCoverFlowActive={isCoverFlowOpen}
       >
         <div
           ref={containerRef}
