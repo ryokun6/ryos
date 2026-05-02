@@ -27,14 +27,33 @@ export interface PcPreset {
 
 /**
  * Curated set of v86 profiles covering iconic OSes that emulate well in browser.
- * IDs map directly to copy.sh/v86 profiles. Most presets use 640×480; Windows 1.01
- * uses 640×350; DOOM-on-a-floppy uses 320×200.
+ * IDs map directly to copy.sh/v86 profiles. Text-mode presets keep VGA sizes
+ * (see TEXT_ONLY_PC_PRESET_IDS); GUI presets use thumbnail dimensions for
+ * default ryOS window size. Windows 1.01 uses 640×350; DOOM uses 320×200.
  *
  * Thumbnails (`image`) are captured by `bun run generate:infinite-pc-thumbnails`
  * and saved under `public/assets/infinite-pc-thumbnails/<id>.png`. Presets
  * without a thumbnail fall back to a solid `rgb` color card.
  */
 const THUMBNAIL_BASE = "/assets/infinite-pc-thumbnails";
+
+/** Console / BIOS text-mode boots — keep VGA framebuffer sizes, not thumbnail capture dimensions. */
+export const TEXT_ONLY_PC_PRESET_IDS = new Set<string>([
+  "freedos",
+  "msdos",
+  "windows1",
+  "windows30",
+  "linux26",
+  "linux4",
+  "buildroot",
+  "freebsd",
+  "openbsd",
+  "netbsd",
+  "minix",
+  "fiwix",
+  "solos",
+  "mikeos",
+]);
 
 export const PC_PRESETS: PcPreset[] = [
   {
@@ -83,7 +102,7 @@ export const PC_PRESETS: PcPreset[] = [
     year: "1992",
     profile: "windows31",
     description: "TrueType fonts and the iconic Hot Dog Stand theme",
-    screenSize: { width: 640, height: 480 },
+    screenSize: { width: 1024, height: 768 },
     rgb: "0,128,128",
     image: `${THUMBNAIL_BASE}/windows31.png`,
   },
@@ -93,7 +112,7 @@ export const PC_PRESETS: PcPreset[] = [
     year: "1995",
     profile: "windows95",
     description: "Start menu, taskbar, and the 32-bit revolution",
-    screenSize: { width: 800, height: 600 },
+    screenSize: { width: 1024, height: 768 },
     rgb: "0,128,128",
     image: `${THUMBNAIL_BASE}/windows95.png`,
   },
@@ -103,7 +122,7 @@ export const PC_PRESETS: PcPreset[] = [
     year: "1998",
     profile: "windows98",
     description: "Active Desktop, USB support, and Internet Explorer 4",
-    screenSize: { width: 800, height: 600 },
+    screenSize: { width: 640, height: 480 },
     rgb: "0,128,128",
     image: `${THUMBNAIL_BASE}/windows98.png`,
   },
@@ -113,7 +132,7 @@ export const PC_PRESETS: PcPreset[] = [
     year: "2000",
     profile: "windows-me",
     description: "Millennium Edition - the last 9x kernel",
-    screenSize: { width: 800, height: 600 },
+    screenSize: { width: 1024, height: 768 },
     rgb: "0,128,128",
     image: `${THUMBNAIL_BASE}/windows-me.png`,
   },
@@ -163,7 +182,7 @@ export const PC_PRESETS: PcPreset[] = [
     year: "2006",
     profile: "dsl",
     description: "Tiny 50MB live Linux distribution",
-    screenSize: { width: 800, height: 600 },
+    screenSize: { width: 1024, height: 768 },
     rgb: "30,40,30",
     image: `${THUMBNAIL_BASE}/dsl.png`,
   },
@@ -223,7 +242,7 @@ export const PC_PRESETS: PcPreset[] = [
     year: "2000",
     profile: "beos",
     description: "Be Inc.'s media-focused desktop OS",
-    screenSize: { width: 1024, height: 768 },
+    screenSize: { width: 800, height: 600 },
     rgb: "240,200,30",
     image: `${THUMBNAIL_BASE}/beos.png`,
   },
@@ -253,7 +272,7 @@ export const PC_PRESETS: PcPreset[] = [
     year: "1990",
     profile: "oberon",
     description: "Wirth's tiling-window research OS",
-    screenSize: { width: 1024, height: 768 },
+    screenSize: { width: 1280, height: 1024 },
     rgb: "180,180,180",
     image: `${THUMBNAIL_BASE}/oberon.png`,
   },
@@ -263,7 +282,7 @@ export const PC_PRESETS: PcPreset[] = [
     year: "2016",
     profile: "redox",
     description: "Modern microkernel OS written in Rust",
-    screenSize: { width: 1024, height: 768 },
+    screenSize: { width: 1280, height: 1024 },
     rgb: "100,40,40",
     image: `${THUMBNAIL_BASE}/redox.png`,
   },
