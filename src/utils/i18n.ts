@@ -15,13 +15,13 @@ export type AppId =
   | "ipod"
   | "karaoke"
   | "synth"
-  | "pc"
   | "terminal"
   | "applet-viewer"
   | "control-panels"
   | "admin"
   | "stickies"
   | "infinite-mac"
+  | "pc"
   | "winamp"
   | "calendar"
   | "contacts"
@@ -146,13 +146,25 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     ipod: ["addSongs", "wheelNavigation", "playbackControls", "syncedLyrics", "playbackModes", "displayFullscreen"],
     karaoke: ["addSearchSongs", "syncLyricsTiming", "styleLayout", "syncedWithIpod", "worksWithChats", "keyboardShortcuts"],
     synth: ["virtualKeyboard", "controlsPanel", "presets", "waveform3d", "effects", "midiInput"],
-    pc: ["pcEmulator", "keyboardControls", "mouseCapture", "fullscreenMode", "saveStates", "aspectRatio"],
     terminal: ["basicCommands", "navigation", "commandHistory", "aiAssistant", "fileEditing", "terminalSounds"],
     "applet-viewer": ["appletStore", "createWithRyosChat", "viewApplets", "shareApplets", "openFromFinder", "keepUpdated"],
     "control-panels": ["appearance", "sounds", "aiModel", "shaderEffects", "backupRestore", "system"],
     admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
     stickies: ["createNote", "colors", "deleteNote", "autoSave"],
     "infinite-mac": ["classicMacEmulator", "selectSystem", "pauseResume", "backToSystems"],
+    pc: [
+      "pcEmulator",
+      "pickSystem",
+      "mouseCapture",
+      "keyboardInput",
+      "backToSystems",
+      "dosGames",
+      "aboutV86",
+      "keyboardControls",
+      "fullscreenMode",
+      "resetLoad",
+      "aspectRatio",
+    ],
     winamp: ["playMusic", "equalizer", "playlist", "skins", "shuffleRepeat", "controls"],
     calendar: ["navigateMonths", "createEvents", "dayView", "colorCoding", "deleteEvents", "autoSave"],
     contacts: ["browseContacts", "createContacts", "editDetails", "importVCards", "useWithRyo", "cloudSync"],

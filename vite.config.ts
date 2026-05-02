@@ -174,6 +174,40 @@ export default defineConfig({
         });
       },
     },
+    // Serve cross-origin-isolated embed wrappers in dev
+    // (e.g. /embed/infinite-mac, /embed/infinite-pc).
+    // Vercel applies COEP/COOP headers via vercel.json + rewrites in prod;
+    // this plugin mirrors that behavior for the Vite dev server.
+    {
+      name: 'serve-coep-embeds',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const rawUrl = req.url || '';
+          // Strip query string for matching but keep it for the rewrite below
+          const [pathPart, queryPart] = rawUrl.split('?');
+          // Only match clean URLs like /embed/foo (no extension, no further segments)
+          const match = pathPart.match(/^\/embed\/([a-zA-Z0-9_-]+)$/);
+          if (!match) return next();
+          const name = match[1];
+          const htmlPath = path.resolve(__dirname, 'public/embed', `${name}.html`);
+          import('node:fs').then(({ promises: fs }) => {
+            fs.readFile(htmlPath)
+              .then((buf) => {
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+                res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+                res.end(buf);
+              })
+              .catch(() => {
+                // No matching embed file — let the request fall through
+                // (it will hit the SPA fallback, same as before).
+                req.url = queryPart ? `${pathPart}?${queryPart}` : pathPart;
+                next();
+              });
+          });
+        });
+      },
+    },
     react(),
     tailwindcss(),
     // Only include PWA plugin in production builds (not Tauri, not dev)

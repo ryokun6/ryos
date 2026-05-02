@@ -29,6 +29,7 @@ const APP_ALIASES: Record<string, AppId> = {
   store: "applet-viewer",
   vm: "pc",
   virtualpc: "pc",
+  pc: "pc",
   cam: "photo-booth",
   camera: "photo-booth",
   photos: "photo-booth",

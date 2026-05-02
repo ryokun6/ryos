@@ -620,6 +620,15 @@ async function handleStaticRequest(pathname: string): Promise<Response | null> {
     });
   }
 
+  if (pathname === "/embed/pc" || pathname === "/embed/infinite-pc") {
+    return await serveDistPath("embed/pc.html", {
+      headers: {
+        "Cross-Origin-Embedder-Policy": "credentialless",
+        "Cross-Origin-Opener-Policy": "same-origin",
+      },
+    });
+  }
+
   if (pathname.startsWith("/docs/") && !pathname.endsWith(".html")) {
     const cleanPath = pathname.replace(/^\/+/, "");
     const docsResponse = await serveDistPath(`${cleanPath}.html`);

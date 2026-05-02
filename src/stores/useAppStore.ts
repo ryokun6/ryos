@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
+import { resolveAppId } from "@/config/appRegistryData";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { AppState } from "@/apps/base/types";
 import { AIModel } from "@/types/aiModels";
@@ -114,7 +115,32 @@ interface AppStoreState {
   clearRecentItems: () => void;
 }
 
-const CURRENT_APP_STORE_VERSION = 4; // migrate to instance-only state
+const CURRENT_APP_STORE_VERSION = 5; // remap legacy app ids (e.g. infinite-pc → pc)
+
+function remapLegacyAppIdsInAppStore(prev: {
+  instances?: Record<string, AppInstance>;
+  recentApps?: RecentApp[];
+  recentDocuments?: RecentDocument[];
+}) {
+  if (prev.instances) {
+    for (const inst of Object.values(prev.instances)) {
+      const resolved = resolveAppId(inst.appId);
+      if (resolved) inst.appId = resolved;
+    }
+  }
+  if (prev.recentApps) {
+    prev.recentApps = prev.recentApps.map((entry) => {
+      const resolved = resolveAppId(entry.appId);
+      return resolved ? { ...entry, appId: resolved } : entry;
+    });
+  }
+  if (prev.recentDocuments) {
+    prev.recentDocuments = prev.recentDocuments.map((entry) => {
+      const resolved = resolveAppId(entry.appId);
+      return resolved ? { ...entry, appId: resolved } : entry;
+    });
+  }
+}
 
 // ---------------- Store ---------------------------------------------------------
 const createUseAppStore = () =>
@@ -804,11 +830,16 @@ const createUseAppStore = () =>
           prev.nextInstanceId = 0;
         }
 
+        if (version < 5) {
+          remapLegacyAppIdsInAppStore(prev);
+        }
+
         prev.version = CURRENT_APP_STORE_VERSION;
         return prev;
         },
         onRehydrateStorage: () => (state) => {
         if (!state) return;
+        remapLegacyAppIdsInAppStore(state);
         // Clean instanceOrder after rehydrate
         if (
           (state as unknown as { instanceOrder?: string[] }).instanceOrder &&

@@ -18,13 +18,13 @@ export const appIds = [
   "ipod",
   "karaoke",
   "synth",
-  "pc",
   "terminal",
   "applet-viewer",
   "control-panels",
   "admin",
   "stickies",
   "infinite-mac",
+  "pc",
   "winamp",
   "calendar",
   "contacts",
@@ -33,6 +33,18 @@ export const appIds = [
 ] as const;
 
 export type AppId = (typeof appIds)[number];
+
+/** Persisted / bookmarked IDs that were renamed in the registry */
+export const LEGACY_APP_ID_ALIASES: Record<string, AppId> = {
+  "infinite-pc": "pc",
+};
+
+const APP_ID_SET = new Set<string>(appIds);
+
+export function resolveAppId(id: string): AppId | undefined {
+  const candidate = (LEGACY_APP_ID_ALIASES[id] ?? id) as AppId;
+  return APP_ID_SET.has(candidate) ? candidate : undefined;
+}
 
 /** Minimal app data for stores that don't need full registry */
 export interface AppBasicInfo {
@@ -55,13 +67,13 @@ export const appNames: Record<AppId, string> = {
   "ipod": "iPod",
   "karaoke": "Karaoke",
   "synth": "Synth",
-  "pc": "Virtual PC",
   "terminal": "Terminal",
   "applet-viewer": "Applet Store",
   "control-panels": "Control Panels",
   "admin": "Admin",
   "stickies": "Stickies",
   "infinite-mac": "Infinite Mac",
+  pc: "Virtual PC",
   "winamp": "Winamp",
   "calendar": "Calendar",
   "contacts": "Contacts",
