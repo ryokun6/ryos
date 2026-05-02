@@ -279,9 +279,12 @@ export function MtvLyricsOverlay({
 
   const lineTypography = cn(
     "font-geneva-12 text-white text-left w-full block",
-    isFullscreen
-      ? "text-[24px] sm:text-[32px] md:text-[40px]"
-      : "text-[20px]"
+    // Fullscreen uses the `.tv-cc-fullscreen-text` clamp() rule (see
+    // index.css / themes.css) so the caption scales fluidly with the
+    // viewport — same min(vw,vh) pattern karaoke uses for its
+    // fullscreen lyrics. Windowed keeps a fixed pixel size so the
+    // caption matches the TV frame regardless of window size.
+    isFullscreen ? "tv-cc-fullscreen-text" : "text-[20px]"
   );
 
   // z-[15]: below click-capture (z-20), CRT static (z-30+).
@@ -291,9 +294,26 @@ export function MtvLyricsOverlay({
         // `tv-cc-force-font` escapes macOSX theme Lucida/global 13px div
         // rules — see themes.css alongside ipod-force-font /
         // karaoke-force-font.
-        "tv-cc-force-font pointer-events-none absolute inset-x-0 z-[15] flex justify-start pl-8 pr-4 sm:pl-10",
-        isFullscreen ? "bottom-[18%] sm:bottom-[17%]" : "bottom-10 sm:bottom-11"
+        "tv-cc-force-font pointer-events-none absolute inset-x-0 z-[15] flex justify-start",
+        isFullscreen
+          ? "bottom-[18%] sm:bottom-[17%]"
+          : "bottom-10 sm:bottom-11 pl-8 pr-4 sm:pl-10"
       )}
+      style={
+        isFullscreen
+          ? {
+              // Scale the left gutter with the viewport so the caption
+              // sits comfortably away from the edge on big TVs while
+              // still fitting on phones. `max(safe-area-inset, clamp)`
+              // keeps us clear of the notch on iOS without shrinking
+              // the desktop padding.
+              paddingLeft:
+                "max(env(safe-area-inset-left, 0px), clamp(2.5rem, 8vw, 6rem))",
+              paddingRight:
+                "max(env(safe-area-inset-right, 0px), clamp(1rem, 3vw, 3rem))",
+            }
+          : undefined
+      }
       aria-hidden
     >
       {/* Line change: incoming line slides up from below while the outgoing

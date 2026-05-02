@@ -511,6 +511,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-size: clamp(32px, min(10vw, 10vh), 120px);
   }
 
+  /* TV fullscreen closed captions - viewport-relative with max cap
+     (same min(vw,vh) pattern as karaoke fullscreen lyrics, but ~45%
+     the size since captions sit beneath the video rather than taking
+     over the frame). */
+  .tv-cc-fullscreen-text {
+    font-size: clamp(20px, min(4.5vw, 5vh), 56px);
+    line-height: 1.35;
+  }
+
   .karaoke-title-card-title-window {
     font-size: clamp(18px, 5.1cqw, 72px) !important;
   }

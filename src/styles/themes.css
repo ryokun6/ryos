@@ -1629,24 +1629,16 @@
   font-size: 20px !important;
 }
 
-:root[data-os-theme="macosx"] .tv-cc-force-font .font-geneva-12.text-\[24px\] {
-  font-size: 24px !important;
-}
-
-@media (min-width: 640px) {
-  :root[data-os-theme="macosx"]
-    .tv-cc-force-font
-    .font-geneva-12.sm\:text-\[32px\] {
-    font-size: 32px !important;
-  }
-}
-
-@media (min-width: 768px) {
-  :root[data-os-theme="macosx"]
-    .tv-cc-force-font
-    .font-geneva-12.md\:text-\[40px\] {
-    font-size: 40px !important;
-  }
+/* Fullscreen captions: preserve the viewport-relative clamp defined in
+   index.css — mirrors how `.fullscreen-lyrics-text` is re-asserted on
+   macOSX so the `* { font-size: unset }` escape above doesn't flatten
+   it back to 16px. */
+:root[data-os-theme="macosx"]
+  .tv-cc-force-font
+  .font-geneva-12.tv-cc-fullscreen-text,
+:root[data-os-theme="macosx"] .tv-cc-force-font .tv-cc-fullscreen-text {
+  font-size: clamp(20px, min(4.5vw, 5vh), 56px) !important;
+  line-height: 1.35 !important;
 }
 
 :root[data-os-theme="macosx"] .ipod-force-font .font-chicago,
