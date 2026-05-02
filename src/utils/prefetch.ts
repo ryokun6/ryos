@@ -317,7 +317,7 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
   if (result.action === 'none') {
     if (isManual) {
       const stored = getStoredVersion();
-      toast.success('Already running the latest version', {
+      toast.success(i18n.t('common.toast.alreadyLatestVersion'), {
         description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
       });
     }
@@ -341,10 +341,13 @@ async function checkAndUpdate(isManual: boolean = false): Promise<void> {
       await clearAllCaches();
     }
     
-    // Run prefetch - show reload toast for updates, dismiss silently for first-time
+    // Run prefetch - show reload toast for updates, dismiss silently for first-time.
+    // Surface errors only when the user explicitly triggered the check; periodic
+    // background runs should fail quietly so transient network blips don't spam
+    // a "Failed to load asset manifest" toast every 5 minutes.
     const showReloadToast = result.action === 'update';
-    await runPrefetchWithToast(showReloadToast, result.server);
-    
+    await runPrefetchWithToast(showReloadToast, result.server, isManual);
+
   } finally {
     isUpdateInProgress = false;
   }
@@ -369,16 +372,16 @@ export async function forceRefreshCache(): Promise<void> {
   const serverVersion = await fetchServerVersion();
   
   if (!serverVersion) {
-    toast.error('Could not check for updates');
+    toast.error(i18n.t('common.toast.couldNotCheckUpdates'));
     return;
   }
-  
+
   const stored = getStoredVersion();
   const isNewVersion = serverVersion.buildNumber !== stored.buildNumber;
-  
+
   // If already on latest version, just show success message without reboot
   if (!isNewVersion) {
-    toast.success('Already running the latest version', {
+    toast.success(i18n.t('common.toast.alreadyLatestVersion'), {
       description: stored.version ? `ryOS ${stored.version} (${stored.buildNumber})` : undefined,
     });
     return;
@@ -395,8 +398,9 @@ export async function forceRefreshCache(): Promise<void> {
     clearPrefetchFlag();
     await clearAllCaches();
     
-    // Show update ready toast with reboot button (only for new versions)
-    await runPrefetchWithToast(true, serverVersion);
+    // Show update ready toast with reboot button (only for new versions).
+    // This is a manual user-triggered check, so surface errors loudly.
+    await runPrefetchWithToast(true, serverVersion, true);
   } finally {
     isUpdateInProgress = false;
   }
@@ -410,15 +414,21 @@ export async function forceRefreshCache(): Promise<void> {
  */
 async function runPrefetchWithToast(
   showVersionToast: boolean,
-  server: ServerVersion
+  server: ServerVersion,
+  isManual: boolean = false
 ): Promise<void> {
   console.log('[Prefetch] Starting prefetch...');
-  
+
   // Fetch manifest first
   const manifest = await fetchIconManifest();
   if (!manifest) {
-    toast.error('Failed to load asset manifest');
-    console.log('[Prefetch] Could not fetch manifest');
+    // The icon manifest is a cache-warming hint, not a runtime requirement —
+    // assets still lazy-load on demand. Only nag the user when they explicitly
+    // asked for an update check; otherwise fail quietly.
+    if (isManual) {
+      toast.error(i18n.t('common.toast.failedToLoadAssetManifest'));
+    }
+    console.warn('[Prefetch] Could not fetch icon manifest, skipping prefetch');
     return;
   }
   
@@ -431,7 +441,9 @@ async function runPrefetchWithToast(
   const totalItems = iconUrls.length + soundUrls.length + jsUrls.length + assetUrls.length;
   
   if (totalItems === 0) {
-    toast.info('No assets to cache');
+    if (isManual) {
+      toast.info(i18n.t('common.toast.noAssetsToCache'));
+    }
     console.log('[Prefetch] No assets to prefetch');
     return;
   }
@@ -538,7 +550,13 @@ async function runPrefetchWithToast(
     
   } catch (error) {
     console.error('[Prefetch] Error during prefetch:', error);
-    toast.error('Failed to cache assets', { id: toastId });
+    if (isManual) {
+      toast.error(i18n.t('common.toast.failedToCacheAssets'), { id: toastId });
+    } else {
+      // Quietly dismiss the progress toast on background failures so users
+      // don't see a scary error for a transient network blip.
+      toast.dismiss(toastId);
+    }
   }
 }
 
@@ -665,10 +683,18 @@ async function fetchIconManifest(): Promise<IconManifest | null> {
     const response = await abortableFetch('/icons/manifest.json', {
       method: 'GET',
       timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
+      throwOnHttpError: true,
+      retry: {
+        maxAttempts: 3,
+        initialDelayMs: 500,
+        backoffMultiplier: 2,
+        onRetry: (attempt, delayMs) => {
+          console.warn(
+            `[Prefetch] Manifest fetch attempt ${attempt} failed, retrying in ${delayMs}ms`
+          );
+        },
+      },
     });
-    if (!response.ok) return null;
     return await response.json();
   } catch (error) {
     console.warn('[Prefetch] Failed to load icon manifest:', error);
