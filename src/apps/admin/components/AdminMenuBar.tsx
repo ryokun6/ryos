@@ -105,7 +105,7 @@ export function AdminMenuBar({
             }}
             className="text-md h-6 px-3"
           >
-            {t("apps.admin.sidebar.cursorAgents", "Cursor agents")}
+            {t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}
           </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarCheckboxItem

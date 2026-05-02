@@ -8,8 +8,6 @@
 import type { Redis } from "./_utils/redis.js";
 import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
-import * as RateLimit from "./_utils/_rate-limit.js";
-import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { resolveRequestAuth } from "./_utils/request-auth.js";
 import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
@@ -20,6 +18,10 @@ import {
 } from "./_utils/redis.js";
 import { getRealtimeProvider } from "./_utils/runtime-config.js";
 import { getAnalyticsSummary, getAnalyticsDetail, type AnalyticsSummary, type AnalyticsDetail } from "./_utils/_analytics.js";
+import {
+  CURSOR_REPO_AGENT_OWNER,
+  executeCursorRyOsRepoAgent,
+} from "./chat/tools/cursor-repo-agent.js";
 
 /** Matches `cursorSdkMetaKey` in chat/tools/cursor-repo-agent.ts */
 const CURSOR_SDK_META_KEY_PATTERN = "cursor-sdk-run:*:meta";
@@ -28,13 +30,12 @@ const META_RUN_ID_REGEX = /^cursor-sdk-run:([^:]+):meta$/;
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const ADMIN_RATE_LIMIT_WINDOW = 60;
-const ADMIN_RATE_LIMIT_MAX = 30;
-
 interface AdminRequest {
   action: string;
   targetUsername?: string;
   reason?: string;
+  prompt?: string;
+  modelId?: string;
 }
 
 interface UserProfile {
@@ -558,24 +559,7 @@ export default apiHandler<AdminRequest>(
       return;
     }
 
-    const ip = getClientIp(req);
-    const rateLimitKey = RateLimit.makeKey(["rl", "admin", "user", username || ip]);
-    const rateLimitResult = await RateLimit.checkCounterLimit({
-      key: rateLimitKey,
-      windowSeconds: ADMIN_RATE_LIMIT_WINDOW,
-      limit: ADMIN_RATE_LIMIT_MAX,
-    });
-
-    if (!rateLimitResult.allowed) {
-      logger.warn("Rate limit exceeded", { username, ip });
-      logger.response(429, Date.now() - startTime);
-      res.status(429).json({
-        error: "rate_limit_exceeded",
-        limit: rateLimitResult.limit,
-        retryAfter: rateLimitResult.resetSeconds,
-      });
-      return;
-    }
+    // No /api/admin rate limit: only `ryo` passes the check above.
 
     const action = req.query.action as string | undefined;
 
@@ -811,6 +795,63 @@ export default apiHandler<AdminRequest>(
             res.status(500).json({ error: "Failed to clear memories" });
             return;
           }
+        }
+        case "startCursorAgent": {
+          const prompt =
+            typeof body?.prompt === "string" ? body.prompt.trim() : "";
+          if (!prompt) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({ error: "Prompt is required" });
+            return;
+          }
+          if (prompt.length > 32_000) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({ error: "Prompt is too long" });
+            return;
+          }
+          const modelId =
+            typeof body?.modelId === "string" ? body.modelId.trim() : "";
+          const apiKey = process.env.CURSOR_API_KEY?.trim();
+          if (!apiKey) {
+            logger.response(503, Date.now() - startTime);
+            res.status(503).json({ error: "Cursor SDK not configured" });
+            return;
+          }
+          const result = await executeCursorRyOsRepoAgent(
+            {
+              prompt,
+              ...(modelId ? { modelId } : {}),
+            },
+            {
+              username: CURSOR_REPO_AGENT_OWNER,
+              apiKey,
+              redis,
+              log: (message: unknown, data?: unknown) =>
+                logger.info(
+                  typeof message === "string" ? message : String(message),
+                  data
+                ),
+              logError: (message: unknown, error?: unknown) =>
+                logger.error(
+                  typeof message === "string" ? message : String(message),
+                  error
+                ),
+            }
+          );
+          if ("success" in result && result.success === false) {
+            logger.response(400, Date.now() - startTime);
+            res.status(400).json({
+              error: result.error ?? "Cursor agent failed to start",
+            });
+            return;
+          }
+          logger.info("Cursor agent started from admin", {
+            async: "async" in result && result.async,
+            runId: "runId" in result ? result.runId : undefined,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json(result);
+          return;
         }
         case "forceProcessDailyNotes": {
           if (!targetUsername) {

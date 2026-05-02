@@ -3335,7 +3335,7 @@
         "rooms": "Rooms",
         "songs": "Songs",
         "server": "Server",
-        "cursorAgents": "Cursor agents",
+        "cursorAgents": "Cursor Agents",
         "private": "Private",
         "messagesCount": "{{count}} messages",
         "online": "online"
@@ -3356,8 +3356,13 @@
         "colUpdated": "Updated",
         "colLink": "Link",
         "openPr": "PR",
+        "openAgent": "Agent",
         "followupFrom": "Follow-up from {{id}}",
-        "startedLine": "Started {{time}}"
+        "startedLine": "Started {{time}}",
+        "newAgentPlaceholder": "Send to Cursor",
+        "newAgentAria": "New Cursor agent prompt",
+        "startAgent": "Run",
+        "startFailed": "Could not start agent"
       },
       "server": {
         "title": "Server",

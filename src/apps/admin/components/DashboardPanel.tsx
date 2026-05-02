@@ -250,6 +250,8 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
       : "0%";
 
   const showTrend = !isToday && prevDay != null;
+  /** Daily rollups only — one bar per day is not a useful chart (e.g. Today / 1d). */
+  const showTimeSeriesCharts = days.length >= 2;
 
   const topEndpointMax = topEndpoints.length > 0 ? topEndpoints[0].count : 1;
 
@@ -326,76 +328,82 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           <span>{isToday ? (latestDay?.avgLatencyMs ?? 0) : totals.avgLatencyMs}{t("apps.admin.dashboard.totals.msAvg")}</span>
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.apiCalls")}
+        {showTimeSeriesCharts ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.apiCalls")}
+              </div>
+              <MiniBarChart data={days} valueKey="calls" color="bg-neutral-400" height={56} />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
-            <MiniBarChart data={days} valueKey="calls" color="bg-neutral-400" height={56} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
-            </div>
-          </div>
 
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.uniqueVisitors")}
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.uniqueVisitors")}
+              </div>
+              <MiniBarChart
+                data={days}
+                valueKey="uniqueVisitors"
+                color="bg-green-400"
+                height={56}
+              />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
-            <MiniBarChart data={days} valueKey="uniqueVisitors" color="bg-green-400" height={56} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
-            </div>
-          </div>
 
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.aiRequests")}
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.aiRequests")}
+              </div>
+              <MiniBarChart data={days} valueKey="ai" color="bg-yellow-400" height={56} />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
-            <MiniBarChart data={days} valueKey="ai" color="bg-yellow-400" height={56} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
-            </div>
-          </div>
 
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.errors")}
-            </div>
-            <MiniBarChart data={days} valueKey="errors" color="bg-red-400" height={56} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.errors")}
+              </div>
+              <MiniBarChart data={days} valueKey="errors" color="bg-red-400" height={56} />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         {/* Top Endpoints */}
         <div className="px-3 pb-3">
@@ -528,25 +536,31 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           </div>
         </div>
 
-        {/* Avg Latency */}
-        <div className="px-3 pb-3">
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.avgResponseTime")}
-            </div>
-            <MiniBarChart data={days} valueKey="avgLatencyMs" color="bg-neutral-300" height={48} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
+        {showTimeSeriesCharts ? (
+          <div className="px-3 pb-3">
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.avgResponseTime")}
+              </div>
+              <MiniBarChart
+                data={days}
+                valueKey="avgLatencyMs"
+                color="bg-neutral-300"
+                height={48}
+              />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );

@@ -92,7 +92,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             isSelected={activeSection === "cursorAgents"}
             onClick={() => { playButtonClick(); onSectionChange("cursorAgents"); onRoomSelect(null); }}
           >
-            {t("apps.admin.sidebar.cursorAgents", "Cursor agents")}
+            {t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}
           </SelectableListItem>
 
           <SelectableListItem

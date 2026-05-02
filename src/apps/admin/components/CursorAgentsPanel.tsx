@@ -1,20 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
-import { getAdminCursorAgentRuns } from "@/api/admin";
+import {
+  getAdminCursorAgentRuns,
+  postAdminStartCursorAgent,
+} from "@/api/admin";
 import { ApiRequestError } from "@/api/core";
 import { ArrowsClockwise, Robot } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
 
 export interface AdminCursorAgentRunRow {
   runId: string;
@@ -40,26 +38,93 @@ interface CursorAgentsResponse {
 }
 
 interface CursorAgentsPanelProps {
-  formatRelativeTime: (timestamp: number) => string;
   refreshSignal?: number;
 }
 
-function statusBadgeClass(status: string): string {
+function cursorAgentPageUrl(agentId: string): string {
+  return `https://cursor.com/agents/${encodeURIComponent(agentId)}`;
+}
+
+function statusDotClass(status: string): string {
   const s = status.toLowerCase();
-  if (s === "running") {
-    return "bg-amber-100 text-amber-800";
-  }
-  if (s === "finished") {
-    return "bg-green-100 text-green-700";
-  }
+  if (s === "running") return "bg-amber-500";
+  if (s === "finished") return "bg-emerald-500";
   if (s === "error" || s === "failed" || s === "cancelled" || s === "canceled") {
-    return "bg-red-100 text-red-700";
+    return "bg-red-500";
   }
-  return "bg-neutral-100 text-neutral-600";
+  return "bg-neutral-400";
+}
+
+function CursorAgentsToolbar({
+  prompt,
+  onPromptChange,
+  onSubmit,
+  isSubmitting,
+  submitError,
+  onRefresh,
+  refreshDisabled,
+}: {
+  prompt: string;
+  onPromptChange: (value: string) => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  submitError: string | null;
+  onRefresh: () => void;
+  refreshDisabled?: boolean;
+}) {
+  const { t } = useTranslation();
+
+  const handleFormSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting || !prompt.trim()) return;
+    onSubmit();
+  };
+
+  return (
+    <div className="shrink-0 border-b border-black/10">
+      <form
+        className="flex items-center gap-2 px-2 py-1"
+        onSubmit={handleFormSubmit}
+      >
+        <Input
+          type="text"
+          value={prompt}
+          onChange={(e) => onPromptChange(e.target.value)}
+          placeholder={t(
+            "apps.admin.cursorAgents.newAgentPlaceholder",
+            "Send to Cursor"
+          )}
+          disabled={isSubmitting}
+          className="h-7 flex-1 min-w-0 text-[11px] font-geneva-12"
+          aria-label={t(
+            "apps.admin.cursorAgents.newAgentAria",
+            "New Cursor agent prompt"
+          )}
+        />
+        {isSubmitting ? (
+          <ActivityIndicator size={18} className="shrink-0" />
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onRefresh}
+          disabled={refreshDisabled || isSubmitting}
+          className="h-7 w-7 shrink-0 p-0"
+          aria-label={t("apps.admin.cursorAgents.refresh", "Refresh")}
+          title={t("apps.admin.cursorAgents.refresh", "Refresh")}
+        >
+          <ArrowsClockwise className="h-3.5 w-3.5" weight="bold" />
+        </Button>
+      </form>
+      {submitError ? (
+        <p className="text-[10px] text-red-600 px-2 pb-1">{submitError}</p>
+      ) : null}
+    </div>
+  );
 }
 
 export function CursorAgentsPanel({
-  formatRelativeTime,
   refreshSignal = 0,
 }: CursorAgentsPanelProps) {
   const { t } = useTranslation();
@@ -69,6 +134,15 @@ export function CursorAgentsPanel({
   const [scanIncomplete, setScanIncomplete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [newPrompt, setNewPrompt] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+
+  const selectedRun = runs.find((r) => r.runId === selectedRunId) ?? null;
+  const selectedHeaderTitle =
+    selectedRun?.agentTitle?.trim() ||
+    t("apps.chats.toolCalls.cursorRyOsRepoAgent.panelTitle");
 
   const fetchRuns = useCallback(async () => {
     if (!username || !isAuthenticated) return;
@@ -98,63 +172,125 @@ export function CursorAgentsPanel({
   }, [fetchRuns, refreshSignal]);
 
   const handleRefreshClick = () => {
-    fetchRuns();
+    void fetchRuns();
   };
+
+  const handleStartAgent = async () => {
+    const prompt = newPrompt.trim();
+    if (!prompt || isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const result = await postAdminStartCursorAgent<{
+        async?: boolean;
+        runId?: string;
+        success?: boolean;
+        error?: string;
+        message?: string;
+      }>({ prompt });
+
+      if (result.async && result.runId) {
+        setNewPrompt("");
+        setSelectedRunId(result.runId);
+        await fetchRuns();
+        return;
+      }
+      if (result.success) {
+        setNewPrompt("");
+        await fetchRuns();
+        return;
+      }
+      setSubmitError(
+        result.error ??
+          t("apps.admin.cursorAgents.startFailed", "Could not start agent")
+      );
+    } catch (err) {
+      const message =
+        err instanceof ApiRequestError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : t("apps.admin.cursorAgents.startFailed", "Could not start agent");
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toolbar = (
+    <CursorAgentsToolbar
+      prompt={newPrompt}
+      onPromptChange={setNewPrompt}
+      onSubmit={() => void handleStartAgent()}
+      isSubmitting={isSubmitting}
+      submitError={submitError}
+      onRefresh={handleRefreshClick}
+      refreshDisabled={isLoading}
+    />
+  );
+
+  const panelShellClass =
+    "font-geneva-12 flex h-full min-h-0 flex-1 flex-col overflow-hidden";
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 font-geneva-12">
-        <ActivityIndicator size={24} />
-        <span className="text-[11px] text-neutral-500">
-          {t("apps.admin.cursorAgents.loading", "Loading Cursor agent runs…")}
-        </span>
+      <div className={panelShellClass}>
+        {toolbar}
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <ActivityIndicator size={24} />
+          <span className="text-[11px] text-neutral-500">
+            {t("apps.admin.cursorAgents.loading", "Loading Cursor agent runs…")}
+          </span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-3 px-4 text-center font-geneva-12">
-        <p className="text-[12px] text-red-600">{error}</p>
-        <Button variant="outline" size="sm" onClick={handleRefreshClick} className="h-8 text-[11px]">
-          <ArrowsClockwise className="h-3.5 w-3.5 mr-1" weight="bold" />
-          {t("apps.admin.cursorAgents.retry", "Retry")}
-        </Button>
+      <div className={panelShellClass}>
+        {toolbar}
+        <div className="flex flex-col items-center justify-center py-12 gap-3 px-4 text-center">
+          <p className="text-[12px] text-red-600">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshClick}
+            className="h-8 text-[11px]"
+          >
+            <ArrowsClockwise className="h-3.5 w-3.5 mr-1" weight="bold" />
+            {t("apps.admin.cursorAgents.retry", "Retry")}
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (runs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-neutral-400 font-geneva-12 px-6 text-center gap-2">
-        <Robot className="h-9 w-9 opacity-50" weight="bold" />
-        <p className="text-[12px] font-medium text-neutral-500">
-          {t("apps.admin.cursorAgents.emptyTitle", "No Cursor agent runs in Redis")}
-        </p>
-        <p className="text-[11px] max-w-sm text-neutral-400">
-          {t(
-            "apps.admin.cursorAgents.emptyHint",
-            "Runs appear here when the repo agent tool starts a Cursor Cloud job (async mode with Redis). Data expires after about 24 hours."
-          )}
-        </p>
-        <Button variant="ghost" size="sm" onClick={handleRefreshClick} className="h-7 text-[11px] mt-1">
-          <ArrowsClockwise className="h-3 w-3 mr-1" weight="bold" />
-          {t("apps.admin.cursorAgents.refresh", "Refresh")}
-        </Button>
+      <div className={panelShellClass}>
+        {toolbar}
+        <div className="flex flex-col items-center justify-center py-16 text-neutral-400 px-6 text-center gap-2">
+          <Robot className="h-9 w-9 opacity-50" weight="bold" />
+          <p className="text-[12px] font-medium text-neutral-500">
+            {t("apps.admin.cursorAgents.emptyTitle", "No Cursor agent runs in Redis")}
+          </p>
+          <p className="text-[11px] max-w-sm text-neutral-400">
+            {t(
+              "apps.admin.cursorAgents.emptyHint",
+              "Runs appear here when the repo agent tool starts a Cursor Cloud job (async mode with Redis). Data expires after about 24 hours."
+            )}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="font-geneva-12">
-      <div className="flex items-center justify-end px-2 py-1 border-b border-black/10">
-        <Button variant="ghost" size="sm" onClick={handleRefreshClick} className="h-7 text-[11px]">
-          <ArrowsClockwise className="h-3.5 w-3.5 mr-1" weight="bold" />
-          {t("apps.admin.cursorAgents.refresh", "Refresh")}
-        </Button>
-      </div>
+    <div className={panelShellClass}>
+      {toolbar}
       {(truncated || scanIncomplete) && (
-        <p className="text-[10px] text-amber-700 bg-amber-50 px-3 py-1 border-b border-amber-100">
+        <p className="text-[10px] text-amber-700 bg-amber-50 px-3 py-1 border-b border-amber-100 shrink-0">
           {scanIncomplete && !truncated
             ? t(
                 "apps.admin.cursorAgents.scanIncompleteHint",
@@ -166,29 +302,16 @@ export function CursorAgentsPanel({
               )}
         </p>
       )}
+      <div
+        className={cn(
+          "flex-1 min-h-0 grid gap-0",
+          selectedRunId
+            ? "grid-cols-[minmax(0,1fr)_minmax(280px,42%)]"
+            : "grid-cols-1"
+        )}
+      >
+        <div className="min-h-0 min-w-0 overflow-auto">
       <Table>
-        <TableHeader>
-          <TableRow className="text-[10px] border-none font-normal">
-            <TableHead className="font-normal bg-gray-100/50 h-[28px] w-[72px]">
-              {t("apps.admin.cursorAgents.colStatus", "Status")}
-            </TableHead>
-            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
-              {t("apps.admin.cursorAgents.colRun", "Run / agent")}
-            </TableHead>
-            <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
-              {t("apps.admin.cursorAgents.colModel", "Model")}
-            </TableHead>
-            <TableHead className="font-normal bg-gray-100/50 h-[28px]">
-              {t("apps.admin.cursorAgents.colTask", "Task")}
-            </TableHead>
-            <TableHead className="font-normal bg-gray-100/50 h-[28px] whitespace-nowrap">
-              {t("apps.admin.cursorAgents.colUpdated", "Updated")}
-            </TableHead>
-            <TableHead className="font-normal bg-gray-100/50 h-[28px] w-16">
-              {t("apps.admin.cursorAgents.colLink", "Link")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
         <TableBody className="text-[11px]">
           {runs.map((run) => {
             const summaryLine =
@@ -196,38 +319,96 @@ export function CursorAgentsPanel({
               run.errorPreview ||
               run.promptPreview ||
               "—";
-            const updatedTs = run.updatedAt ?? run.createdAt ?? 0;
-            const createdTs = run.createdAt ?? 0;
+            const taskTitle = run.agentTitle?.trim();
+            const taskPrimary = taskTitle || summaryLine;
+            const taskSecondary =
+              taskTitle &&
+              summaryLine !== "—" &&
+              summaryLine !== taskTitle
+                ? summaryLine
+                : null;
 
             return (
               <TableRow
                 key={run.runId}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedRunId(run.runId)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedRunId(run.runId);
+                  }
+                }}
                 className={cn(
-                  "border-none odd:bg-gray-200/50",
-                  run.status === "running" && "bg-amber-50/60 odd:bg-amber-50/70"
+                  "border-none odd:bg-gray-200/50 cursor-pointer",
+                  run.status === "running" && "bg-amber-50/60 odd:bg-amber-50/70",
+                  selectedRunId === run.runId &&
+                    "bg-blue-100/80 odd:bg-blue-100/80"
                 )}
               >
-                <TableCell className="align-top py-2">
+                <TableCell className="w-0 align-top py-2 pl-2 pr-1">
                   <span
                     className={cn(
-                      "inline-flex px-1.5 py-0.5 rounded text-[9px] font-medium capitalize",
-                      statusBadgeClass(run.status)
+                      "mt-[5px] inline-block h-2 w-2 shrink-0 rounded-full",
+                      statusDotClass(run.status)
                     )}
-                  >
-                    {run.status}
-                  </span>
+                    title={run.status}
+                    aria-label={run.status}
+                  />
                 </TableCell>
-                <TableCell className="align-top py-2 max-w-[140px]">
-                  <div className="truncate font-mono text-[10px]" title={run.runId}>
-                    {run.runId}
-                  </div>
-                  {run.agentId ? (
-                    <div className="truncate text-[10px] text-neutral-500 mt-0.5" title={run.agentId}>
-                      {run.agentId}
+                <TableCell
+                  className="align-top py-2 pl-2 pr-2 min-w-0"
+                  title={[run.runId, run.agentId, summaryLine]
+                    .filter(Boolean)
+                    .join("\n")}
+                >
+                  <div className="text-[11px] font-medium truncate">{taskPrimary}</div>
+                  {taskSecondary ? (
+                    <div className="text-[10px] text-neutral-600 line-clamp-2 mt-0.5">
+                      {taskSecondary}
                     </div>
-                  ) : (
-                    <div className="text-[10px] text-neutral-400 mt-0.5">—</div>
-                  )}
+                  ) : null}
+                  {run.modelId || run.agentId || run.prUrl ? (
+                    <div
+                      className="text-[10px] text-neutral-500 mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-0.5 min-w-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {run.modelId ? (
+                        <span className="truncate">{run.modelId}</span>
+                      ) : null}
+                      {run.modelId && (run.agentId || run.prUrl) ? (
+                        <span className="text-neutral-400" aria-hidden>
+                          ·
+                        </span>
+                      ) : null}
+                      {run.agentId ? (
+                        <a
+                          href={cursorAgentPageUrl(run.agentId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline shrink-0"
+                        >
+                          {t("apps.admin.cursorAgents.openAgent", "Agent")}
+                        </a>
+                      ) : null}
+                      {run.agentId && run.prUrl ? (
+                        <span className="text-neutral-400" aria-hidden>
+                          ·
+                        </span>
+                      ) : null}
+                      {run.prUrl ? (
+                        <a
+                          href={run.prUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline shrink-0"
+                        >
+                          {t("apps.admin.cursorAgents.openPr", "PR")}
+                        </a>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {run.isFollowup && run.previousRunId ? (
                     <div className="text-[9px] text-neutral-400 mt-0.5 truncate">
                       {t("apps.admin.cursorAgents.followupFrom", {
@@ -236,57 +417,23 @@ export function CursorAgentsPanel({
                     </div>
                   ) : null}
                 </TableCell>
-                <TableCell className="align-top py-2 whitespace-nowrap text-[10px] text-neutral-600">
-                  {run.modelId ?? "—"}
-                </TableCell>
-                <TableCell className="align-top py-2 max-w-[220px]">
-                  {run.agentTitle ? (
-                    <div className="text-[11px] font-medium truncate" title={run.agentTitle}>
-                      {run.agentTitle}
-                    </div>
-                  ) : null}
-                  <div className="text-[10px] text-neutral-600 line-clamp-2" title={summaryLine}>
-                    {summaryLine}
-                  </div>
-                </TableCell>
-                <TableCell
-                  className="align-top py-2 whitespace-nowrap text-[10px] text-neutral-500"
-                  title={
-                    updatedTs
-                      ? new Date(updatedTs).toISOString()
-                      : createdTs
-                        ? new Date(createdTs).toISOString()
-                        : undefined
-                  }
-                >
-                  {updatedTs ? formatRelativeTime(updatedTs) : "—"}
-                  {createdTs && createdTs !== updatedTs ? (
-                    <div className="text-[9px] text-neutral-400">
-                      {t("apps.admin.cursorAgents.startedLine", {
-                        time: formatRelativeTime(createdTs),
-                      })}
-                    </div>
-                  ) : null}
-                </TableCell>
-                <TableCell className="align-top py-2">
-                  {run.prUrl ? (
-                    <a
-                      href={run.prUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-blue-600 hover:underline"
-                    >
-                      {t("apps.admin.cursorAgents.openPr", "PR")}
-                    </a>
-                  ) : (
-                    <span className="text-[10px] text-neutral-300">—</span>
-                  )}
-                </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
+        </div>
+        {selectedRunId ? (
+          <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-l border-black/10 bg-white">
+            <CursorRepoAgentChatCard
+              key={selectedRunId}
+              runId={selectedRunId}
+              headerTitle={selectedHeaderTitle}
+              variant="panel"
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
