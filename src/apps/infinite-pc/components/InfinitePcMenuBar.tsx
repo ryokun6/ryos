@@ -175,7 +175,7 @@ export function InfinitePcMenuBar({
                       currentRenderAspect === aspect ? "bg-gray-100" : ""
                     }`}
                   >
-                    {aspect}
+                    {t(`apps.pc.aspectRatios.${aspect}`, { defaultValue: aspect })}
                   </MenubarItem>
                 ))}
               </MenubarSubContent>

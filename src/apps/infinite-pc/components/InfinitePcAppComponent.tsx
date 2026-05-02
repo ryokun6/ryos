@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -21,6 +22,7 @@ import {
 } from "./InfinitePcBrowseHeader";
 import { InfinitePcGameGridCard } from "./InfinitePcGameGridCard";
 import { INFINITE_PC_PRESET_AVERAGE_COLORS } from "../presetAverageColors.generated";
+import { getPcPresetName, getPcPresetYear } from "../presetI18n";
 import { SquaresFour } from "@phosphor-icons/react";
 
 function formatBytes(bytes: number): string {
@@ -41,6 +43,7 @@ function PcLoadingOverlay({
   progress: PcLoadProgress;
   error: string | null;
 }) {
+  const { t } = useTranslation();
   const { phase, loaded, total } = progress;
   const pct =
     total > 0 ? Math.min(100, Math.max(0, Math.round((loaded / total) * 100))) : 0;
@@ -50,9 +53,9 @@ function PcLoadingOverlay({
   if (error) {
     statusLine = <span className="text-red-300">{error}</span>;
   } else if (phase === "starting") {
-    statusLine = <span className="shimmer">Connecting…</span>;
+    statusLine = <span className="shimmer">{t("apps.pc.status.connecting")}</span>;
   } else if (phase === "booting") {
-    statusLine = <span className="shimmer">Booting…</span>;
+    statusLine = <span className="shimmer">{t("apps.pc.status.booting")}</span>;
   } else if (total > 0) {
     statusLine = (
       <span className="text-neutral-300 tabular-nums">
@@ -60,7 +63,7 @@ function PcLoadingOverlay({
       </span>
     );
   } else {
-    statusLine = <span className="shimmer">Loading…</span>;
+    statusLine = <span className="shimmer">{t("apps.pc.status.loading")}</span>;
   }
 
   return (
@@ -96,6 +99,7 @@ function PresetGridCard({
   preset: PcPreset;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation();
   const [thumbError, setThumbError] = useState(false);
   const showThumb = !!preset.image && !thumbError;
   const textShadow = "0 1px 3px rgba(0,0,0,0.95)";
@@ -150,13 +154,13 @@ function PresetGridCard({
           className="text-white font-apple-garamond !text-[18px] leading-tight truncate max-w-full"
           style={{ textShadow }}
         >
-          {preset.name}
+          {getPcPresetName(preset, t)}
         </span>
         <span
           className="text-neutral-300 text-[10px] shrink-0 opacity-100 @md:opacity-0 transition-opacity duration-200 @md:group-hover:opacity-100"
           style={{ textShadow }}
         >
-          {preset.year}
+          {getPcPresetYear(preset, t)}
         </span>
       </div>
     </motion.button>
@@ -270,7 +274,7 @@ export function InfinitePcAppComponent({
   if (!isWindowOpen) return null;
 
   const windowTitle = selectedPreset
-    ? selectedPreset.name
+    ? getPcPresetName(selectedPreset, t)
     : isGameRunning && selectedGame
       ? selectedGame.name
       : t("apps.pc.title");
@@ -356,7 +360,7 @@ export function InfinitePcAppComponent({
                 />
                 {!isEmulatorLoaded && selectedPreset && (
                   <PcLoadingOverlay
-                    presetName={selectedPreset.name}
+                    presetName={getPcPresetName(selectedPreset, t)}
                     progress={loadProgress}
                     error={loadError}
                   />

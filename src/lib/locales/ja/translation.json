@@ -6,6 +6,30 @@
         "loginPrompt": "管理者アカウントでログインしてください。",
         "title": "アクセス拒否"
       },
+      "cursorAgents": {
+        "colLink": "リンク",
+        "colModel": "モデル",
+        "colRun": "実行 / エージェント",
+        "colStatus": "ステータス",
+        "colTask": "タスク",
+        "colUpdated": "更新日時",
+        "emptyHint": "リポジトリエージェントツールがCursor Cloudジョブ（Redisを使用した非同期モード）を開始すると、ここに実行が表示されます。キーの有効期限は約24時間です。",
+        "emptyTitle": "RedisにCursorエージェントの実行データがありません",
+        "followupFrom": "{{id}} からのフォローアップ",
+        "loadFailed": "実行データを読み込めませんでした",
+        "loading": "Cursorエージェントの実行を読み込み中…",
+        "newAgentAria": "新規Cursorエージェントプロンプト",
+        "newAgentPlaceholder": "Cursorに送信",
+        "openAgent": "エージェント",
+        "openPr": "PR",
+        "refresh": "更新",
+        "retry": "再試行",
+        "scanIncompleteHint": "Redisキーのスキャンが早期に停止しました。再試行するか、問題が解決しない場合は担当者に連絡してください。",
+        "startAgent": "実行",
+        "startFailed": "エージェントを開始できませんでした",
+        "startedLine": "{{time}}に開始",
+        "truncatedHint": "リストは切り捨てられている可能性があります（行数制限またはスキャン上限）。"
+      },
       "dashboard": {
         "charts": {
           "aiRequests": "AIリクエスト",
@@ -238,6 +262,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "cursorAgents": "Cursorエージェント",
         "dashboard": "ダッシュボード",
         "messagesCount": "メッセージ{{count}}件",
         "online": "オンライン",
@@ -286,6 +311,8 @@
         "noSongsToExport": "書き出す曲がありません"
       },
       "statusBar": {
+        "cursorAgentsCount": "{{count}}個のCursorエージェント",
+        "cursorAgentsCount_plural": "{{count}}個のCursorエージェント",
         "loggedInAs": "{{username}}としてログイン中",
         "messagesCount": "メッセージ{{count}}件",
         "messagesCount_plural": "メッセージ{{count}}件",
@@ -2507,15 +2534,36 @@
       "untitled": "無題"
     },
     "pc": {
+      "aspectRatios": {
+        "1/1": "1:1",
+        "16/10": "16:10",
+        "16/9": "16:9",
+        "4/3": "4:3",
+        "5/4": "5:4",
+        "AsIs": "そのまま",
+        "Fit": "フィット"
+      },
       "description": "3D PCシミュレーション",
       "dialogs": {
         "resetVirtualPcDescription": "PCをリセットしてもよろしいですか？これにより、現在のすべての状態がクリアされます。",
         "resetVirtualPcTitle": "バーチャルPCをリセット"
       },
       "help": {
+        "aboutV86": {
+          "description": "Powered by copy.sh/v86（オープンソースのx86エミュレータ）",
+          "title": "v86について"
+        },
         "aspectRatio": {
           "description": "モニターに合わせて4:3またはワイドスクリーンに切り替え",
           "title": "アスペクト比"
+        },
+        "backToSystems": {
+          "description": "「ファイル ▸ 戻る」を使用してOSおよびゲームブラウザに戻ります",
+          "title": "システムに戻る"
+        },
+        "dosGames": {
+          "description": "js-dosライブラリ（シェアウェアおよびクラシック）については「ゲーム」タブを使用してください",
+          "title": "DOSゲーム"
         },
         "fullscreenMode": {
           "description": "コントロール ▸ フルスクリーンを切り替えて没入感のある表示",
@@ -2525,6 +2573,10 @@
           "description": "物理キーボードを使用してゲーム内入力",
           "title": "キーボードコントロール"
         },
+        "keyboardInput": {
+          "description": "ほとんどのキー入力が送信されます。Escキーを押すとポインターのロックを解除できます",
+          "title": "キーボード入力"
+        },
         "mouseCapture": {
           "description": "ウィンドウ内をクリックしてマウスをキャプチャ/解放",
           "title": "マウスキャプチャ"
@@ -2533,6 +2585,10 @@
           "description": "ブラウザでクラシックなDOSゲームとアプリを直接実行",
           "title": "PCエミュレーター"
         },
+        "pickSystem": {
+          "description": "グリッドからOSを選択してエミュレータを起動します",
+          "title": "システムを選択"
+        },
         "resetLoad": {
           "description": "ファイル ▸ リセットで再開、またはゲームをロードでゲームを切り替えます。",
           "title": "リセットとロード"
@@ -2540,9 +2596,13 @@
       },
       "loadingEmulator": "エミュレーターを読み込み中",
       "loadingGame": "{{gameName}}を読み込み中...",
+      "loadingSystem": "{{name}}を読み込み中...",
       "menu": {
         "aboutVirtualPc": "バーチャルPCについて",
         "aspectRatio": "アスペクト比",
+        "backToBrowse": "戻る",
+        "backToPresets": "システム一覧に戻る",
+        "captureScreenshot": "スクリーンショットを撮る",
         "controls": "コントロール",
         "fullScreen": "フルスクリーン",
         "loadGame": "ゲームを読み込む",
@@ -2554,7 +2614,174 @@
         "virtualPcHelp": "バーチャルPCのヘルプ"
       },
       "name": "バーチャルPC",
+      "presets": {
+        "archlinux": {
+          "description": "i3ウィンドウマネージャを搭載したローリングリリースLinux",
+          "name": "Arch Linux",
+          "year": "2019"
+        },
+        "beos": {
+          "description": "Be Inc.によるメディア重視のデスクトップOS",
+          "name": "BeOS 5",
+          "year": "2000"
+        },
+        "buildroot": {
+          "description": "組み込みターゲット向けの最小構成Linux",
+          "name": "Buildroot Linux",
+          "year": "2014"
+        },
+        "doof": {
+          "description": "1.44MBのフロッピーに詰め込まれたDOOM",
+          "name": "Doom on a Floppy",
+          "year": "2024"
+        },
+        "dsl": {
+          "description": "50MBの軽量ライブLinuxディストリビューション",
+          "name": "Damn Small Linux",
+          "year": "2006"
+        },
+        "fiwix": {
+          "description": "教育用Unix系カーネル",
+          "name": "FiwixOS",
+          "year": "2018"
+        },
+        "freebsd": {
+          "description": "BSD Unix系オペレーティングシステム",
+          "name": "FreeBSD",
+          "year": "2003"
+        },
+        "freedos": {
+          "description": "無料かつオープンソースのDOS互換OS",
+          "name": "FreeDOS",
+          "year": "1998"
+        },
+        "haiku": {
+          "description": "BeOSのオープンソースによる復活",
+          "name": "Haiku",
+          "year": "2009"
+        },
+        "helenos": {
+          "description": "マルチサーバー・マイクロカーネルの研究用OS",
+          "name": "HelenOS",
+          "year": "2011"
+        },
+        "kolibrios": {
+          "description": "アセンブリ言語で記述された、フロッピーに収まる極小GUI OS",
+          "name": "KolibriOS",
+          "year": "2009"
+        },
+        "linux26": {
+          "description": "BusyBoxユーザーランドを備えたクラシックなLinuxカーネル",
+          "name": "Linux 2.6",
+          "year": "2003"
+        },
+        "linux4": {
+          "description": "モダンなLinuxカーネル、ヘッドレスなターミナル起動",
+          "name": "Linux 4.x",
+          "year": "2017"
+        },
+        "mikeos": {
+          "description": "アセンブリ言語で記述されたCLIメニュー付きのホビーx86 OS",
+          "name": "MikeOS",
+          "year": "2009"
+        },
+        "minix": {
+          "description": "タネンバウムによるマイクロカーネル教育用OS",
+          "name": "Minix",
+          "year": "1987"
+        },
+        "msdos": {
+          "description": "クラシックなMicrosoftディスクオペレーティングシステム",
+          "name": "MS-DOS 6.22",
+          "year": "1994"
+        },
+        "netbsd": {
+          "description": "ポータブルなBSD Unix - 「もちろんNetBSDで動く」",
+          "name": "NetBSD",
+          "year": "2018"
+        },
+        "oberon": {
+          "description": "ヴィルトによるタイル型ウィンドウの研究用OS",
+          "name": "Oberon",
+          "year": "1990"
+        },
+        "openbsd": {
+          "description": "セキュリティ重視のBSD Unix",
+          "name": "OpenBSD",
+          "year": "2010"
+        },
+        "reactos": {
+          "description": "オープンソースのWindows互換OS",
+          "name": "ReactOS",
+          "year": "2018"
+        },
+        "redox": {
+          "description": "Rustで書かれたモダンなマイクロカーネルOS",
+          "name": "Redox",
+          "year": "2016"
+        },
+        "serenity": {
+          "description": "90年代後半の美学とモダンなUnixの魂",
+          "name": "SerenityOS",
+          "year": "2018"
+        },
+        "solos": {
+          "description": "フロッピー1枚に収まるホビーOS",
+          "name": "Sol OS",
+          "year": "2012"
+        },
+        "windows-me": {
+          "description": "Millennium Edition - 最後の9x系カーネル",
+          "name": "Windows ME",
+          "year": "2000"
+        },
+        "windows1": {
+          "description": "フロッピーでリリースされた最初のWindows",
+          "name": "Windows 1.01",
+          "year": "1985"
+        },
+        "windows2000": {
+          "description": "NTベースの安定性、プロフェッショナルなデスクトップ",
+          "name": "Windows 2000",
+          "year": "2000"
+        },
+        "windows30": {
+          "description": "プログラム マネージャーと16色のアイコン",
+          "name": "Windows 3.0",
+          "year": "1990"
+        },
+        "windows31": {
+          "description": "TrueTypeフォントと象徴的な「ホットドッグスタンド」テーマ",
+          "name": "Windows 3.1",
+          "year": "1992"
+        },
+        "windows95": {
+          "description": "スタートメニュー、タスクバー、そして32ビット革命",
+          "name": "Windows 95",
+          "year": "1995"
+        },
+        "windows98": {
+          "description": "Active Desktop、USBサポート、Internet Explorer 4",
+          "name": "Windows 98",
+          "year": "1998"
+        }
+      },
       "programsAvailable": "{{count}}個のプログラムが利用可能です",
+      "screenshotUnavailable": "スクリーンショットは利用できません。ブラウザのスクリーンショットツール（MacではCmd+Shift+4、WindowsではWin+Shift+S）を使用してください。",
+      "selectSystem": "x86オペレーティングシステムを選択",
+      "status": {
+        "booting": "起動中…",
+        "bytesZero": "0 MB",
+        "connecting": "接続中…",
+        "emulatorStartFailed": "エミュレータの起動に失敗しました",
+        "loading": "読み込み中…"
+      },
+      "systemsAvailable": "{{count}}個のシステムが利用可能",
+      "tabs": {
+        "games": "ゲーム",
+        "os": "OS"
+      },
+      "title": "仮想PC",
       "virtualPc": "バーチャルPC"
     },
     "photo-booth": {

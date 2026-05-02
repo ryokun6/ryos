@@ -267,7 +267,7 @@ export function useInfinitePcLogic({
           setLoadError(
             typeof payload.message === "string"
               ? payload.message
-              : "Failed to start emulator"
+              : t("apps.pc.status.emulatorStartFailed")
           );
           break;
         }
@@ -282,12 +282,7 @@ export function useInfinitePcLogic({
             "Virtual PC screenshot:",
             typeof payload.message === "string" ? payload.message : payload
           );
-          alert(
-            t(
-              "apps.pc.screenshotUnavailable",
-              "Screenshot not available. Use your browser's screenshot tool (Cmd+Shift+4 on Mac, Win+Shift+S on Windows)."
-            )
-          );
+          alert(t("apps.pc.screenshotUnavailable"));
           break;
         }
       }

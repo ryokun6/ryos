@@ -6,6 +6,30 @@
         "loginPrompt": "請使用管理員帳戶登入。",
         "title": "存取遭拒"
       },
+      "cursorAgents": {
+        "colLink": "連結",
+        "colModel": "模型",
+        "colRun": "執行 / Agent",
+        "colStatus": "狀態",
+        "colTask": "任務",
+        "colUpdated": "已更新",
+        "emptyHint": "當儲存庫 Agent 工具啟動 Cursor Cloud 工作（搭配 Redis 的非同步模式）時，執行記錄會顯示在此處。金鑰將在大約 24 小時後過期。",
+        "emptyTitle": "Redis 中沒有 Cursor Agent 執行記錄",
+        "followupFrom": "來自 {{id}} 的後續",
+        "loadFailed": "無法載入執行記錄",
+        "loading": "正在載入 Cursor Agent 執行記錄…",
+        "newAgentAria": "新的 Cursor Agent 提示詞",
+        "newAgentPlaceholder": "傳送至 Cursor",
+        "openAgent": "Agent",
+        "openPr": "PR",
+        "refresh": "重新整理",
+        "retry": "重試",
+        "scanIncompleteHint": "Redis 金鑰掃描提前停止；請重試，若問題持續請聯絡維運人員。",
+        "startAgent": "執行",
+        "startFailed": "無法啟動 Agent",
+        "startedLine": "已於 {{time}} 開始",
+        "truncatedHint": "列表可能已被截斷（行數限制或掃描上限）。"
+      },
       "dashboard": {
         "charts": {
           "aiRequests": "AI 請求",
@@ -238,6 +262,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "cursorAgents": "Cursor 代理程式",
         "dashboard": "儀表板",
         "messagesCount": "{{count}} 則訊息",
         "online": "線上",
@@ -286,6 +311,8 @@
         "noSongsToExport": "沒有歌曲可供匯出"
       },
       "statusBar": {
+        "cursorAgentsCount": "{{count}} 個 Cursor 代理程式",
+        "cursorAgentsCount_plural": "{{count}} 個 Cursor 代理程式",
         "loggedInAs": "已登入為 {{username}}",
         "messagesCount": "{{count}} 則訊息",
         "messagesCount_plural": "{{count}} 則訊息",
@@ -2507,15 +2534,36 @@
       "untitled": "未命名"
     },
     "pc": {
+      "aspectRatios": {
+        "1/1": "1:1",
+        "16/10": "16:10",
+        "16/9": "16:9",
+        "4/3": "4:3",
+        "5/4": "5:4",
+        "AsIs": "原始比例",
+        "Fit": "適應螢幕"
+      },
       "description": "3D PC 模擬",
       "dialogs": {
         "resetVirtualPcDescription": "您確定要重設此 PC 嗎？這將清除所有目前的狀態。",
         "resetVirtualPcTitle": "重設虛擬 PC"
       },
       "help": {
+        "aboutV86": {
+          "description": "由 copy.sh/v86 提供技術支援，這是一個開源的 x86 模擬器",
+          "title": "關於 v86"
+        },
         "aspectRatio": {
           "description": "在 4:3 或寬螢幕之間切換以符合您的顯示器",
           "title": "長寬比"
+        },
+        "backToSystems": {
+          "description": "使用 檔案 ▸ 返回 以回到作業系統與遊戲瀏覽器",
+          "title": "返回系統列表"
+        },
+        "dosGames": {
+          "description": "使用「遊戲」分頁來存取 js-dos 函式庫（共享軟體與經典遊戲）",
+          "title": "DOS 遊戲"
         },
         "fullscreenMode": {
           "description": "切換「控制」▸「全螢幕」以獲得沉浸式顯示",
@@ -2525,6 +2573,10 @@
           "description": "使用實體鍵盤進行遊戲內輸入",
           "title": "鍵盤控制"
         },
+        "keyboardInput": {
+          "description": "大多數按鍵會直接傳遞；按 Esc 可解除指標鎖定",
+          "title": "鍵盤輸入"
+        },
         "mouseCapture": {
           "description": "在視窗內點擊以擷取/釋放滑鼠",
           "title": "滑鼠擷取"
@@ -2533,6 +2585,10 @@
           "description": "在瀏覽器中直接執行經典 DOS 遊戲和應用程式",
           "title": "PC 模擬器"
         },
+        "pickSystem": {
+          "description": "從網格中選擇作業系統以啟動模擬器",
+          "title": "選擇系統"
+        },
         "resetLoad": {
           "description": "使用「檔案 ▸ 重設」重新開始，或「載入遊戲」切換遊戲。",
           "title": "重設與載入"
@@ -2540,9 +2596,13 @@
       },
       "loadingEmulator": "載入模擬器",
       "loadingGame": "載入 {{gameName}}...",
+      "loadingSystem": "正在載入 {{name}}...",
       "menu": {
         "aboutVirtualPc": "關於虛擬PC",
         "aspectRatio": "長寬比",
+        "backToBrowse": "返回",
+        "backToPresets": "返回系統列表",
+        "captureScreenshot": "擷取螢幕截圖",
         "controls": "控制",
         "fullScreen": "全螢幕",
         "loadGame": "載入遊戲",
@@ -2554,7 +2614,174 @@
         "virtualPcHelp": "虛擬PC輔助說明"
       },
       "name": "虛擬 PC",
+      "presets": {
+        "archlinux": {
+          "description": "搭載 i3 視窗管理員的滾動更新版 Linux",
+          "name": "Arch Linux",
+          "year": "2019"
+        },
+        "beos": {
+          "description": "Be Inc. 開發、專注於多媒體的桌上型作業系統",
+          "name": "BeOS 5",
+          "year": "2000"
+        },
+        "buildroot": {
+          "description": "適用於嵌入式系統的極簡 Linux",
+          "name": "Buildroot Linux",
+          "year": "2014"
+        },
+        "doof": {
+          "description": "塞進 1.44MB 磁碟片的 DOOM",
+          "name": "磁碟片上的 Doom",
+          "year": "2024"
+        },
+        "dsl": {
+          "description": "僅 50MB 的微型 Live Linux 發行版",
+          "name": "Damn Small Linux",
+          "year": "2006"
+        },
+        "fiwix": {
+          "description": "教育用途的類 Unix 核心",
+          "name": "FiwixOS",
+          "year": "2018"
+        },
+        "freebsd": {
+          "description": "BSD 類 Unix 作業系統",
+          "name": "FreeBSD",
+          "year": "2003"
+        },
+        "freedos": {
+          "description": "免費、開源且相容於 DOS 的作業系統",
+          "name": "FreeDOS",
+          "year": "1998"
+        },
+        "haiku": {
+          "description": "BeOS 的開源復刻版",
+          "name": "Haiku",
+          "year": "2009"
+        },
+        "helenos": {
+          "description": "多伺服器微核心研究型作業系統",
+          "name": "HelenOS",
+          "year": "2011"
+        },
+        "kolibrios": {
+          "description": "以組合語言編寫的微型圖形介面作業系統，可裝入磁碟片",
+          "name": "KolibriOS",
+          "year": "2009"
+        },
+        "linux26": {
+          "description": "搭載 BusyBox 使用者空間的經典 Linux 核心",
+          "name": "Linux 2.6",
+          "year": "2003"
+        },
+        "linux4": {
+          "description": "現代 Linux 核心，無顯示器終端機啟動",
+          "name": "Linux 4.x",
+          "year": "2017"
+        },
+        "mikeos": {
+          "description": "以組合語言編寫並具備 CLI 選單的愛好者 x86 作業系統",
+          "name": "MikeOS",
+          "year": "2009"
+        },
+        "minix": {
+          "description": "Tanenbaum 的微核心教學作業系統",
+          "name": "Minix",
+          "year": "1987"
+        },
+        "msdos": {
+          "description": "經典的 Microsoft 磁碟作業系統",
+          "name": "MS-DOS 6.22",
+          "year": "1994"
+        },
+        "netbsd": {
+          "description": "可攜式 BSD Unix ——「它當然能執行 NetBSD」",
+          "name": "NetBSD",
+          "year": "2018"
+        },
+        "oberon": {
+          "description": "Wirth 的平鋪式視窗研究作業系統",
+          "name": "Oberon",
+          "year": "1990"
+        },
+        "openbsd": {
+          "description": "專注於安全性的 BSD Unix",
+          "name": "OpenBSD",
+          "year": "2010"
+        },
+        "reactos": {
+          "description": "與 Windows 相容的開源作業系統",
+          "name": "ReactOS",
+          "year": "2018"
+        },
+        "redox": {
+          "description": "以 Rust 編寫的現代微核心作業系統",
+          "name": "Redox",
+          "year": "2016"
+        },
+        "serenity": {
+          "description": "具備現代 Unix 靈魂的 90 年代末期美學",
+          "name": "SerenityOS",
+          "year": "2018"
+        },
+        "solos": {
+          "description": "可裝進單張磁碟片的業餘作業系統",
+          "name": "Sol OS",
+          "year": "2012"
+        },
+        "windows-me": {
+          "description": "Millennium Edition - 最後一款 9x 核心",
+          "name": "Windows ME",
+          "year": "2000"
+        },
+        "windows1": {
+          "description": "首款以磁碟片發行的 Windows 版本",
+          "name": "Windows 1.01",
+          "year": "1985"
+        },
+        "windows2000": {
+          "description": "基於 NT 的穩定性，專業桌面",
+          "name": "Windows 2000",
+          "year": "2000"
+        },
+        "windows30": {
+          "description": "程式管理員與 16 色圖示",
+          "name": "Windows 3.0",
+          "year": "1990"
+        },
+        "windows31": {
+          "description": "TrueType 字型與經典的「熱狗攤」佈景主題",
+          "name": "Windows 3.1",
+          "year": "1992"
+        },
+        "windows95": {
+          "description": "開始功能表、工作列與 32 位元革命",
+          "name": "Windows 95",
+          "year": "1995"
+        },
+        "windows98": {
+          "description": "Active Desktop、USB 支援與 Internet Explorer 4",
+          "name": "Windows 98",
+          "year": "1998"
+        }
+      },
       "programsAvailable": "{{count}} 個程式可用",
+      "screenshotUnavailable": "無法提供螢幕截圖。請使用瀏覽器的截圖工具（Mac 請按 Cmd+Shift+4，Windows 請按 Win+Shift+S）。",
+      "selectSystem": "選擇一個 x86 作業系統",
+      "status": {
+        "booting": "正在啟動…",
+        "bytesZero": "0 MB",
+        "connecting": "連線中…",
+        "emulatorStartFailed": "啟動模擬器失敗",
+        "loading": "載入中…"
+      },
+      "systemsAvailable": "{{count}} 個可用系統",
+      "tabs": {
+        "games": "遊戲",
+        "os": "作業系統"
+      },
+      "title": "虛擬電腦",
       "virtualPc": "虛擬 PC"
     },
     "photo-booth": {

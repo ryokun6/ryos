@@ -6,6 +6,30 @@
         "loginPrompt": "Bitte melden Sie sich mit einem Administratorkonto an.",
         "title": "Zugriff verweigert"
       },
+      "cursorAgents": {
+        "colLink": "Link",
+        "colModel": "Modell",
+        "colRun": "Durchlauf / Agent",
+        "colStatus": "Status",
+        "colTask": "Aufgabe",
+        "colUpdated": "Aktualisiert",
+        "emptyHint": "Durchläufe erscheinen hier, wenn das Repo-Agent-Tool einen Cursor Cloud-Job startet (Async-Modus mit Redis). Keys laufen nach etwa 24 Stunden ab.",
+        "emptyTitle": "Keine Cursor-Agent-Durchläufe in Redis",
+        "followupFrom": "Follow-up von {{id}}",
+        "loadFailed": "Durchläufe konnten nicht geladen werden",
+        "loading": "Cursor-Agent-Durchläufe werden geladen…",
+        "newAgentAria": "Neuer Cursor-Agent-Prompt",
+        "newAgentPlaceholder": "An Cursor senden",
+        "openAgent": "Agent",
+        "openPr": "PR",
+        "refresh": "Aktualisieren",
+        "retry": "Wiederholen",
+        "scanIncompleteHint": "Redis-Key-Scan vorzeitig gestoppt; versuchen Sie es erneut oder kontaktieren Sie Ops, falls dies weiterhin auftritt.",
+        "startAgent": "Durchlauf",
+        "startFailed": "Agent konnte nicht gestartet werden",
+        "startedLine": "Gestartet {{time}}",
+        "truncatedHint": "Liste ist möglicherweise unvollständig (Zeilenlimit oder Scan-Limit)."
+      },
       "dashboard": {
         "charts": {
           "aiRequests": "KI-Anfragen",
@@ -238,6 +262,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "cursorAgents": "Cursor-Agenten",
         "dashboard": "Dashboard",
         "messagesCount": "{{count}} Nachrichten",
         "online": "online",
@@ -286,6 +311,8 @@
         "noSongsToExport": "Keine Songs zum Exportieren"
       },
       "statusBar": {
+        "cursorAgentsCount": "{{count}} Cursor-Agent",
+        "cursorAgentsCount_plural": "{{count}} Cursor-Agenten",
         "loggedInAs": "Angemeldet als {{username}}",
         "messagesCount": "{{count}} Nachricht",
         "messagesCount_plural": "{{count}} Nachrichten",
@@ -2507,15 +2534,36 @@
       "untitled": "Ohne Titel"
     },
     "pc": {
+      "aspectRatios": {
+        "1/1": "1:1",
+        "16/10": "16:10",
+        "16/9": "16:9",
+        "4/3": "4:3",
+        "5/4": "5:4",
+        "AsIs": "Original",
+        "Fit": "Einpassen"
+      },
       "description": "3D-PC-Simulation",
       "dialogs": {
         "resetVirtualPcDescription": "Sind Sie sicher, dass Sie den PC zurücksetzen möchten? Dadurch wird der gesamte aktuelle Zustand gelöscht.",
         "resetVirtualPcTitle": "Virtual PC zurücksetzen"
       },
       "help": {
+        "aboutV86": {
+          "description": "Unterstützt durch copy.sh/v86, einen Open-Source x86-Emulator",
+          "title": "Über v86"
+        },
         "aspectRatio": {
           "description": "Zwischen 4:3 oder Breitbild wechseln, um zu Ihrem Monitor zu passen",
           "title": "Seitenverhältnis"
+        },
+        "backToSystems": {
+          "description": "Verwenden Sie Datei ▸ Zurück, um zum Browser für Betriebssysteme und Spiele zurückzukehren",
+          "title": "Zurück zu Systemen"
+        },
+        "dosGames": {
+          "description": "Verwenden Sie den Tab „Spiele“ für die js-dos-Bibliothek (Shareware und Klassiker)",
+          "title": "DOS-Spiele"
         },
         "fullscreenMode": {
           "description": "Steuerung ▸ Vollbild umschalten für eine immersive Anzeige",
@@ -2525,6 +2573,10 @@
           "description": "Verwenden Sie Ihre physische Tastatur für die Eingabe im Spiel",
           "title": "Tastatursteuerung"
         },
+        "keyboardInput": {
+          "description": "Die meisten Tasten werden durchgereicht; drücken Sie Esc, um die Mauszeigersperre aufzuheben",
+          "title": "Tastatureingabe"
+        },
         "mouseCapture": {
           "description": "Klicken Sie im Fenster, um die Maus zu erfassen/freizugeben",
           "title": "Maus-Erfassung"
@@ -2533,6 +2585,10 @@
           "description": "Führt klassische DOS-Spiele und Apps direkt in Ihrem Browser aus",
           "title": "PC-Emulator"
         },
+        "pickSystem": {
+          "description": "Wähle ein Betriebssystem aus dem Raster, um den Emulator zu starten",
+          "title": "System wählen"
+        },
         "resetLoad": {
           "description": "Verwenden Sie Datei ▸ Zurücksetzen, um neu zu starten, oder Spiel laden, um das Spiel zu wechseln.",
           "title": "Zurücksetzen & Laden"
@@ -2540,9 +2596,13 @@
       },
       "loadingEmulator": "EMULATOR WIRD GELADEN",
       "loadingGame": "Lade {{gameName}}...",
+      "loadingSystem": "Lade {{name}}...",
       "menu": {
         "aboutVirtualPc": "Über Virtueller PC",
         "aspectRatio": "Seitenverhältnis",
+        "backToBrowse": "Zurück",
+        "backToPresets": "Zurück zu den Systemen",
+        "captureScreenshot": "Screenshot aufnehmen",
         "controls": "Steuerung",
         "fullScreen": "Vollbild",
         "loadGame": "Spiel laden",
@@ -2554,7 +2614,174 @@
         "virtualPcHelp": "Virtueller PC-Hilfe"
       },
       "name": "Virtueller PC",
+      "presets": {
+        "archlinux": {
+          "description": "Rolling-Release-Linux mit i3-Window-Manager",
+          "name": "Arch Linux",
+          "year": "2019"
+        },
+        "beos": {
+          "description": "Medienfokussiertes Desktop-Betriebssystem von Be Inc.",
+          "name": "BeOS 5",
+          "year": "2000"
+        },
+        "buildroot": {
+          "description": "Minimales Linux für Embedded-Systeme",
+          "name": "Buildroot Linux",
+          "year": "2014"
+        },
+        "doof": {
+          "description": "DOOM auf eine 1,44-MB-Diskette gequetscht",
+          "name": "Doom auf Diskette",
+          "year": "2024"
+        },
+        "dsl": {
+          "description": "Winzige 50-MB-Live-Linux-Distribution",
+          "name": "Damn Small Linux",
+          "year": "2006"
+        },
+        "fiwix": {
+          "description": "Unix-ähnlicher Kernel für Bildungszwecke",
+          "name": "FiwixOS",
+          "year": "2018"
+        },
+        "freebsd": {
+          "description": "BSD-Unix-ähnliches Betriebssystem",
+          "name": "FreeBSD",
+          "year": "2003"
+        },
+        "freedos": {
+          "description": "Freies, quelloffenes DOS-kompatibles Betriebssystem",
+          "name": "FreeDOS",
+          "year": "1998"
+        },
+        "haiku": {
+          "description": "Open-Source-Wiederbelebung von BeOS",
+          "name": "Haiku",
+          "year": "2009"
+        },
+        "helenos": {
+          "description": "Multiserver-Mikrokern-Forschungsbetriebssystem",
+          "name": "HelenOS",
+          "year": "2011"
+        },
+        "kolibrios": {
+          "description": "Winziges GUI-Betriebssystem in Assembler, passt auf eine Diskette",
+          "name": "KolibriOS",
+          "year": "2009"
+        },
+        "linux26": {
+          "description": "Klassischer Linux-Kernel mit BusyBox-Userland",
+          "name": "Linux 2.6",
+          "year": "2003"
+        },
+        "linux4": {
+          "description": "Moderner Linux-Kernel, Headless-Terminal-Boot",
+          "name": "Linux 4.x",
+          "year": "2017"
+        },
+        "mikeos": {
+          "description": "Hobby-x86-Betriebssystem in Assembler mit CLI-Menü",
+          "name": "MikeOS",
+          "year": "2009"
+        },
+        "minix": {
+          "description": "Tanenbaums Mikrokernel-Lehrbetriebssystem",
+          "name": "Minix",
+          "year": "1987"
+        },
+        "msdos": {
+          "description": "Das klassische Microsoft-Disk-Operating-System",
+          "name": "MS-DOS 6.22",
+          "year": "1994"
+        },
+        "netbsd": {
+          "description": "Portables BSD-Unix – „Natürlich läuft NetBSD darauf“",
+          "name": "NetBSD",
+          "year": "2018"
+        },
+        "oberon": {
+          "description": "Wirths Tiling-Window-Forschungsbetriebssystem",
+          "name": "Oberon",
+          "year": "1990"
+        },
+        "openbsd": {
+          "description": "Sicherheitsorientiertes BSD-Unix",
+          "name": "OpenBSD",
+          "year": "2010"
+        },
+        "reactos": {
+          "description": "Windows-kompatibles Open-Source-Betriebssystem",
+          "name": "ReactOS",
+          "year": "2018"
+        },
+        "redox": {
+          "description": "Modernes, in Rust geschriebenes Mikrokernel-Betriebssystem",
+          "name": "Redox",
+          "year": "2016"
+        },
+        "serenity": {
+          "description": "Ästhetik der späten 90er mit einer modernen Unix-Seele",
+          "name": "SerenityOS",
+          "year": "2018"
+        },
+        "solos": {
+          "description": "Hobby-Betriebssystem, das auf eine einzige Diskette passt",
+          "name": "Sol OS",
+          "year": "2012"
+        },
+        "windows-me": {
+          "description": "Millennium Edition – der letzte 9x-Kernel",
+          "name": "Windows ME",
+          "year": "2000"
+        },
+        "windows1": {
+          "description": "Die allererste Windows-Version auf einer Diskette",
+          "name": "Windows 1.01",
+          "year": "1985"
+        },
+        "windows2000": {
+          "description": "NT-basierte Stabilität, professioneller Desktop",
+          "name": "Windows 2000",
+          "year": "2000"
+        },
+        "windows30": {
+          "description": "Programm-Manager und 16-Farben-Icons",
+          "name": "Windows 3.0",
+          "year": "1990"
+        },
+        "windows31": {
+          "description": "TrueType-Schriftarten und das kultige Hot-Dog-Stand-Design",
+          "name": "Windows 3.1",
+          "year": "1992"
+        },
+        "windows95": {
+          "description": "Startmenü, Taskleiste und die 32-Bit-Revolution",
+          "name": "Windows 95",
+          "year": "1995"
+        },
+        "windows98": {
+          "description": "Active Desktop, USB-Unterstützung und Internet Explorer 4",
+          "name": "Windows 98",
+          "year": "1998"
+        }
+      },
       "programsAvailable": "{{count}} PROGRAMME VERFÜGBAR",
+      "screenshotUnavailable": "Screenshot nicht verfügbar. Verwenden Sie das Screenshot-Tool Ihres Browsers (Cmd+Umschalt+4 auf dem Mac, Win+Umschalt+S unter Windows).",
+      "selectSystem": "Wählen Sie ein x86-Betriebssystem aus",
+      "status": {
+        "booting": "Bootet…",
+        "bytesZero": "0 MB",
+        "connecting": "Verbinden…",
+        "emulatorStartFailed": "Emulator konnte nicht gestartet werden",
+        "loading": "Laden…"
+      },
+      "systemsAvailable": "{{count}} SYSTEME VERFÜGBAR",
+      "tabs": {
+        "games": "Spiele",
+        "os": "OS"
+      },
+      "title": "Virtual PC",
       "virtualPc": "Virtueller PC"
     },
     "photo-booth": {

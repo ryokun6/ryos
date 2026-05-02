@@ -2246,6 +2246,174 @@
           "title": "Aspect Ratio",
           "description": "Switch between 4∶3 or widescreen to fit your monitor"
         }
+      },
+      "status": {
+        "connecting": "Connecting…",
+        "booting": "Booting…",
+        "loading": "Loading…",
+        "emulatorStartFailed": "Failed to start emulator",
+        "bytesZero": "0 MB"
+      },
+      "aspectRatios": {
+        "AsIs": "As Is",
+        "1/1": "1:1",
+        "5/4": "5:4",
+        "4/3": "4:3",
+        "16/10": "16:10",
+        "16/9": "16:9",
+        "Fit": "Fit"
+      },
+      "presets": {
+        "freedos": {
+          "name": "FreeDOS",
+          "year": "1998",
+          "description": "Free, open-source DOS-compatible OS"
+        },
+        "msdos": {
+          "name": "MS-DOS 6.22",
+          "year": "1994",
+          "description": "The classic Microsoft disk operating system"
+        },
+        "windows1": {
+          "name": "Windows 1.01",
+          "year": "1985",
+          "description": "The very first Windows release on a floppy"
+        },
+        "windows30": {
+          "name": "Windows 3.0",
+          "year": "1990",
+          "description": "Program Manager and 16-color icons"
+        },
+        "windows31": {
+          "name": "Windows 3.1",
+          "year": "1992",
+          "description": "TrueType fonts and the iconic Hot Dog Stand theme"
+        },
+        "windows95": {
+          "name": "Windows 95",
+          "year": "1995",
+          "description": "Start menu, taskbar, and the 32-bit revolution"
+        },
+        "windows98": {
+          "name": "Windows 98",
+          "year": "1998",
+          "description": "Active Desktop, USB support, and Internet Explorer 4"
+        },
+        "windows-me": {
+          "name": "Windows ME",
+          "year": "2000",
+          "description": "Millennium Edition - the last 9x kernel"
+        },
+        "windows2000": {
+          "name": "Windows 2000",
+          "year": "2000",
+          "description": "NT-based stability, professional desktop"
+        },
+        "linux26": {
+          "name": "Linux 2.6",
+          "year": "2003",
+          "description": "Classic Linux kernel with BusyBox userland"
+        },
+        "linux4": {
+          "name": "Linux 4.x",
+          "year": "2017",
+          "description": "Modern Linux kernel, headless terminal boot"
+        },
+        "archlinux": {
+          "name": "Arch Linux",
+          "year": "2019",
+          "description": "Rolling-release Linux with i3 window manager"
+        },
+        "dsl": {
+          "name": "Damn Small Linux",
+          "year": "2006",
+          "description": "Tiny 50MB live Linux distribution"
+        },
+        "buildroot": {
+          "name": "Buildroot Linux",
+          "year": "2014",
+          "description": "Minimal Linux for embedded targets"
+        },
+        "freebsd": {
+          "name": "FreeBSD",
+          "year": "2003",
+          "description": "BSD Unix-like operating system"
+        },
+        "openbsd": {
+          "name": "OpenBSD",
+          "year": "2010",
+          "description": "Security-focused BSD Unix"
+        },
+        "netbsd": {
+          "name": "NetBSD",
+          "year": "2018",
+          "description": "Portable BSD Unix - 'Of course it runs NetBSD'"
+        },
+        "haiku": {
+          "name": "Haiku",
+          "year": "2009",
+          "description": "Open-source revival of BeOS"
+        },
+        "beos": {
+          "name": "BeOS 5",
+          "year": "2000",
+          "description": "Be Inc.'s media-focused desktop OS"
+        },
+        "reactos": {
+          "name": "ReactOS",
+          "year": "2018",
+          "description": "Open-source Windows-compatible OS"
+        },
+        "kolibrios": {
+          "name": "KolibriOS",
+          "year": "2009",
+          "description": "Tiny GUI OS written in assembly, fits on a floppy"
+        },
+        "oberon": {
+          "name": "Oberon",
+          "year": "1990",
+          "description": "Wirth's tiling-window research OS"
+        },
+        "redox": {
+          "name": "Redox",
+          "year": "2016",
+          "description": "Modern microkernel OS written in Rust"
+        },
+        "minix": {
+          "name": "Minix",
+          "year": "1987",
+          "description": "Tanenbaum's microkernel teaching OS"
+        },
+        "serenity": {
+          "name": "SerenityOS",
+          "year": "2018",
+          "description": "Late-90s aesthetic with a modern Unix soul"
+        },
+        "helenos": {
+          "name": "HelenOS",
+          "year": "2011",
+          "description": "Multiserver microkernel research OS"
+        },
+        "fiwix": {
+          "name": "FiwixOS",
+          "year": "2018",
+          "description": "Educational Unix-like kernel"
+        },
+        "solos": {
+          "name": "Sol OS",
+          "year": "2012",
+          "description": "Hobby OS that fits on a single floppy"
+        },
+        "doof": {
+          "name": "Doom on a Floppy",
+          "year": "2024",
+          "description": "DOOM crammed onto a 1.44MB floppy"
+        },
+        "mikeos": {
+          "name": "MikeOS",
+          "year": "2009",
+          "description": "Hobby x86 OS in assembly with a CLI menu"
+        }
       }
     },
     "terminal": {
@@ -2936,7 +3104,10 @@
         "weekView": "Week View",
         "monthView": "Month View",
         "goToToday": "Go to Today",
+        "showToDoItems": "Show To Do Items",
         "importFromDevice": "Import from Device…",
+        "exportToIcs": "Export Events…",
+        "syncCalendar": "Sync Calendar",
         "help": "Calendar Help",
         "about": "About Calendar"
       },
@@ -2968,21 +3139,6 @@
         "toDoItems": "To Do Items",
         "noTodoItems": "No to-do items",
         "newTodoPlaceholder": "New To Do..."
-      },
-      "menu": {
-        "newEvent": "New Event",
-        "editEvent": "Edit Event",
-        "deleteEvent": "Delete Event",
-        "dayView": "Day View",
-        "weekView": "Week View",
-        "monthView": "Month View",
-        "goToToday": "Go to Today",
-        "showToDoItems": "Show To Do Items",
-        "importFromDevice": "Import from Device…",
-        "exportToIcs": "Export Events…",
-        "syncCalendar": "Sync Calendar",
-        "help": "Calendar Help",
-        "about": "About Calendar"
       },
       "import": {
         "success": "{{count}} event imported",

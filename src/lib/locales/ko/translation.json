@@ -6,6 +6,30 @@
         "loginPrompt": "관리자 계정으로 로그인해 주세요.",
         "title": "접근 거부됨"
       },
+      "cursorAgents": {
+        "colLink": "링크",
+        "colModel": "모델",
+        "colRun": "실행 / 에이전트",
+        "colStatus": "상태",
+        "colTask": "작업",
+        "colUpdated": "업데이트됨",
+        "emptyHint": "레포 에이전트 도구가 Cursor Cloud 작업(Redis 비동기 모드)을 시작하면 실행 내역이 여기에 표시됩니다. 키는 약 24시간 후에 만료됩니다.",
+        "emptyTitle": "Redis에 Cursor 에이전트 실행 내역이 없습니다",
+        "followupFrom": "{{id}}에서 이어진 후속 작업",
+        "loadFailed": "실행 내역을 불러올 수 없습니다",
+        "loading": "Cursor 에이전트 실행 내역을 불러오는 중…",
+        "newAgentAria": "새 Cursor 에이전트 프롬프트",
+        "newAgentPlaceholder": "Cursor로 전송",
+        "openAgent": "에이전트",
+        "openPr": "PR",
+        "refresh": "새로고침",
+        "retry": "재시도",
+        "scanIncompleteHint": "Redis 키 스캔이 조기에 중단되었습니다. 다시 시도하거나 문제가 지속되면 운영팀에 문의하세요.",
+        "startAgent": "실행",
+        "startFailed": "에이전트를 시작할 수 없습니다",
+        "startedLine": "{{time}}에 시작됨",
+        "truncatedHint": "목록이 잘렸을 수 있습니다(행 제한 또는 스캔 한도)."
+      },
       "dashboard": {
         "charts": {
           "aiRequests": "AI 요청",
@@ -238,6 +262,7 @@
         "websocket": "웹소켓 (푸셔)"
       },
       "sidebar": {
+        "cursorAgents": "커서 에이전트",
         "dashboard": "대시보드",
         "messagesCount": "{{count}}개 메시지",
         "online": "온라인",
@@ -286,6 +311,8 @@
         "noSongsToExport": "내보낼 노래가 없습니다."
       },
       "statusBar": {
+        "cursorAgentsCount": "{{count}}개 커서 에이전트",
+        "cursorAgentsCount_plural": "{{count}}개 커서 에이전트",
         "loggedInAs": "{{username}}님으로 로그인됨",
         "messagesCount": "{{count}}개 메시지",
         "messagesCount_plural": "{{count}}개 메시지",
@@ -2507,15 +2534,36 @@
       "untitled": "제목 없음"
     },
     "pc": {
+      "aspectRatios": {
+        "1/1": "1:1",
+        "16/10": "16:10",
+        "16/9": "16:9",
+        "4/3": "4:3",
+        "5/4": "5:4",
+        "AsIs": "있는 그대로",
+        "Fit": "맞춤"
+      },
       "description": "3D PC 시뮬레이션",
       "dialogs": {
         "resetVirtualPcDescription": "PC를 초기화하시겠습니까? 현재 모든 상태가 지워집니다.",
         "resetVirtualPcTitle": "가상 PC 초기화"
       },
       "help": {
+        "aboutV86": {
+          "description": "오픈 소스 x86 에뮬레이터인 copy.sh/v86 기반",
+          "title": "v86 정보"
+        },
         "aspectRatio": {
           "description": "모니터에 맞게 4:3 또는 와이드스크린 간 전환",
           "title": "종횡비"
+        },
+        "backToSystems": {
+          "description": "OS 및 게임 브라우저로 돌아가려면 파일 ▸ 뒤로를 사용하세요",
+          "title": "시스템으로 돌아가기"
+        },
+        "dosGames": {
+          "description": "js-dos 라이브러리(쉐어웨어 및 고전 게임)를 보려면 게임 탭을 사용하세요",
+          "title": "DOS 게임"
         },
         "fullscreenMode": {
           "description": "제어 ▸ 전체 화면을 전환하여 몰입형 표시",
@@ -2525,6 +2573,10 @@
           "description": "물리적 키보드를 사용하여 게임 내 입력",
           "title": "키보드 컨트롤"
         },
+        "keyboardInput": {
+          "description": "대부분의 키가 전달됩니다. 포인터 잠금을 해제하려면 Esc를 누르세요.",
+          "title": "키보드 입력"
+        },
         "mouseCapture": {
           "description": "창 내부를 클릭하여 마우스 캡처/해제",
           "title": "마우스 캡처"
@@ -2533,6 +2585,10 @@
           "description": "브라우저에서 클래식 DOS 게임 및 앱 직접 실행",
           "title": "PC 에뮬레이터"
         },
+        "pickSystem": {
+          "description": "그리드에서 OS를 선택하여 에뮬레이터를 실행하세요",
+          "title": "시스템 선택"
+        },
         "resetLoad": {
           "description": "파일 ▸ 재시작으로 다시 시작하거나, 게임 불러오기로 게임을 전환하세요.",
           "title": "재시작 및 불러오기"
@@ -2540,9 +2596,13 @@
       },
       "loadingEmulator": "에뮬레이터 로드 중",
       "loadingGame": "{{gameName}} 로드 중...",
+      "loadingSystem": "{{name}} 로드 중...",
       "menu": {
         "aboutVirtualPc": "가상 PC 정보",
         "aspectRatio": "화면 비율",
+        "backToBrowse": "뒤로",
+        "backToPresets": "시스템 목록으로 돌아가기",
+        "captureScreenshot": "스크린샷 캡처",
         "controls": "제어",
         "fullScreen": "전체 화면",
         "loadGame": "게임 불러오기",
@@ -2554,7 +2614,174 @@
         "virtualPcHelp": "가상 PC 도움말"
       },
       "name": "가상 PC",
+      "presets": {
+        "archlinux": {
+          "description": "i3 윈도우 매니저가 포함된 롤링 릴리스 리눅스",
+          "name": "Arch Linux",
+          "year": "2019"
+        },
+        "beos": {
+          "description": "Be Inc.의 미디어 중심 데스크톱 OS",
+          "name": "BeOS 5",
+          "year": "2000"
+        },
+        "buildroot": {
+          "description": "임베디드 타겟을 위한 최소형 리눅스",
+          "name": "Buildroot Linux",
+          "year": "2014"
+        },
+        "doof": {
+          "description": "1.44MB 플로피에 담긴 DOOM",
+          "name": "플로피 속의 Doom",
+          "year": "2024"
+        },
+        "dsl": {
+          "description": "50MB 크기의 초소형 라이브 리눅스 배포판",
+          "name": "Damn Small Linux",
+          "year": "2006"
+        },
+        "fiwix": {
+          "description": "교육용 유닉스 계열 커널",
+          "name": "FiwixOS",
+          "year": "2018"
+        },
+        "freebsd": {
+          "description": "BSD 유닉스 계열 운영 체제",
+          "name": "FreeBSD",
+          "year": "2003"
+        },
+        "freedos": {
+          "description": "무료 오픈 소스 DOS 호환 운영 체제",
+          "name": "FreeDOS",
+          "year": "1998"
+        },
+        "haiku": {
+          "description": "BeOS의 오픈 소스 부활",
+          "name": "Haiku",
+          "year": "2009"
+        },
+        "helenos": {
+          "description": "멀티서버 마이크로커널 연구용 운영 체제",
+          "name": "HelenOS",
+          "year": "2011"
+        },
+        "kolibrios": {
+          "description": "어셈블리어로 작성된 초소형 GUI 운영 체제, 플로피 디스크에 수록 가능",
+          "name": "KolibriOS",
+          "year": "2009"
+        },
+        "linux26": {
+          "description": "BusyBox 유저랜드를 포함한 클래식 리눅스 커널",
+          "name": "Linux 2.6",
+          "year": "2003"
+        },
+        "linux4": {
+          "description": "현대적인 리눅스 커널, 헤드리스 터미널 부팅",
+          "name": "Linux 4.x",
+          "year": "2017"
+        },
+        "mikeos": {
+          "description": "CLI 메뉴가 포함된 어셈블리 언어 기반 취미용 x86 OS",
+          "name": "MikeOS",
+          "year": "2009"
+        },
+        "minix": {
+          "description": "타넨바움의 마이크로커널 교육용 OS",
+          "name": "Minix",
+          "year": "1987"
+        },
+        "msdos": {
+          "description": "클래식 마이크로소프트 디스크 운영 체제",
+          "name": "MS-DOS 6.22",
+          "year": "1994"
+        },
+        "netbsd": {
+          "description": "이식 가능한 BSD 유닉스 - '물론 NetBSD에서도 돌아갑니다'",
+          "name": "NetBSD",
+          "year": "2018"
+        },
+        "oberon": {
+          "description": "비르트의 타일링 윈도우 연구용 OS",
+          "name": "Oberon",
+          "year": "1990"
+        },
+        "openbsd": {
+          "description": "보안 중심의 BSD Unix",
+          "name": "OpenBSD",
+          "year": "2010"
+        },
+        "reactos": {
+          "description": "오픈 소스 Windows 호환 OS",
+          "name": "ReactOS",
+          "year": "2018"
+        },
+        "redox": {
+          "description": "Rust로 작성된 현대적인 마이크로커널 OS",
+          "name": "Redox",
+          "year": "2016"
+        },
+        "serenity": {
+          "description": "90년대 후반의 감성과 현대적인 Unix의 영혼",
+          "name": "SerenityOS",
+          "year": "2018"
+        },
+        "solos": {
+          "description": "플로피 디스크 한 장에 담기는 취미용 OS",
+          "name": "Sol OS",
+          "year": "2012"
+        },
+        "windows-me": {
+          "description": "Millennium Edition - 마지막 9x 커널",
+          "name": "Windows ME",
+          "year": "2000"
+        },
+        "windows1": {
+          "description": "플로피 디스크로 출시된 최초의 Windows",
+          "name": "Windows 1.01",
+          "year": "1985"
+        },
+        "windows2000": {
+          "description": "NT 기반의 안정성, 전문가용 데스크톱",
+          "name": "Windows 2000",
+          "year": "2000"
+        },
+        "windows30": {
+          "description": "프로그램 관리자와 16색 아이콘",
+          "name": "Windows 3.0",
+          "year": "1990"
+        },
+        "windows31": {
+          "description": "TrueType 글꼴과 상징적인 핫도그 가판대 테마",
+          "name": "Windows 3.1",
+          "year": "1992"
+        },
+        "windows95": {
+          "description": "시작 메뉴, 작업 표시줄, 그리고 32비트 혁명",
+          "name": "Windows 95",
+          "year": "1995"
+        },
+        "windows98": {
+          "description": "Active Desktop, USB 지원, 그리고 Internet Explorer 4",
+          "name": "Windows 98",
+          "year": "1998"
+        }
+      },
       "programsAvailable": "{{count}}개의 프로그램 사용 가능",
+      "screenshotUnavailable": "스크린샷을 사용할 수 없습니다. 브라우저의 스크린샷 도구를 사용하세요 (Mac에서는 Cmd+Shift+4, Windows에서는 Win+Shift+S).",
+      "selectSystem": "x86 운영 체제 선택",
+      "status": {
+        "booting": "부팅 중…",
+        "bytesZero": "0 MB",
+        "connecting": "연결 중…",
+        "emulatorStartFailed": "에뮬레이터 시작 실패",
+        "loading": "로드 중…"
+      },
+      "systemsAvailable": "{{count}}개의 시스템 사용 가능",
+      "tabs": {
+        "games": "게임",
+        "os": "OS"
+      },
+      "title": "Virtual PC",
       "virtualPc": "가상 PC"
     },
     "photo-booth": {
