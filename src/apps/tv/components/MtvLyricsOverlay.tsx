@@ -71,8 +71,6 @@ const LINE_TRANSITION = {
   },
 };
 
-// Stable framer-motion variant objects so the line slide-in/out doesn't
-// receive freshly-allocated prop objects on every render.
 const LINE_INITIAL = { y: "100%" } as const;
 const LINE_ANIMATE = { y: 0 } as const;
 const LINE_EXIT = { y: "-100%" } as const;
@@ -85,14 +83,177 @@ interface RevealToken {
   revealAtMs: number;
 }
 
+/** Build the per-token reveal list for a given lyric line. When KRC word
+ *  timings exist we use them verbatim; otherwise we whitespace-split and
+ *  spread evenly across the supplied line duration. Same logic as the
+ *  previous single-line implementation, just hoisted so both the
+ *  current-line row (with reveal) and the previous-line row (fully
+ *  revealed) share identical tokenisation. */
+function buildTokens(
+  line: LyricLine | null,
+  lineDurationMs: number
+): RevealToken[] {
+  if (!line) return [];
+  const original = line.words ?? "";
+  if (!original) return [];
+
+  const wordTimings = line.wordTimings;
+  if (wordTimings && wordTimings.length > 0) {
+    // KRC word timings cover the original (untrimmed) line. The text of
+    // each timing already includes its trailing whitespace, so we can
+    // render them in order without extra splitting. We trim the very
+    // first and last tokens' surrounding whitespace so the CC plate
+    // hugs the visible text.
+    const last = wordTimings.length - 1;
+    return wordTimings.map((w, i) => {
+      let text = w.text;
+      if (i === 0) text = text.replace(/^\s+/, "");
+      if (i === last) text = text.replace(/\s+$/, "");
+      return { text, revealAtMs: w.startTimeMs };
+    });
+  }
+
+  const trimmed = original.trim();
+  if (!trimmed) return [];
+  const parts: string[] = [];
+  const re = /\S+\s*/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(trimmed)) !== null) {
+    parts.push(m[0]);
+  }
+  const total = lineDurationMs;
+  return parts.map((text, i) => ({
+    text,
+    revealAtMs: (i / parts.length) * total,
+  }));
+}
+
+/** Resolve the duration of `lines[idx]` from the gap to the next line,
+ *  with a sensible fallback for the last line of the song. */
+function getLineDurationMs(lines: LyricLine[], idx: number): number {
+  const line = lines[idx];
+  if (!line) return 0;
+  const next = lines[idx + 1];
+  if (!next) return FALLBACK_LINE_DURATION_MS;
+  const a = parseInt(line.startTimeMs, 10);
+  const b = parseInt(next.startTimeMs, 10);
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) {
+    return FALLBACK_LINE_DURATION_MS;
+  }
+  return b - a;
+}
+
 /**
- * Single-line, TV-style closed-caption overlay for the MTV channel.
+ * Single CC row — renders the spacer + animated line that slides through
+ * it. The animated line is keyed by `lineKey` so AnimatePresence can run
+ * the slide-up swap whenever the underlying line changes.
+ */
+interface CcRowProps {
+  tokens: RevealToken[];
+  /** Number of tokens currently revealed. Pass `tokens.length` for the
+   *  static "previous line" row above the active line. */
+  revealedTokens: number;
+  /** Identifier that uniquely represents the current line in this slot.
+   *  Used as the AnimatePresence key — when it changes, the old row
+   *  exits upward and the new one enters from below. */
+  lineKey: string;
+  /** Typography classes shared across rows to keep both lines visually
+   *  identical. */
+  lineTypography: string;
+}
+
+function CcRow({
+  tokens,
+  revealedTokens,
+  lineKey,
+  lineTypography,
+}: CcRowProps) {
+  const hasContent = tokens.length > 0;
+  return (
+    <div className="relative w-full">
+      {/* Invisible spacer locks the row height so the % transforms on
+          the animated child have a stable container. It MUST use the
+          same per-token markup as the visible row — `px-0.5` per word
+          adds a few px per token, and a row even slightly wider than
+          the spacer wraps to a second visual line and gets clipped by
+          the parent's `overflow-hidden`. (Tracked down as silently
+          dropping the last word on lines that just barely fit.) */}
+      <div
+        aria-hidden
+        className={cn(lineTypography, "invisible")}
+        style={LINE_TONE_STYLE}
+      >
+        {hasContent ? (
+          tokens.map((t, i) => (
+            <span
+              key={`s-${lineKey}-${i}`}
+              className={WORD_PLATE_CLASS_NAME}
+              style={WORD_PLATE_STYLE}
+            >
+              {t.text}
+            </span>
+          ))
+        ) : (
+          // Reserve a row's worth of vertical space even when this slot
+          // is empty (e.g. before the first line of the song) so the
+          // current line doesn't jump up by one row when the previous
+          // slot finally fills in.
+          <span className={WORD_PLATE_CLASS_NAME} style={WORD_PLATE_STYLE}>
+            &nbsp;
+          </span>
+        )}
+      </div>
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <AnimatePresence mode="sync" initial={false}>
+          {hasContent && (
+            <motion.div
+              key={lineKey}
+              className={cn(lineTypography, "absolute left-0 top-0 z-[1]")}
+              style={LINE_TONE_STYLE}
+              initial={LINE_INITIAL}
+              animate={LINE_ANIMATE}
+              exit={LINE_EXIT}
+              transition={LINE_TRANSITION}
+            >
+              {tokens.map((t, i) => {
+                const isRevealed = i < revealedTokens;
+                return (
+                  <span
+                    key={`tok-${lineKey}-${i}`}
+                    aria-hidden={!isRevealed}
+                    className={
+                      isRevealed
+                        ? WORD_PLATE_CLASS_NAME
+                        : WORD_PLATE_HIDDEN_CLASS_NAME
+                    }
+                    style={WORD_PLATE_STYLE}
+                  >
+                    {t.text}
+                  </span>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Two-line, TV-style closed-caption overlay for the MTV channel.
  *
  * MTV plays from the user's iPod library, so we reuse the same
  * `useLyrics` pipeline iPod / Karaoke use — the song id of the current
  * TV video is the same id the iPod uses for lyrics lookups.
  *
- * Reveal timing matches the audio at *word* granularity:
+ * Layout (TV roll-up style):
+ *   - Top row: the previous lyric line, fully revealed (history).
+ *   - Bottom row: the active lyric line, with per-word reveal.
+ * When the active line advances both rows slide up together so the new
+ * "previous" row inherits the text that was just being revealed.
+ *
+ * Reveal timing for the active line matches the audio at *word* granularity:
  *   - When the LRC has KRC `wordTimings[]`, each token is revealed
  *     exactly at its word's `startTimeMs` (relative to line start).
  *   - Otherwise tokens are split on whitespace and distributed evenly
@@ -126,79 +287,53 @@ export function MtvLyricsOverlay({
     songId: songId ?? "",
     title: title ?? track?.title ?? "",
     artist: artist ?? track?.artist ?? "",
-    // useLyrics expects seconds; lyricOffset is folded back in here so
-    // currentLine matches what we'll render.
     currentTime: currentTimeMs / 1000,
   });
 
+  const currentIdx = lyricsState.currentLine;
+
   const activeLine: LyricLine | null = useMemo(() => {
     if (!visible) return null;
-    const idx = lyricsState.currentLine;
-    if (idx < 0) return null;
-    return lyricsState.lines[idx] ?? null;
-  }, [visible, lyricsState.currentLine, lyricsState.lines]);
+    if (currentIdx < 0) return null;
+    return lyricsState.lines[currentIdx] ?? null;
+  }, [visible, currentIdx, lyricsState.lines]);
+
+  const previousLine: LyricLine | null = useMemo(() => {
+    if (!visible) return null;
+    if (currentIdx <= 0) return null;
+    return lyricsState.lines[currentIdx - 1] ?? null;
+  }, [visible, currentIdx, lyricsState.lines]);
 
   const lineStartMs = activeLine ? parseInt(activeLine.startTimeMs, 10) : NaN;
 
-  // Duration of the current line: from this line's start to the next
-  // line's start. Falls back to a sensible default for the last line.
-  const lineDurationMs = useMemo(() => {
-    if (!activeLine) return 0;
-    const idx = lyricsState.currentLine;
-    const next = lyricsState.lines[idx + 1];
-    if (!next) return FALLBACK_LINE_DURATION_MS;
-    const a = parseInt(activeLine.startTimeMs, 10);
-    const b = parseInt(next.startTimeMs, 10);
-    if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) {
-      return FALLBACK_LINE_DURATION_MS;
-    }
-    return b - a;
-  }, [activeLine, lyricsState.currentLine, lyricsState.lines]);
+  const lineDurationMs = useMemo(
+    () => getLineDurationMs(lyricsState.lines, currentIdx),
+    [lyricsState.lines, currentIdx]
+  );
 
-  // Build the token list for the active line. Each token carries its
-  // reveal time (relative to line start). When KRC word timings exist
-  // we use them verbatim; otherwise we whitespace-split and spread
-  // evenly across the line.
-  const tokens = useMemo<RevealToken[]>(() => {
-    if (!activeLine) return [];
-    const original = activeLine.words ?? "";
-    if (!original) return [];
+  const previousLineDurationMs = useMemo(
+    () => getLineDurationMs(lyricsState.lines, currentIdx - 1),
+    [lyricsState.lines, currentIdx]
+  );
 
-    const wordTimings = activeLine.wordTimings;
-    if (wordTimings && wordTimings.length > 0) {
-      // KRC word timings cover the original (untrimmed) line. The text
-      // of each timing already includes its trailing whitespace, so we
-      // can render them in order without extra splitting. We trim the
-      // very first and last tokens' surrounding whitespace so the CC
-      // plate hugs the visible text.
-      const last = wordTimings.length - 1;
-      return wordTimings.map((w, i) => {
-        let text = w.text;
-        if (i === 0) text = text.replace(/^\s+/, "");
-        if (i === last) text = text.replace(/\s+$/, "");
-        return { text, revealAtMs: w.startTimeMs };
-      });
-    }
+  // Tokens for the active (bottom) line — these drive the per-word
+  // reveal. The previous (top) line uses `previousTokens` and is shown
+  // fully revealed, so its per-token reveal times are unused.
+  const tokens = useMemo<RevealToken[]>(
+    () => buildTokens(activeLine, lineDurationMs),
+    [activeLine, lineDurationMs]
+  );
 
-    // Fallback: split on whitespace, keeping the spaces attached to the
-    // preceding word so the rendered string is identical to the
-    // original. Reveal each word evenly across the line duration.
-    const trimmed = original.trim();
-    if (!trimmed) return [];
-    const parts: string[] = [];
-    const re = /\S+\s*/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(trimmed)) !== null) {
-      parts.push(m[0]);
-    }
-    const total = lineDurationMs;
-    return parts.map((text, i) => ({
-      text,
-      revealAtMs: (i / parts.length) * total,
-    }));
-  }, [activeLine, lineDurationMs]);
+  const previousTokens = useMemo<RevealToken[]>(
+    () => buildTokens(previousLine, previousLineDurationMs),
+    [previousLine, previousLineDurationMs]
+  );
 
   const fullText = useMemo(() => tokens.map((t) => t.text).join(""), [tokens]);
+  const previousFullText = useMemo(
+    () => previousTokens.map((t) => t.text).join(""),
+    [previousTokens]
+  );
 
   // Track the latest prop time + when we received it so we can
   // extrapolate per-frame for smooth reveal between coarse progress
@@ -215,7 +350,10 @@ export function MtvLyricsOverlay({
   const [revealedTokens, setRevealedTokens] = useState(0);
   const lastRevealedRef = useRef(0);
   const lineKey = activeLine
-    ? `${lyricsState.currentLine}:${activeLine.startTimeMs}`
+    ? `${currentIdx}:${activeLine.startTimeMs}`
+    : "";
+  const previousLineKey = previousLine
+    ? `${currentIdx - 1}:${previousLine.startTimeMs}`
     : "";
 
   useEffect(() => {
@@ -231,9 +369,6 @@ export function MtvLyricsOverlay({
       }
       return;
     }
-    // Pre-resolve the timing curve and the highest reveal time so the
-    // hot loop can short-circuit once every token is on screen rather
-    // than scanning the whole array each frame just to reconfirm.
     const tokenCount = tokens.length;
     const lastRevealAtMs = tokens[tokenCount - 1].revealAtMs;
     let raf = 0;
@@ -250,10 +385,6 @@ export function MtvLyricsOverlay({
       } else if (timeIntoLine <= 0) {
         count = 0;
       } else {
-        // Tokens are time-sorted, so an incremental scan from the
-        // previous reveal point converges in O(1) for the steady
-        // state where the next reveal is just one token ahead. This
-        // replaces the previous full O(n) scan-then-break per frame.
         let i = lastRevealedRef.current;
         while (i > 0 && tokens[i - 1].revealAtMs > timeIntoLine) {
           i--;
@@ -273,7 +404,9 @@ export function MtvLyricsOverlay({
     return () => cancelAnimationFrame(raf);
   }, [tokens, lineStartMs]);
 
-  if (!visible || !fullText) return null;
+  // Hide the overlay entirely when there's nothing to show in either
+  // slot — same exit semantics as the original single-line version.
+  if (!visible || (!fullText && !previousFullText)) return null;
 
   const isFullscreen = variant === "fullscreen";
 
@@ -302,11 +435,6 @@ export function MtvLyricsOverlay({
       style={
         isFullscreen
           ? {
-              // Scale the left gutter with the viewport so the caption
-              // sits comfortably away from the edge on big TVs while
-              // still fitting on phones. `max(safe-area-inset, clamp)`
-              // keeps us clear of the notch on iOS without shrinking
-              // the desktop padding.
               paddingLeft:
                 "max(env(safe-area-inset-left, 0px), clamp(2.5rem, 8vw, 6rem))",
               paddingRight:
@@ -316,70 +444,24 @@ export function MtvLyricsOverlay({
       }
       aria-hidden
     >
-      {/* Line change: incoming line slides up from below while the outgoing
-          line is driven upward in the same frame (sync), so it reads as a
-          push. Invisible spacer locks height to the full line for %
-          transforms. */}
-      <div className="relative w-full max-w-[92%]">
-        {/* Invisible spacer sets the row height the animated line
-            slides through. It MUST use the same per-token markup and
-            padding as the visible row — `px-0.5` per word adds a few
-            px of width per token, and a row that's even slightly
-            wider than the spacer wraps to a second visual line and
-            gets clipped by the parent's `overflow-hidden` (used for
-            the slide transitions). That manifested as the last word
-            silently disappearing on lines that just barely fit. */}
-        <div
-          aria-hidden
-          className={cn(lineTypography, "invisible")}
-          style={LINE_TONE_STYLE}
-        >
-          {tokens.map((t, i) => (
-            <span
-              key={`s-${lineKey}-${i}`}
-              className={WORD_PLATE_CLASS_NAME}
-              style={WORD_PLATE_STYLE}
-            >
-              {t.text}
-            </span>
-          ))}
-        </div>
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <AnimatePresence mode="sync" initial={false}>
-            <motion.div
-              key={lineKey}
-              className={cn(lineTypography, "absolute left-0 top-0 z-[1]")}
-              style={LINE_TONE_STYLE}
-              initial={LINE_INITIAL}
-              animate={LINE_ANIMATE}
-              exit={LINE_EXIT}
-              transition={LINE_TRANSITION}
-            >
-              {tokens.map((t, i) => {
-                const isRevealed = i < revealedTokens;
-                return (
-                  <span
-                    key={`tok-${lineKey}-${i}`}
-                    aria-hidden={!isRevealed}
-                    // Unrevealed tokens use the same plate class as
-                    // revealed ones — only `opacity-0` differs — so
-                    // the row width matches the spacer above. Reusing
-                    // the same DOM node across the reveal boundary
-                    // also lets the browser keep cached layout.
-                    className={
-                      isRevealed
-                        ? WORD_PLATE_CLASS_NAME
-                        : WORD_PLATE_HIDDEN_CLASS_NAME
-                    }
-                    style={WORD_PLATE_STYLE}
-                  >
-                    {t.text}
-                  </span>
-                );
-              })}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+      {/* Stack two CC rows: previous line on top (fully revealed) and the
+          active line below (progressive reveal). `gap-1` keeps the rows
+          visually distinct without crowding the picture; `max-w-[92%]`
+          matches the original single-line clamp so wide captions still
+          break inside the safe area. */}
+      <div className="relative w-full max-w-[92%] flex flex-col gap-1">
+        <CcRow
+          tokens={previousTokens}
+          revealedTokens={previousTokens.length}
+          lineKey={previousLineKey || "cc-prev-empty"}
+          lineTypography={lineTypography}
+        />
+        <CcRow
+          tokens={tokens}
+          revealedTokens={revealedTokens}
+          lineKey={lineKey || "cc-curr-empty"}
+          lineTypography={lineTypography}
+        />
       </div>
     </div>
   );
