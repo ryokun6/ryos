@@ -21,6 +21,10 @@ import {
 import { getRealtimeProvider } from "./_utils/runtime-config.js";
 import { getAnalyticsSummary, getAnalyticsDetail, type AnalyticsSummary, type AnalyticsDetail } from "./_utils/_analytics.js";
 
+/** Matches `cursorSdkMetaKey` in chat/tools/cursor-repo-agent.ts */
+const CURSOR_SDK_META_KEY_PATTERN = "cursor-sdk-run:*:meta";
+const META_RUN_ID_REGEX = /^cursor-sdk-run:([^:]+):meta$/;
+
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
@@ -282,6 +286,179 @@ async function getServerInfo(redis: Redis): Promise<{
   };
 }
 
+export interface AdminCursorAgentRunRow {
+  runId: string;
+  agentId: string;
+  /** Derived: running until terminal metadata is written */
+  status: string;
+  createdAt: number | null;
+  updatedAt: number | null;
+  promptPreview?: string;
+  agentTitle?: string;
+  modelId?: string;
+  prUrl?: string;
+  terminalStatus?: string;
+  summaryPreview?: string;
+  errorPreview?: string;
+  isFollowup?: boolean;
+  previousRunId?: string;
+}
+
+function parseStoredRecord(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== "object") {
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        return parsed && typeof parsed === "object"
+          ? (parsed as Record<string, unknown>)
+          : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+  return raw as Record<string, unknown>;
+}
+
+function strField(rec: Record<string, unknown>, key: string): string | undefined {
+  const v = rec[key];
+  return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
+function numField(rec: Record<string, unknown>, key: string): number | null {
+  const v = rec[key];
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+function previewFromSummary(summary: string | undefined, max = 160): string | undefined {
+  if (!summary || summary.trim().length === 0) return undefined;
+  const t = summary.trim().replace(/\s+/g, " ");
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+}
+
+async function listCursorSdkRunsForAdmin(
+  redis: Redis,
+  limit: number
+): Promise<{ runs: AdminCursorAgentRunRow[]; scanIncomplete: boolean }> {
+  const metaKeys = new Set<string>();
+  let cursor: string | number = 0;
+  let iterations = 0;
+  const maxIterations = 200;
+
+  try {
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, {
+        match: CURSOR_SDK_META_KEY_PATTERN,
+        count: 500,
+      });
+      cursor = nextCursor;
+      iterations++;
+      for (const k of keys) {
+        if (typeof k === "string") metaKeys.add(k);
+      }
+    } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
+  } catch (e) {
+    console.error("listCursorSdkRunsForAdmin scan failed", e);
+    return { runs: [], scanIncomplete: false };
+  }
+
+  const scanIncomplete = iterations >= maxIterations && cursor !== 0 && cursor !== "0";
+
+  const keyList = [...metaKeys];
+  const rows: AdminCursorAgentRunRow[] = [];
+  const batchSize = 40;
+
+  for (let i = 0; i < keyList.length; i += batchSize) {
+    const batch = keyList.slice(i, i + batchSize);
+    let values: unknown[];
+    try {
+      values = await redis.mget<unknown[]>(...batch);
+    } catch (e) {
+      console.error("listCursorSdkRunsForAdmin mget failed", e);
+      continue;
+    }
+
+    for (let j = 0; j < batch.length; j++) {
+      const key = batch[j]!;
+      const rec = parseStoredRecord(values[j]);
+      if (!rec) continue;
+
+      const fromKey = META_RUN_ID_REGEX.exec(key)?.[1];
+      const runId = strField(rec, "runId") ?? fromKey;
+      if (!runId) continue;
+
+      const agentId = strField(rec, "agentId") ?? "";
+      const terminalStatus = strField(rec, "terminalStatus");
+      const finishedAt = numField(rec, "finishedAt");
+      const createdAt = numField(rec, "createdAt");
+      const updatedAt = finishedAt ?? createdAt;
+      const activeRunId = rec["activeRunId"];
+      const isRunning =
+        !terminalStatus &&
+        (activeRunId === runId ||
+          activeRunId === null ||
+          activeRunId === undefined);
+
+      let status: string;
+      if (isRunning) {
+        status = "running";
+      } else if (terminalStatus === "finished") {
+        status = "finished";
+      } else if (terminalStatus) {
+        status = terminalStatus;
+      } else {
+        status = "unknown";
+      }
+
+      const summaryRaw = strField(rec, "summary");
+      const errorRaw = strField(rec, "error");
+
+      rows.push({
+        runId,
+        agentId,
+        status,
+        createdAt,
+        updatedAt,
+        promptPreview: strField(rec, "promptPreview"),
+        agentTitle: strField(rec, "agentTitle"),
+        modelId: strField(rec, "modelId"),
+        prUrl: strField(rec, "prUrl"),
+        terminalStatus,
+        summaryPreview: previewFromSummary(summaryRaw),
+        errorPreview: previewFromSummary(errorRaw, 120),
+        isFollowup: rec.isFollowup === true,
+        previousRunId: strField(rec, "previousRunId"),
+      });
+    }
+  }
+
+  const dedup = new Map<string, AdminCursorAgentRunRow>();
+  for (const r of rows) {
+    dedup.set(r.runId, r);
+  }
+
+  const list = [...dedup.values()];
+  list.sort((a, b) => {
+    const ar = a.status === "running" ? 1 : 0;
+    const br = b.status === "running" ? 1 : 0;
+    if (ar !== br) return br - ar;
+    const at = a.updatedAt ?? a.createdAt ?? 0;
+    const bt = b.updatedAt ?? b.createdAt ?? 0;
+    return bt - at;
+  });
+
+  return {
+    runs: list.slice(0, limit),
+    scanIncomplete,
+  };
+}
+
 async function getStats(redis: Redis): Promise<{ totalUsers: number; totalRooms: number; totalMessages: number }> {
   try {
     let userCount = 0;
@@ -515,6 +692,27 @@ export default apiHandler<AdminRequest>(
             logger.response(200, Date.now() - startTime);
             res.status(200).json(data);
           }
+          return;
+        }
+        case "getCursorAgentRuns": {
+          const limit = Math.min(
+            Math.max(parseInt((req.query.limit as string) || "50", 10) || 50, 1),
+            100
+          );
+          const { runs, scanIncomplete } = await listCursorSdkRunsForAdmin(redis, limit);
+          const sliceTruncated = runs.length >= limit;
+          logger.info("Cursor agent runs listed", {
+            count: runs.length,
+            limit,
+            scanIncomplete,
+            sliceTruncated,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({
+            runs,
+            truncated: sliceTruncated || scanIncomplete,
+            scanIncomplete,
+          });
           return;
         }
         default:

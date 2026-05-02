@@ -118,3 +118,9 @@ export async function getAdminAnalytics<TResponse>(
   return adminGet<TResponse>("getAnalytics", { days, detail });
 }
 
+export async function getAdminCursorAgentRuns<TResponse>(
+  limit: number = 50
+): Promise<TResponse> {
+  return adminGet<TResponse>("getCursorAgentRuns", { limit });
+}
+

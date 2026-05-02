@@ -199,6 +199,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   });
 
   const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
+  const [cursorAgentsRefreshSignal, setCursorAgentsRefreshSignal] = useState(0);
   const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
   const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(
     null
@@ -1005,6 +1006,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       fetchRoomMessages(selectedRoomId);
     }
     fetchUsers(userSearch);
+    setCursorAgentsRefreshSignal((n) => n + 1);
     toast.success(t("apps.admin.messages.dataRefreshed"));
   }, [
     fetchRooms,
@@ -1121,6 +1123,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     stats,
     activeSection,
     setActiveSection,
+    cursorAgentsRefreshSignal,
     isRoomsExpanded,
     setIsRoomsExpanded,
     selectedUserProfile,

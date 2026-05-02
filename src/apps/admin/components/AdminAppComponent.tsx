@@ -6,6 +6,7 @@ import { DashboardPanel } from "./DashboardPanel";
 import { UserProfilePanel } from "./UserProfilePanel";
 import { SongDetailPanel } from "./SongDetailPanel";
 import { ServerPanel } from "./ServerPanel";
+import { CursorAgentsPanel } from "./CursorAgentsPanel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -76,6 +77,7 @@ export function AdminAppComponent({
     stats,
     activeSection,
     setActiveSection,
+    cursorAgentsRefreshSignal,
     isRoomsExpanded,
     setIsRoomsExpanded,
     selectedUserProfile,
@@ -330,7 +332,8 @@ export function AdminAppComponent({
             {!selectedUserProfile &&
               !selectedSongId &&
               activeSection !== "server" &&
-              activeSection !== "dashboard" && (
+              activeSection !== "dashboard" &&
+              activeSection !== "cursorAgents" && (
               <div
                 className={cn(
                   "flex items-center gap-2 px-2 py-1.5 border-b",
@@ -566,6 +569,17 @@ export function AdminAppComponent({
                 !selectedUserProfile &&
                 !selectedSongId && (
                   <ServerPanel onRefresh={handleRefresh} />
+                )}
+
+              {/* Cursor Cloud agent runs (Redis) */}
+              {activeSection === "cursorAgents" &&
+                !selectedRoomId &&
+                !selectedUserProfile &&
+                !selectedSongId && (
+                  <CursorAgentsPanel
+                    formatRelativeTime={formatRelativeTime}
+                    refreshSignal={cursorAgentsRefreshSignal}
+                  />
                 )}
 
               {/* User Profile View */}
@@ -911,6 +925,8 @@ export function AdminAppComponent({
                   ? t("apps.admin.sidebar.dashboard", "Dashboard")
                   : activeSection === "server"
                   ? t("apps.admin.server.title", "Server")
+                  : activeSection === "cursorAgents"
+                    ? t("apps.admin.sidebar.cursorAgents", "Cursor agents")
                   : activeSection === "users" && !selectedRoomId
                     ? t("apps.admin.statusBar.usersCount", {
                         count: users.length,
