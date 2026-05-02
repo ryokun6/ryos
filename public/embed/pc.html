@@ -10,6 +10,13 @@
   -->
   <meta name="referrer" content="no-referrer" />
   <title>Virtual PC</title>
+  <link
+    rel="preload"
+    href="/fonts/monacottf.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin=""
+  />
   <style>
     @font-face {
       font-family: "Monaco";
@@ -84,9 +91,9 @@
       position: absolute;
       inset: 0;
       display: flex;
-      align-items: flex-end;
+      align-items: flex-start;
       justify-content: center;
-      padding: 0 0 18px 0;
+      padding: 18px 0 0 0;
       pointer-events: none;
       transition: opacity 200ms ease-out;
       z-index: 5;
@@ -447,6 +454,7 @@
   var emulator;
   try {
     emulator = new V86(settings);
+    void ensureMonacoFontForCanvas();
   } catch (e) {
     showError(e && e.message ? e.message : String(e));
     return;
@@ -518,6 +526,165 @@
   var screenEl = document.getElementById("screen_container");
   var isLocked = false;
   var isReady = false;
+
+  function isCanvasScreenVisible() {
+    var canvas = screenEl && screenEl.querySelector("canvas");
+    return !!(canvas && getComputedStyle(canvas).display !== "none");
+  }
+
+  function isTextScreenVisible() {
+    var textRoot = screenEl && screenEl.querySelector(":scope > div");
+    return !!(textRoot && getComputedStyle(textRoot).display !== "none");
+  }
+
+  var TEXT_SCREEN_CANVAS_FONT =
+    'normal normal 12px/18px "Monaco", Menlo, Consolas, "Courier New", monospace';
+  var SCREENSHOT_PADDING_PX = 16;
+  var monacoFontReadyPromise = null;
+
+  function padScreenshotImage(img, backdrop) {
+    backdrop = backdrop || "#000";
+    return new Promise(function (resolve) {
+      function draw() {
+        var w = img.naturalWidth;
+        var h = img.naturalHeight;
+        if (!w || !h) {
+          resolve(img);
+          return;
+        }
+        var pad = SCREENSHOT_PADDING_PX;
+        var canvas = document.createElement("canvas");
+        canvas.width = w + pad * 2;
+        canvas.height = h + pad * 2;
+        var ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(img);
+          return;
+        }
+        ctx.fillStyle = backdrop;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, pad, pad);
+        var out = new Image();
+        out.src = canvas.toDataURL("image/png");
+        resolve(out);
+      }
+      if (img.complete && img.naturalWidth) draw();
+      else img.onload = draw;
+      img.onerror = function () {
+        resolve(img);
+      };
+    });
+  }
+
+  function ensureMonacoFontForCanvas() {
+    if (!monacoFontReadyPromise) {
+      monacoFontReadyPromise = (async function () {
+        try {
+          if (typeof FontFace !== "undefined") {
+            var face = new FontFace(
+              "Monaco",
+              'url("/fonts/monacottf.woff2") format("woff2")',
+              { style: "normal", weight: "400" }
+            );
+            await face.load();
+            document.fonts.add(face);
+          }
+        } catch (_) {}
+        if (document.fonts && document.fonts.load) {
+          try {
+            await document.fonts.load('12px "Monaco"');
+            await document.fonts.load("400 12px Monaco");
+          } catch (_) {}
+        }
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+      })();
+    }
+    return monacoFontReadyPromise;
+  }
+
+  function canvasFontForTextScreen(cs) {
+    var size = (cs && cs.fontSize) || "12px";
+    var weight = (cs && cs.fontWeight) || "normal";
+    var fontStyle = (cs && cs.fontStyle) || "normal";
+    return (
+      fontStyle +
+      " " +
+      weight +
+      " " +
+      size +
+      '/18px "Monaco", Menlo, Consolas, "Courier New", monospace'
+    );
+  }
+
+  /** v86 text screenshots use 9×16 cells but ryOS text CSS is 12px/18px — rasterize the DOM. */
+  async function captureTextModeScreenshotFromDom(textRoot) {
+    await ensureMonacoFontForCanvas();
+    var rect = textRoot.getBoundingClientRect();
+    var w = Math.max(1, Math.round(rect.width));
+    var h = Math.max(1, Math.round(rect.height));
+    var dpr = window.devicePixelRatio || 1;
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(w * dpr));
+    canvas.height = Math.max(1, Math.round(h * dpr));
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.scale(dpr, dpr);
+    var rootStyle = getComputedStyle(textRoot);
+    ctx.font = TEXT_SCREEN_CANVAS_FONT;
+    ctx.fillStyle = rootStyle.backgroundColor || "#000";
+    ctx.fillRect(0, 0, w, h);
+
+    var rows = textRoot.children;
+    for (var ri = 0; ri < rows.length; ri++) {
+      var row = rows[ri];
+      var rowRect = row.getBoundingClientRect();
+      var y = rowRect.top - rect.top;
+      var x = rowRect.left - rect.left;
+      var spans = row.children.length ? row.children : [row];
+      for (var si = 0; si < spans.length; si++) {
+        var span = spans[si];
+        var cs = getComputedStyle(span);
+        var text = span.textContent || "";
+        if (!text) continue;
+        ctx.font = canvasFontForTextScreen(cs);
+        ctx.textBaseline = "top";
+        var lineH = parseFloat(cs.lineHeight) || rowRect.height;
+        var bg = cs.backgroundColor;
+        if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
+          ctx.font = canvasFontForTextScreen(cs);
+          var mw = ctx.measureText(text).width;
+          ctx.fillStyle = bg;
+          ctx.fillRect(x, y, mw, lineH);
+        }
+        ctx.fillStyle = cs.color || "#fff";
+        ctx.font = canvasFontForTextScreen(cs);
+        ctx.fillText(text, x, y);
+        ctx.font = canvasFontForTextScreen(cs);
+        x += ctx.measureText(text).width;
+      }
+    }
+
+    var img = new Image();
+    img.src = canvas.toDataURL("image/png");
+    return img;
+  }
+
+  async function captureEmulatorScreenshot() {
+    if (isTextScreenVisible() && !isCanvasScreenVisible()) {
+      var textRoot = screenEl.querySelector(":scope > div");
+      var domShot = await captureTextModeScreenshotFromDom(textRoot);
+      if (domShot && domShot.src) {
+        return padScreenshotImage(domShot, "#000");
+      }
+      return domShot;
+    }
+    if (typeof emulator.screen_make_screenshot === "function") {
+      return emulator.screen_make_screenshot();
+    }
+    return null;
+  }
 
   function setHintVisible(visible) {
     if (!grabHint) return;
@@ -612,29 +779,24 @@
     }
 
     if (data.command === "screenshot") {
-      try {
-        if (typeof emulator.screen_make_screenshot !== "function") {
+      (async function () {
+        try {
+          var shot = await captureEmulatorScreenshot();
+          if (!shot || !shot.src) {
+            notifyParent({
+              type: "screenshot_error",
+              message: "No screen image available",
+            });
+            return;
+          }
+          notifyParent({ type: "screenshot_ready", dataUrl: shot.src });
+        } catch (err) {
           notifyParent({
             type: "screenshot_error",
-            message: "Screenshot API unavailable",
+            message: err && err.message ? err.message : String(err),
           });
-          return;
         }
-        var shot = emulator.screen_make_screenshot();
-        if (!shot || !shot.src) {
-          notifyParent({
-            type: "screenshot_error",
-            message: "No screen image available",
-          });
-          return;
-        }
-        notifyParent({ type: "screenshot_ready", dataUrl: shot.src });
-      } catch (err) {
-        notifyParent({
-          type: "screenshot_error",
-          message: err && err.message ? err.message : String(err),
-        });
-      }
+      })();
     }
   });
 })();

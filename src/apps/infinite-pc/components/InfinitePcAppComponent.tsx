@@ -74,7 +74,7 @@ function PcLoadingOverlay({
         </div>
         <div className="w-full h-[2px] rounded-full bg-white/10 overflow-hidden relative">
           {indeterminate ? (
-            <div className="h-full animate-progress-indeterminate" />
+            <div className="h-full animate-progress-indeterminate-white" />
           ) : (
             <div
               className="h-full bg-white/80 transition-[width] duration-200 ease-out"
