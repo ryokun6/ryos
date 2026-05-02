@@ -21,6 +21,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
   switch (type) {
@@ -234,6 +235,7 @@ export function DashboardAppComponent({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [stripHeight, setStripHeight] = useState(0);
+  const isMobile = useMediaQuery("(max-width: 767px)");
 
   const {
     translatedHelpItems,
@@ -308,6 +310,7 @@ export function DashboardAppComponent({
 
   useEffect(() => {
     if (!showOverlay) return;
+    if (isMobile) return;
     const reposition = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
@@ -328,7 +331,7 @@ export function DashboardAppComponent({
     reposition();
     window.addEventListener("resize", reposition);
     return () => window.removeEventListener("resize", reposition);
-  }, [showOverlay]);
+  }, [showOverlay, isMobile]);
 
   return (
     <>
@@ -375,51 +378,113 @@ export function DashboardAppComponent({
                 }}
               />
               {/* Widgets - pointer-events-none so scrim receives backdrop clicks */}
-              <motion.div
-                data-dashboard-widget
-                className="absolute inset-0"
-                style={{ pointerEvents: "none" }}
-                animate={{ y: isPickerOpen ? -stripHeight : 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              >
-                <AnimatePresence>
-                  {widgets.map((widget) => (
-                    <motion.div
-                    key={widget.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{
-                      duration: 0.3,
-                      ease: [0.4, 0, 0.2, 1],
-                    }}
-                    style={{
-                      position: "relative",
-                      pointerEvents: "auto",
-                      zIndex: widget.zIndex ?? 1,
-                      transformOrigin: `${widget.position.x + widget.size.width / 2}px ${widget.position.y + widget.size.height / 2}px`,
-                    }}
+              {isMobile ? (
+                <div
+                  className="absolute inset-0 overflow-y-auto overflow-x-hidden"
+                  style={{
+                    pointerEvents: "auto",
+                    paddingTop: "calc(env(safe-area-inset-top, 0px) + 20px)",
+                    paddingBottom: isPickerOpen
+                      ? `calc(${stripHeight + 80}px + env(safe-area-inset-bottom, 0px))`
+                      : "calc(80px + env(safe-area-inset-bottom, 0px))",
+                    paddingLeft: 16,
+                    paddingRight: 16,
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
+                  <div
+                    className="flex flex-col items-center"
+                    style={{ gap: 16, width: "100%" }}
                   >
-                    <WidgetChrome
-                      width={widget.size.width}
-                      height={widget.size.height}
-                      x={widget.position.x}
-                      y={widget.position.y}
-                      zIndex={widget.zIndex ?? 1}
-                      borderRadius={widget.type === "ipod" ? "9999px" : undefined}
-                      hideDoneButton={widget.type === "ipod"}
-                      onRemove={() => removeWidget(widget.id)}
-                      onMove={(pos) => moveWidget(widget.id, pos)}
-                      onBringToFront={() => bringToFront(widget.id)}
-                      overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
-                      backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
-                    >
-                      {(isFlipped) => <WidgetContent type={widget.type} widgetId={widget.id} isFlipped={isFlipped} />}
-                    </WidgetChrome>
-                  </motion.div>
-                  ))}
-                </AnimatePresence>
-              </motion.div>
+                    <AnimatePresence initial={false}>
+                      {widgets.map((widget) => {
+                        const maxAvailable = Math.max(0, window.innerWidth - 32);
+                        const renderWidth = Math.min(widget.size.width, maxAvailable);
+                        return (
+                          <motion.div
+                            key={widget.id}
+                            data-dashboard-widget
+                            layout
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85, height: 0, marginTop: 0 }}
+                            transition={{
+                              duration: 0.3,
+                              ease: [0.4, 0, 0.2, 1],
+                            }}
+                            style={{
+                              position: "relative",
+                              pointerEvents: "auto",
+                            }}
+                          >
+                            <WidgetChrome
+                              layout="stacked"
+                              width={renderWidth}
+                              height={widget.size.height}
+                              x={0}
+                              y={0}
+                              zIndex={widget.zIndex ?? 1}
+                              borderRadius={widget.type === "ipod" ? "9999px" : undefined}
+                              hideDoneButton={widget.type === "ipod"}
+                              onRemove={() => removeWidget(widget.id)}
+                              overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
+                              backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
+                            >
+                              {(isFlipped) => <WidgetContent type={widget.type} widgetId={widget.id} isFlipped={isFlipped} />}
+                            </WidgetChrome>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              ) : (
+                <motion.div
+                  data-dashboard-widget
+                  className="absolute inset-0"
+                  style={{ pointerEvents: "none" }}
+                  animate={{ y: isPickerOpen ? -stripHeight : 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
+                  <AnimatePresence>
+                    {widgets.map((widget) => (
+                      <motion.div
+                        key={widget.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{
+                          duration: 0.3,
+                          ease: [0.4, 0, 0.2, 1],
+                        }}
+                        style={{
+                          position: "relative",
+                          pointerEvents: "auto",
+                          zIndex: widget.zIndex ?? 1,
+                          transformOrigin: `${widget.position.x + widget.size.width / 2}px ${widget.position.y + widget.size.height / 2}px`,
+                        }}
+                      >
+                        <WidgetChrome
+                          width={widget.size.width}
+                          height={widget.size.height}
+                          x={widget.position.x}
+                          y={widget.position.y}
+                          zIndex={widget.zIndex ?? 1}
+                          borderRadius={widget.type === "ipod" ? "9999px" : undefined}
+                          hideDoneButton={widget.type === "ipod"}
+                          onRemove={() => removeWidget(widget.id)}
+                          onMove={(pos) => moveWidget(widget.id, pos)}
+                          onBringToFront={() => bringToFront(widget.id)}
+                          overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
+                          backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
+                        >
+                          {(isFlipped) => <WidgetContent type={widget.type} widgetId={widget.id} isFlipped={isFlipped} />}
+                        </WidgetChrome>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              )}
 
               {/* Widget strip */}
               <AnimatePresence>
