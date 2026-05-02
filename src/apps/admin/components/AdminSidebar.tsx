@@ -82,17 +82,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </SelectableListItem>
 
           <SelectableListItem
-            isSelected={activeSection === "server"}
-            onClick={() => { playButtonClick(); onSectionChange("server"); onRoomSelect(null); }}
+            isSelected={activeSection === "users" && selectedRoomId === null}
+            onClick={() => { playButtonClick(); onSectionChange("users"); onRoomSelect(null); }}
           >
-            {t("apps.admin.sidebar.server", "Server")}
-          </SelectableListItem>
-
-          <SelectableListItem
-            isSelected={activeSection === "cursorAgents"}
-            onClick={() => { playButtonClick(); onSectionChange("cursorAgents"); onRoomSelect(null); }}
-          >
-            {t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}
+            <div className="flex items-center">
+              <span>{t("apps.admin.sidebar.users")}</span>
+              <span className={cn("text-[10px] ml-1.5", activeSection === "users" && selectedRoomId === null ? "text-white/40" : "text-black/40")}>
+                {stats.totalUsers}
+              </span>
+            </div>
           </SelectableListItem>
 
           <SelectableListItem
@@ -108,15 +106,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </SelectableListItem>
 
           <SelectableListItem
-            isSelected={activeSection === "users" && selectedRoomId === null}
-            onClick={() => { playButtonClick(); onSectionChange("users"); onRoomSelect(null); }}
+            isSelected={activeSection === "cursorAgents"}
+            onClick={() => { playButtonClick(); onSectionChange("cursorAgents"); onRoomSelect(null); }}
           >
-            <div className="flex items-center">
-              <span>{t("apps.admin.sidebar.users")}</span>
-              <span className={cn("text-[10px] ml-1.5", activeSection === "users" && selectedRoomId === null ? "text-white/40" : "text-black/40")}>
-                {stats.totalUsers}
-              </span>
-            </div>
+            {t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}
+          </SelectableListItem>
+
+          <SelectableListItem
+            isSelected={activeSection === "server"}
+            onClick={() => { playButtonClick(); onSectionChange("server"); onRoomSelect(null); }}
+          >
+            {t("apps.admin.sidebar.server", "Server")}
           </SelectableListItem>
 
           {/* Rooms Section Header */}
