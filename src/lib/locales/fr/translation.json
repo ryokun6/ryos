@@ -3041,7 +3041,7 @@
         "errorGeneric": "Impossible de créer la chaîne. Veuillez réessayer.",
         "errorNoVideos": "Aucune vidéo trouvée pour cette idée. Essayez une autre description.",
         "errorRateLimit": "Trop de chaînes créées. Veuillez patienter un instant et réessayer.",
-        "inlinePlaceholder": "Décrivez une nouvelle chaîne...",
+        "inlinePlaceholder": "Créez une nouvelle chaîne...",
         "placeholder": "ex. : Figures et parcs de skate",
         "signInRequired": "Connectez-vous pour créer des chaînes",
         "signInRequiredDescription": "Connectez-vous ou créez un compte pour programmer vos propres chaînes TV.",

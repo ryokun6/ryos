@@ -3041,7 +3041,7 @@
         "errorGeneric": "無法建立頻道。請再試一次。",
         "errorNoVideos": "找不到與該構想相關的影片。請嘗試不同的描述。",
         "errorRateLimit": "已建立太多頻道。請稍候再試。",
-        "inlinePlaceholder": "描述新頻道...",
+        "inlinePlaceholder": "建立新頻道...",
         "placeholder": "例如：滑板技巧與公園",
         "signInRequired": "登入以建立頻道",
         "signInRequiredDescription": "登入或建立帳號以編排您自己的電視頻道。",

@@ -3041,7 +3041,7 @@
         "errorGeneric": "채널을 생성할 수 없습니다. 다시 시도해 주세요.",
         "errorNoVideos": "해당 아이디어에 대한 동영상을 찾을 수 없습니다. 다른 설명을 입력해 보세요.",
         "errorRateLimit": "너무 많은 채널이 생성되었습니다. 잠시 후 다시 시도해 주세요.",
-        "inlinePlaceholder": "새 채널 설명...",
+        "inlinePlaceholder": "새 채널 만들기...",
         "placeholder": "예: 스케이트보드 기술 및 파크",
         "signInRequired": "채널을 만들려면 로그인하세요",
         "signInRequiredDescription": "나만의 TV 채널을 편성하려면 로그인하거나 계정을 만드세요.",

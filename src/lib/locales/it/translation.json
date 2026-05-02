@@ -3041,7 +3041,7 @@
         "errorGeneric": "Impossibile creare il canale. Riprova.",
         "errorNoVideos": "Nessun video trovato per questa idea. Prova una descrizione diversa.",
         "errorRateLimit": "Troppi canali creati. Attendi un momento e riprova.",
-        "inlinePlaceholder": "Descrivi un nuovo canale...",
+        "inlinePlaceholder": "Crea un nuovo canale...",
         "placeholder": "es. Trick e parchi da skateboard",
         "signInRequired": "Accedi per creare canali",
         "signInRequiredDescription": "Accedi o crea un account per programmare i tuoi canali TV.",

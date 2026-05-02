@@ -1661,7 +1661,7 @@
         "title": "New Channel",
         "description": "Describe a channel and AI will program it with videos from YouTube.",
         "placeholder": "e.g. Skateboarding tricks and parks",
-        "inlinePlaceholder": "Describe a new channel...",
+        "inlinePlaceholder": "Make a new channel...",
         "submit": "Create Channel",
         "creating": "Creating...",
         "statusPlanning": "Planning the channel",
