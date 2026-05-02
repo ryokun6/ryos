@@ -6,8 +6,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { isWindowsTheme } from "@/themes";
 import { SelectableListItem } from "@/components/ui/selectable-list-item";
 import { useTranslation } from "react-i18next";
-
-type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
+import type { AdminSection } from "../utils/navigationState";
 
 interface Room {
   id: string;
@@ -87,6 +86,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             onClick={() => { playButtonClick(); onSectionChange("server"); onRoomSelect(null); }}
           >
             {t("apps.admin.sidebar.server", "Server")}
+          </SelectableListItem>
+
+          <SelectableListItem
+            isSelected={activeSection === "cursorAgents"}
+            onClick={() => { playButtonClick(); onSectionChange("cursorAgents"); onRoomSelect(null); }}
+          >
+            {t("apps.admin.sidebar.cursorAgents", "Cursor agents")}
           </SelectableListItem>
 
           <SelectableListItem

@@ -177,6 +177,25 @@ describe("admin", () => {
       expect(data.totalRooms).toBeGreaterThanOrEqual(0);
       expect(data.totalMessages).toBeGreaterThanOrEqual(0);
     });
+
+    test("GET getCursorAgentRuns - with admin token", async () => {
+      if (!adminToken) {
+        console.log("  ⚠️  Skipped (no admin token available)");
+        return;
+      }
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/admin?action=getCursorAgentRuns&limit=10`,
+        ADMIN_USERNAME,
+        adminToken,
+        { method: "GET" }
+      );
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(Array.isArray(data.runs)).toBe(true);
+      expect(typeof data.truncated).toBe("boolean");
+    });
   });
 
   describe("Admin Operations", () => {

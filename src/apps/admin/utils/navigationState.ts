@@ -1,4 +1,10 @@
-export type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
+export type AdminSection =
+  | "dashboard"
+  | "users"
+  | "rooms"
+  | "songs"
+  | "server"
+  | "cursorAgents";
 
 export interface AdminDetailSelectionState {
   selectedRoomId: string | null;

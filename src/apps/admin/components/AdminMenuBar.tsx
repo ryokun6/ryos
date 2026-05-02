@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
-
-type AdminSection = "dashboard" | "users" | "rooms" | "songs" | "server";
+import type { AdminSection } from "../utils/navigationState";
 
 interface AdminMenuBarProps {
   onClose: () => void;
@@ -98,6 +97,15 @@ export function AdminMenuBar({
             className="text-md h-6 px-3"
           >
             {t("apps.admin.sidebar.users")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={activeSection === "cursorAgents"}
+            onCheckedChange={(checked) => {
+              if (checked) onSectionChange("cursorAgents");
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.sidebar.cursorAgents", "Cursor agents")}
           </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarCheckboxItem
