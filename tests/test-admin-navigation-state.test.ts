@@ -34,8 +34,8 @@ describe("admin navigation detail reset", () => {
     });
   });
 
-  test("clears all details in server section", () => {
-    expect(getClearedAdminDetailSelection("server", detailState)).toEqual({
+  test("clears all details in dashboard section", () => {
+    expect(getClearedAdminDetailSelection("dashboard", detailState)).toEqual({
       selectedRoomId: null,
       selectedUserProfile: null,
       selectedSongId: null,

@@ -28,6 +28,7 @@ interface AdminSidebarProps {
     totalRooms: number;
     totalMessages: number;
     totalSongs?: number;
+    totalCursorAgents?: number;
   };
   isVisible: boolean;
 }
@@ -109,14 +110,19 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             isSelected={activeSection === "cursorAgents"}
             onClick={() => { playButtonClick(); onSectionChange("cursorAgents"); onRoomSelect(null); }}
           >
-            {t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}
-          </SelectableListItem>
-
-          <SelectableListItem
-            isSelected={activeSection === "server"}
-            onClick={() => { playButtonClick(); onSectionChange("server"); onRoomSelect(null); }}
-          >
-            {t("apps.admin.sidebar.server", "Server")}
+            <div className="flex items-center">
+              <span>{t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}</span>
+              <span
+                className={cn(
+                  "ml-1.5 text-[10px]",
+                  activeSection === "cursorAgents"
+                    ? "text-white/40"
+                    : "text-black/40"
+                )}
+              >
+                {stats.totalCursorAgents ?? 0}
+              </span>
+            </div>
           </SelectableListItem>
 
           {/* Rooms Section Header */}

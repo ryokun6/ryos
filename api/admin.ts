@@ -346,7 +346,11 @@ function previewFromSummary(summary: string | undefined, max = 160): string | un
 async function listCursorSdkRunsForAdmin(
   redis: Redis,
   limit: number
-): Promise<{ runs: AdminCursorAgentRunRow[]; scanIncomplete: boolean }> {
+): Promise<{
+  runs: AdminCursorAgentRunRow[];
+  totalCount: number;
+  scanIncomplete: boolean;
+}> {
   const metaKeys = new Set<string>();
   let cursor: string | number = 0;
   let iterations = 0;
@@ -366,7 +370,7 @@ async function listCursorSdkRunsForAdmin(
     } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
   } catch (e) {
     console.error("listCursorSdkRunsForAdmin scan failed", e);
-    return { runs: [], scanIncomplete: false };
+    return { runs: [], totalCount: 0, scanIncomplete: false };
   }
 
   const scanIncomplete = iterations >= maxIterations && cursor !== 0 && cursor !== "0";
@@ -456,6 +460,7 @@ async function listCursorSdkRunsForAdmin(
 
   return {
     runs: list.slice(0, limit),
+    totalCount: list.length,
     scanIncomplete,
   };
 }
@@ -683,10 +688,12 @@ export default apiHandler<AdminRequest>(
             Math.max(parseInt((req.query.limit as string) || "50", 10) || 50, 1),
             100
           );
-          const { runs, scanIncomplete } = await listCursorSdkRunsForAdmin(redis, limit);
-          const sliceTruncated = runs.length >= limit;
+          const { runs, totalCount, scanIncomplete } =
+            await listCursorSdkRunsForAdmin(redis, limit);
+          const sliceTruncated = totalCount > limit;
           logger.info("Cursor agent runs listed", {
             count: runs.length,
+            totalCount,
             limit,
             scanIncomplete,
             sliceTruncated,
@@ -694,6 +701,7 @@ export default apiHandler<AdminRequest>(
           logger.response(200, Date.now() - startTime);
           res.status(200).json({
             runs,
+            totalCount,
             truncated: sliceTruncated || scanIncomplete,
             scanIncomplete,
           });

@@ -3533,6 +3533,8 @@
         "roomsCount": "{{count}} room",
         "roomsCount_plural": "{{count}} rooms",
         "songsCount": "{{count}} songs",
+        "cursorAgentsCount": "{{count}} Cursor agent",
+        "cursorAgentsCount_plural": "{{count}} Cursor agents",
         "loggedInAs": "Logged in as {{username}}"
       },
       "accessDenied": {

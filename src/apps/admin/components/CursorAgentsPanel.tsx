@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
 
 export interface AdminCursorAgentRunRow {
@@ -33,12 +34,14 @@ export interface AdminCursorAgentRunRow {
 
 interface CursorAgentsResponse {
   runs: AdminCursorAgentRunRow[];
+  totalCount?: number;
   truncated?: boolean;
   scanIncomplete?: boolean;
 }
 
 interface CursorAgentsPanelProps {
   refreshSignal?: number;
+  onTotalCountChange?: (count: number) => void;
 }
 
 function cursorAgentPageUrl(agentId: string): string {
@@ -73,6 +76,9 @@ function CursorAgentsToolbar({
   refreshDisabled?: boolean;
 }) {
   const { t } = useTranslation();
+  const currentTheme = useThemeStore((state) => state.current);
+  const isMacOSXTheme = currentTheme === "macosx";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -81,9 +87,21 @@ function CursorAgentsToolbar({
   };
 
   return (
-    <div className="shrink-0 border-b border-black/10">
+    <div className="shrink-0">
       <form
-        className="flex items-center gap-2 px-2 py-1"
+        className={cn(
+          "flex items-center gap-2 border-b px-2 py-1.5",
+          isXpTheme
+            ? "border-[#919b9c]"
+            : isMacOSXTheme
+              ? "border-black/10"
+              : "border-black/20"
+        )}
+        style={
+          isMacOSXTheme
+            ? { backgroundImage: "var(--os-pinstripe-window)" }
+            : undefined
+        }
         onSubmit={handleFormSubmit}
       >
         <Input
@@ -95,15 +113,12 @@ function CursorAgentsToolbar({
             "Send to Cursor"
           )}
           disabled={isSubmitting}
-          className="h-7 flex-1 min-w-0 text-[11px] font-geneva-12"
+          className="h-7 min-w-0 flex-1 text-[12px]"
           aria-label={t(
             "apps.admin.cursorAgents.newAgentAria",
             "New Cursor agent prompt"
           )}
         />
-        {isSubmitting ? (
-          <ActivityIndicator size={18} className="shrink-0" />
-        ) : null}
         <Button
           type="button"
           variant="ghost"
@@ -114,11 +129,17 @@ function CursorAgentsToolbar({
           aria-label={t("apps.admin.cursorAgents.refresh", "Refresh")}
           title={t("apps.admin.cursorAgents.refresh", "Refresh")}
         >
-          <ArrowsClockwise className="h-3.5 w-3.5" weight="bold" />
+          {isSubmitting ? (
+            <ActivityIndicator size={14} />
+          ) : (
+            <ArrowsClockwise size={14} weight="bold" />
+          )}
         </Button>
       </form>
       {submitError ? (
-        <p className="text-[10px] text-red-600 px-2 pb-1">{submitError}</p>
+        <p className="border-b border-black/10 px-2 pb-1.5 text-[10px] text-red-600">
+          {submitError}
+        </p>
       ) : null}
     </div>
   );
@@ -126,6 +147,7 @@ function CursorAgentsToolbar({
 
 export function CursorAgentsPanel({
   refreshSignal = 0,
+  onTotalCountChange,
 }: CursorAgentsPanelProps) {
   const { t } = useTranslation();
   const { username, isAuthenticated } = useAuth();
@@ -153,6 +175,7 @@ export function CursorAgentsPanel({
       setRuns(data.runs ?? []);
       setTruncated(!!data.truncated);
       setScanIncomplete(!!data.scanIncomplete);
+      onTotalCountChange?.(data.totalCount ?? data.runs?.length ?? 0);
     } catch (err) {
       const message =
         err instanceof ApiRequestError
@@ -165,7 +188,7 @@ export function CursorAgentsPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [username, isAuthenticated, t]);
+  }, [username, isAuthenticated, t, onTotalCountChange]);
 
   useEffect(() => {
     fetchRuns();

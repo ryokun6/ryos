@@ -3,7 +3,6 @@ export type AdminSection =
   | "users"
   | "rooms"
   | "songs"
-  | "server"
   | "cursorAgents";
 
 export interface AdminDetailSelectionState {
