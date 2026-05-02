@@ -692,42 +692,47 @@
     else grabHint.classList.add("hidden");
   }
 
-  function tryKeyboardLock() {
+  function canUseKeyboardLockApi() {
+    if (window.self !== window.top) return false;
     var nav = navigator;
-    if (!nav.keyboard || typeof nav.keyboard.lock !== "function") return;
+    return !!(nav.keyboard && typeof nav.keyboard.lock === "function");
+  }
+
+  function tryKeyboardLock() {
+    if (!canUseKeyboardLockApi()) return;
+    var keys = [
+      "Tab",
+      "AltLeft",
+      "AltRight",
+      "MetaLeft",
+      "MetaRight",
+      "ControlLeft",
+      "ControlRight",
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "F5",
+      "F6",
+      "F7",
+      "F8",
+      "F9",
+      "F10",
+      "F11",
+      "F12",
+    ];
     try {
-      // Lock everything except Escape — Esc must remain available so the
-      // user can release pointer lock. Per spec, omitting a key from the
-      // list means it stays handled by the browser.
-      nav.keyboard.lock([
-        "Tab",
-        "AltLeft",
-        "AltRight",
-        "MetaLeft",
-        "MetaRight",
-        "ControlLeft",
-        "ControlRight",
-        "F1",
-        "F2",
-        "F3",
-        "F4",
-        "F5",
-        "F6",
-        "F7",
-        "F8",
-        "F9",
-        "F10",
-        "F11",
-        "F12",
-      ]);
+      // lock() is only allowed in a primary top-level document; ryOS loads this embed in an iframe.
+      var p = navigator.keyboard.lock(keys);
+      if (p && typeof p.catch === "function") p.catch(function () {});
     } catch (_) {}
   }
 
   function tryKeyboardUnlock() {
-    var nav = navigator;
-    if (!nav.keyboard || typeof nav.keyboard.unlock !== "function") return;
+    if (!canUseKeyboardLockApi()) return;
     try {
-      nav.keyboard.unlock();
+      var p = navigator.keyboard.unlock();
+      if (p && typeof p.catch === "function") p.catch(function () {});
     } catch (_) {}
   }
 
