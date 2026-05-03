@@ -38,6 +38,8 @@ export interface MusicQuizRef {
 export interface MusicQuizProps {
   isVisible: boolean;
   onExit: () => void;
+  lcdFilterOn?: boolean;
+  backlightOn?: boolean;
   /** Pause the main library player when entering, called once when visible turns true */
   onEnter?: () => void;
   /** Sound effects */
@@ -65,7 +67,16 @@ function pickRound(tracks: Track[]): { options: Track[]; correctIndex: number; c
 }
 
 export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function MusicQuiz(
-  { isVisible, onExit: _onExit, onEnter, playClick, playScroll, vibrate },
+  {
+    isVisible,
+    onExit: _onExit,
+    lcdFilterOn = false,
+    backlightOn = true,
+    onEnter,
+    playClick,
+    playScroll,
+    vibrate,
+  },
   ref
 ) {
   const { t } = useTranslation();
@@ -311,10 +322,29 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const correctTrackUrl = round?.options[round.correctIndex]?.url;
 
   return (
-    <div className="absolute inset-0 z-30 flex flex-col bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc] overflow-hidden font-chicago">
-      {/* Header */}
-      <div className="border-b border-[#0a3667] py-0 px-2 text-[16px] flex items-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-        <div className="w-12 text-left text-[12px]">
+    <div
+      className={cn(
+        "relative z-50 flex h-full min-h-[150px] w-full flex-col overflow-hidden select-none font-chicago",
+        "border border-black border-2 rounded-[2px]",
+        lcdFilterOn ? "lcd-screen" : "",
+        backlightOn
+          ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
+          : "bg-[#8a9da9] contrast-65 saturate-50",
+        lcdFilterOn &&
+          backlightOn &&
+          "shadow-[0_0_10px_2px_rgba(197,224,245,0.05)]"
+      )}
+    >
+      {lcdFilterOn && (
+        <div className="absolute inset-0 pointer-events-none z-[25] lcd-scan-lines" />
+      )}
+      {lcdFilterOn && (
+        <div className="absolute inset-0 pointer-events-none z-[25] lcd-reflection" />
+      )}
+
+      {/* Title bar — match IpodScreen */}
+      <div className="border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center sticky top-0 z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+        <div className="w-6 flex items-center justify-start text-xs tabular-nums">
           {phase !== "finished" && hasEnoughTracks && (
             <span>
               {Math.min(roundNumber, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
@@ -322,17 +352,13 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
           )}
         </div>
         <div className="flex-1 truncate text-center">{headerTitle}</div>
-        <div className="w-12 text-right text-[12px]">
-          {phase !== "finished" && hasEnoughTracks && (
-            <span>
-              {t("apps.ipod.musicQuiz.scoreShort", "Score")}: {score}
-            </span>
-          )}
+        <div className="w-6 flex items-center justify-end text-xs tabular-nums">
+          {phase !== "finished" && hasEnoughTracks && <span>{score}</span>}
         </div>
       </div>
 
       {/* Body */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="relative h-[calc(100%-26px)] overflow-hidden z-30">
         {!hasEnoughTracks ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
             <p className="text-[14px]">
@@ -343,27 +369,27 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
             </p>
           </div>
         ) : phase === "finished" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-            <div className="text-[14px] mb-1">
-              {t("apps.ipod.musicQuiz.finalScore", "Final Score")}
-            </div>
-            <div className="text-[28px] leading-none mb-2">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+            <span className="font-chicago text-[16px] tabular-nums leading-4">
               {score}/{TOTAL_ROUNDS}
-            </div>
-            <div className="text-[12px] mb-3">
+            </span>
+            <span className="font-chicago text-[14px] leading-4">
               {t(scoreMessageKey(score, TOTAL_ROUNDS), {
                 defaultValue:
                   score === TOTAL_ROUNDS
-                    ? "Perfect score! 🏆"
+                    ? "Perfect score!"
                     : score / TOTAL_ROUNDS >= 0.6
-                    ? "Great job!"
-                    : score / TOTAL_ROUNDS >= 0.3
-                    ? "Not bad!"
-                    : "Keep listening!",
+                      ? "Great job!"
+                      : score / TOTAL_ROUNDS >= 0.3
+                        ? "Not bad!"
+                        : "Keep listening!",
               })}
-            </div>
-            <div className="text-[11px] opacity-80">
-              {t("apps.ipod.musicQuiz.pressCenterToReplay", "Press center to play again · Menu to exit")}
+            </span>
+            <div className="flex flex-col font-chicago text-[14px] leading-4 opacity-85">
+              <span>
+                {t("apps.ipod.musicQuiz.pressCenterToReplay", "Press center to play again")}
+              </span>
+              <span>{t("apps.ipod.musicQuiz.menuToExit", "Menu to exit")}</span>
             </div>
           </div>
         ) : phase === "loading" ? (
@@ -374,22 +400,25 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
           </div>
         ) : (
           <div className="absolute inset-0 flex flex-col">
-            {/* Prompt + snippet progress */}
-            <div className="px-2 pt-1 pb-1 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-              <div className="text-[12px]">
-                {phase === "feedback"
-                  ? round?.isCorrect
-                    ? t("apps.ipod.musicQuiz.correct", "Correct!")
-                    : round?.selectedIndex == null
-                    ? t("apps.ipod.musicQuiz.timesUp", "Time's up!")
-                    : t("apps.ipod.musicQuiz.wrong", "Not quite!")
-                  : t("apps.ipod.musicQuiz.guessTheSong", "Guess the song")}
+            {/* Snippet progress or feedback — fixed slot height */}
+            <div className="px-2 py-px text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+              <div className="flex h-5 w-full items-center justify-center">
+                {phase === "feedback" ? (
+                  <div className="w-full truncate text-center font-chicago text-[16px] leading-4">
+                    {round?.isCorrect
+                      ? t("apps.ipod.musicQuiz.correct", "Correct!")
+                      : round?.selectedIndex == null
+                        ? t("apps.ipod.musicQuiz.timesUp", "Time's up!")
+                        : t("apps.ipod.musicQuiz.wrong", "Not quite!")}
+                  </div>
+                ) : (
+                  <SnippetProgressBar
+                    key={`${roundNumber}-playing`}
+                    durationMs={SNIPPET_DURATION_MS}
+                    running={phase === "playing"}
+                  />
+                )}
               </div>
-              <SnippetProgressBar
-                key={`${roundNumber}-${phase}`}
-                durationMs={SNIPPET_DURATION_MS}
-                running={phase === "playing"}
-              />
             </div>
 
             {/* Options */}
@@ -414,7 +443,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
                     <MenuListItem
                       text={formatOption(option)}
                       isSelected={isSelected}
-                      backlightOn={true}
+                      backlightOn={backlightOn}
                       onClick={() => {
                         if (phase === "playing") {
                           setSelectedIndex(idx);
@@ -493,7 +522,7 @@ function scoreMessageKey(score: number, total: number): string {
 
 function SnippetProgressBar({ durationMs, running }: { durationMs: number; running: boolean }) {
   return (
-    <div className="mt-1 w-full h-[6px] rounded-full border border-[#0a3667] overflow-hidden">
+    <div className="h-[6px] w-full shrink-0 rounded-full border border-[#0a3667] overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={running ? "run" : "stop"}

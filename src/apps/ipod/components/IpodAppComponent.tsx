@@ -327,68 +327,70 @@ export function IpodAppComponent({
                 screenLongPressStartPos.current = null;
               }}
             >
-              <IpodScreen
-                currentTrack={tracks[currentIndex] || null}
-                isPlaying={isPlaying && !isFullScreen}
-                elapsedTime={elapsedTime}
-                totalTime={totalTime}
-                menuMode={menuMode}
-                menuHistory={menuHistory}
-                selectedMenuItem={selectedMenuItem}
-                onSelectMenuItem={setSelectedMenuItem}
-                currentIndex={currentIndex}
-                tracksLength={tracks.length}
-                backlightOn={backlightOn}
-                menuDirection={menuDirection}
-                onMenuItemAction={handleMenuItemAction}
-                showVideo={showVideo}
-                displayMode={displayMode}
-                playerRef={playerRef}
-                handleTrackEnd={handleTrackEnd}
-                handleProgress={handleProgress}
-                handleDuration={handleDuration}
-                handlePlay={handlePlay}
-                handlePause={handlePause}
-                handleReady={handleReady}
-                loopCurrent={loopCurrent}
-                statusMessage={statusMessage}
-                onToggleVideo={toggleVideo}
-                lcdFilterOn={lcdFilterOn}
-                ipodVolume={ipodVolume}
-                showStatusCallback={showStatus}
-                showLyrics={showLyrics}
-                lyricsAlignment={lyricsAlignment}
-                koreanDisplay={koreanDisplay}
-                japaneseFurigana={japaneseFurigana}
-                lyricOffset={lyricOffset ?? 0}
-                adjustLyricOffset={(delta) => adjustLyricOffset(currentIndex, delta)}
-                registerActivity={registerActivity}
-                isFullScreen={isFullScreen}
-                lyricsControls={fullScreenLyricsControls}
-                furiganaMap={furiganaMap}
-                soramimiMap={soramimiMap}
-                activityState={activityState}
-                onNextTrack={() => {
-                  if (isOffline) {
-                    showOfflineStatus();
-                  } else {
-                    skipOperationRef.current = true;
-                    startTrackSwitch();
-                    nextTrack();
-                    showStatus("⏭");
-                  }
-                }}
-                onPreviousTrack={() => {
-                  if (isOffline) {
-                    showOfflineStatus();
-                  } else {
-                    skipOperationRef.current = true;
-                    startTrackSwitch();
-                    previousTrack();
-                    showStatus("⏮");
-                  }
-                }}
-              />
+              {!isMusicQuizOpen && (
+                <IpodScreen
+                  currentTrack={tracks[currentIndex] || null}
+                  isPlaying={isPlaying && !isFullScreen}
+                  elapsedTime={elapsedTime}
+                  totalTime={totalTime}
+                  menuMode={menuMode}
+                  menuHistory={menuHistory}
+                  selectedMenuItem={selectedMenuItem}
+                  onSelectMenuItem={setSelectedMenuItem}
+                  currentIndex={currentIndex}
+                  tracksLength={tracks.length}
+                  backlightOn={backlightOn}
+                  menuDirection={menuDirection}
+                  onMenuItemAction={handleMenuItemAction}
+                  showVideo={showVideo}
+                  displayMode={displayMode}
+                  playerRef={playerRef}
+                  handleTrackEnd={handleTrackEnd}
+                  handleProgress={handleProgress}
+                  handleDuration={handleDuration}
+                  handlePlay={handlePlay}
+                  handlePause={handlePause}
+                  handleReady={handleReady}
+                  loopCurrent={loopCurrent}
+                  statusMessage={statusMessage}
+                  onToggleVideo={toggleVideo}
+                  lcdFilterOn={lcdFilterOn}
+                  ipodVolume={ipodVolume}
+                  showStatusCallback={showStatus}
+                  showLyrics={showLyrics}
+                  lyricsAlignment={lyricsAlignment}
+                  koreanDisplay={koreanDisplay}
+                  japaneseFurigana={japaneseFurigana}
+                  lyricOffset={lyricOffset ?? 0}
+                  adjustLyricOffset={(delta) => adjustLyricOffset(currentIndex, delta)}
+                  registerActivity={registerActivity}
+                  isFullScreen={isFullScreen}
+                  lyricsControls={fullScreenLyricsControls}
+                  furiganaMap={furiganaMap}
+                  soramimiMap={soramimiMap}
+                  activityState={activityState}
+                  onNextTrack={() => {
+                    if (isOffline) {
+                      showOfflineStatus();
+                    } else {
+                      skipOperationRef.current = true;
+                      startTrackSwitch();
+                      nextTrack();
+                      showStatus("⏭");
+                    }
+                  }}
+                  onPreviousTrack={() => {
+                    if (isOffline) {
+                      showOfflineStatus();
+                    } else {
+                      skipOperationRef.current = true;
+                      startTrackSwitch();
+                      previousTrack();
+                      showStatus("⏮");
+                    }
+                  }}
+                />
+              )}
 
               {/* Cover Flow overlay - positioned within screen bounds */}
               <CoverFlow
@@ -409,6 +411,8 @@ export function IpodAppComponent({
                 ref={musicQuizRef}
                 isVisible={isMusicQuizOpen}
                 onExit={() => setIsMusicQuizOpen(false)}
+                lcdFilterOn={lcdFilterOn}
+                backlightOn={backlightOn}
                 playClick={playClickSound}
                 playScroll={playScrollSound}
                 vibrate={vibrate}

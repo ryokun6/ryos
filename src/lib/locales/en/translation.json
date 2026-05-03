@@ -1935,11 +1935,12 @@
         "timesUp": "Time's up!",
         "scoreShort": "Score",
         "finalScore": "Final Score",
-        "perfect": "Perfect score! 🏆",
+        "perfect": "Perfect score!",
         "greatJob": "Great job!",
         "notBad": "Not bad!",
         "keepPracticing": "Keep listening!",
-        "pressCenterToReplay": "Press center to play again · Menu to exit",
+        "pressCenterToReplay": "Press center to play again",
+        "menuToExit": "Menu to exit",
         "notEnoughTracks": "Add more songs to play the quiz"
       },
       "translationLanguages": {
