@@ -9,28 +9,29 @@ import {
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
-// Logical (CSS) game-world dimensions. The canvas element is stretched
-// to fill the iPod screen body via CSS (width/height: 100%); these
-// numbers define the game's internal coordinate system, which is then
-// drawn at the actual pixel size with DPR scaling.
-const GAME_WIDTH = 220;
-const GAME_HEIGHT = 124;
+// Game-world dimensions in CSS pixels. The iPod screen is 150px tall ×
+// ~218px wide (250px device − 2×16px padding); the title bar takes 26px,
+// leaving ~124px of body. We design the world for the smallest sensible
+// body size so the paddle is always reachable, and let the canvas
+// element's CSS handle the actual rendered size.
+const GAME_WIDTH = 200;
+const GAME_HEIGHT = 110;
 
-// Brick layout — slim rows that occupy the top quarter of the play field.
+// Brick layout — slim rows occupying ~20% of the play area.
 const BRICK_COLS = 10;
 const BRICK_ROWS = 4;
 const BRICK_GAP = 1;
-const BRICK_TOP_OFFSET = 4;
+const BRICK_TOP_OFFSET = 3;
 const BRICK_SIDE_OFFSET = 2;
 const BRICK_HEIGHT = 4;
 
 // Paddle / ball
-const PADDLE_WIDTH = 30;
+const PADDLE_WIDTH = 28;
 const PADDLE_HEIGHT = 3;
-const PADDLE_Y = GAME_HEIGHT - 8;
+const PADDLE_Y = GAME_HEIGHT - 7;
 const BALL_RADIUS = 1.5;
-const BALL_BASE_SPEED = 80; // px / sec
-const BALL_SPEED_INCREMENT = 8; // per level
+const BALL_BASE_SPEED = 75; // px / sec
+const BALL_SPEED_INCREMENT = 7; // per level
 
 // Wheel sensitivity: pixels of paddle movement per single rotation tick
 const WHEEL_TICK_PIXELS = 14;
@@ -162,8 +163,11 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    // Use the canvas' actual rendered CSS size so the game world maps
-    // 1:1 to the screen body (no clipping, no letterboxing).
+    // Map game-world units (GAME_WIDTH × GAME_HEIGHT) onto the canvas'
+    // current rendered CSS size, with DPR scaling for crispness. The
+    // canvas stretches to fill its container, so the world gets squashed
+    // / stretched to match — that's intentional, and keeps the full
+    // play area (including the paddle) visible at any iPod scale.
     const cssW = canvas.clientWidth || GAME_WIDTH;
     const cssH = canvas.clientHeight || GAME_HEIGHT;
     const sx = (cssW * dpr) / GAME_WIDTH;
@@ -327,9 +331,10 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     rafRef.current = requestAnimationFrame(loop);
   }, [loop]);
 
-  // Size the canvas' backing store to its actual CSS-rendered size,
-  // and re-size whenever the container changes (iPod scale, window
-  // resize, etc.). This way the canvas always fills the screen body.
+  // Resize the canvas' backing store to its actual rendered CSS size
+  // whenever the iPod scales / the window resizes. The CSS size is
+  // controlled by the inset-0 absolute positioning in the JSX below,
+  // so this just keeps the bitmap crisp.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -472,14 +477,15 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         </div>
       </div>
 
-      {/* Body — canvas stretches to fill the entire body via CSS so it
-          uses every available pixel (no fixed pixel size that could
-          clip below the title bar). */}
-      <div className="relative flex-1 min-h-0 w-full overflow-hidden z-30">
+      {/* Body — exact same h-[calc(100%-26px)] pattern as MusicQuiz so
+          the body has a concrete height. The canvas fills the entire
+          body via inset-0 (no fixed pixels) so it never overflows
+          horizontally and always reaches the bottom of the screen. */}
+      <div className="relative h-[calc(100%-26px)] w-full overflow-hidden z-30">
         <canvas
           ref={canvasRef}
-          className="block absolute inset-0"
-          style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
+          className="absolute inset-0 block"
+          style={{ imageRendering: "pixelated" }}
           aria-label={t("apps.ipod.brickGame.title")}
         />
 
