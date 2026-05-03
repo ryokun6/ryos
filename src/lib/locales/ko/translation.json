@@ -1566,6 +1566,20 @@
         "taipei": "타이베이",
         "tokyo": "도쿄"
       },
+      "currency": {
+        "about": "Frankfurter(ECB) 또는 대체 제공자 기준의 참고 환율입니다. 참고용이며 금융 조언이 아닙니다.",
+        "amountPlaceholder": "금액",
+        "asOfDate": "기준일 {{date}}",
+        "cachedHint": "캐시된 환율 사용 (쌍을 바꾸면 새로고침)",
+        "defaultPair": "기본 통화 쌍",
+        "error": "환율을 불러올 수 없습니다",
+        "from": "출발",
+        "loading": "환율 불러오는 중…",
+        "staleRates": "캐시된 환율 · {{time}}",
+        "swap": "통화 바꾸기",
+        "to": "도착",
+        "updated": "업데이트 {{time}}"
+      },
       "description": "위젯 대시보드 오버레이",
       "dictionary": {
         "dataSources": "데이터는 위키낱말사전 및 기타 공개 사전에서 가져왔습니다. 흔치 않은 단어의 경우 결과가 다를 수 있습니다.",
@@ -1663,20 +1677,6 @@
         "translateFrom": "번역할 언어",
         "translating": "번역 중..."
       },
-      "currency": {
-        "amountPlaceholder": "금액",
-        "swap": "통화 바꾸기",
-        "loading": "환율 불러오는 중…",
-        "error": "환율을 불러올 수 없습니다",
-        "asOfDate": "기준일 {{date}}",
-        "updated": "업데이트 {{time}}",
-        "staleRates": "캐시된 환율 · {{time}}",
-        "cachedHint": "캐시된 환율 사용 (쌍을 바꾸면 새로고침)",
-        "from": "출발",
-        "to": "도착",
-        "defaultPair": "기본 통화 쌍",
-        "about": "Frankfurter(ECB) 또는 대체 제공자 기준의 참고 환율입니다. 참고용이며 금융 조언이 아닙니다."
-      },
       "weather": {
         "changeCity": "도시 변경",
         "enableLocation": "날씨를 위해 위치 활성화",
@@ -1699,13 +1699,13 @@
         "aquarium": "수족관",
         "calendar": "캘린더",
         "clock": "시계",
+        "currencyConverter": "환율 변환",
         "dictionary": "사전",
         "ipod": "iPod",
         "removeWidget": "위젯 제거",
         "stickyNote": "스티커 메모",
         "stocks": "주식",
         "translation": "번역",
-        "currencyConverter": "환율 변환",
         "weather": "날씨"
       }
     },
@@ -2304,6 +2304,7 @@
         "extras": "부가 기능",
         "ipod": "iPod",
         "music": "음악",
+        "musicQuiz": "음악 퀴즈",
         "nowPlaying": "지금 재생 중",
         "off": "끔",
         "on": "켬",
@@ -2313,6 +2314,24 @@
         "shuffle": "셔플",
         "shuffleSongs": "곡 셔플",
         "theme": "테마"
+      },
+      "musicQuiz": {
+        "correct": "정답입니다!",
+        "finalScore": "최종 점수",
+        "greatJob": "잘하셨습니다!",
+        "guessTheSong": "노래 제목 맞히기",
+        "keepPracticing": "계속 들어보세요!",
+        "loading": "음악 불러오는 중…",
+        "menuToExit": "메뉴를 눌러 종료",
+        "notBad": "나쁘지 않네요!",
+        "notEnoughTracks": "퀴즈를 플레이하려면 노래를 더 추가하세요",
+        "perfect": "만점입니다!",
+        "pressCenterToReplay": "가운데 버튼을 눌러 다시 시작",
+        "results": "결과",
+        "scoreShort": "점수",
+        "timesUp": "시간 종료!",
+        "title": "음악 퀴즈",
+        "wrong": "아쉽네요!"
       },
       "name": "iPod",
       "status": {

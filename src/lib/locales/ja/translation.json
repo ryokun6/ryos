@@ -1566,6 +1566,20 @@
         "taipei": "台北",
         "tokyo": "東京"
       },
+      "currency": {
+        "about": "Frankfurter（ECB）または代替ソースの参考レート。参考情報であり金融助言ではありません。",
+        "amountPlaceholder": "金額",
+        "asOfDate": "基準日 {{date}}",
+        "cachedHint": "キャッシュのレートを使用（ペアを変えると更新）",
+        "defaultPair": "既定の通貨ペア",
+        "error": "為替レートを取得できませんでした",
+        "from": "元",
+        "loading": "レート読み込み中…",
+        "staleRates": "キャッシュのレート · {{time}}",
+        "swap": "通貨を入れ替え",
+        "to": "先",
+        "updated": "更新 {{time}}"
+      },
       "description": "ウィジェットダッシュボードオーバーレイ",
       "dictionary": {
         "dataSources": "データはWiktionaryおよびその他のオープン辞書から取得しています。珍しい単語では結果が異なる場合があります。",
@@ -1663,20 +1677,6 @@
         "translateFrom": "翻訳元",
         "translating": "翻訳中..."
       },
-      "currency": {
-        "amountPlaceholder": "金額",
-        "swap": "通貨を入れ替え",
-        "loading": "レート読み込み中…",
-        "error": "為替レートを取得できませんでした",
-        "asOfDate": "基準日 {{date}}",
-        "updated": "更新 {{time}}",
-        "staleRates": "キャッシュのレート · {{time}}",
-        "cachedHint": "キャッシュのレートを使用（ペアを変えると更新）",
-        "from": "元",
-        "to": "先",
-        "defaultPair": "既定の通貨ペア",
-        "about": "Frankfurter（ECB）または代替ソースの参考レート。参考情報であり金融助言ではありません。"
-      },
       "weather": {
         "changeCity": "都市を変更",
         "enableLocation": "天気予報の位置情報を有効にする",
@@ -1699,13 +1699,13 @@
         "aquarium": "水族館",
         "calendar": "カレンダー",
         "clock": "時計",
+        "currencyConverter": "通貨換算",
         "dictionary": "辞書",
         "ipod": "iPod",
         "removeWidget": "ウィジェットを削除",
         "stickyNote": "付箋",
         "stocks": "株価",
         "translation": "翻訳",
-        "currencyConverter": "通貨換算",
         "weather": "天気"
       }
     },
@@ -2304,6 +2304,7 @@
         "extras": "エクストラ",
         "ipod": "iPod",
         "music": "ミュージック",
+        "musicQuiz": "ミュージッククイズ",
         "nowPlaying": "再生中",
         "off": "オフ",
         "on": "オン",
@@ -2313,6 +2314,24 @@
         "shuffle": "シャッフル",
         "shuffleSongs": "曲をシャッフル",
         "theme": "テーマ"
+      },
+      "musicQuiz": {
+        "correct": "正解！",
+        "finalScore": "最終スコア",
+        "greatJob": "よくできました！",
+        "guessTheSong": "曲名を当てよう",
+        "keepPracticing": "その調子！",
+        "loading": "スニペットを読み込み中…",
+        "menuToExit": "MENUボタンで終了",
+        "notBad": "悪くないですね！",
+        "notEnoughTracks": "クイズをプレイするには曲を追加してください",
+        "perfect": "全問正解！",
+        "pressCenterToReplay": "センターボタンで再試行",
+        "results": "結果",
+        "scoreShort": "スコア",
+        "timesUp": "タイムアップ！",
+        "title": "ミュージッククイズ",
+        "wrong": "残念！"
       },
       "name": "iPod",
       "status": {

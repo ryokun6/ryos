@@ -1566,6 +1566,20 @@
         "taipei": "Taipei",
         "tokyo": "Tokyo"
       },
+      "currency": {
+        "about": "Taux indicatifs via Frankfurter (BCE) ou une source de secours. À titre indicatif ; pas un conseil financier.",
+        "amountPlaceholder": "Montant",
+        "asOfDate": "Au {{date}}",
+        "cachedHint": "Taux mis en cache (changez la paire pour actualiser).",
+        "defaultPair": "Paire de devises par défaut",
+        "error": "Impossible de charger le taux de change",
+        "from": "De",
+        "loading": "Chargement du taux…",
+        "staleRates": "Taux mis en cache · {{time}}",
+        "swap": "Inverser les devises",
+        "to": "Vers",
+        "updated": "Mis à jour {{time}}"
+      },
       "description": "Superposition du tableau de bord des widgets",
       "dictionary": {
         "dataSources": "Données provenant de Wiktionary et d'autres dictionnaires ouverts. Les résultats peuvent varier pour les mots rares.",
@@ -1663,20 +1677,6 @@
         "translateFrom": "Traduire depuis",
         "translating": "Traduction en cours..."
       },
-      "currency": {
-        "amountPlaceholder": "Montant",
-        "swap": "Inverser les devises",
-        "loading": "Chargement du taux…",
-        "error": "Impossible de charger le taux de change",
-        "asOfDate": "Au {{date}}",
-        "updated": "Mis à jour {{time}}",
-        "staleRates": "Taux mis en cache · {{time}}",
-        "cachedHint": "Taux mis en cache (changez la paire pour actualiser).",
-        "from": "De",
-        "to": "Vers",
-        "defaultPair": "Paire de devises par défaut",
-        "about": "Taux indicatifs via Frankfurter (BCE) ou une source de secours. À titre indicatif ; pas un conseil financier."
-      },
       "weather": {
         "changeCity": "Changer de ville",
         "enableLocation": "Activer la localisation pour la météo",
@@ -1699,13 +1699,13 @@
         "aquarium": "Aquarium",
         "calendar": "Calendrier",
         "clock": "Horloge",
+        "currencyConverter": "Convertisseur de devises",
         "dictionary": "Dictionnaire",
         "ipod": "iPod",
         "removeWidget": "Supprimer le widget",
         "stickyNote": "Note adhésive",
         "stocks": "Bourse",
         "translation": "Traduction",
-        "currencyConverter": "Convertisseur de devises",
         "weather": "Météo"
       }
     },
@@ -2304,6 +2304,7 @@
         "extras": "Extras",
         "ipod": "iPod",
         "music": "Musique",
+        "musicQuiz": "Quiz musical",
         "nowPlaying": "En lecture",
         "off": "Désactivé",
         "on": "Activé",
@@ -2313,6 +2314,24 @@
         "shuffle": "Aléatoire",
         "shuffleSongs": "Lecture aléatoire des morceaux",
         "theme": "Thème"
+      },
+      "musicQuiz": {
+        "correct": "Correct !",
+        "finalScore": "Score final",
+        "greatJob": "Bravo !",
+        "guessTheSong": "Devinez le morceau",
+        "keepPracticing": "Continuez d'écouter !",
+        "loading": "Chargement de l'extrait…",
+        "menuToExit": "Menu pour quitter",
+        "notBad": "Pas mal !",
+        "notEnoughTracks": "Ajoutez plus de morceaux pour jouer au quiz",
+        "perfect": "Score parfait !",
+        "pressCenterToReplay": "Appuyez au centre pour rejouer",
+        "results": "Résultats",
+        "scoreShort": "Score",
+        "timesUp": "Temps écoulé !",
+        "title": "Quiz musical",
+        "wrong": "Pas tout à fait !"
       },
       "name": "iPod",
       "status": {

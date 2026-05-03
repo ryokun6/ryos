@@ -1566,6 +1566,20 @@
         "taipei": "Taipeh",
         "tokyo": "Tokio"
       },
+      "currency": {
+        "about": "Indikative Kurse von Frankfurter (EZB) oder einem Fallback-Anbieter. Nur zur Information; keine Finanzberatung.",
+        "amountPlaceholder": "Betrag",
+        "asOfDate": "Stand {{date}}",
+        "cachedHint": "Zwischengespeicherter Kurs (Paar ändern zum Aktualisieren).",
+        "defaultPair": "Standardwährungspaar",
+        "error": "Wechselkurs konnte nicht geladen werden",
+        "from": "Von",
+        "loading": "Kurs wird geladen…",
+        "staleRates": "Zwischengespeicherte Kurse · {{time}}",
+        "swap": "Währungen tauschen",
+        "to": "Nach",
+        "updated": "Aktualisiert {{time}}"
+      },
       "description": "Widget-Dashboard-Overlay",
       "dictionary": {
         "dataSources": "Daten stammen von Wiktionary und anderen offenen Wörterbüchern. Ergebnisse können bei seltenen Wörtern variieren.",
@@ -1663,20 +1677,6 @@
         "translateFrom": "Übersetzen von",
         "translating": "Übersetzt..."
       },
-      "currency": {
-        "amountPlaceholder": "Betrag",
-        "swap": "Währungen tauschen",
-        "loading": "Kurs wird geladen…",
-        "error": "Wechselkurs konnte nicht geladen werden",
-        "asOfDate": "Stand {{date}}",
-        "updated": "Aktualisiert {{time}}",
-        "staleRates": "Zwischengespeicherte Kurse · {{time}}",
-        "cachedHint": "Zwischengespeicherter Kurs (Paar ändern zum Aktualisieren).",
-        "from": "Von",
-        "to": "Nach",
-        "defaultPair": "Standardwährungspaar",
-        "about": "Indikative Kurse von Frankfurter (EZB) oder einem Fallback-Anbieter. Nur zur Information; keine Finanzberatung."
-      },
       "weather": {
         "changeCity": "Stadt ändern",
         "enableLocation": "Standort für Wetter aktivieren",
@@ -1699,13 +1699,13 @@
         "aquarium": "Aquarium",
         "calendar": "Kalender",
         "clock": "Uhr",
+        "currencyConverter": "Währungsrechner",
         "dictionary": "Wörterbuch",
         "ipod": "iPod",
         "removeWidget": "Widget entfernen",
         "stickyNote": "Haftnotiz",
         "stocks": "Aktien",
         "translation": "Übersetzung",
-        "currencyConverter": "Währungsrechner",
         "weather": "Wetter"
       }
     },
@@ -2304,6 +2304,7 @@
         "extras": "Extras",
         "ipod": "iPod",
         "music": "Musik",
+        "musicQuiz": "Musik-Quiz",
         "nowPlaying": "Aktuelle Wiedergabe",
         "off": "Aus",
         "on": "Ein",
@@ -2313,6 +2314,24 @@
         "shuffle": "Mischen",
         "shuffleSongs": "Titel mischen",
         "theme": "Design"
+      },
+      "musicQuiz": {
+        "correct": "Richtig!",
+        "finalScore": "Endergebnis",
+        "greatJob": "Gut gemacht!",
+        "guessTheSong": "Errate den Song",
+        "keepPracticing": "Weiterhören!",
+        "loading": "Ausschnitt wird geladen …",
+        "menuToExit": "Menü zum Beenden",
+        "notBad": "Nicht schlecht!",
+        "notEnoughTracks": "Füge mehr Titel hinzu, um das Quiz zu spielen",
+        "perfect": "Volle Punktzahl!",
+        "pressCenterToReplay": "Mitteltaste zum Erneutspielen",
+        "results": "Ergebnisse",
+        "scoreShort": "Punktzahl",
+        "timesUp": "Zeit abgelaufen!",
+        "title": "Musik-Quiz",
+        "wrong": "Nicht ganz!"
       },
       "name": "iPod",
       "status": {

@@ -1566,6 +1566,20 @@
         "taipei": "台北",
         "tokyo": "東京"
       },
+      "currency": {
+        "about": "參考匯率來自 Frankfurter（ECB）或備援來源。僅供參考，非投資建議。",
+        "amountPlaceholder": "金額",
+        "asOfDate": "截至 {{date}}",
+        "cachedHint": "使用快取匯率（變更幣對以重新整理）",
+        "defaultPair": "預設幣別對",
+        "error": "無法載入匯率",
+        "from": "來源",
+        "loading": "載入匯率中…",
+        "staleRates": "使用快取匯率 · {{time}}",
+        "swap": "交換幣別",
+        "to": "目標",
+        "updated": "更新於 {{time}}"
+      },
       "description": "小工具儀表板疊層",
       "dictionary": {
         "dataSources": "資料來源為維基詞典及其他開放詞典。不常見的詞彙結果可能有所不同。",
@@ -1663,20 +1677,6 @@
         "translateFrom": "從...翻譯",
         "translating": "翻譯中..."
       },
-      "currency": {
-        "amountPlaceholder": "金額",
-        "swap": "交換幣別",
-        "loading": "載入匯率中…",
-        "error": "無法載入匯率",
-        "asOfDate": "截至 {{date}}",
-        "updated": "更新於 {{time}}",
-        "staleRates": "使用快取匯率 · {{time}}",
-        "cachedHint": "使用快取匯率（變更幣對以重新整理）",
-        "from": "來源",
-        "to": "目標",
-        "defaultPair": "預設幣別對",
-        "about": "參考匯率來自 Frankfurter（ECB）或備援來源。僅供參考，非投資建議。"
-      },
       "weather": {
         "changeCity": "更改城市",
         "enableLocation": "啟用定位以取得天氣",
@@ -1699,13 +1699,13 @@
         "aquarium": "水族箱",
         "calendar": "日曆",
         "clock": "時鐘",
+        "currencyConverter": "匯率換算",
         "dictionary": "字典",
         "ipod": "iPod",
         "removeWidget": "移除小工具",
         "stickyNote": "便利貼",
         "stocks": "股票",
         "translation": "翻譯",
-        "currencyConverter": "匯率換算",
         "weather": "天氣"
       }
     },
@@ -2304,6 +2304,7 @@
         "extras": "附加功能",
         "ipod": "iPod",
         "music": "音樂",
+        "musicQuiz": "音樂問答",
         "nowPlaying": "播放中的歌曲",
         "off": "關閉",
         "on": "開啟",
@@ -2313,6 +2314,24 @@
         "shuffle": "隨機",
         "shuffleSongs": "隨機播放歌曲",
         "theme": "主題"
+      },
+      "musicQuiz": {
+        "correct": "正確！",
+        "finalScore": "最終得分",
+        "greatJob": "表現出色！",
+        "guessTheSong": "猜猜這首歌",
+        "keepPracticing": "繼續聆聽！",
+        "loading": "正在載入片段…",
+        "menuToExit": "按 Menu 鍵退出",
+        "notBad": "還不錯！",
+        "notEnoughTracks": "加入更多歌曲以開始問答",
+        "perfect": "滿分！",
+        "pressCenterToReplay": "按下中心鍵再次開始",
+        "results": "結果",
+        "scoreShort": "得分",
+        "timesUp": "時間到！",
+        "title": "音樂問答",
+        "wrong": "不太對！"
       },
       "name": "iPod",
       "status": {

@@ -663,7 +663,7 @@ export function useIpodLogic({
           const extrasLabel = t("apps.ipod.menuItems.extras");
           const extrasItems = [
             {
-              label: t("apps.ipod.menuItems.musicQuiz", "Music Quiz"),
+              label: t("apps.ipod.menuItems.musicQuiz"),
               action: () => {
                 registerActivity();
                 if (isOffline) {

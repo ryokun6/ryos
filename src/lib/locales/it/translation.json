@@ -1566,6 +1566,20 @@
         "taipei": "Taipei",
         "tokyo": "Tokyo"
       },
+      "currency": {
+        "about": "Tassi indicativi da Frankfurter (BCE) o fornitore alternativo. Solo informativi; nessun consiglio finanziario.",
+        "amountPlaceholder": "Importo",
+        "asOfDate": "Al {{date}}",
+        "cachedHint": "Tasso in cache (cambia la coppia per aggiornare).",
+        "defaultPair": "Coppia di valute predefinita",
+        "error": "Impossibile caricare il tasso di cambio",
+        "from": "Da",
+        "loading": "Caricamento tasso…",
+        "staleRates": "Tassi in cache · {{time}}",
+        "swap": "Scambia valute",
+        "to": "A",
+        "updated": "Aggiornato {{time}}"
+      },
       "description": "Sovrapposizione dashboard widget",
       "dictionary": {
         "dataSources": "Dati provenienti da Wiktionary e altri dizionari aperti. I risultati potrebbero variare per parole non comuni.",
@@ -1663,20 +1677,6 @@
         "translateFrom": "Traduci da",
         "translating": "Traduzione in corso..."
       },
-      "currency": {
-        "amountPlaceholder": "Importo",
-        "swap": "Scambia valute",
-        "loading": "Caricamento tasso…",
-        "error": "Impossibile caricare il tasso di cambio",
-        "asOfDate": "Al {{date}}",
-        "updated": "Aggiornato {{time}}",
-        "staleRates": "Tassi in cache · {{time}}",
-        "cachedHint": "Tasso in cache (cambia la coppia per aggiornare).",
-        "from": "Da",
-        "to": "A",
-        "defaultPair": "Coppia di valute predefinita",
-        "about": "Tassi indicativi da Frankfurter (BCE) o fornitore alternativo. Solo informativi; nessun consiglio finanziario."
-      },
       "weather": {
         "changeCity": "Cambia città",
         "enableLocation": "Abilita posizione per il meteo",
@@ -1699,13 +1699,13 @@
         "aquarium": "Acquario",
         "calendar": "Calendario",
         "clock": "Orologio",
+        "currencyConverter": "Convertitore di valuta",
         "dictionary": "Dizionario",
         "ipod": "iPod",
         "removeWidget": "Rimuovi widget",
         "stickyNote": "Nota adesiva",
         "stocks": "Borsa",
         "translation": "Traduzione",
-        "currencyConverter": "Convertitore di valuta",
         "weather": "Meteo"
       }
     },
@@ -2304,6 +2304,7 @@
         "extras": "Extra",
         "ipod": "iPod",
         "music": "Musica",
+        "musicQuiz": "Quiz musicale",
         "nowPlaying": "In riproduzione",
         "off": "Disattivo",
         "on": "Attivo",
@@ -2313,6 +2314,24 @@
         "shuffle": "Casuale",
         "shuffleSongs": "Riproduzione casuale",
         "theme": "Tema"
+      },
+      "musicQuiz": {
+        "correct": "Esatto!",
+        "finalScore": "Punteggio finale",
+        "greatJob": "Ottimo lavoro!",
+        "guessTheSong": "Indovina la canzone",
+        "keepPracticing": "Continua ad ascoltare!",
+        "loading": "Caricamento frammento…",
+        "menuToExit": "Menu per uscire",
+        "notBad": "Niente male!",
+        "notEnoughTracks": "Aggiungi altri brani per giocare al quiz",
+        "perfect": "Punteggio perfetto!",
+        "pressCenterToReplay": "Premi il tasto centrale per rigiocare",
+        "results": "Risultati",
+        "scoreShort": "Punteggio",
+        "timesUp": "Tempo scaduto!",
+        "title": "Quiz musicale",
+        "wrong": "Non proprio!"
       },
       "name": "iPod",
       "status": {

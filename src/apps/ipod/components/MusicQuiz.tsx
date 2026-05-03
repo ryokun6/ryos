@@ -312,8 +312,8 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   }), [phase, round, selectedIndex, handleAnswer, playClick, playScroll, vibrate, clearTimers, roundNumber, startNextRound]);
 
   const headerTitle = useMemo(() => {
-    if (phase === "finished") return t("apps.ipod.musicQuiz.results", "Results");
-    return t("apps.ipod.musicQuiz.title", "Music Quiz");
+    if (phase === "finished") return t("apps.ipod.musicQuiz.results");
+    return t("apps.ipod.musicQuiz.title");
   }, [phase, t]);
 
   if (!isVisible) return null;
@@ -362,10 +362,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         {!hasEnoughTracks ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
             <p className="text-[14px]">
-              {t(
-                "apps.ipod.musicQuiz.notEnoughTracks",
-                "Add more songs to play the quiz"
-              )}
+              {t("apps.ipod.musicQuiz.notEnoughTracks")}
             </p>
           </div>
         ) : phase === "finished" ? (
@@ -374,28 +371,19 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
               {score}/{TOTAL_ROUNDS}
             </span>
             <span className="font-chicago text-[14px] leading-4">
-              {t(scoreMessageKey(score, TOTAL_ROUNDS), {
-                defaultValue:
-                  score === TOTAL_ROUNDS
-                    ? "Perfect score!"
-                    : score / TOTAL_ROUNDS >= 0.6
-                      ? "Great job!"
-                      : score / TOTAL_ROUNDS >= 0.3
-                        ? "Not bad!"
-                        : "Keep listening!",
-              })}
+              {t(scoreMessageKey(score, TOTAL_ROUNDS))}
             </span>
             <div className="flex flex-col font-chicago text-[14px] leading-4 opacity-85">
               <span>
-                {t("apps.ipod.musicQuiz.pressCenterToReplay", "Press center to play again")}
+                {t("apps.ipod.musicQuiz.pressCenterToReplay")}
               </span>
-              <span>{t("apps.ipod.musicQuiz.menuToExit", "Menu to exit")}</span>
+              <span>{t("apps.ipod.musicQuiz.menuToExit")}</span>
             </div>
           </div>
         ) : phase === "loading" ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
             <div className="text-[14px] animate-pulse">
-              {t("apps.ipod.musicQuiz.loading", "Loading snippet…")}
+              {t("apps.ipod.musicQuiz.loading")}
             </div>
           </div>
         ) : (
@@ -406,10 +394,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
                 {phase === "feedback" ? (
                   <div className="w-full truncate text-center font-chicago text-[16px] leading-4">
                     {round?.isCorrect
-                      ? t("apps.ipod.musicQuiz.correct", "Correct!")
+                      ? t("apps.ipod.musicQuiz.correct")
                       : round?.selectedIndex == null
-                        ? t("apps.ipod.musicQuiz.timesUp", "Time's up!")
-                        : t("apps.ipod.musicQuiz.wrong", "Not quite!")}
+                        ? t("apps.ipod.musicQuiz.timesUp")
+                        : t("apps.ipod.musicQuiz.wrong")}
                   </div>
                 ) : (
                   <SnippetProgressBar
