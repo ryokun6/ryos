@@ -884,6 +884,58 @@
   pointer-events: none;
 }
 
+/* Aqua icon badge — circular variant of the aqua button used for small
+   gradient-filled icons (e.g. POI markers in the Maps app). The dynamic
+   gradient color is applied via inline `background`; this class provides
+   the shine, glow, and inset depth shadows that make it look like glass. */
+.aqua-icon-badge {
+  position: relative;
+  overflow: hidden;
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.aqua-icon-badge::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  transform: translateX(-50%);
+  width: calc(100% - 4px);
+  height: 45%;
+  background: linear-gradient(
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0.15)
+  );
+  border-radius: 9999px 9999px 40% 40% / 9999px 9999px 80% 80%;
+  filter: blur(0.3px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.aqua-icon-badge::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  transform: translateX(-50%);
+  width: calc(100% - 6px);
+  height: 30%;
+  background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4));
+  border-radius: 40% 40% 9999px 9999px / 80% 80% 9999px 9999px;
+  filter: blur(1px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.aqua-icon-badge > * {
+  position: relative;
+  z-index: 3;
+}
+
 /* Text styling */
 .aqua-button span,
 .aqua-button {

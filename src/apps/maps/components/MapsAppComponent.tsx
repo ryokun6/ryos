@@ -9,6 +9,7 @@ import { appMetadata } from "..";
 import { MapsMenuBar } from "./MapsMenuBar";
 import { useMapsLogic, type MapsMapType } from "../hooks/useMapsLogic";
 import { useMapKit, type MapKitStatus } from "../hooks/useMapKit";
+import { getPoiVisual, poiVisualGradient } from "../utils/poiVisuals";
 
 // Minimal MapKit JS shape we touch from this component. We only declare the
 // fields we use so we don't need the full @types/apple-mapkit-js-browser
@@ -23,6 +24,7 @@ interface MapKitSearchResultItem {
   name?: string;
   formattedAddress?: string;
   region?: unknown;
+  pointOfInterestCategory?: string;
 }
 
 interface MapKitSearchResponse {
@@ -42,6 +44,14 @@ interface MapKitMapInstance {
   addAnnotation: (annotation: unknown) => void;
   removeAnnotation: (annotation: unknown) => void;
   destroy: () => void;
+}
+
+interface MapKitSearchInstance {
+  search: (
+    query: string,
+    callback: (error: Error | null, data: MapKitSearchResponse) => void,
+    options?: { region?: unknown }
+  ) => void;
 }
 
 interface MapKitMarkerAnnotation {
@@ -99,6 +109,7 @@ interface MapsSearchResult {
   name: string;
   subtitle: string;
   coordinate: MapKitCoordinate;
+  category?: string;
 }
 
 function statusMessageKey(status: MapKitStatus): string {
@@ -143,6 +154,8 @@ export function MapsAppComponent({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<MapKitMapInstance | null>(null);
   const annotationRef = useRef<MapKitMarkerAnnotation | null>(null);
+  const searchInstanceRef = useRef<MapKitSearchInstance | null>(null);
+  const searchRequestIdRef = useRef(0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MapsSearchResult[]>([]);
@@ -240,29 +253,54 @@ export function MapsAppComponent({
       const mk = getMapKit();
       if (!mk || status !== "ready") return;
 
+      // Reuse a single Search instance across calls. We deliberately omit
+      // `getsUserLocation: true` because requesting browser geolocation on
+      // every keystroke adds 1–10s of latency and triggers a permission
+      // prompt — biasing by the visible map region (below) gives much
+      // better POI relevance without that cost.
+      if (!searchInstanceRef.current) {
+        searchInstanceRef.current = new mk.Search() as MapKitSearchInstance;
+      }
+      const search = searchInstanceRef.current;
+
+      // Bias results to the visible map region so "coffee" returns nearby
+      // shops instead of a globally-ranked list. Falling back to no region
+      // on the very first call (before the map renders) is fine.
+      const map = mapInstanceRef.current;
+      const region = map?.region;
+
+      const requestId = ++searchRequestIdRef.current;
       setIsSearching(true);
       setSearchError(null);
       setIsShowingResults(true);
 
-      const search = new mk.Search({ getsUserLocation: true });
-      search.search(trimmed, (err, data) => {
-        setIsSearching(false);
-        if (err) {
-          setSearchResults([]);
-          setSearchError(err.message || "Search failed");
-          return;
-        }
-        const places = data?.places ?? [];
-        const mapped: MapsSearchResult[] = places
-          .filter((p) => p && p.coordinate)
-          .map((p, index) => ({
-            id: `${p.coordinate.latitude},${p.coordinate.longitude},${index}`,
-            name: p.name || p.formattedAddress || trimmed,
-            subtitle: p.formattedAddress || "",
-            coordinate: p.coordinate,
-          }));
-        setSearchResults(mapped);
-      });
+      search.search(
+        trimmed,
+        (err, data) => {
+          // Ignore stale callbacks (user typed and re-searched in the
+          // meantime). MapKit doesn't expose a cancel API, so we discard.
+          if (requestId !== searchRequestIdRef.current) return;
+
+          setIsSearching(false);
+          if (err) {
+            setSearchResults([]);
+            setSearchError(err.message || "Search failed");
+            return;
+          }
+          const places = data?.places ?? [];
+          const mapped: MapsSearchResult[] = places
+            .filter((p) => p && p.coordinate)
+            .map((p, index) => ({
+              id: `${p.coordinate.latitude},${p.coordinate.longitude},${index}`,
+              name: p.name || p.formattedAddress || trimmed,
+              subtitle: p.formattedAddress || "",
+              coordinate: p.coordinate,
+              category: p.pointOfInterestCategory,
+            }));
+          setSearchResults(mapped);
+        },
+        region ? { region } : undefined
+      );
     },
     [status]
   );
@@ -310,6 +348,31 @@ export function MapsAppComponent({
     map.showsUserLocation = true;
     map.tracksUserLocation = true;
   }, []);
+
+  // Debounced search-as-you-type. Fires `performSearch` after the user pauses
+  // for ~250ms. Pressing Enter still triggers immediately via handleSearchKeyDown
+  // — performSearch's request-token guard ensures the latest call wins.
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      // Bump request id so any in-flight callback is ignored once it returns.
+      searchRequestIdRef.current += 1;
+      setSearchResults([]);
+      setSearchError(null);
+      setIsSearching(false);
+      setIsShowingResults(false);
+      return;
+    }
+    if (status !== "ready") return;
+    if (trimmed.length < 2) return; // skip noise on a single character
+
+    const handle = window.setTimeout(() => {
+      performSearch(trimmed);
+    }, 250);
+    return () => {
+      window.clearTimeout(handle);
+    };
+  }, [searchQuery, status, performSearch]);
 
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -465,25 +528,38 @@ export function MapsAppComponent({
                   <ul className="divide-y divide-black/10">
                     {searchResults.map((result) => {
                       const isSelected = selectedResultId === result.id;
+                      const visual = getPoiVisual(result.category);
+                      const Icon = visual.Icon;
                       return (
                         <li key={result.id}>
                           <button
                             type="button"
                             onClick={() => handleSelectResult(result)}
                             className={cn(
-                              "w-full text-left px-3 py-2 text-[12px]",
+                              "flex w-full items-center gap-3 px-3 py-2 text-left text-[12px]",
                               "hover:bg-black/5",
                               isSelected && "bg-black/5"
                             )}
                           >
-                            <div className="font-medium text-black truncate">
-                              {result.name}
+                            <div
+                              className="aqua-icon-badge flex h-7 w-7 shrink-0 items-center justify-center text-white"
+                              style={{
+                                backgroundImage: poiVisualGradient(visual),
+                              }}
+                              aria-hidden="true"
+                            >
+                              <Icon size={17} weight="fill" />
                             </div>
-                            {result.subtitle && (
-                              <div className="text-[11px] text-black/55 truncate">
-                                {result.subtitle}
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate font-medium text-black">
+                                {result.name}
                               </div>
-                            )}
+                              {result.subtitle && (
+                                <div className="truncate text-[11px] text-black/55">
+                                  {result.subtitle}
+                                </div>
+                              )}
+                            </div>
                           </button>
                         </li>
                       );
