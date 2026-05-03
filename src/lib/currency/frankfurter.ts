@@ -44,36 +44,38 @@ export function getCurrencyMaxFractionDigits(currency: string): number {
 /**
  * Normalize a user-typed amount string into a canonical numeric form
  * (digits and at most one ".") suitable for storage and parsing.
- * Accepts "," as decimal separator while typing and strips all other chars
- * (currency symbols, group separators, whitespace, letters).
+ *
+ * Locale-aware: only the locale's decimal separator is treated as a decimal
+ * point. The locale's group separator (and all other non-digit characters
+ * — currency symbols, whitespace, letters) is stripped. To enter decimals
+ * the user must explicitly type the decimal separator.
  */
-export function normalizeAmountInput(raw: string, maxFractionDigits = 2): string {
+export function normalizeAmountInput(
+  raw: string,
+  maxFractionDigits = 2,
+  locale = "en-US"
+): string {
   if (!raw) return "";
 
-  let s = raw;
+  const { decimal: decimalSep } = getNumberSeparators(locale);
 
-  // If both "." and "," are present, treat the rightmost separator as decimal
-  // and the others as group separators.
-  const lastDot = s.lastIndexOf(".");
-  const lastComma = s.lastIndexOf(",");
-  if (lastDot !== -1 && lastComma !== -1) {
-    if (lastDot > lastComma) {
-      s = s.replace(/,/g, "");
-    } else {
-      s = s.replace(/\./g, "").replace(",", ".");
+  // Convert the locale decimal separator to canonical "." and strip everything
+  // else that isn't a digit. This intentionally drops group separators (which
+  // are typed implicitly by formatting) and any stray currency symbols.
+  let s = "";
+  let seenDot = false;
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (ch >= "0" && ch <= "9") {
+      s += ch;
+    } else if (ch === decimalSep && !seenDot) {
+      s += ".";
+      seenDot = true;
+    } else if (decimalSep !== "." && ch === "." && !seenDot) {
+      // Locale's decimal isn't "." — treat literal "." as group separator and skip.
+      continue;
     }
-  } else if (lastComma !== -1) {
-    // Only commas — treat the last one as decimal separator
-    const before = s.slice(0, lastComma).replace(/,/g, "");
-    const after = s.slice(lastComma + 1);
-    s = `${before}.${after}`;
-  }
-
-  // Keep only digits and a single dot
-  s = s.replace(/[^\d.]/g, "");
-  const firstDot = s.indexOf(".");
-  if (firstDot !== -1) {
-    s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, "");
+    // anything else (group separator, currency symbol, letters, spaces) is dropped
   }
 
   if (maxFractionDigits <= 0) {

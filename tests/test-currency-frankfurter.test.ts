@@ -48,38 +48,50 @@ describe("normalizeAmountInput", () => {
     expect(normalizeAmountInput("100")).toBe("100");
   });
 
-  test("strips currency symbols, group separators, and spaces", () => {
-    expect(normalizeAmountInput("$1,234.56")).toBe("1234.56");
-    expect(normalizeAmountInput("€ 1.234,56")).toBe("1234.56");
-    expect(normalizeAmountInput("¥1,000", 0)).toBe("1000");
+  test("strips currency symbols, group separators, and spaces (en-US)", () => {
+    expect(normalizeAmountInput("$1,234.56", 2, "en-US")).toBe("1234.56");
+    expect(normalizeAmountInput("¥1,000", 0, "en-US")).toBe("1000");
   });
 
-  test("treats single comma as decimal separator", () => {
-    expect(normalizeAmountInput("3,14")).toBe("3.14");
+  test("strips locale group separators and uses locale decimal separator (de-DE)", () => {
+    expect(normalizeAmountInput("1.234,56", 2, "de-DE")).toBe("1234.56");
+    expect(normalizeAmountInput("3,14", 2, "de-DE")).toBe("3.14");
+    // Literal "." in a comma-decimal locale is treated as a group separator
+    expect(normalizeAmountInput("1.000", 2, "de-DE")).toBe("1000");
   });
 
-  test("collapses multiple decimal points", () => {
-    expect(normalizeAmountInput("1.2.3")).toBe("1.23");
+  test("does NOT treat group separator as decimal when typing past it", () => {
+    // Regression: typing "0" after "$7,000" used to produce "7.00".
+    expect(normalizeAmountInput("$7,0000", 2, "en-US")).toBe("70000");
+    expect(normalizeAmountInput("$70,000", 2, "en-US")).toBe("70000");
+    expect(normalizeAmountInput("$700", 2, "en-US")).toBe("700");
+    expect(normalizeAmountInput("700", 2, "en-US")).toBe("700");
+    // de-DE equivalent
+    expect(normalizeAmountInput("7.0000", 2, "de-DE")).toBe("70000");
+  });
+
+  test("only the first decimal separator counts; later ones are dropped", () => {
+    expect(normalizeAmountInput("1.2.3", 2, "en-US")).toBe("1.23");
   });
 
   test("trims fractional digits to maxFractionDigits", () => {
-    expect(normalizeAmountInput("1.23456", 2)).toBe("1.23");
-    expect(normalizeAmountInput("1.99", 0)).toBe("199");
+    expect(normalizeAmountInput("1.23456", 2, "en-US")).toBe("1.23");
+    expect(normalizeAmountInput("1.99", 0, "en-US")).toBe("199");
   });
 
   test("preserves trailing dot to allow further typing", () => {
-    expect(normalizeAmountInput("100.")).toBe("100.");
+    expect(normalizeAmountInput("100.", 2, "en-US")).toBe("100.");
   });
 
   test("normalizes leading zeros", () => {
-    expect(normalizeAmountInput("0010")).toBe("10");
-    expect(normalizeAmountInput("0.5")).toBe("0.5");
-    expect(normalizeAmountInput("0")).toBe("0");
+    expect(normalizeAmountInput("0010", 2, "en-US")).toBe("10");
+    expect(normalizeAmountInput("0.5", 2, "en-US")).toBe("0.5");
+    expect(normalizeAmountInput("0", 2, "en-US")).toBe("0");
   });
 
   test("returns empty for empty input", () => {
-    expect(normalizeAmountInput("")).toBe("");
-    expect(normalizeAmountInput("abc")).toBe("");
+    expect(normalizeAmountInput("", 2, "en-US")).toBe("");
+    expect(normalizeAmountInput("abc", 2, "en-US")).toBe("");
   });
 });
 

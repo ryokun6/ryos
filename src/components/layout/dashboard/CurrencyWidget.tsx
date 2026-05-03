@@ -70,7 +70,8 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
   const [amountStr, setAmountStr] = useState(() =>
     normalizeAmountInput(
       config?.lastAmount ?? "100",
-      getCurrencyMaxFractionDigits(config?.fromCurrency ?? "USD")
+      getCurrencyMaxFractionDigits(config?.fromCurrency ?? "USD"),
+      i18n.language
     )
   );
   const [rateData, setRateData] = useState<RateCacheEntry | null>(null);
@@ -86,7 +87,8 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
     if (config?.lastAmount != null) {
       const normalized = normalizeAmountInput(
         config.lastAmount,
-        getCurrencyMaxFractionDigits(config.fromCurrency ?? fromCurrency)
+        getCurrencyMaxFractionDigits(config.fromCurrency ?? fromCurrency),
+        i18n.language
       );
       if (normalized !== amountStr) setAmountStr(normalized);
     }
@@ -196,7 +198,8 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
     setFromCurrency(code);
     const renormalized = normalizeAmountInput(
       amountStr,
-      getCurrencyMaxFractionDigits(code)
+      getCurrencyMaxFractionDigits(code),
+      i18n.language
     );
     if (renormalized !== amountStr) setAmountStr(renormalized);
     persistFields({ fromCurrency: code, toCurrency, lastAmount: renormalized });
@@ -223,7 +226,11 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
     // How many digits precede the caret in what the user typed?
     const digitsBeforeCaret = countDigitsBeforePos(rawValue, selStart);
 
-    const normalized = normalizeAmountInput(rawValue, maxFractionDigits);
+    const normalized = normalizeAmountInput(
+      rawValue,
+      maxFractionDigits,
+      i18n.language
+    );
     const nextDisplay = formatCurrencyAmountDisplay(
       normalized,
       fromCurrency,
