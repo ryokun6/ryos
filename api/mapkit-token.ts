@@ -20,10 +20,46 @@ let cachedToken: CachedToken | null = null;
 function readPrivateKey(): string | null {
   const raw = process.env.MAPKIT_PRIVATE_KEY;
   if (!raw || raw.trim().length === 0) return null;
-  // Support PEM stored as a single-line env var with literal "\n" escape
-  // sequences (common in Vercel/Bun env UIs) as well as real newlines.
-  const normalized = raw.includes("\\n") ? raw.replace(/\\n/g, "\n") : raw;
-  return normalized.trim();
+
+  // The .p8 file is a PKCS#8 PEM. We accept any of the common ways it gets
+  // pasted into a host env UI:
+  //   1. Multi-line PEM with real newlines (Vercel UI multi-line paste).
+  //   2. Single-line value with literal "\n" or "\r\n" escapes (CLI/.env style).
+  //   3. Doubly-escaped "\\n" sequences (some pipelines escape on save).
+  //   4. Just the raw base64 body, with no BEGIN/END markers.
+  //
+  // We normalize all of those into a strict PEM with `\n` between lines and a
+  // 64-char-wrapped base64 body, which is what `jose.importPKCS8` expects.
+  let body = raw
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
+
+  const beginMatch = body.match(/-----BEGIN [A-Z0-9 ]+-----/);
+  const endMatch = body.match(/-----END [A-Z0-9 ]+-----/);
+
+  let header = "-----BEGIN PRIVATE KEY-----";
+  let footer = "-----END PRIVATE KEY-----";
+  let base64Body: string;
+
+  if (beginMatch && endMatch) {
+    header = beginMatch[0];
+    footer = endMatch[0];
+    base64Body = body
+      .slice(beginMatch.index! + header.length, endMatch.index!)
+      .replace(/\s+/g, "");
+  } else {
+    base64Body = body.replace(/\s+/g, "");
+  }
+
+  if (!/^[A-Za-z0-9+/=]+$/.test(base64Body) || base64Body.length === 0) {
+    return null;
+  }
+
+  const wrapped = base64Body.match(/.{1,64}/g)?.join("\n") ?? base64Body;
+  return `${header}\n${wrapped}\n${footer}\n`;
 }
 
 function listMissingEnv(): string[] {
