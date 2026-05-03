@@ -311,6 +311,13 @@ export function useIpodLogic({
     showStatus("🚫");
   }, [showStatus, t]);
 
+  // Ref-only version — marks activity without triggering any React state update.
+  // Use this on high-frequency paths (e.g. brick game wheel) to keep the RAF
+  // loop uninterrupted.
+  const registerActivityRef = useCallback(() => {
+    userHasInteractedRef.current = true;
+  }, []);
+
   const registerActivity = useCallback(() => {
     setLastActivityTime(Date.now());
     userHasInteractedRef.current = true;
@@ -1418,24 +1425,28 @@ export function useIpodLogic({
   // Wheel rotation handler
   const handleWheelRotation = useCallback(
     (direction: RotationDirection) => {
-      playScrollSound();
+      // Brick game: skip all state-mutating work (registerActivity, playScrollSound)
+      // so the RAF loop runs uninterrupted. Only update the ref for interaction tracking.
+      if (isBrickGameOpen && brickGameRef.current) {
+        registerActivityRef();
+        brickGameRef.current.navigate(
+          direction === "clockwise" ? "next" : "previous"
+        );
+        return;
+      }
+
       registerActivity();
 
       // Handle Music Quiz navigation
       if (isMusicQuizOpen && musicQuizRef.current) {
+        playScrollSound();
         const handled = musicQuizRef.current.navigate(
           direction === "clockwise" ? "next" : "previous"
         );
         if (handled) return;
       }
 
-      // Handle Brick Game paddle movement
-      if (isBrickGameOpen && brickGameRef.current) {
-        const handled = brickGameRef.current.navigate(
-          direction === "clockwise" ? "next" : "previous"
-        );
-        if (handled) return;
-      }
+      playScrollSound();
 
       // Handle Cover Flow navigation
       if (isCoverFlowOpen && coverFlowRef.current) {
@@ -1478,7 +1489,7 @@ export function useIpodLogic({
         );
       }
     },
-    [playScrollSound, registerActivity, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
+    [playScrollSound, registerActivity, registerActivityRef, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
   );
 
   // Scaling

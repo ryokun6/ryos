@@ -33,8 +33,9 @@ const BALL_RADIUS = 1.5;
 const BALL_BASE_SPEED = 75; // px / sec
 const BALL_SPEED_INCREMENT = 7; // per level
 
-// Wheel sensitivity: pixels of paddle movement per single rotation tick
-const WHEEL_TICK_PIXELS = 14;
+// Target nudge per wheel detent (IpodWheel ≈15°); paddle eases toward target each frame.
+const WHEEL_TICK_PIXELS = 11;
+const PADDLE_SMOOTH_SPEED = 520; // game-units / sec toward target
 
 const STARTING_LIVES = 3;
 
@@ -142,18 +143,47 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef<number | null>(null);
   const enteredRef = useRef(false);
+  const paddleTargetXRef = useRef(GAME_WIDTH / 2 - PADDLE_WIDTH / 2);
+  const lastSyncedScoreRef = useRef(0);
+  const lastSyncedLivesRef = useRef(STARTING_LIVES);
+  const lastBrickVibrateRef = useRef(0);
 
   // React state mirrors only what the UI text needs to render.
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(STARTING_LIVES);
-  const [level, setLevel] = useState(1);
   const [phase, setPhase] = useState<Phase>("ready");
 
   const syncUI = useCallback(() => {
     const s = stateRef.current;
-    setScore(s.score);
-    setLives(s.lives);
-    setLevel(s.level);
+    if (s.score !== lastSyncedScoreRef.current) {
+      lastSyncedScoreRef.current = s.score;
+      setScore(s.score);
+    }
+    if (s.lives !== lastSyncedLivesRef.current) {
+      lastSyncedLivesRef.current = s.lives;
+      setLives(s.lives);
+    }
+  }, []);
+
+  const resetPaddleTarget = useCallback((paddleX: number) => {
+    paddleTargetXRef.current = paddleX;
+  }, []);
+
+  const stepPaddle = useCallback((dt: number) => {
+    const s = stateRef.current;
+    const maxX = GAME_WIDTH - PADDLE_WIDTH;
+    const target = Math.max(0, Math.min(maxX, paddleTargetXRef.current));
+    const dx = target - s.paddleX;
+    if (Math.abs(dx) < 0.02) {
+      s.paddleX = target;
+    } else {
+      const step = PADDLE_SMOOTH_SPEED * dt;
+      s.paddleX += Math.max(-step, Math.min(step, dx));
+    }
+    const p = phaseRef.current;
+    if (p === "ready" || p === "lifeLost") {
+      s.ballX = s.paddleX + PADDLE_WIDTH / 2;
+    }
   }, []);
 
   const draw = useCallback(() => {
@@ -161,18 +191,14 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
 
-    const dpr = window.devicePixelRatio || 1;
-    // Map game-world units (GAME_WIDTH × GAME_HEIGHT) onto the canvas'
-    // current rendered CSS size, with DPR scaling for crispness. The
-    // canvas stretches to fill its container, so the world gets squashed
-    // / stretched to match — that's intentional, and keeps the full
-    // play area (including the paddle) visible at any iPod scale.
-    const cssW = canvas.clientWidth || GAME_WIDTH;
-    const cssH = canvas.clientHeight || GAME_HEIGHT;
-    const sx = (cssW * dpr) / GAME_WIDTH;
-    const sy = (cssH * dpr) / GAME_HEIGHT;
+    // Backing-store pixels already include devicePixelRatio; map game units to bitmap.
+    const sx = canvas.width / GAME_WIDTH;
+    const sy = canvas.height / GAME_HEIGHT;
+    if (sx <= 0 || sy <= 0) return;
     ctx.setTransform(sx, 0, 0, sy, 0, 0);
+    // Default 2d context is transparent so the LCD gradient behind the canvas shows through.
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
     const fg = "#0a3667";
@@ -246,7 +272,6 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         const angle = Math.max(-maxAngle, Math.min(maxAngle, hit * maxAngle));
         s.ballVX = Math.sin(angle) * speed;
         s.ballVY = -Math.abs(Math.cos(angle) * speed);
-        vibrate?.();
       }
 
       // Brick collision: simple AABB vs circle (treat ball as small square).
@@ -275,7 +300,11 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
             s.ballVY = -s.ballVY;
           }
           syncUI();
-          vibrate?.();
+          const now = performance.now();
+          if (now - lastBrickVibrateRef.current > 120) {
+            lastBrickVibrateRef.current = now;
+            vibrate?.();
+          }
           break;
         }
       }
@@ -284,7 +313,9 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
       if (s.bricks.every((b) => !b.alive)) {
         s.level += 1;
         s.bricks = makeBricks(s.level);
-        s.paddleX = GAME_WIDTH / 2 - PADDLE_WIDTH / 2;
+        const cx = GAME_WIDTH / 2 - PADDLE_WIDTH / 2;
+        s.paddleX = cx;
+        resetPaddleTarget(cx);
         s.ballX = GAME_WIDTH / 2;
         s.ballY = PADDLE_Y - BALL_RADIUS - 1;
         s.ballVX = 0;
@@ -297,7 +328,9 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
       // Ball fell below paddle → lose a life
       if (s.ballY - BALL_RADIUS > GAME_HEIGHT) {
         s.lives -= 1;
-        s.paddleX = GAME_WIDTH / 2 - PADDLE_WIDTH / 2;
+        const cx = GAME_WIDTH / 2 - PADDLE_WIDTH / 2;
+        s.paddleX = cx;
+        resetPaddleTarget(cx);
         s.ballX = GAME_WIDTH / 2;
         s.ballY = PADDLE_Y - BALL_RADIUS - 1;
         s.ballVX = 0;
@@ -310,7 +343,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         syncUI();
       }
     },
-    [setPhaseBoth, syncUI, vibrate]
+    [setPhaseBoth, syncUI, vibrate, resetPaddleTarget]
   );
 
   const loop = useCallback(
@@ -318,11 +351,12 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
       const last = lastFrameRef.current ?? now;
       const dt = Math.min(0.05, (now - last) / 1000); // clamp huge gaps (tab switch)
       lastFrameRef.current = now;
+      stepPaddle(dt);
       stepPhysics(dt);
       draw();
       rafRef.current = requestAnimationFrame(loop);
     },
-    [stepPhysics, draw]
+    [stepPaddle, stepPhysics, draw]
   );
 
   const startLoop = useCallback(() => {
@@ -331,32 +365,32 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     rafRef.current = requestAnimationFrame(loop);
   }, [loop]);
 
-  // Resize the canvas' backing store to its actual rendered CSS size
-  // whenever the iPod scales / the window resizes. The CSS size is
-  // controlled by the inset-0 absolute positioning in the JSX below,
-  // so this just keeps the bitmap crisp.
+  // Size the bitmap from the play-area container. CSS must pin display size
+  // (w-full h-full); otherwise width/height attributes become the layout size.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const container = canvas.parentElement;
+    if (!container) return;
+
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const cssW = canvas.clientWidth;
-      const cssH = canvas.clientHeight;
+      const cssW = container.clientWidth;
+      const cssH = container.clientHeight;
       if (cssW <= 0 || cssH <= 0) return;
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
       const targetW = Math.round(cssW * dpr);
       const targetH = Math.round(cssH * dpr);
       if (canvas.width !== targetW) canvas.width = targetW;
       if (canvas.height !== targetH) canvas.height = targetH;
       draw();
     };
+
     resize();
     const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
-    window.addEventListener("resize", resize);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", resize);
-    };
+    ro.observe(container);
+    return () => ro.disconnect();
   }, [draw]);
 
   // Reset and start the render/physics loop while visible.
@@ -365,7 +399,11 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
       if (!enteredRef.current) {
         enteredRef.current = true;
         onEnter?.();
-        stateRef.current = initialState(1);
+        const fresh = initialState(1);
+        stateRef.current = fresh;
+        resetPaddleTarget(fresh.paddleX);
+        lastSyncedScoreRef.current = 0;
+        lastSyncedLivesRef.current = STARTING_LIVES;
         setPhaseBoth("ready");
         syncUI();
       }
@@ -373,14 +411,16 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     } else {
       enteredRef.current = false;
       stopLoop();
-      stateRef.current = initialState(1);
+      const fresh = initialState(1);
+      stateRef.current = fresh;
+      resetPaddleTarget(fresh.paddleX);
       setPhaseBoth("ready");
       syncUI();
     }
     return () => {
       stopLoop();
     };
-  }, [isVisible, onEnter, startLoop, stopLoop, setPhaseBoth, syncUI]);
+  }, [isVisible, onEnter, startLoop, stopLoop, setPhaseBoth, syncUI, resetPaddleTarget]);
 
   // Imperative API
   useImperativeHandle(
@@ -388,17 +428,12 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     () => ({
       navigate: (direction) => {
         if (!isVisible) return false;
-        playScroll?.();
-        const s = stateRef.current;
+        const maxX = GAME_WIDTH - PADDLE_WIDTH;
         const delta = direction === "next" ? WHEEL_TICK_PIXELS : -WHEEL_TICK_PIXELS;
-        s.paddleX = Math.max(
+        paddleTargetXRef.current = Math.max(
           0,
-          Math.min(GAME_WIDTH - PADDLE_WIDTH, s.paddleX + delta)
+          Math.min(maxX, paddleTargetXRef.current + delta)
         );
-        // While ball is stuck to paddle (ready / lifeLost), keep it centered above paddle.
-        if (phaseRef.current === "ready" || phaseRef.current === "lifeLost") {
-          s.ballX = s.paddleX + PADDLE_WIDTH / 2;
-        }
         return true;
       },
       selectCurrent: () => {
@@ -413,7 +448,9 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         } else if (p === "paused") {
           setPhaseBoth("playing");
         } else if (p === "gameOver" || p === "won") {
-          stateRef.current = initialState(1);
+          const fresh = initialState(1);
+          stateRef.current = fresh;
+          resetPaddleTarget(fresh.paddleX);
           setPhaseBoth("ready");
           syncUI();
         }
@@ -425,17 +462,13 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         else if (p === "paused") setPhaseBoth("playing");
       },
     }),
-    [isVisible, playClick, playScroll, setPhaseBoth, syncUI, vibrate]
+    [isVisible, playClick, setPhaseBoth, syncUI, vibrate, resetPaddleTarget]
   );
 
   if (!isVisible) return null;
 
   const overlayMessage =
-    phase === "ready"
-      ? t("apps.ipod.brickGame.pressCenterToStart")
-      : phase === "lifeLost"
-      ? t("apps.ipod.brickGame.pressCenterToContinue")
-      : phase === "paused"
+    phase === "paused"
       ? t("apps.ipod.brickGame.paused")
       : phase === "gameOver"
       ? t("apps.ipod.brickGame.gameOver")
@@ -446,7 +479,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
   return (
     <div
       className={cn(
-        "relative z-50 flex h-full min-h-[150px] w-full flex-col overflow-hidden select-none font-chicago",
+        "absolute inset-0 z-50 flex h-full max-h-full flex-col overflow-hidden select-none font-chicago",
         "border border-black border-2 rounded-[2px]",
         lcdFilterOn ? "lcd-screen" : "",
         backlightOn
@@ -464,8 +497,8 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-reflection" />
       )}
 
-      {/* Title bar — match IpodScreen */}
-      <div className="border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center sticky top-0 z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+      {/* Title bar — match IpodScreen (26px); must not shrink or flex-1 steals height */}
+      <div className="shrink-0 border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
         <div className="w-10 flex items-center justify-start text-xs tabular-nums">
           ♥ {lives}
         </div>
@@ -477,22 +510,13 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         </div>
       </div>
 
-      {/* Body — exact same h-[calc(100%-26px)] pattern as MusicQuiz so
-          the body has a concrete height. The canvas fills the entire
-          body via inset-0 (no fixed pixels) so it never overflows
-          horizontally and always reaches the bottom of the screen. */}
-      <div className="relative h-[calc(100%-26px)] w-full overflow-hidden z-30">
+      <div className="relative z-30 h-[calc(100%-26px)] w-full min-h-0 overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 block"
+          className="block size-full max-h-full max-w-full"
           style={{ imageRendering: "pixelated" }}
           aria-label={t("apps.ipod.brickGame.title")}
         />
-
-        {/* Level indicator (top-right of play area, away from bricks). */}
-        <div className="pointer-events-none absolute top-0.5 right-1 font-chicago text-[9px] leading-none text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] tabular-nums">
-          L{level}
-        </div>
 
         {overlayMessage && (
           <div
