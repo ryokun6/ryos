@@ -17,20 +17,28 @@ interface CachedToken {
 // receives a token that's about to expire.
 let cachedToken: CachedToken | null = null;
 
-function readPrivateKey(): string | null {
+interface PrivateKeyParseResult {
+  pem: string | null;
+  reason?: string;
+  rawLength?: number;
+  bodyLength?: number;
+  hasBeginMarker?: boolean;
+  hasEndMarker?: boolean;
+  invalidCharSample?: string;
+}
+
+function parsePrivateKey(): PrivateKeyParseResult {
   const raw = process.env.MAPKIT_PRIVATE_KEY;
-  if (!raw || raw.trim().length === 0) return null;
+  if (!raw || raw.trim().length === 0) {
+    return { pem: null, reason: "env var empty or unset" };
+  }
 
   // The .p8 file is a PKCS#8 PEM. We accept any of the common ways it gets
-  // pasted into a host env UI:
-  //   1. Multi-line PEM with real newlines (Vercel UI multi-line paste).
-  //   2. Single-line value with literal "\n" or "\r\n" escapes (CLI/.env style).
-  //   3. Doubly-escaped "\\n" sequences (some pipelines escape on save).
-  //   4. Just the raw base64 body, with no BEGIN/END markers.
-  //
-  // We normalize all of those into a strict PEM with `\n` between lines and a
-  // 64-char-wrapped base64 body, which is what `jose.importPKCS8` expects.
-  let body = raw
+  // pasted into a host env UI: multi-line PEM, single-line w/ "\n" escapes,
+  // doubly-escaped "\\n", or just the raw base64 body. We normalize to a
+  // strict PEM with `\n` between lines and 64-char-wrapped base64, which is
+  // what jose.importPKCS8 expects.
+  const body = raw
     .replace(/\\r\\n/g, "\n")
     .replace(/\\n/g, "\n")
     .replace(/\r\n/g, "\n")
@@ -54,12 +62,39 @@ function readPrivateKey(): string | null {
     base64Body = body.replace(/\s+/g, "");
   }
 
-  if (!/^[A-Za-z0-9+/=]+$/.test(base64Body) || base64Body.length === 0) {
-    return null;
+  if (base64Body.length === 0) {
+    return {
+      pem: null,
+      reason: "no base64 body",
+      rawLength: raw.length,
+      bodyLength: body.length,
+      hasBeginMarker: !!beginMatch,
+      hasEndMarker: !!endMatch,
+    };
+  }
+
+  const invalidChars = base64Body.match(/[^A-Za-z0-9+/=]/g);
+  if (invalidChars && invalidChars.length > 0) {
+    return {
+      pem: null,
+      reason: "base64 body contains non-base64 characters",
+      rawLength: raw.length,
+      bodyLength: base64Body.length,
+      hasBeginMarker: !!beginMatch,
+      hasEndMarker: !!endMatch,
+      invalidCharSample: Array.from(new Set(invalidChars))
+        .slice(0, 10)
+        .map((c) => `0x${c.charCodeAt(0).toString(16)}`)
+        .join(","),
+    };
   }
 
   const wrapped = base64Body.match(/.{1,64}/g)?.join("\n") ?? base64Body;
-  return `${header}\n${wrapped}\n${footer}\n`;
+  return { pem: `${header}\n${wrapped}\n${footer}\n` };
+}
+
+function readPrivateKey(): string | null {
+  return parsePrivateKey().pem;
 }
 
 function listMissingEnv(): string[] {
@@ -102,11 +137,34 @@ export default apiHandler(
   async ({ res, logger, startTime }) => {
     const missing = listMissingEnv();
     if (missing.length > 0) {
-      logger.warn("MapKit token endpoint missing env vars", { missing });
+      // When the only "missing" thing is MAPKIT_PRIVATE_KEY but the env var
+      // is actually set, surface why parsing failed so the operator can fix
+      // the env value without redeploying with extra logs.
+      const keyDiagnostics =
+        missing.includes("MAPKIT_PRIVATE_KEY") &&
+        process.env.MAPKIT_PRIVATE_KEY
+          ? parsePrivateKey()
+          : undefined;
+      logger.warn("MapKit token endpoint missing env vars", {
+        missing,
+        keyDiagnostics,
+      });
       logger.response(500, Date.now() - startTime);
       res.status(500).json({
         error: "MapKit not configured",
         missing,
+        ...(keyDiagnostics
+          ? {
+              privateKey: {
+                reason: keyDiagnostics.reason,
+                rawLength: keyDiagnostics.rawLength,
+                bodyLength: keyDiagnostics.bodyLength,
+                hasBeginMarker: keyDiagnostics.hasBeginMarker,
+                hasEndMarker: keyDiagnostics.hasEndMarker,
+                invalidCharSample: keyDiagnostics.invalidCharSample,
+              },
+            }
+          : {}),
       });
       return;
     }
