@@ -16,13 +16,8 @@ import { track } from "@vercel/analytics";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { generateHTML, type AnyExtension } from "@tiptap/core";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import TextAlign from "@tiptap/extension-text-align";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
 import { htmlToMarkdown } from "@/utils/markdown";
+import { generateHtmlFromJsonSync } from "@/utils/tiptapHtml";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -154,14 +149,8 @@ const getSystemState = () => {
     let contentMarkdown: string | null = null;
     if (instance.contentJson) {
       try {
-        const htmlStr = generateHTML(instance.contentJson, [
-          StarterKit,
-          Underline,
-          TextAlign.configure({ types: ["heading", "paragraph"] }),
-          TaskList,
-          TaskItem.configure({ nested: true }),
-        ] as AnyExtension[]);
-        contentMarkdown = htmlToMarkdown(htmlStr);
+        const htmlStr = generateHtmlFromJsonSync(instance.contentJson);
+        if (htmlStr) contentMarkdown = htmlToMarkdown(htmlStr);
       } catch (err) {
         console.error("Failed to convert TextEdit content to markdown:", err);
       }

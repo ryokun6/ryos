@@ -1,8 +1,16 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+
+const LazyMarkdown = lazy(() =>
+  Promise.all([import("react-markdown"), import("remark-gfm")]).then(
+    ([{ default: ReactMarkdown }, { default: remarkGfm }]) => ({
+      default: ({ children }: { children: string }) => (
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      ),
+    })
+  )
+);
 import type { AssistantStreamSegment } from "@/lib/cursorSdkRunCoalesce";
 import {
   mergeAssistantStream,
@@ -235,9 +243,9 @@ function AssistantSegmentsBody({ segments }: { segments: AssistantStreamSegment[
       {segments.map((seg, idx) =>
         seg.type === "markdown" ? (
           <div key={`md-${idx}`} className={markdownStreamClass}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {seg.text.trim() ? seg.text : "\u00a0"}
-            </ReactMarkdown>
+            <Suspense fallback={<span>{seg.text.trim() ? seg.text : "\u00a0"}</span>}>
+              <LazyMarkdown>{seg.text.trim() ? seg.text : "\u00a0"}</LazyMarkdown>
+            </Suspense>
           </div>
         ) : null
       )}
@@ -420,7 +428,9 @@ function TerminalBanner({
     if (summary) {
       return (
         <div className={markdownStreamClass}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{summary}</ReactMarkdown>
+          <Suspense fallback={<span>{summary}</span>}>
+            <LazyMarkdown>{summary}</LazyMarkdown>
+          </Suspense>
         </div>
       );
     }
