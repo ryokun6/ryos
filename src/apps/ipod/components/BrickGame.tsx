@@ -467,14 +467,9 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
 
   if (!isVisible) return null;
 
-  const overlayMessage =
-    phase === "paused"
-      ? t("apps.ipod.brickGame.paused")
-      : phase === "gameOver"
-      ? t("apps.ipod.brickGame.gameOver")
-      : phase === "won"
-      ? t("apps.ipod.brickGame.youWin")
-      : null;
+  const isResultsScreen = phase === "gameOver" || phase === "won";
+
+  const pauseOverlay = phase === "paused" ? t("apps.ipod.brickGame.paused") : null;
 
   return (
     <div
@@ -497,10 +492,10 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-reflection" />
       )}
 
-      {/* Title bar — match IpodScreen (26px); must not shrink or flex-1 steals height */}
+      {/* Title bar */}
       <div className="shrink-0 border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
         <div className="w-10 flex items-center justify-start text-xs tabular-nums">
-          ♥ {lives}
+          {isResultsScreen ? t("apps.ipod.brickGame.results") : `♥ ${lives}`}
         </div>
         <div className="flex-1 truncate text-center">
           {t("apps.ipod.brickGame.title")}
@@ -511,22 +506,41 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
       </div>
 
       <div className="relative z-30 h-[calc(100%-26px)] w-full min-h-0 overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          className="block size-full max-h-full max-w-full"
-          style={{ imageRendering: "pixelated" }}
-          aria-label={t("apps.ipod.brickGame.title")}
-        />
-
-        {overlayMessage && (
-          <div
-            className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2 top-1/2 flex items-center justify-center"
-            aria-live="polite"
-          >
-            <div className="rounded-[2px] border border-[#0a3667] bg-[#c5e0f5]/85 px-2 py-0.5 font-chicago text-[11px] leading-tight text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] text-center whitespace-nowrap">
-              {overlayMessage}
+        {/* Results screen replaces the canvas entirely */}
+        {isResultsScreen ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+            <span className="font-chicago text-[16px] tabular-nums leading-4">
+              {score} {t("apps.ipod.brickGame.pts")}
+            </span>
+            <span className="font-chicago text-[14px] leading-4">
+              {phase === "won"
+                ? t("apps.ipod.brickGame.youWin")
+                : t("apps.ipod.brickGame.gameOverTitle")}
+            </span>
+            <div className="flex flex-col font-chicago text-[14px] leading-4 opacity-85">
+              <span>{t("apps.ipod.brickGame.pressCenterToReplay")}</span>
+              <span>{t("apps.ipod.brickGame.menuToExit")}</span>
             </div>
           </div>
+        ) : (
+          <>
+            <canvas
+              ref={canvasRef}
+              className="block size-full max-h-full max-w-full"
+              style={{ imageRendering: "pixelated" }}
+              aria-label={t("apps.ipod.brickGame.title")}
+            />
+            {pauseOverlay && (
+              <div
+                className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
+                aria-live="polite"
+              >
+                <div className="rounded-[2px] border border-[#0a3667] bg-[#c5e0f5]/85 px-2 py-0.5 font-chicago text-[11px] leading-tight text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] text-center whitespace-nowrap">
+                  {pauseOverlay}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

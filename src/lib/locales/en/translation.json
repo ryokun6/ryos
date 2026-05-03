@@ -1948,10 +1948,15 @@
       },
       "brickGame": {
         "title": "Brick",
+        "results": "Results",
+        "pts": "pts",
         "pressCenterToStart": "Press center to launch",
         "pressCenterToContinue": "Press center to continue",
+        "pressCenterToReplay": "Press center to play again",
+        "menuToExit": "Menu to exit",
         "paused": "Paused",
-        "gameOver": "Game Over — center to retry",
+        "gameOverTitle": "Game Over",
+        "gameOver": "Game Over",
         "youWin": "You win!"
       },
       "translationLanguages": {
