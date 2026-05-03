@@ -58,11 +58,11 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   const toggleChannelsOpen = useChatsStore((s) => s.toggleChannelsOpen);
   const togglePrivateOpen = useChatsStore((s) => s.togglePrivateOpen);
 
+  const onlineUsersSet = useMemo(() => new Set(onlineUsers), [onlineUsers]);
+
   if (!isVisible) {
     return null;
   }
-
-  const onlineUsersSet = useMemo(() => new Set(onlineUsers), [onlineUsers]);
 
   const renderRoomItem = (room: ChatRoom) => {
     const unreadCount = unreadCounts[room.id] || 0;
