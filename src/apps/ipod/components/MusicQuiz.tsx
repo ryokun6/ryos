@@ -100,6 +100,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const playerRef = useRef<ReactPlayer | null>(null);
   const snippetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadingWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startSecRef = useRef(0);
   const snippetStartedAtRef = useRef<number | null>(null);
   const enteredRef = useRef(false);
@@ -114,6 +115,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     if (feedbackTimerRef.current) {
       clearTimeout(feedbackTimerRef.current);
       feedbackTimerRef.current = null;
+    }
+    if (loadingWatchdogRef.current) {
+      clearTimeout(loadingWatchdogRef.current);
+      loadingWatchdogRef.current = null;
     }
   }, []);
 
@@ -250,6 +255,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
 
   const handleReady = useCallback(() => {
     if (phase !== "loading") return;
+    if (loadingWatchdogRef.current) {
+      clearTimeout(loadingWatchdogRef.current);
+      loadingWatchdogRef.current = null;
+    }
     setPhase("playing");
     // Defer to next tick to ensure player is fully ready before seeking
     setTimeout(() => {
@@ -259,6 +268,38 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
       startSnippet();
     }, 50);
   }, [phase, startSnippet]);
+
+  // Watchdog: on iOS Safari (and any other blocked-autoplay environment) the
+  // YouTube iframe sometimes never fires onReady because playback is blocked
+  // by autoplay policies. After a grace period, skip to the next round so the
+  // game isn't stuck on "Loading...".
+  useEffect(() => {
+    if (phase !== "loading" || !round) return;
+    if (loadingWatchdogRef.current) {
+      clearTimeout(loadingWatchdogRef.current);
+    }
+    loadingWatchdogRef.current = setTimeout(() => {
+      if (!round) return;
+      // Mark the round as skipped (no answer) and continue.
+      setRound((r) => (r ? { ...r, selectedIndex: null, isCorrect: false } : r));
+      setSelectedIndex(round.correctIndex);
+      setLastRoundPoints(0);
+      setPhase("feedback");
+      feedbackTimerRef.current = setTimeout(() => {
+        if (roundNumber >= TOTAL_ROUNDS) {
+          setPhase("finished");
+        } else {
+          startNextRound();
+        }
+      }, FEEDBACK_DURATION_MS);
+    }, 8000);
+    return () => {
+      if (loadingWatchdogRef.current) {
+        clearTimeout(loadingWatchdogRef.current);
+        loadingWatchdogRef.current = null;
+      }
+    };
+  }, [phase, round, roundNumber, startNextRound]);
 
   // Imperative API exposed via ref
   useImperativeHandle(ref, () => ({
@@ -474,10 +515,17 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         )}
       </div>
 
-      {/* Hidden audio-only player for snippet */}
+      {/*
+        Hidden audio-only player for snippet.
+        IMPORTANT: iOS Safari blocks YouTube iframe playback when the iframe
+        has zero/near-zero size or is positioned off-screen. We render the
+        player at full size behind the quiz UI (z-0) with visibility hidden
+        so it is visually imperceptible but still satisfies Safari's
+        viewport/size requirements for autoplay and media playback.
+      */}
       <div
-        className="absolute opacity-0 pointer-events-none"
-        style={{ width: 1, height: 1, left: -9999, top: -9999 }}
+        className="absolute inset-0 z-0 pointer-events-none"
+        style={{ visibility: "hidden" }}
         aria-hidden
       >
         {correctTrackUrl && phase !== "finished" && phase !== "idle" && (
@@ -487,8 +535,8 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
             playing={phase === "playing"}
             controls={false}
             volume={finalVolume}
-            width="1px"
-            height="1px"
+            width="100%"
+            height="100%"
             playsinline
             onReady={handleReady}
             onDuration={handleDuration}
@@ -504,6 +552,9 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
                   playsinline: 1,
                   enablejsapi: 1,
                   origin: window.location.origin,
+                },
+                embedOptions: {
+                  referrerPolicy: "strict-origin-when-cross-origin",
                 },
               },
             }}
