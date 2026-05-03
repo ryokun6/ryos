@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef } from "react";
-import { motion, type Transition } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getChannelLogo, type Channel } from "@/apps/tv/data/channels";
@@ -8,26 +8,18 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Trash } from "@phosphor-icons/react";
+import { AppDrawer, DRAWER_WIDTH, DRAWER_TRANSITION } from "@/components/shared/AppDrawer";
 
-const DRAWER_WIDTH = 240;
+// ── Layout constants ──────────────────────────────────────────────────────────
 
-/** Small gap from the window’s right edge; keeps a hint of tuck without clipping the playlist. */
-const DRAWER_EDGE_INSET_PX = 4;
-
-/** Pixels of drawer width that stay behind the main pane when open — keep low so row numbers stay visible. */
-const DRAWER_OPEN_UNDERLAP_PX = 6;
-
-/** Equal top/bottom inset inside the window frame — lower = taller drawer. */
-const DRAWER_VERTICAL_INSET_PX = 22;
-
-/** Viewports below this width use a bottom sheet instead of a side drawer (matches WindowFrame mobile layout). */
+/** Viewports below this width use a bottom sheet instead of a side drawer. */
 const COMPACT_DRAWER_MEDIA = "(max-width: 767px)";
 
 /** Horizontal inset for the compact bottom drawer (each side). */
 const COMPACT_DRAWER_INSET_PX = 12;
 
 /**
- * Negative overlap upward so the drawer covers the window body’s bottom inset.
+ * Negative overlap upward so the drawer covers the window body's bottom inset.
  * Matches macOS brushed-metal `mb-[8px]` on the TV window content in WindowFrame.
  */
 const COMPACT_DRAWER_OVERLAP_TOP_PX = -8;
@@ -35,32 +27,10 @@ const COMPACT_DRAWER_OVERLAP_TOP_PX = -8;
 /** Compact drawer height cap — scroll inside for long playlists. */
 const COMPACT_DRAWER_MAX_HEIGHT = "min(30dvh, 216px)";
 
-// Slow enough to read as a real "panel sliding out" but fast enough to
-// not feel laggy. Matches the cadence of the channel-switch animation
-// in the rest of the TV app.
-const DRAWER_TRANSITION: Transition = {
-  type: "spring",
-  stiffness: 320,
-  damping: 32,
-  mass: 0.8,
-};
+// Re-export so callers that previously imported from this module still work.
+export { DRAWER_WIDTH, DRAWER_TRANSITION };
 
-interface TvVideoDrawerProps {
-  isOpen: boolean;
-  channel: Channel | null;
-  channels: Channel[];
-  currentChannelId: string;
-  currentVideoIndex: number;
-  /** Tunes the TV to the picked channel. */
-  onSelectChannel: (channelId: string) => void;
-  /** Plays the picked video on the current channel. */
-  onSelectVideo: (index: number) => void;
-  /**
-   * When set (editable channels only), rows show a remove control.
-   * Deletes from the backing library (Videos / iPod / custom channel).
-   */
-  onRemoveVideo?: (videoId: string) => void;
-}
+// ── Channel logo strip ────────────────────────────────────────────────────────
 
 function getChannelInitials(name: string): string {
   const trimmed = name.trim();
@@ -191,19 +161,30 @@ const TvChannelLogoStrip = memo(function TvChannelLogoStrip({
   );
 });
 
+// ── Main drawer component ─────────────────────────────────────────────────────
+
+interface TvVideoDrawerProps {
+  isOpen: boolean;
+  channel: Channel | null;
+  channels: Channel[];
+  currentChannelId: string;
+  currentVideoIndex: number;
+  onSelectChannel: (channelId: string) => void;
+  onSelectVideo: (index: number) => void;
+  onRemoveVideo?: (videoId: string) => void;
+}
+
 /**
- * Classic Mac-OS-X-style drawer attached to the right edge of the TV
- * window. Playlist only (no header chrome); toggle via Controls → Show Videos.
+ * Classic Mac-OS-X-style drawer attached to the right edge of the TV window.
  *
- * Rendered inside `WindowFrame`'s drawer slot, which positions it in
- * the window's coordinate space — meaning it pins to the window during
- * drag/resize and inherits its z-stack. Closed: `translateX(0)` (fully
- * behind the window body). Open: translates by slightly less than the
- * panel width so only a few pixels stay overlapped by the main window.
+ * Desktop (≥ 768 px):  delegates to the shared AppDrawer component (side
+ * panel, slides right).  The TV-specific brushed-metal shell is handled by
+ * AppDrawer; this component only supplies the channel strip + video list.
  *
- * On narrow viewports (max-width: 767px), the panel hangs below the window
- * frame (same stacking as the side drawer) and slides downward when opened —
- * it does not cover the video area.
+ * Narrow (< 768 px):   renders a compact bottom sheet that hangs below the
+ * window frame and slides down to reveal.  That layout is too TV-specific
+ * (hangs outside the window, overlaps the bottom edge) for a shared component,
+ * so it is implemented locally with its own motion.div.
  */
 export const TvVideoDrawer = memo(function TvVideoDrawer({
   isOpen,
@@ -229,21 +210,11 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
   const listRef = useRef<HTMLUListElement>(null);
   const activeItemRef = useRef<HTMLLIElement>(null);
 
-  // Auto-scroll the now-playing entry into view when the drawer opens
-  // or the channel/index changes. Without this, opening the drawer on a
-  // long playlist could land miles away from the actively-playing clip.
   useEffect(() => {
     if (!isOpen) return;
-    const el = activeItemRef.current;
-    if (!el) return;
-    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    activeItemRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [isOpen, channel?.id, currentVideoIndex]);
 
-  // Drawer slide-out / slide-in feedback. Reuses the OS window
-  // expand/collapse SFX so the drawer feels of a piece with the rest
-  // of WindowFrame's chrome. Skip the initial mount so opening the TV
-  // app doesn't fire a phantom drawer sound when the prop defaults to
-  // its starting value.
   const { play: playDrawerOpen } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE);
   const { play: playDrawerClose } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE);
   const drawerSoundMountedRef = useRef(false);
@@ -252,14 +223,10 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       drawerSoundMountedRef.current = true;
       return;
     }
-    if (isOpen) {
-      void playDrawerOpen();
-    } else {
-      void playDrawerClose();
-    }
+    if (isOpen) void playDrawerOpen();
+    else void playDrawerClose();
   }, [isOpen, playDrawerOpen, playDrawerClose]);
 
-  // Visible chrome is playlist-only; expose channel context to AT.
   const listAriaLabel = useMemo(() => {
     if (!channel) return t("apps.tv.drawer.title");
     return t("apps.tv.channelBadge", {
@@ -281,45 +248,155 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
     />
   );
 
-  const wrapperClass = cn(
-    "absolute select-none flex flex-col"
+  const listUlClass = cn("flex-1 min-h-0 overflow-y-auto", !isMacOSTheme && "bg-white");
+
+  // ── Shared video list renderer ─────────────────────────────────────────────
+  const renderMacVideoItems = () =>
+    videos.length === 0 ? (
+      <li className="px-3 py-2 font-lucida-grande text-[11px] opacity-60">
+        {t("apps.tv.drawer.empty")}
+      </li>
+    ) : (
+      videos.map((video, index) => {
+        const isActive = index === currentVideoIndex;
+        return (
+          <li key={`${video.id}-${index}`} ref={isActive ? activeItemRef : undefined} className="group relative min-w-0">
+            <button
+              type="button"
+              onClick={() => onSelectVideo(index)}
+              className={cn(
+                "w-full text-left px-3 py-1.5 flex items-center gap-2 focus:outline-none transition-colors duration-100",
+                "font-lucida-grande text-[11px] text-black/90 hover:bg-[#3875D7]/12",
+                isActive && "tv-drawer-mac-row-active"
+              )}
+            >
+              <span className={cn("shrink-0 w-5 text-right tabular-nums opacity-70", isActive && "opacity-100")}>
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="flex-1 min-w-0 truncate">{video.title}</span>
+            </button>
+            {onRemoveVideo && (
+              <button
+                type="button"
+                aria-label={t("apps.tv.drawer.removeVideo")}
+                title={t("apps.tv.drawer.removeVideo")}
+                className={cn(
+                  "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center rounded-[4px] p-1 transition-opacity duration-150",
+                  "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#3875D7]/60",
+                  showTrashAlways
+                    ? "pointer-events-auto opacity-100"
+                    : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+                  "text-black/45 hover:bg-red-600/14 hover:text-red-700",
+                  isActive && "text-white/75 hover:text-white hover:bg-white/18"
+                )}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemoveVideo(video.id); }}
+              >
+                <Trash size={14} weight="regular" className="pointer-events-none shrink-0" />
+              </button>
+            )}
+          </li>
+        );
+      })
+    );
+
+  const renderOtherVideoItems = () =>
+    videos.length === 0 ? (
+      <li className={cn("px-3 py-2 text-[11px] opacity-60", isSystem7 && "font-chicago", isXpTheme && "font-tahoma")}>
+        {t("apps.tv.drawer.empty")}
+      </li>
+    ) : (
+      videos.map((video, index) => {
+        const isActive = index === currentVideoIndex;
+        return (
+          <li key={`${video.id}-${index}`} ref={isActive ? activeItemRef : undefined} className="group relative min-w-0">
+            <button
+              type="button"
+              onClick={() => onSelectVideo(index)}
+              className={cn(
+                "w-full text-left px-3 py-1.5 flex items-center gap-2 focus:outline-none transition-colors duration-100",
+                isSystem7 && "font-chicago text-[12px] hover:bg-black hover:text-white",
+                isXpTheme && "font-tahoma text-[11px] hover:bg-[#316AC5]/15",
+                isActive && isSystem7 && "bg-black text-white hover:bg-black hover:text-white",
+                isActive && isXpTheme && "bg-[#316AC5] text-white hover:bg-[#316AC5]"
+              )}
+            >
+              <span className={cn("shrink-0 w-5 text-right tabular-nums opacity-70", isActive && "opacity-100")}>
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="flex-1 min-w-0 truncate">{video.title}</span>
+            </button>
+            {onRemoveVideo && (
+              <button
+                type="button"
+                aria-label={t("apps.tv.drawer.removeVideo")}
+                title={t("apps.tv.drawer.removeVideo")}
+                className={cn(
+                  "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center p-1 transition-opacity duration-150",
+                  "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-1",
+                  showTrashAlways
+                    ? "pointer-events-auto opacity-100"
+                    : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+                  isSystem7 && cn(
+                    "rounded-none border border-transparent",
+                    isActive
+                      ? "text-white/75 hover:text-white hover:bg-white/15 hover:border-white/25 focus-visible:ring-white/60"
+                      : "text-black/55 hover:text-red-700 hover:bg-black/[0.06] hover:border-black/15"
+                  ),
+                  isXpTheme && !isWin98 && cn(
+                    "rounded-sm",
+                    isActive
+                      ? "text-white/85 hover:text-white hover:bg-white/18 focus-visible:ring-white/70"
+                      : "text-black/50 hover:text-red-700 hover:bg-red-500/12 focus-visible:ring-[#316AC5]/50"
+                  ),
+                  isWin98 && "rounded-none border border-transparent text-[#303030] hover:text-[#c00000] hover:bg-[#c0c0c0] hover:border-[#808080] focus-visible:ring-[#000080]/40"
+                )}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemoveVideo(video.id); }}
+              >
+                <Trash size={14} weight="regular" className="pointer-events-none shrink-0" />
+              </button>
+            )}
+          </li>
+        );
+      })
+    );
+
+  // ── Content (shared between side and compact paths) ────────────────────────
+  const drawerContent = (
+    <>
+      {channelLogoStrip}
+      <ul ref={listRef} className={listUlClass} aria-label={listAriaLabel}>
+        {isMacOSTheme ? renderMacVideoItems() : renderOtherVideoItems()}
+      </ul>
+    </>
   );
 
-  // Outer shell: macOS uses `.tv-drawer-metal` in themes.css (brushed
-  // aluminum + inset gloss like the TV window). Other themes keep flat chrome.
-  const panelOuterClass = cn(
+  // ── Desktop side drawer — delegates to shared AppDrawer ───────────────────
+  // AppDrawer owns positioning, spring animation, and the themed panel shell.
+  // The TV passes its channel strip + video list as children.
+  if (!isCompactDrawer) {
+    return (
+      <AppDrawer isOpen={isOpen} data-tv-drawer data-tv-drawer-layout="side">
+        {drawerContent}
+      </AppDrawer>
+    );
+  }
+
+  // ── Compact bottom sheet (narrow viewports) ───────────────────────────────
+  // This layout hangs *below* the window frame (top: 100 %) and slides down
+  // to reveal.  That positioning is too TV-specific for the shared AppDrawer,
+  // so it is implemented with its own motion.div.
+  const compactPanelClass = cn(
     "flex flex-1 flex-col overflow-hidden min-h-0",
-    isMacOSTheme &&
-      cn(
-        "tv-drawer-metal",
-        !isCompactDrawer && "rounded-r-[0.45rem]",
-        isCompactDrawer && "rounded-b-[0.45rem]"
-      ),
-    !isMacOSTheme &&
-      isSystem7 &&
-      (isCompactDrawer
-        ? "bg-white border-2 border-black border-t-0 rounded-b shadow-[2px_4px_0_0_rgba(0,0,0,0.45)]"
-        : "bg-white border-2 border-black border-l-0 shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]"),
-    !isMacOSTheme &&
-      isXpTheme &&
-      !isWin98 &&
-      (isCompactDrawer
-        ? "bg-[#ECE9D8] border-[3px] border-t-0 border-[#0054E3] rounded-b-[0.5rem]"
-        : "bg-[#ECE9D8] border-[3px] border-l-0 border-[#0054E3] rounded-r-[0.5rem]"),
-    !isMacOSTheme &&
-      isWin98 &&
-      (isCompactDrawer
-        ? "bg-[#C0C0C0] border-2 border-t-0 border-l-white border-r-[#808080] border-b-[#808080]"
-        : "bg-[#C0C0C0] border-2 border-l-0 border-t-white border-r-[#808080] border-b-[#808080]")
+    isMacOSTheme && "tv-drawer-metal rounded-b-[0.45rem]",
+    !isMacOSTheme && isSystem7 && "bg-white border-2 border-black border-t-0 rounded-b shadow-[2px_4px_0_0_rgba(0,0,0,0.45)]",
+    !isMacOSTheme && isXpTheme && !isWin98 && "bg-[#ECE9D8] border-[3px] border-t-0 border-[#0054E3] rounded-b-[0.5rem]",
+    !isMacOSTheme && isWin98 && "bg-[#C0C0C0] border-2 border-t-0 border-l-white border-r-[#808080] border-b-[#808080]"
   );
 
-  const listUlClass = cn(
-    "flex-1 min-h-0 overflow-y-auto",
-    !isMacOSTheme && "bg-white"
-  );
-
-  const positionStyle = isCompactDrawer
-    ? ({
+  return (
+    <motion.div
+      className={cn("absolute select-none flex flex-col", !isOpen && "pointer-events-none")}
+      style={{
         left: COMPACT_DRAWER_INSET_PX,
         right: COMPACT_DRAWER_INSET_PX,
         top: "100%",
@@ -329,233 +406,24 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
         zIndex: 0,
         marginTop: COMPACT_DRAWER_OVERLAP_TOP_PX,
         paddingBottom: "max(0px, env(safe-area-inset-bottom, 0px))",
-      } as const)
-    : ({
-        top: DRAWER_VERTICAL_INSET_PX,
-        bottom: DRAWER_VERTICAL_INSET_PX,
-        width: DRAWER_WIDTH,
-        zIndex: 0,
-        right: DRAWER_EDGE_INSET_PX,
-      } as const);
-
-  const animateProps = isCompactDrawer
-    ? {
-        x: 0,
-        // Closed: tucked upward under the window bottom edge; open: drops down.
-        y: isOpen ? 0 : "-100%",
-        opacity: isOpen ? 1 : 0,
-      }
-    : {
-        x: isOpen ? DRAWER_WIDTH - DRAWER_OPEN_UNDERLAP_PX : 0,
-        y: 0,
-        opacity: isOpen ? 1 : 0,
-      };
-
-  return (
-    <motion.div
-      className={cn(wrapperClass, !isOpen && "pointer-events-none")}
-      style={positionStyle}
+      }}
       initial={false}
-      animate={animateProps}
+      animate={{ x: 0, y: isOpen ? 0 : "-100%", opacity: isOpen ? 1 : 0 }}
       transition={DRAWER_TRANSITION}
-      // Side drawer: closed behind content. Compact: hangs below the window;
-      // closed state is tucked up with translateY — suppress hits when closed.
       aria-hidden={!isOpen}
       data-tv-drawer
-      data-tv-drawer-layout={isCompactDrawer ? "bottom" : "side"}
+      data-tv-drawer-layout="bottom"
     >
-      <div className={panelOuterClass}>
+      <div className={compactPanelClass}>
         {isMacOSTheme ? (
           <div className="tv-drawer-metal-inner flex flex-1 min-h-0 flex-col p-2">
-            <div className="tv-drawer-mac-list-well flex flex-1 min-h-0 flex-col overflow-hidden">
-              {channelLogoStrip}
-              <ul
-                ref={listRef}
-                className={listUlClass}
-                aria-label={listAriaLabel}
-              >
-                {videos.length === 0 ? (
-                  <li className="px-3 py-2 font-lucida-grande text-[11px] opacity-60">
-                    {t("apps.tv.drawer.empty")}
-                  </li>
-                ) : (
-                  videos.map((video, index) => {
-                    const isActive = index === currentVideoIndex;
-                    return (
-                      <li
-                        key={`${video.id}-${index}`}
-                        ref={isActive ? activeItemRef : undefined}
-                        className="group relative min-w-0"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => onSelectVideo(index)}
-                          className={cn(
-                            "w-full text-left px-3 py-1.5 flex items-center gap-2",
-                            "focus:outline-none transition-colors duration-100",
-                            "font-lucida-grande text-[11px] text-black/90 hover:bg-[#3875D7]/12",
-                            isActive && "tv-drawer-mac-row-active"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "shrink-0 w-5 text-right tabular-nums opacity-70",
-                              isActive && "opacity-100"
-                            )}
-                          >
-                            {String(index + 1).padStart(2, "0")}
-                          </span>
-                          <span className="flex-1 min-w-0 truncate">
-                            {video.title}
-                          </span>
-                        </button>
-                        {onRemoveVideo && (
-                          <button
-                            type="button"
-                            aria-label={t("apps.tv.drawer.removeVideo")}
-                            title={t("apps.tv.drawer.removeVideo")}
-                            className={cn(
-                              "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center rounded-[4px] p-1 transition-opacity duration-150",
-                              "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#3875D7]/60",
-                              showTrashAlways
-                                ? "pointer-events-auto opacity-100"
-                                : cn(
-                                    "pointer-events-none opacity-0",
-                                    "group-hover:pointer-events-auto group-hover:opacity-100",
-                                    "group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-                                  ),
-                              "text-black/45 hover:bg-red-600/14 hover:text-red-700",
-                              isActive &&
-                                "text-white/75 hover:text-white hover:bg-white/18"
-                            )}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onRemoveVideo(video.id);
-                            }}
-                          >
-                            <Trash
-                              size={14}
-                              weight="regular"
-                              className="pointer-events-none shrink-0"
-                            />
-                          </button>
-                        )}
-                      </li>
-                    );
-                  })
-                )}
-              </ul>
+            <div className="tv-drawer-mac-list-well flex flex-1 min-h-0 flex-col overflow-hidden" style={{ borderRadius: "0 0 4px 4px" }}>
+              {drawerContent}
             </div>
           </div>
         ) : (
           <div className="flex flex-1 min-h-0 flex-col overflow-hidden p-2">
-            {channelLogoStrip}
-            <ul
-              ref={listRef}
-              className={listUlClass}
-              aria-label={listAriaLabel}
-            >
-              {videos.length === 0 ? (
-                <li
-                  className={cn(
-                    "px-3 py-2 text-[11px] opacity-60",
-                    isSystem7 && "font-chicago",
-                    isXpTheme && "font-tahoma"
-                  )}
-                >
-                  {t("apps.tv.drawer.empty")}
-                </li>
-              ) : (
-                videos.map((video, index) => {
-                  const isActive = index === currentVideoIndex;
-                  return (
-                    <li
-                      key={`${video.id}-${index}`}
-                      ref={isActive ? activeItemRef : undefined}
-                      className="group relative min-w-0"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => onSelectVideo(index)}
-                        className={cn(
-                          "w-full text-left px-3 py-1.5 flex items-center gap-2",
-                          "focus:outline-none transition-colors duration-100",
-                          isSystem7 &&
-                            "font-chicago text-[12px] hover:bg-black hover:text-white",
-                          isXpTheme &&
-                            "font-tahoma text-[11px] hover:bg-[#316AC5]/15",
-                          isActive &&
-                            isSystem7 &&
-                            "bg-black text-white hover:bg-black hover:text-white",
-                          isActive &&
-                            isXpTheme &&
-                            "bg-[#316AC5] text-white hover:bg-[#316AC5]"
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "shrink-0 w-5 text-right tabular-nums opacity-70",
-                            isActive && "opacity-100"
-                          )}
-                        >
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-                        <span className="flex-1 min-w-0 truncate">
-                          {video.title}
-                        </span>
-                      </button>
-                      {onRemoveVideo && (
-                        <button
-                          type="button"
-                          aria-label={t("apps.tv.drawer.removeVideo")}
-                          title={t("apps.tv.drawer.removeVideo")}
-                          className={cn(
-                            "tv-drawer-remove-btn absolute right-1 top-1/2 z-[1] flex -translate-y-1/2 items-center justify-center p-1 transition-opacity duration-150",
-                            "focus:outline-none focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-1",
-                            showTrashAlways
-                              ? "pointer-events-auto opacity-100"
-                              : cn(
-                                  "pointer-events-none opacity-0",
-                                  "group-hover:pointer-events-auto group-hover:opacity-100",
-                                  "group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-                                ),
-                            isSystem7 &&
-                              cn(
-                                "rounded-none border border-transparent",
-                                isActive
-                                  ? "text-white/75 hover:text-white hover:bg-white/15 hover:border-white/25 focus-visible:ring-white/60"
-                                  : "text-black/55 hover:text-red-700 hover:bg-black/[0.06] hover:border-black/15"
-                              ),
-                            isXpTheme &&
-                              !isWin98 &&
-                              cn(
-                                "rounded-sm",
-                                isActive
-                                  ? "text-white/85 hover:text-white hover:bg-white/18 focus-visible:ring-white/70"
-                                  : "text-black/50 hover:text-red-700 hover:bg-red-500/12 focus-visible:ring-[#316AC5]/50"
-                              ),
-                            isWin98 &&
-                              "rounded-none border border-transparent text-[#303030] hover:text-[#c00000] hover:bg-[#c0c0c0] hover:border-[#808080] focus-visible:ring-[#000080]/40"
-                          )}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onRemoveVideo(video.id);
-                          }}
-                        >
-                          <Trash
-                            size={14}
-                            weight="regular"
-                            className="pointer-events-none shrink-0"
-                          />
-                        </button>
-                      )}
-                    </li>
-                  );
-                })
-              )}
-            </ul>
+            {drawerContent}
           </div>
         )}
       </div>

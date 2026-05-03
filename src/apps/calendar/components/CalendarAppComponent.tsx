@@ -27,6 +27,8 @@ import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { useTranslation } from "react-i18next";
 import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
+import { AppDrawer } from "@/components/shared/AppDrawer";
+import { useSound, Sounds } from "@/hooks/useSound";
 
 // ============================================================================
 // CONSTANTS
@@ -135,6 +137,7 @@ function TodoSidebar({
   isMacOSTheme,
   isSystem7Theme,
   fullWidth,
+  noHeader,
 }: {
   todos: TodoItem[];
   calendars: CalendarGroup[];
@@ -148,6 +151,7 @@ function TodoSidebar({
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   fullWidth?: boolean;
+  noHeader?: boolean;
 }) {
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
@@ -215,7 +219,7 @@ function TodoSidebar({
 
   return (
     <div className="flex flex-col h-full select-none os-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
-      {isMacOSTheme ? (
+      {!noHeader && (isMacOSTheme ? (
         <div
           className={cn("text-[11px] font-regular text-center", useGeneva && "font-geneva-12")}
           style={{
@@ -234,7 +238,7 @@ function TodoSidebar({
         >
           {t("apps.calendar.sidebar.toDoItems")}
         </div>
-      )}
+      ))}
       <div className="flex-1 overflow-y-auto px-2">
         {todos.length === 0 && (
           <div className={cn("text-[10px] opacity-30 px-0.5 py-2", useGeneva && "font-geneva-12")}>{t("apps.calendar.sidebar.noTodoItems")}</div>
@@ -1174,6 +1178,19 @@ export function CalendarAppComponent({
     canRedo,
   });
 
+  // Drawer open/close sounds — same SFX as the TV drawer for consistency.
+  const { play: playDrawerOpen } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE);
+  const { play: playDrawerClose } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE);
+  const drawerSoundMountedRef = useRef(false);
+  useEffect(() => {
+    if (!drawerSoundMountedRef.current) {
+      drawerSoundMountedRef.current = true;
+      return;
+    }
+    if (showTodoSidebar) void playDrawerOpen();
+    else void playDrawerClose();
+  }, [showTodoSidebar, playDrawerOpen, playDrawerClose]);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(700);
   const [showCalendarSidebar, setShowCalendarSidebar] = useState(true);
@@ -1190,8 +1207,6 @@ export function CalendarAppComponent({
 
   const isNarrow = containerWidth < 600;
   const showSidebar = containerWidth >= 540 && showCalendarSidebar;
-  const showTodo = showTodoSidebar && !isNarrow;
-  const showTodoFullWidth = showTodoSidebar && isNarrow;
   const effectiveView = view;
   const safeSearchQuery = searchQuery ?? "";
   const normalizedSearchQuery = useMemo(() => safeSearchQuery.trim().toLocaleLowerCase(), [safeSearchQuery]);
@@ -1216,9 +1231,7 @@ export function CalendarAppComponent({
     }
   }, [effectiveView, navigateWeek, navigateMonth, selectedDate, setSelectedDate]);
 
-  const headerLabel = showTodoFullWidth
-    ? t("apps.calendar.sidebar.toDoItems")
-    : effectiveView === "week" ? weekLabel : effectiveView === "day" ? selectedDateLabel : monthYearLabel;
+  const headerLabel = effectiveView === "week" ? weekLabel : effectiveView === "day" ? selectedDateLabel : monthYearLabel;
 
   const menuBar = (
     <CalendarMenuBar
@@ -1257,6 +1270,25 @@ export function CalendarAppComponent({
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
         windowConstraints={{ minWidth: 300, minHeight: 380 }}
+        drawer={
+          <AppDrawer
+            isOpen={showTodoSidebar}
+            title={t("apps.calendar.sidebar.toDoItems")}
+          >
+            <TodoSidebar
+              todos={todos}
+              calendars={calendars}
+              onToggle={toggleTodo}
+              onAdd={addTodo}
+              onUpdate={updateTodo}
+              onDelete={deleteTodo}
+              isMacOSTheme={isMacOSTheme}
+              isSystem7Theme={isSystem7Theme}
+              fullWidth
+              noHeader
+            />
+          </AppDrawer>
+        }
       >
         <div
           ref={containerRef}
@@ -1337,80 +1369,35 @@ export function CalendarAppComponent({
               )
             )}
 
-            {/* Main view area — hidden when todo is full-width on narrow screens */}
-            {!showTodoFullWidth && (
-              <div
-                className={cn("flex-1 flex overflow-hidden calendar-grid bg-white")}
-                style={isMacOSTheme ? {
-                  border: "1px solid rgba(0, 0, 0, 0.55)",
-                  boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-                } : undefined}
-              >
-                {effectiveView === "week" && (
-                  <WeekTimeGrid weekDates={weekDates} selectedEventId={selectedEventId}
-                    onDateClick={handleDateClick} onTimeSlotClick={handleNewEventAtTime}
-                    onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
-                    hourHeight={weekTimeGridHourHeight} setHourHeight={setWeekTimeGridHourHeight} />
-                )}
-                {effectiveView === "day" && (
-                  <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
-                    onTimeSlotClick={handleNewEventAtTime}
-                    onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
-                    hourHeight={dayTimeGridHourHeight} setHourHeight={setDayTimeGridHourHeight} />
-                )}
-                {effectiveView === "month" && (
-                  <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
-                    onDateClick={handleDateClick} onDateDoubleClick={handleDateDoubleClick}
-                    onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                    isXpTheme={isXpTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
-                )}
-              </div>
-            )}
-
-            {/* Todo: full-width on narrow screens, sidebar on wide */}
-            {showTodoFullWidth && (
-              <div
-                className="flex-1 overflow-y-auto bg-white"
-                style={isMacOSTheme ? {
-                  border: "1px solid rgba(0, 0, 0, 0.55)",
-                  boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-                } : undefined}
-              >
-                <TodoSidebar
-                  todos={todos}
-                  calendars={calendars}
-                  onToggle={toggleTodo}
-                  onAdd={addTodo}
-                  onUpdate={updateTodo}
-                  onDelete={deleteTodo}
-                  isMacOSTheme={isMacOSTheme}
-                  isSystem7Theme={isSystem7Theme}
-                  fullWidth
-                />
-              </div>
-            )}
-            {showTodo && (
-              <div
-                className="shrink-0 overflow-y-auto bg-white"
-                style={isMacOSTheme ? {
-                  border: "1px solid rgba(0, 0, 0, 0.55)",
-                  boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-                } : { borderLeft: "1px solid rgba(0,0,0,0.08)" }}
-              >
-                <TodoSidebar
-                  todos={todos}
-                  calendars={calendars}
-                  onToggle={toggleTodo}
-                  onAdd={addTodo}
-                  onUpdate={updateTodo}
-                  onDelete={deleteTodo}
-                  isMacOSTheme={isMacOSTheme}
-                  isSystem7Theme={isSystem7Theme}
-                />
-              </div>
-            )}
+            {/* Main calendar view */}
+            <div
+              className={cn("flex-1 flex overflow-hidden calendar-grid bg-white")}
+              style={isMacOSTheme ? {
+                border: "1px solid rgba(0, 0, 0, 0.55)",
+                boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+              } : undefined}
+            >
+              {effectiveView === "week" && (
+                <WeekTimeGrid weekDates={weekDates} selectedEventId={selectedEventId}
+                  onDateClick={handleDateClick} onTimeSlotClick={handleNewEventAtTime}
+                  onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
+                  isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
+                  hourHeight={weekTimeGridHourHeight} setHourHeight={setWeekTimeGridHourHeight} />
+              )}
+              {effectiveView === "day" && (
+                <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
+                  onTimeSlotClick={handleNewEventAtTime}
+                  onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
+                  isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
+                  hourHeight={dayTimeGridHourHeight} setHourHeight={setDayTimeGridHourHeight} />
+              )}
+              {effectiveView === "month" && (
+                <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
+                  onDateClick={handleDateClick} onDateDoubleClick={handleDateDoubleClick}
+                  onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
+                  isXpTheme={isXpTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
+              )}
+            </div>
           </div>
 
           {/* Bottom toolbar */}
