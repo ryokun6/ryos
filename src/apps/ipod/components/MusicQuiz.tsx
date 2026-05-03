@@ -173,6 +173,16 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   // Cleanup on unmount
   useEffect(() => () => clearTimers(), [clearTimers]);
 
+  // Loading watchdog: if onReady never fires (e.g. autoplay blocked or YouTube
+  // embed error), force-transition to playing after 8s so the quiz isn't stuck.
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const t = setTimeout(() => {
+      setPhase((p) => (p === "loading" ? "playing" : p));
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [phase, roundNumber]);
+
   const handleAnswer = useCallback(
     (idx: number) => {
       if (!round || phase !== "playing") return;
@@ -233,14 +243,21 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const handleReady = useCallback(() => {
     if (phase !== "loading") return;
     setPhase("playing");
-    // Defer to next tick to ensure player is fully ready before seeking
-    setTimeout(() => {
+  }, [phase]);
+
+  // When entering playing phase, seek to the start and arm the snippet timer.
+  useEffect(() => {
+    if (phase !== "playing") return;
+    // Avoid re-arming after a replay (replaySnippet already manages timers).
+    if (snippetTimerRef.current) return;
+    const t = setTimeout(() => {
       if (playerRef.current) {
         playerRef.current.seekTo(startSecRef.current, "seconds");
       }
       startSnippet();
     }, 50);
-  }, [phase, startSnippet]);
+    return () => clearTimeout(t);
+  }, [phase, roundNumber, startSnippet]);
 
   // Imperative API exposed via ref
   useImperativeHandle(ref, () => ({
