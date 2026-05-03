@@ -3,7 +3,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type CurrencyWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
 import { ArrowsDownUp, ArrowsLeftRight } from "@phosphor-icons/react";
-import { fetchFrankfurterPairRate, parseAmountInput } from "@/lib/currency/frankfurter";
+import { fetchCurrencyRateForWidget, parseAmountInput } from "@/lib/currency/frankfurter";
 
 const MAIN_CURRENCIES = [
   "USD",
@@ -117,7 +117,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
       setUsingCache(false);
 
       try {
-        const { rate, rateDate } = await fetchFrankfurterPairRate(from, to, controller.signal);
+        const { rate, rateDate } = await fetchCurrencyRateForWidget(from, to, controller.signal);
         if (controller.signal.aborted) return;
         const entry: RateCacheEntry = { rate, rateDate, fetchedAt: Date.now() };
         rateMemoryCache.set(key, entry);

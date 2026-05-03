@@ -1,4 +1,4 @@
-/** Frankfurter (ECB) public API — no API key, CORS-friendly for browser use. */
+/** Prefer `/api/currency-rate` (server proxy + fallbacks); see `api/currency-rate.ts`. */
 
 const FRANKFURTER_LATEST = "https://api.frankfurter.app/latest";
 
@@ -9,20 +9,40 @@ export interface FrankfurterLatestResponse {
   rates: Record<string, number>;
 }
 
-export async function fetchFrankfurterPairRate(
+interface CurrencyRateApiOk {
+  rate: number;
+  rateDate: string;
+  source?: string;
+}
+
+function normalizePair(from: string, to: string) {
+  return { from: from.trim().toUpperCase(), to: to.trim().toUpperCase() };
+}
+
+export function parseAmountInput(raw: string): number {
+  const normalized = raw.replace(/,/g, ".").replace(/[^\d.+-]/g, "");
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Direct Frankfurter (ECB). Uses `redirect: "follow"` because api.frankfurter.app may 301. */
+export async function fetchFrankfurterPairRateDirect(
   from: string,
   to: string,
   signal?: AbortSignal
 ): Promise<{ rate: number; rateDate: string }> {
-  const trimmedFrom = from.trim().toUpperCase();
-  const trimmedTo = to.trim().toUpperCase();
+  const { from: trimmedFrom, to: trimmedTo } = normalizePair(from, to);
 
   if (trimmedFrom === trimmedTo) {
     return { rate: 1, rateDate: new Date().toISOString().slice(0, 10) };
   }
 
   const url = `${FRANKFURTER_LATEST}?from=${encodeURIComponent(trimmedFrom)}&to=${encodeURIComponent(trimmedTo)}`;
-  const res = await fetch(url, { signal });
+  const res = await fetch(url, {
+    signal,
+    redirect: "follow",
+    headers: { Accept: "application/json" },
+  });
   if (!res.ok) {
     throw new Error(`Frankfurter HTTP ${res.status}`);
   }
@@ -34,8 +54,28 @@ export async function fetchFrankfurterPairRate(
   return { rate, rateDate: data.date };
 }
 
-export function parseAmountInput(raw: string): number {
-  const normalized = raw.replace(/,/g, ".").replace(/[^\d.+-]/g, "");
-  const n = parseFloat(normalized);
-  return Number.isFinite(n) ? n : 0;
+export async function fetchCurrencyRateForWidget(
+  from: string,
+  to: string,
+  signal?: AbortSignal
+): Promise<{ rate: number; rateDate: string }> {
+  const { from: f, to: t } = normalizePair(from, to);
+  if (f === t) {
+    return { rate: 1, rateDate: new Date().toISOString().slice(0, 10) };
+  }
+
+  try {
+    const url = `/api/currency-rate?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`;
+    const res = await fetch(url, { signal, headers: { Accept: "application/json" } });
+    if (res.ok) {
+      const data = (await res.json()) as CurrencyRateApiOk;
+      if (typeof data.rate === "number" && Number.isFinite(data.rate) && data.rateDate) {
+        return { rate: data.rate, rateDate: data.rateDate };
+      }
+    }
+  } catch {
+    // Vite-only dev (no API) or network — fall through to direct Frankfurter
+  }
+
+  return fetchFrankfurterPairRateDirect(f, t, signal);
 }
