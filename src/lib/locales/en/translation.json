@@ -1911,6 +1911,7 @@
         "music": "Music",
         "settings": "Settings",
         "extras": "Extras",
+        "musicQuiz": "Music Quiz",
         "shuffleSongs": "Shuffle Songs",
         "nowPlaying": "Now Playing",
         "ipod": "iPod",
@@ -1923,6 +1924,23 @@
         "one": "One",
         "all": "All",
         "allSongs": "All Songs"
+      },
+      "musicQuiz": {
+        "title": "Music Quiz",
+        "results": "Results",
+        "guessTheSong": "Guess the song",
+        "loading": "Loading snippet…",
+        "correct": "Correct!",
+        "wrong": "Not quite!",
+        "timesUp": "Time's up!",
+        "scoreShort": "Score",
+        "finalScore": "Final Score",
+        "perfect": "Perfect score! 🏆",
+        "greatJob": "Great job!",
+        "notBad": "Not bad!",
+        "keepPracticing": "Keep listening!",
+        "pressCenterToReplay": "Press center to play again · Menu to exit",
+        "notEnoughTracks": "Add more songs to play the quiz"
       },
       "translationLanguages": {
         "auto": "Auto",

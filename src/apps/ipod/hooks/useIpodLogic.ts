@@ -41,6 +41,7 @@ import {
 import type { WheelArea, RotationDirection } from "../types";
 import type { IpodInitialData } from "../../base/types";
 import type { CoverFlowRef } from "../components/CoverFlow";
+import type { MusicQuizRef } from "../components/MusicQuiz";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 
@@ -221,6 +222,10 @@ export function useIpodLogic({
   // Cover Flow state
   const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
 
+  // Music Quiz state
+  const [isMusicQuizOpen, setIsMusicQuizOpen] = useState(false);
+  const wasPlayingBeforeQuizRef = useRef(false);
+
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
@@ -229,6 +234,7 @@ export function useIpodLogic({
   const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
   const skipOperationRef = useRef(false);
   const coverFlowRef = useRef<CoverFlowRef | null>(null);
+  const musicQuizRef = useRef<MusicQuizRef | null>(null);
   
   // Screen long press for CoverFlow toggle
   const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -653,7 +659,41 @@ export function useIpodLogic({
         action: () => {
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
-          setIsSongSearchDialogOpen(true);
+          setMenuDirection("forward");
+          const extrasLabel = t("apps.ipod.menuItems.extras");
+          const extrasItems = [
+            {
+              label: t("apps.ipod.menuItems.musicQuiz", "Music Quiz"),
+              action: () => {
+                registerActivity();
+                if (isOffline) {
+                  showOfflineStatus();
+                  return;
+                }
+                // Save what was playing so we can restore the paused state on exit
+                wasPlayingBeforeQuizRef.current = useIpodStore.getState().isPlaying;
+                if (wasPlayingBeforeQuizRef.current) {
+                  setIsPlaying(false);
+                }
+                if (useIpodStore.getState().showVideo) toggleVideo();
+                setIsMusicQuizOpen(true);
+              },
+              showChevron: true,
+            },
+            {
+              label: t("apps.ipod.menu.searchSongs", "Search Songs..."),
+              action: () => {
+                registerActivity();
+                setIsSongSearchDialogOpen(true);
+              },
+              showChevron: false,
+            },
+          ];
+          setMenuHistory((prev) => [
+            ...prev,
+            { title: extrasLabel, items: extrasItems, selectedIndex: 0 },
+          ]);
+          setSelectedMenuItem(0);
         },
         showChevron: true,
       },
@@ -697,7 +737,7 @@ export function useIpodLogic({
         showChevron: true,
       },
     ];
-  }, [registerActivity, toggleVideo, musicMenuItems, settingsMenuItems, memoizedToggleShuffle, memoizedToggleBacklight, t]);
+  }, [registerActivity, toggleVideo, musicMenuItems, settingsMenuItems, memoizedToggleShuffle, memoizedToggleBacklight, t, isOffline, showOfflineStatus, setIsPlaying]);
 
   // Initialize menu history
   useEffect(() => {
@@ -716,6 +756,9 @@ export function useIpodLogic({
       return musicMenuItems;
     } else if (menu.title === t("apps.ipod.menuItems.settings")) {
       return settingsMenuItems;
+    } else if (menu.title === t("apps.ipod.menuItems.extras")) {
+      // Extras submenu has stable items; keep existing references to avoid stale closures.
+      return menu.items;
     } else if (menu.title === t("apps.ipod.menuItems.allSongs")) {
       // Rebuild "All Songs" submenu from current tracks
       return tracks.map((track, trackIndex) => ({
@@ -1096,6 +1139,12 @@ export function useIpodLogic({
       return;
     }
 
+    // Exit Music Quiz if open
+    if (isMusicQuizOpen) {
+      setIsMusicQuizOpen(false);
+      return;
+    }
+
     if (showVideo) toggleVideo();
 
     if (menuMode) {
@@ -1167,7 +1216,7 @@ export function useIpodLogic({
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
@@ -1242,6 +1291,10 @@ export function useIpodLogic({
           handleMenuButton();
           break;
         case "right":
+          if (isMusicQuizOpen && musicQuizRef.current) {
+            musicQuizRef.current.navigate("next");
+            return;
+          }
           if (isOffline) {
             showOfflineStatus();
           } else {
@@ -1252,6 +1305,11 @@ export function useIpodLogic({
           }
           break;
         case "bottom":
+          if (isMusicQuizOpen && musicQuizRef.current) {
+            // Replay current snippet
+            musicQuizRef.current.replaySnippet();
+            return;
+          }
           if (isOffline) {
             showOfflineStatus();
           } else {
@@ -1260,6 +1318,10 @@ export function useIpodLogic({
           }
           break;
         case "left":
+          if (isMusicQuizOpen && musicQuizRef.current) {
+            musicQuizRef.current.navigate("previous");
+            return;
+          }
           if (isOffline) {
             showOfflineStatus();
           } else {
@@ -1270,6 +1332,11 @@ export function useIpodLogic({
           }
           break;
         case "center":
+          // Handle Music Quiz selection
+          if (isMusicQuizOpen && musicQuizRef.current) {
+            musicQuizRef.current.selectCurrent();
+            return;
+          }
           // Handle Cover Flow selection
           if (isCoverFlowOpen && coverFlowRef.current) {
             coverFlowRef.current.selectCurrent();
@@ -1301,7 +1368,7 @@ export function useIpodLogic({
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen]
+    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen]
   );
 
   // Wheel rotation handler
@@ -1309,6 +1376,14 @@ export function useIpodLogic({
     (direction: RotationDirection) => {
       playScrollSound();
       registerActivity();
+
+      // Handle Music Quiz navigation
+      if (isMusicQuizOpen && musicQuizRef.current) {
+        const handled = musicQuizRef.current.navigate(
+          direction === "clockwise" ? "next" : "previous"
+        );
+        if (handled) return;
+      }
 
       // Handle Cover Flow navigation
       if (isCoverFlowOpen && coverFlowRef.current) {
@@ -1351,7 +1426,7 @@ export function useIpodLogic({
         );
       }
     },
-    [playScrollSound, registerActivity, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen]
+    [playScrollSound, registerActivity, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen]
   );
 
   // Scaling
@@ -1825,6 +1900,11 @@ export function useIpodLogic({
     coverFlowRef,
     containerRef,
 
+    // Sound effects (exposed for quiz / extras)
+    playClickSound,
+    playScrollSound,
+    vibrate,
+
     // State
     statusMessage,
     elapsedTime,
@@ -1836,6 +1916,9 @@ export function useIpodLogic({
     menuHistory,
     cameFromNowPlayingMenuItem,
     isCoverFlowOpen,
+    isMusicQuizOpen,
+    setIsMusicQuizOpen,
+    musicQuizRef,
     isAddingSong,
     activityState,
     skipOperationRef,

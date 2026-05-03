@@ -14,6 +14,7 @@ import { PipPlayer } from "./PipPlayer";
 import { FullScreenPortal } from "./FullScreenPortal";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { CoverFlow } from "./CoverFlow";
+import { MusicQuiz } from "./MusicQuiz";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
@@ -79,6 +80,12 @@ export function IpodAppComponent({
     menuDirection,
     menuHistory,
     isCoverFlowOpen,
+    isMusicQuizOpen,
+    setIsMusicQuizOpen,
+    musicQuizRef,
+    playClickSound,
+    playScrollSound,
+    vibrate,
     activityState,
     skipOperationRef,
     isHelpDialogOpen,
@@ -395,6 +402,16 @@ export function IpodAppComponent({
                 isPlaying={isPlaying}
                 onTogglePlay={togglePlay}
                 onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+              />
+
+              {/* Music Quiz overlay - positioned within screen bounds */}
+              <MusicQuiz
+                ref={musicQuizRef}
+                isVisible={isMusicQuizOpen}
+                onExit={() => setIsMusicQuizOpen(false)}
+                playClick={playClickSound}
+                playScroll={playScrollSound}
+                vibrate={vibrate}
               />
             </div>
 
