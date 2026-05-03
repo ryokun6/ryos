@@ -2122,6 +2122,19 @@
         "toggleRomanization": "読み仮名の切り替え",
         "translateLyrics": "歌詞を翻訳"
       },
+      "brickGame": {
+        "gameOver": "ゲームオーバー",
+        "gameOverTitle": "ゲームオーバー",
+        "menuToExit": "MENUで終了",
+        "paused": "一時停止",
+        "pressCenterToContinue": "センターボタンで再開",
+        "pressCenterToReplay": "センターボタンでもう一度プレイ",
+        "pressCenterToStart": "センターボタンで起動",
+        "pts": "pts",
+        "results": "結果",
+        "title": "Brick",
+        "youWin": "勝利！"
+      },
       "coverFlow": {
         "hideMedia": "メディアを非表示",
         "noTrack": "トラックなし",
@@ -2301,11 +2314,11 @@
         "all": "すべて",
         "allSongs": "すべての曲",
         "backlight": "バックライト",
+        "brickGame": "ブロック崩し",
         "extras": "エクストラ",
         "ipod": "iPod",
         "music": "ミュージック",
         "musicQuiz": "ミュージッククイズ",
-        "brickGame": "ブロック崩し",
         "nowPlaying": "再生中",
         "off": "オフ",
         "on": "オン",
@@ -2488,6 +2501,59 @@
       },
       "name": "カラオケ",
       "noTrack": "トラックが読み込まれていません。曲を選択するにはiPodを開いてください。"
+    },
+    "maps": {
+      "description": "Apple マップで場所を検索",
+      "help": {
+        "dropPins": {
+          "description": "リストから結果を選択してピンをドロップし、マップの中心をその場所に合わせます",
+          "title": "ピンをドロップ"
+        },
+        "locateMe": {
+          "description": "「現在地を表示」ボタンをクリックして、マップを現在地に合わせます",
+          "title": "現在地を表示"
+        },
+        "mapTypes": {
+          "description": "表示メニューから標準、ハイブリッド、航空写真を切り替えます",
+          "title": "マップの種類"
+        },
+        "poweredByApple": {
+          "description": "マップタイル、検索、ジオコーディングは Apple MapKit JS によって提供されています",
+          "title": "Apple マップ提供"
+        },
+        "searchPlaces": {
+          "description": "検索バーに都市、店舗、または住所を入力して、地図上で見つけます。",
+          "title": "場所を検索"
+        },
+        "switchMapStyle": {
+          "description": "「表示」メニューを使用して、標準、ハイブリッド、航空写真、落ち着いた配色（標準）を切り替えます。",
+          "title": "マップのスタイルを切り替え"
+        }
+      },
+      "locateMe": "現在地を表示",
+      "mapAriaLabel": "マップ",
+      "menu": {
+        "about": "マップについて",
+        "help": "マップヘルプ",
+        "hybrid": "ハイブリッド",
+        "locateMe": "現在地を表示",
+        "mutedStandard": "落ち着いた配色（標準）",
+        "satellite": "航空写真",
+        "standard": "標準"
+      },
+      "name": "マップ",
+      "noResults": "結果なし",
+      "searchButton": "検索",
+      "searchPlaceholder": "マップを検索",
+      "searching": "検索中…",
+      "status": {
+        "error": "Appleマップを読み込めませんでした: {{error}}",
+        "idle": "Appleマップを初期化中…",
+        "loading": "Appleマップを読み込み中…",
+        "missingToken": "Appleマップがまだ設定されていません。MapKitの資格情報を追加するよう開発者に依頼してください。",
+        "tokenHint": "資格情報が設定されると、サーバーは有効期間の短いMapKitトークンを自動的に署名します。"
+      },
+      "title": "マップ"
     },
     "minesweeper": {
       "description": "クラシックなパズルゲーム",

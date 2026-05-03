@@ -2122,6 +2122,19 @@
         "toggleRomanization": "Basculer la romanisation",
         "translateLyrics": "Traduire les paroles"
       },
+      "brickGame": {
+        "gameOver": "Fin de partie",
+        "gameOverTitle": "Fin de partie",
+        "menuToExit": "Menu pour quitter",
+        "paused": "Pause",
+        "pressCenterToContinue": "Appuyez au centre pour continuer",
+        "pressCenterToReplay": "Appuyez au centre pour rejouer",
+        "pressCenterToStart": "Appuyez au centre pour lancer",
+        "pts": "pts",
+        "results": "Résultats",
+        "title": "Brique",
+        "youWin": "Vous avez gagné !"
+      },
       "coverFlow": {
         "hideMedia": "Masquer les médias",
         "noTrack": "Aucune piste",
@@ -2301,11 +2314,11 @@
         "all": "Tout",
         "allSongs": "Toutes les chansons",
         "backlight": "Rétroéclairage",
+        "brickGame": "Brick",
         "extras": "Extras",
         "ipod": "iPod",
         "music": "Musique",
         "musicQuiz": "Quiz musical",
-        "brickGame": "Brick",
         "nowPlaying": "En lecture",
         "off": "Désactivé",
         "on": "Activé",
@@ -2488,6 +2501,59 @@
       },
       "name": "Karaoké",
       "noTrack": "Aucun morceau n'est chargé. Ouvrez l'iPod pour sélectionner un morceau."
+    },
+    "maps": {
+      "description": "Trouvez des lieux avec Apple Maps",
+      "help": {
+        "dropPins": {
+          "description": "Choisissez un résultat dans la liste pour placer un repère et recentrer la carte dessus",
+          "title": "Placer des repères"
+        },
+        "locateMe": {
+          "description": "Cliquez sur le bouton Me localiser pour recentrer la carte sur votre position actuelle",
+          "title": "Me localiser"
+        },
+        "mapTypes": {
+          "description": "Basculez entre Standard, Hybride et Satellite depuis le menu Présentation",
+          "title": "Types de carte"
+        },
+        "poweredByApple": {
+          "description": "Les tuiles de carte, la recherche et le géocodage sont fournis par Apple MapKit JS",
+          "title": "Fourni par Apple Maps"
+        },
+        "searchPlaces": {
+          "description": "Saisissez une ville, un établissement ou une adresse dans la barre de recherche pour la trouver sur la carte",
+          "title": "Rechercher des lieux"
+        },
+        "switchMapStyle": {
+          "description": "Utilisez le menu Présentation pour basculer entre Standard, Hybride, Satellite et Standard réduit.",
+          "title": "Changer le style de la carte"
+        }
+      },
+      "locateMe": "Me localiser",
+      "mapAriaLabel": "Carte",
+      "menu": {
+        "about": "À propos de Plans",
+        "help": "Aide Plans",
+        "hybrid": "Hybride",
+        "locateMe": "Me localiser",
+        "mutedStandard": "Standard réduit",
+        "satellite": "Satellite",
+        "standard": "Standard"
+      },
+      "name": "Plans",
+      "noResults": "Aucun résultat",
+      "searchButton": "Rechercher",
+      "searchPlaceholder": "Rechercher dans Plans",
+      "searching": "Recherche en cours…",
+      "status": {
+        "error": "Échec du chargement d’Apple Plans : {{error}}",
+        "idle": "Initialisation d’Apple Plans…",
+        "loading": "Chargement d’Apple Maps…",
+        "missingToken": "Apple Maps n’est pas encore configuré. Demandez au développeur d’ajouter des identifiants MapKit.",
+        "tokenHint": "Le serveur signe automatiquement des jetons MapKit à courte durée de vie une fois les identifiants configurés."
+      },
+      "title": "Plans"
     },
     "minesweeper": {
       "description": "Jeu de puzzle classique",

@@ -2122,6 +2122,19 @@
         "toggleRomanization": "Alternar Romanização",
         "translateLyrics": "Traduzir letra"
       },
+      "brickGame": {
+        "gameOver": "Fim de Jogo",
+        "gameOverTitle": "Fim de Jogo",
+        "menuToExit": "Menu para sair",
+        "paused": "Pausado",
+        "pressCenterToContinue": "Pressione o centro para continuar",
+        "pressCenterToReplay": "Pressione o centro para jogar novamente",
+        "pressCenterToStart": "Pressione o centro para iniciar",
+        "pts": "pts",
+        "results": "Resultados",
+        "title": "Brick",
+        "youWin": "Você venceu!"
+      },
       "coverFlow": {
         "hideMedia": "Ocultar Mídia",
         "noTrack": "Nenhuma faixa",
@@ -2301,11 +2314,11 @@
         "all": "Todas",
         "allSongs": "Todas as Músicas",
         "backlight": "Luz de Fundo",
+        "brickGame": "Brick",
         "extras": "Extras",
         "ipod": "iPod",
         "music": "Música",
         "musicQuiz": "Music Quiz",
-        "brickGame": "Brick",
         "nowPlaying": "A Reproduzir",
         "off": "Desligado",
         "on": "Ligado",
@@ -2488,6 +2501,59 @@
       },
       "name": "Karaoke",
       "noTrack": "Nenhuma faixa carregada. Abra o iPod para selecionar uma música."
+    },
+    "maps": {
+      "description": "Encontre lugares com o Apple Mapas",
+      "help": {
+        "dropPins": {
+          "description": "Escolha um resultado da lista para fixar um marcador e centralizar o mapa nele",
+          "title": "Fixar Marcadores"
+        },
+        "locateMe": {
+          "description": "Clique no botão Localizar para centralizar o mapa na sua localização atual",
+          "title": "Localizar"
+        },
+        "mapTypes": {
+          "description": "Alterne entre Padrão, Híbrido e Satélite no menu Visualizar",
+          "title": "Tipos de Mapa"
+        },
+        "poweredByApple": {
+          "description": "Os blocos de mapa, a busca e a geocodificação são fornecidos pelo Apple MapKit JS",
+          "title": "Fornecido por Apple Mapas"
+        },
+        "searchPlaces": {
+          "description": "Digite uma cidade, empresa ou endereço na barra de busca para encontrá-los no mapa",
+          "title": "Buscar Lugares"
+        },
+        "switchMapStyle": {
+          "description": "Use o menu Visualizar para alternar entre Padrão, Híbrido, Satélite e Padrão Suave.",
+          "title": "Alterar Estilo do Mapa"
+        }
+      },
+      "locateMe": "Localizar-me",
+      "mapAriaLabel": "Mapa",
+      "menu": {
+        "about": "Sobre o Mapas",
+        "help": "Ajuda do Mapas",
+        "hybrid": "Híbrido",
+        "locateMe": "Localizar-me",
+        "mutedStandard": "Padrão Suave",
+        "satellite": "Satélite",
+        "standard": "Padrão"
+      },
+      "name": "Mapas",
+      "noResults": "Nenhum resultado",
+      "searchButton": "Buscar",
+      "searchPlaceholder": "Buscar no Mapas",
+      "searching": "Buscando…",
+      "status": {
+        "error": "Falha ao carregar o Apple Maps: {{error}}",
+        "idle": "O Apple Maps está inicializando…",
+        "loading": "Carregando Apple Maps…",
+        "missingToken": "O Apple Maps ainda não está configurado. Peça ao desenvolvedor para adicionar as credenciais do MapKit.",
+        "tokenHint": "O servidor assina tokens do MapKit de curta duração automaticamente assim que as credenciais são configuradas."
+      },
+      "title": "Mapas"
     },
     "minesweeper": {
       "description": "Jogo clássico de quebra-cabeça",

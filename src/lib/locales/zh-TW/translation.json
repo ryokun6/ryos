@@ -2122,6 +2122,19 @@
         "toggleRomanization": "切換羅馬拼音",
         "translateLyrics": "翻譯歌詞"
       },
+      "brickGame": {
+        "gameOver": "遊戲結束",
+        "gameOverTitle": "遊戲結束",
+        "menuToExit": "按 Menu 鍵退出",
+        "paused": "已暫停",
+        "pressCenterToContinue": "按下中央鍵繼續",
+        "pressCenterToReplay": "按下中央鍵再次遊玩",
+        "pressCenterToStart": "按下中央鍵啟動",
+        "pts": "分",
+        "results": "結果",
+        "title": "磚塊",
+        "youWin": "你贏了！"
+      },
       "coverFlow": {
         "hideMedia": "隱藏媒體",
         "noTrack": "沒有曲目",
@@ -2301,11 +2314,11 @@
         "all": "全部",
         "allSongs": "所有歌曲",
         "backlight": "背光燈",
+        "brickGame": "打磚塊",
         "extras": "附加功能",
         "ipod": "iPod",
         "music": "音樂",
         "musicQuiz": "音樂問答",
-        "brickGame": "打磚塊",
         "nowPlaying": "播放中的歌曲",
         "off": "關閉",
         "on": "開啟",
@@ -2488,6 +2501,59 @@
       },
       "name": "卡拉 OK",
       "noTrack": "未載入任何曲目。開啟 iPod 以選取歌曲。"
+    },
+    "maps": {
+      "description": "使用 Apple 地圖尋找地點",
+      "help": {
+        "dropPins": {
+          "description": "從清單中選擇一個結果以放置大頭針，並將地圖重新對焦於該處",
+          "title": "放置大頭針"
+        },
+        "locateMe": {
+          "description": "按一下「定位我」按鈕，將地圖重新對焦於你的目前位置",
+          "title": "定位我"
+        },
+        "mapTypes": {
+          "description": "從「顯示方式」選單中切換標準、混合和衛星模式",
+          "title": "地圖類型"
+        },
+        "poweredByApple": {
+          "description": "地圖圖塊、搜尋和地理編碼由 Apple MapKit JS 提供",
+          "title": "由 Apple 地圖提供技術支援"
+        },
+        "searchPlaces": {
+          "description": "在搜尋列中輸入城市、商家或地址，以便在地圖上尋找",
+          "title": "搜尋地點"
+        },
+        "switchMapStyle": {
+          "description": "使用「顯示方式」選單在「標準」、「混合」、「衛星」和「淡化標準」之間切換。",
+          "title": "切換地圖樣式"
+        }
+      },
+      "locateMe": "我的位置",
+      "mapAriaLabel": "地圖",
+      "menu": {
+        "about": "關於地圖",
+        "help": "地圖說明",
+        "hybrid": "混合",
+        "locateMe": "我的位置",
+        "mutedStandard": "淡化標準",
+        "satellite": "衛星",
+        "standard": "標準"
+      },
+      "name": "地圖",
+      "noResults": "無結果",
+      "searchButton": "搜尋",
+      "searchPlaceholder": "搜尋地圖",
+      "searching": "正在搜尋…",
+      "status": {
+        "error": "無法載入 Apple 地圖：{{error}}",
+        "idle": "Apple 地圖正在初始化…",
+        "loading": "正在載入 Apple 地圖…",
+        "missingToken": "尚未設定 Apple 地圖。請要求開發者新增 MapKit 憑證。",
+        "tokenHint": "設定憑證後，伺服器會自動簽署短期 MapKit 權杖。"
+      },
+      "title": "地圖"
     },
     "minesweeper": {
       "description": "經典益智遊戲",

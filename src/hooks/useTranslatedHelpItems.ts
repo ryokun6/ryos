@@ -203,6 +203,14 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "search",
     "cloudLibrary",
   ],
+  maps: [
+    "searchPlaces",
+    "dropPins",
+    "locateMe",
+    "mapTypes",
+    "poweredByApple",
+    "switchMapStyle",
+  ],
 };
 
 /**

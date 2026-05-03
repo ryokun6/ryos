@@ -1,9 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-28T05:55:31.746Z",
+  "generatedAt": "2026-05-03T22:43:15.631Z",
   "themes": {
     "default": [
-      "account-login.png",
       "admin.png",
       "app.png",
       "apple.png",
@@ -85,6 +84,7 @@
       "macpaint/select.png",
       "macpaint/spray.png",
       "macpaint/text.png",
+      "maps.png",
       "minesweeper-app.png",
       "minesweeper.png",
       "movies.png",
@@ -190,6 +190,7 @@
       "karaoke.png",
       "mac-classic.png",
       "mac.png",
+      "maps.png",
       "media.png",
       "minesweeper-app.png",
       "minesweeper.png",
@@ -215,7 +216,8 @@
       "winamp.png"
     ],
     "system7": [
-      "chats.png"
+      "chats.png",
+      "maps.png"
     ],
     "win98": [
       "account-login.png",
@@ -300,6 +302,7 @@
       "macpaint/select.png",
       "macpaint/spray.png",
       "macpaint/text.png",
+      "maps.png",
       "minesweeper-app.png",
       "minesweeper.png",
       "movies.png",
@@ -443,6 +446,7 @@
       "macpaint/select.png",
       "macpaint/spray.png",
       "macpaint/text.png",
+      "maps.png",
       "minesweeper-app.png",
       "minesweeper.png",
       "movies.png",

@@ -2122,6 +2122,19 @@
         "toggleRomanization": "Romanisierung umschalten",
         "translateLyrics": "Liedtext übersetzen"
       },
+      "brickGame": {
+        "gameOver": "Game Over",
+        "gameOverTitle": "Game Over",
+        "menuToExit": "Menü zum Beenden",
+        "paused": "Pause",
+        "pressCenterToContinue": "Mitte drücken zum Fortfahren",
+        "pressCenterToReplay": "Mitte drücken zum Erneut spielen",
+        "pressCenterToStart": "Mitte drücken zum Starten",
+        "pts": "Pkt.",
+        "results": "Ergebnisse",
+        "title": "Brick",
+        "youWin": "Du hast gewonnen!"
+      },
       "coverFlow": {
         "hideMedia": "Medien ausblenden",
         "noTrack": "Kein Titel",
@@ -2301,11 +2314,11 @@
         "all": "Alle",
         "allSongs": "Alle Lieder",
         "backlight": "Hintergrundbeleuchtung",
+        "brickGame": "Brick",
         "extras": "Extras",
         "ipod": "iPod",
         "music": "Musik",
         "musicQuiz": "Musik-Quiz",
-        "brickGame": "Brick",
         "nowPlaying": "Aktuelle Wiedergabe",
         "off": "Aus",
         "on": "Ein",
@@ -2488,6 +2501,59 @@
       },
       "name": "Karaoke",
       "noTrack": "Kein Titel geladen. Öffne den iPod, um einen Titel auszuwählen."
+    },
+    "maps": {
+      "description": "Orte mit Apple Karten finden",
+      "help": {
+        "dropPins": {
+          "description": "Wähle ein Ergebnis aus der Liste aus, um eine Stecknadel zu setzen und die Karte darauf zu zentrieren",
+          "title": "Stecknadeln setzen"
+        },
+        "locateMe": {
+          "description": "Klicke auf die Taste „Meinen Standort finden“, um die Karte auf deinen aktuellen Standort zu zentrieren",
+          "title": "Meinen Standort finden"
+        },
+        "mapTypes": {
+          "description": "Wechsle im Menü „Darstellung“ zwischen Standard, Hybrid und Satellit",
+          "title": "Kartentypen"
+        },
+        "poweredByApple": {
+          "description": "Kartenkacheln, Suche und Geocoding werden von Apple MapKit JS bereitgestellt",
+          "title": "Unterstützt von Apple Karten"
+        },
+        "searchPlaces": {
+          "description": "Geben Sie eine Stadt, ein Unternehmen oder eine Adresse in die Suchleiste ein, um sie auf der Karte zu finden.",
+          "title": "Orte suchen"
+        },
+        "switchMapStyle": {
+          "description": "Verwenden Sie das Menü „Darstellung“, um zwischen „Standard“, „Hybrid“, „Satellit“ und „Standard (reduziert)“ zu wechseln.",
+          "title": "Kartenstil ändern"
+        }
+      },
+      "locateMe": "Meinen Standort bestimmen",
+      "mapAriaLabel": "Karte",
+      "menu": {
+        "about": "Über Karten",
+        "help": "Karten-Hilfe",
+        "hybrid": "Hybrid",
+        "locateMe": "Meinen Standort bestimmen",
+        "mutedStandard": "Standard (reduziert)",
+        "satellite": "Satellit",
+        "standard": "Standard"
+      },
+      "name": "Karten",
+      "noResults": "Keine Ergebnisse",
+      "searchButton": "Suchen",
+      "searchPlaceholder": "In Karten suchen",
+      "searching": "Suchen …",
+      "status": {
+        "error": "Apple Maps konnte nicht geladen werden: {{error}}",
+        "idle": "Apple Maps wird initialisiert …",
+        "loading": "Apple Maps wird geladen…",
+        "missingToken": "Apple Maps ist noch nicht konfiguriert. Bitten Sie den Entwickler, MapKit-Anmeldedaten hinzuzufügen.",
+        "tokenHint": "Der Server signiert automatisch kurzlebige MapKit-Token, sobald die Anmeldedaten konfiguriert sind."
+      },
+      "title": "Karten"
     },
     "minesweeper": {
       "description": "Klassisches Puzzlespiel",

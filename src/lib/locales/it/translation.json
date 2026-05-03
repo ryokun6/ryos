@@ -2122,6 +2122,19 @@
         "toggleRomanization": "Alterna romanizzazione",
         "translateLyrics": "Traduci testi"
       },
+      "brickGame": {
+        "gameOver": "Game Over",
+        "gameOverTitle": "Game Over",
+        "menuToExit": "Menu per uscire",
+        "paused": "In pausa",
+        "pressCenterToContinue": "Premi al centro per continuare",
+        "pressCenterToReplay": "Premi al centro per giocare ancora",
+        "pressCenterToStart": "Premi al centro per avviare",
+        "pts": "pt",
+        "results": "Risultati",
+        "title": "Brick",
+        "youWin": "Hai vinto!"
+      },
       "coverFlow": {
         "hideMedia": "Nascondi media",
         "noTrack": "Nessun brano",
@@ -2301,11 +2314,11 @@
         "all": "Tutti",
         "allSongs": "Tutti i brani",
         "backlight": "Retroilluminazione",
+        "brickGame": "Brick",
         "extras": "Extra",
         "ipod": "iPod",
         "music": "Musica",
         "musicQuiz": "Quiz musicale",
-        "brickGame": "Brick",
         "nowPlaying": "In riproduzione",
         "off": "Disattivo",
         "on": "Attivo",
@@ -2488,6 +2501,59 @@
       },
       "name": "Karaoke",
       "noTrack": "Nessun brano caricato. Apri iPod per selezionare un brano."
+    },
+    "maps": {
+      "description": "Trova luoghi con Mappe Apple",
+      "help": {
+        "dropPins": {
+          "description": "Scegli un risultato dall'elenco per inserire un segnaposto e ricentrare la mappa su di esso",
+          "title": "Inserisci segnaposto"
+        },
+        "locateMe": {
+          "description": "Fai clic sul pulsante Localizzami per ricentrare la mappa sulla tua posizione attuale",
+          "title": "Localizzami"
+        },
+        "mapTypes": {
+          "description": "Passa tra Standard, Ibrida e Satellite dal menu Vista",
+          "title": "Tipi di mappa"
+        },
+        "poweredByApple": {
+          "description": "I tasselli delle mappe, la ricerca e la geocodifica sono forniti da Apple MapKit JS",
+          "title": "Offerto da Mappe Apple"
+        },
+        "searchPlaces": {
+          "description": "Digita una città, un'attività o un indirizzo nella barra di ricerca per trovarli sulla mappa",
+          "title": "Cerca luoghi"
+        },
+        "switchMapStyle": {
+          "description": "Usa il menu Vista per passare tra Standard, Ibrida, Satellite e Standard attenuata.",
+          "title": "Cambia stile mappa"
+        }
+      },
+      "locateMe": "La mia posizione",
+      "mapAriaLabel": "Mappa",
+      "menu": {
+        "about": "Informazioni su Mappe",
+        "help": "Aiuto Mappe",
+        "hybrid": "Ibrida",
+        "locateMe": "La mia posizione",
+        "mutedStandard": "Standard attenuata",
+        "satellite": "Satellite",
+        "standard": "Standard"
+      },
+      "name": "Mappe",
+      "noResults": "Nessun risultato",
+      "searchButton": "Cerca",
+      "searchPlaceholder": "Cerca in Mappe",
+      "searching": "Ricerca in corso…",
+      "status": {
+        "error": "Impossibile caricare Apple Maps: {{error}}",
+        "idle": "Inizializzazione di Apple Maps in corso…",
+        "loading": "Caricamento di Apple Maps…",
+        "missingToken": "Apple Maps non è ancora configurato. Chiedi allo sviluppatore di aggiungere le credenziali MapKit.",
+        "tokenHint": "Il server firma automaticamente i token MapKit a breve durata una volta configurate le credenziali."
+      },
+      "title": "Mappe"
     },
     "minesweeper": {
       "description": "Classico rompicapo",

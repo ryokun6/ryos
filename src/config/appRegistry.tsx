@@ -162,6 +162,11 @@ const LazyCandyBarApp = createLazyComponent<unknown>(
   "candybar"
 );
 
+const LazyMapsApp = createLazyComponent<unknown>(
+  () => import("@/apps/maps/components/MapsAppComponent").then(m => ({ default: m.MapsAppComponent })),
+  "maps"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -198,6 +203,7 @@ import { appMetadata as calendarMetadata, helpItems as calendarHelpItems } from 
 import { appMetadata as contactsMetadata, helpItems as contactsHelpItems } from "@/apps/contacts";
 import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
 import { appMetadata as candybarMetadata, helpItems as candybarHelpItems } from "@/apps/candybar/metadata";
+import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/maps";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/hooks/useInfinitePcLogic";
 
@@ -538,6 +544,19 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 680, height: 460 },
       minSize: { width: 500, height: 350 },
+    } as WindowConstraints,
+  },
+  ["maps"]: {
+    id: "maps",
+    name: "Maps",
+    icon: { type: "image", src: mapsMetadata.icon },
+    description: "Find places with Apple Maps",
+    component: LazyMapsApp,
+    helpItems: mapsHelpItems,
+    metadata: mapsMetadata,
+    windowConfig: {
+      defaultSize: { width: 720, height: 520 },
+      minSize: { width: 360, height: 320 },
     } as WindowConstraints,
   },
 } as const;

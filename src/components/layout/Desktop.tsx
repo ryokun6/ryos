@@ -57,6 +57,7 @@ const DEFAULT_SHORTCUT_ORDER: AppId[] = [
   "minesweeper",
   "synth",
   "calendar",
+  "maps",
   "terminal",
   "pc",
   "dashboard",
