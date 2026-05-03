@@ -49,39 +49,11 @@ import { useSpotlightStore } from "@/stores/useSpotlightStore";
 import { toggleExposeView, toggleSpotlightSearch, requestAppLaunch } from "@/utils/appEventBus";
 import { useUndoRedoStore } from "@/stores/useUndoRedoStore";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { appMetadata as finderMetadata, helpItems as finderHelpItems } from "@/apps/finder/metadata";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
   return getTranslatedAppName(appId as AppId);
-};
-
-const finderHelpItems = [
-  {
-    icon: "🔍",
-    title: "Browse Files",
-    description: "Navigate through your files and folders",
-  },
-  {
-    icon: "📁",
-    title: "Create Folders",
-    description: "Organize your files with new folders",
-  },
-  {
-    icon: "🗑️",
-    title: "Delete Files",
-    description: "Remove unwanted files and folders",
-  },
-];
-
-const finderMetadata = {
-  name: "Finder",
-  version: "1.0.0",
-  creator: {
-    name: "Ryo Lu",
-    url: "https://ryo.lu",
-  },
-  github: "https://github.com/ryokun6/ryos",
-  icon: "/icons/mac.png",
 };
 
 let cachedTauriFullscreen: boolean | null = null;
@@ -1533,7 +1505,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           {currentTheme === "macosx" && !hasActiveApp && (
             <FinderAppMenu />
           )}
-          {hasActiveApp && children ? children : <DefaultMenuItems />}
+          {hasActiveApp ? children : <DefaultMenuItems />}
         </Menubar>
       </ScrollableMenuWrapper>
       {/* Draggable spacer for Tauri window only */}
