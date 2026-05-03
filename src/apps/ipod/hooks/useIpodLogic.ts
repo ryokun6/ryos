@@ -42,6 +42,7 @@ import type { WheelArea, RotationDirection } from "../types";
 import type { IpodInitialData } from "../../base/types";
 import type { CoverFlowRef } from "../components/CoverFlow";
 import type { MusicQuizRef } from "../components/MusicQuiz";
+import type { BrickGameRef } from "../components/BrickGame";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 
@@ -226,6 +227,10 @@ export function useIpodLogic({
   const [isMusicQuizOpen, setIsMusicQuizOpen] = useState(false);
   const wasPlayingBeforeQuizRef = useRef(false);
 
+  // Brick Game state
+  const [isBrickGameOpen, setIsBrickGameOpen] = useState(false);
+  const wasPlayingBeforeBrickGameRef = useRef(false);
+
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
@@ -235,6 +240,7 @@ export function useIpodLogic({
   const skipOperationRef = useRef(false);
   const coverFlowRef = useRef<CoverFlowRef | null>(null);
   const musicQuizRef = useRef<MusicQuizRef | null>(null);
+  const brickGameRef = useRef<BrickGameRef | null>(null);
   
   // Screen long press for CoverFlow toggle
   const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -677,6 +683,20 @@ export function useIpodLogic({
                 }
                 if (useIpodStore.getState().showVideo) toggleVideo();
                 setIsMusicQuizOpen(true);
+              },
+              showChevron: true,
+            },
+            {
+              label: t("apps.ipod.menuItems.brickGame", "Brick"),
+              action: () => {
+                registerActivity();
+                // Pause any playback while the game is open (works offline).
+                wasPlayingBeforeBrickGameRef.current = useIpodStore.getState().isPlaying;
+                if (wasPlayingBeforeBrickGameRef.current) {
+                  setIsPlaying(false);
+                }
+                if (useIpodStore.getState().showVideo) toggleVideo();
+                setIsBrickGameOpen(true);
               },
               showChevron: true,
             },
@@ -1145,6 +1165,12 @@ export function useIpodLogic({
       return;
     }
 
+    // Exit Brick Game if open
+    if (isBrickGameOpen) {
+      setIsBrickGameOpen(false);
+      return;
+    }
+
     if (showVideo) toggleVideo();
 
     if (menuMode) {
@@ -1216,7 +1242,7 @@ export function useIpodLogic({
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
@@ -1228,11 +1254,11 @@ export function useIpodLogic({
     if (isCoverFlowOpen) {
       // Exit cover flow
       setIsCoverFlowOpen(false);
-    } else if (!menuMode && tracks.length > 0) {
-      // Enter cover flow only when in Now Playing mode
+    } else if (!menuMode && !isMusicQuizOpen && !isBrickGameOpen && tracks.length > 0) {
+      // Enter cover flow only when in Now Playing mode and no overlay is active
       setIsCoverFlowOpen(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, menuMode, tracks.length]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, menuMode, isMusicQuizOpen, isBrickGameOpen, tracks.length]);
 
   const handleCoverFlowSelect = useCallback((index: number) => {
     playClickSound();
@@ -1295,6 +1321,10 @@ export function useIpodLogic({
             musicQuizRef.current.navigate("next");
             return;
           }
+          if (isBrickGameOpen && brickGameRef.current) {
+            brickGameRef.current.navigate("next");
+            return;
+          }
           if (isOffline) {
             showOfflineStatus();
           } else {
@@ -1310,6 +1340,11 @@ export function useIpodLogic({
             musicQuizRef.current.replaySnippet();
             return;
           }
+          if (isBrickGameOpen && brickGameRef.current) {
+            // Pause / resume the game
+            brickGameRef.current.togglePause();
+            return;
+          }
           if (isOffline) {
             showOfflineStatus();
           } else {
@@ -1320,6 +1355,10 @@ export function useIpodLogic({
         case "left":
           if (isMusicQuizOpen && musicQuizRef.current) {
             musicQuizRef.current.navigate("previous");
+            return;
+          }
+          if (isBrickGameOpen && brickGameRef.current) {
+            brickGameRef.current.navigate("previous");
             return;
           }
           if (isOffline) {
@@ -1335,6 +1374,11 @@ export function useIpodLogic({
           // Handle Music Quiz selection
           if (isMusicQuizOpen && musicQuizRef.current) {
             musicQuizRef.current.selectCurrent();
+            return;
+          }
+          // Handle Brick Game selection (start / pause / restart)
+          if (isBrickGameOpen && brickGameRef.current) {
+            brickGameRef.current.selectCurrent();
             return;
           }
           // Handle Cover Flow selection
@@ -1368,7 +1412,7 @@ export function useIpodLogic({
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen]
+    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
   );
 
   // Wheel rotation handler
@@ -1380,6 +1424,14 @@ export function useIpodLogic({
       // Handle Music Quiz navigation
       if (isMusicQuizOpen && musicQuizRef.current) {
         const handled = musicQuizRef.current.navigate(
+          direction === "clockwise" ? "next" : "previous"
+        );
+        if (handled) return;
+      }
+
+      // Handle Brick Game paddle movement
+      if (isBrickGameOpen && brickGameRef.current) {
+        const handled = brickGameRef.current.navigate(
           direction === "clockwise" ? "next" : "previous"
         );
         if (handled) return;
@@ -1426,7 +1478,7 @@ export function useIpodLogic({
         );
       }
     },
-    [playScrollSound, registerActivity, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen]
+    [playScrollSound, registerActivity, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
   );
 
   // Scaling
@@ -1919,6 +1971,9 @@ export function useIpodLogic({
     isMusicQuizOpen,
     setIsMusicQuizOpen,
     musicQuizRef,
+    isBrickGameOpen,
+    setIsBrickGameOpen,
+    brickGameRef,
     isAddingSong,
     activityState,
     skipOperationRef,

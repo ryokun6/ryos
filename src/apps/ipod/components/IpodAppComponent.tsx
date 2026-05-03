@@ -15,6 +15,7 @@ import { FullScreenPortal } from "./FullScreenPortal";
 import { LyricsDisplay } from "./LyricsDisplay";
 import { CoverFlow } from "./CoverFlow";
 import { MusicQuiz } from "./MusicQuiz";
+import { BrickGame } from "./BrickGame";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
@@ -83,6 +84,9 @@ export function IpodAppComponent({
     isMusicQuizOpen,
     setIsMusicQuizOpen,
     musicQuizRef,
+    isBrickGameOpen,
+    setIsBrickGameOpen,
+    brickGameRef,
     playClickSound,
     playScrollSound,
     vibrate,
@@ -327,7 +331,7 @@ export function IpodAppComponent({
                 screenLongPressStartPos.current = null;
               }}
             >
-              {!isMusicQuizOpen && (
+              {!isMusicQuizOpen && !isBrickGameOpen && (
                 <IpodScreen
                   currentTrack={tracks[currentIndex] || null}
                   isPlaying={isPlaying && !isFullScreen}
@@ -411,6 +415,18 @@ export function IpodAppComponent({
                 ref={musicQuizRef}
                 isVisible={isMusicQuizOpen}
                 onExit={() => setIsMusicQuizOpen(false)}
+                lcdFilterOn={lcdFilterOn}
+                backlightOn={backlightOn}
+                playClick={playClickSound}
+                playScroll={playScrollSound}
+                vibrate={vibrate}
+              />
+
+              {/* Brick Game overlay - positioned within screen bounds */}
+              <BrickGame
+                ref={brickGameRef}
+                isVisible={isBrickGameOpen}
+                onExit={() => setIsBrickGameOpen(false)}
                 lcdFilterOn={lcdFilterOn}
                 backlightOn={backlightOn}
                 playClick={playClickSound}

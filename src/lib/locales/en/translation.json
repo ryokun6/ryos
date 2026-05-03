@@ -1912,6 +1912,7 @@
         "settings": "Settings",
         "extras": "Extras",
         "musicQuiz": "Music Quiz",
+        "brickGame": "Brick",
         "shuffleSongs": "Shuffle Songs",
         "nowPlaying": "Now Playing",
         "ipod": "iPod",
@@ -1944,6 +1945,14 @@
         "pressCenterToStart": "Press center to start",
         "menuToExit": "Menu to exit",
         "notEnoughTracks": "Add more songs to play the quiz"
+      },
+      "brickGame": {
+        "title": "Brick",
+        "pressCenterToStart": "Press center to launch",
+        "pressCenterToContinue": "Press center to continue",
+        "paused": "Paused",
+        "gameOver": "Game Over — center to retry",
+        "youWin": "You win!"
       },
       "translationLanguages": {
         "auto": "Auto",
