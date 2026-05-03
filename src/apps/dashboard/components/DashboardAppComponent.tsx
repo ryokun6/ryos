@@ -236,6 +236,8 @@ export function DashboardAppComponent({
   const [isClosing, setIsClosing] = useState(false);
   const [stripHeight, setStripHeight] = useState(0);
   const isMobile = useMediaQuery("(max-width: 767px)");
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const prevWidgetCountRef = useRef(0);
 
   const {
     translatedHelpItems,
@@ -309,6 +311,28 @@ export function DashboardAppComponent({
   const showOverlay = isWindowOpen && !isClosing;
 
   useEffect(() => {
+    if (!isMobile) {
+      prevWidgetCountRef.current = widgets.length;
+      return;
+    }
+    const prev = prevWidgetCountRef.current;
+    prevWidgetCountRef.current = widgets.length;
+    if (widgets.length <= prev) return;
+    const container = mobileScrollRef.current;
+    if (!container) return;
+    // Defer to next frame so the new widget has been laid out.
+    const raf = requestAnimationFrame(() => {
+      const target = container.scrollHeight - container.clientHeight;
+      try {
+        container.scrollTo({ top: target, behavior: "smooth" });
+      } catch {
+        container.scrollTop = target;
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [widgets.length, isMobile]);
+
+  useEffect(() => {
     if (!showOverlay) return;
     if (isMobile) return;
     const reposition = () => {
@@ -380,6 +404,7 @@ export function DashboardAppComponent({
               {/* Widgets - pointer-events-none so scrim receives backdrop clicks */}
               {isMobile ? (
                 <div
+                  ref={mobileScrollRef}
                   className="absolute inset-0 overflow-y-auto overflow-x-hidden"
                   style={{
                     pointerEvents: "auto",
