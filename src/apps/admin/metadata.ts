@@ -1,33 +1,33 @@
 export const helpItems = [
   {
     icon: "👑",
-    title: "Admin Access",
-    description: "This app is only accessible to the admin user (ryo).",
+    title: "Admin Only",
+    description: "Locked down to the admin user (ryo) — auth-gated on every action",
   },
   {
     icon: "👥",
     title: "User Management",
-    description: "View, search, and manage registered users.",
+    description: "Page through registered users, view profiles, and revoke or rename accounts",
   },
   {
     icon: "💬",
-    title: "Room Management",
-    description: "View and manage chat rooms, delete inappropriate content.",
+    title: "Room Moderation",
+    description: "Inspect chat rooms with IRC metadata; delete inappropriate content fast",
   },
   {
     icon: "🎵",
     title: "Song Library",
-    description: "Import, export, and manage the cached song library.",
+    description: "Bulk import, export, and clean the cached YouTube + lyrics song library",
   },
   {
     icon: "🔍",
     title: "Search & Filter",
-    description: "Search users or songs by name to quickly find entries.",
+    description: "Quickly search users or songs by name across paginated grids",
   },
   {
     icon: "📊",
-    title: "Statistics",
-    description: "View system statistics and usage metrics.",
+    title: "System Stats",
+    description: "Live usage metrics including a Cursor agent runs telemetry card",
   },
 ];
 

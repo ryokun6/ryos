@@ -9,32 +9,32 @@ export const appMetadata = {
 export const helpItems = [
   {
     icon: "📺",
-    title: "Channels",
-    description: "Flip through curated YouTube channels like a TV",
+    title: "Channel Surf",
+    description: "Flip between curated YouTube channels like a Saturday-morning TV",
   },
   {
     icon: "⏯️",
-    title: "Playback",
-    description: "Play, pause, and skip videos within the current channel",
+    title: "Mid-Show Tune-In",
+    description: "New channels join already in-progress with a random seek for that live feel",
   },
   {
     icon: "🔢",
     title: "Channel Numbers",
-    description: "Press 1–6 to jump to a channel, or use CH+ / CH−",
+    description: "Type 1–6 (or multi-digit) to jump straight to a channel, or use CH+/CH−",
   },
   {
-    icon: "⌨️",
-    title: "Shortcuts",
-    description: "Arrow keys: up/down change channel, left/right change video",
+    icon: "🤖",
+    title: "AI-Made Channels",
+    description: "Use Channels ▸ Create to prompt the AI for a custom themed playlist",
+  },
+  {
+    icon: "🎤",
+    title: "MTV Channel",
+    description: "The MTV channel mirrors your iPod library and shows synced lyrics overlays",
   },
   {
     icon: "🖥️",
-    title: "Full Screen",
-    description: "Watch in full screen from the Controls menu or window chrome",
-  },
-  {
-    icon: "❓",
-    title: "Help & About",
-    description: "Open Help from the Help menu for more info",
+    title: "Full-Screen Mode",
+    description: "Pop into full screen from Controls ▸ Full Screen for a true couch experience",
   },
 ];

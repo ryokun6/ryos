@@ -3,37 +3,37 @@ export const helpItems = [
     icon: "🌐",
     title: "Browse the Web",
     description:
-      "Enter URLs and use navigation buttons (Back, Forward, Refresh, Stop).",
+      "Type any URL and use Back, Forward, Refresh, and Stop to navigate.",
   },
   {
     icon: "🌌",
     title: "Travel Through Time",
     description:
-      "Select a year from the dropdown to view websites from the past or future.",
+      "Pick any year from 1000 to the far future to see sites as they were — or could be.",
   },
   {
     icon: "✨",
-    title: "History Reimagined",
+    title: "AI History Reimagined",
     description:
-      "AI reconstructs very old sites (pre-1996) and imagines future web experiences.",
+      "Pre-1996 pages and future years are reconstructed live by AI in streaming HTML.",
   },
   {
     icon: "⭐",
-    title: "Save Favorites",
+    title: "Year-Locked Favorites",
     description:
-      "Add sites and specific years to your Favorites bar for easy access.",
+      "Favorite a site at a specific year so it always opens in that exact era.",
   },
   {
     icon: "🔮",
     title: "Explore Time Nodes",
     description:
-      "Click the clock icon in the address bar to see available snapshots of the current site across time.",
+      "Click the clock in the address bar to jump between cached snapshots of any site.",
   },
   {
     icon: "🔗",
     title: "Share Your Journey",
     description:
-      "Use the Share button to generate a link to the exact page and year you're viewing.",
+      "Generate a share link that reopens the exact page and year you're viewing.",
   },
 ];
 

@@ -14,33 +14,36 @@ export const helpItems = [
     icon: "🔍",
     title: "Browse & Navigate",
     description:
-      "Back/Forward buttons, address bar & Go menu for fast navigation",
+      "Back, Forward, address bar, and Go menu jump anywhere in your file system",
   },
   {
     icon: "📁",
     title: "File Management",
     description:
-      "Create folders, rename, move, and drag items to organize files",
-  },
-  {
-    icon: "👀",
-    title: "View & Sort",
-    description: "Switch Icon sizes and sort by name, kind, size, or date",
+      "Create folders, rename, drag, and duplicate to organize your files",
   },
   {
     icon: "📍",
     title: "Quick Access",
     description:
-      "Jump to Documents, Applications, or Trash instantly from Go menu",
+      "Sidebar pins jump to Documents, Applications, Images, and Trash",
   },
   {
-    icon: "ℹ️",
-    title: "Storage Info",
-    description: "See free space & item count in the window footer",
+    icon: "📡",
+    title: "AirDrop Sharing",
+    description:
+      "Right-click any file to AirDrop it to nearby ryOS users instantly",
+  },
+  {
+    icon: "📥",
+    title: "Drop to Import",
+    description:
+      "Drop .app, .gz, or .html files anywhere to install them into Applets",
   },
   {
     icon: "🗑️",
-    title: "Trash",
-    description: "Drag files to Trash & Empty to permanently delete",
+    title: "Trash & Undo",
+    description:
+      "Move files to Trash, then Edit ▸ Undo to instantly bring them back",
   },
 ];

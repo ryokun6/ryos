@@ -2,32 +2,32 @@ export const helpItems = [
   {
     icon: "🎙️",
     title: "Record Slot",
-    description: "Click a slot to record audio; click again to stop",
+    description: "Click any empty slot to record straight from your mic; click to stop",
   },
   {
     icon: "▶️",
-    title: "Keyboard Play",
-    description: "Press 1-9 to trigger sounds instantly",
+    title: "Keyboard Triggers",
+    description: "Press 1–9 to fire sounds instantly — perfect for live performances",
   },
   {
     icon: "🌊",
-    title: "Waveform View",
-    description: "See live waveform while recording or playing back",
+    title: "Live Waveform",
+    description: "Watch a real-time waveform while recording or playing each clip",
   },
   {
     icon: "✏️",
-    title: "Customize Slot",
-    description: "Add emoji & title to each sample for quick ID",
+    title: "Custom Emoji & Title",
+    description: "Tag every slot with an emoji and name so you can find it on the fly",
   },
   {
     icon: "📂",
     title: "Multiple Boards",
-    description: "Create, rename & switch boards for sets of sounds",
+    description: "Create, rename, and switch between boards for different sound sets",
   },
   {
     icon: "🌍",
     title: "Import / Export",
-    description: "Share boards as files; drag-drop to import",
+    description: "Share boards as files and drop them back in to load instantly",
   },
 ];
 

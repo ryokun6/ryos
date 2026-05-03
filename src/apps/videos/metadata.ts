@@ -1,33 +1,33 @@
 export const helpItems = [
   {
     icon: "🎥",
-    title: "Add Video",
-    description: "Paste any YouTube URL to add to playlist",
+    title: "Add from YouTube",
+    description: "Paste any YouTube URL and ryOS fetches the metadata into your playlist",
   },
   {
     icon: "▶️",
-    title: "Playback",
-    description: "Play, pause, next, previous controls",
+    title: "Classic Playback",
+    description: "Play, pause, skip, scrub, and adjust volume from the chunky transport bar",
   },
   {
     icon: "🔁",
-    title: "Loop",
-    description: "Loop current video or entire playlist",
+    title: "Loop Mode",
+    description: "Loop a single video or the entire playlist for endless background play",
   },
   {
     icon: "🔀",
-    title: "Shuffle",
-    description: "Randomize playlist order",
+    title: "Shuffle Order",
+    description: "Toggle shuffle to randomize playlist order without losing your queue",
   },
   {
-    icon: "📝",
-    title: "Playlist",
-    description: "Manage and organize your video playlist",
+    icon: "📺",
+    title: "Powers Ryo TV",
+    description: "Your playlist also feeds the TV app's curated channel lineup",
   },
   {
-    icon: "🎨",
-    title: "Retro UI",
-    description: "Classic QuickTime player aesthetics",
+    icon: "🔗",
+    title: "Share Deep Links",
+    description: "Generate share URLs that reopen the same clip directly in Videos",
   },
 ];
 

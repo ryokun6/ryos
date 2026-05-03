@@ -1,33 +1,33 @@
 export const helpItems = [
   {
     icon: "🛒",
-    title: "Applet Store",
-    description: "Browse and install applets from the community. Open the Store menu to discover new apps.",
+    title: "Browse the Store",
+    description: "Open the Store tab to discover community-built apps and install them in one click",
   },
   {
     icon: "💬",
-    title: "Create with ryOS Chat",
-    description: "Ask ryOS Chat to create custom apps and applets for you. Share your ideas and get working apps instantly.",
+    title: "Create with Chats",
+    description: "Ask Ryo in Chats to build a custom applet — get a working HTML app instantly",
   },
   {
     icon: "📄",
-    title: "View Applets",
-    description: "Open and run applets saved from ryOS Chat or downloaded from the store.",
+    title: "Run Anything",
+    description: "Sandboxed runner executes any HTML applet saved on your system safely",
   },
   {
     icon: "📤",
-    title: "Share Applets",
-    description: "Share your favorite applets with others using the Share Applet option in the File menu.",
+    title: "Share via Code",
+    description: "Use File ▸ Share Applet to copy a link or short code others can paste in",
   },
   {
     icon: "📂",
     title: "Open from Finder",
-    description: "Browse and open applets saved on your system using the File menu.",
+    description: "Drop .app or .gz applet bundles into Finder and they appear in /Applets",
   },
   {
     icon: "🔄",
-    title: "Keep Updated",
-    description: "Check for updates in the Store menu to get the latest versions of your installed applets.",
+    title: "Auto Update Check",
+    description: "Store ▸ Check for Updates pulls the latest versions of your installed applets",
   },
 ];
 

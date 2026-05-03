@@ -118,27 +118,27 @@
       },
       "help": {
         "adminAccess": {
-          "description": "이 앱은 관리자 사용자(ryo)만 접근할 수 있습니다.",
-          "title": "관리자 접근"
+          "description": "관리자 사용자(ryo)로 제한됨 — 모든 작업에 인증 필요",
+          "title": "관리자 전용"
         },
         "roomManagement": {
-          "description": "채팅방을 보고 관리하며, 부적절한 콘텐츠를 삭제합니다.",
-          "title": "채팅방 관리"
+          "description": "IRC 메타데이터로 채팅방을 검사하고 부적절한 콘텐츠를 빠르게 삭제",
+          "title": "방 관리"
         },
         "searchFilter": {
-          "description": "사용자나 노래를 이름으로 검색하여 항목을 빠르게 찾으세요.",
+          "description": "페이지가 매겨진 그리드에서 이름으로 사용자나 곡을 빠르게 검색",
           "title": "검색 및 필터"
         },
         "songLibrary": {
-          "description": "캐시된 노래 라이브러리 가져오기, 내보내기 및 관리.",
-          "title": "노래 라이브러리"
+          "description": "캐시된 YouTube + 가사 곡 라이브러리를 일괄 가져오기, 내보내기 및 정리",
+          "title": "곡 라이브러리"
         },
         "statistics": {
-          "description": "시스템 통계 및 사용량 지표를 확인합니다.",
-          "title": "통계"
+          "description": "Cursor 에이전트 실행 텔레메트리 카드를 포함한 실시간 사용 지표",
+          "title": "시스템 통계"
         },
         "userManagement": {
-          "description": "등록된 사용자를 보고, 검색하고, 관리합니다.",
+          "description": "등록된 사용자를 페이지별로 확인하고, 프로필을 조회하거나 계정을 해지 또는 이름 변경",
           "title": "사용자 관리"
         }
       },
@@ -411,28 +411,28 @@
       },
       "help": {
         "appletStore": {
-          "description": "커뮤니티에서 앱렛 탐색 및 설치. 스토어 메뉴를 열어 새 앱 발견.",
-          "title": "앱렛 스토어"
+          "description": "스토어 탭을 열어 커뮤니티에서 제작한 앱을 탐색하고 클릭 한 번으로 설치",
+          "title": "스토어 둘러보기"
         },
         "createWithRyosChat": {
-          "description": "ryOS 채팅에 사용자 지정 앱 및 앱렛 생성 요청. 아이디어를 공유하고 즉시 작동하는 앱 받기.",
-          "title": "ryOS 채팅으로 만들기"
+          "description": "채팅에서 Ryo에게 커스텀 Applet 제작을 요청하고 즉시 작동하는 HTML 앱을 확인",
+          "title": "채팅으로 만들기"
         },
         "keepUpdated": {
-          "description": "스토어 메뉴에서 업데이트 확인하여 설치된 앱렛의 최신 버전 받기.",
-          "title": "최신 상태 유지"
+          "description": "Store ▸ 업데이트 확인을 통해 설치된 Applet의 최신 버전을 가져옵니다",
+          "title": "자동 업데이트 확인"
         },
         "openFromFinder": {
-          "description": "파일 메뉴를 사용하여 시스템에 저장된 앱렛 탐색 및 열기.",
+          "description": ".app 또는 .gz Applet 번들을 Finder에 드롭하면 /Applets에 나타납니다",
           "title": "Finder에서 열기"
         },
         "shareApplets": {
-          "description": "파일 메뉴의 앱렛 공유 옵션을 사용하여 즐겨찾는 앱렛을 다른 사용자와 공유.",
-          "title": "앱렛 공유"
+          "description": "파일 ▸ Applet 공유를 사용하여 다른 사람이 붙여넣을 수 있는 링크나 단축 코드를 복사",
+          "title": "코드로 공유"
         },
         "viewApplets": {
-          "description": "ryOS 채팅에서 저장한 앱렛 또는 스토어에서 다운로드한 앱렛 열기 및 실행.",
-          "title": "앱렛 보기"
+          "description": "샌드박스 실행기가 시스템에 저장된 모든 HTML Applet을 안전하게 실행",
+          "title": "무엇이든 실행"
         }
       },
       "labels": {
@@ -511,6 +511,32 @@
         "success": "{{count}}개 이벤트를 내보냈습니다",
         "successPlural": "{{count}}개 이벤트 내보냄"
       },
+      "help": {
+        "createEvents": {
+          "description": "날짜를 더블 클릭하거나 파일 ▸ 새로운 이벤트를 사용하여 시간 기반 이벤트를 추가하세요",
+          "title": "이벤트 생성"
+        },
+        "icalImportExport": {
+          "description": ".ics 파일을 드롭하여 일괄 가져오거나, 캘린더를 내보내어 다른 사람과 공유하세요",
+          "title": "iCal 가져오기 / 내보내기"
+        },
+        "navigateMonths": {
+          "description": "화살표 버튼을 사용하여 월을 넘기거나, '오늘'을 눌러 현재로 바로 돌아갈 수 있습니다",
+          "title": "월 이동"
+        },
+        "ryoSchedules": {
+          "description": "채팅에서 Ryo에게 요청하여 다가오는 이벤트를 추가, 편집 또는 요약하세요",
+          "title": "Ryo가 일정을 관리합니다"
+        },
+        "todosSidebar": {
+          "description": "할 일 패널을 켜고 꺼서 일정과 함께 작업을 관리하세요",
+          "title": "할 일 사이드바"
+        },
+        "undoAutoSave": {
+          "description": "모든 변경 사항은 자동으로 저장됩니다. ⌘Z를 사용하여 삭제, 편집, 일괄 가져오기까지 되돌릴 수 있습니다",
+          "title": "실행 취소 및 자동 저장"
+        }
+      },
       "import": {
         "success": "{{count}}개의 이벤트를 가져왔습니다",
         "successPlural": "{{count}}개 이벤트 가져옴"
@@ -557,28 +583,28 @@
       },
       "help": {
         "applyIconPacks": {
-          "description": "아이콘 팩을 선택하고 적용을 클릭하여 데스크톱 아이콘을 사용자화하세요",
-          "title": "아이콘 팩 적용"
+          "description": "'적용'을 눌러 모든 데스크탑, Dock 및 Finder 아이콘을 새 팩으로 즉시 교체하세요",
+          "title": "원클릭 적용"
         },
         "browseIconPacks": {
-          "description": "사이드바 카테고리에서 사용 가능한 아이콘 팩을 찾아보고 메인 영역에서 미리 보세요",
-          "title": "아이콘 팩 찾아보기"
+          "description": "사이드바에서 카테고리(시스템, 기기, 커뮤니티)를 선택하여 팩을 살펴보세요",
+          "title": "아이콘 팩 둘러보기"
         },
         "cloudLibrary": {
-          "description": "아이콘 팩은 클라우드에 저장되며 모든 세션에서 사용할 수 있습니다",
+          "description": "팩은 ryOS 클라우드 카탈로그에 보관되어 모든 기기에서 사용할 수 있습니다",
           "title": "클라우드 라이브러리"
         },
         "favorites": {
-          "description": "아이콘 팩을 즐겨찾기로 표시하여 사이드바에서 빠르게 접근하세요",
+          "description": "마음에 드는 팩에 별표를 표시하면 사이드바 상단에 고정되어 빠르게 교체할 수 있습니다",
           "title": "즐겨찾기"
         },
         "iconPackDetails": {
-          "description": "아이콘 팩을 클릭하여 포함된 모든 아이콘의 전체 미리보기를 확인하세요",
-          "title": "아이콘 팩 상세 정보"
+          "description": "적용하기 전에 아무 팩이나 클릭하여 내부의 모든 아이콘을 확인해 보세요",
+          "title": "팩 미리보기"
         },
         "search": {
-          "description": "검색창을 사용하여 이름이나 제작자별로 아이콘 팩을 빠르게 찾으세요",
-          "title": "검색"
+          "description": "이름이나 작성자로 검색하세요. 내장된 뒤로/앞으로 버튼으로 탐색 기록을 되짚어볼 수 있습니다",
+          "title": "검색 및 기록"
         }
       },
       "loading": "아이콘 팩 로드 중…",
@@ -670,28 +696,28 @@
       },
       "help": {
         "chatWithRyo": {
-          "description": "메시지를 입력하여 Ryo와 채팅, 코드 생성 또는 ryOS 도움말 받기.",
-          "title": "Ryo와 채팅"
+          "description": "무엇이든 물어보세요 — Ryo는 코드를 작성하고, 문서를 요약하며, ryOS 기능을 설명할 수 있습니다.",
+          "title": "Ryo와 채팅하기"
         },
         "controlApps": {
-          "description": "Ryo에게 앱 시작 또는 종료, 테마 전환 또는 iPod 재생 제어 요청.",
-          "title": "앱 제어"
+          "description": "Ryo는 앱 실행, 테마 전환, 스티커 메모 이동, TV 조정 및 iPod 노래 재생을 수행할 수 있습니다.",
+          "title": "OS 제어"
         },
         "createEditFiles": {
-          "description": "Ryo에게 HTML 앱렛 생성, 문서 편집, 파일 읽기 또는 앱렛 스토어 검색 요청.",
+          "description": "Ryo에게 HTML Applet을 실행하거나, TextEdit 문서를 편집하거나, Applet Store를 탐색하도록 요청하세요.",
           "title": "파일 생성 및 편집"
         },
         "joinChatRooms": {
-          "description": "공개 채팅방에서 다른 사용자와 연결. @ryo 언급으로 AI 응답 받기.",
-          "title": "채팅방 참가"
+          "description": "채팅방에 참여하여 온라인상의 모든 사용자와 대화하세요 — @ryo를 멘션하면 AI의 답변을 받을 수 있습니다.",
+          "title": "공개 채팅방 참여"
         },
         "nudgeDjMode": {
-          "description": "👋 넛지를 보내 컨텍스트 인식 팁 받기. 음악이 재생 중일 때 Ryo가 DJ가 됩니다.",
+          "description": "👋 넛지를 보내 상황에 맞는 팁을 확인하세요. iPod이 재생되면 Ryo가 DJ로 변신합니다.",
           "title": "넛지 및 DJ 모드"
         },
         "pushToTalk": {
-          "description": "스페이스바를 길게 누르거나 마이크 버튼을 탭하여 음성 메시지 녹음 및 전송.",
-          "title": "누르고 말하기"
+          "description": "스페이스바를 길게 누르거나 마이크를 탭하여 음성 메시지를 녹음하고 전송하세요. 텍스트 변환 기능이 제공됩니다.",
+          "title": "푸시 투 토크 음성"
         }
       },
       "menu": {
@@ -875,6 +901,33 @@
         "contentWritten": "내용 작성됨",
         "controllingPlayback": "재생 제어 중…",
         "createdDocument": "문서 생성됨: {{path}}",
+        "cursorCloudAgent": {
+          "finished": "완료됨",
+          "followupAriaLabel": "Cursor 에이전트에게 보낼 후속 메시지",
+          "followupBusy": "에이전트가 여전히 실행 중입니다…",
+          "followupPlaceholder": "에이전트에게 답장…",
+          "followupSend": "후속 메시지 전송",
+          "followupSending": "후속 메시지 전송 중…",
+          "noEventsYet": "스트림 이벤트 대기 중…",
+          "openPr": "PR 열기",
+          "panelTitle": "Cursor 레포 에이전트",
+          "running": "실행 중",
+          "starting": "Cursor Cloud 에이전트 시작 중…",
+          "stream": {
+            "args": "인자",
+            "emptyAssistant": "(메시지 내용 없음)",
+            "result": "결과",
+            "runEnded": "실행 완료 · {{status}}",
+            "runEndedError": "오류로 인해 실행 종료됨",
+            "status": "상태",
+            "system": "세션 시작됨",
+            "thinking": "생각 중",
+            "toolCall": "도구 · {{name}}",
+            "toolUse": "도구 요청 · {{name}}",
+            "truncated": "잘림",
+            "userPrompt": "프롬프트"
+          }
+        },
         "document": "문서",
         "edited": "{{fileName}} 편집됨",
         "editedApplet": "애플릿 편집 완료: {{path}}",
@@ -982,6 +1035,11 @@
         "launchedWithUrlAndYear": "{{year}}년에 {{url}} 실행됨",
         "launching": "{{appName}} 실행 중…",
         "launchingApp": "앱 실행 중…",
+        "listCursorCloudAgentRuns": {
+          "listed": "Listed {{count}} recent run(s).",
+          "loading": "Listing Cursor Cloud agent runs…",
+          "truncatedHint": "(list may be truncated)"
+        },
         "listedItems": "항목 목록 표시됨",
         "listingApplications": "애플리케이션 목록 표시 중…",
         "listingSharedApplets": "공유 앱렛 목록 표시 중…",
@@ -1088,39 +1146,7 @@
           "fetchedPage": "\"{{title}}\" 읽기",
           "fetching": "{{hostname}} 읽는 중…"
         },
-        "writingContent": "내용 쓰는 중…",
-        "cursorCloudAgent": {
-          "finished": "완료됨",
-          "followupAriaLabel": "Cursor 에이전트에게 보낼 후속 메시지",
-          "followupBusy": "에이전트가 여전히 실행 중입니다…",
-          "followupPlaceholder": "에이전트에게 답장…",
-          "followupSend": "후속 메시지 전송",
-          "followupSending": "후속 메시지 전송 중…",
-          "noEventsYet": "스트림 이벤트 대기 중…",
-          "openPr": "PR 열기",
-          "panelTitle": "Cursor 레포 에이전트",
-          "running": "실행 중",
-          "starting": "Cursor Cloud 에이전트 시작 중…",
-          "stream": {
-            "args": "인자",
-            "emptyAssistant": "(메시지 내용 없음)",
-            "result": "결과",
-            "runEnded": "실행 완료 · {{status}}",
-            "runEndedError": "오류로 인해 실행 종료됨",
-            "status": "상태",
-            "system": "세션 시작됨",
-            "thinking": "생각 중",
-            "toolCall": "도구 · {{name}}",
-            "toolUse": "도구 요청 · {{name}}",
-            "truncated": "잘림",
-            "userPrompt": "프롬프트"
-          }
-        },
-        "listCursorCloudAgentRuns": {
-          "loading": "Listing Cursor Cloud agent runs…",
-          "listed": "Listed {{count}} recent run(s).",
-          "truncatedHint": "(list may be truncated)"
-        }
+        "writingContent": "내용 쓰는 중…"
       }
     },
     "contacts": {
@@ -1175,28 +1201,28 @@
       },
       "help": {
         "browseContacts": {
-          "description": "저장된 연락처를 검색하고 전환하려면 왼쪽 사이드바를 사용하세요",
-          "title": "연락처 찾아보기"
+          "description": "왼쪽 사이드바를 사용하여 저장된 연락처를 검색, 필터링 및 전환하세요",
+          "title": "연락처 둘러보기"
         },
         "cloudSync": {
-          "description": "주소록을 Redis에 보관하려면 제어판에서 연락처 동기화를 활성화하세요",
+          "description": "제어판에서 연락처 동기화를 활성화하여 주소록을 클라우드에 백업하세요",
           "title": "클라우드 동기화"
         },
         "createContacts": {
-          "description": "이름, 전화번호, 이메일, 메모를 추가하려면 파일 > 새 연락처를 선택하세요",
-          "title": "연락처 만들기"
-        },
-        "editDetails": {
-          "description": "검사기에서 연락처 세부 정보를 업데이트하면 변경 사항이 자동으로 저장됩니다",
-          "title": "세부 정보 편집"
+          "description": "파일 ▸ 새 연락처에서 이름, 번호, 이메일, 주소 및 자유 형식의 메모를 추가할 수 있습니다",
+          "title": "연락처 생성"
         },
         "importVCards": {
-          "description": "연락처를 ryOS로 가져오려면 파일 메뉴에서 .vcf 파일을 가져오세요",
+          "description": ".vcf 파일을 끌어다 놓거나(또는 파일 ▸ 가져오기 사용) 연락처와 사진을 가져오세요",
           "title": "vCard 가져오기"
         },
+        "smartGroups": {
+          "description": "자동 분류를 통해 생일, 업무용 연락처, Telegram 사용자를 한눈에 확인하세요",
+          "title": "스마트 그룹"
+        },
         "useWithRyo": {
-          "description": "Ryo는 채팅 및 텔레그램에서 동기화된 연락처를 나열, 생성, 업데이트 및 검색할 수 있습니다",
-          "title": "Ryo와 함께 사용"
+          "description": "Ryo는 채팅에서 바로 연락처 목록 확인, 생성, 업데이트 및 검색을 수행할 수 있습니다",
+          "title": "Ryo에게 물어보기"
         }
       },
       "menu": {
@@ -1350,32 +1376,28 @@
       "formatFileSystemDescription": "샘플 문서, 이미지, 사용자 지정 배경화면을 제외한 모든 파일이 지워집니다. 포맷 후 ryOS가 다시 시작됩니다.",
       "help": {
         "aiModel": {
-          "description": "채팅 및 터미널 어시스턴트에서 사용하는 AI 모델 선택",
+          "description": "채팅과 Terminal Ryo 어시스턴트를 구동할 AI 모델을 선택하세요",
           "title": "AI 모델"
         },
         "appearance": {
-          "description": "데스크톱 배경 화면에 사진, 패턴 또는 셰이더 효과 선택",
+          "description": "배경화면, 패턴 또는 라이브 셰이더 효과를 선택하여 데스크탑을 꾸며보세요",
           "title": "모양"
         },
         "backupRestore": {
-          "description": "모든 설정 및 파일 내보내기 또는 복원",
-          "title": "백업 및 복원"
+          "description": "모든 항목 내보내기, 백업에서 복원 또는 가상 디스크 포맷",
+          "title": "백업 및 재설정"
         },
         "shaderEffects": {
-          "description": "CRT, 갤럭시 또는 오로라 시각 효과 활성화",
+          "description": "CRT, Galaxy 또는 Aurora 오버레이를 활성화하여 클래식한 CRT 감성을 느껴보세요",
           "title": "셰이더 효과"
         },
         "sounds": {
-          "description": "UI 사운드, 타이핑 신시사이저 및 터미널/IE 효과 전환",
+          "description": "UI 클릭음, 타이핑 신디사이저, Terminal/IE 사운드 효과를 설정합니다",
           "title": "사운드"
         },
         "sync": {
-          "description": "자동 클라우드 동기화와 수동 클라우드 백업을 설정합니다",
-          "title": "동기화"
-        },
-        "system": {
-          "description": "기본 설정 재설정 또는 가상 파일 시스템 포맷",
-          "title": "시스템"
+          "description": "연락처, 캘린더 등의 자동 동기화 및 수동 클라우드 백업 설정",
+          "title": "클라우드 동기화"
         }
       },
       "highContrast": "고대비",
@@ -1556,6 +1578,32 @@
         "thesaurus": "유의어 사전",
         "title": "사전"
       },
+      "help": {
+        "closeDashboard": {
+          "description": "배경을 클릭하거나 F4/Esc를 눌러 Dashboard를 즉시 사라지게 합니다",
+          "title": "빠르게 닫기"
+        },
+        "layoutPersists": {
+          "description": "위젯 구성과 위치는 세션이 바뀌거나 테마를 변경해도 그대로 유지됩니다",
+          "title": "레이아웃 유지"
+        },
+        "moveWidgets": {
+          "description": "위젯을 드래그하여 위치를 변경할 수 있으며, 새 위젯은 겹치지 않도록 자동으로 배치됩니다",
+          "title": "드래그하여 정렬"
+        },
+        "openDashboard": {
+          "description": "어디서나 F4를 누르거나(또는 Dashboard 아이콘을 클릭하여) 위젯 오버레이를 서서히 나타냅니다",
+          "title": "Dashboard 열기"
+        },
+        "weatherWidget": {
+          "description": "날씨 위젯은 간단한 권한 확인 후 현재 위치의 실제 기상 조건을 가져옵니다",
+          "title": "실시간 날씨"
+        },
+        "widgetLibrary": {
+          "description": "시계, 날씨, 캘린더, 주식, 미니 iPod, 스티커 메모, 사전 등 추가",
+          "title": "위젯 라이브러리"
+        }
+      },
       "ipod": {
         "iTunesNotOpen": "iTunes가 열려 있지 않습니다.",
         "menu": "메뉴",
@@ -1727,29 +1775,29 @@
         "videos": "동영상"
       },
       "help": {
+        "airdropSharing": {
+          "description": "파일을 우클릭하여 주변 ryOS 사용자에게 즉시 AirDrop으로 공유하세요",
+          "title": "AirDrop 공유"
+        },
         "browseNavigate": {
-          "description": "뒤로/앞으로 버튼, 주소 표시줄 및 이동 메뉴로 빠르게 탐색",
+          "description": "뒤로, 앞으로, 주소창 및 이동 메뉴를 통해 파일 시스템 어디로든 이동할 수 있습니다",
           "title": "탐색 및 이동"
         },
+        "dropToImport": {
+          "description": ".app, .gz, .html 파일을 아무 곳에나 드롭하여 Applets에 설치하세요",
+          "title": "드롭하여 가져오기"
+        },
         "fileManagement": {
-          "description": "폴더 생성, 이름 변경, 이동 및 항목 드래그로 파일 정리",
+          "description": "폴더 생성, 이름 변경, 드래그 및 복제를 통해 파일을 정리합니다",
           "title": "파일 관리"
         },
         "quickAccess": {
-          "description": "이동 메뉴에서 문서, 응용 프로그램 또는 휴지통으로 즉시 이동",
-          "title": "빠른 액세스"
+          "description": "사이드바 핀을 통해 문서, 응용 프로그램, 이미지, 휴지통으로 빠르게 이동합니다",
+          "title": "빠른 접근"
         },
-        "storageInfo": {
-          "description": "창 하단에서 사용 가능한 공간 및 항목 수 확인",
-          "title": "저장 공간 정보"
-        },
-        "trash": {
-          "description": "파일을 휴지통으로 드래그하고 비우면 영구적으로 삭제",
-          "title": "휴지통"
-        },
-        "viewSort": {
-          "description": "아이콘 크기 전환 및 이름, 종류, 크기 또는 날짜로 정렬",
-          "title": "보기 및 정렬"
+        "trashUndo": {
+          "description": "파일을 휴지통으로 이동한 후, 편집 ▸ 실행 취소를 클릭해 즉시 복구하세요",
+          "title": "휴지통 및 실행 취소"
         }
       },
       "menu": {
@@ -1812,28 +1860,28 @@
     "infinite-mac": {
       "description": "클래식 Mac OS 에뮬레이터",
       "help": {
-        "backToSystems": {
-          "description": "파일 ▸ 시스템으로 돌아가기를 이용해 사전 설정된 그리드로 돌아가세요.",
-          "title": "시스템으로 돌아가기"
-        },
         "captureScreenshot": {
-          "description": "보기 ▸ 스크린샷 캡처를 사용하여 현재 디스플레이를 저장합니다",
+          "description": "보기 ▸ 스크린샷 캡처로 현재 화면을 즉시 파일로 저장하세요",
           "title": "스크린샷 캡처"
         },
+        "chatsCanDriveIt": {
+          "description": "채팅에서 Ryo에게 에뮬레이터 일시 정지, 재개, 스케일링, 스크린샷을 요청하세요",
+          "title": "채팅으로 제어 가능"
+        },
         "classicMacEmulator": {
-          "description": "Infinite Mac을 통해 브라우저에서 클래식 Mac OS 시스템을 실행하세요.",
-          "title": "클래식 Mac 에뮬레이터"
+          "description": "Infinite Mac 기반의 브라우저에서 실제 System 6, 7, 8, 9를 부팅하세요",
+          "title": "브라우저에서 즐기는 클래식 Mac"
         },
         "displayScaling": {
-          "description": "보기 ▸ 크기 조절을 사용하여 디스플레이 크기(1배, 1.5배 또는 2배)를 조절합니다",
-          "title": "디스플레이 크기 조절"
+          "description": "보기 ▸ 스케일링에서 1x, 1.5x, 2x를 전환하여 화면에 맞게 조절하세요",
+          "title": "디스플레이 스케일링"
         },
         "pauseResume": {
-          "description": "상호 작용하지 않을 때 보기 ▸ 일시 정지 또는 재개를 이용해 리소스를 절약하세요.",
-          "title": "일시 정지 / 재개"
+          "description": "보기 ▸ 일시 정지는 VM을 멈춰 유휴 상태 시 CPU 소모를 방지합니다",
+          "title": "전력 절약을 위한 일시 정지"
         },
         "selectSystem": {
-          "description": "에뮬레이터를 로드하려면 그리드에서 Mac OS 버전을 선택하세요.",
+          "description": "그리드에서 클래식 Mac OS 프리셋을 선택해 에뮬레이터를 실행하세요",
           "title": "시스템 선택"
         }
       },
@@ -1906,27 +1954,27 @@
       "goToNow": "지금으로 이동",
       "help": {
         "browseWeb": {
-          "description": "URL 입력 및 탐색 버튼 사용(뒤로, 앞으로, 새로 고침, 중지).",
+          "description": "URL을 입력하고 뒤로, 앞으로, 새로고침, 중지 버튼을 사용하여 탐색하세요.",
           "title": "웹 탐색"
         },
         "exploreTimeNodes": {
-          "description": "주소 표시줄의 시계 아이콘을 클릭하여 시간에 걸친 현재 사이트의 사용 가능한 스냅샷 보기.",
-          "title": "시간 노드 탐색"
+          "description": "주소창의 시계 아이콘을 클릭하여 사이트의 캐시된 스냅샷 사이를 이동하세요.",
+          "title": "타임 노드 탐색"
         },
         "historyReimagined": {
-          "description": "AI가 매우 오래된 사이트(1996년 이전)를 재구성하고 미래 웹 경험을 상상합니다.",
-          "title": "역사 재구성"
+          "description": "1996년 이전 페이지와 미래의 연도는 AI가 스트리밍 HTML로 실시간 재구성합니다.",
+          "title": "AI로 재구성된 역사"
         },
         "saveFavorites": {
-          "description": "사이트 및 특정 연도를 즐겨찾기 표시줄에 추가하여 쉽게 액세스.",
-          "title": "즐겨찾기 저장"
+          "description": "특정 연도의 사이트를 즐겨찾기에 추가하여 항상 해당 시대의 모습으로 열 수 있습니다.",
+          "title": "연도 고정 즐겨찾기"
         },
         "shareJourney": {
-          "description": "공유 버튼을 사용하여 보는 정확한 페이지 및 연도의 링크 생성.",
-          "title": "여정 공유"
+          "description": "현재 보고 있는 페이지와 연도를 그대로 열 수 있는 공유 링크를 생성합니다.",
+          "title": "여정 공유하기"
         },
         "travelThroughTime": {
-          "description": "드롭다운에서 연도를 선택하여 과거 또는 미래의 웹사이트 보기.",
+          "description": "1000년부터 먼 미래까지 연도를 선택하여 당시의 모습 또는 미래의 모습을 확인해 보세요.",
           "title": "시간 여행"
         }
       },
@@ -2125,28 +2173,28 @@
       },
       "help": {
         "addSongs": {
-          "description": "YouTube URL을 붙여넣어 iPod에 음악 추가.",
-          "title": "곡 추가"
+          "description": "YouTube URL을 붙여넣어 트랙을 라이브러리에 바로 추가하세요.",
+          "title": "YouTube에서 추가"
+        },
+        "coverFlow": {
+          "description": "화면을 길게 눌러 커버 플로우를 열고 앨범을 넘겨보세요.",
+          "title": "커버 플로우"
         },
         "displayFullscreen": {
-          "description": "백라이트, 테마 조정 및 전체 화면 동영상으로 전환.",
-          "title": "표시 및 전체 화면"
+          "description": "워프, 메시, 워터 셰이더 배경과 함께 뮤직 비디오를 전체 화면으로 감상하세요",
+          "title": "전체 화면 비주얼"
+        },
+        "karaokeSync": {
+          "description": "라이브러리가 가라오케와 공유됩니다 — 여기에 추가된 곡은 그곳에도 표시됩니다",
+          "title": "가라오케 동기화"
         },
         "lyricsPronunciation": {
-          "description": "번역, 후리가나, 로마자, 병음이 포함된 동기화된 가사를 봅니다.",
-          "title": "가사 및 발음"
-        },
-        "playbackControls": {
-          "description": "재생, 일시 정지, 트랙 건너뛰기 및 현재 곡 제어.",
-          "title": "재생 컨트롤"
-        },
-        "playbackModes": {
-          "description": "셔플, 곡 또는 재생 목록 반복 등을 활성화.",
-          "title": "재생 모드"
+          "description": "번역, 후리가나, 로마자, 병음이 포함된 실시간 동기화 가사를 확인하세요.",
+          "title": "동기화된 가사"
         },
         "wheelNavigation": {
-          "description": "클릭 휠을 사용하여 메뉴 및 음악 라이브러리 탐색.",
-          "title": "휠 탐색"
+          "description": "휠(또는 마우스 스크롤 휠)을 돌려 메뉴와 트랙을 탐색하세요.",
+          "title": "클릭 휠"
         }
       },
       "keys": {
@@ -2315,28 +2363,28 @@
       },
       "help": {
         "addSearchSongs": {
-          "description": "YouTube에서 노래를 검색하거나 URL을 붙여넣어 라이브러리에 추가하세요.",
-          "title": "노래 추가 및 검색"
+          "description": "YouTube를 검색하거나 URL을 붙여넣어 라이브러리에 트랙을 즉시 추가하세요",
+          "title": "곡 추가 및 검색"
         },
         "keyboardShortcuts": {
-          "description": "스페이스바로 재생/일시 정지, 화살표 키로 탐색 및 트랙 변경.",
+          "description": "Space 재생/일시정지, ←/→ 5초 이동, ↑/↓ 트랙 변경, F 전체 화면",
           "title": "키보드 단축키"
         },
+        "listenParty": {
+          "description": "동기화된 가라오케 세션을 호스트하거나 참여하세요 — 팔로워에게 동일한 경과 시간이 표시됩니다",
+          "title": "리슨 파티"
+        },
         "stylePronunciation": {
-          "description": "글꼴, 레이아웃, 번역을 변경하고 후리가나/로마자/병음을 추가합니다.",
+          "description": "글꼴 및 레이아웃 전환; 번역, 후리가나, 로마자 또는 병음 표시",
           "title": "스타일 및 발음"
         },
         "syncLyricsTiming": {
-          "description": "[ ] 키, 마우스 휠 또는 좌/우 드래그로 가사 오프셋을 조정하세요.",
-          "title": "가사 타이밍 동기화"
+          "description": "[ 또는 ] 키를 누르거나(또는 가사에서 마우스 휠 사용) 오프셋을 ±50ms씩 미세 조정하세요",
+          "title": "가사 타이밍 조절"
         },
         "syncedWithIpod": {
-          "description": "iPod과 동일한 음악 라이브러리를 공유합니다. 어느 앱에서든 노래 추가 가능.",
-          "title": "iPod과 동기화"
-        },
-        "worksWithChats": {
-          "description": "Ryo에게 채팅으로 노래 재생, 제어, 설정 조정을 요청하세요.",
-          "title": "채팅과 연동"
+          "description": "iPod 앱과 동일한 라이브러리 및 가사 데이터베이스를 사용합니다 — 어디서든 트랙을 추가하세요",
+          "title": "iPod과 공유됨"
         }
       },
       "liveListen": {
@@ -2410,29 +2458,29 @@
         "newGameTitle": "새 게임"
       },
       "help": {
+        "chordReveal": {
+          "description": "깃발이 올바르게 꽂힌 숫자 셀을 더블 클릭하여 주변의 안전한 칸을 자동으로 모두 엽니다.",
+          "title": "코드 공개"
+        },
         "desktopControls": {
-          "description": "왼쪽 클릭으로 표시, 오른쪽 클릭으로 깃발, 숫자 더블 클릭으로 인접 셀 자동 표시",
-          "title": "데스크톱 컨트롤"
+          "description": "왼쪽 클릭으로 셀 확인, 오른쪽 클릭으로 지뢰 의심 구역 깃발 표시",
+          "title": "데스크톱 조작"
         },
-        "gameRules": {
-          "description": "숫자는 인접한 지뢰 수를 보여줍니다. 모든 지뢰에 깃발을 달고 모든 안전한 셀을 표시하여 승리.",
-          "title": "게임 규칙"
-        },
-        "gameStatus": {
-          "description": "이모티콘은 게임 상태를 보여줍니다: 🙂 플레이 중, 💀 게임 오버, 😎 승리!",
-          "title": "게임 상태"
-        },
-        "mineCounter": {
-          "description": "상단 바에 깃발 없는 지뢰 수와 총 지뢰 수가 표시됩니다.",
-          "title": "지뢰 수"
+        "mineCounterTimer": {
+          "description": "상단 바에서 남은 지뢰 개수와 경과 시간을 확인할 수 있습니다.",
+          "title": "지뢰 카운터 및 타이머"
         },
         "mobileControls": {
-          "description": "탭하여 표시, 길게 눌러 지뢰에 깃발",
-          "title": "모바일 컨트롤"
+          "description": "탭하여 확인, 길게 눌러 깃발 표시 — 스마트폰과 태블릿에서 원활하게 작동합니다",
+          "title": "모바일 조작"
         },
-        "restart": {
-          "description": "웃는 얼굴을 누르거나 게임 ▸ 새로 만들기를 선택하여 새 보드 시작",
-          "title": "다시 시작"
+        "quickRestart": {
+          "description": "스마일리를 클릭하거나 언제든지 파일 ▸ 새 게임을 선택하여 새 보드를 시작하세요.",
+          "title": "빠른 재시작"
+        },
+        "smileyStatus": {
+          "description": "스마일리는 게임 상태를 보여줍니다: 🙂 진행 중, 💀 폭발, 😎 승리",
+          "title": "스마일리 상태"
         }
       },
       "lcd": {
@@ -2462,29 +2510,29 @@
         "openFiltersMenu": "필터 메뉴 열기"
       },
       "help": {
+        "autoSaveExport": {
+          "description": "편집 내용은 몇 초마다 자동으로 저장됩니다. PNG를 /Images로 내보내 Finder에서 확인하세요.",
+          "title": "자동 저장 및 내보내기"
+        },
+        "cutCopyPaste": {
+          "description": "올가미로 영역을 선택한 후, 캔버스 내에서 래스터 픽셀을 오려두거나 복사하거나 붙여넣으세요.",
+          "title": "오려두기, 복사하기 및 붙여넣기"
+        },
         "drawingTools": {
-          "description": "왼쪽 도구 모음을 사용하여 연필, 브러시, 도형 등의 다양한 그리기 도구 선택.",
+          "description": "왼쪽 도구 모음에서 연필, 브러시, 스프레이, 도형, 지우개 또는 채우기를 선택하세요.",
           "title": "그리기 도구"
         },
         "filters": {
-          "description": "필터 메뉴에서 반전, 그레이스케일, 밝기 등을 적용.",
+          "description": "필터 메뉴에서 반전, 그레이스케일, 밝기 등을 적용하세요.",
           "title": "필터"
         },
         "patterns": {
-          "description": "하단 팔레트의 다양한 패턴 중에서 선택하여 도형 및 영역 채우기.",
-          "title": "패턴"
-        },
-        "saving": {
-          "description": "파일 > 저장을 사용하여 작품 저장 또는 파일 > 다른 이름으로 저장을 사용하여 새 이름으로 저장.",
-          "title": "저장"
+          "description": "하단 팔레트에서 클래식 Mac 패턴을 선택하여 도형이나 영역을 채우세요.",
+          "title": "패턴 채우기"
         },
         "strokeWidth": {
-          "description": "도구 모음 컨트롤로 브러시 및 연필 획 너비를 조절합니다.",
-          "title": "획 너비"
-        },
-        "undo": {
-          "description": "⌘Z를 누르거나 편집 > 실행 취소를 사용하여 마지막 작업 취소.",
-          "title": "실행 취소"
+          "description": "도구 아래의 크기 선택기를 사용하여 브러시와 연필의 두께를 조절하세요.",
+          "title": "선 두께"
         }
       },
       "menu": {
@@ -2554,49 +2602,29 @@
         "resetVirtualPcTitle": "가상 PC 초기화"
       },
       "help": {
-        "aboutV86": {
-          "description": "오픈 소스 x86 에뮬레이터인 copy.sh/v86 기반",
-          "title": "v86 정보"
-        },
-        "aspectRatio": {
-          "description": "모니터에 맞게 4:3 또는 와이드스크린 간 전환",
-          "title": "종횡비"
-        },
         "backToSystems": {
-          "description": "OS 및 게임 브라우저로 돌아가려면 파일 ▸ 뒤로를 사용하세요",
+          "description": "파일 ▸ 뒤로를 선택하면 OS 및 게임 브라우저로 돌아가 새 이미지를 선택할 수 있습니다",
           "title": "시스템으로 돌아가기"
         },
         "dosGames": {
-          "description": "js-dos 라이브러리(쉐어웨어 및 고전 게임)를 보려면 게임 탭을 사용하세요",
-          "title": "DOS 게임"
-        },
-        "fullscreenMode": {
-          "description": "제어 ▸ 전체 화면을 전환하여 몰입형 표시",
-          "title": "전체 화면 모드"
-        },
-        "keyboardControls": {
-          "description": "물리적 키보드를 사용하여 게임 내 입력",
-          "title": "키보드 컨트롤"
+          "description": "게임 탭으로 전환하여 엄선된 js-dos 고전 게임들을 확인해 보세요",
+          "title": "DOS 게임 라이브러리"
         },
         "keyboardInput": {
-          "description": "대부분의 키가 전달됩니다. 포인터 잠금을 해제하려면 Esc를 누르세요.",
-          "title": "키보드 입력"
+          "description": "거의 모든 키(Ctrl 조합 포함)가 가상 머신(VM)으로 직접 전송됩니다",
+          "title": "키보드 패스스루"
         },
         "mouseCapture": {
-          "description": "창 내부를 클릭하여 마우스 캡처/해제",
+          "description": "화면 안을 클릭하여 커서를 캡처하고, Esc를 눌러 해제하세요",
           "title": "마우스 캡처"
         },
         "pcEmulator": {
-          "description": "브라우저에서 클래식 DOS 게임 및 앱 직접 실행",
-          "title": "PC 에뮬레이터"
+          "description": "v86을 통해 브라우저에서 실제 Windows, Linux 및 FreeDOS 이미지를 부팅하세요",
+          "title": "x86 OS 에뮬레이터"
         },
-        "pickSystem": {
-          "description": "그리드에서 OS를 선택하여 에뮬레이터를 실행하세요",
-          "title": "시스템 선택"
-        },
-        "resetLoad": {
-          "description": "파일 ▸ 재시작으로 다시 시작하거나, 게임 불러오기로 게임을 전환하세요.",
-          "title": "재시작 및 불러오기"
+        "screenshotFullscreen": {
+          "description": "보기를 사용하여 화면을 캡처하거나 모니터를 가득 채우세요",
+          "title": "스크린샷 및 전체 화면"
         }
       },
       "loadingEmulator": "에뮬레이터 로드 중",
@@ -2827,28 +2855,28 @@
       },
       "help": {
         "applyingEffects": {
-          "description": "효과 버튼(카메라 버튼 오른쪽)을 클릭하여 효과 패널을 열고 라이브 카메라 보기에 재미있는 필터 적용.",
-          "title": "효과 적용"
+          "description": "효과를 열어 실시간으로 적용되는 CSS 필터와 워프 셰이더를 살펴보세요",
+          "title": "라이브 효과"
         },
         "downloadingPhotos": {
-          "description": "사진이 자동으로 저장됩니다. 사진 스트립의 사진을 클릭하여 다운로드.",
-          "title": "사진 다운로드"
+          "description": "사진이 /Images 폴더에 자동으로 저장됩니다. 썸네일을 클릭하여 즉시 다운로드하세요.",
+          "title": "Finder에 자동 저장"
         },
         "quickSnaps": {
-          "description": "타이머 버튼(카메라 버튼 왼쪽)을 클릭하여 1초 간격으로 4장의 사진 시퀀스 시작.",
-          "title": "빠른 스냅"
+          "description": "타이머 버튼을 누르면 1초 간격으로 4장의 사진을 연속으로 촬영합니다",
+          "title": "4분할 연속 촬영"
         },
         "switchingCameras": {
-          "description": "여러 카메라가 연결된 경우 메뉴 모음의 카메라 메뉴를 사용하여 사용 가능한 카메라 간 전환.",
+          "description": "메뉴 막대의 카메라 메뉴에서 연결된 모든 카메라(전면, 후면, USB)를 선택할 수 있습니다.",
           "title": "카메라 전환"
         },
         "takingPhoto": {
-          "description": "큰 빨간색 카메라 버튼을 클릭하여 단일 이미지 캡처.",
+          "description": "커다란 빨간색 카메라 버튼을 눌러 웹캠으로 사진을 촬영하세요",
           "title": "사진 촬영"
         },
         "viewingPhotos": {
-          "description": "사진 스택 버튼(맨 왼쪽)을 클릭하여 하단의 사진 스트립을 표시하거나 숨겨 저장된 모든 사진 표시.",
-          "title": "사진 보기"
+          "description": "사진 스택을 토글하여 저장된 사진들을 창 하단에서 슬라이드하며 확인하세요",
+          "title": "포토 스트립"
         }
       },
       "menu": {
@@ -2865,28 +2893,28 @@
       "description": "효과음 재생",
       "help": {
         "customizeSlot": {
-          "description": "각 샘플에 이모지 및 제목 추가하여 빠른 식별",
-          "title": "슬롯 사용자 지정"
+          "description": "각 슬롯에 이모지와 이름을 태그하여 즉시 찾을 수 있습니다.",
+          "title": "사용자화 이모지 및 제목"
         },
         "importExport": {
-          "description": "보드를 파일로 공유; 드래그 앤 드롭으로 가져오기",
+          "description": "보드를 파일로 공유하고, 다시 끌어다 놓아 즉시 불러오세요.",
           "title": "가져오기 / 내보내기"
         },
         "keyboardPlay": {
-          "description": "1-9 키를 눌러 즉시 사운드 트리거",
-          "title": "키보드 재생"
+          "description": "1~9 키를 눌러 사운드를 즉시 재생하세요. 라이브 공연에 완벽합니다.",
+          "title": "키보드 트리거"
         },
         "multipleBoards": {
-          "description": "사운드 세트용 보드 생성, 이름 변경 및 전환",
-          "title": "여러 보드"
+          "description": "다양한 사운드 세트를 위해 보드를 생성, 이름 변경 및 전환하세요.",
+          "title": "다중 보드"
         },
         "recordSlot": {
-          "description": "슬롯을 클릭하여 오디오 녹음; 다시 클릭하여 중지",
+          "description": "빈 슬롯을 클릭하여 마이크로 바로 녹음하고, 다시 클릭하여 중단하세요.",
           "title": "녹음 슬롯"
         },
         "waveformView": {
-          "description": "녹음 또는 재생 중 라이브 파형 보기",
-          "title": "파형 보기"
+          "description": "각 클립을 녹음하거나 재생하는 동안 실시간 파형을 확인하세요.",
+          "title": "실시간 파형"
         }
       },
       "importedSoundboard": "가져온 사운드보드",
@@ -2924,28 +2952,28 @@
       },
       "help": {
         "autoSave": {
-          "description": "메모는 자동으로 저장되며 세션 간에 유지됩니다.",
+          "description": "메모는 자동으로 저장되며 다음 실행 시 같은 위치에 다시 나타납니다",
           "title": "자동 저장"
         },
         "clearAll": {
-          "description": "파일 > 모든 메모 지우기를 사용하여 모든 스티커 메모를 한 번에 제거합니다.",
+          "description": "파일 ▸ 모든 메모 지우기를 선택하면 게시판을 한 번에 깔끔하게 비울 수 있습니다",
           "title": "모두 지우기"
         },
         "colors": {
-          "description": "생각을 정리하려면 메모 메뉴에서 메모 색상을 변경하세요.",
-          "title": "색상"
+          "description": "메모 메뉴에서 노란색, 분홍색, 파란색, 녹색, 보라색 등 다양한 색상을 선택하세요.",
+          "title": "색상 태그"
         },
         "createNote": {
-          "description": "파일 > 새 메모를 클릭하거나 버튼을 사용하여 새 스티커 메모를 만드세요.",
-          "title": "메모 만들기"
-        },
-        "deleteNote": {
-          "description": "메모의 X 버튼을 클릭하거나 메뉴를 사용하여 삭제하세요.",
-          "title": "메모 삭제"
+          "description": "파일 ▸ 새로운 메모(또는 ⌘N)를 선택하면 데스크탑에 새로운 스티커 메모가 생성됩니다.",
+          "title": "메모 생성"
         },
         "moveResize": {
-          "description": "제목 표시줄을 드래그하여 이동하고, 모서리를 드래그하여 메모 크기를 조절하세요.",
+          "description": "제목 표시줄을 드래그하여 위치를 변경하고, 모서리를 드래그하여 크기를 자유롭게 조절하세요",
           "title": "이동 및 크기 조절"
+        },
+        "ryoCanEdit": {
+          "description": "채팅에서 Ryo에게 스티커 메모 추가, 이동, 색상 변경 또는 내용 수정을 요청하세요",
+          "title": "Ryo가 편집할 수 있습니다"
         }
       },
       "menu": {
@@ -2991,28 +3019,28 @@
       },
       "help": {
         "controlsPanel": {
-          "description": "CONTROLS를 전환하여 오실레이터, 엔벨로프 및 효과 조정",
+          "description": "CONTROLS를 열어 오실레이터, 엔벨로프, 필터 및 FX를 조절하세요",
           "title": "컨트롤 패널"
         },
         "effects": {
-          "description": "리버브, 딜레이, 디스토션, 코러스, 페이저 및 비트 크러셔",
-          "title": "효과"
+          "description": "보이스별로 리버브, 딜레이, 디스토션, 코러스, 페이저, 비트 크러셔를 연결하세요",
+          "title": "스택형 이펙트"
         },
         "octaveShift": {
-          "description": "-/+ 키 또는 버튼으로 옥타브를 위아래로 이동하세요.",
-          "title": "옥타브 이동"
+          "description": "-/+ 키를 누르거나 버튼을 사용하여 건반을 한 옥타브 위나 아래로 이동하세요",
+          "title": "옥타브 시프트"
         },
         "presets": {
-          "description": "사용자 지정 사운드 사전 설정 저장, 로드 및 관리",
-          "title": "사전 설정"
+          "description": "사용자 정의 프리셋을 저장, 불러오기 및 이름 변경하여 나만의 사운드 뱅크를 구축하세요",
+          "title": "프리셋 저장"
         },
         "virtualKeyboard": {
-          "description": "화면 키 또는 컴퓨터 키보드로 음표 연주",
+          "description": "화면상의 키로 음을 연주하거나 QWERTY 키보드를 건반으로 사용하세요",
           "title": "가상 키보드"
         },
         "waveform3d": {
-          "description": "컨트롤 패널이 열려 있을 때 라이브 애니메이션 파형",
-          "title": "3D 파형"
+          "description": "패널이 열려 있을 때 모든 음에 반응하는 실시간 3D 파형 메시를 확인하세요",
+          "title": "3D FFT 비주얼라이저"
         }
       },
       "menu": {
@@ -3075,27 +3103,27 @@
       "description": "명령줄 인터페이스",
       "help": {
         "aiAssistant": {
-          "description": "\"ryo <프롬프트>\"를 입력하여 터미널 내에서 직접 Ryo AI와 채팅.",
-          "title": "AI 어시스턴트"
+          "description": "\"ryo <prompt>\"(또는 간단히 \"ai\")를 입력하여 OS 컨텍스트가 포함된 상태로 Ryo와 채팅하세요",
+          "title": "Ryo에게 인라인으로 질문하기"
         },
         "basicCommands": {
-          "description": "ls, cd, cat, pwd, clear, touch 등의 명령을 사용하여 파일 탐색 및 관리.",
-          "title": "기본 명령"
+          "description": "ls, cd, cat, pwd, mkdir, touch, clear를 사용하여 파일 시스템을 탐색하세요",
+          "title": "Unix 기초"
         },
         "commandHistory": {
-          "description": "↑ / ↓ 화살표를 눌러 이전 명령을 순환하고 빠르게 다시 실행.",
+          "description": "↑ / ↓를 눌러 이전 명령을 탐색하고 즉시 다시 실행하세요",
           "title": "명령 기록"
         },
         "fileEditing": {
-          "description": "프롬프트에서 직접 텍스트 편집(edit) 또는 Vim 스타일 편집기(vim)로 문서 열기.",
-          "title": "파일 편집"
+          "description": "TextEdit을 사용하려면 edit <file>을, 실제 모달 Vim 편집기를 사용하려면 vim <file>을 실행하세요",
+          "title": "Edit 및 Vim"
         },
         "navigation": {
-          "description": "Finder와 동일한 가상 파일 시스템을 친숙한 Unix 명령으로 탐색.",
-          "title": "탐색"
+          "description": "Finder와 동일한 가상 파일 시스템 — 어느 앱에서든 편집하면 즉시 동기화됩니다",
+          "title": "Finder와 공유됨"
         },
         "terminalSounds": {
-          "description": "출력, 오류 및 AI 응답에 대한 고유한 사운드. 보기 ▸ 사운드에서 전환.",
+          "description": "출력, 오류, AI 응답 시 선명한 클릭 및 벨 효과음 — 보기 ▸ 사운드에서 설정하세요",
           "title": "터미널 사운드"
         }
       },
@@ -3173,28 +3201,28 @@
       "heading2": "제목 2",
       "heading3": "제목 3",
       "help": {
+        "aiCoEditor": {
+          "description": "채팅에서 Ryo에게 열려 있는 문서를 읽거나 요약하거나 다시 쓰도록 요청하세요",
+          "title": "AI 공동 편집기"
+        },
         "fileManagement": {
-          "description": "파일 생성, 열기, 저장 및 내보내기(HTML, MD, TXT)",
-          "title": "파일 관리"
+          "description": "Markdown, HTML 또는 일반 텍스트로 내보내고 파일을 다시 끌어다 놓아 가져오세요.",
+          "title": "HTML, MD 또는 TXT로 저장"
         },
         "formatting": {
-          "description": "굵게, 기울임꼴, 밑줄, 제목 및 정렬 옵션",
-          "title": "서식"
+          "description": "굵게, 기울임꼴, 밑줄, 제목, 정렬 및 인라인 링크",
+          "title": "서식 있는 텍스트"
         },
         "listsTasks": {
-          "description": "글머리 기호, 번호 매기기 및 확인란 작업 목록 생성",
-          "title": "목록 및 작업"
-        },
-        "richEditing": {
-          "description": "텍스트 입력, 복사, 잘라내기, 붙여넣기, 실행 취소 및 다시 실행을 쉽게",
-          "title": "리치 편집"
+          "description": "모든 문서에서 글머리 기호, 번호 매기기, 대화형 체크박스 목록을 혼합하여 사용하세요",
+          "title": "목록 및 작업 상자"
         },
         "slashCommands": {
-          "description": "/를 입력하여 빠른 서식 지정 (제목, 목록, 텍스트 스타일)",
+          "description": "/를 입력하여 제목, 목록, 스타일 메뉴를 즉시 불러오세요",
           "title": "슬래시 명령"
         },
         "voiceDictation": {
-          "description": "손 없이 문서에 직접 텍스트 받아쓰기",
+          "description": "마이크를 탭하여 핸즈프리로 받아쓰세요. 음성이 그 자리에서 텍스트로 변환됩니다.",
           "title": "음성 받아쓰기"
         }
       },
@@ -3296,29 +3324,29 @@
         "title": "예약"
       },
       "help": {
+        "aiChannels": {
+          "description": "채널 ▸ 생성을 사용하여 AI에게 맞춤형 테마 재생목록을 요청하세요.",
+          "title": "AI 제작 채널"
+        },
         "channels": {
-          "description": "TV처럼 큐레이션된 YouTube 채널을 넘겨보세요",
-          "title": "채널"
+          "description": "토요일 아침 TV처럼 큐레이션된 YouTube 채널 사이를 넘나들어 보세요.",
+          "title": "채널 서핑"
         },
         "fullscreen": {
-          "description": "제어 메뉴 또는 윈도우 크롬에서 전체 화면으로 시청하세요",
-          "title": "전체 화면"
+          "description": "컨트롤 ▸ 전체 화면에서 전체 화면으로 전환하여 진정한 소파 경험을 즐겨보세요.",
+          "title": "전체 화면 모드"
         },
-        "helpAbout": {
-          "description": "도움말 메뉴에서 도움말을 열어 더 많은 정보를 확인하세요",
-          "title": "도움말 및 정보"
+        "mtvChannel": {
+          "description": "MTV 채널은 iPod 라이브러리를 미러링하고 동기화된 가사 오버레이를 표시합니다.",
+          "title": "MTV 채널"
         },
         "numbers": {
-          "description": "숫자를 눌러 채널로 이동하거나 CH+ / CH−를 사용하세요",
+          "description": "1~6(또는 여러 자리)을 입력해 채널로 바로 이동하거나 CH+/CH−를 사용하세요.",
           "title": "채널 번호"
         },
         "playback": {
-          "description": "현재 채널 내에서 동영상을 재생, 일시 정지 및 건너뜁니다",
-          "title": "재생"
-        },
-        "shortcuts": {
-          "description": "화살표 키: 위/아래는 채널 변경, 왼쪽/오른쪽은 동영상 변경",
-          "title": "단축키"
+          "description": "새로운 채널이 이미 진행 중인 상태로 무작위 탐색되어 라이브 느낌을 줍니다.",
+          "title": "방송 중간 시청"
         }
       },
       "menu": {
@@ -3396,28 +3424,28 @@
       },
       "help": {
         "addVideo": {
-          "description": "YouTube URL을 붙여넣어 재생 목록에 추가",
-          "title": "동영상 추가"
+          "description": "YouTube URL을 붙여넣으면 ryOS가 메타데이터를 가져와 재생목록에 추가합니다.",
+          "title": "YouTube에서 추가"
         },
         "loop": {
-          "description": "현재 동영상 또는 전체 재생 목록 반복",
-          "title": "반복"
+          "description": "단일 비디오 또는 전체 재생 목록을 반복하여 끊김 없는 배경 재생을 즐기세요",
+          "title": "반복 모드"
         },
         "playback": {
-          "description": "재생, 일시 정지, 다음, 이전 컨트롤",
-          "title": "재생"
+          "description": "두툼한 트랜스포트 바에서 재생, 일시 중지, 건너뛰기, 탐색 및 볼륨을 조절하세요.",
+          "title": "클래식 재생"
         },
-        "playlist": {
-          "description": "동영상 재생 목록 관리 및 정리",
-          "title": "재생 목록"
+        "powersTv": {
+          "description": "재생 목록이 TV 앱의 큐레이션된 채널 라인업에도 제공됩니다",
+          "title": "Ryo TV 구동"
         },
-        "retroUi": {
-          "description": "클래식 QuickTime 플레이어 미학",
-          "title": "레트로 UI"
+        "shareDeepLinks": {
+          "description": "비디오에서 동일한 클립을 직접 다시 여는 공유 URL을 생성합니다",
+          "title": "딥 링크 공유"
         },
         "shuffle": {
-          "description": "재생 목록 순서 무작위화",
-          "title": "셔플"
+          "description": "셔플을 토글하여 대기열을 유지하면서 재생 목록 순서를 무작위로 섞으세요",
+          "title": "셔플 순서"
         }
       },
       "menu": {
@@ -3473,28 +3501,28 @@
       "description": "클래식 Winamp 미디어 플레이어",
       "help": {
         "controls": {
-          "description": "Winamp의 클래식 재생 컨트롤(재생, 일시정지, 정지, 다음, 이전)을 사용하세요",
-          "title": "컨트롤"
+          "description": "Winamp 2와 똑같은 정통 재생, 일시 정지, 정지, 다음 및 이전 버튼",
+          "title": "클래식 트랜스포트"
         },
         "equalizer": {
-          "description": "이퀄라이저 창을 켜거나 꺼서 오디오 주파수와 프리셋을 조정하세요",
-          "title": "이퀄라이저"
+          "description": "EQ 창을 열어 주파수를 조절하고 클래식 장르 프리셋 중에서 선택하세요",
+          "title": "10밴드 이퀄라이저"
         },
         "playMusic": {
-          "description": "오디오 파일을 Winamp로 드래그 앤 드롭하거나 재생목록을 사용해 트랙을 추가하세요",
+          "description": "오디오 파일을 Winamp의 아무 곳에나 끌어다 놓거나 재생 목록 편집기를 통해 추가하세요",
           "title": "음악 재생"
         },
         "playlist": {
-          "description": "재생목록 편집기를 열어 재생 대기열을 관리하세요",
-          "title": "재생목록"
+          "description": "대기열 관리, 트랙 순서 변경 및 나중에 사용할 수 있도록 .m3u 재생 목록을 저장하세요",
+          "title": "재생 목록 편집기"
         },
         "shuffleRepeat": {
-          "description": "메인 창의 버튼으로 셔플 및 반복 모드를 전환하세요",
+          "description": "메인 창에서 셔플 및 반복을 설정하여 무한 재생 또는 무작위 재생을 즐기세요",
           "title": "셔플 및 반복"
         },
         "skins": {
-          "description": "우클릭하여 스킨 선택을 포함한 옵션을 열고 모양을 변경하세요",
-          "title": "스킨"
+          "description": "마우스 오른쪽 버튼을 클릭하여 스킨 선택기를 여세요 — Webamp는 오리지널 Winamp 클래식 디자인을 제공합니다",
+          "title": "커스텀 스킨"
         }
       },
       "menu": {

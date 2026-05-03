@@ -3,37 +3,37 @@ export const helpItems = [
     icon: "💬",
     title: "Chat with Ryo",
     description:
-      "Type your message to chat with Ryo, generate code, or get help with ryOS.",
+      "Ask anything — Ryo can write code, summarize docs, or explain ryOS features.",
   },
   {
     icon: "📝",
     title: "Create & Edit Files",
     description:
-      "Ask Ryo to create HTML applets, edit documents, read files, or search the Applets Store.",
+      "Tell Ryo to spin up HTML applets, edit your TextEdit documents, or browse the Applet Store.",
   },
   {
     icon: "🚀",
-    title: "Control Apps",
+    title: "Control Your OS",
     description:
-      "Ask Ryo to launch or close apps, switch themes, or control iPod playback.",
+      "Ryo can launch apps, switch themes, move stickies, tune the TV, and play iPod songs.",
   },
   {
     icon: "#️⃣",
-    title: "Join Chat Rooms",
+    title: "Join Public Rooms",
     description:
-      "Connect with others in public chat rooms. Mention @ryo for AI responses.",
+      "Hop into rooms to chat with everyone online — mention @ryo to get AI replies.",
   },
   {
     icon: "🎤",
-    title: "Push to Talk",
+    title: "Push-to-Talk Voice",
     description:
-      "Hold Space or tap the microphone button to record and send voice messages.",
+      "Hold Space or tap the mic to record and send voice messages with transcription.",
   },
   {
     icon: "👋",
     title: "Nudge & DJ Mode",
     description:
-      "Send 👋 nudge for context-aware tips. Ryo becomes a DJ when music is playing.",
+      "Send a 👋 nudge for context-aware tips; Ryo turns into a DJ when iPod is playing.",
   },
 ];
 

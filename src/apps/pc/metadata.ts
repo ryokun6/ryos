@@ -11,33 +11,33 @@ export const appMetadata = {
 
 export const helpItems = [
   {
-    icon: "🎮",
-    title: "PC Emulator",
-    description: "Runs classic DOS games & apps right in your browser",
+    icon: "💻",
+    title: "x86 OS Emulator",
+    description: "Boot real Windows, Linux, and FreeDOS images in-browser via v86",
   },
   {
-    icon: "⌨️",
-    title: "Keyboard Controls",
-    description: "Use your physical keyboard for in-game input",
+    icon: "🎮",
+    title: "DOS Games Library",
+    description: "Switch to the Games tab for a curated shelf of js-dos classics",
   },
   {
     icon: "🖱️",
     title: "Mouse Capture",
-    description: "Click inside the window to capture / release the mouse",
+    description: "Click inside the screen to capture the cursor; press Esc to release",
   },
   {
-    icon: "⛶",
-    title: "Full-Screen Mode",
-    description: "Toggle Controls ▸ Full Screen for an immersive display",
+    icon: "⌨️",
+    title: "Keyboard Passthrough",
+    description: "Almost every key (including Ctrl-combos) is sent straight to the VM",
   },
   {
-    icon: "🔄",
-    title: "Reset & Load",
-    description: "Use File ▸ Reset to restart, or Load Game to switch games",
+    icon: "📸",
+    title: "Screenshot & Fullscreen",
+    description: "Use View to capture the screen or fill your monitor edge-to-edge",
   },
   {
-    icon: "🔳",
-    title: "Aspect Ratio",
-    description: "Switch between 4∶3 or widescreen to fit your monitor",
+    icon: "🔙",
+    title: "Back to Systems",
+    description: "File ▸ Back returns to the OS and Games browser to pick a new image",
   },
 ];

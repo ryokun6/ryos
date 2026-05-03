@@ -12,32 +12,32 @@ export const appMetadata = {
 export const helpItems = [
   {
     icon: "📝",
-    title: "Create Note",
-    description: "Click File > New Note to create a new sticky note",
+    title: "Create a Note",
+    description: "File ▸ New Note (or ⌘N) drops a fresh sticky right onto your desktop",
   },
   {
     icon: "🎨",
-    title: "Colors",
-    description: "Change note colors from the Note menu to organize your thoughts",
+    title: "Color Tags",
+    description: "Pick from yellow, pink, blue, green, purple, and more from the Note menu",
   },
   {
     icon: "↔️",
     title: "Move & Resize",
-    description: "Drag the title bar to move, drag the corner to resize notes",
+    description: "Drag the title bar to reposition; drag the corner to resize freely",
   },
   {
-    icon: "🗑️",
-    title: "Delete Note",
-    description: "Click the X button on a note to delete it",
+    icon: "🤖",
+    title: "Ryo Can Edit",
+    description: "Ask Ryo in Chats to add, move, recolor, or rewrite stickies for you",
   },
   {
     icon: "🧹",
     title: "Clear All",
-    description: "Use File > Clear All Notes to remove all stickies at once",
+    description: "File ▸ Clear All Notes wipes the bulletin board in one tidy sweep",
   },
   {
     icon: "💾",
     title: "Auto-Save",
-    description: "Notes are automatically saved and persist between sessions",
+    description: "Notes save automatically and reappear in the same spot on next launch",
   },
 ];

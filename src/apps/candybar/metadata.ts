@@ -14,36 +14,36 @@ export const helpItems = [
     icon: "🍬",
     title: "Browse Icon Packs",
     description:
-      "Browse available icon packs in the sidebar categories and preview them in the main area",
+      "Pick a category in the sidebar — System, Devices, Community — to flip through packs",
   },
   {
     icon: "📦",
-    title: "Icon Pack Details",
+    title: "Pack Preview",
     description:
-      "Click on an icon pack to see a full preview of all included icons",
+      "Click any pack to see every icon inside before you commit to applying it",
   },
   {
     icon: "🎨",
-    title: "Apply Icon Packs",
+    title: "One-Click Apply",
     description:
-      "Select an icon pack and click Apply to customize your desktop icons",
+      "Hit Apply to swap every desktop, dock, and Finder icon to the new pack instantly",
   },
   {
     icon: "⭐",
     title: "Favorites",
     description:
-      "Mark icon packs as favorites for quick access from the sidebar",
+      "Star packs you love and they pin to the top of the sidebar for quick swaps",
   },
   {
     icon: "🔍",
-    title: "Search",
+    title: "Search & History",
     description:
-      "Use the search bar to quickly find icon packs by name or author",
+      "Search by name or author; built-in back/forward buttons retrace your browsing",
   },
   {
     icon: "☁️",
     title: "Cloud Library",
     description:
-      "Icon packs are stored in the cloud and available across all your sessions",
+      "Packs live in the ryOS cloud catalog so they're available across every device",
   },
 ];

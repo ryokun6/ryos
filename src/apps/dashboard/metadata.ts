@@ -14,36 +14,36 @@ export const helpItems = [
     icon: "🎛️",
     title: "Open Dashboard",
     description:
-      "Press F4 or click the Dashboard icon to show your widgets",
+      "Press F4 (or click the Dashboard icon) to fade in your widget overlay anywhere",
   },
   {
-    icon: "🕐",
-    title: "Clock Widget",
+    icon: "🧩",
+    title: "Widget Library",
     description:
-      "An analog clock that shows the current time",
-  },
-  {
-    icon: "📅",
-    title: "Calendar Widget",
-    description:
-      "A mini calendar showing the current month and your events",
+      "Add clock, weather, calendar, stocks, mini iPod, sticky note, dictionary, and more",
   },
   {
     icon: "🌤️",
-    title: "Weather Widget",
+    title: "Live Weather",
     description:
-      "Shows current weather for your location (requires location permission)",
+      "Weather widget pulls real conditions for your location with a quick permission prompt",
   },
   {
     icon: "↔️",
-    title: "Move Widgets",
+    title: "Drag to Arrange",
     description:
-      "Drag widgets to rearrange them on the dashboard",
+      "Drag any widget to reposition it; new widgets auto-place to avoid overlap",
+  },
+  {
+    icon: "💾",
+    title: "Layout Persists",
+    description:
+      "Your widget set and positions stay put across sessions and theme changes",
   },
   {
     icon: "✕",
-    title: "Close Dashboard",
+    title: "Quick Dismiss",
     description:
-      "Click the background or press F4 / Escape to close",
+      "Click the background or press F4/Esc to instantly fade Dashboard back out",
   },
 ];
