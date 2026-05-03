@@ -1,9 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type CurrencyWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
 import { ArrowsDownUp, ArrowsLeftRight } from "@phosphor-icons/react";
-import { fetchCurrencyRateForWidget, parseAmountInput } from "@/lib/currency/frankfurter";
+import {
+  countDigitsBeforePos,
+  fetchCurrencyRateForWidget,
+  formatCurrencyAmountDisplay,
+  getCurrencyMaxFractionDigits,
+  normalizeAmountInput,
+  parseAmountInput,
+  positionAfterNthDigit,
+} from "@/lib/currency/frankfurter";
 
 const MAIN_CURRENCIES = [
   "USD",
@@ -59,7 +67,13 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
 
   const [fromCurrency, setFromCurrency] = useState(config?.fromCurrency ?? "USD");
   const [toCurrency, setToCurrency] = useState(config?.toCurrency ?? "EUR");
-  const [amountStr, setAmountStr] = useState(config?.lastAmount ?? "100");
+  const [amountStr, setAmountStr] = useState(() =>
+    normalizeAmountInput(
+      config?.lastAmount ?? "100",
+      getCurrencyMaxFractionDigits(config?.fromCurrency ?? "USD"),
+      i18n.language
+    )
+  );
   const [rateData, setRateData] = useState<RateCacheEntry | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +84,14 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
   useEffect(() => {
     if (config?.fromCurrency && config.fromCurrency !== fromCurrency) setFromCurrency(config.fromCurrency);
     if (config?.toCurrency && config.toCurrency !== toCurrency) setToCurrency(config.toCurrency);
-    if (config?.lastAmount != null && config.lastAmount !== amountStr) setAmountStr(config.lastAmount);
+    if (config?.lastAmount != null) {
+      const normalized = normalizeAmountInput(
+        config.lastAmount,
+        getCurrencyMaxFractionDigits(config.fromCurrency ?? fromCurrency),
+        i18n.language
+      );
+      if (normalized !== amountStr) setAmountStr(normalized);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config?.fromCurrency, config?.toCurrency, config?.lastAmount]);
 
@@ -175,7 +196,13 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
 
   const handleFromChange = (code: string) => {
     setFromCurrency(code);
-    persistFields({ fromCurrency: code, toCurrency, lastAmount: amountStr });
+    const renormalized = normalizeAmountInput(
+      amountStr,
+      getCurrencyMaxFractionDigits(code),
+      i18n.language
+    );
+    if (renormalized !== amountStr) setAmountStr(renormalized);
+    persistFields({ fromCurrency: code, toCurrency, lastAmount: renormalized });
   };
 
   const handleToChange = (code: string) => {
@@ -183,9 +210,46 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
     persistFields({ fromCurrency, toCurrency: code, lastAmount: amountStr });
   };
 
-  const handleAmountChange = (v: string) => {
-    setAmountStr(v);
-    persistFields({ fromCurrency, toCurrency, lastAmount: v });
+  const maxFractionDigits = getCurrencyMaxFractionDigits(fromCurrency);
+  const formattedAmount = useMemo(
+    () => formatCurrencyAmountDisplay(amountStr, fromCurrency, i18n.language),
+    [amountStr, fromCurrency, i18n.language]
+  );
+
+  const handleAmountInput = (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const inputEl = e.target;
+    const rawValue = inputEl.value;
+    const selStart = inputEl.selectionStart ?? rawValue.length;
+
+    // How many digits precede the caret in what the user typed?
+    const digitsBeforeCaret = countDigitsBeforePos(rawValue, selStart);
+
+    const normalized = normalizeAmountInput(
+      rawValue,
+      maxFractionDigits,
+      i18n.language
+    );
+    const nextDisplay = formatCurrencyAmountDisplay(
+      normalized,
+      fromCurrency,
+      i18n.language
+    );
+
+    setAmountStr(normalized);
+    persistFields({ fromCurrency, toCurrency, lastAmount: normalized });
+
+    // Restore caret to sit after the same digit count in the formatted output.
+    requestAnimationFrame(() => {
+      if (!inputEl || document.activeElement !== inputEl) return;
+      const target = positionAfterNthDigit(nextDisplay, digitsBeforeCaret);
+      try {
+        inputEl.setSelectionRange(target, target);
+      } catch {
+        // Some browsers throw on certain input types; safe to ignore.
+      }
+    });
   };
 
   const handleSwap = () => {
@@ -238,8 +302,8 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
         <input
           type="text"
           inputMode="decimal"
-          value={amountStr}
-          onChange={(e) => handleAmountChange(e.target.value)}
+          value={formattedAmount}
+          onChange={handleAmountInput}
           onPointerDown={(e) => e.stopPropagation()}
           placeholder={t("apps.dashboard.currency.amountPlaceholder", "Amount")}
           style={{
@@ -371,8 +435,8 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
         <input
           type="text"
           inputMode="decimal"
-          value={amountStr}
-          onChange={(e) => handleAmountChange(e.target.value)}
+          value={formattedAmount}
+          onChange={handleAmountInput}
           onPointerDown={(e) => e.stopPropagation()}
           placeholder={t("apps.dashboard.currency.amountPlaceholder", "Amount")}
           style={{
