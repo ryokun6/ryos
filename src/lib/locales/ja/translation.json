@@ -1620,14 +1620,14 @@
         "swap": "通貨を入れ替え",
         "loading": "レート読み込み中…",
         "error": "為替レートを取得できませんでした",
-        "ecbDate": "ECB: {{date}}",
+        "asOfDate": "基準日 {{date}}",
         "updated": "更新 {{time}}",
         "staleRates": "キャッシュのレート · {{time}}",
         "cachedHint": "キャッシュのレートを使用（ペアを変えると更新）",
         "from": "元",
         "to": "先",
         "defaultPair": "既定の通貨ペア",
-        "about": "Frankfurter（ECB）のレート。参考情報であり金融助言ではありません。"
+        "about": "Frankfurter（ECB）または代替ソースの参考レート。参考情報であり金融助言ではありません。"
       },
       "weather": {
         "changeCity": "都市を変更",

@@ -301,7 +301,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
             {simplifiedRateLine && <div style={{ fontWeight: 600 }}>{simplifiedRateLine}</div>}
             {rateData && (
               <div style={{ color: usingCache ? "#996600" : "#666" }}>
-                {t("apps.dashboard.currency.ecbDate", "ECB: {{date}}", { date: rateData.rateDate })} · {updatedLabel}
+                {t("apps.dashboard.currency.asOfDate", "As of {{date}}", { date: rateData.rateDate })} · {updatedLabel}
               </div>
             )}
             {usingCache && (
@@ -492,7 +492,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.88)", lineHeight: 1.35, textAlign: "center" }}>
             {simplifiedRateLine && <div style={{ fontWeight: 600 }}>{simplifiedRateLine}</div>}
             <div style={{ opacity: usingCache ? 1 : 0.85, color: usingCache ? "#ffe066" : "rgba(255,255,255,0.75)" }}>
-              {t("apps.dashboard.currency.ecbDate", "ECB: {{date}}", { date: rateData.rateDate })} · {updatedLabel}
+              {t("apps.dashboard.currency.asOfDate", "As of {{date}}", { date: rateData.rateDate })} · {updatedLabel}
             </div>
             {usingCache && (
               <div style={{ color: "#ffe8a3", marginTop: 2 }}>

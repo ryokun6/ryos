@@ -1620,14 +1620,14 @@
         "swap": "통화 바꾸기",
         "loading": "환율 불러오는 중…",
         "error": "환율을 불러올 수 없습니다",
-        "ecbDate": "ECB: {{date}}",
+        "asOfDate": "기준일 {{date}}",
         "updated": "업데이트 {{time}}",
         "staleRates": "캐시된 환율 · {{time}}",
         "cachedHint": "캐시된 환율 사용 (쌍을 바꾸면 새로고침)",
         "from": "출발",
         "to": "도착",
         "defaultPair": "기본 통화 쌍",
-        "about": "Frankfurter(ECB) 환율입니다. 참고용이며 금융 조언이 아닙니다."
+        "about": "Frankfurter(ECB) 또는 대체 제공자 기준의 참고 환율입니다. 참고용이며 금융 조언이 아닙니다."
       },
       "weather": {
         "changeCity": "도시 변경",

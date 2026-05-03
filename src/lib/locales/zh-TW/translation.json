@@ -1620,14 +1620,14 @@
         "swap": "交換幣別",
         "loading": "載入匯率中…",
         "error": "無法載入匯率",
-        "ecbDate": "ECB：{{date}}",
+        "asOfDate": "截至 {{date}}",
         "updated": "更新於 {{time}}",
         "staleRates": "使用快取匯率 · {{time}}",
         "cachedHint": "使用快取匯率（變更幣對以重新整理）",
         "from": "來源",
         "to": "目標",
         "defaultPair": "預設幣別對",
-        "about": "匯率來自 Frankfurter（ECB）。僅供參考，非投資建議。"
+        "about": "參考匯率來自 Frankfurter（ECB）或備援來源。僅供參考，非投資建議。"
       },
       "weather": {
         "changeCity": "更改城市",

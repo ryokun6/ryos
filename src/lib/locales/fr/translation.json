@@ -1620,14 +1620,14 @@
         "swap": "Inverser les devises",
         "loading": "Chargement du taux…",
         "error": "Impossible de charger le taux de change",
-        "ecbDate": "BCE : {{date}}",
+        "asOfDate": "Au {{date}}",
         "updated": "Mis à jour {{time}}",
         "staleRates": "Taux mis en cache · {{time}}",
         "cachedHint": "Taux mis en cache (changez la paire pour actualiser).",
         "from": "De",
         "to": "Vers",
         "defaultPair": "Paire de devises par défaut",
-        "about": "Taux via Frankfurter (BCE). À titre indicatif uniquement ; pas un conseil financier."
+        "about": "Taux indicatifs via Frankfurter (BCE) ou une source de secours. À titre indicatif ; pas un conseil financier."
       },
       "weather": {
         "changeCity": "Changer de ville",

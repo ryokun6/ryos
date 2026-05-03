@@ -1620,14 +1620,14 @@
         "swap": "Intercambiar monedas",
         "loading": "Cargando tipo de cambio…",
         "error": "No se pudo cargar el tipo de cambio",
-        "ecbDate": "BCE: {{date}}",
+        "asOfDate": "Al {{date}}",
         "updated": "Actualizado {{time}}",
         "staleRates": "Tipos en caché · {{time}}",
         "cachedHint": "Usando tipo en caché (cambia el par para actualizar).",
         "from": "De",
         "to": "A",
         "defaultPair": "Par de divisas predeterminado",
-        "about": "Tipos de Frankfurter (BCE). Solo informativo; no es asesoramiento financiero."
+        "about": "Tipos orientativos de Frankfurter (BCE) o proveedor alternativo. Solo informativo; no es asesoramiento financiero."
       },
       "weather": {
         "changeCity": "Cambiar ciudad",

@@ -1620,14 +1620,14 @@
         "swap": "Scambia valute",
         "loading": "Caricamento tasso…",
         "error": "Impossibile caricare il tasso di cambio",
-        "ecbDate": "BCE: {{date}}",
+        "asOfDate": "Al {{date}}",
         "updated": "Aggiornato {{time}}",
         "staleRates": "Tassi in cache · {{time}}",
         "cachedHint": "Tasso in cache (cambia la coppia per aggiornare).",
         "from": "Da",
         "to": "A",
         "defaultPair": "Coppia di valute predefinita",
-        "about": "Tassi da Frankfurter (BCE). Solo a scopo informativo; nessun consiglio finanziario."
+        "about": "Tassi indicativi da Frankfurter (BCE) o fornitore alternativo. Solo informativi; nessun consiglio finanziario."
       },
       "weather": {
         "changeCity": "Cambia città",

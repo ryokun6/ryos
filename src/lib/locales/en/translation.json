@@ -3330,14 +3330,14 @@
         "swap": "Swap currencies",
         "loading": "Loading rate…",
         "error": "Could not load exchange rate",
-        "ecbDate": "ECB: {{date}}",
+        "asOfDate": "As of {{date}}",
         "updated": "Updated {{time}}",
         "staleRates": "Using cached rates · {{time}}",
         "cachedHint": "Using cached rate (refresh by changing pair).",
         "from": "From",
         "to": "To",
         "defaultPair": "Default currency pair",
-        "about": "Rates from Frankfurter (ECB). For information only; not financial advice."
+        "about": "Indicative rates from Frankfurter (ECB) or a fallback provider. For information only; not financial advice."
       },
       "ipod": {
         "noTrack": "No Track",
