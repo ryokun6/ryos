@@ -1663,6 +1663,20 @@
         "translateFrom": "翻訳元",
         "translating": "翻訳中..."
       },
+      "currency": {
+        "amountPlaceholder": "金額",
+        "swap": "通貨を入れ替え",
+        "loading": "レート読み込み中…",
+        "error": "為替レートを取得できませんでした",
+        "asOfDate": "基準日 {{date}}",
+        "updated": "更新 {{time}}",
+        "staleRates": "キャッシュのレート · {{time}}",
+        "cachedHint": "キャッシュのレートを使用（ペアを変えると更新）",
+        "from": "元",
+        "to": "先",
+        "defaultPair": "既定の通貨ペア",
+        "about": "Frankfurter（ECB）または代替ソースの参考レート。参考情報であり金融助言ではありません。"
+      },
       "weather": {
         "changeCity": "都市を変更",
         "enableLocation": "天気予報の位置情報を有効にする",
@@ -1691,6 +1705,7 @@
         "stickyNote": "付箋",
         "stocks": "株価",
         "translation": "翻訳",
+        "currencyConverter": "通貨換算",
         "weather": "天気"
       }
     },

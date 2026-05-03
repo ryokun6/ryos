@@ -3287,6 +3287,7 @@
         "ipod": "iPod",
         "dictionary": "Dictionary",
         "translation": "Translation",
+        "currencyConverter": "Currency Converter",
         "addWidget": "Add Widget...",
         "removeWidget": "Remove Widget"
       },
@@ -3325,6 +3326,20 @@
         "defaultLanguages": "Default Languages",
         "save": "Save",
         "poweredBy": "Powered by MyMemory"
+      },
+      "currency": {
+        "amountPlaceholder": "Amount",
+        "swap": "Swap currencies",
+        "loading": "Loading rate…",
+        "error": "Could not load exchange rate",
+        "asOfDate": "As of {{date}}",
+        "updated": "Updated {{time}}",
+        "staleRates": "Using cached rates · {{time}}",
+        "cachedHint": "Using cached rate (refresh by changing pair).",
+        "from": "From",
+        "to": "To",
+        "defaultPair": "Default currency pair",
+        "about": "Indicative rates from Frankfurter (ECB) or a fallback provider. For information only; not financial advice."
       },
       "ipod": {
         "noTrack": "No Track",

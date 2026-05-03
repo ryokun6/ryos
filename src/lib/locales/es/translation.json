@@ -1663,6 +1663,20 @@
         "translateFrom": "Traducir de",
         "translating": "Traduciendo..."
       },
+      "currency": {
+        "amountPlaceholder": "Importe",
+        "swap": "Intercambiar monedas",
+        "loading": "Cargando tipo de cambio…",
+        "error": "No se pudo cargar el tipo de cambio",
+        "asOfDate": "Al {{date}}",
+        "updated": "Actualizado {{time}}",
+        "staleRates": "Tipos en caché · {{time}}",
+        "cachedHint": "Usando tipo en caché (cambia el par para actualizar).",
+        "from": "De",
+        "to": "A",
+        "defaultPair": "Par de divisas predeterminado",
+        "about": "Tipos orientativos de Frankfurter (BCE) o proveedor alternativo. Solo informativo; no es asesoramiento financiero."
+      },
       "weather": {
         "changeCity": "Cambiar ciudad",
         "enableLocation": "Habilitar ubicación para el clima",
@@ -1691,6 +1705,7 @@
         "stickyNote": "Nota adhesiva",
         "stocks": "Bolsa",
         "translation": "Traducción",
+        "currencyConverter": "Conversor de divisas",
         "weather": "Tiempo"
       }
     },
