@@ -401,7 +401,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         ) : (
           <div className="absolute inset-0 flex flex-col">
             {/* Snippet progress or feedback — fixed slot height */}
-            <div className="px-2 py-px text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+            <div className="border-b border-[#0a3667] px-2 py-px text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
               <div className="flex h-5 w-full items-center justify-center">
                 {phase === "feedback" ? (
                   <div className="w-full truncate text-center font-chicago text-[16px] leading-4">
