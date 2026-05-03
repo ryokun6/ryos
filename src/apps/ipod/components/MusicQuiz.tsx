@@ -21,6 +21,16 @@ const MAX_GAME_SCORE = musicQuizMaxScore(TOTAL_ROUNDS);
 const SNIPPET_MIN_START_SEC = 20;
 const SNIPPET_MAX_FALLBACK_SEC = 180;
 
+// iOS Safari blocks programmatic YouTube iframe playback unless the first
+// play() call happens inside a direct user gesture. We gate the first round
+// behind a "Press center to start" screen so we can capture that gesture,
+// then subsequent rounds reuse the same iframe (which stays unlocked).
+const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+const isIOS = /iP(hone|od|ad)/.test(ua);
+const isSafari =
+  /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS/.test(ua);
+const isIOSSafari = isIOS && isSafari;
+
 export interface MusicQuizRound {
   correctIndex: number;
   options: Track[];
@@ -29,7 +39,13 @@ export interface MusicQuizRound {
   isCorrect: boolean | null;
 }
 
-type Phase = "idle" | "loading" | "playing" | "feedback" | "finished";
+type Phase =
+  | "idle"
+  | "awaitingStart"
+  | "loading"
+  | "playing"
+  | "feedback"
+  | "finished";
 
 export interface MusicQuizRef {
   /** Move selection up/down. Returns true if handled. */
@@ -96,6 +112,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const [score, setScore] = useState(0);
   const [lastRoundPoints, setLastRoundPoints] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
 
   const playerRef = useRef<ReactPlayer | null>(null);
   const snippetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -104,6 +121,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const startSecRef = useRef(0);
   const snippetStartedAtRef = useRef<number | null>(null);
   const enteredRef = useRef(false);
+  // Once we've captured a user gesture on iOS Safari, the underlying
+  // YouTube iframe stays unlocked for the rest of the session. We keep the
+  // same ReactPlayer mounted across rounds so later auto-starts work.
+  const hasUnlockedPlaybackRef = useRef(false);
 
   const hasEnoughTracks = tracks.length >= 2;
 
@@ -134,6 +155,16 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     return min + Math.random() * (max - min);
   }, []);
 
+  /**
+   * Prepares the next round.
+   *
+   * - On iOS Safari, if playback hasn't been unlocked by a user gesture yet,
+   *   we stage the round but stay in "awaitingStart" so the user can press
+   *   center to start (and unlock YouTube playback). The ReactPlayer still
+   *   mounts with the correct URL so the iframe is ready the instant we
+   *   capture the gesture.
+   * - Otherwise we go straight to "loading" → "playing".
+   */
   const startNextRound = useCallback(() => {
     clearTimers();
     if (!hasEnoughTracks) {
@@ -158,7 +189,8 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     setRoundNumber((n) => n + 1);
     setSelectedIndex(0);
     snippetStartedAtRef.current = null;
-    setPhase("loading");
+    const needsGesture = isIOSSafari && !hasUnlockedPlaybackRef.current;
+    setPhase(needsGesture ? "awaitingStart" : "loading");
   }, [clearTimers, hasEnoughTracks, tracks]);
 
   // When becoming visible, start the game.
@@ -174,12 +206,14 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     } else {
       // Reset on hide
       enteredRef.current = false;
+      hasUnlockedPlaybackRef.current = false;
       clearTimers();
       setPhase("idle");
       setRound(null);
       setRoundNumber(0);
       setScore(0);
       setSelectedIndex(0);
+      setIsPlayerReady(false);
     }
   }, [isVisible, onEnter, startNextRound, clearTimers]);
 
@@ -244,8 +278,11 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
 
   const handleDuration = useCallback(
     (duration: number) => {
-      // Re-pick a start within the song's true bounds.
-      if (!round || phase !== "loading") return;
+      // Re-pick a start within the song's true bounds. We accept this in
+      // both "loading" (normal flow) and "awaitingStart" (iOS first round
+      // where the iframe is pre-loaded and waiting for a user gesture).
+      if (!round) return;
+      if (phase !== "loading" && phase !== "awaitingStart") return;
       const start = computeStartSec(duration);
       startSecRef.current = start;
       setRound((r) => (r ? { ...r, startSec: start } : r));
@@ -254,11 +291,15 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   );
 
   const handleReady = useCallback(() => {
-    if (phase !== "loading") return;
     if (loadingWatchdogRef.current) {
       clearTimeout(loadingWatchdogRef.current);
       loadingWatchdogRef.current = null;
     }
+    setIsPlayerReady(true);
+    // On iOS we stay in "awaitingStart" until the user taps center. The
+    // iframe is loaded and ready to play the instant we get the gesture.
+    if (phase === "awaitingStart") return;
+    if (phase !== "loading") return;
     setPhase("playing");
     // Defer to next tick to ensure player is fully ready before seeking
     setTimeout(() => {
@@ -274,7 +315,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   // by autoplay policies. After a grace period, skip to the next round so the
   // game isn't stuck on "Loading...".
   useEffect(() => {
-    if (phase !== "loading" || !round) return;
+    if (!round) return;
+    if (phase !== "loading" && !(phase === "awaitingStart" && !isPlayerReady)) {
+      return;
+    }
     if (loadingWatchdogRef.current) {
       clearTimeout(loadingWatchdogRef.current);
     }
@@ -299,7 +343,51 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         loadingWatchdogRef.current = null;
       }
     };
-  }, [phase, round, roundNumber, startNextRound]);
+  }, [phase, round, roundNumber, startNextRound, isPlayerReady]);
+
+  // Kick off the snippet on iOS after a user gesture. Called synchronously
+  // from the center-button handler so Safari attributes the YouTube
+  // playVideo() call to the active gesture — this is what unlocks the
+  // iframe for autoplay on all subsequent rounds.
+  const unlockAndStart = useCallback(() => {
+    hasUnlockedPlaybackRef.current = true;
+    const internalPlayer = playerRef.current?.getInternalPlayer?.();
+    // Invoke YT API methods directly (not via react-player's async layer)
+    // so the browser attributes them to the active user gesture.
+    if (internalPlayer) {
+      try {
+        if (typeof internalPlayer.seekTo === "function") {
+          internalPlayer.seekTo(startSecRef.current, true);
+        }
+      } catch {
+        // ignore; we'll re-seek from handleReady if needed
+      }
+      try {
+        if (typeof internalPlayer.playVideo === "function") {
+          internalPlayer.playVideo();
+        }
+      } catch {
+        // ignore; handleReady will start playback when the iframe is ready
+      }
+    }
+    snippetStartedAtRef.current = performance.now();
+    setPhase("playing");
+    if (snippetTimerRef.current) clearTimeout(snippetTimerRef.current);
+    snippetTimerRef.current = setTimeout(() => {
+      if (!round) return;
+      clearTimers();
+      setRound((r) => (r ? { ...r, selectedIndex: null, isCorrect: false } : r));
+      setSelectedIndex((r) => (round?.correctIndex ?? r));
+      setPhase("feedback");
+      feedbackTimerRef.current = setTimeout(() => {
+        if (roundNumber >= TOTAL_ROUNDS) {
+          setPhase("finished");
+        } else {
+          startNextRound();
+        }
+      }, FEEDBACK_DURATION_MS);
+    }, SNIPPET_DURATION_MS);
+  }, [clearTimers, round, roundNumber, startNextRound]);
 
   // Imperative API exposed via ref
   useImperativeHandle(ref, () => ({
@@ -313,13 +401,20 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         });
         return true;
       }
-      if (phase === "finished") {
-        // No-op navigation in finished view
+      if (phase === "finished" || phase === "awaitingStart") {
+        // No-op navigation while waiting to start or on results screen
         return true;
       }
       return false;
     },
     selectCurrent: () => {
+      if (phase === "awaitingStart") {
+        if (!isPlayerReady) return;
+        playClick?.();
+        vibrate?.();
+        unlockAndStart();
+        return;
+      }
       if (phase === "playing" && round) {
         handleAnswer(selectedIndex);
         return;
@@ -369,7 +464,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         }, SNIPPET_DURATION_MS);
       }
     },
-  }), [phase, round, selectedIndex, handleAnswer, playClick, playScroll, vibrate, clearTimers, roundNumber, startNextRound]);
+  }), [phase, round, selectedIndex, handleAnswer, playClick, playScroll, vibrate, clearTimers, roundNumber, startNextRound, unlockAndStart, isPlayerReady]);
 
   const headerTitle = useMemo(() => {
     if (phase === "finished") return t("apps.ipod.musicQuiz.results");
@@ -446,6 +541,32 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
               {t("apps.ipod.musicQuiz.loading")}
             </div>
           </div>
+        ) : phase === "awaitingStart" ? (
+          <div
+            className={cn(
+              "absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+              isPlayerReady ? "cursor-pointer" : ""
+            )}
+            onClick={() => {
+              if (!isPlayerReady) return;
+              // Also accept a direct tap on the screen as the gesture, in
+              // addition to the wheel center button — on touch devices a
+              // tap on the screen is a more obvious way to start.
+              playClick?.();
+              vibrate?.();
+              unlockAndStart();
+            }}
+          >
+            {isPlayerReady ? (
+              <div className="font-chicago text-[14px] leading-4">
+                {t("apps.ipod.musicQuiz.pressCenterToStart")}
+              </div>
+            ) : (
+              <div className="text-[14px] animate-pulse">
+                {t("apps.ipod.musicQuiz.loading")}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="absolute inset-0 flex flex-col">
             {/* Snippet progress or feedback — fixed slot height */}
@@ -517,18 +638,24 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
 
       {/*
         Hidden audio-only player for snippet.
-        IMPORTANT: iOS Safari blocks YouTube iframe playback when the iframe
-        has zero/near-zero size or is positioned off-screen. We render the
-        player at full size behind the quiz UI (z-0) with visibility hidden
-        so it is visually imperceptible but still satisfies Safari's
-        viewport/size requirements for autoplay and media playback.
+        IMPORTANT #1: iOS Safari blocks YouTube iframe playback when the
+        iframe has zero/near-zero size or is positioned off-screen. We
+        render the player at full size behind the quiz UI (z-0) with
+        visibility hidden so it is visually imperceptible but still
+        satisfies Safari's viewport/size requirements for media playback.
+        IMPORTANT #2: Once the user has unlocked playback on iOS Safari via
+        a gesture, the unlock applies to the specific iframe element. To
+        keep it unlocked across rounds (and across replays after finishing
+        a game), we keep the same ReactPlayer mounted for the lifetime of
+        the quiz and only change its src via react-player's internal
+        cueVideoById.
       */}
       <div
         className="absolute inset-0 z-0 pointer-events-none"
         style={{ visibility: "hidden" }}
         aria-hidden
       >
-        {correctTrackUrl && phase !== "finished" && phase !== "idle" && (
+        {correctTrackUrl && phase !== "idle" && (
           <ReactPlayer
             ref={playerRef}
             url={correctTrackUrl}
