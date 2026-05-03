@@ -802,28 +802,6 @@ export async function prepareRyoConversationModelInput(
                 ...toolContextOverrides,
               }),
           },
-          /** @deprecated Prefer cursorCloudAgent — same execute; kept for backward compatibility */
-          cursorRyOsRepoAgent: {
-            description: CURSOR_CLOUD_AGENT_DESCRIPTION,
-            inputSchema: cursorCloudAgentSchema,
-            execute: async (input: CursorCloudAgentInput) =>
-              executeCursorCloudAgent(input, {
-                log,
-                logError,
-                env: {
-                  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
-                  YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
-                },
-                username: username ?? null,
-                redis,
-                timeZone: userTimeZone,
-                apiKey: cursorApiKey,
-                ...(cursorRepoAgentNotifyTelegram
-                  ? { notifyTelegram: cursorRepoAgentNotifyTelegram }
-                  : {}),
-                ...toolContextOverrides,
-              }),
-          },
           listCursorCloudAgentRuns: {
             description:
               "List recent Cursor Cloud coding-agent runs against ryokun6/ryos (real product repo, not the browser VFS). Returns stable run ids, status, timestamps, prompt/summary previews, PR URLs when known, and poll URLs for live events. Use when the user asks what jobs are running or to see recent agent activity.",

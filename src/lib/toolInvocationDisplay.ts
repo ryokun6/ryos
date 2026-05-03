@@ -20,7 +20,6 @@ export type WebSearchToolOutput = {
 /** Friendly labels for tools where word-splitting would be awkward */
 const TOOL_DISPLAY_LABELS: Record<string, string> = {
   cursorCloudAgent: "Cursor Cloud agent",
-  cursorRyOsRepoAgent: "Cursor Cloud agent",
   listCursorCloudAgentRuns: "Cursor agent runs",
 };
 

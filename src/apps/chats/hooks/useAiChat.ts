@@ -821,8 +821,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = "";
             break;
           }
-          case "cursorCloudAgent":
-          case "cursorRyOsRepoAgent": {
+          case "cursorCloudAgent": {
             console.log("[ToolCall] cursorCloudAgent (server-side):", toolCall.input);
             // Result comes from server — do not call addToolResult
             result = "";
@@ -1858,7 +1857,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           "memoryDelete",
           "webFetch",
           "cursorCloudAgent",
-          "cursorRyOsRepoAgent",
           "listCursorCloudAgentRuns",
         ];
         const toolParts = lastMsg.parts.filter(

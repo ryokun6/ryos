@@ -55,9 +55,6 @@ export const DEFAULT_RYOS_GITHUB_REPO_URL = "https://github.com/ryokun6/ryos";
 export const CURSOR_CLOUD_AGENT_DESCRIPTION =
   "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram). The chat card exposes a reply input that resumes the same Cursor agent for follow-up turns and a button that opens the auto-created GitHub PR. To show recent runs in chat, use `listCursorCloudAgentRuns`.";
 
-/** @deprecated Use CURSOR_CLOUD_AGENT_DESCRIPTION */
-export const CURSOR_RYOS_REPO_AGENT_DESCRIPTION = CURSOR_CLOUD_AGENT_DESCRIPTION;
-
 export const cursorCloudAgentSchema = z.object({
   prompt: z
     .string()
@@ -76,13 +73,7 @@ export const cursorCloudAgentSchema = z.object({
     ),
 });
 
-/** @deprecated Use cursorCloudAgentSchema — same shape, kept for external callers */
-export const cursorRyOsRepoAgentSchema = cursorCloudAgentSchema;
-
 export type CursorCloudAgentInput = z.infer<typeof cursorCloudAgentSchema>;
-
-/** @deprecated Use CursorCloudAgentInput */
-export type CursorRyOsRepoAgentInput = CursorCloudAgentInput;
 
 export const listCursorCloudAgentRunsSchema = z.object({
   limit: z
@@ -110,9 +101,6 @@ export interface CursorCloudAgentContext extends MemoryToolContext {
   /** When set, send a Telegram message to this chat once the run terminates. */
   notifyTelegram?: CursorRepoAgentTelegramNotify;
 }
-
-/** @deprecated Use CursorCloudAgentContext */
-export type CursorRyOsRepoAgentContext = CursorCloudAgentContext;
 
 const TELEGRAM_NOTIFY_MAX_BODY_CHARS = 3500;
 
@@ -183,9 +171,6 @@ export type CursorCloudAgentToolOutput =
       durationMs?: number;
       error?: string;
     };
-
-/** @deprecated Use CursorCloudAgentToolOutput */
-export type CursorRyOsRepoAgentToolOutput = CursorCloudAgentToolOutput;
 
 export interface CursorSdkRunListRow {
   runId: string;
@@ -1037,5 +1022,3 @@ export async function sendCursorAgentFollowup(input: {
   };
 }
 
-/** @deprecated Use executeCursorCloudAgent */
-export const executeCursorRyOsRepoAgent = executeCursorCloudAgent;

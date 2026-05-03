@@ -31,7 +31,6 @@ export function getTelegramToolStatusText(
     case "songLibraryControl":
       return getTelegramSongLibraryStatusText(input);
     case "cursorCloudAgent":
-    case "cursorRyOsRepoAgent":
       return "Starting Cursor cloud agent...";
     default:
       return "Using a tool...";

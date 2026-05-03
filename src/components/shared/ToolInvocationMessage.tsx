@@ -183,7 +183,6 @@ export function ToolInvocationMessage({
         break;
       }
       case "cursorCloudAgent":
-      case "cursorRyOsRepoAgent":
         displayCallMessage = t("apps.chats.toolCalls.cursorCloudAgent.starting");
         break;
       case "listCursorCloudAgentRuns":
@@ -713,7 +712,7 @@ export function ToolInvocationMessage({
   // Async Cursor Cloud agent — server streams events to Redis; UI polls /api/ai/cursor-run-status
   if (
     state === "output-available" &&
-    (toolName === "cursorCloudAgent" || toolName === "cursorRyOsRepoAgent") &&
+    toolName === "cursorCloudAgent" &&
     output &&
     typeof output === "object" &&
     "async" in output &&
