@@ -51,9 +51,15 @@ export function pickPrUrlFromRunGit(git: unknown): string | undefined {
 /** Default repo for ryOS Cursor Cloud runs (override with CURSOR_CLOUD_REPO_URL). */
 export const DEFAULT_RYOS_GITHUB_REPO_URL = "https://github.com/ryokun6/ryos";
 
+/** Cursor dashboard URL for a cloud agent (`bc_…` id from the SDK). */
+export function cursorCloudAgentDashboardUrl(agentId: string): string {
+  const id = agentId.trim();
+  return `https://cursor.com/agents/${encodeURIComponent(id)}`;
+}
+
 /** Shown to the model when this tool is enabled */
 export const CURSOR_CLOUD_AGENT_DESCRIPTION =
-  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram). The chat card exposes a reply input that resumes the same Cursor agent for follow-up turns and a button that opens the auto-created GitHub PR. To show recent runs in chat, use `listCursorCloudAgentRuns`.";
+  "Run Cursor's coding agent in Cursor Cloud against the GitHub repo ryokun6/ryos (not the browser VFS). Use when the user asks to implement, debug, or refactor the real ryOS product codebase—not virtual paths like /Documents or /Applets (those use read/write/edit). Give clear instructions and desired outcomes. Uses CURSOR_API_KEY and Cursor SDK billing. The run is asynchronous: you get an immediate acknowledgment while work continues, and the user is notified when it completes (live stream in web chat, follow-up message on Telegram). The chat card exposes a reply input that resumes the same Cursor agent for follow-up turns and a button that opens the auto-created GitHub PR. When you tell the user the job started, share the **Cursor agent dashboard link** from the tool result (`agentDashboardUrl`, URL shape https://cursor.com/agents/bc_…) — do **not** lead with the opaque run id. For recent jobs, use `listCursorCloudAgentRuns` (each row includes `agentDashboardUrl`).";
 
 export const cursorCloudAgentSchema = z.object({
   prompt: z
@@ -158,6 +164,8 @@ export type CursorCloudAgentToolOutput =
       async: true;
       runId: string;
       agentId: string;
+      /** https://cursor.com/agents/{agentId} — prefer this when telling the user where to follow the job */
+      agentDashboardUrl: string;
       /** Cloud catalog display name when available (`Agent.get`) */
       agentTitle?: string;
       message: string;
@@ -188,6 +196,8 @@ export interface CursorSdkRunListRow {
   isFollowup?: boolean;
   previousRunId?: string;
   nextRunId?: string;
+  /** https://cursor.com/agents/{agentId} */
+  agentDashboardUrl?: string;
   /** Relative path — prepend API origin in clients if needed */
   pollUrl: string;
 }
@@ -329,6 +339,9 @@ export async function listCursorSdkRunsFromRedis(
       rows.push({
         runId,
         agentId,
+        ...(agentId
+          ? { agentDashboardUrl: cursorCloudAgentDashboardUrl(agentId) }
+          : {}),
         status,
         createdAt,
         updatedAt,
@@ -800,8 +813,10 @@ export async function executeCursorCloudAgent(
       async: true,
       runId,
       agentId,
+      agentDashboardUrl: cursorCloudAgentDashboardUrl(agentId),
       ...(agentTitle ? { agentTitle } : {}),
-      message: "Cursor Cloud agent run started.",
+      message:
+        "Started. Share the Cursor agent link with the user (agentDashboardUrl) — not the run id — for where to follow progress.",
       pollHint:
         "Poll GET /api/ai/cursor-run-status?runId=… for events until a terminal entry appears.",
     };
@@ -828,6 +843,7 @@ export type CursorAgentFollowupResult =
       ok: true;
       runId: string;
       agentId: string;
+      agentDashboardUrl: string;
       previousRunId: string;
       message: string;
     }
@@ -1024,8 +1040,10 @@ export async function sendCursorAgentFollowup(input: {
     ok: true,
     runId: newRunId,
     agentId,
+    agentDashboardUrl: cursorCloudAgentDashboardUrl(agentId),
     previousRunId,
-    message: "Cursor Cloud agent follow-up started.",
+    message:
+      "Follow-up started. Tell the user to use the same Cursor agent link (agentDashboardUrl) to follow this turn.",
   };
 }
 

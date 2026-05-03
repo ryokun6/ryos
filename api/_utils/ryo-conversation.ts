@@ -737,8 +737,8 @@ export async function prepareRyoConversationModelInput(
 
   const cursorSdkAddon = enableCursorRepoTool
     ? channel === "telegram"
-      ? `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs with status and PR links. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge it briefly to the user — they will receive a follow-up Telegram message with the result when the run completes.`
-      : `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs with status and PR links. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub.`
+      ? `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs (each row includes \`agentDashboardUrl\`: https://cursor.com/agents/… — share that with the user instead of the run id). Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge briefly and point to \`agentDashboardUrl\`; they will receive a follow-up Telegram message when the run completes.`
+      : `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs (each row includes \`agentDashboardUrl\`: https://cursor.com/agents/… — prefer that over run id when talking to the user). Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub.`
     : "";
 
   const staticSystemPrompt = staticPrompts.join("\n") + cursorSdkAddon;
@@ -804,7 +804,7 @@ export async function prepareRyoConversationModelInput(
           },
           listCursorCloudAgentRuns: {
             description:
-              "List recent Cursor Cloud coding-agent runs against ryokun6/ryos (real product repo, not the browser VFS). Returns stable run ids, status, timestamps, prompt/summary previews, PR URLs when known, and poll URLs for live events. Use when the user asks what jobs are running or to see recent agent activity.",
+              "List recent Cursor Cloud coding-agent runs against ryokun6/ryos (real product repo, not the browser VFS). Returns stable run ids, agentDashboardUrl (https://cursor.com/agents/… for the user), status, timestamps, prompt/summary previews, PR URLs when known, and poll URLs for live events. When summarizing for the user, prefer agentDashboardUrl over run id.",
             inputSchema: listCursorCloudAgentRunsSchema,
             execute: async (input) =>
               executeListCursorCloudAgentRuns(input, {

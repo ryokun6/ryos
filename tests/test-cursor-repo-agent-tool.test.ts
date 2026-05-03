@@ -290,6 +290,9 @@ describe("listCursorSdkRunsFromRedis", () => {
     expect(runs[1].prUrl).toBe("https://github.com/x/y/pull/1");
     expect(runs[1].nextRunId).toBe("abc");
     expect(runs[1].summaryPreview).toContain("All good");
+    expect(runs[0].agentDashboardUrl).toBe(
+      "https://cursor.com/agents/ag1"
+    );
   });
 });
 
@@ -351,6 +354,9 @@ describe("executeListCursorCloudAgentRuns", () => {
       expect(result.runs.length).toBe(1);
       expect(result.runs[0].pollUrl).toContain("/api/ai/cursor-run-status");
       expect(result.runs[0].pollUrl).toContain(encodeURIComponent("x"));
+      expect(result.runs[0].agentDashboardUrl).toBe(
+        "https://cursor.com/agents/a"
+      );
     }
   });
 });

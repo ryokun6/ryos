@@ -301,6 +301,7 @@ export interface AdminCursorAgentRunRow {
   isFollowup?: boolean;
   previousRunId?: string;
   nextRunId?: string;
+  agentDashboardUrl?: string;
 }
 
 async function listCursorSdkRunsForAdmin(
