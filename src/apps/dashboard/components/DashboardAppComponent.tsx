@@ -13,6 +13,7 @@ import { WeatherWidget, WeatherEmojiOverflow, WeatherBackPanel } from "@/compone
 import { StocksWidget, StocksBackPanel } from "@/components/layout/dashboard/StocksWidget";
 import { IpodWidget, IpodBackPanel } from "@/components/layout/dashboard/IpodWidget";
 import { TranslationWidget, TranslationBackPanel } from "@/components/layout/dashboard/TranslationWidget";
+import { CurrencyWidget, CurrencyBackPanel } from "@/components/layout/dashboard/CurrencyWidget";
 import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
 import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
 import { AquariumWidget } from "@/components/layout/dashboard/AquariumWidget";
@@ -37,6 +38,8 @@ function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: 
       return <IpodWidget widgetId={widgetId} />;
     case "translation":
       return <TranslationWidget widgetId={widgetId} />;
+    case "currency":
+      return <CurrencyWidget widgetId={widgetId} />;
     case "stickynote":
       return <StickyNoteWidget widgetId={widgetId} />;
     case "dictionary":
@@ -62,6 +65,8 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
       return <IpodBackPanel widgetId={widgetId} onDone={onDone} />;
     case "translation":
       return <TranslationBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "currency":
+      return <CurrencyBackPanel widgetId={widgetId} onDone={onDone} />;
     case "stickynote":
       return <StickyNoteBackPanel widgetId={widgetId} onDone={onDone} />;
     case "dictionary":
@@ -83,6 +88,7 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
   stocks: "📈",
   ipod: "🎵",
   translation: "🌐",
+  currency: "💱",
   stickynote: "📝",
   dictionary: "📖",
   aquarium: "🐠",
@@ -121,6 +127,7 @@ function WidgetStrip({
     { type: "stocks", label: t("apps.dashboard.widgets.stocks") },
     { type: "ipod", label: t("apps.dashboard.widgets.ipod", "iPod") },
     { type: "translation", label: t("apps.dashboard.widgets.translation", "Translation") },
+    { type: "currency", label: t("apps.dashboard.widgets.currencyConverter", "Currency Converter") },
     { type: "stickynote", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
     { type: "dictionary", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
     { type: "aquarium", label: t("apps.dashboard.widgets.aquarium", "Aquarium") },
@@ -301,6 +308,7 @@ export function DashboardAppComponent({
       onAddStocks={() => handleAddWidget("stocks")}
       onAddIpod={() => handleAddWidget("ipod")}
       onAddTranslation={() => handleAddWidget("translation")}
+      onAddCurrency={() => handleAddWidget("currency")}
       onAddStickyNote={() => handleAddWidget("stickynote")}
       onAddDictionary={() => handleAddWidget("dictionary")}
       onAddAquarium={() => handleAddWidget("aquarium")}

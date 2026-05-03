@@ -1615,6 +1615,20 @@
         "translateFrom": "Traduzir de",
         "translating": "Traduzindo..."
       },
+      "currency": {
+        "amountPlaceholder": "Valor",
+        "swap": "Trocar moedas",
+        "loading": "Carregando taxa…",
+        "error": "Não foi possível carregar a taxa de câmbio",
+        "ecbDate": "BCE: {{date}}",
+        "updated": "Atualizado {{time}}",
+        "staleRates": "Taxas em cache · {{time}}",
+        "cachedHint": "Usando taxa em cache (altere o par para atualizar).",
+        "from": "De",
+        "to": "Para",
+        "defaultPair": "Par de moedas padrão",
+        "about": "Taxas via Frankfurter (BCE). Apenas informativo; não é aconselhamento financeiro."
+      },
       "weather": {
         "changeCity": "Alterar cidade",
         "enableLocation": "Ativar localização para o tempo",
@@ -1643,6 +1657,7 @@
         "stickyNote": "Nota Autoadesiva",
         "stocks": "Ações",
         "translation": "Tradução",
+        "currencyConverter": "Conversor de moedas",
         "weather": "Tempo"
       }
     },

@@ -22,6 +22,7 @@ interface DashboardMenuBarProps {
   onAddStocks: () => void;
   onAddIpod: () => void;
   onAddTranslation: () => void;
+  onAddCurrency: () => void;
   onAddStickyNote: () => void;
   onAddDictionary: () => void;
   onAddAquarium: () => void;
@@ -38,6 +39,7 @@ export function DashboardMenuBar({
   onAddStocks,
   onAddIpod,
   onAddTranslation,
+  onAddCurrency,
   onAddStickyNote,
   onAddDictionary,
   onAddAquarium,
@@ -78,6 +80,9 @@ export function DashboardMenuBar({
               </MenubarItem>
               <MenubarItem onClick={onAddTranslation} className="text-md h-6 px-3">
                 🌐 {t("apps.dashboard.widgets.translation", "Translation")}
+              </MenubarItem>
+              <MenubarItem onClick={onAddCurrency} className="text-md h-6 px-3">
+                💱 {t("apps.dashboard.widgets.currencyConverter", "Currency Converter")}
               </MenubarItem>
               <MenubarItem onClick={onAddStickyNote} className="text-md h-6 px-3">
                 📝 {t("apps.dashboard.widgets.stickyNote", "Sticky Note")}

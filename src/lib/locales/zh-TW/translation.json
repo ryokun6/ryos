@@ -1615,6 +1615,20 @@
         "translateFrom": "從...翻譯",
         "translating": "翻譯中..."
       },
+      "currency": {
+        "amountPlaceholder": "金額",
+        "swap": "交換幣別",
+        "loading": "載入匯率中…",
+        "error": "無法載入匯率",
+        "ecbDate": "ECB：{{date}}",
+        "updated": "更新於 {{time}}",
+        "staleRates": "使用快取匯率 · {{time}}",
+        "cachedHint": "使用快取匯率（變更幣對以重新整理）",
+        "from": "來源",
+        "to": "目標",
+        "defaultPair": "預設幣別對",
+        "about": "匯率來自 Frankfurter（ECB）。僅供參考，非投資建議。"
+      },
       "weather": {
         "changeCity": "更改城市",
         "enableLocation": "啟用定位以取得天氣",
@@ -1643,6 +1657,7 @@
         "stickyNote": "便利貼",
         "stocks": "股票",
         "translation": "翻譯",
+        "currencyConverter": "匯率換算",
         "weather": "天氣"
       }
     },

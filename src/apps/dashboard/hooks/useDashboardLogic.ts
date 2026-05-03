@@ -45,6 +45,7 @@ export function useDashboardLogic() {
         dictionary: { width: 240, height: 220 },
         stickynote: { width: 200, height: 200 },
         translation: { width: 300, height: 170 },
+        currency: { width: 280, height: 200 },
       };
       const size = sizeMap[type];
 

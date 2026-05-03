@@ -1615,6 +1615,20 @@
         "translateFrom": "Übersetzen von",
         "translating": "Übersetzt..."
       },
+      "currency": {
+        "amountPlaceholder": "Betrag",
+        "swap": "Währungen tauschen",
+        "loading": "Kurs wird geladen…",
+        "error": "Wechselkurs konnte nicht geladen werden",
+        "ecbDate": "EZB: {{date}}",
+        "updated": "Aktualisiert {{time}}",
+        "staleRates": "Zwischengespeicherte Kurse · {{time}}",
+        "cachedHint": "Zwischengespeicherter Kurs (Paar ändern zum Aktualisieren).",
+        "from": "Von",
+        "to": "Nach",
+        "defaultPair": "Standardwährungspaar",
+        "about": "Kurse von Frankfurter (EZB). Nur zur Information; keine Finanzberatung."
+      },
       "weather": {
         "changeCity": "Stadt ändern",
         "enableLocation": "Standort für Wetter aktivieren",
@@ -1643,6 +1657,7 @@
         "stickyNote": "Haftnotiz",
         "stocks": "Aktien",
         "translation": "Übersetzung",
+        "currencyConverter": "Währungsrechner",
         "weather": "Wetter"
       }
     },
