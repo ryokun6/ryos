@@ -234,7 +234,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
 
   if (isXpTheme) {
     return (
-      <div className="flex flex-col flex-1" style={{ fontFamily: font, padding: 8, gap: 6, minHeight: "inherit" }}>
+      <div className="flex flex-col flex-1" style={{ fontFamily: font, padding: "7px 8px 5px", gap: 5, minHeight: "inherit" }}>
         <input
           type="text"
           inputMode="decimal"
@@ -284,14 +284,13 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
         </div>
         <div
           style={{
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 700,
-            padding: "6px 8px",
+            padding: "5px 8px",
             border: "1px solid #ACA899",
             borderRadius: 2,
             background: "#F5F5F0",
             color: loading ? "#888" : "#000",
-            minHeight: 36,
           }}
         >
           {loading ? t("apps.dashboard.currency.loading", "Loading rate…") : error && !rateData ? error : outputStr}
@@ -305,7 +304,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
               </div>
             )}
             {usingCache && (
-              <div style={{ color: "#996600", marginTop: 2 }}>
+              <div style={{ color: "#996600", marginTop: 1 }}>
                 {t("apps.dashboard.currency.cachedHint", "Using cached rate (refresh by changing pair).")}
               </div>
             )}
@@ -315,23 +314,37 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
     );
   }
 
-  const aquaSelectStyle = {
-    fontSize: 11,
+  /** Graphite-style glossy controls (Translation widget shape, neutral gray). */
+  const graphiteSelectStyle = {
+    fontSize: 12,
     fontWeight: 600 as const,
     padding: "3px 8px",
     borderRadius: 6,
-    border: "1px solid rgba(0,0,0,0.25)",
-    background: "linear-gradient(180deg, #6AB0F3 0%, #3B82D0 50%, #2E6DB8 100%)",
+    border: "1px solid rgba(0,0,0,0.35)",
+    background:
+      "linear-gradient(180deg, #c4c8d0 0%, #9ba1ad 38%, #6f7682 72%, #5a616c 100%)",
     color: "#FFF",
     cursor: "pointer" as const,
-    boxShadow: "0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.45)",
     fontFamily: font,
     appearance: "none" as const,
     WebkitAppearance: "none" as const,
     outline: "none" as const,
-    textShadow: "0 -1px 1px rgba(0,0,0,0.25)",
+    textShadow: "0 -1px 1px rgba(0,0,0,0.35)",
     minWidth: 0,
     flex: 1,
+  };
+
+  const graphiteBtnStyle = {
+    padding: "4px 6px",
+    borderRadius: 6,
+    border: "1px solid rgba(0,0,0,0.35)",
+    background:
+      "linear-gradient(180deg, #c4c8d0 0%, #9ba1ad 38%, #6f7682 72%, #5a616c 100%)",
+    cursor: "pointer" as const,
+    color: "#FFF",
+    flexShrink: 0,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.45)",
   };
 
   return (
@@ -343,34 +356,18 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
         minHeight: "inherit",
         fontFamily: font,
         position: "relative",
-        background: "linear-gradient(180deg, rgba(75,120,90,0.88) 0%, rgba(45,85,60,0.92) 50%, rgba(35,65,48,0.94) 100%)",
+        background:
+          "linear-gradient(180deg, rgba(118,122,132,0.9) 0%, rgba(82,86,94,0.93) 45%, rgba(58,61,68,0.95) 100%)",
       }}
     >
       <div
-        className="absolute pointer-events-none"
+        className="relative flex flex-col"
         style={{
-          top: "50%",
-          right: -16,
-          transform: "translateY(-50%)",
-          width: 140,
-          height: 140,
-          opacity: 0.2,
-          zIndex: 0,
+          padding: "7px 10px 5px",
+          gap: 6,
+          zIndex: 1,
         }}
       >
-        <svg viewBox="0 0 100 100" width="140" height="140" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(200,230,210,0.9)" strokeWidth="1.5" />
-          <path d="M30 38 Q50 20 70 38 Q50 55 30 38" fill="none" stroke="rgba(200,230,210,0.85)" strokeWidth="1.2" />
-          <text x="50" y="58" textAnchor="middle" fill="rgba(200,230,210,0.55)" fontSize="20" fontFamily="sans-serif">
-            $
-          </text>
-          <text x="50" y="78" textAnchor="middle" fill="rgba(200,230,210,0.55)" fontSize="16" fontFamily="sans-serif">
-            €
-          </text>
-        </svg>
-      </div>
-
-      <div className="relative flex flex-col gap-2" style={{ padding: "8px 10px", zIndex: 1 }}>
         <input
           type="text"
           inputMode="decimal"
@@ -380,15 +377,15 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
           placeholder={t("apps.dashboard.currency.amountPlaceholder", "Amount")}
           style={{
             width: "100%",
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 600,
             padding: "6px 10px",
             borderRadius: 8,
-            border: "1px solid rgba(0,0,0,0.12)",
-            background: "rgba(255,255,255,0.92)",
+            border: "1px solid rgba(0,0,0,0.18)",
+            background: "rgba(255,255,255,0.94)",
             color: "#1a1a1a",
             outline: "none",
-            boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06)",
+            boxShadow: "inset 0 1px 3px rgba(0,0,0,0.07), 0 1px 0 rgba(255,255,255,0.12)",
           }}
         />
 
@@ -398,7 +395,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
               value={fromCurrency}
               onChange={(e) => handleFromChange(e.target.value)}
               onPointerDown={(e) => e.stopPropagation()}
-              style={{ ...aquaSelectStyle, width: "100%", paddingRight: 18 }}
+              style={{ ...graphiteSelectStyle, width: "100%", paddingRight: 20 }}
             >
               {MAIN_CURRENCIES.map((c) => (
                 <option key={c} value={c} style={{ color: "#000", background: "#FFF" }}>
@@ -409,12 +406,14 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
             <div
               style={{
                 position: "absolute",
-                right: 5,
+                right: 6,
                 top: "50%",
                 transform: "translateY(-50%)",
                 pointerEvents: "none",
-                color: "rgba(255,255,255,0.85)",
+                color: "rgba(255,255,255,0.88)",
                 fontSize: 8,
+                lineHeight: 1,
+                textShadow: "0 -1px 1px rgba(0,0,0,0.35)",
               }}
             >
               ▼
@@ -425,16 +424,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
             onClick={handleSwap}
             onPointerDown={(e) => e.stopPropagation()}
             title={t("apps.dashboard.currency.swap", "Swap currencies")}
-            style={{
-              padding: "4px 6px",
-              borderRadius: 6,
-              border: "1px solid rgba(0,0,0,0.25)",
-              background: "linear-gradient(180deg, #6AB0F3 0%, #3B82D0 50%, #2E6DB8 100%)",
-              cursor: "pointer",
-              color: "#FFF",
-              flexShrink: 0,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
-            }}
+            style={graphiteBtnStyle}
           >
             <ArrowsDownUp size={14} weight="bold" />
           </button>
@@ -443,7 +433,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
               value={toCurrency}
               onChange={(e) => handleToChange(e.target.value)}
               onPointerDown={(e) => e.stopPropagation()}
-              style={{ ...aquaSelectStyle, width: "100%", paddingRight: 18 }}
+              style={{ ...graphiteSelectStyle, width: "100%", paddingRight: 20 }}
             >
               {MAIN_CURRENCIES.map((c) => (
                 <option key={c} value={c} style={{ color: "#000", background: "#FFF" }}>
@@ -454,12 +444,14 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
             <div
               style={{
                 position: "absolute",
-                right: 5,
+                right: 6,
                 top: "50%",
                 transform: "translateY(-50%)",
                 pointerEvents: "none",
-                color: "rgba(255,255,255,0.85)",
+                color: "rgba(255,255,255,0.88)",
                 fontSize: 8,
+                lineHeight: 1,
+                textShadow: "0 -1px 1px rgba(0,0,0,0.35)",
               }}
             >
               ▼
@@ -469,16 +461,15 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
 
         <div
           style={{
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: 700,
-            padding: "8px 10px",
+            padding: "6px 10px",
             borderRadius: 8,
-            border: "1px solid rgba(0,0,0,0.08)",
-            background: "rgba(255,255,255,0.9)",
-            color: loading ? "rgba(0,0,0,0.35)" : error && !rateData ? "#c44" : "#0d1f14",
-            minHeight: 40,
+            border: "1px solid rgba(0,0,0,0.12)",
+            background: "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(245,246,248,0.95) 100%)",
+            color: loading ? "rgba(0,0,0,0.38)" : error && !rateData ? "#b33" : "#1a1d22",
             textAlign: "center" as const,
-            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
+            boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.2)",
           }}
         >
           {loading
@@ -489,13 +480,30 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
         </div>
 
         {!loading && rateData && (
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.88)", lineHeight: 1.35, textAlign: "center" }}>
-            {simplifiedRateLine && <div style={{ fontWeight: 600 }}>{simplifiedRateLine}</div>}
-            <div style={{ opacity: usingCache ? 1 : 0.85, color: usingCache ? "#ffe066" : "rgba(255,255,255,0.75)" }}>
+          <div
+            style={{
+              fontSize: 10,
+              color: "rgba(255,255,255,0.82)",
+              lineHeight: 1.28,
+              textAlign: "center",
+              paddingBottom: 0,
+              marginBottom: 0,
+            }}
+          >
+            {simplifiedRateLine && (
+              <div style={{ fontWeight: 600, textShadow: "0 1px 2px rgba(0,0,0,0.25)" }}>{simplifiedRateLine}</div>
+            )}
+            <div
+              style={{
+                opacity: usingCache ? 1 : 0.88,
+                color: usingCache ? "#f5e6a8" : "rgba(240,242,245,0.78)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+              }}
+            >
               {t("apps.dashboard.currency.asOfDate", "As of {{date}}", { date: rateData.rateDate })} · {updatedLabel}
             </div>
             {usingCache && (
-              <div style={{ color: "#ffe8a3", marginTop: 2 }}>
+              <div style={{ color: "#f0e0a0", marginTop: 1, fontSize: 9.5 }}>
                 {t("apps.dashboard.currency.cachedHint", "Using cached rate (refresh by changing pair).")}
               </div>
             )}
@@ -594,7 +602,7 @@ export function CurrencyBackPanel({
         onClick={handleSave}
         className="text-[11px] font-medium hover:opacity-80 transition-opacity self-end"
         style={{
-          color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+          color: isXpTheme ? "#0066CC" : "rgba(210,215,245,0.95)",
           cursor: "pointer",
           border: "none",
           background: "none",
