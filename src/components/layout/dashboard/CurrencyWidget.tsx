@@ -267,7 +267,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
             ))}
           </select>
           <button type="button" onClick={handleSwap} onPointerDown={(e) => e.stopPropagation()} style={swapBtnXp} title={t("apps.dashboard.currency.swap", "Swap currencies")}>
-            <ArrowsLeftRight size={12} weight="bold" />
+            <ArrowsLeftRight size={12} weight="bold" style={{ transform: "rotate(90deg)" }} />
           </button>
           <select
             value={toCurrency}
@@ -426,7 +426,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
             title={t("apps.dashboard.currency.swap", "Swap currencies")}
             style={graphiteBtnStyle}
           >
-            <ArrowsDownUp size={14} weight="bold" />
+            <ArrowsDownUp size={14} weight="bold" style={{ transform: "rotate(90deg)" }} />
           </button>
           <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
             <select

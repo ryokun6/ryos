@@ -40,12 +40,12 @@ export function useDashboardLogic() {
         calendar: { width: 240, height: 350 },
         weather: { width: 340, height: 180 },
         stocks: { width: 240, height: 340 },
-        aquarium: { width: 300, height: 200 },
+        aquarium: { width: 340, height: 200 },
         ipod: { width: 320, height: 125 },
-        dictionary: { width: 240, height: 220 },
+        dictionary: { width: 340, height: 220 },
         stickynote: { width: 200, height: 200 },
-        translation: { width: 300, height: 170 },
-        currency: { width: 280, height: 186 },
+        translation: { width: 340, height: 170 },
+        currency: { width: 340, height: 170 },
       };
       const size = sizeMap[type];
 
