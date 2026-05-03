@@ -2172,12 +2172,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   }, [username, needsUsername]);
 
   // --- Action Handlers ---
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const messageContent = input; // Capture input before clearing
-      const imageContent = selectedImage; // Capture image before clearing
-      if (!messageContent.trim() && !imageContent) return; // Don't submit empty messages
+  const handleSubmitMessage = useCallback(
+    async (messageContent: string, imageContent: string | null = null) => {
+      if (!messageContent.trim() && !imageContent) return false; // Don't submit empty messages
 
       // Check if user needs to set username before submitting
       if (needsUsername && !username) {
@@ -2185,7 +2182,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
         });
-        return;
+        return false;
       }
 
       // Check if user is authenticated (cookies handle auth automatically)
@@ -2194,7 +2191,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           description: i18n.t("apps.chats.toasts.pleaseLoginToContinueChatting"),
           duration: 3000,
         });
-        return;
+        return false;
       }
 
       // Clear any previous rate limit errors on new submission attempt
@@ -2212,9 +2209,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           systemState: freshSystemState,
         });
         if (delegated) {
-          setInput("");
-          setSelectedImage(null);
-          return;
+          return true;
         }
       }
 
@@ -2263,19 +2258,31 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           },
         );
       }
-      setInput(""); // Clear input after sending
-      setSelectedImage(null); // Clear image after sending
+      return true;
     },
     [
       sendMessage,
-      input,
-      selectedImage,
       needsUsername,
       username,
       isAuthenticated,
       aiModel,
-      setInput,
       t,
+    ],
+  );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const didSubmit = await handleSubmitMessage(input, selectedImage);
+      if (didSubmit) {
+        setInput(""); // Clear input after sending
+        setSelectedImage(null); // Clear image after sending
+      }
+    },
+    [
+      handleSubmitMessage,
+      input,
+      selectedImage,
     ],
   );
 
@@ -2556,6 +2563,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     input,
     handleInputChange,
     handleSubmit,
+    handleSubmitMessage,
     isLoading,
     reload: regenerate, // Map v5 regenerate to v4 reload
     error,

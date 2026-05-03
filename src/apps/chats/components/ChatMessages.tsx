@@ -310,7 +310,6 @@ interface ChatMessageItemProps {
   fontSize: number;
   currentTheme: string;
   copiedMessageId: string | null;
-  hoveredMessageId: string | null;
   playingMessageId: string | null;
   speechLoadingId: string | null;
   highlightSegment: { messageId: string; start: number; end: number } | null;
@@ -325,13 +324,10 @@ interface ChatMessageItemProps {
   onSendMessage?: (username: string) => void;
   onCopyMessage: (message: ChatMessage) => void;
   onDeleteMessage: (message: ChatMessage) => void;
-  setHoveredMessageId: (id: string | null) => void;
-  setIsInteractingWithPreview: (v: boolean) => void;
   setLocalHighlightSegment: (seg: { messageId: string; start: number; end: number } | null) => void;
   setPlayingMessageId: (id: string | null) => void;
   setSpeechLoadingId: (id: string | null) => void;
   localHighlightQueueRef: React.MutableRefObject<{ messageId: string; start: number; end: number }[]>;
-  isInteractingWithPreview: boolean;
   speak: (text: string, onDone?: () => void) => void;
   stop: () => void;
   playNote: () => void;
@@ -352,7 +348,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     fontSize,
     currentTheme,
     copiedMessageId,
-    hoveredMessageId,
     playingMessageId,
     speechLoadingId,
     highlightSegment,
@@ -367,13 +362,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     onSendMessage,
     onCopyMessage,
     onDeleteMessage,
-    setHoveredMessageId,
-    setIsInteractingWithPreview,
     setLocalHighlightSegment,
     setPlayingMessageId,
     setSpeechLoadingId,
     localHighlightQueueRef,
-    isInteractingWithPreview,
     speak,
     stop,
     playNote,
@@ -381,6 +373,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     stopElevatorMusic,
     playDingSound,
   } = props;
+
+  const [isHovered, setIsHovered] = useState(false);
+  const [isInteractingWithPreview, setIsInteractingWithPreview] = useState(false);
 
   // Keep a ref to the latest playNote so onComplete callbacks stay stable
   // across renders and don't cause Framer Motion to re-run animations.
@@ -506,10 +501,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         transformOrigin: message.role === "user" ? "bottom right" : "bottom left",
       }}
       onMouseEnter={() =>
-        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(messageKey)
+        !isInteractingWithPreview && !isTouchDevice() && setIsHovered(true)
       }
       onMouseLeave={() =>
-        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(null)
+        !isInteractingWithPreview && !isTouchDevice() && setIsHovered(false)
       }
       onTouchStart={(e) => {
         if (!isInteractingWithPreview && isTouchDevice()) {
@@ -517,7 +512,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
           const isLinkPreview = target.closest("[data-link-preview]");
           if (!isLinkPreview) {
             e.preventDefault();
-            setHoveredMessageId(messageKey);
+            setIsHovered(true);
           }
         }
       }}
@@ -536,7 +531,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                     <motion.button
                       initial={MOTION_BTN_INITIAL}
                       animate={{
-                        opacity: hoveredMessageId === messageKey ? 1 : 0,
+                        opacity: isHovered ? 1 : 0,
                         scale: 1,
                       }}
                       className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
@@ -555,7 +550,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <motion.button
               initial={MOTION_BTN_INITIAL}
               animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
+                opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
               className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
@@ -612,7 +607,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <motion.button
               initial={MOTION_BTN_INITIAL}
               animate={{
-                opacity: hoveredMessageId === messageKey ? 1 : 0,
+                opacity: isHovered ? 1 : 0,
                 scale: 1,
               }}
               className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
@@ -629,7 +624,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               <motion.button
                 initial={MOTION_BTN_INITIAL}
                 animate={{
-                  opacity: hoveredMessageId === messageKey ? 1 : 0,
+                  opacity: isHovered ? 1 : 0,
                   scale: 1,
                 }}
                 className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
@@ -724,7 +719,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   <motion.button
                     initial={MOTION_BTN_INITIAL}
                     animate={{
-                      opacity: hoveredMessageId === messageKey ? 1 : 0,
+                      opacity: isHovered ? 1 : 0,
                       scale: 1,
                     }}
                     className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
@@ -753,7 +748,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 <motion.button
                   initial={MOTION_BTN_INITIAL}
                   animate={{
-                    opacity: hoveredMessageId === messageKey ? 1 : 0,
+                    opacity: isHovered ? 1 : 0,
                     scale: 1,
                   }}
                   className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
@@ -1136,9 +1131,6 @@ function ChatMessagesContent({
   const currentTheme = useThemeStore((s) => s.current);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [speechLoadingId, setSpeechLoadingId] = useState<string | null>(null);
-  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
-  const [isInteractingWithPreview, setIsInteractingWithPreview] =
-    useState(false);
 
   // Local highlight state for manual speech triggered from this component
   const [localHighlightSegment, setLocalHighlightSegment] = useState<{
@@ -1337,7 +1329,6 @@ function ChatMessagesContent({
             fontSize={fontSize}
             currentTheme={currentTheme}
             copiedMessageId={copiedMessageId}
-            hoveredMessageId={hoveredMessageId}
             playingMessageId={playingMessageId}
             speechLoadingId={speechLoadingId}
             highlightSegment={highlightSegment ?? null}
@@ -1352,13 +1343,10 @@ function ChatMessagesContent({
             onSendMessage={onSendMessage}
             onCopyMessage={copyMessage}
             onDeleteMessage={deleteMessage}
-            setHoveredMessageId={setHoveredMessageId}
-            setIsInteractingWithPreview={setIsInteractingWithPreview}
             setLocalHighlightSegment={setLocalHighlightSegment}
             setPlayingMessageId={setPlayingMessageId}
             setSpeechLoadingId={setSpeechLoadingId}
             localHighlightQueueRef={localHighlightQueueRef}
-            isInteractingWithPreview={isInteractingWithPreview}
             speak={speak}
             stop={stop}
             playNote={playNote}

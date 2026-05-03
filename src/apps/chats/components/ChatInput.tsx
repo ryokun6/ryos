@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { memo, useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Square, Hand, At, Microphone, ImageSquare, X } from "@phosphor-icons/react";
@@ -71,11 +71,9 @@ function AnimatedEllipsis() {
 }
 
 interface ChatInputProps {
-  input: string;
   isLoading: boolean;
   isForeground?: boolean;
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmitMessage: (message: string, imageData: string | null) => boolean | Promise<boolean>;
   onStop: () => void;
   onDirectMessageSubmit?: (message: string) => void;
   onNudge?: () => void;
@@ -92,17 +90,15 @@ interface ChatInputProps {
   needsUsername?: boolean;
   isOffline?: boolean;
   onManualStop?: () => void;
-  selectedImage?: string | null;
-  onImageChange?: (imageData: string | null) => void;
   onTyping?: () => void;
+  prefillMessage?: string | null;
+  resetTrigger?: number;
 }
 
-export function ChatInput({
-  input,
+export const ChatInput = memo(function ChatInput({
   isLoading,
   isForeground = false,
-  onInputChange,
-  onSubmit,
+  onSubmitMessage,
   onStop,
   onDirectMessageSubmit,
   onNudge,
@@ -114,11 +110,12 @@ export function ChatInput({
   needsUsername = false,
   isOffline = false,
   onManualStop,
-  selectedImage,
-  onImageChange,
   onTyping,
+  prefillMessage,
+  resetTrigger = 0,
 }: ChatInputProps) {
   const { t } = useTranslation();
+  const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -128,6 +125,7 @@ export function ChatInput({
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [lastTypingTime, setLastTypingTime] = useState(0);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [waveformFrequencies, setWaveformFrequencies] = useState<number[]>(
     Array(WAVEFORM_BANDS).fill(0)
@@ -138,6 +136,7 @@ export function ChatInput({
   // Track previous loading/speaking states for detecting transitions
   const prevIsLoadingRef = useRef(isLoading);
   const prevIsSpeechPlayingRef = useRef(isSpeechPlaying);
+  const didMountRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const audioButtonRef = useRef<HTMLButtonElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -178,32 +177,39 @@ export function ChatInput({
         const nextIndex = historyIndex + 1;
         if (nextIndex < previousMessages.length) {
           setHistoryIndex(nextIndex);
-          const event = {
-            target: { value: previousMessages[nextIndex] },
-          } as React.ChangeEvent<HTMLInputElement>;
-          onInputChange(event);
+          setInput(previousMessages[nextIndex]);
         }
       } else if (e.key === "ArrowDown" && historyIndex > -1) {
         e.preventDefault();
         const nextIndex = historyIndex - 1;
         setHistoryIndex(nextIndex);
-        const event = {
-          target: {
-            value: nextIndex === -1 ? "" : previousMessages[nextIndex],
-          },
-        } as React.ChangeEvent<HTMLInputElement>;
-        onInputChange(event);
+        setInput(nextIndex === -1 ? "" : previousMessages[nextIndex]);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isForeground, historyIndex, previousMessages, onInputChange]);
+  }, [isForeground, historyIndex, previousMessages]);
 
   // Reset history index when input changes manually
   useEffect(() => {
     setHistoryIndex(-1);
   }, [input]);
+
+  useEffect(() => {
+    if (prefillMessage) {
+      setInput(prefillMessage);
+    }
+  }, [prefillMessage]);
+
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    setInput("");
+    setSelectedImage(null);
+  }, [resetTrigger]);
 
   // Keep Talking Mode: Auto-start recording after AI response completes
   useEffect(() => {
@@ -233,7 +239,7 @@ export function ChatInput({
   const handleInputChangeWithSound = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    onInputChange(e);
+    setInput(e.target.value);
     setHistoryIndex(-1);
 
     const now = Date.now();
@@ -272,20 +278,11 @@ export function ChatInput({
       onDirectMessageSubmit(text.trim());
     } else {
       // Fallback to form submission
-      const transcriptionEvent = {
-        target: { value: text.trim() },
-      } as React.ChangeEvent<HTMLInputElement>;
-      onInputChange(transcriptionEvent);
-
-      const submitEvent = new Event(
-        "submit"
-      ) as unknown as React.FormEvent<HTMLFormElement>;
-      onSubmit(submitEvent);
-
-      const clearEvent = {
-        target: { value: "" },
-      } as React.ChangeEvent<HTMLInputElement>;
-      onInputChange(clearEvent);
+      void Promise.resolve(onSubmitMessage(text.trim(), null)).then(
+        (didSubmit) => {
+          if (didSubmit) setInput("");
+        }
+      );
     }
   };
 
@@ -340,10 +337,7 @@ export function ChatInput({
       newValue = `@ryo ${input}`.trim() + (input.endsWith(" ") ? "" : " ");
     }
 
-    const event = {
-      target: { value: newValue },
-    } as React.ChangeEvent<HTMLInputElement>;
-    onInputChange(event);
+    setInput(newValue);
 
     // Focus the input field after adding the mention
     inputRef.current?.focus();
@@ -398,18 +392,18 @@ export function ChatInput({
         quality: 0.85,
       });
 
-      onImageChange?.(processedImage);
+      setSelectedImage(processedImage);
     } catch (error) {
       console.error("Failed to process image:", error);
     } finally {
       setIsProcessingImage(false);
     }
-  }, [onImageChange]);
+  }, []);
 
   // Handle image clear
   const handleImageClear = useCallback(() => {
-    onImageChange?.(null);
-  }, [onImageChange]);
+    setSelectedImage(null);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -545,7 +539,7 @@ export function ChatInput({
         </AnimatePresence>
 
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             if (isOffline) {
               e.preventDefault();
               checkOfflineAndShowError(t("apps.chats.status.chatRequiresInternet"));
@@ -556,7 +550,12 @@ export function ChatInput({
                 message: input,
               });
             }
-            onSubmit(e);
+            e.preventDefault();
+            const didSubmit = await onSubmitMessage(input, selectedImage);
+            if (didSubmit) {
+              setInput("");
+              setSelectedImage(null);
+            }
           }}
           className={`flex ${isMacTheme ? "gap-2" : "gap-1"}`}
         >
@@ -750,7 +749,7 @@ export function ChatInput({
                       </Tooltip>
                     </TooltipProvider>
                   )}
-                  {!isInChatRoom && onImageChange && (
+                  {!isInChatRoom && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -1012,4 +1011,4 @@ export function ChatInput({
       </motion.div>
     </AnimatePresence>
   );
-}
+});

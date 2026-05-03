@@ -9,7 +9,6 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useChatRoom } from "../hooks/useChatRoom";
 import { useAiChat } from "../hooks/useAiChat";
 import { useAuth } from "@/hooks/useAuth";
-import React from "react";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
 import { ChatRoomSidebar } from "./ChatRoomSidebar";
@@ -62,9 +61,7 @@ export function ChatsAppComponent({
 
   const {
     messages,
-    input,
-    handleInputChange,
-    handleSubmit: handleAiSubmit,
+    handleSubmitMessage: submitAiMessage,
     isLoading,
     reload,
     error,
@@ -84,8 +81,6 @@ export function ChatsAppComponent({
     highlightSegment,
     rateLimitError,
     needsUsername,
-    selectedImage,
-    handleImageChange,
   } = useAiChat(promptSetUsername); // Pass promptSetUsername to useAiChat
 
   // Destructure auth properties from authResult
@@ -147,10 +142,15 @@ export function ChatsAppComponent({
 
   // Proactive greeting for eligible users
   const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting();
+  const [inputPrefillMessage, setInputPrefillMessage] = useState<string | null>(
+    null
+  );
+  const [inputResetTrigger, setInputResetTrigger] = useState(0);
 
   // Wrap confirmClearChats to trigger proactive greeting after clearing
   const handleConfirmClearChats = useCallback(() => {
     confirmClearChats();
+    setInputResetTrigger((prev) => prev + 1);
     // Trigger proactive greeting after the chat is cleared (slight delay for state update)
     setTimeout(() => {
       triggerGreeting();
@@ -193,17 +193,14 @@ export function ChatsAppComponent({
 
       if (initialData.autoSend) {
         // Auto-send directly using handleDirectMessageSubmit which takes the
-        // message as a parameter, avoiding the stale-closure race condition
-        // where handleAiSubmit would read the old (empty) input state.
+        // message as a parameter, avoiding stale draft state.
         handleDirectMessageSubmit(initialData.prefillMessage);
       } else {
         // Just pre-fill the input field
-        handleInputChange({
-          target: { value: initialData.prefillMessage },
-        } as React.ChangeEvent<HTMLInputElement>);
+        setInputPrefillMessage(initialData.prefillMessage);
       }
     }
-  }, [initialData?.prefillMessage, initialData?.autoSend, handleInputChange, handleDirectMessageSubmit, currentRoomId, handleRoomSelect]);
+  }, [initialData?.prefillMessage, initialData?.autoSend, handleDirectMessageSubmit, currentRoomId, handleRoomSelect]);
 
   // Safety check: ensure rooms is an array before finding
   const currentRoom =
@@ -221,17 +218,27 @@ export function ChatsAppComponent({
     displayNames.join(", ") +
     (remainingCount > 0 ? `, ${remainingCount}+` : "");
 
-  // Use the @ryo chat hook
-  const { isRyoLoading, stopRyo, handleRyoMention, detectAndProcessMention } =
-    useRyoChat({
-      currentRoomId,
-      onScrollToBottom: () => setScrollToBottomTrigger((prev) => prev + 1),
-      roomMessages: currentRoomMessages?.map((msg: AppChatMessage) => ({
+  const ryoRoomMessages = useMemo(
+    () =>
+      currentRoomMessages?.map((msg: AppChatMessage) => ({
         username: msg.username,
         content: msg.content,
         userId: msg.id,
         timestamp: new Date(msg.timestamp).toISOString(),
       })),
+    [currentRoomMessages]
+  );
+
+  const handleRyoScrollToBottom = useCallback(() => {
+    setScrollToBottomTrigger((prev) => prev + 1);
+  }, []);
+
+  // Use the @ryo chat hook
+  const { isRyoLoading, stopRyo, handleRyoMention, detectAndProcessMention } =
+    useRyoChat({
+      currentRoomId,
+      onScrollToBottom: handleRyoScrollToBottom,
+      roomMessages: ryoRoomMessages,
     });
 
   // Wrapper for room selection that handles unread scroll triggering
@@ -266,59 +273,52 @@ export function ChatsAppComponent({
   );
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-
+    async (messageText: string, imageData: string | null) => {
       // Check if offline and show error
       if (checkOfflineAndShowError(t("apps.chats.status.chatRequiresInternet"))) {
-        return;
+        return false;
       }
 
       if (currentRoomId && username) {
-        const trimmedInput = input.trim();
+        const trimmedInput = messageText.trim();
 
         // Detect if this is an @ryo mention
         const { isMention, messageContent } =
           detectAndProcessMention(trimmedInput);
 
         if (isMention) {
-          // Clear input immediately
-          handleInputChange({
-            target: { value: "" },
-          } as React.ChangeEvent<HTMLInputElement>);
-
           // Send the user's message to the chat room first (showing @ryo)
-          sendRoomMessage(input);
+          sendRoomMessage(messageText);
 
           // Then send to AI (doesn't affect input clearing)
           handleRyoMention(messageContent);
 
           // Trigger scroll
           setScrollToBottomTrigger((prev) => prev + 1);
+          return true;
         } else {
           // Regular room message
-          sendRoomMessage(input);
-          handleInputChange({
-            target: { value: "" },
-          } as React.ChangeEvent<HTMLInputElement>);
+          sendRoomMessage(messageText);
           // Trigger scroll after sending room message
           setScrollToBottomTrigger((prev) => prev + 1);
+          return true;
         }
       } else {
         // AI chat when not in a room
-        handleAiSubmit(e);
-        // Trigger scroll after submitting AI message
-        setScrollToBottomTrigger((prev) => prev + 1);
+        const didSubmit = await submitAiMessage(messageText, imageData);
+        if (didSubmit) {
+          // Trigger scroll after submitting AI message
+          setScrollToBottomTrigger((prev) => prev + 1);
+        }
+        return didSubmit;
       }
     },
     [
       currentRoomId,
       username,
       sendRoomMessage,
-      handleAiSubmit,
+      submitAiMessage,
       t,
-      input,
-      handleInputChange,
       handleRyoMention,
       detectAndProcessMention,
     ]
@@ -435,47 +435,138 @@ export function ChatsAppComponent({
     handleDisconnectTelegramLink,
   } = useTelegramLink({ username, isAuthenticated });
 
-  const menuBar = (
-    <ChatsMenuBar
-      onClose={onClose}
-      onShowHelp={() => setIsHelpDialogOpen(true)}
-      onShowAbout={() => setIsAboutDialogOpen(true)}
-      onClearChats={() => setIsClearDialogOpen(true)}
-      onSaveTranscript={handleSaveTranscript}
-      onSetUsername={promptSetUsername}
-      onToggleSidebar={toggleSidebarVisibility}
-      isSidebarVisible={sidebarVisibleBool} // Pass boolean
-      onAddRoom={promptAddRoom}
-      rooms={rooms}
-      currentRoom={currentRoom ?? null}
-      onRoomSelect={(room) => handleRoomSelectWithScroll(room ? room.id : null)}
-      onIncreaseFontSize={handleIncreaseFontSize}
-      onDecreaseFontSize={handleDecreaseFontSize}
-      onResetFontSize={handleResetFontSize}
-      username={username}
-      isAuthenticated={isAuthenticated}
-      onVerifyToken={promptVerifyToken}
-      isVerifyDialogOpen={isVerifyDialogOpen}
-      setVerifyDialogOpen={setVerifyDialogOpen}
-      verifyPasswordInput={verifyPasswordInput}
-      setVerifyPasswordInput={setVerifyPasswordInput}
-      verifyUsernameInput={verifyUsernameInput}
-      setVerifyUsernameInput={setVerifyUsernameInput}
-      isVerifyingToken={isVerifyingToken}
-      verifyError={verifyError}
-      handleVerifyTokenSubmit={handleVerifyTokenSubmit}
-      onLogout={logout}
-      telegramLinkedAccount={telegramLinkedAccount}
-      telegramLinkSession={telegramLinkSession}
-      isTelegramStatusLoading={isTelegramStatusLoading}
-      isCreatingTelegramLink={isCreatingTelegramLink}
-      isDisconnectingTelegramLink={isDisconnectingTelegramLink}
-      onRefreshTelegramLinkStatus={refreshTelegramLinkStatus}
-      onCreateTelegramLink={handleCreateTelegramLink}
-      onOpenTelegramLink={handleOpenTelegramLink}
-      onCopyTelegramCode={handleCopyTelegramCode}
-      onDisconnectTelegramLink={handleDisconnectTelegramLink}
-    />
+  const handleShowHelp = useCallback(() => {
+    setIsHelpDialogOpen(true);
+  }, []);
+
+  const handleShowAbout = useCallback(() => {
+    setIsAboutDialogOpen(true);
+  }, []);
+
+  const handleOpenClearDialog = useCallback(() => {
+    setIsClearDialogOpen(true);
+  }, [setIsClearDialogOpen]);
+
+  const handleMenuRoomSelect = useCallback(
+    (room: ChatRoom | null) => {
+      handleRoomSelectWithScroll(room ? room.id : null);
+    },
+    [handleRoomSelectWithScroll]
+  );
+
+  const handlePromptDeleteRoom = useCallback(
+    (room: ChatRoom) => {
+      promptDeleteRoom(room);
+    },
+    [promptDeleteRoom]
+  );
+
+  const handleMessageDeleted = useCallback(
+    (deletedId: string) => {
+      if (currentRoomId) {
+        useChatsStore
+          .getState()
+          .removeMessageFromRoom(currentRoomId, deletedId);
+      }
+    },
+    [currentRoomId]
+  );
+
+  const handleTypingInCurrentRoom = useCallback(() => {
+    if (currentRoomId) {
+      emitTyping(currentRoomId);
+    }
+  }, [currentRoomId, emitTyping]);
+
+  const handleLeaveCurrentRoom = useCallback(() => {
+    if (currentRoom) {
+      handlePromptDeleteRoom(currentRoom);
+    }
+  }, [currentRoom, handlePromptDeleteRoom]);
+
+  const menuBar = useMemo(
+    () => (
+      <ChatsMenuBar
+        onClose={onClose}
+        onShowHelp={handleShowHelp}
+        onShowAbout={handleShowAbout}
+        onClearChats={handleOpenClearDialog}
+        onSaveTranscript={handleSaveTranscript}
+        onSetUsername={promptSetUsername}
+        onToggleSidebar={toggleSidebarVisibility}
+        isSidebarVisible={sidebarVisibleBool} // Pass boolean
+        onAddRoom={promptAddRoom}
+        rooms={rooms}
+        currentRoom={currentRoom ?? null}
+        onRoomSelect={handleMenuRoomSelect}
+        onIncreaseFontSize={handleIncreaseFontSize}
+        onDecreaseFontSize={handleDecreaseFontSize}
+        onResetFontSize={handleResetFontSize}
+        username={username}
+        isAuthenticated={isAuthenticated}
+        onVerifyToken={promptVerifyToken}
+        isVerifyDialogOpen={isVerifyDialogOpen}
+        setVerifyDialogOpen={setVerifyDialogOpen}
+        verifyPasswordInput={verifyPasswordInput}
+        setVerifyPasswordInput={setVerifyPasswordInput}
+        verifyUsernameInput={verifyUsernameInput}
+        setVerifyUsernameInput={setVerifyUsernameInput}
+        isVerifyingToken={isVerifyingToken}
+        verifyError={verifyError}
+        handleVerifyTokenSubmit={handleVerifyTokenSubmit}
+        onLogout={logout}
+        telegramLinkedAccount={telegramLinkedAccount}
+        telegramLinkSession={telegramLinkSession}
+        isTelegramStatusLoading={isTelegramStatusLoading}
+        isCreatingTelegramLink={isCreatingTelegramLink}
+        isDisconnectingTelegramLink={isDisconnectingTelegramLink}
+        onRefreshTelegramLinkStatus={refreshTelegramLinkStatus}
+        onCreateTelegramLink={handleCreateTelegramLink}
+        onOpenTelegramLink={handleOpenTelegramLink}
+        onCopyTelegramCode={handleCopyTelegramCode}
+        onDisconnectTelegramLink={handleDisconnectTelegramLink}
+      />
+    ),
+    [
+      onClose,
+      handleShowHelp,
+      handleShowAbout,
+      handleOpenClearDialog,
+      handleSaveTranscript,
+      promptSetUsername,
+      toggleSidebarVisibility,
+      sidebarVisibleBool,
+      promptAddRoom,
+      rooms,
+      currentRoom,
+      handleMenuRoomSelect,
+      handleIncreaseFontSize,
+      handleDecreaseFontSize,
+      handleResetFontSize,
+      username,
+      isAuthenticated,
+      promptVerifyToken,
+      isVerifyDialogOpen,
+      setVerifyDialogOpen,
+      verifyPasswordInput,
+      setVerifyPasswordInput,
+      verifyUsernameInput,
+      setVerifyUsernameInput,
+      isVerifyingToken,
+      verifyError,
+      handleVerifyTokenSubmit,
+      logout,
+      telegramLinkedAccount,
+      telegramLinkSession,
+      isTelegramStatusLoading,
+      isCreatingTelegramLink,
+      isDisconnectingTelegramLink,
+      refreshTelegramLinkStatus,
+      handleCreateTelegramLink,
+      handleOpenTelegramLink,
+      handleCopyTelegramCode,
+      handleDisconnectTelegramLink,
+    ]
   );
 
   const previousUserMessages = useMemo(
@@ -484,15 +575,19 @@ export function ChatsAppComponent({
     [aiMessageCount]
   );
 
-  if (!isWindowOpen) return null;
+  const currentMessagesToDisplay = useMemo(
+    () =>
+      buildDisplayMessages({
+        currentRoomId,
+        currentRoomMessagesLimited,
+        aiMessages: messages,
+        messageRenderLimit,
+        username,
+      }),
+    [currentRoomId, currentRoomMessagesLimited, messages, messageRenderLimit, username]
+  );
 
-  const currentMessagesToDisplay = buildDisplayMessages({
-    currentRoomId,
-    currentRoomMessagesLimited,
-    aiMessages: messages,
-    messageRenderLimit,
-    username,
-  });
+  if (!isWindowOpen) return null;
 
   return (
     <>
@@ -583,7 +678,7 @@ export function ChatsAppComponent({
                     currentRoom={currentRoom ?? null}
                     onRoomSelect={handleMobileRoomSelect}
                     onAddRoom={promptAddRoom}
-                    onDeleteRoom={(room) => promptDeleteRoom(room)}
+                    onDeleteRoom={handlePromptDeleteRoom}
                     isVisible={true}
                     isAdmin={isAdmin}
                     username={username}
@@ -603,11 +698,9 @@ export function ChatsAppComponent({
               <ChatRoomSidebar
                 rooms={rooms}
                 currentRoom={currentRoom ?? null}
-                onRoomSelect={(room) =>
-                  handleRoomSelectWithScroll(room ? room.id : null)
-                }
+                onRoomSelect={handleMenuRoomSelect}
                 onAddRoom={promptAddRoom}
-                onDeleteRoom={(room) => promptDeleteRoom(room)}
+                onDeleteRoom={handlePromptDeleteRoom}
                 isVisible={sidebarVisibleBool}
                 isAdmin={isAdmin}
                 username={username}
@@ -685,7 +778,7 @@ export function ChatsAppComponent({
                   {!currentRoom && (
                     <Button
                       variant="ghost"
-                      onClick={() => setIsClearDialogOpen(true)}
+                      onClick={handleOpenClearDialog}
                       className="flex items-center gap-1 px-2 py-1 h-7"
                     >
                       <span className="font-geneva-12 text-[11px]">{t("apps.chats.status.clear")}</span>
@@ -696,7 +789,7 @@ export function ChatsAppComponent({
                   {currentRoom && currentRoom.type === "private" && (
                     <Button
                       variant="ghost"
-                      onClick={() => promptDeleteRoom(currentRoom)}
+                      onClick={handleLeaveCurrentRoom}
                       className="flex items-center gap-1 px-2 py-1 h-7"
                     >
                       <span className="font-geneva-12 text-[11px]">{t("apps.chats.status.leave")}</span>
@@ -725,18 +818,12 @@ export function ChatsAppComponent({
                     }
                     error={!currentRoomId ? error : undefined}
                     onRetry={reload}
-                    onClear={() => setIsClearDialogOpen(true)}
+                    onClear={handleOpenClearDialog}
                     isRoomView={!!currentRoomId}
                     roomId={currentRoomId ?? undefined}
                     isAdmin={isAdmin}
                     username={username || undefined}
-                    onMessageDeleted={(deletedId) => {
-                      if (currentRoomId) {
-                        useChatsStore
-                          .getState()
-                          .removeMessageFromRoom(currentRoomId, deletedId);
-                      }
-                    }}
+                    onMessageDeleted={handleMessageDeleted}
                     fontSize={fontSize}
                     scrollToBottomTrigger={scrollToBottomTrigger}
                     highlightSegment={highlightSegment}
@@ -778,11 +865,9 @@ export function ChatsAppComponent({
                     )
                   ) : (
                     <ChatInput
-                      input={input}
                       isLoading={isLoading || isRyoLoading}
                       isForeground={isForeground}
-                      onInputChange={handleInputChange}
-                      onSubmit={handleSubmit}
+                      onSubmitMessage={handleSubmit}
                       onStop={handleStop}
                       isSpeechPlaying={isSpeaking}
                       onDirectMessageSubmit={handleDirectSubmit}
@@ -793,9 +878,11 @@ export function ChatsAppComponent({
                       rateLimitError={rateLimitError}
                       isOffline={isOffline}
                       needsUsername={needsUsername && !username}
-                      selectedImage={selectedImage}
-                      onImageChange={handleImageChange}
-                      onTyping={currentRoomId ? () => emitTyping(currentRoomId) : undefined}
+                      onTyping={
+                        currentRoomId ? handleTypingInCurrentRoom : undefined
+                      }
+                      prefillMessage={inputPrefillMessage}
+                      resetTrigger={inputResetTrigger}
                     />
                   )}
                 </div>

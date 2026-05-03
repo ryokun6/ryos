@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -75,7 +75,7 @@ interface ChatsMenuBarProps {
   onDisconnectTelegramLink: () => void;
 }
 
-export function ChatsMenuBar({
+export const ChatsMenuBar = memo(function ChatsMenuBar({
   onClose,
   onShowHelp,
   onShowAbout,
@@ -123,6 +123,34 @@ export function ChatsMenuBar({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = isWindowsTheme(currentTheme);
   const isMacOsxTheme = currentTheme === "macosx";
+
+  const handleVerifyDialogOpenChange = useCallback(
+    (open: boolean) => {
+      setVerifyDialogOpen(open);
+    },
+    [setVerifyDialogOpen]
+  );
+
+  const handleLoginSubmit = useCallback(async () => {
+    await handleVerifyTokenSubmit(verifyPasswordInput, true);
+  }, [handleVerifyTokenSubmit, verifyPasswordInput]);
+
+  const handleSignUpSubmit = useCallback(async () => {
+    setVerifyDialogOpen(false);
+    onSetUsername();
+  }, [onSetUsername, setVerifyDialogOpen]);
+
+  const handleOpenShareDialog = useCallback(() => {
+    setIsShareDialogOpen(true);
+  }, []);
+
+  const handleCloseShareDialog = useCallback(() => {
+    setIsShareDialogOpen(false);
+  }, []);
+
+  const handleCloseTelegramDialog = useCallback(() => {
+    setIsTelegramDialogOpen(false);
+  }, []);
 
   const { permission: notificationPermission, requestPermission: requestNotificationPermission } =
     useNotificationPermission();
@@ -408,7 +436,7 @@ export function ChatsMenuBar({
             {!isMacOsxTheme && (
               <>
                 <MenubarItem
-                  onSelect={() => setIsShareDialogOpen(true)}
+                  onSelect={handleOpenShareDialog}
                   className="text-md h-6 px-3"
                 >
                   {t("common.menu.shareApp")}
@@ -429,17 +457,13 @@ export function ChatsMenuBar({
       {/* Log In / Sign Up Dialog */}
       <LoginDialog
         isOpen={isVerifyDialogOpen}
-        onOpenChange={(open) => {
-          setVerifyDialogOpen(open);
-        }}
+        onOpenChange={handleVerifyDialogOpenChange}
         /* Login props */
         usernameInput={verifyUsernameInput}
         onUsernameInputChange={setVerifyUsernameInput}
         passwordInput={verifyPasswordInput}
         onPasswordInputChange={setVerifyPasswordInput}
-        onLoginSubmit={async () => {
-          await handleVerifyTokenSubmit(verifyPasswordInput, true);
-        }}
+        onLoginSubmit={handleLoginSubmit}
         isLoginLoading={isVerifyingToken}
         loginError={verifyError}
         /* Sign Up props */
@@ -447,16 +471,13 @@ export function ChatsMenuBar({
         onNewUsernameChange={setVerifyUsernameInput}
         newPassword={verifyPasswordInput}
         onNewPasswordChange={setVerifyPasswordInput}
-        onSignUpSubmit={async () => {
-          setVerifyDialogOpen(false);
-          onSetUsername();
-        }}
+        onSignUpSubmit={handleSignUpSubmit}
         isSignUpLoading={false}
         signUpError={null}
       />
       <ShareItemDialog
         isOpen={isShareDialogOpen}
-        onClose={() => setIsShareDialogOpen(false)}
+        onClose={handleCloseShareDialog}
         itemType="App"
         itemIdentifier={appId}
         title={appName}
@@ -464,7 +485,7 @@ export function ChatsMenuBar({
       />
       <TelegramLinkDialog
         isOpen={isTelegramDialogOpen}
-        onClose={() => setIsTelegramDialogOpen(false)}
+        onClose={handleCloseTelegramDialog}
         linkedAccount={telegramLinkedAccount}
         linkSession={telegramLinkSession}
         isStatusLoading={isTelegramStatusLoading}
@@ -477,4 +498,4 @@ export function ChatsMenuBar({
       />
     </>
   );
-}
+});

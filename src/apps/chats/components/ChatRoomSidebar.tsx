@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Plus, Trash, CaretRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,7 @@ interface ChatRoomSidebarProps {
   onlineUsers?: string[];
 }
 
-export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
+export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   rooms,
   currentRoom,
   onRoomSelect,
@@ -41,7 +41,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
   isOverlay = false,
   username,
   onlineUsers = [],
-}) => {
+}: ChatRoomSidebarProps) {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const unreadCounts = useChatsStore((state) => state.unreadCounts);
@@ -62,7 +62,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
     return null;
   }
 
-  const onlineUsersSet = new Set(onlineUsers);
+  const onlineUsersSet = useMemo(() => new Set(onlineUsers), [onlineUsers]);
 
   const renderRoomItem = (room: ChatRoom) => {
     const unreadCount = unreadCounts[room.id] || 0;
@@ -324,4 +324,4 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
       </div>
     </div>
   );
-};
+});

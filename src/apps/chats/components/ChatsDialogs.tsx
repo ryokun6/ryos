@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -88,7 +88,7 @@ interface ChatsDialogsProps {
   setPasswordError: (value: string | null) => void;
 }
 
-export const ChatsDialogs = ({
+export const ChatsDialogs = memo(function ChatsDialogs({
   translatedHelpItems,
   appMetadata,
   isHelpDialogOpen,
@@ -143,12 +143,34 @@ export const ChatsDialogs = ({
   isSettingPassword,
   passwordError,
   setPasswordError,
-}: ChatsDialogsProps) => {
+}: ChatsDialogsProps) {
   const { t } = useTranslation();
 
   const createRoomInitialUsers = useMemo(
     () => (prefilledUser ? [prefilledUser] : []),
     [prefilledUser]
+  );
+
+  const handleLoginSubmit = useCallback(async () => {
+    await handleVerifyTokenSubmit(verifyPasswordInput, true);
+  }, [handleVerifyTokenSubmit, verifyPasswordInput]);
+
+  const handleCreateRoomOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setPrefilledUser("");
+      }
+      setIsNewRoomDialogOpen(open);
+    },
+    [setIsNewRoomDialogOpen, setPrefilledUser]
+  );
+
+  const handlePasswordInputChange = useCallback(
+    (value: string) => {
+      setPasswordInput(value);
+      setPasswordError(null);
+    },
+    [setPasswordError, setPasswordInput]
   );
 
   return (
@@ -189,9 +211,7 @@ export const ChatsDialogs = ({
         onUsernameInputChange={setVerifyUsernameInput}
         passwordInput={verifyPasswordInput}
         onPasswordInputChange={setVerifyPasswordInput}
-        onLoginSubmit={async () => {
-          await handleVerifyTokenSubmit(verifyPasswordInput, true);
-        }}
+        onLoginSubmit={handleLoginSubmit}
         isLoginLoading={isVerifyingToken}
         loginError={verifyError}
         newUsername={newUsername}
@@ -204,12 +224,7 @@ export const ChatsDialogs = ({
       />
       <CreateRoomDialog
         isOpen={isNewRoomDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPrefilledUser("");
-          }
-          setIsNewRoomDialogOpen(open);
-        }}
+        onOpenChange={handleCreateRoomOpenChange}
         onSubmit={handleAddRoom}
         isAdmin={isAdmin}
         currentUsername={username}
@@ -248,14 +263,11 @@ export const ChatsDialogs = ({
         title={t("apps.chats.dialogs.setPasswordTitle")}
         description={t("apps.chats.dialogs.setPasswordDescription")}
         value={passwordInput}
-        onChange={(value) => {
-          setPasswordInput(value);
-          setPasswordError(null);
-        }}
+        onChange={handlePasswordInputChange}
         isLoading={isSettingPassword}
         errorMessage={passwordError}
         submitLabel={t("apps.chats.dialogs.setPasswordButton")}
       />
     </>
   );
-};
+});
