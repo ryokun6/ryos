@@ -131,7 +131,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     backlightOn = true,
     onEnter,
     playClick,
-    playScroll,
+    playScroll: _playScroll,
     vibrate,
   },
   ref
