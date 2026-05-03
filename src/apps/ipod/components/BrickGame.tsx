@@ -10,21 +10,24 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 // Logical (CSS) game canvas dimensions. Backed by a higher-resolution
-// device-pixel canvas for crisp rendering on all DPRs.
-const GAME_WIDTH = 200;
-const GAME_HEIGHT = 120;
+// device-pixel canvas for crisp rendering on all DPRs. Sized to fill the
+// iPod screen body (150px screen − 26px title bar = 124px usable, with a
+// little padding so the paddle isn't pinned to the very bottom edge).
+const GAME_WIDTH = 210;
+const GAME_HEIGHT = 118;
 
-// Brick layout
+// Brick layout — keep bricks shallow so the lower play area stays visible.
 const BRICK_COLS = 10;
-const BRICK_ROWS = 5;
+const BRICK_ROWS = 4;
 const BRICK_GAP = 1;
-const BRICK_TOP_OFFSET = 6;
+const BRICK_TOP_OFFSET = 4;
 const BRICK_SIDE_OFFSET = 2;
+const BRICK_HEIGHT = 3;
 
 // Paddle / ball
 const PADDLE_WIDTH = 32;
-const PADDLE_HEIGHT = 4;
-const PADDLE_Y = GAME_HEIGHT - 8;
+const PADDLE_HEIGHT = 3;
+const PADDLE_Y = GAME_HEIGHT - 10;
 const BALL_RADIUS = 2;
 const BALL_BASE_SPEED = 80; // px / sec
 const BALL_SPEED_INCREMENT = 8; // per level
@@ -81,15 +84,15 @@ function makeBricks(level: number): Brick[] {
   const totalGapWidth = BRICK_GAP * (BRICK_COLS - 1);
   const usableWidth = GAME_WIDTH - BRICK_SIDE_OFFSET * 2 - totalGapWidth;
   const brickWidth = usableWidth / BRICK_COLS;
-  const brickHeight = 5;
   const bricks: Brick[] = [];
-  // Number of rows scales modestly with level; cap at the visual budget.
+  // Number of rows scales modestly with level; cap so the brick block
+  // never grows past ~⅓ of the play area, leaving room to track the ball.
   const rows = Math.min(BRICK_ROWS + Math.floor((level - 1) / 2), BRICK_ROWS + 2);
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < BRICK_COLS; c++) {
       const x = BRICK_SIDE_OFFSET + c * (brickWidth + BRICK_GAP);
-      const y = BRICK_TOP_OFFSET + r * (brickHeight + BRICK_GAP);
-      bricks.push({ x, y, w: brickWidth, h: brickHeight, alive: true });
+      const y = BRICK_TOP_OFFSET + r * (BRICK_HEIGHT + BRICK_GAP);
+      bricks.push({ x, y, w: brickWidth, h: BRICK_HEIGHT, alive: true });
     }
   }
   return bricks;
@@ -458,8 +461,8 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
           aria-label={t("apps.ipod.brickGame.title")}
         />
 
-        {/* Level indicator (top-left corner of play area) */}
-        <div className="pointer-events-none absolute top-1 left-2 font-chicago text-[10px] leading-none text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] tabular-nums">
+        {/* Level indicator (just above the paddle so it never overlaps bricks) */}
+        <div className="pointer-events-none absolute bottom-1 left-2 font-chicago text-[10px] leading-none text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] tabular-nums">
           L{level}
         </div>
 
