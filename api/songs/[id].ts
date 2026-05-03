@@ -321,24 +321,29 @@ export default apiHandler<Record<string, unknown>>(
       // - First time fetch (no existing lyrics): anyone can do it
       // - Changing lyrics source or force refresh: requires auth + canModifySong
       if (action === "fetch-lyrics") {
-        const rlKey = RateLimit.makeKey(["rl", "song", "fetch-lyrics", "user", rateLimitUser]);
-        const rlResult = await RateLimit.checkCounterLimit({
-          key: rlKey,
-          windowSeconds: RATE_LIMITS.fetchLyrics.windowSeconds,
-          limit: RATE_LIMITS.fetchLyrics.limit,
-        });
+        const isAuthenticatedRyo = username?.toLowerCase() === "ryo";
+        if (!isAuthenticatedRyo) {
+          const rlKey = RateLimit.makeKey(["rl", "song", "fetch-lyrics", "user", rateLimitUser]);
+          const rlResult = await RateLimit.checkCounterLimit({
+            key: rlKey,
+            windowSeconds: RATE_LIMITS.fetchLyrics.windowSeconds,
+            limit: RATE_LIMITS.fetchLyrics.limit,
+          });
 
-        if (!rlResult.allowed) {
-          logger.warn("Rate limit exceeded (fetch-lyrics)", { user: rateLimitUser });
-          return jsonResponse(
-            {
-              error: "rate_limit_exceeded",
-              limit: rlResult.limit,
-              retryAfter: rlResult.resetSeconds,
-            },
-            429,
-            { "Retry-After": String(rlResult.resetSeconds) }
-          );
+          if (!rlResult.allowed) {
+            logger.warn("Rate limit exceeded (fetch-lyrics)", { user: rateLimitUser });
+            return jsonResponse(
+              {
+                error: "rate_limit_exceeded",
+                limit: rlResult.limit,
+                retryAfter: rlResult.resetSeconds,
+              },
+              429,
+              { "Retry-After": String(rlResult.resetSeconds) }
+            );
+          }
+        } else {
+          logger.info("Rate limit bypassed for authenticated ryo user (fetch-lyrics)");
         }
 
         const parsed = FetchLyricsSchema.safeParse(bodyObj);
