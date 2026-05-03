@@ -104,6 +104,24 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   },
 ];
 
+// Default sizes per widget type. Used to normalize sizes during persisted
+// state migrations so existing widgets adopt updated layout dimensions
+// without requiring a manual reset.
+const DEFAULT_WIDGET_SIZES: Record<WidgetType, { width: number; height: number }> = {
+  clock: { width: 170, height: 170 },
+  calendar: { width: 240, height: 350 },
+  weather: { width: 340, height: 180 },
+  stocks: { width: 240, height: 340 },
+  aquarium: { width: 340, height: 200 },
+  ipod: { width: 320, height: 125 },
+  dictionary: { width: 340, height: 220 },
+  stickynote: { width: 200, height: 200 },
+  translation: { width: 340, height: 170 },
+  currency: { width: 340, height: 170 },
+};
+
+const DASHBOARD_STORE_VERSION = 1;
+
 export const useDashboardStore = create<DashboardStoreState>()(
   persist(
     (set, _get) => ({
@@ -165,6 +183,26 @@ export const useDashboardStore = create<DashboardStoreState>()(
     }),
     {
       name: "dashboard-storage",
+      version: DASHBOARD_STORE_VERSION,
+      migrate: (persistedState, version) => {
+        const state = (persistedState ?? {}) as Partial<DashboardStoreState>;
+        if (version < 1) {
+          // v1: Normalize widths/heights for currency/translation/aquarium/dictionary
+          // to match the weather widget width (340) and trim currency height.
+          const TYPES_TO_RESIZE: WidgetType[] = [
+            "currency",
+            "translation",
+            "aquarium",
+            "dictionary",
+          ];
+          state.widgets = (state.widgets ?? []).map((w) => {
+            if (!TYPES_TO_RESIZE.includes(w.type)) return w;
+            const target = DEFAULT_WIDGET_SIZES[w.type];
+            return { ...w, size: { ...target } };
+          });
+        }
+        return state as DashboardStoreState;
+      },
     }
   )
 );
