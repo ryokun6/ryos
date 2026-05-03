@@ -6,6 +6,30 @@
         "loginPrompt": "Пожалуйста, войдите с учетной записью администратора.",
         "title": "Доступ запрещен"
       },
+      "cursorAgents": {
+        "colLink": "Ссылка",
+        "colModel": "Модель",
+        "colRun": "Запуск / агент",
+        "colStatus": "Статус",
+        "colTask": "Задача",
+        "colUpdated": "Обновлено",
+        "emptyHint": "Запуски появляются здесь, когда инструмент repo agent запускает задачу Cursor Cloud (асинхронный режим с Redis). Ключи истекают примерно через 24 часа.",
+        "emptyTitle": "В Redis нет запусков агента Cursor",
+        "followupFrom": "Продолжение {{id}}",
+        "loadFailed": "Не удалось загрузить запуски",
+        "loading": "Загрузка запусков агента Cursor…",
+        "newAgentAria": "Новый запрос для агента Cursor",
+        "newAgentPlaceholder": "Отправить в Cursor",
+        "openAgent": "Агент",
+        "openPr": "PR",
+        "refresh": "Обновить",
+        "retry": "Повторить",
+        "scanIncompleteHint": "Сканирование ключей Redis завершилось досрочно; попробуйте еще раз или обратитесь к администраторам, если проблема сохранится.",
+        "startAgent": "Запуск",
+        "startFailed": "Не удалось запустить агента",
+        "startedLine": "Запущено {{time}}",
+        "truncatedHint": "Список может быть сокращен (лимит строк или ограничение сканирования)."
+      },
       "dashboard": {
         "charts": {
           "aiRequests": "Запросы ИИ",
@@ -238,6 +262,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "cursorAgents": "Агенты курсора",
         "dashboard": "Дашборд",
         "messagesCount": "{{count}} сообщений",
         "online": "онлайн",
@@ -286,6 +311,8 @@
         "noSongsToExport": "Нет песен для экспорта"
       },
       "statusBar": {
+        "cursorAgentsCount": "{{count}} агент курсора",
+        "cursorAgentsCount_plural": "{{count}} агентов курсора",
         "loggedInAs": "Вы вошли как {{username}}",
         "messagesCount": "{{count}} сообщение",
         "messagesCount_plural": "{{count}} сообщений",
@@ -2512,15 +2539,36 @@
       "untitled": "Без названия"
     },
     "pc": {
+      "aspectRatios": {
+        "1/1": "1:1",
+        "16/10": "16:10",
+        "16/9": "16:9",
+        "4/3": "4:3",
+        "5/4": "5:4",
+        "AsIs": "Как есть",
+        "Fit": "По размеру"
+      },
       "description": "3D-симуляция ПК",
       "dialogs": {
         "resetVirtualPcDescription": "Вы уверены, что хотите сбросить ПК? Это приведет к удалению всех текущих данных.",
         "resetVirtualPcTitle": "Сбросить виртуальный ПК"
       },
       "help": {
+        "aboutV86": {
+          "description": "Работает на базе copy.sh/v86, эмулятора x86 с открытым исходным кодом",
+          "title": "О v86"
+        },
         "aspectRatio": {
           "description": "Переключение между форматом 4∶3 или широкоэкранным для соответствия вашему монитору",
           "title": "Соотношение сторон"
+        },
+        "backToSystems": {
+          "description": "Используйте Файл ▸ Назад, чтобы вернуться к браузеру ОС и игр",
+          "title": "Назад к системам"
+        },
+        "dosGames": {
+          "description": "Используйте вкладку «Игры» для библиотеки js-dos (shareware и классика)",
+          "title": "Игры DOS"
         },
         "fullscreenMode": {
           "description": "Переключитесь в режим «Управление ▸ Полный экран» для полного погружения",
@@ -2530,6 +2578,10 @@
           "description": "Используйте физическую клавиатуру для ввода в игре",
           "title": "Управление с клавиатуры"
         },
+        "keyboardInput": {
+          "description": "Большинство клавиш передаются напрямую; нажмите Esc, чтобы освободить указатель",
+          "title": "Ввод с клавиатуры"
+        },
         "mouseCapture": {
           "description": "Нажмите в окне, чтобы захватить / освободить мышь",
           "title": "Захват мыши"
@@ -2538,6 +2590,10 @@
           "description": "Запускает классические DOS-игры и приложения прямо в вашем браузере",
           "title": "Эмулятор ПК"
         },
+        "pickSystem": {
+          "description": "Выберите ОС из сетки, чтобы запустить эмулятор",
+          "title": "Выберите систему"
+        },
         "resetLoad": {
           "description": "Используйте Файл ▸ Сброс, чтобы начать заново, или Загрузить игру, чтобы сменить игру.",
           "title": "Сброс и Загрузка"
@@ -2545,9 +2601,13 @@
       },
       "loadingEmulator": "ЗАГРУЗКА ЭМУЛЯТОРА",
       "loadingGame": "Загрузка {{gameName}}...",
+      "loadingSystem": "Загрузка {{name}}...",
       "menu": {
         "aboutVirtualPc": "О Virtual PC",
         "aspectRatio": "Соотношение сторон",
+        "backToBrowse": "Назад",
+        "backToPresets": "Назад к системам",
+        "captureScreenshot": "Сделать скриншот",
         "controls": "Управление",
         "fullScreen": "Полноэкранный режим",
         "loadGame": "Загрузить игру",
@@ -2558,8 +2618,175 @@
         "toggleMouseCapture": "Переключить захват мыши",
         "virtualPcHelp": "Справка Virtual PC"
       },
-      "name": "Virtual PC",
+      "name": "Виртуальный ПК",
+      "presets": {
+        "archlinux": {
+          "description": "Rolling-release Linux с оконным менеджером i3",
+          "name": "Arch Linux",
+          "year": "2019"
+        },
+        "beos": {
+          "description": "Настольная ОС от Be Inc., ориентированная на мультимедиа",
+          "name": "BeOS 5",
+          "year": "2000"
+        },
+        "buildroot": {
+          "description": "Минимальный Linux для встраиваемых систем",
+          "name": "Buildroot Linux",
+          "year": "2014"
+        },
+        "doof": {
+          "description": "DOOM, умещенный на дискету 1,44 МБ",
+          "name": "Doom на дискете",
+          "year": "2024"
+        },
+        "dsl": {
+          "description": "Крошечный Live-дистрибутив Linux размером 50 МБ",
+          "name": "Damn Small Linux",
+          "year": "2006"
+        },
+        "fiwix": {
+          "description": "Учебное Unix-подобное ядро",
+          "name": "FiwixOS",
+          "year": "2018"
+        },
+        "freebsd": {
+          "description": "Unix-подобная операционная система BSD",
+          "name": "FreeBSD",
+          "year": "2003"
+        },
+        "freedos": {
+          "description": "Свободная DOS-совместимая ОС с открытым исходным кодом",
+          "name": "FreeDOS",
+          "year": "1998"
+        },
+        "haiku": {
+          "description": "Возрождение BeOS с открытым исходным кодом",
+          "name": "Haiku",
+          "year": "2009"
+        },
+        "helenos": {
+          "description": "Исследовательская многосерверная микроядерная ОС",
+          "name": "HelenOS",
+          "year": "2011"
+        },
+        "kolibrios": {
+          "description": "Крошечная ОС с графическим интерфейсом на ассемблере, умещается на дискете",
+          "name": "KolibriOS",
+          "year": "2009"
+        },
+        "linux26": {
+          "description": "Классическое ядро Linux с пользовательским окружением BusyBox",
+          "name": "Linux 2.6",
+          "year": "2003"
+        },
+        "linux4": {
+          "description": "Современное ядро Linux, загрузка в консоль без графического интерфейса",
+          "name": "Linux 4.x",
+          "year": "2017"
+        },
+        "mikeos": {
+          "description": "Любительская ОС для x86 на ассемблере с консольным меню",
+          "name": "MikeOS",
+          "year": "2009"
+        },
+        "minix": {
+          "description": "Обучающая микроядерная ОС Таненбаума",
+          "name": "Minix",
+          "year": "1987"
+        },
+        "msdos": {
+          "description": "Классическая дисковая операционная система Microsoft",
+          "name": "MS-DOS 6.22",
+          "year": "1994"
+        },
+        "netbsd": {
+          "description": "Переносимая BSD Unix — «Конечно, на этом работает NetBSD»",
+          "name": "NetBSD",
+          "year": "2018"
+        },
+        "oberon": {
+          "description": "Исследовательская ОС Вирта с тайлинговым интерфейсом",
+          "name": "Oberon",
+          "year": "1990"
+        },
+        "openbsd": {
+          "description": "BSD Unix, ориентированная на безопасность",
+          "name": "OpenBSD",
+          "year": "2010"
+        },
+        "reactos": {
+          "description": "Windows-совместимая ОС с открытым исходным кодом",
+          "name": "ReactOS",
+          "year": "2018"
+        },
+        "redox": {
+          "description": "Современная микроядерная ОС, написанная на Rust",
+          "name": "Redox",
+          "year": "2016"
+        },
+        "serenity": {
+          "description": "Эстетика конца 90-х с современной душой Unix",
+          "name": "SerenityOS",
+          "year": "2018"
+        },
+        "solos": {
+          "description": "Хобби-ОС, умещающаяся на одной дискете",
+          "name": "Sol OS",
+          "year": "2012"
+        },
+        "windows-me": {
+          "description": "Millennium Edition — последнее ядро линейки 9x",
+          "name": "Windows ME",
+          "year": "2000"
+        },
+        "windows1": {
+          "description": "Самый первый выпуск Windows на дискете",
+          "name": "Windows 1.01",
+          "year": "1985"
+        },
+        "windows2000": {
+          "description": "Стабильность на базе NT, профессиональный рабочий стол",
+          "name": "Windows 2000",
+          "year": "2000"
+        },
+        "windows30": {
+          "description": "Диспетчер программ и 16-цветные значки",
+          "name": "Windows 3.0",
+          "year": "1990"
+        },
+        "windows31": {
+          "description": "Шрифты TrueType и культовая тема «Hot Dog Stand»",
+          "name": "Windows 3.1",
+          "year": "1992"
+        },
+        "windows95": {
+          "description": "Меню «Пуск», панель задач и 32-битная революция",
+          "name": "Windows 95",
+          "year": "1995"
+        },
+        "windows98": {
+          "description": "Active Desktop, поддержка USB и Internet Explorer 4",
+          "name": "Windows 98",
+          "year": "1998"
+        }
+      },
       "programsAvailable": "{{count}} ДОСТУПНЫХ ПРОГРАММ",
+      "screenshotUnavailable": "Скриншот недоступен. Используйте инструмент создания скриншотов вашего браузера (Cmd+Shift+4 на Mac, Win+Shift+S в Windows).",
+      "selectSystem": "Выберите операционную систему x86",
+      "status": {
+        "booting": "Загрузка…",
+        "bytesZero": "0 МБ",
+        "connecting": "Подключение…",
+        "emulatorStartFailed": "Не удалось запустить эмулятор",
+        "loading": "Загрузка…"
+      },
+      "systemsAvailable": "{{count}} СИСТЕМ ДОСТУПНО",
+      "tabs": {
+        "games": "Игры",
+        "os": "ОС"
+      },
+      "title": "Виртуальный ПК",
       "virtualPc": "Виртуальный ПК"
     },
     "photo-booth": {
@@ -3046,7 +3273,7 @@
         "errorGeneric": "Не удалось создать канал. Пожалуйста, попробуйте еще раз.",
         "errorNoVideos": "Для этой идеи видео не найдены. Попробуйте другое описание.",
         "errorRateLimit": "Создано слишком много каналов. Пожалуйста, подождите немного и попробуйте еще раз.",
-        "inlinePlaceholder": "Опишите новый канал...",
+        "inlinePlaceholder": "Создайте новый канал...",
         "placeholder": "напр., Трюки на скейтборде и парки",
         "signInRequired": "Войдите, чтобы создавать каналы",
         "signInRequiredDescription": "Войдите или создайте аккаунт, чтобы настраивать собственные ТВ-каналы.",

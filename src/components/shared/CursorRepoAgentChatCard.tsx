@@ -25,6 +25,8 @@ interface CursorRepoAgentChatCardProps {
   headerTitle: string;
   /** Intro line shown above the card (outside applet chrome) */
   introMessage?: string;
+  /** Admin side panel: fill parent height, no chat card chrome (margin/shadow/rounded). */
+  variant?: "chat" | "panel";
 }
 
 /**
@@ -37,7 +39,9 @@ export function CursorRepoAgentChatCard({
   runId,
   headerTitle,
   introMessage,
+  variant = "chat",
 }: CursorRepoAgentChatCardProps) {
+  const isPanel = variant === "panel";
   const { t } = useTranslation();
   const {
     events,
@@ -105,8 +109,12 @@ export function CursorRepoAgentChatCard({
       ) : null}
 
       <div
-        className="my-1 flex flex-col overflow-hidden rounded bg-white font-geneva-12 dark:bg-neutral-950"
-        style={{ boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.3)" }}
+        className={
+          isPanel
+            ? "flex h-full min-h-0 flex-col overflow-hidden bg-white font-geneva-12 dark:bg-neutral-950"
+            : "my-1 flex flex-col overflow-hidden rounded bg-white font-geneva-12 dark:bg-neutral-950"
+        }
+        style={isPanel ? undefined : { boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.3)" }}
       >
         <div className="flex flex-shrink-0 items-center gap-3 border-b border-gray-300 bg-gray-100 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-800/90">
           <span className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center" aria-hidden>
@@ -160,7 +168,13 @@ export function CursorRepoAgentChatCard({
           </div>
         </div>
 
-        <div className="border-t border-gray-200 bg-neutral-50/50 dark:border-neutral-600 dark:bg-neutral-900/40">
+        <div
+          className={
+            isPanel
+              ? "flex min-h-0 flex-1 flex-col border-t border-gray-200 bg-neutral-50/50 dark:border-neutral-600 dark:bg-neutral-900/40"
+              : "border-t border-gray-200 bg-neutral-50/50 dark:border-neutral-600 dark:bg-neutral-900/40"
+          }
+        >
           {error ? (
             <div className="border-b border-red-200/80 bg-red-50/90 px-3 py-1.5 text-[11px] text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
               {error}
@@ -168,7 +182,11 @@ export function CursorRepoAgentChatCard({
           ) : null}
           <div
             ref={scrollRef}
-            className="h-52 space-y-1 overflow-auto px-2 py-2 shadow-inner dark:bg-black/20"
+            className={
+              isPanel
+                ? "min-h-0 flex-1 space-y-1 overflow-auto px-2 py-2 dark:bg-black/20"
+                : "h-52 space-y-1 overflow-auto px-2 py-2 shadow-inner dark:bg-black/20"
+            }
           >
             {items.length === 0 ? (
               <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
@@ -237,7 +255,13 @@ export function CursorRepoAgentChatCard({
             )}
           </div>
 
-          <div className="border-t border-gray-200 bg-white/80 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900/60">
+          <div
+            className={
+              isPanel
+                ? "shrink-0 border-t border-gray-200 bg-white/80 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900/60"
+                : "border-t border-gray-200 bg-white/80 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900/60"
+            }
+          >
             {followupError ? (
               <div className="mb-1 text-[10px] text-red-700 dark:text-red-300">
                 {followupError}

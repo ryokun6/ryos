@@ -28,6 +28,7 @@ interface AdminSidebarProps {
     totalRooms: number;
     totalMessages: number;
     totalSongs?: number;
+    totalCursorAgents?: number;
   };
   isVisible: boolean;
 }
@@ -82,17 +83,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </SelectableListItem>
 
           <SelectableListItem
-            isSelected={activeSection === "server"}
-            onClick={() => { playButtonClick(); onSectionChange("server"); onRoomSelect(null); }}
+            isSelected={activeSection === "users" && selectedRoomId === null}
+            onClick={() => { playButtonClick(); onSectionChange("users"); onRoomSelect(null); }}
           >
-            {t("apps.admin.sidebar.server", "Server")}
-          </SelectableListItem>
-
-          <SelectableListItem
-            isSelected={activeSection === "cursorAgents"}
-            onClick={() => { playButtonClick(); onSectionChange("cursorAgents"); onRoomSelect(null); }}
-          >
-            {t("apps.admin.sidebar.cursorAgents", "Cursor agents")}
+            <div className="flex items-center">
+              <span>{t("apps.admin.sidebar.users")}</span>
+              <span className={cn("text-[10px] ml-1.5", activeSection === "users" && selectedRoomId === null ? "text-white/40" : "text-black/40")}>
+                {stats.totalUsers}
+              </span>
+            </div>
           </SelectableListItem>
 
           <SelectableListItem
@@ -108,13 +107,20 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </SelectableListItem>
 
           <SelectableListItem
-            isSelected={activeSection === "users" && selectedRoomId === null}
-            onClick={() => { playButtonClick(); onSectionChange("users"); onRoomSelect(null); }}
+            isSelected={activeSection === "cursorAgents"}
+            onClick={() => { playButtonClick(); onSectionChange("cursorAgents"); onRoomSelect(null); }}
           >
             <div className="flex items-center">
-              <span>{t("apps.admin.sidebar.users")}</span>
-              <span className={cn("text-[10px] ml-1.5", activeSection === "users" && selectedRoomId === null ? "text-white/40" : "text-black/40")}>
-                {stats.totalUsers}
+              <span>{t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}</span>
+              <span
+                className={cn(
+                  "ml-1.5 text-[10px]",
+                  activeSection === "cursorAgents"
+                    ? "text-white/40"
+                    : "text-black/40"
+                )}
+              >
+                {stats.totalCursorAgents ?? 0}
               </span>
             </div>
           </SelectableListItem>

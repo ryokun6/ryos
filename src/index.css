@@ -342,6 +342,18 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   width: 100%;
 }
 
+.animate-progress-indeterminate-white {
+  animation: progress-indeterminate 2.5s linear infinite;
+  background: linear-gradient(
+    90deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.85) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  width: 100%;
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(120px);
@@ -509,6 +521,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   /* Fullscreen lyrics text - viewport-relative with max cap */
   .fullscreen-lyrics-text {
     font-size: clamp(32px, min(10vw, 10vh), 120px);
+  }
+
+  /* TV fullscreen closed captions - viewport-relative with max cap
+     (same min(vw,vh) pattern as karaoke fullscreen lyrics, but ~45%
+     the size since captions sit beneath the video rather than taking
+     over the frame). */
+  .tv-cc-fullscreen-text {
+    font-size: clamp(20px, min(4.5vw, 5vh), 56px);
+    line-height: 1.35;
   }
 
   .karaoke-title-card-title-window {

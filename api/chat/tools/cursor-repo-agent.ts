@@ -11,7 +11,7 @@ import { sendTelegramMessage } from "../../_utils/telegram.js";
 
 export const CURSOR_REPO_AGENT_OWNER = "ryo";
 
-export const CURSOR_SDK_RUN_TTL_SEC = 86_400;
+export const CURSOR_SDK_RUN_TTL_SEC = 90 * 86_400;
 
 /** Redis key prefixes — keep in sync with api/ai/cursor-run-status.ts */
 export function cursorSdkEventsKey(runId: string): string {
@@ -247,7 +247,11 @@ function previewFromRunSummary(
 export async function listCursorSdkRunsFromRedis(
   redis: Redis,
   limit: number
-): Promise<{ runs: Omit<CursorSdkRunListRow, "pollUrl">[]; scanIncomplete: boolean }> {
+): Promise<{
+  runs: Omit<CursorSdkRunListRow, "pollUrl">[];
+  totalCount: number;
+  scanIncomplete: boolean;
+}> {
   const metaKeys = new Set<string>();
   let cursor: string | number = 0;
   let iterations = 0;
@@ -267,7 +271,7 @@ export async function listCursorSdkRunsFromRedis(
     } while (cursor !== 0 && cursor !== "0" && iterations < maxIterations);
   } catch (e) {
     console.error(`${TOOL_LOG_PREFIX} listCursorSdkRunsFromRedis scan failed`, e);
-    return { runs: [], scanIncomplete: false };
+    return { runs: [], totalCount: 0, scanIncomplete: false };
   }
 
   const scanIncomplete =
@@ -357,8 +361,11 @@ export async function listCursorSdkRunsFromRedis(
     return bt - at;
   });
 
+  const totalCount = list.length;
+
   return {
     runs: list.slice(0, limit),
+    totalCount,
     scanIncomplete,
   };
 }
@@ -391,11 +398,11 @@ export async function executeListCursorCloudAgentRuns(
   }
 
   const limit = Math.min(Math.max(input.limit ?? 20, 1), 50);
-  const { runs, scanIncomplete } = await listCursorSdkRunsFromRedis(
+  const { runs, scanIncomplete, totalCount } = await listCursorSdkRunsFromRedis(
     context.redis,
     limit
   );
-  const sliceTruncated = runs.length >= limit;
+  const sliceTruncated = totalCount > limit;
 
   const withPoll: CursorSdkRunListRow[] = runs.map((r) => ({
     ...r,

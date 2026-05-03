@@ -5,7 +5,6 @@ import { AdminSidebar } from "./AdminSidebar";
 import { DashboardPanel } from "./DashboardPanel";
 import { UserProfilePanel } from "./UserProfilePanel";
 import { SongDetailPanel } from "./SongDetailPanel";
-import { ServerPanel } from "./ServerPanel";
 import { CursorAgentsPanel } from "./CursorAgentsPanel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -78,6 +77,7 @@ export function AdminAppComponent({
     activeSection,
     setActiveSection,
     cursorAgentsRefreshSignal,
+    setCursorAgentCount,
     isRoomsExpanded,
     setIsRoomsExpanded,
     selectedUserProfile,
@@ -298,6 +298,12 @@ export function AdminAppComponent({
     );
   }
 
+  const showCursorAgentsPanel =
+    activeSection === "cursorAgents" &&
+    !selectedRoomId &&
+    !selectedUserProfile &&
+    !selectedSongId;
+
   return (
     <>
       {!isXpTheme && isForeground && menuBar}
@@ -327,11 +333,10 @@ export function AdminAppComponent({
           />
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col bg-white overflow-hidden">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
             {/* Toolbar */}
             {!selectedUserProfile &&
               !selectedSongId &&
-              activeSection !== "server" &&
               activeSection !== "dashboard" &&
               activeSection !== "cursorAgents" && (
               <div
@@ -553,33 +558,28 @@ export function AdminAppComponent({
               </div>
             )}
 
-            {/* Content Area */}
-            <ScrollArea ref={scrollAreaRef} className="flex-1">
+            {/* Content Area — Cursor Agents manages its own scroll regions */}
+            {showCursorAgentsPanel ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <CursorAgentsPanel
+                  refreshSignal={cursorAgentsRefreshSignal}
+                  onTotalCountChange={setCursorAgentCount}
+                />
+              </div>
+            ) : null}
+            <ScrollArea
+              ref={scrollAreaRef}
+              className={cn(
+                "min-h-0 min-w-0 flex-1",
+                showCursorAgentsPanel && "hidden"
+              )}
+            >
               {/* Dashboard View */}
               {activeSection === "dashboard" &&
                 !selectedRoomId &&
                 !selectedUserProfile &&
                 !selectedSongId && (
                   <DashboardPanel onRefresh={handleRefresh} />
-                )}
-
-              {/* Server View */}
-              {activeSection === "server" &&
-                !selectedRoomId &&
-                !selectedUserProfile &&
-                !selectedSongId && (
-                  <ServerPanel onRefresh={handleRefresh} />
-                )}
-
-              {/* Cursor Cloud agent runs (Redis) */}
-              {activeSection === "cursorAgents" &&
-                !selectedRoomId &&
-                !selectedUserProfile &&
-                !selectedSongId && (
-                  <CursorAgentsPanel
-                    formatRelativeTime={formatRelativeTime}
-                    refreshSignal={cursorAgentsRefreshSignal}
-                  />
                 )}
 
               {/* User Profile View */}
@@ -737,7 +737,7 @@ export function AdminAppComponent({
                 !selectedRoomId &&
                 !selectedUserProfile &&
                 !selectedSongId && (
-                  <div className="font-geneva-12">
+                  <div className="w-full min-w-0 font-geneva-12">
                     {songs.length === 0 && !isLoading ? (
                       <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
                         <MusicNote
@@ -763,13 +763,13 @@ export function AdminAppComponent({
                       </div>
                     ) : (
                       <>
-                        <div className="divide-y divide-gray-200">
+                        <div className="w-full min-w-0 divide-y divide-gray-200">
                           {filteredSongs
                             .slice(0, visibleSongsCount)
                             .map((song) => (
                               <div
                                 key={song.youtubeId}
-                                className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100/50 transition-colors cursor-pointer group"
+                                className="flex w-full min-w-0 items-center gap-3 px-3 py-2 hover:bg-gray-100/50 transition-colors cursor-pointer group"
                                 onClick={() =>
                                   setSelectedSongId(song.youtubeId)
                                 }
@@ -787,15 +787,15 @@ export function AdminAppComponent({
                                   />
                                 </div>
                                 {/* Title and Artist */}
-                                <div className="flex-1 min-w-0">
+                                <div className="min-w-0 flex-1 overflow-hidden">
                                   <div
-                                    className="text-[12px] font-medium truncate"
+                                    className="block w-full min-w-0 truncate text-[12px] font-medium"
                                     title={song.title}
                                   >
                                     {song.title}
                                   </div>
                                   <div
-                                    className="text-[11px] text-neutral-500 truncate"
+                                    className="block w-full min-w-0 truncate text-[11px] text-neutral-500"
                                     title={song.artist}
                                   >
                                     {song.artist || "-"}
@@ -803,7 +803,7 @@ export function AdminAppComponent({
                                 </div>
                                 {/* Created By */}
                                 {song.createdBy && (
-                                  <span className="text-[10px] text-neutral-400 flex-shrink-0">
+                                  <span className="max-w-[5rem] shrink truncate text-[10px] text-neutral-400">
                                     {song.createdBy}
                                   </span>
                                 )}
@@ -923,10 +923,11 @@ export function AdminAppComponent({
               <span>
                 {activeSection === "dashboard"
                   ? t("apps.admin.sidebar.dashboard", "Dashboard")
-                  : activeSection === "server"
-                  ? t("apps.admin.server.title", "Server")
                   : activeSection === "cursorAgents"
-                    ? t("apps.admin.sidebar.cursorAgents", "Cursor agents")
+                    ? t("apps.admin.statusBar.cursorAgentsCount", {
+                        count: stats.totalCursorAgents ?? 0,
+                        defaultValue: `${stats.totalCursorAgents ?? 0} Cursor agents`,
+                      })
                   : activeSection === "users" && !selectedRoomId
                     ? t("apps.admin.statusBar.usersCount", {
                         count: users.length,

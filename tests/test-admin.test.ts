@@ -195,6 +195,7 @@ describe("admin", () => {
       const data = await res.json();
       expect(Array.isArray(data.runs)).toBe(true);
       expect(typeof data.truncated).toBe("boolean");
+      expect(typeof data.totalCount).toBe("number");
     });
   });
 

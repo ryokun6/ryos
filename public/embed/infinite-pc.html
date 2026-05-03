@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <!--
+    i.copy.sh has hotlink protection that 403s requests with a foreign Referer
+    (anything other than copy.sh or empty). Strip the referrer for this page and
+    every subresource it triggers so OS image fetches go through.
+  -->
+  <meta name="referrer" content="no-referrer" />
+  <title>Infinite PC</title>
+  <link
+    rel="preload"
+    href="/fonts/monacottf.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin=""
+  />
+  <style>
+    @font-face {
+      font-family: "Monaco";
+      src: url("/fonts/monacottf.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: #ddd; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+    /* Layout: emulator fills viewport */
+    #screen_container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      overflow: hidden;
+    }
+    #screen_container > div {
+      /* text-mode buffer (DOS prompt, BIOS, kernel boot logs, etc.).
+       *
+       * v86's screenshot helper assumes a 9×16 cell, and its cursor uses
+       * VGA scanlines 0..15 mapped directly to `marginTop: <px>`. None of
+       * that breaks if the row is *taller* than 16px — the cursor just
+       * sits a few px above the row's bottom, invisible at this scale.
+       *
+       * Monaco's `usWinDescent` is large (descenders extend ~4px below
+       * baseline at font-size 12), so a 16px row clips the bowls of g,
+       * p, q, y. Text-mode presets use a 640×480 window in ryOS; 18px rows
+       * leave vertical margin inside the framebuffer (see PC_PRESETS).
+       */
+      white-space: pre;
+      font-family: "Monaco", "Menlo", "Consolas", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 18px;
+      color: #fff;
+      background: #000;
+      font-feature-settings: "liga" 0, "calt" 0, "tnum" 1;
+      font-variant-ligatures: none;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0;
+    }
+    #screen_container canvas {
+      display: block;
+      image-rendering: pixelated;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    /* Error overlay */
+    #error {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 8px;
+      text-align: center;
+      background: #111;
+    }
+    #error.shown { display: flex; }
+    #error .title { font-size: 14px; color: #f88; }
+    #error .detail { font-size: 12px; color: #aaa; max-width: 480px; word-break: break-word; }
+
+    /* "Click to interact" hint shown when pointer lock isn't active */
+    #grab_hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 18px 0 0 0;
+      pointer-events: none;
+      transition: opacity 200ms ease-out;
+      z-index: 5;
+    }
+    #grab_hint.hidden { opacity: 0; }
+    #grab_hint .pill {
+      font-family: "Geneva-12", "Geneva", "Helvetica Neue", -apple-system, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      white-space: nowrap;
+    }
+    #grab_hint kbd {
+      font-family: inherit;
+      font-size: 10px;
+      padding: 1px 5px;
+      margin: 0 2px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="screen_container">
+    <div></div>
+    <canvas></canvas>
+  </div>
+  <div id="grab_hint" class="hidden">
+    <div class="pill">Click to capture &mdash; <kbd>Esc</kbd> to release</div>
+  </div>
+  <div id="error">
+    <div class="title">Failed to start emulator</div>
+    <div class="detail"></div>
+  </div>
+
+  <script src="/v86/libv86.js"></script>
+  <script>
+(function () {
+  // -----------------------------------------------------------
+  // Config: all OS images come from copy.sh's CORS-enabled CDN
+  // (https://i.copy.sh/). v86 itself (libv86.js, v86.wasm, BIOS)
+  // is self-hosted under /v86/ on this origin so no CORS dance.
+  // -----------------------------------------------------------
+  var IMG_HOST = "https://i.copy.sh/";
+  var WASM_PATH = "/v86/v86.wasm";
+  var BIOS_PATH = "/v86/bios/seabios.bin";
+  var VGA_BIOS_PATH = "/v86/bios/vgabios.bin";
+
+  var PARENT_ORIGIN = window.location.origin;
+
+  // -----------------------------------------------------------
+  // Profiles
+  //
+  // These configs are 1:1 with the upstream `oses` array in
+  //   https://github.com/copy/v86/blob/master/src/browser/main.js
+  // (audited against commit 4e4bf556, Mar 31 2026). Each profile here is
+  // copied verbatim from the matching `id:` entry in main.js. Sizes are in
+  // bytes and must match exactly for `async: true` chunked images, because
+  // v86 derives the `fixed_chunk_size`-aligned range list from `size`.
+  //
+  // We deliberately use the chunk-by-parts hosting on i.copy.sh (the same
+  // CDN copy.sh's own page hits). That CDN sets CORS but blocks foreign
+  // referrers, which is why the page sets <meta name="referrer"
+  // content="no-referrer">.
+  // -----------------------------------------------------------
+  var PROFILES = {
+    // ---------- DOS ----------
+    freedos: {
+      name: "FreeDOS",
+      fda: { url: IMG_HOST + "freedos722.img", size: 737280 },
+    },
+    msdos: {
+      name: "MS-DOS 6.22",
+      hda: chunked("msdos622/.img", 64 * 1024 * 1024, 256 * 1024),
+    },
+
+    // ---------- 16-bit Windows ----------
+    windows1: {
+      name: "Windows 1.01",
+      fda: { url: IMG_HOST + "windows101.img", size: 1474560 },
+    },
+    windows30: {
+      name: "Windows 3.0",
+      memory_size: 128 * 1024 * 1024,
+      hda: { url: IMG_HOST + "windows30.img", size: 25165824, async: false },
+    },
+    windows31: {
+      name: "Windows 3.1",
+      memory_size: 64 * 1024 * 1024,
+      hda: { url: IMG_HOST + "win31.img", size: 34463744, async: false },
+    },
+
+    // ---------- 32-bit Windows (state-restored) ----------
+    windows95: {
+      name: "Windows 95",
+      memory_size: 64 * 1024 * 1024,
+      hda: chunked("windows95-v2/.img", 471859200, 256 * 1024),
+    },
+    windows98: {
+      name: "Windows 98",
+      memory_size: 128 * 1024 * 1024,
+      hda: chunked("windows98/.img", 300 * 1024 * 1024, 256 * 1024),
+      state: { url: IMG_HOST + "windows98_state-v2.bin.zst" },
+      mac_address_translation: true,
+    },
+    "windows-me": {
+      name: "Windows ME",
+      memory_size: 256 * 1024 * 1024,
+      hda: chunked("windowsme-v3/.img", 1024 * 1024 * 1024, 256 * 1024),
+      state: { url: IMG_HOST + "windows-me_state-v3.bin.zst" },
+    },
+    windows2000: {
+      name: "Windows 2000",
+      memory_size: 512 * 1024 * 1024,
+      hda: chunked("windows2k-v2/.img", 2 * 1024 * 1024 * 1024, 256 * 1024),
+      state: { url: IMG_HOST + "windows2k_state-v4.bin.zst" },
+      mac_address_translation: true,
+    },
+
+    // ---------- Linux ----------
+    linux26: {
+      name: "Linux 2.6",
+      cdrom: { url: IMG_HOST + "linux.iso", size: 6547456, async: false },
+    },
+    linux4: {
+      // Empty `filesystem: {}` is intentional — matches upstream and asks
+      // v86 to expose a writable in-memory 9p root (no `baseurl`/`basefs`).
+      name: "Linux 4.x",
+      cdrom: { url: IMG_HOST + "linux4.iso", size: 7731200, async: false },
+      filesystem: {},
+    },
+    archlinux: {
+      name: "Arch Linux",
+      memory_size: 512 * 1024 * 1024,
+      vga_memory_size: 8 * 1024 * 1024,
+      state: { url: IMG_HOST + "arch_state-v3.bin.zst" },
+      filesystem: { baseurl: IMG_HOST + "arch/" },
+      net_device_type: "virtio",
+    },
+    dsl: {
+      name: "Damn Small Linux",
+      memory_size: 256 * 1024 * 1024,
+      cdrom: { url: IMG_HOST + "dsl-4.11.rc2.iso", size: 52824064, async: false },
+    },
+    buildroot: {
+      // bzimage + empty 9p fs — Buildroot has its rootfs baked into the
+      // bzImage as initramfs, so no `basefs` is needed. Matches upstream.
+      name: "Buildroot Linux",
+      bzimage: { url: IMG_HOST + "buildroot-bzimage.bin", size: 5166352, async: false },
+      cmdline: "tsc=reliable mitigations=off random.trust_cpu=on",
+      filesystem: {},
+      mouse_disabled_default: true,
+    },
+
+    // ---------- BSD ----------
+    freebsd: {
+      name: "FreeBSD",
+      memory_size: 256 * 1024 * 1024,
+      hda: chunked("freebsd/.img", 2147483648, 1024 * 1024),
+      state: { url: IMG_HOST + "freebsd_state-v2.bin.zst" },
+    },
+    openbsd: {
+      name: "OpenBSD",
+      memory_size: 256 * 1024 * 1024,
+      hda: chunked("openbsd/.img", 1073741824, 1024 * 1024),
+      state: { url: IMG_HOST + "openbsd_state-v2.bin.zst" },
+    },
+    netbsd: {
+      // No state file in upstream — boots fresh into a getty.
+      name: "NetBSD",
+      memory_size: 256 * 1024 * 1024,
+      hda: chunked("netbsd/.img", 511000064, 1024 * 1024),
+    },
+
+    // ---------- BeOS family ----------
+    haiku: {
+      name: "Haiku",
+      memory_size: 512 * 1024 * 1024,
+      hda: chunked("haiku-v5/.img", 1342177280, 1024 * 1024),
+      state: { url: IMG_HOST + "haiku_state-v5.bin.zst" },
+      acpi: true,
+    },
+    beos: {
+      // Comment from upstream: "segfaults if 256k bios is used".
+      name: "BeOS 5",
+      memory_size: 512 * 1024 * 1024,
+      hda: chunked("beos5/.img", 536870912, 1024 * 1024),
+    },
+
+    // ---------- Windows-likes ----------
+    reactos: {
+      name: "ReactOS",
+      memory_size: 512 * 1024 * 1024,
+      hda: chunked("reactos-v3/.img", 734003200, 1024 * 1024),
+      state: { url: IMG_HOST + "reactos_state-v3.bin.zst" },
+      mac_address_translation: true,
+      acpi: true,
+      net_device_type: "virtio",
+    },
+
+    // ---------- Other GUI hobby OSes ----------
+    kolibrios: {
+      // Upstream's primary URL is //builds.kolibrios.org/... but that origin
+      // doesn't set CORS. Upstream falls back to host + kolibri.img on
+      // copy.sh's own CDN — that's the variant we use here, matching the
+      // upstream `kolibrios-fallback` profile (same image, CORS-friendly).
+      name: "KolibriOS",
+      fda: { url: IMG_HOST + "kolibri.img", size: 1474560 },
+    },
+    oberon: {
+      name: "Oberon",
+      hda: { url: IMG_HOST + "oberon.img", size: 24 * 1024 * 1024, async: false },
+    },
+    redox: {
+      name: "Redox",
+      memory_size: 1024 * 1024 * 1024,
+      hda: chunked(
+        "redox_demo_i686_2024-09-07_1225_harddrive/.img",
+        671088640,
+        1024 * 1024
+      ),
+      state: { url: IMG_HOST + "redox_state-v2.bin.zst" },
+      acpi: true,
+    },
+
+    // ---------- Unix-likes ----------
+    minix: {
+      name: "Minix",
+      memory_size: 256 * 1024 * 1024,
+      cdrom: chunked("minix-3.3.0/.iso", 605581312, 1024 * 1024),
+    },
+    serenity: {
+      // The chunked URL ending in `.img.zst` is intentional — copy.sh hosts
+      // the SerenityOS image as zstd-compressed parts and v86 transparently
+      // decompresses each chunk on fetch. Confirmed against upstream.
+      name: "SerenityOS",
+      memory_size: 512 * 1024 * 1024,
+      hda: chunked("serenity-v3/.img.zst", 734003200, 1024 * 1024),
+      state: { url: IMG_HOST + "serenity_state-v4.bin.zst" },
+      mac_address_translation: true,
+    },
+    helenos: {
+      name: "HelenOS",
+      memory_size: 256 * 1024 * 1024,
+      cdrom: { url: IMG_HOST + "HelenOS-0.14.1-ia32.iso", size: 25792512, async: false },
+    },
+    fiwix: {
+      name: "FiwixOS",
+      memory_size: 256 * 1024 * 1024,
+      hda: chunked("FiwixOS-3.4-i386/.img", 1024 * 1024 * 1024, 1024 * 1024),
+    },
+
+    // ---------- Floppy / curiosities ----------
+    solos: {
+      name: "Sol OS",
+      fda: { url: IMG_HOST + "os8.img", size: 1474560 },
+    },
+    doof: {
+      name: "Doom On One Floppy",
+      fda: { url: IMG_HOST + "doof-1440.img", size: 1474560 },
+    },
+    mikeos: {
+      name: "MikeOS",
+      cdrom: { url: IMG_HOST + "mikeos.iso", size: 3311616, async: false },
+    },
+  };
+
+  /**
+   * Build a chunked async-image config. v86 fetches `size / fixed_chunk_size`
+   * range-named parts from `<url>-NNNN-NNNN`, which is how copy.sh hosts
+   * large disk images on its CDN. Equivalent to:
+   *   { url, size, async: true, use_parts: true, fixed_chunk_size }
+   */
+  function chunked(path, size, chunk) {
+    return {
+      url: IMG_HOST + path,
+      size: size,
+      async: true,
+      use_parts: true,
+      fixed_chunk_size: chunk,
+    };
+  }
+
+  // -----------------------------------------------------------
+  // Boot
+  // -----------------------------------------------------------
+  var params = new URLSearchParams(location.search);
+  var profileId = params.get("profile");
+  var errorEl = document.getElementById("error");
+  var errorDetail = errorEl.querySelector(".detail");
+
+  function notifyParent(payload) {
+    try {
+      window.parent.postMessage(
+        { type: "_infinite_pc_bridge", payload: payload },
+        // The wrapper is same-origin with the parent (served by ryOS), so
+        // posting back to our own origin is the parent's origin.
+        window.location.origin
+      );
+    } catch (_) {}
+  }
+
+  function showError(msg) {
+    errorDetail.textContent = msg;
+    errorEl.classList.add("shown");
+    notifyParent({ type: "emulator_error", message: msg });
+  }
+
+  if (!profileId || !PROFILES[profileId]) {
+    showError("Unknown profile: " + (profileId || "(none)"));
+    return;
+  }
+  if (typeof V86 === "undefined") {
+    showError("v86 library failed to load");
+    return;
+  }
+
+  var profile = PROFILES[profileId];
+
+  // Tell the parent which OS we're booting before any downloads start so the
+  // overlay can show the right name immediately.
+  notifyParent({
+    type: "download_start",
+    name: profile.name,
+    profileId: profileId,
+  });
+
+  // copy.sh `oses[].state` → V86 `initial_state` (not the literal key `state`).
+  var bootProfile = Object.assign({}, profile);
+  if (bootProfile.state) {
+    bootProfile.initial_state = bootProfile.state;
+    delete bootProfile.state;
+  }
+
+  // Default memory sizes match v86 defaults when not set by the profile.
+  var settings = Object.assign(
+    {
+      wasm_path: WASM_PATH,
+      memory_size: 64 * 1024 * 1024,
+      vga_memory_size: 8 * 1024 * 1024,
+      bios: { url: BIOS_PATH },
+      vga_bios: { url: VGA_BIOS_PATH },
+      screen_container: document.getElementById("screen_container"),
+      autostart: true,
+    },
+    bootProfile
+  );
+
+  var emulator;
+  try {
+    emulator = new V86(settings);
+    void ensureMonacoFontForCanvas();
+  } catch (e) {
+    showError(e && e.message ? e.message : String(e));
+    return;
+  }
+
+  // Track per-file progress and forward an aggregated payload to the parent.
+  var loadProgress = {};
+  var lastEmit = 0;
+  emulator.add_listener("download-progress", function (e) {
+    if (!e || !e.file_name) return;
+    loadProgress[e.file_name] = {
+      loaded: e.loaded || 0,
+      total: e.total || 0,
+    };
+    var loaded = 0;
+    var total = 0;
+    var keys = Object.keys(loadProgress);
+    keys.forEach(function (k) {
+      loaded += loadProgress[k].loaded;
+      total += loadProgress[k].total;
+    });
+    // Throttle to ~20Hz to avoid spamming postMessage on chunked downloads.
+    var now = Date.now();
+    if (now - lastEmit < 50) return;
+    lastEmit = now;
+    notifyParent({
+      type: "download_progress",
+      file_name: e.file_name,
+      file_index: typeof e.file_index === "number" ? e.file_index : 0,
+      file_count: typeof e.file_count === "number" ? e.file_count : keys.length,
+      loaded: loaded,
+      total: total,
+      lengthComputable: !!e.lengthComputable,
+    });
+  });
+
+  // emulator-loaded: downloads (or first chunk) finished, emulator is wired up.
+  // emulator-ready: emulator has begun executing instructions / rendering.
+  // We treat either as "ready to show" for the parent overlay.
+  function notifyReady() {
+    notifyParent({ type: "emulator_loaded" });
+  }
+  emulator.add_listener("emulator-loaded", notifyReady);
+  emulator.add_listener("emulator-ready", notifyReady);
+  emulator.add_listener("emulator-started", notifyReady);
+
+  emulator.add_listener("download-error", function (e) {
+    var url = (e && e.request && e.request.url) || "(unknown)";
+    showError("Download failed: " + url);
+  });
+
+  // -----------------------------------------------------------
+  // Click-to-capture: pointer lock + keyboard grab.
+  //
+  // Behavior:
+  //   - User clicks anywhere in the emulator screen → request pointer lock
+  //     (v86's `lock_mouse()` wraps `requestPointerLock({unadjustedMovement})`)
+  //     and try to lock all keyboard keys EXCEPT Escape, so OS shortcuts
+  //     (Alt+Tab, Cmd+Q, F11, Tab) are routed to v86 but Esc still releases.
+  //   - Pointer lock is the source of truth. While locked, the v86 mouse +
+  //     keyboard adapters receive input. When the user hits Esc, the browser
+  //     auto-exits pointer lock; `pointerlockchange` fires and we re-show the
+  //     "Click to capture" hint and release the keyboard lock.
+  //   - We don't toggle v86's mouse/keyboard adapters on/off — pointer lock
+  //     itself prevents the cursor from moving outside the iframe, and the
+  //     adapters quietly ignore mouse moves when not locked anyway.
+  // -----------------------------------------------------------
+  var grabHint = document.getElementById("grab_hint");
+  var screenEl = document.getElementById("screen_container");
+  var isLocked = false;
+  var isReady = false;
+
+  function isCanvasScreenVisible() {
+    var canvas = screenEl && screenEl.querySelector("canvas");
+    return !!(canvas && getComputedStyle(canvas).display !== "none");
+  }
+
+  function isTextScreenVisible() {
+    var textRoot = screenEl && screenEl.querySelector(":scope > div");
+    return !!(textRoot && getComputedStyle(textRoot).display !== "none");
+  }
+
+  var TEXT_SCREEN_CANVAS_FONT =
+    'normal normal 12px/18px "Monaco", Menlo, Consolas, "Courier New", monospace';
+  var SCREENSHOT_PADDING_PX = 16;
+  var monacoFontReadyPromise = null;
+
+  function padScreenshotImage(img, backdrop) {
+    backdrop = backdrop || "#000";
+    return new Promise(function (resolve) {
+      function draw() {
+        var w = img.naturalWidth;
+        var h = img.naturalHeight;
+        if (!w || !h) {
+          resolve(img);
+          return;
+        }
+        var pad = SCREENSHOT_PADDING_PX;
+        var canvas = document.createElement("canvas");
+        canvas.width = w + pad * 2;
+        canvas.height = h + pad * 2;
+        var ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(img);
+          return;
+        }
+        ctx.fillStyle = backdrop;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, pad, pad);
+        var out = new Image();
+        out.src = canvas.toDataURL("image/png");
+        resolve(out);
+      }
+      if (img.complete && img.naturalWidth) draw();
+      else img.onload = draw;
+      img.onerror = function () {
+        resolve(img);
+      };
+    });
+  }
+
+  function ensureMonacoFontForCanvas() {
+    if (!monacoFontReadyPromise) {
+      monacoFontReadyPromise = (async function () {
+        try {
+          if (typeof FontFace !== "undefined") {
+            var face = new FontFace(
+              "Monaco",
+              'url("/fonts/monacottf.woff2") format("woff2")',
+              { style: "normal", weight: "400" }
+            );
+            await face.load();
+            document.fonts.add(face);
+          }
+        } catch (_) {}
+        if (document.fonts && document.fonts.load) {
+          try {
+            await document.fonts.load('12px "Monaco"');
+            await document.fonts.load("400 12px Monaco");
+          } catch (_) {}
+        }
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+      })();
+    }
+    return monacoFontReadyPromise;
+  }
+
+  function canvasFontForTextScreen(cs) {
+    var size = (cs && cs.fontSize) || "12px";
+    var weight = (cs && cs.fontWeight) || "normal";
+    var fontStyle = (cs && cs.fontStyle) || "normal";
+    return (
+      fontStyle +
+      " " +
+      weight +
+      " " +
+      size +
+      '/18px "Monaco", Menlo, Consolas, "Courier New", monospace'
+    );
+  }
+
+  /** v86 text screenshots use 9×16 cells but ryOS text CSS is 12px/18px — rasterize the DOM. */
+  async function captureTextModeScreenshotFromDom(textRoot) {
+    await ensureMonacoFontForCanvas();
+    var rect = textRoot.getBoundingClientRect();
+    var w = Math.max(1, Math.round(rect.width));
+    var h = Math.max(1, Math.round(rect.height));
+    var dpr = window.devicePixelRatio || 1;
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(w * dpr));
+    canvas.height = Math.max(1, Math.round(h * dpr));
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.scale(dpr, dpr);
+    var rootStyle = getComputedStyle(textRoot);
+    ctx.font = TEXT_SCREEN_CANVAS_FONT;
+    ctx.fillStyle = rootStyle.backgroundColor || "#000";
+    ctx.fillRect(0, 0, w, h);
+
+    var rows = textRoot.children;
+    for (var ri = 0; ri < rows.length; ri++) {
+      var row = rows[ri];
+      var rowRect = row.getBoundingClientRect();
+      var y = rowRect.top - rect.top;
+      var x = rowRect.left - rect.left;
+      var spans = row.children.length ? row.children : [row];
+      for (var si = 0; si < spans.length; si++) {
+        var span = spans[si];
+        var cs = getComputedStyle(span);
+        var text = span.textContent || "";
+        if (!text) continue;
+        ctx.font = canvasFontForTextScreen(cs);
+        ctx.textBaseline = "top";
+        var lineH = parseFloat(cs.lineHeight) || rowRect.height;
+        var bg = cs.backgroundColor;
+        if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
+          ctx.font = canvasFontForTextScreen(cs);
+          var mw = ctx.measureText(text).width;
+          ctx.fillStyle = bg;
+          ctx.fillRect(x, y, mw, lineH);
+        }
+        ctx.fillStyle = cs.color || "#fff";
+        ctx.font = canvasFontForTextScreen(cs);
+        ctx.fillText(text, x, y);
+        ctx.font = canvasFontForTextScreen(cs);
+        x += ctx.measureText(text).width;
+      }
+    }
+
+    var img = new Image();
+    img.src = canvas.toDataURL("image/png");
+    return img;
+  }
+
+  async function captureEmulatorScreenshot() {
+    if (isTextScreenVisible() && !isCanvasScreenVisible()) {
+      var textRoot = screenEl.querySelector(":scope > div");
+      var domShot = await captureTextModeScreenshotFromDom(textRoot);
+      if (domShot && domShot.src) {
+        return padScreenshotImage(domShot, "#000");
+      }
+      return domShot;
+    }
+    if (typeof emulator.screen_make_screenshot === "function") {
+      return emulator.screen_make_screenshot();
+    }
+    return null;
+  }
+
+  function setHintVisible(visible) {
+    if (!grabHint) return;
+    if (visible) grabHint.classList.remove("hidden");
+    else grabHint.classList.add("hidden");
+  }
+
+  function canUseKeyboardLockApi() {
+    if (window.self !== window.top) return false;
+    var nav = navigator;
+    return !!(nav.keyboard && typeof nav.keyboard.lock === "function");
+  }
+
+  function tryKeyboardLock() {
+    if (!canUseKeyboardLockApi()) return;
+    var keys = [
+      "Tab",
+      "AltLeft",
+      "AltRight",
+      "MetaLeft",
+      "MetaRight",
+      "ControlLeft",
+      "ControlRight",
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "F5",
+      "F6",
+      "F7",
+      "F8",
+      "F9",
+      "F10",
+      "F11",
+      "F12",
+    ];
+    try {
+      // lock() is only allowed in a primary top-level document; ryOS loads this embed in an iframe.
+      var p = navigator.keyboard.lock(keys);
+      if (p && typeof p.catch === "function") p.catch(function () {});
+    } catch (_) {}
+  }
+
+  function tryKeyboardUnlock() {
+    if (!canUseKeyboardLockApi()) return;
+    try {
+      var p = navigator.keyboard.unlock();
+      if (p && typeof p.catch === "function") p.catch(function () {});
+    } catch (_) {}
+  }
+
+  screenEl.addEventListener("mousedown", function (e) {
+    // Left-click only; right-click should still pass through to v86 once
+    // the pointer is already locked.
+    if (e.button !== 0) return;
+    if (isLocked || !isReady) return;
+    // Bring the iframe into focus so keyboard events route to v86.
+    try { window.focus(); } catch (_) {}
+    if (emulator && typeof emulator.lock_mouse === "function") {
+      emulator.lock_mouse();
+    }
+  });
+
+  document.addEventListener("pointerlockchange", function () {
+    isLocked = document.pointerLockElement !== null;
+    setHintVisible(!isLocked);
+    if (isLocked) {
+      tryKeyboardLock();
+    } else {
+      tryKeyboardUnlock();
+    }
+  });
+
+  // Mark the emulator as ready and show the click-to-capture hint as soon as
+  // v86 reports it can take input.
+  function markReady() {
+    isReady = true;
+    if (!isLocked) setHintVisible(true);
+  }
+  emulator.add_listener("emulator-loaded", markReady);
+  emulator.add_listener("emulator-ready", markReady);
+  emulator.add_listener("emulator-started", markReady);
+
+  // Parent menu: View ▸ Full Screen / Capture Screenshot (copy.sh/v86 main.js).
+  window.addEventListener("message", function (e) {
+    if (e.source !== window.parent) return;
+    if (e.origin !== window.location.origin) return;
+    var data = e.data;
+    if (!data || data.type !== "_infinite_pc_command") return;
+    if (!emulator) return;
+
+    if (data.command === "fullscreen") {
+      if (typeof emulator.screen_go_fullscreen === "function") {
+        emulator.screen_go_fullscreen();
+      }
+      return;
+    }
+
+    if (data.command === "screenshot") {
+      (async function () {
+        try {
+          var shot = await captureEmulatorScreenshot();
+          if (!shot || !shot.src) {
+            notifyParent({
+              type: "screenshot_error",
+              message: "No screen image available",
+            });
+            return;
+          }
+          notifyParent({ type: "screenshot_ready", dataUrl: shot.src });
+        } catch (err) {
+          notifyParent({
+            type: "screenshot_error",
+            message: err && err.message ? err.message : String(err),
+          });
+        }
+      })();
+    }
+  });
+})();
+  </script>
+</body>
+</html>

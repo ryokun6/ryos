@@ -1,4 +1,4 @@
-import { appIds, appNames, type AppId } from "@/config/appRegistryData";
+import { appIds, appNames, resolveAppId, type AppId } from "@/config/appRegistryData";
 import type { AppLaunchRequest } from "@/utils/appEventBus";
 
 export interface RouteToastDescriptor {
@@ -218,8 +218,8 @@ export function resolveInitialRoute(
   const directAppPathMatch = pathname.match(/^\/([^/]+)$/);
   if (directAppPathMatch) {
     const potentialAppId = directAppPathMatch[1];
-    if (KNOWN_APP_IDS.has(potentialAppId)) {
-      const appId = potentialAppId as AppId;
+    const appId = resolveAppId(potentialAppId);
+    if (appId && KNOWN_APP_IDS.has(appId)) {
       const appName = appNames[appId] || appId;
 
       return createLaunchAction(

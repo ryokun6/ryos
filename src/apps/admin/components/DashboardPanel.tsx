@@ -7,6 +7,8 @@ import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { getAdminAnalytics } from "@/api/admin";
+import { AdminPanelHeader } from "./AdminPanelHeader";
+import { DashboardServerCard } from "./DashboardServerCard";
 
 interface DailyMetrics {
   date: string;
@@ -161,6 +163,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rangeDays, setRangeDays] = useState(1);
+  const [serverReloadKey, setServerReloadKey] = useState(0);
 
   const isToday = rangeDays === 1;
   const rangeLabel = isToday ? t("apps.admin.dashboard.range.today") : `${rangeDays}d`;
@@ -250,46 +253,50 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
       : "0%";
 
   const showTrend = !isToday && prevDay != null;
+  /** Daily rollups only — one bar per day is not a useful chart (e.g. Today / 1d). */
+  const showTimeSeriesCharts = days.length >= 2;
 
   const topEndpointMax = topEndpoints.length > 0 ? topEndpoints[0].count : 1;
 
   return (
     <div className="flex flex-col h-full font-geneva-12">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-        <span className="text-[12px] font-medium">{t("apps.admin.dashboard.title")}</span>
-        <div className="flex items-center gap-1">
-          {RANGE_DAYS.map((d) => (
+      <AdminPanelHeader
+        title={t("apps.admin.dashboard.title")}
+        actions={
+          <>
+            {RANGE_DAYS.map((d) => (
+              <Button
+                key={d}
+                variant="ghost"
+                size="sm"
+                onClick={() => setRangeDays(d)}
+                className={cn(
+                  "h-7 px-2 text-[12px]",
+                  rangeDays === d && "bg-neutral-200"
+                )}
+              >
+                {getRangeLabel(d)}
+              </Button>
+            ))}
             <Button
-              key={d}
               variant="ghost"
               size="sm"
-              onClick={() => setRangeDays(d)}
-              className={cn(
-                "h-6 px-2 text-[10px]",
-                rangeDays === d && "bg-neutral-200"
-              )}
+              onClick={() => {
+                fetchData();
+                setServerReloadKey((k) => k + 1);
+                onRefresh?.();
+              }}
+              className="h-7 w-7 shrink-0 p-0"
             >
-              {getRangeLabel(d)}
+              {isLoading ? (
+                <ActivityIndicator size={14} />
+              ) : (
+                <ArrowsClockwise size={14} weight="bold" />
+              )}
             </Button>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              fetchData();
-              onRefresh?.();
-            }}
-            className="h-7 w-7 p-0 ml-1"
-          >
-            {isLoading ? (
-              <ActivityIndicator size={14} />
-            ) : (
-              <ArrowsClockwise className="h-3.5 w-3.5" weight="bold" />
-            )}
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="flex-1 overflow-y-auto">
         {/* KPI Cards */}
@@ -326,76 +333,82 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           <span>{isToday ? (latestDay?.avgLatencyMs ?? 0) : totals.avgLatencyMs}{t("apps.admin.dashboard.totals.msAvg")}</span>
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.apiCalls")}
+        {showTimeSeriesCharts ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.apiCalls")}
+              </div>
+              <MiniBarChart data={days} valueKey="calls" color="bg-neutral-400" height={56} />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
-            <MiniBarChart data={days} valueKey="calls" color="bg-neutral-400" height={56} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
-            </div>
-          </div>
 
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.uniqueVisitors")}
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.uniqueVisitors")}
+              </div>
+              <MiniBarChart
+                data={days}
+                valueKey="uniqueVisitors"
+                color="bg-green-400"
+                height={56}
+              />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
-            <MiniBarChart data={days} valueKey="uniqueVisitors" color="bg-green-400" height={56} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
-            </div>
-          </div>
 
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.aiRequests")}
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.aiRequests")}
+              </div>
+              <MiniBarChart data={days} valueKey="ai" color="bg-yellow-400" height={56} />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
-            <MiniBarChart data={days} valueKey="ai" color="bg-yellow-400" height={56} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
-            </div>
-          </div>
 
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.errors")}
-            </div>
-            <MiniBarChart data={days} valueKey="errors" color="bg-red-400" height={56} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.errors")}
+              </div>
+              <MiniBarChart data={days} valueKey="errors" color="bg-red-400" height={56} />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         {/* Top Endpoints */}
         <div className="px-3 pb-3">
@@ -528,24 +541,34 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
           </div>
         </div>
 
-        {/* Avg Latency */}
-        <div className="px-3 pb-3">
-          <div className="border border-gray-200 rounded p-3 bg-white">
-            <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
-              {t("apps.admin.dashboard.charts.avgResponseTime")}
-            </div>
-            <MiniBarChart data={days} valueKey="avgLatencyMs" color="bg-neutral-300" height={48} />
-            <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
-              <span>
-                {days.length > 0 ? formatDateLabel(days[0].date) : ""}
-              </span>
-              <span>
-                {days.length > 0
-                  ? formatDateLabel(days[days.length - 1].date)
-                  : ""}
-              </span>
+        {showTimeSeriesCharts ? (
+          <div className="px-3 pb-3">
+            <div className="border border-gray-200 rounded p-3 bg-white">
+              <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">
+                {t("apps.admin.dashboard.charts.avgResponseTime")}
+              </div>
+              <MiniBarChart
+                data={days}
+                valueKey="avgLatencyMs"
+                color="bg-neutral-300"
+                height={48}
+              />
+              <div className="flex justify-between mt-1.5 text-[9px] text-neutral-400">
+                <span>
+                  {days.length > 0 ? formatDateLabel(days[0].date) : ""}
+                </span>
+                <span>
+                  {days.length > 0
+                    ? formatDateLabel(days[days.length - 1].date)
+                    : ""}
+                </span>
+              </div>
             </div>
           </div>
+        ) : null}
+
+        <div className="px-3 pb-3">
+          <DashboardServerCard reloadKey={serverReloadKey} />
         </div>
       </div>
     </div>

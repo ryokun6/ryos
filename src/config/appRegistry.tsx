@@ -1,4 +1,4 @@
-import { type AppId } from "./appRegistryData";
+import { resolveAppId, type AppId } from "./appRegistryData";
 import type {
   BaseApp,
   ControlPanelsInitialData,
@@ -87,11 +87,6 @@ const LazyTvApp = createLazyComponent<unknown>(
   "tv"
 );
 
-const LazyPcApp = createLazyComponent<unknown>(
-  () => import("@/apps/pc/components/PcAppComponent").then(m => ({ default: m.PcAppComponent })),
-  "pc"
-);
-
 const LazyPhotoBoothApp = createLazyComponent<unknown>(
   () => import("@/apps/photo-booth/components/PhotoBoothComponent").then(m => ({ default: m.PhotoBoothComponent })),
   "photo-booth"
@@ -137,6 +132,11 @@ const LazyInfiniteMacApp = createLazyComponent<unknown>(
   "infinite-mac"
 );
 
+const LazyInfinitePcApp = createLazyComponent<unknown>(
+  () => import("@/apps/infinite-pc/components/InfinitePcAppComponent").then(m => ({ default: m.InfinitePcAppComponent })),
+  "pc"
+);
+
 const LazyWinampApp = createLazyComponent<unknown>(
   () => import("@/apps/winamp/components/WinampAppComponent").then(m => ({ default: m.WinampAppComponent })),
   "winamp"
@@ -180,7 +180,6 @@ import { appMetadata as tvMetadata, helpItems as tvHelpItems } from "@/apps/tv/m
 import { appMetadata as ipodMetadata, helpItems as ipodHelpItems } from "@/apps/ipod/metadata";
 import { appMetadata as karaokeMetadata, helpItems as karaokeHelpItems } from "@/apps/karaoke/metadata";
 import { appMetadata as synthMetadata, helpItems as synthHelpItems } from "@/apps/synth/metadata";
-import { appMetadata as pcMetadata, helpItems as pcHelpItems } from "@/apps/pc/metadata";
 import { appMetadata as terminalMetadata, helpItems as terminalHelpItems } from "@/apps/terminal";
 import { appMetadata as appletViewerMetadata, helpItems as appletViewerHelpItems } from "@/apps/applet-viewer";
 import { appMetadata as controlPanelsMetadata, helpItems as controlPanelsHelpItems } from "@/apps/control-panels";
@@ -190,12 +189,17 @@ import {
   appMetadata as infiniteMacMetadata,
   helpItems as infiniteMacHelpItems,
 } from "@/apps/infinite-mac/metadata";
+import {
+  appMetadata as infinitePcMetadata,
+  helpItems as infinitePcHelpItems,
+} from "@/apps/infinite-pc/metadata";
 import { appMetadata as winampMetadata, helpItems as winampHelpItems } from "@/apps/winamp";
 import { appMetadata as calendarMetadata, helpItems as calendarHelpItems } from "@/apps/calendar/metadata";
 import { appMetadata as contactsMetadata, helpItems as contactsHelpItems } from "@/apps/contacts";
 import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
 import { appMetadata as candybarMetadata, helpItems as candybarHelpItems } from "@/apps/candybar/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
+import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/hooks/useInfinitePcLogic";
 
 // ============================================================================
 // APP REGISTRY
@@ -376,20 +380,6 @@ export const appRegistry = {
       minSize: { width: 720, height: 290 },
     } as WindowConstraints,
   },
-  ["pc"]: {
-    id: "pc",
-    name: "Virtual PC",
-    icon: { type: "image", src: pcMetadata.icon },
-    description: "3D PC simulation",
-    component: LazyPcApp,
-    helpItems: pcHelpItems,
-    metadata: pcMetadata,
-    windowConfig: {
-      defaultSize: { width: 645, height: 511 },
-      minSize: { width: 645, height: 511 },
-      maxSize: { width: 645, height: 511 },
-    } as WindowConstraints,
-  },
   ["terminal"]: {
     id: "terminal",
     name: "Terminal",
@@ -469,6 +459,20 @@ export const appRegistry = {
       defaultSize: infiniteMacDefaultSize,
       minSize: { width: 512, height: 342 },
       maxSize: { width: 1024, height: 792 }, // 768 + 24 for macOS X titlebar spacer
+    } as WindowConstraints,
+  },
+  ["pc"]: {
+    id: "pc",
+    name: "Virtual PC",
+    icon: { type: "image", src: infinitePcMetadata.icon },
+    description: "x86 OS emulation and DOS games",
+    component: LazyInfinitePcApp,
+    helpItems: infinitePcHelpItems,
+    metadata: infinitePcMetadata,
+    windowConfig: {
+      defaultSize: infinitePcDefaultSize,
+      minSize: { width: 640, height: 400 },
+      maxSize: { width: 1280, height: 1024 },
     } as WindowConstraints,
   },
   ["winamp"]: {
@@ -572,19 +576,24 @@ export const getNonFinderApps = (isAdmin: boolean = false): Array<{
     }));
 };
 
+function resolveRegistryAppId(appId: AppId): AppId {
+  return resolveAppId(appId) ?? appId;
+}
+
 // Helper function to get app metadata
 export const getAppMetadata = (appId: AppId) => {
-  return appRegistry[appId].metadata;
+  return appRegistry[resolveRegistryAppId(appId)].metadata;
 };
 
 // Helper function to get app component
 export const getAppComponent = (appId: AppId) => {
-  return appRegistry[appId].component;
+  return appRegistry[resolveRegistryAppId(appId)].component;
 };
 
 // Helper function to get window configuration
 export const getWindowConfig = (appId: AppId): WindowConstraints => {
-  return appRegistry[appId].windowConfig || defaultWindowConstraints;
+  const resolved = resolveRegistryAppId(appId);
+  return appRegistry[resolved].windowConfig || defaultWindowConstraints;
 };
 
 // Helper function to get mobile window size

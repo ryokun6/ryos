@@ -4,22 +4,47 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
+## May 2026
+
+- Expand **Virtual PC** beyond DOS games: integrate the **v86 x86 emulator** with an OS browser (Windows 1.0–2000/ME, FreeDOS, MS-DOS, Windows 95/98, ReactOS, Haiku, BeOS, Serenity, KolibriOS, FreeBSD/NetBSD/OpenBSD, Linux 2.6/4.x, Arch, Buildroot, MikeOS, MINIX, Fiwix, HelenOS, Oberon, Redox, SolOS, doof, DSL), persisted preset selection, COEP-enabled `/embed/pc.html` route, generated thumbnails, and full UI localization. Renames the app id from `infinite-pc` to `pc` with a legacy alias.
+- Add **Cursor agents** admin tab backed by Redis run metadata: dashboard server card, panel headers, agent counts, relaxed admin rate limits, sidebar/View menu reordering, and improved follow-up UX (Space-key fix, polished submit button).
+- Add **Aquarium** dashboard widget alongside the existing 8 widgets.
+- TV polish: channel-bug logo overlay (visible in fullscreen), occasional idle bursts (spin / watermark / shimmer with glossy overlay blend), animations hard-reset on channel switch, drawer open/close SFX, square channel-strip buttons, channel logo tray strip, fullscreen control parity with Karaoke (dismiss + CH± pills, viewport-scaled captions, marquee fade on pause/overflow), CRT static skipped while fullscreen, and synced reset-channel deletes.
+
+<details>
+<summary>Minor changes (8)</summary>
+
+- Localize Virtual PC UI and v86 preset catalog; translate remaining locale TODOs across all languages.
+- Add Cover Flow toggle to Karaoke and iPod title bars.
+- Karaoke: fix visual-effect gating order; further optimize hidden video visual effects.
+- TV: slightly increase mobile compact drawer max height; hard-kill channel-bug animations on channel switch; fade right edge of LCD marquee when paused and overflowing (TV + Videos).
+- macOSX: scale fullscreen captions with viewport via theme override.
+- Chats: extend Cursor SDK run Redis TTL from 1 day to 90 days; rename channel prompt placeholder to "Make a new channel...".
+- Refactor: extract `FullscreenMobileDismiss` for fullscreen portals (shared across TV/Karaoke).
+- Admin: relax rate limits for admin endpoints; reorder admin sidebar and View menu sections.
+
+</details>
+
 ## April 2026
 
 - Add **Ryo TV** app: channel-surfing UI with CRT shader effects (power on/off, channel switch, buffering), procedural CRT sound effects, AI-generated channels with import/export, MTV music-video channel with per-word KRC-timed Geneva CC plate captions, `/tv` route, OG card, and full localization.
 - Add **tvControl** chat tool: server-side fanout for `createChannel`, expose current TV channel and custom lineup in system state, client handler with invocation UI; gate channel creation on login with toast and login dialog.
 - Add **IRC chat** support: `irc.pieter.com` default, IRC server registry, channel browser in New Chat IRC tab, authenticated-user join via registered servers, `IRC_BRIDGE_DISABLED` env opt-out, and IRC bridge wiring tests.
+- Add **`cursorRyOsRepoAgent`** chat tool: async repo-agent runs with a live stream card, persisted PR url with Open PR button, follow-up endpoint with reply input, and Telegram bridging that sends a completion notification.
 - Add intro title card to Karaoke (5s with lead time, scaling, marquee scroll, paused marquee on pause), empty library state with Add Songs CTA, and smoother ScrollingText marquee for iPod/Karaoke.
 - Refine wallpaper system with Leopard sets, picker layout improvements, category ordering, and a new default `nature earth horizon` wallpaper; persist display settings at version 1.
 - Refine themed desktop: System 7 shows Chats, IE, Karaoke after iPod; Applications shortcut on non-macOS X themes (Applet Store hidden there); themed Chats icons across System 7, macOSX, XP 48px, and Win98.
 - Optimize system prompts for static caching with tiered dynamic context.
 
 <details>
-<summary>Minor changes (11)</summary>
+<summary>Minor changes (14)</summary>
 
 - TV: opaque static, finer noise grain, native-refresh-rate noise canvas, lineup-based channel numbers and dynamic window title, reset-channels item, mobile Safari sync play, hide CC during channel/clip transitions, LCD Filter toggle.
 - TV: rebuilt multi-stage CRT power-on/off (center-beam unfold, scale-coupled glow), close window after power-off, screen on/off on play/pause, power back on for Next/Prev/CH.
 - TV: marquee-scroll long NET channel names, inline AI channel creation prompt with shimmer loading, exclude YouTube Shorts from AI channels and via client `onDuration`, Ryo TV pulls from Videos library, reject substring-confusable YouTube hosts (CodeQL).
+- TV: dedicated channel cloud sync, YouTube URL paste handling in the drawer, playlist drawer with side panel + compact bottom layout, drawer remove control, cached random playlists, playlist-order preservation when removing, prepopulate channels from exported library (with Taiwan), allow default channels to be hidden, reset-channel deletes kept in sync.
+- Chats: localize Chats toasts, Applet Viewer flows, and Finder list icons.
+- Karaoke / iPod: react to locale changes for lyrics translation `auto` mode.
 - macOSX: include CJK and emoji pixel fonts in LCD font stack.
 - Karaoke: default Korean romanization on, gradient inactive lyrics match sans, tune interlude dots and outlines, open Karaoke cover flow from title art.
 - Karaoke perf: isolate lyrics subtree from playback-tick rerenders; enable react-scan when display debug mode is on.
@@ -28,6 +53,7 @@ A summary of changes and updates to ryOS, organized by month.
 - Chats: 400px max width on new chat dialog, align IRC channel list with lyrics search dialog, constrain dialogs and tab content for long-text truncation, stabilize new chat dialog on IRC tab, delegate to parent `StartGrindPlanning` when embedded.
 - Files: sparse default desktop shortcuts on System 7 and Windows themes; guard optional `aliasTarget` in System 7 desktop migration.
 - IRC: use `crypto.randomInt` for bridge IRC nick suffix.
+- Tests: cover `cursor-agent` PR url extraction and follow-up pre-checks.
 
 </details>
 
@@ -403,4 +429,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is maintained from git history and manual curation. Last updated: 2026-04-29*
+*This changelog is maintained from git history and manual curation. Last updated: 2026-05-02*

@@ -17,6 +17,7 @@ import {
 import {
   deleteAdminUser,
   getAdminStats,
+  getAdminCursorAgentRuns,
   getAdminUsers,
 } from "@/api/admin";
 import { ApiRequestError } from "@/api/core";
@@ -80,6 +81,7 @@ interface Stats {
   totalRooms: number;
   totalMessages: number;
   totalSongs?: number;
+  totalCursorAgents?: number;
 }
 
 interface DeleteTarget {
@@ -260,6 +262,25 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       console.error("Failed to fetch stats:", error);
     }
   }, [username, isAuthenticated, isOffline]);
+
+  const fetchCursorAgentCount = useCallback(async () => {
+    if (!username || !isAuthenticated) return;
+    if (isOffline) return;
+
+    try {
+      const data = await getAdminCursorAgentRuns<{ totalCount?: number }>(1);
+      setStats((prev) => ({
+        ...prev,
+        totalCursorAgents: data.totalCount ?? 0,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch Cursor agent count:", error);
+    }
+  }, [username, isAuthenticated, isOffline]);
+
+  const setCursorAgentCount = useCallback((count: number) => {
+    setStats((prev) => ({ ...prev, totalCursorAgents: count }));
+  }, []);
 
   // Fetch users (uses admin API to get all users)
   const fetchUsers = useCallback(
@@ -951,8 +972,21 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       fetchRooms();
       fetchStats();
       fetchSongs();
+      fetchCursorAgentCount();
     }
-  }, [isAdmin, isWindowOpen, fetchRooms, fetchStats, fetchSongs]);
+  }, [
+    isAdmin,
+    isWindowOpen,
+    fetchRooms,
+    fetchStats,
+    fetchSongs,
+    fetchCursorAgentCount,
+  ]);
+
+  useEffect(() => {
+    if (!isAdmin || !isWindowOpen) return;
+    fetchCursorAgentCount();
+  }, [cursorAgentsRefreshSignal, isAdmin, isWindowOpen, fetchCursorAgentCount]);
 
   useEffect(() => {
     return () => {
@@ -1001,6 +1035,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     }
     fetchRooms();
     fetchStats();
+    fetchCursorAgentCount();
     fetchSongs();
     if (selectedRoomId) {
       fetchRoomMessages(selectedRoomId);
@@ -1011,6 +1046,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   }, [
     fetchRooms,
     fetchStats,
+    fetchCursorAgentCount,
     fetchSongs,
     fetchRoomMessages,
     fetchUsers,
@@ -1124,6 +1160,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     activeSection,
     setActiveSection,
     cursorAgentsRefreshSignal,
+    setCursorAgentCount,
     isRoomsExpanded,
     setIsRoomsExpanded,
     selectedUserProfile,

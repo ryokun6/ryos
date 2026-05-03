@@ -124,3 +124,14 @@ export async function getAdminCursorAgentRuns<TResponse>(
   return adminGet<TResponse>("getCursorAgentRuns", { limit });
 }
 
+export async function postAdminStartCursorAgent<TResponse>(input: {
+  prompt: string;
+  modelId?: string;
+}): Promise<TResponse> {
+  return adminPost<TResponse, { action: string; prompt: string; modelId?: string }>({
+    action: "startCursorAgent",
+    prompt: input.prompt,
+    ...(input.modelId ? { modelId: input.modelId } : {}),
+  });
+}
+

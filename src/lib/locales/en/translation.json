@@ -1666,7 +1666,7 @@
         "title": "New Channel",
         "description": "Describe a channel and AI will program it with videos from YouTube.",
         "placeholder": "e.g. Skateboarding tricks and parks",
-        "inlinePlaceholder": "Describe a new channel...",
+        "inlinePlaceholder": "Make a new channel...",
         "submit": "Create Channel",
         "creating": "Creating...",
         "statusPlanning": "Planning the channel",
@@ -2172,32 +2172,64 @@
     },
     "pc": {
       "name": "Virtual PC",
-      "description": "3D PC simulation",
+      "title": "Virtual PC",
+      "description": "x86 OS emulation (v86) and classic DOS games",
       "virtualPc": "Virtual PC",
+      "selectSystem": "Select an x86 Operating System",
+      "systemsAvailable": "{{count}} SYSTEMS AVAILABLE",
+      "tabs": {
+        "os": "OS",
+        "games": "Games"
+      },
       "loadingGame": "Loading {{gameName}}...",
+      "loadingSystem": "Loading {{name}}...",
       "programsAvailable": "{{count}} PROGRAMS AVAILABLE",
-      "loadingEmulator": "LOADING EMULATOR",
+      "loadingEmulator": "Loading Emulator...",
       "menu": {
         "loadGame": "Load Game",
         "saveState": "Save State",
         "loadState": "Load State",
         "reset": "Reset",
         "controls": "Controls",
+        "backToPresets": "Back to Systems",
+        "backToBrowse": "Back",
         "fullScreen": "Full Screen",
+        "captureScreenshot": "Capture Screenshot",
         "toggleMouseCapture": "Toggle Mouse Capture",
         "mouseSensitivity": "Mouse Sensitivity",
         "aspectRatio": "Aspect Ratio",
         "virtualPcHelp": "Virtual PC Help",
         "aboutVirtualPc": "About Virtual PC"
       },
+      "screenshotUnavailable": "Screenshot not available. Use your browser's screenshot tool (Cmd+Shift+4 on Mac, Win+Shift+S on Windows).",
       "dialogs": {
         "resetVirtualPcTitle": "Reset Virtual PC",
         "resetVirtualPcDescription": "Are you sure you want to reset the PC? This will clear all current state."
       },
       "help": {
         "pcEmulator": {
-          "title": "PC Emulator",
-          "description": "Runs classic DOS games & apps right in your browser"
+          "title": "x86 PC Emulator",
+          "description": "Boot operating systems via v86 or launch DOS games in-browser"
+        },
+        "pickSystem": {
+          "title": "Pick a System",
+          "description": "Choose an OS from the grid to launch the emulator"
+        },
+        "keyboardInput": {
+          "title": "Keyboard Input",
+          "description": "Most keys pass through; press Esc to release pointer lock"
+        },
+        "backToSystems": {
+          "title": "Back to Systems",
+          "description": "Use File ▸ Back to return to the OS and Games browser"
+        },
+        "dosGames": {
+          "title": "DOS Games",
+          "description": "Use the Games tab for the js-dos library (shareware and classics)"
+        },
+        "aboutV86": {
+          "title": "About v86",
+          "description": "Powered by copy.sh/v86, an open-source x86 emulator"
         },
         "keyboardControls": {
           "title": "Keyboard Controls",
@@ -2218,6 +2250,174 @@
         "aspectRatio": {
           "title": "Aspect Ratio",
           "description": "Switch between 4∶3 or widescreen to fit your monitor"
+        }
+      },
+      "status": {
+        "connecting": "Connecting…",
+        "booting": "Booting…",
+        "loading": "Loading…",
+        "emulatorStartFailed": "Failed to start emulator",
+        "bytesZero": "0 MB"
+      },
+      "aspectRatios": {
+        "AsIs": "As Is",
+        "1/1": "1:1",
+        "5/4": "5:4",
+        "4/3": "4:3",
+        "16/10": "16:10",
+        "16/9": "16:9",
+        "Fit": "Fit"
+      },
+      "presets": {
+        "freedos": {
+          "name": "FreeDOS",
+          "year": "1998",
+          "description": "Free, open-source DOS-compatible OS"
+        },
+        "msdos": {
+          "name": "MS-DOS 6.22",
+          "year": "1994",
+          "description": "The classic Microsoft disk operating system"
+        },
+        "windows1": {
+          "name": "Windows 1.01",
+          "year": "1985",
+          "description": "The very first Windows release on a floppy"
+        },
+        "windows30": {
+          "name": "Windows 3.0",
+          "year": "1990",
+          "description": "Program Manager and 16-color icons"
+        },
+        "windows31": {
+          "name": "Windows 3.1",
+          "year": "1992",
+          "description": "TrueType fonts and the iconic Hot Dog Stand theme"
+        },
+        "windows95": {
+          "name": "Windows 95",
+          "year": "1995",
+          "description": "Start menu, taskbar, and the 32-bit revolution"
+        },
+        "windows98": {
+          "name": "Windows 98",
+          "year": "1998",
+          "description": "Active Desktop, USB support, and Internet Explorer 4"
+        },
+        "windows-me": {
+          "name": "Windows ME",
+          "year": "2000",
+          "description": "Millennium Edition - the last 9x kernel"
+        },
+        "windows2000": {
+          "name": "Windows 2000",
+          "year": "2000",
+          "description": "NT-based stability, professional desktop"
+        },
+        "linux26": {
+          "name": "Linux 2.6",
+          "year": "2003",
+          "description": "Classic Linux kernel with BusyBox userland"
+        },
+        "linux4": {
+          "name": "Linux 4.x",
+          "year": "2017",
+          "description": "Modern Linux kernel, headless terminal boot"
+        },
+        "archlinux": {
+          "name": "Arch Linux",
+          "year": "2019",
+          "description": "Rolling-release Linux with i3 window manager"
+        },
+        "dsl": {
+          "name": "Damn Small Linux",
+          "year": "2006",
+          "description": "Tiny 50MB live Linux distribution"
+        },
+        "buildroot": {
+          "name": "Buildroot Linux",
+          "year": "2014",
+          "description": "Minimal Linux for embedded targets"
+        },
+        "freebsd": {
+          "name": "FreeBSD",
+          "year": "2003",
+          "description": "BSD Unix-like operating system"
+        },
+        "openbsd": {
+          "name": "OpenBSD",
+          "year": "2010",
+          "description": "Security-focused BSD Unix"
+        },
+        "netbsd": {
+          "name": "NetBSD",
+          "year": "2018",
+          "description": "Portable BSD Unix - 'Of course it runs NetBSD'"
+        },
+        "haiku": {
+          "name": "Haiku",
+          "year": "2009",
+          "description": "Open-source revival of BeOS"
+        },
+        "beos": {
+          "name": "BeOS 5",
+          "year": "2000",
+          "description": "Be Inc.'s media-focused desktop OS"
+        },
+        "reactos": {
+          "name": "ReactOS",
+          "year": "2018",
+          "description": "Open-source Windows-compatible OS"
+        },
+        "kolibrios": {
+          "name": "KolibriOS",
+          "year": "2009",
+          "description": "Tiny GUI OS written in assembly, fits on a floppy"
+        },
+        "oberon": {
+          "name": "Oberon",
+          "year": "1990",
+          "description": "Wirth's tiling-window research OS"
+        },
+        "redox": {
+          "name": "Redox",
+          "year": "2016",
+          "description": "Modern microkernel OS written in Rust"
+        },
+        "minix": {
+          "name": "Minix",
+          "year": "1987",
+          "description": "Tanenbaum's microkernel teaching OS"
+        },
+        "serenity": {
+          "name": "SerenityOS",
+          "year": "2018",
+          "description": "Late-90s aesthetic with a modern Unix soul"
+        },
+        "helenos": {
+          "name": "HelenOS",
+          "year": "2011",
+          "description": "Multiserver microkernel research OS"
+        },
+        "fiwix": {
+          "name": "FiwixOS",
+          "year": "2018",
+          "description": "Educational Unix-like kernel"
+        },
+        "solos": {
+          "name": "Sol OS",
+          "year": "2012",
+          "description": "Hobby OS that fits on a single floppy"
+        },
+        "doof": {
+          "name": "Doom on a Floppy",
+          "year": "2024",
+          "description": "DOOM crammed onto a 1.44MB floppy"
+        },
+        "mikeos": {
+          "name": "MikeOS",
+          "year": "2009",
+          "description": "Hobby x86 OS in assembly with a CLI menu"
         }
       }
     },
@@ -2909,7 +3109,10 @@
         "weekView": "Week View",
         "monthView": "Month View",
         "goToToday": "Go to Today",
+        "showToDoItems": "Show To Do Items",
         "importFromDevice": "Import from Device…",
+        "exportToIcs": "Export Events…",
+        "syncCalendar": "Sync Calendar",
         "help": "Calendar Help",
         "about": "About Calendar"
       },
@@ -2941,21 +3144,6 @@
         "toDoItems": "To Do Items",
         "noTodoItems": "No to-do items",
         "newTodoPlaceholder": "New To Do..."
-      },
-      "menu": {
-        "newEvent": "New Event",
-        "editEvent": "Edit Event",
-        "deleteEvent": "Delete Event",
-        "dayView": "Day View",
-        "weekView": "Week View",
-        "monthView": "Month View",
-        "goToToday": "Go to Today",
-        "showToDoItems": "Show To Do Items",
-        "importFromDevice": "Import from Device…",
-        "exportToIcs": "Export Events…",
-        "syncCalendar": "Sync Calendar",
-        "help": "Calendar Help",
-        "about": "About Calendar"
       },
       "import": {
         "success": "{{count}} event imported",
@@ -3340,7 +3528,7 @@
         "rooms": "Rooms",
         "songs": "Songs",
         "server": "Server",
-        "cursorAgents": "Cursor agents",
+        "cursorAgents": "Cursor Agents",
         "private": "Private",
         "messagesCount": "{{count}} messages",
         "online": "online"
@@ -3361,8 +3549,13 @@
         "colUpdated": "Updated",
         "colLink": "Link",
         "openPr": "PR",
+        "openAgent": "Agent",
         "followupFrom": "Follow-up from {{id}}",
-        "startedLine": "Started {{time}}"
+        "startedLine": "Started {{time}}",
+        "newAgentPlaceholder": "Send to Cursor",
+        "newAgentAria": "New Cursor agent prompt",
+        "startAgent": "Run",
+        "startFailed": "Could not start agent"
       },
       "server": {
         "title": "Server",
@@ -3533,6 +3726,8 @@
         "roomsCount": "{{count}} room",
         "roomsCount_plural": "{{count}} rooms",
         "songsCount": "{{count}} songs",
+        "cursorAgentsCount": "{{count}} Cursor agent",
+        "cursorAgentsCount_plural": "{{count}} Cursor agents",
         "loggedInAs": "Logged in as {{username}}"
       },
       "accessDenied": {

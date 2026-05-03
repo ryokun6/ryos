@@ -41,7 +41,7 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   ipod: "Click-wheel music player with live lyrics",
   karaoke: "Full-screen karaoke with live lyrics",
   synth: "Virtual synthesizer with custom sounds",
-  pc: "DOS emulator with classic games",
+  pc: "x86 OS emulation (v86) and classic DOS games",
   terminal: "Command line interface with Ryo AI",
   "applet-viewer": "Explore and install community applets",
   "control-panels": "Set themes, sounds, and system preferences",

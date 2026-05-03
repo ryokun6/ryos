@@ -6,6 +6,30 @@
         "loginPrompt": "Faça login com uma conta de administrador.",
         "title": "Acesso Negado"
       },
+      "cursorAgents": {
+        "colLink": "Link",
+        "colModel": "Modelo",
+        "colRun": "Execução / agente",
+        "colStatus": "Status",
+        "colTask": "Tarefa",
+        "colUpdated": "Atualizado",
+        "emptyHint": "As execuções aparecem aqui quando a ferramenta do agente do repositório inicia um trabalho no Cursor Cloud (modo assíncrono com Redis). As chaves expiram após cerca de 24 horas.",
+        "emptyTitle": "Nenhuma execução do agente Cursor no Redis",
+        "followupFrom": "Acompanhamento de {{id}}",
+        "loadFailed": "Não foi possível carregar as execuções",
+        "loading": "Carregando execuções do agente Cursor…",
+        "newAgentAria": "Novo prompt do agente Cursor",
+        "newAgentPlaceholder": "Enviar para o Cursor",
+        "openAgent": "Agente",
+        "openPr": "PR",
+        "refresh": "Atualizar",
+        "retry": "Tentar novamente",
+        "scanIncompleteHint": "A varredura de chaves do Redis parou precocemente; tente novamente ou entre em contato com a equipe de ops se isso persistir.",
+        "startAgent": "Execução",
+        "startFailed": "Não foi possível iniciar o agente",
+        "startedLine": "Iniciado {{time}}",
+        "truncatedHint": "A lista pode estar truncada (limite de linhas ou de varredura)."
+      },
       "dashboard": {
         "charts": {
           "aiRequests": "Solicitações de IA",
@@ -238,6 +262,7 @@
         "websocket": "WebSocket (Pusher)"
       },
       "sidebar": {
+        "cursorAgents": "Agentes do Cursor",
         "dashboard": "Painel",
         "messagesCount": "{{count}} mensagens",
         "online": "online",
@@ -286,6 +311,8 @@
         "noSongsToExport": "Nenhuma música para exportar"
       },
       "statusBar": {
+        "cursorAgentsCount": "{{count}} agente do Cursor",
+        "cursorAgentsCount_plural": "{{count}} agentes do Cursor",
         "loggedInAs": "Sessão iniciada como {{username}}",
         "messagesCount": "{{count}} mensagem",
         "messagesCount_plural": "{{count}} mensagens",
@@ -2512,15 +2539,36 @@
       "untitled": "Sem Título"
     },
     "pc": {
+      "aspectRatios": {
+        "1/1": "1:1",
+        "16/10": "16:10",
+        "16/9": "16:9",
+        "4/3": "4:3",
+        "5/4": "5:4",
+        "AsIs": "Como está",
+        "Fit": "Ajustar"
+      },
       "description": "Simulação de PC 3D",
       "dialogs": {
         "resetVirtualPcDescription": "Tem certeza de que deseja redefinir o PC? Isso apagará todo o estado atual.",
         "resetVirtualPcTitle": "Redefinir Virtual PC"
       },
       "help": {
+        "aboutV86": {
+          "description": "Desenvolvido por copy.sh/v86, um emulador x86 de código aberto",
+          "title": "Sobre o v86"
+        },
         "aspectRatio": {
           "description": "Alternar entre 4∶3 ou tela larga para ajustar ao seu monitor",
           "title": "Proporção da Tela"
+        },
+        "backToSystems": {
+          "description": "Use Arquivo ▸ Voltar para retornar ao navegador de SO e Jogos",
+          "title": "Voltar para Sistemas"
+        },
+        "dosGames": {
+          "description": "Use a aba Jogos para a biblioteca js-dos (shareware e clássicos)",
+          "title": "Jogos de DOS"
         },
         "fullscreenMode": {
           "description": "Alternar Controles ▸ Tela Cheia para uma exibição imersiva",
@@ -2530,6 +2578,10 @@
           "description": "Use seu teclado físico para entrada no jogo",
           "title": "Controles do Teclado"
         },
+        "keyboardInput": {
+          "description": "A maioria das teclas é transmitida; pressione Esc para liberar o bloqueio do ponteiro",
+          "title": "Entrada de Teclado"
+        },
         "mouseCapture": {
           "description": "Clique dentro da janela para capturar / liberar o mouse",
           "title": "Captura do Mouse"
@@ -2538,6 +2590,10 @@
           "description": "Executa jogos e aplicativos clássicos do DOS diretamente no seu navegador",
           "title": "Emulador de PC"
         },
+        "pickSystem": {
+          "description": "Escolha um SO na grade para iniciar o emulador",
+          "title": "Escolha um Sistema"
+        },
         "resetLoad": {
           "description": "Use Arquivo ▸ Redefinir para reiniciar, ou Carregar Jogo para mudar de jogo",
           "title": "Redefinir e Carregar"
@@ -2545,9 +2601,13 @@
       },
       "loadingEmulator": "CARREGANDO EMULADOR",
       "loadingGame": "Carregando {{gameName}}...",
+      "loadingSystem": "Carregando {{name}}...",
       "menu": {
         "aboutVirtualPc": "Sobre o Virtual PC",
         "aspectRatio": "Proporção da Tela",
+        "backToBrowse": "Voltar",
+        "backToPresets": "Voltar para Sistemas",
+        "captureScreenshot": "Capturar Tela",
         "controls": "Controles",
         "fullScreen": "Tela Cheia",
         "loadGame": "Carregar Jogo",
@@ -2559,7 +2619,174 @@
         "virtualPcHelp": "Ajuda do Virtual PC"
       },
       "name": "PC Virtual",
+      "presets": {
+        "archlinux": {
+          "description": "Linux rolling-release com gerenciador de janelas i3",
+          "name": "Arch Linux",
+          "year": "2019"
+        },
+        "beos": {
+          "description": "SO de desktop focado em mídia da Be Inc.",
+          "name": "BeOS 5",
+          "year": "2000"
+        },
+        "buildroot": {
+          "description": "Linux minimalista para sistemas embarcados",
+          "name": "Buildroot Linux",
+          "year": "2014"
+        },
+        "doof": {
+          "description": "DOOM compactado em um disquete de 1,44 MB",
+          "name": "Doom em um Disquete",
+          "year": "2024"
+        },
+        "dsl": {
+          "description": "Distribuição Linux live minúscula de 50 MB",
+          "name": "Damn Small Linux",
+          "year": "2006"
+        },
+        "fiwix": {
+          "description": "Kernel educacional tipo Unix",
+          "name": "FiwixOS",
+          "year": "2018"
+        },
+        "freebsd": {
+          "description": "Sistema operacional BSD tipo Unix",
+          "name": "FreeBSD",
+          "year": "2003"
+        },
+        "freedos": {
+          "description": "SO livre e de código aberto compatível com DOS",
+          "name": "FreeDOS",
+          "year": "1998"
+        },
+        "haiku": {
+          "description": "Renascimento de código aberto do BeOS",
+          "name": "Haiku",
+          "year": "2009"
+        },
+        "helenos": {
+          "description": "SO de pesquisa com microkernel multisservidor",
+          "name": "HelenOS",
+          "year": "2011"
+        },
+        "kolibrios": {
+          "description": "SO minúsculo com interface gráfica escrito em assembly, cabe em um disquete",
+          "name": "KolibriOS",
+          "year": "2009"
+        },
+        "linux26": {
+          "description": "Kernel Linux clássico com userland BusyBox",
+          "name": "Linux 2.6",
+          "year": "2003"
+        },
+        "linux4": {
+          "description": "Kernel Linux moderno, inicialização de terminal headless",
+          "name": "Linux 4.x",
+          "year": "2017"
+        },
+        "mikeos": {
+          "description": "SO x86 de hobby em assembly com menu CLI",
+          "name": "MikeOS",
+          "year": "2009"
+        },
+        "minix": {
+          "description": "SO didático de microkernel de Tanenbaum",
+          "name": "Minix",
+          "year": "1987"
+        },
+        "msdos": {
+          "description": "O clássico sistema operacional de disco da Microsoft",
+          "name": "MS-DOS 6.22",
+          "year": "1994"
+        },
+        "netbsd": {
+          "description": "Unix BSD portátil - 'Claro que roda NetBSD'",
+          "name": "NetBSD",
+          "year": "2018"
+        },
+        "oberon": {
+          "description": "SO de pesquisa com janelas lado a lado de Wirth",
+          "name": "Oberon",
+          "year": "1990"
+        },
+        "openbsd": {
+          "description": "Unix BSD focado em segurança",
+          "name": "OpenBSD",
+          "year": "2010"
+        },
+        "reactos": {
+          "description": "SO de código aberto compatível com Windows",
+          "name": "ReactOS",
+          "year": "2018"
+        },
+        "redox": {
+          "description": "SO de microkernel moderno escrito em Rust",
+          "name": "Redox",
+          "year": "2016"
+        },
+        "serenity": {
+          "description": "Estética do final dos anos 90 com alma Unix moderna",
+          "name": "SerenityOS",
+          "year": "2018"
+        },
+        "solos": {
+          "description": "SO de hobby que cabe em um único disquete",
+          "name": "Sol OS",
+          "year": "2012"
+        },
+        "windows-me": {
+          "description": "Millennium Edition - o último kernel 9x",
+          "name": "Windows ME",
+          "year": "2000"
+        },
+        "windows1": {
+          "description": "A primeiríssima versão do Windows em um disquete",
+          "name": "Windows 1.01",
+          "year": "1985"
+        },
+        "windows2000": {
+          "description": "Estabilidade baseada em NT, desktop profissional",
+          "name": "Windows 2000",
+          "year": "2000"
+        },
+        "windows30": {
+          "description": "Gerenciador de Programas e ícones de 16 cores",
+          "name": "Windows 3.0",
+          "year": "1990"
+        },
+        "windows31": {
+          "description": "Fontes TrueType e o icônico tema Hot Dog Stand",
+          "name": "Windows 3.1",
+          "year": "1992"
+        },
+        "windows95": {
+          "description": "Menu Iniciar, barra de tarefas e a revolução de 32 bits",
+          "name": "Windows 95",
+          "year": "1995"
+        },
+        "windows98": {
+          "description": "Active Desktop, suporte a USB e Internet Explorer 4",
+          "name": "Windows 98",
+          "year": "1998"
+        }
+      },
       "programsAvailable": "{{count}} PROGRAMAS DISPONÍVEIS",
+      "screenshotUnavailable": "Captura de tela não disponível. Use a ferramenta de captura do seu navegador (Cmd+Shift+4 no Mac, Win+Shift+S no Windows).",
+      "selectSystem": "Selecione um sistema operacional x86",
+      "status": {
+        "booting": "Iniciando…",
+        "bytesZero": "0 MB",
+        "connecting": "Conectando…",
+        "emulatorStartFailed": "Falha ao iniciar o emulador",
+        "loading": "Carregando…"
+      },
+      "systemsAvailable": "{{count}} SISTEMAS DISPONÍVEIS",
+      "tabs": {
+        "games": "Jogos",
+        "os": "OS"
+      },
+      "title": "PC Virtual",
       "virtualPc": "PC Virtual"
     },
     "photo-booth": {
@@ -3046,7 +3273,7 @@
         "errorGeneric": "Não foi possível criar o canal. Tente novamente.",
         "errorNoVideos": "Nenhum vídeo encontrado para essa ideia. Tente uma descrição diferente.",
         "errorRateLimit": "Muitos canais criados. Aguarde um pouco e tente novamente.",
-        "inlinePlaceholder": "Descreva um novo canal...",
+        "inlinePlaceholder": "Crie um novo canal...",
         "placeholder": "ex: Manobras e pistas de skate",
         "signInRequired": "Inicie sessão para criar canais",
         "signInRequiredDescription": "Faça login ou crie uma conta para programar seus próprios canais de TV.",

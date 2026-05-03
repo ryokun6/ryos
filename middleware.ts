@@ -5,6 +5,8 @@ export const config = {
     "/finder",
     "/stickies",
     "/infinite-mac",
+    "/pc",
+    "/infinite-pc",
     "/soundboard",
     "/internet-explorer",
     "/internet-explorer/:path*",

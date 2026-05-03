@@ -278,11 +278,12 @@ describe("listCursorSdkRunsFromRedis", () => {
         nextRunId: "abc",
       }),
     });
-    const { runs, scanIncomplete } = await listCursorSdkRunsFromRedis(
+    const { runs, scanIncomplete, totalCount } = await listCursorSdkRunsFromRedis(
       redis,
       10
     );
     expect(scanIncomplete).toBe(false);
+    expect(totalCount).toBe(2);
     expect(runs.length).toBe(2);
     expect(runs[0].status).toBe("running");
     expect(runs[0].runId).toBe("abc");

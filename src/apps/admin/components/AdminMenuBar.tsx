@@ -72,24 +72,6 @@ export function AdminMenuBar({
             {t("apps.admin.sidebar.dashboard", "Dashboard")}
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
-            checked={activeSection === "songs"}
-            onCheckedChange={(checked) => {
-              if (checked) onSectionChange("songs");
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.admin.sidebar.songs")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={activeSection === "server"}
-            onCheckedChange={(checked) => {
-              if (checked) onSectionChange("server");
-            }}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.admin.sidebar.server", "Server")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
             checked={activeSection === "users"}
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("users");
@@ -99,13 +81,22 @@ export function AdminMenuBar({
             {t("apps.admin.sidebar.users")}
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
+            checked={activeSection === "songs"}
+            onCheckedChange={(checked) => {
+              if (checked) onSectionChange("songs");
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.sidebar.songs")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
             checked={activeSection === "cursorAgents"}
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("cursorAgents");
             }}
             className="text-md h-6 px-3"
           >
-            {t("apps.admin.sidebar.cursorAgents", "Cursor agents")}
+            {t("apps.admin.sidebar.cursorAgents", "Cursor Agents")}
           </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarCheckboxItem
