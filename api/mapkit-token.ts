@@ -35,12 +35,14 @@ function parsePrivateKey(): PrivateKeyParseResult {
 
   // The .p8 file is a PKCS#8 PEM. We accept any of the common ways it gets
   // pasted into a host env UI: multi-line PEM, single-line w/ "\n" escapes,
-  // doubly-escaped "\\n", or just the raw base64 body. We normalize to a
-  // strict PEM with `\n` between lines and 64-char-wrapped base64, which is
-  // what jose.importPKCS8 expects.
+  // doubly-escaped "\\n" (e.g. Coolify), or just the raw base64 body. We
+  // normalize to a strict PEM with `\n` between lines and 64-char-wrapped
+  // base64, which is what jose.importPKCS8 expects.
   const body = raw
+    .replace(/\\\\n/g, "\n") // doubly-escaped \\n (Coolify stores this way)
+    .replace(/\\\\r\\\\n/g, "\n")
     .replace(/\\r\\n/g, "\n")
-    .replace(/\\n/g, "\n")
+    .replace(/\\n/g, "\n") // singly-escaped \n
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .trim();
@@ -57,9 +59,10 @@ function parsePrivateKey(): PrivateKeyParseResult {
     footer = endMatch[0];
     base64Body = body
       .slice(beginMatch.index! + header.length, endMatch.index!)
-      .replace(/\s+/g, "");
+      .replace(/\s+/g, "")
+      .replace(/\\/g, ""); // strip any stray backslashes from over-escaping
   } else {
-    base64Body = body.replace(/\s+/g, "");
+    base64Body = body.replace(/\s+/g, "").replace(/\\/g, "");
   }
 
   if (base64Body.length === 0) {
