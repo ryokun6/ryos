@@ -11,7 +11,7 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { TypingDots } from "./TypingBubble";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { appRegistry } from "@/config/appRegistry";
+import { appNames } from "@/config/appRegistryData";
 import {
   ToolInvocationMessage,
   type ToolInvocationPart,
@@ -161,8 +161,7 @@ const getAppName = (id?: string): string => {
     return getTranslatedAppName(id as AppId);
   } catch {
     // Fallback to formatting the id if translation fails
-    const entry = (appRegistry as Record<string, { name?: string }>)[id];
-    return entry?.name || formatToolName(id);
+    return appNames[id as AppId] || formatToolName(id);
   }
 };
 
