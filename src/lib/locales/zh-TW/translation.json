@@ -118,27 +118,27 @@
       },
       "help": {
         "adminAccess": {
-          "description": "此應用程式僅限管理員使用者 (ryo) 存取。",
-          "title": "管理員存取"
+          "description": "僅限管理員 (ryo) 使用 — 每項操作皆需經過身份驗證",
+          "title": "僅限管理員"
         },
         "roomManagement": {
-          "description": "檢視及管理聊天室，刪除不當內容。",
+          "description": "透過 IRC 中繼資料檢查聊天室；快速刪除不當內容",
           "title": "聊天室管理"
         },
         "searchFilter": {
-          "description": "依名稱搜尋使用者或歌曲，快速找到項目。",
+          "description": "在分頁網格中快速按名稱搜尋使用者或歌曲",
           "title": "搜尋與篩選"
         },
         "songLibrary": {
-          "description": "匯入、匯出與管理快取歌曲庫。",
+          "description": "批次匯入、匯出及清理快取的 YouTube + 歌詞歌曲庫",
           "title": "歌曲庫"
         },
         "statistics": {
-          "description": "檢視系統統計資料和使用指標。",
-          "title": "統計資料"
+          "description": "即時使用指標，包含 Cursor 代理程式執行遙測卡片",
+          "title": "系統統計"
         },
         "userManagement": {
-          "description": "檢視、搜尋及管理註冊使用者。",
+          "description": "瀏覽已註冊使用者、查看個人資料，以及撤銷或重新命名帳號",
           "title": "使用者管理"
         }
       },
@@ -411,28 +411,28 @@
       },
       "help": {
         "appletStore": {
-          "description": "瀏覽並安裝社群的小程式。開啟「商店」選單以發現新應用程式。",
-          "title": "小程式商店"
+          "description": "開啟「商店」分頁以探索社群開發的應用程式，並可一鍵安裝",
+          "title": "瀏覽商店"
         },
         "createWithRyosChat": {
-          "description": "請 ryOS 聊天為您建立自訂應用程式和小程式。分享您的想法並立即獲得可用的應用程式。",
-          "title": "使用 ryOS 聊天建立"
+          "description": "在「聊天」中要求 Ryo 建立自訂 Applet — 立即獲得可運行的 HTML 應用程式",
+          "title": "透過聊天建立"
         },
         "keepUpdated": {
-          "description": "在「商店」選單中檢查更新以獲得已安裝小程式的最新版本。",
-          "title": "保持更新"
+          "description": "「商店 ▸ 檢查更新」會取得已安裝 applet 的最新版本",
+          "title": "自動檢查更新"
         },
         "openFromFinder": {
-          "description": "使用「檔案」選單瀏覽並開啟系統上儲存的小程式。",
+          "description": "將 .app 或 .gz applet 套件拖入 Finder，它們就會出現在 /Applets 中",
           "title": "從 Finder 開啟"
         },
         "shareApplets": {
-          "description": "使用「檔案」選單中的「分享小程式」選項與他人分享您喜愛的小程式。",
-          "title": "分享小程式"
+          "description": "使用「檔案 ▸ 分享 Applet」來複製連結或短碼，供他人貼上使用",
+          "title": "透過代碼分享"
         },
         "viewApplets": {
-          "description": "開啟並執行從 ryOS 聊天儲存或從商店下載的小程式。",
-          "title": "檢視小程式"
+          "description": "沙盒執行器可安全地執行儲存在系統中的任何 HTML Applet",
+          "title": "執行任何內容"
         }
       },
       "labels": {
@@ -511,6 +511,32 @@
         "success": "已匯出 {{count}} 個事件",
         "successPlural": "{{count}} 個事件已匯出"
       },
+      "help": {
+        "createEvents": {
+          "description": "按兩下任何日期 — 或使用「檔案 ▸ 新增行程」— 來加入定時行程",
+          "title": "建立行程"
+        },
+        "icalImportExport": {
+          "description": "拖入 .ics 檔案進行批次匯入，或匯出您的行事曆與他人分享",
+          "title": "iCal 匯入 / 匯出"
+        },
+        "navigateMonths": {
+          "description": "使用箭頭按鈕切換月份，或點擊「今天」返回目前日期",
+          "title": "切換月份"
+        },
+        "ryoSchedules": {
+          "description": "在聊天中要求 Ryo 為您新增、編輯或摘要即將到來的行程",
+          "title": "Ryo 幫您排程"
+        },
+        "todosSidebar": {
+          "description": "切換待辦事項面板，在排定的行程旁管理任務",
+          "title": "待辦事項側邊欄"
+        },
+        "undoAutoSave": {
+          "description": "每一項變更都會自動儲存；⌘Z 可復原刪除、編輯，甚至是批次匯入",
+          "title": "復原與自動儲存"
+        }
+      },
       "import": {
         "success": "已匯入 {{count}} 個行程",
         "successPlural": "{{count}} 個事件已匯入"
@@ -557,28 +583,28 @@
       },
       "help": {
         "applyIconPacks": {
-          "description": "選擇圖示套件並點擊「套用」以自訂您的桌面圖示",
-          "title": "套用圖示套件"
+          "description": "點擊「套用」即可立即將所有桌面、Dock 和 Finder 圖示更換為新的組合包",
+          "title": "一鍵套用"
         },
         "browseIconPacks": {
-          "description": "在側邊欄分類中瀏覽可用的圖示套件，並在主區域預覽",
-          "title": "瀏覽圖示套件"
+          "description": "在側邊欄選擇一個類別 — 系統、裝置、社群 — 來瀏覽圖示包",
+          "title": "瀏覽圖示包"
         },
         "cloudLibrary": {
-          "description": "圖示套件儲存於雲端，可在您的所有工作階段中使用",
+          "description": "組合包儲存在 ryOS 雲端目錄中，讓您在所有裝置上都能使用",
           "title": "雲端資料庫"
         },
         "favorites": {
-          "description": "將圖示套件標記為收藏，以便從側邊欄快速存取",
+          "description": "為喜愛的組合包加上星號，即可將其固定在側邊欄頂部以便快速切換",
           "title": "收藏"
         },
         "iconPackDetails": {
-          "description": "點擊圖示套件以查看所有包含圖示的完整預覽",
-          "title": "圖示套件詳情"
+          "description": "點擊任何圖示包即可在套用前查看其中的所有圖示",
+          "title": "圖示包預覽"
         },
         "search": {
-          "description": "使用搜尋列依名稱或作者快速尋找圖示套件",
-          "title": "搜尋"
+          "description": "依名稱或作者搜尋；內建的返回/前進按鈕可追溯您的瀏覽記錄",
+          "title": "搜尋與記錄"
         }
       },
       "loading": "正在載入圖示套件…",
@@ -670,27 +696,27 @@
       },
       "help": {
         "chatWithRyo": {
-          "description": "輸入訊息與 Ryo 聊天、產生程式碼或取得 ryOS 的協助。",
+          "description": "詢問任何問題 —— Ryo 可以編寫程式碼、摘要文件或說明 ryOS 功能。",
           "title": "與 Ryo 聊天"
         },
         "controlApps": {
-          "description": "請 Ryo 啟動或關閉應用程式、切換主題或控制 iPod 播放。",
-          "title": "控制應用程式"
+          "description": "Ryo 可以啟動 App、切換主題、移動便條、調整電視以及播放 iPod 歌曲。",
+          "title": "控制您的作業系統"
         },
         "createEditFiles": {
-          "description": "請 Ryo 建立 HTML 小程式、編輯檔案、讀取檔案或搜尋小程式商店。",
+          "description": "讓 Ryo 啟動 HTML Applet、編輯您的「文字編輯」文件，或瀏覽 Applet Store。",
           "title": "建立與編輯檔案"
         },
         "joinChatRooms": {
-          "description": "在公開聊天室中與他人聯繫。提及 @ryo 以獲得 AI 回應。",
-          "title": "加入聊天室"
+          "description": "進入聊天室與線上的每個人聊天 —— 標記 @ryo 即可獲得 AI 回覆。",
+          "title": "加入公開聊天室"
         },
         "nudgeDjMode": {
-          "description": "傳送 👋 輕推以獲得情境感知提示。播放音樂時 Ryo 會變成 DJ。",
-          "title": "輕推與 DJ 模式"
+          "description": "傳送 👋 叮咚以獲取情境相關提示；播放 iPod 時，Ryo 會化身為 DJ。",
+          "title": "叮咚與 DJ 模式"
         },
         "pushToTalk": {
-          "description": "按住空白鍵或點擊麥克風按鈕以錄製並傳送語音訊息。",
+          "description": "按住空白鍵或點擊麥克風即可錄製並傳送語音訊息，並附帶逐字稿。",
           "title": "按住說話"
         }
       },
@@ -875,6 +901,33 @@
         "contentWritten": "內容已寫入",
         "controllingPlayback": "控制播放…",
         "createdDocument": "已建立文件：{{path}}",
+        "cursorCloudAgent": {
+          "finished": "已完成",
+          "followupAriaLabel": "給 Cursor 代理程式的後續訊息",
+          "followupBusy": "代理程式仍在執行中…",
+          "followupPlaceholder": "回覆代理程式…",
+          "followupSend": "傳送後續訊息",
+          "followupSending": "正在傳送後續訊息…",
+          "noEventsYet": "正在等待串流事件…",
+          "openPr": "開啟 PR",
+          "panelTitle": "Cursor 存放庫代理程式",
+          "running": "執行中",
+          "starting": "正在啟動 Cursor Cloud 代理程式…",
+          "stream": {
+            "args": "引數",
+            "emptyAssistant": "(無訊息內容)",
+            "result": "結果",
+            "runEnded": "執行已完成 · {{status}}",
+            "runEndedError": "執行時發生錯誤並結束",
+            "status": "狀態",
+            "system": "工作階段已開始",
+            "thinking": "思考中",
+            "toolCall": "工具 · {{name}}",
+            "toolUse": "工具請求 · {{name}}",
+            "truncated": "已截斷",
+            "userPrompt": "提示詞"
+          }
+        },
         "document": "文件",
         "edited": "已編輯 {{fileName}}",
         "editedApplet": "成功編輯小程式：{{path}}",
@@ -982,6 +1035,11 @@
         "launchedWithUrlAndYear": "已在 {{year}} 啟動 {{url}}",
         "launching": "啟動 {{appName}}…",
         "launchingApp": "啟動應用程式…",
+        "listCursorCloudAgentRuns": {
+          "listed": "Listed {{count}} recent run(s).",
+          "loading": "Listing Cursor Cloud agent runs…",
+          "truncatedHint": "(list may be truncated)"
+        },
         "listedItems": "已列出項目",
         "listingApplications": "列出應用程式…",
         "listingSharedApplets": "列出共享小程式…",
@@ -1088,39 +1146,7 @@
           "fetchedPage": "閱讀「{{title}}」",
           "fetching": "正在閱讀 {{hostname}}…"
         },
-        "writingContent": "寫入內容…",
-        "cursorCloudAgent": {
-          "finished": "已完成",
-          "followupAriaLabel": "給 Cursor 代理程式的後續訊息",
-          "followupBusy": "代理程式仍在執行中…",
-          "followupPlaceholder": "回覆代理程式…",
-          "followupSend": "傳送後續訊息",
-          "followupSending": "正在傳送後續訊息…",
-          "noEventsYet": "正在等待串流事件…",
-          "openPr": "開啟 PR",
-          "panelTitle": "Cursor 存放庫代理程式",
-          "running": "執行中",
-          "starting": "正在啟動 Cursor Cloud 代理程式…",
-          "stream": {
-            "args": "引數",
-            "emptyAssistant": "(無訊息內容)",
-            "result": "結果",
-            "runEnded": "執行已完成 · {{status}}",
-            "runEndedError": "執行時發生錯誤並結束",
-            "status": "狀態",
-            "system": "工作階段已開始",
-            "thinking": "思考中",
-            "toolCall": "工具 · {{name}}",
-            "toolUse": "工具請求 · {{name}}",
-            "truncated": "已截斷",
-            "userPrompt": "提示詞"
-          }
-        },
-        "listCursorCloudAgentRuns": {
-          "loading": "Listing Cursor Cloud agent runs…",
-          "listed": "Listed {{count}} recent run(s).",
-          "truncatedHint": "(list may be truncated)"
-        }
+        "writingContent": "寫入內容…"
       }
     },
     "contacts": {
@@ -1175,28 +1201,28 @@
       },
       "help": {
         "browseContacts": {
-          "description": "使用左側邊欄搜尋並切換已儲存的聯絡人",
+          "description": "使用左側邊欄來搜尋、篩選及切換已儲存的聯絡人",
           "title": "瀏覽聯絡人"
         },
         "cloudSync": {
-          "description": "在「控制面板」中啟用聯絡人同步，以將通訊錄保留在 Redis 中",
+          "description": "在「控制台」中啟用「聯絡人」同步，將您的通訊錄備份至雲端",
           "title": "雲端同步"
         },
         "createContacts": {
-          "description": "選擇「檔案」>「新增聯絡人」以新增姓名、電話號碼、電子郵件和備註",
+          "description": "「檔案 ▸ 新增聯絡人」可加入姓名、電話、電子郵件、地址及自由格式的備註",
           "title": "建立聯絡人"
         },
-        "editDetails": {
-          "description": "在檢查器中更新聯絡人詳細資訊，變更會自動儲存",
-          "title": "編輯詳細資訊"
-        },
         "importVCards": {
-          "description": "從「檔案」選單匯入 .vcf 檔案，將聯絡人帶入 ryOS",
+          "description": "拖入 .vcf 檔案（或使用「檔案 ▸ 匯入」）以匯入聯絡人與相片",
           "title": "匯入 vCard"
         },
+        "smartGroups": {
+          "description": "自動分類功能可顯示生日、工作聯絡人及 Telegram 使用者",
+          "title": "智慧群組"
+        },
         "useWithRyo": {
-          "description": "Ryo 可以在聊天和 Telegram 中列出、建立、更新和搜尋已同步的聯絡人",
-          "title": "搭配 Ryo 使用"
+          "description": "Ryo 可以直接從「聊天」中列出、建立、更新及搜尋聯絡人",
+          "title": "詢問 Ryo"
         }
       },
       "menu": {
@@ -1351,32 +1377,28 @@
       "formatFileSystemDescription": "這將清除所有檔案（範例檔案除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。",
       "help": {
         "aiModel": {
-          "description": "選擇聊天和終端機助理使用的 AI 模型",
+          "description": "選擇驅動「聊天」與「終端機 Ryo 助手」的 AI 模型",
           "title": "AI 模型"
         },
         "appearance": {
-          "description": "選擇照片、圖樣或著色器效果作為桌面桌布",
+          "description": "選擇桌布、圖樣或即時著色器效果來個人化您的桌面",
           "title": "外觀"
         },
         "backupRestore": {
-          "description": "匯出或還原所有設定和檔案",
-          "title": "備份與還原"
+          "description": "匯出所有內容、從備份還原，或格式化虛擬磁碟",
+          "title": "備份與重設"
         },
         "shaderEffects": {
-          "description": "啟用 CRT、銀河或極光視覺效果",
+          "description": "開啟 CRT、銀河或極光疊加效果，營造經典的 CRT 氛圍",
           "title": "著色器效果"
         },
         "sounds": {
-          "description": "切換 UI 音效、打字合成器和終端機 / IE 效果",
+          "description": "切換使用者介面點擊聲、打字合成音以及終端機/IE 音效",
           "title": "音效"
         },
         "sync": {
-          "description": "設定自動雲端同步與手動雲端備份",
-          "title": "同步"
-        },
-        "system": {
-          "description": "重設偏好設定或格式化虛擬檔案系統",
-          "title": "系統"
+          "description": "設定聯絡人、行事曆等項目的自動同步與手動雲端備份",
+          "title": "雲端同步"
         }
       },
       "highContrast": "高對比",
@@ -1557,6 +1579,32 @@
         "thesaurus": "同義詞典",
         "title": "詞典"
       },
+      "help": {
+        "closeDashboard": {
+          "description": "按一下背景或按下 F4/Esc 即可立即淡出 Dashboard",
+          "title": "快速關閉"
+        },
+        "layoutPersists": {
+          "description": "您的小工具組合與位置在不同工作階段或更換主題後仍會保持不變",
+          "title": "保持佈局"
+        },
+        "moveWidgets": {
+          "description": "拖移任何小工具以重新定位；新小工具會自動放置以避免重疊",
+          "title": "拖移以排列"
+        },
+        "openDashboard": {
+          "description": "按下 F4（或按一下 Dashboard 圖示）即可在任何位置淡入小工具圖層",
+          "title": "開啟 Dashboard"
+        },
+        "weatherWidget": {
+          "description": "天氣小工具會在取得權限後抓取您所在位置的即時天氣狀況",
+          "title": "即時天氣"
+        },
+        "widgetLibrary": {
+          "description": "新增時鐘、天氣、行事曆、股市、迷你 iPod、便利貼、字典等",
+          "title": "小工具庫"
+        }
+      },
       "ipod": {
         "iTunesNotOpen": "iTunes 未開啟",
         "menu": "選單",
@@ -1728,29 +1776,29 @@
         "videos": "影片"
       },
       "help": {
+        "airdropSharing": {
+          "description": "右鍵點擊任何檔案即可立即透過 AirDrop 傳送給附近的 ryOS 使用者",
+          "title": "AirDrop 分享"
+        },
         "browseNavigate": {
-          "description": "上一頁/下一頁按鈕、網址列和「前往」選單可快速導航",
-          "title": "瀏覽與導航"
+          "description": "透過「返回」、「前進」、位址列與「前往」選單，跳轉至檔案系統中的任何位置",
+          "title": "瀏覽與導覽"
+        },
+        "dropToImport": {
+          "description": "將 .app、.gz 或 .html 檔案拖放到任何位置即可安裝至 Applets",
+          "title": "拖放匯入"
         },
         "fileManagement": {
-          "description": "建立檔案夾、重新命名、移動和拖曳項目以整理檔案",
+          "description": "透過建立資料夾、重新命名、拖移及製作複本來整理您的檔案",
           "title": "檔案管理"
         },
         "quickAccess": {
-          "description": "從「前往」選單立即跳至檔案、應用程式或垃圾桶",
+          "description": "側邊欄釘選可快速跳轉至「文件」、「應用程式」、「圖片」和「垃圾桶」",
           "title": "快速存取"
         },
-        "storageInfo": {
-          "description": "在視窗底部查看可用空間和項目數量",
-          "title": "儲存空間資訊"
-        },
-        "trash": {
-          "description": "將檔案拖曳至垃圾桶並清空以永久刪除",
-          "title": "垃圾桶"
-        },
-        "viewSort": {
-          "description": "切換圖示大小，並依名稱、種類、大小或日期排序",
-          "title": "檢視與排序"
+        "trashUndo": {
+          "description": "將檔案移至垃圾桶後，選擇「編輯 ▸ 還原」即可立即救回",
+          "title": "垃圾桶與還原"
         }
       },
       "menu": {
@@ -1813,28 +1861,28 @@
     "infinite-mac": {
       "description": "經典 Mac OS 模擬器",
       "help": {
-        "backToSystems": {
-          "description": "使用「檔案 ▸ 返回系統」返回預設網格",
-          "title": "返回系統"
-        },
         "captureScreenshot": {
-          "description": "使用「檢視 ▸ 擷取螢幕截圖」來儲存目前的顯示畫面",
+          "description": "「顯示 ▸ 擷取螢幕截圖」可將目前畫面直接儲存為檔案",
           "title": "擷取螢幕截圖"
         },
+        "chatsCanDriveIt": {
+          "description": "在聊天室中要求 Ryo 暫停、恢復、縮放模擬器或擷取螢幕截圖",
+          "title": "透過聊天室控制"
+        },
         "classicMacEmulator": {
-          "description": "透過 Infinite Mac 在您的瀏覽器中執行經典 Mac OS 系統",
-          "title": "經典 Mac 模擬器"
+          "description": "在瀏覽器中啟動真實的 System 6、7、8 或 9，由 Infinite Mac 提供技術支援",
+          "title": "瀏覽器中的經典 Mac"
         },
         "displayScaling": {
-          "description": "使用「檢視 ▸ 縮放」來調整顯示大小 (1 倍、1.5 倍或 2 倍)",
-          "title": "顯示縮放"
+          "description": "「顯示 ▸ 縮放」可在 1x、1.5x 或 2x 之間切換，以適應任何螢幕",
+          "title": "顯示比例"
         },
         "pauseResume": {
-          "description": "在不互動時，使用「檢視 ▸ 暫停或繼續」以節省資源",
-          "title": "暫停 / 繼續"
+          "description": "「顯示 ▸ 暫停」可停止虛擬機器，避免在閒置時消耗 CPU",
+          "title": "暫停以節省電力"
         },
         "selectSystem": {
-          "description": "從網格中選擇一個 Mac OS 版本以載入模擬器",
+          "description": "從網格中選擇任何經典 Mac OS 預設設定以啟動模擬器",
           "title": "選擇系統"
         }
       },
@@ -1907,27 +1955,27 @@
       "goToNow": "前往現在",
       "help": {
         "browseWeb": {
-          "description": "輸入網址並使用導航按鈕（上一頁、下一頁、重新整理、停止）。",
+          "description": "輸入任何網址，並使用「返回」、「前進」、「重新整理」與「停止」進行導覽。",
           "title": "瀏覽網頁"
         },
         "exploreTimeNodes": {
-          "description": "點擊網址列中的時鐘圖示，查看目前網站在不同時間的可用快照。",
+          "description": "點擊網址列中的時鐘，在任何網站的快取快照之間跳轉。",
           "title": "探索時間節點"
         },
         "historyReimagined": {
-          "description": "AI 重建非常古老的網站（1996 年以前）並想像未來的網路體驗。",
-          "title": "歷史重現"
+          "description": "1996 年之前的頁面與未來年份由 AI 以串流 HTML 即時重建。",
+          "title": "AI 重塑歷史"
         },
         "saveFavorites": {
-          "description": "將網站和特定年份新增至「我的最愛」列以便快速存取。",
-          "title": "儲存我的最愛"
+          "description": "將特定年份的網站加入收藏，使其始終在該年代開啟。",
+          "title": "年份鎖定收藏"
         },
         "shareJourney": {
-          "description": "使用「分享」按鈕產生您正在檢視的確切頁面和年份的連結。",
-          "title": "分享您的旅程"
+          "description": "產生分享連結，重新開啟你正在查看的確切頁面與年份。",
+          "title": "分享你的旅程"
         },
         "travelThroughTime": {
-          "description": "從下拉選單選擇年份，查看過去或未來的網站。",
+          "description": "選擇從 1000 年到遙遠未來的任何年份，查看網站過去或可能的樣貌 — 或是未來的樣子。",
           "title": "穿越時空"
         }
       },
@@ -2126,28 +2174,28 @@
       },
       "help": {
         "addSongs": {
-          "description": "貼上 YouTube 網址以將音樂新增至您的 iPod。",
-          "title": "新增歌曲"
+          "description": "貼上任何 YouTube 網址，將曲目直接加入你的資料庫",
+          "title": "從 YouTube 新增"
+        },
+        "coverFlow": {
+          "description": "長按螢幕以開啟 Cover Flow 並翻閱專輯",
+          "title": "Cover Flow"
         },
         "displayFullscreen": {
-          "description": "調整背光燈、主題並切換至全螢幕影片。",
-          "title": "顯示與全螢幕"
+          "description": "以全螢幕播放音樂錄影帶，並搭配扭曲、網格與水波著色器背景",
+          "title": "全螢幕視覺效果"
+        },
+        "karaokeSync": {
+          "description": "資料庫與卡拉 OK 共享 — 在此新增的歌曲也會顯示在該處",
+          "title": "卡拉 OK 同步"
         },
         "lyricsPronunciation": {
-          "description": "檢視同步歌詞，並顯示翻譯、振假名、羅馬字和拼音。",
-          "title": "歌詞與發音"
-        },
-        "playbackControls": {
-          "description": "播放、暫停、跳過曲目並控制目前歌曲。",
-          "title": "播放控制"
-        },
-        "playbackModes": {
-          "description": "啟用隨機播放、重複歌曲或播放清單等功能。",
-          "title": "播放模式"
+          "description": "查看包含翻譯、振假名、羅馬拼音與漢語拼音的即時同步歌詞",
+          "title": "同步歌詞"
         },
         "wheelNavigation": {
-          "description": "使用點擊轉盤瀏覽選單和您的音樂資料庫。",
-          "title": "轉盤導航"
+          "description": "旋轉選盤（或滾輪）以瀏覽選單與曲目",
+          "title": "Click Wheel"
         }
       },
       "keys": {
@@ -2316,28 +2364,28 @@
       },
       "help": {
         "addSearchSongs": {
-          "description": "在 YouTube 搜尋歌曲，或貼上網址加入資料庫。",
+          "description": "搜尋 YouTube 或貼上任何網址，即可立即將曲目新增至資料庫",
           "title": "新增與搜尋歌曲"
         },
         "keyboardShortcuts": {
-          "description": "空白鍵播放/暫停，方向鍵跳轉及切換曲目。",
-          "title": "鍵盤快捷鍵"
+          "description": "空白鍵 播放/暫停，←/→ 搜尋 5 秒，↑/↓ 切換曲目，F 全螢幕",
+          "title": "鍵盤快速鍵"
+        },
+        "listenParty": {
+          "description": "舉辦或加入同步卡拉 OK 聚會 — 跟隨者會看到相同的播放進度",
+          "title": "聆聽派對"
         },
         "stylePronunciation": {
-          "description": "更改字體、版面配置、翻譯，並加入振假名/羅馬字/拼音。",
+          "description": "切換字體與版面配置；顯示翻譯、振假名、羅馬拼音或漢語拼音",
           "title": "樣式與發音"
         },
         "syncLyricsTiming": {
-          "description": "使用 [ ] 鍵、滑鼠滾輪或左右拖曳來調整歌詞偏移。",
-          "title": "同步歌詞時間"
+          "description": "按下 [ 或 ]（或使用滑鼠滾輪捲動歌詞）以 ±50 毫秒微調偏移量",
+          "title": "調整歌詞時間"
         },
         "syncedWithIpod": {
-          "description": "與 iPod 共用音樂資料庫。可在任一應用程式中新增歌曲。",
-          "title": "與 iPod 同步"
-        },
-        "worksWithChats": {
-          "description": "透過聊天請 Ryo 播放歌曲、控制播放或調整設定。",
-          "title": "與聊天整合"
+          "description": "與 iPod App 使用相同的資料庫與歌詞資料庫 — 隨處皆可新增曲目",
+          "title": "與 iPod 共享"
         }
       },
       "liveListen": {
@@ -2411,29 +2459,29 @@
         "newGameTitle": "新遊戲"
       },
       "help": {
+        "chordReveal": {
+          "description": "雙擊旗幟數量正確的數字格，即可自動清除所有鄰近的安全方格",
+          "title": "自動開格"
+        },
         "desktopControls": {
-          "description": "左鍵點擊以顯示，右鍵點擊以標記，雙擊數字以自動顯示相鄰格子。",
-          "title": "桌面控制"
+          "description": "左鍵點擊揭開方格，右鍵點擊標記疑似地雷",
+          "title": "電腦版控制"
         },
-        "gameRules": {
-          "description": "數字顯示相鄰地雷數量。標記所有地雷並顯示所有安全格子以獲勝。",
-          "title": "遊戲規則"
-        },
-        "gameStatus": {
-          "description": "笑臉顯示遊戲狀態：🙂 遊戲中，💀 遊戲結束，😎 你贏了！",
-          "title": "遊戲狀態"
-        },
-        "mineCounter": {
-          "description": "頂端列顯示剩餘未標記的地雷數和地雷總數。",
-          "title": "地雷計數"
+        "mineCounterTimer": {
+          "description": "頂端列會顯示剩餘未標記的地雷數以及已用時間",
+          "title": "地雷計數器與計時器"
         },
         "mobileControls": {
-          "description": "點擊以顯示，長按以標記地雷。",
+          "description": "點擊揭開，長按標記 — 在手機和平板電腦上體驗極佳",
           "title": "行動裝置控制"
         },
-        "restart": {
-          "description": "按笑臉或選擇「遊戲」▸「新增」以開始新的遊戲。",
-          "title": "重新開始"
+        "quickRestart": {
+          "description": "隨時點擊笑臉或使用「檔案 ▸ 新遊戲」即可重新開始新局",
+          "title": "快速重新開始"
+        },
+        "smileyStatus": {
+          "description": "笑臉顯示遊戲狀態：🙂 遊戲中、💀 踩雷、😎 勝利",
+          "title": "笑臉狀態"
         }
       },
       "lcd": {
@@ -2463,29 +2511,29 @@
         "openFiltersMenu": "開啟濾鏡選單"
       },
       "help": {
+        "autoSaveExport": {
+          "description": "編輯內容每隔幾秒會自動儲存；可將 PNG 匯出至 /Images 以供 Finder 使用",
+          "title": "自動儲存與匯出"
+        },
+        "cutCopyPaste": {
+          "description": "使用套索選取區域，然後直接在畫布中剪下、複製或貼上點陣像素",
+          "title": "剪下、複製與貼上"
+        },
         "drawingTools": {
-          "description": "使用左側工具列選擇不同的繪圖工具，如鉛筆、畫筆、形狀等。",
+          "description": "從左側工具列選擇鉛筆、筆刷、噴槍、形狀、橡皮擦或填滿工具",
           "title": "繪圖工具"
         },
         "filters": {
-          "description": "從「濾鏡」選單套用負片、灰階、亮度等效果。",
+          "description": "從「濾鏡」選單套用反相、灰階、亮度等效果",
           "title": "濾鏡"
         },
         "patterns": {
-          "description": "從底部調色盤選擇各種圖樣以填滿形狀和區域。",
-          "title": "圖樣"
-        },
-        "saving": {
-          "description": "使用「檔案」>「儲存」以儲存您的作品，或「檔案」>「另存新檔」以使用新名稱儲存。",
-          "title": "儲存"
+          "description": "從底部色板選擇經典 Mac 圖樣，以填滿任何形狀或區域",
+          "title": "圖樣填滿"
         },
         "strokeWidth": {
-          "description": "使用工具列控制項調整筆刷和鉛筆的筆觸寬度。",
-          "title": "筆觸寬度"
-        },
-        "undo": {
-          "description": "按 ⌘Z 或使用「編輯」>「還原」以還原上一個動作。",
-          "title": "還原"
+          "description": "使用工具下方的尺寸選擇器調整筆刷和鉛筆的粗細",
+          "title": "線條寬度"
         }
       },
       "menu": {
@@ -2555,49 +2603,29 @@
         "resetVirtualPcTitle": "重設虛擬 PC"
       },
       "help": {
-        "aboutV86": {
-          "description": "由 copy.sh/v86 提供技術支援，這是一個開源的 x86 模擬器",
-          "title": "關於 v86"
-        },
-        "aspectRatio": {
-          "description": "在 4:3 或寬螢幕之間切換以符合您的顯示器",
-          "title": "長寬比"
-        },
         "backToSystems": {
-          "description": "使用 檔案 ▸ 返回 以回到作業系統與遊戲瀏覽器",
-          "title": "返回系統列表"
+          "description": "「檔案 ▸ 返回」可回到作業系統與遊戲瀏覽器以選擇新的映像檔",
+          "title": "返回系統"
         },
         "dosGames": {
-          "description": "使用「遊戲」分頁來存取 js-dos 函式庫（共享軟體與經典遊戲）",
-          "title": "DOS 遊戲"
-        },
-        "fullscreenMode": {
-          "description": "切換「控制」▸「全螢幕」以獲得沉浸式顯示",
-          "title": "全螢幕模式"
-        },
-        "keyboardControls": {
-          "description": "使用實體鍵盤進行遊戲內輸入",
-          "title": "鍵盤控制"
+          "description": "切換至「遊戲」分頁，查看精選的 js-dos 經典遊戲",
+          "title": "DOS 遊戲庫"
         },
         "keyboardInput": {
-          "description": "大多數按鍵會直接傳遞；按 Esc 可解除指標鎖定",
-          "title": "鍵盤輸入"
+          "description": "幾乎所有按鍵（包括 Ctrl 組合鍵）都會直接傳送至虛擬機器 (VM)",
+          "title": "鍵盤直通"
         },
         "mouseCapture": {
-          "description": "在視窗內點擊以擷取/釋放滑鼠",
+          "description": "點擊螢幕內部以擷取游標；按 Esc 鍵釋放",
           "title": "滑鼠擷取"
         },
         "pcEmulator": {
-          "description": "在瀏覽器中直接執行經典 DOS 遊戲和應用程式",
-          "title": "PC 模擬器"
+          "description": "透過 v86 在瀏覽器中啟動真實的 Windows、Linux 和 FreeDOS 映像檔",
+          "title": "x86 作業系統模擬器"
         },
-        "pickSystem": {
-          "description": "從網格中選擇作業系統以啟動模擬器",
-          "title": "選擇系統"
-        },
-        "resetLoad": {
-          "description": "使用「檔案 ▸ 重設」重新開始，或「載入遊戲」切換遊戲。",
-          "title": "重設與載入"
+        "screenshotFullscreen": {
+          "description": "使用「檢視」來擷取螢幕或以全螢幕填滿顯示器",
+          "title": "螢幕截圖與全螢幕"
         }
       },
       "loadingEmulator": "載入模擬器",
@@ -2828,28 +2856,28 @@
       },
       "help": {
         "applyingEffects": {
-          "description": "點擊「效果」按鈕（相機按鈕右側）以開啟效果面板，並在即時相機檢視中套用有趣的濾鏡。",
-          "title": "套用效果"
+          "description": "開啟「特效」以滑動瀏覽即時套用的 CSS 濾鏡與扭曲著色器",
+          "title": "即時特效"
         },
         "downloadingPhotos": {
-          "description": "照片會自動儲存。點擊照片條中的照片以下載。",
-          "title": "下載照片"
+          "description": "照片會自動儲存至 /Images — 點擊縮圖即可立即下載",
+          "title": "自動儲存至 Finder"
         },
         "quickSnaps": {
-          "description": "點擊計時器按鈕（相機按鈕左側）以開始每隔一秒拍攝四張照片的序列。",
-          "title": "快速連拍"
+          "description": "點擊計時器按鈕，以一秒為間隔快速連續拍攝四張照片",
+          "title": "四連拍"
         },
         "switchingCameras": {
-          "description": "如果您連接了多個相機，請使用選單列中的「相機」選單在可用相機之間切換。",
+          "description": "從選單列的「相機」選單中選擇任何已連接的相機（前置、後置、USB）",
           "title": "切換相機"
         },
         "takingPhoto": {
-          "description": "點擊大型紅色相機按鈕以拍攝單張影像。",
+          "description": "點擊紅色大相機按鈕，透過視訊鏡頭拍攝單張照片",
           "title": "拍照"
         },
         "viewingPhotos": {
-          "description": "點擊照片堆疊按鈕（最左側）以顯示或隱藏底部的照片條，顯示所有已儲存的照片。",
-          "title": "檢視照片"
+          "description": "切換照片堆疊，在視窗底部滑動查看已儲存的照片",
+          "title": "照片串"
         }
       },
       "menu": {
@@ -2866,28 +2894,28 @@
       "description": "播放音效",
       "help": {
         "customizeSlot": {
-          "description": "為每個樣本新增表情符號和標題以便快速識別",
-          "title": "自訂插槽"
+          "description": "為每個插槽標記表情符號和名稱，方便隨時查找",
+          "title": "自訂表情符號與標題"
         },
         "importExport": {
-          "description": "將音效板分享為檔案；拖放以匯入",
+          "description": "將面板分享為檔案，並將其拖回即可立即載入",
           "title": "匯入 / 匯出"
         },
         "keyboardPlay": {
-          "description": "按 1-9 立即觸發音效",
-          "title": "鍵盤播放"
+          "description": "按下 1–9 即可立即播放音效 — 非常適合現場表演",
+          "title": "鍵盤觸發鍵"
         },
         "multipleBoards": {
-          "description": "建立、重新命名和切換音效板以管理多組音效",
-          "title": "多個音效板"
+          "description": "針對不同的音效組合建立、重新命名及切換面板",
+          "title": "多個面板"
         },
         "recordSlot": {
-          "description": "點擊插槽開始錄音；再次點擊停止",
+          "description": "點擊任何空白插槽即可直接從麥克風錄音；再次點擊即可停止",
           "title": "錄音插槽"
         },
         "waveformView": {
-          "description": "在錄音或播放時查看即時波形",
-          "title": "波形檢視"
+          "description": "在錄製或播放每個片段時查看即時波形",
+          "title": "即時波形"
         }
       },
       "importedSoundboard": "已匯入的音效板",
@@ -2925,28 +2953,28 @@
       },
       "help": {
         "autoSave": {
-          "description": "便利貼會自動儲存，並在不同工作階段之間保留。",
+          "description": "筆記會自動儲存，並在下次啟動時顯示在相同位置",
           "title": "自動儲存"
         },
         "clearAll": {
-          "description": "使用「檔案 > 清除所有備註」一次移除所有便利貼。",
-          "title": "清除所有"
+          "description": "「檔案 ▸ 全部清除筆記」可一次清空佈告欄",
+          "title": "全部清除"
         },
         "colors": {
-          "description": "從「便利貼」選單變更便利貼顏色，以整理您的想法。",
-          "title": "顏色"
+          "description": "從「筆記」選單中選擇黃色、粉紅色、藍色、綠色、紫色等顏色",
+          "title": "顏色標籤"
         },
         "createNote": {
-          "description": "按一下「檔案」>「新增便利貼」，或使用按鈕來建立新的便利貼。",
-          "title": "建立便利貼"
-        },
-        "deleteNote": {
-          "description": "按一下便利貼上的「X」按鈕，或使用選單來刪除便利貼。",
-          "title": "刪除便利貼"
+          "description": "檔案 ▸ 新增筆記（或 ⌘N）即可在桌面上放置一個新的便利貼",
+          "title": "建立筆記"
         },
         "moveResize": {
-          "description": "拖曳標題列以移動，拖曳角落以調整備註大小。",
+          "description": "拖移標題列以重新定位；拖移角落以自由調整大小",
           "title": "移動與調整大小"
+        },
+        "ryoCanEdit": {
+          "description": "在對話中請 Ryo 為您新增、移動、重新著色或重寫便利貼",
+          "title": "Ryo 可編輯"
         }
       },
       "menu": {
@@ -2992,28 +3020,28 @@
       },
       "help": {
         "controlsPanel": {
-          "description": "切換「控制」以調整振盪器、包絡和效果",
+          "description": "開啟「控制」以調整振盪器、包絡、濾波器和特效 (FX)",
           "title": "控制面板"
         },
         "effects": {
-          "description": "殘響、延遲、失真、和聲、相位器和位元壓縮器",
-          "title": "效果"
+          "description": "為每個聲部串接殘響、延遲、失真、合唱、移相和位元粉碎器",
+          "title": "堆疊效果"
         },
         "octaveShift": {
-          "description": "使用 -/+ 鍵或按鈕向上或向下移動八度音。",
-          "title": "八度音移位"
+          "description": "按下 -/+ 或使用按鈕將琴鍵向上或向下移動一個八度",
+          "title": "八度音位移"
         },
         "presets": {
-          "description": "儲存、載入和管理自訂音效預設",
-          "title": "預設"
+          "description": "儲存、載入及重新命名自訂預設值，以建立專屬音色庫",
+          "title": "儲存預設值"
         },
         "virtualKeyboard": {
-          "description": "使用螢幕按鍵或電腦鍵盤演奏音符",
+          "description": "使用螢幕按鍵演奏音符，或將 QWERTY 鍵盤當作琴鍵使用",
           "title": "虛擬鍵盤"
         },
         "waveform3d": {
-          "description": "開啟控制面板時顯示即時動畫波形",
-          "title": "3D 波形"
+          "description": "面板開啟時，可觀看即時 3D 波形網格對每個音符的反應",
+          "title": "3D FFT 視覺化工具"
         }
       },
       "menu": {
@@ -3076,27 +3104,27 @@
       "description": "命令列介面",
       "help": {
         "aiAssistant": {
-          "description": "輸入「ryo <提示>」以直接在終端機內與 Ryo AI 聊天。",
-          "title": "AI 助理"
+          "description": "輸入「ryo <提示詞>」（或僅輸入「ai」）即可在附帶 OS 上下文的情況下與 Ryo 聊天",
+          "title": "行內詢問 Ryo"
         },
         "basicCommands": {
-          "description": "使用 ls、cd、cat、pwd、clear 和 touch 等指令來導航和管理檔案。",
-          "title": "基本指令"
+          "description": "使用 ls、cd、cat、pwd、mkdir、touch 和 clear 在檔案系統中導覽",
+          "title": "Unix 基礎"
         },
         "commandHistory": {
-          "description": "按 ↑ / ↓ 箭頭以循環瀏覽先前的指令並快速重新執行。",
-          "title": "指令歷史"
+          "description": "按下 ↑ / ↓ 鍵可循環瀏覽先前的指令並快速重新執行",
+          "title": "指令紀錄"
         },
         "fileEditing": {
-          "description": "從提示直接開啟檔案至文字編輯（edit）或 Vim 風格編輯器（vim）。",
-          "title": "檔案編輯"
+          "description": "執行 edit <檔案> 以使用「文字編輯器」，或執行 vim <檔案> 以使用真正的模態 Vim 編輯器",
+          "title": "Edit 與 Vim"
         },
         "navigation": {
-          "description": "使用熟悉的 Unix 指令瀏覽與 Finder 相同的虛擬檔案系統。",
-          "title": "導航"
+          "description": "與 Finder 使用相同的虛擬檔案系統 — 在任一 App 中的編輯都會立即同步",
+          "title": "與 Finder 共享"
         },
         "terminalSounds": {
-          "description": "輸出、錯誤和 AI 回應的獨特音效。在「檢視」▸「音效」中切換。",
+          "description": "針對輸出、錯誤和 AI 回覆提供清脆的點擊聲和提示音效 — 可在「顯示方式 ▸ 音效」中切換",
           "title": "終端機音效"
         }
       },
@@ -3174,28 +3202,28 @@
       "heading2": "標題 2",
       "heading3": "標題 3",
       "help": {
+        "aiCoEditor": {
+          "description": "在聊天中要求 Ryo 閱讀、摘要或重寫開啟的文件",
+          "title": "AI 協作編輯器"
+        },
         "fileManagement": {
-          "description": "建立、開啟、儲存和匯出檔案（HTML、MD、TXT）",
-          "title": "檔案管理"
+          "description": "匯出為 Markdown、HTML 或純文字，並可將檔案拖回以進行匯入",
+          "title": "儲存為 HTML、MD 或 TXT"
         },
         "formatting": {
-          "description": "粗體、斜體、底線、標題和對齊選項",
-          "title": "格式化"
+          "description": "粗體、斜體、底線、標題、對齊方式和行內連結",
+          "title": "豐富文字格式"
         },
         "listsTasks": {
-          "description": "建立項目符號、編號和核取方塊任務清單",
-          "title": "清單與任務"
-        },
-        "richEditing": {
-          "description": "輕鬆輸入、複製、剪下、貼上、還原和重做文字",
-          "title": "富文字編輯"
+          "description": "在任何文件中混合使用項目符號、編號和互動式核取方塊列表",
+          "title": "列表與工作方塊"
         },
         "slashCommands": {
-          "description": "輸入 / 以快速格式化（標題、列表、文字樣式）",
+          "description": "輸入 / 即可開啟標題、列表和樣式的即時選單",
           "title": "斜線指令"
         },
         "voiceDictation": {
-          "description": "免持聽寫文字到檔案中",
+          "description": "點擊麥克風即可進行免持聽寫；語音將直接轉換為文字",
           "title": "語音聽寫"
         }
       },
@@ -3297,29 +3325,29 @@
         "title": "排程"
       },
       "help": {
+        "aiChannels": {
+          "description": "使用「頻道 ▸ 建立」來提示 AI 產生自訂主題播放清單",
+          "title": "AI 製作頻道"
+        },
         "channels": {
-          "description": "像看電視一樣切換精選的 YouTube 頻道",
-          "title": "頻道"
+          "description": "像週六早晨看電視一樣，在精選的 YouTube 頻道之間切換",
+          "title": "轉台瀏覽"
         },
         "fullscreen": {
-          "description": "可從控制選單或視窗邊框切換至全螢幕收看",
-          "title": "全螢幕"
+          "description": "從「控制 ▸ 全螢幕」進入全螢幕模式，享受真正的沙發體驗",
+          "title": "全螢幕模式"
         },
-        "helpAbout": {
-          "description": "從「說明」選單中開啟「說明」以取得更多資訊",
-          "title": "說明與關於"
+        "mtvChannel": {
+          "description": "MTV 頻道會同步您的 iPod 資料庫，並顯示同步歌詞疊加層",
+          "title": "MTV 頻道"
         },
         "numbers": {
-          "description": "按數字鍵跳至頻道，或使用 CH+ / CH−",
+          "description": "輸入 1–6（或多位數）直接跳轉至頻道，或使用 CH+/CH−",
           "title": "頻道號碼"
         },
         "playback": {
-          "description": "在目前頻道中播放、暫停和跳過影片",
-          "title": "播放"
-        },
-        "shortcuts": {
-          "description": "方向鍵：上/下鍵切換頻道，左/右鍵切換影片",
-          "title": "快速鍵"
+          "description": "新頻道會以隨機進度加入已在播放的內容，營造直播感",
+          "title": "節目中途切入"
         }
       },
       "menu": {
@@ -3397,28 +3425,28 @@
       },
       "help": {
         "addVideo": {
-          "description": "貼上任何 YouTube 網址以新增至播放清單",
-          "title": "新增影片"
+          "description": "貼上任何 YouTube 網址，ryOS 就會將中繼資料抓取到您的播放清單中",
+          "title": "從 YouTube 新增"
         },
         "loop": {
-          "description": "循環目前影片或整個播放清單",
-          "title": "循環"
+          "description": "循環播放單個影片或整個播放清單，實現無間斷的背景播放",
+          "title": "循環模式"
         },
         "playback": {
-          "description": "播放、暫停、下一部、上一部控制",
-          "title": "播放"
+          "description": "透過厚實的控制列進行播放、暫停、跳過、拖曳進度及調整音量",
+          "title": "經典播放"
         },
-        "playlist": {
-          "description": "管理和整理您的影片播放清單",
-          "title": "播放清單"
+        "powersTv": {
+          "description": "您的播放清單也會提供給 TV 應用程式的精選頻道陣容",
+          "title": "驅動 Ryo TV"
         },
-        "retroUi": {
-          "description": "經典 QuickTime 播放器美學",
-          "title": "復古介面"
+        "shareDeepLinks": {
+          "description": "產生分享網址，以便直接在「影片」中重新開啟相同的片段",
+          "title": "分享深層連結"
         },
         "shuffle": {
-          "description": "隨機排列播放清單順序",
-          "title": "隨機播放"
+          "description": "切換隨機播放以打亂播放清單順序，且不會遺失您的隊列",
+          "title": "隨機播放順序"
         }
       },
       "menu": {
@@ -3474,28 +3502,28 @@
       "description": "經典 Winamp 媒體播放器",
       "help": {
         "controls": {
-          "description": "使用經典 Winamp 傳輸控制：播放、暫停、停止、下一首、上一首",
-          "title": "控制"
+          "description": "原汁原味的播放、暫停、停止、下一首和上一首按鈕，與 Winamp 2 完全一致",
+          "title": "經典播放控制"
         },
         "equalizer": {
-          "description": "切換等化器視窗，以調整音訊頻率與預設值",
-          "title": "等化器"
+          "description": "開啟等化器視窗以調整頻率，並從經典的曲風預設中選擇",
+          "title": "10 段等化器"
         },
         "playMusic": {
-          "description": "將音訊檔拖放到 Winamp，或使用播放清單新增曲目",
+          "description": "將音訊檔案拖曳至 Winamp 任何位置，或透過播放清單編輯器加入",
           "title": "播放音樂"
         },
         "playlist": {
-          "description": "開啟播放清單編輯器來管理你的佇列",
-          "title": "播放清單"
+          "description": "管理您的隊列、重新排列曲目，並儲存 .m3u 播放清單供日後使用",
+          "title": "播放清單編輯器"
         },
         "shuffleRepeat": {
-          "description": "使用主視窗按鈕切換隨機與重複模式",
-          "title": "隨機與重複"
+          "description": "在主視窗切換隨機與重複播放，實現無間斷或隨機播放",
+          "title": "隨機與重複播放"
         },
         "skins": {
-          "description": "按右鍵開啟選項（包含外觀主題選擇）以變更外觀",
-          "title": "外觀主題"
+          "description": "按右鍵開啟面板選擇器 — Webamp 內建原始 Winamp 經典外觀",
+          "title": "自訂面板"
         }
       },
       "menu": {

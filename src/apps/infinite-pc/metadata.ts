@@ -12,37 +12,32 @@ export const appMetadata = {
 export const helpItems = [
   {
     icon: "💻",
-    title: "x86 PC Emulator",
-    description: "Boot operating systems via v86 or launch DOS games in-browser",
+    title: "x86 OS Emulator",
+    description: "Boot real Windows, Linux, and FreeDOS images in-browser via v86",
   },
   {
-    icon: "📋",
-    title: "Pick a System",
-    description: "Choose an OS from the grid to launch the emulator",
+    icon: "🎮",
+    title: "DOS Games Library",
+    description: "Switch to the Games tab for a curated shelf of js-dos classics",
   },
   {
     icon: "🖱️",
     title: "Mouse Capture",
-    description: "Click inside the screen to capture the mouse cursor",
+    description: "Click inside the screen to capture the cursor; press Esc to release",
   },
   {
     icon: "⌨️",
-    title: "Keyboard Input",
-    description: "Most keys pass through; press Esc to release pointer lock",
+    title: "Keyboard Passthrough",
+    description: "Almost every key (including Ctrl-combos) is sent straight to the VM",
+  },
+  {
+    icon: "📸",
+    title: "Screenshot & Fullscreen",
+    description: "Use View to capture the screen or fill your monitor edge-to-edge",
   },
   {
     icon: "🔙",
     title: "Back to Systems",
-    description: "Use File ▸ Back to return to the OS and Games browser",
-  },
-  {
-    icon: "🎮",
-    title: "DOS Games",
-    description: "Open the Games tab for js-dos classics (former Virtual PC library)",
-  },
-  {
-    icon: "ℹ️",
-    title: "About v86",
-    description: "Powered by copy.sh/v86, an open-source x86 emulator",
+    description: "File ▸ Back returns to the OS and Games browser to pick a new image",
   },
 ];

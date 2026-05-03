@@ -1,39 +1,39 @@
 export const helpItems = [
   {
     icon: "💻",
-    title: "Basic Commands",
+    title: "Unix Basics",
     description:
-      "Use commands like ls, cd, cat, pwd, clear, and touch to navigate and manage files.",
+      "Use ls, cd, cat, pwd, mkdir, touch, and clear to move around your file system",
   },
   {
     icon: "🧭",
-    title: "Navigation",
+    title: "Shared with Finder",
     description:
-      "Browse the same virtual file system as Finder with familiar Unix commands.",
+      "Same virtual file system as Finder — edits in either app sync instantly",
+  },
+  {
+    icon: "🤖",
+    title: "Ask Ryo Inline",
+    description:
+      'Type "ryo <prompt>" (or just "ai") to chat with Ryo with your OS context attached',
+  },
+  {
+    icon: "📝",
+    title: "Edit & Vim",
+    description:
+      "Run edit <file> for TextEdit or vim <file> for a real modal Vim editor",
   },
   {
     icon: "⌨️",
     title: "Command History",
     description:
-      "Press ↑ / ↓ arrows to cycle through previous commands and re-run them quickly.",
-  },
-  {
-    icon: "🤖",
-    title: "AI Assistant",
-    description:
-      'Type "ryo &lt;prompt&gt;" to chat with Ryo AI directly inside the terminal.',
-  },
-  {
-    icon: "📝",
-    title: "File Editing",
-    description:
-      "Open documents in TextEdit (edit) or Vim-style editor (vim) right from the prompt.",
+      "Press ↑ / ↓ to cycle through previous commands and re-run them in a flash",
   },
   {
     icon: "🔊",
     title: "Terminal Sounds",
     description:
-      "Distinct sounds for output, errors & AI replies. Toggle in View ▸ Sounds.",
+      "Crisp click and bell SFX for output, errors, and AI replies — toggle in View ▸ Sounds",
   },
 ];
 

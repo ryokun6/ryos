@@ -14,36 +14,36 @@ export const helpItems = [
     icon: "🎵",
     title: "Play Music",
     description:
-      "Drag and drop audio files onto Winamp or use the playlist to add tracks",
+      "Drag audio files anywhere onto Winamp or add them through the playlist editor",
   },
   {
     icon: "🎚️",
-    title: "Equalizer",
+    title: "10-Band Equalizer",
     description:
-      "Toggle the equalizer window to adjust audio frequencies and presets",
+      "Open the EQ window to sculpt frequencies and pick from classic genre presets",
   },
   {
     icon: "📋",
-    title: "Playlist",
+    title: "Playlist Editor",
     description:
-      "Open the playlist editor to manage your queue of songs",
+      "Manage your queue, reorder tracks, and save .m3u playlists for later",
   },
   {
     icon: "🎨",
-    title: "Skins",
+    title: "Custom Skins",
     description:
-      "Right-click for options including skin selection to change the look",
+      "Right-click for the skin picker — Webamp ships with the original Winamp Classic looks",
   },
   {
     icon: "🔀",
     title: "Shuffle & Repeat",
     description:
-      "Toggle shuffle and repeat modes using the buttons on the main window",
+      "Toggle shuffle and repeat on the main window for endless or randomized playback",
   },
   {
     icon: "⌨️",
-    title: "Controls",
+    title: "Classic Transport",
     description:
-      "Use the classic Winamp transport controls: play, pause, stop, next, previous",
+      "Authentic play, pause, stop, next, and previous buttons exactly like Winamp 2",
   },
 ];

@@ -12,34 +12,32 @@ export const appMetadata = {
 export const helpItems = [
   {
     icon: "🖥️",
-    title: "Classic Mac Emulator",
-    description: "Run classic Mac OS systems in your browser via Infinite Mac",
+    title: "Classic Mac in Your Browser",
+    description: "Boot real System 6, 7, 8, or 9 in-browser, powered by Infinite Mac",
   },
   {
     icon: "📋",
-    title: "Select a System",
-    description: "Pick a Mac OS version from the grid to load the emulator",
+    title: "Pick a System",
+    description: "Choose any classic Mac OS preset from the grid to launch the emulator",
   },
   {
     icon: "🔍",
     title: "Display Scaling",
-    description: "Use View ▸ Scaling to adjust display size (1x, 1.5x, or 2x)",
+    description: "View ▸ Scaling switches between 1x, 1.5x, or 2x to fit any screen",
   },
   {
     icon: "⏸️",
-    title: "Pause / Resume",
-    description:
-      "Use View ▸ Pause or Resume to save resources when not interacting",
+    title: "Pause to Save Power",
+    description: "View ▸ Pause halts the VM so it stops eating CPU when you're idle",
   },
   {
     icon: "📸",
     title: "Capture Screenshot",
-    description: "Use View ▸ Capture Screenshot to save the current display",
+    description: "View ▸ Capture Screenshot grabs the current display straight to a file",
   },
   {
-    icon: "🔙",
-    title: "Back to Systems",
-    description:
-      "Use File ▸ Back to Systems to return to the preset grid",
+    icon: "🤖",
+    title: "Chats Can Drive It",
+    description: "Ask Ryo in Chats to pause, resume, scale, or screenshot the emulator",
   },
 ];

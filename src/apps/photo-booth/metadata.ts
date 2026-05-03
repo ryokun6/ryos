@@ -12,37 +12,38 @@ export const appMetadata = {
 export const helpItems = [
   {
     icon: "📸",
-    title: "Taking a Photo",
-    description: "Click the large red camera button to capture a single image.",
+    title: "Take a Photo",
+    description:
+      "Hit the big red camera button to grab a single shot from your webcam",
   },
   {
     icon: "⏱️",
-    title: "Quick Snaps",
+    title: "Four-Up Burst",
     description:
-      "Click the timer button (left of the camera button) to start a sequence of four photos taken one second apart.",
+      "Tap the timer button to capture four photos in quick succession, one second apart",
   },
   {
     icon: "🎨",
-    title: "Applying Effects",
+    title: "Live Effects",
     description:
-      "Click the 'Effects' button (right of the camera button) to open the effects panel and apply fun filters to your live camera view.",
+      "Open Effects to swipe through CSS filters and warp shaders applied in real time",
   },
   {
     icon: "🖼️",
-    title: "Viewing Photos",
+    title: "Photo Strip",
     description:
-      "Click the photo stack button (far left) to show or hide the photo strip at the bottom, displaying all your saved photos.",
+      "Toggle the photo stack to slide your saved snaps across the bottom of the window",
   },
   {
     icon: "💾",
-    title: "Downloading Photos",
+    title: "Auto-Save to Finder",
     description:
-      "Photos are automatically saved. Click on a photo in the photo strip to download it.",
+      "Photos save automatically into /Images — click a thumbnail to download instantly",
   },
   {
     icon: "📷",
-    title: "Switching Cameras",
+    title: "Switch Cameras",
     description:
-      "Use the 'Camera' menu in the menu bar to switch between available cameras if you have more than one connected.",
+      "Pick any connected camera (front, rear, USB) from the Camera menu in the menu bar",
   },
 ];

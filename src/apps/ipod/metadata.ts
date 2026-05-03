@@ -1,33 +1,33 @@
 export const helpItems = [
   {
     icon: "🎵",
-    title: "Add Songs",
-    description: "Paste YouTube URLs to add music to your iPod.",
+    title: "Add from YouTube",
+    description: "Paste any YouTube URL to add the track straight into your library",
   },
   {
     icon: "🔄",
-    title: "Wheel Navigation",
-    description: "Use the click wheel to browse menus and your music library.",
-  },
-  {
-    icon: "⏯️",
-    title: "Playback Controls",
-    description: "Play, pause, skip tracks, and control your current song.",
+    title: "Click Wheel",
+    description: "Spin the wheel (or your scroll wheel) to browse menus and tracks",
   },
   {
     icon: "🎤",
-    title: "Lyrics & Pronunciation",
-    description: "View synced lyrics with translations, furigana, romaji, and pinyin.",
+    title: "Synced Lyrics",
+    description: "View live-synced lyrics with translations, furigana, romaji, and pinyin",
   },
   {
-    icon: "⚙️",
-    title: "Playback Modes",
-    description: "Enable shuffle, repeat songs or playlists, and more.",
+    icon: "🌀",
+    title: "Cover Flow",
+    description: "Long-press the screen to open Cover Flow and flip through albums",
+  },
+  {
+    icon: "🎶",
+    title: "Karaoke Sync",
+    description: "Library is shared with Karaoke — songs added here show up there too",
   },
   {
     icon: "📺",
-    title: "Display & Fullscreen",
-    description: "Adjust backlight, themes, and switch to fullscreen video.",
+    title: "Fullscreen Visuals",
+    description: "Go fullscreen for music videos with warp, mesh, and water shader backdrops",
   },
 ];
 

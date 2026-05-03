@@ -2,32 +2,32 @@ export const helpItems = [
   {
     icon: "🔍",
     title: "Add & Search Songs",
-    description: "Search YouTube for songs, or paste a URL to add to your library.",
+    description: "Search YouTube or paste any URL to instantly add tracks to your library",
   },
   {
     icon: "⏱️",
-    title: "Sync Lyrics Timing",
-    description: "Use [ ] keys, mouse wheel, or drag left/right to adjust lyrics offset.",
+    title: "Tune Lyrics Timing",
+    description: "Tap [ or ] (or mouse-wheel the lyrics) to nudge offset by ±50 ms",
   },
   {
-    icon: "🎨",
+    icon: "🌐",
     title: "Style & Pronunciation",
-    description: "Change fonts, layouts, translations, and add furigana/romaji/pinyin.",
+    description: "Cycle fonts and layouts; show translations, furigana, romaji, or pinyin",
+  },
+  {
+    icon: "🎉",
+    title: "Listen Party",
+    description: "Host or join a synced karaoke session — followers see the same elapsed time",
   },
   {
     icon: "🎵",
-    title: "Synced with iPod",
-    description: "Shares the same music library as iPod. Add songs in either app.",
-  },
-  {
-    icon: "💬",
-    title: "Works with Chats",
-    description: "Ask Ryo to play songs, control playback, or adjust settings via chat.",
+    title: "Shared with iPod",
+    description: "Same library and lyrics database as the iPod app — add tracks anywhere",
   },
   {
     icon: "⌨️",
     title: "Keyboard Shortcuts",
-    description: "Space to play/pause, arrow keys to seek and change tracks.",
+    description: "Space play/pause, ←/→ seek 5s, ↑/↓ change track, F for fullscreen",
   },
 ];
 

@@ -14,34 +14,34 @@ export const helpItems = [
     icon: "🖱️",
     title: "Desktop Controls",
     description:
-      "Left-click to reveal, right-click to flag, double-click numbers to auto-reveal neighbors.",
+      "Left-click to reveal a cell, right-click to flag a suspected mine",
   },
   {
     icon: "📱",
     title: "Mobile Controls",
-    description: "Tap to reveal, long-press to flag a mine.",
+    description: "Tap to reveal, long-press to flag — works great on phones and tablets",
   },
   {
-    icon: "📖",
-    title: "Game Rules",
+    icon: "⚡",
+    title: "Chord Reveal",
     description:
-      "Numbers show adjacent mines. Flag every mine and reveal all safe cells to win.",
+      "Double-click a numbered cell with the right flags to auto-clear all safe neighbors",
   },
   {
     icon: "💣",
-    title: "Mine Counter",
-    description: "Top bar shows remaining unflagged mines and total mine count.",
+    title: "Mine Counter & Timer",
+    description: "The top bar tracks remaining unflagged mines and your elapsed time",
   },
   {
     icon: "🙂",
-    title: "Game Status",
+    title: "Smiley Status",
     description:
-      "The smiley face shows game state: 🙂 playing, 💀 game over, 😎 you won!",
+      "The smiley shows your game state: 🙂 playing, 💀 boom, 😎 victory",
   },
   {
     icon: "🔄",
-    title: "Restart",
+    title: "Quick Restart",
     description:
-      "Press the smiley face or choose File ▸ New Game to start a fresh board.",
+      "Click the smiley or use File ▸ New Game any time to deal a fresh board",
   },
 ];

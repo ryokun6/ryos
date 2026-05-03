@@ -118,27 +118,27 @@
       },
       "help": {
         "adminAccess": {
-          "description": "Questa app è accessibile solo all'utente amministratore (ryo).",
-          "title": "Accesso Amministratore"
+          "description": "Riservato all'utente amministratore (ryo) — ogni azione richiede autenticazione",
+          "title": "Solo Amministratore"
         },
         "roomManagement": {
-          "description": "Visualizza e gestisci le chat room, elimina i contenuti inappropriati.",
-          "title": "Gestione Stanze"
+          "description": "Ispeziona le stanze chat con metadati IRC; elimina rapidamente i contenuti inappropriati",
+          "title": "Moderazione Stanze"
         },
         "searchFilter": {
-          "description": "Cerca utenti o brani per nome per trovare rapidamente le voci.",
-          "title": "Cerca & Filtra"
+          "description": "Cerca rapidamente utenti o brani per nome in griglie impaginate",
+          "title": "Cerca e Filtra"
         },
         "songLibrary": {
-          "description": "Importa, esporta e gestisci la libreria di brani in cache.",
-          "title": "Libreria brani"
+          "description": "Importa, esporta e pulisci in blocco la libreria musicale cache di YouTube + testi",
+          "title": "Libreria Musicale"
         },
         "statistics": {
-          "description": "Visualizza le statistiche di sistema e le metriche di utilizzo.",
-          "title": "Statistiche"
+          "description": "Metriche di utilizzo in tempo reale, inclusa una scheda di telemetria delle esecuzioni dell'agente Cursor",
+          "title": "Statistiche di Sistema"
         },
         "userManagement": {
-          "description": "Visualizza, cerca e gestisci gli utenti registrati.",
+          "description": "Sfoglia gli utenti registrati, visualizza i profili e revoca o rinomina gli account",
           "title": "Gestione Utenti"
         }
       },
@@ -411,28 +411,28 @@
       },
       "help": {
         "appletStore": {
-          "description": "Sfoglia e installa applet dalla community. Apri il menu Store per scoprire nuove app.",
-          "title": "Applet Store"
+          "description": "Apri la scheda Store per scoprire le app create dalla community e installarle con un clic",
+          "title": "Sfoglia lo Store"
         },
         "createWithRyosChat": {
-          "description": "Chiedi a ryOS Chat di creare app e applet personalizzate per te. Condividi le tue idee e ottieni app funzionanti all'istante.",
-          "title": "Crea con ryOS Chat"
+          "description": "Chiedi a Ryo nelle Chat di creare un'applet personalizzata — ottieni istantaneamente un'app HTML funzionante",
+          "title": "Crea con le Chat"
         },
         "keepUpdated": {
-          "description": "Controlla aggiornamenti nel menu Store per ottenere le ultime versioni delle tue applet installate.",
-          "title": "Mantieni aggiornato"
+          "description": "Store ▸ Verifica aggiornamenti scarica le versioni più recenti delle applet installate",
+          "title": "Controllo aggiornamenti automatico"
         },
         "openFromFinder": {
-          "description": "Sfoglia e apri applet salvate sul tuo sistema usando il menu File.",
-          "title": "Apri da Finder"
+          "description": "Trascina i bundle applet .app o .gz nel Finder e appariranno in /Applets",
+          "title": "Apri dal Finder"
         },
         "shareApplets": {
-          "description": "Condividi le tue applet preferite con altri usando l'opzione Condividi Applet nel menu File.",
-          "title": "Condividi Applet"
+          "description": "Usa File ▸ Condividi Applet per copiare un link o un codice breve che altri possono incollare",
+          "title": "Condividi tramite Codice"
         },
         "viewApplets": {
-          "description": "Apri ed esegui applet salvate da ryOS Chat o scaricate dallo store.",
-          "title": "Visualizza Applet"
+          "description": "Il runner in sandbox esegue in sicurezza qualsiasi applet HTML salvata sul sistema",
+          "title": "Esegui Qualsiasi Cosa"
         }
       },
       "labels": {
@@ -511,6 +511,32 @@
         "success": "{{count}} evento/i esportato/i",
         "successPlural": "{{count}} eventi esportati"
       },
+      "help": {
+        "createEvents": {
+          "description": "Fai doppio clic su una data — o usa File ▸ Nuovo evento — per aggiungere un evento a tempo",
+          "title": "Crea eventi"
+        },
+        "icalImportExport": {
+          "description": "Trascina i file .ics per l'importazione di massa, o esporta il calendario per condividerlo",
+          "title": "Importazione / Esportazione iCal"
+        },
+        "navigateMonths": {
+          "description": "Usa i tasti freccia per scorrere i mesi, o premi Oggi per tornare alla data attuale",
+          "title": "Naviga tra i mesi"
+        },
+        "ryoSchedules": {
+          "description": "Chiedi a Ryo in Chat di aggiungere, modificare o riassumere i prossimi eventi per te",
+          "title": "Ryo lo pianifica"
+        },
+        "todosSidebar": {
+          "description": "Attiva o disattiva il pannello To-do per gestire le attività insieme agli eventi programmati",
+          "title": "Barra laterale To-do"
+        },
+        "undoAutoSave": {
+          "description": "Ogni modifica viene salvata automaticamente; ⌘Z annulla eliminazioni, modifiche e persino importazioni di massa",
+          "title": "Annulla e salvataggio automatico"
+        }
+      },
       "import": {
         "success": "{{count}} evento/i importato/i",
         "successPlural": "{{count}} eventi importati"
@@ -557,28 +583,28 @@
       },
       "help": {
         "applyIconPacks": {
-          "description": "Seleziona un pacchetto di icone e fai clic su Applica per personalizzare le icone del desktop",
-          "title": "Applica pacchetti di icone"
+          "description": "Fai clic su Applica per sostituire istantaneamente ogni icona della scrivania, del dock e del Finder con il nuovo pacchetto",
+          "title": "Applica con un clic"
         },
         "browseIconPacks": {
-          "description": "Sfoglia i pacchetti di icone disponibili nelle categorie della barra laterale e visualizzali in anteprima nell'area principale",
-          "title": "Sfoglia pacchetti di icone"
+          "description": "Scegli una categoria nella barra laterale — Sistema, Dispositivi, Community — per scorrere i pacchetti",
+          "title": "Sfoglia i pacchetti di icone"
         },
         "cloudLibrary": {
-          "description": "I pacchetti di icone sono memorizzati nel cloud e disponibili in tutte le tue sessioni",
+          "description": "I pacchetti risiedono nel catalogo cloud di ryOS, così sono disponibili su ogni dispositivo",
           "title": "Libreria cloud"
         },
         "favorites": {
-          "description": "Contrassegna i pacchetti di icone come preferiti per un accesso rapido dalla barra laterale",
+          "description": "Aggiungi una stella ai pacchetti che ami per fissarli in cima alla barra laterale e cambiarli rapidamente",
           "title": "Preferiti"
         },
         "iconPackDetails": {
-          "description": "Fai clic su un pacchetto di icone per vedere un'anteprima completa di tutte le icone incluse",
-          "title": "Dettagli pacchetto di icone"
+          "description": "Fai clic su un pacchetto per vedere tutte le icone all'interno prima di applicarlo",
+          "title": "Anteprima pacchetto"
         },
         "search": {
-          "description": "Usa la barra di ricerca per trovare rapidamente i pacchetti di icone per nome o autore",
-          "title": "Cerca"
+          "description": "Cerca per nome o autore; i pulsanti avanti/indietro integrati ti permettono di ripercorrere la tua navigazione",
+          "title": "Cerca e cronologia"
         }
       },
       "loading": "Caricamento pacchetti di icone…",
@@ -670,28 +696,28 @@
       },
       "help": {
         "chatWithRyo": {
-          "description": "Digita il tuo messaggio per chattare con Ryo, generare codice o ottenere aiuto con ryOS.",
+          "description": "Chiedi qualsiasi cosa — Ryo può scrivere codice, riassumere documenti o spiegare le funzionalità di ryOS.",
           "title": "Chatta con Ryo"
         },
         "controlApps": {
-          "description": "Chiedi a Ryo di avviare o chiudere app, cambiare temi o controllare la riproduzione di iPod.",
-          "title": "Controlla App"
+          "description": "Ryo può avviare app, cambiare temi, spostare i memo, sintonizzare la TV e riprodurre brani dall'iPod.",
+          "title": "Controlla il tuo OS"
         },
         "createEditFiles": {
-          "description": "Chiedi a Ryo di creare applet HTML, modificare documenti, leggere file o cercare nell'Applets Store.",
-          "title": "Crea & Modifica File"
+          "description": "Chiedi a Ryo di avviare applet HTML, modificare i tuoi documenti TextEdit o sfogliare l'Applet Store.",
+          "title": "Crea e modifica file"
         },
         "joinChatRooms": {
-          "description": "Connettiti con altri nelle chat room pubbliche. Menziona @ryo per risposte AI.",
-          "title": "Unisciti a Chat Room"
+          "description": "Entra nelle stanze per chattare con tutti gli utenti online — menziona @ryo per ricevere risposte dall'IA.",
+          "title": "Entra nelle stanze pubbliche"
         },
         "nudgeDjMode": {
-          "description": "Invia un 👋 nudge per suggerimenti contestuali. Ryo diventa un DJ quando la musica è in riproduzione.",
-          "title": "Nudge e Modalità DJ"
+          "description": "Invia un 👋 nudge per suggerimenti contestuali; Ryo si trasforma in un DJ quando l'iPod è in riproduzione.",
+          "title": "Modalità Nudge e DJ"
         },
         "pushToTalk": {
-          "description": "Tieni premuto Spazio o tocca il pulsante del microfono per registrare e inviare messaggi vocali.",
-          "title": "Premi per Parlare"
+          "description": "Tieni premuto Spazio o tocca il microfono per registrare e inviare messaggi vocali con trascrizione.",
+          "title": "Voce Push-to-Talk"
         }
       },
       "menu": {
@@ -875,6 +901,33 @@
         "contentWritten": "Contenuto scritto",
         "controllingPlayback": "Controllo riproduzione…",
         "createdDocument": "Documento creato: {{path}}",
+        "cursorCloudAgent": {
+          "finished": "Completato",
+          "followupAriaLabel": "Messaggio di follow-up per l'agente Cursor",
+          "followupBusy": "L'agente è ancora in esecuzione…",
+          "followupPlaceholder": "Rispondi all'agente…",
+          "followupSend": "Invia follow-up",
+          "followupSending": "Invio follow-up…",
+          "noEventsYet": "In attesa di eventi stream…",
+          "openPr": "Apri PR",
+          "panelTitle": "Agente repo Cursor",
+          "running": "In esecuzione",
+          "starting": "Avvio dell'agente Cursor Cloud…",
+          "stream": {
+            "args": "Argomenti",
+            "emptyAssistant": "(Nessun contenuto del messaggio)",
+            "result": "Risultato",
+            "runEnded": "Esecuzione completata · {{status}}",
+            "runEndedError": "Esecuzione terminata con un errore",
+            "status": "Stato",
+            "system": "Sessione avviata",
+            "thinking": "Pensando",
+            "toolCall": "Strumento · {{name}}",
+            "toolUse": "Richiesta strumento · {{name}}",
+            "truncated": "troncato",
+            "userPrompt": "Prompt"
+          }
+        },
         "document": "Documento",
         "edited": "Modificato {{fileName}}",
         "editedApplet": "Applet modificata con successo: {{path}}",
@@ -982,6 +1035,11 @@
         "launchedWithUrlAndYear": "Avviato {{url}} nel {{year}}",
         "launching": "Avvio {{appName}}…",
         "launchingApp": "Avvio app…",
+        "listCursorCloudAgentRuns": {
+          "listed": "Listed {{count}} recent run(s).",
+          "loading": "Listing Cursor Cloud agent runs…",
+          "truncatedHint": "(list may be truncated)"
+        },
         "listedItems": "Elementi elencati",
         "listingApplications": "Elenco applicazioni…",
         "listingSharedApplets": "Elenco applet condivise…",
@@ -1088,39 +1146,7 @@
           "fetchedPage": "Leggi \"{{title}}\"",
           "fetching": "Lettura di {{hostname}}…"
         },
-        "writingContent": "Scrittura contenuto…",
-        "cursorCloudAgent": {
-          "finished": "Completato",
-          "followupAriaLabel": "Messaggio di follow-up per l'agente Cursor",
-          "followupBusy": "L'agente è ancora in esecuzione…",
-          "followupPlaceholder": "Rispondi all'agente…",
-          "followupSend": "Invia follow-up",
-          "followupSending": "Invio follow-up…",
-          "noEventsYet": "In attesa di eventi stream…",
-          "openPr": "Apri PR",
-          "panelTitle": "Agente repo Cursor",
-          "running": "In esecuzione",
-          "starting": "Avvio dell'agente Cursor Cloud…",
-          "stream": {
-            "args": "Argomenti",
-            "emptyAssistant": "(Nessun contenuto del messaggio)",
-            "result": "Risultato",
-            "runEnded": "Esecuzione completata · {{status}}",
-            "runEndedError": "Esecuzione terminata con un errore",
-            "status": "Stato",
-            "system": "Sessione avviata",
-            "thinking": "Pensando",
-            "toolCall": "Strumento · {{name}}",
-            "toolUse": "Richiesta strumento · {{name}}",
-            "truncated": "troncato",
-            "userPrompt": "Prompt"
-          }
-        },
-        "listCursorCloudAgentRuns": {
-          "loading": "Listing Cursor Cloud agent runs…",
-          "listed": "Listed {{count}} recent run(s).",
-          "truncatedHint": "(list may be truncated)"
-        }
+        "writingContent": "Scrittura contenuto…"
       }
     },
     "contacts": {
@@ -1175,28 +1201,28 @@
       },
       "help": {
         "browseContacts": {
-          "description": "Usa la barra laterale sinistra per cercare e passare tra i contatti salvati",
-          "title": "Sfoglia Contatti"
+          "description": "Usa la barra laterale sinistra per cercare, filtrare e passare tra i contatti salvati",
+          "title": "Sfoglia contatti"
         },
         "cloudSync": {
-          "description": "Abilita la sincronizzazione dei contatti nei Pannelli di Controllo per mantenere la rubrica in Redis",
-          "title": "Sincronizzazione Cloud"
+          "description": "Abilita la sincronizzazione dei contatti nei Pannelli di controllo per eseguire il backup della rubrica sul cloud",
+          "title": "Sincronizzazione cloud"
         },
         "createContacts": {
-          "description": "Scegli File > Nuovo Contatto per aggiungere nomi, numeri di telefono, email e note",
-          "title": "Crea Contatti"
-        },
-        "editDetails": {
-          "description": "Aggiorna i dettagli del contatto nell'ispettore e le modifiche verranno salvate automaticamente",
-          "title": "Modifica Dettagli"
+          "description": "File ▸ Nuovo contatto aggiunge nomi, numeri, email, indirizzi e note a testo libero",
+          "title": "Crea contatti"
         },
         "importVCards": {
-          "description": "Importa file .vcf dal menu File per portare i contatti in ryOS",
+          "description": "Trascina i file .vcf (o usa File ▸ Importa) per importare contatti e foto",
           "title": "Importa vCard"
         },
+        "smartGroups": {
+          "description": "I raggruppamenti automatici mostrano compleanni, contatti di lavoro e utenti Telegram",
+          "title": "Gruppi smart"
+        },
         "useWithRyo": {
-          "description": "Ryo può elencare, creare, aggiornare e cercare contatti sincronizzati in chat e Telegram",
-          "title": "Usa con Ryo"
+          "description": "Ryo può elencare, creare, aggiornare e cercare contatti direttamente da Chat",
+          "title": "Chiedi a Ryo"
         }
       },
       "menu": {
@@ -1351,32 +1377,28 @@
       "formatFileSystemDescription": "Questo cancellerà tutti i file (eccetto i documenti di esempio), le immagini e gli sfondi personalizzati. ryOS si riavvierà dopo la formattazione.",
       "help": {
         "aiModel": {
-          "description": "Seleziona il modello AI utilizzato da Chat e dall'assistente del Terminale",
-          "title": "Modello AI"
+          "description": "Scegli quale modello IA alimenta Chat e l'assistente Ryo del Terminale",
+          "title": "Modello IA"
         },
         "appearance": {
-          "description": "Scegli foto, motivi o effetti shader per lo sfondo del tuo desktop",
+          "description": "Scegli sfondi, motivi o effetti shader live per personalizzare la scrivania",
           "title": "Aspetto"
         },
         "backupRestore": {
-          "description": "Esporta o ripristina tutte le impostazioni e i file",
-          "title": "Backup e Ripristino"
+          "description": "Esporta tutto, ripristina da un backup o formatta il disco virtuale",
+          "title": "Backup e ripristino"
         },
         "shaderEffects": {
-          "description": "Abilita effetti visivi CRT, Galaxy o Aurora",
-          "title": "Effetti Shader"
+          "description": "Attiva le sovrapposizioni CRT, Galassia o Aurora per quel classico stile CRT",
+          "title": "Effetti shader"
         },
         "sounds": {
-          "description": "Attiva/disattiva suoni dell'interfaccia, sintetizzatore di digitazione ed effetti del Terminale / IE",
+          "description": "Attiva/disattiva clic dell'interfaccia, synth di digitazione ed effetti sonori di Terminale/IE",
           "title": "Suoni"
         },
         "sync": {
-          "description": "Configura la sincronizzazione cloud automatica e i backup cloud manuali",
-          "title": "Sincronizzazione"
-        },
-        "system": {
-          "description": "Reimposta preferenze o formatta il file system virtuale",
-          "title": "Sistema"
+          "description": "Configura la sincronizzazione automatica e i backup manuali sul cloud per contatti, calendario e altro",
+          "title": "Sincronizzazione Cloud"
         }
       },
       "highContrast": "Contrasto elevato",
@@ -1557,6 +1579,32 @@
         "thesaurus": "Thesaurus",
         "title": "Dizionario"
       },
+      "help": {
+        "closeDashboard": {
+          "description": "Fai clic sullo sfondo o premi F4/Esc per chiudere istantaneamente Dashboard",
+          "title": "Chiusura rapida"
+        },
+        "layoutPersists": {
+          "description": "Il set di widget e le loro posizioni rimangono invariati tra le sessioni e i cambi di tema",
+          "title": "Il layout persiste"
+        },
+        "moveWidgets": {
+          "description": "Trascina qualsiasi widget per riposizionarlo; i nuovi widget si posizionano automaticamente per evitare sovrapposizioni",
+          "title": "Trascina per disporre"
+        },
+        "openDashboard": {
+          "description": "Premi F4 (o fai clic sull'icona Dashboard) per far apparire i widget in sovrapposizione ovunque",
+          "title": "Apri Dashboard"
+        },
+        "weatherWidget": {
+          "description": "Il widget meteo recupera le condizioni reali per la tua posizione con una rapida richiesta di autorizzazione",
+          "title": "Meteo in tempo reale"
+        },
+        "widgetLibrary": {
+          "description": "Aggiungi orologio, meteo, calendario, borsa, mini iPod, note adesive, dizionario e altro",
+          "title": "Libreria widget"
+        }
+      },
       "ipod": {
         "iTunesNotOpen": "iTunes non è aperto",
         "menu": "MENU",
@@ -1728,29 +1776,29 @@
         "videos": "Video"
       },
       "help": {
+        "airdropSharing": {
+          "description": "Fai clic destro su qualsiasi file per inviarlo via AirDrop istantaneamente agli utenti ryOS vicini",
+          "title": "Condivisione AirDrop"
+        },
         "browseNavigate": {
-          "description": "Pulsanti Indietro/Avanti, barra degli indirizzi e menu Vai per una navigazione veloce",
-          "title": "Sfoglia e Naviga"
+          "description": "Indietro, Avanti, barra degli indirizzi e menu Vai permettono di spostarsi ovunque nel file system",
+          "title": "Sfoglia e naviga"
+        },
+        "dropToImport": {
+          "description": "Trascina file .app, .gz o .html ovunque per installarli in Applet",
+          "title": "Trascina per importare"
         },
         "fileManagement": {
-          "description": "Crea cartelle, rinomina, sposta e trascina elementi per organizzare i file",
-          "title": "Gestione File"
+          "description": "Crea cartelle, rinomina, trascina e duplica per organizzare i tuoi file",
+          "title": "Gestione file"
         },
         "quickAccess": {
-          "description": "Vai a Documenti, Applicazioni o Cestino istantaneamente dal menu Vai",
-          "title": "Accesso Rapido"
+          "description": "I pin nella barra laterale portano a Documenti, Applicazioni, Immagini e Cestino",
+          "title": "Accesso rapido"
         },
-        "storageInfo": {
-          "description": "Visualizza spazio libero e numero di elementi nel piè di pagina della finestra",
-          "title": "Info Spazio"
-        },
-        "trash": {
-          "description": "Trascina i file nel Cestino e Svuota per eliminare definitivamente",
-          "title": "Cestino"
-        },
-        "viewSort": {
-          "description": "Cambia le dimensioni delle icone e ordina per nome, tipo, dimensione o data",
-          "title": "Visualizza e Ordina"
+        "trashUndo": {
+          "description": "Sposta i file nel Cestino, poi Modifica ▸ Annulla per ripristinarli istantaneamente",
+          "title": "Cestino e Annulla"
         }
       },
       "menu": {
@@ -1813,29 +1861,29 @@
     "infinite-mac": {
       "description": "Emulatori Mac OS Classico",
       "help": {
-        "backToSystems": {
-          "description": "Usa File ▸ Torna ai sistemi per tornare alla griglia preimpostata",
-          "title": "Torna ai sistemi"
-        },
         "captureScreenshot": {
-          "description": "Usa Visualizza ▸ Acquisisci screenshot per salvare la schermata attuale",
-          "title": "Acquisisci screenshot"
+          "description": "Vista ▸ Cattura screenshot salva la visualizzazione corrente direttamente in un file",
+          "title": "Cattura screenshot"
+        },
+        "chatsCanDriveIt": {
+          "description": "Chiedi a Ryo in Chat di mettere in pausa, riprendere, ridimensionare o catturare uno screenshot dell'emulatore",
+          "title": "Controllalo tramite Chat"
         },
         "classicMacEmulator": {
-          "description": "Esegui sistemi Mac OS Classico nel tuo browser tramite Infinite Mac",
-          "title": "Emulatore Mac Classico"
+          "description": "Avvia i veri System 6, 7, 8 o 9 nel browser, con la tecnologia di Infinite Mac",
+          "title": "Mac classico nel tuo browser"
         },
         "displayScaling": {
-          "description": "Usa Visualizza ▸ Scala per regolare le dimensioni del display (1x, 1,5x o 2x)",
-          "title": "Scala del display"
+          "description": "Vista ▸ Ridimensionamento passa tra 1x, 1,5x o 2x per adattarsi a ogni schermo",
+          "title": "Ridimensionamento schermo"
         },
         "pauseResume": {
-          "description": "Usa Vista ▸ Pausa o Riprendi per risparmiare risorse quando non interagisci",
-          "title": "Pausa / Riprendi"
+          "description": "Vista ▸ Pausa arresta la VM per interrompere il consumo di CPU quando non è in uso",
+          "title": "Pausa per risparmiare energia"
         },
         "selectSystem": {
-          "description": "Scegli una versione di Mac OS dalla griglia per caricare l'emulatore",
-          "title": "Seleziona un sistema"
+          "description": "Scegli un preset di Mac OS classico dalla griglia per avviare l'emulatore",
+          "title": "Scegli un sistema"
         }
       },
       "loadingEmulator": "Caricamento emulatore...",
@@ -1907,27 +1955,27 @@
       "goToNow": "Vai a ora",
       "help": {
         "browseWeb": {
-          "description": "Inserisci URL e usa i pulsanti di navigazione (Indietro, Avanti, Aggiorna, Ferma).",
+          "description": "Digita un URL e usa Indietro, Avanti, Aggiorna e Interrompi per navigare.",
           "title": "Naviga sul Web"
         },
         "exploreTimeNodes": {
-          "description": "Fai clic sull'icona dell'orologio nella barra degli indirizzi per vedere le istantanee disponibili del sito attuale nel tempo.",
-          "title": "Esplora nodi temporali"
+          "description": "Fai clic sull'orologio nella barra degli indirizzi per passare tra gli snapshot memorizzati di qualsiasi sito.",
+          "title": "Esplora i nodi temporali"
         },
         "historyReimagined": {
-          "description": "L'IA ricostruisce siti molto vecchi (pre-1996) e immagina esperienze web future.",
-          "title": "Storia reinventata"
+          "description": "Le pagine precedenti al 1996 e gli anni futuri sono ricostruiti in tempo reale dall'IA in streaming HTML.",
+          "title": "La storia reimmaginata dall'IA"
         },
         "saveFavorites": {
-          "description": "Aggiungi siti e anni specifici alla barra dei Preferiti per un facile accesso.",
-          "title": "Salva preferiti"
+          "description": "Aggiungi un sito ai preferiti in un anno specifico affinché si apra sempre in quell'esatta epoca.",
+          "title": "Preferiti bloccati all'anno"
         },
         "shareJourney": {
-          "description": "Usa il pulsante Condividi per generare un link alla pagina e all'anno esatti che stai visualizzando.",
+          "description": "Genera un link di condivisione che riapre l'esatta pagina e l'anno che stai visualizzando.",
           "title": "Condividi il tuo viaggio"
         },
         "travelThroughTime": {
-          "description": "Seleziona un anno dal menu a discesa per visualizzare siti web dal passato o dal futuro.",
+          "description": "Scegli un anno dal 1000 al lontano futuro per vedere i siti come erano — o come potrebbero essere.",
           "title": "Viaggia nel tempo"
         }
       },
@@ -2126,28 +2174,28 @@
       },
       "help": {
         "addSongs": {
-          "description": "Incolla URL di YouTube per aggiungere musica al tuo iPod.",
-          "title": "Aggiungi brani"
+          "description": "Incolla un URL di YouTube per aggiungere il brano direttamente nella tua libreria",
+          "title": "Aggiungi da YouTube"
+        },
+        "coverFlow": {
+          "description": "Premi a lungo lo schermo per aprire Cover Flow e sfogliare gli album",
+          "title": "Cover Flow"
         },
         "displayFullscreen": {
-          "description": "Regola retroilluminazione, temi e passa al video a schermo intero.",
-          "title": "Display e Schermo intero"
+          "description": "Passa a schermo intero per i video musicali con sfondi warp, mesh e water shader",
+          "title": "Visualizzazioni a schermo intero"
+        },
+        "karaokeSync": {
+          "description": "La libreria è condivisa con Karaoke — i brani aggiunti qui appariranno anche lì",
+          "title": "Sincronizzazione Karaoke"
         },
         "lyricsPronunciation": {
-          "description": "Visualizza testi sincronizzati con traduzioni, furigana, romaji e pinyin.",
-          "title": "Testi e pronuncia"
-        },
-        "playbackControls": {
-          "description": "Riproduci, metti in pausa, salta brani e controlla il brano attuale.",
-          "title": "Controlli di riproduzione"
-        },
-        "playbackModes": {
-          "description": "Abilita riproduzione casuale, ripeti brani o playlist e altro ancora.",
-          "title": "Modalità di riproduzione"
+          "description": "Visualizza i testi sincronizzati in tempo reale con traduzioni, furigana, romaji e pinyin",
+          "title": "Testi sincronizzati"
         },
         "wheelNavigation": {
-          "description": "Usa la rotella cliccabile per sfogliare i menu e la tua libreria musicale.",
-          "title": "Navigazione con la rotella"
+          "description": "Ruota la ghiera (o la rotella di scorrimento) per sfogliare menu e brani",
+          "title": "Click Wheel"
         }
       },
       "keys": {
@@ -2316,28 +2364,28 @@
       },
       "help": {
         "addSearchSongs": {
-          "description": "Cerca brani su YouTube o incolla un URL per aggiungerli alla tua libreria.",
+          "description": "Cerca su YouTube o incolla un URL per aggiungere istantaneamente brani alla libreria",
           "title": "Aggiungi e cerca brani"
         },
         "keyboardShortcuts": {
-          "description": "Spazio per riprodurre/mettere in pausa, tasti freccia per cercare e cambiare brano.",
+          "description": "Spazio play/pausa, ←/→ sposta di 5s, ↑/↓ cambia brano, F per schermo intero",
           "title": "Scorciatoie da tastiera"
         },
+        "listenParty": {
+          "description": "Ospita o partecipa a una sessione karaoke sincronizzata — i follower vedono lo stesso tempo trascorso",
+          "title": "Listen Party"
+        },
         "stylePronunciation": {
-          "description": "Modifica font, layout, traduzioni e aggiungi furigana/romaji/pinyin.",
+          "description": "Alterna font e layout; mostra traduzioni, furigana, romaji o pinyin",
           "title": "Stile e pronuncia"
         },
         "syncLyricsTiming": {
-          "description": "Usa i tasti [ ], la rotellina del mouse o trascina sinistra/destra per regolare l'offset dei testi.",
-          "title": "Sincronizza timing testi"
+          "description": "Premi [ o ] (o usa la rotellina del mouse sul testo) per regolare l'offset di ±50 ms",
+          "title": "Regola il tempo del testo"
         },
         "syncedWithIpod": {
-          "description": "Condivide la stessa libreria musicale con iPod. Aggiungi brani in entrambe le app.",
-          "title": "Sincronizzato con iPod"
-        },
-        "worksWithChats": {
-          "description": "Chiedi a Ryo di riprodurre brani, controllare la riproduzione o regolare le impostazioni via chat.",
-          "title": "Funziona con Chat"
+          "description": "Stessa libreria e database dei testi dell'app iPod — aggiungi brani ovunque",
+          "title": "Condiviso con iPod"
         }
       },
       "liveListen": {
@@ -2411,29 +2459,29 @@
         "newGameTitle": "Nuova partita"
       },
       "help": {
+        "chordReveal": {
+          "description": "Fai doppio clic su una cella numerata con le bandiere corrette per scoprire automaticamente le caselle sicure adiacenti",
+          "title": "Rivelazione accordi"
+        },
         "desktopControls": {
-          "description": "Fai clic sinistro per rivelare, fai clic destro per contrassegnare, fai doppio clic sui numeri per rivelare automaticamente le caselle adiacenti.",
+          "description": "Clic sinistro per rivelare una cella, clic destro per segnalare una sospetta mina",
           "title": "Controlli desktop"
         },
-        "gameRules": {
-          "description": "I numeri indicano le mine adiacenti. Segnala ogni mina e rivela tutte le celle sicure per vincere.",
-          "title": "Regole del gioco"
-        },
-        "gameStatus": {
-          "description": "La faccina mostra lo stato del gioco: 🙂 in gioco, 💀 gioco finito, 😎 hai vinto!",
-          "title": "Stato del gioco"
-        },
-        "mineCounter": {
-          "description": "La barra superiore mostra le mine non contrassegnate rimanenti e il numero totale di mine.",
-          "title": "Contatore Mine"
+        "mineCounterTimer": {
+          "description": "La barra superiore tiene traccia delle mine non contrassegnate rimanenti e del tempo trascorso",
+          "title": "Contatore mine e timer"
         },
         "mobileControls": {
-          "description": "Tocca per rivelare, tieni premuto per contrassegnare una mina.",
+          "description": "Tocca per rivelare, tieni premuto per segnalare — perfetto per telefoni e tablet",
           "title": "Controlli mobile"
         },
-        "restart": {
-          "description": "Premi la faccina sorridente o scegli Gioco ▸ Nuovo per iniziare una nuova partita.",
-          "title": "Ricomincia"
+        "quickRestart": {
+          "description": "Fai clic sullo smiley o usa Archivio ▸ Nuova partita in qualsiasi momento per iniziare una nuova partita",
+          "title": "Riavvio rapido"
+        },
+        "smileyStatus": {
+          "description": "Lo smiley mostra lo stato del gioco: 🙂 in corso, 💀 boom, 😎 vittoria",
+          "title": "Stato dello smiley"
         }
       },
       "lcd": {
@@ -2463,29 +2511,29 @@
         "openFiltersMenu": "Apri menu filtri"
       },
       "help": {
+        "autoSaveExport": {
+          "description": "Le modifiche vengono salvate automaticamente ogni pochi secondi; esporta i PNG in /Immagini per il Finder",
+          "title": "Salvataggio automatico ed esportazione"
+        },
+        "cutCopyPaste": {
+          "description": "Seleziona un'area con il laccio, quindi taglia, copia o incolla i pixel direttamente nell'area di disegno",
+          "title": "Taglia, Copia e Incolla"
+        },
         "drawingTools": {
-          "description": "Usa la barra degli strumenti a sinistra per selezionare diversi strumenti di disegno come matita, pennello, forme e altro.",
+          "description": "Scegli matita, pennello, spray, forme, gomma o riempimento dalla barra degli strumenti a sinistra",
           "title": "Strumenti di disegno"
         },
         "filters": {
-          "description": "Applica inverti, scala di grigi, luminosità e altro dal menu Filtri.",
+          "description": "Applica inversione, scala di grigi, luminosità e altro dal menu Filtri",
           "title": "Filtri"
         },
         "patterns": {
-          "description": "Scegli tra vari motivi nella tavolozza inferiore per riempire forme e aree.",
-          "title": "Motivi"
-        },
-        "saving": {
-          "description": "Usa File > Salva per salvare la tua opera, o File > Salva con nome per salvarla con un nuovo nome.",
-          "title": "Salvataggio"
+          "description": "Scegli un motivo classico Mac dalla tavolozza in basso per riempire qualsiasi forma o area",
+          "title": "Motivi di riempimento"
         },
         "strokeWidth": {
-          "description": "Regola lo spessore del tratto di pennello e matita tramite i controlli della barra degli strumenti.",
-          "title": "Spessore Tratto"
-        },
-        "undo": {
-          "description": "Premi ⌘Z o usa Modifica > Annulla per annullare l'ultima azione.",
-          "title": "Annulla"
+          "description": "Regola lo spessore di pennello e matita con il selettore di dimensioni sotto gli strumenti",
+          "title": "Spessore tratto"
         }
       },
       "menu": {
@@ -2555,49 +2603,29 @@
         "resetVirtualPcTitle": "Reset Virtual PC"
       },
       "help": {
-        "aboutV86": {
-          "description": "Offerto da copy.sh/v86, un emulatore x86 open source",
-          "title": "Informazioni su v86"
-        },
-        "aspectRatio": {
-          "description": "Passa tra 4∶3 o widescreen per adattarsi al tuo monitor",
-          "title": "Proporzioni"
-        },
         "backToSystems": {
-          "description": "Usa File ▸ Indietro per tornare al browser di sistemi operativi e giochi",
-          "title": "Torna ai sistemi"
+          "description": "File ▸ Indietro torna al browser di OS e Giochi per scegliere una nuova immagine",
+          "title": "Torna ai Sistemi"
         },
         "dosGames": {
-          "description": "Usa la scheda Giochi per la libreria js-dos (shareware e classici)",
-          "title": "Giochi DOS"
-        },
-        "fullscreenMode": {
-          "description": "Attiva/Disattiva Controlli ▸ Schermo Intero per una visualizzazione immersiva",
-          "title": "Modalità Schermo Intero"
-        },
-        "keyboardControls": {
-          "description": "Usa la tua tastiera fisica per l'input di gioco",
-          "title": "Controlli Tastiera"
+          "description": "Passa alla scheda Giochi per una selezione curata di classici js-dos",
+          "title": "Libreria Giochi DOS"
         },
         "keyboardInput": {
-          "description": "La maggior parte dei tasti viene trasmessa; premi Esc per rilasciare il blocco del puntatore",
-          "title": "Input tastiera"
+          "description": "Quasi tutti i tasti (comprese le combinazioni Ctrl) vengono inviati direttamente alla VM",
+          "title": "Passthrough tastiera"
         },
         "mouseCapture": {
-          "description": "Clicca all'interno della finestra per catturare / rilasciare il mouse",
-          "title": "Cattura Mouse"
+          "description": "Fai clic all'interno dello schermo per catturare il cursore; premi Esc per rilasciarlo",
+          "title": "Cattura mouse"
         },
         "pcEmulator": {
-          "description": "Esegue giochi e app DOS classici direttamente nel tuo browser",
-          "title": "Emulatore PC"
+          "description": "Avvia immagini reali di Windows, Linux e FreeDOS nel browser tramite v86",
+          "title": "Emulatore OS x86"
         },
-        "pickSystem": {
-          "description": "Scegli un sistema operativo dalla griglia per avviare l'emulatore",
-          "title": "Scegli un sistema"
-        },
-        "resetLoad": {
-          "description": "Usa File ▸ Reimposta per riavviare, o Carica Partita per cambiare partita.",
-          "title": "Reimposta & Carica"
+        "screenshotFullscreen": {
+          "description": "Usa Vista per catturare lo schermo o riempire il monitor da bordo a bordo",
+          "title": "Screenshot e Schermo intero"
         }
       },
       "loadingEmulator": "CARICAMENTO EMULATORE",
@@ -2828,28 +2856,28 @@
       },
       "help": {
         "applyingEffects": {
-          "description": "Fai clic sul pulsante 'Effetti' (a destra del pulsante della fotocamera) per aprire il pannello degli effetti e applicare filtri divertenti alla tua visualizzazione live della fotocamera.",
-          "title": "Applicazione effetti"
+          "description": "Apri Effetti per scorrere i filtri CSS e gli shader di distorsione applicati in tempo reale",
+          "title": "Effetti dal vivo"
         },
         "downloadingPhotos": {
-          "description": "Le foto vengono salvate automaticamente. Fai clic su una foto nella striscia di foto per scaricarla.",
-          "title": "Download foto"
+          "description": "Le foto vengono salvate automaticamente in /Immagini — fai clic su una miniatura per scaricarla all'istante",
+          "title": "Salvataggio automatico nel Finder"
         },
         "quickSnaps": {
-          "description": "Tocca il pulsante del timer (a sinistra del pulsante della fotocamera) per avviare una sequenza di quattro foto scattate a un secondo di distanza l'una dall'altra.",
-          "title": "Scatti rapidi"
+          "description": "Tocca il pulsante del timer per scattare quattro foto in rapida successione, a un secondo di distanza",
+          "title": "Raffica da quattro"
         },
         "switchingCameras": {
-          "description": "Usa il menu 'Fotocamera' nella barra dei menu per passare da una fotocamera all'altra se ne hai più di una collegata.",
-          "title": "Cambio fotocamere"
+          "description": "Scegli qualsiasi fotocamera collegata (anteriore, posteriore, USB) dal menu Fotocamera nella barra dei menu",
+          "title": "Cambia fotocamera"
         },
         "takingPhoto": {
-          "description": "Tocca il grande pulsante rosso della fotocamera per scattare una singola foto.",
-          "title": "Acquisizione foto"
+          "description": "Premi il grande pulsante rosso della fotocamera per scattare una singola foto dalla webcam",
+          "title": "Scatta una foto"
         },
         "viewingPhotos": {
-          "description": "Fai clic sul pulsante della pila di foto (all'estrema sinistra) per mostrare o nascondere la striscia di foto in basso, che mostra tutte le tue foto salvate.",
-          "title": "Visualizzazione foto"
+          "description": "Attiva/disattiva la pila di foto per far scorrere i tuoi scatti salvati lungo la parte inferiore della finestra",
+          "title": "Striscia di foto"
         }
       },
       "menu": {
@@ -2866,28 +2894,28 @@
       "description": "Riproduci effetti sonori",
       "help": {
         "customizeSlot": {
-          "description": "Aggiungi emoji e titolo a ogni campione per un'identificazione rapida",
-          "title": "Personalizza Slot"
+          "description": "Contrassegna ogni slot con un'emoji e un nome per trovarlo al volo",
+          "title": "Emoji e titolo personalizzati"
         },
         "importExport": {
-          "description": "Condividi le schede come file; trascina e rilascia per importare",
+          "description": "Condividi le bacheche come file e trascinale all'interno per caricarle all'istante",
           "title": "Importa / Esporta"
         },
         "keyboardPlay": {
-          "description": "Premi 1-9 per attivare i suoni istantaneamente",
-          "title": "Riproduzione da Tastiera"
+          "description": "Premi 1–9 per riprodurre i suoni all'istante — perfetto per le esibizioni dal vivo",
+          "title": "Attivazione da tastiera"
         },
         "multipleBoards": {
-          "description": "Crea, rinomina e passa tra le schede per set di suoni",
-          "title": "Schede Multiple"
+          "description": "Crea, rinomina e passa da una bacheca all'altra per diversi set di suoni",
+          "title": "Più bacheche"
         },
         "recordSlot": {
-          "description": "Fai clic su uno slot per registrare l'audio; fai di nuovo clic per interrompere",
-          "title": "Slot di Registrazione"
+          "description": "Fai clic su uno slot vuoto per registrare direttamente dal microfono; fai clic per interrompere",
+          "title": "Slot di registrazione"
         },
         "waveformView": {
-          "description": "Visualizza la forma d'onda in tempo reale durante la registrazione o la riproduzione",
-          "title": "Vista Forma d'onda"
+          "description": "Visualizza una forma d'onda in tempo reale durante la registrazione o la riproduzione di ogni clip",
+          "title": "Forma d'onda in tempo reale"
         }
       },
       "importedSoundboard": "Pannello Suoni Importato",
@@ -2925,28 +2953,28 @@
       },
       "help": {
         "autoSave": {
-          "description": "Le note vengono salvate automaticamente e persistono tra le sessioni",
+          "description": "Le note vengono salvate automaticamente e riappaiono nello stesso punto al prossimo avvio",
           "title": "Salvataggio automatico"
         },
         "clearAll": {
-          "description": "Usa File > Cancella Tutte le Note per rimuovere tutti gli adesivi contemporaneamente.",
-          "title": "Cancella Tutto"
+          "description": "File ▸ Cancella tutte le note pulisce la bacheca in un colpo solo",
+          "title": "Cancella tutto"
         },
         "colors": {
-          "description": "Cambia i colori delle note dal menu Nota per organizzare i tuoi pensieri",
-          "title": "Colori"
+          "description": "Scegli tra giallo, rosa, blu, verde, viola e altri dal menu Nota",
+          "title": "Tag colorati"
         },
         "createNote": {
-          "description": "Fai clic su File > Nuova nota o usa il pulsante per creare una nuova nota adesiva",
-          "title": "Crea nota"
-        },
-        "deleteNote": {
-          "description": "Fai clic sul pulsante X su una nota o usa il menu per eliminarla",
-          "title": "Elimina nota"
+          "description": "File ▸ Nuova nota (o ⌘N) inserisce un nuovo memo direttamente sulla scrivania",
+          "title": "Crea una nota"
         },
         "moveResize": {
-          "description": "Trascina la barra del titolo per spostare, trascina l'angolo per ridimensionare le note.",
-          "title": "Sposta & Ridimensiona"
+          "description": "Trascina la barra del titolo per riposizionare; trascina l'angolo per ridimensionare liberamente",
+          "title": "Sposta e ridimensiona"
+        },
+        "ryoCanEdit": {
+          "description": "Chiedi a Ryo in Chat di aggiungere, spostare, ricolorare o riscrivere i memo per te",
+          "title": "Ryo può modificare"
         }
       },
       "menu": {
@@ -2992,28 +3020,28 @@
       },
       "help": {
         "controlsPanel": {
-          "description": "Attiva/disattiva CONTROLLI per regolare oscillatori, inviluppo ed effetti",
-          "title": "Pannello Controlli"
+          "description": "Apri CONTROLLI per regolare oscillatori, inviluppi, filtri ed effetti",
+          "title": "Pannello dei controlli"
         },
         "effects": {
-          "description": "Riverbero, delay, distorsione, chorus, phaser e bit-crusher",
-          "title": "Effetti"
+          "description": "Concatena riverbero, delay, distorsione, chorus, phaser e bit-crusher per voce",
+          "title": "Effetti in cascata"
         },
         "octaveShift": {
-          "description": "Usa i tasti o i pulsanti -/+ per spostare le ottave su o giù.",
-          "title": "Spostamento Ottava"
+          "description": "Premi -/+ o usa i pulsanti per spostare la tastiera su o giù di un'ottava",
+          "title": "Spostamento d'ottava"
         },
         "presets": {
-          "description": "Salva, carica e gestisci i preset audio personalizzati",
-          "title": "Preset"
+          "description": "Salva, carica e rinomina preset personalizzati per creare il tuo banco di suoni",
+          "title": "Salva preset"
         },
         "virtualKeyboard": {
-          "description": "Riproduci note con i tasti su schermo o la tastiera del computer",
-          "title": "Tastiera Virtuale"
+          "description": "Suona le note con i tasti a schermo o usa la tua tastiera QWERTY come tastiera musicale",
+          "title": "Tastiera virtuale"
         },
         "waveform3d": {
-          "description": "Forma d'onda animata in tempo reale quando il pannello controlli è aperto",
-          "title": "Forma d'onda 3D"
+          "description": "Guarda una mesh di forme d'onda 3D dal vivo reagire a ogni nota quando il pannello è aperto",
+          "title": "Visualizzatore FFT 3D"
         }
       },
       "menu": {
@@ -3076,28 +3104,28 @@
       "description": "Interfaccia a riga di comando",
       "help": {
         "aiAssistant": {
-          "description": "Digita \"ryo <prompt>\" per chattare con Ryo AI direttamente all'interno del terminale.",
-          "title": "Assistente AI"
+          "description": "Digita \"ryo <prompt>\" (o solo \"ai\") per chattare con Ryo con il contesto del tuo OS incluso",
+          "title": "Chiedi a Ryo in linea"
         },
         "basicCommands": {
-          "description": "Usa comandi come ls, cd, cat, pwd, clear e touch per navigare e gestire i file.",
-          "title": "Comandi Base"
+          "description": "Usa ls, cd, cat, pwd, mkdir, touch e clear per navigare nel tuo file system",
+          "title": "Basi di Unix"
         },
         "commandHistory": {
-          "description": "Premi le frecce ↑ / ↓ per scorrere i comandi precedenti e rieseguirli rapidamente.",
-          "title": "Cronologia Comandi"
+          "description": "Premi ↑ / ↓ per scorrere i comandi precedenti ed eseguirli nuovamente in un istante",
+          "title": "Cronologia comandi"
         },
         "fileEditing": {
-          "description": "Apri documenti in TextEdit (edit) o nell'editor in stile Vim (vim) direttamente dal prompt.",
-          "title": "Modifica File"
+          "description": "Esegui edit <file> per TextEdit o vim <file> per un vero editor Vim modale",
+          "title": "Edit e Vim"
         },
         "navigation": {
-          "description": "Sfoglia lo stesso file system virtuale di Finder con comandi Unix familiari.",
-          "title": "Navigazione"
+          "description": "Stesso file system virtuale del Finder — le modifiche in entrambe le app si sincronizzano all'istante",
+          "title": "Condiviso con il Finder"
         },
         "terminalSounds": {
-          "description": "Suoni distinti per output, errori e risposte AI. Attiva/disattiva in Visualizza ▸ Suoni.",
-          "title": "Suoni Terminale"
+          "description": "Effetti sonori nitidi per output, errori e risposte AI — attivali in Vista ▸ Suoni",
+          "title": "Suoni del terminale"
         }
       },
       "menu": {
@@ -3174,28 +3202,28 @@
       "heading2": "Intestazione 2",
       "heading3": "Intestazione 3",
       "help": {
+        "aiCoEditor": {
+          "description": "Chiedi a Ryo nelle chat di leggere, riassumere o riscrivere il documento aperto",
+          "title": "Co-editor AI"
+        },
         "fileManagement": {
-          "description": "Crea, apri, salva ed esporta file (HTML, MD, TXT)",
-          "title": "Gestione file"
+          "description": "Esporta in Markdown, HTML o testo semplice e trascina i file per importarli",
+          "title": "Salva come HTML, MD o TXT"
         },
         "formatting": {
-          "description": "Grassetto, corsivo, sottolineato, titoli e opzioni di allineamento",
-          "title": "Formattazione"
+          "description": "Grassetto, corsivo, sottolineato, intestazioni, allineamento e link in linea",
+          "title": "Formattazione avanzata"
         },
         "listsTasks": {
-          "description": "Crea elenchi puntati, numerati e di attività con caselle di controllo",
-          "title": "Elenchi e attività"
-        },
-        "richEditing": {
-          "description": "Digita, copia, taglia, incolla, annulla e ripristina il testo con facilità",
-          "title": "Modifica avanzata"
+          "description": "Combina elenchi puntati, numerati e caselle di controllo interattive in ogni documento",
+          "title": "Elenchi e caselle di controllo"
         },
         "slashCommands": {
-          "description": "Digita / per formattazione rapida (titoli, elenchi, stili di testo)",
+          "description": "Digita / per un menu istantaneo di intestazioni, elenchi e stili",
           "title": "Comandi slash"
         },
         "voiceDictation": {
-          "description": "Detta il testo a mani libere direttamente nel documento",
+          "description": "Tocca il microfono e detta a mani libere; il parlato viene trascritto sul posto",
           "title": "Dettatura vocale"
         }
       },
@@ -3297,29 +3325,29 @@
         "title": "Programma"
       },
       "help": {
+        "aiChannels": {
+          "description": "Usa Canali ▸ Crea per chiedere all'IA una playlist a tema personalizzata",
+          "title": "Canali creati dall'IA"
+        },
         "channels": {
-          "description": "Sfoglia canali YouTube selezionati come in TV",
-          "title": "Canali"
+          "description": "Passa da un canale YouTube curato all'altro come con la TV del sabato mattina",
+          "title": "Zapping"
         },
         "fullscreen": {
-          "description": "Guarda a schermo intero dal menu Controlli o dalla cornice della finestra",
-          "title": "Schermo intero"
+          "description": "Passa a tutto schermo da Controlli ▸ Tutto schermo per una vera esperienza da divano",
+          "title": "Modalità a tutto schermo"
         },
-        "helpAbout": {
-          "description": "Apri Aiuto dal menu Aiuto per ulteriori informazioni",
-          "title": "Aiuto e informazioni"
+        "mtvChannel": {
+          "description": "Il canale MTV riflette la tua libreria iPod e mostra i testi sincronizzati in sovrimpressione",
+          "title": "Canale MTV"
         },
         "numbers": {
-          "description": "Premi un numero per passare a un canale, o usa CH+ / CH−",
+          "description": "Digita 1–6 (o più cifre) per passare direttamente a un canale, oppure usa CH+/CH−",
           "title": "Numeri dei canali"
         },
         "playback": {
-          "description": "Riproduci, metti in pausa e salta i video nel canale corrente",
-          "title": "Riproduzione"
-        },
-        "shortcuts": {
-          "description": "Tasti freccia: su/giù cambiano canale, sinistra/destra cambiano video",
-          "title": "Scorciatoie"
+          "description": "I nuovi canali iniziano quando sono già in corso con una ricerca casuale per un effetto live",
+          "title": "Sintonizzazione a metà programma"
         }
       },
       "menu": {
@@ -3397,28 +3425,28 @@
       },
       "help": {
         "addVideo": {
-          "description": "Incolla qualsiasi URL di YouTube per aggiungere alla playlist",
-          "title": "Aggiungi video"
+          "description": "Incolla qualsiasi URL di YouTube e ryOS recupererà i metadati nella tua playlist",
+          "title": "Aggiungi da YouTube"
         },
         "loop": {
-          "description": "Ripeti video corrente o intera playlist",
-          "title": "Ripeti"
+          "description": "Riproduci in loop un singolo video o l'intera playlist per una riproduzione continua in background",
+          "title": "Modalità Loop"
         },
         "playback": {
-          "description": "Controlli riproduci, pausa, successivo, precedente",
-          "title": "Riproduzione"
+          "description": "Riproduci, metti in pausa, salta, scorri e regola il volume dalla robusta barra di trasporto",
+          "title": "Riproduzione classica"
         },
-        "playlist": {
-          "description": "Gestisci e organizza la tua playlist video",
-          "title": "Playlist"
+        "powersTv": {
+          "description": "La tua playlist alimenta anche la selezione di canali curata dell'app TV",
+          "title": "Alimenta Ryo TV"
         },
-        "retroUi": {
-          "description": "Estetica classica del lettore QuickTime",
-          "title": "Interfaccia retrò"
+        "shareDeepLinks": {
+          "description": "Genera URL di condivisione che riaprono lo stesso filmato direttamente in Video",
+          "title": "Condividi Deep Link"
         },
         "shuffle": {
-          "description": "Randomizza ordine playlist",
-          "title": "Casuale"
+          "description": "Attiva la riproduzione casuale per randomizzare l'ordine della playlist senza perdere la coda",
+          "title": "Ordine casuale"
         }
       },
       "menu": {
@@ -3474,28 +3502,28 @@
       "description": "Lettore multimediale classico Winamp",
       "help": {
         "controls": {
-          "description": "Usa i classici controlli di trasporto di Winamp: riproduci, pausa, stop, successivo, precedente",
-          "title": "Controlli"
+          "description": "Pulsanti autentici di riproduzione, pausa, stop, successivo e precedente, proprio come in Winamp 2",
+          "title": "Controlli classici"
         },
         "equalizer": {
-          "description": "Attiva o disattiva la finestra dell'equalizzatore per regolare frequenze audio e preset",
-          "title": "Equalizzatore"
+          "description": "Apri la finestra EQ per modellare le frequenze e scegliere tra i preset classici per genere",
+          "title": "Equalizzatore a 10 bande"
         },
         "playMusic": {
-          "description": "Trascina e rilascia file audio in Winamp oppure usa la playlist per aggiungere brani",
+          "description": "Trascina i file audio in qualsiasi punto di Winamp o aggiungili tramite l'editor della playlist",
           "title": "Riproduci musica"
         },
         "playlist": {
-          "description": "Apri l'editor della playlist per gestire la coda dei brani",
-          "title": "Playlist"
+          "description": "Gestisci la coda, riordina i brani e salva le playlist .m3u per dopo",
+          "title": "Editor playlist"
         },
         "shuffleRepeat": {
-          "description": "Attiva le modalità casuale e ripeti usando i pulsanti nella finestra principale",
-          "title": "Casuale e ripeti"
+          "description": "Attiva la riproduzione casuale e la ripetizione nella finestra principale per una riproduzione infinita o casuale",
+          "title": "Casuale e Ripeti"
         },
         "skins": {
-          "description": "Fai clic con il tasto destro per le opzioni, inclusa la selezione delle skin, per cambiare aspetto",
-          "title": "Skin"
+          "description": "Fai clic con il tasto destro per il selettore di skin — Webamp include l'aspetto originale di Winamp Classic",
+          "title": "Skin personalizzate"
         }
       },
       "menu": {

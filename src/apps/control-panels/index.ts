@@ -3,37 +3,32 @@ export const helpItems = [
     icon: "🎨",
     title: "Appearance",
     description:
-      "Choose photos, patterns, or shader effects for your desktop wallpaper",
-  },
-  {
-    icon: "🔊",
-    title: "Sounds",
-    description: "Toggle UI sounds, typing synth, and Terminal / IE effects",
-  },
-  {
-    icon: "🤖",
-    title: "AI Model",
-    description: "Select the AI model used by Chats and Terminal assistant",
+      "Pick wallpapers, patterns, or live shader effects to personalize your desktop",
   },
   {
     icon: "🌌",
     title: "Shader Effects",
-    description: "Enable CRT, Galaxy, or Aurora visual effects",
+    description: "Switch on CRT, Galaxy, or Aurora overlays for that classic CRT vibe",
   },
   {
-    icon: "📦",
-    title: "Backup & Restore",
-    description: "Export or restore all settings and files",
+    icon: "🔊",
+    title: "Sounds",
+    description: "Toggle UI clicks, typing synth, and Terminal/IE sound effects",
+  },
+  {
+    icon: "🤖",
+    title: "AI Model",
+    description: "Pick which AI model powers Chats and the Terminal Ryo assistant",
   },
   {
     icon: "☁️",
-    title: "Sync",
-    description: "Configure automatic cloud sync and manual cloud backups",
+    title: "Cloud Sync",
+    description: "Configure auto-sync and manual cloud backups for contacts, calendar, and more",
   },
   {
-    icon: "⚙️",
-    title: "System",
-    description: "Reset preferences or format the virtual file system",
+    icon: "📦",
+    title: "Backup & Reset",
+    description: "Export everything, restore from a backup, or format the virtual disk",
   },
 ];
 

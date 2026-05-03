@@ -14,36 +14,36 @@ export const helpItems = [
     icon: "📅",
     title: "Navigate Months",
     description:
-      "Use the arrow buttons to move between months, or click Today to jump back",
+      "Use the arrow buttons to flip months, or hit Today to snap back to now",
   },
   {
     icon: "➕",
     title: "Create Events",
     description:
-      "Double-click a date or use File > New Event to add calendar events",
+      "Double-click any date — or use File ▸ New Event — to add a timed event",
   },
   {
-    icon: "📋",
-    title: "Day View",
+    icon: "✅",
+    title: "Todos Sidebar",
     description:
-      "Click a date to select it, then switch to Day view to see all events for that day",
+      "Toggle the Todos panel to manage tasks alongside your scheduled events",
   },
   {
-    icon: "🎨",
-    title: "Color Coding",
+    icon: "📥",
+    title: "iCal Import / Export",
     description:
-      "Assign colors to events for easy visual organization",
+      "Drop in .ics files to bulk import, or export your calendar to share with others",
   },
   {
-    icon: "🗑️",
-    title: "Delete Events",
+    icon: "🤖",
+    title: "Ryo Schedules It",
     description:
-      "Select an event and use Edit > Delete Event to remove it",
+      "Ask Ryo in Chats to add, edit, or summarize your upcoming events for you",
   },
   {
-    icon: "💾",
-    title: "Auto-Save",
+    icon: "↩️",
+    title: "Undo & Auto-Save",
     description:
-      "Events are automatically saved and persist between sessions",
+      "Every change auto-saves; ⌘Z reverts deletes, edits, and even bulk imports",
   },
 ];
