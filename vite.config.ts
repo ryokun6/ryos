@@ -493,14 +493,15 @@ export default defineConfig({
           react: ["react", "react-dom"],
           
           // UI primitives - loaded early
+          // Note: ui-form was merged into ui-core to eliminate a circular chunk
+          // dependency (ui-form -> ui-core -> ui-form) that caused a TDZ crash
+          // in Vite 6.4.x: "can't access lexical declaration before initialization"
           "ui-core": [
             "@radix-ui/react-dialog",
             "@radix-ui/react-dropdown-menu",
             "@radix-ui/react-menubar",
             "@radix-ui/react-scroll-area",
             "@radix-ui/react-tooltip",
-          ],
-          "ui-form": [
             "@radix-ui/react-label",
             "@radix-ui/react-select",
             "@radix-ui/react-slider",
