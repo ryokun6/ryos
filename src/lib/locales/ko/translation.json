@@ -2317,6 +2317,7 @@
       },
       "musicQuiz": {
         "correct": "정답입니다!",
+        "correctWithPoints": "정답입니다! +{{points}}",
         "finalScore": "최종 점수",
         "greatJob": "잘하셨습니다!",
         "guessTheSong": "노래 제목 맞히기",

@@ -1931,6 +1931,7 @@
         "guessTheSong": "Guess the song",
         "loading": "Loading snippet…",
         "correct": "Correct!",
+        "correctWithPoints": "Correct! +{{points}}",
         "wrong": "Not quite!",
         "timesUp": "Time's up!",
         "scoreShort": "Score",

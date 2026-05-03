@@ -6,11 +6,16 @@ import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { MenuListItem } from "./screen";
+import {
+  computeSpeedScore,
+  musicQuizMaxScore,
+  MUSIC_QUIZ_SNIPPET_MS as SNIPPET_DURATION_MS,
+} from "../utils/musicQuizScoring";
 
-const SNIPPET_DURATION_MS = 10000;
 const FEEDBACK_DURATION_MS = 1800;
 const TOTAL_ROUNDS = 5;
 const NUM_OPTIONS = 4;
+const MAX_GAME_SCORE = musicQuizMaxScore(TOTAL_ROUNDS);
 // Avoid the very beginning and end so snippets feel like "the song", not intros/outros.
 // We still cap by half the actual duration once it loads.
 const SNIPPET_MIN_START_SEC = 20;
@@ -89,12 +94,14 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const [round, setRound] = useState<MusicQuizRound | null>(null);
   const [roundNumber, setRoundNumber] = useState(0);
   const [score, setScore] = useState(0);
+  const [lastRoundPoints, setLastRoundPoints] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const playerRef = useRef<ReactPlayer | null>(null);
   const snippetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startSecRef = useRef(0);
+  const snippetStartedAtRef = useRef<number | null>(null);
   const enteredRef = useRef(false);
 
   const hasEnoughTracks = tracks.length >= 2;
@@ -145,6 +152,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     });
     setRoundNumber((n) => n + 1);
     setSelectedIndex(0);
+    snippetStartedAtRef.current = null;
     setPhase("loading");
   }, [clearTimers, hasEnoughTracks, tracks]);
 
@@ -183,7 +191,16 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
       setRound({ ...round, selectedIndex: idx, isCorrect });
       setSelectedIndex(round.correctIndex);
       setPhase("feedback");
-      if (isCorrect) setScore((s) => s + 1);
+      if (isCorrect) {
+        const startedAt = snippetStartedAtRef.current;
+        const elapsed =
+          startedAt == null ? SNIPPET_DURATION_MS : performance.now() - startedAt;
+        const points = computeSpeedScore(elapsed);
+        setLastRoundPoints(points);
+        setScore((s) => s + points);
+      } else {
+        setLastRoundPoints(0);
+      }
 
       feedbackTimerRef.current = setTimeout(() => {
         if (roundNumber >= TOTAL_ROUNDS) {
@@ -200,6 +217,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const startSnippet = useCallback(() => {
     if (!playerRef.current) return;
     clearTimers();
+    snippetStartedAtRef.current = performance.now();
     playerRef.current.seekTo(startSecRef.current, "seconds");
     snippetTimerRef.current = setTimeout(() => {
       // Time's up — auto-mark wrong (no answer)
@@ -293,6 +311,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         playerRef.current.seekTo(startSecRef.current, "seconds");
         // Restart snippet timer
         clearTimers();
+        snippetStartedAtRef.current = performance.now();
         snippetTimerRef.current = setTimeout(() => {
           if (!round) return;
           clearTimers();
@@ -368,10 +387,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         ) : phase === "finished" ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
             <span className="font-chicago text-[16px] tabular-nums leading-4">
-              {score}/{TOTAL_ROUNDS}
+              {score}/{MAX_GAME_SCORE}
             </span>
             <span className="font-chicago text-[14px] leading-4">
-              {t(scoreMessageKey(score, TOTAL_ROUNDS))}
+              {t(scoreMessageKey(score, MAX_GAME_SCORE))}
             </span>
             <div className="flex flex-col font-chicago text-[14px] leading-4 opacity-85">
               <span>
@@ -394,7 +413,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
                 {phase === "feedback" ? (
                   <div className="w-full truncate text-center font-chicago text-[16px] leading-4">
                     {round?.isCorrect
-                      ? t("apps.ipod.musicQuiz.correct")
+                      ? t("apps.ipod.musicQuiz.correctWithPoints", { points: lastRoundPoints })
                       : round?.selectedIndex == null
                         ? t("apps.ipod.musicQuiz.timesUp")
                         : t("apps.ipod.musicQuiz.wrong")}
@@ -500,8 +519,8 @@ function formatOption(track: Track): string {
   return `${track.title}${artist}`;
 }
 
-function scoreMessageKey(score: number, total: number): string {
-  const ratio = total === 0 ? 0 : score / total;
+function scoreMessageKey(score: number, maxScore: number): string {
+  const ratio = maxScore === 0 ? 0 : score / maxScore;
   if (ratio === 1) return "apps.ipod.musicQuiz.perfect";
   if (ratio >= 0.6) return "apps.ipod.musicQuiz.greatJob";
   if (ratio >= 0.3) return "apps.ipod.musicQuiz.notBad";

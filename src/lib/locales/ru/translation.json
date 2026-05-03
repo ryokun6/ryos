@@ -2317,6 +2317,7 @@
       },
       "musicQuiz": {
         "correct": "Верно!",
+        "correctWithPoints": "Верно! +{{points}}",
         "finalScore": "Итоговый счёт",
         "greatJob": "Отличная работа!",
         "guessTheSong": "Угадайте песню",

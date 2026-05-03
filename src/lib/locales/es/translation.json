@@ -2317,6 +2317,7 @@
       },
       "musicQuiz": {
         "correct": "¡Correcto!",
+        "correctWithPoints": "¡Correcto! +{{points}}",
         "finalScore": "Puntuación final",
         "greatJob": "¡Buen trabajo!",
         "guessTheSong": "Adivina la canción",

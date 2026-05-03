@@ -2317,6 +2317,7 @@
       },
       "musicQuiz": {
         "correct": "正解！",
+        "correctWithPoints": "正解！ +{{points}}",
         "finalScore": "最終スコア",
         "greatJob": "よくできました！",
         "guessTheSong": "曲名を当てよう",

@@ -2317,6 +2317,7 @@
       },
       "musicQuiz": {
         "correct": "正確！",
+        "correctWithPoints": "答對了！+{{points}}",
         "finalScore": "最終得分",
         "greatJob": "表現出色！",
         "guessTheSong": "猜猜這首歌",

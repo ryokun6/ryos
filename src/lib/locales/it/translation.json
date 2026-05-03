@@ -2317,6 +2317,7 @@
       },
       "musicQuiz": {
         "correct": "Esatto!",
+        "correctWithPoints": "Corretto! +{{points}}",
         "finalScore": "Punteggio finale",
         "greatJob": "Ottimo lavoro!",
         "guessTheSong": "Indovina la canzone",
