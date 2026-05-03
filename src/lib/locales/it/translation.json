@@ -2543,7 +2543,28 @@
       },
       "name": "Mappe",
       "noResults": "Nessun risultato",
+      "placeCard": {
+        "addFavorite": "Aggiungi ai preferiti",
+        "close": "Chiudi scheda del luogo",
+        "favorite": "Preferito",
+        "favorited": "Aggiunto ai preferiti",
+        "home": "Casa",
+        "regionLabel": "Luogo selezionato",
+        "removeFavorite": "Rimuovi dai preferiti",
+        "setHome": "Imposta come Casa",
+        "setWork": "Imposta come Lavoro",
+        "work": "Lavoro"
+      },
+      "places": {
+        "allEmpty": "Cerca un luogo e usa le azioni della scheda per salvarlo come Casa, Lavoro o Preferito.",
+        "favorites": "Preferiti",
+        "home": "Casa",
+        "recents": "Luoghi recenti",
+        "title": "Luoghi",
+        "work": "Lavoro"
+      },
       "searchButton": "Cerca",
+      "searchFailed": "Ricerca non riuscita",
       "searchPlaceholder": "Cerca in Mappe",
       "searching": "Ricerca in corso…",
       "status": {

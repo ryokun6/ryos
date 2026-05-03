@@ -2543,7 +2543,28 @@
       },
       "name": "Plans",
       "noResults": "Aucun résultat",
+      "placeCard": {
+        "addFavorite": "Ajouter aux favoris",
+        "close": "Fermer la fiche du lieu",
+        "favorite": "Favori",
+        "favorited": "Ajouté aux favoris",
+        "home": "Domicile",
+        "regionLabel": "Lieu sélectionné",
+        "removeFavorite": "Supprimer des favoris",
+        "setHome": "Définir comme domicile",
+        "setWork": "Définir comme bureau",
+        "work": "Bureau"
+      },
+      "places": {
+        "allEmpty": "Recherchez un lieu et utilisez les actions de la fiche pour l'enregistrer comme domicile, bureau ou favori.",
+        "favorites": "Favoris",
+        "home": "Domicile",
+        "recents": "Lieux récents",
+        "title": "Lieux",
+        "work": "Bureau"
+      },
       "searchButton": "Rechercher",
+      "searchFailed": "Échec de la recherche",
       "searchPlaceholder": "Rechercher dans Plans",
       "searching": "Recherche en cours…",
       "status": {

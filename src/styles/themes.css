@@ -374,6 +374,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.38),
     inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 }
+
 /* Narrow viewports: playlist hangs below the window; round bottom corners only */
 :root[data-os-theme="macosx"] [data-tv-drawer-layout="bottom"] .tv-drawer-metal {
   border-radius: 0 0 0.45rem 0.45rem !important;
@@ -2883,6 +2884,25 @@
   font-family: var(--font-geneva-12) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
+}
+
+/* macOS: Maps place-card surface — matches the toast/dock pinstripe glass */
+:root[data-os-theme="macosx"] .maps-place-card-aqua {
+  background: rgba(248, 248, 248, 0.75);
+  background-image: var(--os-pinstripe-menubar);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+:root[data-os-theme="macosx"] .maps-place-card-aqua {
+  color: rgba(0, 0, 0, 0.9);
+}
+/* Keep gradient-filled badge glyphs white — the `*` color override above
+   would otherwise stain them dark over the colored badge. */
+:root[data-os-theme="macosx"] .maps-place-card-aqua .aqua-icon-badge,
+:root[data-os-theme="macosx"] .maps-place-card-aqua .aqua-icon-badge * {
+  color: #ffffff;
 }
 
 /* macOS: Style toast containers with semi-transparent pinstripes like dock */

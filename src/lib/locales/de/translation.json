@@ -2543,7 +2543,28 @@
       },
       "name": "Karten",
       "noResults": "Keine Ergebnisse",
+      "placeCard": {
+        "addFavorite": "Zu Favoriten hinzufügen",
+        "close": "Ortskarte schließen",
+        "favorite": "Favorit",
+        "favorited": "Favorisiert",
+        "home": "Privat",
+        "regionLabel": "Ausgewählter Ort",
+        "removeFavorite": "Aus Favoriten entfernen",
+        "setHome": "Als Privat festlegen",
+        "setWork": "Als Arbeit festlegen",
+        "work": "Arbeit"
+      },
+      "places": {
+        "allEmpty": "Suche nach einem Ort und verwende die Aktionen auf der Karte, um ihn als Privat, Arbeit oder Favorit zu speichern.",
+        "favorites": "Favoriten",
+        "home": "Privat",
+        "recents": "Zuletzt besucht",
+        "title": "Orte",
+        "work": "Arbeit"
+      },
       "searchButton": "Suchen",
+      "searchFailed": "Suche fehlgeschlagen",
       "searchPlaceholder": "In Karten suchen",
       "searching": "Suchen …",
       "status": {

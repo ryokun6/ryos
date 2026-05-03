@@ -2543,7 +2543,28 @@
       },
       "name": "マップ",
       "noResults": "結果なし",
+      "placeCard": {
+        "addFavorite": "よく使う項目に追加",
+        "close": "場所のカードを閉じる",
+        "favorite": "よく使う項目",
+        "favorited": "よく使う項目に追加済み",
+        "home": "自宅",
+        "regionLabel": "選択中の場所",
+        "removeFavorite": "よく使う項目から削除",
+        "setHome": "自宅に設定",
+        "setWork": "勤務先に設定",
+        "work": "勤務先"
+      },
+      "places": {
+        "allEmpty": "場所を検索し、カードのアクションを使用して自宅、勤務先、またはよく使う項目として保存します。",
+        "favorites": "よく使う項目",
+        "home": "自宅",
+        "recents": "最近表示した場所",
+        "title": "場所",
+        "work": "勤務先"
+      },
       "searchButton": "検索",
+      "searchFailed": "検索に失敗しました",
       "searchPlaceholder": "マップを検索",
       "searching": "検索中…",
       "status": {

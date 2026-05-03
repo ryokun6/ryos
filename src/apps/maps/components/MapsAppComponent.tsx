@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MapPin } from "@phosphor-icons/react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { cn } from "@/lib/utils";
 import type { AppProps } from "@/apps/base/types";
@@ -10,6 +12,10 @@ import { MapsMenuBar } from "./MapsMenuBar";
 import { useMapsLogic, type MapsMapType } from "../hooks/useMapsLogic";
 import { useMapKit, type MapKitStatus } from "../hooks/useMapKit";
 import { getPoiVisual, poiVisualGradient } from "../utils/poiVisuals";
+import { MapsPlacesDrawer } from "./MapsPlacesDrawer";
+import { MapsPlaceCard } from "./MapsPlaceCard";
+import { useMapsStore } from "@/stores/useMapsStore";
+import type { SavedPlace } from "../utils/types";
 
 // Minimal MapKit JS shape we touch from this component. We only declare the
 // fields we use so we don't need the full @types/apple-mapkit-js-browser
@@ -163,6 +169,24 @@ export function MapsAppComponent({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
   const [isShowingResults, setIsShowingResults] = useState(false);
+  const [isPlacesDrawerOpen, setIsPlacesDrawerOpen] = useState(false);
+
+  // Persistent Home / Work / Favorites / Recents + currently-open place.
+  const homePlace = useMapsStore((s) => s.home);
+  const workPlace = useMapsStore((s) => s.work);
+  const favoritePlaces = useMapsStore((s) => s.favorites);
+  const recentPlaces = useMapsStore((s) => s.recents);
+  const selectedPlace = useMapsStore((s) => s.selectedPlace);
+  const setHomePlace = useMapsStore((s) => s.setHome);
+  const setWorkPlace = useMapsStore((s) => s.setWork);
+  const addFavoritePlace = useMapsStore((s) => s.addFavorite);
+  const removeFavoritePlace = useMapsStore((s) => s.removeFavorite);
+  const recordRecentPlace = useMapsStore((s) => s.recordRecent);
+  const setSelectedPlace = useMapsStore((s) => s.setSelectedPlace);
+  const isPlaceFavorite = useCallback(
+    (id: string) => favoritePlaces.some((p) => p.id === id),
+    [favoritePlaces]
+  );
 
   // Initialize the map instance once mapkit is ready and the window is open.
   useEffect(() => {
@@ -284,7 +308,10 @@ export function MapsAppComponent({
           setIsSearching(false);
           if (err) {
             setSearchResults([]);
-            setSearchError(err.message || "Search failed");
+            setSearchError(
+              err.message ||
+                t("apps.maps.searchFailed", { defaultValue: "Search failed" })
+            );
             return;
           }
           const places = data?.places ?? [];
@@ -302,17 +329,22 @@ export function MapsAppComponent({
         region ? { region } : undefined
       );
     },
-    [status]
+    [status, t]
   );
 
-  const handleSelectResult = useCallback(
-    (result: MapsSearchResult) => {
+  const dropPinAt = useCallback(
+    (place: {
+      id: string;
+      name: string;
+      subtitle?: string;
+      latitude: number;
+      longitude: number;
+    }) => {
       const mk = getMapKit();
       const map = mapInstanceRef.current;
       if (!mk || !map) return;
 
-      setSelectedResultId(result.id);
-      setIsShowingResults(false);
+      setSelectedResultId(place.id);
 
       if (annotationRef.current) {
         try {
@@ -323,13 +355,10 @@ export function MapsAppComponent({
         annotationRef.current = null;
       }
 
-      const coord = new mk.Coordinate(
-        result.coordinate.latitude,
-        result.coordinate.longitude
-      );
+      const coord = new mk.Coordinate(place.latitude, place.longitude);
       const annotation = new mk.MarkerAnnotation(coord, {
-        title: result.name,
-        subtitle: result.subtitle,
+        title: place.name,
+        subtitle: place.subtitle ?? "",
         color: "#E25B4F",
       });
       map.addAnnotation(annotation);
@@ -341,6 +370,90 @@ export function MapsAppComponent({
     },
     []
   );
+
+  const handleSelectResult = useCallback(
+    (result: MapsSearchResult) => {
+      setIsShowingResults(false);
+      dropPinAt({
+        id: result.id,
+        name: result.name,
+        subtitle: result.subtitle,
+        latitude: result.coordinate.latitude,
+        longitude: result.coordinate.longitude,
+      });
+
+      const saved: SavedPlace = {
+        id: result.id,
+        name: result.name,
+        subtitle: result.subtitle,
+        latitude: result.coordinate.latitude,
+        longitude: result.coordinate.longitude,
+        category: result.category,
+      };
+      recordRecentPlace(saved);
+      setSelectedPlace(saved);
+    },
+    [dropPinAt, recordRecentPlace, setSelectedPlace]
+  );
+
+  const handleSelectSavedPlace = useCallback(
+    (place: SavedPlace) => {
+      dropPinAt(place);
+      recordRecentPlace(place);
+      setSelectedPlace(place);
+    },
+    [dropPinAt, recordRecentPlace, setSelectedPlace]
+  );
+
+  // Remove the dropped annotation (if any) and clear the selected-result
+  // highlight in the search list. Used both by the "close card" button and
+  // when toggling Home/Work mutations don't apply.
+  const clearDroppedAnnotation = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (map && annotationRef.current) {
+      try {
+        map.removeAnnotation(annotationRef.current);
+      } catch {
+        // ignore
+      }
+    }
+    annotationRef.current = null;
+    setSelectedResultId(null);
+  }, []);
+
+  const handleClosePlaceCard = useCallback(() => {
+    setSelectedPlace(null);
+    clearDroppedAnnotation();
+  }, [setSelectedPlace, clearDroppedAnnotation]);
+
+  const handleToggleFavorite = useCallback(
+    (place: SavedPlace) => {
+      if (isPlaceFavorite(place.id)) {
+        removeFavoritePlace(place.id);
+      } else {
+        addFavoritePlace(place);
+      }
+    },
+    [isPlaceFavorite, removeFavoritePlace, addFavoritePlace]
+  );
+
+  // Re-drop the pin and re-center on the persisted `selectedPlace` once the
+  // map becomes ready. Guarded so it only fires once per mount: subsequent
+  // user-driven selections go through `dropPinAt` directly.
+  const hasHydratedSelectedRef = useRef(false);
+  useEffect(() => {
+    if (hasHydratedSelectedRef.current) return;
+    if (status !== "ready") return;
+    if (!mapInstanceRef.current) return;
+    if (!selectedPlace) {
+      // Mark as hydrated so we don't accidentally re-drop a pin if the user
+      // closes the card before the map finishes loading and then re-opens it.
+      hasHydratedSelectedRef.current = true;
+      return;
+    }
+    hasHydratedSelectedRef.current = true;
+    dropPinAt(selectedPlace);
+  }, [status, selectedPlace, dropPinAt]);
 
   const handleLocateMe = useCallback(() => {
     const map = mapInstanceRef.current;
@@ -428,6 +541,18 @@ export function MapsAppComponent({
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
+        drawer={
+          <MapsPlacesDrawer
+            isOpen={isPlacesDrawerOpen}
+            onClose={() => setIsPlacesDrawerOpen(false)}
+            home={homePlace}
+            work={workPlace}
+            favorites={favoritePlaces}
+            recents={recentPlaces}
+            onSelectPlace={handleSelectSavedPlace}
+            t={t}
+          />
+        }
       >
         <div className="flex flex-1 min-w-0 flex-col h-full w-full bg-os-window-bg font-os-ui">
           {/* Search bar */}
@@ -458,6 +583,17 @@ export function MapsAppComponent({
               })}
               className="flex-1 min-w-0"
             />
+            <Button
+              type="button"
+              variant={isMacOSTheme ? "aqua" : "retro"}
+              size="sm"
+              onClick={() => setIsPlacesDrawerOpen((v) => !v)}
+              aria-pressed={isPlacesDrawerOpen}
+              title={t("apps.maps.places.title", { defaultValue: "Places" })}
+              className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
+            >
+              <MapPin size={12} weight="fill" />
+            </Button>
           </div>
 
           {/* Map area + results overlay */}
@@ -495,6 +631,27 @@ export function MapsAppComponent({
                 </div>
               </div>
             )}
+
+            <MapsPlaceCard
+              place={selectedPlace}
+              isFavorite={
+                selectedPlace ? isPlaceFavorite(selectedPlace.id) : false
+              }
+              isHome={
+                !!selectedPlace &&
+                !!homePlace &&
+                homePlace.id === selectedPlace.id
+              }
+              isWork={
+                !!selectedPlace &&
+                !!workPlace &&
+                workPlace.id === selectedPlace.id
+              }
+              onSetHome={(p) => setHomePlace(p)}
+              onSetWork={(p) => setWorkPlace(p)}
+              onToggleFavorite={handleToggleFavorite}
+              onClose={handleClosePlaceCard}
+            />
 
             {isShowingResults && (
               <div

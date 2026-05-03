@@ -1,4 +1,3 @@
-import type { ComponentType } from "react";
 import {
   Airplane,
   Bank,
@@ -18,6 +17,7 @@ import {
   ForkKnife,
   GasPump,
   GraduationCap,
+  type Icon,
   Lightning,
   MapPin,
   MaskHappy,
@@ -31,13 +31,12 @@ import {
   Sun,
   Tent,
   Train,
-  Tree,
   Trophy,
   Wine,
 } from "@phosphor-icons/react";
 
 export interface PoiVisual {
-  Icon: ComponentType<{ size?: number; weight?: string; className?: string }>;
+  Icon: Icon;
   /** CSS color stop for top-left of the gradient. */
   from: string;
   /** CSS color stop for bottom-right of the gradient. */

@@ -1247,7 +1247,7 @@ export function WindowFrame({
               ? "window flex flex-col h-full" // Use xp.css window class with flex layout
               : isNoTitlebar && currentTheme === "macosx"
               ? "window w-full h-full flex flex-col rounded-os overflow-hidden relative" // No border for notitlebar
-              : "window w-full h-full flex flex-col border-[length:var(--os-metrics-border-width)] border-os-window rounded-os overflow-hidden",
+              : "window w-full h-full flex flex-col border-[length:var(--os-metrics-border-width)] border-os-window rounded-os overflow-hidden relative",
             !effectiveTransparentBackground && !isXpTheme && "bg-os-window-bg",
             !isXpTheme && (currentTheme !== "system7" || isForeground)
               ? "shadow-os-window"

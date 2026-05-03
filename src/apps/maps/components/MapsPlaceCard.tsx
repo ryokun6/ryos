@@ -1,0 +1,275 @@
+import { useTranslation } from "react-i18next";
+import { motion, AnimatePresence, type Transition } from "framer-motion";
+import { Briefcase, House, Star, X } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { getPoiVisual, poiVisualGradient } from "../utils/poiVisuals";
+import type { SavedPlace } from "../utils/types";
+
+export interface MapsPlaceCardProps {
+  place: SavedPlace | null;
+  isFavorite: boolean;
+  isHome: boolean;
+  isWork: boolean;
+  onSetHome: (place: SavedPlace) => void;
+  onSetWork: (place: SavedPlace) => void;
+  onToggleFavorite: (place: SavedPlace) => void;
+  onClose: () => void;
+}
+
+// Spring tuned to feel close to the existing drawer transition but a touch
+// snappier — the card is small and benefits from a quicker settle.
+const CARD_TRANSITION: Transition = {
+  type: "spring",
+  stiffness: 360,
+  damping: 30,
+  mass: 0.7,
+};
+
+/**
+ * Convert a MapKit `pointOfInterestCategory` (camelCase, sometimes prefixed
+ * with `MKPOICategory`) into a human-friendly label, e.g.
+ *   "foodMarket"           -> "Food Market"
+ *   "MKPOICategoryRestaurant" -> "Restaurant"
+ *   "evCharger"            -> "Ev Charger"
+ */
+function humanizeCategory(category?: string | null): string | null {
+  if (!category) return null;
+  const stripped = category.replace(/^MKPOICategory/, "");
+  if (!stripped) return null;
+  const spaced = stripped
+    // insert a space before each uppercase that follows a lowercase/number
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    // collapse runs of caps (e.g. "EVCharger" -> "EV Charger")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+export function MapsPlaceCard({
+  place,
+  isFavorite,
+  isHome,
+  isWork,
+  onSetHome,
+  onSetWork,
+  onToggleFavorite,
+  onClose,
+}: MapsPlaceCardProps) {
+  const { t } = useTranslation();
+  const { isMacOSTheme, isXpTheme, isSystem7Theme } = useThemeFlags();
+
+  return (
+    <AnimatePresence>
+      {place && (
+        <motion.div
+          key={place.id}
+          role="region"
+          aria-label={t("apps.maps.placeCard.regionLabel", {
+            defaultValue: "Selected place",
+          })}
+          className={cn(
+            "absolute select-none",
+            // Mobile: full width minus 8 px gutter, bottom: 8.
+            "left-2 right-2 bottom-2",
+            // Desktop: tighter 12 px insets and a hair more bottom space so the
+            // card doesn't crowd the MapKit zoom controls.
+            "sm:left-3 sm:right-3 sm:bottom-3"
+          )}
+          initial={{ y: 24, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 24, opacity: 0 }}
+          transition={CARD_TRANSITION}
+        >
+          <div
+            className={cn(
+              "flex flex-col gap-2.5 p-3",
+              // Theme shells — macOS matches the toast/dock pinstripe glass;
+              // other themes mirror their drawer panels so the surfaces look
+              // like siblings.
+              isMacOSTheme &&
+                "maps-place-card-aqua rounded-[0.5rem] text-black",
+              !isMacOSTheme &&
+                isSystem7Theme &&
+                "rounded border-2 border-black bg-white text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]",
+              !isMacOSTheme &&
+                !isSystem7Theme &&
+                isXpTheme &&
+                "rounded-[0.4rem] border-2 border-[#0054E3] bg-[#ECE9D8] text-black shadow-md",
+              // Fallback (any future theme): neutral light card.
+              !isMacOSTheme && !isSystem7Theme && !isXpTheme &&
+                "rounded border border-black/30 bg-white text-black shadow-md"
+            )}
+          >
+            <PlaceCardHeader place={place} onClose={onClose} t={t} />
+            <PlaceCardActions
+              place={place}
+              isFavorite={isFavorite}
+              isHome={isHome}
+              isWork={isWork}
+              onSetHome={onSetHome}
+              onSetWork={onSetWork}
+              onToggleFavorite={onToggleFavorite}
+              t={t}
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+interface PlaceCardHeaderProps {
+  place: SavedPlace;
+  onClose: () => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}
+
+function PlaceCardHeader({ place, onClose, t }: PlaceCardHeaderProps) {
+  const visual = getPoiVisual(place.category);
+  const Icon = visual.Icon;
+  const categoryLabel = humanizeCategory(place.category);
+
+  return (
+    <div className="flex items-start gap-2.5">
+      <div
+        className="aqua-icon-badge flex h-9 w-9 shrink-0 items-center justify-center text-white"
+        style={{ backgroundImage: poiVisualGradient(visual) }}
+        aria-hidden="true"
+      >
+        <Icon size={20} weight="fill" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-1.5">
+          <div className="truncate text-[13px] font-semibold leading-tight text-black">
+            {place.name}
+          </div>
+          {categoryLabel && (
+            <div className="shrink-0 text-[11px] leading-tight text-black/45">
+              {categoryLabel}
+            </div>
+          )}
+        </div>
+        {place.subtitle && (
+          <div className="line-clamp-2 text-[11px] leading-snug text-black/60">
+            {place.subtitle}
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className={cn(
+          "shrink-0 -mr-0.5 -mt-0.5 flex h-6 w-6 items-center justify-center rounded-full",
+          "text-black/55 hover:bg-black/10 hover:text-black/85",
+          "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
+        )}
+        aria-label={t("apps.maps.placeCard.close", {
+          defaultValue: "Close place card",
+        })}
+      >
+        <X size={12} weight="bold" />
+      </button>
+    </div>
+  );
+}
+
+interface PlaceCardActionsProps {
+  place: SavedPlace;
+  isFavorite: boolean;
+  isHome: boolean;
+  isWork: boolean;
+  onSetHome: (place: SavedPlace) => void;
+  onSetWork: (place: SavedPlace) => void;
+  onToggleFavorite: (place: SavedPlace) => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}
+
+function PlaceCardActions({
+  place,
+  isFavorite,
+  isHome,
+  isWork,
+  onSetHome,
+  onSetWork,
+  onToggleFavorite,
+  t,
+}: PlaceCardActionsProps) {
+  const { isMacOSTheme } = useThemeFlags();
+  const variant = isMacOSTheme ? "aqua" : "retro";
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        onClick={() => onToggleFavorite(place)}
+        aria-pressed={isFavorite}
+        title={
+          isFavorite
+            ? t("apps.maps.placeCard.removeFavorite", {
+                defaultValue: "Remove from Favorites",
+              })
+            : t("apps.maps.placeCard.addFavorite", {
+                defaultValue: "Add to Favorites",
+              })
+        }
+        className="!gap-1.5"
+      >
+        <Star size={12} weight={isFavorite ? "fill" : "regular"} />
+        <span>
+          {isFavorite
+            ? t("apps.maps.placeCard.favorited", {
+                defaultValue: "Favorited",
+              })
+            : t("apps.maps.placeCard.favorite", {
+                defaultValue: "Favorite",
+              })}
+        </span>
+      </Button>
+
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        onClick={() => onSetHome(place)}
+        aria-pressed={isHome}
+        title={t("apps.maps.placeCard.setHome", {
+          defaultValue: "Set as Home",
+        })}
+        className="!gap-1.5"
+      >
+        <House size={12} weight={isHome ? "fill" : "regular"} />
+        <span>
+          {isHome
+            ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
+            : t("apps.maps.placeCard.setHome", {
+                defaultValue: "Set as Home",
+              })}
+        </span>
+      </Button>
+
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        onClick={() => onSetWork(place)}
+        aria-pressed={isWork}
+        title={t("apps.maps.placeCard.setWork", {
+          defaultValue: "Set as Work",
+        })}
+        className="!gap-1.5"
+      >
+        <Briefcase size={12} weight={isWork ? "fill" : "regular"} />
+        <span>
+          {isWork
+            ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
+            : t("apps.maps.placeCard.setWork", {
+                defaultValue: "Set as Work",
+              })}
+        </span>
+      </Button>
+    </div>
+  );
+}

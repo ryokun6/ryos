@@ -2543,7 +2543,28 @@
       },
       "name": "地圖",
       "noResults": "無結果",
+      "placeCard": {
+        "addFavorite": "加入最愛",
+        "close": "關閉地點卡",
+        "favorite": "最愛",
+        "favorited": "已加入最愛",
+        "home": "住家",
+        "regionLabel": "已選取的地點",
+        "removeFavorite": "從最愛移除",
+        "setHome": "設為住家",
+        "setWork": "設為公司",
+        "work": "公司"
+      },
+      "places": {
+        "allEmpty": "搜尋地點並使用卡片動作將其儲存為「住家」、「公司」或「最愛」。",
+        "favorites": "最愛",
+        "home": "住家",
+        "recents": "最近的地點",
+        "title": "地點",
+        "work": "公司"
+      },
       "searchButton": "搜尋",
+      "searchFailed": "搜尋失敗",
       "searchPlaceholder": "搜尋地圖",
       "searching": "正在搜尋…",
       "status": {

@@ -3907,8 +3907,29 @@
       "searchButton": "Search",
       "searching": "Searching…",
       "noResults": "No results",
+      "searchFailed": "Search failed",
       "locateMe": "Locate Me",
       "mapAriaLabel": "Map",
+      "places": {
+        "title": "Places",
+        "home": "Home",
+        "work": "Work",
+        "favorites": "Favorites",
+        "recents": "Recent Places",
+        "allEmpty": "Search for a place and use the card actions to save it as Home, Work, or a Favorite."
+      },
+      "placeCard": {
+        "regionLabel": "Selected place",
+        "close": "Close place card",
+        "setHome": "Set as Home",
+        "home": "Home",
+        "setWork": "Set as Work",
+        "work": "Work",
+        "addFavorite": "Add to Favorites",
+        "removeFavorite": "Remove from Favorites",
+        "favorite": "Favorite",
+        "favorited": "Favorited"
+      },
       "menu": {
         "locateMe": "Locate Me",
         "standard": "Standard",

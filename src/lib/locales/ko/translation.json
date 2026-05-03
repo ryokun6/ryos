@@ -2543,7 +2543,28 @@
       },
       "name": "지도",
       "noResults": "결과 없음",
+      "placeCard": {
+        "addFavorite": "즐겨찾기에 추가",
+        "close": "장소 카드 닫기",
+        "favorite": "즐겨찾기",
+        "favorited": "즐겨찾기에 추가됨",
+        "home": "집",
+        "regionLabel": "선택된 장소",
+        "removeFavorite": "즐겨찾기에서 제거",
+        "setHome": "집으로 설정",
+        "setWork": "직장으로 설정",
+        "work": "직장"
+      },
+      "places": {
+        "allEmpty": "장소를 검색한 후 카드 동작을 사용하여 집, 직장 또는 즐겨찾기로 저장하세요.",
+        "favorites": "즐겨찾기",
+        "home": "집",
+        "recents": "최근 장소",
+        "title": "장소",
+        "work": "직장"
+      },
       "searchButton": "검색",
+      "searchFailed": "검색 실패",
       "searchPlaceholder": "지도 검색",
       "searching": "검색 중…",
       "status": {
