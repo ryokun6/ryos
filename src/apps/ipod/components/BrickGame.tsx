@@ -9,30 +9,28 @@ import {
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
-// Logical (CSS) game canvas dimensions. The iPod screen is 150px tall and
-// the title bar consumes ~24-28px depending on font metrics, leaving
-// ~120-126px for the body. We size the canvas conservatively so the
-// paddle never gets clipped, and anchor the canvas to the TOP of the
-// flex body so the bottom (paddle) stays visible even if the title bar
-// renders slightly taller than expected.
-const GAME_WIDTH = 200;
-const GAME_HEIGHT = 96;
+// Logical (CSS) game-world dimensions. The canvas element is stretched
+// to fill the iPod screen body via CSS (width/height: 100%); these
+// numbers define the game's internal coordinate system, which is then
+// drawn at the actual pixel size with DPR scaling.
+const GAME_WIDTH = 220;
+const GAME_HEIGHT = 124;
 
-// Brick layout — keep bricks shallow so the lower play area dominates.
+// Brick layout — slim rows that occupy the top quarter of the play field.
 const BRICK_COLS = 10;
 const BRICK_ROWS = 4;
 const BRICK_GAP = 1;
-const BRICK_TOP_OFFSET = 3;
+const BRICK_TOP_OFFSET = 4;
 const BRICK_SIDE_OFFSET = 2;
-const BRICK_HEIGHT = 3;
+const BRICK_HEIGHT = 4;
 
 // Paddle / ball
-const PADDLE_WIDTH = 28;
-const PADDLE_HEIGHT = 2;
-const PADDLE_Y = GAME_HEIGHT - 6;
+const PADDLE_WIDTH = 30;
+const PADDLE_HEIGHT = 3;
+const PADDLE_Y = GAME_HEIGHT - 8;
 const BALL_RADIUS = 1.5;
-const BALL_BASE_SPEED = 70; // px / sec
-const BALL_SPEED_INCREMENT = 7; // per level
+const BALL_BASE_SPEED = 80; // px / sec
+const BALL_SPEED_INCREMENT = 8; // per level
 
 // Wheel sensitivity: pixels of paddle movement per single rotation tick
 const WHEEL_TICK_PIXELS = 14;
@@ -164,8 +162,13 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    // Reset transform then scale so logical units map to CSS pixels.
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Use the canvas' actual rendered CSS size so the game world maps
+    // 1:1 to the screen body (no clipping, no letterboxing).
+    const cssW = canvas.clientWidth || GAME_WIDTH;
+    const cssH = canvas.clientHeight || GAME_HEIGHT;
+    const sx = (cssW * dpr) / GAME_WIDTH;
+    const sy = (cssH * dpr) / GAME_HEIGHT;
+    ctx.setTransform(sx, 0, 0, sy, 0, 0);
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
     const fg = "#0a3667";
@@ -324,16 +327,31 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     rafRef.current = requestAnimationFrame(loop);
   }, [loop]);
 
-  // Set up the canvas with a DPR-scaled backing store.
+  // Size the canvas' backing store to its actual CSS-rendered size,
+  // and re-size whenever the container changes (iPod scale, window
+  // resize, etc.). This way the canvas always fills the screen body.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = GAME_WIDTH * dpr;
-    canvas.height = GAME_HEIGHT * dpr;
-    canvas.style.width = `${GAME_WIDTH}px`;
-    canvas.style.height = `${GAME_HEIGHT}px`;
-    draw();
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = canvas.clientWidth;
+      const cssH = canvas.clientHeight;
+      if (cssW <= 0 || cssH <= 0) return;
+      const targetW = Math.round(cssW * dpr);
+      const targetH = Math.round(cssH * dpr);
+      if (canvas.width !== targetW) canvas.width = targetW;
+      if (canvas.height !== targetH) canvas.height = targetH;
+      draw();
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+    window.addEventListener("resize", resize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", resize);
+    };
   }, [draw]);
 
   // Reset and start the render/physics loop while visible.
@@ -454,13 +472,14 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         </div>
       </div>
 
-      {/* Body — anchor canvas to the top so the paddle (bottom edge of
-          canvas) is always visible regardless of title-bar height. */}
-      <div className="relative flex-1 min-h-0 overflow-hidden z-30">
+      {/* Body — canvas stretches to fill the entire body via CSS so it
+          uses every available pixel (no fixed pixel size that could
+          clip below the title bar). */}
+      <div className="relative flex-1 min-h-0 w-full overflow-hidden z-30">
         <canvas
           ref={canvasRef}
-          className="block absolute top-0 left-1/2 -translate-x-1/2"
-          style={{ width: GAME_WIDTH, height: GAME_HEIGHT, imageRendering: "pixelated" }}
+          className="block absolute inset-0"
+          style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
           aria-label={t("apps.ipod.brickGame.title")}
         />
 
@@ -471,8 +490,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
 
         {overlayMessage && (
           <div
-            className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center justify-center"
-            style={{ top: GAME_HEIGHT / 2 - 10 }}
+            className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2 top-1/2 flex items-center justify-center"
             aria-live="polite"
           >
             <div className="rounded-[2px] border border-[#0a3667] bg-[#c5e0f5]/85 px-2 py-0.5 font-chicago text-[11px] leading-tight text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] text-center whitespace-nowrap">
