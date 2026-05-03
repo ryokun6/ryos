@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState, memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -105,6 +105,14 @@ const getCitationLabel = (url: string): string => {
     return url;
   }
 };
+
+// Stable module-level animation objects — prevents Framer Motion from seeing
+// prop changes on every render, which would otherwise re-trigger animations.
+const CHAT_BUBBLE_VARIANTS = { initial: { opacity: 0 }, animate: { opacity: 1 } };
+const MOTION_SPAN_ANIMATE = { opacity: 1, y: 0 } as const;
+const MOTION_SPAN_INITIAL_NEW = { opacity: 0, y: 12 } as const;
+const MOTION_SPAN_INITIAL_LOADED = { opacity: 1, y: 0 } as const;
+const MOTION_BTN_INITIAL = { opacity: 0, scale: 0.8 } as const;
 
 // Helper function to extract user-friendly error message
 const getErrorMessage = (error: Error): string => {
@@ -374,13 +382,17 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     playDingSound,
   } = props;
 
+  // Keep a ref to the latest playNote so onComplete callbacks stay stable
+  // across renders and don't cause Framer Motion to re-run animations.
+  const playNoteRef = useRef(playNote);
+  useEffect(() => { playNoteRef.current = playNote; }, [playNote]);
+
   let messageText = getMessageText(message);
   const isStaticGreeting = message.role === "assistant" && message.id === "1";
   if (isStaticGreeting && !messageText) {
     messageText = t("apps.chats.messages.greeting");
   }
   const showTypingDots = isLoadingGreeting && !isRoomView && isStaticGreeting;
-  const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
   const isUrgent = isUrgentMessage(messageText);
   let bgColorClass = "";
   if (isUrgent) {
@@ -481,7 +493,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
   return (
     <motion.div
       key={messageKey}
-      variants={variants}
+      variants={CHAT_BUBBLE_VARIANTS}
       initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
       animate="animate"
       transition={
@@ -522,7 +534,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
+                      initial={MOTION_BTN_INITIAL}
                       animate={{
                         opacity: hoveredMessageId === messageKey ? 1 : 0,
                         scale: 1,
@@ -541,7 +553,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               </TooltipProvider>
             )}
             <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={MOTION_BTN_INITIAL}
               animate={{
                 opacity: hoveredMessageId === messageKey ? 1 : 0,
                 scale: 1,
@@ -598,7 +610,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
         {message.role === "assistant" && (
           <>
             <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={MOTION_BTN_INITIAL}
               animate={{
                 opacity: hoveredMessageId === messageKey ? 1 : 0,
                 scale: 1,
@@ -615,7 +627,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             </motion.button>
             {speechEnabled && (
               <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={MOTION_BTN_INITIAL}
                 animate={{
                   opacity: hoveredMessageId === messageKey ? 1 : 0,
                   scale: 1,
@@ -710,7 +722,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               <Tooltip>
                 <TooltipTrigger asChild>
                   <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    initial={MOTION_BTN_INITIAL}
                     animate={{
                       opacity: hoveredMessageId === messageKey ? 1 : 0,
                       scale: 1,
@@ -739,7 +751,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             <Tooltip>
               <TooltipTrigger asChild>
                 <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={MOTION_BTN_INITIAL}
                   animate={{
                     opacity: hoveredMessageId === messageKey ? 1 : 0,
                     scale: 1,
@@ -898,10 +910,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                       key={`${partKey}-segment-${idx}`}
                                       initial={
                                         isInitialMessage
-                                          ? { opacity: 1, y: 0 }
-                                          : { opacity: 0, y: 12 }
+                                          ? MOTION_SPAN_INITIAL_LOADED
+                                          : MOTION_SPAN_INITIAL_NEW
                                       }
-                                      animate={{ opacity: 1, y: 0 }}
+                                      animate={MOTION_SPAN_ANIMATE}
                                       className={`select-text ${
                                         isEmojiOnly(textContent)
                                           ? "text-[24px]"
@@ -923,9 +935,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                         duration: 0.08,
                                         delay: idx * 0.02,
                                         ease: "easeOut",
-                                        onComplete: () => {
-                                          if (idx % 2 === 0) playNote();
-                                        },
+                                        // Only play a note for tokens that are
+                                        // actively streaming in, not for history
+                                        // messages that animate as a no-op on mount.
+                                        ...((!isInitialMessage && idx % 2 === 0) && {
+                                          onComplete: () => { playNoteRef.current(); },
+                                        }),
                                       }}
                                     >
                                       {highlightActive &&
@@ -1206,7 +1221,7 @@ function ChatMessagesContent({
     }
   }, [localTtsSpeaking, speechLoadingId]);
 
-  const copyMessage = async (message: ChatMessage) => {
+  const copyMessage = useCallback(async (message: ChatMessage) => {
     const messageText = getMessageText(message);
     try {
       await navigator.clipboard.writeText(messageText);
@@ -1232,9 +1247,9 @@ function ChatMessagesContent({
         console.error("Fallback copy failed:", fallbackErr);
       }
     }
-  };
+  }, []);
 
-  const deleteMessage = async (message: ChatMessage) => {
+  const deleteMessage = useCallback(async (message: ChatMessage) => {
     if (!roomId) return;
     const serverMessageId = message.serverId || message.id; // prefer serverId when present
     if (!serverMessageId) return;
@@ -1279,7 +1294,7 @@ function ChatMessagesContent({
       }
       console.error("Error deleting message", err);
     }
-  };
+  }, [roomId, onMessageDeleted]);
 
   // Return the message list rendering logic
   return (
