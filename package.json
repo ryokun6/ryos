@@ -115,7 +115,7 @@
     "caniuse-lite": "^1.0.30001762",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "dompurify": "^3.3.1",
+    "dompurify": "^3.4.2",
     "formidable": "^3.5.4",
     "framer-motion": "^12.23.26",
     "hangul-romanization": "^1.0.1",
@@ -183,7 +183,7 @@
     "tailwindcss": "^4.1.18",
     "typescript": "~5.6.3",
     "typescript-eslint": "^8.50.1",
-    "vite": "^6.4.1",
+    "vite": "^6",
     "vite-plugin-pwa": "^1.2.0",
     "woff2": "^1.0.0"
   },
