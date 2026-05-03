@@ -1,6 +1,6 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/useAppStore";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
@@ -111,17 +111,23 @@ export function useRyoChat({
   const { t } = useTranslation();
 
   // Create a separate AI chat hook for @ryo mentions in chat rooms
+  const ryoChatTransport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: getApiUrl("/api/chat"),
+        body: {
+          systemState: getSystemState(),
+        },
+      }),
+    []
+  );
+
   const {
     messages: ryoMessages,
     status,
     stop: stopRyo,
   } = useChat({
-    transport: new DefaultChatTransport({
-      api: getApiUrl("/api/chat"),
-      body: {
-        systemState: getSystemState(),
-      },
-    }),
+    transport: ryoChatTransport,
     // We no longer stream client-side AI to avoid spoofing. onFinish unused.
   });
 

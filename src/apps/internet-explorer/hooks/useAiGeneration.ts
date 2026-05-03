@@ -1,6 +1,6 @@
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   useInternetExplorerStore,
   DEFAULT_TIMELINE,
@@ -201,6 +201,17 @@ export function useAiGeneration({
     // currentGenerationId.current = null; // Revisit if needed.
   };
 
+  const ieGenerateTransport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: getApiUrl("/api/ie-generate"),
+        body: {
+          model: aiModel,
+        },
+      }),
+    [aiModel]
+  );
+
   const {
     messages: aiMessages,
     sendMessage: appendAiMessage,
@@ -210,12 +221,7 @@ export function useAiGeneration({
   } = useChat({
     messages: [],
     onFinish: handleAiFinish,
-    transport: new DefaultChatTransport({
-      api: getApiUrl("/api/ie-generate"),
-      body: {
-        model: aiModel, // Pass the selected model to the API
-      },
-    }),
+    transport: ieGenerateTransport,
   });
 
   const isAiLoading = status === "streaming" || status === "submitted";
