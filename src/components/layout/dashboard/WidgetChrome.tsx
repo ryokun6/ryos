@@ -15,6 +15,12 @@ interface WidgetChromeProps {
   zIndex?: number;
   borderRadius?: string;
   hideDoneButton?: boolean;
+  /**
+   * "absolute" (default) — uses x/y for positioning and supports drag.
+   * "stacked" — relative positioning for use in a vertical/grid layout (mobile);
+   * disables drag, ignores x/y, and lets the parent control placement.
+   */
+  layout?: "absolute" | "stacked";
   onRemove?: () => void;
   onMove?: (position: { x: number; y: number }) => void;
   onBringToFront?: () => void;
@@ -31,10 +37,12 @@ export function WidgetChrome({
   zIndex = 1,
   borderRadius: borderRadiusProp,
   hideDoneButton,
+  layout = "absolute",
   onRemove,
   onMove,
   onBringToFront,
 }: WidgetChromeProps) {
+  const isStacked = layout === "stacked";
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -48,7 +56,7 @@ export function WidgetChrome({
   const didDragRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const showControls = isHovered || isTouchActive;
+  const showControls = isHovered || isTouchActive || isStacked;
 
   useEffect(() => {
     if (!isTouchActive) return;
@@ -67,6 +75,7 @@ export function WidgetChrome({
       if ((e.target as HTMLElement).closest("[data-flip-btn]")) return;
       if ((e.target as HTMLElement).closest("button, input, select, textarea, a")) return;
       if (isFlipped) return;
+      if (isStacked) return;
       if (e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
@@ -78,7 +87,7 @@ export function WidgetChrome({
       dragStartRef.current = { px: e.clientX, py: e.clientY, startX: x, startY: y };
       setIsDragging(true);
     },
-    [x, y, onBringToFront, isFlipped]
+    [x, y, onBringToFront, isFlipped, isStacked]
   );
 
   const handlePointerMove = useCallback(
@@ -166,19 +175,28 @@ export function WidgetChrome({
   return (
     <div
       ref={containerRef}
-      className="absolute select-none touch-none"
-      style={{
-        left: x,
-        top: y,
-        width,
-        height: "auto",
-        cursor: isDragging ? "grabbing" : isFlipped ? "default" : "grab",
-        zIndex: isDragging ? 9999 : zIndex,
-      }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
+      className={`${isStacked ? "relative select-none" : "absolute select-none touch-none"}`}
+      style={
+        isStacked
+          ? {
+              width,
+              height: "auto",
+              cursor: isFlipped ? "default" : "default",
+              zIndex,
+            }
+          : {
+              left: x,
+              top: y,
+              width,
+              height: "auto",
+              cursor: isDragging ? "grabbing" : isFlipped ? "default" : "grab",
+              zIndex: isDragging ? 9999 : zIndex,
+            }
+      }
+      onPointerDown={isStacked ? undefined : handlePointerDown}
+      onPointerMove={isStacked ? undefined : handlePointerMove}
+      onPointerUp={isStacked ? undefined : handlePointerUp}
+      onPointerCancel={isStacked ? undefined : handlePointerCancel}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
