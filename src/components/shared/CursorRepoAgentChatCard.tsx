@@ -146,23 +146,23 @@ export function CursorRepoAgentChatCard({
                 rel="noopener noreferrer"
                 className="inline-flex shrink-0 items-center gap-1 rounded border border-gray-300 bg-white/85 px-1.5 py-0.5 text-[10px] font-medium text-neutral-700 transition-colors hover:bg-gray-100 dark:border-neutral-600 dark:bg-neutral-900/70 dark:text-neutral-200 dark:hover:bg-neutral-800"
                 title={prUrl}
-                aria-label={t("apps.chats.toolCalls.cursorRyOsRepoAgent.openPr")}
+                aria-label={t("apps.chats.toolCalls.cursorCloudAgent.openPr")}
               >
                 <ArrowSquareOut className="h-3 w-3" weight="bold" />
                 <span>
-                  {t("apps.chats.toolCalls.cursorRyOsRepoAgent.openPr")}
+                  {t("apps.chats.toolCalls.cursorCloudAgent.openPr")}
                 </span>
               </a>
             ) : null}
             {!done ? (
               <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-amber-900 dark:text-amber-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
-                {t("apps.chats.toolCalls.cursorRyOsRepoAgent.running")}
+                {t("apps.chats.toolCalls.cursorCloudAgent.running")}
               </span>
             ) : (
               <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-emerald-900 dark:text-emerald-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
-                {t("apps.chats.toolCalls.cursorRyOsRepoAgent.finished")}
+                {t("apps.chats.toolCalls.cursorCloudAgent.finished")}
               </span>
             )}
           </div>
@@ -190,7 +190,7 @@ export function CursorRepoAgentChatCard({
           >
             {items.length === 0 ? (
               <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                {t("apps.chats.toolCalls.cursorRyOsRepoAgent.noEventsYet")}
+                {t("apps.chats.toolCalls.cursorCloudAgent.noEventsYet")}
               </span>
             ) : (
               items.map((item, i) => {
@@ -284,18 +284,18 @@ export function CursorRepoAgentChatCard({
                 placeholder={
                   isSendingFollowup
                     ? t(
-                        "apps.chats.toolCalls.cursorRyOsRepoAgent.followupSending"
+                        "apps.chats.toolCalls.cursorCloudAgent.followupSending"
                       )
                     : !done
                       ? t(
-                          "apps.chats.toolCalls.cursorRyOsRepoAgent.followupBusy"
+                          "apps.chats.toolCalls.cursorCloudAgent.followupBusy"
                         )
                       : t(
-                          "apps.chats.toolCalls.cursorRyOsRepoAgent.followupPlaceholder"
+                          "apps.chats.toolCalls.cursorCloudAgent.followupPlaceholder"
                         )
                 }
                 aria-label={t(
-                  "apps.chats.toolCalls.cursorRyOsRepoAgent.followupAriaLabel"
+                  "apps.chats.toolCalls.cursorCloudAgent.followupAriaLabel"
                 )}
                 className="min-h-[26px] flex-1 resize-none rounded border border-gray-300 bg-white px-2 py-1 text-[12px] leading-snug text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-neutral-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:disabled:bg-neutral-900"
               />
@@ -303,10 +303,10 @@ export function CursorRepoAgentChatCard({
                 type="submit"
                 disabled={!canFollowup || followupDraft.trim().length === 0}
                 aria-label={t(
-                  "apps.chats.toolCalls.cursorRyOsRepoAgent.followupSend"
+                  "apps.chats.toolCalls.cursorCloudAgent.followupSend"
                 )}
                 title={t(
-                  "apps.chats.toolCalls.cursorRyOsRepoAgent.followupSend"
+                  "apps.chats.toolCalls.cursorCloudAgent.followupSend"
                 )}
                 className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center self-end rounded border border-blue-500 bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-neutral-300 disabled:bg-neutral-200 disabled:text-neutral-500 dark:disabled:border-neutral-700 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500"
               >

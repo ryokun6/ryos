@@ -30,6 +30,9 @@ export interface AdminCursorAgentRunRow {
   errorPreview?: string;
   isFollowup?: boolean;
   previousRunId?: string;
+  nextRunId?: string;
+  /** Same shape as API — https://cursor.com/agents/{agentId} */
+  agentDashboardUrl?: string;
 }
 
 interface CursorAgentsResponse {
@@ -164,7 +167,7 @@ export function CursorAgentsPanel({
   const selectedRun = runs.find((r) => r.runId === selectedRunId) ?? null;
   const selectedHeaderTitle =
     selectedRun?.agentTitle?.trim() ||
-    t("apps.chats.toolCalls.cursorRyOsRepoAgent.panelTitle");
+    t("apps.chats.toolCalls.cursorCloudAgent.panelTitle");
 
   const fetchRuns = useCallback(async () => {
     if (!username || !isAuthenticated) return;
@@ -207,6 +210,8 @@ export function CursorAgentsPanel({
       const result = await postAdminStartCursorAgent<{
         async?: boolean;
         runId?: string;
+        agentId?: string;
+        agentDashboardUrl?: string;
         success?: boolean;
         error?: string;
         message?: string;

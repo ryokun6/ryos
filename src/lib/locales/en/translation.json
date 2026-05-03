@@ -989,9 +989,9 @@
           "fetched": "Read {{siteName}}",
           "fetchedPage": "Read \"{{title}}\""
         },
-        "cursorRyOsRepoAgent": {
+        "cursorCloudAgent": {
           "starting": "Starting Cursor Cloud agent…",
-          "panelTitle": "Cursor repo agent",
+          "panelTitle": "Cursor Cloud agent",
           "running": "Running",
           "finished": "Finished",
           "noEventsYet": "Waiting for stream events…",
@@ -1015,6 +1015,11 @@
             "runEndedError": "Run ended with an error",
             "emptyAssistant": "(No message content)"
           }
+        },
+        "listCursorCloudAgentRuns": {
+          "loading": "Listing Cursor Cloud agent runs…",
+          "listed": "Listed {{count}} recent run(s).",
+          "truncatedHint": "(list may be truncated)"
         },
         "searchedWebFor": "Searched the web for {{query}}",
         "foundVideos": "Found {{count}} videos",

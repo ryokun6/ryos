@@ -875,33 +875,6 @@
         "contentWritten": "Inhalt geschrieben",
         "controllingPlayback": "Wiedergabe wird gesteuert…",
         "createdDocument": "Dokument erstellt: {{path}}",
-        "cursorRyOsRepoAgent": {
-          "finished": "Abgeschlossen",
-          "followupAriaLabel": "Folgenachricht an den Cursor-Agenten",
-          "followupBusy": "Agent läuft noch…",
-          "followupPlaceholder": "Antwort an den Agenten…",
-          "followupSend": "Folgenachricht senden",
-          "followupSending": "Folgenachricht wird gesendet…",
-          "noEventsYet": "Warten auf Stream-Ereignisse…",
-          "openPr": "PR öffnen",
-          "panelTitle": "Cursor-Repo-Agent",
-          "running": "Läuft",
-          "starting": "Cursor-Cloud-Agent wird gestartet…",
-          "stream": {
-            "args": "Argumente",
-            "emptyAssistant": "(Kein Nachrichteninhalt)",
-            "result": "Ergebnis",
-            "runEnded": "Durchlauf abgeschlossen · {{status}}",
-            "runEndedError": "Durchlauf mit einem Fehler beendet",
-            "status": "Status",
-            "system": "Sitzung gestartet",
-            "thinking": "Denkt nach",
-            "toolCall": "Tool · {{name}}",
-            "toolUse": "Tool-Anfrage · {{name}}",
-            "truncated": "gekürzt",
-            "userPrompt": "Prompt"
-          }
-        },
         "document": "Dokument",
         "edited": "{{fileName}} bearbeitet",
         "editedApplet": "Applet erfolgreich bearbeitet: {{path}}",
@@ -1115,7 +1088,39 @@
           "fetchedPage": "\"{{title}}\" lesen",
           "fetching": "{{hostname}} wird gelesen…"
         },
-        "writingContent": "Inhalt wird geschrieben…"
+        "writingContent": "Inhalt wird geschrieben…",
+        "cursorCloudAgent": {
+          "finished": "Abgeschlossen",
+          "followupAriaLabel": "Folgenachricht an den Cursor-Agenten",
+          "followupBusy": "Agent läuft noch…",
+          "followupPlaceholder": "Antwort an den Agenten…",
+          "followupSend": "Folgenachricht senden",
+          "followupSending": "Folgenachricht wird gesendet…",
+          "noEventsYet": "Warten auf Stream-Ereignisse…",
+          "openPr": "PR öffnen",
+          "panelTitle": "Cursor-Cloud-Agent",
+          "running": "Läuft",
+          "starting": "Cursor-Cloud-Agent wird gestartet…",
+          "stream": {
+            "args": "Argumente",
+            "emptyAssistant": "(Kein Nachrichteninhalt)",
+            "result": "Ergebnis",
+            "runEnded": "Durchlauf abgeschlossen · {{status}}",
+            "runEndedError": "Durchlauf mit einem Fehler beendet",
+            "status": "Status",
+            "system": "Sitzung gestartet",
+            "thinking": "Denkt nach",
+            "toolCall": "Tool · {{name}}",
+            "toolUse": "Tool-Anfrage · {{name}}",
+            "truncated": "gekürzt",
+            "userPrompt": "Prompt"
+          }
+        },
+        "listCursorCloudAgentRuns": {
+          "loading": "Listing Cursor Cloud agent runs…",
+          "listed": "Listed {{count}} recent run(s).",
+          "truncatedHint": "(list may be truncated)"
+        }
       }
     },
     "contacts": {

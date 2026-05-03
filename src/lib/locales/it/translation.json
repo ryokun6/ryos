@@ -875,33 +875,6 @@
         "contentWritten": "Contenuto scritto",
         "controllingPlayback": "Controllo riproduzione…",
         "createdDocument": "Documento creato: {{path}}",
-        "cursorRyOsRepoAgent": {
-          "finished": "Completato",
-          "followupAriaLabel": "Messaggio di follow-up per l'agente Cursor",
-          "followupBusy": "L'agente è ancora in esecuzione…",
-          "followupPlaceholder": "Rispondi all'agente…",
-          "followupSend": "Invia follow-up",
-          "followupSending": "Invio follow-up…",
-          "noEventsYet": "In attesa di eventi stream…",
-          "openPr": "Apri PR",
-          "panelTitle": "Agente repo Cursor",
-          "running": "In esecuzione",
-          "starting": "Avvio dell'agente Cursor Cloud…",
-          "stream": {
-            "args": "Argomenti",
-            "emptyAssistant": "(Nessun contenuto del messaggio)",
-            "result": "Risultato",
-            "runEnded": "Esecuzione completata · {{status}}",
-            "runEndedError": "Esecuzione terminata con un errore",
-            "status": "Stato",
-            "system": "Sessione avviata",
-            "thinking": "Pensando",
-            "toolCall": "Strumento · {{name}}",
-            "toolUse": "Richiesta strumento · {{name}}",
-            "truncated": "troncato",
-            "userPrompt": "Prompt"
-          }
-        },
         "document": "Documento",
         "edited": "Modificato {{fileName}}",
         "editedApplet": "Applet modificata con successo: {{path}}",
@@ -1115,7 +1088,39 @@
           "fetchedPage": "Leggi \"{{title}}\"",
           "fetching": "Lettura di {{hostname}}…"
         },
-        "writingContent": "Scrittura contenuto…"
+        "writingContent": "Scrittura contenuto…",
+        "cursorCloudAgent": {
+          "finished": "Completato",
+          "followupAriaLabel": "Messaggio di follow-up per l'agente Cursor",
+          "followupBusy": "L'agente è ancora in esecuzione…",
+          "followupPlaceholder": "Rispondi all'agente…",
+          "followupSend": "Invia follow-up",
+          "followupSending": "Invio follow-up…",
+          "noEventsYet": "In attesa di eventi stream…",
+          "openPr": "Apri PR",
+          "panelTitle": "Agente repo Cursor",
+          "running": "In esecuzione",
+          "starting": "Avvio dell'agente Cursor Cloud…",
+          "stream": {
+            "args": "Argomenti",
+            "emptyAssistant": "(Nessun contenuto del messaggio)",
+            "result": "Risultato",
+            "runEnded": "Esecuzione completata · {{status}}",
+            "runEndedError": "Esecuzione terminata con un errore",
+            "status": "Stato",
+            "system": "Sessione avviata",
+            "thinking": "Pensando",
+            "toolCall": "Strumento · {{name}}",
+            "toolUse": "Richiesta strumento · {{name}}",
+            "truncated": "troncato",
+            "userPrompt": "Prompt"
+          }
+        },
+        "listCursorCloudAgentRuns": {
+          "loading": "Listing Cursor Cloud agent runs…",
+          "listed": "Listed {{count}} recent run(s).",
+          "truncatedHint": "(list may be truncated)"
+        }
       }
     },
     "contacts": {
