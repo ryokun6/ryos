@@ -16,6 +16,11 @@ import { MapsPlacesDrawer } from "./MapsPlacesDrawer";
 import { MapsPlaceCard } from "./MapsPlaceCard";
 import { useMapsStore } from "@/stores/useMapsStore";
 import type { SavedPlace } from "../utils/types";
+import {
+  FAVORITE_GLYPH_IMAGE,
+  HOME_GLYPH_IMAGE,
+  WORK_GLYPH_IMAGE,
+} from "../utils/markerGlyphs";
 
 // Minimal MapKit JS shape we touch from this component. We only declare the
 // fields we use so we don't need the full @types/apple-mapkit-js-browser
@@ -592,16 +597,24 @@ export function MapsAppComponent({
         entry.place.latitude,
         entry.place.longitude
       );
-      const color =
+      // Per-kind marker color + Phosphor-derived glyph image. The glyph
+      // hash is the same `data:` SVG for all three densities — Apple's
+      // docs require ≥ 20×20 with 40×40 recommended; SVG scales for all.
+      const visual =
         entry.kind === "home"
-          ? "#1d4ed8" // matches HOME_VISUAL "to" stop in MapsPlacesDrawer
+          ? { color: "#1d4ed8", glyph: HOME_GLYPH_IMAGE }
           : entry.kind === "work"
-            ? "#b45309" // matches WORK_VISUAL "to" stop
-            : "#f59e0b"; // gold for Favorites
+            ? { color: "#b45309", glyph: WORK_GLYPH_IMAGE }
+            : { color: "#f59e0b", glyph: FAVORITE_GLYPH_IMAGE };
       const annotation = new mk.MarkerAnnotation(coord, {
         title: entry.place.name,
         subtitle: entry.place.subtitle ?? "",
-        color,
+        color: visual.color,
+        glyphColor: "#ffffff",
+        glyphImage: visual.glyph,
+        // Use the same glyph when selected so the icon doesn't flash to
+        // the default pin glyph during the expanded callout state.
+        selectedGlyphImage: visual.glyph,
         // Above default search pins so a search result doesn't visually
         // hide a saved annotation at the same location.
         displayPriority: 1000,
