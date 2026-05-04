@@ -132,6 +132,18 @@ interface MapKitGlobal {
     placeOrCoordinate: MapKitPlace | MapKitCoordinate,
     options?: Record<string, unknown>
   ) => MapKitMarkerAnnotation;
+  // MapKit JS 5.78+ Place ID lookup. Lets us upgrade saved-place
+  // annotations (favorites) to PlaceAnnotation by re-fetching the live
+  // `Place` object from a persisted Apple Place ID. Optional so older
+  // MapKit JS still typechecks.
+  //   https://developer.apple.com/documentation/mapkitjs/placelookup
+  PlaceLookup?: new () => {
+    getPlace: (
+      id: string,
+      callback: (error: Error | null, place: MapKitPlace | null) => void,
+      options?: Record<string, unknown>
+    ) => void;
+  };
   // Optional in the type so loaders that don't expose the constant still
   // typecheck. We default to "default" / "required" string literals.
   RegionPriority?: { Default: MapKitRegionPriority; Required: MapKitRegionPriority };
@@ -244,6 +256,18 @@ export function MapsAppComponent({
   const savedAnnotationsRef = useRef<
     Map<string, { annotation: MapKitMarkerAnnotation; place: SavedPlace }>
   >(new Map());
+  // Cache of MapKit `Place` objects keyed by Apple Place ID. Populated
+  // lazily via `mapkit.PlaceLookup` so favorites that were captured from
+  // a search (and therefore have a `placeId`) can render with Apple's
+  // `PlaceAnnotation` iconography instead of a generic star pin. Also
+  // tracks placeIds that we've already kicked off a lookup for so we
+  // don't fire duplicate requests when the effect re-runs.
+  const placeCacheRef = useRef<Map<string, MapKitPlace>>(new Map());
+  const placeLookupInFlightRef = useRef<Set<string>>(new Set());
+  // Bumped when a PlaceLookup completes so the saved-annotations effect
+  // re-runs and upgrades the favorite from MarkerAnnotation to
+  // PlaceAnnotation.
+  const [placeCacheTick, setPlaceCacheTick] = useState(0);
   // Bump every time the underlying MapKit instance is (re)created so any
   // effect that wants to act on `mapInstanceRef.current` can subscribe via
   // a real React dep — refs alone don't trigger re-renders, which made
@@ -670,9 +694,26 @@ export function MapsAppComponent({
         removeFavoritePlace(place.id);
       } else {
         addFavoritePlace(place);
+        // Seed the place cache from the currently-selected search result
+        // (if any) so the new favorite renders as a PlaceAnnotation
+        // immediately, without waiting for a `PlaceLookup` roundtrip.
+        if (place.placeId) {
+          const selectedResult = searchResults.find(
+            (r) => r.placeId === place.placeId && r.place
+          );
+          if (selectedResult?.place) {
+            placeCacheRef.current.set(place.placeId, selectedResult.place);
+            setPlaceCacheTick((t) => t + 1);
+          }
+        }
       }
     },
-    [isPlaceFavorite, removeFavoritePlace, addFavoritePlace]
+    [
+      isPlaceFavorite,
+      removeFavoritePlace,
+      addFavoritePlace,
+      searchResults,
+    ]
   );
 
   // Localized "Home" / "Work" labels used as the marker title for those
@@ -765,18 +806,67 @@ export function MapsAppComponent({
         entry.kind === "home" || entry.kind === "work"
           ? entry.place.name
           : (entry.place.subtitle ?? "");
-      const annotation = new mk.MarkerAnnotation(coord, {
-        title,
-        subtitle,
-        color: visual.color,
-        glyphColor: "#ffffff",
-        glyphImage: visual.glyph,
-        selectedGlyphImage: visual.glyph,
-        // Above default search pins so a search result doesn't visually
-        // hide a saved annotation at the same location.
-        displayPriority: 1000,
-        selected: false,
-      });
+
+      let annotation: MapKitMarkerAnnotation;
+      const cachedPlace = entry.place.placeId
+        ? placeCacheRef.current.get(entry.place.placeId)
+        : undefined;
+
+      if (
+        entry.kind === "favorite" &&
+        cachedPlace &&
+        typeof mk.PlaceAnnotation === "function"
+      ) {
+        // Render favorites with Apple's category iconography (the same
+        // marker style search results get) so a saved restaurant looks
+        // like a restaurant on the map instead of a generic gold star.
+        // We also pass the `place` so MapKit hides the underlying POI
+        // tile glyph and we don't end up with two icons stacked.
+        annotation = new mk.PlaceAnnotation(cachedPlace, {
+          title,
+          subtitle,
+          displayPriority: 1000,
+          selected: false,
+        });
+      } else {
+        annotation = new mk.MarkerAnnotation(coord, {
+          title,
+          subtitle,
+          color: visual.color,
+          glyphColor: "#ffffff",
+          glyphImage: visual.glyph,
+          selectedGlyphImage: visual.glyph,
+          // Above default search pins so a search result doesn't
+          // visually hide a saved annotation at the same location.
+          displayPriority: 1000,
+          selected: false,
+        });
+
+        // For favorites that have a Place ID but no cached `Place` yet,
+        // kick off a one-shot lookup. When it returns we cache the
+        // result and bump the tick so this effect re-runs and swaps the
+        // star for a real PlaceAnnotation.
+        if (
+          entry.kind === "favorite" &&
+          entry.place.placeId &&
+          typeof mk.PlaceLookup === "function" &&
+          !placeLookupInFlightRef.current.has(entry.place.placeId)
+        ) {
+          const placeId = entry.place.placeId;
+          placeLookupInFlightRef.current.add(placeId);
+          try {
+            const lookup = new mk.PlaceLookup();
+            lookup.getPlace(placeId, (err, place) => {
+              placeLookupInFlightRef.current.delete(placeId);
+              if (err || !place) return;
+              placeCacheRef.current.set(placeId, place);
+              setPlaceCacheTick((t) => t + 1);
+            });
+          } catch {
+            placeLookupInFlightRef.current.delete(placeId);
+          }
+        }
+      }
 
       const wrapper = { annotation, place: entry.place };
       const handleSelect = () => {
@@ -793,7 +883,14 @@ export function MapsAppComponent({
     }
 
     savedAnnotationsRef.current = next;
-  }, [status, savedPlaceEntries, mapReadyTick, homeLabel, workLabel]);
+  }, [
+    status,
+    savedPlaceEntries,
+    mapReadyTick,
+    homeLabel,
+    workLabel,
+    placeCacheTick,
+  ]);
 
   // Drop all saved-place annotations when the map tears down so a re-open
   // starts from a clean slate (the next sync effect re-creates them).
