@@ -30,16 +30,25 @@ interface MapKitCoordinate {
   longitude: number;
 }
 
-interface MapKitSearchResultItem {
+// `MapKitPlace` mirrors the subset of `mapkit.Place` (introduced in
+// MapKit JS 5.78) that we touch. Search responses now return Place
+// instances with a stable `id` (Apple's Place ID) plus the address
+// components we already used (name / formattedAddress / category). We
+// keep the type loose so older MapKit JS versions, where `id` is absent,
+// still type-check at the call site.
+//   https://developer.apple.com/documentation/mapkitjs/place
+interface MapKitPlace {
   coordinate: MapKitCoordinate;
   name?: string;
   formattedAddress?: string;
   region?: unknown;
   pointOfInterestCategory?: string;
+  id?: string;
+  alternateIds?: string[];
 }
 
 interface MapKitSearchResponse {
-  places?: MapKitSearchResultItem[];
+  places?: MapKitPlace[];
 }
 
 interface MapKitMapInstance {
@@ -61,7 +70,15 @@ interface MapKitSearchInstance {
   search: (
     query: string,
     callback: (error: Error | null, data: MapKitSearchResponse) => void,
-    options?: { region?: unknown }
+    options?: {
+      region?: unknown;
+      /**
+       * MapKit JS 5.78+ — when set to "required", the search is strictly
+       * confined to the supplied region. Default behavior allows
+       * out-of-region hits when nothing local matches.
+       */
+      regionPriority?: MapKitRegionPriority;
+    }
   ) => void;
 }
 
@@ -82,6 +99,12 @@ interface MapKitMarkerAnnotation {
   ) => void;
 }
 
+// `RegionPriority` was introduced in MapKit JS 5.78 alongside the strict
+// region search filtering. We treat the enum as a string union since the
+// runtime values ("default", "required") are stable.
+//   https://developer.apple.com/documentation/mapkitjs/regionpriority
+type MapKitRegionPriority = "default" | "required";
+
 interface MapKitGlobal {
   Map: new (
     element: HTMLElement,
@@ -97,6 +120,19 @@ interface MapKitGlobal {
     coordinate: MapKitCoordinate,
     options?: Record<string, unknown>
   ) => MapKitMarkerAnnotation;
+  // PlaceAnnotation accepts a `Place` (or `Coordinate` + `place` option)
+  // and renders Apple's category iconography automatically; passing the
+  // `place` also lets the annotation supersede the underlying POI on the
+  // map so we don't end up with two icons stacked at the same coordinate.
+  // Marked optional so we can gracefully degrade on older MapKit JS.
+  //   https://developer.apple.com/documentation/mapkitjs/placeannotation
+  PlaceAnnotation?: new (
+    placeOrCoordinate: MapKitPlace | MapKitCoordinate,
+    options?: Record<string, unknown>
+  ) => MapKitMarkerAnnotation;
+  // Optional in the type so loaders that don't expose the constant still
+  // typecheck. We default to "default" / "required" string literals.
+  RegionPriority?: { Default: MapKitRegionPriority; Required: MapKitRegionPriority };
   Search: new (options?: Record<string, unknown>) => {
     search: (
       query: string,
@@ -134,6 +170,19 @@ interface MapsSearchResult {
   subtitle: string;
   coordinate: MapKitCoordinate;
   category?: string;
+  /**
+   * Apple Place ID (MapKit JS 5.78+). Persisted onto saved places so we
+   * can later refresh the place via `PlaceLookup.getPlace` if the cached
+   * fields go stale.
+   */
+  placeId?: string;
+  /**
+   * Raw `Place` reference returned by MapKit. Held only for the lifetime
+   * of the result list — we use it to construct a `PlaceAnnotation` so
+   * the dropped pin uses Apple's category iconography and supersedes the
+   * underlying POI instead of stacking on top of it.
+   */
+  place?: MapKitPlace;
 }
 
 // Coordinate-degree span used when focusing on a single place (search hit,
@@ -337,6 +386,27 @@ export function MapsAppComponent({
       // on the very first call (before the map renders) is fine.
       const map = mapInstanceRef.current;
       const region = map?.region;
+      // When the user is zoomed in (visible region narrower than ~50 km
+      // per side), promote the region hint to a hard filter via MapKit
+      // JS 5.78's `regionPriority: "required"` — ambiguous queries like
+      // "coffee" should stay local instead of pulling globally-ranked
+      // hits. When zoomed out, fall back to the default soft bias so
+      // searches like "Eiffel Tower" still find Paris from a SF view.
+      const REGION_REQUIRED_MAX_SPAN_DEG = 0.5;
+      const regionSpan = (region as
+        | { span?: { latitudeDelta?: number; longitudeDelta?: number } }
+        | undefined)?.span;
+      const shouldRequireRegion =
+        !!region &&
+        typeof regionSpan?.latitudeDelta === "number" &&
+        typeof regionSpan?.longitudeDelta === "number" &&
+        regionSpan.latitudeDelta < REGION_REQUIRED_MAX_SPAN_DEG &&
+        regionSpan.longitudeDelta < REGION_REQUIRED_MAX_SPAN_DEG;
+      const regionPriorityValue: MapKitRegionPriority | undefined = region
+        ? shouldRequireRegion
+          ? mk.RegionPriority?.Required ?? "required"
+          : mk.RegionPriority?.Default ?? "default"
+        : undefined;
 
       const requestId = ++searchRequestIdRef.current;
       setIsSearching(true);
@@ -363,15 +433,27 @@ export function MapsAppComponent({
           const mapped: MapsSearchResult[] = places
             .filter((p) => p && p.coordinate)
             .map((p, index) => ({
-              id: `${p.coordinate.latitude},${p.coordinate.longitude},${index}`,
+              // Prefer Apple's stable Place ID (5.78+) when available so
+              // re-selecting the same result across sessions / search
+              // refreshes hits the same `SavedPlace` entry. Falls back to
+              // the coordinate-based composite for older MapKit JS.
+              id:
+                p.id ||
+                `${p.coordinate.latitude},${p.coordinate.longitude},${index}`,
               name: p.name || p.formattedAddress || trimmed,
               subtitle: p.formattedAddress || "",
               coordinate: p.coordinate,
               category: p.pointOfInterestCategory,
+              placeId: p.id,
+              place: p,
             }));
           setSearchResults(mapped);
         },
-        region ? { region } : undefined
+        region
+          ? regionPriorityValue
+            ? { region, regionPriority: regionPriorityValue }
+            : { region }
+          : undefined
       );
     },
     [status, t]
@@ -391,13 +473,19 @@ export function MapsAppComponent({
       subtitle?: string;
       latitude: number;
       longitude: number;
+      /**
+       * Original `mapkit.Place` from the search response, when available.
+       * Drives a `PlaceAnnotation` (Apple's category iconography +
+       * automatic POI superseding) instead of a generic red marker.
+       */
+      mapKitPlace?: MapKitPlace;
     }) => {
       const mk = getMapKit();
       const map = mapInstanceRef.current;
       if (!mk || !map) return;
 
       // If the place already has a permanent saved annotation, skip the
-      // red search pin entirely and just frame it. This keeps clicks on
+      // search pin entirely and just frame it. This keeps clicks on
       // search results that match a Favorite from stacking two markers.
       const alreadySaved = isPlaceSavedRef.current(place.id);
 
@@ -413,11 +501,28 @@ export function MapsAppComponent({
       const coord = new mk.Coordinate(place.latitude, place.longitude);
       if (!alreadySaved) {
         setSelectedResultId(place.id);
-        const annotation = new mk.MarkerAnnotation(coord, {
-          title: place.name,
-          subtitle: place.subtitle ?? "",
-          color: "#E25B4F",
-        });
+        let annotation: MapKitMarkerAnnotation;
+        if (place.mapKitPlace && typeof mk.PlaceAnnotation === "function") {
+          // PlaceAnnotation pulls its iconography from the map data and
+          // supersedes any existing POI tile glyph at this coordinate, so
+          // we don't get a red pin sitting on top of Apple's cafe / bank
+          // / etc. icon. We still pass title/subtitle as fallbacks for
+          // the callout text.
+          annotation = new mk.PlaceAnnotation(place.mapKitPlace, {
+            title: place.name,
+            subtitle: place.subtitle ?? "",
+          });
+        } else {
+          annotation = new mk.MarkerAnnotation(coord, {
+            title: place.name,
+            subtitle: place.subtitle ?? "",
+            color: "#E25B4F",
+            // Even on plain MarkerAnnotation, passing `place` lets MapKit
+            // hide the underlying POI icon to avoid the duplicate-marker
+            // problem when the search hit matches a built-in POI.
+            ...(place.mapKitPlace ? { place: place.mapKitPlace } : {}),
+          });
+        }
         map.addAnnotation(annotation);
         annotationRef.current = annotation;
       } else {
@@ -443,6 +548,7 @@ export function MapsAppComponent({
         subtitle: result.subtitle,
         latitude: result.coordinate.latitude,
         longitude: result.coordinate.longitude,
+        mapKitPlace: result.place,
       });
 
       const saved: SavedPlace = {
@@ -452,6 +558,7 @@ export function MapsAppComponent({
         latitude: result.coordinate.latitude,
         longitude: result.coordinate.longitude,
         category: result.category,
+        placeId: result.placeId,
       };
       recordRecentPlace(saved);
       setSelectedPlace(saved);

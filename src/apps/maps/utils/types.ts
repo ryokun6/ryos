@@ -14,4 +14,12 @@ export interface SavedPlace {
   longitude: number;
   /** MapKit `pointOfInterestCategory`, when known. */
   category?: string;
+  /**
+   * Apple Place ID (introduced in MapKit JS 5.78). Persisted alongside
+   * the cached fields so we can later refresh stale data via
+   * `mapkit.PlaceLookup.getPlace`. Optional because legacy entries and
+   * geocoded coordinates from older sessions may not have an ID.
+   *   https://developer.apple.com/documentation/mapkitjs/place/id
+   */
+  placeId?: string;
 }
