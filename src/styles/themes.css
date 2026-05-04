@@ -342,18 +342,6 @@
     inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
-/* TV app video drawer — brushed aluminum shell matching window-material-brushedmetal */
-:root[data-os-theme="macosx"] .tv-drawer-metal {
-  background: none !important;
-  position: relative;
-  border-radius: 0 0.45rem 0.45rem 0 !important;
-  border: 0.5px solid rgba(0, 0, 0, 0.5) !important;
-  box-shadow:
-    0 8px 22px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.38),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
-}
-
 /* Generic shared side-drawer panel — same aluminum shell used by AppDrawer */
 :root[data-os-theme="macosx"] .os-drawer-metal {
   background: none !important;
@@ -389,26 +377,6 @@
     inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Narrow viewports: playlist hangs below the window; round bottom corners only */
-:root[data-os-theme="macosx"] [data-tv-drawer-layout="bottom"] .tv-drawer-metal {
-  border-radius: 0 0 0.45rem 0.45rem !important;
-  box-shadow:
-    0 10px 22px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.38),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
-}
-
-:root[data-os-theme="macosx"] .tv-drawer-metal::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: url("/assets/brushed-metal.jpg") center / cover no-repeat;
-  filter: contrast(0.7) brightness(1.1);
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 0;
-}
-
 :root[data-os-theme="macosx"] .os-drawer-metal::before {
   content: "";
   position: absolute;
@@ -418,21 +386,6 @@
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
-}
-
-:root[data-os-theme="macosx"] .tv-drawer-metal::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow:
-    inset 0 2px 2px rgba(255, 255, 255, 0.65),
-    inset 0 8px 12px rgba(255, 255, 255, 0.1),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-    inset 1px 0 0 rgba(255, 255, 255, 0.14),
-    inset -1px 0 0 rgba(255, 255, 255, 0.12);
-  z-index: 2;
-  pointer-events: none;
 }
 
 :root[data-os-theme="macosx"] .os-drawer-metal::after {
@@ -450,25 +403,9 @@
   pointer-events: none;
 }
 
-:root[data-os-theme="macosx"] .tv-drawer-metal > .tv-drawer-metal-inner {
-  position: relative;
-  z-index: 3;
-}
-
 :root[data-os-theme="macosx"] .os-drawer-metal > .os-drawer-metal-inner {
   position: relative;
   z-index: 3;
-}
-
-/* Recessed list inside brushed-metal drawer (Tiger-era inset field) */
-:root[data-os-theme="macosx"] .tv-drawer-mac-list-well {
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.38);
-  background: #fff;
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.22),
-    inset 0 0 1px rgba(0, 0, 0, 0.12),
-    0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 /* Recessed list inside generic os-drawer-metal panel */
@@ -493,16 +430,6 @@
 }
 :root[data-os-theme="macosx"] .os-drawer-list-well[data-placement="top"] {
   border-radius: 4px 4px 0 0;
-}
-
-/* Side drawer: square inner edge (left) toward the main window; round outward corners only */
-:root[data-os-theme="macosx"] [data-tv-drawer-layout="side"] .tv-drawer-mac-list-well {
-  border-radius: 0 4px 4px 0;
-}
-
-/* Compact bottom drawer: square top of well (flush under overlap); round bottom only */
-:root[data-os-theme="macosx"] [data-tv-drawer-layout="bottom"] .tv-drawer-mac-list-well {
-  border-radius: 0 0 4px 4px;
 }
 
 :root[data-os-theme="macosx"] .tv-drawer-mac-row-active {

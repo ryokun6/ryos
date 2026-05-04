@@ -1,31 +1,12 @@
 import { memo, useEffect, useMemo, useRef } from "react";
-import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getChannelLogo, type Channel } from "@/apps/tv/data/channels";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Trash } from "@phosphor-icons/react";
 import { AppDrawer, DRAWER_WIDTH, DRAWER_TRANSITION } from "@/components/shared/AppDrawer";
-
-// ── Layout constants ──────────────────────────────────────────────────────────
-
-/** Viewports below this width use a bottom sheet instead of a side drawer. */
-const COMPACT_DRAWER_MEDIA = "(max-width: 767px)";
-
-/** Horizontal inset for the compact bottom drawer (each side). */
-const COMPACT_DRAWER_INSET_PX = 12;
-
-/**
- * Negative overlap upward so the drawer covers the window body's bottom inset.
- * Matches macOS brushed-metal `mb-[8px]` on the TV window content in WindowFrame.
- */
-const COMPACT_DRAWER_OVERLAP_TOP_PX = -8;
-
-/** Compact drawer height cap — scroll inside for long playlists. */
-const COMPACT_DRAWER_MAX_HEIGHT = "min(30dvh, 216px)";
 
 // Re-export so callers that previously imported from this module still work.
 export { DRAWER_WIDTH, DRAWER_TRANSITION };
@@ -175,16 +156,14 @@ interface TvVideoDrawerProps {
 }
 
 /**
- * Classic Mac-OS-X-style drawer attached to the right edge of the TV window.
+ * Classic Mac-OS-X-style drawer attached to the TV window.
  *
- * Desktop (≥ 768 px):  delegates to the shared AppDrawer component (side
- * panel, slides right).  The TV-specific brushed-metal shell is handled by
- * AppDrawer; this component only supplies the channel strip + video list.
+ * Delegates all positioning, animation, and themed shell rendering to the
+ * shared `AppDrawer` component. This keeps the TV drawer in lockstep with
+ * other in-window drawers (Calendar, Maps), including the overflow-aware
+ * "try opposite side, then reposition / resize the host window" behaviour.
  *
- * Narrow (< 768 px):   renders a compact bottom sheet that hangs below the
- * window frame and slides down to reveal.  That layout is too TV-specific
- * (hangs outside the window, overlaps the bottom edge) for a shared component,
- * so it is implemented locally with its own motion.div.
+ * This component only supplies the channel logo strip and the video list.
  */
 export const TvVideoDrawer = memo(function TvVideoDrawer({
   isOpen,
@@ -197,7 +176,6 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
   onRemoveVideo,
 }: TvVideoDrawerProps) {
   const { t } = useTranslation();
-  const isCompactDrawer = useMediaQuery(COMPACT_DRAWER_MEDIA);
   const isMobileUi = useIsMobile();
   const showTrashAlways = isMobileUi;
   const currentTheme = useThemeStore((s) => s.current);
@@ -360,74 +338,13 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       })
     );
 
-  // ── Content (shared between side and compact paths) ────────────────────────
-  const drawerContent = (
-    <>
+  return (
+    <AppDrawer isOpen={isOpen} data-tv-drawer>
       {channelLogoStrip}
       <ul ref={listRef} className={listUlClass} aria-label={listAriaLabel}>
         {isMacOSTheme ? renderMacVideoItems() : renderOtherVideoItems()}
       </ul>
-    </>
-  );
-
-  // ── Desktop side drawer — delegates to shared AppDrawer ───────────────────
-  // AppDrawer owns positioning, spring animation, and the themed panel shell.
-  // The TV passes its channel strip + video list as children.
-  if (!isCompactDrawer) {
-    return (
-      <AppDrawer isOpen={isOpen} data-tv-drawer data-tv-drawer-layout="side">
-        {drawerContent}
-      </AppDrawer>
-    );
-  }
-
-  // ── Compact bottom sheet (narrow viewports) ───────────────────────────────
-  // This layout hangs *below* the window frame (top: 100 %) and slides down
-  // to reveal.  That positioning is too TV-specific for the shared AppDrawer,
-  // so it is implemented with its own motion.div.
-  const compactPanelClass = cn(
-    "flex flex-1 flex-col overflow-hidden min-h-0",
-    isMacOSTheme && "tv-drawer-metal rounded-b-[0.45rem]",
-    !isMacOSTheme && isSystem7 && "bg-white border-2 border-black border-t-0 rounded-b shadow-[2px_4px_0_0_rgba(0,0,0,0.45)]",
-    !isMacOSTheme && isXpTheme && !isWin98 && "bg-[#ECE9D8] border-[3px] border-t-0 border-[#0054E3] rounded-b-[0.5rem]",
-    !isMacOSTheme && isWin98 && "bg-[#C0C0C0] border-2 border-t-0 border-l-white border-r-[#808080] border-b-[#808080]"
-  );
-
-  return (
-    <motion.div
-      className={cn("absolute select-none flex flex-col", !isOpen && "pointer-events-none")}
-      style={{
-        left: COMPACT_DRAWER_INSET_PX,
-        right: COMPACT_DRAWER_INSET_PX,
-        top: "100%",
-        bottom: "auto",
-        maxHeight: COMPACT_DRAWER_MAX_HEIGHT,
-        height: "auto",
-        zIndex: 0,
-        marginTop: COMPACT_DRAWER_OVERLAP_TOP_PX,
-        paddingBottom: "max(0px, env(safe-area-inset-bottom, 0px))",
-      }}
-      initial={false}
-      animate={{ x: 0, y: isOpen ? 0 : "-100%", opacity: isOpen ? 1 : 0 }}
-      transition={DRAWER_TRANSITION}
-      aria-hidden={!isOpen}
-      data-tv-drawer
-      data-tv-drawer-layout="bottom"
-    >
-      <div className={compactPanelClass}>
-        {isMacOSTheme ? (
-          <div className="tv-drawer-metal-inner flex flex-1 min-h-0 flex-col p-2">
-            <div className="tv-drawer-mac-list-well flex flex-1 min-h-0 flex-col overflow-hidden" style={{ borderRadius: "0 0 4px 4px" }}>
-              {drawerContent}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-1 min-h-0 flex-col overflow-hidden p-2">
-            {drawerContent}
-          </div>
-        )}
-      </div>
-    </motion.div>
+    </AppDrawer>
   );
 });
 
