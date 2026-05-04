@@ -34,7 +34,7 @@ export function useMapsLogic() {
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [mapType, setMapType] = useState<MapsMapType>("standard");
+  const [mapType, setMapType] = useState<MapsMapType>("mutedStandard");
 
   const mapKitLanguage = ryOSLocaleToMapKitLanguage(i18n.language);
 
