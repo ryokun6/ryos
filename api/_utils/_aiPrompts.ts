@@ -277,6 +277,9 @@ You can manage the user's calendar events, todos, and sticky notes directly from
 - These changes sync to ryOS automatically — the user will see them next time the browser polls.
 - If the user hasn't enabled cloud sync yet, these tools will let you know.
 - Always confirm what you did after making changes in one short line when possible (e.g. "added 'Dentist' on 2026-03-10 at 14:00").
+
+## Maps
+Use mapsSearchPlaces when the user asks to find a place, look up an address, or browse nearby POIs. Pass the user's intent verbatim as 'query' and, when known, the user's coordinates as 'near' so results are biased correctly. Reply with the top result's name + city in one short line and let the place card link in the chat surface do the rest.
 </telegram_chat_instructions>
 `;
 
@@ -389,6 +392,13 @@ Use \`tvControl\` to manage the TV app's channel lineup and tune in to channels.
 - Delete a custom channel: \`tvControl({ action: "deleteChannel", channelId })\`. Built-in channels (RyoTV, MTV, 台視) cannot be deleted or edited.
 - Add a video to an existing custom channel: \`tvControl({ action: "addVideo", channelId, videoId })\` (or \`url\`). Title/artist are auto-fetched if omitted. \`searchSongs\` is appropriate here only when the user names a specific video to add.
 - Remove a video: \`tvControl({ action: "removeVideo", channelId, removeVideoId })\`.
+
+## MAPS / PLACES SEARCH
+Use \`mapsSearchPlaces\` whenever the user asks to find a place, look up an address, browse nearby POIs, or otherwise wants real geographic data (restaurants, cafes, addresses, landmarks, businesses, neighborhoods).
+- Pass the user's intent verbatim as \`query\` (e.g. \`"best ramen near Shibuya"\`, \`"350 Sutter St San Francisco"\`).
+- The server **automatically biases the search to the user's approximate IP location** (from request \`requestGeo\`) when you don't pass \`near\`, so unqualified queries like "coffee" already return nearby hits. Only pass \`near: { latitude, longitude }\` when you have a *better* anchor than IP geolocation — e.g. the user named a different city, you're searching around an address they just mentioned, or the user shared their precise coordinates.
+- Default \`limit\` is 5; bump up to 10 only when the user clearly wants a long list. Apple's daily quota is shared with MapKit JS.
+- The client renders a rich place card with the POI icon, title, and address — tapping it opens the place plotted in the ryOS Maps app. Don't paste raw lat/lng into your chat reply; let the card do the work and just refer to results by name + city.
 
 </tool_usage_instructions>
 `;

@@ -825,6 +825,7 @@ export function MapsAppComponent({
     // saved places — the user explicitly had this card open last session.
     if (selectedPlace) {
       hasHydratedSelectedRef.current = true;
+      lastFocusedPlaceIdRef.current = selectedPlace.id;
       if (isPlaceSaved(selectedPlace.id)) {
         const coord = new mk.Coordinate(
           selectedPlace.latitude,
@@ -907,6 +908,41 @@ export function MapsAppComponent({
     isPlaceSaved,
     mapReadyTick,
   ]);
+
+  // After the initial hydration framing has run, react to external changes
+  // to `selectedPlace` (e.g. from a chat tool card tap). We track the last
+  // place we focused so simultaneous in-app actions (search-result tap,
+  // saved-place tap) don't double-frame on the same coordinate.
+  const lastFocusedPlaceIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hasHydratedSelectedRef.current) return;
+    if (status !== "ready") return;
+    if (!selectedPlace) {
+      lastFocusedPlaceIdRef.current = null;
+      return;
+    }
+    if (lastFocusedPlaceIdRef.current === selectedPlace.id) return;
+
+    lastFocusedPlaceIdRef.current = selectedPlace.id;
+    const mk = getMapKit();
+    const map = mapInstanceRef.current;
+    if (!mk || !map) return;
+
+    if (isPlaceSaved(selectedPlace.id)) {
+      const coord = new mk.Coordinate(
+        selectedPlace.latitude,
+        selectedPlace.longitude
+      );
+      const span = new mk.CoordinateSpan(
+        FOCUS_PLACE_SPAN_DEG,
+        FOCUS_PLACE_SPAN_DEG
+      );
+      const region = new mk.CoordinateRegion(coord, span);
+      map.setRegionAnimated(region, true);
+    } else {
+      dropPinAt(selectedPlace);
+    }
+  }, [selectedPlace, status, isPlaceSaved, dropPinAt, mapReadyTick]);
 
   const handleLocateMe = useCallback(() => {
     const map = mapInstanceRef.current;

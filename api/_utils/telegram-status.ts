@@ -30,6 +30,8 @@ export function getTelegramToolStatusText(
       return getTelegramContactsStatusText(input);
     case "songLibraryControl":
       return getTelegramSongLibraryStatusText(input);
+    case "mapsSearchPlaces":
+      return getTelegramMapsSearchStatusText(input);
     case "cursorCloudAgent":
       return "Starting Cursor cloud agent...";
     default:
@@ -161,6 +163,17 @@ function getTelegramSongLibraryStatusText(input: unknown): string {
     default:
       return "Using song library...";
   }
+}
+
+function getTelegramMapsSearchStatusText(input: unknown): string {
+  if (!input || typeof input !== "object") {
+    return "Searching maps...";
+  }
+  const query =
+    "query" in input && typeof (input as { query?: unknown }).query === "string"
+      ? (input as { query: string }).query.trim()
+      : "";
+  return query ? `Searching maps for "${query}"...` : "Searching maps...";
 }
 
 type StatusReporterDeps = {
