@@ -280,8 +280,8 @@ function PlaceCardActions({
         variant={variant}
         size="sm"
         onClick={() => onDirections(place)}
-        title={t("apps.maps.placeCard.openDirections", {
-          defaultValue: "Get directions in Apple Maps",
+        title={t("apps.maps.placeCard.directionsHint", {
+          defaultValue: "Get directions inside Maps",
         })}
         className={AQUA_ICON_BUTTON_PADDING_CLASS}
       >

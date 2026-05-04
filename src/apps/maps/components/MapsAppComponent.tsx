@@ -17,7 +17,19 @@ import { MapsPlaceCard } from "./MapsPlaceCard";
 import { useMapsStore } from "@/stores/useMapsStore";
 import type { SavedPlace } from "../utils/types";
 import { getPoiMarkerAnnotationOptions } from "../utils/poiMarkerStyle";
-import { buildAppleMapsDrivingDirectionsUrl } from "../utils/appleMapsLinks";
+import {
+  appleTravelModeFromServerTransport,
+  buildAppleMapsDirectionsUrl,
+} from "../utils/appleMapsLinks";
+import {
+  fetchMapsDirections,
+  type MapsDirectionsRoutePayload,
+  type MapsDirectionsTransportType,
+} from "../utils/mapsDirectionsApi";
+import {
+  MapsDirectionsPanel,
+  type DirectionsStartResultRow,
+} from "./MapsDirectionsPanel";
 import {
   homeMarkerAnnotationStyle,
   workMarkerAnnotationStyle,
@@ -68,6 +80,8 @@ interface MapKitClusterAnnotation {
 interface MapKitMapInstance {
   showsUserLocation: boolean;
   tracksUserLocation: boolean;
+  /** Present while user location is visible — shape varies slightly by MapKit JS version. */
+  userLocation?: unknown;
   mapType: string;
   region: unknown;
   setRegionAnimated: (region: unknown, animated?: boolean) => void;
@@ -254,6 +268,24 @@ function statusMessageKey(status: MapKitStatus): string {
   }
 }
 
+function readUserCoordinateFromMap(
+  map: MapKitMapInstance | null
+): MapKitCoordinate | null {
+  if (!map) return null;
+  const raw = map.userLocation as { coordinate?: MapKitCoordinate } | undefined;
+  const c = raw?.coordinate;
+  if (
+    !c ||
+    typeof c.latitude !== "number" ||
+    typeof c.longitude !== "number" ||
+    !Number.isFinite(c.latitude) ||
+    !Number.isFinite(c.longitude)
+  ) {
+    return null;
+  }
+  return c;
+}
+
 export function MapsAppComponent({
   isWindowOpen,
   onClose,
@@ -307,6 +339,42 @@ export function MapsAppComponent({
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
   const [isShowingResults, setIsShowingResults] = useState(false);
   const [isPlacesDrawerOpen, setIsPlacesDrawerOpen] = useState(false);
+
+  const [isDirectionsOpen, setIsDirectionsOpen] = useState(false);
+  const [directionsDestination, setDirectionsDestination] =
+    useState<SavedPlace | null>(null);
+  const [directionsTransportType, setDirectionsTransportType] =
+    useState<MapsDirectionsTransportType>("AUTOMOBILE");
+  const [directionsStartMode, setDirectionsStartMode] = useState<
+    "current" | "custom"
+  >("current");
+  const [userLocationCoordinate, setUserLocationCoordinate] =
+    useState<MapKitCoordinate | null>(null);
+  const [userLocationTrackingEnabled, setUserLocationTrackingEnabled] =
+    useState(false);
+  const [customStartQuery, setCustomStartQuery] = useState("");
+  const [customStartResults, setCustomStartResults] = useState<
+    DirectionsStartResultRow[]
+  >([]);
+  const [selectedCustomStartId, setSelectedCustomStartId] = useState<
+    string | null
+  >(null);
+  const [selectedCustomStartCoord, setSelectedCustomStartCoord] =
+    useState<MapKitCoordinate | null>(null);
+  const [isSearchingCustomStart, setIsSearchingCustomStart] = useState(false);
+  const [customStartSearchError, setCustomStartSearchError] = useState<
+    string | null
+  >(null);
+  const customStartSearchRequestIdRef = useRef(0);
+  const [directionsRoute, setDirectionsRoute] =
+    useState<MapsDirectionsRoutePayload | null>(null);
+  const [directionsRouteAttempted, setDirectionsRouteAttempted] =
+    useState(false);
+  const [directionsRouteAvailable, setDirectionsRouteAvailable] =
+    useState(false);
+  const [directionsLoading, setDirectionsLoading] = useState(false);
+  const [directionsError, setDirectionsError] = useState<string | null>(null);
+  const directionsAbortRef = useRef<AbortController | null>(null);
 
   // Persistent Home / Work / Favorites / Recents + currently-open place.
   const homePlace = useMapsStore((s) => s.home);
@@ -455,6 +523,24 @@ export function MapsAppComponent({
     // Reset the readiness counter so the next time the window opens the
     // saved-annotations sync re-runs against the freshly-created map.
     setMapReadyTick(0);
+    directionsAbortRef.current?.abort();
+    setIsDirectionsOpen(false);
+    setDirectionsDestination(null);
+    setDirectionsRoute(null);
+    setDirectionsRouteAttempted(false);
+    setDirectionsRouteAvailable(false);
+    setDirectionsLoading(false);
+    setDirectionsError(null);
+    setUserLocationCoordinate(null);
+    setUserLocationTrackingEnabled(false);
+    setUserLocationTrackingEnabled(false);
+    customStartSearchRequestIdRef.current += 1;
+    setCustomStartQuery("");
+    setCustomStartResults([]);
+    setSelectedCustomStartId(null);
+    setSelectedCustomStartCoord(null);
+    setIsSearchingCustomStart(false);
+    setCustomStartSearchError(null);
   }, [isWindowOpen]);
 
   useEffect(() => {
@@ -483,12 +569,17 @@ export function MapsAppComponent({
   }, []);
 
   const performSearch = useCallback(
-    (query: string) => {
+    (
+      query: string,
+      mode: "places" | "directionsStart" = "places"
+    ) => {
       const trimmed = query.trim();
       if (!trimmed) {
-        setSearchResults([]);
-        setSearchError(null);
-        setIsShowingResults(false);
+        if (mode === "places") {
+          setSearchResults([]);
+          setSearchError(null);
+          setIsShowingResults(false);
+        }
         return;
       }
       const mk = getMapKit();
@@ -541,46 +632,84 @@ export function MapsAppComponent({
           : mk.RegionPriority?.Default ?? "default"
         : undefined;
 
-      const requestId = ++searchRequestIdRef.current;
-      setIsSearching(true);
-      setSearchError(null);
-      setIsShowingResults(true);
+      const requestId =
+        mode === "places"
+          ? ++searchRequestIdRef.current
+          : ++customStartSearchRequestIdRef.current;
+
+      if (mode === "places") {
+        setIsSearching(true);
+        setSearchError(null);
+        setIsShowingResults(true);
+      } else {
+        setIsSearchingCustomStart(true);
+        setCustomStartSearchError(null);
+      }
 
       search.search(
         trimmed,
         (err, data) => {
           // Ignore stale callbacks (user typed and re-searched in the
           // meantime). MapKit doesn't expose a cancel API, so we discard.
-          if (requestId !== searchRequestIdRef.current) return;
+          if (mode === "places") {
+            if (requestId !== searchRequestIdRef.current) return;
+          } else if (requestId !== customStartSearchRequestIdRef.current) {
+            return;
+          }
 
-          setIsSearching(false);
+          if (mode === "places") {
+            setIsSearching(false);
+          } else {
+            setIsSearchingCustomStart(false);
+          }
+
           if (err) {
-            setSearchResults([]);
-            setSearchError(
-              err.message ||
-                t("apps.maps.searchFailed", { defaultValue: "Search failed" })
-            );
+            if (mode === "places") {
+              setSearchResults([]);
+              setSearchError(
+                err.message ||
+                  t("apps.maps.searchFailed", { defaultValue: "Search failed" })
+              );
+            } else {
+              setCustomStartResults([]);
+              setCustomStartSearchError(
+                err.message ||
+                  t("apps.maps.searchFailed", { defaultValue: "Search failed" })
+              );
+            }
             return;
           }
           const places = data?.places ?? [];
-          const mapped: MapsSearchResult[] = places
-            .filter((p) => p && p.coordinate)
-            .map((p, index) => ({
-              // Prefer Apple's stable Place ID (5.78+) when available so
-              // re-selecting the same result across sessions / search
-              // refreshes hits the same `SavedPlace` entry. Falls back to
-              // the coordinate-based composite for older MapKit JS.
-              id:
-                p.id ||
-                `${p.coordinate.latitude},${p.coordinate.longitude},${index}`,
-              name: p.name || p.formattedAddress || trimmed,
-              subtitle: p.formattedAddress || "",
-              coordinate: p.coordinate,
-              category: p.pointOfInterestCategory,
-              placeId: p.id,
-              place: p,
-            }));
-          setSearchResults(mapped);
+          if (mode === "places") {
+            const mapped: MapsSearchResult[] = places
+              .filter((p) => p && p.coordinate)
+              .map((p, index) => ({
+                id:
+                  p.id ||
+                  `${p.coordinate.latitude},${p.coordinate.longitude},${index}`,
+                name: p.name || p.formattedAddress || trimmed,
+                subtitle: p.formattedAddress || "",
+                coordinate: p.coordinate,
+                category: p.pointOfInterestCategory,
+                placeId: p.id,
+                place: p,
+              }));
+            setSearchResults(mapped);
+          } else {
+            const mappedStart: DirectionsStartResultRow[] = places
+              .filter((p) => p && p.coordinate)
+              .map((p, index) => ({
+                id:
+                  p.id ||
+                  `${p.coordinate.latitude},${p.coordinate.longitude},${index}`,
+                name: p.name || p.formattedAddress || trimmed,
+                subtitle: p.formattedAddress || "",
+                category: p.pointOfInterestCategory,
+                latitude: p.coordinate.latitude,
+                longitude: p.coordinate.longitude,
+              }));
+            setCustomStartResults(mappedStart);
+          }
         },
         region
           ? regionPriorityValue
@@ -591,6 +720,61 @@ export function MapsAppComponent({
     },
     [status, t]
   );
+
+  useEffect(() => {
+    if (!isDirectionsOpen || directionsStartMode !== "custom") return;
+    const trimmed = customStartQuery.trim();
+    if (trimmed.length < 2) {
+      customStartSearchRequestIdRef.current += 1;
+      setCustomStartResults([]);
+      setIsSearchingCustomStart(false);
+      setCustomStartSearchError(null);
+      return;
+    }
+    if (status !== "ready") return;
+    const handle = window.setTimeout(() => {
+      performSearch(trimmed, "directionsStart");
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [
+    customStartQuery,
+    directionsStartMode,
+    isDirectionsOpen,
+    performSearch,
+    status,
+  ]);
+
+  useEffect(() => {
+    if (!isDirectionsOpen || directionsStartMode !== "current") return;
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const tick = () => {
+      const c = readUserCoordinateFromMap(mapInstanceRef.current);
+      if (c) setUserLocationCoordinate(c);
+    };
+    tick();
+    const id = window.setInterval(tick, 500);
+    return () => window.clearInterval(id);
+  }, [isDirectionsOpen, directionsStartMode, mapReadyTick]);
+
+  const directionsUserLocationHint = useMemo(() => {
+    if (directionsStartMode !== "current") return "";
+    if (userLocationCoordinate) {
+      return t("apps.maps.directions.currentReady", {
+        defaultValue: "Using your position from Locate Me.",
+      });
+    }
+    if (userLocationTrackingEnabled) {
+      return t("apps.maps.directions.currentWaiting", {
+        defaultValue: "Waiting for your location… tap Locate Me again if this stalls.",
+      });
+    }
+    return t("apps.maps.directions.currentHint", {
+      defaultValue: "Tap Locate Me on the toolbar first so the map can show your position.",
+    });
+  }, [directionsStartMode, userLocationCoordinate, userLocationTrackingEnabled, t]);
+
+  const directionsUserLocationReady = Boolean(userLocationCoordinate);
 
   // Latest "is this id a saved place?" predicate, captured into a ref so
   // `dropPinAt` can stay stable (no callback dep churn) while still seeing
@@ -773,15 +957,199 @@ export function MapsAppComponent({
   const handleClosePlaceCard = useCallback(() => {
     setSelectedPlace(null);
     clearDroppedAnnotation();
+    setIsDirectionsOpen(false);
+    setDirectionsDestination(null);
+    directionsAbortRef.current?.abort();
+    setDirectionsRoute(null);
+    setDirectionsRouteAttempted(false);
+    setDirectionsRouteAvailable(false);
+    setDirectionsLoading(false);
+    setDirectionsError(null);
+    customStartSearchRequestIdRef.current += 1;
+    setCustomStartQuery("");
+    setCustomStartResults([]);
+    setSelectedCustomStartId(null);
+    setSelectedCustomStartCoord(null);
+    setIsSearchingCustomStart(false);
+    setCustomStartSearchError(null);
   }, [setSelectedPlace, clearDroppedAnnotation]);
 
-  const handleOpenPlaceDirections = useCallback((place: SavedPlace) => {
-    const url = buildAppleMapsDrivingDirectionsUrl(
-      place.latitude,
-      place.longitude
-    );
-    window.open(url, "_blank", "noopener,noreferrer");
+  const resetDirectionsPanelState = useCallback(() => {
+    directionsAbortRef.current?.abort();
+    setDirectionsTransportType("AUTOMOBILE");
+    setDirectionsStartMode("current");
+    setDirectionsRoute(null);
+    setDirectionsRouteAttempted(false);
+    setDirectionsRouteAvailable(false);
+    setDirectionsLoading(false);
+    setDirectionsError(null);
+    customStartSearchRequestIdRef.current += 1;
+    setCustomStartQuery("");
+    setCustomStartResults([]);
+    setSelectedCustomStartId(null);
+    setSelectedCustomStartCoord(null);
+    setIsSearchingCustomStart(false);
+    setCustomStartSearchError(null);
   }, []);
+
+  const handleOpenPlaceDirections = useCallback(
+    (place: SavedPlace) => {
+      setDirectionsDestination(place);
+      setIsDirectionsOpen(true);
+      resetDirectionsPanelState();
+      const c = readUserCoordinateFromMap(mapInstanceRef.current);
+      setUserLocationCoordinate(c);
+    },
+    [resetDirectionsPanelState]
+  );
+
+  const handleCloseDirectionsPanel = useCallback(() => {
+    directionsAbortRef.current?.abort();
+    setIsDirectionsOpen(false);
+    setDirectionsDestination(null);
+    setDirectionsRoute(null);
+    setDirectionsRouteAttempted(false);
+    setDirectionsRouteAvailable(false);
+    setDirectionsLoading(false);
+    setDirectionsError(null);
+    customStartSearchRequestIdRef.current += 1;
+    setCustomStartQuery("");
+    setCustomStartResults([]);
+    setSelectedCustomStartId(null);
+    setSelectedCustomStartCoord(null);
+    setIsSearchingCustomStart(false);
+    setCustomStartSearchError(null);
+  }, []);
+
+  const handleDirectionsHandoff = useCallback(() => {
+    const dest = directionsDestination ?? selectedPlace;
+    if (!dest) return;
+    const travelMode = appleTravelModeFromServerTransport(directionsTransportType);
+    let olat: number | undefined;
+    let olng: number | undefined;
+    if (directionsStartMode === "custom" && selectedCustomStartCoord) {
+      olat = selectedCustomStartCoord.latitude;
+      olng = selectedCustomStartCoord.longitude;
+    } else if (directionsStartMode === "current" && userLocationCoordinate) {
+      olat = userLocationCoordinate.latitude;
+      olng = userLocationCoordinate.longitude;
+    }
+    const url = buildAppleMapsDirectionsUrl({
+      destinationLatitude: dest.latitude,
+      destinationLongitude: dest.longitude,
+      originLatitude: olat,
+      originLongitude: olng,
+      travelMode,
+    });
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [
+    directionsDestination,
+    selectedPlace,
+    directionsTransportType,
+    directionsStartMode,
+    selectedCustomStartCoord,
+    userLocationCoordinate,
+  ]);
+
+  const handleFetchDirectionsRoute = useCallback(async () => {
+    const dest = directionsDestination ?? selectedPlace;
+    if (!dest) return;
+    directionsAbortRef.current?.abort();
+    const ac = new AbortController();
+    directionsAbortRef.current = ac;
+
+    let originStr = "";
+    if (directionsStartMode === "current") {
+      const c =
+        userLocationCoordinate ??
+        readUserCoordinateFromMap(mapInstanceRef.current);
+      if (!c) {
+        setDirectionsError(
+          t("apps.maps.directions.errorNeedLocation", {
+            defaultValue:
+              "Turn on Locate Me and wait for your position, or choose “Start from…” and pick a place.",
+          })
+        );
+        setDirectionsRouteAttempted(false);
+        setDirectionsRouteAvailable(false);
+        setDirectionsRoute(null);
+        return;
+      }
+      originStr = `${c.latitude},${c.longitude}`;
+    } else {
+      if (!selectedCustomStartCoord) {
+        setDirectionsError(
+          t("apps.maps.directions.errorPickStart", {
+            defaultValue: "Pick a start place from the list.",
+          })
+        );
+        return;
+      }
+      originStr = `${selectedCustomStartCoord.latitude},${selectedCustomStartCoord.longitude}`;
+    }
+
+    const destinationStr = `${dest.latitude},${dest.longitude}`;
+
+    setDirectionsLoading(true);
+    setDirectionsError(null);
+    setDirectionsRoute(null);
+    setDirectionsRouteAttempted(false);
+    setDirectionsRouteAvailable(false);
+
+    try {
+      const res = await fetchMapsDirections({
+        origin: originStr,
+        destination: destinationStr,
+        transportType: directionsTransportType,
+        lang: mapKitLanguage,
+        signal: ac.signal,
+      });
+
+      if (!res.success) {
+        setDirectionsRouteAttempted(true);
+        setDirectionsRouteAvailable(false);
+        setDirectionsError(
+          res.message ||
+            t("apps.maps.directions.errorGeneric", {
+              defaultValue: "Couldn’t load directions.",
+            })
+        );
+        return;
+      }
+
+      setDirectionsRouteAttempted(true);
+      if (res.routeAvailable && res.route) {
+        setDirectionsRouteAvailable(true);
+        setDirectionsRoute(res.route);
+      } else {
+        setDirectionsRouteAvailable(false);
+        setDirectionsRoute(null);
+        setDirectionsError(null);
+      }
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return;
+      setDirectionsRouteAttempted(true);
+      setDirectionsRouteAvailable(false);
+      setDirectionsError(
+        e instanceof Error
+          ? e.message
+          : t("apps.maps.directions.errorGeneric", {
+              defaultValue: "Couldn’t load directions.",
+            })
+      );
+    } finally {
+      setDirectionsLoading(false);
+    }
+  }, [
+    directionsDestination,
+    selectedPlace,
+    directionsStartMode,
+    userLocationCoordinate,
+    selectedCustomStartCoord,
+    directionsTransportType,
+    mapKitLanguage,
+    t,
+  ]);
 
   const handleToggleFavorite = useCallback(
     (place: SavedPlace) => {
@@ -1132,6 +1500,11 @@ export function MapsAppComponent({
     if (!map) return;
     map.showsUserLocation = true;
     map.tracksUserLocation = true;
+    setUserLocationTrackingEnabled(true);
+    window.setTimeout(() => {
+      const c = readUserCoordinateFromMap(mapInstanceRef.current);
+      if (c) setUserLocationCoordinate(c);
+    }, 400);
   }, []);
 
   // Debounced search-as-you-type. Fires `performSearch` after the user pauses
@@ -1379,6 +1752,56 @@ export function MapsAppComponent({
               onDirections={handleOpenPlaceDirections}
               onClose={handleClosePlaceCard}
             />
+
+            {isDirectionsOpen && directionsDestination && (
+              <MapsDirectionsPanel
+                destination={directionsDestination}
+                transportType={directionsTransportType}
+                onTransportTypeChange={setDirectionsTransportType}
+                startMode={directionsStartMode}
+                onStartModeChange={(mode) => {
+                  setDirectionsStartMode(mode);
+                  setDirectionsRoute(null);
+                  setDirectionsRouteAttempted(false);
+                  setDirectionsRouteAvailable(false);
+                  setDirectionsError(null);
+                  if (mode === "custom") {
+                    customStartSearchRequestIdRef.current += 1;
+                    setCustomStartResults([]);
+                    setSelectedCustomStartId(null);
+                    setSelectedCustomStartCoord(null);
+                  }
+                }}
+                userLocationReady={directionsUserLocationReady}
+                userLocationHint={directionsUserLocationHint}
+                customStartQuery={customStartQuery}
+                onCustomStartQueryChange={(q) => {
+                  setCustomStartQuery(q);
+                  setSelectedCustomStartId(null);
+                  setSelectedCustomStartCoord(null);
+                }}
+                customStartResults={customStartResults}
+                selectedCustomStartId={selectedCustomStartId}
+                onSelectCustomStart={(row) => {
+                  setSelectedCustomStartId(row.id);
+                  setSelectedCustomStartCoord({
+                    latitude: row.latitude,
+                    longitude: row.longitude,
+                  });
+                  setCustomStartQuery(row.name);
+                }}
+                isSearchingCustomStart={isSearchingCustomStart}
+                customStartSearchError={customStartSearchError}
+                route={directionsRoute}
+                routeAttempted={directionsRouteAttempted}
+                routeAvailable={directionsRouteAvailable}
+                loading={directionsLoading}
+                error={directionsError}
+                onClose={handleCloseDirectionsPanel}
+                onFetchRoute={handleFetchDirectionsRoute}
+                onOpenHandoff={handleDirectionsHandoff}
+              />
+            )}
 
             <div className="pointer-events-auto flex w-full min-w-0 items-center gap-2 bg-transparent">
               <SearchInput
