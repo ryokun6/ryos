@@ -47,11 +47,22 @@ interface PlaceRowProps {
   onClick: () => void;
   /** Override the auto-derived POI visual (e.g. for Home / Work rows). */
   visualOverride?: PoiVisual;
+  /** Override the displayed title (e.g. "Home" / "Work"). */
+  titleOverride?: string;
 }
 
-function PlaceRow({ place, onClick, visualOverride }: PlaceRowProps) {
+function PlaceRow({
+  place,
+  onClick,
+  visualOverride,
+  titleOverride,
+}: PlaceRowProps) {
   const visual = visualOverride ?? getPoiVisual(place.category);
   const Icon = visual.Icon;
+  const title = titleOverride ?? place.name;
+  const subtitle = titleOverride
+    ? place.subtitle || place.name
+    : place.subtitle;
   return (
     <button
       type="button"
@@ -69,10 +80,10 @@ function PlaceRow({ place, onClick, visualOverride }: PlaceRowProps) {
         <Icon size={14} weight="fill" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium text-black">{place.name}</div>
-        {place.subtitle && (
+        <div className="truncate font-medium text-black">{title}</div>
+        {subtitle && (
           <div className="truncate text-[11px] text-black/55">
-            {place.subtitle}
+            {subtitle}
           </div>
         )}
       </div>
@@ -126,37 +137,33 @@ export function MapsPlacesDrawer({
           />
         )}
 
-        {home && (
-          <Section
-            title={t("apps.maps.places.home", { defaultValue: "Home" })}
-          >
-            <PlaceRow
-              place={home}
-              onClick={() => handleSelect(home)}
-              visualOverride={HOME_VISUAL}
-            />
-          </Section>
-        )}
-
-        {work && (
-          <Section
-            title={t("apps.maps.places.work", { defaultValue: "Work" })}
-          >
-            <PlaceRow
-              place={work}
-              onClick={() => handleSelect(work)}
-              visualOverride={WORK_VISUAL}
-            />
-          </Section>
-        )}
-
-        {favorites.length > 0 && (
+        {(home || work || favorites.length > 0) && (
           <Section
             title={t("apps.maps.places.favorites", {
               defaultValue: "Favorites",
             })}
           >
             <div className="space-y-0.5">
+              {home && (
+                <PlaceRow
+                  place={home}
+                  onClick={() => handleSelect(home)}
+                  visualOverride={HOME_VISUAL}
+                  titleOverride={t("apps.maps.places.home", {
+                    defaultValue: "Home",
+                  })}
+                />
+              )}
+              {work && (
+                <PlaceRow
+                  place={work}
+                  onClick={() => handleSelect(work)}
+                  visualOverride={WORK_VISUAL}
+                  titleOverride={t("apps.maps.places.work", {
+                    defaultValue: "Work",
+                  })}
+                />
+              )}
               {favorites.map((place) => (
                 <PlaceRow
                   key={place.id}
