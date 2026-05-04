@@ -7,6 +7,7 @@
 import type { Redis } from "../../_utils/redis.js";
 import { z } from "zod";
 import type { MemoryToolContext } from "./executors.js";
+import { simplifyTelegramCitationDisplay } from "../../_utils/telegram-format.js";
 import { sendTelegramMessage } from "../../_utils/telegram.js";
 
 export const CURSOR_REPO_AGENT_OWNER = "ryo";
@@ -118,7 +119,10 @@ export function formatCursorRunCompletionTelegramMessage(input: {
   error?: string;
 }): string {
   const { ok, agentTitle, status, summary, error } = input;
-  const titleSuffix = agentTitle ? ` — ${agentTitle}` : "";
+  const titleForSuffix = agentTitle?.trim()
+    ? simplifyTelegramCitationDisplay(agentTitle)
+    : "";
+  const titleSuffix = titleForSuffix ? ` — ${titleForSuffix}` : "";
   const headline = ok
     ? `Cursor agent done${titleSuffix}`
     : `Cursor agent failed${titleSuffix}`;
@@ -133,11 +137,12 @@ export function formatCursorRunCompletionTelegramMessage(input: {
       ? `failed: ${status}`
       : "failed";
 
-  const body = rawBody.length > 0 ? rawBody : fallback;
+  const bodySource = rawBody.length > 0 ? rawBody : fallback;
+  const bodyPlain = simplifyTelegramCitationDisplay(bodySource);
   const truncated =
-    body.length > TELEGRAM_NOTIFY_MAX_BODY_CHARS
-      ? `${body.slice(0, TELEGRAM_NOTIFY_MAX_BODY_CHARS)}\n…(truncated)`
-      : body;
+    bodyPlain.length > TELEGRAM_NOTIFY_MAX_BODY_CHARS
+      ? `${bodyPlain.slice(0, TELEGRAM_NOTIFY_MAX_BODY_CHARS)}\n…(truncated)`
+      : bodyPlain;
 
   return `${headline}\n\n${truncated}`;
 }

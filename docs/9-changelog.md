@@ -6,6 +6,7 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## May 2026
 
+- Cursor Cloud agent **done / failed** Telegram notifications strip markdown (headings, bullets, emphasis, code fences, links) to plain text via shared `telegram-format` helpers; web surfaces keep richer run summaries unchanged.
 - Expand **Virtual PC** beyond DOS games: integrate the **v86 x86 emulator** with an OS browser (Windows 1.0–2000/ME, FreeDOS, MS-DOS, Windows 95/98, ReactOS, Haiku, BeOS, Serenity, KolibriOS, FreeBSD/NetBSD/OpenBSD, Linux 2.6/4.x, Arch, Buildroot, MikeOS, MINIX, Fiwix, HelenOS, Oberon, Redox, SolOS, doof, DSL), persisted preset selection, COEP-enabled `/embed/pc.html` route, generated thumbnails, and full UI localization. Renames the app id from `infinite-pc` to `pc` with a legacy alias.
 - Add **Cursor agents** admin tab backed by Redis run metadata: dashboard server card, panel headers, agent counts, relaxed admin rate limits, sidebar/View menu reordering, and improved follow-up UX (Space-key fix, polished submit button).
 - Add **Aquarium** dashboard widget alongside the existing 8 widgets.

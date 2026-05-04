@@ -93,6 +93,24 @@ describe("formatCursorRunCompletionTelegramMessage", () => {
     expect(text.length).toBeLessThanOrEqual(3700);
     expect(text).toContain("…(truncated)");
   });
+
+  test("strips markdown from summary and title for Telegram plain text", () => {
+    const text = formatCursorRunCompletionTelegramMessage({
+      ok: true,
+      agentTitle: "**Fix** bug",
+      summary:
+        "## Done\n- item\n[`code`](https://example.com)\n```\nblock\n```",
+    });
+    expect(text.startsWith("Cursor agent done — Fix bug")).toBe(true);
+    expect(text).toContain("Done");
+    expect(text).toContain("• item");
+    expect(text).toContain("code");
+    expect(text).not.toContain("example.com");
+    expect(text).toContain("block");
+    expect(text).not.toContain("**");
+    expect(text).not.toContain("## ");
+    expect(text).not.toContain("```");
+  });
 });
 
 describe("pickPrUrlFromRunGit", () => {
