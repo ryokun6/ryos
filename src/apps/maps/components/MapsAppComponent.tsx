@@ -1371,6 +1371,8 @@ export function MapsAppComponent({
                 !!workPlace &&
                 workPlace.id === selectedPlace.id
               }
+              savedHomePlace={homePlace}
+              savedWorkPlace={workPlace}
               onSetHome={(p) => setHomePlace(p)}
               onSetWork={(p) => setWorkPlace(p)}
               onToggleFavorite={handleToggleFavorite}
