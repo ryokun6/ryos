@@ -17,6 +17,7 @@ import { areRomanizationSettingsEqual } from "@/types/lyrics";
 
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
+import { useMapsStore } from "@/stores/useMapsStore";
 import {
   getPusherClient,
   getRealtimeConnectionState,
@@ -101,6 +102,7 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   stickies: 3000,
   calendar: 4000,
   contacts: 3000,
+  maps: 3000,
   "custom-wallpapers": 8000,
 };
 
@@ -116,6 +118,7 @@ const MAX_UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   stickies: 8_000,
   calendar: 10_000,
   contacts: 8_000,
+  maps: 8_000,
   "custom-wallpapers": 15_000,
 };
 
@@ -134,6 +137,7 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
     stickies: initialValue,
     calendar: initialValue,
     contacts: initialValue,
+    maps: initialValue,
     "custom-wallpapers": initialValue,
   };
 }
@@ -150,6 +154,7 @@ function createLogicalDomainNumberMap(
     stickies: initialValue,
     calendar: initialValue,
     contacts: initialValue,
+    maps: initialValue,
   };
 }
 
@@ -165,6 +170,7 @@ function createLogicalDomainBooleanMap(
     stickies: initialValue,
     calendar: initialValue,
     contacts: initialValue,
+    maps: initialValue,
   };
 }
 
@@ -184,6 +190,7 @@ function createDomainPendingRemoteUpdateMap(): Record<
     stickies: null,
     calendar: null,
     contacts: null,
+    maps: null,
     "custom-wallpapers": null,
   };
 }
@@ -205,6 +212,7 @@ function createLogicalPendingRemoteUpdateMap(): Record<
     stickies: null,
     calendar: null,
     contacts: null,
+    maps: null,
   };
 }
 
@@ -263,6 +271,11 @@ function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
       return getLatestCloudSyncTimestamp(
         Object.values(deletionMarkers.customWallpaperKeys)
       );
+    case "maps":
+      return getLatestCloudSyncTimestamp([
+        ...Object.values(deletionMarkers.mapsFavoriteIds),
+        ...Object.values(deletionMarkers.mapsRecentIds),
+      ]);
     default:
       return null;
   }
@@ -296,6 +309,7 @@ export function useAutoCloudSync() {
   const syncStickies = useCloudSyncStore((state) => state.syncStickies);
   const syncCalendar = useCloudSyncStore((state) => state.syncCalendar);
   const syncContacts = useCloudSyncStore((state) => state.syncContacts);
+  const syncMaps = useCloudSyncStore((state) => state.syncMaps);
 
   const uploadTimersRef = useRef<
     Partial<Record<LogicalCloudSyncDomain, ReturnType<typeof setTimeout>>>
@@ -315,6 +329,7 @@ export function useAutoCloudSync() {
     stickies: 0,
     calendar: 0,
     contacts: 0,
+    maps: 0,
     "custom-wallpapers": 0,
   });
   const firstQueuedAtRef = useRef<Record<LogicalCloudSyncDomain, number>>(
@@ -351,6 +366,7 @@ export function useAutoCloudSync() {
   const wallpaperSeedDoneRef = useRef(false);
   const contactsSeedDoneRef = useRef(false);
   const tvSeedDoneRef = useRef(false);
+  const mapsSeedDoneRef = useRef(false);
 
   const isSyncActive = Boolean(username && isAuthenticated && autoSyncEnabled);
 
@@ -388,11 +404,13 @@ export function useAutoCloudSync() {
         syncStickies ? "1" : "0",
         syncCalendar ? "1" : "0",
         syncContacts ? "1" : "0",
+        syncMaps ? "1" : "0",
       ].join(""),
     [
       syncCalendar,
       syncContacts,
       syncFiles,
+      syncMaps,
       syncSettings,
       syncSongs,
       syncStickies,
@@ -1080,6 +1098,27 @@ export function useAutoCloudSync() {
         }
       }
 
+      if (!mapsSeedDoneRef.current && isDomainEnabled("maps")) {
+        mapsSeedDoneRef.current = true;
+        if (!metadataMap.maps?.updatedAt) {
+          const mapsState = useMapsStore.getState();
+          const hasLocalMapsState =
+            Boolean(mapsState.home) ||
+            Boolean(mapsState.work) ||
+            mapsState.favorites.length > 0 ||
+            mapsState.recents.length > 0;
+          if (hasLocalMapsState) {
+            console.log(
+              `[CloudSync] Seed upload: ${mapsState.favorites.length} favorites / ${mapsState.recents.length} recents, no remote data`
+            );
+            setTimeout(
+              () => queueUpload("maps"),
+              REMOTE_APPLY_SUPPRESSION_MS + 1000
+            );
+          }
+        }
+      }
+
       if (!tvSeedDoneRef.current && isDomainEnabled("tv")) {
         tvSeedDoneRef.current = true;
         if (!metadataMap.tv?.updatedAt) {
@@ -1538,6 +1577,19 @@ export function useAutoCloudSync() {
       }
     });
 
+    const mapsUnsubscribe = useMapsStore.subscribe((state, prevState) => {
+      if (
+        state.home !== prevState.home ||
+        state.work !== prevState.work ||
+        state.favorites !== prevState.favorites ||
+        state.recents !== prevState.recents
+      ) {
+        if (!useMapsStore.persist.hasHydrated()) return;
+        if (isApplyingRemoteDomain("maps")) return;
+        queueUpload("maps");
+      }
+    });
+
     // Clear any uploads queued by store hydration/initialization so the
     // first remote check can pull down data without being blocked by
     // "has pending upload" guards (e.g. initializeLibrary on new devices).
@@ -1628,6 +1680,7 @@ export function useAutoCloudSync() {
       stickiesUnsubscribe();
       calendarUnsubscribe();
       contactsUnsubscribe();
+      mapsUnsubscribe();
     };
   }, [
     checkRemoteUpdates,

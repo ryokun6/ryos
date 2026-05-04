@@ -24,6 +24,7 @@ import {
   type TodoItem,
 } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
+import { useMapsStore, type SavedPlace } from "@/stores/useMapsStore";
 import {
   useCloudSyncStore,
   type CloudSyncDeletionBucket,
@@ -180,6 +181,16 @@ interface ContactsSnapshotData {
   deletedContactIds?: DeletionMarkerMap;
 }
 
+interface MapsSnapshotData {
+  home: SavedPlace | null;
+  work: SavedPlace | null;
+  favorites: SavedPlace[];
+  recents: SavedPlace[];
+  updatedAt: number;
+  deletedFavoriteIds?: DeletionMarkerMap;
+  deletedRecentIds?: DeletionMarkerMap;
+}
+
 type AnySnapshotData =
   | SettingsSnapshotData
   | FilesMetadataSnapshotData
@@ -190,6 +201,7 @@ type AnySnapshotData =
   | StickiesSnapshotData
   | CalendarSnapshotData
   | ContactsSnapshotData
+  | MapsSnapshotData
   | CustomWallpapersSnapshotData;
 
 function parseSyncTimestamp(value: string | null | undefined): number {
@@ -748,6 +760,77 @@ function serializeContactsSnapshot(): ContactsSnapshotData {
   };
 }
 
+function normalizeSavedPlace(value: unknown): SavedPlace | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Partial<SavedPlace>;
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.name !== "string" ||
+    typeof candidate.latitude !== "number" ||
+    typeof candidate.longitude !== "number"
+  ) {
+    return null;
+  }
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    subtitle:
+      typeof candidate.subtitle === "string" ? candidate.subtitle : undefined,
+    latitude: candidate.latitude,
+    longitude: candidate.longitude,
+    category:
+      typeof candidate.category === "string" ? candidate.category : undefined,
+  };
+}
+
+function normalizeSavedPlaceList(value: unknown): SavedPlace[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const seenIds = new Set<string>();
+  const normalized: SavedPlace[] = [];
+  for (const entry of value) {
+    const place = normalizeSavedPlace(entry);
+    if (!place || seenIds.has(place.id)) {
+      continue;
+    }
+    seenIds.add(place.id);
+    normalized.push(place);
+  }
+  return normalized;
+}
+
+function serializeMapsSnapshot(): MapsSnapshotData {
+  const mapsState = useMapsStore.getState();
+  const deletionMarkers = useCloudSyncStore.getState().deletionMarkers;
+  return {
+    home: mapsState.home,
+    work: mapsState.work,
+    favorites: mapsState.favorites,
+    recents: mapsState.recents,
+    updatedAt: mapsState.updatedAt || 0,
+    deletedFavoriteIds: deletionMarkers.mapsFavoriteIds,
+    deletedRecentIds: deletionMarkers.mapsRecentIds,
+  };
+}
+
+function normalizeMapsSnapshot(data: MapsSnapshotData | null | undefined): MapsSnapshotData {
+  return {
+    home: normalizeSavedPlace(data?.home ?? null),
+    work: normalizeSavedPlace(data?.work ?? null),
+    favorites: normalizeSavedPlaceList(data?.favorites),
+    recents: normalizeSavedPlaceList(data?.recents),
+    updatedAt:
+      typeof data?.updatedAt === "number" && Number.isFinite(data.updatedAt)
+        ? data.updatedAt
+        : 0,
+    deletedFavoriteIds: data?.deletedFavoriteIds,
+    deletedRecentIds: data?.deletedRecentIds,
+  };
+}
+
 async function createCloudSyncEnvelope(
   domain: CloudSyncDomain,
   providedDb?: IDBDatabase
@@ -831,6 +914,13 @@ async function createCloudSyncEnvelope(
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
         data: serializeContactsSnapshot(),
+      };
+    case "maps":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: serializeMapsSnapshot(),
       };
     case "custom-wallpapers":
       return {
@@ -1217,6 +1307,47 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
   });
 }
 
+function applyMapsSnapshot(data: MapsSnapshotData): void {
+  const normalized = normalizeMapsSnapshot(data);
+  const remoteDeletedFavorites = normalizeDeletionMarkerMap(
+    normalized.deletedFavoriteIds
+  );
+  const remoteDeletedRecents = normalizeDeletionMarkerMap(
+    normalized.deletedRecentIds
+  );
+  const cloudSyncState = useCloudSyncStore.getState();
+  const effectiveDeletedFavorites = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.mapsFavoriteIds,
+    remoteDeletedFavorites
+  );
+  const effectiveDeletedRecents = mergeDeletionMarkerMaps(
+    cloudSyncState.deletionMarkers.mapsRecentIds,
+    remoteDeletedRecents
+  );
+
+  cloudSyncState.mergeDeletedKeys("mapsFavoriteIds", remoteDeletedFavorites);
+  cloudSyncState.mergeDeletedKeys("mapsRecentIds", remoteDeletedRecents);
+
+  useMapsStore.getState().replaceFromSync({
+    home: normalized.home,
+    work: normalized.work,
+    favorites: filterDeletedIds(
+      normalized.favorites,
+      effectiveDeletedFavorites,
+      (place) => place.id
+    ),
+    recents: filterDeletedIds(
+      normalized.recents,
+      effectiveDeletedRecents,
+      (place) => place.id
+    ),
+    selectedPlace: useMapsStore.getState().selectedPlace,
+  });
+  useMapsStore.setState({
+    updatedAt: Math.max(useMapsStore.getState().updatedAt || 0, normalized.updatedAt),
+  });
+}
+
 function applyContactsSnapshot(data: ContactsSnapshotData): void {
   const remoteDeletedContactIds = normalizeDeletionMarkerMap(
     data.deletedContactIds
@@ -1377,6 +1508,9 @@ async function applyCloudSyncEnvelope(
         return;
       case "contacts":
         applyContactsSnapshot(envelope.data as ContactsSnapshotData);
+        return;
+      case "maps":
+        applyMapsSnapshot(envelope.data as MapsSnapshotData);
         return;
       case "custom-wallpapers":
         await applyMonolithicBlobSnapshotToIndividualDomain(
@@ -1544,6 +1678,67 @@ function mergeCalendarSnapshots(
   };
 }
 
+function mergeMapsSnapshots(
+  local: MapsSnapshotData,
+  remote: MapsSnapshotData
+): MapsSnapshotData {
+  const localNorm = normalizeMapsSnapshot(local);
+  const remoteNorm = normalizeMapsSnapshot(remote);
+  const mergedDeletedFavorites = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(localNorm.deletedFavoriteIds),
+    normalizeDeletionMarkerMap(remoteNorm.deletedFavoriteIds)
+  );
+  const mergedDeletedRecents = mergeDeletionMarkerMaps(
+    normalizeDeletionMarkerMap(localNorm.deletedRecentIds),
+    normalizeDeletionMarkerMap(remoteNorm.deletedRecentIds)
+  );
+
+  // Local wins for home/work/recents ordering when local is strictly newer;
+  // otherwise remote wins. Favorites are the union (minus deletions) so
+  // simultaneous edits on different devices don't drop pins.
+  const preferLocal = localNorm.updatedAt >= remoteNorm.updatedAt;
+  const home = preferLocal ? localNorm.home : remoteNorm.home;
+  const work = preferLocal ? localNorm.work : remoteNorm.work;
+
+  const favoritesById = new Map<string, SavedPlace>();
+  // Iterate in display order (newest first). Local first when preferred so
+  // local order wins on ties; otherwise remote first.
+  const favoritePass = preferLocal
+    ? [localNorm.favorites, remoteNorm.favorites]
+    : [remoteNorm.favorites, localNorm.favorites];
+  for (const list of favoritePass) {
+    for (const place of list) {
+      if (mergedDeletedFavorites[place.id]) continue;
+      if (!favoritesById.has(place.id)) {
+        favoritesById.set(place.id, place);
+      }
+    }
+  }
+
+  const recentsById = new Map<string, SavedPlace>();
+  const recentPass = preferLocal
+    ? [localNorm.recents, remoteNorm.recents]
+    : [remoteNorm.recents, localNorm.recents];
+  for (const list of recentPass) {
+    for (const place of list) {
+      if (mergedDeletedRecents[place.id]) continue;
+      if (!recentsById.has(place.id)) {
+        recentsById.set(place.id, place);
+      }
+    }
+  }
+
+  return {
+    home,
+    work,
+    favorites: Array.from(favoritesById.values()),
+    recents: Array.from(recentsById.values()).slice(0, 10),
+    updatedAt: Math.max(localNorm.updatedAt, remoteNorm.updatedAt),
+    deletedFavoriteIds: mergedDeletedFavorites,
+    deletedRecentIds: mergedDeletedRecents,
+  };
+}
+
 function mergeContactsSnapshots(
   local: ContactsSnapshotData,
   remote: ContactsSnapshotData
@@ -1677,6 +1872,11 @@ function mergeRedisStateConflict(
       return mergeContactsSnapshots(
         localData as ContactsSnapshotData,
         remoteData as ContactsSnapshotData
+      );
+    case "maps":
+      return mergeMapsSnapshots(
+        localData as MapsSnapshotData,
+        remoteData as MapsSnapshotData
       );
     case "songs":
       return mergeSongsSnapshots(

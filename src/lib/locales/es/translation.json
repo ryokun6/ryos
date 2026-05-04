@@ -1291,6 +1291,7 @@
         "lastFetched": "Obtenido el {{date}}",
         "lastSynced": "Última sincronización {{date}}",
         "lastUploaded": "Subido el {{date}}",
+        "maps": "Mapas",
         "minutesAgo": "hace {{count}}min",
         "neverFetched": "Nunca obtenido",
         "neverSynced": "Aún no sincronizado",

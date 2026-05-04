@@ -330,6 +330,7 @@ export function useControlPanelsLogic({
     syncStickies,
     syncCalendar,
     syncContacts,
+    syncMaps,
     isCheckingRemote: isAutoSyncChecking,
     lastCheckedAt: autoSyncLastCheckedAt,
     lastError: autoSyncLastError,
@@ -347,6 +348,7 @@ export function useControlPanelsLogic({
       syncStickies: state.syncStickies,
       syncCalendar: state.syncCalendar,
       syncContacts: state.syncContacts,
+      syncMaps: state.syncMaps,
       isCheckingRemote: state.isCheckingRemote,
       lastCheckedAt: state.lastCheckedAt,
       lastError: state.lastError,
@@ -392,6 +394,7 @@ export function useControlPanelsLogic({
     stickies: internalAutoSyncDomainStatus.stickies,
     calendar: internalAutoSyncDomainStatus.calendar,
     contacts: internalAutoSyncDomainStatus.contacts,
+    maps: internalAutoSyncDomainStatus.maps,
   };
 
   // Password dialog states
@@ -1656,6 +1659,7 @@ export function useControlPanelsLogic({
     syncStickies,
     syncCalendar,
     syncContacts,
+    syncMaps,
     setSyncFiles: (enabled: boolean) =>
       setDomainEnabled("files-metadata", enabled),
     setSyncSettings: (enabled: boolean) =>
@@ -1669,6 +1673,7 @@ export function useControlPanelsLogic({
       setDomainEnabled("calendar", enabled),
     setSyncContacts: (enabled: boolean) =>
       setDomainEnabled("contacts", enabled),
+    setSyncMaps: (enabled: boolean) => setDomainEnabled("maps", enabled),
     isAutoSyncChecking,
     autoSyncLastCheckedAt,
     autoSyncLastError,

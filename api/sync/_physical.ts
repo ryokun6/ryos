@@ -40,7 +40,8 @@ export async function getPhysicalSyncDomainPayload(
       domain === "tv" ||
       domain === "stickies" ||
       domain === "calendar" ||
-      domain === "contacts") {
+      domain === "contacts" ||
+      domain === "maps") {
     return getRedisStateDomainPayload(redis, username, domain as RedisSyncDomain);
   }
 
@@ -61,7 +62,8 @@ export async function putPhysicalSyncDomain(
       domain === "tv" ||
       domain === "stickies" ||
       domain === "calendar" ||
-      domain === "contacts") {
+      domain === "contacts" ||
+      domain === "maps") {
     return putRedisStateDomain(
       redis,
       username,

@@ -1291,6 +1291,7 @@
         "lastFetched": "Abgerufen am {{date}}",
         "lastSynced": "Zuletzt synchronisiert {{date}}",
         "lastUploaded": "Hochgeladen am {{date}}",
+        "maps": "Karten",
         "minutesAgo": "vor {{count}}Min",
         "neverFetched": "Nie abgerufen",
         "neverSynced": "Noch nicht synchronisiert",

@@ -1291,6 +1291,7 @@
         "lastFetched": "{{date}}에 가져옴",
         "lastSynced": "마지막 동기화 {{date}}",
         "lastUploaded": "{{date}}에 업로드됨",
+        "maps": "지도",
         "minutesAgo": "{{count}}분 전",
         "neverFetched": "가져온 적 없음",
         "neverSynced": "아직 동기화되지 않음",
