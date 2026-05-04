@@ -89,6 +89,8 @@ interface MapKitAnnotationEvent {
 interface MapKitMarkerAnnotation {
   coordinate: MapKitCoordinate;
   data?: unknown;
+  /** Writable. When true MapKit shows the annotation's callout. */
+  selected?: boolean;
   addEventListener?: (
     type: string,
     listener: (event: MapKitAnnotationEvent) => void
@@ -386,22 +388,32 @@ export function MapsAppComponent({
       // on the very first call (before the map renders) is fine.
       const map = mapInstanceRef.current;
       const region = map?.region;
-      // When the user is zoomed in (visible region narrower than ~50 km
-      // per side), promote the region hint to a hard filter via MapKit
-      // JS 5.78's `regionPriority: "required"` — ambiguous queries like
-      // "coffee" should stay local instead of pulling globally-ranked
-      // hits. When zoomed out, fall back to the default soft bias so
-      // searches like "Eiffel Tower" still find Paris from a SF view.
+      // Promote the region hint to a hard filter via MapKit JS 5.78's
+      // `regionPriority: "required"` ONLY when the visible region falls
+      // inside a Goldilocks band:
+      //   • Upper bound (~50 km / 0.5°): when zoomed out farther than
+      //     this, "Eiffel Tower" needs to escape the local region.
+      //   • Lower bound (~3 km / 0.03°): when zoomed in tighter than
+      //     this, the viewport may not contain any matches for the
+      //     query — locking the search to that tiny box returns zero
+      //     results. Fall back to the default soft bias so MapKit can
+      //     widen the search and surface useful nearby hits.
+      // Outside the band we use the default soft region bias.
       const REGION_REQUIRED_MAX_SPAN_DEG = 0.5;
+      const REGION_REQUIRED_MIN_SPAN_DEG = 0.03;
       const regionSpan = (region as
         | { span?: { latitudeDelta?: number; longitudeDelta?: number } }
         | undefined)?.span;
+      const latDelta = regionSpan?.latitudeDelta;
+      const lngDelta = regionSpan?.longitudeDelta;
       const shouldRequireRegion =
         !!region &&
-        typeof regionSpan?.latitudeDelta === "number" &&
-        typeof regionSpan?.longitudeDelta === "number" &&
-        regionSpan.latitudeDelta < REGION_REQUIRED_MAX_SPAN_DEG &&
-        regionSpan.longitudeDelta < REGION_REQUIRED_MAX_SPAN_DEG;
+        typeof latDelta === "number" &&
+        typeof lngDelta === "number" &&
+        latDelta < REGION_REQUIRED_MAX_SPAN_DEG &&
+        lngDelta < REGION_REQUIRED_MAX_SPAN_DEG &&
+        latDelta >= REGION_REQUIRED_MIN_SPAN_DEG &&
+        lngDelta >= REGION_REQUIRED_MIN_SPAN_DEG;
       const regionPriorityValue: MapKitRegionPriority | undefined = region
         ? shouldRequireRegion
           ? mk.RegionPriority?.Required ?? "required"
@@ -566,10 +578,12 @@ export function MapsAppComponent({
     [dropPinAt, recordRecentPlace, setSelectedPlace]
   );
 
-  // Center + record recent for a saved place. We deliberately do NOT call
-  // `dropPinAt` here because Home / Work / Favorites already have their own
-  // permanent annotations on the map — adding a red search-pin on top would
-  // duplicate the marker. The place card opens via `setSelectedPlace`.
+  // Center + record recent for a saved place, and visually highlight its
+  // pin by flipping MapKit's `selected` flag on the annotation. We
+  // deliberately do NOT call `dropPinAt` here because Home / Work /
+  // Favorites already have their own permanent annotations on the map —
+  // adding a red search pin on top would duplicate the marker. Instead
+  // we re-use the saved annotation as the "you are here" indicator.
   const focusSavedPlace = useCallback(
     (place: SavedPlace) => {
       const mk = getMapKit();
@@ -583,7 +597,7 @@ export function MapsAppComponent({
         const region = new mk.CoordinateRegion(coord, span);
         map.setRegionAnimated(region, true);
       }
-      // Also clear any leftover search pin so the saved annotation is the
+      // Clear any leftover search pin so the saved annotation is the
       // only marker visible at this location.
       if (annotationRef.current && map) {
         try {
@@ -593,6 +607,19 @@ export function MapsAppComponent({
         }
         annotationRef.current = null;
         setSelectedResultId(null);
+      }
+      // Highlight the matching saved annotation so it's obvious which
+      // pin corresponds to the now-open place card. `selected = true`
+      // pops the callout; we deselect the rest so only one is active.
+      const wrappers = savedAnnotationsRef.current;
+      for (const [id, wrapper] of wrappers.entries()) {
+        try {
+          wrapper.annotation.selected = id === place.id;
+        } catch {
+          // MapKit JS forbids mutating selection inside a select/deselect
+          // callback; this code path runs from a tap handler so it's
+          // normally safe, but ignore in case MapKit complains.
+        }
       }
       recordRecentPlace(place);
       setSelectedPlace(place);
@@ -653,86 +680,68 @@ export function MapsAppComponent({
   const homeLabel = t("apps.maps.places.home", { defaultValue: "Home" });
   const workLabel = t("apps.maps.places.work", { defaultValue: "Work" });
 
-  // Build the diff key for the saved-annotations layer. We include the
-  // category (so a marker visually moves between Home/Work/Favorite without
-  // a stale icon lingering), the coordinate (so editing a saved place to a
-  // new location re-creates the annotation rather than leaving the pin
-  // stranded at the old spot), and the localized label (so a language
-  // switch rebuilds Home/Work pins with the new title).
+  // Resolve the saved-place entries we want to render as map annotations.
+  // We dedupe by `SavedPlace.id` so a favorite that's also Home or Work is
+  // rendered once (Home/Work win) — two pins stacked at the same coordinate
+  // would just be visual noise.
   const savedPlaceEntries = useMemo<
-    Array<{ key: string; kind: "home" | "work" | "favorite"; place: SavedPlace }>
+    Array<{ kind: "home" | "work" | "favorite"; place: SavedPlace }>
   >(() => {
     const entries: Array<{
-      key: string;
       kind: "home" | "work" | "favorite";
       place: SavedPlace;
     }> = [];
     const seen = new Set<string>();
     if (homePlace) {
-      const key = `home:${homePlace.id}:${homePlace.latitude},${homePlace.longitude}:${homeLabel}`;
-      entries.push({ key, kind: "home", place: homePlace });
+      entries.push({ kind: "home", place: homePlace });
       seen.add(homePlace.id);
     }
     if (workPlace && !seen.has(workPlace.id)) {
-      const key = `work:${workPlace.id}:${workPlace.latitude},${workPlace.longitude}:${workLabel}`;
-      entries.push({ key, kind: "work", place: workPlace });
+      entries.push({ kind: "work", place: workPlace });
       seen.add(workPlace.id);
     }
     for (const fav of favoritePlaces) {
-      // Don't double-render a favorite that's also Home or Work — the
-      // dedicated Home/Work annotation already covers that location and a
-      // second star pin on top would be visual noise.
       if (seen.has(fav.id)) continue;
-      const key = `favorite:${fav.id}:${fav.latitude},${fav.longitude}:${fav.name}`;
-      entries.push({ key, kind: "favorite", place: fav });
+      entries.push({ kind: "favorite", place: fav });
       seen.add(fav.id);
     }
     return entries;
-  }, [homePlace, workPlace, favoritePlaces, homeLabel, workLabel]);
+  }, [homePlace, workPlace, favoritePlaces]);
 
   // Sync Home / Work / Favorites annotations on the map. Each saved kind
   // gets a distinct pin color — Home blue, Work amber, Favorites gold —
-  // matching the drawer/place-card visual language, but we keep the marker
-  // free of glyphs so the map stays uncluttered. We diff by key so
-  // unchanged pins stay put (no flicker, no MapKit re-allocation) while
-  // additions / removals happen incrementally. The click handler stored on
-  // each annotation reads from `focusSavedPlaceRef`, so the listener stays
-  // valid for the lifetime of the annotation.
+  // matching the drawer / place-card visual language.
+  //
+  // We deliberately wipe-and-rebuild the entire annotation set on every
+  // run rather than diffing. The diff approach (used previously) traded a
+  // tiny perf win for a class of bugs where a key collision or store
+  // re-hydration left favorites silently missing from the map. With at
+  // most ~10 saved places, the cost of re-creating annotations is
+  // negligible and the code stays trivially correct.
+  //
+  // The handler stored on each annotation reads from `focusSavedPlaceRef`,
+  // so the listener stays valid for the lifetime of the annotation even
+  // though we recreate annotations whenever entries change.
   useEffect(() => {
     if (status !== "ready") return;
     const mk = getMapKit();
     const map = mapInstanceRef.current;
     if (!mk || !map) return;
 
-    const prev = savedAnnotationsRef.current;
+    // Drop all previously-attached saved annotations before re-adding.
+    for (const value of savedAnnotationsRef.current.values()) {
+      try {
+        map.removeAnnotation(value.annotation);
+      } catch {
+        // ignore — mapkit may have already detached
+      }
+    }
     const next = new Map<
       string,
       { annotation: MapKitMarkerAnnotation; place: SavedPlace }
     >();
 
-    const desiredKeys = new Set(savedPlaceEntries.map((e) => e.key));
-
-    // Remove annotations that no longer correspond to a saved place.
-    for (const [key, value] of prev.entries()) {
-      if (!desiredKeys.has(key)) {
-        try {
-          map.removeAnnotation(value.annotation);
-        } catch {
-          // ignore — mapkit may have already detached
-        }
-      }
-    }
-
     for (const entry of savedPlaceEntries) {
-      const existing = prev.get(entry.key);
-      if (existing) {
-        // Keep the existing annotation but refresh the place data the
-        // click listener will use (e.g. updated subtitle from a re-search).
-        existing.place = entry.place;
-        next.set(entry.key, existing);
-        continue;
-      }
-
       const coord = new mk.Coordinate(
         entry.place.latitude,
         entry.place.longitude
@@ -746,11 +755,6 @@ export function MapsAppComponent({
           : entry.kind === "work"
             ? { color: "#b45309", glyph: WORK_GLYPH_IMAGE }
             : { color: "#f59e0b", glyph: FAVORITE_GLYPH_IMAGE };
-      // For Home / Work pins the on-pin label should read "Home" / "Work"
-      // (matching the place card and drawer headings) instead of the raw
-      // address — that's the whole point of saving the place. The
-      // street-address style stays as the subtitle. Favorites keep the
-      // place's actual name as the title.
       const title =
         entry.kind === "home"
           ? homeLabel
@@ -767,8 +771,6 @@ export function MapsAppComponent({
         color: visual.color,
         glyphColor: "#ffffff",
         glyphImage: visual.glyph,
-        // Use the same glyph when selected so the icon doesn't flash to
-        // the default pin glyph during the expanded callout state.
         selectedGlyphImage: visual.glyph,
         // Above default search pins so a search result doesn't visually
         // hide a saved annotation at the same location.
@@ -787,20 +789,11 @@ export function MapsAppComponent({
       } catch {
         // ignore — failure here is non-fatal; the user can still use the drawer
       }
-      next.set(entry.key, wrapper);
+      next.set(entry.place.id, wrapper);
     }
 
     savedAnnotationsRef.current = next;
-    // Notes:
-    // - `homeLabel` / `workLabel` are read inside the loop but already
-    //   baked into the entry keys via `savedPlaceEntries`, so a language
-    //   switch invalidates the cached entries and rebuilds the pin titles.
-    // - `mapReadyTick` is included so the effect re-runs the moment the
-    //   map instance is (re)created — without it, refs alone wouldn't
-    //   trigger a re-fire and pins would silently fail to attach when the
-    //   sync effect happened to commit before the map init effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, savedPlaceEntries, mapReadyTick]);
+  }, [status, savedPlaceEntries, mapReadyTick, homeLabel, workLabel]);
 
   // Drop all saved-place annotations when the map tears down so a re-open
   // starts from a clean slate (the next sync effect re-creates them).
