@@ -110,7 +110,6 @@ const WORK_VISUAL: PoiVisual = {
 
 export function MapsPlacesDrawer({
   isOpen,
-  onClose,
   home,
   work,
   favorites,
@@ -118,9 +117,12 @@ export function MapsPlacesDrawer({
   onSelectPlace,
   t,
 }: MapsPlacesDrawerProps) {
+  // Keep the drawer open after a tap so the user can quickly hop between
+  // saved places without re-toggling it. The drawer is dismissed only by
+  // the search-bar toggle in the parent — `onClose` is intentionally not
+  // wired here.
   const handleSelect = (place: SavedPlace) => {
     onSelectPlace(place);
-    onClose();
   };
 
   const hasAny = !!home || !!work || favorites.length > 0 || recents.length > 0;

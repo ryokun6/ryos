@@ -82,11 +82,11 @@ export function MapsPlaceCard({
           })}
           className={cn(
             "absolute select-none",
-            // Mobile: full width minus 8 px gutter, bottom: 8.
-            "left-2 right-2 bottom-2",
-            // Desktop: tighter 12 px insets and a hair more bottom space so the
-            // card doesn't crowd the MapKit zoom controls.
-            "sm:left-3 sm:right-3 sm:bottom-3"
+            // Hug the map edges — 6 px on every side. The earlier 8/12 px
+            // insets left a visible band of map peeking around the card; a
+            // smaller, uniform gutter feels closer to the system Maps app
+            // and gives the card more horizontal room on narrow windows.
+            "left-1.5 right-1.5 bottom-1.5"
           )}
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

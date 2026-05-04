@@ -16,6 +16,11 @@ import { MapsPlacesDrawer } from "./MapsPlacesDrawer";
 import { MapsPlaceCard } from "./MapsPlaceCard";
 import { useMapsStore } from "@/stores/useMapsStore";
 import type { SavedPlace } from "../utils/types";
+import {
+  FAVORITE_GLYPH_IMAGE,
+  HOME_GLYPH_IMAGE,
+  WORK_GLYPH_IMAGE,
+} from "../utils/markerGlyphs";
 
 // Minimal MapKit JS shape we touch from this component. We only declare the
 // fields we use so we don't need the full @types/apple-mapkit-js-browser
@@ -60,8 +65,21 @@ interface MapKitSearchInstance {
   ) => void;
 }
 
+interface MapKitAnnotationEvent {
+  target: MapKitMarkerAnnotation;
+}
+
 interface MapKitMarkerAnnotation {
   coordinate: MapKitCoordinate;
+  data?: unknown;
+  addEventListener?: (
+    type: string,
+    listener: (event: MapKitAnnotationEvent) => void
+  ) => void;
+  removeEventListener?: (
+    type: string,
+    listener: (event: MapKitAnnotationEvent) => void
+  ) => void;
 }
 
 interface MapKitGlobal {
@@ -118,6 +136,13 @@ interface MapsSearchResult {
   category?: string;
 }
 
+// Coordinate-degree span used when focusing on a single place (search hit,
+// saved-place tap, persisted selection re-center). ~0.012° ≈ 1.3 km wide
+// at the equator — neighborhood / street level — which mirrors how the
+// system Maps app zooms when you tap a result. The previous value (0.05)
+// stayed at region level and made it hard to see surrounding streets.
+const FOCUS_PLACE_SPAN_DEG = 0.012;
+
 function statusMessageKey(status: MapKitStatus): string {
   switch (status) {
     case "missing-token":
@@ -162,6 +187,18 @@ export function MapsAppComponent({
   const annotationRef = useRef<MapKitMarkerAnnotation | null>(null);
   const searchInstanceRef = useRef<MapKitSearchInstance | null>(null);
   const searchRequestIdRef = useRef(0);
+  // Saved-place annotations (Home / Work / Favorites) keyed by a stable
+  // composite key so we can diff updates in-place without rebuilding the
+  // entire annotation set on every store change.
+  const savedAnnotationsRef = useRef<
+    Map<string, { annotation: MapKitMarkerAnnotation; place: SavedPlace }>
+  >(new Map());
+  // Bump every time the underlying MapKit instance is (re)created so any
+  // effect that wants to act on `mapInstanceRef.current` can subscribe via
+  // a real React dep — refs alone don't trigger re-renders, which made
+  // the saved-annotations sync silently miss the first map-ready window
+  // when status flipped to "ready" mid-render.
+  const [mapReadyTick, setMapReadyTick] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MapsSearchResult[]>([]);
@@ -223,6 +260,11 @@ export function MapsAppComponent({
     map.showsUserLocation = false;
     map.tracksUserLocation = false;
     mapInstanceRef.current = map;
+    // Notify dependents (saved-annotations sync, hydration framing, etc.)
+    // that the underlying map instance is ready. Bumping a counter forces
+    // a re-render so effects that read `mapInstanceRef.current` actually
+    // see the new value instead of skipping it on a stale closure.
+    setMapReadyTick((tick) => tick + 1);
     // We intentionally do NOT depend on mapType here — the next effect
     // syncs it whenever the user picks a different option.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -248,6 +290,9 @@ export function MapsAppComponent({
     }
     mapInstanceRef.current = null;
     annotationRef.current = null;
+    // Reset the readiness counter so the next time the window opens the
+    // saved-annotations sync re-runs against the freshly-created map.
+    setMapReadyTick(0);
   }, [isWindowOpen]);
 
   useEffect(() => {
@@ -332,6 +377,13 @@ export function MapsAppComponent({
     [status, t]
   );
 
+  // Latest "is this id a saved place?" predicate, captured into a ref so
+  // `dropPinAt` can stay stable (no callback dep churn) while still seeing
+  // up-to-date Home / Work / Favorites state.
+  const isPlaceSavedRef = useRef<(id: string | undefined) => boolean>(
+    () => false
+  );
+
   const dropPinAt = useCallback(
     (place: {
       id: string;
@@ -344,7 +396,10 @@ export function MapsAppComponent({
       const map = mapInstanceRef.current;
       if (!mk || !map) return;
 
-      setSelectedResultId(place.id);
+      // If the place already has a permanent saved annotation, skip the
+      // red search pin entirely and just frame it. This keeps clicks on
+      // search results that match a Favorite from stacking two markers.
+      const alreadySaved = isPlaceSavedRef.current(place.id);
 
       if (annotationRef.current) {
         try {
@@ -356,15 +411,23 @@ export function MapsAppComponent({
       }
 
       const coord = new mk.Coordinate(place.latitude, place.longitude);
-      const annotation = new mk.MarkerAnnotation(coord, {
-        title: place.name,
-        subtitle: place.subtitle ?? "",
-        color: "#E25B4F",
-      });
-      map.addAnnotation(annotation);
-      annotationRef.current = annotation;
+      if (!alreadySaved) {
+        setSelectedResultId(place.id);
+        const annotation = new mk.MarkerAnnotation(coord, {
+          title: place.name,
+          subtitle: place.subtitle ?? "",
+          color: "#E25B4F",
+        });
+        map.addAnnotation(annotation);
+        annotationRef.current = annotation;
+      } else {
+        setSelectedResultId(null);
+      }
 
-      const span = new mk.CoordinateSpan(0.05, 0.05);
+      const span = new mk.CoordinateSpan(
+        FOCUS_PLACE_SPAN_DEG,
+        FOCUS_PLACE_SPAN_DEG
+      );
       const region = new mk.CoordinateRegion(coord, span);
       map.setRegionAnimated(region, true);
     },
@@ -396,13 +459,54 @@ export function MapsAppComponent({
     [dropPinAt, recordRecentPlace, setSelectedPlace]
   );
 
-  const handleSelectSavedPlace = useCallback(
+  // Center + record recent for a saved place. We deliberately do NOT call
+  // `dropPinAt` here because Home / Work / Favorites already have their own
+  // permanent annotations on the map — adding a red search-pin on top would
+  // duplicate the marker. The place card opens via `setSelectedPlace`.
+  const focusSavedPlace = useCallback(
     (place: SavedPlace) => {
-      dropPinAt(place);
+      const mk = getMapKit();
+      const map = mapInstanceRef.current;
+      if (mk && map) {
+        const coord = new mk.Coordinate(place.latitude, place.longitude);
+        const span = new mk.CoordinateSpan(
+          FOCUS_PLACE_SPAN_DEG,
+          FOCUS_PLACE_SPAN_DEG
+        );
+        const region = new mk.CoordinateRegion(coord, span);
+        map.setRegionAnimated(region, true);
+      }
+      // Also clear any leftover search pin so the saved annotation is the
+      // only marker visible at this location.
+      if (annotationRef.current && map) {
+        try {
+          map.removeAnnotation(annotationRef.current);
+        } catch {
+          // ignore
+        }
+        annotationRef.current = null;
+        setSelectedResultId(null);
+      }
       recordRecentPlace(place);
       setSelectedPlace(place);
     },
-    [dropPinAt, recordRecentPlace, setSelectedPlace]
+    [recordRecentPlace, setSelectedPlace]
+  );
+
+  // Keep the latest focus handler in a ref so the long-lived MapKit click
+  // listeners attached to saved annotations always invoke the current
+  // closure (and therefore the current store setters) without forcing us
+  // to rebuild every annotation when callbacks change.
+  const focusSavedPlaceRef = useRef(focusSavedPlace);
+  useEffect(() => {
+    focusSavedPlaceRef.current = focusSavedPlace;
+  }, [focusSavedPlace]);
+
+  const handleSelectSavedPlace = useCallback(
+    (place: SavedPlace) => {
+      focusSavedPlace(place);
+    },
+    [focusSavedPlace]
   );
 
   // Remove the dropped annotation (if any) and clear the selected-result
@@ -437,23 +541,304 @@ export function MapsAppComponent({
     [isPlaceFavorite, removeFavoritePlace, addFavoritePlace]
   );
 
-  // Re-drop the pin and re-center on the persisted `selectedPlace` once the
-  // map becomes ready. Guarded so it only fires once per mount: subsequent
-  // user-driven selections go through `dropPinAt` directly.
+  // Localized "Home" / "Work" labels used as the marker title for those
+  // saved kinds, matching the drawer and place-card section headings.
+  const homeLabel = t("apps.maps.places.home", { defaultValue: "Home" });
+  const workLabel = t("apps.maps.places.work", { defaultValue: "Work" });
+
+  // Build the diff key for the saved-annotations layer. We include the
+  // category (so a marker visually moves between Home/Work/Favorite without
+  // a stale icon lingering), the coordinate (so editing a saved place to a
+  // new location re-creates the annotation rather than leaving the pin
+  // stranded at the old spot), and the localized label (so a language
+  // switch rebuilds Home/Work pins with the new title).
+  const savedPlaceEntries = useMemo<
+    Array<{ key: string; kind: "home" | "work" | "favorite"; place: SavedPlace }>
+  >(() => {
+    const entries: Array<{
+      key: string;
+      kind: "home" | "work" | "favorite";
+      place: SavedPlace;
+    }> = [];
+    const seen = new Set<string>();
+    if (homePlace) {
+      const key = `home:${homePlace.id}:${homePlace.latitude},${homePlace.longitude}:${homeLabel}`;
+      entries.push({ key, kind: "home", place: homePlace });
+      seen.add(homePlace.id);
+    }
+    if (workPlace && !seen.has(workPlace.id)) {
+      const key = `work:${workPlace.id}:${workPlace.latitude},${workPlace.longitude}:${workLabel}`;
+      entries.push({ key, kind: "work", place: workPlace });
+      seen.add(workPlace.id);
+    }
+    for (const fav of favoritePlaces) {
+      // Don't double-render a favorite that's also Home or Work — the
+      // dedicated Home/Work annotation already covers that location and a
+      // second star pin on top would be visual noise.
+      if (seen.has(fav.id)) continue;
+      const key = `favorite:${fav.id}:${fav.latitude},${fav.longitude}:${fav.name}`;
+      entries.push({ key, kind: "favorite", place: fav });
+      seen.add(fav.id);
+    }
+    return entries;
+  }, [homePlace, workPlace, favoritePlaces, homeLabel, workLabel]);
+
+  // Sync Home / Work / Favorites annotations on the map. Each saved kind
+  // gets a distinct pin color — Home blue, Work amber, Favorites gold —
+  // matching the drawer/place-card visual language, but we keep the marker
+  // free of glyphs so the map stays uncluttered. We diff by key so
+  // unchanged pins stay put (no flicker, no MapKit re-allocation) while
+  // additions / removals happen incrementally. The click handler stored on
+  // each annotation reads from `focusSavedPlaceRef`, so the listener stays
+  // valid for the lifetime of the annotation.
+  useEffect(() => {
+    if (status !== "ready") return;
+    const mk = getMapKit();
+    const map = mapInstanceRef.current;
+    if (!mk || !map) return;
+
+    const prev = savedAnnotationsRef.current;
+    const next = new Map<
+      string,
+      { annotation: MapKitMarkerAnnotation; place: SavedPlace }
+    >();
+
+    const desiredKeys = new Set(savedPlaceEntries.map((e) => e.key));
+
+    // Remove annotations that no longer correspond to a saved place.
+    for (const [key, value] of prev.entries()) {
+      if (!desiredKeys.has(key)) {
+        try {
+          map.removeAnnotation(value.annotation);
+        } catch {
+          // ignore — mapkit may have already detached
+        }
+      }
+    }
+
+    for (const entry of savedPlaceEntries) {
+      const existing = prev.get(entry.key);
+      if (existing) {
+        // Keep the existing annotation but refresh the place data the
+        // click listener will use (e.g. updated subtitle from a re-search).
+        existing.place = entry.place;
+        next.set(entry.key, existing);
+        continue;
+      }
+
+      const coord = new mk.Coordinate(
+        entry.place.latitude,
+        entry.place.longitude
+      );
+      // Per-kind marker color + Phosphor-derived glyph image. The glyph
+      // hash is the same `data:` SVG for all three densities — Apple's
+      // docs require ≥ 20×20 with 40×40 recommended; SVG scales for all.
+      const visual =
+        entry.kind === "home"
+          ? { color: "#1d4ed8", glyph: HOME_GLYPH_IMAGE }
+          : entry.kind === "work"
+            ? { color: "#b45309", glyph: WORK_GLYPH_IMAGE }
+            : { color: "#f59e0b", glyph: FAVORITE_GLYPH_IMAGE };
+      // For Home / Work pins the on-pin label should read "Home" / "Work"
+      // (matching the place card and drawer headings) instead of the raw
+      // address — that's the whole point of saving the place. The
+      // street-address style stays as the subtitle. Favorites keep the
+      // place's actual name as the title.
+      const title =
+        entry.kind === "home"
+          ? homeLabel
+          : entry.kind === "work"
+            ? workLabel
+            : entry.place.name;
+      const subtitle =
+        entry.kind === "home" || entry.kind === "work"
+          ? entry.place.name
+          : (entry.place.subtitle ?? "");
+      const annotation = new mk.MarkerAnnotation(coord, {
+        title,
+        subtitle,
+        color: visual.color,
+        glyphColor: "#ffffff",
+        glyphImage: visual.glyph,
+        // Use the same glyph when selected so the icon doesn't flash to
+        // the default pin glyph during the expanded callout state.
+        selectedGlyphImage: visual.glyph,
+        // Above default search pins so a search result doesn't visually
+        // hide a saved annotation at the same location.
+        displayPriority: 1000,
+        selected: false,
+      });
+
+      const wrapper = { annotation, place: entry.place };
+      const handleSelect = () => {
+        focusSavedPlaceRef.current(wrapper.place);
+      };
+      annotation.addEventListener?.("select", handleSelect);
+
+      try {
+        map.addAnnotation(annotation);
+      } catch {
+        // ignore — failure here is non-fatal; the user can still use the drawer
+      }
+      next.set(entry.key, wrapper);
+    }
+
+    savedAnnotationsRef.current = next;
+    // Notes:
+    // - `homeLabel` / `workLabel` are read inside the loop but already
+    //   baked into the entry keys via `savedPlaceEntries`, so a language
+    //   switch invalidates the cached entries and rebuilds the pin titles.
+    // - `mapReadyTick` is included so the effect re-runs the moment the
+    //   map instance is (re)created — without it, refs alone wouldn't
+    //   trigger a re-fire and pins would silently fail to attach when the
+    //   sync effect happened to commit before the map init effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, savedPlaceEntries, mapReadyTick]);
+
+  // Drop all saved-place annotations when the map tears down so a re-open
+  // starts from a clean slate (the next sync effect re-creates them).
+  useEffect(() => {
+    if (isWindowOpen) return;
+    savedAnnotationsRef.current = new Map();
+  }, [isWindowOpen]);
+
+  // Suppress the temporary red search pin when the currently-selected place
+  // already has its own permanent saved annotation. Otherwise we'd render
+  // two markers stacked at the same coordinate.
+  const isPlaceSaved = useCallback(
+    (id: string | undefined): boolean => {
+      if (!id) return false;
+      if (homePlace?.id === id) return true;
+      if (workPlace?.id === id) return true;
+      return favoritePlaces.some((p) => p.id === id);
+    },
+    [homePlace, workPlace, favoritePlaces]
+  );
+  useEffect(() => {
+    isPlaceSavedRef.current = isPlaceSaved;
+  }, [isPlaceSaved]);
+
+  // When a search result becomes a saved place (e.g. user just hit "Set as
+  // Home"), drop the temporary search pin so the new persistent annotation
+  // is the only marker shown.
+  useEffect(() => {
+    if (!annotationRef.current) return;
+    if (!selectedResultId) return;
+    if (!isPlaceSaved(selectedResultId)) return;
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    try {
+      map.removeAnnotation(annotationRef.current);
+    } catch {
+      // ignore
+    }
+    annotationRef.current = null;
+    setSelectedResultId(null);
+  }, [selectedResultId, isPlaceSaved]);
+
+  // On first map ready, frame the viewport so the user immediately sees
+  // their context. Priority order:
+  //   1. Persisted `selectedPlace` — re-drop / re-center on the open card
+  //   2. Any saved Home / Work / Favorites — fit them all into view so the
+  //      pins are visible instead of being stranded off-screen at the SF
+  //      default region the map booted with
+  //   3. Otherwise, leave the map at the SF default
+  // Guarded so it only fires once per mount: subsequent user-driven
+  // selections go through `dropPinAt` / `focusSavedPlace` directly.
   const hasHydratedSelectedRef = useRef(false);
   useEffect(() => {
     if (hasHydratedSelectedRef.current) return;
     if (status !== "ready") return;
-    if (!mapInstanceRef.current) return;
-    if (!selectedPlace) {
-      // Mark as hydrated so we don't accidentally re-drop a pin if the user
-      // closes the card before the map finishes loading and then re-opens it.
+    const mk = getMapKit();
+    const map = mapInstanceRef.current;
+    if (!mk || !map) return;
+
+    // Centering on the persisted selected place wins over fitting all
+    // saved places — the user explicitly had this card open last session.
+    if (selectedPlace) {
       hasHydratedSelectedRef.current = true;
+      if (isPlaceSaved(selectedPlace.id)) {
+        const coord = new mk.Coordinate(
+          selectedPlace.latitude,
+          selectedPlace.longitude
+        );
+        const span = new mk.CoordinateSpan(
+          FOCUS_PLACE_SPAN_DEG,
+          FOCUS_PLACE_SPAN_DEG
+        );
+        const region = new mk.CoordinateRegion(coord, span);
+        map.setRegionAnimated(region, true);
+      } else {
+        dropPinAt(selectedPlace);
+      }
+      return;
+    }
+
+    // No selected place — fit the viewport to all saved annotations so the
+    // pins land inside the visible region instead of staying parked off the
+    // SF default. Single-place case zooms to a neighborhood span; multi-
+    // place case computes a bounding region with 30% padding so the pins
+    // don't touch the viewport edges.
+    //
+    // We deliberately do NOT flip `hasHydratedSelectedRef` when there are
+    // no saved places yet — the persist hydration is async, so an empty
+    // entries list on the first run could just mean "store still
+    // hydrating". Leaving the flag false lets a subsequent re-run (after
+    // hydration adds Home/Work/Favorites) actually frame the viewport.
+    const savedCoords = savedPlaceEntries.map((e) => e.place);
+    if (savedCoords.length === 0) {
       return;
     }
     hasHydratedSelectedRef.current = true;
-    dropPinAt(selectedPlace);
-  }, [status, selectedPlace, dropPinAt]);
+
+    if (savedCoords.length === 1) {
+      const only = savedCoords[0];
+      const coord = new mk.Coordinate(only.latitude, only.longitude);
+      const span = new mk.CoordinateSpan(
+        FOCUS_PLACE_SPAN_DEG,
+        FOCUS_PLACE_SPAN_DEG
+      );
+      const region = new mk.CoordinateRegion(coord, span);
+      map.setRegionAnimated(region, true);
+      return;
+    }
+
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+    for (const place of savedCoords) {
+      if (place.latitude < minLat) minLat = place.latitude;
+      if (place.latitude > maxLat) maxLat = place.latitude;
+      if (place.longitude < minLng) minLng = place.longitude;
+      if (place.longitude > maxLng) maxLng = place.longitude;
+    }
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    // Pad the span so the outermost pins sit comfortably inside the view
+    // and clamp to a sensible minimum so two pins right next to each other
+    // don't zoom in to street level.
+    const PAD = 1.3;
+    // Floor at the same span we use for single-place focus so pins that
+    // happen to sit close together still land at street level rather than
+    // forcing a wider zoom.
+    const latDelta = Math.max((maxLat - minLat) * PAD, FOCUS_PLACE_SPAN_DEG);
+    const lngDelta = Math.max((maxLng - minLng) * PAD, FOCUS_PLACE_SPAN_DEG);
+    const center = new mk.Coordinate(centerLat, centerLng);
+    const span = new mk.CoordinateSpan(latDelta, lngDelta);
+    const region = new mk.CoordinateRegion(center, span);
+    map.setRegionAnimated(region, true);
+    // Same reasoning as the saved-annotations effect: depend on
+    // `mapReadyTick` so framing fires the moment the map instance is
+    // (re)created, not whenever some unrelated render happens to flush.
+  }, [
+    status,
+    selectedPlace,
+    savedPlaceEntries,
+    dropPinAt,
+    isPlaceSaved,
+    mapReadyTick,
+  ]);
 
   const handleLocateMe = useCallback(() => {
     const map = mapInstanceRef.current;
