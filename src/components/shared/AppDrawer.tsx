@@ -44,6 +44,15 @@ const DRAWER_OPEN_UNDERLAP_PX = 6;
 const DRAWER_SIDE_PROTRUSION_PX =
   DRAWER_WIDTH - DRAWER_OPEN_UNDERLAP_PX + DRAWER_EDGE_INSET_PX;
 
+/**
+ * When open, the drawer must paint above the main `.window` body (drawer slot
+ * is rendered before it in DOM order). Otherwise the tray is only visible in
+ * the narrow strip past the window’s right edge — often clipped off-screen when
+ * the window is flush with the viewport. Stay below `WindowFrame`’s resize
+ * layer (`z-[60]` on macOS) so resize handles still receive events.
+ */
+const DRAWER_OPEN_Z_INDEX = 55;
+
 // Compact bottom-sheet geometry (mobile) — matches TvVideoDrawer exactly
 const COMPACT_DRAWER_MEDIA = "(max-width: 767px)";
 const COMPACT_DRAWER_INSET_PX = 12;
@@ -325,7 +334,7 @@ export function AppDrawer({
           top: "auto",
           maxHeight: COMPACT_DRAWER_MAX_HEIGHT,
           height: "auto",
-          zIndex: 0,
+          zIndex: isOpen ? DRAWER_OPEN_Z_INDEX : 0,
           marginBottom: COMPACT_DRAWER_OVERLAP_TOP_PX,
           paddingTop: "max(0px, env(safe-area-inset-top, 0px))",
         }
@@ -336,7 +345,7 @@ export function AppDrawer({
           bottom: "auto",
           maxHeight: COMPACT_DRAWER_MAX_HEIGHT,
           height: "auto",
-          zIndex: 0,
+          zIndex: isOpen ? DRAWER_OPEN_Z_INDEX : 0,
           marginTop: COMPACT_DRAWER_OVERLAP_TOP_PX,
           paddingBottom: "max(0px, env(safe-area-inset-bottom, 0px))",
         };
@@ -366,14 +375,14 @@ export function AppDrawer({
         top: DRAWER_VERTICAL_INSET_PX,
         bottom: DRAWER_VERTICAL_INSET_PX,
         width: DRAWER_WIDTH,
-        zIndex: 0,
+        zIndex: isOpen ? DRAWER_OPEN_Z_INDEX : 0,
         left: DRAWER_EDGE_INSET_PX,
       }
     : {
         top: DRAWER_VERTICAL_INSET_PX,
         bottom: DRAWER_VERTICAL_INSET_PX,
         width: DRAWER_WIDTH,
-        zIndex: 0,
+        zIndex: isOpen ? DRAWER_OPEN_Z_INDEX : 0,
         right: DRAWER_EDGE_INSET_PX,
       };
 
