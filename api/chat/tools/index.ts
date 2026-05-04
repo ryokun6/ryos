@@ -244,8 +244,8 @@ export const TOOL_DESCRIPTIONS = {
     "When you don't pass 'near', the server automatically biases the search to the user's approximate IP location, " +
     "so unqualified queries like 'coffee' or 'pharmacy' already return nearby hits. Only override with an explicit " +
     "'near: { latitude, longitude }' when you have a better anchor than IP geolocation (a different city the user named, " +
-    "an address they just mentioned, etc.). When you reference a result in chat, mention it by name + city — the client " +
-    "renders the rich card automatically.",
+    "an address they just mentioned, etc.). The tool only accepts a point anchor — there is no separate region/bounding-box " +
+    "parameter. When you reference a result in chat, mention it by name + city — the client renders the rich card automatically.",
 
   webFetch:
     "Fetch and read the text content of a web page. Use this when the user asks you to look something up online, " +

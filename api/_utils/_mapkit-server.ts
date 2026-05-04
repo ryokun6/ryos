@@ -182,10 +182,13 @@ export async function searchPlaces(
   const url = new URL(`${MAPS_API_HOST}/v1/search`);
   url.searchParams.set("q", options.q);
 
+  // Apple's /v1/search rejects requests containing BOTH `searchLocation` and
+  // `searchRegion` ("cannot specify both searchRegion and searchLocation").
+  // Prefer `searchLocation` when callers accidentally provide both — it's the
+  // stronger ranking signal and matches `userLocation`.
   if (options.searchLocation) {
     url.searchParams.set("searchLocation", formatCoord(options.searchLocation));
-  }
-  if (options.searchRegion) {
+  } else if (options.searchRegion) {
     url.searchParams.set("searchRegion", formatRegion(options.searchRegion));
   }
   if (options.userLocation) {
