@@ -639,6 +639,64 @@ export interface MemoryDeleteOutput {
 }
 
 // ============================================================================
+// Maps Search Places Tool Types
+// ============================================================================
+
+export interface MapsSearchPlacesInput {
+  /** Free-form search query (e.g. "best ramen near Shibuya"). */
+  query: string;
+  /** Optional approximate center used to bias results. */
+  near?: {
+    latitude: number;
+    longitude: number;
+  };
+  /** Optional bounding region used to constrain / bias results. */
+  region?: {
+    northLatitude: number;
+    eastLongitude: number;
+    southLatitude: number;
+    westLongitude: number;
+  };
+  /** Optional ISO 3166-1 alpha-2 country codes to constrain results. */
+  countries?: string[];
+  /** Optional BCP-47 language tag for response text. */
+  language?: string;
+  /** Maximum number of results to return (1-10, default 5). */
+  limit?: number;
+}
+
+export interface MapsSearchPlaceResult {
+  /**
+   * Stable identifier used for ryOS persistence (Apple Place ID when
+   * available, otherwise a coordinate-based composite for older entries).
+   */
+  id: string;
+  /** Apple Place ID, when known. */
+  placeId?: string;
+  name: string;
+  /** Single-line address suitable for showing under the title. */
+  address: string;
+  /** Multi-line formatted address from Apple. */
+  addressLines?: string[];
+  latitude: number;
+  longitude: number;
+  /** MapKit POI category (e.g. "Restaurant"). Drives the card icon. */
+  category?: string;
+  country?: string;
+  countryCode?: string;
+  /** Convenience link that opens Apple Maps centered on this place. */
+  appleMapsUrl: string;
+}
+
+export interface MapsSearchPlacesOutput {
+  success: boolean;
+  query: string;
+  results: MapsSearchPlaceResult[];
+  message: string;
+  error?: string;
+}
+
+// ============================================================================
 // Web Fetch Tool Types
 // ============================================================================
 

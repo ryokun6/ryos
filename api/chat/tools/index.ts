@@ -38,6 +38,7 @@ import type {
   MemoryReadInput,
   MemoryDeleteInput,
   WebFetchInput,
+  MapsSearchPlacesInput,
 } from "./types.js";
 import * as schemas from "./schemas.js";
 import type {
@@ -61,6 +62,7 @@ import {
   executeWebFetch,
   type MemoryToolContext,
 } from "./executors.js";
+import { executeMapsSearchPlaces } from "./maps-executor.js";
 
 // Re-export types and schemas for external use
 export * from "./types.js";
@@ -79,6 +81,7 @@ export {
   executeWebFetch,
   type MemoryToolContext,
 } from "./executors.js";
+export { executeMapsSearchPlaces } from "./maps-executor.js";
 
 const MEMORY_TOOL_NAMES = [
   "memoryWrite",
@@ -95,6 +98,7 @@ const _TELEGRAM_TOOL_NAMES = [
   "stickiesControl",
   "contactsControl",
   "songLibraryControl",
+  "mapsSearchPlaces",
 ] as const;
 
 export type ChatToolProfile = "all" | "memory" | "telegram";
@@ -232,6 +236,13 @@ export const TOOL_DESCRIPTIONS = {
     "Built-in channels (RyoTV, MTV, 台視) are read-only — only custom channels can be edited. " +
     "Always call 'list' first to get channel ids and current state. " +
     "The TV app opens automatically when tuning, creating, or editing channels.",
+
+  mapsSearchPlaces:
+    "Search Apple Maps for points of interest, businesses, and addresses. Use when the user asks to find a place, " +
+    "look up an address, get directions to a venue, plan a route, or otherwise wants real geographic data. " +
+    "Returns a small list of place cards with name, formatted address, MapKit POI category, lat/lng, and an Apple Maps URL. " +
+    "Pass the user's approximate location via 'near' (lat/lng) when known so results are biased toward where they are. " +
+    "When you reference a result in chat, mention it by name + city — the client renders the rich card automatically.",
 
   webFetch:
     "Fetch and read the text content of a web page. Use this when the user asks you to look something up online, " +
@@ -379,6 +390,17 @@ export function createChatTools(
       inputSchema: schemas.webFetchSchema,
       execute: async (input: WebFetchInput) => {
         return executeWebFetch(input, context);
+      },
+    },
+
+    // ============================================================================
+    // Maps Search Tool (Server-side execution)
+    // ============================================================================
+    mapsSearchPlaces: {
+      description: TOOL_DESCRIPTIONS.mapsSearchPlaces,
+      inputSchema: schemas.mapsSearchPlacesSchema,
+      execute: async (input: MapsSearchPlacesInput) => {
+        return executeMapsSearchPlaces(input, context);
       },
     },
 
@@ -536,6 +558,7 @@ export function createChatTools(
           return executeSongLibraryControl(input, context);
         },
       },
+      mapsSearchPlaces: allTools.mapsSearchPlaces,
     } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;
   }
 

@@ -945,6 +945,68 @@ export const documentsControlSchema = z
   });
 
 // ============================================================================
+// Maps Search Places Schema
+// ============================================================================
+
+const mapsCoordinateSchema = z.object({
+  latitude: z
+    .number()
+    .min(-90)
+    .max(90)
+    .describe("Latitude in decimal degrees, between -90 and 90."),
+  longitude: z
+    .number()
+    .min(-180)
+    .max(180)
+    .describe("Longitude in decimal degrees, between -180 and 180."),
+});
+
+const mapsRegionSchema = z.object({
+  northLatitude: z.number().min(-90).max(90),
+  eastLongitude: z.number().min(-180).max(180),
+  southLatitude: z.number().min(-90).max(90),
+  westLongitude: z.number().min(-180).max(180),
+});
+
+export const mapsSearchPlacesSchema = z.object({
+  query: z
+    .string()
+    .min(1)
+    .max(200)
+    .describe(
+      "Free-form search query — a place name, address, business, or category (e.g. 'Blue Bottle Coffee', '350 Sutter St San Francisco', 'best ramen near Shibuya')."
+    ),
+  near: mapsCoordinateSchema
+    .optional()
+    .describe(
+      "Optional approximate center used to bias the search. Pass the user's location or the visible map center when known."
+    ),
+  region: mapsRegionSchema
+    .optional()
+    .describe(
+      "Optional bounding region (NE + SW corners) used to constrain or bias results. Prefer 'near' for simple proximity ranking."
+    ),
+  countries: z
+    .array(z.string().regex(/^[A-Za-z]{2}$/, { message: "Use ISO 3166-1 alpha-2 country codes" }))
+    .max(10)
+    .optional()
+    .describe("Optional ISO 3166-1 alpha-2 country codes to constrain results (e.g. ['US', 'JP'])."),
+  language: z
+    .string()
+    .max(20)
+    .optional()
+    .describe("Optional BCP-47 language tag for response text (e.g. 'en', 'ja', 'zh-Hant')."),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(10)
+    .optional()
+    .default(5)
+    .describe("Maximum number of results to return (1-10, default 5)."),
+});
+
+// ============================================================================
 // Web Fetch Tool Schema
 // ============================================================================
 
