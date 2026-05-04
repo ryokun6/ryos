@@ -183,5 +183,5 @@ export function getPoiVisual(
  * instead of a high-contrast glossy ramp.
  */
 export function poiVisualGradient(visual: PoiVisual): string {
-  return `linear-gradient(180deg, ${visual.from} 0%, color-mix(in srgb, ${visual.from} 72%, ${visual.to}) 100%)`;
+  return `linear-gradient(180deg, ${visual.from} 0%, color-mix(in srgb, ${visual.from} 82%, ${visual.to}) 100%)`;
 }

@@ -1,11 +1,10 @@
 import phosphorFillPaths from "./phosphorFillPaths.json";
 import { getPoiVisual, type PoiIconKey } from "./poiVisuals";
 import { buildGlyphHash } from "./markerGlyphs";
-
 export type MapKitGlyphImage = { 1: string; 2: string; 3: string };
 
 export interface PoiMarkerStyle {
-  /** MapKit `MarkerAnnotation` balloon color (matches card gradient start). */
+  /** MapKit `MarkerAnnotation` balloon color (matches badge `from`). */
   color: string;
   glyphImage: MapKitGlyphImage;
 }

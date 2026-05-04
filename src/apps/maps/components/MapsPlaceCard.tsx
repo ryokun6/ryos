@@ -4,7 +4,15 @@ import { Briefcase, House, Star, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import { getPoiVisual, poiVisualGradient } from "../utils/poiVisuals";
+import {
+  getPoiVisual,
+  poiVisualGradient,
+  poiVisualWithIcon,
+} from "../utils/poiVisuals";
+import {
+  HOME_SAVED_VISUAL,
+  WORK_SAVED_VISUAL,
+} from "../utils/savedPlaceVisuals";
 import type { SavedPlace } from "../utils/types";
 
 export interface MapsPlaceCardProps {
@@ -113,7 +121,13 @@ export function MapsPlaceCard({
                 "rounded border border-black/30 bg-white text-black shadow-md"
             )}
           >
-            <PlaceCardHeader place={place} onClose={onClose} t={t} />
+            <PlaceCardHeader
+              place={place}
+              isHome={isHome}
+              isWork={isWork}
+              onClose={onClose}
+              t={t}
+            />
             <PlaceCardActions
               place={place}
               isFavorite={isFavorite}
@@ -133,14 +147,41 @@ export function MapsPlaceCard({
 
 interface PlaceCardHeaderProps {
   place: SavedPlace;
+  isHome: boolean;
+  isWork: boolean;
   onClose: () => void;
   t: ReturnType<typeof useTranslation>["t"];
 }
 
-function PlaceCardHeader({ place, onClose, t }: PlaceCardHeaderProps) {
-  const visual = getPoiVisual(place.category);
+function PlaceCardHeader({
+  place,
+  isHome,
+  isWork,
+  onClose,
+  t,
+}: PlaceCardHeaderProps) {
+  const homeTitle = t("apps.maps.places.home", { defaultValue: "Home" });
+  const workTitle = t("apps.maps.places.work", { defaultValue: "Work" });
+
+  const titleOverride = isHome
+    ? homeTitle
+    : isWork
+      ? workTitle
+      : undefined;
+
+  const visual = isHome
+    ? poiVisualWithIcon(HOME_SAVED_VISUAL)
+    : isWork
+      ? poiVisualWithIcon(WORK_SAVED_VISUAL)
+      : getPoiVisual(place.category);
   const Icon = visual.Icon;
-  const categoryLabel = humanizeCategory(place.category, t);
+  const categoryLabel =
+    titleOverride == null ? humanizeCategory(place.category, t) : null;
+
+  const title = titleOverride ?? place.name;
+  const subtitle = titleOverride
+    ? place.subtitle || place.name
+    : place.subtitle;
 
   return (
     <div className="flex items-start gap-2.5">
@@ -154,7 +195,7 @@ function PlaceCardHeader({ place, onClose, t }: PlaceCardHeaderProps) {
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
           <div className="truncate text-[13px] font-semibold leading-tight text-black">
-            {place.name}
+            {title}
           </div>
           {categoryLabel && (
             <div className="shrink-0 text-[11px] leading-tight text-black/45">
@@ -162,9 +203,9 @@ function PlaceCardHeader({ place, onClose, t }: PlaceCardHeaderProps) {
             </div>
           )}
         </div>
-        {place.subtitle && (
+        {subtitle && (
           <div className="line-clamp-2 text-[11px] leading-snug text-black/60">
-            {place.subtitle}
+            {subtitle}
           </div>
         )}
       </div>

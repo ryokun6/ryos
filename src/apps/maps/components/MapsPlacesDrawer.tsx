@@ -6,6 +6,7 @@ import {
   poiVisualWithIcon,
   type PoiVisual,
 } from "../utils/poiVisuals";
+import { HOME_SAVED_VISUAL, WORK_SAVED_VISUAL } from "../utils/savedPlaceVisuals";
 import type { SavedPlace } from "../utils/types";
 
 export type { SavedPlace } from "../utils/types";
@@ -99,17 +100,6 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-const HOME_VISUAL: PoiVisual = {
-  iconKey: "House",
-  from: "#60a5fa",
-  to: "#1d4ed8",
-};
-const WORK_VISUAL: PoiVisual = {
-  iconKey: "Briefcase",
-  from: "#f59e0b",
-  to: "#92400e",
-};
-
 export function MapsPlacesDrawer({
   isOpen,
   home,
@@ -152,7 +142,7 @@ export function MapsPlacesDrawer({
                 <PlaceRow
                   place={home}
                   onClick={() => handleSelect(home)}
-                  visualOverride={HOME_VISUAL}
+                  visualOverride={HOME_SAVED_VISUAL}
                   titleOverride={t("apps.maps.places.home", {
                     defaultValue: "Home",
                   })}
@@ -162,7 +152,7 @@ export function MapsPlacesDrawer({
                 <PlaceRow
                   place={work}
                   onClick={() => handleSelect(work)}
-                  visualOverride={WORK_VISUAL}
+                  visualOverride={WORK_SAVED_VISUAL}
                   titleOverride={t("apps.maps.places.work", {
                     defaultValue: "Work",
                   })}

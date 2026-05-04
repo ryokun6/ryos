@@ -16,8 +16,11 @@ import { MapsPlacesDrawer } from "./MapsPlacesDrawer";
 import { MapsPlaceCard } from "./MapsPlaceCard";
 import { useMapsStore } from "@/stores/useMapsStore";
 import type { SavedPlace } from "../utils/types";
-import { HOME_GLYPH_IMAGE, WORK_GLYPH_IMAGE } from "../utils/markerGlyphs";
 import { getPoiMarkerAnnotationOptions } from "../utils/poiMarkerStyle";
+import {
+  homeMarkerAnnotationStyle,
+  workMarkerAnnotationStyle,
+} from "../utils/savedPlaceVisuals";
 
 // Minimal MapKit JS shape we touch from this component. We only declare the
 // fields we use so we don't need the full @types/apple-mapkit-js-browser
@@ -738,19 +741,9 @@ export function MapsAppComponent({
               displayPriority: 1000,
               selected: false,
             })
-          : {
-              title,
-              subtitle,
-              color:
-                entry.kind === "home" ? "#1d4ed8" : "#b45309",
-              glyphColor: "#ffffff",
-              glyphImage:
-                entry.kind === "home" ? HOME_GLYPH_IMAGE : WORK_GLYPH_IMAGE,
-              selectedGlyphImage:
-                entry.kind === "home" ? HOME_GLYPH_IMAGE : WORK_GLYPH_IMAGE,
-              displayPriority: 1000,
-              selected: false,
-            }
+          : entry.kind === "home"
+            ? homeMarkerAnnotationStyle(title, subtitle)
+            : workMarkerAnnotationStyle(title, subtitle)
       );
 
       const wrapper = { annotation, place: entry.place };
