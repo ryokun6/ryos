@@ -3,8 +3,11 @@ import { MapPin } from "@phosphor-icons/react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
+import {
+  ToolbarButton,
+  ToolbarButtonGroup,
+} from "@/components/ui/toolbar-button";
 import { cn } from "@/lib/utils";
 import type { AppProps } from "@/apps/base/types";
 import { appMetadata } from "..";
@@ -1045,6 +1048,7 @@ export function MapsAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="maps"
+        material={isMacOSTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
@@ -1061,13 +1065,18 @@ export function MapsAppComponent({
           />
         }
       >
-        <div className="flex flex-1 min-w-0 flex-col h-full w-full bg-os-window-bg font-os-ui">
+        <div
+          className={cn(
+            "flex flex-1 min-w-0 flex-col h-full w-full font-os-ui",
+            isMacOSTheme ? "bg-transparent" : "bg-os-window-bg"
+          )}
+        >
           {/* Search bar */}
           <div
             className={cn(
               "flex items-center gap-2 py-1.5 pl-1.5 pr-1.5 border-b",
               isMacOSTheme
-                ? "border-black/30 bg-[linear-gradient(to_bottom,#f3f3f3,#d6d6d6)]"
+                ? "border-black/30 bg-transparent"
                 : "border-black/40 bg-os-window-bg"
             )}
           >
@@ -1090,17 +1099,30 @@ export function MapsAppComponent({
               })}
               className="flex-1 min-w-0"
             />
-            <Button
-              type="button"
-              variant={isMacOSTheme ? "aqua" : "retro"}
-              size="sm"
-              onClick={() => setIsPlacesDrawerOpen((v) => !v)}
-              aria-pressed={isPlacesDrawerOpen}
-              title={t("apps.maps.places.title", { defaultValue: "Places" })}
-              className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
-            >
-              <MapPin size={12} weight="fill" />
-            </Button>
+            {isMacOSTheme ? (
+              <ToolbarButtonGroup className="shrink-0">
+                <ToolbarButton
+                  icon
+                  type="button"
+                  onClick={() => setIsPlacesDrawerOpen((v) => !v)}
+                  aria-pressed={isPlacesDrawerOpen}
+                  data-state={isPlacesDrawerOpen ? "on" : "off"}
+                  title={t("apps.maps.places.title", { defaultValue: "Places" })}
+                >
+                  <MapPin size={10} weight="fill" />
+                </ToolbarButton>
+              </ToolbarButtonGroup>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsPlacesDrawerOpen((v) => !v)}
+                aria-pressed={isPlacesDrawerOpen}
+                title={t("apps.maps.places.title", { defaultValue: "Places" })}
+                className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-black/40 bg-os-window-bg text-black hover:bg-black/5"
+              >
+                <MapPin size={12} weight="fill" />
+              </button>
+            )}
           </div>
 
           {/* Map area + results overlay */}

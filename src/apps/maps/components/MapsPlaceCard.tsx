@@ -7,6 +7,10 @@ import {
   AQUA_ICON_BUTTON_PHOSPHOR_SIZE,
 } from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
+import {
+  ToolbarButton,
+  ToolbarButtonGroup,
+} from "@/components/ui/toolbar-button";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   getPoiVisual,
@@ -254,6 +258,72 @@ function PlaceCardActions({
 }: PlaceCardActionsProps) {
   const { isMacOSTheme } = useThemeFlags();
   const variant = isMacOSTheme ? "aqua" : "retro";
+
+  if (isMacOSTheme) {
+    return (
+      <ToolbarButtonGroup>
+        <ToolbarButton
+          type="button"
+          className="font-geneva-12 !text-[11px] gap-1 !px-2"
+          onClick={() => onToggleFavorite(place)}
+          aria-pressed={isFavorite}
+          data-state={isFavorite ? "on" : "off"}
+          title={
+            isFavorite
+              ? t("apps.maps.placeCard.removeFavorite", {
+                  defaultValue: "Remove from Favorites",
+                })
+              : t("apps.maps.placeCard.addFavorite", {
+                  defaultValue: "Add to Favorites",
+                })
+          }
+        >
+          <Star size={12} weight={isFavorite ? "fill" : "regular"} />
+          {isFavorite
+            ? t("apps.maps.placeCard.favorited", {
+                defaultValue: "Favorited",
+              })
+            : t("apps.maps.placeCard.favorite", {
+                defaultValue: "Favorite",
+              })}
+        </ToolbarButton>
+        <ToolbarButton
+          type="button"
+          className="font-geneva-12 !text-[11px] gap-1 !px-2"
+          onClick={() => onSetHome(place)}
+          aria-pressed={isHome}
+          data-state={isHome ? "on" : "off"}
+          title={t("apps.maps.placeCard.setHome", {
+            defaultValue: "Set as Home",
+          })}
+        >
+          <House size={12} weight={isHome ? "fill" : "regular"} />
+          {isHome
+            ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
+            : t("apps.maps.placeCard.setHome", {
+                defaultValue: "Set as Home",
+              })}
+        </ToolbarButton>
+        <ToolbarButton
+          type="button"
+          className="font-geneva-12 !text-[11px] gap-1 !px-2"
+          onClick={() => onSetWork(place)}
+          aria-pressed={isWork}
+          data-state={isWork ? "on" : "off"}
+          title={t("apps.maps.placeCard.setWork", {
+            defaultValue: "Set as Work",
+          })}
+        >
+          <Briefcase size={12} weight={isWork ? "fill" : "regular"} />
+          {isWork
+            ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
+            : t("apps.maps.placeCard.setWork", {
+                defaultValue: "Set as Work",
+              })}
+        </ToolbarButton>
+      </ToolbarButtonGroup>
+    );
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
