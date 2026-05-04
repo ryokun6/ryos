@@ -177,6 +177,11 @@ export function getPoiVisual(
   return poiVisualWithIcon(visual);
 }
 
+/**
+ * Background for circular POI badges in the Maps app. Apple Maps keeps the
+ * fill mostly flat — only a slight shift toward the gradient end color —
+ * instead of a high-contrast glossy ramp.
+ */
 export function poiVisualGradient(visual: PoiVisual): string {
-  return `linear-gradient(to bottom, ${visual.from}, ${visual.to})`;
+  return `linear-gradient(180deg, ${visual.from} 0%, color-mix(in srgb, ${visual.from} 72%, ${visual.to}) 100%)`;
 }
