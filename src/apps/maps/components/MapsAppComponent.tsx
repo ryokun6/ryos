@@ -998,8 +998,26 @@ export function MapsAppComponent({
     />
   );
 
+  // MapKit usually loads in well under a second from cache, and a flash of
+  // "Loading Apple Maps…" during that window is visually noisy. Defer the
+  // loading overlay until we've actually been loading for `LOADING_OVERLAY_DELAY_MS`.
+  // Error and missing-token states still render immediately.
+  const LOADING_OVERLAY_DELAY_MS = 600;
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
+  useEffect(() => {
+    if (status !== "loading") {
+      setShowLoadingOverlay(false);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setShowLoadingOverlay(true);
+    }, LOADING_OVERLAY_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [status]);
+
   const overlayMessage = useMemo(() => {
     if (status === "ready") return null;
+    if (status === "loading" && !showLoadingOverlay) return null;
     return t(statusMessageKey(status), {
       defaultValue:
         status === "missing-token"
@@ -1011,7 +1029,7 @@ export function MapsAppComponent({
               : "Apple Maps is initializing…",
       error: error ?? "",
     });
-  }, [status, t, error]);
+  }, [status, t, error, showLoadingOverlay]);
 
   if (!isWindowOpen) return null;
 
