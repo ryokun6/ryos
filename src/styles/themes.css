@@ -1108,12 +1108,27 @@
 }
 
 /* Also override any text-sm class on these buttons */
-:root[data-os-theme="macosx"] button.text-sm.font-geneva-12 {
+:root[data-os-theme="macosx"]
+  button.text-sm.font-geneva-12:not(.admin-aqua-icon-button) {
   font-size: 10px !important;
 }
 
-:root[data-os-theme="macosx"] button.text-sm.font-geneva-12 span {
+:root[data-os-theme="macosx"]
+  button.text-sm.font-geneva-12:not(.admin-aqua-icon-button)
+  span {
   font-size: 10px !important;
+}
+
+/* Admin compact aqua icon pills — avoid macOS div/button font overrides and IE bookmark text-sm shrink */
+:root[data-os-theme="macosx"]
+  .admin-force-font
+  button.aqua-button.admin-aqua-icon-button,
+:root[data-os-theme="macosx"]
+  .admin-force-font
+  button.aqua-button.admin-aqua-icon-button
+  span {
+  font-size: 12px !important;
+  line-height: 1 !important;
 }
 
 /* Chat meta (username/timestamp) override BEFORE generic Control Panels override anchor */

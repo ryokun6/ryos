@@ -2,6 +2,10 @@ import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "framer-motion";
 import { Briefcase, House, Star, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import {
+  AQUA_ICON_BUTTON_PADDING_CLASS,
+  AQUA_ICON_BUTTON_PHOSPHOR_SIZE,
+} from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
@@ -268,9 +272,12 @@ function PlaceCardActions({
                 defaultValue: "Add to Favorites",
               })
         }
-        className="!gap-1.5"
+        className={AQUA_ICON_BUTTON_PADDING_CLASS}
       >
-        <Star size={12} weight={isFavorite ? "fill" : "regular"} />
+        <Star
+          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          weight={isFavorite ? "fill" : "regular"}
+        />
         <span>
           {isFavorite
             ? t("apps.maps.placeCard.favorited", {
@@ -291,9 +298,12 @@ function PlaceCardActions({
         title={t("apps.maps.placeCard.setHome", {
           defaultValue: "Set as Home",
         })}
-        className="!gap-1.5"
+        className={AQUA_ICON_BUTTON_PADDING_CLASS}
       >
-        <House size={12} weight={isHome ? "fill" : "regular"} />
+        <House
+          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          weight={isHome ? "fill" : "regular"}
+        />
         <span>
           {isHome
             ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
@@ -312,9 +322,12 @@ function PlaceCardActions({
         title={t("apps.maps.placeCard.setWork", {
           defaultValue: "Set as Work",
         })}
-        className="!gap-1.5"
+        className={AQUA_ICON_BUTTON_PADDING_CLASS}
       >
-        <Briefcase size={12} weight={isWork ? "fill" : "regular"} />
+        <Briefcase
+          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          weight={isWork ? "fill" : "regular"}
+        />
         <span>
           {isWork
             ? t("apps.maps.placeCard.work", { defaultValue: "Work" })

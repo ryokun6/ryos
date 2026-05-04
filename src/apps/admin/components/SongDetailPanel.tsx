@@ -5,6 +5,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { ArrowLeft, Trash, MusicNote, Clock, User, VinylRecord, Hash, ArrowSquareOut, Warning, ArrowsClockwise, Microphone, UserMinus, Translate, FileText, TextT, Ear, Check, X, ArrowCounterClockwise, MagnifyingGlass } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import {
+  adminAquaIconButtonClass,
+  AQUA_ICON_BUTTON_ICON_CLASS,
+  AQUA_ICON_BUTTON_PHOSPHOR_SIZE,
+} from "@/lib/aquaIconButton";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -593,36 +598,39 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={handlePlayInIpod}
-                className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                className={adminAquaIconButtonClass("secondary")}
               >
-                <MusicNote className="h-3 w-3" weight="bold" />
+                <MusicNote className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                 <span>{t("apps.admin.song.playInIpod", "Play in iPod")}</span>
               </button>
               <button
                 onClick={handlePlayInKaraoke}
-                className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                className={adminAquaIconButtonClass("secondary")}
               >
-                <Microphone className="h-3 w-3" weight="bold" />
+                <Microphone className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                 <span>{t("apps.admin.song.playInKaraoke", "Play in Karaoke")}</span>
               </button>
               <button
                 onClick={() => setIsLyricsSearchDialogOpen(true)}
-                className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                className={adminAquaIconButtonClass("secondary")}
               >
-                <MagnifyingGlass className="h-3 w-3" weight="bold" />
+                <MagnifyingGlass className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                 <span>{t("apps.admin.song.searchLyrics", "Search Lyrics")}</span>
               </button>
               {song.lyricsSource && (
                 <button
                   onClick={handleForceRefresh}
                   disabled={isForceRefreshing}
-                  className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                  className={adminAquaIconButtonClass("secondary")}
                   title={t("apps.admin.song.forceRefreshTooltip", "Re-fetch lyrics from Kugou and clear cached annotations")}
                 >
                   {isForceRefreshing ? (
-                    <ActivityIndicator size={12} />
+                    <ActivityIndicator size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE} />
                   ) : (
-                    <ArrowCounterClockwise className="h-3 w-3" weight="bold" />
+                    <ArrowCounterClockwise
+                      className={AQUA_ICON_BUTTON_ICON_CLASS}
+                      weight="bold"
+                    />
                   )}
                   <span>{t("apps.admin.song.forceRefresh", "Force Refresh")}</span>
                 </button>
@@ -631,12 +639,12 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                 <button
                   onClick={() => setIsUnshareDialogOpen(true)}
                   disabled={isUnsharing}
-                  className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                  className={adminAquaIconButtonClass("secondary")}
                 >
                   {isUnsharing ? (
-                    <ActivityIndicator size={12} />
+                    <ActivityIndicator size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE} />
                   ) : (
-                    <UserMinus className="h-3 w-3" weight="bold" />
+                    <UserMinus className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                   )}
                   <span>{t("apps.admin.song.unshare", "Unshare")}</span>
                 </button>

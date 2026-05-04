@@ -13,6 +13,11 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight, Eraser, ArrowsClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import {
+  adminAquaIconButtonClass,
+  AQUA_ICON_BUTTON_ICON_CLASS,
+  AQUA_ICON_BUTTON_ICON_CLASS_SM,
+} from "@/lib/aquaIconButton";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -593,9 +598,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   {profile?.banned ? (
                     <button
                       onClick={handleUnban}
-                      className="aqua-button primary h-7 px-3 text-[11px] flex items-center gap-1"
+                      className={adminAquaIconButtonClass("primary")}
                     >
-                      <Check className="h-3 w-3" weight="bold" />
+                      <Check className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                       <span>{t("apps.admin.profile.unban")}</span>
                     </button>
                   ) : (
@@ -628,10 +633,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                       ) : (
                         <button
                           onClick={() => setShowBanInput(true)}
-                          className="aqua-button orange h-7 px-3 text-[11px] flex items-center gap-1"
+                          className={adminAquaIconButtonClass("orange")}
                           style={{ color: "#000", textShadow: "none" }}
                         >
-                          <Prohibit className="h-3 w-3" style={{ color: "#000" }} weight="bold" />
+                          <Prohibit
+                            className={AQUA_ICON_BUTTON_ICON_CLASS}
+                            style={{ color: "#000" }}
+                            weight="bold"
+                          />
                           <span style={{ color: "#000" }}>{t("apps.admin.profile.ban")}</span>
                         </button>
                       )}
@@ -639,9 +648,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   )}
                   <button
                     onClick={() => setIsDeleteDialogOpen(true)}
-                    className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                    className={adminAquaIconButtonClass("secondary")}
                   >
-                    <Trash className="h-3 w-3" weight="bold" />
+                    <Trash className={AQUA_ICON_BUTTON_ICON_CLASS} weight="bold" />
                     <span>{t("apps.admin.profile.delete")}</span>
                   </button>
                 </div>
@@ -683,9 +692,12 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                           <button
                             onClick={() => setIsClearMemoryDialogOpen(true)}
                             disabled={isClearingMemory}
-                            className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
+                            className={cn(
+                              adminAquaIconButtonClass("secondary", "sm"),
+                              "disabled:opacity-50"
+                            )}
                           >
-                            <Eraser className="h-3 w-3" weight="bold" />
+                            <Eraser className={AQUA_ICON_BUTTON_ICON_CLASS_SM} weight="bold" />
                             <span>{isClearingMemory ? t("apps.admin.profile.clearing") : t("apps.admin.profile.clearAll")}</span>
                           </button>
                         </div>
@@ -769,9 +781,18 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                             <button
                               onClick={() => setIsForceProcessDialogOpen(true)}
                               disabled={isProcessingNotes}
-                              className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
+                              className={cn(
+                                adminAquaIconButtonClass("secondary", "sm"),
+                                "disabled:opacity-50"
+                              )}
                             >
-                              <ArrowsClockwise className={cn("h-3 w-3", isProcessingNotes && "animate-spin")} weight="bold" />
+                              <ArrowsClockwise
+                                className={cn(
+                                  AQUA_ICON_BUTTON_ICON_CLASS_SM,
+                                  isProcessingNotes && "animate-spin"
+                                )}
+                                weight="bold"
+                              />
                               <span>{isProcessingNotes ? t("apps.admin.profile.processing") : t("apps.admin.profile.reprocess")}</span>
                             </button>
                           </div>
