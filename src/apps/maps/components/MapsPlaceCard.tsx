@@ -29,21 +29,33 @@ const CARD_TRANSITION: Transition = {
 
 /**
  * Convert a MapKit `pointOfInterestCategory` (camelCase, sometimes prefixed
- * with `MKPOICategory`) into a human-friendly label, e.g.
- *   "foodMarket"           -> "Food Market"
- *   "MKPOICategoryRestaurant" -> "Restaurant"
- *   "evCharger"            -> "Ev Charger"
+ * with `MKPOICategory`) into a localized human-friendly label.
+ *
+ * Looks up `apps.maps.poiCategory.<key>` first (where `<key>` is the
+ * normalized camelCase form, matching `getPoiVisual`), and falls back to a
+ * camelCase -> Title Case humanization when no translation key exists.
+ *
+ * Examples:
+ *   "foodMarket"              -> t("…poiCategory.foodMarket") ?? "Food Market"
+ *   "MKPOICategoryRestaurant" -> t("…poiCategory.restaurant")
+ *   "evCharger"               -> t("…poiCategory.evCharger")  ?? "Ev Charger"
  */
-function humanizeCategory(category?: string | null): string | null {
+function humanizeCategory(
+  category: string | null | undefined,
+  t: ReturnType<typeof useTranslation>["t"]
+): string | null {
   if (!category) return null;
   const stripped = category.replace(/^MKPOICategory/, "");
   if (!stripped) return null;
-  const spaced = stripped
-    // insert a space before each uppercase that follows a lowercase/number
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    // collapse runs of caps (e.g. "EVCharger" -> "EV Charger")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  const key = stripped.charAt(0).toLowerCase() + stripped.slice(1);
+  const fallback =
+    stripped
+      // insert a space before each uppercase that follows a lowercase/number
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      // collapse runs of caps (e.g. "EVCharger" -> "EV Charger")
+      .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
+  const titleCased = fallback.charAt(0).toUpperCase() + fallback.slice(1);
+  return t(`apps.maps.poiCategory.${key}`, { defaultValue: titleCased });
 }
 
 export function MapsPlaceCard({
@@ -128,7 +140,7 @@ interface PlaceCardHeaderProps {
 function PlaceCardHeader({ place, onClose, t }: PlaceCardHeaderProps) {
   const visual = getPoiVisual(place.category);
   const Icon = visual.Icon;
-  const categoryLabel = humanizeCategory(place.category);
+  const categoryLabel = humanizeCategory(place.category, t);
 
   return (
     <div className="flex items-start gap-2.5">
