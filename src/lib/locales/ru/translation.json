@@ -1110,8 +1110,8 @@
         "switchingTheme": "Переключение темы…",
         "textNotFound": "Текст не найден",
         "toggledIpodPlayback": "Переключено воспроизведение iPod",
-        "toolExecutionFailed": "Ошибка выполнения инструмента",
         "toolAttempted": "{{toolName}} — попытка выполнена",
+        "toolExecutionFailed": "Ошибка выполнения инструмента",
         "tv": {
           "addedVideo": "Добавлено «{{title}}» в «{{channel}}»",
           "addingVideo": "Добавление видео в канал…",
@@ -2548,9 +2548,11 @@
       "placeCard": {
         "addFavorite": "Добавить в избранное",
         "close": "Закрыть карточку места",
+        "directions": "Directions",
         "favorite": "Избранное",
         "favorited": "В избранном",
         "home": "Дом",
+        "openDirections": "Get directions in Apple Maps",
         "regionLabel": "Выбранное место",
         "removeFavorite": "Удалить из избранного",
         "setHome": "Сделать домом",

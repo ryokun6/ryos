@@ -1,6 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "framer-motion";
-import { Briefcase, House, Star, X } from "@phosphor-icons/react";
+import {
+  Briefcase,
+  House,
+  NavigationArrow,
+  Star,
+  X,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import {
   AQUA_ICON_BUTTON_PADDING_CLASS,
@@ -24,9 +30,14 @@ export interface MapsPlaceCardProps {
   isFavorite: boolean;
   isHome: boolean;
   isWork: boolean;
+  /** When set elsewhere, the Home action is hidden unless this card is Home. */
+  savedHomePlace: SavedPlace | null;
+  /** When set elsewhere, the Work action is hidden unless this card is Work. */
+  savedWorkPlace: SavedPlace | null;
   onSetHome: (place: SavedPlace) => void;
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
+  onDirections: (place: SavedPlace) => void;
   onClose: () => void;
 }
 
@@ -75,9 +86,12 @@ export function MapsPlaceCard({
   isFavorite,
   isHome,
   isWork,
+  savedHomePlace,
+  savedWorkPlace,
   onSetHome,
   onSetWork,
   onToggleFavorite,
+  onDirections,
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
@@ -130,9 +144,12 @@ export function MapsPlaceCard({
               isFavorite={isFavorite}
               isHome={isHome}
               isWork={isWork}
+              savedHomePlace={savedHomePlace}
+              savedWorkPlace={savedWorkPlace}
               onSetHome={onSetHome}
               onSetWork={onSetWork}
               onToggleFavorite={onToggleFavorite}
+              onDirections={onDirections}
               t={t}
             />
           </div>
@@ -229,9 +246,12 @@ interface PlaceCardActionsProps {
   isFavorite: boolean;
   isHome: boolean;
   isWork: boolean;
+  savedHomePlace: SavedPlace | null;
+  savedWorkPlace: SavedPlace | null;
   onSetHome: (place: SavedPlace) => void;
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
+  onDirections: (place: SavedPlace) => void;
   t: ReturnType<typeof useTranslation>["t"];
 }
 
@@ -240,16 +260,42 @@ function PlaceCardActions({
   isFavorite,
   isHome,
   isWork,
+  savedHomePlace,
+  savedWorkPlace,
   onSetHome,
   onSetWork,
   onToggleFavorite,
+  onDirections,
   t,
 }: PlaceCardActionsProps) {
   const { isMacOSTheme } = useThemeFlags();
   const variant = isMacOSTheme ? "aqua" : "retro";
+  const showHomeButton = !savedHomePlace || isHome;
+  const showWorkButton = !savedWorkPlace || isWork;
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        onClick={() => onDirections(place)}
+        title={t("apps.maps.placeCard.openDirections", {
+          defaultValue: "Get directions in Apple Maps",
+        })}
+        className={AQUA_ICON_BUTTON_PADDING_CLASS}
+      >
+        <NavigationArrow
+          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          weight="bold"
+        />
+        <span>
+          {t("apps.maps.placeCard.directions", {
+            defaultValue: "Directions",
+          })}
+        </span>
+      </Button>
+
       <Button
         type="button"
         variant={variant}
@@ -282,53 +328,57 @@ function PlaceCardActions({
         </span>
       </Button>
 
-      <Button
-        type="button"
-        variant={variant}
-        size="sm"
-        onClick={() => onSetHome(place)}
-        aria-pressed={isHome}
-        title={t("apps.maps.placeCard.setHome", {
-          defaultValue: "Set as Home",
-        })}
-        className={AQUA_ICON_BUTTON_PADDING_CLASS}
-      >
-        <House
-          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-          weight={isHome ? "fill" : "regular"}
-        />
-        <span>
-          {isHome
-            ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
-            : t("apps.maps.placeCard.setHome", {
-                defaultValue: "Set as Home",
-              })}
-        </span>
-      </Button>
+      {showHomeButton && (
+        <Button
+          type="button"
+          variant={variant}
+          size="sm"
+          onClick={() => onSetHome(place)}
+          aria-pressed={isHome}
+          title={t("apps.maps.placeCard.setHome", {
+            defaultValue: "Set as Home",
+          })}
+          className={AQUA_ICON_BUTTON_PADDING_CLASS}
+        >
+          <House
+            size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+            weight={isHome ? "fill" : "regular"}
+          />
+          <span>
+            {isHome
+              ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
+              : t("apps.maps.placeCard.setHome", {
+                  defaultValue: "Set as Home",
+                })}
+          </span>
+        </Button>
+      )}
 
-      <Button
-        type="button"
-        variant={variant}
-        size="sm"
-        onClick={() => onSetWork(place)}
-        aria-pressed={isWork}
-        title={t("apps.maps.placeCard.setWork", {
-          defaultValue: "Set as Work",
-        })}
-        className={AQUA_ICON_BUTTON_PADDING_CLASS}
-      >
-        <Briefcase
-          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-          weight={isWork ? "fill" : "regular"}
-        />
-        <span>
-          {isWork
-            ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
-            : t("apps.maps.placeCard.setWork", {
-                defaultValue: "Set as Work",
-              })}
-        </span>
-      </Button>
+      {showWorkButton && (
+        <Button
+          type="button"
+          variant={variant}
+          size="sm"
+          onClick={() => onSetWork(place)}
+          aria-pressed={isWork}
+          title={t("apps.maps.placeCard.setWork", {
+            defaultValue: "Set as Work",
+          })}
+          className={AQUA_ICON_BUTTON_PADDING_CLASS}
+        >
+          <Briefcase
+            size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+            weight={isWork ? "fill" : "regular"}
+          />
+          <span>
+            {isWork
+              ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
+              : t("apps.maps.placeCard.setWork", {
+                  defaultValue: "Set as Work",
+                })}
+          </span>
+        </Button>
+      )}
     </div>
   );
 }

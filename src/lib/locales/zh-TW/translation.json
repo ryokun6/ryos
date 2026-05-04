@@ -1110,8 +1110,8 @@
         "switchingTheme": "切換主題…",
         "textNotFound": "找不到文字",
         "toggledIpodPlayback": "切換 iPod 播放",
-        "toolExecutionFailed": "工具執行失敗",
         "toolAttempted": "已嘗試 {{toolName}}",
+        "toolExecutionFailed": "工具執行失敗",
         "tv": {
           "addedVideo": "已將 {{title}} 新增至 {{channel}}",
           "addingVideo": "正在將影片新增至頻道…",
@@ -2548,9 +2548,11 @@
       "placeCard": {
         "addFavorite": "加入最愛",
         "close": "關閉地點卡",
+        "directions": "Directions",
         "favorite": "最愛",
         "favorited": "已加入最愛",
         "home": "住家",
+        "openDirections": "Get directions in Apple Maps",
         "regionLabel": "已選取的地點",
         "removeFavorite": "從最愛移除",
         "setHome": "設為住家",
