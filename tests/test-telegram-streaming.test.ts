@@ -66,7 +66,7 @@ describe("telegram streaming helpers", () => {
       formatText: simplifyTelegramCitationDisplay,
     });
 
-    expect(result).toBe("Update\n• it shipped yesterday.");
+    expect(result).toBe("Update\nit shipped yesterday.");
   });
 
   test("formats streamed Telegram text before previewing and sending", async () => {
@@ -95,13 +95,13 @@ describe("telegram streaming helpers", () => {
     });
 
     expect(result).toEqual({
-      text: "Update\n• it shipped yesterday.",
+      text: "Update\nit shipped yesterday.",
       previewMode: "draft",
       messageIds: [777],
     });
     expect(calls).toEqual([
-      { type: "draft", text: "Update\n• it shipped yesterday." },
-      { type: "send", text: "Update\n• it shipped yesterday.", replyToMessageId: 55 },
+      { type: "draft", text: "Update\nit shipped yesterday." },
+      { type: "send", text: "Update\nit shipped yesterday.", replyToMessageId: 55 },
     ]);
   });
 

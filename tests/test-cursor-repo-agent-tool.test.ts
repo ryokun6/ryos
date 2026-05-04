@@ -10,6 +10,7 @@ import {
   sendCursorAgentFollowup,
 } from "../api/chat/tools/cursor-repo-agent.js";
 import type { Redis } from "../api/_utils/redis.js";
+import { stripMarkdownForTelegramCursorAgentCompletion } from "../api/_utils/telegram-format.js";
 
 /**
  * Minimal Redis stand-in: only implements `get` so we can exercise the
@@ -92,6 +93,20 @@ describe("formatCursorRunCompletionTelegramMessage", () => {
     });
     expect(text.length).toBeLessThanOrEqual(3700);
     expect(text).toContain("…(truncated)");
+  });
+
+  test("telegram delivery path strips markdown from the completion body", () => {
+    const formatted = formatCursorRunCompletionTelegramMessage({
+      ok: true,
+      agentTitle: "Dark mode",
+      summary: "**Shipped**\n\nSee [PR](https://github.com/x/y/pull/99).",
+    });
+    const plain = stripMarkdownForTelegramCursorAgentCompletion(formatted);
+    expect(plain.startsWith("Cursor agent done — Dark mode")).toBe(true);
+    expect(plain).toContain("Shipped");
+    expect(plain).toContain("https://github.com/x/y/pull/99");
+    expect(plain).not.toContain("**");
+    expect(plain).not.toContain("[PR]");
   });
 });
 

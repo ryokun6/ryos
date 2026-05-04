@@ -7,6 +7,7 @@
 import type { Redis } from "../../_utils/redis.js";
 import { z } from "zod";
 import type { MemoryToolContext } from "./executors.js";
+import { stripMarkdownForTelegramCursorAgentCompletion } from "../../_utils/telegram-format.js";
 import { sendTelegramMessage } from "../../_utils/telegram.js";
 
 export const CURSOR_REPO_AGENT_OWNER = "ryo";
@@ -613,12 +614,14 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
 
       await notifyTelegramRunComplete(
         notifyTelegram,
-        formatCursorRunCompletionTelegramMessage({
-          ok: status === "finished",
-          agentTitle,
-          status,
-          summary,
-        }),
+        stripMarkdownForTelegramCursorAgentCompletion(
+          formatCursorRunCompletionTelegramMessage({
+            ok: status === "finished",
+            agentTitle,
+            status,
+            summary,
+          })
+        ),
         logError
       );
     } catch (e) {
@@ -648,12 +651,14 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
 
       await notifyTelegramRunComplete(
         notifyTelegram,
-        formatCursorRunCompletionTelegramMessage({
-          ok: false,
-          agentTitle,
-          status: "error",
-          error: errorText,
-        }),
+        stripMarkdownForTelegramCursorAgentCompletion(
+          formatCursorRunCompletionTelegramMessage({
+            ok: false,
+            agentTitle,
+            status: "error",
+            error: errorText,
+          })
+        ),
         logError
       );
     } finally {
