@@ -514,11 +514,17 @@ export function MapsAppComponent({
     [isPlaceFavorite, removeFavoritePlace, addFavoritePlace]
   );
 
+  // Localized "Home" / "Work" labels used as the marker title for those
+  // saved kinds, matching the drawer and place-card section headings.
+  const homeLabel = t("apps.maps.places.home", { defaultValue: "Home" });
+  const workLabel = t("apps.maps.places.work", { defaultValue: "Work" });
+
   // Build the diff key for the saved-annotations layer. We include the
   // category (so a marker visually moves between Home/Work/Favorite without
-  // a stale icon lingering) and the coordinate (so editing a saved place to
-  // a new location re-creates the annotation rather than leaving the pin
-  // stranded at the old spot).
+  // a stale icon lingering), the coordinate (so editing a saved place to a
+  // new location re-creates the annotation rather than leaving the pin
+  // stranded at the old spot), and the localized label (so a language
+  // switch rebuilds Home/Work pins with the new title).
   const savedPlaceEntries = useMemo<
     Array<{ key: string; kind: "home" | "work" | "favorite"; place: SavedPlace }>
   >(() => {
@@ -529,12 +535,12 @@ export function MapsAppComponent({
     }> = [];
     const seen = new Set<string>();
     if (homePlace) {
-      const key = `home:${homePlace.id}:${homePlace.latitude},${homePlace.longitude}`;
+      const key = `home:${homePlace.id}:${homePlace.latitude},${homePlace.longitude}:${homeLabel}`;
       entries.push({ key, kind: "home", place: homePlace });
       seen.add(homePlace.id);
     }
     if (workPlace && !seen.has(workPlace.id)) {
-      const key = `work:${workPlace.id}:${workPlace.latitude},${workPlace.longitude}`;
+      const key = `work:${workPlace.id}:${workPlace.latitude},${workPlace.longitude}:${workLabel}`;
       entries.push({ key, kind: "work", place: workPlace });
       seen.add(workPlace.id);
     }
@@ -543,12 +549,12 @@ export function MapsAppComponent({
       // dedicated Home/Work annotation already covers that location and a
       // second star pin on top would be visual noise.
       if (seen.has(fav.id)) continue;
-      const key = `favorite:${fav.id}:${fav.latitude},${fav.longitude}`;
+      const key = `favorite:${fav.id}:${fav.latitude},${fav.longitude}:${fav.name}`;
       entries.push({ key, kind: "favorite", place: fav });
       seen.add(fav.id);
     }
     return entries;
-  }, [homePlace, workPlace, favoritePlaces]);
+  }, [homePlace, workPlace, favoritePlaces, homeLabel, workLabel]);
 
   // Sync Home / Work / Favorites annotations on the map. Each saved kind
   // gets a distinct pin color — Home blue, Work amber, Favorites gold —
@@ -606,9 +612,24 @@ export function MapsAppComponent({
           : entry.kind === "work"
             ? { color: "#b45309", glyph: WORK_GLYPH_IMAGE }
             : { color: "#f59e0b", glyph: FAVORITE_GLYPH_IMAGE };
+      // For Home / Work pins the on-pin label should read "Home" / "Work"
+      // (matching the place card and drawer headings) instead of the raw
+      // address — that's the whole point of saving the place. The
+      // street-address style stays as the subtitle. Favorites keep the
+      // place's actual name as the title.
+      const title =
+        entry.kind === "home"
+          ? homeLabel
+          : entry.kind === "work"
+            ? workLabel
+            : entry.place.name;
+      const subtitle =
+        entry.kind === "home" || entry.kind === "work"
+          ? entry.place.name
+          : (entry.place.subtitle ?? "");
       const annotation = new mk.MarkerAnnotation(coord, {
-        title: entry.place.name,
-        subtitle: entry.place.subtitle ?? "",
+        title,
+        subtitle,
         color: visual.color,
         glyphColor: "#ffffff",
         glyphImage: visual.glyph,
@@ -636,6 +657,10 @@ export function MapsAppComponent({
     }
 
     savedAnnotationsRef.current = next;
+    // Note: `homeLabel` / `workLabel` are read inside the loop but already
+    // baked into the entry keys via `savedPlaceEntries`, so a language
+    // switch invalidates the cached entries and rebuilds the pin titles.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, savedPlaceEntries]);
 
   // Drop all saved-place annotations when the map tears down so a re-open
