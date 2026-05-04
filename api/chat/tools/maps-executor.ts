@@ -83,14 +83,44 @@ function buildResult(
   };
 }
 
+/**
+ * Resolve a fallback search anchor from the request's IP-derived geolocation
+ * when the model didn't pass an explicit `near`. Apple's `requestGeo` ships
+ * latitude/longitude as strings on Vercel; we coerce to numbers and reject
+ * obviously bogus values (NaN, out-of-range) so we don't make Apple complain.
+ */
+function resolveFallbackNear(
+  context: ServerToolContext
+): { latitude: number; longitude: number } | null {
+  const geo = context.requestGeo;
+  if (!geo) return null;
+  const lat = typeof geo.latitude === "string" ? Number(geo.latitude) : geo.latitude;
+  const lng = typeof geo.longitude === "string" ? Number(geo.longitude) : geo.longitude;
+  if (typeof lat !== "number" || typeof lng !== "number") return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  // Treat a 0,0 anchor (Null Island) as "no signal" — Vercel sometimes ships
+  // exactly that for unknown IPs and biasing every search toward the Gulf of
+  // Guinea is worse than no bias at all.
+  if (lat === 0 && lng === 0) return null;
+  return { latitude: lat, longitude: lng };
+}
+
 export async function executeMapsSearchPlaces(
   input: MapsSearchPlacesInput,
   context: ServerToolContext
 ): Promise<MapsSearchPlacesOutput> {
   const query = input.query.trim();
+  const explicitNear = input.near ?? null;
+  const fallbackNear = explicitNear ? null : resolveFallbackNear(context);
+  const effectiveNear = explicitNear ?? fallbackNear;
+  const nearSource = explicitNear ? "input" : fallbackNear ? "request-ip" : "none";
+
   context.log(
     `[mapsSearchPlaces] query="${query}" near=${
-      input.near ? `${input.near.latitude},${input.near.longitude}` : "none"
+      effectiveNear
+        ? `${effectiveNear.latitude},${effectiveNear.longitude} (${nearSource})`
+        : "none"
     } limit=${input.limit ?? 5}`
   );
 
@@ -124,7 +154,9 @@ export async function executeMapsSearchPlaces(
   try {
     const data = await searchPlaces({
       q: query,
-      ...(input.near ? { searchLocation: input.near, userLocation: input.near } : {}),
+      ...(effectiveNear
+        ? { searchLocation: effectiveNear, userLocation: effectiveNear }
+        : {}),
       ...(input.region ? { searchRegion: input.region } : {}),
       ...(input.countries && input.countries.length > 0
         ? { limitToCountries: input.countries.map((c) => c.toUpperCase()) }

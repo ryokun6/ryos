@@ -38,6 +38,19 @@ export interface ServerToolContext {
     YOUTUBE_API_KEY?: string;
     YOUTUBE_API_KEY_2?: string;
   };
+  /**
+   * Approximate IP-derived geolocation for the current request, when known.
+   * Provided by `geolocation()` in `api/chat.ts`; absent for non-edge contexts
+   * (e.g. Telegram webhook). Used as a fallback location bias by tools like
+   * `mapsSearchPlaces` when the model doesn't pass an explicit anchor.
+   */
+  requestGeo?: {
+    city?: string;
+    region?: string;
+    country?: string;
+    latitude?: string | number;
+    longitude?: string | number;
+  };
 }
 
 /**

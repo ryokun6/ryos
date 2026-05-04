@@ -241,8 +241,11 @@ export const TOOL_DESCRIPTIONS = {
     "Search Apple Maps for points of interest, businesses, and addresses. Use when the user asks to find a place, " +
     "look up an address, get directions to a venue, plan a route, or otherwise wants real geographic data. " +
     "Returns a small list of place cards with name, formatted address, MapKit POI category, lat/lng, and an Apple Maps URL. " +
-    "Pass the user's approximate location via 'near' (lat/lng) when known so results are biased toward where they are. " +
-    "When you reference a result in chat, mention it by name + city — the client renders the rich card automatically.",
+    "When you don't pass 'near', the server automatically biases the search to the user's approximate IP location, " +
+    "so unqualified queries like 'coffee' or 'pharmacy' already return nearby hits. Only override with an explicit " +
+    "'near: { latitude, longitude }' when you have a better anchor than IP geolocation (a different city the user named, " +
+    "an address they just mentioned, etc.). When you reference a result in chat, mention it by name + city — the client " +
+    "renders the rich card automatically.",
 
   webFetch:
     "Fetch and read the text content of a web page. Use this when the user asks you to look something up online, " +

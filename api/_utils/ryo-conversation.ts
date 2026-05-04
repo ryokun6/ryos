@@ -771,6 +771,9 @@ export async function prepareRyoConversationModelInput(
       username: username ?? null,
       redis,
       timeZone: userTimeZone,
+      ...(systemState?.requestGeo
+        ? { requestGeo: systemState.requestGeo }
+        : {}),
       ...toolContextOverrides,
     },
     { profile: toolProfile }
