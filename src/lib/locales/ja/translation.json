@@ -1291,6 +1291,7 @@
         "lastFetched": "{{date}}に取得",
         "lastSynced": "最終同期{{date}}",
         "lastUploaded": "{{date}}にアップロード",
+        "maps": "マップ",
         "minutesAgo": "{{count}}分前",
         "neverFetched": "未取得",
         "neverSynced": "未同期",

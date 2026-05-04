@@ -14,6 +14,7 @@ describe("logical cloud sync helpers", () => {
     expect(isLogicalCloudSyncDomain("files")).toBe(true);
     expect(isLogicalCloudSyncDomain("tv")).toBe(true);
     expect(isLogicalCloudSyncDomain("contacts")).toBe(true);
+    expect(isLogicalCloudSyncDomain("maps")).toBe(true);
     expect(isLogicalCloudSyncDomain("files-images")).toBe(false);
     expect(isLogicalCloudSyncDomain("widgets")).toBe(false);
   });
@@ -27,6 +28,8 @@ describe("logical cloud sync helpers", () => {
       "settings",
     ]);
     expect(getLogicalCloudSyncDomainPhysicalParts("tv")).toEqual(["tv"]);
+    expect(getLogicalCloudSyncDomainPhysicalParts("maps")).toEqual(["maps"]);
+    expect(getLogicalCloudSyncDomainForPhysical("maps")).toBe("maps");
     expect(getLogicalCloudSyncDomainPhysicalParts("files")).toEqual([
       "files-images",
       "files-trash",
@@ -46,6 +49,7 @@ describe("logical cloud sync helpers", () => {
       stickies: null,
       calendar: null,
       contacts: null,
+      maps: null,
     });
   });
 

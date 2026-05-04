@@ -52,6 +52,7 @@ describe("logical cloud sync domain API", () => {
       "calendar",
       "contacts",
       "files",
+      "maps",
       "settings",
       "songs",
       "stickies",
@@ -66,6 +67,7 @@ describe("logical cloud sync domain API", () => {
       "files-images",
       "files-metadata",
       "files-trash",
+      "maps",
       "settings",
       "songs",
       "stickies",
@@ -209,6 +211,107 @@ describe("logical cloud sync domain API", () => {
       "/Photos/cat.png": "2026-03-18T10:59:00.000Z",
     });
     expect(getJson.parts["custom-wallpapers"].mode).toBe("individual");
+  });
+
+  test("PUT /api/sync/domains/maps stores maps writes and round-trips them", async () => {
+    const authToken = await getAuthToken();
+
+    const putRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/maps`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writes: {
+            maps: {
+              domain: "maps",
+              updatedAt: "2026-04-01T10:00:00.000Z",
+              version: 1,
+              syncVersion: makeSyncVersion("maps-client", 1),
+              data: {
+                home: {
+                  id: "home-1",
+                  name: "Home",
+                  latitude: 37.331,
+                  longitude: -122.031,
+                },
+                work: null,
+                favorites: [
+                  {
+                    id: "fav-1",
+                    name: "Coffee Shop",
+                    latitude: 37.78,
+                    longitude: -122.41,
+                  },
+                ],
+                updatedAt: 1_711_988_400_000,
+                deletedFavoriteIds: {},
+              },
+            },
+          },
+        }),
+      }
+    );
+
+    expect(putRes.status).toBe(200);
+    const putJson = await putRes.json();
+    expect(putJson.ok).toBe(true);
+    expect(putJson.domain).toBe("maps");
+    expect(putJson.metadata.updatedAt).toBe("2026-04-01T10:00:00.000Z");
+
+    const getRes = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/maps`,
+      TEST_USERNAME,
+      authToken
+    );
+
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json();
+    expect(getJson.ok).toBe(true);
+    expect(getJson.domain).toBe("maps");
+    expect(Object.keys(getJson.parts)).toEqual(["maps"]);
+    expect(getJson.parts.maps.data.home).toEqual({
+      id: "home-1",
+      name: "Home",
+      latitude: 37.331,
+      longitude: -122.031,
+    });
+    expect(getJson.parts.maps.data.favorites).toHaveLength(1);
+    expect(getJson.parts.maps.data.favorites[0].id).toBe("fav-1");
+    expect(getJson.parts.maps.data.recents).toBeUndefined();
+  });
+
+  test("PUT /api/sync/domains/maps rejects malformed maps snapshots", async () => {
+    const authToken = await getAuthToken();
+
+    const res = await fetchWithAuth(
+      `${BASE_URL}/api/sync/domains/maps`,
+      TEST_USERNAME,
+      authToken,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          writes: {
+            maps: {
+              domain: "maps",
+              updatedAt: "2026-04-01T11:00:00.000Z",
+              version: 1,
+              syncVersion: makeSyncVersion("maps-bad", 1),
+              data: {
+                favorites: [{ id: "no-coords", name: "Bad" }],
+              },
+            },
+          },
+        }),
+      }
+    );
+
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect((json.error || "").toLowerCase()).toContain("maps");
   });
 
   test("POST /api/sync/domains/files/attachments/prepare accepts custom wallpapers only under files", async () => {

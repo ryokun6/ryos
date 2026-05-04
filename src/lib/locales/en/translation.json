@@ -2783,6 +2783,7 @@
         "stickies": "Stickies",
         "calendar": "Calendar",
         "contacts": "Contacts",
+        "maps": "Maps",
         "waiting": "Waiting for the next eligible change",
         "neverSynced": "Not yet synced",
         "checking": "Checking for cloud updates…",

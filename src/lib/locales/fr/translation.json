@@ -1291,6 +1291,7 @@
         "lastFetched": "Récupéré le {{date}}",
         "lastSynced": "Dernière synchronisation {{date}}",
         "lastUploaded": "Mis en ligne le {{date}}",
+        "maps": "Plans",
         "minutesAgo": "il y a {{count}}min",
         "neverFetched": "Jamais récupéré",
         "neverSynced": "Pas encore synchronisé",
