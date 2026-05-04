@@ -111,6 +111,37 @@ describe("formatCursorRunCompletionTelegramMessage", () => {
     expect(text).not.toContain("## ");
     expect(text).not.toContain("```");
   });
+
+  test("appends agent dashboard and PR links as plain labels", () => {
+    const text = formatCursorRunCompletionTelegramMessage({
+      ok: true,
+      agentTitle: "Feature",
+      summary: "Shipped.",
+      agentDashboardUrl: "https://cursor.com/agents/bc_abc",
+      prUrl: "https://github.com/ryokun6/ryos/pull/99",
+    });
+    expect(text).toContain("\n\nAgent: https://cursor.com/agents/bc_abc");
+    expect(text).toContain("\nPR: https://github.com/ryokun6/ryos/pull/99");
+  });
+
+  test("omits PR line when PR is missing", () => {
+    const text = formatCursorRunCompletionTelegramMessage({
+      ok: true,
+      summary: "Done.",
+      agentDashboardUrl: "https://cursor.com/agents/ag1",
+    });
+    expect(text).toContain("Agent: https://cursor.com/agents/ag1");
+    expect(text).not.toContain("PR:");
+  });
+
+  test("omits link block when agent dashboard URL is missing", () => {
+    const text = formatCursorRunCompletionTelegramMessage({
+      ok: true,
+      summary: "Done only body",
+    });
+    expect(text).not.toContain("Agent:");
+    expect(text).not.toContain("PR:");
+  });
 });
 
 describe("pickPrUrlFromRunGit", () => {
