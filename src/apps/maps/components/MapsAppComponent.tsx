@@ -17,6 +17,7 @@ import { MapsPlaceCard } from "./MapsPlaceCard";
 import { useMapsStore } from "@/stores/useMapsStore";
 import type { SavedPlace } from "../utils/types";
 import { getPoiMarkerAnnotationOptions } from "../utils/poiMarkerStyle";
+import { buildAppleMapsDrivingDirectionsUrl } from "../utils/appleMapsLinks";
 import {
   homeMarkerAnnotationStyle,
   workMarkerAnnotationStyle,
@@ -774,6 +775,14 @@ export function MapsAppComponent({
     clearDroppedAnnotation();
   }, [setSelectedPlace, clearDroppedAnnotation]);
 
+  const handleOpenPlaceDirections = useCallback((place: SavedPlace) => {
+    const url = buildAppleMapsDrivingDirectionsUrl(
+      place.latitude,
+      place.longitude
+    );
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, []);
+
   const handleToggleFavorite = useCallback(
     (place: SavedPlace) => {
       if (isPlaceFavorite(place.id)) {
@@ -1365,6 +1374,7 @@ export function MapsAppComponent({
               onSetHome={(p) => setHomePlace(p)}
               onSetWork={(p) => setWorkPlace(p)}
               onToggleFavorite={handleToggleFavorite}
+              onDirections={handleOpenPlaceDirections}
               onClose={handleClosePlaceCard}
             />
 

@@ -1110,8 +1110,8 @@
         "switchingTheme": "Trocando tema…",
         "textNotFound": "Texto não encontrado",
         "toggledIpodPlayback": "Alternou a reprodução do iPod",
-        "toolExecutionFailed": "Falha na execução da ferramenta",
         "toolAttempted": "{{toolName}} tentado",
+        "toolExecutionFailed": "Falha na execução da ferramenta",
         "tv": {
           "addedVideo": "Adicionado {{title}} a {{channel}}",
           "addingVideo": "Adicionando vídeo ao canal…",
@@ -2548,9 +2548,11 @@
       "placeCard": {
         "addFavorite": "Adicionar aos Favoritos",
         "close": "Fechar cartão do local",
+        "directions": "Directions",
         "favorite": "Favorito",
         "favorited": "Favoritado",
         "home": "Casa",
+        "openDirections": "Get directions in Apple Maps",
         "regionLabel": "Local selecionado",
         "removeFavorite": "Remover dos Favoritos",
         "setHome": "Definir como Casa",

@@ -1,6 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "framer-motion";
-import { Briefcase, House, Star, X } from "@phosphor-icons/react";
+import {
+  Briefcase,
+  House,
+  NavigationArrow,
+  Star,
+  X,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import {
   AQUA_ICON_BUTTON_PADDING_CLASS,
@@ -27,6 +33,7 @@ export interface MapsPlaceCardProps {
   onSetHome: (place: SavedPlace) => void;
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
+  onDirections: (place: SavedPlace) => void;
   onClose: () => void;
 }
 
@@ -78,6 +85,7 @@ export function MapsPlaceCard({
   onSetHome,
   onSetWork,
   onToggleFavorite,
+  onDirections,
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
@@ -133,6 +141,7 @@ export function MapsPlaceCard({
               onSetHome={onSetHome}
               onSetWork={onSetWork}
               onToggleFavorite={onToggleFavorite}
+              onDirections={onDirections}
               t={t}
             />
           </div>
@@ -232,6 +241,7 @@ interface PlaceCardActionsProps {
   onSetHome: (place: SavedPlace) => void;
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
+  onDirections: (place: SavedPlace) => void;
   t: ReturnType<typeof useTranslation>["t"];
 }
 
@@ -243,6 +253,7 @@ function PlaceCardActions({
   onSetHome,
   onSetWork,
   onToggleFavorite,
+  onDirections,
   t,
 }: PlaceCardActionsProps) {
   const { isMacOSTheme } = useThemeFlags();
@@ -250,6 +261,27 @@ function PlaceCardActions({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        onClick={() => onDirections(place)}
+        title={t("apps.maps.placeCard.openDirections", {
+          defaultValue: "Get directions in Apple Maps",
+        })}
+        className={AQUA_ICON_BUTTON_PADDING_CLASS}
+      >
+        <NavigationArrow
+          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          weight="bold"
+        />
+        <span>
+          {t("apps.maps.placeCard.directions", {
+            defaultValue: "Directions",
+          })}
+        </span>
+      </Button>
+
       <Button
         type="button"
         variant={variant}

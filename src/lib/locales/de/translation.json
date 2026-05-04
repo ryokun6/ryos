@@ -1110,8 +1110,8 @@
         "switchingTheme": "Thema wird gewechselt…",
         "textNotFound": "Text nicht gefunden",
         "toggledIpodPlayback": "iPod-Wiedergabe umgeschaltet",
-        "toolExecutionFailed": "Tool-Ausführung fehlgeschlagen",
         "toolAttempted": "{{toolName}} versucht",
+        "toolExecutionFailed": "Tool-Ausführung fehlgeschlagen",
         "tv": {
           "addedVideo": "{{title}} zu {{channel}} hinzugefügt",
           "addingVideo": "Video wird zum Kanal hinzugefügt…",
@@ -2548,9 +2548,11 @@
       "placeCard": {
         "addFavorite": "Zu Favoriten hinzufügen",
         "close": "Ortskarte schließen",
+        "directions": "Directions",
         "favorite": "Favorit",
         "favorited": "Favorisiert",
         "home": "Privat",
+        "openDirections": "Get directions in Apple Maps",
         "regionLabel": "Ausgewählter Ort",
         "removeFavorite": "Aus Favoriten entfernen",
         "setHome": "Als Privat festlegen",

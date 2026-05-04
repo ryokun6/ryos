@@ -3923,6 +3923,8 @@
       "placeCard": {
         "regionLabel": "Selected place",
         "close": "Close place card",
+        "directions": "Directions",
+        "openDirections": "Get directions in Apple Maps",
         "setHome": "Set as Home",
         "home": "Home",
         "setWork": "Set as Work",
