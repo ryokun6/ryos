@@ -1291,6 +1291,7 @@
         "lastFetched": "Получено {{date}}",
         "lastSynced": "Последняя синхронизация {{date}}",
         "lastUploaded": "Загружено {{date}}",
+        "maps": "Карты",
         "minutesAgo": "{{count}}мин назад",
         "neverFetched": "Ни разу не получено",
         "neverSynced": "Ещё не синхронизировано",

@@ -1291,6 +1291,7 @@
         "lastFetched": "已於{{date}}擷取",
         "lastSynced": "上次同步{{date}}",
         "lastUploaded": "已於{{date}}上傳",
+        "maps": "地圖",
         "minutesAgo": "{{count}}分鐘前",
         "neverFetched": "從未擷取",
         "neverSynced": "尚未同步",

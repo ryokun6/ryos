@@ -35,5 +35,7 @@ describe("mergePersistedCloudSyncDomainStatus", () => {
     expect(merged["custom-wallpapers"]).toBeDefined();
     expect(merged.tv).toBeDefined();
     expect(merged.contacts).toBeDefined();
+    expect(merged.maps).toBeDefined();
+    expect(merged.maps.lastUploadedAt).toBeNull();
   });
 });

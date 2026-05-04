@@ -88,6 +88,52 @@ function isContactsSnapshotData(value: unknown): value is { contacts: unknown[] 
   );
 }
 
+function isSavedPlaceLike(value: unknown): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const candidate = value as {
+    id?: unknown;
+    name?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+  };
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.name === "string" &&
+    typeof candidate.latitude === "number" &&
+    Number.isFinite(candidate.latitude) &&
+    typeof candidate.longitude === "number" &&
+    Number.isFinite(candidate.longitude)
+  );
+}
+
+function isMapsSnapshotData(value: unknown): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const candidate = value as {
+    home?: unknown;
+    work?: unknown;
+    favorites?: unknown;
+  };
+  if (candidate.home !== null && candidate.home !== undefined && !isSavedPlaceLike(candidate.home)) {
+    return false;
+  }
+  if (candidate.work !== null && candidate.work !== undefined && !isSavedPlaceLike(candidate.work)) {
+    return false;
+  }
+  const favorites = candidate.favorites;
+  if (favorites !== undefined) {
+    if (!Array.isArray(favorites) || !favorites.every(isSavedPlaceLike)) {
+      return false;
+    }
+  }
+  // recents are device-local and not synced; we intentionally ignore the field
+  // if a stale client still sends it.
+  return true;
+}
+
 export function stateKey(username: string, domain: RedisSyncDomain): string {
   return redisStateKey(username, domain);
 }
@@ -352,6 +398,13 @@ export async function putRedisStateDomain(
       ok: false,
       status: 400,
       error: "Invalid songs snapshot payload",
+    };
+  }
+  if (domain === "maps" && !isMapsSnapshotData(body.data)) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Invalid maps snapshot payload",
     };
   }
 

@@ -16,6 +16,7 @@ export const CLOUD_SYNC_DOMAINS = [
   "stickies",
   "calendar",
   "contacts",
+  "maps",
   "custom-wallpapers",
 ] as const;
 
@@ -51,7 +52,8 @@ export type CloudSyncCategory =
   | "tv"
   | "stickies"
   | "calendar"
-  | "contacts";
+  | "contacts"
+  | "maps";
 
 export const FILE_SYNC_DOMAINS = [
   "files-metadata",
@@ -72,6 +74,7 @@ export const REDIS_SYNC_DOMAINS = [
   "stickies",
   "calendar",
   "contacts",
+  "maps",
 ] as const;
 
 export type RedisSyncDomain = (typeof REDIS_SYNC_DOMAINS)[number];
@@ -198,6 +201,8 @@ export function getCloudSyncCategory(
       return "calendar";
     case "contacts":
       return "contacts";
+    case "maps":
+      return "maps";
   }
 }
 
@@ -214,6 +219,7 @@ export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
     stickies: null,
     calendar: null,
     contacts: null,
+    maps: null,
     "custom-wallpapers": null,
   };
 }

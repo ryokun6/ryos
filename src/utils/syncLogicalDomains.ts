@@ -15,6 +15,7 @@ export const LOGICAL_CLOUD_SYNC_DOMAINS = [
   "stickies",
   "calendar",
   "contacts",
+  "maps",
 ] as const;
 
 export type LogicalCloudSyncDomain = (typeof LOGICAL_CLOUD_SYNC_DOMAINS)[number];
@@ -37,6 +38,7 @@ export const LOGICAL_TO_PHYSICAL_CLOUD_SYNC_DOMAINS: Record<
   stickies: ["stickies"],
   calendar: ["calendar"],
   contacts: ["contacts"],
+  maps: ["maps"],
 };
 
 export interface LogicalCloudSyncDomainMetadata {
@@ -70,6 +72,7 @@ export function createEmptyLogicalCloudSyncMetadataMap(): LogicalCloudSyncMetada
     stickies: null,
     calendar: null,
     contacts: null,
+    maps: null,
   };
 }
 

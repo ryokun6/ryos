@@ -38,6 +38,7 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "customWallpaperKeys",
   "songTrackIds",
   "tvCustomChannelIds",
+  "mapsFavoriteIds",
 ] as const;
 
 export type CloudSyncDeletionBucket =
@@ -62,6 +63,7 @@ function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     customWallpaperKeys: {},
     songTrackIds: {},
     tvCustomChannelIds: {},
+    mapsFavoriteIds: {},
   };
 }
 
@@ -75,6 +77,7 @@ interface CloudSyncStoreState {
   syncStickies: boolean;
   syncCalendar: boolean;
   syncContacts: boolean;
+  syncMaps: boolean;
   isCheckingRemote: boolean;
   lastCheckedAt: string | null;
   lastError: string | null;
@@ -146,6 +149,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
     stickies: empty(),
     calendar: empty(),
     contacts: empty(),
+    maps: empty(),
     "custom-wallpapers": empty(),
   };
 }
@@ -180,7 +184,7 @@ export function mergePersistedCloudSyncDomainStatus(
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 12;
+const STORE_VERSION = 13;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -194,6 +198,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       syncStickies: true,
       syncCalendar: true,
       syncContacts: true,
+      syncMaps: true,
       isCheckingRemote: false,
       lastCheckedAt: null,
       lastError: null,
@@ -237,6 +242,9 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           case "contacts":
             set({ syncContacts: enabled });
             return;
+          case "maps":
+            set({ syncMaps: enabled });
+            return;
         }
       },
 
@@ -259,6 +267,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             return state.syncCalendar;
           case "contacts":
             return state.syncContacts;
+          case "maps":
+            return state.syncMaps;
         }
       },
 
@@ -484,6 +494,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncStickies: state.syncStickies,
         syncCalendar: state.syncCalendar,
         syncContacts: state.syncContacts,
+        syncMaps: state.syncMaps,
         lastCheckedAt: state.lastCheckedAt,
         deletionMarkers: state.deletionMarkers,
         domainStatus: Object.fromEntries(
@@ -574,6 +585,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncStickies: (candidate as Record<string, unknown>).syncStickies as boolean ?? true,
           syncCalendar: candidate.syncCalendar ?? true,
           syncContacts: (candidate as Record<string, unknown>).syncContacts as boolean ?? true,
+          syncMaps: (candidate as Record<string, unknown>).syncMaps as boolean ?? true,
           lastCheckedAt: candidate.lastCheckedAt ?? null,
           deletionMarkers,
           domainStatus,

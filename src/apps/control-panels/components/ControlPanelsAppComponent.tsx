@@ -153,6 +153,7 @@ const AUTO_SYNC_ITEM_ICONS = {
   settings: "control-panels",
   calendar: "calendar",
   contacts: "contacts",
+  maps: "maps",
   songs: "ipod",
   videos: "videos",
   tv: "tv",
@@ -369,6 +370,7 @@ export function ControlPanelsAppComponent({
     syncStickies,
     syncCalendar,
     syncContacts,
+    syncMaps,
     setSyncFiles,
     setSyncSettings,
     setSyncSongs,
@@ -377,6 +379,7 @@ export function ControlPanelsAppComponent({
     setSyncStickies,
     setSyncCalendar,
     setSyncContacts,
+    setSyncMaps,
     isAutoSyncChecking,
     autoSyncLastCheckedAt,
     autoSyncLastError,
@@ -770,6 +773,14 @@ export function ControlPanelsAppComponent({
                           status={formatSyncStatus(autoSyncDomainStatus.contacts, t)}
                           checked={syncContacts}
                           onCheckedChange={setSyncContacts}
+                        />
+
+                        <SyncDomainRow
+                          appId={AUTO_SYNC_ITEM_ICONS.maps}
+                          label={t("apps.control-panels.autoSync.maps")}
+                          status={formatSyncStatus(autoSyncDomainStatus.maps, t)}
+                          checked={syncMaps}
+                          onCheckedChange={setSyncMaps}
                         />
 
                         <SyncDomainRow
