@@ -15,8 +15,18 @@
  * filled icons we already render in the place card and drawer.
  */
 
-const SVG_VIEWBOX = "0 0 256 256";
 const SVG_SIZE = 40;
+// Phosphor icons are authored on a 256×256 grid and the path data sits
+// edge-to-edge. Rendered raw inside MapKit's marker balloon they crowd the
+// pill outline and look oversized vs Apple's native glyphs, which sit with
+// generous breathing room. We expand the viewBox so the icon occupies
+// ~58% of the SVG canvas (≈ 23 px of the 40 px frame), matching the inset
+// of Apple Maps' system glyphs.
+const ICON_GRID = 256;
+const GLYPH_SCALE = 0.58;
+const VIEWBOX_SIZE = Math.round(ICON_GRID / GLYPH_SCALE);
+const VIEWBOX_OFFSET = Math.round((VIEWBOX_SIZE - ICON_GRID) / 2);
+const SVG_VIEWBOX = `${-VIEWBOX_OFFSET} ${-VIEWBOX_OFFSET} ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`;
 
 function buildGlyphSvg(pathD: string): string {
   // Inline SVG with white fill on a transparent background. Apple's docs
