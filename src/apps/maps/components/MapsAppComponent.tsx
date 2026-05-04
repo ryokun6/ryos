@@ -780,7 +780,7 @@ export function MapsAppComponent({
       place.latitude,
       place.longitude
     );
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.location.assign(url);
   }, []);
 
   const handleToggleFavorite = useCallback(
