@@ -91,7 +91,7 @@ export function ToolInvocationMessage({
 }: ToolInvocationMessageProps) {
   const { t } = useTranslation();
   const toolName = getToolName(part);
-  const { state, input, output, errorText } = part;
+  const { state, input, output } = part;
 
   // Friendly display strings
   let displayCallMessage: string | null = null;
@@ -324,8 +324,10 @@ export function ToolInvocationMessage({
         truncated?: boolean;
         error?: string;
       };
-      if (o.success === false && typeof o.error === "string") {
-        displayResultMessage = o.error;
+      if (o.success === false) {
+        displayResultMessage = t("apps.chats.toolCalls.toolAttempted", {
+          toolName: formatToolName(toolName),
+        });
       } else if (o.success === true && Array.isArray(o.runs)) {
         const more = o.truncated
           ? ` ${t("apps.chats.toolCalls.listCursorCloudAgentRuns.truncatedHint")}`
@@ -720,11 +722,6 @@ export function ToolInvocationMessage({
     }
   }
 
-  // Handle error states
-  if (state === "output-error" && errorText) {
-    displayResultMessage = t("apps.chats.toolCalls.error", { errorText });
-  }
-
   // Async Cursor Cloud agent — server streams events to Redis; UI polls /api/ai/cursor-run-status
   if (
     state === "output-available" &&
@@ -803,6 +800,29 @@ export function ToolInvocationMessage({
           {results.length > 0 && (
             <MapsSearchPlacesCard query={query} results={results} />
           )}
+        </div>
+      );
+    }
+    if (out && out.success === false) {
+      return (
+        <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
+          <ToolInvocationStatusRow
+            icon={
+              <Check
+                className="h-3 w-3 shrink-0 text-neutral-400"
+                weight="bold"
+                aria-hidden
+              />
+            }
+            className="text-neutral-500"
+            align="start"
+          >
+            <span>
+              {t("apps.chats.toolCalls.toolAttempted", {
+                toolName: formatToolName(toolName),
+              })}
+            </span>
+          </ToolInvocationStatusRow>
         </div>
       );
     }
@@ -915,8 +935,9 @@ export function ToolInvocationMessage({
   }
 
   // Default rendering for other tools
-  const fallbackErrorText =
-    errorText || t("apps.chats.toolCalls.toolExecutionFailed");
+  const toolAttemptedLabel = t("apps.chats.toolCalls.toolAttempted", {
+    toolName: formatToolName(toolName),
+  });
 
   return (
     <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
@@ -959,13 +980,15 @@ export function ToolInvocationMessage({
       {state === "output-error" && (
         <ToolInvocationStatusRow
           icon={
-            <span className="text-[10px] leading-none" aria-hidden="true">
-              ⚠️
-            </span>
+            <Check
+              className="h-3 w-3 shrink-0 text-neutral-400"
+              weight="bold"
+              aria-hidden
+            />
           }
-          className="text-red-600"
+          className="text-neutral-500"
         >
-          <span className="text-xs">{fallbackErrorText}</span>
+          <span>{toolAttemptedLabel}</span>
         </ToolInvocationStatusRow>
       )}
     </div>

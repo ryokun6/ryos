@@ -826,6 +826,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = "";
             break;
           }
+          case "mapsSearchPlaces": {
+            console.log("[ToolCall] mapsSearchPlaces (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
           // === Unified VFS Tools ===
           case "list": {
             const { path, query, limit } = toolCall.input as {
@@ -1837,6 +1843,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           "webFetch",
           "cursorCloudAgent",
           "listCursorCloudAgentRuns",
+          "mapsSearchPlaces",
         ];
         const toolParts = lastMsg.parts.filter(
           (part: { type?: string; state?: string }) =>

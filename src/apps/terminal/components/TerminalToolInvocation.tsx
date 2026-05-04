@@ -311,7 +311,9 @@ export function TerminalToolInvocation({
 
   // Handle error states
   if (state === "output-error") {
-    displayResultMessage = t("apps.chats.toolCalls.toolExecutionFailed");
+    displayResultMessage = t("apps.chats.toolCalls.toolAttempted", {
+      toolName: formatToolName(toolName),
+    });
   }
 
   // Fallback for loading states if no specific message was set
@@ -336,8 +338,12 @@ export function TerminalToolInvocation({
         </>
       ) : state === "output-error" ? (
         <>
-          <span className="text-red-400">⚠️</span>
-          <span className="italic text-red-400">{displayResultMessage}</span>
+          <Check
+            className="h-3 w-3 shrink-0 text-neutral-500 flex-shrink-0"
+            weight="bold"
+            aria-hidden
+          />
+          <span className="italic text-neutral-500">{displayResultMessage}</span>
         </>
       ) : displayCallMessage ? (
         <>

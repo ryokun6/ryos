@@ -1111,6 +1111,7 @@
         "textNotFound": "텍스트를 찾을 수 없음",
         "toggledIpodPlayback": "iPod 재생 전환됨",
         "toolExecutionFailed": "도구 실행 실패",
+        "toolAttempted": "{{toolName}} 시도됨",
         "tv": {
           "addedVideo": "{{channel}}에 {{title}}을(를) 추가했습니다",
           "addingVideo": "채널에 동영상 추가 중…",

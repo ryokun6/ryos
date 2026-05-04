@@ -1111,6 +1111,7 @@
         "textNotFound": "找不到文字",
         "toggledIpodPlayback": "切換 iPod 播放",
         "toolExecutionFailed": "工具執行失敗",
+        "toolAttempted": "已嘗試 {{toolName}}",
         "tv": {
           "addedVideo": "已將 {{title}} 新增至 {{channel}}",
           "addingVideo": "正在將影片新增至頻道…",

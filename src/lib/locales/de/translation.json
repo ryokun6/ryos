@@ -1111,6 +1111,7 @@
         "textNotFound": "Text nicht gefunden",
         "toggledIpodPlayback": "iPod-Wiedergabe umgeschaltet",
         "toolExecutionFailed": "Tool-Ausführung fehlgeschlagen",
+        "toolAttempted": "{{toolName}} versucht",
         "tv": {
           "addedVideo": "{{title}} zu {{channel}} hinzugefügt",
           "addingVideo": "Video wird zum Kanal hinzugefügt…",
