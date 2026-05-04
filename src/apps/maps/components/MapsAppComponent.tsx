@@ -1262,13 +1262,13 @@ export function MapsAppComponent({
                   isMacOSTheme ? "border-black/30" : "border-black/40"
                 )}
               >
-                {isSearching && (
-                  <div className="px-3 py-2 text-[11px] text-black/60">
-                    {t("apps.maps.searching", {
-                      defaultValue: "Searching…",
-                    })}
-                  </div>
-                )}
+                {/*
+                 * No "Searching…" row: while a search is in flight we
+                 * keep showing the previous results (if any) so the
+                 * dropdown doesn't flicker between "Searching…" and the
+                 * real results. If there are no prior results yet, the
+                 * dropdown is empty until the first hit lands.
+                 */}
                 {!isSearching && searchError && (
                   <div className="px-3 py-2 text-[11px] text-red-700">
                     {searchError}
@@ -1281,7 +1281,7 @@ export function MapsAppComponent({
                     })}
                   </div>
                 )}
-                {!isSearching && searchResults.length > 0 && (
+                {searchResults.length > 0 && (
                   <ul className="divide-y divide-black/10">
                     {searchResults.map((result) => {
                       const isSelected = selectedResultId === result.id;
