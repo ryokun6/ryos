@@ -704,28 +704,28 @@ export function MapsAppComponent({
     setSelectedResultId(null);
   }, [selectedResultId, isPlaceSaved]);
 
-  // Re-drop the pin and re-center on the persisted `selectedPlace` once the
-  // map becomes ready. Guarded so it only fires once per mount: subsequent
-  // user-driven selections go through `dropPinAt` directly.
+  // On first map ready, frame the viewport so the user immediately sees
+  // their context. Priority order:
+  //   1. Persisted `selectedPlace` — re-drop / re-center on the open card
+  //   2. Any saved Home / Work / Favorites — fit them all into view so the
+  //      pins are visible instead of being stranded off-screen at the SF
+  //      default region the map booted with
+  //   3. Otherwise, leave the map at the SF default
+  // Guarded so it only fires once per mount: subsequent user-driven
+  // selections go through `dropPinAt` / `focusSavedPlace` directly.
   const hasHydratedSelectedRef = useRef(false);
   useEffect(() => {
     if (hasHydratedSelectedRef.current) return;
     if (status !== "ready") return;
-    if (!mapInstanceRef.current) return;
-    if (!selectedPlace) {
-      // Mark as hydrated so we don't accidentally re-drop a pin if the user
-      // closes the card before the map finishes loading and then re-opens it.
+    const mk = getMapKit();
+    const map = mapInstanceRef.current;
+    if (!mk || !map) return;
+
+    // Centering on the persisted selected place wins over fitting all
+    // saved places — the user explicitly had this card open last session.
+    if (selectedPlace) {
       hasHydratedSelectedRef.current = true;
-      return;
-    }
-    hasHydratedSelectedRef.current = true;
-    if (isPlaceSaved(selectedPlace.id)) {
-      // The saved-annotations sync effect already places (or will place) a
-      // permanent pin for this place — just center the map so the pin and
-      // info card line up without stacking a duplicate red marker on top.
-      const mk = getMapKit();
-      const map = mapInstanceRef.current;
-      if (mk && map) {
+      if (isPlaceSaved(selectedPlace.id)) {
         const coord = new mk.Coordinate(
           selectedPlace.latitude,
           selectedPlace.longitude
@@ -733,11 +733,62 @@ export function MapsAppComponent({
         const span = new mk.CoordinateSpan(0.05, 0.05);
         const region = new mk.CoordinateRegion(coord, span);
         map.setRegionAnimated(region, true);
+      } else {
+        dropPinAt(selectedPlace);
       }
       return;
     }
-    dropPinAt(selectedPlace);
-  }, [status, selectedPlace, dropPinAt, isPlaceSaved]);
+
+    // No selected place — fit the viewport to all saved annotations so the
+    // pins land inside the visible region instead of staying parked off the
+    // SF default. Single-place case zooms to a neighborhood span; multi-
+    // place case computes a bounding region with 30% padding so the pins
+    // don't touch the viewport edges.
+    //
+    // We deliberately do NOT flip `hasHydratedSelectedRef` when there are
+    // no saved places yet — the persist hydration is async, so an empty
+    // entries list on the first run could just mean "store still
+    // hydrating". Leaving the flag false lets a subsequent re-run (after
+    // hydration adds Home/Work/Favorites) actually frame the viewport.
+    const savedCoords = savedPlaceEntries.map((e) => e.place);
+    if (savedCoords.length === 0) {
+      return;
+    }
+    hasHydratedSelectedRef.current = true;
+
+    if (savedCoords.length === 1) {
+      const only = savedCoords[0];
+      const coord = new mk.Coordinate(only.latitude, only.longitude);
+      const span = new mk.CoordinateSpan(0.05, 0.05);
+      const region = new mk.CoordinateRegion(coord, span);
+      map.setRegionAnimated(region, true);
+      return;
+    }
+
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+    for (const place of savedCoords) {
+      if (place.latitude < minLat) minLat = place.latitude;
+      if (place.latitude > maxLat) maxLat = place.latitude;
+      if (place.longitude < minLng) minLng = place.longitude;
+      if (place.longitude > maxLng) maxLng = place.longitude;
+    }
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    // Pad the span so the outermost pins sit comfortably inside the view
+    // and clamp to a sensible minimum so two pins right next to each other
+    // don't zoom in to street level.
+    const PAD = 1.3;
+    const MIN_SPAN = 0.05;
+    const latDelta = Math.max((maxLat - minLat) * PAD, MIN_SPAN);
+    const lngDelta = Math.max((maxLng - minLng) * PAD, MIN_SPAN);
+    const center = new mk.Coordinate(centerLat, centerLng);
+    const span = new mk.CoordinateSpan(latDelta, lngDelta);
+    const region = new mk.CoordinateRegion(center, span);
+    map.setRegionAnimated(region, true);
+  }, [status, selectedPlace, savedPlaceEntries, dropPinAt, isPlaceSaved]);
 
   const handleLocateMe = useCallback(() => {
     const map = mapInstanceRef.current;
