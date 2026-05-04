@@ -23,7 +23,7 @@ const SVG_SIZE = 40;
 // balloon. Tuning the scale up to ~0.85 puts the glyph at roughly the
 // same density as Apple Maps' built-in marker glyphs.
 const ICON_GRID = 256;
-const GLYPH_SCALE = 0.85;
+const GLYPH_SCALE = 0.7;
 const VIEWBOX_SIZE = Math.round(ICON_GRID / GLYPH_SCALE);
 const VIEWBOX_OFFSET = Math.round((VIEWBOX_SIZE - ICON_GRID) / 2);
 const SVG_VIEWBOX = `${-VIEWBOX_OFFSET} ${-VIEWBOX_OFFSET} ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`;
