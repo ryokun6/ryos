@@ -157,7 +157,6 @@ export async function executeMapsSearchPlaces(
       ...(effectiveNear
         ? { searchLocation: effectiveNear, userLocation: effectiveNear }
         : {}),
-      ...(input.region ? { searchRegion: input.region } : {}),
       ...(input.countries && input.countries.length > 0
         ? { limitToCountries: input.countries.map((c) => c.toUpperCase()) }
         : {}),

@@ -948,6 +948,11 @@ export const documentsControlSchema = z
 // Maps Search Places Schema
 // ============================================================================
 
+// Apple Maps Server API rejects requests that include both a point bias
+// (`searchLocation`) and a region bias (`searchRegion`) at the same time. To
+// avoid the surface area for that conflict, the public tool only accepts a
+// point anchor (`near`). The server still falls back to the request's
+// IP-derived coordinates when `near` is omitted.
 const mapsCoordinateSchema = z.object({
   latitude: z
     .number()
@@ -961,13 +966,6 @@ const mapsCoordinateSchema = z.object({
     .describe("Longitude in decimal degrees, between -180 and 180."),
 });
 
-const mapsRegionSchema = z.object({
-  northLatitude: z.number().min(-90).max(90),
-  eastLongitude: z.number().min(-180).max(180),
-  southLatitude: z.number().min(-90).max(90),
-  westLongitude: z.number().min(-180).max(180),
-});
-
 export const mapsSearchPlacesSchema = z.object({
   query: z
     .string()
@@ -979,12 +977,7 @@ export const mapsSearchPlacesSchema = z.object({
   near: mapsCoordinateSchema
     .optional()
     .describe(
-      "Optional approximate center used to bias the search. Pass the user's location or the visible map center when known."
-    ),
-  region: mapsRegionSchema
-    .optional()
-    .describe(
-      "Optional bounding region (NE + SW corners) used to constrain or bias results. Prefer 'near' for simple proximity ranking."
+      "Optional approximate center used to bias the search. Pass the user's location or the visible map center when known. When omitted, the server falls back to the request's IP-derived coordinates."
     ),
   countries: z
     .array(z.string().regex(/^[A-Za-z]{2}$/, { message: "Use ISO 3166-1 alpha-2 country codes" }))

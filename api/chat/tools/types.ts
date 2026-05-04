@@ -658,17 +658,15 @@ export interface MemoryDeleteOutput {
 export interface MapsSearchPlacesInput {
   /** Free-form search query (e.g. "best ramen near Shibuya"). */
   query: string;
-  /** Optional approximate center used to bias results. */
+  /**
+   * Optional approximate center used to bias results. Apple's Maps Server API
+   * does not allow combining a point bias with a bounding region, so the tool
+   * exposes only the point variant and falls back to the request's IP-derived
+   * coordinates when this is omitted.
+   */
   near?: {
     latitude: number;
     longitude: number;
-  };
-  /** Optional bounding region used to constrain / bias results. */
-  region?: {
-    northLatitude: number;
-    eastLongitude: number;
-    southLatitude: number;
-    westLongitude: number;
   };
   /** Optional ISO 3166-1 alpha-2 country codes to constrain results. */
   countries?: string[];
