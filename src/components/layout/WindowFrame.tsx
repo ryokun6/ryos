@@ -17,6 +17,10 @@ import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
+import {
+  WindowFrameDrawerContext,
+  type WindowFrameDrawerContextValue,
+} from "@/components/shared/WindowFrameDrawerContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { calculateExposeGrid, getExposeTransform } from "./exposeUtils";
 import { useTranslation } from "react-i18next";
@@ -980,6 +984,40 @@ export function WindowFrame({
     };
   }, [snapZone, computeWindowInsets]);
 
+  // Context exposed to the optional drawer slot so it can read window
+  // bounds / constraints and request a reposition/resize when its preferred
+  // expansion side would not fit the viewport.
+  const drawerContextValue = useMemo<WindowFrameDrawerContextValue>(
+    () => ({
+      position: windowPosition,
+      size: windowSize,
+      constraints: mergedConstraints,
+      isInteracting: isDragging || !!resizeType,
+      computeInsets: computeWindowInsets,
+      applyWindowFrame: (next) => {
+        const nextPosition = { x: next.x, y: next.y };
+        const nextSize = { width: next.width, height: next.height };
+        setWindowPosition(nextPosition);
+        setWindowSize(nextSize);
+        if (instanceId) {
+          updateInstanceWindowState(instanceId, nextPosition, nextSize);
+        }
+      },
+    }),
+    [
+      windowPosition,
+      windowSize,
+      mergedConstraints,
+      isDragging,
+      resizeType,
+      computeWindowInsets,
+      setWindowPosition,
+      setWindowSize,
+      instanceId,
+      updateInstanceWindowState,
+    ]
+  );
+
   // Render snap zone indicator as a portal
   const snapZoneIndicator = snapZone && snapZoneStyle && isForeground && createPortal(
     <motion.div
@@ -1098,7 +1136,9 @@ export function WindowFrame({
         {/* Drawer slot — rendered first so the window paints over it
             when collapsed. The drawer itself is responsible for sliding
             out from behind the right edge via transform. */}
-        {drawer}
+        <WindowFrameDrawerContext.Provider value={drawerContextValue}>
+          {drawer}
+        </WindowFrameDrawerContext.Provider>
 
         {/* Resize handles - positioned outside main content */}
         <div
