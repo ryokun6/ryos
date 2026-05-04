@@ -117,8 +117,20 @@ export function formatCursorRunCompletionTelegramMessage(input: {
   status?: string;
   summary?: string;
   error?: string;
+  /** Cursor Cloud agent dashboard (https://cursor.com/agents/…), plain URL only */
+  agentDashboardUrl?: string;
+  /** GitHub PR when available */
+  prUrl?: string;
 }): string {
-  const { ok, agentTitle, status, summary, error } = input;
+  const {
+    ok,
+    agentTitle,
+    status,
+    summary,
+    error,
+    agentDashboardUrl,
+    prUrl,
+  } = input;
   const titleForSuffix = agentTitle?.trim()
     ? simplifyTelegramCitationDisplay(agentTitle)
     : "";
@@ -144,7 +156,14 @@ export function formatCursorRunCompletionTelegramMessage(input: {
       ? `${bodyPlain.slice(0, TELEGRAM_NOTIFY_MAX_BODY_CHARS)}\n…(truncated)`
       : bodyPlain;
 
-  return `${headline}\n\n${truncated}`;
+  const dash = agentDashboardUrl?.trim();
+  const pr = prUrl?.trim();
+  const linkLines: string[] = [];
+  if (dash) linkLines.push(`Agent: ${dash}`);
+  if (pr) linkLines.push(`PR: ${pr}`);
+  const linkBlock = linkLines.length > 0 ? `\n\n${linkLines.join("\n")}` : "";
+
+  return `${headline}\n\n${truncated}${linkBlock}`;
 }
 
 async function notifyTelegramRunComplete(
@@ -568,6 +587,7 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
   } = input;
 
   void (async () => {
+    let prUrlMaybe: string | undefined = inheritedPrUrl;
     try {
       for await (const ev of run.stream()) {
         await safePushEvent(redis, eventsKey, { ts: Date.now(), ev });
@@ -583,7 +603,8 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
         logError("[cursorCloudAgent] run.wait failed", waitErr);
       }
 
-      const prUrl = pickPrUrlFromRunGit(run.git) ?? inheritedPrUrl;
+      prUrlMaybe = pickPrUrlFromRunGit(run.git) ?? inheritedPrUrl;
+      const prUrl = prUrlMaybe;
 
       await safePushEvent(redis, eventsKey, {
         ts: Date.now(),
@@ -623,6 +644,8 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
           agentTitle,
           status,
           summary,
+          agentDashboardUrl: cursorCloudAgentDashboardUrl(agentId),
+          ...(prUrl ? { prUrl } : {}),
         }),
         logError
       );
@@ -658,6 +681,8 @@ function spawnBackgroundCursorRun(input: BackgroundCursorRunInput): void {
           agentTitle,
           status: "error",
           error: errorText,
+          agentDashboardUrl: cursorCloudAgentDashboardUrl(agentId),
+          ...(prUrlMaybe ? { prUrl: prUrlMaybe } : {}),
         }),
         logError
       );
