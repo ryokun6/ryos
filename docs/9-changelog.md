@@ -10,6 +10,7 @@ A summary of changes and updates to ryOS, organized by month.
 - Add **Cursor agents** admin tab backed by Redis run metadata: dashboard server card, panel headers, agent counts, relaxed admin rate limits, sidebar/View menu reordering, and improved follow-up UX (Space-key fix, polished submit button).
 - Add **Aquarium** dashboard widget alongside the existing 8 widgets.
 - TV polish: channel-bug logo overlay (visible in fullscreen), occasional idle bursts (spin / watermark / shimmer with glossy overlay blend), animations hard-reset on channel switch, drawer open/close SFX, square channel-strip buttons, channel logo tray strip, fullscreen control parity with Karaoke (dismiss + CH± pills, viewport-scaled captions, marquee fade on pause/overflow), CRT static skipped while fullscreen, and synced reset-channel deletes.
+- Docs: **Maps** — add app documentation (MapKit search, pins, Home/Work/Favorites); **Directions** hands off to Apple Maps in a **new tab** (ryOS tab unchanged). **`mapsSearchPlaces`** in Chats opens a chosen place **inside ryOS Maps** without leaving the chat page; in-map turn-by-turn routing is not implemented yet.
 
 <details>
 <summary>Minor changes (8)</summary>

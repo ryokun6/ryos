@@ -29,6 +29,12 @@ export const helpItems = [
       "Click the Locate Me button to recenter the map on your current location",
   },
   {
+    icon: "🚗",
+    title: "Directions",
+    description:
+      "From a place card, open driving directions in Apple Maps — opens in a new tab so ryOS stays open (in-map routing is not available yet)",
+  },
+  {
     icon: "🛰️",
     title: "Map Types",
     description:
