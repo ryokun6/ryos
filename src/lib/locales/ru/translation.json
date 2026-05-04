@@ -1111,6 +1111,7 @@
         "textNotFound": "Текст не найден",
         "toggledIpodPlayback": "Переключено воспроизведение iPod",
         "toolExecutionFailed": "Ошибка выполнения инструмента",
+        "toolAttempted": "{{toolName}} — попытка выполнена",
         "tv": {
           "addedVideo": "Добавлено «{{title}}» в «{{channel}}»",
           "addingVideo": "Добавление видео в канал…",

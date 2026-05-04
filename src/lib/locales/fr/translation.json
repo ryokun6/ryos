@@ -1111,6 +1111,7 @@
         "textNotFound": "Texte introuvable",
         "toggledIpodPlayback": "Lecture iPod basculée",
         "toolExecutionFailed": "Échec de l'exécution de l'outil",
+        "toolAttempted": "{{toolName}} tenté",
         "tv": {
           "addedVideo": "Ajouté {{title}} à {{channel}}",
           "addingVideo": "Ajout de la vidéo à la chaîne…",

@@ -978,6 +978,7 @@
         "generating": "Generating…",
         "preparingHtmlPreview": "Preparing HTML preview...",
         "toolExecutionFailed": "Tool execution failed",
+        "toolAttempted": "{{toolName}} attempted",
         "error": "Error: {{errorText}}",
         "changingSettings": "Changing settings…",
         "settingsUpdated": "Settings updated",

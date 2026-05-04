@@ -815,8 +815,7 @@ export async function executeCursorCloudAgent(
       agentId,
       agentDashboardUrl: cursorCloudAgentDashboardUrl(agentId),
       ...(agentTitle ? { agentTitle } : {}),
-      message:
-        "Started. Share the Cursor agent link with the user (agentDashboardUrl) — not the run id — for where to follow progress.",
+      message: "Started — live progress streams in the chat card below.",
       pollHint:
         "Poll GET /api/ai/cursor-run-status?runId=… for events until a terminal entry appears.",
     };
@@ -1042,8 +1041,7 @@ export async function sendCursorAgentFollowup(input: {
     agentId,
     agentDashboardUrl: cursorCloudAgentDashboardUrl(agentId),
     previousRunId,
-    message:
-      "Follow-up started. Tell the user to use the same Cursor agent link (agentDashboardUrl) to follow this turn.",
+    message: "Follow-up sent — live progress streams in the chat card below.",
   };
 }
 
