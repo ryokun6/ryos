@@ -93,7 +93,7 @@ export function MapsPlaceCard({
             defaultValue: "Selected place",
           })}
           className={cn(
-            "absolute select-none",
+            "pointer-events-auto absolute select-none",
             // Hug the map edges — 6 px on every side. The earlier 8/12 px
             // insets left a visible band of map peeking around the card; a
             // smaller, uniform gutter feels closer to the system Maps app

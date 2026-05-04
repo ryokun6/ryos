@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapPin } from "@phosphor-icons/react";
+import { MapPin, NavigationArrow } from "@phosphor-icons/react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -285,9 +285,10 @@ export function MapsAppComponent({
 
     const map = new mk.Map(mapContainerRef.current, {
       showsZoomControl: true,
-      showsCompass: "adaptive",
+      showsCompass: "hidden",
       showsScale: "adaptive",
-      showsUserLocationControl: true,
+      showsMapTypeControl: false,
+      showsUserLocationControl: false,
       isRotationEnabled: true,
       // Show all points of interest by default. `null` is MapKit's "no
       // filter" sentinel which means every POI category is rendered.
@@ -1045,6 +1046,8 @@ export function MapsAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="maps"
+        material="notitlebar"
+        disableTitlebarAutoHide
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
@@ -1061,112 +1064,106 @@ export function MapsAppComponent({
           />
         }
       >
-        <div className="flex flex-1 min-w-0 flex-col h-full w-full bg-os-window-bg font-os-ui">
-          {/* Search bar */}
+        <div className="relative h-full w-full min-h-0 flex-1 overflow-hidden bg-transparent font-os-ui">
+          <div
+            ref={mapContainerRef}
+            className="absolute inset-0 bg-[#e5e3df]"
+            role="application"
+            aria-label={t("apps.maps.mapAriaLabel", {
+              defaultValue: "Map",
+            })}
+          />
+
+          {overlayMessage && (
+            <div
+              className={cn(
+                "absolute inset-0 z-[5] flex items-center justify-center px-6 text-center",
+                "bg-os-window-bg/90 backdrop-blur-sm",
+                "font-os-ui text-[12px] text-black/70"
+              )}
+            >
+              <div className="max-w-[360px] space-y-2">
+                <div className="text-[14px] font-semibold text-black">
+                  {t("apps.maps.title", { defaultValue: "Maps" })}
+                </div>
+                <div>{overlayMessage}</div>
+                {!hasToken && (
+                  <div className="text-[11px] text-black/60">
+                    {t("apps.maps.status.tokenHint", {
+                      defaultValue:
+                        "The server signs short-lived MapKit tokens automatically once credentials are configured.",
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Search + results — immersive chrome over the map (Karaoke-style notitlebar window) */}
           <div
             className={cn(
-              "flex items-center gap-2 py-1.5 pl-1.5 pr-1.5 border-b",
-              isMacOSTheme
-                ? "border-black/30 bg-[linear-gradient(to_bottom,#f3f3f3,#d6d6d6)]"
-                : "border-black/40 bg-os-window-bg"
+              "pointer-events-none absolute inset-x-0 top-0 z-20 flex max-h-[min(85%,100%)] min-h-0 flex-col gap-1.5 px-1.5 pb-1.5",
+              // Clearance for macOS notitlebar auto-hide strip (h-6) + 4px breathing room.
+              isMacOSTheme ? "pt-7.5" : "pt-2.5"
             )}
           >
-            <SearchInput
-              value={searchQuery}
-              onChange={(value) => {
-                setSearchQuery(value);
-                if (!value) {
-                  setSearchResults([]);
-                  setSearchError(null);
-                  setIsShowingResults(false);
-                }
-              }}
-              onKeyDown={handleSearchKeyDown}
-              placeholder={t("apps.maps.searchPlaceholder", {
-                defaultValue: "Search Maps",
-              })}
-              ariaLabel={t("apps.maps.searchPlaceholder", {
-                defaultValue: "Search Maps",
-              })}
-              className="flex-1 min-w-0"
-            />
-            <Button
-              type="button"
-              variant={isMacOSTheme ? "aqua" : "retro"}
-              size="sm"
-              onClick={() => setIsPlacesDrawerOpen((v) => !v)}
-              aria-pressed={isPlacesDrawerOpen}
-              title={t("apps.maps.places.title", { defaultValue: "Places" })}
-              className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
-            >
-              <MapPin size={12} weight="fill" />
-            </Button>
-          </div>
-
-          {/* Map area + results overlay */}
-          <div className="relative flex-1 min-h-0 overflow-hidden">
-            <div
-              ref={mapContainerRef}
-              className="absolute inset-0 bg-[#e5e3df]"
-              role="application"
-              aria-label={t("apps.maps.mapAriaLabel", {
-                defaultValue: "Map",
-              })}
-            />
-
-            {overlayMessage && (
-              <div
-                className={cn(
-                  "absolute inset-0 flex items-center justify-center px-6 text-center",
-                  "bg-os-window-bg/90 backdrop-blur-sm",
-                  "font-os-ui text-[12px] text-black/70"
-                )}
+            <div className="pointer-events-auto flex items-center gap-2 bg-transparent">
+              <SearchInput
+                value={searchQuery}
+                onChange={(value) => {
+                  setSearchQuery(value);
+                  if (!value) {
+                    setSearchResults([]);
+                    setSearchError(null);
+                    setIsShowingResults(false);
+                  }
+                }}
+                onKeyDown={handleSearchKeyDown}
+                placeholder={t("apps.maps.searchPlaceholder", {
+                  defaultValue: "Search Maps",
+                })}
+                ariaLabel={t("apps.maps.searchPlaceholder", {
+                  defaultValue: "Search Maps",
+                })}
+                className="min-w-0 flex-1"
+              />
+              <Button
+                type="button"
+                variant={isMacOSTheme ? "aqua" : "retro"}
+                size="sm"
+                onClick={handleLocateMe}
+                disabled={!canUseMap}
+                title={t("apps.maps.menu.locateMe", {
+                  defaultValue: "Locate Me",
+                })}
+                aria-label={t("apps.maps.menu.locateMe", {
+                  defaultValue: "Locate Me",
+                })}
+                className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
               >
-                <div className="max-w-[360px] space-y-2">
-                  <div className="text-[14px] font-semibold text-black">
-                    {t("apps.maps.title", { defaultValue: "Maps" })}
-                  </div>
-                  <div>{overlayMessage}</div>
-                  {!hasToken && (
-                    <div className="text-[11px] text-black/60">
-                      {t("apps.maps.status.tokenHint", {
-                        defaultValue:
-                          "The server signs short-lived MapKit tokens automatically once credentials are configured.",
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <MapsPlaceCard
-              place={selectedPlace}
-              isFavorite={
-                selectedPlace ? isPlaceFavorite(selectedPlace.id) : false
-              }
-              isHome={
-                !!selectedPlace &&
-                !!homePlace &&
-                homePlace.id === selectedPlace.id
-              }
-              isWork={
-                !!selectedPlace &&
-                !!workPlace &&
-                workPlace.id === selectedPlace.id
-              }
-              onSetHome={(p) => setHomePlace(p)}
-              onSetWork={(p) => setWorkPlace(p)}
-              onToggleFavorite={handleToggleFavorite}
-              onClose={handleClosePlaceCard}
-            />
+                <NavigationArrow size={12} weight="fill" />
+              </Button>
+              <Button
+                type="button"
+                variant={isMacOSTheme ? "aqua" : "retro"}
+                size="sm"
+                onClick={() => setIsPlacesDrawerOpen((v) => !v)}
+                aria-pressed={isPlacesDrawerOpen}
+                title={t("apps.maps.places.title", { defaultValue: "Places" })}
+                className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
+              >
+                <MapPin size={12} weight="fill" />
+              </Button>
+            </div>
 
             {isShowingResults && (
               <div
                 className={cn(
-                  "absolute inset-x-0 top-0 max-h-[60%] overflow-y-auto",
-                  "border-b shadow-md",
-                  "bg-white/95 backdrop-blur-sm",
-                  isMacOSTheme ? "border-black/30" : "border-black/40"
+                  "pointer-events-auto min-h-0 overflow-y-auto rounded-[0.4rem] border shadow-md",
+                  "max-h-[min(60vh,28rem)]",
+                  isMacOSTheme
+                    ? "maps-place-card-aqua border-black/20 text-black"
+                    : "border-black/40 bg-white/95 backdrop-blur-sm"
                 )}
               >
                 {/*
@@ -1232,6 +1229,29 @@ export function MapsAppComponent({
                 )}
               </div>
             )}
+          </div>
+
+          <div className="pointer-events-none absolute inset-0 z-10">
+            <MapsPlaceCard
+              place={selectedPlace}
+              isFavorite={
+                selectedPlace ? isPlaceFavorite(selectedPlace.id) : false
+              }
+              isHome={
+                !!selectedPlace &&
+                !!homePlace &&
+                homePlace.id === selectedPlace.id
+              }
+              isWork={
+                !!selectedPlace &&
+                !!workPlace &&
+                workPlace.id === selectedPlace.id
+              }
+              onSetHome={(p) => setHomePlace(p)}
+              onSetWork={(p) => setWorkPlace(p)}
+              onToggleFavorite={handleToggleFavorite}
+              onClose={handleClosePlaceCard}
+            />
           </div>
         </div>
       </WindowFrame>
