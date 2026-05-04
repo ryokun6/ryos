@@ -21,6 +21,12 @@ import {
   homeMarkerAnnotationStyle,
   workMarkerAnnotationStyle,
 } from "../utils/savedPlaceVisuals";
+import {
+  RYOS_MAP_PLACES_CLUSTER_ID,
+  clusteringIdentifierForRegion,
+  formatClusterMarkerTitle,
+  withMapPlaceClustering,
+} from "../utils/mapMarkerClustering";
 
 // Minimal MapKit JS shape we touch from this component. We only declare the
 // fields we use so we don't need the full @types/apple-mapkit-js-browser
@@ -51,6 +57,13 @@ interface MapKitSearchResponse {
   places?: MapKitPlace[];
 }
 
+interface MapKitClusterAnnotation {
+  clusteringIdentifier?: string;
+  memberAnnotations?: unknown[];
+  title?: string;
+  subtitle?: string;
+}
+
 interface MapKitMapInstance {
   showsUserLocation: boolean;
   tracksUserLocation: boolean;
@@ -63,6 +76,17 @@ interface MapKitMapInstance {
   ) => void;
   addAnnotation: (annotation: unknown) => void;
   removeAnnotation: (annotation: unknown) => void;
+  addEventListener?: (
+    type: string,
+    listener: () => void
+  ) => void;
+  removeEventListener?: (
+    type: string,
+    listener: () => void
+  ) => void;
+  annotationForCluster?: (
+    cluster: MapKitClusterAnnotation
+  ) => MapKitClusterAnnotation | void;
   destroy: () => void;
 }
 
@@ -89,6 +113,7 @@ interface MapKitAnnotationEvent {
 interface MapKitMarkerAnnotation {
   coordinate: MapKitCoordinate;
   data?: unknown;
+  clusteringIdentifier?: string | null;
   /** Writable. When true MapKit shows the annotation's callout. */
   selected?: boolean;
   addEventListener?: (
@@ -265,6 +290,8 @@ export function MapsAppComponent({
   const savedAnnotationsRef = useRef<
     Map<string, { annotation: MapKitMarkerAnnotation; place: SavedPlace }>
   >(new Map());
+  const mapMarkersClusteredRef = useRef(false);
+  const regionChangeEndListenerRef = useRef<(() => void) | null>(null);
   // Bump every time the underlying MapKit instance is (re)created so any
   // effect that wants to act on `mapInstanceRef.current` can subscribe via
   // a real React dep — refs alone don't trigger re-renders, which made
@@ -296,6 +323,42 @@ export function MapsAppComponent({
     (id: string) => favoritePlaces.some((p) => p.id === id),
     [favoritePlaces]
   );
+
+  const applyClusteringToMapMarkers = useCallback((clusteringId: string | null) => {
+    const apply = (annotation: MapKitMarkerAnnotation | null) => {
+      if (!annotation) return;
+      try {
+        annotation.clusteringIdentifier = clusteringId;
+      } catch {
+        // ignore — MapKit may reject updates on detached annotations
+      }
+    };
+    apply(annotationRef.current);
+    for (const { annotation } of savedAnnotationsRef.current.values()) {
+      apply(annotation);
+    }
+  }, []);
+
+  const syncMapMarkerClustering = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const clusteringId = clusteringIdentifierForRegion(map.region);
+    const shouldCluster = clusteringId !== null;
+    if (shouldCluster === mapMarkersClusteredRef.current) return;
+    mapMarkersClusteredRef.current = shouldCluster;
+    applyClusteringToMapMarkers(clusteringId);
+  }, [applyClusteringToMapMarkers]);
+
+  const syncMapMarkerClusteringRef = useRef(syncMapMarkerClustering);
+  useEffect(() => {
+    syncMapMarkerClusteringRef.current = syncMapMarkerClustering;
+  }, [syncMapMarkerClustering]);
+
+  const clusteringIdForCurrentMapRegion = useCallback((): string | null => {
+    const map = mapInstanceRef.current;
+    if (!map) return null;
+    return clusteringIdentifierForRegion(map.region);
+  }, []);
 
   // Initialize the map instance once mapkit is ready and the window is open.
   useEffect(() => {
@@ -332,6 +395,21 @@ export function MapsAppComponent({
     map.mapType = mapTypeToMapKit(mapType);
     map.showsUserLocation = false;
     map.tracksUserLocation = false;
+    map.annotationForCluster = (cluster) => {
+      if (cluster.clusteringIdentifier !== RYOS_MAP_PLACES_CLUSTER_ID) {
+        return;
+      }
+      cluster.title = formatClusterMarkerTitle(cluster.memberAnnotations);
+      cluster.subtitle = "";
+      return cluster;
+    };
+    const onRegionChangeEnd = () => {
+      syncMapMarkerClusteringRef.current();
+    };
+    regionChangeEndListenerRef.current = onRegionChangeEnd;
+    map.addEventListener?.("region-change-end", onRegionChangeEnd);
+    mapMarkersClusteredRef.current =
+      clusteringIdentifierForRegion(region) !== null;
     mapInstanceRef.current = map;
     // Notify dependents (saved-annotations sync, hydration framing, etc.)
     // that the underlying map instance is ready. Bumping a counter forces
@@ -356,6 +434,15 @@ export function MapsAppComponent({
     if (isWindowOpen) return;
     const map = mapInstanceRef.current;
     if (!map) return;
+    const regionListener = regionChangeEndListenerRef.current;
+    if (regionListener) {
+      try {
+        map.removeEventListener?.("region-change-end", regionListener);
+      } catch {
+        // ignore
+      }
+      regionChangeEndListenerRef.current = null;
+    }
     try {
       map.destroy();
     } catch {
@@ -363,6 +450,7 @@ export function MapsAppComponent({
     }
     mapInstanceRef.current = null;
     annotationRef.current = null;
+    mapMarkersClusteredRef.current = false;
     // Reset the readiness counter so the next time the window opens the
     // saved-annotations sync re-runs against the freshly-created map.
     setMapReadyTick(0);
@@ -372,6 +460,15 @@ export function MapsAppComponent({
     return () => {
       const map = mapInstanceRef.current;
       if (map) {
+        const regionListener = regionChangeEndListenerRef.current;
+        if (regionListener) {
+          try {
+            map.removeEventListener?.("region-change-end", regionListener);
+          } catch {
+            // ignore
+          }
+          regionChangeEndListenerRef.current = null;
+        }
         try {
           map.destroy();
         } catch {
@@ -379,6 +476,7 @@ export function MapsAppComponent({
         }
         mapInstanceRef.current = null;
         annotationRef.current = null;
+        mapMarkersClusteredRef.current = false;
       }
     };
   }, []);
@@ -534,13 +632,16 @@ export function MapsAppComponent({
         setSelectedResultId(place.id);
         const annotation = new mk.MarkerAnnotation(
           coord,
-          getPoiMarkerAnnotationOptions(
-            place.name,
-            place.subtitle ?? "",
-            place.category,
-            {
-              ...(place.mapKitPlace ? { place: place.mapKitPlace } : {}),
-            }
+          withMapPlaceClustering(
+            getPoiMarkerAnnotationOptions(
+              place.name,
+              place.subtitle ?? "",
+              place.category,
+              {
+                ...(place.mapKitPlace ? { place: place.mapKitPlace } : {}),
+              }
+            ),
+            clusteringIdForCurrentMapRegion()
           )
         );
         map.addAnnotation(annotation);
@@ -556,7 +657,7 @@ export function MapsAppComponent({
       const region = new mk.CoordinateRegion(coord, span);
       map.setRegionAnimated(region, true);
     },
-    []
+    [clusteringIdForCurrentMapRegion]
   );
 
   const handleSelectResult = useCallback(
@@ -769,8 +870,8 @@ export function MapsAppComponent({
           ? entry.place.name
           : (entry.place.subtitle ?? "");
 
-      const annotation = new mk.MarkerAnnotation(
-        coord,
+      const clusteringId = clusteringIdForCurrentMapRegion();
+      const markerOptions =
         entry.kind === "favorite"
           ? getPoiMarkerAnnotationOptions(title, subtitle, entry.place.category, {
               displayPriority: 1000,
@@ -778,7 +879,10 @@ export function MapsAppComponent({
             })
           : entry.kind === "home"
             ? homeMarkerAnnotationStyle(title, subtitle)
-            : workMarkerAnnotationStyle(title, subtitle)
+            : workMarkerAnnotationStyle(title, subtitle);
+      const annotation = new mk.MarkerAnnotation(
+        coord,
+        withMapPlaceClustering(markerOptions, clusteringId)
       );
 
       const wrapper = { annotation, place: entry.place };
@@ -796,7 +900,16 @@ export function MapsAppComponent({
     }
 
     savedAnnotationsRef.current = next;
-  }, [status, savedPlaceEntries, mapReadyTick, homeLabel, workLabel]);
+    syncMapMarkerClustering();
+  }, [
+    status,
+    savedPlaceEntries,
+    mapReadyTick,
+    homeLabel,
+    workLabel,
+    clusteringIdForCurrentMapRegion,
+    syncMapMarkerClustering,
+  ]);
 
   // Drop all saved-place annotations when the map tears down so a re-open
   // starts from a clean slate (the next sync effect re-creates them).
