@@ -1,9 +1,9 @@
-import { House, Briefcase } from "@phosphor-icons/react";
 import { AppDrawer } from "@/components/shared/AppDrawer";
 import { cn } from "@/lib/utils";
 import {
   getPoiVisual,
   poiVisualGradient,
+  poiVisualWithIcon,
   type PoiVisual,
 } from "../utils/poiVisuals";
 import type { SavedPlace } from "../utils/types";
@@ -57,7 +57,9 @@ function PlaceRow({
   visualOverride,
   titleOverride,
 }: PlaceRowProps) {
-  const visual = visualOverride ?? getPoiVisual(place.category);
+  const visual = visualOverride
+    ? poiVisualWithIcon(visualOverride)
+    : getPoiVisual(place.category);
   const Icon = visual.Icon;
   const title = titleOverride ?? place.name;
   const subtitle = titleOverride
@@ -98,12 +100,12 @@ function EmptyState({ message }: { message: string }) {
 }
 
 const HOME_VISUAL: PoiVisual = {
-  Icon: House,
+  iconKey: "House",
   from: "#60a5fa",
   to: "#1d4ed8",
 };
 const WORK_VISUAL: PoiVisual = {
-  Icon: Briefcase,
+  iconKey: "Briefcase",
   from: "#f59e0b",
   to: "#92400e",
 };

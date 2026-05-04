@@ -16,11 +16,8 @@ import { MapsPlacesDrawer } from "./MapsPlacesDrawer";
 import { MapsPlaceCard } from "./MapsPlaceCard";
 import { useMapsStore } from "@/stores/useMapsStore";
 import type { SavedPlace } from "../utils/types";
-import {
-  FAVORITE_GLYPH_IMAGE,
-  HOME_GLYPH_IMAGE,
-  WORK_GLYPH_IMAGE,
-} from "../utils/markerGlyphs";
+import { HOME_GLYPH_IMAGE, WORK_GLYPH_IMAGE } from "../utils/markerGlyphs";
+import { getPoiMarkerAnnotationOptions } from "../utils/poiMarkerStyle";
 
 // Minimal MapKit JS shape we touch from this component. We only declare the
 // fields we use so we don't need the full @types/apple-mapkit-js-browser
@@ -122,28 +119,6 @@ interface MapKitGlobal {
     coordinate: MapKitCoordinate,
     options?: Record<string, unknown>
   ) => MapKitMarkerAnnotation;
-  // PlaceAnnotation accepts a `Place` (or `Coordinate` + `place` option)
-  // and renders Apple's category iconography automatically; passing the
-  // `place` also lets the annotation supersede the underlying POI on the
-  // map so we don't end up with two icons stacked at the same coordinate.
-  // Marked optional so we can gracefully degrade on older MapKit JS.
-  //   https://developer.apple.com/documentation/mapkitjs/placeannotation
-  PlaceAnnotation?: new (
-    placeOrCoordinate: MapKitPlace | MapKitCoordinate,
-    options?: Record<string, unknown>
-  ) => MapKitMarkerAnnotation;
-  // MapKit JS 5.78+ Place ID lookup. Lets us upgrade saved-place
-  // annotations (favorites) to PlaceAnnotation by re-fetching the live
-  // `Place` object from a persisted Apple Place ID. Optional so older
-  // MapKit JS still typechecks.
-  //   https://developer.apple.com/documentation/mapkitjs/placelookup
-  PlaceLookup?: new () => {
-    getPlace: (
-      id: string,
-      callback: (error: Error | null, place: MapKitPlace | null) => void,
-      options?: Record<string, unknown>
-    ) => void;
-  };
   // Optional in the type so loaders that don't expose the constant still
   // typecheck. We default to "default" / "required" string literals.
   RegionPriority?: { Default: MapKitRegionPriority; Required: MapKitRegionPriority };
@@ -186,15 +161,12 @@ interface MapsSearchResult {
   category?: string;
   /**
    * Apple Place ID (MapKit JS 5.78+). Persisted onto saved places so we
-   * can later refresh the place via `PlaceLookup.getPlace` if the cached
-   * fields go stale.
+   * fields go stale or for future server-side refresh.
    */
   placeId?: string;
   /**
-   * Raw `Place` reference returned by MapKit. Held only for the lifetime
-   * of the result list — we use it to construct a `PlaceAnnotation` so
-   * the dropped pin uses Apple's category iconography and supersedes the
-   * underlying POI instead of stacking on top of it.
+   * Raw `Place` reference returned by MapKit. Passed to `MarkerAnnotation`
+   * as `place` so MapKit can hide the underlying POI tile at this coordinate.
    */
   place?: MapKitPlace;
 }
@@ -256,18 +228,6 @@ export function MapsAppComponent({
   const savedAnnotationsRef = useRef<
     Map<string, { annotation: MapKitMarkerAnnotation; place: SavedPlace }>
   >(new Map());
-  // Cache of MapKit `Place` objects keyed by Apple Place ID. Populated
-  // lazily via `mapkit.PlaceLookup` so favorites that were captured from
-  // a search (and therefore have a `placeId`) can render with Apple's
-  // `PlaceAnnotation` iconography instead of a generic star pin. Also
-  // tracks placeIds that we've already kicked off a lookup for so we
-  // don't fire duplicate requests when the effect re-runs.
-  const placeCacheRef = useRef<Map<string, MapKitPlace>>(new Map());
-  const placeLookupInFlightRef = useRef<Set<string>>(new Set());
-  // Bumped when a PlaceLookup completes so the saved-annotations effect
-  // re-runs and upgrades the favorite from MarkerAnnotation to
-  // PlaceAnnotation.
-  const [placeCacheTick, setPlaceCacheTick] = useState(0);
   // Bump every time the underlying MapKit instance is (re)created so any
   // effect that wants to act on `mapInstanceRef.current` can subscribe via
   // a real React dep — refs alone don't trigger re-renders, which made
@@ -509,11 +469,8 @@ export function MapsAppComponent({
       subtitle?: string;
       latitude: number;
       longitude: number;
-      /**
-       * Original `mapkit.Place` from the search response, when available.
-       * Drives a `PlaceAnnotation` (Apple's category iconography +
-       * automatic POI superseding) instead of a generic red marker.
-       */
+      category?: string;
+      /** When set, passed through to MapKit to supersede the built-in POI. */
       mapKitPlace?: MapKitPlace;
     }) => {
       const mk = getMapKit();
@@ -537,28 +494,17 @@ export function MapsAppComponent({
       const coord = new mk.Coordinate(place.latitude, place.longitude);
       if (!alreadySaved) {
         setSelectedResultId(place.id);
-        let annotation: MapKitMarkerAnnotation;
-        if (place.mapKitPlace && typeof mk.PlaceAnnotation === "function") {
-          // PlaceAnnotation pulls its iconography from the map data and
-          // supersedes any existing POI tile glyph at this coordinate, so
-          // we don't get a red pin sitting on top of Apple's cafe / bank
-          // / etc. icon. We still pass title/subtitle as fallbacks for
-          // the callout text.
-          annotation = new mk.PlaceAnnotation(place.mapKitPlace, {
-            title: place.name,
-            subtitle: place.subtitle ?? "",
-          });
-        } else {
-          annotation = new mk.MarkerAnnotation(coord, {
-            title: place.name,
-            subtitle: place.subtitle ?? "",
-            color: "#E25B4F",
-            // Even on plain MarkerAnnotation, passing `place` lets MapKit
-            // hide the underlying POI icon to avoid the duplicate-marker
-            // problem when the search hit matches a built-in POI.
-            ...(place.mapKitPlace ? { place: place.mapKitPlace } : {}),
-          });
-        }
+        const annotation = new mk.MarkerAnnotation(
+          coord,
+          getPoiMarkerAnnotationOptions(
+            place.name,
+            place.subtitle ?? "",
+            place.category,
+            {
+              ...(place.mapKitPlace ? { place: place.mapKitPlace } : {}),
+            }
+          )
+        );
         map.addAnnotation(annotation);
         annotationRef.current = annotation;
       } else {
@@ -584,6 +530,7 @@ export function MapsAppComponent({
         subtitle: result.subtitle,
         latitude: result.coordinate.latitude,
         longitude: result.coordinate.longitude,
+        category: result.category,
         mapKitPlace: result.place,
       });
 
@@ -694,26 +641,9 @@ export function MapsAppComponent({
         removeFavoritePlace(place.id);
       } else {
         addFavoritePlace(place);
-        // Seed the place cache from the currently-selected search result
-        // (if any) so the new favorite renders as a PlaceAnnotation
-        // immediately, without waiting for a `PlaceLookup` roundtrip.
-        if (place.placeId) {
-          const selectedResult = searchResults.find(
-            (r) => r.placeId === place.placeId && r.place
-          );
-          if (selectedResult?.place) {
-            placeCacheRef.current.set(place.placeId, selectedResult.place);
-            setPlaceCacheTick((t) => t + 1);
-          }
-        }
       }
     },
-    [
-      isPlaceFavorite,
-      removeFavoritePlace,
-      addFavoritePlace,
-      searchResults,
-    ]
+    [isPlaceFavorite, removeFavoritePlace, addFavoritePlace]
   );
 
   // Localized "Home" / "Work" labels used as the marker title for those
@@ -749,9 +679,9 @@ export function MapsAppComponent({
     return entries;
   }, [homePlace, workPlace, favoritePlaces]);
 
-  // Sync Home / Work / Favorites annotations on the map. Each saved kind
-  // gets a distinct pin color — Home blue, Work amber, Favorites gold —
-  // matching the drawer / place-card visual language.
+  // Sync Home / Work / Favorites annotations on the map. Home / Work use
+  // branded pins; favorites use the same category icon + color as the
+  // place card and search list (`getPoiMarkerStyle`).
   //
   // We deliberately wipe-and-rebuild the entire annotation set on every
   // run rather than diffing. The diff approach (used previously) traded a
@@ -790,12 +720,6 @@ export function MapsAppComponent({
       // Per-kind marker color + Phosphor-derived glyph image. The glyph
       // hash is the same `data:` SVG for all three densities — Apple's
       // docs require ≥ 20×20 with 40×40 recommended; SVG scales for all.
-      const visual =
-        entry.kind === "home"
-          ? { color: "#1d4ed8", glyph: HOME_GLYPH_IMAGE }
-          : entry.kind === "work"
-            ? { color: "#b45309", glyph: WORK_GLYPH_IMAGE }
-            : { color: "#f59e0b", glyph: FAVORITE_GLYPH_IMAGE };
       const title =
         entry.kind === "home"
           ? homeLabel
@@ -807,66 +731,27 @@ export function MapsAppComponent({
           ? entry.place.name
           : (entry.place.subtitle ?? "");
 
-      let annotation: MapKitMarkerAnnotation;
-      const cachedPlace = entry.place.placeId
-        ? placeCacheRef.current.get(entry.place.placeId)
-        : undefined;
-
-      if (
-        entry.kind === "favorite" &&
-        cachedPlace &&
-        typeof mk.PlaceAnnotation === "function"
-      ) {
-        // Render favorites with Apple's category iconography (the same
-        // marker style search results get) so a saved restaurant looks
-        // like a restaurant on the map instead of a generic gold star.
-        // We also pass the `place` so MapKit hides the underlying POI
-        // tile glyph and we don't end up with two icons stacked.
-        annotation = new mk.PlaceAnnotation(cachedPlace, {
-          title,
-          subtitle,
-          displayPriority: 1000,
-          selected: false,
-        });
-      } else {
-        annotation = new mk.MarkerAnnotation(coord, {
-          title,
-          subtitle,
-          color: visual.color,
-          glyphColor: "#ffffff",
-          glyphImage: visual.glyph,
-          selectedGlyphImage: visual.glyph,
-          // Above default search pins so a search result doesn't
-          // visually hide a saved annotation at the same location.
-          displayPriority: 1000,
-          selected: false,
-        });
-
-        // For favorites that have a Place ID but no cached `Place` yet,
-        // kick off a one-shot lookup. When it returns we cache the
-        // result and bump the tick so this effect re-runs and swaps the
-        // star for a real PlaceAnnotation.
-        if (
-          entry.kind === "favorite" &&
-          entry.place.placeId &&
-          typeof mk.PlaceLookup === "function" &&
-          !placeLookupInFlightRef.current.has(entry.place.placeId)
-        ) {
-          const placeId = entry.place.placeId;
-          placeLookupInFlightRef.current.add(placeId);
-          try {
-            const lookup = new mk.PlaceLookup();
-            lookup.getPlace(placeId, (err, place) => {
-              placeLookupInFlightRef.current.delete(placeId);
-              if (err || !place) return;
-              placeCacheRef.current.set(placeId, place);
-              setPlaceCacheTick((t) => t + 1);
-            });
-          } catch {
-            placeLookupInFlightRef.current.delete(placeId);
-          }
-        }
-      }
+      const annotation = new mk.MarkerAnnotation(
+        coord,
+        entry.kind === "favorite"
+          ? getPoiMarkerAnnotationOptions(title, subtitle, entry.place.category, {
+              displayPriority: 1000,
+              selected: false,
+            })
+          : {
+              title,
+              subtitle,
+              color:
+                entry.kind === "home" ? "#1d4ed8" : "#b45309",
+              glyphColor: "#ffffff",
+              glyphImage:
+                entry.kind === "home" ? HOME_GLYPH_IMAGE : WORK_GLYPH_IMAGE,
+              selectedGlyphImage:
+                entry.kind === "home" ? HOME_GLYPH_IMAGE : WORK_GLYPH_IMAGE,
+              displayPriority: 1000,
+              selected: false,
+            }
+      );
 
       const wrapper = { annotation, place: entry.place };
       const handleSelect = () => {
@@ -883,14 +768,7 @@ export function MapsAppComponent({
     }
 
     savedAnnotationsRef.current = next;
-  }, [
-    status,
-    savedPlaceEntries,
-    mapReadyTick,
-    homeLabel,
-    workLabel,
-    placeCacheTick,
-  ]);
+  }, [status, savedPlaceEntries, mapReadyTick, homeLabel, workLabel]);
 
   // Drop all saved-place annotations when the map tears down so a re-open
   // starts from a clean slate (the next sync effect re-creates them).

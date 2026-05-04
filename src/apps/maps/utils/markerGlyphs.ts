@@ -43,7 +43,7 @@ function buildGlyphSvg(pathD: string): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-function buildGlyphHash(
+export function buildGlyphHash(
   pathD: string
 ): { 1: string; 2: string; 3: string } {
   const url = buildGlyphSvg(pathD);
@@ -59,9 +59,5 @@ const HOUSE_FILL_PATH =
 const BRIEFCASE_FILL_PATH =
   "M152,112a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,112Zm80-40V200a16,16,0,0,1-16,16H40a16,16,0,0,1-16-16V72A16,16,0,0,1,40,56H80V48a24,24,0,0,1,24-24h48a24,24,0,0,1,24,24v8h40A16,16,0,0,1,232,72ZM96,56h64V48a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8Zm120,57.61V72H40v41.61A184,184,0,0,0,128,136,184,184,0,0,0,216,113.61Z";
 
-const STAR_FILL_PATH =
-  "M239.2,97.29a16,16,0,0,0-13.81-11L166,81.17,142.72,25.81h0a15.95,15.95,0,0,0-29.44,0L90.07,81.17,30.61,86.32a16,16,0,0,0-9.11,28.06L66.61,153.8,53.09,212.34a16,16,0,0,0,23.84,17.34l51-31,51.11,31a16,16,0,0,0,23.84-17.34l-13.51-58.6,45.1-39.36A16,16,0,0,0,239.2,97.29Z";
-
 export const HOME_GLYPH_IMAGE = buildGlyphHash(HOUSE_FILL_PATH);
 export const WORK_GLYPH_IMAGE = buildGlyphHash(BRIEFCASE_FILL_PATH);
-export const FAVORITE_GLYPH_IMAGE = buildGlyphHash(STAR_FILL_PATH);
