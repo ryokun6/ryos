@@ -3159,6 +3159,13 @@
         "noTodoItems": "No to-do items",
         "newTodoPlaceholder": "New To Do..."
       },
+      "tray": {
+        "eventDetails": "Event Details",
+        "todoDetails": "To Do Details",
+        "empty": "Select an event or to-do",
+        "markComplete": "Mark Complete",
+        "markIncomplete": "Mark Incomplete"
+      },
       "import": {
         "success": "{{count}} event imported",
         "successPlural": "{{count}} events imported"

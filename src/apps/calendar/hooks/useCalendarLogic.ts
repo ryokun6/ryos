@@ -479,6 +479,22 @@ export function useCalendarLogic() {
     }
   }, [selectedEventId, events]);
 
+  /**
+   * Inline event update (used by the details tray). Records an undo entry
+   * so changes made in the tray remain undoable from the Edit menu.
+   */
+  const handleUpdateEvent = useCallback(
+    (id: string, updates: Partial<CalendarEvent>) => {
+      const existing = events.find((e) => e.id === id);
+      if (!existing) return;
+      const before = { ...existing };
+      updateEvent(id, updates);
+      const after = { ...existing, ...updates, updatedAt: Date.now() };
+      pushUndo({ type: "updateEvent", eventId: id, before, after });
+    },
+    [events, updateEvent, pushUndo]
+  );
+
   const handleDeleteSelectedEvent = useCallback(() => {
     if (selectedEventId) {
       const ev = events.find((e) => e.id === selectedEventId);
@@ -638,6 +654,7 @@ export function useCalendarLogic() {
     handleEditSelectedEvent,
     handleDeleteSelectedEvent,
     handleDeleteEditingEvent,
+    handleUpdateEvent,
 
     // Import / Export
     fileInputRef,
