@@ -72,6 +72,9 @@ The following environment variables are required for full functionality:
 - `YOUTUBE_API_KEY` - YouTube Data API (for video metadata)
 - `YOUTUBE_API_KEY_2` - YouTube Data API fallback key
 - `OPENAI_API_KEY` - OpenAI API (for audio transcription)
+- `MAPKIT_TEAM_ID` / `MAPKIT_KEY_ID` / `MAPKIT_PRIVATE_KEY` / `MAPKIT_ORIGIN` - Apple MapKit (powers the Maps app + the AI's `mapsSearchPlaces` tool via the Apple Maps Server API)
+- `IP_GEOLOCATION_URL_TEMPLATE` - Optional override for the IP-geolocation provider used as a fallback when Vercel's `geolocation()` returns nothing (defaults to `https://ipwho.is/{ip}`). Use this on Coolify / Docker / plain Bun deploys, or to switch to a paid provider. Use `{ip}` as the placeholder.
+- `IP_GEOLOCATION_DISABLED` - Set to `1`/`true` to disable the IP-geolocation fallback entirely (no outbound calls).
 
 ### Localization / Scripts
 - `GOOGLE_GENERATIVE_AI_API_KEY` - Google Generative AI (for machine translation of locale files)

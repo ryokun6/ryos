@@ -25,6 +25,7 @@ import { PROACTIVE_GREETING_INSTRUCTIONS } from "./_utils/_aiPrompts.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { getHeader } from "./_utils/request-helpers.js";
+import { resolveIpGeolocation } from "./_utils/_geolocation.js";
 type SystemState = RyoConversationSystemState;
 
 
@@ -160,21 +161,33 @@ export default apiHandler<{
       return;
     }
 
-    // --- Geolocation (available only on deployed environment) ---
-    // geolocation() requires Web Request headers, which aren't available in vercel dev
+    // --- Geolocation ---
+    // 1) Try Vercel's `geolocation()` first — instant, no outbound call.
+    //    Requires Web Request headers, so this throws in `vercel dev` and any
+    //    non-Vercel host (Coolify, Docker, plain Bun, etc.).
+    // 2) Fall back to a free IP-geolocation provider (`ipwho.is` by default,
+    //    overridable via `IP_GEOLOCATION_URL_TEMPLATE`). Results are cached in
+    //    Redis for 24h so we don't hammer the provider per chat turn.
     let geo: ReturnType<typeof geolocation> = {};
     try {
-      // Only works with Web Request in production, fails in vercel dev with VercelRequest
       geo = geolocation(req as unknown as Request);
     } catch {
-      // In local dev, geolocation isn't available - use empty object
       geo = {};
     }
 
+    const resolvedGeo =
+      (await resolveIpGeolocation({
+        ip,
+        redis,
+        existing: geo,
+        log,
+        logError,
+      })) ?? geo;
+
     // Attach geolocation info to system state that will be sent to the prompt
     const systemState: SystemState | undefined = incomingSystemState
-      ? { ...incomingSystemState, requestGeo: geo }
-      : ({ requestGeo: geo } as SystemState);
+      ? { ...incomingSystemState, requestGeo: resolvedGeo }
+      : ({ requestGeo: resolvedGeo } as SystemState);
     const userTimeZone = systemState?.userLocalTime?.timeZone;
     const loadedMemoryContext = await loadRyoMemoryContext({
       redis: isAuthenticated ? redis : undefined,
