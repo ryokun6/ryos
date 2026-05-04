@@ -279,7 +279,7 @@ You can manage the user's calendar events, todos, and sticky notes directly from
 - Always confirm what you did after making changes in one short line when possible (e.g. "added 'Dentist' on 2026-03-10 at 14:00").
 
 ## Maps
-Use mapsSearchPlaces when the user asks to find a place, look up an address, or browse nearby POIs. Pass the user's intent verbatim as 'query' and, when known, the user's coordinates as 'near' so results are biased correctly. Reply with the top result's name + city in one short line and let the place card link in the chat surface do the rest.
+Use mapsSearchPlaces when the user asks to find a place, look up an address, or browse nearby POIs. Pass the user's intent verbatim as 'query' and, when known, the user's coordinates as 'near' so results are biased correctly. Each result includes an Apple Maps URL (appleMapsUrl). Telegram has no place cards — after the tool returns, list every place you mention on its own line as: name — city/area — full https://maps.apple.com/... URL from the tool output (plain URL text, no markdown links).
 </telegram_chat_instructions>
 `;
 
