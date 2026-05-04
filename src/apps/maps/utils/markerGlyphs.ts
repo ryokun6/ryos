@@ -17,13 +17,13 @@
 
 const SVG_SIZE = 40;
 // Phosphor icons are authored on a 256×256 grid and the path data sits
-// edge-to-edge. Rendered raw inside MapKit's marker balloon they crowd the
-// pill outline and look oversized vs Apple's native glyphs, which sit with
-// generous breathing room. We expand the viewBox so the icon occupies
-// ~58% of the SVG canvas (≈ 23 px of the 40 px frame), matching the inset
-// of Apple Maps' system glyphs.
+// edge-to-edge. We add a small amount of breathing room around the path
+// so the glyph doesn't kiss the marker pill outline, but keep the inset
+// tight — earlier values (~58% scale) made the icon look lost inside the
+// balloon. Tuning the scale up to ~0.85 puts the glyph at roughly the
+// same density as Apple Maps' built-in marker glyphs.
 const ICON_GRID = 256;
-const GLYPH_SCALE = 0.58;
+const GLYPH_SCALE = 0.85;
 const VIEWBOX_SIZE = Math.round(ICON_GRID / GLYPH_SCALE);
 const VIEWBOX_OFFSET = Math.round((VIEWBOX_SIZE - ICON_GRID) / 2);
 const SVG_VIEWBOX = `${-VIEWBOX_OFFSET} ${-VIEWBOX_OFFSET} ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`;
