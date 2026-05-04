@@ -136,6 +136,13 @@ interface MapsSearchResult {
   category?: string;
 }
 
+// Coordinate-degree span used when focusing on a single place (search hit,
+// saved-place tap, persisted selection re-center). ~0.012° ≈ 1.3 km wide
+// at the equator — neighborhood / street level — which mirrors how the
+// system Maps app zooms when you tap a result. The previous value (0.05)
+// stayed at region level and made it hard to see surrounding streets.
+const FOCUS_PLACE_SPAN_DEG = 0.012;
+
 function statusMessageKey(status: MapKitStatus): string {
   switch (status) {
     case "missing-token":
@@ -186,6 +193,12 @@ export function MapsAppComponent({
   const savedAnnotationsRef = useRef<
     Map<string, { annotation: MapKitMarkerAnnotation; place: SavedPlace }>
   >(new Map());
+  // Bump every time the underlying MapKit instance is (re)created so any
+  // effect that wants to act on `mapInstanceRef.current` can subscribe via
+  // a real React dep — refs alone don't trigger re-renders, which made
+  // the saved-annotations sync silently miss the first map-ready window
+  // when status flipped to "ready" mid-render.
+  const [mapReadyTick, setMapReadyTick] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MapsSearchResult[]>([]);
@@ -247,6 +260,11 @@ export function MapsAppComponent({
     map.showsUserLocation = false;
     map.tracksUserLocation = false;
     mapInstanceRef.current = map;
+    // Notify dependents (saved-annotations sync, hydration framing, etc.)
+    // that the underlying map instance is ready. Bumping a counter forces
+    // a re-render so effects that read `mapInstanceRef.current` actually
+    // see the new value instead of skipping it on a stale closure.
+    setMapReadyTick((tick) => tick + 1);
     // We intentionally do NOT depend on mapType here — the next effect
     // syncs it whenever the user picks a different option.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -272,6 +290,9 @@ export function MapsAppComponent({
     }
     mapInstanceRef.current = null;
     annotationRef.current = null;
+    // Reset the readiness counter so the next time the window opens the
+    // saved-annotations sync re-runs against the freshly-created map.
+    setMapReadyTick(0);
   }, [isWindowOpen]);
 
   useEffect(() => {
@@ -403,7 +424,10 @@ export function MapsAppComponent({
         setSelectedResultId(null);
       }
 
-      const span = new mk.CoordinateSpan(0.05, 0.05);
+      const span = new mk.CoordinateSpan(
+        FOCUS_PLACE_SPAN_DEG,
+        FOCUS_PLACE_SPAN_DEG
+      );
       const region = new mk.CoordinateRegion(coord, span);
       map.setRegionAnimated(region, true);
     },
@@ -445,7 +469,10 @@ export function MapsAppComponent({
       const map = mapInstanceRef.current;
       if (mk && map) {
         const coord = new mk.Coordinate(place.latitude, place.longitude);
-        const span = new mk.CoordinateSpan(0.05, 0.05);
+        const span = new mk.CoordinateSpan(
+          FOCUS_PLACE_SPAN_DEG,
+          FOCUS_PLACE_SPAN_DEG
+        );
         const region = new mk.CoordinateRegion(coord, span);
         map.setRegionAnimated(region, true);
       }
@@ -657,11 +684,16 @@ export function MapsAppComponent({
     }
 
     savedAnnotationsRef.current = next;
-    // Note: `homeLabel` / `workLabel` are read inside the loop but already
-    // baked into the entry keys via `savedPlaceEntries`, so a language
-    // switch invalidates the cached entries and rebuilds the pin titles.
+    // Notes:
+    // - `homeLabel` / `workLabel` are read inside the loop but already
+    //   baked into the entry keys via `savedPlaceEntries`, so a language
+    //   switch invalidates the cached entries and rebuilds the pin titles.
+    // - `mapReadyTick` is included so the effect re-runs the moment the
+    //   map instance is (re)created — without it, refs alone wouldn't
+    //   trigger a re-fire and pins would silently fail to attach when the
+    //   sync effect happened to commit before the map init effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, savedPlaceEntries]);
+  }, [status, savedPlaceEntries, mapReadyTick]);
 
   // Drop all saved-place annotations when the map tears down so a re-open
   // starts from a clean slate (the next sync effect re-creates them).
@@ -730,7 +762,10 @@ export function MapsAppComponent({
           selectedPlace.latitude,
           selectedPlace.longitude
         );
-        const span = new mk.CoordinateSpan(0.05, 0.05);
+        const span = new mk.CoordinateSpan(
+          FOCUS_PLACE_SPAN_DEG,
+          FOCUS_PLACE_SPAN_DEG
+        );
         const region = new mk.CoordinateRegion(coord, span);
         map.setRegionAnimated(region, true);
       } else {
@@ -759,7 +794,10 @@ export function MapsAppComponent({
     if (savedCoords.length === 1) {
       const only = savedCoords[0];
       const coord = new mk.Coordinate(only.latitude, only.longitude);
-      const span = new mk.CoordinateSpan(0.05, 0.05);
+      const span = new mk.CoordinateSpan(
+        FOCUS_PLACE_SPAN_DEG,
+        FOCUS_PLACE_SPAN_DEG
+      );
       const region = new mk.CoordinateRegion(coord, span);
       map.setRegionAnimated(region, true);
       return;
@@ -781,14 +819,26 @@ export function MapsAppComponent({
     // and clamp to a sensible minimum so two pins right next to each other
     // don't zoom in to street level.
     const PAD = 1.3;
-    const MIN_SPAN = 0.05;
-    const latDelta = Math.max((maxLat - minLat) * PAD, MIN_SPAN);
-    const lngDelta = Math.max((maxLng - minLng) * PAD, MIN_SPAN);
+    // Floor at the same span we use for single-place focus so pins that
+    // happen to sit close together still land at street level rather than
+    // forcing a wider zoom.
+    const latDelta = Math.max((maxLat - minLat) * PAD, FOCUS_PLACE_SPAN_DEG);
+    const lngDelta = Math.max((maxLng - minLng) * PAD, FOCUS_PLACE_SPAN_DEG);
     const center = new mk.Coordinate(centerLat, centerLng);
     const span = new mk.CoordinateSpan(latDelta, lngDelta);
     const region = new mk.CoordinateRegion(center, span);
     map.setRegionAnimated(region, true);
-  }, [status, selectedPlace, savedPlaceEntries, dropPinAt, isPlaceSaved]);
+    // Same reasoning as the saved-annotations effect: depend on
+    // `mapReadyTick` so framing fires the moment the map instance is
+    // (re)created, not whenever some unrelated render happens to flush.
+  }, [
+    status,
+    selectedPlace,
+    savedPlaceEntries,
+    dropPinAt,
+    isPlaceSaved,
+    mapReadyTick,
+  ]);
 
   const handleLocateMe = useCallback(() => {
     const map = mapInstanceRef.current;
