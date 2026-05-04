@@ -1,4 +1,4 @@
-## Cloud-specific instructions
+## Cursor Cloud specific instructions
 
 # ryOS Cloud Environment Guide
 
@@ -173,3 +173,12 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 - **Build process**: The build generates service worker files (`sw.js`, `workbox-*.js`) which are copied to `.vercel/output/static/`.
 - **Vercel CLI**: Installed globally, but optional for local testing now that standalone Bun API is available.
 - **Port conflicts**: If port 3000 is occupied, set `API_PORT=<port>` for `bun run dev:api` and adjust proxy target accordingly.
+
+### Cloud Environment Notes
+
+- All required secrets (Redis, Pusher, AI keys, S3, etc.) are injected as environment variables. No `.env.local` file is needed.
+- `REDIS_PROVIDER=upstash` is pre-set; the API uses Upstash REST (`REDIS_KV_REST_API_URL`/`REDIS_KV_REST_API_TOKEN`).
+- `REALTIME_PROVIDER=pusher` is pre-set with all Pusher credentials.
+- Redis is also installed locally (`redis-server`) and can be started if needed for local-mode testing, but the injected Upstash credentials are the default.
+- The `test:new-api` auth tests (Register, Login, Admin login) may fail in this environment since they rely on specific admin password setup — this is expected and not a code issue.
+- Bun and Node are installed via the update script. Ensure `PATH` includes `$HOME/.bun/bin` and nvm is sourced before running commands.
