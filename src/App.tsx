@@ -124,12 +124,12 @@ export function App() {
         // Mark as seen immediately so dismissing the toast won't show it again
         setLastSeenDesktopVersion(result.version);
         // New version available - show update toast (both web and Tauri)
-        toast(`ryOS ${result.version} for Mac is available`, {
+        toast(t("common.desktop.updateToast", { version: result.version }), {
           id: 'desktop-update',
           icon: <DownloadSimple className="h-4 w-4" weight="bold" />,
           duration: Infinity,
           action: {
-            label: "Download",
+            label: t("common.desktop.downloadAction"),
             onClick: () => {
               window.open(
                 `https://github.com/ryokun6/ryos/releases/download/v${result.version}/ryOS_${result.version}_aarch64.dmg`,
@@ -142,12 +142,12 @@ export function App() {
         // Mark as seen immediately so dismissing the toast won't show it again
         setLastSeenDesktopVersion(result.version);
         // First time user on web - show initial download toast (not in Tauri)
-        toast("ryOS is available as a Mac app", {
+        toast(t("common.desktop.firstRunToast"), {
           id: 'desktop-update',
           icon: <DownloadSimple className="h-4 w-4" weight="bold" />,
           duration: Infinity,
           action: {
-            label: "Download",
+            label: t("common.desktop.downloadAction"),
             onClick: () => {
               window.open(
                 `https://github.com/ryokun6/ryos/releases/download/v${result.version}/ryOS_${result.version}_aarch64.dmg`,
@@ -172,7 +172,7 @@ export function App() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [setLastSeenDesktopVersion]);
+  }, [setLastSeenDesktopVersion, t]);
 
   if (showBootScreen) {
     return (

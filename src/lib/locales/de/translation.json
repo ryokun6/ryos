@@ -3781,8 +3781,11 @@
       "yellow": "gelb"
     },
     "desktop": {
+      "downloadAction": "Download",
+      "firstRunToast": "ryOS is available as a Mac app",
       "myComputer": "Arbeitsplatz",
-      "setWallpaper": "Hintergrundbild festlegen…"
+      "setWallpaper": "Hintergrundbild festlegen…",
+      "updateToast": "ryOS {{version}} for Mac is available"
     },
     "dialog": {
       "about": "Über",
@@ -4005,9 +4008,22 @@
   "components": {
     "linkPreview": {
       "addToIpod": "Zu iPod hinzufügen",
+      "couldNotExtractIpodVideoId": "Could not extract video ID from this iPod URL",
+      "couldNotExtractKaraokeVideoId": "Could not extract video ID from this Karaoke URL",
+      "couldNotExtractVideoId": "Could not extract video ID from this URL",
+      "couldNotExtractYouTubeVideoId": "Could not extract video ID from this YouTube URL",
+      "failedToLoadPreview": "Failed to load preview",
+      "failedToOpenIpodVideo": "Failed to open video in iPod app",
+      "failedToOpenKaraokeVideo": "Failed to open video in Karaoke app",
+      "fallbackVideoTitle": "YouTube video {{videoId}}",
+      "linkPreviewAlt": "Link preview",
+      "openExternally": "Open Externally",
       "openIpod": "iPod öffnen",
       "openKaraoke": "Karaoke öffnen",
-      "openYouTube": "YouTube öffnen"
+      "openYouTube": "YouTube öffnen",
+      "siteFaviconAlt": "Site favicon",
+      "watchOnYouTube": "Watch on YouTube",
+      "youtubeSiteName": "YouTube"
     }
   },
   "settings": {

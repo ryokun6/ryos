@@ -165,7 +165,11 @@ export function ListenSessionInvite({
           >
             <div className="title-bar-text">{t("apps.karaoke.liveListen.inviteToListen")}</div>
             <div className="title-bar-controls">
-              <button aria-label="Close" data-action="close" onClick={onClose} />
+              <button
+                aria-label={t("common.menu.close")}
+                data-action="close"
+                onClick={onClose}
+              />
             </div>
           </div>
           <div className="window-body">{dialogContent}</div>

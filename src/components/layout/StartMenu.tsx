@@ -190,7 +190,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                 >
                   <ThemedIcon
                     name="info.png"
-                    alt="About"
+                    alt={t("common.dialog.about")}
                     className="w-6 h-6 [image-rendering:pixelated]"
                   />
                   {t("common.startMenu.aboutThisComputer")}

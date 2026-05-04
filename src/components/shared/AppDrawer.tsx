@@ -19,6 +19,7 @@
 import { type ReactNode } from "react";
 import { motion, type Transition } from "framer-motion";
 import { X } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -80,6 +81,7 @@ export function AppDrawer({
   className,
   ...dataAttrs
 }: AppDrawerProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((s) => s.current);
   const isMacOSTheme = currentTheme === "macosx";
   const isSystem7 = currentTheme === "system7";
@@ -170,7 +172,12 @@ export function AppDrawer({
               <div className={headerClass} style={headerStyle}>
                 {title && <span className={titleClass}>{title}</span>}
                 {onClose && (
-                  <button type="button" onClick={onClose} className={closeBtnClass} aria-label="Close">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className={closeBtnClass}
+                    aria-label={t("common.menu.close")}
+                  >
                     <X size={11} weight="bold" />
                   </button>
                 )}
@@ -189,7 +196,12 @@ export function AppDrawer({
           <div className={headerClass}>
             {title && <span className={titleClass}>{title}</span>}
             {onClose && (
-              <button type="button" onClick={onClose} className={closeBtnClass} aria-label="Close">
+              <button
+                type="button"
+                onClick={onClose}
+                className={closeBtnClass}
+                aria-label={t("common.menu.close")}
+              >
                 <X size={11} weight="bold" />
               </button>
             )}

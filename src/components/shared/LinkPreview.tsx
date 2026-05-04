@@ -119,11 +119,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       if (videoId) {
         launchApp("ipod", { initialData: { videoId } });
       } else {
-        toast.error("Could not extract video ID from this YouTube URL");
+        toast.error(t("components.linkPreview.couldNotExtractYouTubeVideoId"));
         console.warn("Could not extract video ID from YouTube URL:", url);
       }
     } catch (error) {
-      toast.error("Failed to open video in iPod app");
+      toast.error(t("components.linkPreview.failedToOpenIpodVideo"));
       console.error("Error launching iPod app:", error);
     }
   };
@@ -136,11 +136,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       if (videoId) {
         launchApp("karaoke", { initialData: { videoId } });
       } else {
-        toast.error("Could not extract video ID from this URL");
+        toast.error(t("components.linkPreview.couldNotExtractVideoId"));
         console.warn("Could not extract video ID from URL:", url);
       }
     } catch (error) {
-      toast.error("Failed to open video in Karaoke app");
+      toast.error(t("components.linkPreview.failedToOpenKaraokeVideo"));
       console.error("Error launching Karaoke app:", error);
     }
   };
@@ -202,7 +202,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                   image:
                     youtubeData.image ||
                     `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                  siteName: "YouTube",
+                  siteName: t("components.linkPreview.youtubeSiteName"),
                   url: url,
                 });
                 return;
@@ -223,10 +223,10 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             // Fallback to basic YouTube-style metadata
             if (!isActive || abortController.signal.aborted) return;
             setMetadata({
-              title: `YouTube Video ${videoId}`,
-              description: "Watch on YouTube",
+              title: t("components.linkPreview.fallbackVideoTitle", { videoId }),
+              description: t("components.linkPreview.watchOnYouTube"),
               image: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-              siteName: "YouTube",
+              siteName: t("components.linkPreview.youtubeSiteName"),
               url: url,
             });
             return;
@@ -263,7 +263,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         }
         if (!isActive || abortController.signal.aborted) return;
         console.error("Error fetching link metadata:", err);
-        setError("Failed to load preview");
+        setError(t("components.linkPreview.failedToLoadPreview"));
         // Set basic metadata with just the URL
         setMetadata({
           title: url,
@@ -282,7 +282,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       isActive = false;
       abortController.abort();
     };
-  }, [url]);
+  }, [url, t]);
 
   if (loading) {
     return (
@@ -345,11 +345,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             );
             launchApp("ipod", { initialData: { videoId } });
           } else {
-            toast.error("Could not extract video ID from this iPod URL");
+            toast.error(t("components.linkPreview.couldNotExtractIpodVideoId"));
             console.warn("Could not extract video ID from iPod URL:", url);
           }
         } catch (error) {
-          toast.error("Failed to open video in iPod app");
+          toast.error(t("components.linkPreview.failedToOpenIpodVideo"));
           console.error("Error launching iPod app:", error);
         }
       } else if (url.includes("/karaoke/")) {
@@ -362,11 +362,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             );
             launchApp("karaoke", { initialData: { videoId } });
           } else {
-            toast.error("Could not extract video ID from this Karaoke URL");
+            toast.error(t("components.linkPreview.couldNotExtractKaraokeVideoId"));
             console.warn("Could not extract video ID from Karaoke URL:", url);
           }
         } catch (error) {
-          toast.error("Failed to open video in Karaoke app");
+          toast.error(t("components.linkPreview.failedToOpenKaraokeVideo"));
           console.error("Error launching Karaoke app:", error);
         }
       } else {
@@ -436,7 +436,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           >
             <img
               src={metadata.image}
-              alt={metadata.title || "Link preview"}
+              alt={metadata.title || t("components.linkPreview.linkPreviewAlt")}
               className="w-full h-full object-cover"
               onError={(e) => {
                 // Hide image if it fails to load
@@ -449,7 +449,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
               <div className="flex items-center gap-2">
                 <img
                   src={getFaviconUrl(url)}
-                  alt="Site favicon"
+                  alt={t("components.linkPreview.siteFaviconAlt")}
                   className="h-4 w-4 flex-shrink-0"
                   onError={(e) => {
                     // Fallback to a simple circle if favicon fails to load
@@ -576,11 +576,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       ? "aqua-button secondary w-full"
                       : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors w-full"
                   )}
-                  title="Open Externally"
+                  title={t("components.linkPreview.openExternally")}
                   data-link-preview
                 >
                   {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
-                  <span>Open Externally</span>
+                  <span>{t("components.linkPreview.openExternally")}</span>
                 </button>
               </div>
             )}
@@ -599,7 +599,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
               >
                 <img
                   src={metadata.image}
-                  alt={metadata.title || "Link preview"}
+                  alt={metadata.title || t("components.linkPreview.linkPreviewAlt")}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     // Hide image if it fails to load
@@ -659,7 +659,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                 <div className="flex items-center gap-2">
                   <img
                     src={getFaviconUrl(url)}
-                    alt="Site favicon"
+                    alt={t("components.linkPreview.siteFaviconAlt")}
                     className="h-4 w-4 flex-shrink-0"
                     onError={(e) => {
                       // Fallback to a simple circle if favicon fails to load
@@ -797,11 +797,11 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                         ? "aqua-button secondary w-full"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors w-full"
                     )}
-                    title="Open Externally"
+                    title={t("components.linkPreview.openExternally")}
                     data-link-preview
                   >
                     {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
-                    <span>Open Externally</span>
+                    <span>{t("components.linkPreview.openExternally")}</span>
                   </button>
                 </div>
               )}
