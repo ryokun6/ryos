@@ -2,6 +2,10 @@ import { Check } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
+import {
+  MapsSearchPlacesCard,
+  type MapsSearchPlaceCardData,
+} from "@/components/shared/MapsSearchPlacesCard";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   getSongLibraryCallSummary,
@@ -180,6 +184,18 @@ export function ToolInvocationMessage({
         let hostname = "";
         try { hostname = new URL(url.startsWith("http") ? url : `https://${url}`).hostname; } catch { /* */ }
         displayCallMessage = t("apps.chats.toolCalls.webFetch.fetching", { hostname: hostname || url });
+        break;
+      }
+      case "mapsSearchPlaces": {
+        const query = typeof input?.query === "string" ? input.query : "";
+        displayCallMessage = query
+          ? t("apps.chats.toolCalls.maps.searching", {
+              defaultValue: 'Searching maps for "{{query}}"…',
+              query,
+            })
+          : t("apps.chats.toolCalls.maps.searchingNoQuery", {
+              defaultValue: "Searching maps…",
+            });
         break;
       }
       case "cursorCloudAgent":
@@ -739,6 +755,57 @@ export function ToolInvocationMessage({
         introMessage={out.message}
       />
     );
+  }
+
+  // Special handling for mapsSearchPlaces — render a rich place-card list
+  if (state === "output-available" && toolName === "mapsSearchPlaces") {
+    const out = output as
+      | {
+          success?: boolean;
+          query?: string;
+          results?: MapsSearchPlaceCardData[];
+          message?: string;
+        }
+      | undefined;
+    if (out && out.success !== false) {
+      const query =
+        typeof out.query === "string"
+          ? out.query
+          : typeof input?.query === "string"
+            ? input.query
+            : "";
+      const results = Array.isArray(out.results) ? out.results : [];
+      return (
+        <div key={partKey} className="mb-0 px-1 py-0.5 text-[12px]">
+          <ToolInvocationStatusRow
+            icon={<Check className="h-3 w-3 text-blue-600" weight="bold" />}
+            className="text-gray-700"
+            align="start"
+          >
+            <span>
+              {results.length === 0
+                ? t("apps.chats.toolCalls.maps.noResults", {
+                    defaultValue: 'No places found for "{{query}}".',
+                    query,
+                  })
+                : results.length === 1
+                  ? t("apps.chats.toolCalls.maps.foundOne", {
+                      defaultValue: 'Found 1 place for "{{query}}".',
+                      query,
+                    })
+                  : t("apps.chats.toolCalls.maps.foundMany", {
+                      defaultValue: 'Found {{count}} places for "{{query}}".',
+                      count: results.length,
+                      query,
+                    })}
+            </span>
+          </ToolInvocationStatusRow>
+          {results.length > 0 && (
+            <MapsSearchPlacesCard query={query} results={results} />
+          )}
+        </div>
+      );
+    }
   }
 
   // Special handling for generateHtml
