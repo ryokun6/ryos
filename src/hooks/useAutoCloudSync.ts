@@ -272,10 +272,9 @@ function getPersistedDeletionChangeAt(domain: CloudSyncDomain): string | null {
         Object.values(deletionMarkers.customWallpaperKeys)
       );
     case "maps":
-      return getLatestCloudSyncTimestamp([
-        ...Object.values(deletionMarkers.mapsFavoriteIds),
-        ...Object.values(deletionMarkers.mapsRecentIds),
-      ]);
+      return getLatestCloudSyncTimestamp(
+        Object.values(deletionMarkers.mapsFavoriteIds)
+      );
     default:
       return null;
   }
@@ -1105,11 +1104,10 @@ export function useAutoCloudSync() {
           const hasLocalMapsState =
             Boolean(mapsState.home) ||
             Boolean(mapsState.work) ||
-            mapsState.favorites.length > 0 ||
-            mapsState.recents.length > 0;
+            mapsState.favorites.length > 0;
           if (hasLocalMapsState) {
             console.log(
-              `[CloudSync] Seed upload: ${mapsState.favorites.length} favorites / ${mapsState.recents.length} recents, no remote data`
+              `[CloudSync] Seed upload: ${mapsState.favorites.length} favorites, no remote data`
             );
             setTimeout(
               () => queueUpload("maps"),
@@ -1578,11 +1576,11 @@ export function useAutoCloudSync() {
     });
 
     const mapsUnsubscribe = useMapsStore.subscribe((state, prevState) => {
+      // recents are intentionally device-local; only home/work/favorites sync.
       if (
         state.home !== prevState.home ||
         state.work !== prevState.work ||
-        state.favorites !== prevState.favorites ||
-        state.recents !== prevState.recents
+        state.favorites !== prevState.favorites
       ) {
         if (!useMapsStore.persist.hasHydrated()) return;
         if (isApplyingRemoteDomain("maps")) return;

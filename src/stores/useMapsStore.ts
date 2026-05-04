@@ -32,14 +32,13 @@ interface MapsStoreState {
   /**
    * Replace local maps state with merged data from cloud sync. Skips deletion
    * tracking and `updatedAt` bump because the snapshot itself is the source of
-   * truth.
+   * truth. Recents are intentionally device-local and are not part of the sync
+   * payload.
    */
   replaceFromSync: (snapshot: {
     home: SavedPlace | null;
     work: SavedPlace | null;
     favorites: SavedPlace[];
-    recents: SavedPlace[];
-    selectedPlace: SavedPlace | null;
   }) => void;
   /** Wipe all persisted Maps state. Not exposed in UI; useful for debugging. */
   clearAll: () => void;
@@ -84,17 +83,9 @@ export const useMapsStore = create<MapsStoreState>()(
       recordRecent: (place) =>
         set((state) => {
           const filtered = state.recents.filter((p) => p.id !== place.id);
-          const next = [place, ...filtered];
-          const trimmed = next.slice(0, RECENTS_LIMIT);
-          const droppedIds = next
-            .slice(RECENTS_LIMIT)
-            .map((entry) => entry.id);
-          const cloudSync = useCloudSyncStore.getState();
-          cloudSync.clearDeletedKeys("mapsRecentIds", [place.id]);
-          if (droppedIds.length > 0) {
-            cloudSync.markDeletedKeys("mapsRecentIds", droppedIds);
-          }
-          return { recents: trimmed, updatedAt: Date.now() };
+          return {
+            recents: [place, ...filtered].slice(0, RECENTS_LIMIT),
+          };
         }),
 
       setSelectedPlace: (place) => set({ selectedPlace: place }),
@@ -104,8 +95,6 @@ export const useMapsStore = create<MapsStoreState>()(
           home: snapshot.home,
           work: snapshot.work,
           favorites: snapshot.favorites,
-          recents: snapshot.recents,
-          selectedPlace: snapshot.selectedPlace,
         }),
 
       clearAll: () =>

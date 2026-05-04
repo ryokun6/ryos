@@ -185,10 +185,8 @@ interface MapsSnapshotData {
   home: SavedPlace | null;
   work: SavedPlace | null;
   favorites: SavedPlace[];
-  recents: SavedPlace[];
   updatedAt: number;
   deletedFavoriteIds?: DeletionMarkerMap;
-  deletedRecentIds?: DeletionMarkerMap;
 }
 
 type AnySnapshotData =
@@ -809,10 +807,8 @@ function serializeMapsSnapshot(): MapsSnapshotData {
     home: mapsState.home,
     work: mapsState.work,
     favorites: mapsState.favorites,
-    recents: mapsState.recents,
     updatedAt: mapsState.updatedAt || 0,
     deletedFavoriteIds: deletionMarkers.mapsFavoriteIds,
-    deletedRecentIds: deletionMarkers.mapsRecentIds,
   };
 }
 
@@ -821,13 +817,11 @@ function normalizeMapsSnapshot(data: MapsSnapshotData | null | undefined): MapsS
     home: normalizeSavedPlace(data?.home ?? null),
     work: normalizeSavedPlace(data?.work ?? null),
     favorites: normalizeSavedPlaceList(data?.favorites),
-    recents: normalizeSavedPlaceList(data?.recents),
     updatedAt:
       typeof data?.updatedAt === "number" && Number.isFinite(data.updatedAt)
         ? data.updatedAt
         : 0,
     deletedFavoriteIds: data?.deletedFavoriteIds,
-    deletedRecentIds: data?.deletedRecentIds,
   };
 }
 
@@ -1312,21 +1306,13 @@ function applyMapsSnapshot(data: MapsSnapshotData): void {
   const remoteDeletedFavorites = normalizeDeletionMarkerMap(
     normalized.deletedFavoriteIds
   );
-  const remoteDeletedRecents = normalizeDeletionMarkerMap(
-    normalized.deletedRecentIds
-  );
   const cloudSyncState = useCloudSyncStore.getState();
   const effectiveDeletedFavorites = mergeDeletionMarkerMaps(
     cloudSyncState.deletionMarkers.mapsFavoriteIds,
     remoteDeletedFavorites
   );
-  const effectiveDeletedRecents = mergeDeletionMarkerMaps(
-    cloudSyncState.deletionMarkers.mapsRecentIds,
-    remoteDeletedRecents
-  );
 
   cloudSyncState.mergeDeletedKeys("mapsFavoriteIds", remoteDeletedFavorites);
-  cloudSyncState.mergeDeletedKeys("mapsRecentIds", remoteDeletedRecents);
 
   useMapsStore.getState().replaceFromSync({
     home: normalized.home,
@@ -1336,12 +1322,6 @@ function applyMapsSnapshot(data: MapsSnapshotData): void {
       effectiveDeletedFavorites,
       (place) => place.id
     ),
-    recents: filterDeletedIds(
-      normalized.recents,
-      effectiveDeletedRecents,
-      (place) => place.id
-    ),
-    selectedPlace: useMapsStore.getState().selectedPlace,
   });
   useMapsStore.setState({
     updatedAt: Math.max(useMapsStore.getState().updatedAt || 0, normalized.updatedAt),
@@ -1688,14 +1668,10 @@ function mergeMapsSnapshots(
     normalizeDeletionMarkerMap(localNorm.deletedFavoriteIds),
     normalizeDeletionMarkerMap(remoteNorm.deletedFavoriteIds)
   );
-  const mergedDeletedRecents = mergeDeletionMarkerMaps(
-    normalizeDeletionMarkerMap(localNorm.deletedRecentIds),
-    normalizeDeletionMarkerMap(remoteNorm.deletedRecentIds)
-  );
 
-  // Local wins for home/work/recents ordering when local is strictly newer;
-  // otherwise remote wins. Favorites are the union (minus deletions) so
-  // simultaneous edits on different devices don't drop pins.
+  // Local wins for home/work when local is strictly newer; otherwise remote
+  // wins. Favorites are the union (minus deletions) so simultaneous edits on
+  // different devices don't drop pins. Recents are intentionally device-local.
   const preferLocal = localNorm.updatedAt >= remoteNorm.updatedAt;
   const home = preferLocal ? localNorm.home : remoteNorm.home;
   const work = preferLocal ? localNorm.work : remoteNorm.work;
@@ -1715,27 +1691,12 @@ function mergeMapsSnapshots(
     }
   }
 
-  const recentsById = new Map<string, SavedPlace>();
-  const recentPass = preferLocal
-    ? [localNorm.recents, remoteNorm.recents]
-    : [remoteNorm.recents, localNorm.recents];
-  for (const list of recentPass) {
-    for (const place of list) {
-      if (mergedDeletedRecents[place.id]) continue;
-      if (!recentsById.has(place.id)) {
-        recentsById.set(place.id, place);
-      }
-    }
-  }
-
   return {
     home,
     work,
     favorites: Array.from(favoritesById.values()),
-    recents: Array.from(recentsById.values()).slice(0, 10),
     updatedAt: Math.max(localNorm.updatedAt, remoteNorm.updatedAt),
     deletedFavoriteIds: mergedDeletedFavorites,
-    deletedRecentIds: mergedDeletedRecents,
   };
 }
 

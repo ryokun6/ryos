@@ -116,7 +116,6 @@ function isMapsSnapshotData(value: unknown): boolean {
     home?: unknown;
     work?: unknown;
     favorites?: unknown;
-    recents?: unknown;
   };
   if (candidate.home !== null && candidate.home !== undefined && !isSavedPlaceLike(candidate.home)) {
     return false;
@@ -130,12 +129,8 @@ function isMapsSnapshotData(value: unknown): boolean {
       return false;
     }
   }
-  const recents = candidate.recents;
-  if (recents !== undefined) {
-    if (!Array.isArray(recents) || !recents.every(isSavedPlaceLike)) {
-      return false;
-    }
-  }
+  // recents are device-local and not synced; we intentionally ignore the field
+  // if a stale client still sends it.
   return true;
 }
 

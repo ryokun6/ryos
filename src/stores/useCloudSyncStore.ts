@@ -39,7 +39,6 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "songTrackIds",
   "tvCustomChannelIds",
   "mapsFavoriteIds",
-  "mapsRecentIds",
 ] as const;
 
 export type CloudSyncDeletionBucket =
@@ -65,7 +64,6 @@ function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     songTrackIds: {},
     tvCustomChannelIds: {},
     mapsFavoriteIds: {},
-    mapsRecentIds: {},
   };
 }
 

@@ -246,17 +246,8 @@ describe("logical cloud sync domain API", () => {
                     longitude: -122.41,
                   },
                 ],
-                recents: [
-                  {
-                    id: "rec-1",
-                    name: "Park",
-                    latitude: 37.77,
-                    longitude: -122.4,
-                  },
-                ],
                 updatedAt: 1_711_988_400_000,
                 deletedFavoriteIds: {},
-                deletedRecentIds: {},
               },
             },
           },
@@ -289,6 +280,7 @@ describe("logical cloud sync domain API", () => {
     });
     expect(getJson.parts.maps.data.favorites).toHaveLength(1);
     expect(getJson.parts.maps.data.favorites[0].id).toBe("fav-1");
+    expect(getJson.parts.maps.data.recents).toBeUndefined();
   });
 
   test("PUT /api/sync/domains/maps rejects malformed maps snapshots", async () => {
