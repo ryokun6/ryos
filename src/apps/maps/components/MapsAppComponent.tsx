@@ -545,14 +545,14 @@ export function MapsAppComponent({
     return entries;
   }, [homePlace, workPlace, favoritePlaces]);
 
-  // Sync Home / Work / Favorites annotations on the map. Every saved place
-  // gets the same default red MapKit pin — no per-category color or glyph —
-  // so the map stays calm and the differentiation lives in the place card
-  // and drawer instead. We diff by key so unchanged pins stay put (no
-  // flicker, no MapKit re-allocation) while additions / removals happen
-  // incrementally. The click handler stored on each annotation reads from
-  // `focusSavedPlaceRef`, so the listener stays valid for the lifetime of
-  // the annotation.
+  // Sync Home / Work / Favorites annotations on the map. Each saved kind
+  // gets a distinct pin color — Home blue, Work amber, Favorites gold —
+  // matching the drawer/place-card visual language, but we keep the marker
+  // free of glyphs so the map stays uncluttered. We diff by key so
+  // unchanged pins stay put (no flicker, no MapKit re-allocation) while
+  // additions / removals happen incrementally. The click handler stored on
+  // each annotation reads from `focusSavedPlaceRef`, so the listener stays
+  // valid for the lifetime of the annotation.
   useEffect(() => {
     if (status !== "ready") return;
     const mk = getMapKit();
@@ -592,12 +592,16 @@ export function MapsAppComponent({
         entry.place.latitude,
         entry.place.longitude
       );
+      const color =
+        entry.kind === "home"
+          ? "#1d4ed8" // matches HOME_VISUAL "to" stop in MapsPlacesDrawer
+          : entry.kind === "work"
+            ? "#b45309" // matches WORK_VISUAL "to" stop
+            : "#f59e0b"; // gold for Favorites
       const annotation = new mk.MarkerAnnotation(coord, {
         title: entry.place.name,
         subtitle: entry.place.subtitle ?? "",
-        // Match the search-pin red so saved places blend into MapKit's
-        // default visual language instead of competing with POI markers.
-        color: "#E25B4F",
+        color,
         // Above default search pins so a search result doesn't visually
         // hide a saved annotation at the same location.
         displayPriority: 1000,
