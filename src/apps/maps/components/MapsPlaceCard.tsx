@@ -92,14 +92,7 @@ export function MapsPlaceCard({
           aria-label={t("apps.maps.placeCard.regionLabel", {
             defaultValue: "Selected place",
           })}
-          className={cn(
-            "pointer-events-auto absolute select-none",
-            // Hug the map edges — 6 px on every side. The earlier 8/12 px
-            // insets left a visible band of map peeking around the card; a
-            // smaller, uniform gutter feels closer to the system Maps app
-            // and gives the card more horizontal room on narrow windows.
-            "left-1.5 right-1.5 bottom-1.5"
-          )}
+          className="pointer-events-auto relative w-full min-w-0 select-none"
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 24, opacity: 0 }}

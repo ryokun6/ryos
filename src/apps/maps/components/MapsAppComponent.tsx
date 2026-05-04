@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, NavigationArrow } from "@phosphor-icons/react";
+import { MapPin, Minus, NavigationArrow, Plus } from "@phosphor-icons/react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
@@ -181,6 +181,40 @@ interface MapsSearchResult {
 // stayed at region level and made it hard to see surrounding streets.
 const FOCUS_PLACE_SPAN_DEG = 0.012;
 
+/** Per click: halve / double the visible span (MapKit `CoordinateRegion`). */
+const MAP_ZOOM_STEP_FACTOR = 0.5;
+const MAP_MIN_SPAN_DEG = 0.0005;
+const MAP_MAX_SPAN_DEG = 120;
+
+interface MapKitRegionLike {
+  center: MapKitCoordinate;
+  span: { latitudeDelta: number; longitudeDelta: number };
+}
+
+function readMapRegion(region: unknown): MapKitRegionLike | null {
+  if (!region || typeof region !== "object") return null;
+  const r = region as {
+    center?: MapKitCoordinate;
+    span?: { latitudeDelta?: number; longitudeDelta?: number };
+  };
+  const lat = r.span?.latitudeDelta;
+  const lng = r.span?.longitudeDelta;
+  if (
+    !r.center ||
+    typeof r.center.latitude !== "number" ||
+    typeof r.center.longitude !== "number" ||
+    typeof lat !== "number" ||
+    typeof lng !== "number"
+  ) {
+    return null;
+  }
+  return { center: r.center, span: { latitudeDelta: lat, longitudeDelta: lng } };
+}
+
+function clampMapSpanDegrees(degrees: number): number {
+  return Math.min(MAP_MAX_SPAN_DEG, Math.max(MAP_MIN_SPAN_DEG, degrees));
+}
+
 function statusMessageKey(status: MapKitStatus): string {
   switch (status) {
     case "missing-token":
@@ -284,7 +318,7 @@ export function MapsAppComponent({
     const region = new mk.CoordinateRegion(center, span);
 
     const map = new mk.Map(mapContainerRef.current, {
-      showsZoomControl: true,
+      showsZoomControl: false,
       showsCompass: "hidden",
       showsScale: "adaptive",
       showsMapTypeControl: false,
@@ -945,6 +979,32 @@ export function MapsAppComponent({
     }
   }, [selectedPlace, status, isPlaceSaved, dropPinAt, mapReadyTick]);
 
+  const adjustMapZoom = useCallback((direction: "in" | "out") => {
+    const mk = getMapKit();
+    const map = mapInstanceRef.current;
+    if (!mk || !map) return;
+    const current = readMapRegion(map.region);
+    if (!current) return;
+    const factor =
+      direction === "in" ? MAP_ZOOM_STEP_FACTOR : 1 / MAP_ZOOM_STEP_FACTOR;
+    const latitudeDelta = clampMapSpanDegrees(
+      current.span.latitudeDelta * factor
+    );
+    const longitudeDelta = clampMapSpanDegrees(
+      current.span.longitudeDelta * factor
+    );
+    const center = new mk.Coordinate(
+      current.center.latitude,
+      current.center.longitude
+    );
+    const span = new mk.CoordinateSpan(latitudeDelta, longitudeDelta);
+    const region = new mk.CoordinateRegion(center, span);
+    map.setRegionAnimated(region, true);
+  }, []);
+
+  const handleZoomIn = useCallback(() => adjustMapZoom("in"), [adjustMapZoom]);
+  const handleZoomOut = useCallback(() => adjustMapZoom("out"), [adjustMapZoom]);
+
   const handleLocateMe = useCallback(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -1047,7 +1107,6 @@ export function MapsAppComponent({
         isForeground={isForeground}
         appId="maps"
         material="notitlebar"
-        disableTitlebarAutoHide
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
@@ -1099,68 +1158,13 @@ export function MapsAppComponent({
             </div>
           )}
 
-          {/* Search + results — immersive chrome over the map (Karaoke-style notitlebar window) */}
-          <div
-            className={cn(
-              "pointer-events-none absolute inset-x-0 top-0 z-20 flex max-h-[min(85%,100%)] min-h-0 flex-col gap-1.5 px-1.5 pb-1.5",
-              // Clearance for macOS notitlebar auto-hide strip (h-6) + 4px breathing room.
-              isMacOSTheme ? "pt-7.5" : "pt-2.5"
-            )}
-          >
-            <div className="pointer-events-auto flex items-center gap-2 bg-transparent">
-              <SearchInput
-                value={searchQuery}
-                onChange={(value) => {
-                  setSearchQuery(value);
-                  if (!value) {
-                    setSearchResults([]);
-                    setSearchError(null);
-                    setIsShowingResults(false);
-                  }
-                }}
-                onKeyDown={handleSearchKeyDown}
-                placeholder={t("apps.maps.searchPlaceholder", {
-                  defaultValue: "Search Maps",
-                })}
-                ariaLabel={t("apps.maps.searchPlaceholder", {
-                  defaultValue: "Search Maps",
-                })}
-                className="min-w-0 flex-1"
-              />
-              <Button
-                type="button"
-                variant={isMacOSTheme ? "aqua" : "retro"}
-                size="sm"
-                onClick={handleLocateMe}
-                disabled={!canUseMap}
-                title={t("apps.maps.menu.locateMe", {
-                  defaultValue: "Locate Me",
-                })}
-                aria-label={t("apps.maps.menu.locateMe", {
-                  defaultValue: "Locate Me",
-                })}
-                className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
-              >
-                <NavigationArrow size={12} weight="fill" />
-              </Button>
-              <Button
-                type="button"
-                variant={isMacOSTheme ? "aqua" : "retro"}
-                size="sm"
-                onClick={() => setIsPlacesDrawerOpen((v) => !v)}
-                aria-pressed={isPlacesDrawerOpen}
-                title={t("apps.maps.places.title", { defaultValue: "Places" })}
-                className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
-              >
-                <MapPin size={12} weight="fill" />
-              </Button>
-            </div>
-
+          {/* Search + results — bottom-left over the map (Karaoke-style notitlebar window) */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex max-h-[min(85%,100%)] min-h-0 w-full flex-col items-start justify-end gap-1.5 p-1.5">
             {isShowingResults && (
               <div
                 className={cn(
-                  "pointer-events-auto min-h-0 overflow-y-auto rounded-[0.4rem] border shadow-md",
-                  "max-h-[min(60vh,28rem)]",
+                  "pointer-events-auto min-h-0 w-full min-w-0 overflow-y-auto rounded-[0.4rem] border shadow-md",
+                  "max-h-[min(50vh,24rem)]",
                   isMacOSTheme
                     ? "maps-place-card-aqua border-black/20 text-black"
                     : "border-black/40 bg-white/95 backdrop-blur-sm"
@@ -1229,9 +1233,7 @@ export function MapsAppComponent({
                 )}
               </div>
             )}
-          </div>
 
-          <div className="pointer-events-none absolute inset-0 z-10">
             <MapsPlaceCard
               place={selectedPlace}
               isFavorite={
@@ -1252,6 +1254,94 @@ export function MapsAppComponent({
               onToggleFavorite={handleToggleFavorite}
               onClose={handleClosePlaceCard}
             />
+
+            <div className="pointer-events-auto flex w-full min-w-0 items-center gap-2 bg-transparent">
+              <SearchInput
+                value={searchQuery}
+                onChange={(value) => {
+                  setSearchQuery(value);
+                  if (!value) {
+                    setSearchResults([]);
+                    setSearchError(null);
+                    setIsShowingResults(false);
+                  }
+                }}
+                onKeyDown={handleSearchKeyDown}
+                placeholder={t("apps.maps.searchPlaceholder", {
+                  defaultValue: "Search Maps",
+                })}
+                ariaLabel={t("apps.maps.searchPlaceholder", {
+                  defaultValue: "Search Maps",
+                })}
+                className="min-w-0 flex-1"
+              />
+              <div
+                className="flex shrink-0 items-center gap-2"
+                role="toolbar"
+                aria-label={t("apps.maps.mapToolbar", {
+                  defaultValue: "Map controls",
+                })}
+              >
+                <Button
+                  type="button"
+                  variant={isMacOSTheme ? "aqua" : "retro"}
+                  size="sm"
+                  onClick={handleZoomOut}
+                  disabled={!canUseMap}
+                  title={t("apps.maps.zoomOut", { defaultValue: "Zoom out" })}
+                  aria-label={t("apps.maps.zoomOut", {
+                    defaultValue: "Zoom out",
+                  })}
+                  className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
+                >
+                  <Minus size={12} weight="bold" />
+                </Button>
+                <Button
+                  type="button"
+                  variant={isMacOSTheme ? "aqua" : "retro"}
+                  size="sm"
+                  onClick={handleZoomIn}
+                  disabled={!canUseMap}
+                  title={t("apps.maps.zoomIn", { defaultValue: "Zoom in" })}
+                  aria-label={t("apps.maps.zoomIn", {
+                    defaultValue: "Zoom in",
+                  })}
+                  className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
+                >
+                  <Plus size={12} weight="bold" />
+                </Button>
+                <Button
+                  type="button"
+                  variant={isMacOSTheme ? "aqua" : "retro"}
+                  size="sm"
+                  onClick={handleLocateMe}
+                  disabled={!canUseMap}
+                  title={t("apps.maps.menu.locateMe", {
+                    defaultValue: "Locate Me",
+                  })}
+                  aria-label={t("apps.maps.menu.locateMe", {
+                    defaultValue: "Locate Me",
+                  })}
+                  className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
+                >
+                  <NavigationArrow size={12} weight="fill" />
+                </Button>
+                <Button
+                  type="button"
+                  variant={isMacOSTheme ? "aqua" : "retro"}
+                  size="sm"
+                  onClick={() => setIsPlacesDrawerOpen((v) => !v)}
+                  aria-pressed={isPlacesDrawerOpen}
+                  title={t("apps.maps.places.title", { defaultValue: "Places" })}
+                  aria-label={t("apps.maps.places.title", {
+                    defaultValue: "Places",
+                  })}
+                  className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
+                >
+                  <MapPin size={12} weight="fill" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </WindowFrame>
