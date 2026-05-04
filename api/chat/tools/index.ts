@@ -247,6 +247,12 @@ export const TOOL_DESCRIPTIONS = {
     "an address they just mentioned, etc.). The tool only accepts a point anchor — there is no separate region/bounding-box " +
     "parameter. When you reference a result in chat, mention it by name + city — the client renders the rich card automatically.",
 
+  mapsSearchPlacesTelegram:
+    "Search Apple Maps for points of interest, businesses, and addresses (Telegram DM). Same inputs as the main maps tool. " +
+    "Each result includes 'appleMapsUrl' (https://maps.apple.com/...). There is no rich place card in Telegram — you MUST paste " +
+    "the exact appleMapsUrl for every place you mention in your reply (plain URL text, one per line is fine). " +
+    "Do not invent URLs; only use appleMapsUrl values from this tool's JSON output.",
+
   webFetch:
     "Fetch and read the text content of a web page. Use this when the user asks you to look something up online, " +
     "read an article, check a website, get information from a URL, or when you need live/current data from the web. " +
@@ -561,7 +567,10 @@ export function createChatTools(
           return executeSongLibraryControl(input, context);
         },
       },
-      mapsSearchPlaces: allTools.mapsSearchPlaces,
+      mapsSearchPlaces: {
+        ...allTools.mapsSearchPlaces,
+        description: TOOL_DESCRIPTIONS.mapsSearchPlacesTelegram,
+      },
     } as Pick<typeof allTools, (typeof _TELEGRAM_TOOL_NAMES)[number]>;
   }
 
