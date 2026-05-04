@@ -41,6 +41,7 @@ graph TD
 | `generateHtml` | Create HTML applets with title and emoji icon |
 | `aquarium` | Render interactive emoji aquarium in chat |
 | `list` | List VFS items: `/Applets`, `/Documents` (includes document names), `/Applications`, `/Music`, `/Applets Store` |
+| `mapsSearchPlaces` | Server-side Apple MapKit place search; chat shows an inline card — tapping a result opens **Maps** in ryOS with that place selected; external link opens Apple Maps |
 | `open` | Open files/apps/media from virtual file system |
 | `read` | Read file contents (applets, documents, Applets Store items) |
 | `write` | Create/modify markdown documents (overwrite/append/prepend modes) |
