@@ -132,6 +132,7 @@ Shared conversation preparation lives in `api/_utils/ryo-conversation.ts`:
 - `prepareRyoConversationModelInput()` - Unified entry point for both web chat and Telegram channels
 - Assembles static system prompt, dynamic context (memories, daily notes, system state), and tools
 - Handles model selection, message enrichment, and OpenAI web search injection
+- Cursor Cloud agent completion notifications sent to Telegram (`formatCursorRunCompletionTelegramMessage` in `api/chat/tools/cursor-repo-agent.ts`) run the summary and title through `simplifyTelegramCitationDisplay` in `api/_utils/telegram-format.ts` so DMs stay plain text; web chat / polling still use the raw summary.
 
 ### Tool schema highlights
 
