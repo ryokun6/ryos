@@ -238,6 +238,167 @@ export async function searchPlaces(
   return (await response.json()) as MapKitSearchResponse;
 }
 
+/** --- Directions (`/v1/directions`) --- */
+
+export type AppleDirectionsTransportType =
+  | "AUTOMOBILE"
+  | "WALKING"
+  | "TRANSIT"
+  | "CYCLING";
+
+export interface DirectionsCoordinate {
+  latitude: number;
+  longitude: number;
+}
+
+export interface DirectionsRouteDto {
+  name?: string;
+  distanceMeters?: number;
+  durationSeconds?: number;
+  transportType?: string;
+  stepIndexes?: number[];
+  hasTolls?: boolean;
+}
+
+export interface DirectionsStepDto {
+  stepPathIndex?: number;
+  distanceMeters?: number;
+  durationSeconds?: number;
+  instructions?: string;
+}
+
+/** Raw JSON from `GET /v1/directions` (subset we consume). */
+export interface DirectionsApiResponse {
+  destination?: {
+    name?: string;
+    formattedAddressLines?: string[];
+    center?: DirectionsCoordinate;
+  };
+  routes?: DirectionsRouteDto[];
+  steps?: DirectionsStepDto[];
+}
+
+export interface NormalizedDirectionsStep {
+  instructions?: string;
+  distanceMeters: number;
+  durationSeconds: number;
+}
+
+export interface NormalizedDirectionsRoute {
+  name: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  transportType: string;
+  hasTolls: boolean;
+  steps: NormalizedDirectionsStep[];
+}
+
+export interface GetDirectionsOptions {
+  /** Origin: `"lat,lng"` or a free-text address (Apple resolves both). */
+  origin: string;
+  /** Destination: `"lat,lng"` or free-text. */
+  destination: string;
+  transportType?: AppleDirectionsTransportType;
+  lang?: string;
+  signal?: AbortSignal;
+}
+
+/**
+ * Pick the first route with usable distance/duration and attach step text from
+ * the global `steps` array via each route's `stepIndexes`.
+ */
+export function normalizeDirectionsResponse(
+  data: DirectionsApiResponse | null | undefined
+): NormalizedDirectionsRoute | null {
+  if (!data || !Array.isArray(data.routes) || data.routes.length === 0) {
+    return null;
+  }
+  const allSteps = Array.isArray(data.steps) ? data.steps : [];
+  for (const route of data.routes) {
+    const dist =
+      typeof route.distanceMeters === "number" ? route.distanceMeters : NaN;
+    const dur =
+      typeof route.durationSeconds === "number" ? route.durationSeconds : NaN;
+    if (!Number.isFinite(dist) || !Number.isFinite(dur)) continue;
+
+    const indexes = Array.isArray(route.stepIndexes) ? route.stepIndexes : [];
+    const collected: NormalizedDirectionsStep[] = [];
+    for (const idx of indexes) {
+      if (typeof idx !== "number" || idx < 0 || idx >= allSteps.length) continue;
+      const s = allSteps[idx];
+      if (!s) continue;
+      const dm =
+        typeof s.distanceMeters === "number" ? s.distanceMeters : 0;
+      const ds =
+        typeof s.durationSeconds === "number" ? s.durationSeconds : 0;
+      collected.push({
+        instructions:
+          typeof s.instructions === "string" ? s.instructions : undefined,
+        distanceMeters: dm,
+        durationSeconds: ds,
+      });
+    }
+
+    return {
+      name: typeof route.name === "string" && route.name.trim().length > 0
+        ? route.name.trim()
+        : "Route",
+      distanceMeters: dist,
+      durationSeconds: dur,
+      transportType:
+        typeof route.transportType === "string"
+          ? route.transportType
+          : "AUTOMOBILE",
+      hasTolls: Boolean(route.hasTolls),
+      steps: collected,
+    };
+  }
+  return null;
+}
+
+/**
+ * Request turn-by-turn directions from the Apple Maps Server API.
+ *
+ * @see https://developer.apple.com/documentation/applemapsserverapi/-v1-directions
+ */
+export async function getDirections(
+  options: GetDirectionsOptions
+): Promise<{
+  raw: DirectionsApiResponse;
+  route: NormalizedDirectionsRoute | null;
+}> {
+  const accessToken = await fetchAccessToken();
+  const url = new URL(`${MAPS_API_HOST}/v1/directions`);
+  url.searchParams.set("origin", options.origin.trim());
+  url.searchParams.set("destination", options.destination.trim());
+  if (options.transportType) {
+    url.searchParams.set("transportType", options.transportType);
+  }
+  if (options.lang) {
+    url.searchParams.set("lang", options.lang.trim());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: options.signal,
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    cachedAccessToken = null;
+  }
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(
+      `Apple Maps Server API directions failed: ${response.status} ${detail.slice(0, 200)}`
+    );
+  }
+
+  const raw = (await response.json()) as DirectionsApiResponse;
+  return { raw, route: normalizeDirectionsResponse(raw) };
+}
+
 /** Resolve the canonical POI category for a search hit. */
 export function resolvePoiCategory(place: MapKitSearchPlace): string | undefined {
   return (
