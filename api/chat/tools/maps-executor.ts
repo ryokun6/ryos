@@ -11,6 +11,7 @@ import {
   type MapKitSearchPlace,
 } from "../../_utils/_mapkit-server.js";
 import { listMapKitMissingEnv } from "../../_utils/_mapkit-jwt.js";
+import { buildAppleMapsPlaceUrl } from "../../src/apps/maps/utils/appleMapsLinks.js";
 import type {
   MapsSearchPlaceResult,
   MapsSearchPlacesInput,
@@ -32,21 +33,20 @@ function buildAppleMapsUrl(
   place: MapKitSearchPlace,
   fallbackLabel: string
 ): string {
-  const url = new URL("https://maps.apple.com/");
-  if (place.coordinate) {
-    url.searchParams.set(
-      "ll",
-      `${place.coordinate.latitude},${place.coordinate.longitude}`
-    );
+  const coord = place.coordinate;
+  if (!coord || typeof coord.latitude !== "number" || typeof coord.longitude !== "number") {
+    const url = new URL("https://maps.apple.com/");
+    const label = place.name || fallbackLabel;
+    if (label) url.searchParams.set("q", label);
+    if (place.placeId) url.searchParams.set("place-id", place.placeId);
+    return url.toString();
   }
-  const label = place.name || fallbackLabel;
-  if (label) {
-    url.searchParams.set("q", label);
-  }
-  if (place.placeId) {
-    url.searchParams.set("place-id", place.placeId);
-  }
-  return url.toString();
+  return buildAppleMapsPlaceUrl({
+    latitude: coord.latitude,
+    longitude: coord.longitude,
+    name: place.name || fallbackLabel,
+    placeId: place.placeId ?? null,
+  });
 }
 
 function buildResult(

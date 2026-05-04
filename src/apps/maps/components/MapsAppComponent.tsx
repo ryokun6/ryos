@@ -17,7 +17,10 @@ import { MapsPlaceCard } from "./MapsPlaceCard";
 import { useMapsStore } from "@/stores/useMapsStore";
 import type { SavedPlace } from "../utils/types";
 import { getPoiMarkerAnnotationOptions } from "../utils/poiMarkerStyle";
-import { buildAppleMapsDrivingDirectionsUrl } from "../utils/appleMapsLinks";
+import {
+  buildAppleMapsDrivingDirectionsUrl,
+  buildAppleMapsPlaceUrl,
+} from "../utils/appleMapsLinks";
 import {
   homeMarkerAnnotationStyle,
   workMarkerAnnotationStyle,
@@ -133,11 +136,28 @@ interface MapKitMarkerAnnotation {
 //   https://developer.apple.com/documentation/mapkitjs/regionpriority
 type MapKitRegionPriority = "default" | "required";
 
+interface MapKitPlaceLookupInstance {
+  getPlace: (
+    id: string,
+    callback: (error: Error | null, place?: MapKitPlace) => void
+  ) => number;
+}
+
+interface MapKitPlaceDetailInstance {
+  destroy: () => void;
+}
+
 interface MapKitGlobal {
   Map: new (
     element: HTMLElement,
     options?: Record<string, unknown>
   ) => MapKitMapInstance;
+  PlaceLookup: new (options?: Record<string, unknown>) => MapKitPlaceLookupInstance;
+  PlaceDetail: new (
+    parent: HTMLElement,
+    place?: MapKitPlace | null,
+    options?: Record<string, unknown>
+  ) => MapKitPlaceDetailInstance;
   Coordinate: new (latitude: number, longitude: number) => MapKitCoordinate;
   CoordinateRegion: new (center: MapKitCoordinate, span: unknown) => unknown;
   CoordinateSpan: new (
@@ -281,6 +301,10 @@ export function MapsAppComponent({
   });
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  /** Host for MapKit `PlaceDetail`; sits above the map, under overlays. */
+  const placeDetailHostRef = useRef<HTMLDivElement | null>(null);
+  const placeDetailRef = useRef<MapKitPlaceDetailInstance | null>(null);
+  const placeDetailRequestIdRef = useRef(0);
   const mapInstanceRef = useRef<MapKitMapInstance | null>(null);
   const annotationRef = useRef<MapKitMarkerAnnotation | null>(null);
   const searchInstanceRef = useRef<MapKitSearchInstance | null>(null);
@@ -307,6 +331,8 @@ export function MapsAppComponent({
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
   const [isShowingResults, setIsShowingResults] = useState(false);
   const [isPlacesDrawerOpen, setIsPlacesDrawerOpen] = useState(false);
+  const [isMapKitPlaceDetailVisible, setIsMapKitPlaceDetailVisible] =
+    useState(false);
 
   // Persistent Home / Work / Favorites / Recents + currently-open place.
   const homePlace = useMapsStore((s) => s.home);
@@ -452,6 +478,19 @@ export function MapsAppComponent({
     mapInstanceRef.current = null;
     annotationRef.current = null;
     mapMarkersClusteredRef.current = false;
+    placeDetailRequestIdRef.current += 1;
+    setIsMapKitPlaceDetailVisible(false);
+    if (placeDetailRef.current) {
+      try {
+        placeDetailRef.current.destroy();
+      } catch {
+        // ignore
+      }
+      placeDetailRef.current = null;
+    }
+    if (placeDetailHostRef.current) {
+      placeDetailHostRef.current.replaceChildren();
+    }
     // Reset the readiness counter so the next time the window opens the
     // saved-annotations sync re-runs against the freshly-created map.
     setMapReadyTick(0);
@@ -478,6 +517,19 @@ export function MapsAppComponent({
         mapInstanceRef.current = null;
         annotationRef.current = null;
         mapMarkersClusteredRef.current = false;
+        placeDetailRequestIdRef.current += 1;
+        setIsMapKitPlaceDetailVisible(false);
+        if (placeDetailRef.current) {
+          try {
+            placeDetailRef.current.destroy();
+          } catch {
+            // ignore
+          }
+          placeDetailRef.current = null;
+        }
+        if (placeDetailHostRef.current) {
+          placeDetailHostRef.current.replaceChildren();
+        }
       }
     };
   }, []);
@@ -770,10 +822,105 @@ export function MapsAppComponent({
     setSelectedResultId(null);
   }, []);
 
+  const clearMapKitPlaceDetailView = useCallback(() => {
+    setIsMapKitPlaceDetailVisible(false);
+    if (placeDetailRef.current) {
+      try {
+        placeDetailRef.current.destroy();
+      } catch {
+        // ignore
+      }
+      placeDetailRef.current = null;
+    }
+    placeDetailHostRef.current?.replaceChildren();
+  }, []);
+
+  const invalidatePlaceDetailRequests = useCallback(() => {
+    placeDetailRequestIdRef.current += 1;
+  }, []);
+
+  const destroyMapKitPlaceDetail = useCallback(() => {
+    invalidatePlaceDetailRequests();
+    clearMapKitPlaceDetailView();
+  }, [invalidatePlaceDetailRequests, clearMapKitPlaceDetailView]);
+
+  const handleOpenMapKitPlaceDetails = useCallback(
+    (place: SavedPlace) => {
+      const mk = getMapKit() as MapKitGlobal | null;
+      const finishWithFallback = () => {
+        window.open(
+          buildAppleMapsPlaceUrl({
+            latitude: place.latitude,
+            longitude: place.longitude,
+            name: place.name,
+            placeId: place.placeId ?? null,
+          }),
+          "_blank",
+          "noopener,noreferrer"
+        );
+      };
+
+      if (!mk || status !== "ready") {
+        finishWithFallback();
+        return;
+      }
+
+      const host = placeDetailHostRef.current;
+      if (!host) {
+        finishWithFallback();
+        return;
+      }
+
+      invalidatePlaceDetailRequests();
+      const requestId = placeDetailRequestIdRef.current;
+      clearMapKitPlaceDetailView();
+
+      const PlaceDetailCtor = mk.PlaceDetail;
+      const PlaceLookupCtor = mk.PlaceLookup;
+      const placeId = place.placeId?.trim();
+      if (!PlaceDetailCtor || !PlaceLookupCtor || !placeId) {
+        finishWithFallback();
+        return;
+      }
+
+      try {
+        const lookup = new PlaceLookupCtor();
+        lookup.getPlace(placeId, (err, resolved) => {
+          if (requestId !== placeDetailRequestIdRef.current) {
+            return;
+          }
+          if (err || !resolved) {
+            finishWithFallback();
+            return;
+          }
+          try {
+            const adaptive = (
+              PlaceDetailCtor as unknown as {
+                ColorSchemes?: { Adaptive?: unknown };
+              }
+            ).ColorSchemes?.Adaptive;
+            const detail = new PlaceDetailCtor(host, resolved, {
+              ...(adaptive != null ? { colorScheme: adaptive } : {}),
+              displaysMap: true,
+            });
+            placeDetailRef.current = detail;
+            setIsMapKitPlaceDetailVisible(true);
+          } catch {
+            finishWithFallback();
+          }
+        });
+      } catch {
+        finishWithFallback();
+      }
+    },
+    [status, invalidatePlaceDetailRequests, clearMapKitPlaceDetailView]
+  );
+
   const handleClosePlaceCard = useCallback(() => {
+    destroyMapKitPlaceDetail();
     setSelectedPlace(null);
     clearDroppedAnnotation();
-  }, [setSelectedPlace, clearDroppedAnnotation]);
+  }, [destroyMapKitPlaceDetail, setSelectedPlace, clearDroppedAnnotation]);
 
   const handleOpenPlaceDirections = useCallback((place: SavedPlace) => {
     const url = buildAppleMapsDrivingDirectionsUrl(
@@ -1254,6 +1401,16 @@ export function MapsAppComponent({
               defaultValue: "Map",
             })}
           />
+          <div
+            ref={placeDetailHostRef}
+            className={cn(
+              "pointer-events-auto absolute inset-x-2 bottom-[min(36%,12rem)] top-16 z-[25]",
+              "min-h-0 max-h-[min(70%,28rem)] overflow-hidden rounded-[0.5rem]",
+              "shadow-lg ring-1 ring-black/15",
+              canUseMap && isMapKitPlaceDetailVisible ? "" : "hidden"
+            )}
+            aria-live="polite"
+          />
 
           {overlayMessage && (
             <div
@@ -1377,6 +1534,7 @@ export function MapsAppComponent({
               onSetWork={(p) => setWorkPlace(p)}
               onToggleFavorite={handleToggleFavorite}
               onDirections={handleOpenPlaceDirections}
+              onPlaceDetails={handleOpenMapKitPlaceDetails}
               onClose={handleClosePlaceCard}
             />
 

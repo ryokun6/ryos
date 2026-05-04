@@ -3,6 +3,7 @@ import { motion, AnimatePresence, type Transition } from "framer-motion";
 import {
   Briefcase,
   House,
+  Info,
   NavigationArrow,
   Star,
   X,
@@ -38,6 +39,8 @@ export interface MapsPlaceCardProps {
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
   onDirections: (place: SavedPlace) => void;
+  /** MapKit place details (in-app) or Apple Maps fallback in a new tab. */
+  onPlaceDetails: (place: SavedPlace) => void;
   onClose: () => void;
 }
 
@@ -92,6 +95,7 @@ export function MapsPlaceCard({
   onSetWork,
   onToggleFavorite,
   onDirections,
+  onPlaceDetails,
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
@@ -137,6 +141,7 @@ export function MapsPlaceCard({
               isHome={isHome}
               isWork={isWork}
               onClose={onClose}
+              onPlaceDetails={() => onPlaceDetails(place)}
               t={t}
             />
             <PlaceCardActions
@@ -164,6 +169,7 @@ interface PlaceCardHeaderProps {
   isHome: boolean;
   isWork: boolean;
   onClose: () => void;
+  onPlaceDetails: () => void;
   t: ReturnType<typeof useTranslation>["t"];
 }
 
@@ -172,6 +178,7 @@ function PlaceCardHeader({
   isHome,
   isWork,
   onClose,
+  onPlaceDetails,
   t,
 }: PlaceCardHeaderProps) {
   const homeTitle = t("apps.maps.places.home", { defaultValue: "Home" });
@@ -223,20 +230,43 @@ function PlaceCardHeader({
           </div>
         )}
       </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className={cn(
-          "shrink-0 -mr-0.5 -mt-0.5 flex h-6 w-6 items-center justify-center rounded-full",
-          "text-black/55 hover:bg-black/10 hover:text-black/85",
-          "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
-        )}
-        aria-label={t("apps.maps.placeCard.close", {
-          defaultValue: "Close place card",
-        })}
-      >
-        <X size={12} weight="bold" />
-      </button>
+      <div className="flex shrink-0 items-start gap-0.5">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPlaceDetails();
+          }}
+          className={cn(
+            "flex h-6 w-6 items-center justify-center rounded-full",
+            "text-black/50 hover:bg-black/8 hover:text-black/80",
+            "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
+          )}
+          aria-label={t("apps.maps.placeCard.placeDetails", {
+            defaultValue: "Place details",
+          })}
+          title={t("apps.maps.placeCard.placeDetails", {
+            defaultValue: "Place details",
+          })}
+        >
+          <Info size={14} weight="bold" />
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className={cn(
+            "flex h-6 w-6 items-center justify-center rounded-full",
+            "-mr-0.5 -mt-0.5",
+            "text-black/55 hover:bg-black/10 hover:text-black/85",
+            "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
+          )}
+          aria-label={t("apps.maps.placeCard.close", {
+            defaultValue: "Close place card",
+          })}
+        >
+          <X size={12} weight="bold" />
+        </button>
+      </div>
     </div>
   );
 }
