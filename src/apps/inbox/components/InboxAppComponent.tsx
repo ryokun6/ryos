@@ -18,7 +18,13 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { AppId } from "@/config/appRegistry";
 import type { InboxItem } from "@/lib/inbox/inboxTypes";
-import { ArrowLeft, EnvelopeSimple, Trash } from "@phosphor-icons/react";
+import {
+  ArrowLeft,
+  CaretDown,
+  CaretRight,
+  EnvelopeSimple,
+  Trash,
+} from "@phosphor-icons/react";
 
 const TAB_ORDER: InboxTabFilter[] = [
   "all",
@@ -96,6 +102,7 @@ export function InboxAppComponent({
     setTab,
     items,
     filteredItems,
+    visibleListItems,
     totalUnread,
     filteredUnreadCount,
     selectedId,
@@ -107,6 +114,9 @@ export function InboxAppComponent({
     toggleRead,
     removeItem,
     clearRead,
+    stackSections,
+    expandedStacks,
+    toggleStackExpanded,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,
@@ -144,7 +154,7 @@ export function InboxAppComponent({
       const now = Date.now();
       return formatInboxTimestamp(ts, now, t, formatAbsolute);
     },
-    [formatAbsolute, locale, t]
+    [formatAbsolute, t]
   );
 
   const handleSelect = useCallback(
@@ -191,20 +201,20 @@ export function InboxAppComponent({
 
   const moveSelection = useCallback(
     (delta: number) => {
-      if (filteredItems.length === 0) return;
+      if (visibleListItems.length === 0) return;
       const idx = selectedId
-        ? filteredItems.findIndex((i) => i.id === selectedId)
+        ? visibleListItems.findIndex((i) => i.id === selectedId)
         : -1;
       const start = idx >= 0 ? idx : 0;
       const next = Math.min(
-        filteredItems.length - 1,
+        visibleListItems.length - 1,
         Math.max(0, start + delta)
       );
-      const item = filteredItems[next];
+      const item = visibleListItems[next];
       setSelectedId(item.id);
       markRead(item.id);
     },
-    [filteredItems, markRead, selectedId, setSelectedId]
+    [visibleListItems, markRead, selectedId, setSelectedId]
   );
 
   const copySelection = useCallback(async () => {
@@ -283,6 +293,68 @@ export function InboxAppComponent({
     selectedItem,
   ]);
 
+  const rowMetaLabel = useCallback(
+    (item: InboxItem) => {
+      const app = item.source?.extras?.appLabel?.trim();
+      if (app) return app;
+      return tabLabel(item.category);
+    },
+    [tabLabel]
+  );
+
+  const renderInboxRow = useCallback(
+    (item: InboxItem, inStack?: boolean) => {
+      const unread = item.readAt === null;
+      const active = item.id === selectedId;
+      return (
+        <button
+          type="button"
+          onClick={() => handleSelect(item)}
+          className={cn(
+            "flex w-full flex-col gap-0.5 py-2 text-left transition-colors",
+            inStack ? "px-2.5" : "px-3",
+            active
+              ? "bg-os-selection-bg/25"
+              : "hover:bg-black/[0.04] dark:hover:bg-white/[0.05]",
+            unread && !active && "bg-blue-500/[0.06] dark:bg-blue-400/[0.08]"
+          )}
+        >
+          <div className="flex items-start gap-2">
+            <span
+              className={cn(
+                "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                unread
+                  ? "bg-blue-600 dark:bg-blue-400"
+                  : "bg-black/15 dark:bg-white/20"
+              )}
+              aria-hidden
+            />
+            <div className="min-w-0 flex-1">
+              <div
+                className={cn(
+                  "truncate text-[12px] leading-tight",
+                  unread ? "font-semibold" : "font-medium opacity-90"
+                )}
+              >
+                {item.title}
+              </div>
+              <div className="line-clamp-2 text-[11px] leading-snug text-black/55 dark:text-white/50">
+                {item.preview}
+              </div>
+              <div className="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-black/40 dark:text-white/35">
+                <span className="min-w-0 truncate">{rowMetaLabel(item)}</span>
+                <span className="shrink-0 tabular-nums">
+                  {relTime(item.updatedAt)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </button>
+      );
+    },
+    [handleSelect, relTime, rowMetaLabel, selectedId]
+  );
+
   const emptyState = (opts: { title: string; hint?: string }) => (
     <li className="px-4 py-10">
       <div className="mx-auto flex max-w-[240px] flex-col items-center text-center">
@@ -356,59 +428,54 @@ export function InboxAppComponent({
                     hint: t("apps.inbox.toolbar.emptyFilteredHint"),
                   })
           ) : (
-            filteredItems.map((item) => {
-              const unread = item.readAt === null;
-              const active = item.id === selectedId;
+            stackSections.map((sec) => {
+              const stackUnread = sec.items.filter((i) => i.readAt === null).length;
+              if (!sec.isStack || sec.items.length < 2) {
+                const item = sec.items[0];
+                return item ? (
+                  <li className="border-b border-black/10" key={sec.key}>
+                    {renderInboxRow(item)}
+                  </li>
+                ) : null;
+              }
+              const expanded = expandedStacks.has(sec.key);
+              const shown = expanded ? sec.items : [sec.items[0]];
               return (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect(item)}
-                    className={cn(
-                      "flex w-full flex-col gap-0.5 px-3 py-2 text-left transition-colors",
-                      active
-                        ? "bg-os-selection-bg/25"
-                        : "hover:bg-black/[0.04] dark:hover:bg-white/[0.05]",
-                      unread &&
-                        !active &&
-                        "bg-blue-500/[0.06] dark:bg-blue-400/[0.08]"
-                    )}
-                  >
-                    <div className="flex items-start gap-2">
-                      <span
-                        className={cn(
-                          "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-                          unread
-                            ? "bg-blue-600 dark:bg-blue-400"
-                            : "bg-black/15 dark:bg-white/20"
-                        )}
-                        aria-hidden
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div
-                          className={cn(
-                            "truncate text-[12px] leading-tight",
-                            unread
-                              ? "font-semibold"
-                              : "font-medium opacity-90"
-                          )}
-                        >
-                          {item.title}
-                        </div>
-                        <div className="line-clamp-2 text-[11px] leading-snug text-black/55 dark:text-white/50">
-                          {item.preview}
-                        </div>
-                        <div className="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-black/40 dark:text-white/35">
-                          <span className="min-w-0 truncate">
-                            {tabLabel(item.category)}
-                          </span>
-                          <span className="shrink-0 tabular-nums">
-                            {relTime(item.updatedAt)}
-                          </span>
-                        </div>
-                      </div>
+                <li key={sec.key}>
+                  <div className="mx-2 mb-1.5 mt-1 rounded-[10px] border border-black/12 bg-black/[0.03] shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:border-white/10 dark:bg-white/[0.04]">
+                    <div className="flex items-center justify-between gap-2 border-b border-black/8 px-2.5 py-1 dark:border-white/8">
+                      <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-black/45 dark:text-white/42">
+                        {sec.label}
+                      </span>
+                      <span className="shrink-0 text-[10px] tabular-nums text-black/40 dark:text-white/35">
+                        {t("apps.inbox.stack.count", {
+                          count: sec.items.length,
+                          unread: stackUnread,
+                        })}
+                      </span>
                     </div>
-                  </button>
+                    <ul className="divide-y divide-black/8 dark:divide-white/8">
+                      {shown.map((item) => (
+                        <li key={item.id}>{renderInboxRow(item, true)}</li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-center gap-1 border-t border-black/8 py-1 text-[10px] font-medium text-black/55 transition-colors hover:bg-black/[0.04] dark:border-white/8 dark:text-white/50 dark:hover:bg-white/[0.06]"
+                      onClick={() => toggleStackExpanded(sec.key)}
+                    >
+                      {expanded ? (
+                        <CaretDown className="h-3 w-3" weight="bold" />
+                      ) : (
+                        <CaretRight className="h-3 w-3" weight="bold" />
+                      )}
+                      {expanded
+                        ? t("apps.inbox.stack.showLess")
+                        : t("apps.inbox.stack.showAll", {
+                            count: sec.items.length,
+                          })}
+                    </button>
+                  </div>
                 </li>
               );
             })
@@ -466,9 +533,6 @@ export function InboxAppComponent({
             <Trash className="h-3.5 w-3.5" weight="bold" />
           </Button>
         </div>
-        <p className="px-0.5 text-[9px] leading-tight text-black/35 dark:text-white/28">
-          {t("apps.inbox.toolbar.keyboardHints")}
-        </p>
       </div>
     </div>
   );

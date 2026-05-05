@@ -3347,24 +3347,30 @@
       },
       "toolbar": {
         "clearReadConfirm": "Remove all read items?",
-        "emptyFiltered": "Nothing in this view yet.",
-        "emptyFilteredHint": "Try another tab, or leave Inbox open while you use Chats and applets—new notices appear here automatically.",
-        "emptyUnread": "You're all caught up.",
-        "emptyUnreadHint": "Unread items from agents, applets, chats, and shared links will show up here when something new arrives.",
+        "emptyFiltered": "Nothing in this tab.",
+        "emptyUnread": "No unread items.",
         "emptyAll": "Your inbox is empty.",
-        "detailPlaceholder": "Select a message in the list, or press ↓ to start.",
-        "detailEmptyFiltered": "No items in this tab.",
+        "detailPlaceholder": "Select a message.",
+        "detailEmptyFiltered": "Nothing in this tab.",
         "summaryCount": "{{total}} items · {{unread}} unread",
         "markAllReadInView": "Mark all read",
         "copySummary": "Copy",
         "copied": "Copied",
-        "keyboardHints": "↑↓ select · Enter open · R read · U unread · C copy · ⌫ delete",
         "openLink": "Open link",
         "openApp": "Open app",
         "received": "Updated",
         "producer": "Source",
-        "noActions": "No shortcut for this item—it's informational.",
+        "noActions": "No shortcut for this item.",
         "backToList": "Messages"
+      },
+      "stack": {
+        "count": "{{count}} · {{unread}} unread",
+        "showAll": "Show all {{count}}",
+        "showLess": "Show less"
+      },
+      "calendarReminder": {
+        "preview": "{{time}}",
+        "previewWithLocation": "{{time}} · {{location}}"
       },
       "time": {
         "justNow": "Just now",

@@ -474,6 +474,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      sonner: path.resolve(__dirname, "./src/lib/sonner-shim.tsx"),
+      "sonner-original": path.resolve(__dirname, "./node_modules/sonner"),
     },
   },
   // esbuild options for faster dev transforms

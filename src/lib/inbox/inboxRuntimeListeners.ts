@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useCalendarEventInboxReminders } from "@/lib/inbox/useCalendarEventInboxReminders";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import { onAppletUpdated, type AppletUpdatedEventDetail } from "@/utils/appEventBus";
@@ -66,7 +67,14 @@ export function recordAppletUpdatedInbox(detail: AppletUpdatedEventDetail) {
       appId: "applet-viewer",
       initialData: path ? { path } : undefined,
     },
-    source: { producer: "chats_edit_applet", extras: path ? { path } : undefined },
+    source: {
+      producer: "chats_edit_applet",
+      extras: {
+        stackGroupKey: "app:applet-viewer",
+        appLabel: "Applets",
+        ...(path ? { path } : {}),
+      },
+    },
   });
 }
 
@@ -137,6 +145,8 @@ export function pollCursorAgentRunForInbox(rootRunId: string) {
         source: {
           producer: "cursor_cloud_agent",
           extras: {
+            stackGroupKey: "app:cursor_agent",
+            appLabel: "Agents",
             rootRunId,
             activeRunId,
             ...(mergedMeta.agentId ? { agentId: mergedMeta.agentId } : {}),
@@ -173,6 +183,7 @@ export function pollCursorAgentRunForInbox(rootRunId: string) {
 }
 
 export function useInboxRuntimeSubscriptions() {
+  useCalendarEventInboxReminders();
   useEffect(() => {
     return onAppletUpdated((e) => recordAppletUpdatedInbox(e.detail));
   }, []);

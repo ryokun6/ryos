@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { helpItems } from "../metadata";
@@ -12,6 +13,7 @@ export function useInboxLogic({
 }: {
   instanceId: string;
 }) {
+  const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("inbox", helpItems);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -48,6 +50,77 @@ export function useInboxLogic({
     [filteredItems]
   );
 
+  const [expandedStacks, setExpandedStacks] = useState<Set<string>>(() => new Set());
+
+  const stackSections = useMemo(() => {
+    const map = new Map<string, InboxItem[]>();
+    for (const item of filteredItems) {
+      const raw = item.source?.extras?.stackGroupKey?.trim();
+      const key =
+        raw && raw.length > 0 ? raw : (`solo:${item.id}` as const);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
+    }
+    const catLabel = (c: InboxCategory) => {
+      if (c === "system") return t("apps.inbox.tabs.system");
+      return t(`apps.inbox.tabs.${c}`);
+    };
+    return Array.from(map.entries())
+      .map(([key, groupItems]) => {
+        const sorted = [...groupItems].sort(
+          (a, b) => b.updatedAt - a.updatedAt
+        );
+        const first = sorted[0];
+        const label =
+          first?.source?.extras?.appLabel?.trim() ||
+          (first ? catLabel(first.category) : "");
+        const isStack = key.startsWith("app:");
+        return { key, items: sorted, label, isStack };
+      })
+      .sort(
+        (a, b) =>
+          Math.max(...b.items.map((i) => i.updatedAt)) -
+          Math.max(...a.items.map((i) => i.updatedAt))
+      );
+  }, [filteredItems, t]);
+
+  const toggleStackExpanded = useCallback((key: string) => {
+    setExpandedStacks((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const visibleListItems = useMemo(() => {
+    const out: InboxItem[] = [];
+    for (const sec of stackSections) {
+      if (sec.isStack && sec.items.length > 1) {
+        const open = expandedStacks.has(sec.key);
+        if (open) out.push(...sec.items);
+        else out.push(sec.items[0]);
+      } else {
+        out.push(...sec.items);
+      }
+    }
+    return out;
+  }, [expandedStacks, stackSections]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const sel = items.find((i) => i.id === selectedId);
+    if (!sel) return;
+    const gk = sel.source?.extras?.stackGroupKey;
+    if (!gk?.startsWith("app:")) return;
+    const same = filteredItems.filter(
+      (i) => i.source?.extras?.stackGroupKey === gk
+    );
+    if (same.length > 1) {
+      setExpandedStacks((prev) => new Set(prev).add(gk));
+    }
+  }, [filteredItems, items, selectedId]);
+
   const selectedItem: InboxItem | null = useMemo(() => {
     if (!selectedId) return null;
     return items.find((i) => i.id === selectedId) ?? null;
@@ -62,11 +135,11 @@ export function useInboxLogic({
 
   useEffect(() => {
     setSelectedId((prev) => {
-      if (filteredItems.length === 0) return null;
-      if (prev && filteredItems.some((i) => i.id === prev)) return prev;
-      return filteredItems[0].id;
+      if (visibleListItems.length === 0) return null;
+      if (prev && visibleListItems.some((i) => i.id === prev)) return prev;
+      return visibleListItems[0].id;
     });
-  }, [filteredItems, tab]);
+  }, [visibleListItems, tab]);
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
@@ -92,6 +165,7 @@ export function useInboxLogic({
     setTab,
     items,
     filteredItems,
+    visibleListItems,
     totalUnread,
     filteredUnreadCount,
     selectedId,
@@ -103,6 +177,9 @@ export function useInboxLogic({
     toggleRead,
     removeItem,
     clearRead,
+    stackSections,
+    expandedStacks,
+    toggleStackExpanded,
     isHelpDialogOpen,
     setIsHelpDialogOpen,
     isAboutDialogOpen,

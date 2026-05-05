@@ -13,7 +13,9 @@ export type InboxCategory =
 export type InboxDedupeKey =
   | `cursor_agent:${string}`
   | `applet_updated:${string}`
-  | `welcome:v1`;
+  | `welcome:v1`
+  | `toast_mirror:${string}`
+  | `calendar_reminder:${string}`;
 
 /** Optional payload for actions (open URL, launch app, etc.) */
 export interface InboxActionPayload {

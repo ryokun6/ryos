@@ -8,7 +8,9 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "sonner": ["./src/lib/sonner-shim.tsx"],
+      "sonner-original": ["./node_modules/sonner"]
     },
 
     /* Bundler mode */

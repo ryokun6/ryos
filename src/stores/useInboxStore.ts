@@ -42,7 +42,10 @@ export function createWelcomeInboxItem(now = Date.now()): InboxItem {
       "System updates, applet edits, Cursor agent completions, and shared links land here.",
     body:
       "Inbox is ryOS’s durable notification center—not email. Items persist locally in your browser and stay unread until you open them or mark them read.\n\nTry triggering a Cursor Cloud agent from Chats or edit an applet from Ryo; matching entries appear automatically.",
-    source: { producer: "inbox", extras: { seed: "welcome" } },
+    source: {
+      producer: "inbox",
+      extras: { seed: "welcome", stackGroupKey: "app:inbox", appLabel: "Inbox" },
+    },
   };
 }
 
