@@ -13,6 +13,7 @@ import {
   fetchWithOrigin,
   fetchWithAuth,
   makeRateLimitBypassHeaders,
+  getTokenFromAuthCookie,
 } from "./test-utils";
 
 const ADMIN_USERNAME = "ryo";
@@ -34,8 +35,7 @@ async function setupTestUser(): Promise<void> {
   });
 
   if (adminLoginRes.status === 200) {
-    const data = await adminLoginRes.json();
-    testToken = data.token;
+    testToken = getTokenFromAuthCookie(adminLoginRes);
     testUsername = ADMIN_USERNAME;
     isAdminUser = true;
     return;
@@ -49,8 +49,7 @@ async function setupTestUser(): Promise<void> {
   });
 
   if (res.status === 201) {
-    const data = await res.json();
-    testToken = data.token;
+    testToken = getTokenFromAuthCookie(res);
     isAdminUser = false;
   }
 }
@@ -58,6 +57,11 @@ async function setupTestUser(): Promise<void> {
 describe("Auth Extra API Tests", () => {
   beforeAll(async () => {
     await setupTestUser();
+  });
+
+  test("Setup - obtained auth token", () => {
+    expect(testToken).toBeTruthy();
+    expect(testUsername).toBeTruthy();
   });
 
   // ============================================================================
