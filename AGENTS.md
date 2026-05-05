@@ -180,5 +180,5 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 - `REDIS_PROVIDER=upstash` is pre-set; the API uses Upstash REST (`REDIS_KV_REST_API_URL`/`REDIS_KV_REST_API_TOKEN`).
 - `REALTIME_PROVIDER=pusher` is pre-set with all Pusher credentials.
 - Redis is also installed locally (`redis-server`) and can be started if needed for local-mode testing, but the injected Upstash credentials are the default.
-- The `test:new-api` auth tests (Register, Login, Admin login) may fail in this environment since they rely on specific admin password setup — this is expected and not a code issue.
+- The `test:new-api` auth tests (Register, Login, Admin login) fail with `expect(data.token).toBeTruthy()` because the auth endpoints return the token only in the `Set-Cookie` header (`ryos_auth=<user>:<token>`), not in the JSON body. The credentials `ryo`/`testtest` work correctly (HTTP 200). This is a pre-existing test/API mismatch.
 - Bun and Node are installed via the update script. Ensure `PATH` includes `$HOME/.bun/bin` and nvm is sourced before running commands.
