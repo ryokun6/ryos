@@ -38,6 +38,9 @@ type KugouSongInfo = {
   songname: string;
   singername: string;
   album_name?: string;
+  trans_param?: {
+    union_cover?: string;
+  };
 };
 
 type KugouSearchResponse = {
@@ -66,6 +69,12 @@ export interface KugouSearchResult {
   hash: string;
   albumId: string | number;
   score: number;
+  /**
+   * Album cover URL with `{size}` placeholder, when present in the search response
+   * (from `trans_param.union_cover`). Clients should run this through
+   * `formatKugouImageUrl` to substitute a concrete pixel size.
+   */
+  cover?: string;
 }
 
 /**
@@ -153,15 +162,23 @@ export async function searchKugou(
 
   // Convert Kugou metadata from Simplified to Traditional Chinese
   // Also normalize artist separator from Chinese comma "、" to " & "
-  const scoredResults = infoList.map((song, index) => ({
-    title: simplifiedToTraditional(song.songname),
-    artist: normalizeArtistSeparator(simplifiedToTraditional(song.singername)),
-    album: song.album_name ? simplifiedToTraditional(song.album_name) : undefined,
-    hash: song.hash,
-    albumId: song.album_id,
-    score: Math.round(scoreSongMatch(song, title, artist) * 1000) / 1000,
-    _kugouOrder: index,
-  }));
+  const scoredResults = infoList.map((song, index) => {
+    const rawCover = song.trans_param?.union_cover;
+    // Normalize to HTTPS so the {size} placeholder URL can be used directly by clients
+    const cover = rawCover
+      ? rawCover.replace(/^http:\/\//, "https://")
+      : undefined;
+    return {
+      title: simplifiedToTraditional(song.songname),
+      artist: normalizeArtistSeparator(simplifiedToTraditional(song.singername)),
+      album: song.album_name ? simplifiedToTraditional(song.album_name) : undefined,
+      hash: song.hash,
+      albumId: song.album_id,
+      score: Math.round(scoreSongMatch(song, title, artist) * 1000) / 1000,
+      cover,
+      _kugouOrder: index,
+    };
+  });
 
   scoredResults.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;

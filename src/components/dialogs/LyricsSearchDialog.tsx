@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { formatKugouImageUrl } from "@/apps/ipod/constants";
 
 export interface LyricsSearchResult {
   title: string;
@@ -23,6 +24,8 @@ export interface LyricsSearchResult {
   hash: string;
   albumId: string | number;
   score: number;
+  /** Album cover URL (may contain `{size}` placeholder) */
+  cover?: string;
 }
 
 interface LyricsSearchDialogProps {
@@ -314,48 +317,74 @@ export function LyricsSearchDialog({
           </p>
           <ScrollArea className="h-[200px] border border-gray-300 rounded-md overflow-hidden bg-white">
             <div>
-              {results.map((result, index) => (
-                <div
-                  key={result.hash}
-                  onClick={() => setSelectedIndex(index)}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleSelectAndUse(index);
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  className={cn(
-                    "px-2 py-1.5 cursor-pointer",
-                    selectedIndex === index
-                      ? "" // Selection styling handled by inline style
-                      : index % 2 === 1
-                        ? "bg-gray-100"
-                        : "bg-white",
-                    isXpTheme
-                      ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                      : "font-geneva-12 text-[12px]"
-                  )}
-                  data-selected={selectedIndex === index ? "true" : undefined}
-                  style={{
-                    fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                      : undefined,
-                    fontSize: isXpTheme ? "11px" : undefined,
-                  }}
-                >
-                  <div className="font-semibold">{result.title}</div>
+              {results.map((result, index) => {
+                const coverUrl = formatKugouImageUrl(result.cover, 100);
+                return (
                   <div
+                    key={result.hash}
+                    onClick={() => setSelectedIndex(index)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleSelectAndUse(index);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
                     className={cn(
-                      selectedIndex === index ? "opacity-80" : "text-neutral-600"
+                      "flex items-center gap-2 px-2 py-1.5 cursor-pointer",
+                      selectedIndex === index
+                        ? "" // Selection styling handled by inline style
+                        : index % 2 === 1
+                          ? "bg-gray-100"
+                          : "bg-white",
+                      isXpTheme
+                        ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                        : "font-geneva-12 text-[12px]"
                     )}
+                    data-selected={selectedIndex === index ? "true" : undefined}
+                    style={{
+                      fontFamily: isXpTheme
+                        ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                        : undefined,
+                      fontSize: isXpTheme ? "11px" : undefined,
+                    }}
                   >
-                    {result.artist}
-                    {result.album && ` • ${result.album}`}
+                    <div
+                      className={cn(
+                        "flex-shrink-0 w-9 h-9 overflow-hidden bg-gray-200",
+                        isXpTheme ? "border border-gray-400" : "rounded-sm"
+                      )}
+                      aria-hidden="true"
+                    >
+                      {coverUrl ? (
+                        <img
+                          src={coverUrl}
+                          alt=""
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                          }}
+                          draggable={false}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold truncate">{result.title}</div>
+                      <div
+                        className={cn(
+                          "truncate",
+                          selectedIndex === index ? "opacity-80" : "text-neutral-600"
+                        )}
+                      >
+                        {result.artist}
+                        {result.album && ` • ${result.album}`}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         </div>
