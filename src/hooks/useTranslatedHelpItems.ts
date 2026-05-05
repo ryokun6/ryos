@@ -211,6 +211,14 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "poweredByApple",
     "switchMapStyle",
   ],
+  inbox: [
+    "unifiedInbox",
+    "readUnread",
+    "categories",
+    "clearRead",
+    "actions",
+    "localFirst",
+  ],
 };
 
 /**

@@ -3323,6 +3323,70 @@
         }
       }
     },
+    "inbox": {
+      "name": "Inbox",
+      "title": "Inbox",
+      "description": "System inbox for notices and durable updates",
+      "tabs": {
+        "all": "All",
+        "unread": "Unread",
+        "system": "System",
+        "cursor_agent": "Agents",
+        "applet": "Applets",
+        "chat": "Chat",
+        "calendar": "Calendar",
+        "shared_link": "Links"
+      },
+      "menu": {
+        "markRead": "Mark Read",
+        "markUnread": "Mark Unread",
+        "deleteItem": "Delete",
+        "clearRead": "Clear Read Items…",
+        "help": "Inbox Help",
+        "about": "About Inbox"
+      },
+      "toolbar": {
+        "clearReadConfirm": "Remove all read items?",
+        "emptyFiltered": "Nothing here.",
+        "emptyAll": "Your inbox is empty.",
+        "detailPlaceholder": "Select a message",
+        "openLink": "Open link",
+        "openApp": "Open app",
+        "received": "Received",
+        "producer": "Source",
+        "noActions": "No actions for this item.",
+        "backToList": "Messages"
+      },
+      "badges": {
+        "unread": "Unread"
+      },
+      "help": {
+        "unifiedInbox": {
+          "title": "Unified inbox",
+          "description": "Browse durable system notices, agent completions, applet edits, and more in one place"
+        },
+        "readUnread": {
+          "title": "Read & unread",
+          "description": "Unread items stay highlighted until you open them or mark them read from the toolbar"
+        },
+        "categories": {
+          "title": "Categories",
+          "description": "Filter by All, System, Agents, Applets, Chat, Calendar, or Shared links"
+        },
+        "clearRead": {
+          "title": "Clear read",
+          "description": "Remove finished items from the list while keeping unread mail queued"
+        },
+        "actions": {
+          "title": "Actions",
+          "description": "Open URLs or jump into apps when an item includes a wired shortcut"
+        },
+        "localFirst": {
+          "title": "Local first",
+          "description": "Everything is stored in your browser — nothing leaves your machine unless you follow a link"
+        }
+      }
+    },
     "dashboard": {
       "name": "Dashboard",
       "title": "Dashboard",

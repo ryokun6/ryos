@@ -40,6 +40,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **iPod** — 1st-gen iPod music player with YouTube import, lyrics, and translation
 - **Applet Store** — Browse, install, and share community-created HTML applets
 - **Stickies** — Sticky notes for quick reminders
+- **Inbox** — Local-first system inbox for notices, Cursor agent completions, and applet updates
 
 ## Quick Start
 

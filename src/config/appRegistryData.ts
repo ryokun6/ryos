@@ -31,6 +31,7 @@ export const appIds = [
   "dashboard",
   "candybar",
   "maps",
+  "inbox",
 ] as const;
 
 export type AppId = (typeof appIds)[number];
@@ -81,6 +82,7 @@ export const appNames: Record<AppId, string> = {
   "dashboard": "Dashboard",
   "candybar": "CandyBar",
   "maps": "Maps",
+  inbox: "Inbox",
 };
 
 /** Get list of apps with basic info for stores */

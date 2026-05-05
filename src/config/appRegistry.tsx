@@ -167,6 +167,11 @@ const LazyMapsApp = createLazyComponent<unknown>(
   "maps"
 );
 
+const LazyInboxApp = createLazyComponent<unknown>(
+  () => import("@/apps/inbox/components/InboxAppComponent").then(m => ({ default: m.InboxAppComponent })),
+  "inbox"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -204,6 +209,7 @@ import { appMetadata as contactsMetadata, helpItems as contactsHelpItems } from 
 import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
 import { appMetadata as candybarMetadata, helpItems as candybarHelpItems } from "@/apps/candybar/metadata";
 import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/maps";
+import { appMetadata as inboxMetadata, helpItems as inboxHelpItems } from "@/apps/inbox/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/hooks/useInfinitePcLogic";
 
@@ -557,6 +563,19 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 720, height: 520 },
       minSize: { width: 360, height: 320 },
+    } as WindowConstraints,
+  },
+  ["inbox"]: {
+    id: "inbox",
+    name: "Inbox",
+    icon: { type: "image", src: inboxMetadata.icon },
+    description: "System inbox for notices and durable updates",
+    component: LazyInboxApp,
+    helpItems: inboxHelpItems,
+    metadata: inboxMetadata,
+    windowConfig: {
+      defaultSize: { width: 680, height: 520 },
+      minSize: { width: 340, height: 320 },
     } as WindowConstraints,
   },
 } as const;

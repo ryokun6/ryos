@@ -27,7 +27,8 @@ export type AppId =
   | "contacts"
   | "dashboard"
   | "candybar"
-  | "maps";
+  | "maps"
+  | "inbox";
 
 /**
  * Get translated app name with theme-awareness
@@ -172,6 +173,14 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     dashboard: ["openDashboard", "clockWidget", "calendarWidget", "weatherWidget", "moveWidgets", "closeDashboard"],
     candybar: ["browseIconPacks", "iconPackDetails", "applyIconPacks", "favorites", "search", "cloudLibrary"],
     maps: ["searchPlaces", "dropPins", "locateMe", "mapTypes", "poweredByApple", "switchMapStyle"],
+    inbox: [
+      "unifiedInbox",
+      "readUnread",
+      "categories",
+      "clearRead",
+      "actions",
+      "localFirst",
+    ],
   };
 
   const keys = helpKeys[appId] || [];

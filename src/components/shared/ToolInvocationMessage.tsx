@@ -1,7 +1,9 @@
 import { Check } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
+import { Fragment } from "react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
+import { CursorRepoAgentInboxTracker } from "@/components/shared/CursorRepoAgentInboxTracker";
 import {
   MapsSearchPlacesCard,
   type MapsSearchPlaceCardData,
@@ -745,12 +747,14 @@ export function ToolInvocationMessage({
         : t("apps.chats.toolCalls.cursorCloudAgent.panelTitle");
 
     return (
-      <CursorRepoAgentChatCard
-        key={partKey}
-        runId={out.runId}
-        headerTitle={headerTitle}
-        introMessage={out.message}
-      />
+      <Fragment key={partKey}>
+        <CursorRepoAgentInboxTracker runId={out.runId} />
+        <CursorRepoAgentChatCard
+          runId={out.runId}
+          headerTitle={headerTitle}
+          introMessage={out.message}
+        />
+      </Fragment>
     );
   }
 

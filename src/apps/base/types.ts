@@ -46,7 +46,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "contacts"
     | "dashboard"
     | "candybar"
-    | "maps";
+    | "maps"
+    | "inbox";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;

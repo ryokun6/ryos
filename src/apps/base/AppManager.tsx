@@ -27,6 +27,7 @@ import {
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
 import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
+import { useInboxRuntimeSubscriptions } from "@/lib/inbox/inboxRuntimeListeners";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -86,6 +87,8 @@ export function AppManager({ apps }: AppManagerProps) {
   const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);
 
   useGlobalUndoRedo();
+
+  useInboxRuntimeSubscriptions();
 
   // App switcher state
   const [switcherVisible, setSwitcherVisible] = useState(false);
