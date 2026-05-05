@@ -770,7 +770,11 @@ export function IpodAppComponent({
             onSelect={handleLyricsSearchSelect}
             onReset={handleLyricsSearchReset}
             hasOverride={!!lyricsSourceOverride}
-            currentSelection={lyricsSourceOverride}
+            currentSelection={
+              lyricsSourceOverride
+                ? { ...lyricsSourceOverride, cover: currentTrack.cover }
+                : undefined
+            }
           />
         )}
         <SongSearchDialog
