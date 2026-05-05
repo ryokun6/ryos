@@ -97,7 +97,7 @@ const DEFAULT_VISUAL: PoiVisual = {
 const VISUALS: Record<string, PoiVisual> = {
   // Food & drink
   restaurant: { iconKey: "ForkKnife", from: "#fb923c", to: "#dc2626" },
-  cafe: { iconKey: "Coffee", from: "#d97706", to: "#78350f" },
+  cafe: { iconKey: "Coffee", from: "#fb923c", to: "#dc2626" },
   bakery: { iconKey: "ForkKnife", from: "#fbbf24", to: "#d97706" },
   brewery: { iconKey: "BeerStein", from: "#f59e0b", to: "#92400e" },
   winery: { iconKey: "Wine", from: "#9f1239", to: "#581c87" },
@@ -105,7 +105,7 @@ const VISUALS: Record<string, PoiVisual> = {
   foodMarket: { iconKey: "ShoppingCart", from: "#84cc16", to: "#16a34a" },
 
   // Shopping
-  store: { iconKey: "Storefront", from: "#0ea5e9", to: "#06b6d4" },
+  store: { iconKey: "Storefront", from: "#facc15", to: "#ca8a04" },
   marina: { iconKey: "ShoppingBag", from: "#0ea5e9", to: "#1d4ed8" },
 
   // Money
@@ -123,7 +123,7 @@ const VISUALS: Record<string, PoiVisual> = {
   // Outdoors
   park: { iconKey: "Park", from: "#22c55e", to: "#15803d" },
   nationalPark: { iconKey: "Mountains", from: "#22c55e", to: "#065f46" },
-  beach: { iconKey: "Sun", from: "#fbbf24", to: "#06b6d4" },
+  beach: { iconKey: "Sun", from: "#0ea5e9", to: "#0284c7" },
 
   // Culture
   museum: { iconKey: "Buildings", from: "#a855f7", to: "#7c3aed" },
