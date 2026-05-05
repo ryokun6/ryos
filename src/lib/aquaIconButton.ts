@@ -17,7 +17,8 @@ export const AQUA_ICON_BUTTON_PHOSPHOR_SIZE = 16;
 
 export const AQUA_ICON_BUTTON_ICON_CLASS = "h-4 w-4 shrink-0";
 
-const AQUA_ICON_BUTTON_PADDING_CLASS_SM =
+/** Tighter padding for compact icon-only aqua pills (matches place-card row height). */
+export const AQUA_ICON_BUTTON_PADDING_CLASS_SM =
   "!gap-1 !pl-2 !pr-2.5 !py-0 min-h-0";
 
 export const AQUA_ICON_BUTTON_CHROME_CLASS_SM = cn(

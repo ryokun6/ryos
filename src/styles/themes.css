@@ -1243,6 +1243,19 @@
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
+/* Calendar tray fields — native <select> matches date/time row (11px); global macOS select rule is 14px */
+:root[data-os-theme="macosx"] select.calendar-tray-compact-select {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  height: 20px !important;
+  padding: 1px 20px 1px 6px !important;
+}
+
+:root[data-os-theme="system7"] select.calendar-tray-compact-select {
+  font-size: 11px !important;
+  padding: 1px 4px !important;
+}
+
 /* Top shine/gloss for macOS select */
 :root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *)):before,
 :root[data-os-theme="macosx"] .macos-select-trigger:before {
@@ -2160,6 +2173,18 @@
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
+}
+
+/* Calendar app — event title: readable headline, not full window chrome size */
+:root[data-os-theme="macosx"] input.calendar-tray-event-title.font-geneva-12 {
+  font-size: 1.125rem !important; /* 18px — between body UI and previous 21px */
+  line-height: 1.3 !important;
+}
+
+/* Outside macOS, keep utility sizes from Tailwind */
+:root[data-os-theme="system7"] input.calendar-tray-event-title.font-geneva-12 {
+  font-size: 1rem !important; /* 16px */
+  line-height: 1.35 !important;
 }
 
 /* Preserve Videos StatusDisplay Geneva font and sizing */

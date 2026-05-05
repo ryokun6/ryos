@@ -5,7 +5,6 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   useCalendarStore,
   type CalendarEvent,
-  type EventColor,
 } from "@/stores/useCalendarStore";
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
@@ -60,8 +59,6 @@ export function useCalendarLogic() {
   // Dialog states
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -402,82 +399,67 @@ export function useCalendarLogic() {
   const handleDateDoubleClick = useCallback(
     (date: string) => {
       setSelectedDate(date);
-      setEditingEvent(null);
-      setIsEventDialogOpen(true);
+      const title = t("apps.calendar.tray.newEventTitle");
+      const cal = calendars[0];
+      const id = addEvent({
+        title,
+        date,
+        color: cal?.color || "blue",
+        calendarId: cal?.id || "home",
+      });
+      const created = useCalendarStore
+        .getState()
+        .events.find((e) => e.id === id);
+      if (created) pushUndo({ type: "addEvent", event: { ...created } });
+      setSelectedEventId(id);
     },
-    [setSelectedDate]
+    [setSelectedDate, calendars, addEvent, t, pushUndo, setSelectedEventId]
   );
 
   const handleNewEventAtTime = useCallback(
     (date: string, hour: number) => {
       setSelectedDate(date);
-      setEditingEvent(null);
-      setIsEventDialogOpen(true);
-      setPrefillTime({
+      const title = t("apps.calendar.tray.newEventTitle");
+      const cal = calendars[0];
+      const startTime = `${String(hour).padStart(2, "0")}:00`;
+      const endH = hour >= 23 ? 23 : hour + 1;
+      const endTime = `${String(endH).padStart(2, "0")}:00`;
+      const id = addEvent({
+        title,
         date,
-        startTime: `${String(hour).padStart(2, "0")}:00`,
-        endTime: `${String(hour + 1).padStart(2, "0")}:00`,
+        startTime,
+        endTime,
+        color: cal?.color || "blue",
+        calendarId: cal?.id || "home",
       });
+      const created = useCalendarStore
+        .getState()
+        .events.find((e) => e.id === id);
+      if (created) pushUndo({ type: "addEvent", event: { ...created } });
+      setSelectedEventId(id);
     },
-    [setSelectedDate]
+    [setSelectedDate, calendars, addEvent, t, pushUndo, setSelectedEventId]
   );
-
-  const [prefillTime, setPrefillTime] = useState<{
-    date: string;
-    startTime: string;
-    endTime: string;
-  } | null>(null);
 
   const handleNewEvent = useCallback(() => {
-    setEditingEvent(null);
-    setPrefillTime(null);
-    setIsEventDialogOpen(true);
-  }, []);
-
-  const handleEditEvent = useCallback((event: CalendarEvent) => {
-    setEditingEvent(event);
-    setPrefillTime(null);
-    setIsEventDialogOpen(true);
-  }, []);
-
-  const handleSaveEvent = useCallback(
-    (eventData: {
-      title: string;
-      date: string;
-      startTime?: string;
-      endTime?: string;
-      color: EventColor;
-      calendarId?: string;
-      notes?: string;
-    }) => {
-      if (editingEvent) {
-        const before = { ...editingEvent };
-        updateEvent(editingEvent.id, eventData);
-        const after = { ...editingEvent, ...eventData, updatedAt: Date.now() };
-        pushUndo({ type: "updateEvent", eventId: editingEvent.id, before, after });
-      } else {
-        const id = addEvent(eventData);
-        const created = events.find((e) => e.id === id) ??
-          ({ ...eventData, id, createdAt: Date.now(), updatedAt: Date.now() } as CalendarEvent);
-        pushUndo({ type: "addEvent", event: created });
-      }
-      setIsEventDialogOpen(false);
-      setEditingEvent(null);
-      setPrefillTime(null);
-    },
-    [editingEvent, addEvent, updateEvent, events, pushUndo]
-  );
+    const title = t("apps.calendar.tray.newEventTitle");
+    const cal = calendars[0];
+    const id = addEvent({
+      title,
+      date: selectedDate,
+      color: cal?.color || "blue",
+      calendarId: cal?.id || "home",
+    });
+    const created = useCalendarStore
+      .getState()
+      .events.find((e) => e.id === id);
+    if (created) pushUndo({ type: "addEvent", event: { ...created } });
+    setSelectedEventId(id);
+  }, [selectedDate, calendars, addEvent, t, pushUndo, setSelectedEventId]);
 
   const handleEditSelectedEvent = useCallback(() => {
-    if (selectedEventId) {
-      const event = events.find((e) => e.id === selectedEventId);
-      if (event) {
-        setEditingEvent(event);
-        setPrefillTime(null);
-        setIsEventDialogOpen(true);
-      }
-    }
-  }, [selectedEventId, events]);
+    // Tray is the editor; selection is enough. (Keeps Edit menu item valid.)
+  }, []);
 
   /**
    * Inline event update (used by the details tray). Records an undo entry
@@ -503,16 +485,6 @@ export function useCalendarLogic() {
       setSelectedEventId(null);
     }
   }, [selectedEventId, events, deleteEvent, pushUndo]);
-
-  const handleDeleteEditingEvent = useCallback(() => {
-    if (editingEvent) {
-      pushUndo({ type: "deleteEvent", event: { ...editingEvent } });
-      deleteEvent(editingEvent.id);
-      setIsEventDialogOpen(false);
-      setEditingEvent(null);
-      setPrefillTime(null);
-    }
-  }, [editingEvent, deleteEvent, pushUndo]);
 
   // iCal import
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -594,8 +566,6 @@ export function useCalendarLogic() {
     setIsHelpDialogOpen,
     isAboutDialogOpen,
     setIsAboutDialogOpen,
-    isEventDialogOpen,
-    setIsEventDialogOpen,
 
     // Calendar state
     searchQuery,
@@ -634,11 +604,8 @@ export function useCalendarLogic() {
     navigateWeek,
 
     // Event state
-    editingEvent,
-    setEditingEvent,
     selectedEventId,
     setSelectedEventId,
-    prefillTime,
 
     // Actions
     setSelectedDate,
@@ -649,11 +616,8 @@ export function useCalendarLogic() {
     handleDateDoubleClick,
     handleNewEvent,
     handleNewEventAtTime,
-    handleEditEvent,
-    handleSaveEvent,
     handleEditSelectedEvent,
     handleDeleteSelectedEvent,
-    handleDeleteEditingEvent,
     handleUpdateEvent,
 
     // Import / Export

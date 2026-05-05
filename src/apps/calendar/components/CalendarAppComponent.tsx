@@ -3,7 +3,6 @@ import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { CalendarMenuBar } from "./CalendarMenuBar";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
-import { EventDialog } from "./EventDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "../metadata";
@@ -31,6 +30,7 @@ import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
 import { AppDrawer } from "@/components/shared/AppDrawer";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { TrayDetails } from "./TrayDetails";
+import { TimedEventBlock } from "./TimedEventBlock";
 
 // ============================================================================
 // CONSTANTS
@@ -164,8 +164,6 @@ function TodoSidebar({
   const [newTitle, setNewTitle] = useState("");
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
-  const [dueDateTodoId, setDueDateTodoId] = useState<string | null>(null);
-  const dueDateInputRef = useRef<HTMLInputElement>(null);
   const defaultCalId = calendars[0]?.id || "home";
 
   const handleAdd = () => {
@@ -191,29 +189,6 @@ function TodoSidebar({
     }
     stopEditingTodo();
   }, [editingTitle, onUpdate, stopEditingTodo]);
-
-  const openDueDatePicker = useCallback((todo: TodoItem) => {
-    const input = dueDateInputRef.current;
-    if (!input) return;
-
-    setDueDateTodoId(todo.id);
-    input.value = todo.dueDate || "";
-
-    if (typeof input.showPicker === "function") {
-      input.showPicker();
-    } else {
-      input.click();
-    }
-  }, []);
-
-  const handleDueDateChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    if (dueDateTodoId) {
-      onUpdate(dueDateTodoId, {
-        dueDate: event.target.value || null,
-      });
-    }
-    setDueDateTodoId(null);
-  }, [dueDateTodoId, onUpdate]);
 
   const actionButtonVisibilityClass = fullWidth
     ? "opacity-60"
@@ -245,9 +220,9 @@ function TodoSidebar({
           {t("apps.calendar.sidebar.toDoItems")}
         </div>
       ))}
-      <div className="flex-1 overflow-y-auto px-2">
+      <div className="flex-1 overflow-y-auto">
         {todos.length === 0 && (
-          <div className={cn("text-[10px] opacity-30 px-0.5 py-2", useGeneva && "font-geneva-12")}>{t("apps.calendar.sidebar.noTodoItems")}</div>
+          <div className={cn("text-[10px] opacity-30 px-2 py-2", useGeneva && "font-geneva-12")}>{t("apps.calendar.sidebar.noTodoItems")}</div>
         )}
         {todos.map((todo) => {
           const cal = calendars.find((c) => c.id === todo.calendarId);
@@ -257,7 +232,7 @@ function TodoSidebar({
             <div
               key={todo.id}
               className={cn(
-                "group relative flex items-start gap-1.5 px-0.5 py-1 min-h-[30px] rounded-sm",
+                "group relative flex w-full items-start gap-1.5 px-2 py-1 min-h-[30px]",
                 isSelected && (isMacOSTheme ? "bg-black/[0.06]" : "bg-black/[0.05]")
               )}
             >
@@ -280,7 +255,7 @@ function TodoSidebar({
                   className={cn(
                     todoTitleFieldClass,
                     "bg-white/90 outline-none transition-[padding]",
-                    !fullWidth && "group-hover:pr-12"
+                    !fullWidth && "group-hover:pr-7"
                   )}
                 />
               ) : (
@@ -301,7 +276,7 @@ function TodoSidebar({
                     "text-left border-transparent bg-transparent",
                     todo.completed && "line-through opacity-40",
                     "hover:bg-black/[0.02] transition-[padding]",
-                    !fullWidth && "group-hover:pr-12"
+                    !fullWidth && "group-hover:pr-7"
                   )}
                 >
                   <span className="block truncate">{todo.title}</span>
@@ -310,23 +285,9 @@ function TodoSidebar({
               <div
                 className={cn(
                   "flex items-center justify-end gap-1",
-                  fullWidth
-                    ? "shrink-0 mt-[3px]"
-                    : "absolute right-0 top-[7px]"
+                  fullWidth ? "shrink-0 mt-[3px]" : "absolute right-2 top-[7px]"
                 )}
               >
-                <button
-                  type="button"
-                  onClick={() => openDueDatePicker(todo)}
-                  className={cn(
-                    "shrink-0 transition-[opacity,transform] hover:!opacity-100",
-                    actionButtonVisibilityClass
-                  )}
-                  aria-label={t("apps.calendar.event.date")}
-                  title={t("apps.calendar.event.date")}
-                >
-                  <CalendarBlank size={10} weight="bold" />
-                </button>
                 <button
                   type="button"
                   onClick={() => onDelete(todo.id)}
@@ -342,14 +303,6 @@ function TodoSidebar({
           );
         })}
       </div>
-      <input
-        ref={dueDateInputRef}
-        type="date"
-        tabIndex={-1}
-        className="absolute pointer-events-none h-0 w-0 opacity-0"
-        onChange={handleDueDateChange}
-        onBlur={() => setDueDateTodoId(null)}
-      />
       <div className="px-2 pb-1.5 pt-1">
         <input
           type="text"
@@ -365,6 +318,15 @@ function TodoSidebar({
       </div>
     </div>
   );
+}
+
+function isKeyboardDeleteTargetEditable(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (target.isContentEditable) return true;
+  if (target.closest("[contenteditable='true']")) return true;
+  return false;
 }
 
 // ============================================================================
@@ -478,6 +440,7 @@ function WeekTimeGrid({
   hourLabels,
   hourHeight,
   setHourHeight,
+  onUpdateEvent,
 }: {
   weekDates: WeekDay[];
   selectedEventId: string | null;
@@ -492,6 +455,7 @@ function WeekTimeGrid({
   hourLabels: string[];
   hourHeight: number;
   setHourHeight: (h: number) => void;
+  onUpdateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
 }) {
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
@@ -501,6 +465,20 @@ function WeekTimeGrid({
     horizontalScrollParentRef: horizontalScrollRef,
   });
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
+
+  const dayColRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const resolveDateAtClientX = useCallback(
+    (clientX: number) => {
+      for (let i = 0; i < weekDates.length; i++) {
+        const el = dayColRefs.current[i];
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        if (clientX >= r.left && clientX <= r.right) return weekDates[i]?.date ?? null;
+      }
+      return null;
+    },
+    [weekDates]
+  );
 
   const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -627,9 +605,12 @@ function WeekTimeGrid({
               })}
             </div>
 
-            {weekDates.map((day) => (
+            {weekDates.map((day, di) => (
               <div
                 key={day.date}
+                ref={(el) => {
+                  dayColRefs.current[di] = el;
+                }}
                 className="flex-1 relative min-w-0"
                 style={{ borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)" }}
               >
@@ -646,43 +627,26 @@ function WeekTimeGrid({
                   />
                 ))}
 
-                {day.timedEvents.map((ev) => {
-                  const [sh, sm] = (ev.startTime || "9:00").split(":").map(Number);
-                  const [eh, em] = (ev.endTime || `${sh + 1}:00`).split(":").map(Number);
-                  const startMin = sh * 60 + sm;
-                  const endMin = eh * 60 + em;
-                  const top = ((startMin - HOUR_START * 60) / 60) * hourHeight;
-                  const height = Math.max(((endMin - startMin) / 60) * hourHeight, 18);
-
-                  return (
-                    <button
-                      key={ev.id}
-                      type="button"
-                      onClick={(e) => handleEventTap(ev, e)}
-                      className="absolute left-0.5 right-0.5 rounded text-left overflow-hidden transition-shadow flex items-start"
-                      style={{
-                        top: Math.max(top, 0), height,
-                        backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
-                        borderLeft: `3px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`,
-                        boxShadow: selectedEventId === ev.id
-                          ? `0 0 0 1px ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
-                          : isMacOSTheme ? "0 1px 3px rgba(0,0,0,0.1)" : "0 1px 2px rgba(0,0,0,0.08)",
-                        opacity: getEventOpacity(ev, searchQuery),
-                        zIndex: 2,
-                      }}
-                    >
-                      <div className="px-1 py-0.5 flex flex-wrap items-baseline gap-x-1 min-w-0">
-                        <span
-                          className={cn("text-[10px] font-semibold shrink-0 whitespace-nowrap", useGeneva && "font-geneva-12")}
-                          style={{ color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue }}
-                        >
-                          {ev.startTime}
-                        </span>
-                        <span className="text-[10px] truncate leading-tight">{ev.title}</span>
-                      </div>
-                    </button>
-                  );
-                })}
+                {day.timedEvents.map((ev) => (
+                  <TimedEventBlock
+                    key={ev.id}
+                    event={ev}
+                    hourHeight={hourHeight}
+                    hourStart={HOUR_START}
+                    hourEnd={HOUR_END}
+                    selectedEventId={selectedEventId}
+                    isMacOSTheme={isMacOSTheme}
+                    useGeneva={useGeneva}
+                    washColor={EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue}
+                    accentColor={EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}
+                    blockOpacity={getEventOpacity(ev, searchQuery)}
+                    minHeightPx={18}
+                    onUpdateEvent={onUpdateEvent}
+                    onEventClick={handleEventTap}
+                    resolveDateAtClientX={resolveDateAtClientX}
+                    timeLabelMode="week"
+                  />
+                ))}
 
                 {day.isToday && (() => {
                   const topPos = ((currentMinute - HOUR_START * 60) / 60) * hourHeight;
@@ -723,6 +687,7 @@ function DayTimeGrid({
   hourLabels,
   hourHeight,
   setHourHeight,
+  onUpdateEvent,
 }: {
   date: string;
   events: CalendarEvent[];
@@ -737,6 +702,7 @@ function DayTimeGrid({
   hourLabels: string[];
   hourHeight: number;
   setHourHeight: (h: number) => void;
+  onUpdateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -830,36 +796,25 @@ function DayTimeGrid({
               />
             ))}
 
-            {timedEvents.map((ev) => {
-              const [sh, sm] = (ev.startTime || "9:00").split(":").map(Number);
-              const [eh, em] = (ev.endTime || `${sh + 1}:00`).split(":").map(Number);
-              const startMin = sh * 60 + sm;
-              const endMin = eh * 60 + em;
-              const top = ((startMin - HOUR_START * 60) / 60) * hourHeight;
-              const height = Math.max(((endMin - startMin) / 60) * hourHeight, 22);
-
-              return (
-                <button key={ev.id} type="button"
-                  onClick={(e) => handleEventTap(ev, e)}
-                  className="absolute left-1 right-1 rounded text-left overflow-hidden transition-shadow flex items-start"
-                  style={{
-                    top: Math.max(top, 0), height,
-                    backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
-                    borderLeft: `3px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`,
-                    boxShadow: selectedEventId === ev.id ? `0 0 0 1px ${EVENT_COLOR_MAP[ev.color]}` : isMacOSTheme ? "0 1px 3px rgba(0,0,0,0.1)" : "0 1px 2px rgba(0,0,0,0.08)",
-                    opacity: getEventOpacity(ev, searchQuery),
-                    zIndex: 2,
-                  }}
-                >
-                  <div className="px-1.5 py-0.5 flex flex-wrap items-baseline gap-x-1.5 min-w-0">
-                    <span className={cn("text-[11px] font-semibold shrink-0 whitespace-nowrap", useGeneva && "font-geneva-12")} style={{ color: EVENT_COLOR_MAP[ev.color] }}>
-                      {ev.startTime}{ev.endTime ? ` – ${ev.endTime}` : ""}
-                    </span>
-                    <span className="text-xs truncate leading-tight">{ev.title}</span>
-                  </div>
-                </button>
-              );
-            })}
+            {timedEvents.map((ev) => (
+              <TimedEventBlock
+                key={ev.id}
+                event={ev}
+                hourHeight={hourHeight}
+                hourStart={HOUR_START}
+                hourEnd={HOUR_END}
+                selectedEventId={selectedEventId}
+                isMacOSTheme={isMacOSTheme}
+                useGeneva={useGeneva}
+                washColor={EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue}
+                accentColor={EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}
+                blockOpacity={getEventOpacity(ev, searchQuery)}
+                minHeightPx={22}
+                onUpdateEvent={onUpdateEvent}
+                onEventClick={handleEventTap}
+                timeLabelMode="day"
+              />
+            ))}
 
             {isToday && (() => {
               const topPos = ((currentMinute - HOUR_START * 60) / 60) * hourHeight;
@@ -1179,16 +1134,15 @@ export function CalendarAppComponent({
   const {
     t, translatedHelpItems,
     isHelpDialogOpen, setIsHelpDialogOpen, isAboutDialogOpen, setIsAboutDialogOpen,
-    isEventDialogOpen, setIsEventDialogOpen,
     isXpTheme, isMacOSTheme, isSystem7Theme,
     searchQuery, setSearchQuery,
     selectedDate, view, monthYearLabel, selectedDateLabel, calendarGrid, selectedDateEvents,
     narrowDayNames, hourLabels, weekDates, weekLabel,
-    editingEvent, selectedEventId, setSelectedEventId, prefillTime,
+    selectedEventId, setSelectedEventId,
     calendars, toggleCalendarVisibility,
     todos, addTodo, toggleTodo, updateTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
-    handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent, handleUpdateEvent,
+    handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditSelectedEvent, handleDeleteSelectedEvent, handleUpdateEvent,
     fileInputRef, handleImport, handleFileSelected, handleExport,
     undoCalendar, redoCalendar, canUndo, canRedo,
   } = logic;
@@ -1220,19 +1174,21 @@ export function CalendarAppComponent({
 
   // Selecting an event clears any selected todo and vice versa so only one
   // detail panel shows at a time.
-  const handleSelectEvent = useCallback((id: string) => {
-    setSelectedTodoId(null);
-    setSelectedEventId(id);
-  }, [setSelectedEventId]);
+  const handleSelectEvent = useCallback(
+    (id: string, options?: { toggle?: boolean }) => {
+      setSelectedTodoId(null);
+      if (options?.toggle === false) {
+        setSelectedEventId(id);
+        return;
+      }
+      setSelectedEventId((prev) => (prev === id ? null : id));
+    },
+    [setSelectedEventId]
+  );
 
   const handleSelectTodo = useCallback((id: string) => {
     setSelectedEventId(null);
     setSelectedTodoId(id);
-  }, [setSelectedEventId]);
-
-  const handleCloseTray = useCallback(() => {
-    setSelectedEventId(null);
-    setSelectedTodoId(null);
   }, [setSelectedEventId]);
 
   const handleDeleteEventFromTray = useCallback((id: string) => {
@@ -1245,6 +1201,28 @@ export function CalendarAppComponent({
     deleteTodo(id);
     if (id === selectedTodoId) setSelectedTodoId(null);
   }, [deleteTodo, selectedTodoId]);
+
+  /** New events open in the tray; clear to-do selection so the drawer targets the event. */
+  const onNewEvent = useCallback(() => {
+    setSelectedTodoId(null);
+    handleNewEvent();
+  }, [handleNewEvent]);
+
+  const onNewEventAtTime = useCallback(
+    (date: string, hour: number) => {
+      setSelectedTodoId(null);
+      handleNewEventAtTime(date, hour);
+    },
+    [handleNewEventAtTime]
+  );
+
+  const onDateDoubleClick = useCallback(
+    (date: string) => {
+      setSelectedTodoId(null);
+      handleDateDoubleClick(date);
+    },
+    [handleDateDoubleClick]
+  );
 
   // Drawer open/close sounds — same SFX as the TV drawer for consistency.
   const { play: playDrawerOpen } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE);
@@ -1305,18 +1283,12 @@ export function CalendarAppComponent({
     ? t("apps.calendar.sidebar.toDoItems")
     : effectiveView === "week" ? weekLabel : effectiveView === "day" ? selectedDateLabel : monthYearLabel;
 
-  const trayTitle = selectedEvent
-    ? t("apps.calendar.tray.eventDetails")
-    : selectedTodo
-      ? t("apps.calendar.tray.todoDetails")
-      : "";
-
   const menuBar = (
     <CalendarMenuBar
       onClose={onClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
-      onNewEvent={handleNewEvent}
+      onNewEvent={onNewEvent}
       onImport={handleImport}
       onExport={handleExport}
       onEditEvent={handleEditSelectedEvent}
@@ -1330,6 +1302,31 @@ export function CalendarAppComponent({
       instanceId={instanceId}
     />
   );
+
+  useEffect(() => {
+    if (!isWindowOpen || !isForeground) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isKeyboardDeleteTargetEditable(e.target)) return;
+      if (!selectedEventId && !selectedTodoId) return;
+      e.preventDefault();
+      if (selectedEventId) {
+        handleDeleteSelectedEvent();
+      } else if (selectedTodoId) {
+        handleDeleteTodoFromTray(selectedTodoId);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [
+    isWindowOpen,
+    isForeground,
+    selectedEventId,
+    selectedTodoId,
+    handleDeleteSelectedEvent,
+    handleDeleteTodoFromTray,
+  ]);
 
   if (!isWindowOpen) return null;
 
@@ -1349,11 +1346,7 @@ export function CalendarAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
         windowConstraints={{ minWidth: 300, minHeight: 380 }}
         drawer={
-          <AppDrawer
-            isOpen={showTrayDrawer}
-            onClose={handleCloseTray}
-            title={trayTitle}
-          >
+          <AppDrawer isOpen={showTrayDrawer}>
             <TrayDetails
               selectedEvent={selectedEvent}
               selectedTodo={selectedTodo}
@@ -1363,7 +1356,6 @@ export function CalendarAppComponent({
               isXpTheme={isXpTheme}
               onUpdateEvent={handleUpdateEvent}
               onDeleteEvent={handleDeleteEventFromTray}
-              onEditEvent={handleEditEvent}
               onUpdateTodo={updateTodo}
               onToggleTodo={toggleTodo}
               onDeleteTodo={handleDeleteTodoFromTray}
@@ -1461,22 +1453,27 @@ export function CalendarAppComponent({
               >
                 {effectiveView === "week" && (
                   <WeekTimeGrid weekDates={weekDates} selectedEventId={selectedEventId}
-                    onDateClick={handleDateClick} onTimeSlotClick={handleNewEventAtTime}
-                    onEventClick={(ev) => handleSelectEvent(ev.id)} onEventDoubleClick={handleEditEvent}
+                    onDateClick={handleDateClick} onTimeSlotClick={onNewEventAtTime}
+                    onEventClick={(ev) => handleSelectEvent(ev.id)}
+                    onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
                     isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
-                    hourHeight={weekTimeGridHourHeight} setHourHeight={setWeekTimeGridHourHeight} />
+                    hourHeight={weekTimeGridHourHeight} setHourHeight={setWeekTimeGridHourHeight}
+                    onUpdateEvent={handleUpdateEvent} />
                 )}
                 {effectiveView === "day" && (
                   <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
-                    onTimeSlotClick={handleNewEventAtTime}
-                    onEventClick={(ev) => handleSelectEvent(ev.id)} onEventDoubleClick={handleEditEvent}
+                    onTimeSlotClick={onNewEventAtTime}
+                    onEventClick={(ev) => handleSelectEvent(ev.id)}
+                    onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
                     isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
-                    hourHeight={dayTimeGridHourHeight} setHourHeight={setDayTimeGridHourHeight} />
+                    hourHeight={dayTimeGridHourHeight} setHourHeight={setDayTimeGridHourHeight}
+                    onUpdateEvent={handleUpdateEvent} />
                 )}
                 {effectiveView === "month" && (
                   <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
-                    onDateClick={handleDateClick} onDateDoubleClick={handleDateDoubleClick}
-                    onEventClick={(ev) => handleSelectEvent(ev.id)} onEventDoubleClick={handleEditEvent}
+                    onDateClick={handleDateClick} onDateDoubleClick={onDateDoubleClick}
+                    onEventClick={(ev) => handleSelectEvent(ev.id)}
+                    onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
                     isXpTheme={isXpTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
                 )}
               </div>
@@ -1532,7 +1529,7 @@ export function CalendarAppComponent({
 
           {/* Bottom toolbar */}
           <BottomToolbar
-            view={effectiveView} onSetView={setView} onGoToToday={goToToday} onNewEvent={handleNewEvent}
+            view={effectiveView} onSetView={setView} onGoToToday={goToToday} onNewEvent={onNewEvent}
             onPrev={handlePrev} onNext={handleNext}
             showCalendarSidebar={showCalendarSidebar} onToggleCalendarSidebar={() => setShowCalendarSidebar((current) => !current)}
             showMiniCalendar={showMiniCalendar} onToggleMiniCalendar={() => setShowMiniCalendar((current) => !current)}
@@ -1543,13 +1540,6 @@ export function CalendarAppComponent({
           />
         </div>
 
-        <EventDialog
-          isOpen={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}
-          onSave={handleSaveEvent} onDelete={handleDeleteEditingEvent}
-          editingEvent={editingEvent}
-          selectedDate={selectedDate} prefillTime={prefillTime}
-          calendars={calendars}
-        />
         <HelpDialog isOpen={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen} appId="calendar" helpItems={translatedHelpItems} />
         <AboutDialog isOpen={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen} metadata={appMetadata} appId="calendar" />
 
