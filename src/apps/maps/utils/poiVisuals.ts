@@ -159,6 +159,14 @@ const VISUALS: Record<string, PoiVisual> = {
   searchHistory: { iconKey: "MapPin", from: "#94a3b8", to: "#475569" },
 };
 
+/** Stable listing for dev previews (e.g. `?preview=maps-poi`). */
+export const POI_CATEGORY_VISUAL_ENTRIES: readonly {
+  key: string;
+  visual: PoiVisual;
+}[] = (Object.keys(VISUALS) as (keyof typeof VISUALS)[])
+  .sort((a, b) => a.localeCompare(b))
+  .map((key) => ({ key, visual: VISUALS[key] }));
+
 export function poiVisualWithIcon(
   visual: PoiVisual
 ): PoiVisual & { Icon: Icon } {

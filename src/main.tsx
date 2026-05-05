@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
+import { PoiVisualsPreview } from "./apps/maps/components/PoiVisualsPreview";
 import { Analytics } from "@vercel/analytics/react";
 import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
@@ -10,6 +11,11 @@ import { preloadIpodData } from "./stores/useIpodStore";
 import { initPrefetch } from "./utils/prefetch";
 import { initializeI18n } from "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
+
+const previewParam =
+  typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("preview")
+    : null;
 
 // Prime React 19 resource hints before anything else runs
 primeReactResources();
@@ -140,8 +146,14 @@ preloadIpodData();
 const renderApp = () => {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-      <App />
-      <Analytics />
+      {previewParam === "maps-poi" ? (
+        <PoiVisualsPreview />
+      ) : (
+        <>
+          <App />
+          <Analytics />
+        </>
+      )}
     </React.StrictMode>
   );
 };
