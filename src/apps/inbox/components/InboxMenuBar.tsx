@@ -17,6 +17,8 @@ interface InboxMenuBarProps {
   onMarkUnread: () => void;
   onDelete: () => void;
   onClearRead: () => void;
+  onMarkAllReadInView: () => void;
+  markAllReadDisabled: boolean;
   hasSelection: boolean;
 }
 
@@ -28,6 +30,8 @@ export function InboxMenuBar({
   onMarkUnread,
   onDelete,
   onClearRead,
+  onMarkAllReadInView,
+  markAllReadDisabled,
   hasSelection,
 }: InboxMenuBarProps) {
   const { t } = useTranslation();
@@ -42,6 +46,14 @@ export function InboxMenuBar({
           {t("common.menu.file")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
+            onClick={onMarkAllReadInView}
+            disabled={markAllReadDisabled}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.inbox.toolbar.markAllReadInView")}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onClearRead} className="text-md h-6 px-3">
             {t("apps.inbox.menu.clearRead")}
           </MenubarItem>

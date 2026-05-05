@@ -22,6 +22,7 @@ interface InboxState {
   items: InboxItem[];
   upsertItem: (input: UpsertInboxInput) => string;
   markRead: (id: string) => void;
+  markReadMany: (ids: string[]) => void;
   markUnread: (id: string) => void;
   toggleRead: (id: string) => void;
   removeItem: (id: string) => void;
@@ -107,6 +108,17 @@ export const useInboxStore = create<InboxState>()(
         set({
           items: get().items.map((i) =>
             i.id === id ? { ...i, readAt: i.readAt ?? t } : i
+          ),
+        });
+      },
+
+      markReadMany: (ids) => {
+        if (ids.length === 0) return;
+        const t = Date.now();
+        const setIds = new Set(ids);
+        set({
+          items: get().items.map((i) =>
+            setIds.has(i.id) ? { ...i, readAt: i.readAt ?? t } : i
           ),
         });
       },

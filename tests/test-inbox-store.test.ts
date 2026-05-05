@@ -80,4 +80,23 @@ describe("useInboxStore", () => {
     expect(useInboxStore.getState().items.length).toBe(1);
     expect(useInboxStore.getState().items[0].title).toBe("b");
   });
+
+  test("markReadMany marks multiple unread items", () => {
+    const idA = useInboxStore.getState().upsertItem({
+      category: "system",
+      title: "a",
+      preview: "p",
+    });
+    const idB = useInboxStore.getState().upsertItem({
+      category: "system",
+      title: "b",
+      preview: "q",
+    });
+    useInboxStore.getState().markReadMany([idA, idB]);
+    const items = useInboxStore.getState().items;
+    const a = items.find((i) => i.id === idA);
+    const b = items.find((i) => i.id === idB);
+    expect(a?.readAt).not.toBeNull();
+    expect(b?.readAt).not.toBeNull();
+  });
 });

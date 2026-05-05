@@ -3347,15 +3347,31 @@
       },
       "toolbar": {
         "clearReadConfirm": "Remove all read items?",
-        "emptyFiltered": "Nothing here.",
+        "emptyFiltered": "Nothing in this view yet.",
+        "emptyFilteredHint": "Try another tab, or leave Inbox open while you use Chats and applets—new notices appear here automatically.",
+        "emptyUnread": "You're all caught up.",
+        "emptyUnreadHint": "Unread items from agents, applets, chats, and shared links will show up here when something new arrives.",
         "emptyAll": "Your inbox is empty.",
-        "detailPlaceholder": "Select a message",
+        "detailPlaceholder": "Select a message in the list, or press ↓ to start.",
+        "detailEmptyFiltered": "No items in this tab.",
+        "summaryCount": "{{total}} items · {{unread}} unread",
+        "markAllReadInView": "Mark all read",
+        "copySummary": "Copy",
+        "copied": "Copied",
+        "keyboardHints": "↑↓ select · Enter open · R read · U unread · C copy · ⌫ delete",
         "openLink": "Open link",
         "openApp": "Open app",
-        "received": "Received",
+        "received": "Updated",
         "producer": "Source",
-        "noActions": "No actions for this item.",
+        "noActions": "No shortcut for this item—it's informational.",
         "backToList": "Messages"
+      },
+      "time": {
+        "justNow": "Just now",
+        "minutesAgo": "{{count}} min ago",
+        "hoursAgo": "{{count}} hr ago",
+        "yesterday": "Yesterday",
+        "daysAgo": "{{count}} days ago"
       },
       "badges": {
         "unread": "Unread"
