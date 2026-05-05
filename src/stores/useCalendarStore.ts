@@ -19,6 +19,8 @@ export interface CalendarEvent {
   endTime?: string; // HH:MM
   color: EventColor;
   calendarId?: string;
+  /** Optional location line (shown under the title in the tray editor). */
+  location?: string;
   notes?: string;
   createdAt: number;
   updatedAt: number;

@@ -33,7 +33,7 @@ import {
 // ── Shared constants (also re-exported for TvVideoDrawer) ────────────────────
 
 /** Width of the side-drawer panel on desktop. */
-export const DRAWER_WIDTH = 240;
+export const DRAWER_WIDTH = 268;
 
 // Side-drawer geometry (desktop)
 const DRAWER_EDGE_INSET_PX = 4;
