@@ -15,6 +15,7 @@ import {
   fetchWithAuth,
   makeRateLimitBypassHeaders,
   ensureUserAuth,
+  getTokenFromAuthCookie,
 } from "./test-utils";
 
 let testToken: string | null = null;
@@ -78,10 +79,11 @@ describe("New API", () => {
       });
       if (res.status === 429 || res.status === 409) return;
       expect(res.status).toBe(201);
+      const token = getTokenFromAuthCookie(res);
+      expect(token).toBeTruthy();
       const data = await res.json();
-      expect(data.token).toBeTruthy();
       expect(data.user?.username).toBe(testUsername.toLowerCase());
-      testToken = data.token;
+      testToken = token;
     });
 
     test("Login - success", async () => {
@@ -93,9 +95,11 @@ describe("New API", () => {
       });
       if (res.status === 429) return;
       expect(res.status).toBe(200);
+      const token = getTokenFromAuthCookie(res);
+      expect(token).toBeTruthy();
       const data = await res.json();
-      expect(data.token).toBeTruthy();
-      testToken = data.token;
+      expect(data.username).toBe(testUsername.toLowerCase());
+      testToken = token;
     });
 
     test("Login - invalid password → 401", async () => {
@@ -126,10 +130,12 @@ describe("New API", () => {
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({ username: testUsername, oldToken: testToken }),
       });
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(200);
+      const token = getTokenFromAuthCookie(res);
+      expect(token).toBeTruthy();
       const data = await res.json();
-      expect(data.token).toBeTruthy();
-      testToken = data.token;
+      expect(data.refreshed).toBe(true);
+      testToken = token;
     });
 
     test("Password check", async () => {
@@ -160,8 +166,7 @@ describe("New API", () => {
         body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
       });
       if (res.status === 200) {
-        const data = await res.json();
-        adminToken = data.token;
+        adminToken = getTokenFromAuthCookie(res);
         expect(adminToken).toBeTruthy();
       }
       // admin may not exist in test env — that's OK

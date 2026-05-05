@@ -46,7 +46,14 @@ export const makeRateLimitBypassHeaders = (): Record<string, string> => ({
   "X-Forwarded-For": `10.2.${Date.now() % 255}.${Math.floor(Math.random() * 255)}`,
 });
 
-function getTokenFromAuthCookie(response: Response): string | null {
+/**
+ * Extract the auth token from a response's `ryos_auth` httpOnly cookie.
+ *
+ * The login/register/refresh endpoints no longer return `token` in the
+ * JSON body — they only set a `ryos_auth={username}:{token}` cookie.
+ * Tests that previously relied on `data.token` must read the cookie.
+ */
+export function getTokenFromAuthCookie(response: Response): string | null {
   const setCookie = response.headers.get("set-cookie");
   if (!setCookie) {
     return null;
@@ -54,6 +61,25 @@ function getTokenFromAuthCookie(response: Response): string | null {
 
   const match = setCookie.match(/(?:^|;\s*)ryos_auth=([^:;]+):([^;]+)/);
   return match?.[2] || null;
+}
+
+/**
+ * Extract both username and token from a response's `ryos_auth` cookie.
+ */
+export function getAuthFromCookie(
+  response: Response
+): { username: string; token: string } | null {
+  const setCookie = response.headers.get("set-cookie");
+  if (!setCookie) return null;
+
+  const match = setCookie.match(/(?:^|;\s*)ryos_auth=([^:;]+):([^;]+)/);
+  if (!match) return null;
+
+  try {
+    return { username: decodeURIComponent(match[1]), token: match[2] };
+  } catch {
+    return null;
+  }
 }
 
 /**

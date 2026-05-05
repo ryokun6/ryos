@@ -12,6 +12,7 @@ import {
   BASE_URL,
   fetchWithOrigin,
   fetchWithAuth,
+  getTokenFromAuthCookie,
 } from "./test-utils";
 
 // Test state
@@ -48,8 +49,7 @@ async function setupTestUser(): Promise<void> {
   });
 
   if (res.status === 201) {
-    const data = await res.json();
-    testToken = data.token;
+    testToken = getTokenFromAuthCookie(res);
   } else if (res.status === 409) {
     // User exists, try login
     const loginRes = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
@@ -58,8 +58,7 @@ async function setupTestUser(): Promise<void> {
       body: JSON.stringify({ username: testUsername, password: "testpassword123" }),
     });
     if (loginRes.ok) {
-      const data = await loginRes.json();
-      testToken = data.token;
+      testToken = getTokenFromAuthCookie(loginRes);
     }
   }
 }
@@ -71,8 +70,7 @@ async function setupAdminUser(): Promise<void> {
     body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
   });
   if (res.ok) {
-    const data = await res.json();
-    adminToken = data.token;
+    adminToken = getTokenFromAuthCookie(res);
   }
 }
 

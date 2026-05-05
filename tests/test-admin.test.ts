@@ -8,6 +8,7 @@ import {
   BASE_URL,
   fetchWithOrigin,
   fetchWithAuth,
+  getTokenFromAuthCookie,
 } from "./test-utils";
 
 // Admin user credentials for dev testing
@@ -32,9 +33,8 @@ describe("admin", () => {
     });
 
     if (res.status === 200) {
-      const data = await res.json();
-      expect(data.token).toBeTruthy();
-      adminToken = data.token;
+      adminToken = getTokenFromAuthCookie(res);
+      expect(adminToken).toBeTruthy();
       return;
     }
 
@@ -48,8 +48,7 @@ describe("admin", () => {
     });
 
     if (createRes.status === 201) {
-      const createData = await createRes.json();
-      adminToken = createData.token;
+      adminToken = getTokenFromAuthCookie(createRes);
       return;
     }
 
@@ -82,9 +81,8 @@ describe("admin", () => {
     });
 
     if (res.status === 201) {
-      const data = await res.json();
-      expect(data.token).toBeTruthy();
-      testUserToken = data.token;
+      testUserToken = getTokenFromAuthCookie(res);
+      expect(testUserToken).toBeTruthy();
       return;
     }
 
@@ -99,8 +97,7 @@ describe("admin", () => {
       });
 
       if (loginRes.status === 200) {
-        const data = await loginRes.json();
-        testUserToken = data.token;
+        testUserToken = getTokenFromAuthCookie(loginRes);
         return;
       }
     }
