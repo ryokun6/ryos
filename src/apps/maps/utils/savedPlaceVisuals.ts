@@ -1,7 +1,7 @@
 import type { PoiVisual } from "./poiVisuals";
 import { HOME_GLYPH_IMAGE, WORK_GLYPH_IMAGE } from "./markerGlyphs";
-/** Base hue for Home (badges and map pins). */
-export const HOME_MARKER_COLOR = "#2563eb";
+/** Base hue for Home — cyan blue (matches the previous Stores hue). */
+export const HOME_MARKER_COLOR = "#0ea5e9";
 
 /** Base hue for Work — saturated warm amber (not muddy brown or pale tan). */
 export const WORK_MARKER_COLOR = "#d97706";
@@ -10,7 +10,7 @@ export const WORK_MARKER_COLOR = "#d97706";
 export const HOME_SAVED_VISUAL: PoiVisual = {
   iconKey: "House",
   from: HOME_MARKER_COLOR,
-  to: "#1d4ed8",
+  to: "#0284c7",
 };
 
 export const WORK_SAVED_VISUAL: PoiVisual = {
