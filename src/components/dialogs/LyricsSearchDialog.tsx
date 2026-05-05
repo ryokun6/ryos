@@ -44,6 +44,8 @@ interface LyricsSearchDialogProps {
     title: string;
     artist: string;
     album?: string;
+    /** Album cover URL (may contain `{size}` placeholder) */
+    cover?: string;
   };
 }
 
@@ -255,7 +257,7 @@ export function LyricsSearchDialog({
           <div className="border border-gray-300 rounded-md overflow-hidden bg-white">
             <div
               className={cn(
-                "px-2 py-1.5",
+                "flex items-center gap-2 px-2 py-1.5",
                 isXpTheme
                   ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                   : "font-geneva-12 text-[12px]"
@@ -268,10 +270,37 @@ export function LyricsSearchDialog({
                 fontSize: isXpTheme ? "11px" : undefined,
               }}
             >
-              <div className="font-semibold">{currentSelection.title}</div>
-              <div className="opacity-80">
-                {currentSelection.artist}
-                {currentSelection.album && ` • ${currentSelection.album}`}
+              {(() => {
+                const coverUrl = formatKugouImageUrl(currentSelection.cover, 100);
+                return (
+                  <div
+                    className={cn(
+                      "flex-shrink-0 w-9 h-9 overflow-hidden bg-gray-200",
+                      isXpTheme ? "border border-gray-400" : "rounded-sm"
+                    )}
+                    aria-hidden="true"
+                  >
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                        }}
+                        draggable={false}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })()}
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold truncate">{currentSelection.title}</div>
+                <div className="opacity-80 truncate">
+                  {currentSelection.artist}
+                  {currentSelection.album && ` • ${currentSelection.album}`}
+                </div>
               </div>
             </div>
           </div>

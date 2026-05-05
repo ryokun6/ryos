@@ -1095,6 +1095,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             title: song.lyricsSource.title,
             artist: song.lyricsSource.artist,
             album: song.lyricsSource.album,
+            cover: song.cover,
           } : undefined}
         />
       )}
