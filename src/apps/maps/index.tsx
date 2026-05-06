@@ -38,18 +38,12 @@ export const helpItems = [
     icon: "🛰️",
     title: "Map Types",
     description:
-      "Switch between Standard, Hybrid, and Satellite from the View menu",
+      "Switch between Standard, Hybrid, Satellite, and Muted Standard from the View menu",
   },
   {
     icon: "🌐",
     title: "Powered by Apple Maps",
     description:
       "Maps tiles, search, and geocoding are provided by Apple MapKit JS",
-  },
-  {
-    icon: "🎨",
-    title: "Switch Map Style",
-    description:
-      "Use the View menu to toggle between Standard, Hybrid, Satellite, and Muted Standard.",
   },
 ];

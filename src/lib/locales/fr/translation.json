@@ -2535,6 +2535,10 @@
     "maps": {
       "description": "Trouvez des lieux avec Apple Maps",
       "help": {
+        "directions": {
+          "description": "Depuis une fiche de lieu, ouvrez l'itinéraire en voiture dans Apple Maps — s'ouvre dans un nouvel onglet pour que ryOS reste ouvert (l'itinéraire intégré n'est pas encore disponible)",
+          "title": "Itinéraire"
+        },
         "dropPins": {
           "description": "Choisissez un résultat dans la liste pour placer un repère et recentrer la carte dessus",
           "title": "Placer des repères"
@@ -2544,7 +2548,7 @@
           "title": "Me localiser"
         },
         "mapTypes": {
-          "description": "Basculez entre Standard, Hybride et Satellite depuis le menu Présentation",
+          "description": "Basculez entre les modes Standard, Hybride, Satellite et Standard atténué depuis le menu Présentation",
           "title": "Types de carte"
         },
         "poweredByApple": {
@@ -2554,10 +2558,6 @@
         "searchPlaces": {
           "description": "Saisissez une ville, un établissement ou une adresse dans la barre de recherche pour la trouver sur la carte",
           "title": "Rechercher des lieux"
-        },
-        "switchMapStyle": {
-          "description": "Utilisez le menu Présentation pour basculer entre Standard, Hybride, Satellite et Standard réduit.",
-          "title": "Changer le style de la carte"
         }
       },
       "locateMe": "Me localiser",

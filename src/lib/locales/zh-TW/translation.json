@@ -2535,6 +2535,10 @@
     "maps": {
       "description": "使用 Apple 地圖尋找地點",
       "help": {
+        "directions": {
+          "description": "從地點卡在 Apple 地圖中開啟駕車路線 — 將於新分頁中開啟，以讓 ryOS 保持開啟（地圖內導航功能尚無法使用）",
+          "title": "路線"
+        },
         "dropPins": {
           "description": "從清單中選擇一個結果以放置大頭針，並將地圖重新對焦於該處",
           "title": "放置大頭針"
@@ -2544,7 +2548,7 @@
           "title": "定位我"
         },
         "mapTypes": {
-          "description": "從「顯示方式」選單中切換標準、混合和衛星模式",
+          "description": "從「顯示」選單在「標準」、「混合」、「衛星」和「柔和標準」之間切換",
           "title": "地圖類型"
         },
         "poweredByApple": {
@@ -2554,10 +2558,6 @@
         "searchPlaces": {
           "description": "在搜尋列中輸入城市、商家或地址，以便在地圖上尋找",
           "title": "搜尋地點"
-        },
-        "switchMapStyle": {
-          "description": "使用「顯示方式」選單在「標準」、「混合」、「衛星」和「淡化標準」之間切換。",
-          "title": "切換地圖樣式"
         }
       },
       "locateMe": "我的位置",

@@ -2535,6 +2535,10 @@
     "maps": {
       "description": "Busca lugares con Apple Maps",
       "help": {
+        "directions": {
+          "description": "Desde una tarjeta de lugar, abre las indicaciones de conducción en Apple Maps; se abre en una pestaña nueva para que ryOS permanezca abierto (la navegación integrada en el mapa aún no está disponible)",
+          "title": "Indicaciones"
+        },
         "dropPins": {
           "description": "Elige un resultado de la lista para soltar un marcador y volver a centrar el mapa en él",
           "title": "Soltar marcadores"
@@ -2544,7 +2548,7 @@
           "title": "Ubicarme"
         },
         "mapTypes": {
-          "description": "Cambia entre Estándar, Híbrido y Satélite desde el menú Visualización",
+          "description": "Cambia entre Estándar, Híbrido, Satélite y Estándar atenuado desde el menú Visualización",
           "title": "Tipos de mapa"
         },
         "poweredByApple": {
@@ -2554,10 +2558,6 @@
         "searchPlaces": {
           "description": "Escribe una ciudad, negocio o dirección en la barra de búsqueda para encontrarlo en el mapa",
           "title": "Buscar lugares"
-        },
-        "switchMapStyle": {
-          "description": "Usa el menú Visualización para alternar entre Estándar, Híbrido, Satélite y Estándar suave.",
-          "title": "Cambiar estilo del mapa"
         }
       },
       "locateMe": "Ubicarme",
