@@ -5,8 +5,7 @@ import {
   type ChatMessage,
   type AIChatMessage,
 } from "@/types/chat";
-import { track } from "@vercel/analytics";
-import { APP_ANALYTICS } from "@/utils/analytics";
+import { APP_ANALYTICS, CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -1016,6 +1015,9 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           // Always fetch messages for the new room to ensure latest content
           if (newRoomId) {
+            track(CHAT_ANALYTICS.ROOM_SWITCH, {
+              hasPreviousRoom: !!currentRoomId,
+            });
             console.log(
               `[ChatsStore] Fetching latest messages for room ${newRoomId}`
             );
@@ -1065,6 +1067,11 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             const data = await createRoomApi(payload);
             if (data.room) {
+              track(CHAT_ANALYTICS.ROOM_CREATE, {
+                roomType: type,
+                memberCount: members.length,
+                isIrc: type === "irc",
+              });
               // Room will be added via Pusher update, so we don't need to manually add it
               return { ok: true, roomId: data.room.id };
             }
@@ -1091,6 +1098,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           try {
             await deleteRoomApi(roomId);
+            track(CHAT_ANALYTICS.ROOM_DELETE);
             // Room will be removed via Pusher update
             // If we're currently in this room, switch to @ryo
             const currentRoomId = get().currentRoomId;
@@ -1134,6 +1142,10 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           try {
             await sendRoomMessageApi(roomId, { content: content.trim() });
+            track(CHAT_ANALYTICS.TEXT_MESSAGE, {
+              ...getTextAnalytics(content.trim()),
+              source: "room_store",
+            });
             // Real message will be added via Pusher, which will replace the optimistic one
             return { ok: true };
           } catch (error) {

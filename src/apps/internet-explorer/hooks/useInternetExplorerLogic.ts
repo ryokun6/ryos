@@ -19,12 +19,11 @@ import {
 } from "@/stores/useInternetExplorerStore";
 import { useAiGeneration } from "./useAiGeneration";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
-import { track } from "@vercel/analytics";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { IE_ANALYTICS } from "@/utils/analytics";
+import { IE_ANALYTICS, normalizeUrlForAnalytics, track } from "@/utils/analytics";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
@@ -607,10 +606,9 @@ export function useInternetExplorerLogic({
                     potentialErrorData
                   );
                   track(IE_ANALYTICS.NAVIGATION_ERROR, {
-                    url: iframeSrc,
+                    ...normalizeUrlForAnalytics(iframeSrc),
                     type: potentialErrorData.type,
                     status: potentialErrorData.status || 500,
-                    message: potentialErrorData.message,
                   });
                   handleNavigationError(potentialErrorData, url);
                   return;
@@ -633,7 +631,7 @@ export function useInternetExplorerLogic({
                   errorData
                 );
                 track(IE_ANALYTICS.NAVIGATION_ERROR, {
-                  url: iframeSrc,
+                  ...normalizeUrlForAnalytics(iframeSrc),
                   type: errorData.type,
                   status: errorData.status || 500,
                 });
@@ -698,10 +696,10 @@ export function useInternetExplorerLogic({
           }&sz=32`;
 
           track(IE_ANALYTICS.NAVIGATION_SUCCESS, {
-            url: currentUrlForFallback,
+            ...normalizeUrlForAnalytics(currentUrlForFallback),
             year: year,
             mode: mode,
-            title: loadedTitle || fallbackTitle,
+            hasTitle: Boolean(loadedTitle || fallbackTitle),
           });
 
           loadSuccess({
@@ -729,7 +727,7 @@ export function useInternetExplorerLogic({
           try {
             const targetUrlForError = finalUrl || url;
             track(IE_ANALYTICS.NAVIGATION_ERROR, {
-              url: targetUrlForError,
+              ...normalizeUrlForAnalytics(targetUrlForError),
               type: "connection_error",
               status: 404,
             });
@@ -749,9 +747,9 @@ export function useInternetExplorerLogic({
               error instanceof Error ? error.message : String(error)
             }`;
             track(IE_ANALYTICS.NAVIGATION_ERROR, {
-              url: finalUrl || url,
+              ...normalizeUrlForAnalytics(finalUrl || url),
               type: "generic_error",
-              error: errorMsg,
+              errorType: "generic_error",
             });
             loadError(errorMsg, {
               error: true,
@@ -817,7 +815,7 @@ export function useInternetExplorerLogic({
       navTokenRef.current = newToken;
 
       track(IE_ANALYTICS.NAVIGATION_START, {
-        url: urlToNavigate,
+        ...normalizeUrlForAnalytics(urlToNavigate),
         year: targetYearParam,
         mode: newMode,
       });

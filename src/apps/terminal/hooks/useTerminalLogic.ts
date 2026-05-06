@@ -12,7 +12,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
-import { track } from "@vercel/analytics";
+import { getTextAnalytics, track } from "@/utils/analytics";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -1432,7 +1432,7 @@ export const useTerminalLogic = ({
     }
 
     // Track AI command
-    track(TERMINAL_ANALYTICS.AI_COMMAND, { prompt: command });
+    track(TERMINAL_ANALYTICS.AI_COMMAND, getTextAnalytics(command));
 
     // Add user command to chat history with special AI mode formatting
     // Remove any existing thinking messages

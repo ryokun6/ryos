@@ -7,7 +7,7 @@ import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { useChatSynth } from "@/hooks/useChatSynth";
 import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { track } from "@vercel/analytics";
+import { CHAT_ANALYTICS, getTextAnalytics, track } from "@/utils/analytics";
 import {
   Tooltip,
   TooltipContent,
@@ -17,7 +17,6 @@ import {
 import { AI_MODELS } from "@/types/aiModels";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { isWindowsTheme } from "@/themes";
-import { CHAT_ANALYTICS } from "@/utils/analytics";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
 import { preprocessImage } from "@/utils/imagePreprocessing";
@@ -547,7 +546,9 @@ export const ChatInput = memo(function ChatInput({
             }
             if (input.trim() !== "") {
               track(CHAT_ANALYTICS.TEXT_MESSAGE, {
-                message: input,
+                ...getTextAnalytics(input),
+                hasAttachment: !!selectedImage,
+                isChatRoom: isInChatRoom,
               });
             }
             e.preventDefault();

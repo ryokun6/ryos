@@ -1,8 +1,7 @@
 import { Command, CommandResult } from "../types";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { track } from "@vercel/analytics";
-import { TERMINAL_ANALYTICS } from "@/utils/analytics";
+import { getTextAnalytics, track, TERMINAL_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 
 export const aiCommand: Command = {
@@ -28,7 +27,7 @@ export const aiCommand: Command = {
       const initialPrompt = args.join(" ");
 
       // Track AI command
-      track(TERMINAL_ANALYTICS.AI_COMMAND, { prompt: initialPrompt });
+      track(TERMINAL_ANALYTICS.AI_COMMAND, getTextAnalytics(initialPrompt));
 
       // Store the initial prompt for the component to process
       terminalStore.setInitialAiPrompt(initialPrompt);
