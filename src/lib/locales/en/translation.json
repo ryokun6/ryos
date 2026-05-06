@@ -3612,11 +3612,17 @@
           "topProductEvents": "Top Product Events",
           "topApps": "Top Apps",
           "eventCategories": "Event Categories",
-          "topPages": "Top Pages"
+          "topPages": "Top Pages",
+          "topSongs": "Top Songs",
+          "topSites": "Top Sites Visited",
+          "topCountries": "Top Countries"
         },
         "empty": {
           "noData": "No data yet",
-          "noAiUsage": "No AI usage yet"
+          "noAiUsage": "No AI usage yet",
+          "noSongs": "No songs played yet",
+          "noSites": "No sites visited yet",
+          "noCountries": "No country data yet"
         }
       },
       "menu": {

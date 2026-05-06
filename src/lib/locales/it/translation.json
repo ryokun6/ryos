@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "Ancora nessun utilizzo AI",
-          "noData": "Ancora nessun dato"
+          "noCountries": "Ancora nessun dato sui paesi",
+          "noData": "Ancora nessun dato",
+          "noSites": "Ancora nessun sito visitato",
+          "noSongs": "Ancora nessun brano riprodotto"
         },
         "failedToLoad": "Caricamento fallito",
         "kpi": {
           "aiRequests": "Richieste AI",
           "apiCalls": "Chiamate API",
+          "appEvents": "Eventi app",
           "errorRate": "Tasso di errore",
+          "pageViews": "Visualizzazioni di pagina",
+          "productEvents": "Eventi prodotto",
+          "sessions": "Sessioni",
           "visitors": "Visitatori"
         },
         "loading": "Caricamento analisi...",
@@ -56,8 +63,16 @@
         "retry": "Riprova",
         "sections": {
           "aiUsageByUser": "Utilizzo AI per utente",
+          "eventCategories": "Categorie eventi",
+          "productAnalytics": "Analisi prodotto",
           "statusCodes": "Codici di stato",
-          "topEndpoints": "Endpoint principali"
+          "topApps": "App principali",
+          "topCountries": "Paesi principali",
+          "topEndpoints": "Endpoint principali",
+          "topPages": "Pagine principali",
+          "topProductEvents": "Eventi prodotto principali",
+          "topSites": "Siti più visitati",
+          "topSongs": "Brani principali"
         },
         "title": "Dashboard",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "Calendario",
       "today": "Oggi",
+      "tray": {
+        "done": "completato",
+        "due": "scadenza",
+        "empty": "Seleziona un evento o un'attività",
+        "eventDetails": "Dettagli evento",
+        "from": "da",
+        "locationPlaceholder": "posizione",
+        "markComplete": "Segna come completato",
+        "markIncomplete": "Segna come non completato",
+        "newEventTitle": "Nuovo evento",
+        "to": "a",
+        "todoDetails": "Dettagli promemoria"
+      },
       "views": {
         "allDay": "tutto il giorno",
         "day": "Giorno",

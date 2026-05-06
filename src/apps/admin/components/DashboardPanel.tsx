@@ -88,6 +88,9 @@ interface ProductAnalyticsDetail {
   categories: ProductBreakdown[];
   sources: ProductBreakdown[];
   topPaths: ProductBreakdown[];
+  topSongs?: ProductBreakdown[];
+  topSites?: ProductBreakdown[];
+  topCountries?: ProductBreakdown[];
 }
 
 interface AnalyticsDetail {
@@ -196,12 +199,16 @@ function StatCard({
 function BreakdownList({
   items,
   nameClassName,
+  barClassName = "bg-neutral-400",
+  emptyMessage = "No data yet",
 }: {
   items: ProductBreakdown[];
   nameClassName?: string;
+  barClassName?: string;
+  emptyMessage?: string;
 }) {
   if (items.length === 0) {
-    return <EmptyState message="No data yet" />;
+    return <EmptyState message={emptyMessage} />;
   }
   const max = items[0]?.count || 1;
   return (
@@ -214,7 +221,7 @@ function BreakdownList({
           <div className="w-24 flex items-center gap-1.5">
             <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-400 rounded-full"
+                className={cn("h-full rounded-full", barClassName)}
                 style={{ width: `${(item.count / max) * 100}%` }}
               />
             </div>
@@ -507,7 +514,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                     <div className="w-24 flex items-center gap-1.5">
                       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-neutral-400 rounded-full"
+                          className="h-full bg-indigo-400 rounded-full"
                           style={{
                             width: `${(ep.count / topEndpointMax) * 100}%`,
                           }}
@@ -663,19 +670,80 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
-              {[
-                [t("apps.admin.dashboard.sections.topProductEvents"), data.product.topEvents],
-                [t("apps.admin.dashboard.sections.topApps"), data.product.topApps],
-                [t("apps.admin.dashboard.sections.eventCategories"), data.product.categories],
-                [t("apps.admin.dashboard.sections.topPages"), data.product.topPaths],
-              ].map(([title, items]) => (
-                <div key={String(title)} className="border border-gray-200 rounded bg-white overflow-hidden">
+              {(
+                [
+                  {
+                    title: t("apps.admin.dashboard.sections.topProductEvents"),
+                    items: data.product.topEvents,
+                    barClassName: "bg-neutral-400",
+                    nameClassName: "font-mono",
+                    emptyMessage: t("apps.admin.dashboard.empty.noData"),
+                  },
+                  {
+                    title: t("apps.admin.dashboard.sections.topApps"),
+                    items: data.product.topApps,
+                    barClassName: "bg-purple-400",
+                    nameClassName: "font-mono",
+                    emptyMessage: t("apps.admin.dashboard.empty.noData"),
+                  },
+                  {
+                    title: t("apps.admin.dashboard.sections.topSongs"),
+                    items: data.product.topSongs ?? [],
+                    barClassName: "bg-pink-400",
+                    nameClassName: undefined,
+                    emptyMessage: t("apps.admin.dashboard.empty.noSongs"),
+                  },
+                  {
+                    title: t("apps.admin.dashboard.sections.topSites"),
+                    items: data.product.topSites ?? [],
+                    barClassName: "bg-teal-400",
+                    nameClassName: "font-mono",
+                    emptyMessage: t("apps.admin.dashboard.empty.noSites"),
+                  },
+                  {
+                    title: t("apps.admin.dashboard.sections.topCountries"),
+                    items: data.product.topCountries ?? [],
+                    barClassName: "bg-orange-400",
+                    nameClassName: "font-mono",
+                    emptyMessage: t("apps.admin.dashboard.empty.noCountries"),
+                  },
+                  {
+                    title: t("apps.admin.dashboard.sections.eventCategories"),
+                    items: data.product.categories,
+                    barClassName: "bg-yellow-500",
+                    nameClassName: "font-mono",
+                    emptyMessage: t("apps.admin.dashboard.empty.noData"),
+                  },
+                  {
+                    title: t("apps.admin.dashboard.sections.topPages"),
+                    items: data.product.topPaths,
+                    barClassName: "bg-green-400",
+                    nameClassName: "font-mono",
+                    emptyMessage: t("apps.admin.dashboard.empty.noData"),
+                  },
+                ] satisfies Array<{
+                  title: string;
+                  items: ProductBreakdown[];
+                  barClassName: string;
+                  nameClassName?: string;
+                  emptyMessage: string;
+                }>
+              ).map((section) => (
+                <div
+                  key={section.title}
+                  className="border border-gray-200 rounded bg-white overflow-hidden"
+                >
                   <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
                     <span className="text-[10px] uppercase tracking-wide text-neutral-400">
-                      {String(title)}
+                      {section.title}
                     </span>
                   </div>
-                  <BreakdownList items={items as ProductBreakdown[]} nameClassName="font-mono" />
+                  <BreakdownList
+                    items={section.items}
+                    nameClassName={section.nameClassName}
+                    barClassName={section.barClassName}
+                    emptyMessage={section.emptyMessage}
+                  />
                 </div>
               ))}
             </div>

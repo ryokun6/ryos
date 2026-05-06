@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "Использование ИИ пока отсутствует",
-          "noData": "Данных пока нет"
+          "noCountries": "Данных по странам пока нет",
+          "noData": "Данных пока нет",
+          "noSites": "Посещенных сайтов пока нет",
+          "noSongs": "Прослушанных песен пока нет"
         },
         "failedToLoad": "Не удалось загрузить",
         "kpi": {
           "aiRequests": "Запросы ИИ",
           "apiCalls": "Вызовы API",
+          "appEvents": "События приложений",
           "errorRate": "Доля ошибок",
+          "pageViews": "Просмотры страниц",
+          "productEvents": "События продукта",
+          "sessions": "Сеансы",
           "visitors": "Посетители"
         },
         "loading": "Загрузка аналитики...",
@@ -56,8 +63,16 @@
         "retry": "Повторить",
         "sections": {
           "aiUsageByUser": "Использование ИИ пользователями",
+          "eventCategories": "Категории событий",
+          "productAnalytics": "Продуктовая аналитика",
           "statusCodes": "Коды состояния",
-          "topEndpoints": "Топ эндпоинтов"
+          "topApps": "Топ приложений",
+          "topCountries": "Топ стран",
+          "topEndpoints": "Топ эндпоинтов",
+          "topPages": "Топ страниц",
+          "topProductEvents": "Топ событий продукта",
+          "topSites": "Топ посещенных сайтов",
+          "topSongs": "Топ песен"
         },
         "title": "Панель управления",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "Календарь",
       "today": "Сегодня",
+      "tray": {
+        "done": "выполнено",
+        "due": "срок",
+        "empty": "Выберите событие или задачу",
+        "eventDetails": "Детали события",
+        "from": "от",
+        "locationPlaceholder": "Местоположение",
+        "markComplete": "Отметить как выполненное",
+        "markIncomplete": "Отметить как невыполненное",
+        "newEventTitle": "Новое событие",
+        "to": "до",
+        "todoDetails": "Сведения о задаче"
+      },
       "views": {
         "allDay": "Весь день",
         "day": "День",

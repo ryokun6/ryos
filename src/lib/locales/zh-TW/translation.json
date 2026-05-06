@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "尚無 AI 使用紀錄",
-          "noData": "尚無資料"
+          "noCountries": "尚無國家資料",
+          "noData": "尚無資料",
+          "noSites": "尚無造訪網站記錄",
+          "noSongs": "尚無歌曲播放記錄"
         },
         "failedToLoad": "載入失敗",
         "kpi": {
           "aiRequests": "AI 請求",
           "apiCalls": "API 呼叫",
+          "appEvents": "應用程式事件",
           "errorRate": "錯誤率",
+          "pageViews": "頁面瀏覽量",
+          "productEvents": "產品事件",
+          "sessions": "工作階段",
           "visitors": "訪客"
         },
         "loading": "正在載入分析數據...",
@@ -56,8 +63,16 @@
         "retry": "重試",
         "sections": {
           "aiUsageByUser": "使用者 AI 使用量",
+          "eventCategories": "事件類別",
+          "productAnalytics": "產品分析",
           "statusCodes": "狀態碼",
-          "topEndpoints": "熱門端點"
+          "topApps": "熱門應用程式",
+          "topCountries": "熱門國家/地區",
+          "topEndpoints": "熱門端點",
+          "topPages": "熱門頁面",
+          "topProductEvents": "熱門產品事件",
+          "topSites": "熱門造訪網站",
+          "topSongs": "熱門歌曲"
         },
         "title": "儀表板",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "行事曆",
       "today": "今天",
+      "tray": {
+        "done": "已完成",
+        "due": "到期",
+        "empty": "選擇事件或待辦事項",
+        "eventDetails": "事件詳情",
+        "from": "來自",
+        "locationPlaceholder": "地點",
+        "markComplete": "標記為已完成",
+        "markIncomplete": "標記為未完成",
+        "newEventTitle": "新增行程",
+        "to": "至",
+        "todoDetails": "待辦事項詳細資訊"
+      },
       "views": {
         "allDay": "全天",
         "day": "日",
