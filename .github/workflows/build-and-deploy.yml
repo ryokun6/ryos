@@ -1,0 +1,172 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Force a Coolify deploy even if no source changes"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+concurrency:
+  group: build-and-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (Bun ${{ matrix.bun-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        bun-version: ["1.3.9"]
+    env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
+      GIT_COMMIT_SHA: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ matrix.bun-version }}
+
+      - name: Cache Bun install
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check and build
+        run: bun run build
+
+      - name: Run unit tests
+        run: bun run test:unit
+
+      - name: Upload build artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to Coolify
+    needs: build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.COOLIFY_APP_URL }}
+    timeout-minutes: 15
+    steps:
+      - name: Verify Coolify secrets are configured
+        env:
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "${COOLIFY_WEBHOOK_URL}" ]; then
+            echo "::error::Missing required secret COOLIFY_WEBHOOK_URL."
+            echo "Set it under Settings -> Secrets and variables -> Actions."
+            echo "Example: https://coolify.example.com/api/v1/deploy?uuid=<resource-uuid>&force=false"
+            exit 1
+          fi
+          if [ -z "${COOLIFY_TOKEN}" ]; then
+            echo "::error::Missing required secret COOLIFY_TOKEN (Coolify API token)."
+            exit 1
+          fi
+          echo "Coolify secrets are configured."
+
+      - name: Trigger Coolify deploy webhook
+        env:
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          url="${COOLIFY_WEBHOOK_URL}"
+          if [ "${FORCE_DEPLOY}" = "true" ]; then
+            if printf '%s' "${url}" | grep -q '?'; then
+              url="${url}&force=true"
+            else
+              url="${url}?force=true"
+            fi
+            echo "Force deploy requested."
+          fi
+
+          # Mask URL in logs to avoid leaking the resource UUID.
+          echo "::add-mask::${url}"
+
+          echo "Triggering Coolify deploy for commit ${COMMIT_SHA}..."
+
+          # Retry up to 3 times on transient network/5xx errors.
+          attempt=1
+          max_attempts=3
+          while : ; do
+            http_code=$(curl --silent --show-error --output /tmp/coolify_response.json \
+              --write-out "%{http_code}" \
+              --request GET \
+              --max-time 60 \
+              --header "Authorization: Bearer ${COOLIFY_TOKEN}" \
+              --header "Accept: application/json" \
+              "${url}") || http_code="000"
+
+            echo "Coolify responded with HTTP ${http_code} (attempt ${attempt}/${max_attempts})"
+            if [ -s /tmp/coolify_response.json ]; then
+              echo "Response body:"
+              cat /tmp/coolify_response.json
+              echo
+            fi
+
+            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
+              echo "Coolify deploy successfully triggered."
+              break
+            fi
+
+            if [ "${attempt}" -ge "${max_attempts}" ]; then
+              echo "::error::Coolify webhook failed after ${max_attempts} attempts (last HTTP ${http_code})."
+              exit 1
+            fi
+
+            sleep_seconds=$((attempt * 5))
+            echo "Retrying in ${sleep_seconds}s..."
+            sleep "${sleep_seconds}"
+            attempt=$((attempt + 1))
+          done
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "## Coolify deploy triggered"
+            echo
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Ref: \`${{ github.ref }}\`"
+            echo "- Actor: @${{ github.actor }}"
+            echo
+            echo "Coolify will pull the latest commit and rebuild the Dockerfile image."
+          } >> "$GITHUB_STEP_SUMMARY"
