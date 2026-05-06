@@ -341,3 +341,155 @@ jobs:
             echo "Coolify is building a per-PR preview using the configured URL template"
             echo "(\`{{pr_id}}-preview.os.ryo.lu\`)."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  notify-telegram:
+    name: Notify Telegram
+    needs: [test, build, deploy, deploy-preview]
+    # Run after every run that reaches this point, even on failure/cancel,
+    # so we always send a status notification when the bot is configured.
+    if: |
+      always() &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send Telegram notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Optional: forum/supergroup topic id (integer). Leave unset for the
+          # default chat. https://core.telegram.org/bots/api#sendmessage
+          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TEST_RESULT: ${{ needs.test.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          DEPLOY_PREVIEW_RESULT: ${{ needs.deploy-preview.result }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TELEGRAM_BOT_TOKEN}" ] || [ -z "${TELEGRAM_CHAT_ID}" ]; then
+            echo "Telegram secrets not configured (TELEGRAM_BOT_TOKEN and/or TELEGRAM_CHAT_ID). Skipping notification."
+            exit 0
+          fi
+
+          # Roll up needs.*.result into a single workflow status.
+          # Possible per-job values: success, failure, cancelled, skipped.
+          status="success"
+          for r in "${TEST_RESULT}" "${BUILD_RESULT}" "${DEPLOY_RESULT}" "${DEPLOY_PREVIEW_RESULT}"; do
+            case "${r}" in
+              failure)
+                status="failure"
+                ;;
+              cancelled)
+                if [ "${status}" != "failure" ]; then
+                  status="cancelled"
+                fi
+                ;;
+            esac
+          done
+
+          short_sha="${COMMIT_SHA:0:7}"
+          run_url="${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}"
+          commit_url="${SERVER_URL}/${REPO}/commit/${COMMIT_SHA}"
+
+          # Build a plain-text message body. Plain text avoids the need to
+          # escape Markdown/HTML special characters in PR titles, branch
+          # names, etc., which removes a class of formatting bugs.
+          {
+            echo "[${REPO}] ${status^^}"
+            echo
+            if [ "${EVENT_NAME}" = "pull_request" ] && [ -n "${PR_NUMBER}" ]; then
+              echo "Event: pull_request #${PR_NUMBER}"
+              if [ -n "${PR_TITLE}" ]; then
+                echo "Title: ${PR_TITLE}"
+              fi
+              echo "Branch: ${PR_HEAD_REF}"
+              echo "Commit: ${PR_HEAD_SHA:0:7}"
+              echo "Preview: https://${PR_NUMBER}-preview.os.ryo.lu"
+            else
+              echo "Event: ${EVENT_NAME}"
+              echo "Ref: ${REF}"
+              echo "Commit: ${short_sha}"
+              echo "Commit URL: ${commit_url}"
+            fi
+            echo "Actor: ${ACTOR}"
+            echo
+            echo "Jobs:"
+            echo "- test: ${TEST_RESULT}"
+            echo "- build: ${BUILD_RESULT}"
+            echo "- deploy: ${DEPLOY_RESULT}"
+            echo "- deploy-preview: ${DEPLOY_PREVIEW_RESULT}"
+            echo
+            echo "Run: ${run_url}"
+          } > /tmp/telegram_message.txt
+
+          api_url="https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
+          # Mask the API URL so the bot token never appears in logs.
+          echo "::add-mask::${api_url}"
+          echo "::add-mask::${TELEGRAM_BOT_TOKEN}"
+
+          # Build curl args safely. Using --data-urlencode means the message
+          # body, chat id, and thread id are sent as form fields and can
+          # contain arbitrary characters without breaking the request or
+          # being interpreted by the shell.
+          curl_args=(
+            --silent --show-error
+            --max-time 30
+            --output /tmp/telegram_response.json
+            --write-out "%{http_code}"
+            --request POST
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}"
+            --data-urlencode "disable_web_page_preview=true"
+            --data-urlencode "text@/tmp/telegram_message.txt"
+          )
+          if [ -n "${TELEGRAM_THREAD_ID}" ]; then
+            curl_args+=(--data-urlencode "message_thread_id=${TELEGRAM_THREAD_ID}")
+          fi
+
+          # Retry up to 3 times on transient network/5xx errors.
+          attempt=1
+          max_attempts=3
+          while : ; do
+            http_code=$(curl "${curl_args[@]}" "${api_url}") || http_code="000"
+            echo "Telegram responded with HTTP ${http_code} (attempt ${attempt}/${max_attempts})"
+
+            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
+              echo "Telegram notification sent."
+              break
+            fi
+
+            # 4xx (other than 429) is a configuration problem; don't retry.
+            if [ "${http_code}" -ge 400 ] && [ "${http_code}" -lt 500 ] && [ "${http_code}" != "429" ]; then
+              echo "::warning::Telegram API returned HTTP ${http_code}. Check TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, and TELEGRAM_THREAD_ID."
+              if [ -s /tmp/telegram_response.json ]; then
+                # The response body may include error_description but never
+                # the bot token, so it is safe to print.
+                echo "Response body:"
+                cat /tmp/telegram_response.json
+                echo
+              fi
+              break
+            fi
+
+            if [ "${attempt}" -ge "${max_attempts}" ]; then
+              echo "::warning::Telegram notification failed after ${max_attempts} attempts (last HTTP ${http_code})."
+              break
+            fi
+
+            sleep_seconds=$((attempt * 5))
+            echo "Retrying in ${sleep_seconds}s..."
+            sleep "${sleep_seconds}"
+            attempt=$((attempt + 1))
+          done
