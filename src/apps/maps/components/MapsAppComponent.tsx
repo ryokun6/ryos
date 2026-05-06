@@ -208,6 +208,19 @@ interface MapsSearchResult {
 // stayed at region level and made it hard to see surrounding streets.
 const FOCUS_PLACE_SPAN_DEG = 0.012;
 
+// Wider span used for the initial framing around the user's current
+// location or home — ~0.12° ≈ 13 km wide at the equator, which covers a
+// full city / metro area instead of zooming all the way down to a single
+// block. Matches the original SF default region the map boots with.
+const CITY_LEVEL_SPAN_DEG = 0.12;
+
+// Cap how long we'll wait for a quick geolocation read on first open.
+// We only call `getCurrentPosition` when the Permissions API already
+// reports `granted`, but even then a stale GPS lock can take seconds to
+// resolve — bail early so the home fallback still gets a chance to frame
+// the viewport.
+const INITIAL_LOCATION_TIMEOUT_MS = 4000;
+
 /** Per click: halve / double the visible span (MapKit `CoordinateRegion`). */
 const MAP_ZOOM_STEP_FACTOR = 0.5;
 const MAP_MIN_SPAN_DEG = 0.0005;
@@ -993,12 +1006,14 @@ export function MapsAppComponent({
   }, [selectedResultId, isPlaceSaved]);
 
   // On first map ready, frame the viewport so the user immediately sees
-  // their context. Priority order:
+  // a useful, city-level region. Priority order:
   //   1. Persisted `selectedPlace` — re-drop / re-center on the open card
-  //   2. Any saved Home / Work / Favorites — fit them all into view so the
-  //      pins are visible instead of being stranded off-screen at the SF
-  //      default region the map booted with
-  //   3. Otherwise, leave the map at the SF default
+  //   2. The user's current location, but only when geolocation
+  //      permission has already been granted in a previous session. We
+  //      deliberately avoid triggering a permission prompt on map open;
+  //      the dedicated "Locate Me" button is the right place for that.
+  //   3. The user's saved Home — city-level zoom around it
+  //   4. Otherwise, leave the map at the SF default region
   // Guarded so it only fires once per mount: subsequent user-driven
   // selections go through `dropPinAt` / `focusSavedPlace` directly.
   const hasHydratedSelectedRef = useRef(false);
@@ -1009,8 +1024,8 @@ export function MapsAppComponent({
     const map = mapInstanceRef.current;
     if (!mk || !map) return;
 
-    // Centering on the persisted selected place wins over fitting all
-    // saved places — the user explicitly had this card open last session.
+    // Centering on the persisted selected place wins over everything
+    // else — the user explicitly had this card open last session.
     if (selectedPlace) {
       hasHydratedSelectedRef.current = true;
       lastFocusedPlaceIdRef.current = selectedPlace.id;
@@ -1031,71 +1046,114 @@ export function MapsAppComponent({
       return;
     }
 
-    // No selected place — fit the viewport to all saved annotations so the
-    // pins land inside the visible region instead of staying parked off the
-    // SF default. Single-place case zooms to a neighborhood span; multi-
-    // place case computes a bounding region with 30% padding so the pins
-    // don't touch the viewport edges.
-    //
-    // We deliberately do NOT flip `hasHydratedSelectedRef` when there are
-    // no saved places yet — the persist hydration is async, so an empty
-    // entries list on the first run could just mean "store still
-    // hydrating". Leaving the flag false lets a subsequent re-run (after
-    // hydration adds Home/Work/Favorites) actually frame the viewport.
-    const savedCoords = savedPlaceEntries.map((e) => e.place);
-    if (savedCoords.length === 0) {
-      return;
-    }
+    // From here on the framing depends on either an async geolocation
+    // read or the user's saved Home. Mark hydrated immediately so an
+    // unrelated re-render (e.g. saved places hydrating later) doesn't
+    // re-run this effect and double-animate the map.
     hasHydratedSelectedRef.current = true;
 
-    if (savedCoords.length === 1) {
-      const only = savedCoords[0];
-      const coord = new mk.Coordinate(only.latitude, only.longitude);
+    let cancelled = false;
+
+    const frameAtCityLevel = (latitude: number, longitude: number) => {
+      if (cancelled) return;
+      const center = new mk.Coordinate(latitude, longitude);
       const span = new mk.CoordinateSpan(
-        FOCUS_PLACE_SPAN_DEG,
-        FOCUS_PLACE_SPAN_DEG
+        CITY_LEVEL_SPAN_DEG,
+        CITY_LEVEL_SPAN_DEG
       );
-      const region = new mk.CoordinateRegion(coord, span);
+      const region = new mk.CoordinateRegion(center, span);
       map.setRegionAnimated(region, true);
-      return;
+    };
+
+    const frameAtHomeOrSkip = () => {
+      if (cancelled) return;
+      // Read the latest persisted home directly from the store rather
+      // than the captured closure value — the persist hydration can land
+      // a moment after this effect first runs, so we want the freshest
+      // value at the time the async permission probe resolves.
+      const home = useMapsStore.getState().home;
+      if (home) {
+        frameAtCityLevel(home.latitude, home.longitude);
+      }
+      // No home set — leave the map at its SF default region.
+    };
+
+    const tryUseCurrentLocation = (): boolean => {
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        return false;
+      }
+      let resolved = false;
+      const timer = window.setTimeout(() => {
+        if (resolved) return;
+        resolved = true;
+        frameAtHomeOrSkip();
+      }, INITIAL_LOCATION_TIMEOUT_MS);
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (resolved) return;
+          resolved = true;
+          window.clearTimeout(timer);
+          frameAtCityLevel(pos.coords.latitude, pos.coords.longitude);
+        },
+        () => {
+          if (resolved) return;
+          resolved = true;
+          window.clearTimeout(timer);
+          frameAtHomeOrSkip();
+        },
+        { timeout: INITIAL_LOCATION_TIMEOUT_MS, maximumAge: 5 * 60 * 1000 }
+      );
+      return true;
+    };
+
+    // Probe the Permissions API first so we only call `getCurrentPosition`
+    // when the user has already granted access in a previous session.
+    // Browsers without `permissions.query` (older Safari) fall back to
+    // home framing; the explicit "Locate Me" button still works there.
+    const permissions = (
+      typeof navigator !== "undefined"
+        ? (navigator as Navigator & {
+            permissions?: {
+              query: (
+                descriptor: PermissionDescriptor
+              ) => Promise<PermissionStatus>;
+            };
+          }).permissions
+        : undefined
+    );
+
+    if (permissions?.query) {
+      permissions
+        .query({ name: "geolocation" as PermissionName })
+        .then((result) => {
+          if (cancelled) return;
+          if (result.state === "granted") {
+            if (!tryUseCurrentLocation()) {
+              frameAtHomeOrSkip();
+            }
+            return;
+          }
+          frameAtHomeOrSkip();
+        })
+        .catch(() => {
+          if (cancelled) return;
+          frameAtHomeOrSkip();
+        });
+    } else {
+      frameAtHomeOrSkip();
     }
 
-    let minLat = Infinity;
-    let maxLat = -Infinity;
-    let minLng = Infinity;
-    let maxLng = -Infinity;
-    for (const place of savedCoords) {
-      if (place.latitude < minLat) minLat = place.latitude;
-      if (place.latitude > maxLat) maxLat = place.latitude;
-      if (place.longitude < minLng) minLng = place.longitude;
-      if (place.longitude > maxLng) maxLng = place.longitude;
-    }
-    const centerLat = (minLat + maxLat) / 2;
-    const centerLng = (minLng + maxLng) / 2;
-    // Pad the span so the outermost pins sit comfortably inside the view
-    // and clamp to a sensible minimum so two pins right next to each other
-    // don't zoom in to street level.
-    const PAD = 1.3;
-    // Floor at the same span we use for single-place focus so pins that
-    // happen to sit close together still land at street level rather than
-    // forcing a wider zoom.
-    const latDelta = Math.max((maxLat - minLat) * PAD, FOCUS_PLACE_SPAN_DEG);
-    const lngDelta = Math.max((maxLng - minLng) * PAD, FOCUS_PLACE_SPAN_DEG);
-    const center = new mk.Coordinate(centerLat, centerLng);
-    const span = new mk.CoordinateSpan(latDelta, lngDelta);
-    const region = new mk.CoordinateRegion(center, span);
-    map.setRegionAnimated(region, true);
+    return () => {
+      cancelled = true;
+    };
     // Same reasoning as the saved-annotations effect: depend on
     // `mapReadyTick` so framing fires the moment the map instance is
     // (re)created, not whenever some unrelated render happens to flush.
-  }, [
-    status,
-    selectedPlace,
-    savedPlaceEntries,
-    dropPinAt,
-    isPlaceSaved,
-    mapReadyTick,
-  ]);
+    // We intentionally do NOT depend on `homePlace` here — the framing
+    // only runs once (guarded by `hasHydratedSelectedRef`) and we read
+    // the latest home directly from the store inside the async branch.
+  }, [status, selectedPlace, dropPinAt, isPlaceSaved, mapReadyTick]);
 
   // After the initial hydration framing has run, react to external changes
   // to `selectedPlace` (e.g. from a chat tool card tap). We track the last
