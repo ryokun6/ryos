@@ -226,8 +226,10 @@ jobs:
           if [ -z "${COOLIFY_PREVIEW_WEBHOOK_URL}" ]; then
             echo "::error::Missing required secret COOLIFY_PREVIEW_WEBHOOK_URL."
             echo "Set it under Settings -> Secrets and variables -> Actions."
-            echo "This must point to the preview Coolify resource webhook (different from the production one)."
-            echo "Example: https://coolify.example.com/api/v1/deploy?uuid=<preview-resource-uuid>&force=false"
+            echo "This must point to the deploy webhook of the application that has Coolify"
+            echo "Preview Deployments enabled (typically your production app's webhook URL,"
+            echo "without any 'tag' or 'pr' query parameters — those are appended per-PR)."
+            echo "Example: https://coolify.example.com/api/v1/deploy?uuid=<app-uuid>"
             exit 1
           fi
           if [ -z "${COOLIFY_PREVIEW_TOKEN}" ] && [ -z "${COOLIFY_TOKEN}" ]; then
@@ -250,9 +252,38 @@ jobs:
 
           # Prefer the preview-specific token; fall back to the shared Coolify token.
           token="${COOLIFY_PREVIEW_TOKEN:-${COOLIFY_TOKEN}}"
-          url="${COOLIFY_PREVIEW_WEBHOOK_URL}"
+          base_url="${COOLIFY_PREVIEW_WEBHOOK_URL}"
 
-          # Mask URL in logs to avoid leaking the resource UUID.
+          # Validate PR number is a positive integer before interpolating into the URL.
+          if ! printf '%s' "${PR_NUMBER}" | grep -Eq '^[1-9][0-9]*$'; then
+            echo "::error::Invalid PR_NUMBER '${PR_NUMBER}'."
+            exit 1
+          fi
+
+          # Coolify rejects combining 'pr' with 'tag'. Refuse misconfigured URLs early.
+          if printf '%s' "${base_url}" | grep -Eq '(\?|&)tag='; then
+            echo "::error::COOLIFY_PREVIEW_WEBHOOK_URL contains a 'tag' query parameter."
+            echo "Coolify cannot combine 'tag' with 'pr'. Remove 'tag=...' from the secret."
+            exit 1
+          fi
+
+          # If the secret already pins a different PR, refuse rather than send a confusing request.
+          if printf '%s' "${base_url}" | grep -Eq '(\?|&)(pr|pull_request_id)='; then
+            echo "::error::COOLIFY_PREVIEW_WEBHOOK_URL already contains a 'pr' or 'pull_request_id' query parameter."
+            echo "The workflow appends '&pr=<PR_NUMBER>' itself. Remove it from the secret."
+            exit 1
+          fi
+
+          # Append '&pr=<PR_NUMBER>' (or '?pr=' if the URL has no query string yet)
+          # to trigger Coolify's native Preview Deployment for this PR.
+          if printf '%s' "${base_url}" | grep -q '?'; then
+            url="${base_url}&pr=${PR_NUMBER}"
+          else
+            url="${base_url}?pr=${PR_NUMBER}"
+          fi
+
+          # Mask both URLs in logs to avoid leaking the resource UUID.
+          echo "::add-mask::${base_url}"
           echo "::add-mask::${url}"
 
           echo "Triggering Coolify preview deploy for PR #${PR_NUMBER} (${PR_HEAD_REF} @ ${PR_HEAD_SHA})..."
@@ -308,5 +339,6 @@ jobs:
             echo "- Commit: \`${PR_HEAD_SHA}\`"
             echo "- Actor: @${ACTOR}"
             echo
-            echo "Coolify will pull the latest PR commit and rebuild the preview Dockerfile image."
+            echo "Coolify will build a per-PR preview deployment using the URL template"
+            echo "configured on the application (e.g. \`{{pr_id}}.<wildcard-domain>\`)."
           } >> "$GITHUB_STEP_SUMMARY"
