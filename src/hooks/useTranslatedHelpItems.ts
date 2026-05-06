@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { AppId } from "@/utils/i18n";
 
@@ -217,9 +217,9 @@ const HELP_KEYS: Record<AppId, string[]> = {
  * Hook to get translated help items for an app
  * Merges translated text with original icons
  */
-export function useTranslatedHelpItems(
+export function useTranslatedHelpItems<TIcon extends ReactNode = string>(
   appId: AppId,
-  originalHelpItems: Array<{ icon: string; title: string; description: string }>
+  originalHelpItems: Array<{ icon: TIcon; title: string; description: string }>
 ) {
   const { t } = useTranslation();
 

@@ -1,14 +1,26 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
+import { Emoji } from "@/components/shared/Emoji";
 
 export function useDashboardLogic() {
   const { t } = useTranslation();
-  const translatedHelpItems = useTranslatedHelpItems("dashboard", helpItems);
+  const helpItemsWithEmojiIcons = useMemo(
+    () =>
+      helpItems.map((item) => ({
+        ...item,
+        icon: <Emoji emoji={item.icon} size={20} />,
+      })),
+    []
+  );
+  const translatedHelpItems = useTranslatedHelpItems(
+    "dashboard",
+    helpItemsWithEmojiIcons
+  );
 
   const { currentTheme, isXpTheme } = useThemeFlags();
 

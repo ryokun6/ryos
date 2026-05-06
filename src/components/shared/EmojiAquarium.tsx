@@ -1,6 +1,7 @@
 import { useMemo, useLayoutEffect, useRef, useState, useEffect } from "react";
 import { motion, MotionConfig } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Emoji } from "@/components/shared/Emoji";
 
 type AquariumSize = "small" | "medium" | "large";
 type AquariumDensity = "calm" | "default" | "crowded";
@@ -163,15 +164,14 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
                 style={{ position: "absolute", willChange: "transform" }}
                 className="select-none z-30"
               >
-                <span
+                <Emoji
+                  emoji={emoji}
+                  size={sizePx}
                   style={{
                     display: "inline-block",
                     transform: dirRight ? "scaleX(-1)" : undefined,
-                    fontSize: `${sizePx}px`,
                   }}
-                >
-                  {emoji}
-                </span>
+                />
               </motion.span>
             );
           })}
@@ -219,15 +219,14 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
                 style={{ position: "absolute", willChange: "transform" }}
                 className="select-none z-30"
               >
-                <span
+                <Emoji
+                  emoji={emoji}
+                  size={sizePx}
                   style={{
                     display: "inline-block",
                     transform: dirRight ? "scaleX(-1)" : undefined,
-                    fontSize: `${sizePx}px`,
                   }}
-                >
-                  {emoji}
-                </span>
+                />
               </motion.span>
             );
           })}
@@ -265,9 +264,9 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
                   position: "absolute",
                   willChange: "transform, opacity",
                 }}
-                className="text-[24px] select-none z-20"
+                className="select-none z-20"
               >
-                {"🪼"}
+                <Emoji emoji={"🪼"} size={24} />
               </motion.span>
             );
           })}
@@ -299,9 +298,9 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
                   position: "absolute",
                   willChange: "transform, opacity",
                 }}
-                className="text-[24px] select-none z-25"
+                className="select-none z-25"
               >
-                {bubbles}
+                <Emoji emoji={bubbles} size={24} />
               </motion.span>
             );
           })}
@@ -333,9 +332,9 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
                   position: "absolute",
                   willChange: "transform, opacity",
                 }}
-                className="text-[28px] select-none z-40"
+                className="select-none z-40"
               >
-                {bubbles}
+                <Emoji emoji={bubbles} size={28} />
               </motion.span>
             );
           })}
@@ -369,7 +368,7 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
                 style={{ position: "absolute" }}
                 className="select-none z-0"
               >
-                <span style={{ fontSize: `${size}px` }}>{emoji}</span>
+                <Emoji emoji={emoji} size={size} />
               </motion.span>
             );
           })}
@@ -379,9 +378,9 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="absolute right-4 top-1.5 select-none text-[24px]"
+            className="absolute right-4 top-1.5 select-none"
           >
-            🛟
+            <Emoji emoji={"🛟"} size={24} />
           </motion.span>
         </div>
       </div>
