@@ -217,32 +217,28 @@ jobs:
       url: ${{ vars.COOLIFY_PREVIEW_APP_URL }}
     timeout-minutes: 15
     steps:
-      - name: Verify Coolify preview secrets are configured
+      - name: Verify Coolify secrets are configured
         env:
-          COOLIFY_PREVIEW_WEBHOOK_URL: ${{ secrets.COOLIFY_PREVIEW_WEBHOOK_URL }}
-          COOLIFY_PREVIEW_TOKEN: ${{ secrets.COOLIFY_PREVIEW_TOKEN }}
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
         run: |
-          if [ -z "${COOLIFY_PREVIEW_WEBHOOK_URL}" ]; then
-            echo "::error::Missing required secret COOLIFY_PREVIEW_WEBHOOK_URL."
+          if [ -z "${COOLIFY_WEBHOOK_URL}" ]; then
+            echo "::error::Missing required secret COOLIFY_WEBHOOK_URL."
             echo "Set it under Settings -> Secrets and variables -> Actions."
-            echo "This must point to the deploy webhook of the application that has Coolify"
-            echo "Preview Deployments enabled (typically your production app's webhook URL,"
-            echo "without any 'tag' or 'pr' query parameters — those are appended per-PR)."
+            echo "Per-PR previews reuse the production app's deploy webhook and append '&pr=<NUMBER>',"
+            echo "so the URL must not contain 'tag', 'pr', or 'pull_request_id' query parameters."
             echo "Example: https://coolify.example.com/api/v1/deploy?uuid=<app-uuid>"
             exit 1
           fi
-          if [ -z "${COOLIFY_PREVIEW_TOKEN}" ] && [ -z "${COOLIFY_TOKEN}" ]; then
-            echo "::error::Missing Coolify API token."
-            echo "Set COOLIFY_PREVIEW_TOKEN (preferred) or COOLIFY_TOKEN under Settings -> Secrets and variables -> Actions."
+          if [ -z "${COOLIFY_TOKEN}" ]; then
+            echo "::error::Missing required secret COOLIFY_TOKEN (Coolify API token)."
             exit 1
           fi
-          echo "Coolify preview secrets are configured."
+          echo "Coolify secrets are configured."
 
       - name: Trigger Coolify preview deploy webhook
         env:
-          COOLIFY_PREVIEW_WEBHOOK_URL: ${{ secrets.COOLIFY_PREVIEW_WEBHOOK_URL }}
-          COOLIFY_PREVIEW_TOKEN: ${{ secrets.COOLIFY_PREVIEW_TOKEN }}
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -250,9 +246,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Prefer the preview-specific token; fall back to the shared Coolify token.
-          token="${COOLIFY_PREVIEW_TOKEN:-${COOLIFY_TOKEN}}"
-          base_url="${COOLIFY_PREVIEW_WEBHOOK_URL}"
+          token="${COOLIFY_TOKEN}"
+          base_url="${COOLIFY_WEBHOOK_URL}"
 
           # Validate PR number is a positive integer before interpolating into the URL.
           if ! printf '%s' "${PR_NUMBER}" | grep -Eq '^[1-9][0-9]*$'; then
@@ -262,14 +257,14 @@ jobs:
 
           # Coolify rejects combining 'pr' with 'tag'. Refuse misconfigured URLs early.
           if printf '%s' "${base_url}" | grep -Eq '(\?|&)tag='; then
-            echo "::error::COOLIFY_PREVIEW_WEBHOOK_URL contains a 'tag' query parameter."
+            echo "::error::COOLIFY_WEBHOOK_URL contains a 'tag' query parameter."
             echo "Coolify cannot combine 'tag' with 'pr'. Remove 'tag=...' from the secret."
             exit 1
           fi
 
-          # If the secret already pins a different PR, refuse rather than send a confusing request.
+          # If the secret already pins a PR, refuse rather than send a confusing request.
           if printf '%s' "${base_url}" | grep -Eq '(\?|&)(pr|pull_request_id)='; then
-            echo "::error::COOLIFY_PREVIEW_WEBHOOK_URL already contains a 'pr' or 'pull_request_id' query parameter."
+            echo "::error::COOLIFY_WEBHOOK_URL already contains a 'pr' or 'pull_request_id' query parameter."
             echo "The workflow appends '&pr=<PR_NUMBER>' itself. Remove it from the secret."
             exit 1
           fi
