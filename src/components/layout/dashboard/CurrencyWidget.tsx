@@ -35,6 +35,7 @@ const MAIN_CURRENCIES = [
   "KRW",
   "SGD",
   "HKD",
+  "TWD",
   "TRY",
   "ZAR",
   "ILS",

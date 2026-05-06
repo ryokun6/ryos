@@ -1,12 +1,13 @@
 /** Prefer `/api/currency-rate` (server proxy + fallbacks); see `api/currency-rate.ts`. */
 
-const FRANKFURTER_LATEST = "https://api.frankfurter.app/latest";
+const FRANKFURTER_V2 = "https://api.frankfurter.dev/v2";
 
-export interface FrankfurterLatestResponse {
-  amount: number;
-  base: string;
+/** v2 single-pair rate: `GET /v2/rate/{base}/{quote}` */
+export interface FrankfurterV2RateResponse {
   date: string;
-  rates: Record<string, number>;
+  base: string;
+  quote: string;
+  rate: number;
 }
 
 interface CurrencyRateApiOk {
@@ -180,7 +181,7 @@ export function positionAfterNthDigit(s: string, n: number): number {
   return s.length;
 }
 
-/** Direct Frankfurter (ECB). Uses `redirect: "follow"` because api.frankfurter.app may 301. */
+/** Direct Frankfurter v2 (see https://frankfurter.dev/). */
 export async function fetchFrankfurterPairRateDirect(
   from: string,
   to: string,
@@ -192,7 +193,7 @@ export async function fetchFrankfurterPairRateDirect(
     return { rate: 1, rateDate: new Date().toISOString().slice(0, 10) };
   }
 
-  const url = `${FRANKFURTER_LATEST}?from=${encodeURIComponent(trimmedFrom)}&to=${encodeURIComponent(trimmedTo)}`;
+  const url = `${FRANKFURTER_V2}/rate/${encodeURIComponent(trimmedFrom)}/${encodeURIComponent(trimmedTo)}`;
   const res = await fetch(url, {
     signal,
     redirect: "follow",
@@ -201,12 +202,11 @@ export async function fetchFrankfurterPairRateDirect(
   if (!res.ok) {
     throw new Error(`Frankfurter HTTP ${res.status}`);
   }
-  const data = (await res.json()) as FrankfurterLatestResponse;
-  const rate = data.rates[trimmedTo];
-  if (typeof rate !== "number" || !Number.isFinite(rate)) {
+  const data = (await res.json()) as FrankfurterV2RateResponse;
+  if (typeof data.rate !== "number" || !Number.isFinite(data.rate)) {
     throw new Error("Frankfurter: missing rate");
   }
-  return { rate, rateDate: data.date };
+  return { rate: data.rate, rateDate: data.date };
 }
 
 export async function fetchCurrencyRateForWidget(
