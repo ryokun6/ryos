@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
+import { track } from "@/utils/analytics";
 
 // Define oscillator type
 type OscillatorType = "sine" | "square" | "triangle" | "sawtooth";
@@ -698,6 +699,10 @@ export const useSynthLogic = ({
   };
 
   const savePreset = (name: string) => {
+    track("synth:preset_save", {
+      appId: "synth",
+      mode: isSavingNewPreset ? "create" : "update",
+    });
     if (isSavingNewPreset) {
       // Create a new preset
       const newPreset: SynthPreset = {
@@ -728,6 +733,7 @@ export const useSynthLogic = ({
   };
 
   const loadPreset = (preset: SynthPreset) => {
+    track("synth:preset_load", { appId: "synth" });
     setCurrentPreset(preset);
     updateSynthParams(preset);
     showStatus(t("apps.synth.status.presetLoaded", { name: preset.name }));
@@ -1055,6 +1061,7 @@ export const useSynthLogic = ({
   const handleOctaveDown = () => {
     setOctaveOffset((prev) => {
       const next = Math.max(-2, prev - 1);
+      track("synth:octave_change", { appId: "synth", octave: next });
       showStatus(t("apps.synth.status.octave", { offset: next }));
       return next;
     });
@@ -1063,6 +1070,7 @@ export const useSynthLogic = ({
   const handleOctaveUp = () => {
     setOctaveOffset((prev) => {
       const next = Math.min(2, prev + 1);
+      track("synth:octave_change", { appId: "synth", octave: next });
       showStatus(t("apps.synth.status.octave", { offset: next }));
       return next;
     });

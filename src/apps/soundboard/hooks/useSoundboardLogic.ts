@@ -10,6 +10,7 @@ import { isWindowsTheme } from "@/themes";
 import { useTranslation } from "react-i18next";
 import { helpItems as sharedHelpItems } from "..";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { track } from "@/utils/analytics";
 
 interface ImportedSlot {
   audioData: string | null;
@@ -190,9 +191,15 @@ export function useSoundboardLogic({
       if (playbackStates[index]?.isPlaying) {
         stopSound(index);
       } else {
+        track("soundboard:play", {
+          appId: "soundboard",
+          slotIndex: index,
+          hasTitle: !!slot.title,
+        });
         playSound(index);
       }
     } else {
+      track("soundboard:record_start", { appId: "soundboard", slotIndex: index });
       startRecording(index);
     }
   };
@@ -234,6 +241,10 @@ export function useSoundboardLogic({
         if (newBoardsFromFile.length > 0 && newBoardsFromFile[0].id) {
           setActiveBoardId(newBoardsFromFile[0].id);
         }
+        track("soundboard:import", {
+          appId: "soundboard",
+          boardCount: newBoardsFromFile.length,
+        });
       } catch (err) {
         console.error("Failed to import soundboards:", err);
       }
@@ -269,6 +280,7 @@ export function useSoundboardLogic({
       .toLowerCase()}_soundboard.json`;
     anchor.click();
     URL.revokeObjectURL(url);
+    track("soundboard:export", { appId: "soundboard", slotCount: boardToExport.slots.length });
   };
 
   const reloadFromJson = async () => {
