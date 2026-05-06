@@ -1,7 +1,13 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import { __INTERNAL, resolveIpGeolocation } from "../api/_utils/_geolocation.js";
 
 const { isPrivateOrLocalIp, parseProviderResponse, getProviderUrl } = __INTERNAL;
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+  mock.restore();
+});
 
 describe("geolocation fallback", () => {
   describe("isPrivateOrLocalIp", () => {
@@ -34,6 +40,25 @@ describe("geolocation fallback", () => {
       expect(isPrivateOrLocalIp("fc00::1")).toBe(true);
       expect(isPrivateOrLocalIp("fd00::1")).toBe(true);
       expect(isPrivateOrLocalIp("fe80::1")).toBe(true);
+    });
+
+    test("flags reserved, documentation, benchmark, and multicast ranges", () => {
+      expect(isPrivateOrLocalIp("192.0.2.10")).toBe(true);
+      expect(isPrivateOrLocalIp("198.18.0.1")).toBe(true);
+      expect(isPrivateOrLocalIp("198.51.100.10")).toBe(true);
+      expect(isPrivateOrLocalIp("203.0.113.10")).toBe(true);
+      expect(isPrivateOrLocalIp("224.0.0.1")).toBe(true);
+      expect(isPrivateOrLocalIp("240.0.0.1")).toBe(true);
+      expect(isPrivateOrLocalIp("255.255.255.255")).toBe(true);
+    });
+
+    test("flags IPv6 documentation, multicast, and private IPv4-mapped addresses", () => {
+      expect(isPrivateOrLocalIp("2001:db8::1")).toBe(true);
+      expect(isPrivateOrLocalIp("2001:0db8::1")).toBe(true);
+      expect(isPrivateOrLocalIp("ff02::1")).toBe(true);
+      expect(isPrivateOrLocalIp("::ffff:192.168.1.1")).toBe(true);
+      expect(isPrivateOrLocalIp("::ffff:c0a8:0101")).toBe(true);
+      expect(isPrivateOrLocalIp("::ffff:8.8.8.8")).toBe(false);
     });
 
     test("does not flag public IPs", () => {
@@ -171,6 +196,21 @@ describe("geolocation fallback", () => {
         existing: {},
       });
       expect(result).toEqual({});
+    });
+
+    test("skips outbound lookups for reserved IPs", async () => {
+      const fetchMock = mock(async (): Promise<Response> => {
+        return new Response(JSON.stringify({ city: "Should Not Fetch" }));
+      });
+      globalThis.fetch = fetchMock as typeof fetch;
+
+      const result = await resolveIpGeolocation({
+        ip: "203.0.113.10",
+        existing: {},
+      });
+
+      expect(result).toEqual({});
+      expect(fetchMock).toHaveBeenCalledTimes(0);
     });
 
     test("respects the disable flag", async () => {
