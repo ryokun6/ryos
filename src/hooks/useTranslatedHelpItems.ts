@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { MAPS_HELP_I18N_KEYS } from "@/apps/maps/helpKeys";
 import type { AppId } from "@/utils/i18n";
 
 const HELP_KEYS: Record<AppId, string[]> = {
@@ -203,14 +204,7 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "search",
     "cloudLibrary",
   ],
-  maps: [
-    "searchPlaces",
-    "dropPins",
-    "locateMe",
-    "directions",
-    "mapTypes",
-    "poweredByApple",
-  ],
+  maps: [...MAPS_HELP_I18N_KEYS],
 };
 
 /**

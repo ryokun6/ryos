@@ -2535,10 +2535,6 @@
     "maps": {
       "description": "Encontre lugares com o Apple Mapas",
       "help": {
-        "directions": {
-          "description": "A partir de um cartão de local, abra itinerários no Mapas da Apple — abre em uma nova aba para que o ryOS permaneça aberto (a navegação no mapa ainda não está disponível)",
-          "title": "Itinerários"
-        },
         "dropPins": {
           "description": "Escolha um resultado da lista para fixar um marcador e centralizar o mapa nele",
           "title": "Fixar Marcadores"
@@ -2546,6 +2542,10 @@
         "locateMe": {
           "description": "Clique no botão Localizar para centralizar o mapa na sua localização atual",
           "title": "Localizar"
+        },
+        "directions": {
+          "description": "No cartão do local, abra indicações de condução no Apple Mapas — abre num novo separador para manter o ryOS aberto (rotas no mapa ainda não disponíveis).",
+          "title": "Indicações"
         },
         "mapTypes": {
           "description": "Alterne entre Padrão, Híbrido, Satélite e Padrão Suave no menu Visualizar",
@@ -2576,11 +2576,11 @@
       "placeCard": {
         "addFavorite": "Adicionar aos Favoritos",
         "close": "Fechar cartão do local",
-        "directions": "Directions",
+        "directions": "Indicações",
         "favorite": "Favorito",
         "favorited": "Favoritado",
         "home": "Casa",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "Obter indicações no Apple Mapas",
         "regionLabel": "Local selecionado",
         "removeFavorite": "Remover dos Favoritos",
         "setHome": "Definir como Casa",

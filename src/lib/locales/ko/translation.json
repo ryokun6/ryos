@@ -2535,10 +2535,6 @@
     "maps": {
       "description": "Apple 지도로 장소 찾기",
       "help": {
-        "directions": {
-          "description": "장소 카드에서 Apple 지도로 운전 경로를 엽니다. ryOS가 열린 상태를 유지할 수 있도록 새 탭에서 열립니다(지도 내 경로 안내는 아직 지원되지 않음).",
-          "title": "경로"
-        },
         "dropPins": {
           "description": "목록에서 결과를 선택하여 핀을 고정하고 지도의 중심을 맞추십시오.",
           "title": "핀 고정"
@@ -2546,6 +2542,10 @@
         "locateMe": {
           "description": "내 위치 버튼을 클릭하여 현재 위치를 지도의 중심으로 맞추십시오.",
           "title": "내 위치"
+        },
+        "directions": {
+          "description": "장소 카드에서 Apple 지도로 운전 경로를 엽니다 — 새 탭에서 열려 ryOS는 그대로 유지됩니다(지도 안 경로 안내는 아직 없음).",
+          "title": "길찾기"
         },
         "mapTypes": {
           "description": "보기 메뉴에서 표준, 하이브리드, 위성 및 저채도 표준 간에 전환하십시오",
@@ -2576,11 +2576,11 @@
       "placeCard": {
         "addFavorite": "즐겨찾기에 추가",
         "close": "장소 카드 닫기",
-        "directions": "Directions",
+        "directions": "길찾기",
         "favorite": "즐겨찾기",
         "favorited": "즐겨찾기에 추가됨",
         "home": "집",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "Apple 지도에서 길 찾기",
         "regionLabel": "선택된 장소",
         "removeFavorite": "즐겨찾기에서 제거",
         "setHome": "집으로 설정",

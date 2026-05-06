@@ -2535,10 +2535,6 @@
     "maps": {
       "description": "Busca lugares con Apple Maps",
       "help": {
-        "directions": {
-          "description": "Desde una tarjeta de lugar, abre las indicaciones de conducción en Apple Maps; se abre en una pestaña nueva para que ryOS permanezca abierto (la navegación integrada en el mapa aún no está disponible)",
-          "title": "Indicaciones"
-        },
         "dropPins": {
           "description": "Elige un resultado de la lista para soltar un marcador y volver a centrar el mapa en él",
           "title": "Soltar marcadores"
@@ -2546,6 +2542,10 @@
         "locateMe": {
           "description": "Haz clic en el botón Ubicarme para volver a centrar el mapa en tu ubicación actual",
           "title": "Ubicarme"
+        },
+        "directions": {
+          "description": "Desde la tarjeta del lugar, abre las indicaciones de conducción en Apple Maps: se abre en una pestaña nueva para mantener ryOS abierto (no hay rutas dentro del mapa todavía).",
+          "title": "Indicaciones"
         },
         "mapTypes": {
           "description": "Cambia entre Estándar, Híbrido, Satélite y Estándar atenuado desde el menú Visualización",
@@ -2576,11 +2576,11 @@
       "placeCard": {
         "addFavorite": "Añadir a Favoritos",
         "close": "Cerrar tarjeta de lugar",
-        "directions": "Directions",
+        "directions": "Indicaciones",
         "favorite": "Favorito",
         "favorited": "En favoritos",
         "home": "Casa",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "Obtener indicaciones en Apple Maps",
         "regionLabel": "Lugar seleccionado",
         "removeFavorite": "Eliminar de Favoritos",
         "setHome": "Establecer como Casa",

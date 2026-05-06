@@ -2535,10 +2535,6 @@
     "maps": {
       "description": "Apple マップで場所を検索",
       "help": {
-        "directions": {
-          "description": "プレイスカードから、Apple マップで運転経路を開きます。ryOSを開いたままにできるよう、新しいタブで開きます（マップ内でのルート案内はまだ利用できません）",
-          "title": "経路"
-        },
         "dropPins": {
           "description": "リストから結果を選択してピンをドロップし、マップの中心をその場所に合わせます",
           "title": "ピンをドロップ"
@@ -2546,6 +2542,10 @@
         "locateMe": {
           "description": "「現在地を表示」ボタンをクリックして、マップを現在地に合わせます",
           "title": "現在地を表示"
+        },
+        "directions": {
+          "description": "場所カードから Apple マップで車のルートを開きます。新しいタブで開くため ryOS はそのままです（地図内のルートは未対応）。",
+          "title": "ルート"
         },
         "mapTypes": {
           "description": "「表示」メニューから、標準、ハイブリッド、航空写真、落ち着いた配色（標準）を切り替えます",
@@ -2576,11 +2576,11 @@
       "placeCard": {
         "addFavorite": "よく使う項目に追加",
         "close": "場所のカードを閉じる",
-        "directions": "Directions",
+        "directions": "ルート",
         "favorite": "よく使う項目",
         "favorited": "よく使う項目に追加済み",
         "home": "自宅",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "Apple マップでルートを表示",
         "regionLabel": "選択中の場所",
         "removeFavorite": "よく使う項目から削除",
         "setHome": "自宅に設定",
