@@ -136,4 +136,81 @@ describe("product analytics aggregation", () => {
     expect(detail.sources.find((e) => e.name === "web")?.count).toBe(3);
     expect(detail.topPaths.find((e) => e.name === "/chats")?.count).toBe(1);
   });
+
+  test("aggregates top songs, sites and countries", async () => {
+    const redis = new FakeRedis();
+    recordProductAnalyticsEvents(
+      redis as unknown as Redis,
+      {
+        events: [
+          {
+            name: "ipod:song_play",
+            appId: "ipod",
+            properties: { title: "Yesterday", artist: "The Beatles" },
+          },
+          {
+            name: "ipod:song_play",
+            appId: "ipod",
+            properties: { title: "Yesterday", artist: "The Beatles" },
+          },
+          {
+            name: "media:song_play",
+            appId: "karaoke",
+            properties: { title: "Imagine", artist: "John Lennon" },
+          },
+          {
+            name: "internet-explorer:navigation_success",
+            appId: "internet-explorer",
+            properties: { host: "example.com", protocol: "https" },
+          },
+          {
+            name: "internet-explorer:navigation_success",
+            appId: "internet-explorer",
+            properties: { host: "example.com", protocol: "https" },
+          },
+          {
+            name: "internet-explorer:navigation_success",
+            appId: "internet-explorer",
+            properties: { host: "wikipedia.org", protocol: "https" },
+          },
+        ],
+      },
+      { ip: "8.8.8.8", country: "us" }
+    );
+
+    await Promise.resolve();
+
+    const detail = await getProductAnalyticsDetail(redis as unknown as Redis, 1);
+    expect(detail.topSongs.find((e) => e.name === "The Beatles — Yesterday")?.count).toBe(2);
+    expect(detail.topSongs.find((e) => e.name === "John Lennon — Imagine")?.count).toBe(1);
+    expect(detail.topSites.find((e) => e.name === "example.com")?.count).toBe(2);
+    expect(detail.topSites.find((e) => e.name === "wikipedia.org")?.count).toBe(1);
+    // 6 events × 1 country bump each = 6 (we count one country bucket per event,
+    // not per session, so high-volume countries dominate naturally).
+    expect(detail.topCountries.find((e) => e.name === "US")?.count).toBe(6);
+  });
+
+  test("ignores client-supplied country and skips when geo unresolved", async () => {
+    const redis = new FakeRedis();
+    recordProductAnalyticsEvents(
+      redis as unknown as Redis,
+      {
+        events: [
+          {
+            name: "ipod:song_play",
+            appId: "ipod",
+            // Even if a malicious client sets a `country` property here, it
+            // must NOT influence the top-countries breakdown.
+            properties: { title: "Spoofed", artist: "Bad Actor", country: "ZZ" },
+          },
+        ],
+      },
+      { ip: "8.8.8.8" }
+    );
+
+    await Promise.resolve();
+
+    const detail = await getProductAnalyticsDetail(redis as unknown as Redis, 1);
+    expect(detail.topCountries).toEqual([]);
+  });
 });

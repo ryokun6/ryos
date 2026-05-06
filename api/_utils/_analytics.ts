@@ -124,6 +124,62 @@ const VALID_EVENT_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9:_./-]{0,99}$/;
 const SENSITIVE_PROPERTY_RE =
   /(password|token|secret|authorization|cookie|message|prompt|content|html|base64|blob|dataurl|transcript|body|text)$/i;
 
+const SONG_EVENT_NAMES = new Set([
+  "ipod:song_play",
+  "media:song_play",
+]);
+const SITE_EVENT_NAMES = new Set([
+  "internet-explorer:navigation_success",
+]);
+
+const MAX_SONG_LABEL_LENGTH = 120;
+const MAX_SITE_LABEL_LENGTH = 120;
+const MAX_COUNTRY_LABEL_LENGTH = 80;
+
+function pickProductString(
+  properties: Record<string, ProductAnalyticsPrimitive> | undefined,
+  ...keys: string[]
+): string | undefined {
+  if (!properties) return undefined;
+  for (const key of keys) {
+    const value = properties[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
+
+function buildSongLabel(
+  properties: Record<string, ProductAnalyticsPrimitive>
+): string | undefined {
+  const title = pickProductString(properties, "title");
+  if (!title) return undefined;
+  const artist = pickProductString(properties, "artist");
+  const label = artist ? `${artist} — ${title}` : title;
+  return label.slice(0, MAX_SONG_LABEL_LENGTH);
+}
+
+function buildSiteLabel(
+  properties: Record<string, ProductAnalyticsPrimitive>
+): string | undefined {
+  // The IE navigation event already calls `normalizeUrlForAnalytics` so we
+  // get a non-PII `host` field. Fall back to `pathTop` for completeness.
+  const host = pickProductString(properties, "host");
+  if (!host) return undefined;
+  return host.slice(0, MAX_SITE_LABEL_LENGTH);
+}
+
+function normalizeCountryLabel(value: string | null | undefined): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  // Keep ISO-3166 codes upper-case; otherwise truncate and strip control chars.
+  // eslint-disable-next-line no-control-regex
+  const cleaned = trimmed.replace(/[\u0000-\u001f\u007f]/g, "").slice(0, MAX_COUNTRY_LABEL_LENGTH);
+  return cleaned.length <= 3 ? cleaned.toUpperCase() : cleaned;
+}
+
 const KNOWN_APP_IDS = new Set([
   "finder",
   "soundboard",
@@ -176,6 +232,13 @@ export interface ProductAnalyticsRequestContext {
   ip: string;
   username?: string | null;
   userAgent?: string | null;
+  /**
+   * Optional ISO-3166 country code (or country name) resolved from the
+   * request IP. When present, country counts are bumped per event so the
+   * admin dashboard can render a "top countries" breakdown without
+   * persisting raw IP addresses.
+   */
+  country?: string | null;
 }
 
 interface SanitizedProductAnalyticsEvent {
@@ -225,6 +288,12 @@ export interface ProductAnalyticsDetail {
   categories: ProductEventBreakdown[];
   sources: ProductEventBreakdown[];
   topPaths: ProductEventBreakdown[];
+  /** Top songs played across iPod / karaoke (`<artist> — <title>`). */
+  topSongs: ProductEventBreakdown[];
+  /** Top external sites visited via Internet Explorer (host name). */
+  topSites: ProductEventBreakdown[];
+  /** Top visitor countries derived from server-side IP geolocation. */
+  topCountries: ProductEventBreakdown[];
 }
 
 function normalizeDimension(value: unknown, fallback?: string): string | undefined {
@@ -365,6 +434,7 @@ export function recordProductAnalyticsEvents(
   const date = todayUTC();
   const dailyKey = pk("daily", date);
   const pipe = redis.pipeline();
+  const country = normalizeCountryLabel(context.country);
 
   for (const event of sanitized) {
     pipe.hincrby(dailyKey, "events", 1);
@@ -385,6 +455,19 @@ export function recordProductAnalyticsEvents(
     pipe.hincrby(pk("source", date), event.source, 1);
     if (event.appId) pipe.hincrby(pk("app", date), event.appId, 1);
     if (event.path) pipe.hincrby(pk("path", date), event.path, 1);
+
+    if (SONG_EVENT_NAMES.has(event.name)) {
+      const songLabel = buildSongLabel(event.properties);
+      if (songLabel) pipe.hincrby(pk("song", date), songLabel, 1);
+    }
+    if (SITE_EVENT_NAMES.has(event.name)) {
+      const siteLabel = buildSiteLabel(event.properties);
+      if (siteLabel) pipe.hincrby(pk("site", date), siteLabel, 1);
+    }
+    // Count one country bucket per event when geo is resolved server-side
+    // for the request. We intentionally do NOT trust client-supplied country
+    // values to avoid spoofed geography buckets in the dashboard.
+    if (country) pipe.hincrby(pk("country", date), country, 1);
   }
 
   if (_lastProductTTLDate !== date) {
@@ -396,6 +479,9 @@ export function recordProductAnalyticsEvents(
     pipe.expire(pk("source", date), ANALYTICS_TTL_SECONDS);
     pipe.expire(pk("app", date), ANALYTICS_TTL_SECONDS);
     pipe.expire(pk("path", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("song", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("site", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("country", date), ANALYTICS_TTL_SECONDS);
   }
 
   pipe.exec().catch((err) => {
@@ -754,7 +840,7 @@ export async function getProductAnalyticsDetail(
 ): Promise<ProductAnalyticsDetail> {
   const dates = dateRange(days);
   const uvKeys = dates.map((d) => pk("uv", d));
-  const CMDS_PER_DAY = 7;
+  const CMDS_PER_DAY = 10;
 
   const pipe = redis.pipeline();
   for (const date of dates) {
@@ -765,6 +851,9 @@ export async function getProductAnalyticsDetail(
     pipe.hgetall(pk("category", date));
     pipe.hgetall(pk("source", date));
     pipe.hgetall(pk("path", date));
+    pipe.hgetall(pk("song", date));
+    pipe.hgetall(pk("site", date));
+    pipe.hgetall(pk("country", date));
   }
   if (uvKeys.length > 0) pipe.pfcount(...uvKeys);
   const results = await pipe.exec();
@@ -783,6 +872,9 @@ export async function getProductAnalyticsDetail(
   const categoryMap = new Map<string, number>();
   const sourceMap = new Map<string, number>();
   const pathMap = new Map<string, number>();
+  const songMap = new Map<string, number>();
+  const siteMap = new Map<string, number>();
+  const countryMap = new Map<string, number>();
 
   const dailyMetrics: DailyProductEventMetrics[] = dates.map((date, i) => {
     const base = i * CMDS_PER_DAY;
@@ -803,6 +895,9 @@ export async function getProductAnalyticsDetail(
     mergeHashCounts(categoryMap, (results[base + 4] as Record<string, string> | null) || null);
     mergeHashCounts(sourceMap, (results[base + 5] as Record<string, string> | null) || null);
     mergeHashCounts(pathMap, (results[base + 6] as Record<string, string> | null) || null);
+    mergeHashCounts(songMap, (results[base + 7] as Record<string, string> | null) || null);
+    mergeHashCounts(siteMap, (results[base + 8] as Record<string, string> | null) || null);
+    mergeHashCounts(countryMap, (results[base + 9] as Record<string, string> | null) || null);
 
     return {
       date,
@@ -823,5 +918,8 @@ export async function getProductAnalyticsDetail(
     categories: breakdownFromMap(categoryMap, 20),
     sources: breakdownFromMap(sourceMap, 20),
     topPaths: breakdownFromMap(pathMap, 20),
+    topSongs: breakdownFromMap(songMap, 20),
+    topSites: breakdownFromMap(siteMap, 20),
+    topCountries: breakdownFromMap(countryMap, 20),
   };
 }
