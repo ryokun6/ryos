@@ -16,6 +16,7 @@ import {
   type ListenRemoteCommandAction,
 } from "@/api/listen";
 import { getListenClientInstanceId } from "@/lib/listenClientInstance";
+import { LISTEN_ANALYTICS, track } from "@/utils/analytics";
 export interface ListenTrackMeta {
   title: string;
   artist?: string;
@@ -614,6 +615,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           ...identity,
         });
 
+        track(LISTEN_ANALYTICS.SESSION_CREATE, {
+          listenerCount: session.users.length + (session.anonymousListeners?.length ?? 0),
+        });
         return { ok: true, session };
       } catch (error) {
         console.error("[ListenSession] createSession failed", error);
@@ -666,6 +670,10 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           ...identity,
         });
 
+        track(LISTEN_ANALYTICS.SESSION_JOIN, {
+          isAnonymous,
+          listenerCount,
+        });
         return { ok: true, session };
       } catch (error) {
         console.error("[ListenSession] joinSession failed", error);
@@ -687,6 +695,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           ...initialState,
           clientInstanceId: get().clientInstanceId,
         });
+        track(LISTEN_ANALYTICS.SESSION_LEAVE, { isAnonymous });
         return { ok: true };
       }
 
@@ -767,6 +776,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           { username, emoji }
         );
 
+        track(LISTEN_ANALYTICS.REACTION, { emoji });
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] sendReaction failed", error);
@@ -799,6 +809,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           currentSession: session,
           ...updateIdentityFlags(session, username, clientInstanceId),
         });
+        track(LISTEN_ANALYTICS.TRANSFER_HOST);
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] transferHost failed", error);
@@ -827,6 +838,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           currentSession: session,
           ...updateIdentityFlags(session, username, clientInstanceId),
         });
+        track(LISTEN_ANALYTICS.ASSIGN_DJ);
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] assignDj failed", error);
@@ -860,6 +872,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         if (args.action === "play" || args.action === "pause" || args.action === "seek") {
           applyOptimisticRemotePlayback(args.action !== "pause", args.positionMs);
         }
+        track(LISTEN_ANALYTICS.REMOTE_COMMAND, { action: args.action });
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] sendRemotePlaybackCommand failed", error);

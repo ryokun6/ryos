@@ -14,6 +14,7 @@ import { helpItems } from "..";
 import type { VideosInitialData } from "../../base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
+import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
 
 interface Video {
   id: string;
@@ -342,6 +343,11 @@ export function useVideosLogic({
         console.log(
           `[Videos] Video added successfully. Current video should be: ${newVideo.id}`
         );
+        track(MEDIA_ANALYTICS.VIDEO_ADD, {
+          appId: "videos",
+          source: "url",
+          videoCount: newVideos.length,
+        });
 
         showStatus(t("apps.videos.status.videoAdded"));
 
@@ -575,6 +581,14 @@ export function useVideosLogic({
       return;
     }
     setIsPlaying(true);
+    const video = getCurrentVideo();
+    if (video) {
+      track(MEDIA_ANALYTICS.VIDEO_PLAY, {
+        appId: "videos",
+        videoId: video.id,
+        hasArtist: Boolean(video.artist),
+      });
+    }
   }, [setIsPlaying]);
 
   const handlePause = useCallback(() => {
@@ -603,6 +617,7 @@ export function useVideosLogic({
     // Mark as track switching to prevent spurious play/pause events during sync
     startTrackSwitch();
     setIsFullScreen(true);
+    track(MEDIA_ANALYTICS.FULLSCREEN, { appId: "videos", isOpen: true });
     showStatus(t("apps.videos.status.fullscreen"));
   }, [startTrackSwitch, showStatus, t]);
 
@@ -610,6 +625,7 @@ export function useVideosLogic({
     // Mark as track switching to prevent spurious play/pause events during sync
     startTrackSwitch();
     setIsFullScreen(false);
+    track(MEDIA_ANALYTICS.FULLSCREEN, { appId: "videos", isOpen: false });
     // Sync time from fullscreen player to regular player
     if (fullScreenPlayerRef.current && playerRef.current) {
       const currentTime = fullScreenPlayerRef.current.getCurrentTime();
@@ -641,6 +657,7 @@ export function useVideosLogic({
   // Handler to open share dialog
   const handleShareVideo = useCallback(() => {
     if (videos.length > 0 && currentVideoId) {
+      track(MEDIA_ANALYTICS.SHARE, { appId: "videos", itemType: "video" });
       setIsShareDialogOpen(true);
     }
   }, [videos.length, currentVideoId]);

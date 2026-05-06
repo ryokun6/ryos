@@ -5,6 +5,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { isWindowsTheme } from "@/themes";
+import { MINESWEEPER_ANALYTICS, track } from "@/utils/analytics";
 
 const BOARD_SIZE = 9;
 const MINES_COUNT = 10;
@@ -171,6 +172,10 @@ export function useMinesweeperLogic() {
       if (allNonMinesRevealed) {
         playGameWin();
         setGameWon(true);
+        track(MINESWEEPER_ANALYTICS.WIN, {
+          boardSize: BOARD_SIZE,
+          mines: MINES_COUNT,
+        });
       }
     },
     [playGameWin]
@@ -231,6 +236,11 @@ export function useMinesweeperLogic() {
             playMineHit();
             revealAllMines(newBoard);
             setGameOver(true);
+            track(MINESWEEPER_ANALYTICS.LOSS, {
+              boardSize: BOARD_SIZE,
+              mines: MINES_COUNT,
+              viaChord: true,
+            });
             return;
           }
         }
@@ -243,6 +253,11 @@ export function useMinesweeperLogic() {
         playMineHit();
         revealAllMines(newBoard);
         setGameOver(true);
+        track(MINESWEEPER_ANALYTICS.LOSS, {
+          boardSize: BOARD_SIZE,
+          mines: MINES_COUNT,
+          viaChord: false,
+        });
         return;
       }
 
@@ -274,11 +289,17 @@ export function useMinesweeperLogic() {
       const newBoard = [...gameBoard.map((row) => [...row])];
       newBoard[row][col].isFlagged = !newBoard[row][col].isFlagged;
       setGameBoard(newBoard);
+      track(MINESWEEPER_ANALYTICS.FLAG, {
+        isFlagged: newBoard[row][col].isFlagged,
+        remainingMines: newBoard[row][col].isFlagged
+          ? remainingMines - 1
+          : remainingMines + 1,
+      });
       setRemainingMines((prev) =>
         newBoard[row][col].isFlagged ? prev - 1 : prev + 1
       );
     },
-    [gameBoard, gameOver, gameWon, playFlag]
+    [gameBoard, gameOver, gameWon, playFlag, remainingMines]
   );
 
   const startNewGame = useCallback(() => {
@@ -287,6 +308,10 @@ export function useMinesweeperLogic() {
     setGameWon(false);
     setIsNewGameDialogOpen(false);
     setRemainingMines(MINES_COUNT);
+    track(MINESWEEPER_ANALYTICS.NEW_GAME, {
+      boardSize: BOARD_SIZE,
+      mines: MINES_COUNT,
+    });
   }, [initializeBoard]);
 
   const currentTheme = useThemeStore((state) => state.current);

@@ -18,6 +18,7 @@ import {
   shuffleArray,
 } from "@/apps/tv/utils";
 import { isMobileSafari } from "@/utils/device";
+import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
 
 export const MTV_CHANNEL_ID = "mtv";
 export const RYO_TV_CHANNEL_ID = "ryos-picks";
@@ -220,6 +221,10 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
       tuneInRandomlyOnNextDurationRef.current = true;
       setCurrentChannelId(id);
       setIsPlaying(true);
+      track(MEDIA_ANALYTICS.TV_CHANNEL_TUNE, {
+        channelId: id,
+        isCustom: id.startsWith("custom-"),
+      });
       showStatus(
         t("apps.tv.channelBadge", {
           number: String(ch.number).padStart(2, "0"),
