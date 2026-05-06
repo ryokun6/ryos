@@ -9,6 +9,7 @@ import type { Contact, ContactDraft } from "@/utils/contacts";
 import { contactMatchesQuery, parseVCardText, sortContacts } from "@/utils/contacts";
 import { resizeImageToBase64 } from "@/utils/imageResize";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
+import { CONTACTS_ANALYTICS, track } from "@/utils/analytics";
 import { helpItems } from "..";
 
 type ContactGroupId = "all" | "imported" | "telegram" | "work" | "birthdays";
@@ -134,6 +135,7 @@ export function useContactsLogic() {
     setSelectedGroupId("all");
     const id = addContact({ source: "manual" });
     setSelectedContactId(id);
+    track(CONTACTS_ANALYTICS.CONTACT_CREATE, { appId: "contacts" });
   };
 
   const handleDeleteSelectedContact = () => {
@@ -141,6 +143,7 @@ export function useContactsLogic() {
       return;
     }
     deleteContact(selectedContact.id);
+    track(CONTACTS_ANALYTICS.CONTACT_DELETE, { appId: "contacts" });
     toast.success(
       t("apps.contacts.messages.deleted", {
         name: selectedContact.displayName,
@@ -161,6 +164,10 @@ export function useContactsLogic() {
     setMyContactId(
       myContactId === selectedContact.id ? null : selectedContact.id
     );
+    track(CONTACTS_ANALYTICS.MY_CARD_SET, {
+      appId: "contacts",
+      enabled: myContactId !== selectedContact.id,
+    });
   };
 
   const updateSelectedContact = (draft: ContactDraft) => {
@@ -168,6 +175,7 @@ export function useContactsLogic() {
       return;
     }
     updateContact(selectedContact.id, draft);
+    track(CONTACTS_ANALYTICS.CONTACT_UPDATE, { appId: "contacts" });
   };
 
   const handleImport = () => {
@@ -198,6 +206,11 @@ export function useContactsLogic() {
       }
 
       const result = importContacts(parsed);
+      track(CONTACTS_ANALYTICS.IMPORT, {
+        appId: "contacts",
+        importedCount: result.importedCount,
+        mergedCount: result.mergedCount,
+      });
 
       if (result.contacts.length === 0) {
         toast.error(t("apps.contacts.messages.importEmpty"));
