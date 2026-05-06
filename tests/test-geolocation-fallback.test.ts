@@ -54,8 +54,10 @@ describe("geolocation fallback", () => {
 
     test("flags IPv6 documentation, multicast, and private IPv4-mapped addresses", () => {
       expect(isPrivateOrLocalIp("2001:db8::1")).toBe(true);
+      expect(isPrivateOrLocalIp("2001:0db8::1")).toBe(true);
       expect(isPrivateOrLocalIp("ff02::1")).toBe(true);
       expect(isPrivateOrLocalIp("::ffff:192.168.1.1")).toBe(true);
+      expect(isPrivateOrLocalIp("::ffff:c0a8:0101")).toBe(true);
       expect(isPrivateOrLocalIp("::ffff:8.8.8.8")).toBe(false);
     });
 

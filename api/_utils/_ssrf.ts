@@ -31,6 +31,13 @@ const isBlockedHostname = (hostname: string): boolean => {
   return BLOCKED_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
 };
 
+const stripIpLiteralBrackets = (hostname: string): string => {
+  if (hostname.startsWith("[") && hostname.endsWith("]")) {
+    return hostname.slice(1, -1);
+  }
+  return hostname;
+};
+
 const resolveAndValidateHostname = async (hostname: string): Promise<void> => {
   const records = await lookup(hostname, { all: true, verbatim: true });
   if (!records.length) {
@@ -70,8 +77,12 @@ export const validatePublicUrl = async (rawUrl: string): Promise<URL> => {
     throw new SsrfBlockedError("Blocked hostname");
   }
 
-  if (isIP(hostname) && isPrivateOrReservedIp(hostname)) {
-    throw new SsrfBlockedError("Private or reserved IPs are not allowed");
+  const ipLiteral = stripIpLiteralBrackets(hostname);
+  if (isIP(ipLiteral)) {
+    if (isPrivateOrReservedIp(ipLiteral)) {
+      throw new SsrfBlockedError("Private or reserved IPs are not allowed");
+    }
+    return parsed;
   }
 
   await resolveAndValidateHostname(hostname);
