@@ -230,12 +230,36 @@ function canUseBrowserApis(): boolean {
 }
 
 function randomId(prefix: string): string {
-  const cryptoObj = typeof crypto !== "undefined" ? crypto : undefined;
-  const id =
-    cryptoObj && "randomUUID" in cryptoObj
-      ? cryptoObj.randomUUID()
-      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  return `${prefix}_${id}`;
+  const cryptoObj: Crypto | undefined =
+    typeof crypto !== "undefined" ? crypto : undefined;
+
+  // Prefer randomUUID() when available (modern browsers + secure contexts).
+  if (cryptoObj && typeof cryptoObj.randomUUID === "function") {
+    return `${prefix}_${cryptoObj.randomUUID()}`;
+  }
+
+  // Fall back to a cryptographically secure random byte sequence. We avoid
+  // Math.random() here because the resulting id is persisted as a stable
+  // visitor/session identifier and CodeQL flags Math.random() as insecure
+  // randomness in this context.
+  if (cryptoObj && typeof cryptoObj.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    let hex = "";
+    for (let i = 0; i < bytes.length; i++) {
+      hex += bytes[i].toString(16).padStart(2, "0");
+    }
+    return `${prefix}_${Date.now().toString(36)}-${hex}`;
+  }
+
+  // Last resort (extremely old environments): timestamp-only id. This is not
+  // ideal but is never used in modern browsers since the checks above will
+  // succeed. We intentionally do NOT use Math.random() here.
+  const hiResNow =
+    typeof performance !== "undefined" && typeof performance.now === "function"
+      ? performance.now()
+      : 0;
+  return `${prefix}_${Date.now().toString(36)}-${Math.floor(hiResNow).toString(36)}`;
 }
 
 function readOrCreateStorageId(
