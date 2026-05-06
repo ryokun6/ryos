@@ -207,9 +207,9 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "searchPlaces",
     "dropPins",
     "locateMe",
+    "directions",
     "mapTypes",
     "poweredByApple",
-    "switchMapStyle",
   ],
 };
 

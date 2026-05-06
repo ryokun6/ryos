@@ -2535,6 +2535,10 @@
     "maps": {
       "description": "Orte mit Apple Karten finden",
       "help": {
+        "directions": {
+          "description": "Öffne von einer Ortkarte aus die Wegbeschreibung in Apple Maps – wird in einem neuen Tab geöffnet, damit ryOS geöffnet bleibt (Routenführung in der Karte ist noch nicht verfügbar)",
+          "title": "Wegbeschreibung"
+        },
         "dropPins": {
           "description": "Wähle ein Ergebnis aus der Liste aus, um eine Stecknadel zu setzen und die Karte darauf zu zentrieren",
           "title": "Stecknadeln setzen"
@@ -2544,7 +2548,7 @@
           "title": "Meinen Standort finden"
         },
         "mapTypes": {
-          "description": "Wechsle im Menü „Darstellung“ zwischen Standard, Hybrid und Satellit",
+          "description": "Wechseln Sie im Menü „Darstellung“ zwischen Standard, Hybrid, Satellit und Standard (reduziert)",
           "title": "Kartentypen"
         },
         "poweredByApple": {
@@ -2554,10 +2558,6 @@
         "searchPlaces": {
           "description": "Geben Sie eine Stadt, ein Unternehmen oder eine Adresse in die Suchleiste ein, um sie auf der Karte zu finden.",
           "title": "Orte suchen"
-        },
-        "switchMapStyle": {
-          "description": "Verwenden Sie das Menü „Darstellung“, um zwischen „Standard“, „Hybrid“, „Satellit“ und „Standard (reduziert)“ zu wechseln.",
-          "title": "Kartenstil ändern"
         }
       },
       "locateMe": "Meinen Standort bestimmen",

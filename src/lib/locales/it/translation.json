@@ -2535,6 +2535,10 @@
     "maps": {
       "description": "Trova luoghi con Mappe Apple",
       "help": {
+        "directions": {
+          "description": "Da una scheda del luogo, apri le indicazioni stradali in Apple Maps — si apre in una nuova scheda in modo che ryOS rimanga aperto (la navigazione integrata non è ancora disponibile)",
+          "title": "Indicazioni"
+        },
         "dropPins": {
           "description": "Scegli un risultato dall'elenco per inserire un segnaposto e ricentrare la mappa su di esso",
           "title": "Inserisci segnaposto"
@@ -2544,7 +2548,7 @@
           "title": "Localizzami"
         },
         "mapTypes": {
-          "description": "Passa tra Standard, Ibrida e Satellite dal menu Vista",
+          "description": "Passa tra Standard, Ibrida, Satellitare e Standard attenuata dal menu Vista",
           "title": "Tipi di mappa"
         },
         "poweredByApple": {
@@ -2554,10 +2558,6 @@
         "searchPlaces": {
           "description": "Digita una città, un'attività o un indirizzo nella barra di ricerca per trovarli sulla mappa",
           "title": "Cerca luoghi"
-        },
-        "switchMapStyle": {
-          "description": "Usa il menu Vista per passare tra Standard, Ibrida, Satellite e Standard attenuata.",
-          "title": "Cambia stile mappa"
         }
       },
       "locateMe": "La mia posizione",
