@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Emoji } from "@/components/shared/Emoji";
 
 function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
   switch (type) {
@@ -212,7 +213,7 @@ function WidgetStrip({
                   filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.4))",
                 }}
               >
-                <span className="text-4xl">{WIDGET_ICONS[w.type]}</span>
+                <Emoji emoji={WIDGET_ICONS[w.type]} size={36} />
               </motion.div>
               <span
                 className="text-[10px] font-bold text-center leading-tight max-w-[72px] truncate"

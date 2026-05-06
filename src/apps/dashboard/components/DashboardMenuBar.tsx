@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/menubar";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
+import { Emoji } from "@/components/shared/Emoji";
 
 interface DashboardMenuBarProps {
   onClose: () => void;
@@ -63,35 +64,45 @@ export function DashboardMenuBar({
               {t("apps.dashboard.menu.addWidget")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
-              <MenubarItem onClick={onAddClock} className="text-md h-6 px-3">
-                🕐 {t("apps.dashboard.widgets.clock")}
+              <MenubarItem onClick={onAddClock} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="🕐" size={14} />
+                {t("apps.dashboard.widgets.clock")}
               </MenubarItem>
-              <MenubarItem onClick={onAddCalendar} className="text-md h-6 px-3">
-                📅 {t("apps.dashboard.widgets.calendar")}
+              <MenubarItem onClick={onAddCalendar} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="📅" size={14} />
+                {t("apps.dashboard.widgets.calendar")}
               </MenubarItem>
-              <MenubarItem onClick={onAddWeather} className="text-md h-6 px-3">
-                🌤️ {t("apps.dashboard.widgets.weather")}
+              <MenubarItem onClick={onAddWeather} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="🌤️" size={14} />
+                {t("apps.dashboard.widgets.weather")}
               </MenubarItem>
-              <MenubarItem onClick={onAddStocks} className="text-md h-6 px-3">
-                📈 {t("apps.dashboard.widgets.stocks")}
+              <MenubarItem onClick={onAddStocks} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="📈" size={14} />
+                {t("apps.dashboard.widgets.stocks")}
               </MenubarItem>
-              <MenubarItem onClick={onAddIpod} className="text-md h-6 px-3">
-                🎵 {t("apps.dashboard.widgets.ipod", "iPod")}
+              <MenubarItem onClick={onAddIpod} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="🎵" size={14} />
+                {t("apps.dashboard.widgets.ipod", "iPod")}
               </MenubarItem>
-              <MenubarItem onClick={onAddTranslation} className="text-md h-6 px-3">
-                🌐 {t("apps.dashboard.widgets.translation", "Translation")}
+              <MenubarItem onClick={onAddTranslation} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="🌐" size={14} />
+                {t("apps.dashboard.widgets.translation", "Translation")}
               </MenubarItem>
-              <MenubarItem onClick={onAddCurrency} className="text-md h-6 px-3">
-                💱 {t("apps.dashboard.widgets.currencyConverter", "Currency Converter")}
+              <MenubarItem onClick={onAddCurrency} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="💱" size={14} />
+                {t("apps.dashboard.widgets.currencyConverter", "Currency Converter")}
               </MenubarItem>
-              <MenubarItem onClick={onAddStickyNote} className="text-md h-6 px-3">
-                📝 {t("apps.dashboard.widgets.stickyNote", "Sticky Note")}
+              <MenubarItem onClick={onAddStickyNote} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="📝" size={14} />
+                {t("apps.dashboard.widgets.stickyNote", "Sticky Note")}
               </MenubarItem>
-              <MenubarItem onClick={onAddDictionary} className="text-md h-6 px-3">
-                📖 {t("apps.dashboard.widgets.dictionary", "Dictionary")}
+              <MenubarItem onClick={onAddDictionary} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="📖" size={14} />
+                {t("apps.dashboard.widgets.dictionary", "Dictionary")}
               </MenubarItem>
-              <MenubarItem onClick={onAddAquarium} className="text-md h-6 px-3">
-                🐠 {t("apps.dashboard.widgets.aquarium", "Aquarium")}
+              <MenubarItem onClick={onAddAquarium} className="text-md h-6 px-3 gap-1.5">
+                <Emoji emoji="🐠" size={14} />
+                {t("apps.dashboard.widgets.aquarium", "Aquarium")}
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>

@@ -4,6 +4,7 @@ import type { TFunction } from "i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type WeatherWidgetConfig } from "@/stores/useDashboardStore";
 import { MapPin, MagnifyingGlass, NavigationArrow } from "@phosphor-icons/react";
+import { Emoji } from "@/components/shared/Emoji";
 
 interface DailyForecast {
   dayLabel: string;
@@ -279,7 +280,10 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
           {locationName || "—"}
         </span>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-2xl">{getWeatherEmoji(weather.weatherCode, weather.isDay)}</span>
+          <Emoji
+            emoji={getWeatherEmoji(weather.weatherCode, weather.isDay)}
+            size={24}
+          />
           <div>
             <div className="text-xl font-light">{weather.temperature}°</div>
             <div className="text-[10px] text-gray-500">
@@ -397,9 +401,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
           >
             {weather.forecast.map((day) => (
               <div key={day.dayLabel} className="flex-1 flex flex-col items-center py-2 gap-1">
-                <span style={{ fontSize: 24, lineHeight: 1 }}>
-                  {getWeatherEmoji(day.weatherCode)}
-                </span>
+                <Emoji emoji={getWeatherEmoji(day.weatherCode)} size={24} />
                 <span
                   className="font-semibold"
                   style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
@@ -422,9 +424,11 @@ export function WeatherEmojiOverflow({ widgetId }: { widgetId: string }) {
 
   return (
     <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none" style={{ top: -21, zIndex: 10 }}>
-      <span style={{ fontSize: 100, lineHeight: 1, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", opacity: 0.9 }}>
-        {getWeatherEmoji(weather.weatherCode, weather.isDay)}
-      </span>
+      <Emoji
+        emoji={getWeatherEmoji(weather.weatherCode, weather.isDay)}
+        size={100}
+        style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", opacity: 0.9 }}
+      />
     </div>
   );
 }

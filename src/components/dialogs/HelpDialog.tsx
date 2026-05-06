@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,7 @@ const APP_DOC_NAMES: Partial<Record<AppId, string>> = {
 };
 
 interface HelpCardProps {
-  icon: string;
+  icon: ReactNode;
   title: string;
   description: string;
 }
@@ -32,7 +33,9 @@ function HelpCard({ icon, title, description }: HelpCardProps) {
 
   return (
     <div className="p-4 bg-black/5 rounded-os transition-colors">
-      <div className="!text-[18px]">{icon}</div>
+      <div className="!text-[18px] flex items-center" style={{ height: 22 }}>
+        {icon}
+      </div>
       <h3
         className={cn(
           "font-medium",
