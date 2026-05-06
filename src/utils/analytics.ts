@@ -389,8 +389,8 @@ export async function flushAnalytics(preferBeacon = false): Promise<void> {
 
 export function trackPageView(path?: string): void {
   track("page:view", {
-    path: path || getCurrentPath(),
-    title: canUseBrowserApis() ? document.title.slice(0, 120) : undefined,
+    pagePath: path || getCurrentPath(),
+    pageTitle: canUseBrowserApis() ? document.title.slice(0, 120) : undefined,
     category: "pageViews",
   });
 }
