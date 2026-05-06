@@ -14,7 +14,6 @@ export interface Favorite {
 
 // Define a constant for domains that bypass the proxy when in "now" mode
 export const DIRECT_PASSTHROUGH_DOMAINS = [
-  "baby-cursor.ryo.lu",
   "os.ryo.lu",
   "hcsimulator.com",
   "os.rocorgi.wang",
@@ -265,13 +264,6 @@ export const DEFAULT_FAVORITES: Favorite[] = [
     isDirectory: true, // Mark as directory
     children: [
       {
-        title: "Baby Cursor",
-        url: "https://baby-cursor.ryo.lu",
-        favicon: "https://www.google.com/s2/favicons?domain=ryo.lu&sz=32",
-        year: "current",
-        isDirectory: false,
-      },
-      {
         title: "HyperCards",
         url: "https://hcsimulator.com",
         favicon:
@@ -350,7 +342,42 @@ export const DEFAULT_FAVORITES: Favorite[] = [
 ];
 
 // Define the current version for the store
-const CURRENT_IE_STORE_VERSION = 5;
+const RESET_IE_STORE_BEFORE_VERSION = 5;
+const CURRENT_IE_STORE_VERSION = 6;
+
+const REMOVED_DEFAULT_FAVORITE_HOSTS = new Set(["baby-cursor.ryo.lu"]);
+
+const getFavoriteHostname = (url?: string): string | null => {
+  if (!url) return null;
+
+  try {
+    return new URL(url.startsWith("http") ? url : `https://${url}`).hostname;
+  } catch {
+    return null;
+  }
+};
+
+const isRemovedBrowserFavorite = (favorite: Favorite): boolean => {
+  const hostname = getFavoriteHostname(favorite.url);
+  return (
+    favorite.title.trim().toLowerCase() === "baby cursor" ||
+    (hostname !== null && REMOVED_DEFAULT_FAVORITE_HOSTS.has(hostname))
+  );
+};
+
+export const removeRemovedDefaultFavorites = (
+  favorites: Favorite[]
+): Favorite[] =>
+  favorites
+    .filter((favorite) => !isRemovedBrowserFavorite(favorite))
+    .map((favorite) =>
+      favorite.children
+        ? {
+            ...favorite,
+            children: removeRemovedDefaultFavorites(favorite.children),
+          }
+        : favorite
+    );
 
 // Helper function to classify year into navigation mode
 function classifyYear(year: string): NavigationMode {
@@ -889,7 +916,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
         // Use Record<string, unknown> to allow safe property access with type checking
         let state = persistedState as Record<string, unknown>;
 
-        if (version < CURRENT_IE_STORE_VERSION) {
+        if (version < RESET_IE_STORE_BEFORE_VERSION) {
           console.log(
             `Migrating Internet Explorer store from version ${version} to ${CURRENT_IE_STORE_VERSION}`
           );
@@ -929,7 +956,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
           ? finalState.history.slice(0, 50)
           : [];
         finalState.favorites = Array.isArray(finalState.favorites)
-          ? finalState.favorites
+          ? removeRemovedDefaultFavorites(finalState.favorites as Favorite[])
           : DEFAULT_FAVORITES;
 
         return finalState as InternetExplorerStore;
