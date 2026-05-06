@@ -30,6 +30,7 @@ import {
   type CloudSyncDeletionBucket,
 } from "@/stores/useCloudSyncStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { FINDER_ANALYTICS, track } from "@/utils/analytics";
 
 // Interface for content stored in IndexedDB
 export interface DocumentContent {
@@ -54,6 +55,17 @@ const getParentPath = (path: string): string => {
   const parts = path.split("/").filter(Boolean);
   if (parts.length <= 1) return "/";
   return `/${parts.slice(0, -1).join("/")}`;
+};
+
+const getFinderAnalyticsPathInfo = (path: string, type?: string) => {
+  const parts = path.split("/").filter(Boolean);
+  const fileName = parts[parts.length - 1] || "";
+  const extMatch = fileName.match(/\.([a-z0-9]+)$/i);
+  return {
+    topLevel: parts[0] || "root",
+    fileType: type || extMatch?.[1]?.toLowerCase() || "unknown",
+    isRoot: parts.length === 0,
+  };
 };
 
 const arePathArraysEqual = (first: readonly string[], second: readonly string[]) =>
@@ -1043,6 +1055,12 @@ export function useFileSystem(
           if (fileMetadata.aliasType === "app") {
             // Launch app directly
             const appId = fileMetadata.aliasTarget as AppId;
+            track(FINDER_ANALYTICS.FILE_OPEN, {
+              appId: "finder",
+              targetAppId: appId,
+              sourceType: "alias",
+              ...getFinderAnalyticsPathInfo(currentFile.path, currentFile.type),
+            });
             launchApp(appId, { launchOrigin });
             return;
           } else {
@@ -1080,6 +1098,11 @@ export function useFileSystem(
       // 1. Handle Directories (Virtual and Real)
       if (file.isDirectory) {
         if (file.type === "directory" || file.type === "directory-virtual") {
+          track(FINDER_ANALYTICS.FILE_OPEN, {
+            appId: "finder",
+            isDirectory: true,
+            ...getFinderAnalyticsPathInfo(file.path, file.type),
+          });
           navigateToPath(file.path);
         }
         return;
@@ -1095,6 +1118,12 @@ export function useFileSystem(
         const storeName = getStoreForFile(file.path, {
           name: file.name,
           type: file.type,
+        });
+        track(FINDER_ANALYTICS.FILE_OPEN, {
+          appId: "finder",
+          isDirectory: false,
+          targetAppId: file.appId || undefined,
+          ...getFinderAnalyticsPathInfo(file.path, file.type),
         });
         if (storeName) {
           // Get the file metadata to get the UUID
