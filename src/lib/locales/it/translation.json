@@ -2548,7 +2548,7 @@
           "title": "Indicazioni"
         },
         "mapTypes": {
-          "description": "Passa tra Standard, Ibrida e Satellite dal menu Vista",
+          "description": "Passa tra Standard, Ibrida, Satellitare e Standard attenuata dal menu Vista",
           "title": "Tipi di mappa"
         },
         "poweredByApple": {
@@ -2558,10 +2558,6 @@
         "searchPlaces": {
           "description": "Digita una città, un'attività o un indirizzo nella barra di ricerca per trovarli sulla mappa",
           "title": "Cerca luoghi"
-        },
-        "switchMapStyle": {
-          "description": "Usa il menu Vista per passare tra Standard, Ibrida, Satellite e Standard attenuata.",
-          "title": "Cambia stile mappa"
         }
       },
       "locateMe": "La mia posizione",

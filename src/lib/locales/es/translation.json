@@ -2548,7 +2548,7 @@
           "title": "Indicaciones"
         },
         "mapTypes": {
-          "description": "Cambia entre Estándar, Híbrido y Satélite desde el menú Visualización",
+          "description": "Cambia entre Estándar, Híbrido, Satélite y Estándar atenuado desde el menú Visualización",
           "title": "Tipos de mapa"
         },
         "poweredByApple": {
@@ -2558,10 +2558,6 @@
         "searchPlaces": {
           "description": "Escribe una ciudad, negocio o dirección en la barra de búsqueda para encontrarlo en el mapa",
           "title": "Buscar lugares"
-        },
-        "switchMapStyle": {
-          "description": "Usa el menú Visualización para alternar entre Estándar, Híbrido, Satélite y Estándar suave.",
-          "title": "Cambiar estilo del mapa"
         }
       },
       "locateMe": "Ubicarme",

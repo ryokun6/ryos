@@ -2548,7 +2548,7 @@
           "title": "Route"
         },
         "mapTypes": {
-          "description": "Wechsle im Menü „Darstellung“ zwischen Standard, Hybrid und Satellit",
+          "description": "Wechseln Sie im Menü „Darstellung“ zwischen Standard, Hybrid, Satellit und Standard (reduziert)",
           "title": "Kartentypen"
         },
         "poweredByApple": {
@@ -2558,10 +2558,6 @@
         "searchPlaces": {
           "description": "Geben Sie eine Stadt, ein Unternehmen oder eine Adresse in die Suchleiste ein, um sie auf der Karte zu finden.",
           "title": "Orte suchen"
-        },
-        "switchMapStyle": {
-          "description": "Verwenden Sie das Menü „Darstellung“, um zwischen „Standard“, „Hybrid“, „Satellit“ und „Standard (reduziert)“ zu wechseln.",
-          "title": "Kartenstil ändern"
         }
       },
       "locateMe": "Meinen Standort bestimmen",

@@ -9,5 +9,4 @@ export const MAPS_HELP_I18N_KEYS = [
   "directions",
   "mapTypes",
   "poweredByApple",
-  "switchMapStyle",
 ] as const satisfies readonly string[];

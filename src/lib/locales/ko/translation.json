@@ -2548,7 +2548,7 @@
           "title": "길찾기"
         },
         "mapTypes": {
-          "description": "보기 메뉴에서 표준, 하이브리드, 위성 지도를 전환할 수 있습니다.",
+          "description": "보기 메뉴에서 표준, 하이브리드, 위성 및 저채도 표준 간에 전환하십시오",
           "title": "지도 유형"
         },
         "poweredByApple": {
@@ -2558,10 +2558,6 @@
         "searchPlaces": {
           "description": "검색창에 도시, 업체 또는 주소를 입력하여 지도에서 찾으십시오.",
           "title": "장소 검색"
-        },
-        "switchMapStyle": {
-          "description": "보기 메뉴를 사용하여 표준, 하이브리드, 위성 및 부드러운 표준 간에 전환하십시오.",
-          "title": "지도 스타일 전환"
         }
       },
       "locateMe": "내 위치 찾기",
