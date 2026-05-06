@@ -21,7 +21,8 @@ describe("client analytics wiring", () => {
     ];
 
     for (const file of files) {
-      expect(readSource(file).includes("@vercel/analytics")).toBe(false);
+      const source = readSource(file);
+      expect(source.includes("@vercel" + "/analytics")).toBe(false);
     }
 
     const main = readSource("src/main.tsx");
