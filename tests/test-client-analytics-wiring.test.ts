@@ -46,7 +46,7 @@ describe("client analytics wiring", () => {
       "prompt: command"
     );
     expect(readSource("src/apps/terminal/commands/ai.ts")).not.toContain(
-      "prompt: initialPrompt"
+      "track(TERMINAL_ANALYTICS.AI_COMMAND, { prompt:"
     );
   });
 });
