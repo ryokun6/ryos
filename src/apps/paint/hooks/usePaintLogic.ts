@@ -440,7 +440,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
     canvasRef.current?.applyFilter(filter);
     track(PAINT_ANALYTICS.FILTER_APPLY, {
       appId: "paint",
-      filter,
+      filter: filter.name,
     });
   }, []);
 

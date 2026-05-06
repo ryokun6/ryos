@@ -207,7 +207,7 @@ const SENSITIVE_PROPERTY_RE =
   /(password|token|secret|authorization|cookie|message|prompt|content|html|base64|blob|dataurl|transcript|body|text)$/i;
 
 let queue: QueuedAnalyticsEvent[] = [];
-let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let flushTimer: number | null = null;
 let initialized = false;
 
 function canUseBrowserApis(): boolean {
@@ -342,13 +342,19 @@ export function track(
 ): void {
   if (!canUseBrowserApis() || !name || typeof name !== "string") return;
 
+  const referrerAnalytics = document.referrer
+    ? normalizeUrlForAnalytics(document.referrer)
+    : undefined;
+  const referrerHost =
+    typeof referrerAnalytics?.host === "string" ? referrerAnalytics.host : undefined;
+
   const event: QueuedAnalyticsEvent = {
     name: name.slice(0, 100),
     timestamp: Date.now(),
     sessionId: getSessionId(),
     clientId: getClientId(),
     path: getCurrentPath(),
-    referrer: document.referrer ? normalizeUrlForAnalytics(document.referrer).host : undefined,
+    referrer: referrerHost,
     appId:
       typeof properties?.appId === "string" ? properties.appId : undefined,
     category:

@@ -30,7 +30,6 @@ import {
   type CloudSyncDeletionBucket,
 } from "@/stores/useCloudSyncStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { FINDER_ANALYTICS, track } from "@/utils/analytics";
 
 // Interface for content stored in IndexedDB
 export interface DocumentContent {
@@ -55,28 +54,6 @@ const getParentPath = (path: string): string => {
   const parts = path.split("/").filter(Boolean);
   if (parts.length <= 1) return "/";
   return `/${parts.slice(0, -1).join("/")}`;
-};
-
-const getAnalyticsDirectory = (path: string): string => {
-  const [top] = path.split("/").filter(Boolean);
-  return top || "root";
-};
-
-const getAnalyticsExtension = (nameOrPath: string): string => {
-  const name = nameOrPath.split("/").pop() || nameOrPath;
-  const idx = name.lastIndexOf(".");
-  return idx >= 0 ? name.slice(idx + 1).toLowerCase().slice(0, 16) : "none";
-};
-
-const getAnalyticsPathInfo = (path: string, type?: string) => {
-  const parts = path.split("/").filter(Boolean);
-  const fileName = parts[parts.length - 1] || "";
-  const extMatch = fileName.match(/\.([a-z0-9]+)$/i);
-  return {
-    topLevel: parts[0] || "root",
-    fileType: type || extMatch?.[1]?.toLowerCase() || "unknown",
-    isRoot: parts.length === 0,
-  };
 };
 
 const arePathArraysEqual = (first: readonly string[], second: readonly string[]) =>

@@ -197,7 +197,7 @@ function BreakdownList({
   items,
   nameClassName,
 }: {
-  items: ProductEventBreakdown[];
+  items: ProductBreakdown[];
   nameClassName?: string;
 }) {
   if (items.length === 0) {
@@ -639,6 +639,47 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               </div>
             </div>
           </div>
+        ) : null}
+
+        {data.product ? (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-3 pb-3">
+              <StatCard
+                label={t("apps.admin.dashboard.kpi.productEvents")}
+                value={formatNumber(data.product.summary.totals.events)}
+              />
+              <StatCard
+                label={t("apps.admin.dashboard.kpi.pageViews")}
+                value={formatNumber(data.product.summary.totals.pageViews)}
+              />
+              <StatCard
+                label={t("apps.admin.dashboard.kpi.sessions")}
+                value={formatNumber(data.product.summary.totals.sessions)}
+              />
+              <StatCard
+                label={t("apps.admin.dashboard.kpi.appEvents")}
+                value={formatNumber(data.product.summary.totals.appLifecycle)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
+              {[
+                [t("apps.admin.dashboard.sections.topProductEvents"), data.product.topEvents],
+                [t("apps.admin.dashboard.sections.topApps"), data.product.topApps],
+                [t("apps.admin.dashboard.sections.eventCategories"), data.product.categories],
+                [t("apps.admin.dashboard.sections.topPages"), data.product.topPaths],
+              ].map(([title, items]) => (
+                <div key={String(title)} className="border border-gray-200 rounded bg-white overflow-hidden">
+                  <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                    <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+                      {String(title)}
+                    </span>
+                  </div>
+                  <BreakdownList items={items as ProductBreakdown[]} nameClassName="font-mono" />
+                </div>
+              ))}
+            </div>
+          </>
         ) : null}
 
         <div className="px-3 pb-3">

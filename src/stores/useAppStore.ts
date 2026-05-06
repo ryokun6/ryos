@@ -116,10 +116,6 @@ interface AppStoreState {
 
 const CURRENT_APP_STORE_VERSION = 5; // remap legacy app ids (e.g. infinite-pc → pc)
 
-function getOpenWindowCount(instances: Record<string, AppInstance>): number {
-  return Object.values(instances).filter((inst) => inst.isOpen).length;
-}
-
 function remapLegacyAppIdsInAppStore(prev: {
   instances?: Record<string, AppInstance>;
   recentApps?: RecentApp[];
