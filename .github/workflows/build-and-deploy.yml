@@ -21,6 +21,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    name: Unit tests (Bun ${{ matrix.bun-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        bun-version: ["1.3.9"]
+    env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ matrix.bun-version }}
+
+      - name: Cache Bun install
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run unit tests
+        run: bun run test:unit
+
   build:
     name: Build (Bun ${{ matrix.bun-version }})
     runs-on: ubuntu-latest
@@ -58,9 +94,6 @@ jobs:
       - name: Type check and build
         run: bun run build
 
-      - name: Run unit tests
-        run: bun run test:unit
-
       - name: Upload build artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
@@ -71,8 +104,8 @@ jobs:
           if-no-files-found: error
 
   deploy:
-    name: Deploy to Coolify
-    needs: build
+    name: Deploy to Coolify (production)
+    needs: [test, build]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       github.event_name == 'workflow_dispatch'
@@ -169,4 +202,111 @@ jobs:
             echo "- Actor: @${{ github.actor }}"
             echo
             echo "Coolify will pull the latest commit and rebuild the Dockerfile image."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-preview:
+    name: Deploy preview to Coolify
+    needs: [test, build]
+    # Only run on PRs from the same repository (forks cannot access secrets).
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment:
+      name: preview
+      url: ${{ vars.COOLIFY_PREVIEW_APP_URL }}
+    timeout-minutes: 15
+    steps:
+      - name: Verify Coolify preview secrets are configured
+        env:
+          COOLIFY_PREVIEW_WEBHOOK_URL: ${{ secrets.COOLIFY_PREVIEW_WEBHOOK_URL }}
+          COOLIFY_PREVIEW_TOKEN: ${{ secrets.COOLIFY_PREVIEW_TOKEN }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "${COOLIFY_PREVIEW_WEBHOOK_URL}" ]; then
+            echo "::error::Missing required secret COOLIFY_PREVIEW_WEBHOOK_URL."
+            echo "Set it under Settings -> Secrets and variables -> Actions."
+            echo "This must point to the preview Coolify resource webhook (different from the production one)."
+            echo "Example: https://coolify.example.com/api/v1/deploy?uuid=<preview-resource-uuid>&force=false"
+            exit 1
+          fi
+          if [ -z "${COOLIFY_PREVIEW_TOKEN}" ] && [ -z "${COOLIFY_TOKEN}" ]; then
+            echo "::error::Missing Coolify API token."
+            echo "Set COOLIFY_PREVIEW_TOKEN (preferred) or COOLIFY_TOKEN under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "Coolify preview secrets are configured."
+
+      - name: Trigger Coolify preview deploy webhook
+        env:
+          COOLIFY_PREVIEW_WEBHOOK_URL: ${{ secrets.COOLIFY_PREVIEW_WEBHOOK_URL }}
+          COOLIFY_PREVIEW_TOKEN: ${{ secrets.COOLIFY_PREVIEW_TOKEN }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+
+          # Prefer the preview-specific token; fall back to the shared Coolify token.
+          token="${COOLIFY_PREVIEW_TOKEN:-${COOLIFY_TOKEN}}"
+          url="${COOLIFY_PREVIEW_WEBHOOK_URL}"
+
+          # Mask URL in logs to avoid leaking the resource UUID.
+          echo "::add-mask::${url}"
+
+          echo "Triggering Coolify preview deploy for PR #${PR_NUMBER} (${PR_HEAD_REF} @ ${PR_HEAD_SHA})..."
+
+          # Retry up to 3 times on transient network/5xx errors.
+          attempt=1
+          max_attempts=3
+          while : ; do
+            http_code=$(curl --silent --show-error --output /tmp/coolify_preview_response.json \
+              --write-out "%{http_code}" \
+              --request GET \
+              --max-time 60 \
+              --header "Authorization: Bearer ${token}" \
+              --header "Accept: application/json" \
+              "${url}") || http_code="000"
+
+            echo "Coolify responded with HTTP ${http_code} (attempt ${attempt}/${max_attempts})"
+            if [ -s /tmp/coolify_preview_response.json ]; then
+              echo "Response body:"
+              cat /tmp/coolify_preview_response.json
+              echo
+            fi
+
+            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
+              echo "Coolify preview deploy successfully triggered."
+              break
+            fi
+
+            if [ "${attempt}" -ge "${max_attempts}" ]; then
+              echo "::error::Coolify preview webhook failed after ${max_attempts} attempts (last HTTP ${http_code})."
+              exit 1
+            fi
+
+            sleep_seconds=$((attempt * 5))
+            echo "Retrying in ${sleep_seconds}s..."
+            sleep "${sleep_seconds}"
+            attempt=$((attempt + 1))
+          done
+
+      - name: Summary
+        if: success()
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          {
+            echo "## Coolify preview deploy triggered"
+            echo
+            echo "- PR: #${PR_NUMBER}"
+            echo "- Branch: \`${PR_HEAD_REF}\`"
+            echo "- Commit: \`${PR_HEAD_SHA}\`"
+            echo "- Actor: @${ACTOR}"
+            echo
+            echo "Coolify will pull the latest PR commit and rebuild the preview Dockerfile image."
           } >> "$GITHUB_STEP_SUMMARY"
