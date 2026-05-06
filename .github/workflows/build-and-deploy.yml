@@ -175,13 +175,43 @@ jobs:
               echo
             fi
 
-            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
+            # Coolify can return HTTP 200 with a body that actually describes a
+            # failure (e.g. resource not deployable). A successful response
+            # contains a deployment_uuid for each entry in "deployments". If
+            # the body is JSON of the expected shape, require every entry to
+            # have a deployment_uuid; otherwise treat the call as failed.
+            body_ok=true
+            body_messages=""
+            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ] \
+               && [ -s /tmp/coolify_response.json ] \
+               && command -v jq >/dev/null 2>&1 \
+               && jq -e '.deployments | type == "array"' \
+                    /tmp/coolify_response.json >/dev/null 2>&1; then
+              total=$(jq '.deployments | length' /tmp/coolify_response.json)
+              ok=$(jq '[.deployments[] | select((.deployment_uuid // "") != "")] | length' \
+                   /tmp/coolify_response.json)
+              if [ "${total}" -eq 0 ] || [ "${ok}" -lt "${total}" ]; then
+                body_ok=false
+                body_messages=$(jq -r '[.deployments[].message // ""] | map(select(. != "")) | join(" | ")' \
+                                /tmp/coolify_response.json)
+              fi
+            fi
+
+            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ] && [ "${body_ok}" = "true" ]; then
               echo "Coolify deploy successfully triggered."
               break
             fi
 
+            if [ "${body_ok}" = "false" ]; then
+              echo "::warning::Coolify accepted the request (HTTP ${http_code}) but did not queue a deployment: ${body_messages}"
+            fi
+
             if [ "${attempt}" -ge "${max_attempts}" ]; then
-              echo "::error::Coolify webhook failed after ${max_attempts} attempts (last HTTP ${http_code})."
+              if [ "${body_ok}" = "false" ]; then
+                echo "::error::Coolify deploy failed: ${body_messages}"
+              else
+                echo "::error::Coolify webhook failed after ${max_attempts} attempts (last HTTP ${http_code})."
+              fi
               exit 1
             fi
 
@@ -285,9 +315,11 @@ jobs:
 
           echo "Triggering Coolify preview deploy for PR #${PR_NUMBER} (${PR_HEAD_REF} @ ${PR_HEAD_SHA})..."
 
-          # Retry up to 3 times on transient network/5xx errors.
+          # Retry up to 4 times. The first request may race the GitHub App's
+          # 'pull_request' webhook delivery to Coolify, which is what creates
+          # the per-PR ApplicationPreview record that '?pr=' looks up.
           attempt=1
-          max_attempts=3
+          max_attempts=4
           while : ; do
             http_code=$(curl --silent --show-error --output /tmp/coolify_preview_response.json \
               --write-out "%{http_code}" \
@@ -304,17 +336,71 @@ jobs:
               echo
             fi
 
-            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
+            # Coolify's preview deploy endpoint returns HTTP 200 even when it
+            # cannot queue a deployment (for example, when no preview record
+            # exists for this PR yet, the body is:
+            #   {"deployments":[{"message":"Pull request <N> not found for this resource.",...}]}
+            # ). A truly successful response includes a deployment_uuid on
+            # every entry. If the body is parseable JSON of the expected
+            # shape, require deployment_uuid on every deployments[] entry;
+            # otherwise treat the call as failed.
+            body_ok=true
+            body_messages=""
+            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ] \
+               && [ -s /tmp/coolify_preview_response.json ] \
+               && command -v jq >/dev/null 2>&1 \
+               && jq -e '.deployments | type == "array"' \
+                    /tmp/coolify_preview_response.json >/dev/null 2>&1; then
+              total=$(jq '.deployments | length' /tmp/coolify_preview_response.json)
+              ok=$(jq '[.deployments[] | select((.deployment_uuid // "") != "")] | length' \
+                   /tmp/coolify_preview_response.json)
+              if [ "${total}" -eq 0 ] || [ "${ok}" -lt "${total}" ]; then
+                body_ok=false
+                body_messages=$(jq -r '[.deployments[].message // ""] | map(select(. != "")) | join(" | ")' \
+                                /tmp/coolify_preview_response.json)
+              fi
+            fi
+
+            if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ] && [ "${body_ok}" = "true" ]; then
               echo "Coolify preview deploy successfully triggered."
               break
             fi
 
+            if [ "${body_ok}" = "false" ]; then
+              echo "::warning::Coolify accepted the request (HTTP ${http_code}) but did not queue a preview deployment: ${body_messages}"
+            fi
+
             if [ "${attempt}" -ge "${max_attempts}" ]; then
-              echo "::error::Coolify preview webhook failed after ${max_attempts} attempts (last HTTP ${http_code})."
+              if [ "${body_ok}" = "false" ]; then
+                echo "::error::Coolify preview deploy failed: ${body_messages}"
+                if printf '%s' "${body_messages}" | grep -qi 'not found'; then
+                  echo
+                  echo "Coolify has no preview record for PR #${PR_NUMBER} on this resource."
+                  echo
+                  echo "Likely causes:"
+                  echo "  * The Coolify GitHub App is not installed on this repository, or"
+                  echo "    'Preview Deployments' is not enabled on the source"
+                  echo "    (Sources -> <your GitHub App>; permissions must include"
+                  echo "    Pull Requests: Read & write, with the 'Pull requests' event subscribed)."
+                  echo "  * The 'pull_request' webhook delivery to Coolify failed or was"
+                  echo "    delivered before preview deploys were enabled on the application."
+                  echo "  * 'Allow Public PR Deployments' is off and the PR author is not a"
+                  echo "    repository member, collaborator, or contributor."
+                  echo
+                  echo "Fixes:"
+                  echo "  * Open the application in Coolify -> 'Preview Deployments' tab and"
+                  echo "    click 'Load Pull Requests', then re-run this workflow."
+                  echo "  * Verify the GitHub App permissions and 'Pull requests' subscription,"
+                  echo "    then redeliver the webhook from GitHub -> Settings -> Webhooks."
+                  echo "  * See https://coolify.io/docs/applications/ci-cd/github/preview-deploy"
+                fi
+              else
+                echo "::error::Coolify preview webhook failed after ${max_attempts} attempts (last HTTP ${http_code})."
+              fi
               exit 1
             fi
 
-            sleep_seconds=$((attempt * 5))
+            sleep_seconds=$((attempt * 10))
             echo "Retrying in ${sleep_seconds}s..."
             sleep "${sleep_seconds}"
             attempt=$((attempt + 1))
