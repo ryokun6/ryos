@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "아직 AI 사용 내역이 없습니다",
-          "noData": "아직 데이터가 없습니다"
+          "noCountries": "아직 국가 데이터가 없습니다",
+          "noData": "아직 데이터가 없습니다",
+          "noSites": "아직 방문한 사이트가 없습니다",
+          "noSongs": "아직 재생한 곡이 없습니다"
         },
         "failedToLoad": "로드 실패",
         "kpi": {
           "aiRequests": "AI 요청",
           "apiCalls": "API 호출",
+          "appEvents": "앱 이벤트",
           "errorRate": "오류율",
+          "pageViews": "페이지 뷰",
+          "productEvents": "제품 이벤트",
+          "sessions": "세션",
           "visitors": "방문자"
         },
         "loading": "분석 데이터 로드 중...",
@@ -56,8 +63,16 @@
         "retry": "재시도",
         "sections": {
           "aiUsageByUser": "사용자별 AI 사용량",
+          "eventCategories": "이벤트 카테고리",
+          "productAnalytics": "제품 분석",
           "statusCodes": "상태 코드",
-          "topEndpoints": "주요 엔드포인트"
+          "topApps": "인기 앱",
+          "topCountries": "주요 국가",
+          "topEndpoints": "주요 엔드포인트",
+          "topPages": "인기 페이지",
+          "topProductEvents": "주요 제품 이벤트",
+          "topSites": "주요 방문 사이트",
+          "topSongs": "인기 곡"
         },
         "title": "대시보드",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "캘린더",
       "today": "오늘",
+      "tray": {
+        "done": "완료",
+        "due": "마감",
+        "empty": "이벤트 또는 할 일을 선택하세요",
+        "eventDetails": "이벤트 상세 정보",
+        "from": "시작",
+        "locationPlaceholder": "위치",
+        "markComplete": "완료로 표시",
+        "markIncomplete": "미완료로 표시",
+        "newEventTitle": "새 이벤트",
+        "to": "~",
+        "todoDetails": "할 일 상세 정보"
+      },
       "views": {
         "allDay": "종일",
         "day": "일",

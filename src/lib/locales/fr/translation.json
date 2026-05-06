@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "Aucune utilisation de l'IA pour le moment",
-          "noData": "Aucune donnée pour le moment"
+          "noCountries": "Aucune donnée de pays pour le moment",
+          "noData": "Aucune donnée pour le moment",
+          "noSites": "Aucun site visité pour le moment",
+          "noSongs": "Aucun morceau écouté pour le moment"
         },
         "failedToLoad": "Échec du chargement",
         "kpi": {
           "aiRequests": "Requêtes IA",
           "apiCalls": "Appels API",
+          "appEvents": "Événements d'application",
           "errorRate": "Taux d'erreur",
+          "pageViews": "Pages vues",
+          "productEvents": "Événements de produit",
+          "sessions": "Sessions",
           "visitors": "Visiteurs"
         },
         "loading": "Chargement des analyses...",
@@ -56,8 +63,16 @@
         "retry": "Réessayer",
         "sections": {
           "aiUsageByUser": "Utilisation de l'IA par utilisateur",
+          "eventCategories": "Catégories d'événements",
+          "productAnalytics": "Analyses de produit",
           "statusCodes": "Codes d'état",
-          "topEndpoints": "Principaux points de terminaison"
+          "topApps": "Meilleures applications",
+          "topCountries": "Meilleurs pays",
+          "topEndpoints": "Principaux points de terminaison",
+          "topPages": "Meilleures pages",
+          "topProductEvents": "Meilleurs événements de produit",
+          "topSites": "Meilleurs sites visités",
+          "topSongs": "Meilleurs morceaux"
         },
         "title": "Tableau de bord",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "Calendrier",
       "today": "Aujourd'hui",
+      "tray": {
+        "done": "terminé",
+        "due": "échéance",
+        "empty": "Sélectionnez un événement ou une tâche",
+        "eventDetails": "Détails de l'événement",
+        "from": "de",
+        "locationPlaceholder": "lieu",
+        "markComplete": "Marquer comme terminé",
+        "markIncomplete": "Marquer comme non terminé",
+        "newEventTitle": "Nouvel événement",
+        "to": "à",
+        "todoDetails": "Détails de la tâche"
+      },
       "views": {
         "allDay": "Toute la journée",
         "day": "Jour",

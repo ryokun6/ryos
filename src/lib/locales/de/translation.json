@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "Noch keine KI-Nutzung",
-          "noData": "Noch keine Daten"
+          "noCountries": "Noch keine Länderdaten",
+          "noData": "Noch keine Daten",
+          "noSites": "Noch keine Websites besucht",
+          "noSongs": "Noch keine Songs abgespielt"
         },
         "failedToLoad": "Laden fehlgeschlagen",
         "kpi": {
           "aiRequests": "KI-Anfragen",
           "apiCalls": "API-Aufrufe",
+          "appEvents": "App-Events",
           "errorRate": "Fehlerrate",
+          "pageViews": "Seitenaufrufe",
+          "productEvents": "Produkt-Events",
+          "sessions": "Sitzungen",
           "visitors": "Besucher"
         },
         "loading": "Analysen werden geladen...",
@@ -56,8 +63,16 @@
         "retry": "Wiederholen",
         "sections": {
           "aiUsageByUser": "KI-Nutzung nach Benutzer",
+          "eventCategories": "Event-Kategorien",
+          "productAnalytics": "Produkt-Analytics",
           "statusCodes": "Statuscodes",
-          "topEndpoints": "Top-Endpunkte"
+          "topApps": "Top-Apps",
+          "topCountries": "Top-Länder",
+          "topEndpoints": "Top-Endpunkte",
+          "topPages": "Top-Seiten",
+          "topProductEvents": "Top-Produkt-Events",
+          "topSites": "Meistbesuchte Websites",
+          "topSongs": "Top-Songs"
         },
         "title": "Dashboard",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "Kalender",
       "today": "Heute",
+      "tray": {
+        "done": "erledigt",
+        "due": "fällig",
+        "empty": "Event oder To-do auswählen",
+        "eventDetails": "Event-Details",
+        "from": "von",
+        "locationPlaceholder": "Ort",
+        "markComplete": "Als erledigt markieren",
+        "markIncomplete": "Als nicht erledigt markieren",
+        "newEventTitle": "Neues Ereignis",
+        "to": "bis",
+        "todoDetails": "To-Do-Details"
+      },
       "views": {
         "allDay": "Ganztägig",
         "day": "Tag",

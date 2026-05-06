@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "Nenhum uso de IA ainda",
-          "noData": "Sem dados ainda"
+          "noCountries": "Sem dados de países ainda",
+          "noData": "Sem dados ainda",
+          "noSites": "Nenhum site visitado ainda",
+          "noSongs": "Nenhuma música reproduzida ainda"
         },
         "failedToLoad": "Falha ao carregar",
         "kpi": {
           "aiRequests": "Solicitações de IA",
           "apiCalls": "Chamadas de API",
+          "appEvents": "Eventos do app",
           "errorRate": "Taxa de Erro",
+          "pageViews": "Visualizações de página",
+          "productEvents": "Eventos de produto",
+          "sessions": "Sessões",
           "visitors": "Visitantes"
         },
         "loading": "Carregando estatísticas...",
@@ -56,8 +63,16 @@
         "retry": "Tentar novamente",
         "sections": {
           "aiUsageByUser": "Uso de IA por Usuário",
+          "eventCategories": "Categorias de eventos",
+          "productAnalytics": "Análise de produto",
           "statusCodes": "Códigos de Status",
-          "topEndpoints": "Principais Endpoints"
+          "topApps": "Principais apps",
+          "topCountries": "Principais países",
+          "topEndpoints": "Principais Endpoints",
+          "topPages": "Principais páginas",
+          "topProductEvents": "Principais eventos de produto",
+          "topSites": "Principais sites visitados",
+          "topSongs": "Principais músicas"
         },
         "title": "Dashboard",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "Calendário",
       "today": "Hoje",
+      "tray": {
+        "done": "concluído",
+        "due": "vencimento",
+        "empty": "Selecione um evento ou tarefa",
+        "eventDetails": "Detalhes do evento",
+        "from": "de",
+        "locationPlaceholder": "localização",
+        "markComplete": "Marcar como concluída",
+        "markIncomplete": "Marcar como não concluída",
+        "newEventTitle": "Novo evento",
+        "to": "para",
+        "todoDetails": "Detalhes da tarefa"
+      },
       "views": {
         "allDay": "o dia todo",
         "day": "Dia",

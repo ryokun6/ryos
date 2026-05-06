@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "Aún no hay uso de IA",
-          "noData": "Aún no hay datos"
+          "noCountries": "Aún no hay datos de países",
+          "noData": "Aún no hay datos",
+          "noSites": "Aún no hay sitios visitados",
+          "noSongs": "Aún no hay canciones reproducidas"
         },
         "failedToLoad": "Error al cargar",
         "kpi": {
           "aiRequests": "Solicitudes de IA",
           "apiCalls": "Llamadas a la API",
+          "appEvents": "Eventos de la aplicación",
           "errorRate": "Tasa de errores",
+          "pageViews": "Vistas de página",
+          "productEvents": "Eventos de producto",
+          "sessions": "Sesiones",
           "visitors": "Visitantes"
         },
         "loading": "Cargando analíticas...",
@@ -56,8 +63,16 @@
         "retry": "Reintentar",
         "sections": {
           "aiUsageByUser": "Uso de IA por usuario",
+          "eventCategories": "Categorías de eventos",
+          "productAnalytics": "Analíticas de producto",
           "statusCodes": "Códigos de estado",
-          "topEndpoints": "Endpoints principales"
+          "topApps": "Apps principales",
+          "topCountries": "Países principales",
+          "topEndpoints": "Endpoints principales",
+          "topPages": "Páginas principales",
+          "topProductEvents": "Eventos de producto principales",
+          "topSites": "Sitios más visitados",
+          "topSongs": "Canciones principales"
         },
         "title": "Panel de control",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "Calendario",
       "today": "Hoy",
+      "tray": {
+        "done": "completado",
+        "due": "vence",
+        "empty": "Selecciona un evento o tarea",
+        "eventDetails": "Detalles del evento",
+        "from": "desde",
+        "locationPlaceholder": "ubicación",
+        "markComplete": "Marcar como completado",
+        "markIncomplete": "Marcar como no completado",
+        "newEventTitle": "Nuevo evento",
+        "to": "a",
+        "todoDetails": "Detalles de la tarea"
+      },
       "views": {
         "allDay": "todo el día",
         "day": "Día",

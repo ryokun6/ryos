@@ -40,13 +40,20 @@
         },
         "empty": {
           "noAiUsage": "AIの使用はまだありません",
-          "noData": "データはまだありません"
+          "noCountries": "国のデータはまだありません",
+          "noData": "データはまだありません",
+          "noSites": "訪問したサイトはまだありません",
+          "noSongs": "再生した曲はまだありません"
         },
         "failedToLoad": "読み込みに失敗しました",
         "kpi": {
           "aiRequests": "AIリクエスト",
           "apiCalls": "APIコール",
+          "appEvents": "アプリイベント",
           "errorRate": "エラー率",
+          "pageViews": "ページビュー",
+          "productEvents": "プロダクトイベント",
+          "sessions": "セッション",
           "visitors": "ビジター"
         },
         "loading": "分析データを読み込み中...",
@@ -56,8 +63,16 @@
         "retry": "再試行",
         "sections": {
           "aiUsageByUser": "ユーザー別のAI使用状況",
+          "eventCategories": "イベントカテゴリ",
+          "productAnalytics": "プロダクトアナリティクス",
           "statusCodes": "ステータスコード",
-          "topEndpoints": "トップエンドポイント"
+          "topApps": "トップアプリ",
+          "topCountries": "トップの国",
+          "topEndpoints": "トップエンドポイント",
+          "topPages": "人気のページ",
+          "topProductEvents": "人気のプロダクトイベント",
+          "topSites": "よく訪問するサイト",
+          "topSongs": "人気の曲"
         },
         "title": "ダッシュボード",
         "totals": {
@@ -565,6 +580,19 @@
       },
       "title": "カレンダー",
       "today": "今日",
+      "tray": {
+        "done": "完了",
+        "due": "期限",
+        "empty": "イベントまたはToDoを選択",
+        "eventDetails": "イベントの詳細",
+        "from": "から",
+        "locationPlaceholder": "場所",
+        "markComplete": "完了にする",
+        "markIncomplete": "未完了にする",
+        "newEventTitle": "新規イベント",
+        "to": "〜",
+        "todoDetails": "ToDoの詳細"
+      },
       "views": {
         "allDay": "終日",
         "day": "日",
