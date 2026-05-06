@@ -2543,6 +2543,10 @@
           "description": "Fai clic sul pulsante Localizzami per ricentrare la mappa sulla tua posizione attuale",
           "title": "Localizzami"
         },
+        "directions": {
+          "description": "Dalla scheda luogo, apri le indicazioni stradali in Mappe di Apple: si apre in una nuova scheda così ryOS resta aperto (itinerario nella mappa non ancora disponibile).",
+          "title": "Indicazioni"
+        },
         "mapTypes": {
           "description": "Passa tra Standard, Ibrida e Satellite dal menu Vista",
           "title": "Tipi di mappa"
@@ -2576,11 +2580,11 @@
       "placeCard": {
         "addFavorite": "Aggiungi ai preferiti",
         "close": "Chiudi scheda del luogo",
-        "directions": "Directions",
+        "directions": "Indicazioni",
         "favorite": "Preferito",
         "favorited": "Aggiunto ai preferiti",
         "home": "Casa",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "Ottieni indicazioni in Mappe",
         "regionLabel": "Luogo selezionato",
         "removeFavorite": "Rimuovi dai preferiti",
         "setHome": "Imposta come Casa",

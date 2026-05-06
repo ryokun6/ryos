@@ -2543,6 +2543,10 @@
           "description": "Klicke auf die Taste „Meinen Standort finden“, um die Karte auf deinen aktuellen Standort zu zentrieren",
           "title": "Meinen Standort finden"
         },
+        "directions": {
+          "description": "Richtungsangaben von einer Ortskarte in Apple Karten öffnen — öffnet in einem neuen Tab, damit ryOS geöffnet bleibt (Routenführung innerhalb der Karte ist noch nicht verfügbar).",
+          "title": "Route"
+        },
         "mapTypes": {
           "description": "Wechsle im Menü „Darstellung“ zwischen Standard, Hybrid und Satellit",
           "title": "Kartentypen"
@@ -2576,11 +2580,11 @@
       "placeCard": {
         "addFavorite": "Zu Favoriten hinzufügen",
         "close": "Ortskarte schließen",
-        "directions": "Directions",
+        "directions": "Route",
         "favorite": "Favorit",
         "favorited": "Favorisiert",
         "home": "Privat",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "Route in Apple Karten erhalten",
         "regionLabel": "Ausgewählter Ort",
         "removeFavorite": "Aus Favoriten entfernen",
         "setHome": "Als Privat festlegen",

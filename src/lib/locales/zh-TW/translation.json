@@ -2543,6 +2543,10 @@
           "description": "按一下「定位我」按鈕，將地圖重新對焦於你的目前位置",
           "title": "定位我"
         },
+        "directions": {
+          "description": "從地點卡開啟 Apple 地圖的開車路線 — 會在新分頁開啟，ryOS 分頁保持開啟（地圖內導航路線尚未提供）。",
+          "title": "路線"
+        },
         "mapTypes": {
           "description": "從「顯示方式」選單中切換標準、混合和衛星模式",
           "title": "地圖類型"
@@ -2576,11 +2580,11 @@
       "placeCard": {
         "addFavorite": "加入最愛",
         "close": "關閉地點卡",
-        "directions": "Directions",
+        "directions": "路線",
         "favorite": "最愛",
         "favorited": "已加入最愛",
         "home": "住家",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "在 Apple 地圖取得路線",
         "regionLabel": "已選取的地點",
         "removeFavorite": "從最愛移除",
         "setHome": "設為住家",

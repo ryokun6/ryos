@@ -4032,6 +4032,10 @@
           "title": "Locate Me",
           "description": "Click the Locate Me button to recenter the map on your current location"
         },
+        "directions": {
+          "title": "Directions",
+          "description": "From a place card, open driving directions in Apple Maps — opens in a new tab so ryOS stays open (in-map routing is not available yet)"
+        },
         "mapTypes": {
           "title": "Map Types",
           "description": "Switch between Standard, Hybrid, and Satellite from the View menu"

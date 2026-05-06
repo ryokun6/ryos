@@ -2543,6 +2543,10 @@
           "description": "Haz clic en el botón Ubicarme para volver a centrar el mapa en tu ubicación actual",
           "title": "Ubicarme"
         },
+        "directions": {
+          "description": "Desde la tarjeta del lugar, abre las indicaciones de conducción en Apple Maps: se abre en una pestaña nueva para mantener ryOS abierto (no hay rutas dentro del mapa todavía).",
+          "title": "Indicaciones"
+        },
         "mapTypes": {
           "description": "Cambia entre Estándar, Híbrido y Satélite desde el menú Visualización",
           "title": "Tipos de mapa"
@@ -2576,11 +2580,11 @@
       "placeCard": {
         "addFavorite": "Añadir a Favoritos",
         "close": "Cerrar tarjeta de lugar",
-        "directions": "Directions",
+        "directions": "Indicaciones",
         "favorite": "Favorito",
         "favorited": "En favoritos",
         "home": "Casa",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "Obtener indicaciones en Apple Maps",
         "regionLabel": "Lugar seleccionado",
         "removeFavorite": "Eliminar de Favoritos",
         "setHome": "Establecer como Casa",

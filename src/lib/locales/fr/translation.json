@@ -2543,6 +2543,10 @@
           "description": "Cliquez sur le bouton Me localiser pour recentrer la carte sur votre position actuelle",
           "title": "Me localiser"
         },
+        "directions": {
+          "description": "Depuis la fiche du lieu, ouvrez l'itinéraire en voiture dans Plans — s'ouvre dans un nouvel onglet pour laisser ryOS ouvert (l'itinéraire dans la carte n'est pas encore disponible).",
+          "title": "Itinéraire"
+        },
         "mapTypes": {
           "description": "Basculez entre Standard, Hybride et Satellite depuis le menu Présentation",
           "title": "Types de carte"
@@ -2576,11 +2580,11 @@
       "placeCard": {
         "addFavorite": "Ajouter aux favoris",
         "close": "Fermer la fiche du lieu",
-        "directions": "Directions",
+        "directions": "Itinéraire",
         "favorite": "Favori",
         "favorited": "Ajouté aux favoris",
         "home": "Domicile",
-        "openDirections": "Get directions in Apple Maps",
+        "openDirections": "Obtenir l'itinéraire dans Plans",
         "regionLabel": "Lieu sélectionné",
         "removeFavorite": "Supprimer des favoris",
         "setHome": "Définir comme domicile",
