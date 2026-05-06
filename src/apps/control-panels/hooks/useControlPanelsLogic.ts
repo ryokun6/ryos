@@ -30,6 +30,7 @@ import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
+import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
   FILE_SYNC_DOMAINS,
@@ -1181,6 +1182,10 @@ export function useControlPanelsLogic({
 
   const handleConfirmReset = () => {
     setIsConfirmResetOpen(false);
+    track(SETTINGS_ANALYTICS.RESET, {
+      appId: "control-panels",
+      action: "reset_all",
+    });
     setNextBootMessage(t("common.system.resettingSystem"));
     performReset();
   };
@@ -1387,6 +1392,12 @@ export function useControlPanelsLogic({
           );
         }
 
+        track(SETTINGS_ANALYTICS.RESET, {
+          appId: "control-panels",
+          action: "restore_backup",
+          compressed: file.name.endsWith(".gz"),
+        });
+
         // Clear current state
         clearAllAppStates();
         clearPrefetchFlag(); // Force re-prefetch on next boot
@@ -1485,6 +1496,10 @@ export function useControlPanelsLogic({
   };
 
   const performFormat = async () => {
+    track(SETTINGS_ANALYTICS.RESET, {
+      appId: "control-panels",
+      action: "format_file_system",
+    });
     // Reset wallpaper to default before formatting
     setCurrentWallpaper(DEFAULT_WALLPAPER_PATH);
     await formatFileSystem();

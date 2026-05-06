@@ -45,6 +45,9 @@ export const IE_ANALYTICS = {
   NAVIGATION_START: "internet-explorer:navigation_start",
   NAVIGATION_ERROR: "internet-explorer:navigation_error",
   NAVIGATION_SUCCESS: "internet-explorer:navigation_success",
+  GENERATION_START: "internet-explorer:generation_start",
+  GENERATION_SUCCESS: "internet-explorer:generation_success",
+  GENERATION_ERROR: "internet-explorer:generation_error",
 } as const;
 
 // Terminal events (existing)
@@ -120,6 +123,18 @@ export const MEDIA_ANALYTICS = {
   FULLSCREEN: "media:fullscreen",
   TV_CHANNEL_CREATE: "tv:channel_create",
   TV_CHANNEL_TUNE: "tv:channel_tune",
+} as const;
+
+export const WINAMP_ANALYTICS = {
+  LOAD: "winamp:load",
+  PLAY: "winamp:play",
+  PAUSE: "winamp:pause",
+  STOP: "winamp:stop",
+  NEXT: "winamp:next",
+  PREVIOUS: "winamp:previous",
+  SKIN_CHANGE: "winamp:skin_change",
+  SHUFFLE_TOGGLE: "winamp:shuffle_toggle",
+  REPEAT_TOGGLE: "winamp:repeat_toggle",
 } as const;
 
 export const LISTEN_ANALYTICS = {

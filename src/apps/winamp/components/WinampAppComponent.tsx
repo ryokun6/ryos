@@ -13,6 +13,7 @@ import { YouTubeMedia } from "../utils/youtubeMedia";
 import { WEBAMP_SKINS } from "../skins";
 import { useTranslation } from "react-i18next";
 import { getYouTubeVideoId } from "@/apps/ipod/constants";
+import { WINAMP_ANALYTICS, track } from "@/utils/analytics";
 
 const MAIN_WINDOW_WIDTH = 275;
 const MAIN_WINDOW_HEIGHT = 116;
@@ -63,6 +64,10 @@ export function WinampAppComponent({
     if (!webamp) return;
     webamp.setSkinFromUrl(url ?? "/skins/base-2.91.wsz");
     setCurrentSkinUrl(url);
+    track(WINAMP_ANALYTICS.SKIN_CHANGE, {
+      appId: "winamp",
+      skin: url ? "custom" : "default",
+    });
   }, []);
 
   const syncMediaState = useCallback(() => {
@@ -78,8 +83,10 @@ export function WinampAppComponent({
     if (!webamp) return;
     if (webamp.getMediaStatus() === "PLAYING") {
       webamp.pause();
+      track(WINAMP_ANALYTICS.PAUSE, { appId: "winamp" });
     } else {
       webamp.play();
+      track(WINAMP_ANALYTICS.PLAY, { appId: "winamp" });
     }
     syncMediaState();
   }, [syncMediaState]);
@@ -88,6 +95,7 @@ export function WinampAppComponent({
     const webamp = webampRef.current;
     if (!webamp) return;
     webamp.stop();
+    track(WINAMP_ANALYTICS.STOP, { appId: "winamp" });
     syncMediaState();
   }, [syncMediaState]);
 
@@ -95,6 +103,10 @@ export function WinampAppComponent({
     const webamp = webampRef.current;
     if (!webamp) return;
     webamp.previousTrack();
+    track(WINAMP_ANALYTICS.PREVIOUS, {
+      appId: "winamp",
+      direction: "previous",
+    });
     syncMediaState();
   }, [syncMediaState]);
 
@@ -102,6 +114,10 @@ export function WinampAppComponent({
     const webamp = webampRef.current;
     if (!webamp) return;
     webamp.nextTrack();
+    track(WINAMP_ANALYTICS.NEXT, {
+      appId: "winamp",
+      direction: "next",
+    });
     syncMediaState();
   }, [syncMediaState]);
 
@@ -110,6 +126,11 @@ export function WinampAppComponent({
     if (!webamp) return;
     webamp.toggleShuffle();
     syncMediaState();
+    track(WINAMP_ANALYTICS.SHUFFLE_TOGGLE, {
+      appId: "winamp",
+      mode: "shuffle",
+      enabled: webamp.isShuffleEnabled(),
+    });
   }, [syncMediaState]);
 
   const handleToggleRepeat = useCallback(() => {
@@ -117,6 +138,11 @@ export function WinampAppComponent({
     if (!webamp) return;
     webamp.toggleRepeat();
     syncMediaState();
+    track(WINAMP_ANALYTICS.REPEAT_TOGGLE, {
+      appId: "winamp",
+      mode: "repeat",
+      enabled: webamp.isRepeatEnabled(),
+    });
   }, [syncMediaState]);
 
   const handleClose = useCallback(() => {
@@ -175,6 +201,10 @@ export function WinampAppComponent({
       ipodTracks,
       t("apps.winamp.status.unknownArtist")
     );
+    track(WINAMP_ANALYTICS.LOAD, {
+      appId: "winamp",
+      trackCount: webampTracks.length,
+    });
 
     const webampOptions = {
       initialTracks:
