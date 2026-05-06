@@ -15,6 +15,7 @@ export interface ApiHandlerOptions {
   allowExpiredAuth?: boolean;
   parseJsonBody?: boolean;
   contentType?: string | null;
+  analytics?: boolean;
 }
 
 export interface ApiHandlerContext<TBody = unknown> {
@@ -50,6 +51,7 @@ export function apiHandler<TBody = unknown>(
     allowExpiredAuth = false,
     parseJsonBody = false,
     contentType = "application/json",
+    analytics = true,
   } = options;
 
   return async (req: VercelRequest, res: VercelResponse): Promise<void> => {
@@ -136,14 +138,16 @@ export function apiHandler<TBody = unknown>(
       finalStatus = 500;
     }
 
-    recordAnalyticsEvent(redis, {
-      path: req.url || "/api/unknown",
-      method,
-      status: finalStatus,
-      latencyMs: Date.now() - startTime,
-      ip: getClientIp(req),
-      username: user?.username,
-    });
+    if (analytics) {
+      recordAnalyticsEvent(redis, {
+        path: req.url || "/api/unknown",
+        method,
+        status: finalStatus,
+        latencyMs: Date.now() - startTime,
+        ip: getClientIp(req),
+        username: user?.username,
+      });
+    }
   };
 }
 
