@@ -52,12 +52,51 @@ interface AIRateLimitInfo {
   windowLabel: string;
 }
 
+interface ProductDailyMetrics {
+  date: string;
+  events: number;
+  pageViews: number;
+  sessions: number;
+  appLifecycle: number;
+  auth: number;
+  errors: number;
+  uniqueVisitors: number;
+}
+
+interface ProductAnalyticsSummary {
+  days: ProductDailyMetrics[];
+  totals: {
+    events: number;
+    pageViews: number;
+    sessions: number;
+    appLifecycle: number;
+    auth: number;
+    errors: number;
+    uniqueVisitors: number;
+  };
+}
+
+interface ProductBreakdown {
+  name: string;
+  count: number;
+}
+
+interface ProductAnalyticsDetail {
+  summary: ProductAnalyticsSummary;
+  topEvents: ProductBreakdown[];
+  topApps: ProductBreakdown[];
+  categories: ProductBreakdown[];
+  sources: ProductBreakdown[];
+  topPaths: ProductBreakdown[];
+}
+
 interface AnalyticsDetail {
   summary: AnalyticsSummary;
   topEndpoints: EndpointBreakdown[];
   statusCodes: StatusBreakdown[];
   aiByUser: AIUserBreakdown[];
   aiRateLimits: AIRateLimitInfo[];
+  product?: ProductAnalyticsDetail;
 }
 
 interface DashboardPanelProps {
@@ -150,6 +189,41 @@ function StatCard({
           {trend.value}% {trend.label}
         </div>
       )}
+    </div>
+  );
+}
+
+function BreakdownList({
+  items,
+  nameClassName,
+}: {
+  items: ProductEventBreakdown[];
+  nameClassName?: string;
+}) {
+  if (items.length === 0) {
+    return <EmptyState message="No data yet" />;
+  }
+  const max = items[0]?.count || 1;
+  return (
+    <div className="divide-y divide-gray-100">
+      {items.slice(0, 10).map((item) => (
+        <div key={item.name} className="flex items-center gap-2 px-3 py-1.5">
+          <span className={cn("text-[11px] text-neutral-600 flex-1 truncate", nameClassName)}>
+            {item.name}
+          </span>
+          <div className="w-24 flex items-center gap-1.5">
+            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-400 rounded-full"
+                style={{ width: `${(item.count / max) * 100}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-neutral-500 w-8 text-right tabular-nums">
+              {formatNumber(item.count)}
+            </span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
