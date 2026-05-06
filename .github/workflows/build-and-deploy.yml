@@ -214,7 +214,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: preview
-      url: ${{ vars.COOLIFY_PREVIEW_APP_URL }}
+      # Mirrors the Coolify Preview URL Template ({{pr_id}}-preview.os.ryo.lu)
+      # so the GitHub PR check links straight to the per-PR preview.
+      url: https://${{ github.event.pull_request.number }}-preview.os.ryo.lu
     timeout-minutes: 15
     steps:
       - name: Verify Coolify secrets are configured
@@ -326,14 +328,16 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           ACTOR: ${{ github.actor }}
         run: |
+          preview_url="https://${PR_NUMBER}-preview.os.ryo.lu"
           {
             echo "## Coolify preview deploy triggered"
             echo
+            echo "- Preview: [${preview_url}](${preview_url})"
             echo "- PR: #${PR_NUMBER}"
             echo "- Branch: \`${PR_HEAD_REF}\`"
             echo "- Commit: \`${PR_HEAD_SHA}\`"
             echo "- Actor: @${ACTOR}"
             echo
-            echo "Coolify will build a per-PR preview deployment using the URL template"
-            echo "configured on the application (e.g. \`{{pr_id}}.<wildcard-domain>\`)."
+            echo "Coolify is building a per-PR preview using the configured URL template"
+            echo "(\`{{pr_id}}-preview.os.ryo.lu\`)."
           } >> "$GITHUB_STEP_SUMMARY"
