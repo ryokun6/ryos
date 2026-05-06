@@ -1,4 +1,5 @@
 import type { Redis } from "./redis.js";
+import { isPrivateOrReservedIp } from "./_ip.js";
 
 /**
  * IP-based geolocation fallback for non-Vercel deployments (Coolify, Docker,
@@ -6,7 +7,7 @@ import type { Redis } from "./redis.js";
  * empty object.
  *
  * Resolution order:
- *   1. Skip any private/loopback/link-local IP (returns null).
+ *   1. Skip any private/reserved/local IP (returns null).
  *   2. Read a cached lookup from Redis (24h TTL).
  *   3. Call the configured HTTP geolocation provider (defaults to
  *      `https://ipwho.is/{ip}` — free, HTTPS, no API key required).
@@ -44,27 +45,7 @@ const FETCH_TIMEOUT_MS = 4_000; // Keep short so chat latency isn't impacted
 const DEFAULT_PROVIDER_TEMPLATE = "https://ipwho.is/{ip}";
 
 function isPrivateOrLocalIp(ip: string): boolean {
-  if (!ip) return true;
-  const lower = ip.toLowerCase();
-  if (lower === "unknown-ip" || lower === "localhost-dev") return true;
-  if (lower === "::1" || lower === "::" || lower === "0.0.0.0") return true;
-  if (lower.startsWith("127.")) return true;
-  // RFC1918 + carrier-grade NAT + link-local
-  if (lower.startsWith("10.")) return true;
-  if (lower.startsWith("192.168.")) return true;
-  if (lower.startsWith("169.254.")) return true;
-  if (lower.startsWith("100.")) {
-    const second = parseInt(lower.split(".")[1] || "0", 10);
-    if (second >= 64 && second <= 127) return true;
-  }
-  if (lower.startsWith("172.")) {
-    const second = parseInt(lower.split(".")[1] || "0", 10);
-    if (second >= 16 && second <= 31) return true;
-  }
-  // IPv6 unique-local + link-local
-  if (lower.startsWith("fc") || lower.startsWith("fd")) return true;
-  if (lower.startsWith("fe80")) return true;
-  return false;
+  return isPrivateOrReservedIp(ip);
 }
 
 function isGeolocationDisabled(): boolean {
