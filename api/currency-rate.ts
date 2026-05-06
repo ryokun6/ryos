@@ -4,13 +4,14 @@ import { crossRateFromUsdRates } from "./_utils/currency-cross-rate.js";
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
-const FRANKFURTER = "https://api.frankfurter.app/latest";
+const FRANKFURTER_V2 = "https://api.frankfurter.dev/v2";
 
-interface FrankfurterLatestResponse {
-  amount: number;
-  base: string;
+/** `GET /v2/rate/{base}/{quote}` — see https://frankfurter.dev/ */
+interface FrankfurterV2RateResponse {
   date: string;
-  rates: Record<string, number>;
+  base: string;
+  quote: string;
+  rate: number;
 }
 
 interface OpenErApiResponse {
@@ -40,19 +41,18 @@ async function fetchFrankfurterPair(
   to: string,
   signal: AbortSignal
 ): Promise<{ rate: number; rateDate: string }> {
-  const url = `${FRANKFURTER}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  const url = `${FRANKFURTER_V2}/rate/${encodeURIComponent(from)}/${encodeURIComponent(to)}`;
   const res = await fetch(url, {
     redirect: "follow",
     signal,
     headers: { Accept: "application/json" },
   });
   if (!res.ok) throw new Error(`Frankfurter HTTP ${res.status}`);
-  const data = (await res.json()) as FrankfurterLatestResponse;
-  const rate = data.rates[to];
-  if (typeof rate !== "number" || !Number.isFinite(rate)) {
+  const data = (await res.json()) as FrankfurterV2RateResponse;
+  if (typeof data.rate !== "number" || !Number.isFinite(data.rate)) {
     throw new Error("Frankfurter: missing rate");
   }
-  return { rate, rateDate: data.date };
+  return { rate: data.rate, rateDate: data.date };
 }
 
 async function fetchOpenErApiPair(
