@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowsClockwise, Warning } from "@phosphor-icons/react";
@@ -196,16 +196,52 @@ function StatCard({
   );
 }
 
+function isLikelyIsoAlpha2(value: string): boolean {
+  return /^[A-Za-z]{2}$/.test(value);
+}
+
+function countryCodeToFlagEmoji(code: string): string {
+  const upper = code.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(upper)) return "";
+  const A = 0x1f1e6;
+  const codePoints = [
+    A + (upper.charCodeAt(0) - "A".charCodeAt(0)),
+    A + (upper.charCodeAt(1) - "A".charCodeAt(0)),
+  ];
+  return String.fromCodePoint(...codePoints);
+}
+
+function formatCountryDisplay(
+  raw: string,
+  locale: string
+): { flag: string; name: string } {
+  const trimmed = raw.trim();
+  if (isLikelyIsoAlpha2(trimmed)) {
+    const code = trimmed.toUpperCase();
+    let name = code;
+    try {
+      const display = new Intl.DisplayNames([locale], { type: "region" });
+      name = display.of(code) ?? code;
+    } catch {
+      name = code;
+    }
+    return { flag: countryCodeToFlagEmoji(code), name };
+  }
+  return { flag: "", name: trimmed };
+}
+
 function BreakdownList({
   items,
   nameClassName,
   barClassName = "bg-neutral-400",
   emptyMessage = "No data yet",
+  renderName,
 }: {
   items: ProductBreakdown[];
   nameClassName?: string;
   barClassName?: string;
   emptyMessage?: string;
+  renderName?: (name: string) => ReactNode;
 }) {
   if (items.length === 0) {
     return <EmptyState message={emptyMessage} />;
@@ -216,7 +252,7 @@ function BreakdownList({
       {items.slice(0, 10).map((item) => (
         <div key={item.name} className="flex items-center gap-2 px-3 py-1.5">
           <span className={cn("text-[11px] text-neutral-600 flex-1 truncate", nameClassName)}>
-            {item.name}
+            {renderName ? renderName(item.name) : item.name}
           </span>
           <div className="w-24 flex items-center gap-1.5">
             <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -238,7 +274,24 @@ function BreakdownList({
 const RANGE_DAYS = [1, 7, 14, 30] as const;
 
 export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const countryLocale = i18n.resolvedLanguage || i18n.language || "en";
+  const renderCountryName = useMemo(
+    () => (raw: string) => {
+      const { flag, name } = formatCountryDisplay(raw, countryLocale);
+      return (
+        <>
+          {flag ? (
+            <span aria-hidden="true" className="mr-1.5">
+              {flag}
+            </span>
+          ) : null}
+          {name}
+        </>
+      );
+    },
+    [countryLocale]
+  );
   const { username, isAuthenticated } = useAuth();
   const [data, setData] = useState<AnalyticsDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -704,8 +757,9 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                     title: t("apps.admin.dashboard.sections.topCountries"),
                     items: data.product.topCountries ?? [],
                     barClassName: "bg-orange-400",
-                    nameClassName: "font-mono",
+                    nameClassName: undefined,
                     emptyMessage: t("apps.admin.dashboard.empty.noCountries"),
+                    renderName: renderCountryName,
                   },
                   {
                     title: t("apps.admin.dashboard.sections.eventCategories"),
@@ -727,6 +781,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                   barClassName: string;
                   nameClassName?: string;
                   emptyMessage: string;
+                  renderName?: (name: string) => ReactNode;
                 }>
               ).map((section) => (
                 <div
@@ -743,6 +798,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                     nameClassName={section.nameClassName}
                     barClassName={section.barClassName}
                     emptyMessage={section.emptyMessage}
+                    renderName={section.renderName}
                   />
                 </div>
               ))}
