@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
+import { track } from "@/utils/analytics";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { loginWithPassword, verifyAuthToken } from "@/api/auth";
 

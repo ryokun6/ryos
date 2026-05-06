@@ -30,6 +30,7 @@ import {
   type CloudSyncDeletionBucket,
 } from "@/stores/useCloudSyncStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { FINDER_ANALYTICS, track } from "@/utils/analytics";
 
 // Interface for content stored in IndexedDB
 export interface DocumentContent {
@@ -54,6 +55,38 @@ const getParentPath = (path: string): string => {
   const parts = path.split("/").filter(Boolean);
   if (parts.length <= 1) return "/";
   return `/${parts.slice(0, -1).join("/")}`;
+};
+
+const getFinderAnalyticsPathInfo = (path: string, type?: string) => {
+  const parts = path.split("/").filter(Boolean);
+  const fileName = parts[parts.length - 1] || "";
+  const extMatch = fileName.match(/\.([a-z0-9]+)$/i);
+  return {
+    topLevel: parts[0] || "root",
+    fileType: type || extMatch?.[1]?.toLowerCase() || "unknown",
+    isRoot: parts.length === 0,
+  };
+};
+
+const getFinderSizeBucket = (sizeBytes: number): string => {
+  if (sizeBytes <= 0) return "empty";
+  if (sizeBytes < 10 * 1024) return "<10kb";
+  if (sizeBytes < 100 * 1024) return "10-100kb";
+  if (sizeBytes < 1024 * 1024) return "100kb-1mb";
+  return "1mb+";
+};
+
+const trackFinderFileOperation = (
+  eventName: string,
+  path: string,
+  type?: string,
+  extra?: Record<string, string | number | boolean | null | undefined>
+) => {
+  track(eventName, {
+    appId: "finder",
+    ...getFinderAnalyticsPathInfo(path, type),
+    ...extra,
+  });
 };
 
 const arePathArraysEqual = (first: readonly string[], second: readonly string[]) =>
@@ -1043,6 +1076,12 @@ export function useFileSystem(
           if (fileMetadata.aliasType === "app") {
             // Launch app directly
             const appId = fileMetadata.aliasTarget as AppId;
+            track(FINDER_ANALYTICS.FILE_OPEN, {
+              appId: "finder",
+              targetAppId: appId,
+              sourceType: "alias",
+              ...getFinderAnalyticsPathInfo(currentFile.path, currentFile.type),
+            });
             launchApp(appId, { launchOrigin });
             return;
           } else {
@@ -1080,6 +1119,11 @@ export function useFileSystem(
       // 1. Handle Directories (Virtual and Real)
       if (file.isDirectory) {
         if (file.type === "directory" || file.type === "directory-virtual") {
+          track(FINDER_ANALYTICS.FILE_OPEN, {
+            appId: "finder",
+            isDirectory: true,
+            ...getFinderAnalyticsPathInfo(file.path, file.type),
+          });
           navigateToPath(file.path);
         }
         return;
@@ -1095,6 +1139,12 @@ export function useFileSystem(
         const storeName = getStoreForFile(file.path, {
           name: file.name,
           type: file.type,
+        });
+        track(FINDER_ANALYTICS.FILE_OPEN, {
+          appId: "finder",
+          isDirectory: false,
+          targetAppId: file.appId || undefined,
+          ...getFinderAnalyticsPathInfo(file.path, file.type),
         });
         if (storeName) {
           // Get the file metadata to get the UUID
@@ -1490,6 +1540,12 @@ export function useFileSystem(
         );
         // Pass the complete metadata object to addItem
         addFileItem(metadata);
+        track(FINDER_ANALYTICS.FILE_SAVE, {
+          appId: "finder",
+          isUpdate: Boolean(existingItem),
+          sizeBucket: getFinderSizeBucket(fileSize),
+          ...getFinderAnalyticsPathInfo(path, fileType),
+        });
 
         // Get the item again to get the UUID (in case it was newly generated)
         const savedItem = getFileItem(path);
@@ -1540,6 +1596,10 @@ export function useFileSystem(
             `[useFileSystem:saveFile] No valid content store for path: ${path}`
           );
         }
+        trackFinderFileOperation(FINDER_ANALYTICS.FILE_SAVE, path, fileType, {
+          isUpdate: Boolean(existingItem),
+          sizeBucket: getFinderSizeBucket(fileSize),
+        });
       } catch (metaError) {
         console.error(
           `[useFileSystem:saveFile] Error updating metadata store for ${path}:`,
@@ -1631,6 +1691,15 @@ export function useFileSystem(
 
         // Update metadata in file store
         moveFileItem(sourcePath, newPath);
+        trackFinderFileOperation(FINDER_ANALYTICS.FILE_MOVE, sourcePath, sourceFile.type, {
+          targetTopLevel: targetFolderPath.split("/").filter(Boolean)[0] || "root",
+        });
+        track(FINDER_ANALYTICS.FILE_MOVE, {
+          appId: "finder",
+          fromTopLevel: getFinderAnalyticsPathInfo(sourcePath, sourceFile.type).topLevel,
+          toTopLevel: getFinderAnalyticsPathInfo(newPath, sourceFile.type).topLevel,
+          fileType: getFinderAnalyticsPathInfo(sourcePath, sourceFile.type).fileType,
+        });
         console.log(
           `[useFileSystem:moveFile] Successfully moved ${sourcePath} to ${newPath}`
         );
@@ -1664,6 +1733,10 @@ export function useFileSystem(
 
       // 1. Rename Metadata in FileStore (preserves UUID)
       renameFileItem(oldPath, newPath, newName);
+      track(FINDER_ANALYTICS.FILE_RENAME, {
+        appId: "finder",
+        ...getFinderAnalyticsPathInfo(newPath, itemToRename.type),
+      });
 
       // 2. Update content metadata (name field) in IndexedDB if it's a file with content
       if (!itemToRename.isDirectory && itemToRename.uuid) {
@@ -1702,6 +1775,9 @@ export function useFileSystem(
           }
         }
       }
+      trackFinderFileOperation(FINDER_ANALYTICS.FILE_RENAME, newPath, itemToRename.type, {
+        fromTopLevel: getFinderAnalyticsPathInfo(oldPath, itemToRename.type).topLevel,
+      });
     },
     [getFileItem, renameFileItem]
   );
@@ -1723,6 +1799,11 @@ export function useFileSystem(
         icon: "/icons/directory.png",
       };
       addFileItem(newFolderItem);
+      track(FINDER_ANALYTICS.FOLDER_CREATE, {
+        appId: "finder",
+        ...getFinderAnalyticsPathInfo(path, "directory"),
+      });
+      trackFinderFileOperation(FINDER_ANALYTICS.FOLDER_CREATE, path, "directory");
       setError(undefined); // Clear previous error
     },
     [getFileItem, addFileItem]
@@ -1740,6 +1821,11 @@ export function useFileSystem(
 
       // 1. Mark item as trashed in FileStore
       removeFileItem(fileMetadata.path);
+      track(FINDER_ANALYTICS.MOVE_TO_TRASH, {
+        appId: "finder",
+        isDirectory: fileMetadata.isDirectory,
+        ...getFinderAnalyticsPathInfo(fileMetadata.path, fileMetadata.type),
+      });
 
       // 2. Move Content to TRASH DB store
       const storeName = getStoreForFile(fileMetadata.path, {
@@ -1787,6 +1873,9 @@ export function useFileSystem(
           setError("Failed to move content to trash");
         }
       }
+      trackFinderFileOperation(FINDER_ANALYTICS.MOVE_TO_TRASH, fileMetadata.path, fileMetadata.type, {
+        isDirectory: Boolean(fileMetadata.isDirectory),
+      });
     },
     [removeFileItem]
   );
@@ -1808,6 +1897,14 @@ export function useFileSystem(
 
       // 1. Restore metadata in FileStore
       restoreFileItem(fileMetadata.path);
+      track(FINDER_ANALYTICS.RESTORE_FROM_TRASH, {
+        appId: "finder",
+        isDirectory: fileMetadata.isDirectory,
+        ...getFinderAnalyticsPathInfo(
+          fileMetadata.originalPath,
+          fileMetadata.type
+        ),
+      });
 
       // 2. Move Content from TRASH DB store back
       const targetStoreName = getStoreForFile(fileMetadata.originalPath, {
@@ -1851,6 +1948,12 @@ export function useFileSystem(
           setError("Failed to restore content from trash");
         }
       }
+      trackFinderFileOperation(
+        FINDER_ANALYTICS.RESTORE_FROM_TRASH,
+        fileMetadata.originalPath,
+        fileMetadata.type,
+        { isDirectory: Boolean(fileMetadata.isDirectory) }
+      );
     },
     [getFileItem, restoreFileItem]
   );
@@ -1858,6 +1961,10 @@ export function useFileSystem(
   const emptyTrash = useCallback(async () => {
     // 1. Permanently delete metadata from FileStore and get UUIDs of files whose content needs deletion
     const contentUUIDsToDelete = emptyTrashMetadata();
+    track(FINDER_ANALYTICS.EMPTY_TRASH, {
+      appId: "finder",
+      itemCount: contentUUIDsToDelete.length,
+    });
 
     // 2. Clear corresponding content from TRASH IndexedDB store
     try {
@@ -1872,6 +1979,10 @@ export function useFileSystem(
         emitCloudSyncDomainChange("files-trash");
       }
       console.log("[useFileSystem] Cleared trash content from IndexedDB.");
+      track(FINDER_ANALYTICS.EMPTY_TRASH, {
+        appId: "finder",
+        deletedCount: contentUUIDsToDelete.length,
+      });
     } catch (err) {
       console.error("Error clearing trash content from IndexedDB:", err);
       setError("Failed to empty trash storage.");

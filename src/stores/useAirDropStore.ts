@@ -6,6 +6,7 @@ import {
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
 import type { PusherChannel } from "@/lib/pusherClient";
+import { AIRDROP_ANALYTICS, track } from "@/utils/analytics";
 import { toast } from "sonner";
 
 const AIRDROP_PRESENCE_TTL_MS = 60_000;
@@ -83,6 +84,7 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
   startAirDrop: (username: string) => {
     const state = get();
     if (state.heartbeatInterval) return;
+    track(AIRDROP_ANALYTICS.START);
 
     const heartbeat = async () => {
       try {
@@ -139,6 +141,9 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
 
   stopAirDrop: () => {
     const state = get();
+    if (state.heartbeatInterval || state.lobbyChannel || state.pusherChannel) {
+      track(AIRDROP_ANALYTICS.STOP);
+    }
     if (state.heartbeatInterval) clearInterval(state.heartbeatInterval);
     if (state.discoverInterval) clearInterval(state.discoverInterval);
     if (state.lobbyChannel) {
@@ -164,6 +169,7 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         const users: string[] = data.users || [];
+        track(AIRDROP_ANALYTICS.DISCOVER, { nearbyCount: users.length });
         const now = Date.now();
         const map: Record<string, number> = {};
         for (const u of users) {
@@ -187,6 +193,10 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
         body: JSON.stringify({ recipient, fileName, fileType, content }),
       });
       if (res.ok) {
+        track(AIRDROP_ANALYTICS.SEND, {
+          fileType: fileType || "unknown",
+          fileNameExtension: fileName.split(".").pop()?.slice(0, 12) || "",
+        });
         toast.success(`Sent "${fileName}" to @${recipient}`);
         return true;
       }
@@ -211,6 +221,7 @@ export const useAirDropStore = create<AirDropState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         get().removeTransfer(transferId);
+        track(AIRDROP_ANALYTICS.RESPOND, { accepted: accept });
         return { success: true, ...data };
       }
       return { success: false };

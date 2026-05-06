@@ -12,6 +12,11 @@ import { checkOfflineAndShowError } from "@/utils/offline";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  IE_ANALYTICS,
+  normalizeUrlForAnalytics,
+  track,
+} from "@/utils/analytics";
 
 interface UseAiGenerationProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -285,6 +290,12 @@ export function useAiGeneration({
 
     // Format URL properly *before* using it for cache check or storing in ref
     const normalizedTargetUrl = url.startsWith("http") ? url : `https://${url}`;
+    track(IE_ANALYTICS.GENERATION_START, {
+      ...normalizeUrlForAnalytics(normalizedTargetUrl),
+      year,
+      hasCurrentHtml: !!currentHtmlContent,
+      hasPrefetchedTitle: !!prefetchedTitle,
+    });
 
     // Store the intended URL and Year in refs *before* potentially returning early from cache or making AI call
     generatingUrlRef.current = normalizedTargetUrl;
@@ -315,6 +326,11 @@ export function useAiGeneration({
       const errorMessage =
         "Invalid URL format. Please enter a valid website address.";
       loadError(errorMessage);
+      track(IE_ANALYTICS.GENERATION_ERROR, {
+        ...normalizeUrlForAnalytics(normalizedTargetUrl),
+        year,
+        errorType: "invalid_url",
+      });
       return;
     }
 
@@ -459,12 +475,22 @@ IMPORTANT NAVIGATION CONTEXT:
           },
         }
       );
+      track(IE_ANALYTICS.GENERATION_SUCCESS, {
+        ...normalizeUrlForAnalytics(normalizedTargetUrl),
+        year,
+        fetchedExistingContent: !!existingContent,
+      });
     } catch (error: unknown) {
       if (error instanceof Error && error.name === "AbortError") {
         console.log("AI generation was aborted");
         return;
       }
       console.error("Failed to generate futuristic website:", error);
+      track(IE_ANALYTICS.GENERATION_ERROR, {
+        ...normalizeUrlForAnalytics(normalizedTargetUrl),
+        year,
+        errorType: error instanceof Error ? error.name : "unknown",
+      });
       loadError(
         `Failed to generate website preview for ${normalizedTargetUrl} in ${year}. ${
           error instanceof Error ? error.message : String(error)

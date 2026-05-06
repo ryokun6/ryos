@@ -4,6 +4,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
 import type { Video } from "@/stores/useVideoStore";
+import { getTextAnalytics, MEDIA_ANALYTICS, track } from "@/utils/analytics";
 
 interface CreateChannelResponse {
   name: string;
@@ -94,8 +95,26 @@ export function useCreateTvChannel() {
           prompt: trimmed,
           queries: data.queries,
         });
+        track(MEDIA_ANALYTICS.TV_CHANNEL_CREATE, {
+          ...getTextAnalytics(trimmed),
+          videoCount: data.videos.length,
+          queryCount: data.queries?.length ?? 0,
+          success: true,
+        });
 
         return { channel, queries: data.queries ?? [] };
+      } catch (error) {
+        track(MEDIA_ANALYTICS.TV_CHANNEL_CREATE, {
+          ...getTextAnalytics(trimmed),
+          success: false,
+          errorType:
+            error instanceof TvChannelAuthRequiredError
+              ? "auth"
+              : error instanceof Error
+                ? error.name
+                : "unknown",
+        });
+        throw error;
       } finally {
         setIsCreating(false);
       }

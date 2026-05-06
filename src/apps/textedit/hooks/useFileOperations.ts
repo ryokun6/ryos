@@ -21,6 +21,7 @@ import {
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { getStoreForFile } from "@/utils/indexedDBOperations";
+import { TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 
 interface UseFileOperationsProps {
   editor: Editor | null;
@@ -60,6 +61,7 @@ export function useFileOperations({
         content: persistedContent,
       });
 
+      track(TEXTEDIT_ANALYTICS.SAVE, { appId: "textedit", format: "md" });
       onSaveSuccess?.(currentFilePath);
       console.log("[TextEdit] File saved successfully:", currentFilePath);
     } catch (error) {
@@ -90,6 +92,7 @@ export function useFileOperations({
           content: persistedContent,
         });
 
+        track(TEXTEDIT_ANALYTICS.SAVE_AS, { appId: "textedit", format: "md" });
         onSaveSuccess?.(filePath);
         console.log("[TextEdit] File saved successfully:", filePath);
         return filePath;
@@ -142,6 +145,12 @@ export function useFileOperations({
           content: persistedContent,
         });
 
+        track(TEXTEDIT_ANALYTICS.IMPORT, {
+          appId: "textedit",
+          extension: file.name.split(".").pop()?.toLowerCase() || "unknown",
+          sizeBucket:
+            file.size <= 10_000 ? "small" : file.size <= 100_000 ? "medium" : "large",
+        });
         onLoadSuccess?.(filePath);
         console.log("[TextEdit] File imported successfully:", filePath);
         return filePath;
@@ -194,6 +203,7 @@ export function useFileOperations({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      track(TEXTEDIT_ANALYTICS.EXPORT, { appId: "textedit", format });
     },
     [editor, currentFilePath]
   );

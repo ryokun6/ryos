@@ -22,6 +22,7 @@ import type { Redis } from "./redis.js";
 const ANALYTICS_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 
 let _lastTTLDate: string | null = null;
+let _lastProductTTLDate: string | null = null;
 
 function todayUTC(): string {
   return new Date().toISOString().slice(0, 10);
@@ -29,6 +30,10 @@ function todayUTC(): string {
 
 function k(suffix: string, date: string): string {
   return `analytics:${suffix}:${date}`;
+}
+
+function pk(suffix: string, date: string): string {
+  return `analytics:product:${suffix}:${date}`;
 }
 
 const AI_PATH_PREFIXES = [
@@ -108,6 +113,297 @@ export function recordAnalyticsEvent(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// Product/app event analytics — first-party replacement for Vercel Analytics
+// ────────────────────────────────────────────────────────────────────────────
+
+const MAX_PRODUCT_EVENTS_PER_BATCH = 25;
+const MAX_PRODUCT_PROPERTY_KEYS = 20;
+const MAX_PRODUCT_STRING_LENGTH = 160;
+const VALID_DIMENSION_RE = /^[a-zA-Z0-9][a-zA-Z0-9:_./@ -]{0,159}$/;
+const VALID_EVENT_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9:_./-]{0,99}$/;
+const SENSITIVE_PROPERTY_RE =
+  /(password|token|secret|authorization|cookie|message|prompt|content|html|base64|blob|dataurl|transcript|body|text)$/i;
+
+const KNOWN_APP_IDS = new Set([
+  "finder",
+  "soundboard",
+  "internet-explorer",
+  "chats",
+  "textedit",
+  "paint",
+  "photo-booth",
+  "minesweeper",
+  "videos",
+  "tv",
+  "ipod",
+  "karaoke",
+  "synth",
+  "terminal",
+  "applet-viewer",
+  "control-panels",
+  "admin",
+  "stickies",
+  "infinite-mac",
+  "pc",
+  "winamp",
+  "calendar",
+  "contacts",
+  "dashboard",
+  "candybar",
+  "maps",
+]);
+
+export type ProductAnalyticsPrimitive = string | number | boolean | null;
+
+export interface ProductAnalyticsEvent {
+  name: string;
+  timestamp?: number;
+  sessionId?: string;
+  clientId?: string;
+  path?: string;
+  referrer?: string;
+  appId?: string;
+  category?: string;
+  source?: string;
+  properties?: Record<string, ProductAnalyticsPrimitive | undefined>;
+}
+
+export interface ProductAnalyticsBatch {
+  events: ProductAnalyticsEvent[];
+}
+
+export interface ProductAnalyticsRequestContext {
+  ip: string;
+  username?: string | null;
+  userAgent?: string | null;
+}
+
+interface SanitizedProductAnalyticsEvent {
+  name: string;
+  sessionId?: string;
+  clientId?: string;
+  path?: string;
+  appId?: string;
+  category: string;
+  source: string;
+  properties: Record<string, ProductAnalyticsPrimitive>;
+}
+
+export interface DailyProductEventMetrics {
+  date: string;
+  events: number;
+  pageViews: number;
+  sessions: number;
+  appLifecycle: number;
+  auth: number;
+  errors: number;
+  uniqueVisitors: number;
+}
+
+export interface ProductAnalyticsSummary {
+  days: DailyProductEventMetrics[];
+  totals: {
+    events: number;
+    pageViews: number;
+    sessions: number;
+    appLifecycle: number;
+    auth: number;
+    errors: number;
+    uniqueVisitors: number;
+  };
+}
+
+export interface ProductEventBreakdown {
+  name: string;
+  count: number;
+}
+
+export interface ProductAnalyticsDetail {
+  summary: ProductAnalyticsSummary;
+  topEvents: ProductEventBreakdown[];
+  topApps: ProductEventBreakdown[];
+  categories: ProductEventBreakdown[];
+  sources: ProductEventBreakdown[];
+  topPaths: ProductEventBreakdown[];
+}
+
+function normalizeDimension(value: unknown, fallback?: string): string | undefined {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  const truncated = trimmed.slice(0, MAX_PRODUCT_STRING_LENGTH);
+  return VALID_DIMENSION_RE.test(truncated) ? truncated : fallback;
+}
+
+function normalizeProductEventName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().slice(0, 100);
+  if (!trimmed || !VALID_EVENT_NAME_RE.test(trimmed)) return null;
+  return trimmed;
+}
+
+function normalizeProductPath(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  try {
+    const url = new URL(value, "http://local");
+    const parts = url.pathname
+      .split("/")
+      .filter(Boolean)
+      .slice(0, 4)
+      .map((part) => part.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 48));
+    return `/${parts.join("/")}` || "/";
+  } catch {
+    const path = value.split("?")[0].split("#")[0].slice(0, 120);
+    if (!path.startsWith("/")) return undefined;
+    return path.replace(/[^a-zA-Z0-9/_-]/g, "-") || "/";
+  }
+}
+
+function normalizeAppId(value: unknown): string | undefined {
+  const candidate = normalizeDimension(value);
+  if (!candidate) return undefined;
+  return KNOWN_APP_IDS.has(candidate) ? candidate : undefined;
+}
+
+function sanitizeProductProperties(
+  properties: ProductAnalyticsEvent["properties"]
+): Record<string, ProductAnalyticsPrimitive> {
+  const safe: Record<string, ProductAnalyticsPrimitive> = {};
+  if (!properties || typeof properties !== "object") return safe;
+
+  for (const [rawKey, rawValue] of Object.entries(properties)) {
+    if (Object.keys(safe).length >= MAX_PRODUCT_PROPERTY_KEYS) break;
+    const key = rawKey.trim().replace(/[^a-zA-Z0-9_:-]/g, "_").slice(0, 64);
+    if (!key || SENSITIVE_PROPERTY_RE.test(key)) continue;
+
+    if (rawValue === null || typeof rawValue === "boolean") {
+      safe[key] = rawValue;
+    } else if (typeof rawValue === "number") {
+      safe[key] = Number.isFinite(rawValue) ? rawValue : 0;
+    } else if (typeof rawValue === "string") {
+      safe[key] = rawValue.slice(0, MAX_PRODUCT_STRING_LENGTH);
+    }
+  }
+
+  return safe;
+}
+
+export function sanitizeProductAnalyticsEvent(
+  event: ProductAnalyticsEvent
+): SanitizedProductAnalyticsEvent | null {
+  const name = normalizeProductEventName(event?.name);
+  if (!name) return null;
+
+  const category =
+    normalizeDimension(event.category) ||
+    (name.startsWith("app:") || name.startsWith("window:")
+      ? "appLifecycle"
+      : name.startsWith("user:")
+        ? "auth"
+        : name.includes(":crash") || name.includes(":error")
+          ? "errors"
+          : name === "page:view"
+            ? "pageViews"
+            : name === "session:start"
+              ? "sessions"
+              : "events");
+
+  return {
+    name,
+    sessionId: normalizeDimension(event.sessionId),
+    clientId: normalizeDimension(event.clientId),
+    path: normalizeProductPath(event.path),
+    appId: normalizeAppId(event.appId),
+    category,
+    source: normalizeDimension(event.source, "web") || "web",
+    properties: sanitizeProductProperties(event.properties),
+  };
+}
+
+function parseProductDailyHash(raw: Record<string, string> | null): Omit<DailyProductEventMetrics, "date" | "uniqueVisitors"> {
+  if (!raw) {
+    return {
+      events: 0,
+      pageViews: 0,
+      sessions: 0,
+      appLifecycle: 0,
+      auth: 0,
+      errors: 0,
+    };
+  }
+  return {
+    events: parseInt(String(raw.events || "0"), 10),
+    pageViews: parseInt(String(raw.pageViews || "0"), 10),
+    sessions: parseInt(String(raw.sessions || "0"), 10),
+    appLifecycle: parseInt(String(raw.appLifecycle || "0"), 10),
+    auth: parseInt(String(raw.auth || "0"), 10),
+    errors: parseInt(String(raw.errors || "0"), 10),
+  };
+}
+
+function breakdownFromMap(map: Map<string, number>, limit: number): ProductEventBreakdown[] {
+  return [...map.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+export function recordProductAnalyticsEvents(
+  redis: Redis,
+  batch: ProductAnalyticsBatch,
+  context: ProductAnalyticsRequestContext
+): void {
+  const events = Array.isArray(batch?.events)
+    ? batch.events.slice(0, MAX_PRODUCT_EVENTS_PER_BATCH)
+    : [];
+  const sanitized = events
+    .map((event) => sanitizeProductAnalyticsEvent(event))
+    .filter((event): event is SanitizedProductAnalyticsEvent => !!event);
+
+  if (sanitized.length === 0) return;
+
+  const date = todayUTC();
+  const dailyKey = pk("daily", date);
+  const pipe = redis.pipeline();
+
+  for (const event of sanitized) {
+    pipe.hincrby(dailyKey, "events", 1);
+    if (event.name === "page:view") pipe.hincrby(dailyKey, "pageViews", 1);
+    if (event.name === "session:start") pipe.hincrby(dailyKey, "sessions", 1);
+    if (event.category === "appLifecycle") pipe.hincrby(dailyKey, "appLifecycle", 1);
+    if (event.category === "auth") pipe.hincrby(dailyKey, "auth", 1);
+    if (event.category === "errors") pipe.hincrby(dailyKey, "errors", 1);
+
+    const visitorId =
+      context.username ||
+      event.clientId ||
+      event.sessionId ||
+      `ip:${context.ip}`;
+    pipe.pfadd(pk("uv", date), visitorId);
+    pipe.hincrby(pk("event", date), event.name, 1);
+    pipe.hincrby(pk("category", date), event.category, 1);
+    pipe.hincrby(pk("source", date), event.source, 1);
+    if (event.appId) pipe.hincrby(pk("app", date), event.appId, 1);
+    if (event.path) pipe.hincrby(pk("path", date), event.path, 1);
+  }
+
+  if (_lastProductTTLDate !== date) {
+    _lastProductTTLDate = date;
+    pipe.expire(dailyKey, ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("uv", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("event", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("category", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("source", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("app", date), ANALYTICS_TTL_SECONDS);
+    pipe.expire(pk("path", date), ANALYTICS_TTL_SECONDS);
+  }
+
+  pipe.exec().catch((err) => {
+    console.warn("[analytics] product pipeline error (non-fatal):", err);
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Read path — admin-only queries
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -152,6 +448,7 @@ export interface AnalyticsDetail {
   statusCodes: StatusBreakdown[];
   aiByUser: AIUserBreakdown[];
   aiRateLimits: AIRateLimitInfo[];
+  product: ProductAnalyticsDetail;
 }
 
 export interface AIRateLimitInfo {
@@ -395,5 +692,136 @@ export async function getAnalyticsDetail(
     });
   }
 
-  return { summary, topEndpoints, statusCodes, aiByUser, aiRateLimits };
+  const product = await getProductAnalyticsDetail(redis, days);
+
+  return { summary, topEndpoints, statusCodes, aiByUser, aiRateLimits, product };
+}
+
+export async function getProductAnalyticsSummary(
+  redis: Redis,
+  days: number = 7
+): Promise<ProductAnalyticsSummary> {
+  const dates = dateRange(days);
+  const uvKeys = dates.map((d) => pk("uv", d));
+
+  const pipe = redis.pipeline();
+  for (const date of dates) {
+    pipe.hgetall(pk("daily", date));
+    pipe.pfcount(pk("uv", date));
+  }
+  if (uvKeys.length > 0) pipe.pfcount(...uvKeys);
+  const results = await pipe.exec();
+
+  const totals = {
+    events: 0,
+    pageViews: 0,
+    sessions: 0,
+    appLifecycle: 0,
+    auth: 0,
+    errors: 0,
+    uniqueVisitors: 0,
+  };
+
+  const dailyMetrics: DailyProductEventMetrics[] = dates.map((date, i) => {
+    const d = parseProductDailyHash(
+      (results[i * 2] as Record<string, string> | null) || null
+    );
+    const uv = (results[i * 2 + 1] as number) || 0;
+
+    totals.events += d.events;
+    totals.pageViews += d.pageViews;
+    totals.sessions += d.sessions;
+    totals.appLifecycle += d.appLifecycle;
+    totals.auth += d.auth;
+    totals.errors += d.errors;
+
+    return {
+      date,
+      ...d,
+      uniqueVisitors: uv,
+    };
+  });
+
+  totals.uniqueVisitors =
+    uvKeys.length > 0 ? ((results[dates.length * 2] as number) || 0) : 0;
+
+  return { days: dailyMetrics, totals };
+}
+
+export async function getProductAnalyticsDetail(
+  redis: Redis,
+  days: number = 7
+): Promise<ProductAnalyticsDetail> {
+  const dates = dateRange(days);
+  const uvKeys = dates.map((d) => pk("uv", d));
+  const CMDS_PER_DAY = 7;
+
+  const pipe = redis.pipeline();
+  for (const date of dates) {
+    pipe.hgetall(pk("daily", date));
+    pipe.pfcount(pk("uv", date));
+    pipe.hgetall(pk("event", date));
+    pipe.hgetall(pk("app", date));
+    pipe.hgetall(pk("category", date));
+    pipe.hgetall(pk("source", date));
+    pipe.hgetall(pk("path", date));
+  }
+  if (uvKeys.length > 0) pipe.pfcount(...uvKeys);
+  const results = await pipe.exec();
+
+  const totals = {
+    events: 0,
+    pageViews: 0,
+    sessions: 0,
+    appLifecycle: 0,
+    auth: 0,
+    errors: 0,
+    uniqueVisitors: 0,
+  };
+  const eventMap = new Map<string, number>();
+  const appMap = new Map<string, number>();
+  const categoryMap = new Map<string, number>();
+  const sourceMap = new Map<string, number>();
+  const pathMap = new Map<string, number>();
+
+  const dailyMetrics: DailyProductEventMetrics[] = dates.map((date, i) => {
+    const base = i * CMDS_PER_DAY;
+    const d = parseProductDailyHash(
+      (results[base] as Record<string, string> | null) || null
+    );
+    const uv = (results[base + 1] as number) || 0;
+
+    totals.events += d.events;
+    totals.pageViews += d.pageViews;
+    totals.sessions += d.sessions;
+    totals.appLifecycle += d.appLifecycle;
+    totals.auth += d.auth;
+    totals.errors += d.errors;
+
+    mergeHashCounts(eventMap, (results[base + 2] as Record<string, string> | null) || null);
+    mergeHashCounts(appMap, (results[base + 3] as Record<string, string> | null) || null);
+    mergeHashCounts(categoryMap, (results[base + 4] as Record<string, string> | null) || null);
+    mergeHashCounts(sourceMap, (results[base + 5] as Record<string, string> | null) || null);
+    mergeHashCounts(pathMap, (results[base + 6] as Record<string, string> | null) || null);
+
+    return {
+      date,
+      ...d,
+      uniqueVisitors: uv,
+    };
+  });
+
+  totals.uniqueVisitors =
+    uvKeys.length > 0
+      ? ((results[dates.length * CMDS_PER_DAY] as number) || 0)
+      : 0;
+
+  return {
+    summary: { days: dailyMetrics, totals },
+    topEvents: breakdownFromMap(eventMap, 20),
+    topApps: breakdownFromMap(appMap, 20),
+    categories: breakdownFromMap(categoryMap, 20),
+    sources: breakdownFromMap(sourceMap, 20),
+    topPaths: breakdownFromMap(pathMap, 20),
+  };
 }

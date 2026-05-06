@@ -10,6 +10,7 @@ import {
 } from "@/utils/cloudSyncEvents";
 import { convertImageFileToWallpaperJpeg } from "@/utils/customWallpaperProcessing";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 
 /** Default desktop wallpaper (nature photo). */
 export const DEFAULT_WALLPAPER_PATH =
@@ -124,18 +125,35 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
     (set, get) => ({
       // Display mode
       displayMode: "color",
-      setDisplayMode: (m) => set({ displayMode: m }),
+      setDisplayMode: (m) => {
+        const previousMode = get().displayMode;
+        set({ displayMode: m });
+        if (previousMode !== m) {
+          track(SETTINGS_ANALYTICS.DISPLAY_MODE_CHANGE, { displayMode: m });
+        }
+      },
 
       // Shader settings
       shaderEffectEnabled: initialShaderState,
       selectedShaderType: ShaderType.AURORA,
-      setShaderEffectEnabled: (enabled) => set({ shaderEffectEnabled: enabled }),
-      setSelectedShaderType: (t) => set({ selectedShaderType: t }),
+      setShaderEffectEnabled: (enabled) => {
+        set({ shaderEffectEnabled: enabled });
+        track(SETTINGS_ANALYTICS.SHADER_TOGGLE, { enabled });
+      },
+      setSelectedShaderType: (t) => {
+        set({ selectedShaderType: t });
+        track(SETTINGS_ANALYTICS.SHADER_TYPE_CHANGE, { shaderType: t });
+      },
 
       // Wallpaper
       currentWallpaper: DEFAULT_WALLPAPER_PATH,
       wallpaperSource: DEFAULT_WALLPAPER_PATH,
-      setCurrentWallpaper: (p) => set({ currentWallpaper: p, wallpaperSource: p }),
+      setCurrentWallpaper: (p) => {
+        set({ currentWallpaper: p, wallpaperSource: p });
+        track(SETTINGS_ANALYTICS.WALLPAPER_CHANGE, {
+          wallpaperKind: p.startsWith(INDEXEDDB_PREFIX) ? "custom" : "built-in",
+        });
+      },
 
       setWallpaper: async (path) => {
         let wall: string;
@@ -170,6 +188,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         window.dispatchEvent(
           new CustomEvent("wallpaperChange", { detail: wall })
         );
+        track(SETTINGS_ANALYTICS.WALLPAPER_CHANGE, {
+          wallpaperKind: wall.startsWith(INDEXEDDB_PREFIX) ? "custom" : "built-in",
+          uploaded: path instanceof File,
+        });
       },
 
       loadCustomWallpapers: async () => {
@@ -260,9 +282,20 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       screenSaverEnabled: false,
       screenSaverType: "starfield",
       screenSaverIdleTime: 5, // 5 minutes default
-      setScreenSaverEnabled: (v) => set({ screenSaverEnabled: v }),
-      setScreenSaverType: (v) => set({ screenSaverType: v }),
-      setScreenSaverIdleTime: (v) => set({ screenSaverIdleTime: v }),
+      setScreenSaverEnabled: (v) => {
+        set({ screenSaverEnabled: v });
+        track(SETTINGS_ANALYTICS.SCREENSAVER_CHANGE, { enabled: v });
+      },
+      setScreenSaverType: (v) => {
+        set({ screenSaverType: v });
+        track(SETTINGS_ANALYTICS.SCREENSAVER_CHANGE, { screenSaverType: v });
+      },
+      setScreenSaverIdleTime: (v) => {
+        set({ screenSaverIdleTime: v });
+        track(SETTINGS_ANALYTICS.SCREENSAVER_CHANGE, {
+          idleMinutesBucket: v <= 5 ? "0-5" : v <= 15 ? "6-15" : "16+",
+        });
+      },
 
       // Debug mode
       debugMode: false,

@@ -1,5 +1,4 @@
-import { track } from "@vercel/analytics";
-import { APP_ANALYTICS } from "@/utils/analytics";
+import { APP_ANALYTICS, track } from "@/utils/analytics";
 
 export type RuntimeCrashScope = "app" | "desktop";
 

@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { helpItems } from "..";
 import type { PaintInitialData } from "../../base/types";
 import { emitFileSaved } from "@/utils/appEventBus";
+import { PAINT_ANALYTICS, track } from "@/utils/analytics";
 
 interface PaintCanvasHandle {
   undo: () => void;
@@ -71,6 +72,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
       setStrokeWidth(1);
     }
     setSelectedTool(tool);
+    track(PAINT_ANALYTICS.TOOL_SELECT, { appId: "paint", tool });
   };
 
   const handleCanvasRef = useCallback((ref: PaintCanvasHandle | null) => {
@@ -197,6 +199,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
     setHasUnsavedChanges(false);
     setCanvasWidth(589);
     setCanvasHeight(418);
+    track(PAINT_ANALYTICS.CLEAR, { appId: "paint" });
   };
 
   const handleNewFile = () => {
@@ -237,6 +240,10 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
         });
 
         setHasUnsavedChanges(false);
+        track(PAINT_ANALYTICS.SAVE, {
+          appId: "paint",
+          hasExistingPath: true,
+        });
         toast.success(t("apps.paint.dialogs.imageSavedSuccessfully"));
       } catch (err) {
         console.error("Error saving image:", err);
@@ -270,6 +277,10 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
       setLastFilePath(filePath);
       setHasUnsavedChanges(false);
       setIsSaveDialogOpen(false);
+      track(PAINT_ANALYTICS.SAVE, {
+        appId: "paint",
+        hasExistingPath: false,
+      });
       toast.success("Image saved successfully");
     } catch (err) {
       console.error("Error saving file:", err);
@@ -278,6 +289,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
   };
 
   const handleImportFile = () => {
+    track(PAINT_ANALYTICS.IMPORT, { appId: "paint", source: "finder" });
     launchApp("finder", { initialPath: "/Images" });
   };
 
@@ -298,6 +310,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
       document.body.removeChild(link);
 
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      track(PAINT_ANALYTICS.EXPORT, { appId: "paint" });
     } catch (err) {
       console.error("Error exporting file:", err);
     }
@@ -325,6 +338,11 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
           setIsLoadingFile(false);
           setSaveFileName(file.name);
           setIsSaveDialogOpen(true);
+          track(PAINT_ANALYTICS.IMPORT, {
+            appId: "paint",
+            source: "local_file",
+            fileType: file.name.split(".").pop()?.toLowerCase() || "unknown",
+          });
         };
         img.src = dataUrl;
       };
@@ -420,6 +438,10 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
 
   const handleApplyFilter = useCallback((filter: Filter) => {
     canvasRef.current?.applyFilter(filter);
+    track(PAINT_ANALYTICS.FILTER_APPLY, {
+      appId: "paint",
+      filter: filter.name,
+    });
   }, []);
 
   const currentTheme = useThemeStore((state) => state.current);

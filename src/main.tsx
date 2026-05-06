@@ -1,7 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { Analytics } from "@vercel/analytics/react";
 import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useLanguageStore } from "./stores/useLanguageStore";
@@ -10,6 +9,7 @@ import { preloadIpodData } from "./stores/useIpodStore";
 import { initPrefetch } from "./utils/prefetch";
 import { initializeI18n } from "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
+import { initializeAnalytics } from "./utils/analytics";
 
 // Prime React 19 resource hints before anything else runs
 primeReactResources();
@@ -138,10 +138,10 @@ preloadFileSystemData();
 preloadIpodData();
 
 const renderApp = () => {
+  initializeAnalytics();
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
       <App />
-      <Analytics />
     </React.StrictMode>
   );
 };

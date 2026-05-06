@@ -25,6 +25,7 @@ import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
+import { MEDIA_ANALYTICS, track as trackAnalytics } from "@/utils/analytics";
 
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;
@@ -661,6 +662,7 @@ export function useKaraokeLogic({
       }
       
       if (isFullScreen) {
+        trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen: true });
         // Entering fullscreen - sync position from main player to fullscreen player
         const currentTime = playerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
         const wasPlaying = isPlaying;
@@ -688,6 +690,7 @@ export function useKaraokeLogic({
         };
         setTimeout(checkAndSync, 100);
       } else {
+        trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen: false });
         // Exiting fullscreen - sync position from fullscreen player to main player
         const currentTime = fullScreenPlayerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
         const wasPlaying = isPlaying;
@@ -746,7 +749,16 @@ export function useKaraokeLogic({
       return;
     }
     setIsPlaying(true);
-  }, [listenRemoteOnly, setIsPlaying]);
+    const currentTrack = tracks[currentIndex];
+    if (currentTrack) {
+      trackAnalytics(MEDIA_ANALYTICS.SONG_PLAY, {
+        appId: "karaoke",
+        trackId: currentTrack.id,
+        title: currentTrack.title,
+        artist: currentTrack.artist || "",
+      });
+    }
+  }, [currentIndex, listenRemoteOnly, setIsPlaying, tracks]);
 
   const handlePause = useCallback(() => {
     if (listenRemoteOnly) return;
@@ -943,6 +955,7 @@ export function useKaraokeLogic({
   const handleShareSong = useCallback(() => {
     if (tracks.length > 0 && currentIndex >= 0) {
       const track = tracks[currentIndex];
+      trackAnalytics(MEDIA_ANALYTICS.SHARE, { appId: "karaoke", itemType: "song" });
       // Save song metadata to cache when sharing (requires auth)
       // Pass isShare: true to update createdBy (if allowed)
       if (track) {

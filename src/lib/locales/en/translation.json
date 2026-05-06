@@ -3584,7 +3584,11 @@
           "visitors": "Visitors",
           "apiCalls": "API Calls",
           "aiRequests": "AI Requests",
-          "errorRate": "Error Rate"
+          "errorRate": "Error Rate",
+          "productEvents": "Product Events",
+          "pageViews": "Page Views",
+          "sessions": "Sessions",
+          "appEvents": "App Events"
         },
         "totals": {
           "totals": "totals",
@@ -3603,7 +3607,12 @@
         "sections": {
           "topEndpoints": "Top Endpoints",
           "statusCodes": "Status Codes",
-          "aiUsageByUser": "AI Usage by User"
+          "aiUsageByUser": "AI Usage by User",
+          "productAnalytics": "Product Analytics",
+          "topProductEvents": "Top Product Events",
+          "topApps": "Top Apps",
+          "eventCategories": "Event Categories",
+          "topPages": "Top Pages"
         },
         "empty": {
           "noData": "No data yet",

@@ -28,6 +28,7 @@ import {
   formatClusterMarkerTitle,
   withMapPlaceClustering,
 } from "../utils/mapMarkerClustering";
+import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 
 // Minimal MapKit JS shape we touch from this component. We only declare the
 // fields we use so we don't need the full @types/apple-mapkit-js-browser
@@ -545,6 +546,11 @@ export function MapsAppComponent({
       setIsSearching(true);
       setSearchError(null);
       setIsShowingResults(true);
+      track(MAPS_ANALYTICS.SEARCH, {
+        appId: "maps",
+        queryLength: trimmed.length,
+        regionRequired: shouldRequireRegion,
+      });
 
       search.search(
         trimmed,
@@ -560,6 +566,11 @@ export function MapsAppComponent({
               err.message ||
                 t("apps.maps.searchFailed", { defaultValue: "Search failed" })
             );
+            track("maps:search_error", {
+              appId: "maps",
+              queryLength: trimmed.length,
+              errorType: "mapkit_search",
+            });
             return;
           }
           const places = data?.places ?? [];
@@ -664,6 +675,11 @@ export function MapsAppComponent({
   const handleSelectResult = useCallback(
     (result: MapsSearchResult) => {
       setIsShowingResults(false);
+      track(MAPS_ANALYTICS.PLACE_SELECT, {
+        appId: "maps",
+        source: "search",
+        category: result.category || "unknown",
+      });
       dropPinAt({
         id: result.id,
         name: result.name,
@@ -749,6 +765,11 @@ export function MapsAppComponent({
 
   const handleSelectSavedPlace = useCallback(
     (place: SavedPlace) => {
+      track(MAPS_ANALYTICS.PLACE_SELECT, {
+        appId: "maps",
+        source: "saved",
+        category: place.category || "unknown",
+      });
       focusSavedPlace(place);
     },
     [focusSavedPlace]
@@ -776,6 +797,10 @@ export function MapsAppComponent({
   }, [setSelectedPlace, clearDroppedAnnotation]);
 
   const handleOpenPlaceDirections = useCallback((place: SavedPlace) => {
+    track(MAPS_ANALYTICS.DIRECTIONS, {
+      appId: "maps",
+      category: place.category || "unknown",
+    });
     const url = buildAppleMapsDrivingDirectionsUrl(
       place.latitude,
       place.longitude
@@ -785,7 +810,13 @@ export function MapsAppComponent({
 
   const handleToggleFavorite = useCallback(
     (place: SavedPlace) => {
-      if (isPlaceFavorite(place.id)) {
+      const willFavorite = !isPlaceFavorite(place.id);
+      track(MAPS_ANALYTICS.FAVORITE_TOGGLE, {
+        appId: "maps",
+        enabled: willFavorite,
+        category: place.category || "unknown",
+      });
+      if (!willFavorite) {
         removeFavoritePlace(place.id);
       } else {
         addFavoritePlace(place);
@@ -1373,8 +1404,22 @@ export function MapsAppComponent({
               }
               savedHomePlace={homePlace}
               savedWorkPlace={workPlace}
-              onSetHome={(p) => setHomePlace(p)}
-              onSetWork={(p) => setWorkPlace(p)}
+              onSetHome={(p) => {
+                track(MAPS_ANALYTICS.HOME_WORK_SET, {
+                  appId: "maps",
+                  kind: "home",
+                  category: p.category || "unknown",
+                });
+                setHomePlace(p);
+              }}
+              onSetWork={(p) => {
+                track(MAPS_ANALYTICS.HOME_WORK_SET, {
+                  appId: "maps",
+                  kind: "work",
+                  category: p.category || "unknown",
+                });
+                setWorkPlace(p);
+              }}
               onToggleFavorite={handleToggleFavorite}
               onDirections={handleOpenPlaceDirections}
               onClose={handleClosePlaceCard}

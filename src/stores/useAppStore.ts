@@ -5,8 +5,7 @@ import { resolveAppId } from "@/config/appRegistryData";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { AppState } from "@/apps/base/types";
 import { AIModel } from "@/types/aiModels";
-import { track } from "@vercel/analytics";
-import { APP_ANALYTICS } from "@/utils/analytics";
+import { APP_ANALYTICS, track } from "@/utils/analytics";
 import { requestCloudSyncCheck, requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { shouldRequestCloudSyncOnAppLaunch, getCloudSyncDomainsForApp } from "@/utils/cloudSyncLaunch";
 export type { AIModel } from "@/types/aiModels";
@@ -151,7 +150,16 @@ const createUseAppStore = () =>
 
       // AI model (kept here as it's core app functionality)
       aiModel: null,
-      setAiModel: (m) => set({ aiModel: m }),
+      setAiModel: (m) => {
+        const previousModel = get().aiModel;
+        set({ aiModel: m });
+        if (previousModel !== m) {
+          track(APP_ANALYTICS.AI_MODEL_CHANGE, {
+            model: m || "auto",
+            previousModel: previousModel || "auto",
+          });
+        }
+      },
 
       // Boot state
       isFirstBoot: true,
@@ -163,7 +171,12 @@ const createUseAppStore = () =>
 
       // Expose/Mission Control mode
       exposeMode: false,
-      setExposeMode: (v) => set({ exposeMode: v }),
+      setExposeMode: (v) => {
+        if (get().exposeMode !== v) {
+          track(APP_ANALYTICS.APP_EXPOSE, { isOpen: v });
+        }
+        set({ exposeMode: v });
+      },
 
       // ryOS version (fetched from version.json)
       ryOSVersion: null,
@@ -343,8 +356,11 @@ const createUseAppStore = () =>
               },
             })
           );
-          // Track app launch analytics
-          track(APP_ANALYTICS.APP_LAUNCH, { appId });
+          track(APP_ANALYTICS.APP_LAUNCH, {
+            appId,
+            openWindowCount: get().instanceOrder.length,
+            hasInitialData: initialData !== undefined,
+          });
         }
         return createdId;
       },
@@ -424,6 +440,10 @@ const createUseAppStore = () =>
               detail: { instanceId, isOpen: false, isForeground: false },
             })
           );
+          track(APP_ANALYTICS.APP_CLOSE, {
+            appId: inst.appId,
+            openWindowCount: Object.keys(instances).length,
+          });
           return {
             instances,
             instanceOrder: order,
@@ -472,6 +492,12 @@ const createUseAppStore = () =>
               },
             })
           );
+          if (foreground && instances[foreground]) {
+            track(APP_ANALYTICS.APP_FOCUS, {
+              appId: instances[foreground].appId,
+              openWindowCount: Object.keys(instances).length,
+            });
+          }
           return {
             instances,
             instanceOrder: order,
@@ -549,6 +575,10 @@ const createUseAppStore = () =>
               detail: { instanceId, isOpen: true, isForeground: false, isMinimized: true },
             })
           );
+          track(APP_ANALYTICS.APP_MINIMIZE, {
+            appId: inst.appId,
+            openWindowCount: Object.keys(instances).length,
+          });
 
           return {
             instances,
@@ -581,6 +611,10 @@ const createUseAppStore = () =>
               detail: { instanceId, isOpen: true, isForeground: true, isMinimized: false },
             })
           );
+          track(APP_ANALYTICS.APP_RESTORE, {
+            appId: inst.appId,
+            openWindowCount: Object.keys(instances).length,
+          });
 
           return {
             instances,
@@ -651,6 +685,10 @@ const createUseAppStore = () =>
                   },
                 }));
               }
+              track(APP_ANALYTICS.APP_REOPEN, {
+                appId,
+                restoredFromMinimized: true,
+              });
               return lastRestoredId;
             }
           }
@@ -678,6 +716,11 @@ const createUseAppStore = () =>
                 },
               }));
             }
+            track(APP_ANALYTICS.APP_REOPEN, {
+              appId,
+              reusedExistingWindow: true,
+              hasInitialData: initialData !== undefined,
+            });
             return existing.instanceId;
           }
         }

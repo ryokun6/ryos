@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
+import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 
 function sanitizeStoredTheme(id: string | null | undefined): OsThemeId {
   if (id && id in themes) {
@@ -63,6 +64,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
   current: "macosx",
   setTheme: (theme) => {
     const safe = sanitizeStoredTheme(theme);
+    const previousTheme = useThemeStore.getState().current;
     set({ current: safe });
     localStorage.setItem(THEME_KEY, safe);
     // Clean up legacy key
@@ -72,6 +74,12 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     // Note: No need to invalidate icon cache on theme switch.
     // Theme switching changes the icon PATH (e.g., /icons/default/ → /icons/macosx/),
     // and the service worker caches each path separately.
+    if (previousTheme !== safe) {
+      track(SETTINGS_ANALYTICS.THEME_CHANGE, {
+        theme: safe,
+        previousTheme,
+      });
+    }
   },
   hydrate: () => {
     let saved = localStorage.getItem(THEME_KEY);

@@ -12,6 +12,7 @@ import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTimeout } from "@/hooks/useTimeout";
 import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
+import { PHOTO_BOOTH_ANALYTICS, track } from "@/utils/analytics";
 
 interface Effect {
   name: string;
@@ -294,6 +295,10 @@ export function usePhotoBoothLogic({
       console.log("No photos to export");
       return;
     }
+    track(PHOTO_BOOTH_ANALYTICS.EXPORT, {
+      appId: "photo-booth",
+      count: photos.length,
+    });
 
     // If there's only one photo, download it directly
     if (photos.length === 1) {
@@ -556,10 +561,14 @@ export function usePhotoBoothLogic({
   const handleCameraSelect = useCallback(
     async (deviceId: string) => {
       console.log("Switching to camera:", deviceId);
+      track(PHOTO_BOOTH_ANALYTICS.CAMERA_CHANGE, {
+        appId: "photo-booth",
+        cameraCount: availableCameras.length,
+      });
       setSelectedCameraId(deviceId);
       await startCamera();
     },
-    [startCamera]
+    [availableCameras.length, startCamera]
   );
 
   // Detect iOS devices which need special handling
@@ -765,6 +774,11 @@ export function usePhotoBoothLogic({
   }, [selectedCameraId]);
 
   const handlePhoto = (photoDataUrl: string) => {
+    track(PHOTO_BOOTH_ANALYTICS.CAPTURE, {
+      appId: "photo-booth",
+      effect: selectedEffect.translationKey,
+      isBurst: isMultiPhotoMode,
+    });
     // Trigger flash effect
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 800);
@@ -835,6 +849,10 @@ export function usePhotoBoothLogic({
   };
 
   const startMultiPhotoSequence = () => {
+    track(PHOTO_BOOTH_ANALYTICS.BURST_CAPTURE, {
+      appId: "photo-booth",
+      effect: selectedEffect.translationKey,
+    });
     setIsMultiPhotoMode(true);
     setMultiPhotoCount(0);
     currentPhotoBatchRef.current = [];

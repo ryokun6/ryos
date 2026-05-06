@@ -10,6 +10,7 @@ import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
 import { parseIcalString, toIcalString } from "../utils/parseIcal";
 import { toast } from "sonner";
+import { CALENDAR_ANALYTICS, track } from "@/utils/analytics";
 
 type CalendarUndoAction =
   | { type: "addEvent"; event: CalendarEvent }
@@ -412,6 +413,7 @@ export function useCalendarLogic() {
         .events.find((e) => e.id === id);
       if (created) pushUndo({ type: "addEvent", event: { ...created } });
       setSelectedEventId(id);
+      track(CALENDAR_ANALYTICS.EVENT_CREATE, { source: "dateDoubleClick" });
     },
     [setSelectedDate, calendars, addEvent, t, pushUndo, setSelectedEventId]
   );
@@ -437,6 +439,7 @@ export function useCalendarLogic() {
         .events.find((e) => e.id === id);
       if (created) pushUndo({ type: "addEvent", event: { ...created } });
       setSelectedEventId(id);
+      track(CALENDAR_ANALYTICS.EVENT_CREATE, { source: "timeSlot" });
     },
     [setSelectedDate, calendars, addEvent, t, pushUndo, setSelectedEventId]
   );
@@ -455,6 +458,7 @@ export function useCalendarLogic() {
       .events.find((e) => e.id === id);
     if (created) pushUndo({ type: "addEvent", event: { ...created } });
     setSelectedEventId(id);
+    track(CALENDAR_ANALYTICS.EVENT_CREATE, { source: "toolbar" });
   }, [selectedDate, calendars, addEvent, t, pushUndo, setSelectedEventId]);
 
   const handleEditSelectedEvent = useCallback(() => {
@@ -473,6 +477,9 @@ export function useCalendarLogic() {
       updateEvent(id, updates);
       const after = { ...existing, ...updates, updatedAt: Date.now() };
       pushUndo({ type: "updateEvent", eventId: id, before, after });
+      track(CALENDAR_ANALYTICS.EVENT_UPDATE, {
+        updatedFieldCount: Object.keys(updates).length,
+      });
     },
     [events, updateEvent, pushUndo]
   );
@@ -483,6 +490,7 @@ export function useCalendarLogic() {
       if (ev) pushUndo({ type: "deleteEvent", event: { ...ev } });
       deleteEvent(selectedEventId);
       setSelectedEventId(null);
+      track(CALENDAR_ANALYTICS.EVENT_DELETE);
     }
   }, [selectedEventId, events, deleteEvent, pushUndo]);
 
@@ -513,6 +521,7 @@ export function useCalendarLogic() {
         if (importedEvents.length > 0) {
           pushUndo({ type: "importEvents", events: importedEvents });
           setSelectedDate(parsed[0].date);
+          track(CALENDAR_ANALYTICS.IMPORT, { count: importedEvents.length });
           toast.success(
             parsed.length === 1
               ? t("apps.calendar.import.success", { count: parsed.length })
@@ -532,6 +541,7 @@ export function useCalendarLogic() {
     }
 
     const icsContent = toIcalString(events);
+    track(CALENDAR_ANALYTICS.EXPORT, { count: events.length });
     const blob = new Blob([icsContent], { type: "text/calendar" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

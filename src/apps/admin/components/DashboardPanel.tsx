@@ -52,12 +52,51 @@ interface AIRateLimitInfo {
   windowLabel: string;
 }
 
+interface ProductDailyMetrics {
+  date: string;
+  events: number;
+  pageViews: number;
+  sessions: number;
+  appLifecycle: number;
+  auth: number;
+  errors: number;
+  uniqueVisitors: number;
+}
+
+interface ProductAnalyticsSummary {
+  days: ProductDailyMetrics[];
+  totals: {
+    events: number;
+    pageViews: number;
+    sessions: number;
+    appLifecycle: number;
+    auth: number;
+    errors: number;
+    uniqueVisitors: number;
+  };
+}
+
+interface ProductBreakdown {
+  name: string;
+  count: number;
+}
+
+interface ProductAnalyticsDetail {
+  summary: ProductAnalyticsSummary;
+  topEvents: ProductBreakdown[];
+  topApps: ProductBreakdown[];
+  categories: ProductBreakdown[];
+  sources: ProductBreakdown[];
+  topPaths: ProductBreakdown[];
+}
+
 interface AnalyticsDetail {
   summary: AnalyticsSummary;
   topEndpoints: EndpointBreakdown[];
   statusCodes: StatusBreakdown[];
   aiByUser: AIUserBreakdown[];
   aiRateLimits: AIRateLimitInfo[];
+  product?: ProductAnalyticsDetail;
 }
 
 interface DashboardPanelProps {
@@ -150,6 +189,41 @@ function StatCard({
           {trend.value}% {trend.label}
         </div>
       )}
+    </div>
+  );
+}
+
+function BreakdownList({
+  items,
+  nameClassName,
+}: {
+  items: ProductBreakdown[];
+  nameClassName?: string;
+}) {
+  if (items.length === 0) {
+    return <EmptyState message="No data yet" />;
+  }
+  const max = items[0]?.count || 1;
+  return (
+    <div className="divide-y divide-gray-100">
+      {items.slice(0, 10).map((item) => (
+        <div key={item.name} className="flex items-center gap-2 px-3 py-1.5">
+          <span className={cn("text-[11px] text-neutral-600 flex-1 truncate", nameClassName)}>
+            {item.name}
+          </span>
+          <div className="w-24 flex items-center gap-1.5">
+            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-400 rounded-full"
+                style={{ width: `${(item.count / max) * 100}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-neutral-500 w-8 text-right tabular-nums">
+              {formatNumber(item.count)}
+            </span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -565,6 +639,47 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
               </div>
             </div>
           </div>
+        ) : null}
+
+        {data.product ? (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-3 pb-3">
+              <StatCard
+                label={t("apps.admin.dashboard.kpi.productEvents")}
+                value={formatNumber(data.product.summary.totals.events)}
+              />
+              <StatCard
+                label={t("apps.admin.dashboard.kpi.pageViews")}
+                value={formatNumber(data.product.summary.totals.pageViews)}
+              />
+              <StatCard
+                label={t("apps.admin.dashboard.kpi.sessions")}
+                value={formatNumber(data.product.summary.totals.sessions)}
+              />
+              <StatCard
+                label={t("apps.admin.dashboard.kpi.appEvents")}
+                value={formatNumber(data.product.summary.totals.appLifecycle)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
+              {[
+                [t("apps.admin.dashboard.sections.topProductEvents"), data.product.topEvents],
+                [t("apps.admin.dashboard.sections.topApps"), data.product.topApps],
+                [t("apps.admin.dashboard.sections.eventCategories"), data.product.categories],
+                [t("apps.admin.dashboard.sections.topPages"), data.product.topPaths],
+              ].map(([title, items]) => (
+                <div key={String(title)} className="border border-gray-200 rounded bg-white overflow-hidden">
+                  <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                    <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+                      {String(title)}
+                    </span>
+                  </div>
+                  <BreakdownList items={items as ProductBreakdown[]} nameClassName="font-mono" />
+                </div>
+              ))}
+            </div>
+          </>
         ) : null}
 
         <div className="px-3 pb-3">
