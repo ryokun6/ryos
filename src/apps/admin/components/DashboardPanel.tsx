@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowsClockwise, Warning } from "@phosphor-icons/react";
+import { ArrowsClockwise, ArrowRight, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { getAdminAnalytics } from "@/api/admin";
 import { AdminPanelHeader } from "./AdminPanelHeader";
 import { DashboardServerCard } from "./DashboardServerCard";
+import type { AdminSection } from "../utils/navigationState";
 
 interface DailyMetrics {
   date: string;
@@ -101,6 +102,7 @@ interface AnalyticsDetail {
 
 interface DashboardPanelProps {
   onRefresh?: () => void;
+  onSectionChange?: (section: AdminSection) => void;
 }
 
 function formatNumber(n: number): string {
@@ -230,7 +232,7 @@ function BreakdownList({
 
 const RANGE_DAYS = [1, 7, 14, 30] as const;
 
-export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
+export function DashboardPanel({ onRefresh, onSectionChange }: DashboardPanelProps) {
   const { t } = useTranslation();
   const { username, isAuthenticated } = useAuth();
   const [data, setData] = useState<AnalyticsDetail | null>(null);
@@ -643,6 +645,25 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
 
         {data.product ? (
           <>
+            <div className="flex items-center justify-between gap-2 px-3 pt-1 pb-1">
+              <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+                {t(
+                  "apps.admin.dashboard.sections.productAnalytics",
+                  "Product Analytics"
+                )}
+              </span>
+              {onSectionChange ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onSectionChange("analytics")}
+                  className="h-6 px-2 text-[11px] text-neutral-500 hover:text-neutral-700"
+                >
+                  {t("apps.admin.dashboard.viewDetailed", "View detailed")}
+                  <ArrowRight size={11} weight="bold" className="ml-1" />
+                </Button>
+              ) : null}
+            </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-3 pb-3">
               <StatCard
                 label={t("apps.admin.dashboard.kpi.productEvents")}

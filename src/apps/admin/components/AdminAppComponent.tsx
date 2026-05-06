@@ -3,6 +3,7 @@ import { WindowFrame } from "@/components/layout/WindowFrame";
 import { AdminMenuBar } from "./AdminMenuBar";
 import { AdminSidebar } from "./AdminSidebar";
 import { DashboardPanel } from "./DashboardPanel";
+import { AnalyticsPanel } from "./AnalyticsPanel";
 import { UserProfilePanel } from "./UserProfilePanel";
 import { SongDetailPanel } from "./SongDetailPanel";
 import { CursorAgentsPanel } from "./CursorAgentsPanel";
@@ -338,6 +339,7 @@ export function AdminAppComponent({
             {!selectedUserProfile &&
               !selectedSongId &&
               activeSection !== "dashboard" &&
+              activeSection !== "analytics" &&
               activeSection !== "cursorAgents" && (
               <div
                 className={cn(
@@ -579,7 +581,18 @@ export function AdminAppComponent({
                 !selectedRoomId &&
                 !selectedUserProfile &&
                 !selectedSongId && (
-                  <DashboardPanel onRefresh={handleRefresh} />
+                  <DashboardPanel
+                    onRefresh={handleRefresh}
+                    onSectionChange={setActiveSection}
+                  />
+                )}
+
+              {/* Analytics View */}
+              {activeSection === "analytics" &&
+                !selectedRoomId &&
+                !selectedUserProfile &&
+                !selectedSongId && (
+                  <AnalyticsPanel onRefresh={handleRefresh} />
                 )}
 
               {/* User Profile View */}
@@ -923,6 +936,8 @@ export function AdminAppComponent({
               <span>
                 {activeSection === "dashboard"
                   ? t("apps.admin.sidebar.dashboard", "Dashboard")
+                  : activeSection === "analytics"
+                    ? t("apps.admin.sidebar.analytics", "Analytics")
                   : activeSection === "cursorAgents"
                     ? t("apps.admin.statusBar.cursorAgentsCount", {
                         count: stats.totalCursorAgents ?? 0,

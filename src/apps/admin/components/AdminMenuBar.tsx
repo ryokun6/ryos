@@ -72,6 +72,15 @@ export function AdminMenuBar({
             {t("apps.admin.sidebar.dashboard", "Dashboard")}
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
+            checked={activeSection === "analytics"}
+            onCheckedChange={(checked) => {
+              if (checked) onSectionChange("analytics");
+            }}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.admin.sidebar.analytics", "Analytics")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
             checked={activeSection === "users"}
             onCheckedChange={(checked) => {
               if (checked) onSectionChange("users");

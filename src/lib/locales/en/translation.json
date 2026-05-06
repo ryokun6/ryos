@@ -3574,6 +3574,7 @@
         "loading": "Loading analytics...",
         "failedToLoad": "Failed to load",
         "retry": "Retry",
+        "viewDetailed": "View detailed",
         "range": {
           "today": "Today"
         },
@@ -3582,6 +3583,7 @@
         },
         "kpi": {
           "visitors": "Visitors",
+          "uniqueVisitors": "Unique Visitors",
           "apiCalls": "API Calls",
           "aiRequests": "AI Requests",
           "errorRate": "Error Rate",
@@ -3619,6 +3621,29 @@
           "noAiUsage": "No AI usage yet"
         }
       },
+      "analytics": {
+        "title": "Analytics",
+        "intro": "First-party product analytics: page views, sessions, app lifecycle and every tracked event from across ryOS.",
+        "range": "Range",
+        "filterEvents": "Filter events...",
+        "noProductData": "No product analytics data yet. Events appear here once the app starts emitting them.",
+        "kpi": {
+          "auth": "Auth Events",
+          "errors": "Errors",
+          "apiCalls": "API Calls"
+        },
+        "charts": {
+          "events": "Events",
+          "pageViews": "Page Views",
+          "sessions": "Sessions",
+          "appLifecycle": "App Lifecycle",
+          "errors": "Errors"
+        },
+        "sections": {
+          "eventExplorer": "Event Explorer",
+          "sources": "Sources"
+        }
+      },
       "menu": {
         "refreshData": "Refresh Data",
         "showSidebar": "Show Sidebar",
@@ -3627,6 +3652,7 @@
       },
       "sidebar": {
         "dashboard": "Dashboard",
+        "analytics": "Analytics",
         "users": "Users",
         "rooms": "Rooms",
         "songs": "Songs",

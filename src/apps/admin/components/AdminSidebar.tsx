@@ -83,6 +83,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </SelectableListItem>
 
           <SelectableListItem
+            isSelected={activeSection === "analytics"}
+            onClick={() => { playButtonClick(); onSectionChange("analytics"); onRoomSelect(null); }}
+          >
+            {t("apps.admin.sidebar.analytics", "Analytics")}
+          </SelectableListItem>
+
+          <SelectableListItem
             isSelected={activeSection === "users" && selectedRoomId === null}
             onClick={() => { playButtonClick(); onSectionChange("users"); onRoomSelect(null); }}
           >

@@ -1,5 +1,6 @@
 export type AdminSection =
   | "dashboard"
+  | "analytics"
   | "users"
   | "rooms"
   | "songs"
