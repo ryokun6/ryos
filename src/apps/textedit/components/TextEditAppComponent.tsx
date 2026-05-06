@@ -23,6 +23,7 @@ import { markdownToHtml } from "@/utils/markdown";
 import { useTranslation } from "react-i18next";
 import { onDocumentUpdated } from "@/utils/appEventBus";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
+import { getTextAnalytics, TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -289,6 +290,7 @@ function TextEditContent({
 
   const handleTranscriptionComplete = (text: string) => {
     setIsTranscribing(false);
+    track(TEXTEDIT_ANALYTICS.TRANSCRIBE, getTextAnalytics(text));
     if (editor) {
       if (!editor.isFocused) {
         editor.commands.focus();
@@ -309,6 +311,7 @@ function TextEditContent({
 
   const handleNewFile = () => {
     const newInstanceId = launchAppInstance("textedit", null, t("apps.textedit.untitled"), true);
+    track(TEXTEDIT_ANALYTICS.NEW_DOCUMENT, { appId: "textedit" });
     console.log(`Created new TextEdit file in instance: ${newInstanceId}`);
   };
 
