@@ -39,6 +39,9 @@ export interface FileItem {
   type?: string;
   aliasType?: "file" | "app"; // For desktop shortcuts/aliases
   aliasTarget?: string; // Target path or appId for aliases
+  originalPath?: string; // Original location for trashed files
+  deletedAt?: number; // Trash timestamp
+  status?: "active" | "trashed";
 }
 
 interface FileListProps {

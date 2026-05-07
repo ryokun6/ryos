@@ -1761,6 +1761,7 @@
         "emptyTrash": "Svuota Cestino...",
         "kind": "Tipo",
         "moveToTrash": "Sposta nel Cestino",
+        "putBack": "Ripristina",
         "name": "Nome",
         "newFolder": "Nuova Cartella…",
         "noAirDropUsersAvailable": "Nessun utente nelle vicinanze",

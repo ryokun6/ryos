@@ -250,7 +250,9 @@ export function FinderAppComponent({
       onEmptyTrash={handleEmptyTrash}
       onRestore={handleRestore}
       isTrashEmpty={trashItemsCount === 0}
-      isInTrash={Boolean(selectedFile?.path.startsWith("/Trash"))}
+      isInTrash={Boolean(
+        selectedFile && (currentPath === "/Trash" || selectedFile.status === "trashed")
+      )}
       onNavigateBack={navigateBack}
       onNavigateForward={navigateForward}
       canNavigateBack={canNavigateBack()}
