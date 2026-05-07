@@ -23,6 +23,9 @@ concurrency:
 jobs:
   test:
     name: Unit tests (Bun ${{ matrix.bun-version }})
+    # Only run on pull requests. Pushes to main go straight to image build +
+    # Coolify deploy; PR CI is responsible for running tests before merge.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -59,6 +62,9 @@ jobs:
 
   build:
     name: Build (Bun ${{ matrix.bun-version }})
+    # Only run on pull requests. Pushes to main skip this job since the
+    # Dockerfile already runs the production build inside the image step.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
