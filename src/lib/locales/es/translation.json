@@ -1761,6 +1761,7 @@
         "emptyTrash": "Vaciar Papelera...",
         "kind": "Tipo",
         "moveToTrash": "Mover a la Papelera",
+        "putBack": "Volver a colocar",
         "name": "Nombre",
         "newFolder": "Nueva Carpeta…",
         "noAirDropUsersAvailable": "No hay usuarios cercanos",

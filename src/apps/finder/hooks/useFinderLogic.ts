@@ -1237,57 +1237,67 @@ export function useFinderLogic({
     ];
   };
 
-  const fileMenuItems = (file: FileItem): MenuItem[] => [
-    {
-      type: "item",
-      label: t("apps.finder.contextMenu.open"),
-      onSelect: () => handleFileOpen(file),
-    },
-    { type: "separator" },
-    {
-      type: "submenu",
-      label: t("apps.finder.contextMenu.shareViaAirDrop"),
-      items: getAirDropMenuItems(file),
-      disabled: !canShareViaAirDrop(file),
-    },
-    { type: "separator" },
-    {
-      type: "item",
-      label: t("apps.finder.contextMenu.addToDesktop"),
-      onSelect: () => handleAddToDesktop(file),
-      disabled:
-        file.isDirectory ||
-        file.path.startsWith("/Desktop") ||
-        file.path === "/Desktop",
-    },
-    {
-      type: "item",
-      label: t("common.dock.addToDock"),
-      onSelect: () => handleAddToDock(file),
-      disabled: !isDockable(file) || isAlreadyInDock(file),
-    },
-    { type: "separator" },
-    {
-      type: "item",
-      label: t("apps.finder.contextMenu.rename"),
-      onSelect: handleRename,
-    },
-    {
-      type: "item",
-      label: t("apps.finder.contextMenu.duplicate"),
-      onSelect: handleDuplicate,
-    },
-    {
-      type: "item",
-      label: t("apps.finder.contextMenu.moveToTrash"),
-      onSelect: () => trackedMoveToTrash(file),
-      disabled:
-        file.path.startsWith("/Trash") ||
-        file.path === "/Documents" ||
-        file.path === "/Images" ||
-        file.path === "/Applications",
-    },
-  ];
+  const fileMenuItems = (file: FileItem): MenuItem[] => {
+    const isTrashedItem = currentPath === "/Trash" || file.status === "trashed";
+
+    return [
+      {
+        type: "item",
+        label: t("apps.finder.contextMenu.open"),
+        onSelect: () => handleFileOpen(file),
+      },
+      { type: "separator" },
+      {
+        type: "submenu",
+        label: t("apps.finder.contextMenu.shareViaAirDrop"),
+        items: getAirDropMenuItems(file),
+        disabled: !canShareViaAirDrop(file),
+      },
+      { type: "separator" },
+      {
+        type: "item",
+        label: t("apps.finder.contextMenu.addToDesktop"),
+        onSelect: () => handleAddToDesktop(file),
+        disabled:
+          file.isDirectory ||
+          file.path.startsWith("/Desktop") ||
+          file.path === "/Desktop",
+      },
+      {
+        type: "item",
+        label: t("common.dock.addToDock"),
+        onSelect: () => handleAddToDock(file),
+        disabled: !isDockable(file) || isAlreadyInDock(file),
+      },
+      { type: "separator" },
+      {
+        type: "item",
+        label: t("apps.finder.contextMenu.rename"),
+        onSelect: handleRename,
+      },
+      {
+        type: "item",
+        label: t("apps.finder.contextMenu.duplicate"),
+        onSelect: handleDuplicate,
+      },
+      isTrashedItem
+        ? {
+            type: "item",
+            label: t("apps.finder.contextMenu.putBack"),
+            onSelect: () => restoreFromTrash(file),
+          }
+        : {
+            type: "item",
+            label: t("apps.finder.contextMenu.moveToTrash"),
+            onSelect: () => trackedMoveToTrash(file),
+            disabled:
+              file.path.startsWith("/Trash") ||
+              file.path === "/Documents" ||
+              file.path === "/Images" ||
+              file.path === "/Applications",
+          },
+    ];
+  };
 
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOSXTheme = currentTheme === "macosx";

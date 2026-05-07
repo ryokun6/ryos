@@ -39,6 +39,9 @@ export interface FileItem {
   type?: string;
   aliasType?: "file" | "app"; // For desktop shortcuts/aliases
   aliasTarget?: string; // Target path or appId for aliases
+  originalPath?: string; // Original location for trashed files
+  deletedAt?: number; // Trash timestamp
+  status?: "active" | "trashed";
 }
 
 interface FileListProps {
@@ -863,6 +866,8 @@ export function FileList({
     containerRef.current &&
     createSelectionRect(selectionRect.start, selectionRect.end);
   const containerRect = containerRef.current?.getBoundingClientRect();
+  // Remount the table when the final row is removed to clear stale row paint.
+  const listTableKey = files.length === 0 ? "empty" : "populated";
 
   // ------------------- Render -------------------
 
@@ -876,7 +881,7 @@ export function FileList({
         onDrop={handleContainerDrop}
         onMouseDown={handleBlankMouseDown}
       >
-        <Table className="min-w-[480px]">
+        <Table key={listTableKey} className="min-w-[480px]">
           <TableHeader>
             <TableRow className="text-[10px] border-none font-normal">
               <TableHead className="font-normal bg-gray-100/50 h-[28px]">

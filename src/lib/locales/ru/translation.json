@@ -1761,6 +1761,7 @@
         "emptyTrash": "Очистить Корзину...",
         "kind": "Вид",
         "moveToTrash": "Переместить в Корзину",
+        "putBack": "Вернуть на место",
         "name": "Имя",
         "newFolder": "Новая папка…",
         "noAirDropUsersAvailable": "Пользователей поблизости нет",

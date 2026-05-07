@@ -1761,6 +1761,7 @@
         "emptyTrash": "ゴミ箱を空にする...",
         "kind": "種類",
         "moveToTrash": "ゴミ箱に入れる",
+        "putBack": "元に戻す",
         "name": "名前",
         "newFolder": "新規フォルダ…",
         "noAirDropUsersAvailable": "近くのユーザーはいません",

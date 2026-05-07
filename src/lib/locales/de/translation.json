@@ -1761,6 +1761,7 @@
         "emptyTrash": "Papierkorb leeren...",
         "kind": "Art",
         "moveToTrash": "In den Papierkorb legen",
+        "putBack": "Zurücklegen",
         "name": "Name",
         "newFolder": "Neuer Ordner…",
         "noAirDropUsersAvailable": "Keine Nutzer in der Nähe",

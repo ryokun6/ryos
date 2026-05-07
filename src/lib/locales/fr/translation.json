@@ -1761,6 +1761,7 @@
         "emptyTrash": "Vider la corbeille...",
         "kind": "Type",
         "moveToTrash": "Placer dans la corbeille",
+        "putBack": "Remettre à sa place",
         "name": "Nom",
         "newFolder": "Nouveau dossier…",
         "noAirDropUsersAvailable": "Aucun utilisateur a proximité",
