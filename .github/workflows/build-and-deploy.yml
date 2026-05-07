@@ -59,6 +59,7 @@ jobs:
 
   build:
     name: Build (Bun ${{ matrix.bun-version }})
+    needs: [test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -105,7 +106,7 @@ jobs:
 
   deploy:
     name: Deploy to Coolify (production)
-    needs: [test, build]
+    needs: [build]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       github.event_name == 'workflow_dispatch'
