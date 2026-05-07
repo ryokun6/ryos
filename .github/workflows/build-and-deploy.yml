@@ -162,6 +162,11 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ steps.tags.outputs.tags }}
+          # GIT_COMMIT_SHA is consumed by `scripts/generate-build-version.ts`
+          # inside the Dockerfile so the built image's `public/version.json`
+          # reports the real commit instead of falling back to 'dev'.
+          build-args: |
+            GIT_COMMIT_SHA=${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
