@@ -43,6 +43,7 @@ type Phase =
   | "idle"
   | "awaitingStart"
   | "loading"
+  | "starting"
   | "playing"
   | "feedback"
   | "finished";
@@ -252,14 +253,15 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     [round, phase, playClick, vibrate, clearTimers, roundNumber, startNextRound]
   );
 
-  // Snippet playback control
-  const startSnippet = useCallback(() => {
-    if (!playerRef.current) return;
+  // Arm the snippet timer. Should be called the moment the snippet actually
+  // starts playing (i.e. from onPlay), NOT when the player is merely ready —
+  // YouTube takes a noticeable amount of time between onReady and the first
+  // audio frame, and we don't want that loading time to eat into the
+  // player's countdown.
+  const armSnippetTimer = useCallback(() => {
     clearTimers();
     snippetStartedAtRef.current = performance.now();
-    playerRef.current.seekTo(startSecRef.current, "seconds");
     snippetTimerRef.current = setTimeout(() => {
-      // Time's up — auto-mark wrong (no answer)
       if (!round) return;
       clearTimers();
       const updated = { ...round, selectedIndex: null, isCorrect: false };
@@ -300,25 +302,37 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     // iframe is loaded and ready to play the instant we get the gesture.
     if (phase === "awaitingStart") return;
     if (phase !== "loading") return;
+    // Seek first so playback resumes at the desired snippet start, then
+    // transition to "starting". `playing={true}` follows from "starting",
+    // and the countdown is armed only once the player fires onPlay.
+    if (playerRef.current) {
+      playerRef.current.seekTo(startSecRef.current, "seconds");
+    }
+    setPhase("starting");
+  }, [phase]);
+
+  const handlePlay = useCallback(() => {
+    // Only arm the snippet timer on the FIRST play after we requested the
+    // snippet to start. Subsequent onPlay events (e.g. after a buffering
+    // pause) are ignored so the countdown stays anchored to the initial
+    // playback.
+    if (phase !== "starting") return;
     setPhase("playing");
-    // Defer to next tick to ensure player is fully ready before seeking
-    setTimeout(() => {
-      if (playerRef.current) {
-        playerRef.current.seekTo(startSecRef.current, "seconds");
-      }
-      startSnippet();
-    }, 50);
-  }, [phase, startSnippet]);
+    armSnippetTimer();
+  }, [phase, armSnippetTimer]);
 
   // Watchdog: on iOS Safari (and any other blocked-autoplay environment) the
-  // YouTube iframe sometimes never fires onReady because playback is blocked
-  // by autoplay policies. After a grace period, skip to the next round so the
-  // game isn't stuck on "Loading...".
+  // YouTube iframe sometimes never fires onReady — or fires onReady but never
+  // onPlay because playback is blocked by autoplay policies. After a grace
+  // period in any pre-playing phase, skip to the next round so the game
+  // isn't stuck on "Loading...".
   useEffect(() => {
     if (!round) return;
-    if (phase !== "loading" && !(phase === "awaitingStart" && !isPlayerReady)) {
-      return;
-    }
+    const inLoadingPhase =
+      phase === "loading" ||
+      phase === "starting" ||
+      (phase === "awaitingStart" && !isPlayerReady);
+    if (!inLoadingPhase) return;
     if (loadingWatchdogRef.current) {
       clearTimeout(loadingWatchdogRef.current);
     }
@@ -370,24 +384,12 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         // ignore; handleReady will start playback when the iframe is ready
       }
     }
-    snippetStartedAtRef.current = performance.now();
-    setPhase("playing");
-    if (snippetTimerRef.current) clearTimeout(snippetTimerRef.current);
-    snippetTimerRef.current = setTimeout(() => {
-      if (!round) return;
-      clearTimers();
-      setRound((r) => (r ? { ...r, selectedIndex: null, isCorrect: false } : r));
-      setSelectedIndex((r) => (round?.correctIndex ?? r));
-      setPhase("feedback");
-      feedbackTimerRef.current = setTimeout(() => {
-        if (roundNumber >= TOTAL_ROUNDS) {
-          setPhase("finished");
-        } else {
-          startNextRound();
-        }
-      }, FEEDBACK_DURATION_MS);
-    }, SNIPPET_DURATION_MS);
-  }, [clearTimers, round, roundNumber, startNextRound]);
+    // Move into "starting" so the player gets `playing={true}` but the
+    // countdown stays paused until the iframe actually starts emitting
+    // audio (signalled by onPlay). This is what excludes iOS gesture-to-
+    // first-frame latency from the player's reaction window.
+    setPhase("starting");
+  }, []);
 
   // Imperative API exposed via ref
   useImperativeHandle(ref, () => ({
@@ -535,7 +537,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
               <span>{t("apps.ipod.musicQuiz.menuToExit")}</span>
             </div>
           </div>
-        ) : phase === "loading" ? (
+        ) : phase === "loading" || phase === "starting" ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
             <div className="text-[14px] animate-pulse">
               {t("apps.ipod.musicQuiz.loading")}
@@ -659,13 +661,14 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
           <ReactPlayer
             ref={playerRef}
             url={correctTrackUrl}
-            playing={phase === "playing"}
+            playing={phase === "playing" || phase === "starting"}
             controls={false}
             volume={finalVolume}
             width="100%"
             height="100%"
             playsinline
             onReady={handleReady}
+            onPlay={handlePlay}
             onDuration={handleDuration}
             config={{
               youtube: {
