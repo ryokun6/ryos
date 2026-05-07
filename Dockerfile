@@ -6,6 +6,14 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY . .
+
+# Commit SHA passed in by CI (e.g. GitHub Actions). The prebuild script
+# (`scripts/generate-build-version.ts`) reads this to populate the build
+# number in `public/version.json`. Without it, the script falls back to
+# 'dev' because the `.git` directory is excluded by `.dockerignore`.
+ARG GIT_COMMIT_SHA=""
+ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
+
 RUN bun run build
 
 FROM --platform=linux/amd64 oven/bun:1.3.9 AS runtime
