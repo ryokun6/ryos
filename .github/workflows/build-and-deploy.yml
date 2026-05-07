@@ -95,18 +95,74 @@ jobs:
       - name: Type check and build
         run: bun run build
 
-      - name: Upload build artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+  image:
+    name: Build & push Docker image to GHCR
+    needs: [build]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_NAME: ghcr.io/ryokun6/ryos
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          name: dist-${{ github.sha }}
-          path: dist
-          retention-days: 7
-          if-no-files-found: error
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: tags
+        run: |
+          {
+            echo "tags<<EOF"
+            echo "${IMAGE_NAME}:latest"
+            echo "${IMAGE_NAME}:sha-${GITHUB_SHA}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      - name: Image summary
+        run: |
+          {
+            echo "## Pushed Docker image"
+            echo
+            echo "- \`${IMAGE_NAME}:latest\`"
+            echo "- \`${IMAGE_NAME}:sha-${GITHUB_SHA}\`"
+            echo
+            echo "Coolify can now pull \`${IMAGE_NAME}:latest\` for the next deploy."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     name: Deploy to Coolify (production)
-    needs: [build]
+    needs: [image]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       github.event_name == 'workflow_dispatch'
@@ -202,5 +258,5 @@ jobs:
             echo "- Ref: \`${{ github.ref }}\`"
             echo "- Actor: @${{ github.actor }}"
             echo
-            echo "Coolify will pull the latest commit and rebuild the Dockerfile image."
+            echo "Coolify will pull \`ghcr.io/ryokun6/ryos:latest\` (sha-${{ github.sha }}) and roll out the new image."
           } >> "$GITHUB_STEP_SUMMARY"
