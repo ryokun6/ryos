@@ -116,12 +116,29 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Prefer a long-lived PAT (secrets.GHCR_PAT) when configured, falling
+      # back to the auto-injected GITHUB_TOKEN otherwise. The PAT path is
+      # the escape hatch for the first push to a new user-namespace package
+      # (and for repos where org settings restrict the GITHUB_TOKEN's
+      # `packages: write` upgrade). Once the package exists and the repo's
+      # workflow permissions allow it, GITHUB_TOKEN is sufficient.
+      - name: Report which GHCR credential will be used
+        env:
+          HAS_PAT: ${{ secrets.GHCR_PAT != '' }}
+        run: |
+          if [ "${HAS_PAT}" = "true" ]; then
+            echo "Using GHCR_PAT (PAT owner: ${{ github.repository_owner }})"
+          else
+            echo "Using GITHUB_TOKEN (actor: ${{ github.actor }})"
+            echo "::notice::No GHCR_PAT secret set; falling back to GITHUB_TOKEN. If this push 403s, see PR description for fix options."
+          fi
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.GHCR_PAT != '' && github.repository_owner || github.actor }}
+          password: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Compute image tags
         id: tags
