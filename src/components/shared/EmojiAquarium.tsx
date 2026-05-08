@@ -49,7 +49,7 @@ export function AquariumBubbleOverflowLayer({
   className,
 }: AquariumBubbleOverflowLayerProps) {
   const rand = createSeededRandom(seed);
-  const escapeHeight = Math.max(16, Math.round(height * 0.1));
+  const escapeHeight = Math.max(28, Math.round(height * 0.14));
   const safeWidth = Math.max(1, width);
 
   return (
@@ -68,11 +68,11 @@ export function AquariumBubbleOverflowLayer({
         const drift = (rand() - 0.5) * 34;
         const dur = 8 + rand() * 7;
         const delay = i * 0.8 + rand() * 1.5;
-        const size = (startsNearSurface ? 24 : 18) + rand() * 10;
+        const size = (startsNearSurface ? 32 : 20) + rand() * 10;
         const exitsTank = i < Math.ceil(count / 2) || rand() > 0.35;
-        const endY = exitsTank ? -(6 + rand() * escapeHeight) : -6;
-        const edgeY = exitsTank ? Math.min(-6, endY * 0.55) : 6;
-        const fadeY = exitsTank ? endY - 10 : endY;
+        const endY = exitsTank ? -(12 + rand() * escapeHeight) : -6;
+        const edgeY = exitsTank ? Math.min(-10, endY * 0.5) : 6;
+        const fadeY = exitsTank ? endY - 14 : endY;
 
         return (
           <motion.span
@@ -81,8 +81,8 @@ export function AquariumBubbleOverflowLayer({
             animate={{
               x: [x, x + drift * 0.35, x + drift * 0.7, x + drift],
               y: [startY, edgeY, endY, fadeY],
-              opacity: [0, 0.9, 0.85, 0],
-              scale: [0.45, 1.05, 1, 0.72],
+              opacity: [0, 1, 0.95, 0],
+              scale: [0.45, 1.12, 1.05, 0.72],
             }}
             transition={{
               duration: dur,
@@ -93,7 +93,7 @@ export function AquariumBubbleOverflowLayer({
             style={{
               position: "absolute",
               willChange: "transform, opacity",
-              filter: "drop-shadow(0 2px 6px rgba(255,255,255,0.35))",
+              filter: "drop-shadow(0 2px 8px rgba(255,255,255,0.55))",
             }}
             className="select-none"
           >
@@ -460,7 +460,7 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
             seed={`${seedRef.current}:chat-bubble-overflow`}
             width={width}
             height={height}
-            count={5}
+            count={6}
             className="z-50"
           />
         )}

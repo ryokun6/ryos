@@ -31,7 +31,7 @@ export function AquariumBubbleOverflow({ widgetId }: AquariumWidgetProps) {
       seed={`${widgetId}:dashboard-bubble-overflow`}
       width={widget.size.width}
       height={widget.size.height}
-      count={8}
+      count={10}
       className="z-50"
     />
   );
