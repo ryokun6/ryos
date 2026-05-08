@@ -1,6 +1,7 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
 import { useEffect, useRef, useState, memo, useCallback } from "react";
+import { Streamdown, type Components as StreamdownComponents } from "streamdown";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -32,7 +33,7 @@ import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
-import { segmentChatMarkdownText, type ChatMarkdownToken } from "@/lib/chatMarkdown";
+import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -89,29 +90,9 @@ const isUrlOnly = (text: string): boolean => {
 
 const isUrgentMessage = (content: string) => content.startsWith("!!!!");
 
-const getFaviconUrl = (url: string): string => {
-  try {
-    const domain = new URL(url).hostname;
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
-  } catch {
-    return `https://www.google.com/s2/favicons?domain=example.com&sz=16`;
-  }
-};
-
-const getCitationLabel = (url: string): string => {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-};
-
 // Stable module-level animation objects — prevents Framer Motion from seeing
 // prop changes on every render, which would otherwise re-trigger animations.
 const CHAT_BUBBLE_VARIANTS = { initial: { opacity: 0 }, animate: { opacity: 1 } };
-const MOTION_SPAN_ANIMATE = { opacity: 1, y: 0 } as const;
-const MOTION_SPAN_INITIAL_NEW = { opacity: 0, y: 12 } as const;
-const MOTION_SPAN_INITIAL_LOADED = { opacity: 1, y: 0 } as const;
 const MOTION_BTN_INITIAL = { opacity: 0, scale: 0.8 } as const;
 
 // Helper function to extract user-friendly error message
@@ -184,6 +165,36 @@ const getMessageText = (message: {
     .map((p) => (p as { type: string; text?: string }).text || "")
     .join("");
 };
+
+const getMessageKey = (message: {
+  id?: string;
+  role: string;
+  parts?: Array<{ type: string; text?: string }>;
+}): string => {
+  const messageText = getMessageText(message);
+  return message.id === "1" || message.id === "proactive-1"
+    ? "greeting"
+    : message.id || `${message.role}-${messageText.substring(0, 10)}`;
+};
+
+const chatStreamdownComponents: StreamdownComponents = {
+  a: ({ children, href, onClick }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="ryos-chat-streamdown-link"
+      onClick={(event) => {
+        onClick?.(event);
+        event.stopPropagation();
+      }}
+    >
+      {children}
+    </a>
+  ),
+};
+
+const STREAMDOWN_DISALLOWED_ELEMENTS = ["img"] as const;
 
 // Define an extended message type that includes username
 // Extend VercelMessage and add username and the 'human' role
@@ -304,6 +315,7 @@ interface ChatMessageItemProps {
   message: ChatMessage;
   messageKey: string;
   isInitialMessage: boolean;
+  isStreamingMessage: boolean;
   isLoading: boolean;
   isLoadingGreeting: boolean;
   isRoomView: boolean;
@@ -312,10 +324,6 @@ interface ChatMessageItemProps {
   copiedMessageId: string | null;
   playingMessageId: string | null;
   speechLoadingId: string | null;
-  highlightSegment: { messageId: string; start: number; end: number } | null;
-  localHighlightSegment: { messageId: string; start: number; end: number } | null;
-  isSpeaking: boolean;
-  localTtsSpeaking: boolean;
   speechEnabled: boolean;
   isAdmin: boolean;
   roomId?: string;
@@ -324,13 +332,10 @@ interface ChatMessageItemProps {
   onSendMessage?: (username: string) => void;
   onCopyMessage: (message: ChatMessage) => void;
   onDeleteMessage: (message: ChatMessage) => void;
-  setLocalHighlightSegment: (seg: { messageId: string; start: number; end: number } | null) => void;
   setPlayingMessageId: (id: string | null) => void;
   setSpeechLoadingId: (id: string | null) => void;
-  localHighlightQueueRef: React.MutableRefObject<{ messageId: string; start: number; end: number }[]>;
   speak: (text: string, onDone?: () => void) => void;
   stop: () => void;
-  playNote: () => void;
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
   playDingSound: () => void;
@@ -342,6 +347,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     message,
     messageKey,
     isInitialMessage,
+    isStreamingMessage,
     isLoading,
     isLoadingGreeting,
     isRoomView,
@@ -350,10 +356,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     copiedMessageId,
     playingMessageId,
     speechLoadingId,
-    highlightSegment,
-    localHighlightSegment,
-    isSpeaking,
-    localTtsSpeaking,
     speechEnabled,
     isAdmin,
     roomId: _roomId,
@@ -362,13 +364,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     onSendMessage,
     onCopyMessage,
     onDeleteMessage,
-    setLocalHighlightSegment,
     setPlayingMessageId,
     setSpeechLoadingId,
-    localHighlightQueueRef,
     speak,
     stop,
-    playNote,
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
@@ -376,11 +375,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
 
   const [isHovered, setIsHovered] = useState(false);
   const [isInteractingWithPreview, setIsInteractingWithPreview] = useState(false);
-
-  // Keep a ref to the latest playNote so onComplete callbacks stay stable
-  // across renders and don't cause Framer Motion to re-run animations.
-  const playNoteRef = useRef(playNote);
-  useEffect(() => { playNoteRef.current = playNote; }, [playNote]);
 
   let messageText = getMessageText(message);
   const isStaticGreeting = message.role === "assistant" && message.id === "1";
@@ -418,13 +412,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     hasAquarium = true;
   }
 
-  const combinedHighlightSeg = highlightSegment || localHighlightSegment;
-  const combinedIsSpeaking = isSpeaking || localTtsSpeaking;
-  const highlightActive =
-    combinedIsSpeaking &&
-    combinedHighlightSeg &&
-    combinedHighlightSeg.messageId === message.id;
-
   const isTouchDevice = () =>
     "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
@@ -434,55 +421,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
       if (token.type === "link" && token.url) urls.add(token.url);
     });
     return Array.from(urls);
-  };
-
-  const renderInlineToken = (segment: ChatMarkdownToken) => {
-    const tokenNode =
-      (segment.type === "link" || segment.type === "citation") && segment.url ? (
-        <a
-          href={segment.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={
-            segment.type === "citation"
-              ? "inline-flex h-4 w-4 translate-y-[1px] items-center justify-center align-baseline no-underline"
-              : "text-blue-600 hover:underline"
-          }
-          style={{
-            color:
-              segment.type === "citation"
-                ? undefined
-                : isUrgent
-                ? "inherit"
-                : undefined,
-          }}
-          onClick={(e) => e.stopPropagation()}
-          title={
-            segment.type === "citation"
-              ? getCitationLabel(segment.url)
-              : undefined
-          }
-          aria-label={
-            segment.type === "citation"
-              ? `Source: ${getCitationLabel(segment.url)}`
-              : undefined
-          }
-        >
-          {segment.type === "citation" ? (
-            <img
-              src={getFaviconUrl(segment.url)}
-              alt=""
-              aria-hidden="true"
-              className="h-3.5 w-3.5 rounded-[2px]"
-            />
-          ) : (
-            segment.content
-          )}
-        </a>
-      ) : (
-        segment.content
-      );
-    return tokenNode;
   };
 
   return (
@@ -634,8 +572,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                     setPlayingMessageId(null);
                   } else {
                     stop();
-                    setLocalHighlightSegment(null);
-                    localHighlightQueueRef.current = [];
                     setSpeechLoadingId(null);
                     const text = displayContent.trim();
                     if (text) {
@@ -648,33 +584,13 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         }
                       }
                       if (chunks.length > 0) {
-                        let charCursor = 0;
-                        const segments = chunks.map((chunk) => {
-                          const visibleLen = segmentChatMarkdownText(chunk).reduce(
-                            (acc, token) => acc + token.content.length,
-                            0
-                          );
-                          const seg = {
-                            messageId: message.id || messageKey,
-                            start: charCursor,
-                            end: charCursor + visibleLen,
-                          };
-                          charCursor += visibleLen;
-                          return seg;
-                        });
-                        localHighlightQueueRef.current = segments;
-                        setLocalHighlightSegment(segments[0]);
+                        let pendingChunks = chunks.length;
                         setSpeechLoadingId(messageKey);
                         setPlayingMessageId(messageKey);
                         chunks.forEach((chunk) => {
                           speak(chunk, () => {
-                            localHighlightQueueRef.current.shift();
-                            if (localHighlightQueueRef.current.length > 0) {
-                              setLocalHighlightSegment(
-                                localHighlightQueueRef.current[0]
-                              );
-                            } else {
-                              setLocalHighlightSegment(null);
+                            pendingChunks -= 1;
+                            if (pendingChunks === 0) {
                               setPlayingMessageId(null);
                               setSpeechLoadingId(null);
                             }
@@ -872,15 +788,12 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         ).length;
                         if (openTags !== closeTags) {
                           return (
-                            <motion.span
+                            <span
                               key={partKey}
-                              initial={{ opacity: 1 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0 }}
                               className="select-text italic"
                             >
                               {t("apps.chats.status.editing")}
-                            </motion.span>
+                            </span>
                           );
                         }
                       }
@@ -889,69 +802,32 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         : partText;
                       const partDisplayContent = decodeHtmlEntities(rawPartContent);
                       const textContent = partDisplayContent;
+                      const streamdownContent = textContent.trim();
+                      const isEmojiMessage = isEmojiOnly(textContent);
                       return (
-                        <div key={partKey} className="w-full">
-                          <div className="whitespace-pre-wrap">
-                            {textContent &&
-                              (() => {
-                                const tokens = segmentChatMarkdownText(textContent.trim());
-                                let charPos = 0;
-                                return tokens.map((segment, idx) => {
-                                  const start = charPos;
-                                  const end = charPos + segment.content.length;
-                                  charPos = end;
-                                  return (
-                                    <motion.span
-                                      key={`${partKey}-segment-${idx}`}
-                                      initial={
-                                        isInitialMessage
-                                          ? MOTION_SPAN_INITIAL_LOADED
-                                          : MOTION_SPAN_INITIAL_NEW
-                                      }
-                                      animate={MOTION_SPAN_ANIMATE}
-                                      className={`select-text ${
-                                        isEmojiOnly(textContent)
-                                          ? "text-[24px]"
-                                          : ""
-                                      } ${
-                                        segment.type === "bold"
-                                          ? "font-bold"
-                                          : segment.type === "italic"
-                                          ? "italic"
-                                          : ""
-                                      }`}
-                                      style={{
-                                        userSelect: "text",
-                                        fontSize: isEmojiOnly(textContent)
-                                          ? undefined
-                                          : `${fontSize}px`,
-                                      }}
-                                      transition={{
-                                        duration: 0.08,
-                                        delay: idx * 0.02,
-                                        ease: "easeOut",
-                                        // Only play a note for tokens that are
-                                        // actively streaming in, not for history
-                                        // messages that animate as a no-op on mount.
-                                        ...((!isInitialMessage && idx % 2 === 0) && {
-                                          onComplete: () => { playNoteRef.current(); },
-                                        }),
-                                      }}
-                                    >
-                                      {highlightActive &&
-                                      start < (combinedHighlightSeg?.end ?? 0) &&
-                                      end > (combinedHighlightSeg?.start ?? 0) ? (
-                                        <span className="animate-highlight">
-                                          {renderInlineToken(segment)}
-                                        </span>
-                                      ) : (
-                                        renderInlineToken(segment)
-                                      )}
-                                    </motion.span>
-                                  );
-                                });
-                              })()}
-                          </div>
+                        <div
+                          key={partKey}
+                          className="w-full"
+                          style={{
+                            fontSize: isEmojiMessage ? "24px" : `${fontSize}px`,
+                          }}
+                        >
+                          {streamdownContent && (
+                            <Streamdown
+                              className={`ryos-chat-streamdown ${
+                                isUrgent ? "ryos-chat-streamdown-urgent" : ""
+                              }`}
+                              components={chatStreamdownComponents}
+                              disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+                              skipHtml
+                              unwrapDisallowed
+                              mode={isStreamingMessage ? "streaming" : "static"}
+                              isAnimating={isStreamingMessage}
+                              parseIncompleteMarkdown={isStreamingMessage}
+                            >
+                              {streamdownContent}
+                            </Streamdown>
+                          )}
                         </div>
                       );
                     }
@@ -984,56 +860,27 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
               )}
             </motion.div>
           ) : (
-            <>
-              {displayContent && (
-                <span
-                  className={`select-text whitespace-pre-wrap ${
-                    isEmojiOnly(displayContent) ? "text-[24px]" : ""
+            displayContent && (
+              <div
+                className="select-text"
+                style={{
+                  fontSize: isEmojiOnly(displayContent) ? "24px" : `${fontSize}px`,
+                }}
+              >
+                <Streamdown
+                  className={`ryos-chat-streamdown ${
+                    isUrgent ? "ryos-chat-streamdown-urgent" : ""
                   }`}
-                  style={{
-                    userSelect: "text",
-                    fontSize: isEmojiOnly(displayContent)
-                      ? undefined
-                      : `${fontSize}px`,
-                  }}
+                  components={chatStreamdownComponents}
+                  disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+                  skipHtml
+                  unwrapDisallowed
+                  mode="static"
                 >
-                  {(() => {
-                    const tokens = segmentChatMarkdownText(displayContent);
-                    let charPos2 = 0;
-                    return tokens.map((segment, idx) => {
-                      const start2 = charPos2;
-                      const end2 = charPos2 + segment.content.length;
-                      charPos2 = end2;
-                      const isHighlight =
-                        highlightActive &&
-                        start2 < (combinedHighlightSeg?.end ?? 0) &&
-                        end2 > (combinedHighlightSeg?.start ?? 0);
-                      const contentNode = renderInlineToken(segment);
-                      return (
-                        <span
-                          key={`${messageKey}-segment-${idx}`}
-                          className={`${
-                            segment.type === "bold"
-                              ? "font-bold"
-                              : segment.type === "italic"
-                              ? "italic"
-                              : ""
-                          }`}
-                        >
-                          {isHighlight ? (
-                            <span className="bg-yellow-200 animate-highlight">
-                              {contentNode}
-                            </span>
-                          ) : (
-                            contentNode
-                          )}
-                        </span>
-                      );
-                    });
-                  })()}
-                </span>
-              )}
-            </>
+                  {displayContent}
+                </Streamdown>
+              </div>
+            )
           )}
         </motion.div>
       )}
@@ -1095,8 +942,6 @@ interface ChatMessagesContentProps {
   onMessageDeleted?: (messageId: string) => void;
   fontSize: number;
   scrollToBottomTrigger: number;
-  highlightSegment?: { messageId: string; start: number; end: number } | null;
-  isSpeaking?: boolean;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
   typingUsers?: string[];
@@ -1115,8 +960,6 @@ function ChatMessagesContent({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
-  highlightSegment,
-  isSpeaking,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1131,16 +974,6 @@ function ChatMessagesContent({
   const currentTheme = useThemeStore((s) => s.current);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [speechLoadingId, setSpeechLoadingId] = useState<string | null>(null);
-
-  // Local highlight state for manual speech triggered from this component
-  const [localHighlightSegment, setLocalHighlightSegment] = useState<{
-    messageId: string;
-    start: number;
-    end: number;
-  } | null>(null);
-  const localHighlightQueueRef = useRef<
-    { messageId: string; start: number; end: number }[]
-  >([]);
 
   const previousMessagesRef = useRef<ChatMessage[]>([]);
   const initialMessageIdsRef = useRef<Set<string>>(new Set());
@@ -1186,11 +1019,7 @@ function ChatMessagesContent({
     if (!hasInitializedRef.current && messages.length > 0) {
       hasInitializedRef.current = true;
       previousMessagesRef.current = messages;
-      initialMessageIdsRef.current = new Set(
-        messages.map(
-          (m) => m.id || `${m.role}-${getMessageText(m).substring(0, 10)}`
-        )
-      );
+      initialMessageIdsRef.current = new Set(messages.map(getMessageKey));
     } else if (messages.length === 0) {
       hasInitializedRef.current = false;
     }
@@ -1288,6 +1117,13 @@ function ChatMessagesContent({
     }
   }, [roomId, onMessageDeleted]);
 
+  const streamingAssistantMessage = isLoading
+    ? [...messages].reverse().find((msg) => msg.role === "assistant")
+    : undefined;
+  const streamingAssistantMessageKey = streamingAssistantMessage
+    ? getMessageKey(streamingAssistantMessage)
+    : null;
+
   // Return the message list rendering logic
   return (
     <AnimatePresence initial={false} mode="sync">
@@ -1312,17 +1148,16 @@ function ChatMessagesContent({
         </motion.div>
       )}
       {messages.map((message) => {
-        const messageText = getMessageText(message);
-        const messageKey = (message.id === "1" || message.id === "proactive-1")
-          ? "greeting"
-          : message.id || `${message.role}-${messageText.substring(0, 10)}`;
+        const messageKey = getMessageKey(message);
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
+        const isStreamingMessage = messageKey === streamingAssistantMessageKey;
         return (
           <ChatMessageItem
             key={messageKey}
             message={message}
             messageKey={messageKey}
             isInitialMessage={isInitialMessage}
+            isStreamingMessage={isStreamingMessage}
             isLoading={isLoading}
             isLoadingGreeting={!!isLoadingGreeting}
             isRoomView={isRoomView}
@@ -1331,10 +1166,6 @@ function ChatMessagesContent({
             copiedMessageId={copiedMessageId}
             playingMessageId={playingMessageId}
             speechLoadingId={speechLoadingId}
-            highlightSegment={highlightSegment ?? null}
-            localHighlightSegment={localHighlightSegment}
-            isSpeaking={!!isSpeaking}
-            localTtsSpeaking={localTtsSpeaking}
             speechEnabled={speechEnabled}
             isAdmin={isAdmin}
             roomId={roomId}
@@ -1343,13 +1174,10 @@ function ChatMessagesContent({
             onSendMessage={onSendMessage}
             onCopyMessage={copyMessage}
             onDeleteMessage={deleteMessage}
-            setLocalHighlightSegment={setLocalHighlightSegment}
             setPlayingMessageId={setPlayingMessageId}
             setSpeechLoadingId={setSpeechLoadingId}
-            localHighlightQueueRef={localHighlightQueueRef}
             speak={speak}
             stop={stop}
-            playNote={playNote}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
             playDingSound={playDingSound}
@@ -1458,8 +1286,6 @@ export function ChatMessages({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
-  highlightSegment,
-  isSpeaking,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -1488,8 +1314,6 @@ export function ChatMessages({
           onMessageDeleted={onMessageDeleted}
           fontSize={fontSize}
           scrollToBottomTrigger={scrollToBottomTrigger}
-          highlightSegment={highlightSegment}
-          isSpeaking={isSpeaking}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
           typingUsers={typingUsers}

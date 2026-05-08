@@ -141,6 +141,7 @@
     "react-scan": "^0.5.3",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
+    "streamdown": "^2.5.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.176.0",

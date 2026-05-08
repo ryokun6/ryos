@@ -596,8 +596,89 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
-  .animate-highlight {
-    animation: highlight-bg-opacity 1.5s ease-in-out infinite;
+  .ryos-chat-streamdown,
+  .ryos-chat-streamdown * {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .ryos-chat-streamdown {
+    max-width: 100%;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .ryos-chat-streamdown :where(p) {
+    margin: 0;
+  }
+
+  .ryos-chat-streamdown :where(p + p, ul, ol, pre, blockquote, table) {
+    margin-top: 0.5em;
+  }
+
+  .ryos-chat-streamdown :where(ul, ol) {
+    margin-bottom: 0;
+    padding-left: 1.25em;
+  }
+
+  .ryos-chat-streamdown :where(ul) {
+    list-style: disc;
+  }
+
+  .ryos-chat-streamdown :where(ol) {
+    list-style: decimal;
+  }
+
+  .ryos-chat-streamdown :where(li + li) {
+    margin-top: 0.25em;
+  }
+
+  .ryos-chat-streamdown :where(pre) {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid rgb(0 0 0 / 0.2);
+    border-radius: 3px;
+    background: rgb(255 255 255 / 0.55);
+    padding: 0.5em;
+  }
+
+  .ryos-chat-streamdown :where(code) {
+    border-radius: 2px;
+    background: rgb(255 255 255 / 0.55);
+    padding: 0.05em 0.25em;
+    font-family: var(--font-monaco);
+    font-size: 0.9em;
+  }
+
+  .ryos-chat-streamdown :where(pre code) {
+    background: transparent;
+    padding: 0;
+  }
+
+  .ryos-chat-streamdown :where(blockquote) {
+    border-left: 2px solid rgb(0 0 0 / 0.25);
+    margin-bottom: 0;
+    padding-left: 0.6em;
+  }
+
+  .ryos-chat-streamdown :where(table) {
+    border-collapse: collapse;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .ryos-chat-streamdown :where(th, td) {
+    border: 1px solid rgb(0 0 0 / 0.25);
+    padding: 0.25em 0.4em;
+  }
+
+  .ryos-chat-streamdown-link {
+    color: rgb(37 99 235);
+    text-decoration: underline;
+  }
+
+  .ryos-chat-streamdown-urgent .ryos-chat-streamdown-link {
+    color: inherit;
   }
 
   /* Draggable area styles - prevents browser gestures on touch devices */
@@ -791,16 +872,6 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   -webkit-text-stroke-width: calc(0.12em * var(--interlude-dot-stroke-scale, 1.212121)) !important;
   -webkit-text-stroke-color: #fff !important;
   paint-order: stroke fill !important;
-}
-
-@keyframes highlight-bg-opacity {
-  0%,
-  100% {
-    background-color: rgb(254 249 195 / 1); /* bg-yellow-200 */
-  }
-  50% {
-    background-color: rgb(254 249 195 / 0.5); /* bg-yellow-200/50 */
-  }
 }
 
 /* CRT Scanline Effect */
