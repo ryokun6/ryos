@@ -604,8 +604,13 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   .ryos-chat-streamdown {
     max-width: 100%;
+    font-size: var(--ryos-chat-font-size, inherit) !important;
     line-height: 1.25;
     overflow-wrap: anywhere;
+  }
+
+  .ryos-chat-streamdown :where(p, li, blockquote, table, th, td, a, strong, em, span) {
+    font-size: inherit !important;
   }
 
   .ryos-chat-streamdown :where(p) {
@@ -636,10 +641,13 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   .ryos-chat-streamdown :where(pre) {
     max-width: 100%;
     overflow-x: auto;
-    border: 1px solid rgb(0 0 0 / 0.2);
-    border-radius: 3px;
-    background: rgb(255 255 255 / 0.55);
-    padding: 0.5em;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    margin: 0;
+    padding: 0.55em 0.7em;
+    font-size: inherit !important;
+    line-height: 1.45;
   }
 
   .ryos-chat-streamdown :where(code) {
@@ -647,12 +655,60 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     background: rgb(255 255 255 / 0.55);
     padding: 0.05em 0.25em;
     font-family: var(--font-monaco);
-    font-size: 0.9em;
+    font-size: 0.92em !important;
   }
 
   .ryos-chat-streamdown :where(pre code) {
     background: transparent;
     padding: 0;
+    font-size: inherit !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] {
+    content-visibility: visible !important;
+    contain-intrinsic-size: auto !important;
+    gap: 0 !important;
+    margin: 0.55em 0 0 !important;
+    overflow: hidden !important;
+    border: 1px solid rgb(31 41 55 / 0.24) !important;
+    border-radius: 4px !important;
+    background: #f6f8fa !important;
+    padding: 0 !important;
+    font-size: var(--ryos-chat-font-size, inherit) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8);
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] > :first-child {
+    min-height: 0 !important;
+    border-bottom: 1px solid rgb(31 41 55 / 0.12);
+    background: #eaeef2;
+    padding: 0.18em 0.65em !important;
+    color: rgb(31 41 55 / 0.68);
+    font-family: var(--font-geneva-12);
+    font-size: 0.78em !important;
+    line-height: 1.2;
+    text-transform: lowercase;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block-actions"] {
+    display: none !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre, code, span) {
+    font-family: var(--font-monaco) !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre, code) {
+    color: #24292f;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-c"],
+  .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--shiki-light"] {
+    color: var(--shiki-light, var(--sdm-c, #24292f)) !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-tbg"] {
+    background-color: var(--shiki-light-bg, var(--sdm-tbg, transparent)) !important;
   }
 
   .ryos-chat-streamdown :where(blockquote) {

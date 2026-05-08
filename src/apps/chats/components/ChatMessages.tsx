@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, memo, useCallback } from "react";
+import { useEffect, useRef, useState, memo, useCallback, type CSSProperties } from "react";
 import { Streamdown, type Components as StreamdownComponents } from "streamdown";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -195,6 +195,25 @@ const chatStreamdownComponents: StreamdownComponents = {
 };
 
 const STREAMDOWN_DISALLOWED_ELEMENTS = ["img"] as const;
+const CHAT_STREAMDOWN_SHIKI_THEME: ["github-light", "github-dark"] = [
+  "github-light",
+  "github-dark",
+];
+
+type ChatMessageStyle = CSSProperties & {
+  "--ryos-chat-font-size": string;
+};
+
+const getChatMessageStyle = (
+  fontSize: number,
+  isEmojiMessage = false
+): ChatMessageStyle => {
+  const size = isEmojiMessage ? "24px" : `${fontSize}px`;
+  return {
+    fontSize: size,
+    "--ryos-chat-font-size": size,
+  };
+};
 
 // Define an extended message type that includes username
 // Extend VercelMessage and add username and the 'human' role
@@ -758,7 +777,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   ? "bg-yellow-100 text-black"
                   : "bg-blue-100 text-black")
           } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
-          style={{ fontSize: `${fontSize}px` }}
+          style={getChatMessageStyle(fontSize)}
         >
           {showTypingDots ? (
             <TypingDots />
@@ -808,9 +827,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         <div
                           key={partKey}
                           className="w-full"
-                          style={{
-                            fontSize: isEmojiMessage ? "24px" : `${fontSize}px`,
-                          }}
+                          style={getChatMessageStyle(fontSize, isEmojiMessage)}
                         >
                           {streamdownContent && (
                             <Streamdown
@@ -819,6 +836,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               }`}
                               components={chatStreamdownComponents}
                               disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+                              controls={false}
+                              lineNumbers={false}
+                              shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
                               skipHtml
                               unwrapDisallowed
                               mode={isStreamingMessage ? "streaming" : "static"}
@@ -863,9 +883,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
             displayContent && (
               <div
                 className="select-text"
-                style={{
-                  fontSize: isEmojiOnly(displayContent) ? "24px" : `${fontSize}px`,
-                }}
+                style={getChatMessageStyle(fontSize, isEmojiOnly(displayContent))}
               >
                 <Streamdown
                   className={`ryos-chat-streamdown ${
@@ -873,6 +891,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }`}
                   components={chatStreamdownComponents}
                   disallowedElements={STREAMDOWN_DISALLOWED_ELEMENTS}
+                  controls={false}
+                  lineNumbers={false}
+                  shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
                   skipHtml
                   unwrapDisallowed
                   mode="static"
@@ -1197,7 +1218,7 @@ function ChatMessagesContent({
           >
             <div
               className="p-1.5 px-2 chat-bubble bg-neutral-200 text-neutral-400 w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words"
-              style={{ fontSize: `${fontSize}px` }}
+              style={getChatMessageStyle(fontSize)}
             >
               <div className="flex items-center gap-1.5">
                 <TypingDots />
