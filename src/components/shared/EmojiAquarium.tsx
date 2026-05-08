@@ -55,7 +55,7 @@ export function AquariumBubbleOverflowLayer({
   return (
     <div
       className={cn("absolute left-0 top-0 pointer-events-none overflow-visible", className)}
-      style={{ width: safeWidth, height }}
+      style={{ width: safeWidth, height, zIndex: 60 }}
       aria-hidden="true"
     >
       {Array.from({ length: count }).map((_, i) => {
@@ -63,10 +63,10 @@ export function AquariumBubbleOverflowLayer({
         const x = edgePad + rand() * Math.max(0, safeWidth - edgePad * 2);
         const start = rand() * (height * 0.5);
         const drift = (rand() - 0.5) * 34;
-        const dur = 11 + rand() * 10;
-        const delay = rand() * 7;
+        const dur = 8 + rand() * 7;
+        const delay = i * 0.8 + rand() * 1.5;
         const size = 18 + rand() * 10;
-        const exitsTank = rand() > 0.35;
+        const exitsTank = i < Math.ceil(count / 2) || rand() > 0.35;
         const endY = exitsTank ? -(18 + rand() * escapeHeight) : -16;
 
         return (
@@ -455,7 +455,7 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
             seed={`${seedRef.current}:chat-bubble-overflow`}
             width={width}
             height={height}
-            count={3}
+            count={4}
             className="z-50"
           />
         )}
