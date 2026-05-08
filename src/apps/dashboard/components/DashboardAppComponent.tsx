@@ -16,7 +16,7 @@ import { TranslationWidget, TranslationBackPanel } from "@/components/layout/das
 import { CurrencyWidget, CurrencyBackPanel } from "@/components/layout/dashboard/CurrencyWidget";
 import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
 import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
-import { AquariumWidget } from "@/components/layout/dashboard/AquariumWidget";
+import { AquariumWidget, AquariumBubbleOverflow } from "@/components/layout/dashboard/AquariumWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -79,6 +79,7 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
 
 function WidgetOverflow({ type, widgetId }: { type: string; widgetId: string }) {
   if (type === "weather") return <WeatherEmojiOverflow widgetId={widgetId} />;
+  if (type === "aquarium") return <AquariumBubbleOverflow widgetId={widgetId} />;
   return null;
 }
 

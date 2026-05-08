@@ -14,7 +14,17 @@ interface EmojiAquariumProps {
   variant?: "chat" | "widget";
 }
 
-function useSeededRandom(seed?: string) {
+interface AquariumBubbleOverflowLayerProps {
+  seed?: string;
+  width: number;
+  height: number;
+  count?: number;
+  className?: string;
+}
+
+const BUBBLE_EMOJI = "🫧"; // falls back to monochrome when unsupported
+
+function createSeededRandom(seed?: string) {
   // Mulberry32 PRNG
   let a = 0;
   if (seed && seed.length > 0) {
@@ -31,6 +41,65 @@ function useSeededRandom(seed?: string) {
   };
 }
 
+export function AquariumBubbleOverflowLayer({
+  seed,
+  width,
+  height,
+  count = 3,
+  className,
+}: AquariumBubbleOverflowLayerProps) {
+  const rand = createSeededRandom(seed);
+  const escapeHeight = Math.max(28, Math.round(height * 0.24));
+  const safeWidth = Math.max(1, width);
+
+  return (
+    <div
+      className={cn("absolute left-0 top-0 pointer-events-none overflow-visible", className)}
+      style={{ width: safeWidth, height }}
+      aria-hidden="true"
+    >
+      {Array.from({ length: count }).map((_, i) => {
+        const edgePad = 8;
+        const x = edgePad + rand() * Math.max(0, safeWidth - edgePad * 2);
+        const start = rand() * (height * 0.5);
+        const drift = (rand() - 0.5) * 34;
+        const dur = 11 + rand() * 10;
+        const delay = rand() * 7;
+        const size = 18 + rand() * 10;
+        const exitsTank = rand() > 0.35;
+        const endY = exitsTank ? -(18 + rand() * escapeHeight) : -16;
+
+        return (
+          <motion.span
+            key={`bubble-overflow-${i}`}
+            initial={{ x, y: height - start, opacity: 0, scale: 0.45 }}
+            animate={{
+              x: [x, x + drift * 0.4, x + drift],
+              y: [height - start, Math.min(10, endY + escapeHeight * 0.45), endY],
+              opacity: [0, 0.45, 0.75, 0],
+              scale: [0.45, 0.85, 1.15, 0.7],
+            }}
+            transition={{
+              duration: dur,
+              ease: "easeOut",
+              repeat: Infinity,
+              delay,
+            }}
+            style={{
+              position: "absolute",
+              willChange: "transform, opacity",
+              filter: "drop-shadow(0 2px 4px rgba(255,255,255,0.22))",
+            }}
+            className="select-none"
+          >
+            <Emoji emoji={BUBBLE_EMOJI} size={size} />
+          </motion.span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquariumProps) {
   // Create a stable seed once so re-renders (e.g., hover) don't change layout.
   const seedRef = useRef<string | undefined>(seed);
@@ -44,7 +113,7 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
     }
   }, [seed]);
 
-  const rand = useSeededRandom(seedRef.current);
+  const rand = createSeededRandom(seedRef.current);
 
   // Responsive: chat uses an aspect ratio, dashboard widgets fill their frame.
   const containerRef = useRef<HTMLDivElement>(null);
@@ -85,8 +154,6 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
   const largeFishes = ["🦈", "🐬"];
   const decor = ["🪸", "⚓️", "🪨", "🌿", "🗿", "🐚", "🦑", "🦀"];
 
-  const bubbles = "🫧"; // falls back to monochrome when unsupported
-
   const floorXs = useMemo(() => {
     const xs: number[] = [];
     if (floorCount <= 0) return xs;
@@ -115,8 +182,8 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
       <div
         className={cn(
           variant === "chat"
-            ? "chat-bubble bg-blue-300 text-black !p-0 mb-2 w-full max-w-[420px] rounded"
-            : "h-full min-h-[inherit] bg-blue-300 text-black w-full overflow-hidden rounded-[inherit]",
+            ? "chat-bubble relative overflow-visible bg-blue-300 text-black !p-0 mb-2 w-full max-w-[420px] rounded"
+            : "relative h-full min-h-[inherit] bg-blue-300 text-black w-full overflow-visible rounded-[inherit]",
           className
         )}
         ref={containerRef}
@@ -300,7 +367,7 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
                 }}
                 className="select-none z-25"
               >
-                <Emoji emoji={bubbles} size={24} />
+                <Emoji emoji={BUBBLE_EMOJI} size={24} />
               </motion.span>
             );
           })}
@@ -334,7 +401,7 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
                 }}
                 className="select-none z-40"
               >
-                <Emoji emoji={bubbles} size={28} />
+                <Emoji emoji={BUBBLE_EMOJI} size={28} />
               </motion.span>
             );
           })}
@@ -383,6 +450,15 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
             <Emoji emoji={"🛟"} size={24} />
           </motion.span>
         </div>
+        {variant === "chat" && (
+          <AquariumBubbleOverflowLayer
+            seed={`${seedRef.current}:chat-bubble-overflow`}
+            width={width}
+            height={height}
+            count={3}
+            className="z-50"
+          />
+        )}
       </div>
     </MotionConfig>
   );
