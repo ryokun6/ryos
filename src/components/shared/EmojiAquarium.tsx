@@ -49,7 +49,7 @@ export function AquariumBubbleOverflowLayer({
   className,
 }: AquariumBubbleOverflowLayerProps) {
   const rand = createSeededRandom(seed);
-  const escapeHeight = Math.max(28, Math.round(height * 0.24));
+  const escapeHeight = Math.max(16, Math.round(height * 0.1));
   const safeWidth = Math.max(1, width);
 
   return (
@@ -70,8 +70,8 @@ export function AquariumBubbleOverflowLayer({
         const delay = i * 0.8 + rand() * 1.5;
         const size = (startsNearSurface ? 24 : 18) + rand() * 10;
         const exitsTank = i < Math.ceil(count / 2) || rand() > 0.35;
-        const endY = exitsTank ? -(18 + rand() * escapeHeight) : -16;
-        const edgeY = exitsTank ? Math.min(-10, endY * 0.45) : 6;
+        const endY = exitsTank ? -(6 + rand() * escapeHeight) : -6;
+        const edgeY = exitsTank ? Math.min(-6, endY * 0.55) : 6;
 
         return (
           <motion.span
