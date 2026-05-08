@@ -61,23 +61,27 @@ export function AquariumBubbleOverflowLayer({
       {Array.from({ length: count }).map((_, i) => {
         const edgePad = 8;
         const x = edgePad + rand() * Math.max(0, safeWidth - edgePad * 2);
-        const start = rand() * (height * 0.5);
+        const startsNearSurface = i < Math.ceil(count / 3);
+        const startY = startsNearSurface
+          ? 10 + rand() * Math.max(12, height * 0.16)
+          : height - rand() * (height * 0.5);
         const drift = (rand() - 0.5) * 34;
         const dur = 8 + rand() * 7;
         const delay = i * 0.8 + rand() * 1.5;
-        const size = 18 + rand() * 10;
+        const size = (startsNearSurface ? 24 : 18) + rand() * 10;
         const exitsTank = i < Math.ceil(count / 2) || rand() > 0.35;
         const endY = exitsTank ? -(18 + rand() * escapeHeight) : -16;
+        const edgeY = exitsTank ? Math.min(-10, endY * 0.45) : 6;
 
         return (
           <motion.span
             key={`bubble-overflow-${i}`}
-            initial={{ x, y: height - start, opacity: 0, scale: 0.45 }}
+            initial={{ x, y: startY, opacity: 0, scale: 0.45 }}
             animate={{
               x: [x, x + drift * 0.4, x + drift],
-              y: [height - start, Math.min(10, endY + escapeHeight * 0.45), endY],
-              opacity: [0, 0.45, 0.75, 0],
-              scale: [0.45, 0.85, 1.15, 0.7],
+              y: [startY, edgeY, endY],
+              opacity: [0, 0.8, 0],
+              scale: [0.45, 1.05, 0.72],
             }}
             transition={{
               duration: dur,
