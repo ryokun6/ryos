@@ -1,5 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
+import { createCodePlugin } from "@streamdown/code";
 import { useEffect, useRef, useState, memo, useCallback, type CSSProperties } from "react";
 import { Streamdown, type Components as StreamdownComponents } from "streamdown";
 import { Button } from "@/components/ui/button";
@@ -199,6 +200,12 @@ const CHAT_STREAMDOWN_SHIKI_THEME: ["github-light", "github-dark"] = [
   "github-light",
   "github-dark",
 ];
+const chatCodePlugin = createCodePlugin({
+  themes: CHAT_STREAMDOWN_SHIKI_THEME,
+});
+const CHAT_STREAMDOWN_PLUGINS = {
+  code: chatCodePlugin,
+};
 
 type ChatMessageStyle = CSSProperties & {
   "--ryos-chat-font-size": string;
@@ -839,6 +846,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               controls={false}
                               lineNumbers={false}
                               shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
+                              plugins={CHAT_STREAMDOWN_PLUGINS}
                               skipHtml
                               unwrapDisallowed
                               mode={isStreamingMessage ? "streaming" : "static"}
@@ -894,6 +902,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   controls={false}
                   lineNumbers={false}
                   shikiTheme={CHAT_STREAMDOWN_SHIKI_THEME}
+                  plugins={CHAT_STREAMDOWN_PLUGINS}
                   skipHtml
                   unwrapDisallowed
                   mode="static"

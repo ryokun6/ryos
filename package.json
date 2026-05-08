@@ -88,6 +88,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-visually-hidden": "^1.2.4",
+    "@streamdown/code": "^1.1.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tiptap/core": "^2.27",
     "@tiptap/extension-task-item": "^2.27",
