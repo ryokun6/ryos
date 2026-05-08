@@ -619,12 +619,12 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   .ryos-chat-streamdown :where(p + p, ul, ol, pre, blockquote, table) {
-    margin-top: 0.5em;
+    margin-top: 0.35em;
   }
 
   .ryos-chat-streamdown :where(ul, ol) {
     margin-bottom: 0;
-    padding-left: 1.25em;
+    padding-left: 1.1em;
   }
 
   .ryos-chat-streamdown :where(ul) {
@@ -646,15 +646,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     border-radius: 0;
     background: transparent;
     margin: 0;
-    padding: 0.55em 0.7em;
+    padding: 0.38em 0.5em;
     font-size: inherit !important;
-    line-height: 1.45;
+    line-height: 1.4;
   }
 
   .ryos-chat-streamdown :where(code) {
     border-radius: 2px;
     background: rgb(255 255 255 / 0.55);
-    padding: 0.05em 0.25em;
+    padding: 0 0.18em;
     font-family: var(--font-monaco);
     font-size: 0.92em !important;
   }
@@ -669,26 +669,18 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     content-visibility: visible !important;
     contain-intrinsic-size: auto !important;
     gap: 0 !important;
-    margin: 0.55em 0 0 !important;
+    margin: 0.35em 0 0 !important;
     overflow: hidden !important;
-    border: 1px solid rgb(31 41 55 / 0.24) !important;
-    border-radius: 4px !important;
-    background: #f6f8fa !important;
+    border: 0 !important;
+    border-radius: 3px !important;
+    background: #24292e !important;
     padding: 0 !important;
     font-size: var(--ryos-chat-font-size, inherit) !important;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.3);
   }
 
   .ryos-chat-streamdown [data-streamdown="code-block"] > :first-child {
-    min-height: 0 !important;
-    border-bottom: 1px solid rgb(31 41 55 / 0.12);
-    background: #eaeef2;
-    padding: 0.18em 0.65em !important;
-    color: rgb(31 41 55 / 0.68);
-    font-family: var(--font-geneva-12);
-    font-size: 0.78em !important;
-    line-height: 1.2;
-    text-transform: lowercase;
+    display: none !important;
   }
 
   .ryos-chat-streamdown [data-streamdown="code-block-actions"] {
@@ -700,16 +692,16 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre, code) {
-    color: #24292f;
+    color: rgb(209 213 219);
   }
 
   .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-c"],
   .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--shiki-light"] {
-    color: var(--shiki-light, var(--sdm-c, #24292f)) !important;
+    color: var(--shiki-dark, var(--shiki-light, var(--sdm-c, rgb(209 213 219)))) !important;
   }
 
   .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-tbg"] {
-    background-color: var(--shiki-light-bg, var(--sdm-tbg, transparent)) !important;
+    background-color: var(--shiki-dark-bg, var(--shiki-light-bg, var(--sdm-tbg, transparent))) !important;
   }
 
   .ryos-chat-streamdown :where(blockquote) {
