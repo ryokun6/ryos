@@ -1,5 +1,4 @@
-import EmojiAquarium, { AquariumBubbleOverflowLayer } from "@/components/shared/EmojiAquarium";
-import { useDashboardStore } from "@/stores/useDashboardStore";
+import EmojiAquarium from "@/components/shared/EmojiAquarium";
 
 interface AquariumWidgetProps {
   widgetId: string;
@@ -19,20 +18,5 @@ export function AquariumWidget({ widgetId }: AquariumWidgetProps) {
         className="h-full min-h-[inherit] rounded-[inherit] shadow-[inset_0_1px_8px_rgba(255,255,255,0.35),inset_0_-10px_18px_rgba(3,105,161,0.2)]"
       />
     </div>
-  );
-}
-
-export function AquariumBubbleOverflow({ widgetId }: AquariumWidgetProps) {
-  const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
-  if (!widget) return null;
-
-  return (
-    <AquariumBubbleOverflowLayer
-      seed={`${widgetId}:dashboard-bubble-overflow`}
-      width={widget.size.width}
-      height={widget.size.height}
-      count={6}
-      className="z-10"
-    />
   );
 }

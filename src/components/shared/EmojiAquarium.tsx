@@ -450,15 +450,13 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
             <Emoji emoji={"🛟"} size={24} />
           </motion.span>
         </div>
-        {variant === "chat" && (
-          <AquariumBubbleOverflowLayer
-            seed={`${seedRef.current}:chat-bubble-overflow`}
-            width={width}
-            height={height}
-            count={4}
-            className="z-50"
-          />
-        )}
+        <AquariumBubbleOverflowLayer
+          seed={`${seedRef.current}:${variant}-bubble-overflow`}
+          width={width}
+          height={height}
+          count={variant === "widget" ? 6 : 4}
+          className="z-50"
+        />
       </div>
     </MotionConfig>
   );

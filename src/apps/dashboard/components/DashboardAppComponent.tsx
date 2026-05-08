@@ -16,7 +16,7 @@ import { TranslationWidget, TranslationBackPanel } from "@/components/layout/das
 import { CurrencyWidget, CurrencyBackPanel } from "@/components/layout/dashboard/CurrencyWidget";
 import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
 import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
-import { AquariumWidget, AquariumBubbleOverflow } from "@/components/layout/dashboard/AquariumWidget";
+import { AquariumWidget } from "@/components/layout/dashboard/AquariumWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -79,7 +79,6 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
 
 function WidgetOverflow({ type, widgetId }: { type: string; widgetId: string }) {
   if (type === "weather") return <WeatherEmojiOverflow widgetId={widgetId} />;
-  if (type === "aquarium") return <AquariumBubbleOverflow widgetId={widgetId} />;
   return null;
 }
 
@@ -461,6 +460,7 @@ export function DashboardAppComponent({
                               zIndex={widget.zIndex ?? 1}
                               borderRadius={widget.type === "ipod" ? "9999px" : undefined}
                               hideDoneButton={widget.type === "ipod"}
+                              allowOverflow={widget.type === "aquarium"}
                               onRemove={() => removeWidget(widget.id)}
                               overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
                               backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
@@ -507,6 +507,7 @@ export function DashboardAppComponent({
                           zIndex={widget.zIndex ?? 1}
                           borderRadius={widget.type === "ipod" ? "9999px" : undefined}
                           hideDoneButton={widget.type === "ipod"}
+                          allowOverflow={widget.type === "aquarium"}
                           onRemove={() => removeWidget(widget.id)}
                           onMove={(pos) => moveWidget(widget.id, pos)}
                           onBringToFront={() => bringToFront(widget.id)}
