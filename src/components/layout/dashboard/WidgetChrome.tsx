@@ -15,7 +15,6 @@ interface WidgetChromeProps {
   zIndex?: number;
   borderRadius?: string;
   hideDoneButton?: boolean;
-  allowOverflow?: boolean;
   /**
    * "absolute" (default) — uses x/y for positioning and supports drag.
    * "stacked" — relative positioning for use in a vertical/grid layout (mobile);
@@ -38,7 +37,6 @@ export function WidgetChrome({
   zIndex = 1,
   borderRadius: borderRadiusProp,
   hideDoneButton,
-  allowOverflow = false,
   layout = "absolute",
   onRemove,
   onMove,
@@ -278,7 +276,7 @@ export function WidgetChrome({
         >
           {/* Front face */}
           <div
-            className={`relative ${allowOverflow ? "overflow-visible" : "overflow-hidden"}`}
+            className="relative overflow-hidden"
             style={{
               ...cardStyle,
               backfaceVisibility: "hidden",
