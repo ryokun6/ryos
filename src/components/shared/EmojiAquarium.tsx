@@ -61,7 +61,7 @@ export function AquariumBubbleOverflowLayer({
       {Array.from({ length: count }).map((_, i) => {
         const edgePad = 8;
         const x = edgePad + rand() * Math.max(0, safeWidth - edgePad * 2);
-        const startsNearSurface = i < Math.ceil(count / 3);
+        const startsNearSurface = i < Math.ceil(count / 2);
         const startY = startsNearSurface
           ? 10 + rand() * Math.max(12, height * 0.16)
           : height - rand() * (height * 0.5);
@@ -72,16 +72,17 @@ export function AquariumBubbleOverflowLayer({
         const exitsTank = i < Math.ceil(count / 2) || rand() > 0.35;
         const endY = exitsTank ? -(6 + rand() * escapeHeight) : -6;
         const edgeY = exitsTank ? Math.min(-6, endY * 0.55) : 6;
+        const fadeY = exitsTank ? endY - 10 : endY;
 
         return (
           <motion.span
             key={`bubble-overflow-${i}`}
             initial={{ x, y: startY, opacity: 0, scale: 0.45 }}
             animate={{
-              x: [x, x + drift * 0.4, x + drift],
-              y: [startY, edgeY, endY],
-              opacity: [0, 0.8, 0],
-              scale: [0.45, 1.05, 0.72],
+              x: [x, x + drift * 0.35, x + drift * 0.7, x + drift],
+              y: [startY, edgeY, endY, fadeY],
+              opacity: [0, 0.9, 0.85, 0],
+              scale: [0.45, 1.05, 1, 0.72],
             }}
             transition={{
               duration: dur,
@@ -92,7 +93,7 @@ export function AquariumBubbleOverflowLayer({
             style={{
               position: "absolute",
               willChange: "transform, opacity",
-              filter: "drop-shadow(0 2px 4px rgba(255,255,255,0.22))",
+              filter: "drop-shadow(0 2px 6px rgba(255,255,255,0.35))",
             }}
             className="select-none"
           >
@@ -458,7 +459,7 @@ export function EmojiAquarium({ seed, className, variant = "chat" }: EmojiAquari
           seed={`${seedRef.current}:${variant}-bubble-overflow`}
           width={width}
           height={height}
-          count={variant === "widget" ? 6 : 4}
+          count={variant === "widget" ? 8 : 5}
           className="z-50"
         />
       </div>
