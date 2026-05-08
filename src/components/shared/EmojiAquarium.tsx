@@ -54,8 +54,19 @@ export function AquariumBubbleOverflowLayer({
 
   return (
     <div
-      className={cn("absolute left-0 top-0 pointer-events-none overflow-visible", className)}
-      style={{ width: safeWidth, height, zIndex: 60 }}
+      className={cn("pointer-events-none overflow-visible", className)}
+      style={{
+        // Inline `position` to defeat the macOS theme rule
+        // `:root[data-os-theme="macosx"] .chat-bubble > * { position: relative; }`
+        // which would otherwise force this overlay into normal flow and add
+        // an empty `height`-sized gap below the aquarium.
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: safeWidth,
+        height,
+        zIndex: 60,
+      }}
       aria-hidden="true"
     >
       {Array.from({ length: count }).map((_, i) => {
