@@ -666,17 +666,20 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     line-height: inherit;
   }
 
+  /* Code block panel — matches the applet preview box: white, subtle 1px
+     outline, gently rounded, centered inside the chat bubble. */
   .ryos-chat-streamdown [data-streamdown="code-block"] {
     content-visibility: visible !important;
     contain-intrinsic-size: auto !important;
     gap: 0 !important;
-    margin: 0.25em 0 0 !important;
+    margin: 0.3em 0 0.05em !important;
     overflow: hidden !important;
     border: 0 !important;
-    border-radius: 2px !important;
-    background: #24292e !important;
+    border-radius: 3px !important;
+    background: #ffffff !important;
     padding: 0 !important;
     font-size: var(--ryos-chat-font-size, inherit) !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
   }
 
   .ryos-chat-streamdown [data-streamdown="code-block"] > :first-child {
@@ -692,34 +695,19 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre, code) {
-    color: rgb(209 213 219);
+    color: #24292f;
   }
 
-  .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-c"],
-  .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--shiki-light"] {
-    color: var(--shiki-dark, var(--shiki-light, var(--sdm-c, rgb(209 213 219)))) !important;
+  /* Streamdown's Shiki dual-theme spans expose --sdm-c for the light token
+     color and --shiki-dark for dark mode. Force the light token color to
+     paint correctly on our white panel without depending on Tailwind
+     scanning Streamdown's compiled output for arbitrary-value classes. */
+  .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-c"] {
+    color: var(--sdm-c, #24292f) !important;
   }
 
   .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-tbg"] {
-    background-color: var(--shiki-dark-bg, var(--shiki-light-bg, var(--sdm-tbg, transparent))) !important;
-  }
-
-  /* In macOS aqua, the chat bubble has heavy inset strokes, 12px padding,
-     16px rounded corners, and overflow:hidden. Let the code block extend to
-     the bubble edges so the aqua bevel/shine clips it cleanly instead of
-     framing it with a visible border ring. */
-  :root[data-os-theme="macosx"] .ryos-chat-streamdown [data-streamdown="code-block"] {
-    margin-left: -12px !important;
-    margin-right: -12px !important;
-    border-radius: 0 !important;
-  }
-
-  :root[data-os-theme="macosx"] .ryos-chat-streamdown [data-streamdown="code-block"]:last-child {
-    margin-bottom: -6px !important;
-  }
-
-  :root[data-os-theme="macosx"] .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) {
-    padding: 0.35em 12px;
+    background-color: var(--sdm-tbg, transparent) !important;
   }
 
   .ryos-chat-streamdown :where(blockquote) {
