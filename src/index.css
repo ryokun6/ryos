@@ -637,7 +637,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   .ryos-chat-streamdown :where(li + li) {
-    margin-top: 0.25em;
+    margin-top: 0.1em;
   }
 
   .ryos-chat-streamdown :where(pre) {
