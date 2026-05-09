@@ -764,20 +764,24 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
      cells, and rows all clear their borders so we don't end up with the
      wrapper outline + table outline doubling up. Cells use a hairline
      bottom border for row dividers and tighter padding than Streamdown's
-     default px-4 py-2. */
+     default px-4 py-2. The wrapper scrolls horizontally when the table
+     is wider than the bubble (cells enforce a `min-width`). */
   .ryos-chat-streamdown [data-streamdown="table-wrapper"] {
     margin: 0.3em 0 0.05em;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
     border: 0 !important;
     border-radius: 3px;
     background: #ffffff !important;
     padding: 0 !important;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+    -webkit-overflow-scrolling: touch;
   }
 
   .ryos-chat-streamdown :where(table) {
     width: auto;
-    max-width: 100%;
+    max-width: none !important;
     margin: 0 !important;
     border: 0 !important;
     border-collapse: collapse;
@@ -802,6 +806,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     text-align: left;
     vertical-align: top;
     white-space: normal !important;
+    min-width: 6em;
+    overflow-wrap: anywhere;
   }
 
   .ryos-chat-streamdown :where(tr:last-child td) {
