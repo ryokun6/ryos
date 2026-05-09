@@ -745,12 +745,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     overflow-x: auto;
   }
 
-  /* Streamdown's Shiki output wraps each code line in a sibling `<span>`
-     with no newline separator between them, so without intervention every
-     line collapses onto the same row. Force the direct line-wrapper spans
-     to render block so authored line breaks become visible line breaks. */
+  /* Streamdown's Shiki output is `<pre><code><span>line1</span><span>line2</span>…`
+     with no newline separator between the line wrappers, so without
+     intervention every line collapses onto a single row. Force those
+     line-wrapper spans (direct children of `<code>` inside the panel) to
+     render block-level so authored line breaks become visible. */
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) > code > span,
   .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) > span {
     display: block;
+    white-space: inherit;
   }
 
   .ryos-chat-streamdown :where(blockquote) {
