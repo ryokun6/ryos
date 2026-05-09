@@ -1,6 +1,8 @@
 @import url("/fonts/fonts.css");
 @import "./styles/themes.css";
 @import "tailwindcss";
+@import "streamdown/styles.css";
+@source "../node_modules/@streamdown/code/dist/*.js";
 @config "../tailwind.config.js";
 
 /* Additional fonts not in fonts.css */
@@ -596,8 +598,237 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
-  .animate-highlight {
-    animation: highlight-bg-opacity 1.5s ease-in-out infinite;
+  .ryos-chat-streamdown,
+  .ryos-chat-streamdown * {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .ryos-chat-streamdown {
+    max-width: 100%;
+    font-size: var(--ryos-chat-font-size, inherit) !important;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .ryos-chat-streamdown :where(p, li, blockquote, table, th, td, a, strong, em, span) {
+    font-size: inherit !important;
+  }
+
+  .ryos-chat-streamdown :where(p) {
+    margin: 0;
+  }
+
+  .ryos-chat-streamdown :where(p + p, ul, ol, pre, blockquote, table) {
+    margin-top: 0.35em;
+  }
+
+  .ryos-chat-streamdown :where(ul, ol) {
+    margin-bottom: 0;
+    padding-left: 1.1em;
+  }
+
+  .ryos-chat-streamdown :where(ul) {
+    list-style: disc;
+  }
+
+  .ryos-chat-streamdown :where(ol) {
+    list-style: decimal;
+  }
+
+  .ryos-chat-streamdown :where(li + li) {
+    margin-top: 0.25em;
+  }
+
+  .ryos-chat-streamdown :where(pre) {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0.3em 0.55em !important;
+    font-size: inherit !important;
+    line-height: 1.3;
+  }
+
+  .ryos-chat-streamdown :where(code) {
+    border-radius: 2px;
+    background: rgb(0 0 0 / 0.06);
+    padding: 0 0.18em;
+    font-family: var(--font-monaco);
+    font-size: 0.92em !important;
+  }
+
+  .ryos-chat-streamdown :where(pre code) {
+    background: transparent;
+    padding: 0;
+    font-size: inherit !important;
+    line-height: inherit;
+  }
+
+  /* Code block panel — matches the applet preview box: white, subtle 1px
+     outline, gently rounded, centered inside the chat bubble. */
+  .ryos-chat-streamdown [data-streamdown="code-block"] {
+    content-visibility: visible !important;
+    contain-intrinsic-size: auto !important;
+    gap: 0 !important;
+    margin: 0.3em 0 0.05em !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 3px !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    font-size: var(--ryos-chat-font-size, inherit) !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] > :first-child {
+    display: none !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block-actions"] {
+    display: none !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre, code, span) {
+    font-family: var(--font-monaco) !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre, code) {
+    color: #24292f;
+  }
+
+  /* Streamdown's Shiki dual-theme spans expose --sdm-c for the light token
+     color and --shiki-dark for dark mode. Force the light token color to
+     paint correctly on our white panel without depending on Tailwind
+     scanning Streamdown's compiled output for arbitrary-value classes. */
+  .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-c"] {
+    color: var(--sdm-c, #24292f) !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] span[style*="--sdm-tbg"] {
+    background-color: var(--sdm-tbg, transparent) !important;
+  }
+
+  /* Streamdown's compiled JS applies Tailwind `border` / `border-border`
+     classes to many nested elements (inner code body div, table wrapper,
+     cells). Our global `* { @apply border-border }` resolves border-color
+     to solid black, which produced harsh black lines inside the code panel
+     and around tables. Soften inherited border-color across the chat
+     markdown surface so any stray `border` class is a quiet hairline. */
+  .ryos-chat-streamdown,
+  .ryos-chat-streamdown * {
+    border-color: rgba(0, 0, 0, 0.14);
+  }
+
+  /* The outer `[data-streamdown="code-block"]` already provides the panel
+     outline via box-shadow; nuke every nested border, padding, and
+     background so the inner `code-block-body` div doesn't repaint a
+     second border or 16px (`p-4`) inset on top of the white panel. */
+  .ryos-chat-streamdown [data-streamdown="code-block"],
+  .ryos-chat-streamdown [data-streamdown="code-block"] * {
+    border: 0 !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(div),
+  .ryos-chat-streamdown [data-streamdown="code-block-body"] {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Final pre inside the code panel is the only thing that should pad.
+     Keep `white-space: pre` so authored whitespace is preserved; if a
+     line is wider than the bubble, the panel scrolls horizontally. */
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) {
+    padding: 0.3em 0.55em !important;
+    white-space: pre !important;
+    overflow-x: auto;
+  }
+
+  /* Streamdown's Shiki output is `<pre><code><span>line1</span><span>line2</span>…`
+     with no newline separator between the line wrappers, so without
+     intervention every line collapses onto a single row. Force those
+     line-wrapper spans (direct children of `<code>` inside the panel) to
+     render block-level so authored line breaks become visible. */
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) > code > span,
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) > span {
+    display: block;
+    white-space: inherit;
+  }
+
+  .ryos-chat-streamdown :where(blockquote) {
+    border-left: 2px solid rgba(0, 0, 0, 0.18);
+    margin-bottom: 0;
+    padding-left: 0.6em;
+  }
+
+  /* Tables: only the wrapper draws the panel outline. The table itself,
+     cells, and rows all clear their borders so we don't end up with the
+     wrapper outline + table outline doubling up. Cells use a hairline
+     bottom border for row dividers and tighter padding than Streamdown's
+     default px-4 py-2. The wrapper scrolls horizontally when the table
+     is wider than the bubble (cells enforce a `min-width`). */
+  .ryos-chat-streamdown [data-streamdown="table-wrapper"] {
+    margin: 0.3em 0 0.05em;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    border: 0 !important;
+    border-radius: 3px;
+    background: #ffffff !important;
+    padding: 0 !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ryos-chat-streamdown :where(table) {
+    width: auto;
+    max-width: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-collapse: collapse;
+    border-spacing: 0;
+    background: transparent;
+    box-shadow: none !important;
+  }
+
+  .ryos-chat-streamdown :where(thead),
+  .ryos-chat-streamdown [data-streamdown="table-header"] {
+    background: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .ryos-chat-streamdown :where(tr) {
+    border: 0 !important;
+  }
+
+  .ryos-chat-streamdown :where(th, td) {
+    border: 0 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+    padding: 0.22em 0.55em !important;
+    text-align: left;
+    vertical-align: top;
+    white-space: normal !important;
+    min-width: 6em;
+    overflow-wrap: anywhere;
+  }
+
+  .ryos-chat-streamdown :where(tr:last-child td) {
+    border-bottom: 0 !important;
+  }
+
+  .ryos-chat-streamdown :where(th) {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.72);
+  }
+
+  .ryos-chat-streamdown-link {
+    color: rgb(37 99 235);
+    text-decoration: underline;
+  }
+
+  .ryos-chat-streamdown-urgent .ryos-chat-streamdown-link {
+    color: inherit;
   }
 
   /* Draggable area styles - prevents browser gestures on touch devices */
@@ -791,16 +1022,6 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   -webkit-text-stroke-width: calc(0.12em * var(--interlude-dot-stroke-scale, 1.212121)) !important;
   -webkit-text-stroke-color: #fff !important;
   paint-order: stroke fill !important;
-}
-
-@keyframes highlight-bg-opacity {
-  0%,
-  100% {
-    background-color: rgb(254 249 195 / 1); /* bg-yellow-200 */
-  }
-  50% {
-    background-color: rgb(254 249 195 / 0.5); /* bg-yellow-200/50 */
-  }
 }
 
 /* CRT Scanline Effect */
