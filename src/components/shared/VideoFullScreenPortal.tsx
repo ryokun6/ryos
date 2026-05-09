@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import type ReactPlayer from "react-player";
+import type { YouTubePlayerHandle as ReactPlayer } from "@/components/shared/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { FullscreenMobileDismiss } from "@/components/shared/FullscreenMobileDismiss";

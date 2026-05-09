@@ -8,7 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { motion, AnimatePresence, type Transition } from "framer-motion";
-import ReactPlayer from "react-player";
+import type { YouTubePlayerHandle as ReactPlayer } from "@/components/shared/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";

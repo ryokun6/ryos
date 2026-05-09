@@ -1,5 +1,5 @@
 import { useRef, useEffect, useMemo, useCallback } from "react";
-import ReactPlayer from "react-player";
+import { YouTubePlayer as ReactPlayer } from "@/components/shared/YouTubePlayer";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";

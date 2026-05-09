@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import ReactPlayer from "react-player";
+import { YouTubePlayer as ReactPlayer } from "@/components/shared/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { AppProps, KaraokeInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";

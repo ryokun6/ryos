@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, type RefObject } from "react";
 import { motion, AnimatePresence, useIsPresent } from "framer-motion";
-import ReactPlayer from "react-player";
-import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
+import {
+  YouTubePlayer,
+  type YouTubePlayerHandle as ReactPlayer,
+} from "@/components/shared/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { AppProps, VideosInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";

@@ -116,8 +116,6 @@ export default defineConfig({
       "tailwind-merge",
       // framer-motion is used on initial load for animations
       "framer-motion",
-      // Pre-bundle so CJS→ESM works (avoids "exports is not defined" / "no export named default" in dev)
-      "react-player",
       "pinyin-pro",
       "wanakana",
       "hangul-romanization",
@@ -512,9 +510,6 @@ export default defineConfig({
           
           // Heavy audio libs - deferred until Soundboard/iPod/Synth opens
           audio: ["tone", "wavesurfer.js", "audio-buffer-utils"],
-          
-          // Media player - shared by iPod and Videos apps
-          "media-player": ["react-player"],
 
           // Korean romanization - only needed for lyrics
           "hangul": ["hangul-romanization"],

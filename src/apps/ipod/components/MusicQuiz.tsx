@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useMemo, useCallback, useImperativeHandle, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactPlayer from "react-player";
+import {
+  YouTubePlayer as ReactPlayer,
+  type YouTubePlayerHandle,
+} from "@/components/shared/YouTubePlayer";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -115,7 +118,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
 
-  const playerRef = useRef<ReactPlayer | null>(null);
+  const playerRef = useRef<YouTubePlayerHandle | null>(null);
   const snippetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadingWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);

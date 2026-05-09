@@ -2,7 +2,7 @@
 
 import type { Track } from "@/stores/useIpodStore";
 import type { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana, RomanizationSettings, DisplayMode } from "@/types/lyrics";
-import type ReactPlayer from "react-player";
+import type { YouTubePlayerHandle as ReactPlayer } from "@/components/shared/YouTubePlayer";
 import type { useLyrics } from "@/hooks/useLyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import type { ActivityInfo } from "@/hooks/useActivityLabel";

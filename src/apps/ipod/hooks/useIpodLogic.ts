@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import ReactPlayer from "react-player";
+import type { YouTubePlayerHandle as ReactPlayer } from "@/components/shared/YouTubePlayer";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { track } from "@/utils/analytics";

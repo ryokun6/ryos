@@ -33,7 +33,7 @@ import {
   type LyricsFont,
   type RomanizationSettings,
 } from "@/types/lyrics";
-import type ReactPlayer from "react-player";
+import type { YouTubePlayerHandle as ReactPlayer } from "@/components/shared/YouTubePlayer";
 
 export interface KaraokeLyricsPlaybackContextValue {
   lyricsControls: ReturnType<typeof useLyrics>;

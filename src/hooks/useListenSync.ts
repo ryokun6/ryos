@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import { useShallow } from "zustand/react/shallow";
-import type ReactPlayer from "react-player";
+import type { YouTubePlayerHandle as ReactPlayer } from "@/components/shared/YouTubePlayer";
 import {
   useListenSessionStore,
   type ListenTrackMeta,
