@@ -125,6 +125,14 @@ interface ExtractResponse {
   best: ExtractedFormat | null;
   bestAudio: ExtractedFormat | null;
   formats: ExtractedFormat[];
+  /**
+   * Same-origin URL the player should set as `<video src>`. Required for
+   * production playback because googlevideo.com signed URLs are tied to
+   * the User-Agent / Origin / Referer that yt-dlp used during extraction
+   * and would 403 if fetched directly from the browser.
+   */
+  proxyUrl?: string | null;
+  proxyAudioUrl?: string | null;
 }
 
 const YOUTUBE_HOSTS = new Set([
@@ -224,11 +232,14 @@ async function fetchExtract(
   }
 }
 
-function pickPlayableFormat(data: ExtractResponse): ExtractedFormat | null {
-  if (data.best) return data.best;
-  // Audio-only fallback: still works in <video>; the element just renders blank.
-  if (data.bestAudio) return data.bestAudio;
-  return data.formats.find((f) => f.url) ?? null;
+function pickPlayableUrl(data: ExtractResponse): string | null {
+  // Prefer the same-origin proxy so the browser doesn't have to talk
+  // to googlevideo.com directly (UA / referer mismatches → 403).
+  if (data.proxyUrl) return data.proxyUrl;
+  if (data.proxyAudioUrl) return data.proxyAudioUrl;
+  if (data.best?.url) return data.best.url;
+  if (data.bestAudio?.url) return data.bestAudio.url;
+  return data.formats.find((f) => f.url)?.url ?? null;
 }
 
 function dimToCss(value: number | string | undefined): string {
@@ -325,14 +336,14 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       fetchExtract(videoId, { signal: controller.signal })
         .then((data) => {
           if (cancelled) return;
-          const fmt = pickPlayableFormat(data);
-          if (!fmt) {
+          const playable = pickPlayableUrl(data);
+          if (!playable) {
             const err = new Error("No playable YouTube format");
             setLoadError(err);
             callbacksRef.current.onError?.(err);
             return;
           }
-          setResolvedUrl(fmt.url);
+          setResolvedUrl(playable);
           if (typeof data.duration === "number" && data.duration > 0) {
             setResolvedDuration(data.duration);
           }
@@ -653,9 +664,9 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       if (videoId && err && (err.code === MediaError.MEDIA_ERR_NETWORK || err.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED)) {
         fetchExtract(videoId, { refresh: true })
           .then((data) => {
-            const fmt = pickPlayableFormat(data);
-            if (fmt) {
-              setResolvedUrl(fmt.url);
+            const playable = pickPlayableUrl(data);
+            if (playable) {
+              setResolvedUrl(playable);
             } else {
               callbacksRef.current.onError?.(err);
             }
