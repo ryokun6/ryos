@@ -18,7 +18,22 @@ RUN bun run build
 
 FROM --platform=linux/amd64 oven/bun:1.3.9 AS runtime
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# `curl` is used by the runtime + to fetch the standalone `yt-dlp` binary
+# below. `ca-certificates` is required so yt-dlp can talk to YouTube /
+# googlevideo.com over HTTPS. We deliberately download the upstream
+# pyinstaller-bundled binary instead of `apt-get install -y yt-dlp`
+# because the Debian package is months stale and breaks whenever YouTube
+# rotates its player. We pin to a known-good release tag (override at
+# build time with `--build-arg YT_DLP_VERSION=<tag>` to bump).
+ARG YT_DLP_VERSION=2026.03.17
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL -o /usr/local/bin/yt-dlp \
+         "https://github.com/yt-dlp/yt-dlp/releases/download/${YT_DLP_VERSION}/yt-dlp_linux" \
+    && chmod +x /usr/local/bin/yt-dlp \
+    && /usr/local/bin/yt-dlp --version
+ENV YT_DLP_PATH=/usr/local/bin/yt-dlp
 
 WORKDIR /app
 

@@ -311,7 +311,7 @@
 <p>This makes it a good fit for: <ul><li>a plain VPS + systemd</li></ul><ul><li>Coolify Dockerfile deployments</li><li>self-hosted containers behind Traefik / Nginx / Caddy</li></ul></p>
 <hr>
 <h2>1) Prerequisites</h2>
-<ul><li>Linux VPS or container host</li></ul><ul><li>Bun installed (or Docker/Coolify)</li><li>a public domain + TLS if exposing to the internet</li><li>Redis if using self-hosted Redis / local websocket fanout</li></ul>
+<ul><li>Linux VPS or container host</li></ul><ul><li>Bun installed (or Docker/Coolify)</li><li>a public domain + TLS if exposing to the internet</li><li>Redis if using self-hosted Redis / local websocket fanout</li><li><code>yt-dlp</code> on <code>PATH</code> (or set <code>YT_DLP_PATH</code>) for the iPod / Karaoke / Videos / TV YouTube playback pipeline. The bundled <code>Dockerfile</code> installs it automatically; on a plain VPS see <a href="#yt-dlp-dependency">§ "yt-dlp dependency"</a>.</li></ul>
 <hr>
 <h2>2) Build + run locally in production mode</h2>
 <pre><code>bun install
@@ -319,7 +319,14 @@ bun run build
 APP_PUBLIC_ORIGIN="https://your-domain.com" \
 API_ALLOWED_ORIGINS="https://your-domain.com" \
 bun run start</code></pre>
-<p>Important runtime envs: <ul><li><code>PORT</code> or <code>API_PORT</code> — listening port (defaults to <code>3000</code>)</li></ul><ul><li><code>API_HOST</code> — bind host (defaults to <code>0.0.0.0</code>)</li><li><code>APP_PUBLIC_ORIGIN</code> — canonical browser origin, e.g. <code>https://your-domain.com</code></li><li><code>API_ALLOWED_ORIGINS</code> — comma-separated allowed browser origins for <code>/api/<em></code>; supports wildcard subdomain patterns (e.g. <code></em>.example.com</code>), and <code><em></code> to allow all origins</li><li><code>STORAGE_PROVIDER</code> — optional explicit storage backend (<code>s3</code>, <code>vercel-blob</code>); auto-detected if unset</li></ul></p>
+<p>Important runtime envs: <ul><li><code>PORT</code> or <code>API_PORT</code> — listening port (defaults to <code>3000</code>)</li></ul><ul><li><code>API_HOST</code> — bind host (defaults to <code>0.0.0.0</code>)</li><li><code>APP_PUBLIC_ORIGIN</code> — canonical browser origin, e.g. <code>https://your-domain.com</code></li><li><code>API_ALLOWED_ORIGINS</code> — comma-separated allowed browser origins for <code>/api/<em></code>; supports wildcard subdomain patterns (e.g. <code></em>.example.com</code>), and <code><em></code> to allow all origins</li><li><code>STORAGE_PROVIDER</code> — optional explicit storage backend (<code>s3</code>, <code>vercel-blob</code>); auto-detected if unset</li><li><code>YT_DLP_PATH</code> — absolute path to the <code>yt-dlp</code> binary if it isn't on <code>PATH</code></li></ul></p>
+<h3>yt-dlp dependency</h3>
+<p>The YouTube extractor (<code>/api/youtube/extract</code> + <code>/api/youtube/stream</code>) shells out to <strong>yt-dlp</strong> to resolve playable stream URLs. The built-in <code>Dockerfile</code> already pulls the standalone Linux binary from GitHub (pinned via the <code>YT_DLP_VERSION</code> build arg). On a plain VPS install it once with:</p>
+<pre><code>sudo curl -fsSL -o /usr/local/bin/yt-dlp \
+  "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux"
+sudo chmod +x /usr/local/bin/yt-dlp
+yt-dlp --version</code></pre>
+<code>ffmpeg</code> is <strong>not</strong> required — the API only uses <code>yt-dlp -J --skip-download</code> to get the JSON dump, never to mux files. If <code>yt-dlp</code> is missing the endpoint returns <code>503 yt-dlp binary not available on the server</code>.
 <hr>
 <h2>3) Redis backend options</h2>
 <p>ryOS supports <strong>two Redis modes</strong>.</p>
@@ -388,6 +395,10 @@ S3_SECRET_ACCESS_KEY=your-secret-key</code></pre>
 <p>The app shows a version like <code>10.3 (abc1234)</code> from <code>version.json</code>. Without a commit SHA at build time, it falls back to <code>dev</code>. To show the real commit: <ol><li>In Coolify → your app → <strong>Advanced</strong> → enable <strong>Include Source Commit in Build</strong></li></ol><ol><li>The build script reads <code>SOURCE_COMMIT</code> (Coolify) or <code>VERCEL_GIT_COMMIT_SHA</code> (Vercel) or <code>GIT_COMMIT_SHA</code> (generic CI)</li></ol></p>
 <p>No extra env vars needed — Coolify injects <code>SOURCE_COMMIT</code> when that option is enabled.</p>
 <p>Coolify deployments are auto-detected (via <code>COOLIFY_</em></code> environment variables) and displayed in the Admin app's Server page.</p>
+<h3>Gating Coolify deploys behind GitHub Actions</h3>
+<p>The repository ships with a <code>.github/workflows/build-and-deploy.yml</code> workflow that runs on every push and pull request: <ol><li>Installs dependencies with Bun and runs <code>bun run build</code> + <code>bun run test:unit</code>.</li></ol><ol><li>On a green build of <code>main</code>, calls a Coolify deploy webhook so Coolify only redeploys when CI is green.</li></ol></p>
+<p>To wire it up: <ol><li>In Coolify, open your application → <strong>Webhooks</strong> → copy the <strong>Deploy webhook URL</strong> (it looks like <code>https://coolify.example.com/api/v1/deploy?uuid=&lt;resource-uuid&gt;</code>) and the <strong>API token</strong>.</li></ol><ol><li>In GitHub, open <strong>Settings → Secrets and variables → Actions → New repository secret</strong> and add:<ul><li><code>COOLIFY_WEBHOOK_URL</code> — the deploy webhook URL</li><li><code>COOLIFY_TOKEN</code> — the Coolify API token (sent as <code>Authorization: Bearer ...</code>)</li></ul></li><li>Optional: under <strong>Variables</strong>, set <code>COOLIFY_APP_URL</code> to your public app URL so it shows up on the GitHub deployment timeline.</li><li>Optional: in Coolify, disable the built-in Git auto-deploy so the webhook from GitHub Actions is the single source of truth.</li></ol></p>
+<p>The workflow also exposes a manual <code>workflow_dispatch</code> trigger with a <code>force_deploy</code> input that appends <code>force=true</code> to the webhook URL (useful when only environment variables changed).</p>
 <hr>
 <h2>7) VPS + systemd example</h2>
 <p>Example unit file:</p>
