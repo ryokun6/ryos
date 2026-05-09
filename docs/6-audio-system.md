@@ -10,7 +10,7 @@ Overview of ryOS audio capabilities and architecture.
 | Tone.js | Synthesizer app with polyphonic synthesis, effects chain, and Chat typing synthesis |
 | WaveSurfer.js | Waveform visualization for recorded sounds in Soundboard app |
 | MediaRecorder API | Audio recording functionality for Soundboard app |
-| ReactPlayer | YouTube video/audio playback in iPod and Karaoke apps |
+| Native HTML5 `<video>` (`YouTubePlayer.tsx`) | YouTube video/audio playback in iPod, Karaoke, Videos, and TV apps. Stream URLs are resolved via `/api/youtube/extract` (yt-dlp). |
 | Webamp + YouTube IFrame API | Winamp playback via custom YouTube-backed media class |
 
 ## Architecture Overview
@@ -18,8 +18,8 @@ Overview of ryOS audio capabilities and architecture.
 ```mermaid
 graph TB
     subgraph Sources["Audio Sources"]
-        iPod["iPod App<br/>(ReactPlayer)"]
-        Karaoke["Karaoke App<br/>(ReactPlayer)"]
+        iPod["iPod App<br/>(YouTubePlayer · native video)"]
+        Karaoke["Karaoke App<br/>(YouTubePlayer · native video)"]
         Winamp["Winamp App<br/>(Webamp + YouTubeMedia)"]
         Soundboard["Soundboard<br/>(HTMLAudioElement)"]
         UI["UI Sounds<br/>(useSound)"]
@@ -111,12 +111,12 @@ ryOS provides multiple audio playback mechanisms:
 
 ### iPod App
 
-Uses ReactPlayer for YouTube video/audio playback with:
+Uses the native `YouTubePlayer` (HTML5 `<video>` driven by `/api/youtube/extract`, see [YouTube playback pipeline](#youtube-playback-pipeline)) with:
 - Volume control via `ipodVolume` setting
 - Seeking and playback state management
 - Fullscreen playback with synchronized lyrics display
 - Volume ducking when TTS is speaking (iPod and Karaoke volume at 35% of original on non-iOS)
-- Track switching guard to prevent race conditions between YouTube load events and play/pause state
+- Track switching guard to prevent race conditions between video load events and play/pause state
 - iOS Safari autoplay watchdog that detects blocked playback and reverts to paused state
 - CoverFlow album art browser with 3D perspective, triggered via long-press or menu
 
@@ -145,14 +145,24 @@ Uses Webamp with a custom `YouTubeMedia` backend:
 
 ### Karaoke App
 
-Uses ReactPlayer (same as iPod) with independent playback state via `useKaraokeStore`:
+Uses the native `YouTubePlayer` (same as iPod) with independent playback state via `useKaraokeStore`:
 - Shares iPod's music library, lyrics preferences, and display mode settings (`useIpodStore`)
 - Maintains its own playback state (current song, play/pause, loop, shuffle) so iPod and Karaoke can play different tracks simultaneously
 - Full-window video/visual background with lyrics overlay
-- Fullscreen portal with synchronized player handoff (position and play state synced between main and fullscreen ReactPlayer instances)
+- Fullscreen portal with synchronized player handoff (position and play state synced between main and fullscreen `YouTubePlayer` instances)
 - Track switching guard and iOS Safari autoplay watchdog (same technique as iPod)
 - iPod widget control: the iPod wheel and controls can operate Karaoke playback when both apps are open
 - Listen Together sessions for synchronized group playback via Pusher
+
+### YouTube Playback Pipeline
+
+YouTube playback no longer embeds the YouTube IFrame Player. Instead:
+
+1. **`/api/youtube/extract`** (`api/youtube/extract.ts`) accepts `?id=<videoId>` or `?url=<youtubeUrl>` and shells out to **`yt-dlp`** to resolve the best progressive (single-file audio + video) MP4 stream URL. Results are cached in Redis for ~5 hours so signed URLs stay valid before yt-dlp's ~6h server-side expiry. Per-IP burst (30/min) and daily (500/day) rate limits apply.
+2. **`src/components/shared/YouTubePlayer.tsx`** is a `forwardRef` component that fetches the resolved URL on the client and feeds it into a native `<video>` element. It mirrors react-player's prop surface (`playing`, `controls`, `volume`, `muted`, `playbackRate`, `loop`, `playsinline`, `progressInterval`, `onReady`/`onPlay`/`onPause`/`onEnded`/`onProgress`/`onDuration`/`onSeek`/`onBuffer`/`onBufferEnd`/`onError`/`onStart`).
+3. **Ref handle (`YouTubePlayerHandle`)** exposes `seekTo(amount, "seconds" | "fraction")`, `getCurrentTime()`, `getDuration()`, `getSecondsLoaded()`, and `getInternalPlayer()` — the last returning a YT.Player-shaped shim with `playVideo`/`pauseVideo`/`seekTo`/`getPlayerState` (matching `YT.PlayerState`)/`setVolume`/`getVolume`/`setPlaybackRate`/`getPlaybackRate` plus a writable `playbackRate` property. This lets existing call sites in `useListenSync`, `VideoFullScreenPortal`, the iPod / Karaoke / TV play handlers, and `MusicQuiz` keep their YT-style code paths.
+4. **Resilience**: on `MEDIA_ERR_NETWORK` / `MEDIA_ERR_SRC_NOT_SUPPORTED` (typically an expired signed URL), the component refetches `/api/youtube/extract?refresh=1` once and updates the source in place.
+5. **Configuration**: requires `yt-dlp` on `PATH` (or set `YT_DLP_PATH`). The standalone Bun server is the supported deployment path; Vercel doesn't ship `yt-dlp` natively.
 
 ### Soundboard App
 
