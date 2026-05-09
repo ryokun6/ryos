@@ -736,9 +736,22 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     background: transparent !important;
   }
 
-  /* Final pre inside the code panel is the only thing that should pad. */
+  /* Final pre inside the code panel is the only thing that should pad.
+     Wrap long lines instead of forcing a horizontal scroll so the panel
+     stays compact in chat bubbles, while still respecting authored line
+     breaks via `pre-wrap`. */
   .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) {
     padding: 0.3em 0.55em !important;
+    white-space: pre-wrap !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    overflow-x: hidden;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre, code, span) {
+    white-space: inherit !important;
+    word-break: inherit;
+    overflow-wrap: inherit;
   }
 
   .ryos-chat-streamdown :where(blockquote) {
