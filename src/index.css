@@ -644,9 +644,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     overflow-x: auto;
     border: 0;
     border-radius: 0;
-    background: transparent;
-    margin: 0;
-    padding: 0.2em 0.45em;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0.3em 0.55em !important;
     font-size: inherit !important;
     line-height: 1.3;
   }
@@ -710,21 +710,66 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     background-color: var(--sdm-tbg, transparent) !important;
   }
 
+  /* Streamdown's compiled JS applies Tailwind `border` and `border-border`
+     classes to many internal elements (inner pre, table wrapper, cells).
+     Our global `* { @apply border-border }` resolves border-color to solid
+     black, which produced the harsh black lines inside the code panel and
+     around tables. Soften the inherited border-color inside the chat
+     markdown surface so any stray `border` class becomes a quiet hairline. */
+  .ryos-chat-streamdown,
+  .ryos-chat-streamdown * {
+    border-color: rgba(0, 0, 0, 0.14);
+  }
+
+  /* The outer `[data-streamdown="code-block"]` already provides the panel
+     outline via box-shadow; clear every nested border so the inner pre /
+     header / actions don't draw extra lines on top of the white panel. */
+  .ryos-chat-streamdown [data-streamdown="code-block"],
+  .ryos-chat-streamdown [data-streamdown="code-block"] * {
+    border: 0 !important;
+  }
+
   .ryos-chat-streamdown :where(blockquote) {
-    border-left: 2px solid rgb(0 0 0 / 0.25);
+    border-left: 2px solid rgba(0, 0, 0, 0.18);
     margin-bottom: 0;
     padding-left: 0.6em;
   }
 
+  /* Tables: keep them flush like the applet preview with a single thin
+     outer outline, light header band, and hairline row dividers — no
+     thick cell-by-cell black grid. */
   .ryos-chat-streamdown :where(table) {
+    border: 0 !important;
     border-collapse: collapse;
+    border-spacing: 0;
+    width: auto;
     max-width: 100%;
-    overflow-x: auto;
+    overflow: hidden;
+    margin: 0.3em 0 0.05em;
+    border-radius: 3px;
+    background: #ffffff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+  }
+
+  .ryos-chat-streamdown :where(thead) {
+    background: rgba(0, 0, 0, 0.04);
   }
 
   .ryos-chat-streamdown :where(th, td) {
-    border: 1px solid rgb(0 0 0 / 0.25);
-    padding: 0.25em 0.4em;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+    padding: 0.25em 0.55em;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .ryos-chat-streamdown :where(tr:last-child td) {
+    border-bottom: 0 !important;
+  }
+
+  .ryos-chat-streamdown :where(th) {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.7);
   }
 
   .ryos-chat-streamdown-link {
