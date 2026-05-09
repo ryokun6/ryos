@@ -35,6 +35,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
+import { cleanTextForSpeech } from "../utils/textForSpeech";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -644,9 +645,9 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       const chunks: string[] = [];
                       const lines = text.split(/\r?\n/);
                       for (const line of lines) {
-                        const trimmedLine = line.trim();
-                        if (trimmedLine && trimmedLine.length > 0) {
-                          chunks.push(trimmedLine);
+                        const cleanedLine = cleanTextForSpeech(line);
+                        if (cleanedLine && cleanedLine.length > 0) {
+                          chunks.push(cleanedLine);
                         }
                       }
                       if (chunks.length > 0) {

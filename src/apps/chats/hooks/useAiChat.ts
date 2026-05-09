@@ -49,6 +49,7 @@ import {
   persistChatApplet,
   persistChatDocument,
 } from "../utils/chatFilePersistence";
+import { cleanTextForSpeech } from "../utils/textForSpeech";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -649,20 +650,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   // Queue-based TTS – speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
-
-  // Strip any number of leading exclamation marks (urgent markers) plus following spaces,
-  // then remove any leading standalone punctuation that may remain.
-  const cleanTextForSpeech = (text: string) => {
-    // First, remove HTML code blocks (```html...``` or similar)
-    const withoutCodeBlocks = text
-      .replace(/```[\s\S]*?```/g, "") // Remove all code blocks
-      .replace(/<[^>]*>/g, "") // Remove any HTML tags
-      .replace(/^!+\s*/, "") // remove !!!!!! prefix
-      .replace(/^[\s.!?。，！？；：]+/, "") // remove leftover punctuation/space at start
-      .trim();
-
-    return withoutCodeBlocks;
-  };
 
   // Rate limit state
   const [rateLimitError, setRateLimitError] = useState<{
