@@ -555,8 +555,8 @@ export const appRegistry = {
     helpItems: mapsHelpItems,
     metadata: mapsMetadata,
     windowConfig: {
-      defaultSize: { width: 720, height: 520 },
-      minSize: { width: 360, height: 320 },
+      defaultSize: { width: 560, height: 560 },
+      minSize: { width: 400, height: 300 },
     } as WindowConstraints,
   },
 } as const;
