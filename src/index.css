@@ -810,7 +810,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     text-align: left;
     vertical-align: top;
     white-space: normal !important;
-    min-width: 6em;
+    min-width: 10em;
     overflow-wrap: anywhere;
   }
 
