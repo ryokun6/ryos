@@ -1193,12 +1193,35 @@ function ChatMessagesContent({
     }
   }, [roomId, onMessageDeleted]);
 
-  const streamingAssistantMessage = isLoading
-    ? [...messages].reverse().find((msg) => msg.role === "assistant")
-    : undefined;
+  // Only treat the very last message as a streaming target, and only if it
+  // is an assistant message. Searching backwards for the last assistant can
+  // briefly flag a previously-completed assistant message as streaming
+  // during the moment after the user's new message is appended but before
+  // the AI SDK pushes the next empty assistant message — that flicker would
+  // make Streamdown's animate plugin re-run and rapidly fade-in the whole
+  // prior reply word-by-word.
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : undefined;
+  const streamingAssistantMessage =
+    isLoading && lastMessage && lastMessage.role === "assistant"
+      ? lastMessage
+      : undefined;
   const streamingAssistantMessageKey = streamingAssistantMessage
     ? getMessageKey(streamingAssistantMessage)
     : null;
+
+  // Belt-and-suspenders: once a message key has been seen as streaming and
+  // then leaves that state, lock its `isAnimating` to false forever so any
+  // future flicker (e.g. message list reorder, key reuse) cannot re-trigger
+  // the animation.
+  const animatedKeysRef = useRef<Set<string>>(new Set());
+  const previousStreamingKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const previousKey = previousStreamingKeyRef.current;
+    if (previousKey && previousKey !== streamingAssistantMessageKey) {
+      animatedKeysRef.current.add(previousKey);
+    }
+    previousStreamingKeyRef.current = streamingAssistantMessageKey;
+  }, [streamingAssistantMessageKey]);
 
   // Return the message list rendering logic
   return (
@@ -1226,7 +1249,9 @@ function ChatMessagesContent({
       {messages.map((message) => {
         const messageKey = getMessageKey(message);
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
-        const isStreamingMessage = messageKey === streamingAssistantMessageKey;
+        const isStreamingMessage =
+          messageKey === streamingAssistantMessageKey &&
+          !animatedKeysRef.current.has(messageKey);
         return (
           <ChatMessageItem
             key={messageKey}
