@@ -710,23 +710,35 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     background-color: var(--sdm-tbg, transparent) !important;
   }
 
-  /* Streamdown's compiled JS applies Tailwind `border` and `border-border`
-     classes to many internal elements (inner pre, table wrapper, cells).
-     Our global `* { @apply border-border }` resolves border-color to solid
-     black, which produced the harsh black lines inside the code panel and
-     around tables. Soften the inherited border-color inside the chat
-     markdown surface so any stray `border` class becomes a quiet hairline. */
+  /* Streamdown's compiled JS applies Tailwind `border` / `border-border`
+     classes to many nested elements (inner code body div, table wrapper,
+     cells). Our global `* { @apply border-border }` resolves border-color
+     to solid black, which produced harsh black lines inside the code panel
+     and around tables. Soften inherited border-color across the chat
+     markdown surface so any stray `border` class is a quiet hairline. */
   .ryos-chat-streamdown,
   .ryos-chat-streamdown * {
     border-color: rgba(0, 0, 0, 0.14);
   }
 
   /* The outer `[data-streamdown="code-block"]` already provides the panel
-     outline via box-shadow; clear every nested border so the inner pre /
-     header / actions don't draw extra lines on top of the white panel. */
+     outline via box-shadow; nuke every nested border, padding, and
+     background so the inner `code-block-body` div doesn't repaint a
+     second border or 16px (`p-4`) inset on top of the white panel. */
   .ryos-chat-streamdown [data-streamdown="code-block"],
   .ryos-chat-streamdown [data-streamdown="code-block"] * {
     border: 0 !important;
+  }
+
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(div),
+  .ryos-chat-streamdown [data-streamdown="code-block-body"] {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Final pre inside the code panel is the only thing that should pad. */
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) {
+    padding: 0.3em 0.55em !important;
   }
 
   .ryos-chat-streamdown :where(blockquote) {
@@ -735,32 +747,48 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     padding-left: 0.6em;
   }
 
-  /* Tables: keep them flush like the applet preview with a single thin
-     outer outline, light header band, and hairline row dividers — no
-     thick cell-by-cell black grid. */
-  .ryos-chat-streamdown :where(table) {
-    border: 0 !important;
-    border-collapse: collapse;
-    border-spacing: 0;
-    width: auto;
-    max-width: 100%;
-    overflow: hidden;
+  /* Tables: only the wrapper draws the panel outline. The table itself,
+     cells, and rows all clear their borders so we don't end up with the
+     wrapper outline + table outline doubling up. Cells use a hairline
+     bottom border for row dividers and tighter padding than Streamdown's
+     default px-4 py-2. */
+  .ryos-chat-streamdown [data-streamdown="table-wrapper"] {
     margin: 0.3em 0 0.05em;
+    overflow: hidden;
+    border: 0 !important;
     border-radius: 3px;
-    background: #ffffff;
+    background: #ffffff !important;
+    padding: 0 !important;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
   }
 
-  .ryos-chat-streamdown :where(thead) {
-    background: rgba(0, 0, 0, 0.04);
+  .ryos-chat-streamdown :where(table) {
+    width: auto;
+    max-width: 100%;
+    margin: 0 !important;
+    border: 0 !important;
+    border-collapse: collapse;
+    border-spacing: 0;
+    background: transparent;
+    box-shadow: none !important;
+  }
+
+  .ryos-chat-streamdown :where(thead),
+  .ryos-chat-streamdown [data-streamdown="table-header"] {
+    background: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .ryos-chat-streamdown :where(tr) {
+    border: 0 !important;
   }
 
   .ryos-chat-streamdown :where(th, td) {
     border: 0 !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-    padding: 0.25em 0.55em;
+    padding: 0.22em 0.55em !important;
     text-align: left;
     vertical-align: top;
+    white-space: normal !important;
   }
 
   .ryos-chat-streamdown :where(tr:last-child td) {
@@ -769,7 +797,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   .ryos-chat-streamdown :where(th) {
     font-weight: 600;
-    color: rgba(0, 0, 0, 0.7);
+    color: rgba(0, 0, 0, 0.72);
   }
 
   .ryos-chat-streamdown-link {
