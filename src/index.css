@@ -704,6 +704,24 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     background-color: var(--shiki-dark-bg, var(--shiki-light-bg, var(--sdm-tbg, transparent))) !important;
   }
 
+  /* In macOS aqua, the chat bubble has heavy inset strokes, 12px padding,
+     16px rounded corners, and overflow:hidden. Let the code block extend to
+     the bubble edges so the aqua bevel/shine clips it cleanly instead of
+     framing it with a visible border ring. */
+  :root[data-os-theme="macosx"] .ryos-chat-streamdown [data-streamdown="code-block"] {
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    border-radius: 0 !important;
+  }
+
+  :root[data-os-theme="macosx"] .ryos-chat-streamdown [data-streamdown="code-block"]:last-child {
+    margin-bottom: -6px !important;
+  }
+
+  :root[data-os-theme="macosx"] .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) {
+    padding: 0.35em 12px;
+  }
+
   .ryos-chat-streamdown :where(blockquote) {
     border-left: 2px solid rgb(0 0 0 / 0.25);
     margin-bottom: 0;
