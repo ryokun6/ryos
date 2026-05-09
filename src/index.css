@@ -737,13 +737,20 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   }
 
   /* Final pre inside the code panel is the only thing that should pad.
-     Keep `white-space: pre` so authored line breaks render as separate
-     lines; if a line is wider than the bubble, the panel scrolls
-     horizontally instead of collapsing lines together. */
+     Keep `white-space: pre` so authored whitespace is preserved; if a
+     line is wider than the bubble, the panel scrolls horizontally. */
   .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) {
     padding: 0.3em 0.55em !important;
     white-space: pre !important;
     overflow-x: auto;
+  }
+
+  /* Streamdown's Shiki output wraps each code line in a sibling `<span>`
+     with no newline separator between them, so without intervention every
+     line collapses onto the same row. Force the direct line-wrapper spans
+     to render block so authored line breaks become visible line breaks. */
+  .ryos-chat-streamdown [data-streamdown="code-block"] :where(pre) > span {
+    display: block;
   }
 
   .ryos-chat-streamdown :where(blockquote) {
