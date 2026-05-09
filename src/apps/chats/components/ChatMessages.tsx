@@ -206,6 +206,12 @@ const chatCodePlugin = createCodePlugin({
 const CHAT_STREAMDOWN_PLUGINS = {
   code: chatCodePlugin,
 };
+const CHAT_STREAMDOWN_ANIMATED = {
+  animation: "fadeIn",
+  duration: 150,
+  easing: "ease-out",
+  sep: "word",
+} as const;
 
 type ChatMessageStyle = CSSProperties & {
   "--ryos-chat-font-size": string;
@@ -362,6 +368,7 @@ interface ChatMessageItemProps {
   setSpeechLoadingId: (id: string | null) => void;
   speak: (text: string, onDone?: () => void) => void;
   stop: () => void;
+  playNote: () => void;
   playElevatorMusic: () => void;
   stopElevatorMusic: () => void;
   playDingSound: () => void;
@@ -394,6 +401,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     setSpeechLoadingId,
     speak,
     stop,
+    playNote,
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
@@ -401,6 +409,38 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
 
   const [isHovered, setIsHovered] = useState(false);
   const [isInteractingWithPreview, setIsInteractingWithPreview] = useState(false);
+
+  // Stable ref to playNote so the bubbling animationstart handler stays stable
+  // across renders and Streamdown's animated word spans don't trigger
+  // unnecessary re-binds.
+  const playNoteRef = useRef(playNote);
+  useEffect(() => {
+    playNoteRef.current = playNote;
+  }, [playNote]);
+
+  // Counter so we play a note on every other animated word during streaming,
+  // matching the original chat synth cadence and avoiding audio overload on
+  // bursty token arrivals.
+  const animationCountRef = useRef(0);
+  const handleStreamdownAnimationStart = useCallback(
+    (event: React.AnimationEvent<HTMLDivElement>) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || !target.dataset || target.dataset.sdAnimate === undefined) {
+        return;
+      }
+      animationCountRef.current += 1;
+      if (animationCountRef.current % 2 !== 0) {
+        return;
+      }
+      try {
+        playNoteRef.current();
+      } catch {
+        // useChatSynth handles audio context errors internally; swallow any
+        // synchronous throws so streaming doesn't break.
+      }
+    },
+    []
+  );
 
   let messageText = getMessageText(message);
   const isStaticGreeting = message.role === "assistant" && message.id === "1";
@@ -835,6 +875,11 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                           key={partKey}
                           className="w-full"
                           style={getChatMessageStyle(fontSize, isEmojiMessage)}
+                          onAnimationStart={
+                            isStreamingMessage
+                              ? handleStreamdownAnimationStart
+                              : undefined
+                          }
                         >
                           {streamdownContent && (
                             <Streamdown
@@ -850,6 +895,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                               skipHtml
                               unwrapDisallowed
                               mode={isStreamingMessage ? "streaming" : "static"}
+                              animated={CHAT_STREAMDOWN_ANIMATED}
                               isAnimating={isStreamingMessage}
                               parseIncompleteMarkdown={isStreamingMessage}
                             >
@@ -1208,6 +1254,7 @@ function ChatMessagesContent({
             setSpeechLoadingId={setSpeechLoadingId}
             speak={speak}
             stop={stop}
+            playNote={playNote}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
             playDingSound={playDingSound}

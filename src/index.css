@@ -1,6 +1,7 @@
 @import url("/fonts/fonts.css");
 @import "./styles/themes.css";
 @import "tailwindcss";
+@import "streamdown/styles.css";
 @source "../node_modules/@streamdown/code/dist/*.js";
 @config "../tailwind.config.js";
 
