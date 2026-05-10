@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
+  getAppletSandboxAttribute,
+  isTrustedAppletAuthor,
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
@@ -68,9 +70,11 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     }
   `;
 
-  // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
-  // Also inject auth bridge script for API authentication
-  const ensureMacFonts = (content: string): string => {
+  // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside
+  // iframe content. The auth bridge script is only injected for trusted
+  // (ryo-authored) applets — untrusted previews must remain inert in
+  // their sandboxed-without-`allow-same-origin` iframes.
+  const ensureMacFonts = (content: string, trusted: boolean): string => {
     if (!content) return content;
     
     const preload = `<link rel="stylesheet" href="/fonts/fonts.css">`;
@@ -79,8 +83,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       *{font-family:inherit!important}
       h1,h2,h3,h4,h5,h6,p,div,span,a,li,ul,ol,button,input,select,textarea,label,code,pre,blockquote,small,strong,em,table,th,td{font-family:"LucidaGrande","Lucida Grande",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Noto Color Emoji",sans-serif!important}
     </style>` : '';
-    
-    const injectedContent = `${APPLET_AUTH_BRIDGE_SCRIPT}${preload}${fontStyle}`;
+
+    const authBridge = trusted ? APPLET_AUTH_BRIDGE_SCRIPT : "";
+    const injectedContent = `${authBridge}${preload}${fontStyle}`;
 
     const headCloseIdx = content.toLowerCase().lastIndexOf("</head>");
     if (headCloseIdx !== -1) {
@@ -145,8 +150,14 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         return;
       }
 
-      // Check if the message is from one of our applet preview iframes
-      const iframes = feedRef.current?.querySelectorAll("iframe");
+      // Only respond to messages from our trusted applet preview iframes.
+      // Untrusted iframes are sandboxed without `allow-same-origin`, so
+      // their `event.origin` would be `"null"` and never match
+      // `window.location.origin` above — this loop is a defence-in-depth
+      // check that we additionally ignore them by element identity.
+      const iframes = feedRef.current?.querySelectorAll<HTMLIFrameElement>(
+        "iframe[data-ryos-trusted-applet='1']"
+      );
       const frameWindows: Window[] = [];
       iframes?.forEach((iframe) => {
         if (iframe.contentWindow) {
@@ -167,9 +178,14 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     };
   }, [sendAuthPayload]);
 
-  // Send auth payload to all iframes when auth changes
+  // Send auth payload to all iframes when auth changes.
+  // Only trusted iframes are tagged with `data-ryos-trusted-applet="1"`
+  // (set in renderAppletCard); skip the rest so an untrusted preview never
+  // even receives an attempted postMessage from us.
   useEffect(() => {
-    const iframes = feedRef.current?.querySelectorAll("iframe");
+    const iframes = feedRef.current?.querySelectorAll<HTMLIFrameElement>(
+      "iframe[data-ryos-trusted-applet='1']"
+    );
     iframes?.forEach((iframe) => {
       sendAuthPayload(iframe.contentWindow || undefined);
     });
@@ -523,15 +539,21 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
           }}
         >
           {content ? (
-            <iframe
-              srcDoc={ensureMacFonts(content)}
-              title={displayName}
-              className="w-full h-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
-              style={{
-                display: "block",
-              }}
-            />
+            (() => {
+              const trusted = isTrustedAppletAuthor(applet.createdBy);
+              return (
+                <iframe
+                  srcDoc={ensureMacFonts(content, trusted)}
+                  title={displayName}
+                  className="w-full h-full border-0"
+                  sandbox={getAppletSandboxAttribute(trusted)}
+                  data-ryos-trusted-applet={trusted ? "1" : "0"}
+                  style={{
+                    display: "block",
+                  }}
+                />
+              );
+            })()
           ) : isLoadingContent ? (
             <div className="flex items-center justify-center h-full bg-gray-50">
               <div className="text-center">

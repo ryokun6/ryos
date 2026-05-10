@@ -1338,6 +1338,7 @@
       "backupRestoreDescription": "Fazer backup ou restaurar todas as definições e ficheiros da aplicação",
       "bootScreen": "Tela de Inicialização",
       "bootScreenDescription": "Testar a animação da tela de inicialização",
+      "changePassword": "Alterar Senha",
       "chatSynth": "Synth de Chat",
       "chatSynthVolume": "Volume do Sintetizador de Chat",
       "checkForUpdates": "Verificar Atualizações",
@@ -1761,12 +1762,12 @@
         "emptyTrash": "Esvaziar Lixeira...",
         "kind": "Tipo",
         "moveToTrash": "Mover para a Lixeira",
-        "putBack": "Colocar de Volta",
         "name": "Nome",
         "newFolder": "Nova Pasta…",
         "noAirDropUsersAvailable": "Nenhum usuário próximo",
         "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
+        "putBack": "Colocar de Volta",
         "rename": "Renomear…",
         "searchingForAirDropUsers": "Buscando usuários próximos…",
         "shareViaAirDrop": "Compartilhar via AirDrop",
@@ -2536,6 +2537,10 @@
     "maps": {
       "description": "Encontre lugares com o Apple Mapas",
       "help": {
+        "directions": {
+          "description": "No cartão do local, abra indicações de condução no Apple Mapas — abre num novo separador para manter o ryOS aberto (rotas no mapa ainda não disponíveis).",
+          "title": "Indicações"
+        },
         "dropPins": {
           "description": "Escolha um resultado da lista para fixar um marcador e centralizar o mapa nele",
           "title": "Fixar Marcadores"
@@ -2543,10 +2548,6 @@
         "locateMe": {
           "description": "Clique no botão Localizar para centralizar o mapa na sua localização atual",
           "title": "Localizar"
-        },
-        "directions": {
-          "description": "No cartão do local, abra indicações de condução no Apple Mapas — abre num novo separador para manter o ryOS aberto (rotas no mapa ainda não disponíveis).",
-          "title": "Indicações"
         },
         "mapTypes": {
           "description": "Alterne entre Padrão, Híbrido, Satélite e Padrão Suave no menu Visualizar",
@@ -3790,6 +3791,24 @@
       "systemPreferences": "Preferências do Sistema…"
     },
     "auth": {
+      "changePassword": {
+        "confirmPassword": "Confirmar Nova Senha",
+        "currentPassword": "Senha Atual",
+        "currentPasswordRequired": "A senha atual é obrigatória",
+        "description": "Digite sua senha atual e escolha uma nova.",
+        "genericError": "Falha ao alterar a senha",
+        "mismatch": "As novas senhas não coincidem",
+        "newPassword": "Nova Senha",
+        "sameAsCurrent": "A nova senha deve ser diferente da senha atual",
+        "saving": "Salvando...",
+        "submit": "Alterar Senha",
+        "title": "Alterar Senha",
+        "toastChangedDescription": "Sua senha foi atualizada",
+        "toastChangedTitle": "Senha Alterada",
+        "toastSetDescription": "Agora você pode usar sua senha para recuperar sua conta",
+        "toastSetTitle": "Senha Definida",
+        "tooShort": "A senha deve ter pelo menos 8 caracteres"
+      },
       "createAccount": "Criar Conta",
       "creatingAccount": "A criar...",
       "dialogTitle": "Login do ryOS",

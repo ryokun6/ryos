@@ -1,9 +1,92 @@
 export const APPLET_AUTH_MESSAGE_TYPE = "ryos-applet-auth";
 
 /**
- * Injected into applet iframes. Requests the parent's username for
- * display/attribution, and patches fetch to include credentials on
- * same-origin /api/applet-ai requests so the httpOnly auth cookie is sent.
+ * Username of the trusted applet author. Only applets explicitly authored by
+ * this account receive same-origin sandbox privileges and the auth bridge
+ * (which forwards the user's auth cookie on `/api/applet-ai` requests).
+ *
+ * Anyone else's applet — including the currently-logged-in user's own
+ * applets — runs inside a strict sandbox without same-origin and without
+ * the bridge. This protects the user's session from malicious third-party
+ * applets shared via the Applet Store or imported from disk.
+ */
+export const TRUSTED_APPLET_AUTHOR = "ryo";
+
+/**
+ * Returns true when an applet's `createdBy` value matches the trusted
+ * author and the applet is therefore eligible for same-origin privileges
+ * and auth bridge injection.
+ *
+ * Treats null/undefined/empty values as untrusted.
+ */
+export function isTrustedAppletAuthor(
+  createdBy: string | null | undefined
+): boolean {
+  if (typeof createdBy !== "string") return false;
+  const normalized = createdBy.trim().toLowerCase();
+  if (!normalized) return false;
+  return normalized === TRUSTED_APPLET_AUTHOR;
+}
+
+/**
+ * Sandbox attributes used for trusted applets (and other AI/system content
+ * authored by `ryo`). These iframes can use same-origin features such as
+ * the auth bridge and `parent.postMessage` with the parent origin.
+ */
+const TRUSTED_APPLET_SANDBOX = [
+  "allow-scripts",
+  "allow-same-origin",
+  "allow-forms",
+  "allow-popups",
+  "allow-popups-to-escape-sandbox",
+  "allow-modals",
+  "allow-pointer-lock",
+  "allow-downloads",
+  "allow-storage-access-by-user-activation",
+].join(" ");
+
+/**
+ * Sandbox attributes for untrusted applets. CRITICALLY does NOT include
+ * `allow-same-origin` — without it, the iframe runs in a unique opaque
+ * origin and cannot:
+ *   - read parent localStorage / cookies / IndexedDB
+ *   - call `window.parent.<anything>` directly
+ *   - send credentialed `fetch` requests to the host origin
+ * This is the appropriate isolation level for applets authored by anyone
+ * other than the trusted admin.
+ */
+const UNTRUSTED_APPLET_SANDBOX = [
+  "allow-scripts",
+  "allow-forms",
+  "allow-popups",
+  "allow-popups-to-escape-sandbox",
+  "allow-modals",
+  "allow-pointer-lock",
+  "allow-downloads",
+].join(" ");
+
+/**
+ * Returns the appropriate iframe `sandbox` attribute string for an applet
+ * based on whether its author is trusted.
+ *
+ * Untrusted applets are denied `allow-same-origin` so they cannot escape
+ * the sandbox to read parent state or impersonate the user.
+ */
+export function getAppletSandboxAttribute(trusted: boolean): string {
+  return trusted ? TRUSTED_APPLET_SANDBOX : UNTRUSTED_APPLET_SANDBOX;
+}
+
+/**
+ * Auth bridge script injected into TRUSTED applet iframes only.
+ *
+ * - Requests the parent's username for display/attribution
+ * - Patches `fetch` so credentials are sent on same-origin
+ *   `/api/applet-ai` requests (so the httpOnly auth cookie is forwarded).
+ *
+ * Untrusted (non-ryo) applets never receive this script. Their fetches to
+ * `/api/applet-ai` are made from a unique opaque origin and do not include
+ * the user's auth cookie — they are subject to the standard anonymous
+ * rate limit.
  */
 export const APPLET_AUTH_BRIDGE_SCRIPT = `
 <script>

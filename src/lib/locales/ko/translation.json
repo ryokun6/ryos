@@ -1338,6 +1338,7 @@
       "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다",
       "bootScreen": "부팅 화면",
       "bootScreenDescription": "부팅 화면 애니메이션을 테스트합니다.",
+      "changePassword": "암호 변경",
       "chatSynth": "챗 신스",
       "chatSynthVolume": "채팅 신디 볼륨",
       "checkForUpdates": "업데이트 확인",
@@ -1761,12 +1762,12 @@
         "emptyTrash": "휴지통 비우기...",
         "kind": "종류",
         "moveToTrash": "휴지통으로 이동",
-        "putBack": "되돌리기",
         "name": "이름",
         "newFolder": "새 폴더…",
         "noAirDropUsersAvailable": "근처 사용자가 없습니다",
         "open": "열기",
         "openAirDrop": "AirDrop 열기",
+        "putBack": "되돌리기",
         "rename": "이름 변경…",
         "searchingForAirDropUsers": "근처 사용자를 찾는 중…",
         "shareViaAirDrop": "AirDrop으로 공유",
@@ -2536,6 +2537,10 @@
     "maps": {
       "description": "Apple 지도로 장소 찾기",
       "help": {
+        "directions": {
+          "description": "장소 카드에서 Apple 지도로 운전 경로를 엽니다 — 새 탭에서 열려 ryOS는 그대로 유지됩니다(지도 안 경로 안내는 아직 없음).",
+          "title": "길찾기"
+        },
         "dropPins": {
           "description": "목록에서 결과를 선택하여 핀을 고정하고 지도의 중심을 맞추십시오.",
           "title": "핀 고정"
@@ -2543,10 +2548,6 @@
         "locateMe": {
           "description": "내 위치 버튼을 클릭하여 현재 위치를 지도의 중심으로 맞추십시오.",
           "title": "내 위치"
-        },
-        "directions": {
-          "description": "장소 카드에서 Apple 지도로 운전 경로를 엽니다 — 새 탭에서 열려 ryOS는 그대로 유지됩니다(지도 안 경로 안내는 아직 없음).",
-          "title": "길찾기"
         },
         "mapTypes": {
           "description": "보기 메뉴에서 표준, 하이브리드, 위성 및 저채도 표준 간에 전환하십시오",
@@ -3790,6 +3791,24 @@
       "systemPreferences": "시스템 환경설정…"
     },
     "auth": {
+      "changePassword": {
+        "confirmPassword": "새 암호 확인",
+        "currentPassword": "현재 암호",
+        "currentPasswordRequired": "현재 암호를 입력해야 합니다",
+        "description": "현재 암호를 입력하고 새 암호를 설정하십시오.",
+        "genericError": "암호 변경에 실패했습니다",
+        "mismatch": "새 암호가 일치하지 않습니다",
+        "newPassword": "새 암호",
+        "sameAsCurrent": "새 암호는 현재 암호와 달라야 합니다",
+        "saving": "저장 중...",
+        "submit": "암호 변경",
+        "title": "암호 변경",
+        "toastChangedDescription": "암호가 업데이트되었습니다",
+        "toastChangedTitle": "암호 변경됨",
+        "toastSetDescription": "이제 암호를 사용하여 계정을 복구할 수 있습니다",
+        "toastSetTitle": "암호 설정됨",
+        "tooShort": "암호는 8자 이상이어야 합니다"
+      },
       "createAccount": "계정 만들기",
       "creatingAccount": "만드는 중...",
       "dialogTitle": "ryOS 로그인",

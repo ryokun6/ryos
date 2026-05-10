@@ -169,7 +169,10 @@ export interface ChatsStoreState {
   setAuthenticated: (authenticated: boolean) => void;
   setHasPassword: (hasPassword: boolean | null) => void; // Set password status
   checkHasPassword: () => Promise<{ ok: boolean; error?: string }>; // Check if user has password
-  setPassword: (password: string) => Promise<{ ok: boolean; error?: string }>; // Set password for user
+  setPassword: (
+    password: string,
+    currentPassword?: string
+  ) => Promise<{ ok: boolean; error?: string }>; // Set or change password for user
   setRooms: (rooms: ChatRoom[]) => void;
   setCurrentRoomId: (roomId: string | null) => void;
   setRoomMessagesForCurrentRoom: (messages: ChatMessage[]) => void; // Sets messages for the *current* room
@@ -380,7 +383,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             };
           }
         },
-        setPassword: async (password) => {
+        setPassword: async (password, currentPassword) => {
           const currentUsername = get().username;
 
           if (!currentUsername) {
@@ -388,6 +391,13 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
+            const payload: { password: string; currentPassword?: string } = {
+              password,
+            };
+            if (typeof currentPassword === "string" && currentPassword.length > 0) {
+              payload.currentPassword = currentPassword;
+            }
+
             const response = await abortableFetch(
               getApiUrl("/api/auth/password/set"),
               {
@@ -395,7 +405,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ password }),
+                body: JSON.stringify(payload),
                 timeout: 15000,
                 throwOnHttpError: false,
                 retry: { maxAttempts: 1, initialDelayMs: 250 },

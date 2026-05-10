@@ -7,12 +7,40 @@
  */
 
 import { getRuntimeEnv } from "./_cors.js";
+import { getConfiguredPublicOrigin } from "./runtime-config.js";
 import { USER_TTL_SECONDS } from "./auth/_constants.js";
 
 export const AUTH_COOKIE_NAME = "ryos_auth";
 
+/**
+ * Decide whether to mark the auth cookie as `Secure`.
+ *
+ * `Secure` means browsers will only send the cookie over HTTPS, which is
+ * what we want any time the app is reachable over TLS.
+ *
+ * Sources, in order of precedence:
+ * 1. Explicit override: `AUTH_COOKIE_SECURE=1|true|0|false`. Useful for
+ *    self-hosted deployments running behind a TLS-terminating proxy where
+ *    auto-detection might be ambiguous.
+ * 2. `APP_PUBLIC_ORIGIN`: if it starts with `https://`, the deployment is
+ *    HTTPS-fronted regardless of which env "stage" we're in. This is the
+ *    primary signal for non-Vercel HTTPS deployments.
+ * 3. Vercel preview environments: HTTPS by default.
+ * 4. `production` runtime env: HTTPS by convention.
+ *
+ * Otherwise (local development over plain HTTP) leaves `Secure` off so
+ * the cookie still works on http://localhost.
+ */
 function isSecureContext(): boolean {
-  return getRuntimeEnv() === "production";
+  const override = process.env.AUTH_COOKIE_SECURE?.trim().toLowerCase();
+  if (override === "1" || override === "true" || override === "yes") return true;
+  if (override === "0" || override === "false" || override === "no") return false;
+
+  const publicOrigin = getConfiguredPublicOrigin();
+  if (publicOrigin && publicOrigin.startsWith("https://")) return true;
+
+  const env = getRuntimeEnv();
+  return env === "production" || env === "preview";
 }
 
 export function buildSetAuthCookie(

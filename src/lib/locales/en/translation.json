@@ -242,7 +242,25 @@
       "setPasswordRequired": "Set Password Required",
       "setPasswordRequiredDescription": "You need to set a password before logging out to ensure you can recover your account. Would you like to set a password now?",
       "logOut": "Log Out",
-      "logOutDescription": "Are you sure you want to log out? You will be signed out of your account."
+      "logOutDescription": "Are you sure you want to log out? You will be signed out of your account.",
+      "changePassword": {
+        "title": "Change Password",
+        "description": "Enter your current password and choose a new one.",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm New Password",
+        "submit": "Change Password",
+        "saving": "Saving...",
+        "currentPasswordRequired": "Current password is required",
+        "tooShort": "Password must be at least 8 characters",
+        "mismatch": "New passwords do not match",
+        "sameAsCurrent": "New password must be different from your current password",
+        "genericError": "Failed to change password",
+        "toastSetTitle": "Password Set",
+        "toastSetDescription": "You can now use your password to recover your account",
+        "toastChangedTitle": "Password Changed",
+        "toastChangedDescription": "Your password has been updated"
+      }
     },
     "htmlPreview": {
       "toastSaved": "Applet saved successfully",
@@ -2741,6 +2759,7 @@
       },
       "logIn": "Log In",
       "setPassword": "Set Password",
+      "changePassword": "Change Password",
       "logOut": "Log Out",
       "loggingOut": "Logging out...",
       "logOutOfAllDevices": "Log Out of All Devices",

@@ -1338,6 +1338,7 @@
       "backupRestoreDescription": "備份或還原所有應用程式設定和檔案",
       "bootScreen": "開機畫面",
       "bootScreenDescription": "測試開機畫面動畫",
+      "changePassword": "變更密碼",
       "chatSynth": "聊天合成",
       "chatSynthVolume": "聊天合成音量",
       "checkForUpdates": "檢查更新",
@@ -1761,12 +1762,12 @@
         "emptyTrash": "清空垃圾桶…",
         "kind": "種類",
         "moveToTrash": "丟到垃圾桶",
-        "putBack": "放回",
         "name": "名稱",
         "newFolder": "新增檔案夾…",
         "noAirDropUsersAvailable": "附近沒有使用者",
         "open": "開啟",
         "openAirDrop": "開啟 AirDrop",
+        "putBack": "放回",
         "rename": "重新命名…",
         "searchingForAirDropUsers": "正在尋找附近的使用者…",
         "shareViaAirDrop": "透過 AirDrop 分享",
@@ -2536,6 +2537,10 @@
     "maps": {
       "description": "使用 Apple 地圖尋找地點",
       "help": {
+        "directions": {
+          "description": "從地點卡開啟 Apple 地圖的開車路線 — 會在新分頁開啟，ryOS 分頁保持開啟（地圖內導航路線尚未提供）。",
+          "title": "路線"
+        },
         "dropPins": {
           "description": "從清單中選擇一個結果以放置大頭針，並將地圖重新對焦於該處",
           "title": "放置大頭針"
@@ -2543,10 +2548,6 @@
         "locateMe": {
           "description": "按一下「定位我」按鈕，將地圖重新對焦於你的目前位置",
           "title": "定位我"
-        },
-        "directions": {
-          "description": "從地點卡開啟 Apple 地圖的開車路線 — 會在新分頁開啟，ryOS 分頁保持開啟（地圖內導航路線尚未提供）。",
-          "title": "路線"
         },
         "mapTypes": {
           "description": "從「顯示」選單在「標準」、「混合」、「衛星」和「柔和標準」之間切換",
@@ -3790,6 +3791,24 @@
       "systemPreferences": "系統偏好設定…"
     },
     "auth": {
+      "changePassword": {
+        "confirmPassword": "確認新密碼",
+        "currentPassword": "目前密碼",
+        "currentPasswordRequired": "必須填寫目前密碼",
+        "description": "請輸入目前密碼並選擇新密碼。",
+        "genericError": "密碼變更失敗",
+        "mismatch": "新密碼不符",
+        "newPassword": "新密碼",
+        "sameAsCurrent": "新密碼必須與目前密碼不同",
+        "saving": "正在儲存...",
+        "submit": "變更密碼",
+        "title": "變更密碼",
+        "toastChangedDescription": "您的密碼已更新",
+        "toastChangedTitle": "密碼已變更",
+        "toastSetDescription": "您現在可以使用密碼來復原帳戶",
+        "toastSetTitle": "密碼已設定",
+        "tooShort": "密碼長度至少須為 8 個字元"
+      },
       "createAccount": "建立帳戶",
       "creatingAccount": "正在建立...",
       "dialogTitle": "ryOS 登入",

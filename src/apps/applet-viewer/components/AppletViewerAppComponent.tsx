@@ -9,6 +9,7 @@ import { AppStore } from "./AppStore";
 import { appMetadata, AppletViewerInitialData } from "../index";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
 import { useAppletViewerLogic } from "../hooks/useAppletViewerLogic";
+import { getAppletSandboxAttribute } from "@/utils/appletAuthBridge";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -69,6 +70,7 @@ export function AppletViewerAppComponent({
     verifyError,
     handleVerifyTokenSubmit,
     getAppletTitle,
+    isTrustedApplet,
   } = useAppletViewerLogic({ instanceId, initialData });
 
   const menuBar = (
@@ -113,7 +115,7 @@ export function AppletViewerAppComponent({
                 srcDoc={injectAppletAuthScript(ensureMacFonts(htmlContent))}
                 title={windowTitle}
                 className="border-0"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+                sandbox={getAppletSandboxAttribute(isTrustedApplet)}
                 style={{
                   display: "block",
                   margin: 0,
