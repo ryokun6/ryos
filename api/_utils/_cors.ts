@@ -10,16 +10,34 @@ const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
 const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
 const LOCALHOST_PORTS = new Set(["80", "443", "3000", "3001", "5173"]);
 
-// Allowed Vercel preview URL prefixes for this project
-// Vercel preview URLs follow patterns like:
-// - {project}-{random}.vercel.app
-// - {project}-git-{branch}-{username}.vercel.app
-// Only allow previews from this specific project to prevent other Vercel apps from accessing the API
-const ALLOWED_VERCEL_PREVIEW_PREFIXES = [
-  "ryos-",      // Main project name
-  "ryo-lu-",    // Username-based prefix
-  "os-ryo-",    // Alternative naming
+// Allowed Vercel preview URL **team suffixes**. Vercel preview URLs
+// follow patterns like:
+//   {project}-{hash}-{team}.vercel.app
+//   {project}-git-{branch}-{team}.vercel.app
+// The trailing `-{team}.vercel.app` segment is set by Vercel based on
+// the deploying account/team and cannot be chosen by an unrelated
+// Vercel project. Anchoring on the team suffix (rather than the
+// project-name prefix that anyone can pick) prevents third parties from
+// CORS-allowlisting their own Vercel deployments.
+const DEFAULT_ALLOWED_VERCEL_PREVIEW_TEAM_SUFFIXES = [
+  "-ryo-lu.vercel.app",
 ];
+
+const getAllowedVercelPreviewTeamSuffixes = (): string[] => {
+  const raw = process.env.API_VERCEL_PREVIEW_TEAM_SUFFIXES?.trim();
+  if (!raw) return DEFAULT_ALLOWED_VERCEL_PREVIEW_TEAM_SUFFIXES;
+  const tokens = raw
+    .split(",")
+    .map((token) => token.trim().toLowerCase())
+    .filter(Boolean);
+  // Normalize so each entry starts with `-` and ends with `.vercel.app`.
+  return tokens.map((token) => {
+    let suffix = token;
+    if (!suffix.endsWith(".vercel.app")) suffix = `${suffix}.vercel.app`;
+    if (!suffix.startsWith("-")) suffix = `-${suffix}`;
+    return suffix;
+  });
+};
 
 function normalizeEnv(env: string | undefined): RuntimeEnv | null {
   if (env === "production" || env === "preview" || env === "development") {
@@ -72,17 +90,18 @@ function isLocalhostOrigin(origin: string): boolean {
 function isVercelPreviewOrigin(origin: string): boolean {
   const parsed = parseOrigin(origin);
   if (!parsed) return false;
-  
+
   const hostname = parsed.hostname.toLowerCase();
-  
+
   // Must end with .vercel.app
   if (!hostname.endsWith(".vercel.app")) return false;
-  
-  // Must start with one of the allowed project prefixes
-  // This prevents other Vercel-deployed apps from accessing the API
-  return ALLOWED_VERCEL_PREVIEW_PREFIXES.some(prefix => 
-    hostname.startsWith(prefix)
-  );
+
+  // Must end with one of the allowed team suffixes. The team segment
+  // is part of the hostname Vercel assigns at deploy time and cannot
+  // be picked by an unrelated Vercel project, so this resists the
+  // "register a project named ryos-evil and get CORS for free" attack.
+  const suffixes = getAllowedVercelPreviewTeamSuffixes();
+  return suffixes.some((suffix) => hostname.endsWith(suffix));
 }
 
 function isTailscaleOrigin(origin: string): boolean {
