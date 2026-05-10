@@ -66,3 +66,23 @@ export async function logoutUser(): Promise<{ success: boolean }> {
     method: "POST",
   });
 }
+
+export interface SetPasswordRequest {
+  /** New password to store. */
+  password: string;
+  /**
+   * Existing password. Required by the server when the user already has
+   * a password set; omitted only for first-time setup on legacy accounts.
+   */
+  currentPassword?: string;
+}
+
+export async function setUserPassword(
+  params: SetPasswordRequest
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }, SetPasswordRequest>({
+    path: "/api/auth/password/set",
+    method: "POST",
+    body: params,
+  });
+}

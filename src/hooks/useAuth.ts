@@ -178,8 +178,8 @@ export function useAuth() {
   }, [storeCheckHasPassword]);
 
   const setPassword = useCallback(
-    async (password: string) => {
-      return storeSetPassword(password);
+    async (password: string, currentPassword?: string) => {
+      return storeSetPassword(password, currentPassword);
     },
     [storeSetPassword]
   );
