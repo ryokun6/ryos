@@ -10,6 +10,9 @@ interface MenuListItemProps {
   isLoading?: boolean;
 }
 
+const CJK_TEXT_PATTERN =
+  /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]/;
+
 export function MenuListItem({
   text,
   isSelected,
@@ -19,15 +22,18 @@ export function MenuListItem({
   value,
   isLoading = false,
 }: MenuListItemProps) {
+  const hasCjkText =
+    CJK_TEXT_PATTERN.test(text) || (value ? CJK_TEXT_PATTERN.test(value) : false);
+
   return (
     <div
       onClick={isLoading ? undefined : onClick}
       className={cn(
-        // h-full + leading-none makes the row exactly fill its
+        // h-full makes the row exactly fill its
         // virtualization wrapper (MENU_ITEM_HEIGHT in IpodScreen) so
         // items in every menu — main, music, artist, and All Songs —
         // share the same vertical rhythm.
-        "h-full pl-2 pr-3 font-chicago text-[16px] leading-none flex justify-between items-center",
+        "h-full pl-2 pr-3 font-chicago flex justify-between items-center",
         isLoading ? "cursor-default" : "cursor-pointer",
         isSelected && !isLoading
           ? backlightOn
@@ -38,13 +44,27 @@ export function MenuListItem({
           : "text-[#0a3667] hover:bg-[#c0d8f0] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
       )}
     >
-      <span className="whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2">
+      <span
+        className={cn(
+          "whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2 leading-[1.15]",
+          hasCjkText ? "text-[15px]" : "text-[16px]"
+        )}
+      >
         {text}
       </span>
       {value ? (
-        <span className="flex-shrink-0">{value}</span>
+        <span
+          className={cn(
+            "flex-shrink-0 leading-[1.15]",
+            hasCjkText ? "text-[15px]" : "text-[16px]"
+          )}
+        >
+          {value}
+        </span>
       ) : (
-        showChevron && !isLoading && <span className="flex-shrink-0">{">"}</span>
+        showChevron && !isLoading && (
+          <span className="flex-shrink-0 text-[16px] leading-none">{">"}</span>
+        )
       )}
     </div>
   );
