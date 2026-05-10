@@ -17,7 +17,13 @@ import {
 } from "@/utils/romanization";
 import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch";
 
-// Memoized lyric line component to prevent unnecessary re-renders
+// Memoized lyric line component to prevent unnecessary re-renders.
+//
+// `onClick` / `setRef` accept the row index so the parent can pass stable
+// references (one per LyricsSyncMode instance) instead of allocating a new
+// closure per row per render. Inline closures here would defeat React.memo
+// because `Object.is` comparison on prop functions would always fail, and
+// every progress tick (~10/s for the seek bar) would re-render every row.
 const LyricLineItem = memo(function LyricLineItem({
   line,
   index,
@@ -34,15 +40,24 @@ const LyricLineItem = memo(function LyricLineItem({
   isPast: boolean;
   romanizedText: string | null;
   displayText: string;
-  onClick: () => void;
-  setRef: (el: HTMLButtonElement | null) => void;
+  onClick: (index: number) => void;
+  setRef: (index: number, el: HTMLButtonElement | null) => void;
 }) {
+  const handleClick = useCallback(() => {
+    onClick(index);
+  }, [onClick, index]);
+  const handleRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      setRef(index, el);
+    },
+    [setRef, index]
+  );
   return (
     <button
       type="button"
       key={`${line.startTimeMs}-${index}`}
-      ref={setRef}
-      onClick={onClick}
+      ref={handleRef}
+      onClick={handleClick}
       className={cn(
         "w-full text-left py-2 px-3 rounded-xl",
         "hover:bg-white/10 active:bg-white/20",
@@ -217,16 +232,35 @@ export function LyricsSyncMode({
     return findCurrentLineIndex(parsedTimestamps, adjustedTime);
   }, [parsedTimestamps, lines.length, currentTimeMs, currentOffset]);
 
-  // Handle line tap - calculate new offset so this line plays at current time
+  // Mirror `currentTimeMs` in a ref so the row click handler can stay
+  // referentially stable. Without this, `handleLineTap` would change every
+  // ~100ms (every seek-bar tick), invalidating the per-row memoization.
+  const currentTimeMsRef = useRef(currentTimeMs);
+  useEffect(() => {
+    currentTimeMsRef.current = currentTimeMs;
+  }, [currentTimeMs]);
+
+  // Stable line click handler keyed by index — the row component closes over
+  // the index, so this can stay identity-stable across renders.
   const handleLineTap = useCallback(
-    (line: LyricLine) => {
+    (index: number) => {
+      const line = lines[index];
+      if (!line) return;
       const lineStartMs = parseInt(line.startTimeMs, 10);
       // new_offset = line_start_time - current_playback_time
-      // This means: "The line I tapped should be playing right now"
-      const newOffset = lineStartMs - currentTimeMs;
+      // "The line I tapped should be playing right now."
+      const newOffset = lineStartMs - currentTimeMsRef.current;
       onSetOffset(newOffset);
     },
-    [currentTimeMs, onSetOffset]
+    [lines, onSetOffset]
+  );
+
+  // Stable ref-setter keyed by index for the same reason.
+  const setLineRef = useCallback(
+    (index: number, el: HTMLButtonElement | null) => {
+      lineRefs.current[index] = el;
+    },
+    []
   );
 
   // Track last scrolled line to avoid redundant scrolls
@@ -421,10 +455,8 @@ export function LyricsSyncMode({
                 isPast={index < currentLineIndex}
                 romanizedText={romanizedTexts.get(index) ?? null}
                 displayText={line.words}
-                onClick={() => handleLineTap(line)}
-                setRef={(el) => {
-                  lineRefs.current[index] = el;
-                }}
+                onClick={handleLineTap}
+                setRef={setLineRef}
               />
             ))}
           </div>
