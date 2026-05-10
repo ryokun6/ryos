@@ -46,7 +46,9 @@ export function IpodAppComponent({
     t,
     translatedHelpItems,
     tracks,
+    coverFlowTracks,
     currentIndex,
+    coverFlowCurrentIndex,
     loopCurrent,
     isShuffled,
     isPlaying,
@@ -457,8 +459,8 @@ export function IpodAppComponent({
               {/* Cover Flow overlay - positioned within screen bounds */}
               <CoverFlow
                 ref={coverFlowRef}
-                tracks={tracks}
-                currentIndex={currentIndex}
+                tracks={coverFlowTracks}
+                currentIndex={coverFlowCurrentIndex}
                 onSelectTrack={handleCoverFlowSelect}
                 onExit={handleCoverFlowExit}
                 onRotation={handleCoverFlowRotation}

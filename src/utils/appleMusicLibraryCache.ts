@@ -21,7 +21,10 @@ const LIBRARY_KEY = "library";
 const PLAYLISTS_KEY = "playlists";
 const TRACK_COLLECTION_KEY_PREFIX = "track-collection:";
 
-export type AppleMusicTrackCollectionKey = "recently-added" | "favorite-songs";
+export type AppleMusicTrackCollectionKey =
+  | "recently-added"
+  | "favorite-songs"
+  | "radio-stations";
 
 export interface CachedAppleMusicLibrary {
   tracks: Track[];

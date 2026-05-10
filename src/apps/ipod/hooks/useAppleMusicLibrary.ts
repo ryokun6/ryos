@@ -135,6 +135,54 @@ interface RecentlyAddedResponse {
   data?: AppleMusicLibrarySongResource[];
 }
 
+export interface AppleMusicCatalogPlayableResource {
+  id: string;
+  type: string;
+  attributes?: {
+    name?: string;
+    artistName?: string;
+    curatorName?: string;
+    url?: string;
+    durationInMillis?: number;
+    artwork?: {
+      url?: string;
+      width?: number;
+      height?: number;
+    };
+    playParams?: {
+      id?: string;
+      kind?: string;
+      isLibrary?: boolean;
+      catalogId?: string;
+    };
+  };
+}
+
+interface AppleMusicStationsResponse {
+  data?: AppleMusicCatalogPlayableResource[];
+}
+
+interface AppleMusicRecommendationResource {
+  id: string;
+  type: string;
+  attributes?: {
+    title?: {
+      stringForDisplay?: string;
+    };
+    resourceTypes?: string[];
+    kind?: string;
+  };
+  relationships?: {
+    contents?: {
+      data?: AppleMusicCatalogPlayableResource[];
+    };
+  };
+}
+
+interface AppleMusicRecommendationsResponse {
+  data?: AppleMusicRecommendationResource[];
+}
+
 export type AppleMusicSearchScope = "catalog" | "library";
 
 /**
@@ -187,7 +235,8 @@ export function libraryResourceToTrack(
     durationMs: attrs.durationInMillis,
     source: "appleMusic",
     appleMusicPlayParams: {
-      catalogId: playParams.catalogId,
+      catalogId:
+        playParams.catalogId ?? (!playParams.isLibrary ? playParams.id : undefined),
       libraryId: playParams.isLibrary ? playParams.id : undefined,
       kind: playParams.kind,
       isLibrary: playParams.isLibrary,
@@ -235,6 +284,68 @@ function libraryPlaylistResourceToPlaylist(
   };
 }
 
+export function appleMusicPlayableResourceToTrack(
+  res: AppleMusicCatalogPlayableResource,
+  fallbackArtist = "Apple Music"
+): Track | null {
+  const attrs = res.attributes;
+  if (!attrs) return null;
+  const playParams = attrs.playParams;
+  const playableId = playParams?.id || playParams?.catalogId || res.id;
+  if (!playableId) return null;
+
+  if (res.type === "stations") {
+    return {
+      id: `am:station:${playableId}`,
+      url: attrs.url?.startsWith("https://music.apple.com/")
+        ? attrs.url
+        : `applemusic:station:${playableId}`,
+      title: attrs.name || "Apple Music Radio",
+      artist: attrs.curatorName || fallbackArtist,
+      cover: resolveArtworkUrl(attrs.artwork, 600),
+      source: "appleMusic",
+      appleMusicPlayParams: {
+        stationId: playableId,
+        kind: playParams?.kind || "radioStation",
+      },
+      lyricOffset: 0,
+    };
+  }
+
+  if (res.type === "playlists") {
+    return {
+      id: `am:playlist:${playableId}`,
+      url: attrs.url?.startsWith("https://music.apple.com/")
+        ? attrs.url
+        : `applemusic:playlist:${playableId}`,
+      title: attrs.name || "Apple Music Mix",
+      artist: attrs.curatorName || fallbackArtist,
+      cover: resolveArtworkUrl(attrs.artwork, 600),
+      source: "appleMusic",
+      appleMusicPlayParams: {
+        playlistId: playableId,
+        kind: playParams?.kind || "playlist",
+      },
+      lyricOffset: 0,
+    };
+  }
+
+  if (res.type === "songs" || res.type === "library-songs") {
+    return libraryResourceToTrack(res as AppleMusicLibrarySongResource);
+  }
+
+  return null;
+}
+
+function dedupeTracksById(tracks: Track[]): Track[] {
+  const seen = new Set<string>();
+  return tracks.filter((track) => {
+    if (seen.has(track.id)) return false;
+    seen.add(track.id);
+    return true;
+  });
+}
+
 const PAGE_SIZE = 100;
 const MAX_PAGES = 50; // safety cap (5,000 songs)
 const SEARCH_RESULT_LIMIT = 15;
@@ -244,6 +355,8 @@ const RECENTLY_ADDED_COLLECTION_KEY: AppleMusicTrackCollectionKey =
   "recently-added";
 const FAVORITE_SONGS_COLLECTION_KEY: AppleMusicTrackCollectionKey =
   "favorite-songs";
+const RADIO_STATIONS_COLLECTION_KEY: AppleMusicTrackCollectionKey =
+  "radio-stations";
 
 function getAppleMusicInstanceForUser() {
   const instance = getMusicKitInstance();
@@ -305,6 +418,111 @@ export async function searchAppleMusicTracks(
   return (resources ?? [])
     .map((resource) => libraryResourceToTrack(resource))
     .filter((track): track is Track => track !== null);
+}
+
+async function fetchAppleMusicRecommendations(): Promise<
+  AppleMusicRecommendationResource[]
+> {
+  const instance = getAppleMusicInstanceForUser();
+  const response = await instance.api.music<AppleMusicRecommendationsResponse>(
+    "/v1/me/recommendations",
+    {
+      limit: 10,
+    }
+  );
+  const data = response?.data as AppleMusicRecommendationsResponse | undefined;
+  return data?.data ?? [];
+}
+
+export async function fetchAppleMusicRadioStations(
+  options: FetchPlaylistTracksOptions = {}
+): Promise<Track[]> {
+  const cached = await loadAppleMusicTrackCollection(
+    RADIO_STATIONS_COLLECTION_KEY
+  );
+  if (!options.force && cached) {
+    return cached.tracks;
+  }
+
+  try {
+    const instance = getAppleMusicInstanceForUser();
+    const storefront = getCatalogStorefront(instance);
+    const personalStationResponse =
+      await instance.api.music<AppleMusicStationsResponse>(
+        `/v1/catalog/${encodeURIComponent(storefront)}/stations`,
+        {
+          "filter[identity]": "personal",
+        }
+      );
+    const personalStationData = personalStationResponse?.data as
+      | AppleMusicStationsResponse
+      | undefined;
+    const personalStations = (personalStationData?.data ?? [])
+      .map((resource) => appleMusicPlayableResourceToTrack(resource))
+      .filter((track): track is Track => track !== null);
+
+    const recommendations = await fetchAppleMusicRecommendations().catch(
+      (err) => {
+        console.warn("[apple music] failed to load recommendation stations", err);
+        return [] as AppleMusicRecommendationResource[];
+      }
+    );
+    const recommendationStations = recommendations.flatMap((recommendation) =>
+      (recommendation.relationships?.contents?.data ?? [])
+        .filter((resource) => resource.type === "stations")
+        .map((resource) =>
+          appleMusicPlayableResourceToTrack(
+            resource,
+            recommendation.attributes?.title?.stringForDisplay || "Apple Music"
+          )
+        )
+        .filter((track): track is Track => track !== null)
+    );
+
+    const stations = dedupeTracksById([
+      ...personalStations,
+      ...recommendationStations,
+    ]);
+    if (stations.length === 0 && cached) {
+      return cached.tracks;
+    }
+    void saveAppleMusicTrackCollection(RADIO_STATIONS_COLLECTION_KEY, {
+      tracks: stations,
+      loadedAt: Date.now(),
+    });
+    return stations;
+  } catch (err) {
+    if (cached) {
+      console.warn(
+        "[apple music] radio refresh failed (using cached stations)",
+        err
+      );
+      return cached.tracks;
+    }
+    throw err;
+  }
+}
+
+export async function fetchAppleMusicGeniusTrack(): Promise<Track | null> {
+  const recommendations = await fetchAppleMusicRecommendations();
+  const playableTracks = recommendations.flatMap((recommendation) =>
+    (recommendation.relationships?.contents?.data ?? [])
+      .map((resource) =>
+        appleMusicPlayableResourceToTrack(
+          resource,
+          recommendation.attributes?.title?.stringForDisplay || "Apple Music"
+        )
+      )
+      .filter((track): track is Track => track !== null)
+  );
+
+  // Prefer playlists/songs for Genius; stations are already exposed in Radio.
+  return (
+    playableTracks.find((track) => track.appleMusicPlayParams?.playlistId) ??
+    playableTracks.find((track) => track.appleMusicPlayParams?.catalogId) ??
+    playableTracks[0] ??
+    null
+  );
 }
 
 async function fetchLibraryAlbumTracks(albumId: string): Promise<Track[]> {

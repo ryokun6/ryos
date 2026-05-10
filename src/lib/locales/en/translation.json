@@ -1869,7 +1869,8 @@
         "appleMusicLibrarySynced": "Library: {{count}} songs",
         "libraryYoutube": "Library: YouTube",
         "libraryAppleMusic": "Library: Apple Music",
-        "appleMusicAddedToFavorites": "Added to Favorites"
+        "appleMusicAddedToFavorites": "Added to Favorites",
+        "appleMusicGeniusPlaying": "Genius Mix"
       },
       "syncMode": {
         "instructions": "Tap the line you're hearing to sync lyrics",
@@ -1932,6 +1933,9 @@
         "appleMusicFavoritesFailed": "Failed to load favorite songs",
         "appleMusicAddedToFavorites": "Added to Favorites",
         "appleMusicAddToFavoritesFailed": "Failed to add to favorites",
+        "appleMusicRadioFailed": "Failed to load Apple Music radio",
+        "appleMusicGeniusFailed": "Failed to play Apple Music recommendations",
+        "appleMusicNoRecommendations": "No Apple Music recommendations are available yet",
         "lyricsSearchTitle": "Search Lyrics",
         "lyricsSearchDescription": "Search for lyrics for \"{{title}}\" by {{artist}}",
         "lyricsSearchPlaceholder": "Enter search query (e.g., song title, artist)",
@@ -1985,6 +1989,9 @@
         "loading": "Loading…",
         "recentlyAdded": "Recently Added",
         "favoriteSongs": "Favorite Songs",
+        "radio": "Radio",
+        "genius": "Genius",
+        "noStations": "No Stations",
         "noSongs": "No Songs",
         "librarySource": "Library",
         "libraryAppleMusic": "Apple Music",

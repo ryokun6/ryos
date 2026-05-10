@@ -19,6 +19,8 @@ import {
   refreshAppleMusicRecentlyAdded,
   refreshAppleMusicFavorites,
   searchAppleMusicTracks,
+  fetchAppleMusicRadioStations,
+  fetchAppleMusicGeniusTrack,
   addAppleMusicTrackToFavorites,
   cacheAppleMusicFavoriteSongTrack,
   type AppleMusicSearchScope,
@@ -72,6 +74,13 @@ const IS_IOS = /iP(hone|od|ad)/.test(UA);
 const IS_SAFARI =
   /Safari/.test(UA) && !/Chrome/.test(UA) && !/CriOS/.test(UA);
 const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
+
+function isAppleMusicCollectionTrack(track: Track | null | undefined): boolean {
+  return Boolean(
+    track?.appleMusicPlayParams?.stationId ||
+      track?.appleMusicPlayParams?.playlistId
+  );
+}
 
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
@@ -135,6 +144,13 @@ export function useIpodLogic({
   // of the hook's logic. Each slice has its own current-song pointer.
   const isAppleMusic = librarySource === "appleMusic";
   const tracks = isAppleMusic ? appleMusicTracks : youtubeTracks;
+  const browsableTracks = useMemo(
+    () =>
+      isAppleMusic
+        ? tracks.filter((track) => !isAppleMusicCollectionTrack(track))
+        : tracks,
+    [isAppleMusic, tracks]
+  );
   const currentSongId = isAppleMusic
     ? appleMusicCurrentSongId
     : youtubeCurrentSongId;
@@ -145,6 +161,11 @@ export function useIpodLogic({
     const index = tracks.findIndex((t) => t.id === currentSongId);
     return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
   }, [tracks, currentSongId]);
+  const browseCurrentIndex = useMemo(() => {
+    if (!currentSongId) return browsableTracks.length > 0 ? 0 : -1;
+    return browsableTracks.findIndex((track) => track.id === currentSongId);
+  }, [browsableTracks, currentSongId]);
+  const coverFlowCurrentIndex = browseCurrentIndex >= 0 ? browseCurrentIndex : 0;
 
   // Now Playing "X of Y" should reflect the active playback context. When
   // the user picked a song from inside an Artist / Album / Playlist
@@ -152,8 +173,14 @@ export function useIpodLogic({
   // case scope the counter to that ordered list. Otherwise fall back to
   // the full library count.
   const nowPlayingScope = useMemo(() => {
-    if (!isAppleMusic || !appleMusicPlaybackQueue || appleMusicPlaybackQueue.length === 0) {
+    if (!isAppleMusic) {
       return { index: currentIndex, total: tracks.length };
+    }
+    if (!appleMusicPlaybackQueue || appleMusicPlaybackQueue.length === 0) {
+      return {
+        index: browseCurrentIndex >= 0 ? browseCurrentIndex : currentIndex,
+        total: browsableTracks.length,
+      };
     }
     const validIds = new Set(tracks.map((t) => t.id));
     const queue = appleMusicPlaybackQueue.filter((id) => validIds.has(id));
@@ -169,8 +196,10 @@ export function useIpodLogic({
     isAppleMusic,
     appleMusicPlaybackQueue,
     tracks,
+    browsableTracks.length,
     currentSongId,
     currentIndex,
+    browseCurrentIndex,
   ]);
 
   const {
@@ -254,8 +283,8 @@ export function useIpodLogic({
   const setCurrentSongId = isAppleMusic
     ? setAppleMusicCurrentSongId
     : setYoutubeCurrentSongId;
-  const nextTrack = isAppleMusic ? appleMusicNextTrack : youtubeNextTrack;
-  const previousTrack = isAppleMusic
+  const rawNextTrack = isAppleMusic ? appleMusicNextTrack : youtubeNextTrack;
+  const rawPreviousTrack = isAppleMusic
     ? appleMusicPreviousTrack
     : youtubePreviousTrack;
 
@@ -373,6 +402,36 @@ export function useIpodLogic({
   const isAppleMusicFavoritesLoading = useIpodStore(
     (s) => s.appleMusicFavoritesLoading
   );
+  const radioMenuTitleForRestore = t("apps.ipod.menuItems.radio", "Radio");
+  const [shouldHydrateRadioOnRestore] = useState(() => {
+    const state = useIpodStore.getState();
+    const currentAppleMusicTrack = state.appleMusicCurrentSongId
+      ? state.appleMusicTracks.find(
+          (track) => track.id === state.appleMusicCurrentSongId
+        )
+      : null;
+    return Boolean(
+      state.librarySource === "appleMusic" &&
+        (currentAppleMusicTrack?.appleMusicPlayParams?.stationId ||
+          state.ipodMenuBreadcrumb?.some(
+            (entry) =>
+              entry.title === radioMenuTitleForRestore ||
+              entry.title === "Radio"
+          ))
+    );
+  });
+  const shouldHydrateRadioOnRestoreRef = useRef(
+    shouldHydrateRadioOnRestore
+  );
+  const [appleMusicRadioTracks, setAppleMusicRadioTracks] = useState<Track[]>(
+    []
+  );
+  const [isAppleMusicRadioLoading, setIsAppleMusicRadioLoading] = useState(
+    shouldHydrateRadioOnRestore
+  );
+  const hasAttemptedRadioRestoreHydrationRef = useRef(false);
+  const [isAppleMusicGeniusLoading, setIsAppleMusicGeniusLoading] =
+    useState(false);
   
   // Cover Flow state
   const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
@@ -753,7 +812,12 @@ export function useIpodLogic({
       const existingIds = new Set(state.appleMusicTracks.map((t) => t.id));
       const additions = toMerge.filter((t) => !existingIds.has(t.id));
       if (additions.length > 0) {
-        state.setAppleMusicTracks([...state.appleMusicTracks, ...additions]);
+        const nextTracks = [...state.appleMusicTracks, ...additions];
+        if (additions.some(isAppleMusicCollectionTrack)) {
+          useIpodStore.setState({ appleMusicTracks: nextTracks });
+        } else {
+          state.setAppleMusicTracks(nextTracks);
+        }
       }
       playTrackFromMenu(track, trackIndexInActiveMenu, queueIds);
     },
@@ -863,7 +927,12 @@ export function useIpodLogic({
     const existingIds = new Set(state.appleMusicTracks.map((track) => track.id));
     const additions = incomingTracks.filter((track) => !existingIds.has(track.id));
     if (additions.length > 0) {
-      state.setAppleMusicTracks([...additions, ...state.appleMusicTracks]);
+      const nextTracks = [...additions, ...state.appleMusicTracks];
+      if (additions.some(isAppleMusicCollectionTrack)) {
+        useIpodStore.setState({ appleMusicTracks: nextTracks });
+      } else {
+        state.setAppleMusicTracks(nextTracks);
+      }
     }
   }, []);
 
@@ -961,6 +1030,145 @@ export function useIpodLogic({
       }
     }
   }, [appleMusicAuthorized, handleAppleMusicSignIn, mergeAppleMusicTracks, t]);
+
+  const loadAppleMusicRadioStations = useCallback(async (options?: {
+    promptForAuth?: boolean;
+    showErrors?: boolean;
+  }) => {
+    const promptForAuth = options?.promptForAuth ?? true;
+    const showErrors = options?.showErrors ?? true;
+    const hadCached = appleMusicRadioTracks.length > 0;
+    if (!hadCached) setIsAppleMusicRadioLoading(true);
+    try {
+      const stations = await fetchAppleMusicRadioStations();
+      setAppleMusicRadioTracks(stations);
+      mergeAppleMusicTracks(stations);
+    } catch (err) {
+      if (!appleMusicAuthorized && promptForAuth) {
+        void handleAppleMusicSignIn();
+        return;
+      }
+      if (!hadCached) {
+        if (showErrors) {
+          toast.error(
+            t(
+              "apps.ipod.dialogs.appleMusicRadioFailed",
+              "Failed to load Apple Music radio"
+            ),
+            {
+              description: err instanceof Error ? err.message : String(err),
+            }
+          );
+        }
+      } else {
+        console.warn(
+          "[apple music] radio refresh failed (using cached stations)",
+          err
+        );
+      }
+    } finally {
+      if (!hadCached) setIsAppleMusicRadioLoading(false);
+    }
+  }, [
+    appleMusicAuthorized,
+    appleMusicRadioTracks.length,
+    handleAppleMusicSignIn,
+    mergeAppleMusicTracks,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (!isAppleMusic || appleMusicRadioTracks.length > 0) return;
+
+    const hasRadioMenuInHistory = menuHistory.some(
+      (menu) =>
+        menu.title === radioMenuTitleForRestore || menu.title === "Radio"
+    );
+    const currentAppleMusicTrack = currentSongId
+      ? tracks.find((track) => track.id === currentSongId)
+      : null;
+    const hasStationNowPlaying = Boolean(
+      currentAppleMusicTrack?.appleMusicPlayParams?.stationId
+    );
+
+    if (
+      !shouldHydrateRadioOnRestoreRef.current &&
+      !hasRadioMenuInHistory &&
+      !hasStationNowPlaying
+    ) {
+      return;
+    }
+
+    if (hasAttemptedRadioRestoreHydrationRef.current) return;
+    hasAttemptedRadioRestoreHydrationRef.current = true;
+    void loadAppleMusicRadioStations({
+      promptForAuth: false,
+      showErrors: false,
+    });
+  }, [
+    appleMusicRadioTracks.length,
+    currentSongId,
+    isAppleMusic,
+    loadAppleMusicRadioStations,
+    menuHistory,
+    radioMenuTitleForRestore,
+    tracks,
+  ]);
+
+  const playAppleMusicGenius = useCallback(async () => {
+    registerActivity();
+    if (!appleMusicAuthorized) {
+      void handleAppleMusicSignIn();
+      return;
+    }
+    setIsAppleMusicGeniusLoading(true);
+    try {
+      const track = await fetchAppleMusicGeniusTrack();
+      if (!track) {
+        toast.info(
+          t(
+            "apps.ipod.dialogs.appleMusicNoRecommendations",
+            "No Apple Music recommendations are available yet"
+          )
+        );
+        return;
+      }
+      mergeAppleMusicTracks([track]);
+      useIpodStore.getState().setLibrarySource("appleMusic");
+      useIpodStore.getState().setAppleMusicPlaybackQueue([track.id]);
+      useIpodStore.getState().setAppleMusicCurrentSongId(track.id);
+      setIsPlaying(true);
+      setMenuDirection("forward");
+      setMenuMode(false);
+      if (useIpodStore.getState().showVideo) {
+        toggleVideo();
+      }
+      showStatus(
+        t("apps.ipod.status.appleMusicGeniusPlaying", "Genius Mix")
+      );
+    } catch (err) {
+      toast.error(
+        t(
+          "apps.ipod.dialogs.appleMusicGeniusFailed",
+          "Failed to play Apple Music recommendations"
+        ),
+        {
+          description: err instanceof Error ? err.message : String(err),
+        }
+      );
+    } finally {
+      setIsAppleMusicGeniusLoading(false);
+    }
+  }, [
+    appleMusicAuthorized,
+    handleAppleMusicSignIn,
+    mergeAppleMusicTracks,
+    registerActivity,
+    setIsPlaying,
+    showStatus,
+    t,
+    toggleVideo,
+  ]);
 
   const handleAppleMusicAddToFavorites = useCallback(async () => {
     registerActivity();
@@ -1156,14 +1364,14 @@ export function useIpodLogic({
   const unknownAlbumLabel = t("apps.ipod.menuItems.unknownAlbum");
   const tracksByArtist = useMemo(() => {
     const grouped: Record<string, { track: Track; index: number }[]> = {};
-    for (let index = 0; index < tracks.length; index++) {
-      const track = tracks[index];
+    for (let index = 0; index < browsableTracks.length; index++) {
+      const track = browsableTracks[index];
       const artist = track.artist || unknownArtistLabel;
       const bucket = grouped[artist] || (grouped[artist] = []);
       bucket.push({ track, index });
     }
     return grouped;
-  }, [tracks, unknownArtistLabel]);
+  }, [browsableTracks, unknownArtistLabel]);
 
   const sortedArtists = useMemo(
     () =>
@@ -1182,8 +1390,8 @@ export function useIpodLogic({
         tracks: { track: Track; index: number }[];
       }
     > = {};
-    for (let index = 0; index < tracks.length; index++) {
-      const track = tracks[index];
+    for (let index = 0; index < browsableTracks.length; index++) {
+      const track = browsableTracks[index];
       const album = track.album || unknownAlbumLabel;
       const albumArtist =
         track.source === "appleMusic"
@@ -1200,7 +1408,7 @@ export function useIpodLogic({
       group.tracks.push({ track, index });
     }
     return grouped;
-  }, [tracks, unknownAlbumLabel, unknownArtistLabel]);
+  }, [browsableTracks, unknownAlbumLabel, unknownArtistLabel]);
 
   const sortedAlbums = useMemo(
     () =>
@@ -1225,8 +1433,8 @@ export function useIpodLogic({
       string,
       Record<string, { track: Track; index: number }[]>
     > = {};
-    for (let index = 0; index < tracks.length; index++) {
-      const track = tracks[index];
+    for (let index = 0; index < browsableTracks.length; index++) {
+      const track = browsableTracks[index];
       const artist = track.artist || unknownArtistLabel;
       const albumKey = getAlbumGroupingKey(
         track,
@@ -1239,7 +1447,7 @@ export function useIpodLogic({
       bucket.push({ track, index });
     }
     return grouped;
-  }, [tracks, unknownArtistLabel, unknownAlbumLabel]);
+  }, [browsableTracks, unknownArtistLabel, unknownAlbumLabel]);
 
   const sortedAlbumsByArtist = useMemo(() => {
     const result: Record<string, string[]> = {};
@@ -1260,13 +1468,13 @@ export function useIpodLogic({
   // new `items` reference, called `setMenuHistory(updated)`, and re-ran.
   const allSongsMenuItems = useMemo(
     () =>
-      tracks.map((track, index) => ({
+      browsableTracks.map((track, index) => ({
         label: track.title,
         // Full library queue → pass null to clear any contextual queue.
         action: () => playTrackFromMenu(track, index, null),
         showChevron: false,
       })),
-    [tracks, playTrackFromMenu]
+    [browsableTracks, playTrackFromMenu]
   );
 
   const appleMusicRecentlyAddedMenuItems = useMemo(() => {
@@ -1349,6 +1557,42 @@ export function useIpodLogic({
   }, [
     appleMusicFavoriteTracks,
     isAppleMusicFavoritesLoading,
+    playAppleMusicTrackFromMenu,
+    t,
+  ]);
+
+  const appleMusicRadioMenuItems = useMemo(() => {
+    const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
+    if (isAppleMusicRadioLoading && appleMusicRadioTracks.length === 0) {
+      return [
+        {
+          label: loadingLabel,
+          action: () => {},
+          showChevron: false,
+          isLoading: true,
+        },
+      ];
+    }
+
+    if (appleMusicRadioTracks.length === 0) {
+      return [
+        {
+          label: t("apps.ipod.menuItems.noStations", "No Stations"),
+          action: () => {},
+          showChevron: false,
+        },
+      ];
+    }
+
+    return appleMusicRadioTracks.map((track, index) => ({
+      label: track.title,
+      action: () =>
+        playAppleMusicTrackFromMenu(track, index, [track.id], [track]),
+      showChevron: false,
+    }));
+  }, [
+    appleMusicRadioTracks,
+    isAppleMusicRadioLoading,
     playAppleMusicTrackFromMenu,
     t,
   ]);
@@ -1645,6 +1889,8 @@ export function useIpodLogic({
       "apps.ipod.menuItems.favoriteSongs",
       "Favorite Songs"
     );
+    const radioLabel = t("apps.ipod.menuItems.radio", "Radio");
+    const geniusLabel = t("apps.ipod.menuItems.genius", "Genius");
 
     const pushSubmenu = (
       title: string,
@@ -1712,6 +1958,26 @@ export function useIpodLogic({
           action: () => pushSubmenu(songsLabel, allSongsMenuItems),
           showChevron: true,
         },
+        {
+          label: radioLabel,
+          action: () => {
+            registerActivity();
+            pushMenuChild({
+              title: radioLabel,
+              items: appleMusicRadioMenuItems,
+              selectedIndex: 0,
+            });
+            void loadAppleMusicRadioStations();
+          },
+          showChevron: true,
+        },
+        {
+          label: isAppleMusicGeniusLoading ? loadingLabel : geniusLabel,
+          action: () => {
+            void playAppleMusicGenius();
+          },
+          showChevron: false,
+        },
       ];
     }
 
@@ -1738,11 +2004,16 @@ export function useIpodLogic({
     allSongsMenuItems,
     appleMusicFavoritesMenuItems,
     appleMusicRecentlyAddedMenuItems,
+    appleMusicRadioMenuItems,
     artistsListMenuItems,
     albumsListMenuItems,
     applePlaylistsMenuItems,
     loadAppleMusicFavorites,
     loadAppleMusicRecentlyAdded,
+    loadAppleMusicRadioStations,
+    playAppleMusicGenius,
+    isAppleMusicGeniusLoading,
+    loadingLabel,
     registerActivity,
     pushMenuChild,
     t,
@@ -1969,6 +2240,8 @@ export function useIpodLogic({
       menu.title === t("apps.ipod.menuItems.favoriteSongs", "Favorite Songs")
     ) {
       return appleMusicFavoritesMenuItems;
+    } else if (menu.title === t("apps.ipod.menuItems.radio", "Radio")) {
+      return appleMusicRadioMenuItems;
     } else if (menu.title === t("apps.ipod.menuItems.extras")) {
       // Extras submenu has stable items; keep existing references to avoid stale closures.
       return menu.items;
@@ -2008,6 +2281,7 @@ export function useIpodLogic({
     settingsMenuItems,
     appleMusicFavoritesMenuItems,
     appleMusicRecentlyAddedMenuItems,
+    appleMusicRadioMenuItems,
     allSongsMenuItems,
     artistAllSongsMenuItemsByTitle,
     artistAlbumMenuItemsByTitle,
@@ -2231,6 +2505,73 @@ export function useIpodLogic({
       isTrackSwitchingRef.current = false;
     }, 2000);
   }, []);
+
+  const getCurrentAppleMusicStationTrack = useCallback(() => {
+    const state = useIpodStore.getState();
+    if (state.librarySource !== "appleMusic" || !state.appleMusicCurrentSongId) {
+      return null;
+    }
+    const track =
+      state.appleMusicTracks.find(
+        (candidate) => candidate.id === state.appleMusicCurrentSongId
+      ) ??
+      appleMusicRadioTracks.find(
+        (candidate) => candidate.id === state.appleMusicCurrentSongId
+      ) ??
+      null;
+    return track?.appleMusicPlayParams?.stationId ? track : null;
+  }, [appleMusicRadioTracks]);
+
+  const skipAppleMusicStationTrack = useCallback(async () => {
+    if (!getCurrentAppleMusicStationTrack()) return false;
+    const activePlayer = isFullScreen
+      ? fullScreenPlayerRef.current
+      : playerRef.current;
+    const instance = activePlayer?.getInternalPlayer?.();
+    if (!instance || typeof instance.skipToNextItem !== "function") {
+      return false;
+    }
+
+    try {
+      skipOperationRef.current = true;
+      startTrackSwitch();
+      useIpodStore.getState().setElapsedTime(0);
+      useIpodStore.getState().setTotalTime(0);
+      await instance.skipToNextItem();
+      setIsPlaying(true);
+      showStatus("⏭");
+      return true;
+    } catch (err) {
+      console.warn("[apple music] failed to skip radio station item", err);
+      return false;
+    }
+  }, [
+    getCurrentAppleMusicStationTrack,
+    isFullScreen,
+    setIsPlaying,
+    showStatus,
+    startTrackSwitch,
+  ]);
+
+  const nextTrack = useCallback(() => {
+    if (getCurrentAppleMusicStationTrack()) {
+      void skipAppleMusicStationTrack();
+      return;
+    }
+    rawNextTrack();
+  }, [getCurrentAppleMusicStationTrack, rawNextTrack, skipAppleMusicStationTrack]);
+
+  const previousTrack = useCallback(() => {
+    if (getCurrentAppleMusicStationTrack()) {
+      void skipAppleMusicStationTrack();
+      return;
+    }
+    rawPreviousTrack();
+  }, [
+    getCurrentAppleMusicStationTrack,
+    rawPreviousTrack,
+    skipAppleMusicStationTrack,
+  ]);
 
   // Track handling
   const handleAddTrack = useCallback(
@@ -2563,13 +2904,17 @@ export function useIpodLogic({
             items: musicMenuItems,
             selectedIndex: songsMenuIndex,
           },
-          { title: allSongsLabel, items: allSongsMenuItems, selectedIndex: currentIndex },
+          {
+            title: allSongsLabel,
+            items: allSongsMenuItems,
+            selectedIndex: Math.max(0, browseCurrentIndex),
+          },
         ]);
-        setSelectedMenuItem(currentIndex);
+        setSelectedMenuItem(Math.max(0, browseCurrentIndex));
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, currentIndex, cameFromNowPlayingMenuItem, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
@@ -2581,11 +2926,16 @@ export function useIpodLogic({
     if (isCoverFlowOpen) {
       // Exit cover flow
       setIsCoverFlowOpen(false);
-    } else if (!menuMode && !isMusicQuizOpen && !isBrickGameOpen && tracks.length > 0) {
+    } else if (
+      !menuMode &&
+      !isMusicQuizOpen &&
+      !isBrickGameOpen &&
+      browsableTracks.length > 0
+    ) {
       // Enter cover flow only when in Now Playing mode and no overlay is active
       setIsCoverFlowOpen(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, menuMode, isMusicQuizOpen, isBrickGameOpen, tracks.length]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, menuMode, isMusicQuizOpen, isBrickGameOpen, browsableTracks.length]);
 
   const getAppleMusicAlbumQueueIds = useCallback(
     (track: Track) => {
@@ -2594,7 +2944,7 @@ export function useIpodLogic({
         unknownAlbumLabel,
         unknownArtistLabel
       );
-      return tracks
+      return browsableTracks
         .filter(
           (candidate) =>
             candidate.source === "appleMusic" &&
@@ -2606,7 +2956,7 @@ export function useIpodLogic({
         )
         .map((candidate) => candidate.id);
     },
-    [tracks, unknownAlbumLabel, unknownArtistLabel]
+    [browsableTracks, unknownAlbumLabel, unknownArtistLabel]
   );
 
   const handleCoverFlowSelect = useCallback((index: number) => {
@@ -2615,7 +2965,7 @@ export function useIpodLogic({
     registerActivity();
     
     // Switch to the selected track
-    const track = tracks[index];
+    const track = browsableTracks[index];
     if (track) {
       startTrackSwitch();
       if (useIpodStore.getState().librarySource === "appleMusic") {
@@ -2635,7 +2985,7 @@ export function useIpodLogic({
         toggleVideo();
       }
     }
-  }, [playClickSound, vibrate, registerActivity, tracks, startTrackSwitch, getAppleMusicAlbumQueueIds, setCurrentSongId, setIsPlaying, showVideo, toggleVideo]);
+  }, [playClickSound, vibrate, registerActivity, browsableTracks, startTrackSwitch, getAppleMusicAlbumQueueIds, setCurrentSongId, setIsPlaying, showVideo, toggleVideo]);
 
   // Play a track without exiting CoverFlow
   const handleCoverFlowPlayInPlace = useCallback((index: number) => {
@@ -2643,7 +2993,7 @@ export function useIpodLogic({
     vibrate();
     registerActivity();
     
-    const track = tracks[index];
+    const track = browsableTracks[index];
     if (track) {
       startTrackSwitch();
       if (useIpodStore.getState().librarySource === "appleMusic") {
@@ -2655,7 +3005,7 @@ export function useIpodLogic({
       setIsPlaying(true);
       // Don't close CoverFlow - stay in place
     }
-  }, [playClickSound, vibrate, registerActivity, tracks, startTrackSwitch, getAppleMusicAlbumQueueIds, setCurrentSongId, setIsPlaying]);
+  }, [playClickSound, vibrate, registerActivity, browsableTracks, startTrackSwitch, getAppleMusicAlbumQueueIds, setCurrentSongId, setIsPlaying]);
 
   const handleCoverFlowExit = useCallback(() => {
     playClickSound();
@@ -2689,6 +3039,8 @@ export function useIpodLogic({
           }
           if (isOffline) {
             showOfflineStatus();
+          } else if (getCurrentAppleMusicStationTrack()) {
+            void skipAppleMusicStationTrack();
           } else {
             skipOperationRef.current = true;
             startTrackSwitch();
@@ -2725,6 +3077,8 @@ export function useIpodLogic({
           }
           if (isOffline) {
             showOfflineStatus();
+          } else if (getCurrentAppleMusicStationTrack()) {
+            void skipAppleMusicStationTrack();
           } else {
             skipOperationRef.current = true;
             startTrackSwitch();
@@ -2774,7 +3128,7 @@ export function useIpodLogic({
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
+    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicStationTrack, skipAppleMusicStationTrack, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
   );
 
   // Wheel rotation handler
@@ -3036,9 +3390,13 @@ export function useIpodLogic({
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
     [lyricsTranslationLanguage, appLanguage]
   );
+  const lyricsSongId =
+    isAppleMusicCollectionTrack(currentTrack)
+      ? ""
+      : currentTrack?.id ?? "";
 
   const fullScreenLyricsControls = useLyrics({
-    songId: currentTrack?.id ?? "",
+    songId: lyricsSongId,
     title: currentTrack?.title ?? "",
     artist: currentTrack?.artist ?? "",
     currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
@@ -3058,7 +3416,7 @@ export function useIpodLogic({
   // Show toast with Search button when lyrics fetch fails
   useLyricsErrorToast({
     error: fullScreenLyricsControls.error,
-    songId: currentTrack?.id,
+    songId: lyricsSongId || undefined,
     onSearchClick: () => setIsLyricsSearchDialogOpen(true),
     t,
     appId: "ipod",
@@ -3074,7 +3432,7 @@ export function useIpodLogic({
     furiganaProgress,
     soramimiProgress,
   } = useFurigana({
-    songId: currentTrack?.id ?? "",
+    songId: lyricsSongId,
     lines: fullScreenLyricsControls.originalLines,
     isShowingOriginal: true,
     romanization,
@@ -3361,8 +3719,10 @@ export function useIpodLogic({
 
     // Store state
     tracks,
+    coverFlowTracks: browsableTracks,
     currentSongId,
     currentIndex,
+    coverFlowCurrentIndex,
     nowPlayingScope,
     loopCurrent,
     loopAll,

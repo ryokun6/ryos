@@ -12,7 +12,10 @@ import { Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
-import { AppleMusicPlayerBridge } from "./AppleMusicPlayerBridge";
+import {
+  AppleMusicPlayerBridge,
+  type AppleMusicNowPlayingMetadata,
+} from "./AppleMusicPlayerBridge";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { useTranslation } from "react-i18next";
 import {
@@ -50,6 +53,14 @@ const MENU_ITEM_HEIGHT = 24;
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
+
+function formatPlaybackTime(totalSeconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  return `${Math.floor(safeSeconds / 60)}:${String(safeSeconds % 60).padStart(
+    2,
+    "0"
+  )}`;
+}
 
 // Animation variants for menu transitions
 const menuVariants = {
@@ -147,25 +158,82 @@ export function IpodScreen({
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
   const isAppleMusicTrack = currentTrack?.source === "appleMusic";
+  const isAppleMusicStationTrack = Boolean(
+    currentTrack?.appleMusicPlayParams?.stationId
+  );
+  const [appleMusicNowPlayingItem, setAppleMusicNowPlayingItem] =
+    useState<AppleMusicNowPlayingMetadata | null>(null);
+  const [showStationTitleInTitlebar, setShowStationTitleInTitlebar] =
+    useState(false);
   const effectiveDisplayMode =
     isAppleMusicTrack && displayMode === DisplayMode.Video
       ? DisplayMode.Cover
       : displayMode;
   const shouldAnimateVisuals = showVideo && isPlaying;
 
+  const stationId = currentTrack?.appleMusicPlayParams?.stationId ?? null;
+  useEffect(() => {
+    setAppleMusicNowPlayingItem(null);
+    setShowStationTitleInTitlebar(false);
+  }, [stationId]);
+
+  useEffect(() => {
+    if (!stationId || menuMode || !isPlaying) {
+      setShowStationTitleInTitlebar(false);
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      setShowStationTitleInTitlebar((showStation) => !showStation);
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [isPlaying, menuMode, stationId]);
+
+  const nowPlayingDisplayTrack = useMemo(() => {
+    if (!currentTrack || !isAppleMusicStationTrack || !appleMusicNowPlayingItem) {
+      return currentTrack;
+    }
+    return {
+      ...currentTrack,
+      title: appleMusicNowPlayingItem.title,
+      artist: appleMusicNowPlayingItem.artist ?? currentTrack.artist,
+      album: appleMusicNowPlayingItem.album,
+      cover: appleMusicNowPlayingItem.cover ?? currentTrack.cover,
+    };
+  }, [appleMusicNowPlayingItem, currentTrack, isAppleMusicStationTrack]);
+
+  const titlebarTitle =
+    !menuMode &&
+    isAppleMusicStationTrack &&
+    isPlaying &&
+    showStationTitleInTitlebar &&
+    currentTrack?.title
+      ? currentTrack.title
+      : currentMenuTitle;
+  const displayDurationSeconds = Math.max(0, Math.floor(totalTime));
+  const displayElapsedSeconds = Math.max(
+    0,
+    Math.min(displayDurationSeconds, Math.floor(elapsedTime))
+  );
+  const displayRemainingSeconds = Math.max(
+    0,
+    displayDurationSeconds - displayElapsedSeconds
+  );
+
   // Cover URL for paused state overlay
   const coverUrl = useMemo(() => {
-    if (!currentTrack) return null;
+    if (!nowPlayingDisplayTrack) return null;
     if (isAppleMusicTrack) {
       // Apple Music supplies an https URL directly; no Kugou template here.
-      return currentTrack.cover ?? null;
+      return nowPlayingDisplayTrack.cover ?? null;
     }
-    const videoId = getYouTubeVideoId(currentTrack.url);
+    const videoId = getYouTubeVideoId(nowPlayingDisplayTrack.url);
     const youtubeThumbnail = videoId
       ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
       : null;
-    return formatKugouImageUrl(currentTrack.cover, 400) ?? youtubeThumbnail;
-  }, [currentTrack, isAppleMusicTrack]);
+    return (
+      formatKugouImageUrl(nowPlayingDisplayTrack.cover, 400) ?? youtubeThumbnail
+    );
+  }, [isAppleMusicTrack, nowPlayingDisplayTrack]);
 
   // Current menu items (the deepest menu in the history stack).
   const currentMenuItems = useMemo(
@@ -350,6 +418,7 @@ export function IpodScreen({
                 onPause={!isFullScreen ? handlePause : undefined}
                 onEnded={!isFullScreen ? handleTrackEnd : undefined}
                 onReady={!isFullScreen ? handleReady : undefined}
+                onNowPlayingItemChange={setAppleMusicNowPlayingItem}
               />
             ) : (
               <div
@@ -554,7 +623,7 @@ export function IpodScreen({
       )}
 
       {/* Title bar */}
-      <div className="border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center sticky top-0 z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+      <div className="h-6 min-h-6 shrink-0 border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center sticky top-0 z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
         <div
           className={`w-6 flex items-center justify-start font-chicago ${
             isPlaying ? "text-xs" : "text-[18px]"
@@ -564,14 +633,19 @@ export function IpodScreen({
             {isPlaying ? "▶" : "⏸︎"}
           </div>
         </div>
-        <div className="flex-1 truncate text-center">{currentMenuTitle}</div>
+        <ScrollingText
+          text={titlebarTitle}
+          isPlaying
+          scrollStartDelaySec={1}
+          className="flex-1 min-w-0 px-1 text-center leading-none"
+        />
         <div className="w-6 flex items-center justify-end">
           <BatteryIndicator backlightOn={backlightOn} />
         </div>
       </div>
 
       {/* Content area - z-30 only when video is not showing so it can receive events */}
-      <div className={cn("relative h-[calc(100%-26px)]", !showVideo && "z-30")}>
+      <div className={cn("relative h-[calc(100%-24px)]", !showVideo && "z-30")}>
         <AnimatePresence initial={false} custom={menuDirection} mode="sync">
           {menuMode ? (
             <motion.div
@@ -666,16 +740,18 @@ export function IpodScreen({
               }}
             >
               <div className="flex-1 flex flex-col p-1 px-2 overflow-visible">
-                {currentTrack ? (
+                {currentTrack && nowPlayingDisplayTrack ? (
                   <>
                     <div
                       className={cn(
                         "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] flex items-center justify-between gap-2",
-                        currentTrack.album ? "mb-1" : "mb-1.5"
+                        nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
                       )}
                     >
                       <span>
-                        {currentIndex + 1} of {tracksLength}
+                        {isAppleMusicStationTrack
+                          ? "LIVE"
+                          : `${currentIndex + 1} of ${tracksLength}`}
                       </span>
                       {isShuffled && (
                         <Shuffle
@@ -688,20 +764,20 @@ export function IpodScreen({
                     </div>
                     <div className="font-chicago text-[16px] text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] flex flex-col gap-0 leading-[1.05] min-h-0 overflow-visible">
                       <ScrollingText
-                        text={currentTrack.title}
+                        text={nowPlayingDisplayTrack.title}
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
                         className="leading-[1.05] py-px"
                       />
                       <ScrollingText
-                        text={currentTrack.artist || ""}
+                        text={nowPlayingDisplayTrack.artist || ""}
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
                         className="leading-[1.05] py-px"
                       />
-                      {currentTrack.album && (
+                      {nowPlayingDisplayTrack.album && (
                         <ScrollingText
-                          text={currentTrack.album}
+                          text={nowPlayingDisplayTrack.album}
                           isPlaying={isPlaying}
                           scrollStartDelaySec={1}
                           className="leading-[1.05] py-px"
@@ -711,7 +787,7 @@ export function IpodScreen({
                     <div
                       className={cn(
                         "mt-auto flex-shrink-0 w-full",
-                        currentTrack.album ? "pt-1.5" : "pt-3"
+                        nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
                       )}
                     >
                       <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
@@ -728,18 +804,9 @@ export function IpodScreen({
                       </div>
                       <div className="font-chicago text-[16px] w-full h-[22px] flex justify-between text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
                         <span>
-                          {Math.floor(elapsedTime / 60)}:
-                          {String(Math.floor(elapsedTime % 60)).padStart(
-                            2,
-                            "0"
-                          )}
+                          {formatPlaybackTime(displayElapsedSeconds)}
                         </span>
-                        <span>
-                          -{Math.floor((totalTime - elapsedTime) / 60)}:
-                          {String(
-                            Math.floor((totalTime - elapsedTime) % 60)
-                          ).padStart(2, "0")}
-                        </span>
+                        <span>-{formatPlaybackTime(displayRemainingSeconds)}</span>
                       </div>
                     </div>
                   </>

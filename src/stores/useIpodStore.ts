@@ -52,6 +52,10 @@ export interface AppleMusicPlayParams {
   catalogId?: string;
   /** Library song ID (`i.<hash>` form) for personal library tracks. */
   libraryId?: string;
+  /** Catalog station ID (`ra.*` form) for Apple Music radio playback. */
+  stationId?: string;
+  /** Catalog playlist ID (`pl.*` form) for recommendation playback. */
+  playlistId?: string;
   /** MusicKit kind, e.g. "song", "library-song". */
   kind: string;
   isLibrary?: boolean;
@@ -382,12 +386,21 @@ function normalizeAppleMusicPlaybackQueue(
 function resolveAppleMusicQueueTracks(state: IpodData): Track[] {
   const libraryTracks = state.appleMusicTracks;
   const queue = normalizeAppleMusicPlaybackQueue(state.appleMusicPlaybackQueue);
-  if (!queue) return libraryTracks;
+  if (!queue) {
+    return libraryTracks.filter((track) => !isAppleMusicCollectionTrack(track));
+  }
 
   const libraryById = new Map(libraryTracks.map((track) => [track.id, track]));
   return queue
     .map((id) => libraryById.get(id) ?? null)
     .filter((track): track is Track => track !== null);
+}
+
+function isAppleMusicCollectionTrack(track: Track): boolean {
+  return Boolean(
+    track.appleMusicPlayParams?.stationId ||
+      track.appleMusicPlayParams?.playlistId
+  );
 }
 
 /** Helper to get current index from song ID */
@@ -1876,6 +1889,9 @@ export const useIpodStore = create<IpodState>()(
             appleMusicLibraryError: null,
           };
         });
+        tracksToSave = tracksToSave.filter(
+          (track) => !isAppleMusicCollectionTrack(track)
+        );
         // Persist to IndexedDB so the next mount can re-hydrate without
         // a network round-trip. Fire-and-forget — failures are logged
         // by the cache helper and the in-memory copy still works.

@@ -37,6 +37,7 @@ if (!browserGlobals.navigator) {
 }
 
 const {
+  appleMusicPlayableResourceToTrack,
   libraryResourceToTrack,
   refreshAppleMusicPlaylists,
   refreshStaleAppleMusicPlaylistTracks,
@@ -130,6 +131,22 @@ describe("libraryResourceToTrack", () => {
     expect(track!.appleMusicPlayParams?.libraryId).toBe("i.foo");
   });
 
+  test("uses playParams.id as catalog ID for catalog song resources", () => {
+    const track = libraryResourceToTrack({
+      id: "1616228595",
+      type: "songs",
+      attributes: {
+        name: "Bohemian Rhapsody",
+        playParams: { id: "1616228595", kind: "song" },
+      },
+    });
+
+    expect(track).not.toBeNull();
+    expect(track!.id).toBe("am:1616228595");
+    expect(track!.appleMusicPlayParams?.catalogId).toBe("1616228595");
+    expect(track!.appleMusicPlayParams?.libraryId).toBeUndefined();
+  });
+
   test("returns null when the resource has no playParams", () => {
     const track = libraryResourceToTrack({
       id: "i.broken",
@@ -137,6 +154,62 @@ describe("libraryResourceToTrack", () => {
       attributes: { name: "No params" },
     });
     expect(track).toBeNull();
+  });
+});
+
+describe("Apple Music playable resources", () => {
+  test("converts a station resource into a MusicKit station queue track", () => {
+    const track = appleMusicPlayableResourceToTrack({
+      id: "ra.u-personal",
+      type: "stations",
+      attributes: {
+        name: "My Station",
+        curatorName: "Apple Music",
+        url: "https://music.apple.com/us/station/my-station/ra.u-personal",
+        artwork: { url: "https://example/{w}x{h}bb.jpg" },
+        playParams: {
+          id: "ra.u-personal",
+          kind: "radioStation",
+        },
+      },
+    });
+
+    expect(track).not.toBeNull();
+    expect(track!.id).toBe("am:station:ra.u-personal");
+    expect(track!.url).toBe(
+      "https://music.apple.com/us/station/my-station/ra.u-personal"
+    );
+    expect(track!.title).toBe("My Station");
+    expect(track!.source).toBe("appleMusic");
+    expect(track!.cover).toBe("https://example/600x600bb.jpg");
+    expect(track!.appleMusicPlayParams).toEqual({
+      stationId: "ra.u-personal",
+      kind: "radioStation",
+    });
+  });
+
+  test("converts a recommendation playlist into a MusicKit playlist queue track", () => {
+    const track = appleMusicPlayableResourceToTrack({
+      id: "pl.pm-mix",
+      type: "playlists",
+      attributes: {
+        name: "Favorites Mix",
+        curatorName: "Apple Music for Me",
+        playParams: {
+          id: "pl.pm-mix",
+          kind: "playlist",
+        },
+      },
+    });
+
+    expect(track).not.toBeNull();
+    expect(track!.id).toBe("am:playlist:pl.pm-mix");
+    expect(track!.title).toBe("Favorites Mix");
+    expect(track!.artist).toBe("Apple Music for Me");
+    expect(track!.appleMusicPlayParams).toEqual({
+      playlistId: "pl.pm-mix",
+      kind: "playlist",
+    });
   });
 });
 
@@ -252,6 +325,28 @@ describe("useIpodStore Apple Music slice", () => {
     useIpodStore.getState().appleMusicNextTrack();
     expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:3");
     expect(useIpodStore.getState().currentSongId).toBe(null);
+  });
+
+  test("appleMusicNextTrack skips radio stations in the full library order", () => {
+    useIpodStore.getState().setAppleMusicTracks([
+      { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+      {
+        id: "am:station:ra.1",
+        url: "applemusic:station:ra.1",
+        title: "Station",
+        source: "appleMusic",
+        appleMusicPlayParams: { stationId: "ra.1", kind: "radioStation" },
+      },
+      { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+    ]);
+    useIpodStore.setState({
+      appleMusicPlaybackQueue: null,
+      loopAll: true,
+      isShuffled: false,
+    });
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:1");
+    useIpodStore.getState().appleMusicNextTrack();
+    expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:2");
   });
 
   test("appleMusicPreviousTrack wraps when starting from the first item", () => {

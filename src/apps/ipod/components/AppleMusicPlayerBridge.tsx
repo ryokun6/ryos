@@ -41,6 +41,9 @@ export interface AppleMusicPlayerBridgeProps {
   onPause?: () => void;
   onEnded?: () => void;
   onReady?: () => void;
+  onNowPlayingItemChange?: (
+    metadata: AppleMusicNowPlayingMetadata | null
+  ) => void;
 }
 
 export interface AppleMusicPlayerBridgeHandle {
@@ -49,9 +52,23 @@ export interface AppleMusicPlayerBridgeHandle {
   getInternalPlayer(): MusicKit.MusicKitInstance | null;
 }
 
+export interface AppleMusicNowPlayingMetadata {
+  id?: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  cover?: string;
+}
+
 function getQueueOptions(track: Track): MusicKit.SetQueueOptions | null {
   const params = track.appleMusicPlayParams;
   if (!params) return null;
+  if (params.stationId) {
+    return { station: params.stationId, startPlaying: true };
+  }
+  if (params.playlistId) {
+    return { playlist: params.playlistId, startPlaying: true };
+  }
   // Prefer catalog ID for streaming. Fall back to the library ID when the
   // track is library-only (no catalog match available).
   const id =
@@ -73,6 +90,30 @@ function getSafeStartSeconds(
   return seconds;
 }
 
+function resolveArtworkUrl(
+  artwork: MusicKit.MediaItemArtwork | undefined,
+  size = 600
+): string | undefined {
+  return artwork?.url?.replace("{w}", String(size)).replace("{h}", String(size));
+}
+
+function mediaItemToNowPlayingMetadata(
+  item: MusicKit.MediaItem | undefined
+): AppleMusicNowPlayingMetadata | null {
+  if (!item) return null;
+  const attrs = item.attributes;
+  const title = attrs?.name || item.title;
+  if (!title) return null;
+
+  return {
+    id: item.id || attrs?.playParams?.id,
+    title,
+    artist: attrs?.artistName || item.artistName,
+    album: attrs?.albumName || item.albumName,
+    cover: resolveArtworkUrl(attrs?.artwork) || item.artworkURL,
+  };
+}
+
 export const AppleMusicPlayerBridge = forwardRef<
   AppleMusicPlayerBridgeHandle,
   AppleMusicPlayerBridgeProps
@@ -88,6 +129,7 @@ export const AppleMusicPlayerBridge = forwardRef<
     onPause,
     onEnded,
     onReady,
+    onNowPlayingItemChange,
   },
   ref
 ) {
@@ -147,11 +189,13 @@ export const AppleMusicPlayerBridge = forwardRef<
   const onPlayRef = useRef(onPlay);
   const onPauseRef = useRef(onPause);
   const onEndedRef = useRef(onEnded);
+  const onNowPlayingItemChangeRef = useRef(onNowPlayingItemChange);
   onProgressRef.current = onProgress;
   onDurationRef.current = onDuration;
   onPlayRef.current = onPlay;
   onPauseRef.current = onPause;
   onEndedRef.current = onEnded;
+  onNowPlayingItemChangeRef.current = onNowPlayingItemChange;
 
   // Wire up MusicKit event listeners once the instance is available.
   // We deliberately skip `playbackTimeDidChange` for progress updates:
@@ -198,6 +242,9 @@ export const AppleMusicPlayerBridge = forwardRef<
       if (durationMs > 0) {
         onDurationRef.current?.(durationMs / 1000);
       }
+      onNowPlayingItemChangeRef.current?.(
+        mediaItemToNowPlayingMetadata(event.item)
+      );
     };
 
     const tryAttach = (inst: MusicKit.MusicKitInstance | null) => {
@@ -360,10 +407,12 @@ export const AppleMusicPlayerBridge = forwardRef<
       } catch {
         /* ignore */
       }
+      onNowPlayingItemChangeRef.current?.(null);
       lastQueuedTrackIdRef.current = null;
       return;
     }
     if (lastQueuedTrackIdRef.current === queueKey) return;
+    onNowPlayingItemChangeRef.current?.(null);
 
     const queueOptions = getQueueOptions(currentTrack);
     if (!queueOptions) {

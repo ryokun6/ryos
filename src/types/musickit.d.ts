@@ -46,6 +46,7 @@ declare global {
       songs?: string[];
       album?: string;
       playlist?: string;
+      station?: string;
       url?: string;
       startWith?: number;
       startTime?: number;
@@ -75,6 +76,7 @@ declare global {
       kind: string;
       isLibrary?: boolean;
       catalogId?: string;
+      stationHash?: string;
       reporting?: boolean;
     }
 
