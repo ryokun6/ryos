@@ -1,5 +1,6 @@
 import {
   createContext,
+  memo,
   useCallback,
   useContext,
   useEffect,
@@ -323,15 +324,80 @@ function makeTitleCardGlow(hex: string) {
   };
 }
 
-function buildFullscreenContainerStyle(): CSSProperties {
-  return {
-    gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
-    paddingLeft: "env(safe-area-inset-left, 0px)",
-    paddingRight: "env(safe-area-inset-right, 0px)",
-  };
-}
+// Hoisted to module scope so the rendered LyricsDisplay doesn't receive a
+// freshly-allocated `containerStyle` prop on every parent render. The values
+// are pure CSS strings (no per-render data), so a single shared instance is
+// safe.
+const FULLSCREEN_CONTAINER_STYLE: CSSProperties = {
+  gap: "clamp(0.2rem, calc(min(10vw,10vh) * 0.08), 1rem)",
+  paddingLeft: "env(safe-area-inset-left, 0px)",
+  paddingRight: "env(safe-area-inset-right, 0px)",
+};
 
-function KaraokeTitleCard({
+// All inline style objects below are split between "fullscreen" and "window"
+// variants and are constant strings. Hoisting to module scope keeps the
+// title card's React.memo equality fast and avoids dozens of object allocs
+// per playback tick when the title card is on screen.
+const TITLE_CARD_SECONDARY_TEXT_STYLE: CSSProperties = {
+  lineHeight: 1.1,
+  opacity: 0.55,
+};
+const TITLE_CARD_COVER_SLEEVE_STYLE: CSSProperties = {
+  background: "#1a1a1a",
+  borderRadius: "1%",
+  boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+};
+const TITLE_CARD_COVER_REFLECTION_STYLE: CSSProperties = {
+  transform: "scaleY(-1)",
+  opacity: 0.3,
+  maskImage:
+    "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
+  WebkitMaskImage:
+    "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
+  borderRadius: "1%",
+};
+const TITLE_CARD_COVER_REFLECTION_WRAPPER_STYLE: CSSProperties = {
+  height: "50%",
+};
+const TITLE_CARD_COVER_IMAGE_STYLE_FULLSCREEN: CSSProperties = {
+  width: "clamp(120px, min(24vw, 24vh), 320px)",
+  height: "clamp(120px, min(24vw, 24vh), 320px)",
+};
+const TITLE_CARD_COVER_IMAGE_STYLE_WINDOW: CSSProperties = {
+  width: "clamp(96px, 18cqw, 220px)",
+  height: "clamp(96px, 18cqw, 220px)",
+};
+const TITLE_CARD_CONTENT_STYLE_FULLSCREEN: CSSProperties = {
+  gap: "clamp(22px, min(5vw, 5vh), 64px)",
+};
+const TITLE_CARD_CONTENT_STYLE_WINDOW: CSSProperties = {
+  gap: "clamp(22px, 5cqw, 64px)",
+};
+const TITLE_CARD_OUTER_STYLE_FULLSCREEN: CSSProperties = {
+  paddingLeft: "clamp(24px, min(6vw, 6vh), 80px)",
+};
+const TITLE_CARD_OUTER_STYLE_WINDOW: CSSProperties = {
+  paddingLeft: "clamp(24px, 6cqw, 80px)",
+};
+const TITLE_CARD_REGULAR_OUTLINE_STYLE: TitleCardLineStyle = {
+  color: "#fff",
+  lineHeight: 1,
+  WebkitTextStroke: "0.12em rgba(0,0,0,0.7)",
+  paintOrder: "stroke fill",
+  textShadow: "none",
+};
+const TITLE_CARD_REGULAR_GRADIENT_STYLE: TitleCardLineStyle = {
+  color: "rgba(255, 255, 255, 0.78)",
+  lineHeight: 1,
+  textShadow: TITLE_CARD_BASE_SHADOW,
+};
+
+// Wrapped in React.memo because the parent overlays re-render on every
+// playback tick (~10/s). The title card's props (title / artist / album /
+// coverUrl / fontClassName / variant / isPlaying / bottomPaddingClass /
+// onOpenCoverFlow / coverFlowLabel) are all stable for the lifetime of a
+// track, so memo lets the entire title-card subtree skip those re-renders.
+const KaraokeTitleCard = memo(function KaraokeTitleCard({
   title,
   artist,
   album,
@@ -368,48 +434,21 @@ function KaraokeTitleCard({
     variant === "fullscreen"
       ? "karaoke-title-card-secondary-fullscreen"
       : "karaoke-title-card-secondary-window";
-  const secondaryTextStyle: CSSProperties = {
-    lineHeight: 1.1,
-    opacity: 0.55,
-  };
-  const coverImageStyle: CSSProperties = {
-    width:
-      variant === "fullscreen"
-        ? "clamp(120px, min(24vw, 24vh), 320px)"
-        : "clamp(96px, 18cqw, 220px)",
-    height:
-      variant === "fullscreen"
-        ? "clamp(120px, min(24vw, 24vh), 320px)"
-        : "clamp(96px, 18cqw, 220px)",
-  };
-  const coverSleeveStyle: CSSProperties = {
-    background: "#1a1a1a",
-    borderRadius: "1%",
-    boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-  };
-  const titleCardContentStyle: CSSProperties = {
-    gap:
-      variant === "fullscreen"
-        ? "clamp(22px, min(5vw, 5vh), 64px)"
-        : "clamp(22px, 5cqw, 64px)",
-  };
-  const titleCardOuterStyle: CSSProperties = {
-    paddingLeft:
-      variant === "fullscreen"
-        ? "clamp(24px, min(6vw, 6vh), 80px)"
-        : "clamp(24px, 6cqw, 80px)",
-  };
+  const isFullscreen = variant === "fullscreen";
+  const coverImageStyle = isFullscreen
+    ? TITLE_CARD_COVER_IMAGE_STYLE_FULLSCREEN
+    : TITLE_CARD_COVER_IMAGE_STYLE_WINDOW;
+  const titleCardContentStyle = isFullscreen
+    ? TITLE_CARD_CONTENT_STYLE_FULLSCREEN
+    : TITLE_CARD_CONTENT_STYLE_WINDOW;
+  const titleCardOuterStyle = isFullscreen
+    ? TITLE_CARD_OUTER_STYLE_FULLSCREEN
+    : TITLE_CARD_OUTER_STYLE_WINDOW;
   const regularTextStyle = useMemo((): TitleCardLineStyle => {
     switch (styleCategory) {
       case "outline-blue":
       case "outline-red":
-        return {
-          color: "#fff",
-          lineHeight: 1,
-          WebkitTextStroke: "0.12em rgba(0,0,0,0.7)",
-          paintOrder: "stroke fill",
-          textShadow: "none",
-        };
+        return TITLE_CARD_REGULAR_OUTLINE_STYLE;
       case "glow-gold":
         return {
           color: primaryGlow.baseColor,
@@ -419,11 +458,7 @@ function KaraokeTitleCard({
         };
       case "glow-gradient":
       default:
-        return {
-          color: "rgba(255, 255, 255, 0.78)",
-          lineHeight: 1,
-          textShadow: TITLE_CARD_BASE_SHADOW,
-        };
+        return TITLE_CARD_REGULAR_GRADIENT_STYLE;
     }
   }, [primaryGlow, styleCategory]);
   const metadataLines = useMemo(() => {
@@ -473,7 +508,10 @@ function KaraokeTitleCard({
                 onTouchEnd={(e) => e.stopPropagation()}
               />
             )}
-            <div className="absolute inset-0 overflow-hidden" style={coverSleeveStyle}>
+            <div
+              className="absolute inset-0 overflow-hidden"
+              style={TITLE_CARD_COVER_SLEEVE_STYLE}
+            >
               <img
                 src={coverUrl}
                 alt=""
@@ -483,19 +521,13 @@ function KaraokeTitleCard({
             </div>
             <div
               className="absolute top-full left-0 w-full pointer-events-none"
-              style={{ height: "50%" }}
+              style={TITLE_CARD_COVER_REFLECTION_WRAPPER_STYLE}
             >
               <img
                 src={coverUrl}
                 alt=""
                 className="w-full h-auto"
-                style={{
-                  transform: "scaleY(-1)",
-                  opacity: 0.3,
-                  maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
-                  WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
-                  borderRadius: "1%",
-                }}
+                style={TITLE_CARD_COVER_REFLECTION_STYLE}
                 draggable={false}
               />
             </div>
@@ -515,7 +547,7 @@ function KaraokeTitleCard({
             <div
               key={metadataLine}
               className={`text-white ${secondaryTextSizeClass} ${fontClassName} whitespace-pre-wrap break-words`}
-              style={secondaryTextStyle}
+              style={TITLE_CARD_SECONDARY_TEXT_STYLE}
             >
               {metadataLine}
             </div>
@@ -524,7 +556,7 @@ function KaraokeTitleCard({
       </motion.div>
     </motion.div>
   );
-}
+});
 
 interface WindowLyricsProps {
   showLyrics: boolean;
@@ -806,7 +838,7 @@ export function KaraokeFullscreenLyricsOverlay({
             isTranslating={lyricsControls.isTranslating}
             textSizeClass="fullscreen-lyrics-text"
             gapClass="gap-0"
-            containerStyle={buildFullscreenContainerStyle()}
+            containerStyle={FULLSCREEN_CONTAINER_STYLE}
             interactive={true}
             bottomPaddingClass={bottomPadding}
             furiganaMap={furiganaMap}
