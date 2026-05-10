@@ -13,7 +13,11 @@ import { useActivityState } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
-import { useAppleMusicLibrary } from "./useAppleMusicLibrary";
+import {
+  useAppleMusicLibrary,
+  fetchAppleMusicPlaylistTracks,
+  APPLE_MUSIC_LIBRARY_STALE_AFTER_MS,
+} from "./useAppleMusicLibrary";
 import { useMusicKit } from "@/hooks/useMusicKit";
 import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
 import {
@@ -74,6 +78,9 @@ export function useIpodLogic({
     youtubeTracks,
     youtubeCurrentSongId,
     appleMusicTracks,
+    appleMusicPlaylists,
+    appleMusicPlaylistTracks,
+    appleMusicPlaylistTracksLoading,
     appleMusicCurrentSongId,
     librarySource,
     loopCurrent,
@@ -87,6 +94,9 @@ export function useIpodLogic({
       youtubeTracks: s.tracks,
       youtubeCurrentSongId: s.currentSongId,
       appleMusicTracks: s.appleMusicTracks,
+      appleMusicPlaylists: s.appleMusicPlaylists,
+      appleMusicPlaylistTracks: s.appleMusicPlaylistTracks,
+      appleMusicPlaylistTracksLoading: s.appleMusicPlaylistTracksLoading,
       appleMusicCurrentSongId: s.appleMusicCurrentSongId,
       librarySource: s.librarySource,
       loopCurrent: s.loopCurrent,
@@ -531,6 +541,37 @@ export function useIpodLogic({
     ]
   );
 
+  const playAppleMusicTrackFromMenu = useCallback(
+    (track: Track, trackIndexInActiveMenu: number) => {
+      const state = useIpodStore.getState();
+      if (!state.appleMusicTracks.some((entry) => entry.id === track.id)) {
+        state.setAppleMusicTracks([...state.appleMusicTracks, track]);
+      }
+      playTrackFromMenu(track, trackIndexInActiveMenu);
+    },
+    [playTrackFromMenu]
+  );
+
+  const requestPlaylistTracksIfNeeded = useCallback((playlistId: string) => {
+    const state = useIpodStore.getState();
+    const loadedAt = state.appleMusicPlaylistTracksLoadedAt[playlistId];
+    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
+    const hasTracks =
+      (state.appleMusicPlaylistTracks[playlistId]?.length ?? 0) > 0;
+    const isStale = ageMs >= APPLE_MUSIC_LIBRARY_STALE_AFTER_MS;
+
+    if (!hasTracks || isStale) {
+      void fetchAppleMusicPlaylistTracks(playlistId, {
+        force: isStale && hasTracks,
+      }).catch((err) => {
+        console.warn(
+          `[apple music] failed to load playlist tracks for ${playlistId}`,
+          err
+        );
+      });
+    }
+  }, []);
+
   // -------------------------------------------------------------------
   // Apple Music handlers (defined here so the menu builders below can
   // reference them via useMemo).
@@ -560,6 +601,12 @@ export function useIpodLogic({
     setIsPlaying(false);
     await musicKitUnauthorize();
     useIpodStore.getState().setAppleMusicTracks([]);
+    useIpodStore.setState({
+      appleMusicPlaylists: [],
+      appleMusicPlaylistTracks: {},
+      appleMusicPlaylistTracksLoadedAt: {},
+      appleMusicPlaylistTracksLoading: {},
+    });
     // Drop the IndexedDB-cached library so a different user signing
     // in next doesn't inherit the previous user's tracks.
     void clearAppleMusicLibrary();
@@ -734,6 +781,7 @@ export function useIpodLogic({
   // (e.g. an Apple Music sync of several thousand songs) this is expensive
   // enough that we don't want it running on every IpodScreen re-render.
   const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
+  const unknownAlbumLabel = t("apps.ipod.menuItems.unknownAlbum");
   const tracksByArtist = useMemo(() => {
     const grouped: Record<string, { track: Track; index: number }[]> = {};
     for (let index = 0; index < tracks.length; index++) {
@@ -751,6 +799,25 @@ export function useIpodLogic({
         a.localeCompare(b, undefined, { sensitivity: "base" })
       ),
     [tracksByArtist]
+  );
+
+  const tracksByAlbum = useMemo(() => {
+    const grouped: Record<string, { track: Track; index: number }[]> = {};
+    for (let index = 0; index < tracks.length; index++) {
+      const track = tracks[index];
+      const album = track.album || unknownAlbumLabel;
+      const bucket = grouped[album] || (grouped[album] = []);
+      bucket.push({ track, index });
+    }
+    return grouped;
+  }, [tracks, unknownAlbumLabel]);
+
+  const sortedAlbums = useMemo(
+    () =>
+      Object.keys(tracksByAlbum).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      ),
+    [tracksByAlbum]
   );
 
   // Memoize the entire "All Songs" submenu items array. Without this,
@@ -784,25 +851,183 @@ export function useIpodLogic({
     return result;
   }, [tracksByArtist, sortedArtists, playTrackFromMenu]);
 
-  // Menu items
-  const musicMenuItems = useMemo(() => {
-    const allSongsLabel = t("apps.ipod.menuItems.allSongs");
-    return [
-      {
-        label: allSongsLabel,
+  const albumMenuItemsByAlbum = useMemo(() => {
+    const result: Record<
+      string,
+      { label: string; action: () => void; showChevron: boolean }[]
+    > = {};
+    for (const album of sortedAlbums) {
+      const albumTracks = tracksByAlbum[album];
+      result[album] = albumTracks.map(({ track, index }) => ({
+        label: track.title,
+        action: () => playTrackFromMenu(track, index),
+        showChevron: false,
+      }));
+    }
+    return result;
+  }, [tracksByAlbum, sortedAlbums, playTrackFromMenu]);
+
+  const artistsListMenuItems = useMemo(
+    () =>
+      sortedArtists.map((artist) => ({
+        label: artist,
         action: () => {
           registerActivity();
           setMenuDirection("forward");
           setMenuHistory((prev) => [
             ...prev,
             {
-              title: allSongsLabel,
-              items: allSongsMenuItems,
+              title: artist,
+              items: artistMenuItemsByArtist[artist],
               selectedIndex: 0,
             },
           ]);
           setSelectedMenuItem(0);
         },
+        showChevron: true,
+      })),
+    [sortedArtists, artistMenuItemsByArtist, registerActivity]
+  );
+
+  const albumsListMenuItems = useMemo(
+    () =>
+      sortedAlbums.map((album) => ({
+        label: album,
+        action: () => {
+          registerActivity();
+          setMenuDirection("forward");
+          setMenuHistory((prev) => [
+            ...prev,
+            {
+              title: album,
+              items: albumMenuItemsByAlbum[album],
+              selectedIndex: 0,
+            },
+          ]);
+          setSelectedMenuItem(0);
+        },
+        showChevron: true,
+      })),
+    [sortedAlbums, albumMenuItemsByAlbum, registerActivity]
+  );
+
+  const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
+  const applePlaylistTrackMenuItemsByPlaylist = useMemo(() => {
+    const result: Record<
+      string,
+      {
+        label: string;
+        action: () => void;
+        showChevron: boolean;
+        isLoading?: boolean;
+      }[]
+    > = {};
+    for (const playlist of appleMusicPlaylists) {
+      const playlistTracks = appleMusicPlaylistTracks[playlist.id] ?? [];
+      const isLoading =
+        appleMusicPlaylistTracksLoading[playlist.id] === true &&
+        playlistTracks.length === 0;
+      if (isLoading) {
+        result[playlist.id] = [
+          {
+            label: loadingLabel,
+            action: () => {},
+            showChevron: false,
+            isLoading: true,
+          },
+        ];
+      } else {
+        result[playlist.id] = playlistTracks.map((track, trackListIndex) => ({
+          label: track.title,
+          action: () => playAppleMusicTrackFromMenu(track, trackListIndex),
+          showChevron: false,
+        }));
+      }
+    }
+    return result;
+  }, [
+    appleMusicPlaylists,
+    appleMusicPlaylistTracks,
+    appleMusicPlaylistTracksLoading,
+    playAppleMusicTrackFromMenu,
+    loadingLabel,
+  ]);
+
+  const applePlaylistsMenuItems = useMemo(
+    () =>
+      appleMusicPlaylists.map((playlist) => ({
+        label: playlist.name,
+        action: () => {
+          registerActivity();
+          requestPlaylistTracksIfNeeded(playlist.id);
+          setMenuDirection("forward");
+          setMenuHistory((prev) => [
+            ...prev,
+            {
+              title: playlist.name,
+              items: applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? [],
+              selectedIndex: 0,
+            },
+          ]);
+          setSelectedMenuItem(0);
+        },
+        showChevron: true,
+      })),
+    [
+      appleMusicPlaylists,
+      applePlaylistTrackMenuItemsByPlaylist,
+      registerActivity,
+      requestPlaylistTracksIfNeeded,
+    ]
+  );
+
+  // Menu items
+  const musicMenuItems = useMemo(() => {
+    const allSongsLabel = t("apps.ipod.menuItems.allSongs");
+    const songsLabel = t("apps.ipod.menuItems.songs");
+    const playlistsLabel = t("apps.ipod.menuItems.playlists");
+    const artistsLabel = t("apps.ipod.menuItems.artists");
+    const albumsLabel = t("apps.ipod.menuItems.albums");
+
+    const pushSubmenu = (
+      title: string,
+      items: { label: string; action: () => void; showChevron: boolean }[]
+    ) => {
+      registerActivity();
+      setMenuDirection("forward");
+      setMenuHistory((prev) => [...prev, { title, items, selectedIndex: 0 }]);
+      setSelectedMenuItem(0);
+    };
+
+    if (isAppleMusic) {
+      return [
+        {
+          label: playlistsLabel,
+          action: () => pushSubmenu(playlistsLabel, applePlaylistsMenuItems),
+          showChevron: true,
+        },
+        {
+          label: artistsLabel,
+          action: () => pushSubmenu(artistsLabel, artistsListMenuItems),
+          showChevron: true,
+        },
+        {
+          label: songsLabel,
+          action: () => pushSubmenu(songsLabel, allSongsMenuItems),
+          showChevron: true,
+        },
+        {
+          label: albumsLabel,
+          action: () => pushSubmenu(albumsLabel, albumsListMenuItems),
+          showChevron: true,
+        },
+      ];
+    }
+
+    return [
+      {
+        label: allSongsLabel,
+        action: () => pushSubmenu(allSongsLabel, allSongsMenuItems),
         showChevron: true,
       },
       ...sortedArtists.map((artist) => ({
@@ -824,9 +1049,13 @@ export function useIpodLogic({
       })),
     ];
   }, [
+    isAppleMusic,
     sortedArtists,
     allSongsMenuItems,
     artistMenuItemsByArtist,
+    artistsListMenuItems,
+    albumsListMenuItems,
+    applePlaylistsMenuItems,
     registerActivity,
     t,
   ]);
@@ -1055,12 +1284,30 @@ export function useIpodLogic({
     } else if (menu.title === t("apps.ipod.menuItems.extras")) {
       // Extras submenu has stable items; keep existing references to avoid stale closures.
       return menu.items;
-    } else if (menu.title === t("apps.ipod.menuItems.allSongs")) {
+    } else if (
+      menu.title === t("apps.ipod.menuItems.allSongs") ||
+      menu.title === t("apps.ipod.menuItems.songs")
+    ) {
       // Return the memoized array — same reference unless tracks changed,
       // so the menu-history sync effect skips a redundant setMenuHistory.
       return allSongsMenuItems;
+    } else if (menu.title === t("apps.ipod.menuItems.playlists")) {
+      return applePlaylistsMenuItems;
+    } else if (menu.title === t("apps.ipod.menuItems.artists")) {
+      return artistsListMenuItems;
+    } else if (menu.title === t("apps.ipod.menuItems.albums")) {
+      return albumsListMenuItems;
     } else if (artistMenuItemsByArtist[menu.title]) {
       return artistMenuItemsByArtist[menu.title];
+    } else if (albumMenuItemsByAlbum[menu.title]) {
+      return albumMenuItemsByAlbum[menu.title];
+    } else {
+      const playlist = appleMusicPlaylists.find(
+        (entry) => entry.name === menu.title
+      );
+      if (playlist) {
+        return applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? [];
+      }
     }
     return null;
   }, [
@@ -1069,6 +1316,12 @@ export function useIpodLogic({
     settingsMenuItems,
     allSongsMenuItems,
     artistMenuItemsByArtist,
+    albumMenuItemsByAlbum,
+    artistsListMenuItems,
+    albumsListMenuItems,
+    applePlaylistsMenuItems,
+    applePlaylistTrackMenuItemsByPlaylist,
+    appleMusicPlaylists,
     t,
   ]);
 

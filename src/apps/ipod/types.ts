@@ -17,6 +17,8 @@ export interface MenuItem {
   action: () => void;
   showChevron?: boolean;
   value?: string;
+  /** When true, the row renders as a non-interactive loading placeholder. */
+  isLoading?: boolean;
 }
 
 // Menu history entry

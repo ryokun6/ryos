@@ -1951,7 +1951,13 @@
         "off": "Off",
         "one": "One",
         "all": "All",
-        "allSongs": "All Songs"
+        "allSongs": "All Songs",
+        "songs": "Songs",
+        "playlists": "Playlists",
+        "artists": "Artists",
+        "albums": "Albums",
+        "unknownAlbum": "Unknown Album",
+        "loading": "Loading…"
       },
       "musicQuiz": {
         "title": "Music Quiz",

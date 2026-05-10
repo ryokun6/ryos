@@ -36,6 +36,16 @@ export interface LyricsSource {
 /** Library source the iPod is currently displaying. */
 export type LibrarySource = "youtube" | "appleMusic";
 
+/** User playlist from the Apple Music library. */
+export interface AppleMusicPlaylist {
+  id: string;
+  globalId?: string;
+  name: string;
+  artworkUrl?: string;
+  trackCount?: number;
+  canEdit?: boolean;
+}
+
 /** Apple Music play parameters needed for `setQueue` (catalog vs library). */
 export interface AppleMusicPlayParams {
   /** Catalog song ID (numeric string) when available — preferred for setQueue. */
@@ -128,6 +138,14 @@ interface IpodData {
    * `useAppleMusicLibrary`. The library hook treats anything younger
    * than `APPLE_MUSIC_LIBRARY_STALE_AFTER_MS` (24h) as fresh. */
   appleMusicTracks: Track[];
+  /** Playlists from the user's Apple Music library (IndexedDB-backed). */
+  appleMusicPlaylists: AppleMusicPlaylist[];
+  /** Tracks per playlist id; lazy-loaded on drill-down. */
+  appleMusicPlaylistTracks: Record<string, Track[]>;
+  /** Per-playlist cache timestamp for stale-while-revalidate. */
+  appleMusicPlaylistTracksLoadedAt: Record<string, number>;
+  /** Per-playlist in-flight fetch flags. */
+  appleMusicPlaylistTracksLoading: Record<string, boolean>;
   /** Currently selected song id within the Apple Music library. */
   appleMusicCurrentSongId: string | null;
   /** Last time the Apple Music library was synced (epoch ms). */
@@ -272,6 +290,10 @@ const initialIpodData: IpodData = {
 
   librarySource: "youtube",
   appleMusicTracks: [],
+  appleMusicPlaylists: [],
+  appleMusicPlaylistTracks: {},
+  appleMusicPlaylistTracksLoadedAt: {},
+  appleMusicPlaylistTracksLoading: {},
   appleMusicCurrentSongId: null,
   appleMusicLibraryLoadedAt: null,
   appleMusicLibraryLoading: false,
@@ -367,6 +389,15 @@ export interface IpodState extends IpodData {
   setLibrarySource: (source: LibrarySource) => void;
   /** Replace the cached Apple Music library with the supplied tracks. */
   setAppleMusicTracks: (tracks: Track[]) => void;
+  /** Replace the cached Apple Music playlist list. */
+  setAppleMusicPlaylists: (playlists: AppleMusicPlaylist[]) => void;
+  /** Cache tracks for one playlist and mark it fresh. */
+  setAppleMusicPlaylistTracks: (playlistId: string, tracks: Track[]) => void;
+  /** Mark a per-playlist track fetch as in-flight (or finished). */
+  setAppleMusicPlaylistTracksLoading: (
+    playlistId: string,
+    loading: boolean
+  ) => void;
   /** Mark a library load as in-flight (or finished). */
   setAppleMusicLibraryLoading: (loading: boolean) => void;
   /** Persist any error from the latest library fetch. */
@@ -1681,6 +1712,30 @@ export const useIpodStore = create<IpodState>()(
           storefrontId: storefrontIdAtSave,
         });
       },
+      setAppleMusicPlaylists: (playlists) =>
+        set({ appleMusicPlaylists: playlists }),
+      setAppleMusicPlaylistTracks: (playlistId, tracks) =>
+        set((state) => ({
+          appleMusicPlaylistTracks: {
+            ...state.appleMusicPlaylistTracks,
+            [playlistId]: tracks,
+          },
+          appleMusicPlaylistTracksLoadedAt: {
+            ...state.appleMusicPlaylistTracksLoadedAt,
+            [playlistId]: Date.now(),
+          },
+          appleMusicPlaylistTracksLoading: {
+            ...state.appleMusicPlaylistTracksLoading,
+            [playlistId]: false,
+          },
+        })),
+      setAppleMusicPlaylistTracksLoading: (playlistId, loading) =>
+        set((state) => ({
+          appleMusicPlaylistTracksLoading: {
+            ...state.appleMusicPlaylistTracksLoading,
+            [playlistId]: loading,
+          },
+        })),
       setAppleMusicLibraryLoading: (loading) =>
         set({ appleMusicLibraryLoading: loading }),
       setAppleMusicLibraryError: (error) =>

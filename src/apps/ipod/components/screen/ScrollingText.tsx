@@ -98,7 +98,7 @@ export function ScrollingText({
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-hidden",
+        "relative overflow-x-hidden overflow-y-visible",
         !shouldScroll && "flex",
         !shouldScroll && alignClass,
         className

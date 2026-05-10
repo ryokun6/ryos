@@ -12,14 +12,28 @@
 
 import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
-import type { Track } from "@/stores/useIpodStore";
+import type {
+  AppleMusicPlaylist,
+  Track,
+} from "@/stores/useIpodStore";
 
 const LIBRARY_KEY = "library";
+const PLAYLISTS_KEY = "playlists";
 
 export interface CachedAppleMusicLibrary {
   tracks: Track[];
   loadedAt: number;
   storefrontId: string | null;
+}
+
+export interface CachedAppleMusicPlaylists {
+  playlists: AppleMusicPlaylist[];
+  loadedAt: number;
+}
+
+export interface CachedAppleMusicPlaylistTracks {
+  tracks: Track[];
+  loadedAt: number;
 }
 
 /** Persist the library to IndexedDB. Failures are logged but swallowed
@@ -50,6 +64,87 @@ export async function loadAppleMusicLibrary(): Promise<CachedAppleMusicLibrary |
   }
 }
 
+export async function saveAppleMusicPlaylists(
+  payload: CachedAppleMusicPlaylists
+): Promise<void> {
+  try {
+    await dbOperations.put(
+      STORES.APPLE_MUSIC_PLAYLISTS,
+      payload,
+      PLAYLISTS_KEY
+    );
+  } catch (err) {
+    console.warn("[apple music cache] failed to save playlists", err);
+  }
+}
+
+export async function loadAppleMusicPlaylists(): Promise<CachedAppleMusicPlaylists | null> {
+  try {
+    const cached = await dbOperations.get<CachedAppleMusicPlaylists>(
+      STORES.APPLE_MUSIC_PLAYLISTS,
+      PLAYLISTS_KEY
+    );
+    if (!cached || !Array.isArray(cached.playlists)) return null;
+    return cached;
+  } catch (err) {
+    console.warn("[apple music cache] failed to load playlists", err);
+    return null;
+  }
+}
+
+export async function saveAppleMusicPlaylistTracks(
+  playlistId: string,
+  payload: CachedAppleMusicPlaylistTracks
+): Promise<void> {
+  try {
+    await dbOperations.put(
+      STORES.APPLE_MUSIC_PLAYLIST_TRACKS,
+      payload,
+      playlistId
+    );
+  } catch (err) {
+    console.warn(
+      `[apple music cache] failed to save playlist tracks for ${playlistId}`,
+      err
+    );
+  }
+}
+
+export async function loadAppleMusicPlaylistTracks(
+  playlistId: string
+): Promise<CachedAppleMusicPlaylistTracks | null> {
+  try {
+    const cached = await dbOperations.get<CachedAppleMusicPlaylistTracks>(
+      STORES.APPLE_MUSIC_PLAYLIST_TRACKS,
+      playlistId
+    );
+    if (!cached || !Array.isArray(cached.tracks)) return null;
+    return cached;
+  } catch (err) {
+    console.warn(
+      `[apple music cache] failed to load playlist tracks for ${playlistId}`,
+      err
+    );
+    return null;
+  }
+}
+
+async function clearAppleMusicPlaylists(): Promise<void> {
+  try {
+    await dbOperations.delete(STORES.APPLE_MUSIC_PLAYLISTS, PLAYLISTS_KEY);
+  } catch (err) {
+    console.warn("[apple music cache] failed to clear playlists", err);
+  }
+}
+
+async function clearAppleMusicPlaylistTracks(): Promise<void> {
+  try {
+    await dbOperations.clear(STORES.APPLE_MUSIC_PLAYLIST_TRACKS);
+  } catch (err) {
+    console.warn("[apple music cache] failed to clear playlist tracks", err);
+  }
+}
+
 /** Clear the cache (called on sign-out so a different user doesn't
  * inherit the previous user's library). */
 export async function clearAppleMusicLibrary(): Promise<void> {
@@ -58,4 +153,6 @@ export async function clearAppleMusicLibrary(): Promise<void> {
   } catch (err) {
     console.warn("[apple music cache] failed to clear library", err);
   }
+  await clearAppleMusicPlaylists();
+  await clearAppleMusicPlaylistTracks();
 }

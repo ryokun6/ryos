@@ -1,9 +1,19 @@
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import {
+  useIpodStore,
+  type AppleMusicPlaylist,
+  type Track,
+} from "@/stores/useIpodStore";
 import { getMusicKitInstance } from "@/hooks/useMusicKit";
-import { loadAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
+import {
+  loadAppleMusicLibrary,
+  loadAppleMusicPlaylists,
+  loadAppleMusicPlaylistTracks,
+  saveAppleMusicPlaylists,
+  saveAppleMusicPlaylistTracks,
+} from "@/utils/appleMusicLibraryCache";
 
 /**
  * Apple Music library fetcher.
@@ -44,6 +54,39 @@ export interface AppleMusicLibrarySongResource {
 interface LibrarySongsResponse {
   data?: AppleMusicLibrarySongResource[];
   next?: string;
+  meta?: {
+    total?: number;
+  };
+}
+
+interface AppleMusicLibraryPlaylistResource {
+  id: string;
+  type: string;
+  attributes?: {
+    name?: string;
+    artwork?: {
+      url?: string;
+      width?: number;
+      height?: number;
+    };
+    trackCount?: number;
+    canEdit?: boolean;
+    playParams?: {
+      id: string;
+      globalId?: string;
+    };
+  };
+}
+
+interface LibraryPlaylistsResponse {
+  data?: AppleMusicLibraryPlaylistResource[];
+  meta?: {
+    total?: number;
+  };
+}
+
+interface LibraryPlaylistTracksResponse {
+  data?: AppleMusicLibrarySongResource[];
   meta?: {
     total?: number;
   };
@@ -101,6 +144,23 @@ export function libraryResourceToTrack(
   };
 }
 
+function libraryPlaylistResourceToPlaylist(
+  res: AppleMusicLibraryPlaylistResource
+): AppleMusicPlaylist | null {
+  const attrs = res.attributes;
+  if (!attrs?.name) return null;
+
+  const playParams = attrs.playParams;
+  return {
+    id: res.id,
+    globalId: playParams?.globalId,
+    name: attrs.name,
+    artworkUrl: resolveArtworkUrl(attrs.artwork, 300),
+    trackCount: attrs.trackCount,
+    canEdit: attrs.canEdit,
+  };
+}
+
 const PAGE_SIZE = 100;
 const MAX_PAGES = 50; // safety cap (5,000 songs)
 
@@ -115,13 +175,50 @@ const MAX_PAGES = 50; // safety cap (5,000 songs)
  * (5,000+ songs = 50 paginated API calls), so re-fetching on every
  * page reload is hugely wasteful.
  */
-const APPLE_MUSIC_LIBRARY_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+export const APPLE_MUSIC_LIBRARY_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 
 interface FetchOptions {
   /** Force a refetch even if a load is already in progress. */
   force?: boolean;
   /** Optional progress callback; invoked with `(loaded, total)` per page. */
   onProgress?: (loaded: number, total: number | undefined) => void;
+}
+
+interface FetchPlaylistTracksOptions {
+  /** Force a refetch even when a fresh cache exists. */
+  force?: boolean;
+}
+
+async function fetchAppleMusicPlaylistsList(): Promise<AppleMusicPlaylist[]> {
+  const instance = getMusicKitInstance();
+  if (!instance) throw new Error("MusicKit instance is not configured");
+  if (!instance.isAuthorized) {
+    throw new Error("Apple Music user is not authorized");
+  }
+
+  const aggregated: AppleMusicPlaylist[] = [];
+  let offset = 0;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const response = await instance.api.music<LibraryPlaylistsResponse>(
+      "/v1/me/library/playlists",
+      {
+        limit: PAGE_SIZE,
+        offset,
+      }
+    );
+    const data = response?.data as LibraryPlaylistsResponse | undefined;
+    const items = data?.data ?? [];
+
+    for (const item of items) {
+      const playlist = libraryPlaylistResourceToPlaylist(item);
+      if (playlist) aggregated.push(playlist);
+    }
+
+    if (items.length < PAGE_SIZE) break;
+    offset += items.length;
+  }
+
+  return aggregated;
 }
 
 /**
@@ -183,10 +280,106 @@ export async function fetchAppleMusicLibrary(
     }
 
     store.setAppleMusicTracks(aggregated);
+
+    try {
+      const playlists = await fetchAppleMusicPlaylistsList();
+      const loadedAt = Date.now();
+      store.setAppleMusicPlaylists(playlists);
+      void saveAppleMusicPlaylists({ playlists, loadedAt });
+    } catch (err) {
+      console.warn("[apple music] playlist sync failed (songs kept)", err);
+    }
+
     return aggregated.length;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     store.setAppleMusicLibraryError(message);
+    throw err;
+  }
+}
+
+/**
+ * Lazy-load tracks for one library playlist. Uses a 24h stale-while-revalidate
+ * window keyed per playlist id.
+ */
+export async function fetchAppleMusicPlaylistTracks(
+  playlistId: string,
+  options: FetchPlaylistTracksOptions = {}
+): Promise<Track[]> {
+  const instance = getMusicKitInstance();
+  if (!instance) throw new Error("MusicKit instance is not configured");
+  if (!instance.isAuthorized) {
+    throw new Error("Apple Music user is not authorized");
+  }
+
+  const store = useIpodStore.getState();
+  let cachedTracks = store.appleMusicPlaylistTracks[playlistId];
+  let loadedAt = store.appleMusicPlaylistTracksLoadedAt[playlistId];
+
+  if (!cachedTracks || cachedTracks.length === 0) {
+    const cached = await loadAppleMusicPlaylistTracks(playlistId);
+    if (cached && cached.tracks.length > 0) {
+      useIpodStore.setState((state) => ({
+        appleMusicPlaylistTracks: {
+          ...state.appleMusicPlaylistTracks,
+          [playlistId]: cached.tracks,
+        },
+        appleMusicPlaylistTracksLoadedAt: {
+          ...state.appleMusicPlaylistTracksLoadedAt,
+          [playlistId]: cached.loadedAt,
+        },
+      }));
+      cachedTracks = cached.tracks;
+      loadedAt = cached.loadedAt;
+    }
+  }
+
+  const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
+  const isFresh = ageMs < APPLE_MUSIC_LIBRARY_STALE_AFTER_MS;
+
+  if (!options.force && isFresh && cachedTracks && cachedTracks.length > 0) {
+    return cachedTracks;
+  }
+
+  if (store.appleMusicPlaylistTracksLoading[playlistId]) {
+    return cachedTracks ?? [];
+  }
+
+  store.setAppleMusicPlaylistTracksLoading(playlistId, true);
+
+  const aggregated: Track[] = [];
+  try {
+    let offset = 0;
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const response = await instance.api.music<LibraryPlaylistTracksResponse>(
+        `/v1/me/library/playlists/${encodeURIComponent(playlistId)}/tracks`,
+        {
+          limit: PAGE_SIZE,
+          offset,
+          "include[library-songs]": "catalog",
+        }
+      );
+      const data = response?.data as LibraryPlaylistTracksResponse | undefined;
+      const items = data?.data ?? [];
+
+      for (const item of items) {
+        const track = libraryResourceToTrack(item);
+        if (track) aggregated.push(track);
+      }
+
+      if (items.length < PAGE_SIZE) break;
+      offset += items.length;
+    }
+
+    const savedAt = Date.now();
+    store.setAppleMusicPlaylistTracks(playlistId, aggregated);
+    void saveAppleMusicPlaylistTracks(playlistId, {
+      tracks: aggregated,
+      loadedAt: savedAt,
+    });
+    return aggregated;
+  } catch (err) {
+    store.setAppleMusicPlaylistTracksLoading(playlistId, false);
     throw err;
   }
 }
@@ -203,8 +396,8 @@ export interface UseAppleMusicLibraryOptions {
  * both `enabled` and `isAuthorized` are true.
  *
  * Caching strategy (stale-while-revalidate):
- *   - The library is persisted to localStorage by `useIpodStore`, so
- *     reloading the page or reopening the app does NOT re-fetch.
+ *   - The library is persisted to IndexedDB, so reloading the page or
+ *     reopening the app does NOT re-fetch.
  *   - On mount, if a cached copy exists:
  *       - Fresh (< 24h): use it as-is, no network request.
  *       - Stale (>= 24h): use it immediately, kick off a silent
@@ -295,7 +488,7 @@ export function useAppleMusicLibrary({
       // Hydrate from IndexedDB if the in-memory store is empty (always
       // the case after a fresh page load — only librarySource and the
       // current song id are persisted to localStorage).
-      let { appleMusicTracks, appleMusicLibraryLoadedAt } =
+      let { appleMusicTracks, appleMusicLibraryLoadedAt, appleMusicPlaylists } =
         useIpodStore.getState();
       if (appleMusicTracks.length === 0) {
         const cached = await loadAppleMusicLibrary();
@@ -312,6 +505,17 @@ export function useAppleMusicLibrary({
           });
           appleMusicTracks = cached.tracks;
           appleMusicLibraryLoadedAt = cached.loadedAt;
+        }
+      }
+
+      if (appleMusicPlaylists.length === 0) {
+        const cachedPlaylists = await loadAppleMusicPlaylists();
+        if (cancelled) return;
+        if (cachedPlaylists && cachedPlaylists.playlists.length > 0) {
+          useIpodStore.setState({
+            appleMusicPlaylists: cachedPlaylists.playlists,
+          });
+          appleMusicPlaylists = cachedPlaylists.playlists;
         }
       }
 

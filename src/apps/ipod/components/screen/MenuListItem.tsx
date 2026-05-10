@@ -7,6 +7,7 @@ interface MenuListItemProps {
   backlightOn?: boolean;
   showChevron?: boolean;
   value?: string;
+  isLoading?: boolean;
 }
 
 export function MenuListItem({
@@ -16,21 +17,25 @@ export function MenuListItem({
   backlightOn = true,
   showChevron = true,
   value,
+  isLoading = false,
 }: MenuListItemProps) {
   return (
     <div
-      onClick={onClick}
+      onClick={isLoading ? undefined : onClick}
       className={cn(
         // h-full + leading-none makes the row exactly fill its
         // virtualization wrapper (MENU_ITEM_HEIGHT in IpodScreen) so
         // items in every menu — main, music, artist, and All Songs —
         // share the same vertical rhythm.
-        "h-full pl-2 cursor-pointer font-chicago text-[16px] leading-none flex justify-between items-center",
+        "h-full pl-2 font-chicago text-[16px] leading-none flex justify-between items-center",
+        isLoading ? "cursor-default" : "cursor-pointer",
         showChevron || value ? "pr-4" : "pr-2",
-        isSelected
+        isSelected && !isLoading
           ? backlightOn
             ? "bg-[#0a3667] text-[#c5e0f5] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
             : "bg-[#0a3667] text-[#8a9da9] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+          : isLoading
+          ? "text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] animate-pulse"
           : "text-[#0a3667] hover:bg-[#c0d8f0] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
       )}
     >
@@ -40,7 +45,7 @@ export function MenuListItem({
       {value ? (
         <span className="flex-shrink-0">{value}</span>
       ) : (
-        showChevron && <span className="flex-shrink-0">{">"}</span>
+        showChevron && !isLoading && <span className="flex-shrink-0">{">"}</span>
       )}
     </div>
   );

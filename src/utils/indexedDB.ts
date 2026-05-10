@@ -1,7 +1,7 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 8; // Add APPLE_MUSIC_LIBRARY store
+const DB_VERSION = 9; // Add Apple Music playlist caches
 let hasLoggedOpenSuccess = false;
 
 export const STORES = {
@@ -15,6 +15,8 @@ export const STORES = {
   // in IndexedDB (not localStorage) because the library can easily
   // exceed localStorage's 5–10MB per-origin quota.
   APPLE_MUSIC_LIBRARY: "apple_music_library",
+  APPLE_MUSIC_PLAYLISTS: "apple_music_playlists",
+  APPLE_MUSIC_PLAYLIST_TRACKS: "apple_music_playlist_tracks",
 } as const;
 
 /**

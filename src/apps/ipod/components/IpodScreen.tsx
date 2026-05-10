@@ -608,6 +608,7 @@ export function IpodScreen({
                               }}
                               showChevron={item.showChevron !== false}
                               value={item.value}
+                              isLoading={item.isLoading}
                             />
                           </div>
                         );
@@ -652,42 +653,64 @@ export function IpodScreen({
               <div className="flex-1 flex flex-col p-1 px-2 overflow-auto">
                 {currentTrack ? (
                   <>
-                    <div className="font-chicago text-[12px] mb-1 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+                    <div
+                      className={cn(
+                        "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+                        currentTrack.album ? "mb-0" : "mb-1"
+                      )}
+                    >
                       {currentIndex + 1} of {tracksLength}
                     </div>
-                    <div className="font-chicago text-[16px] text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+                    <div className="font-chicago text-[16px] text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] flex flex-col gap-px leading-snug min-h-0 overflow-visible">
                       <ScrollingText
                         text={currentTrack.title}
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
+                        className="leading-snug pb-px -mb-px"
                       />
                       <ScrollingText
                         text={currentTrack.artist || ""}
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
+                        className="leading-snug pb-px -mb-px"
                       />
+                      {currentTrack.album && (
+                        <ScrollingText
+                          text={currentTrack.album}
+                          isPlaying={isPlaying}
+                          scrollStartDelaySec={1}
+                          className="leading-snug pb-px -mb-px"
+                        />
+                      )}
                     </div>
-                    <div className="mt-auto w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
-                      <div
-                        className="h-full bg-[#0a3667]"
-                        style={{
-                          width: `${
-                            totalTime > 0 ? (elapsedTime / totalTime) * 100 : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                    <div className="font-chicago text-[16px] w-full h-[22px] flex justify-between text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-                      <span>
-                        {Math.floor(elapsedTime / 60)}:
-                        {String(Math.floor(elapsedTime % 60)).padStart(2, "0")}
-                      </span>
-                      <span>
-                        -{Math.floor((totalTime - elapsedTime) / 60)}:
-                        {String(
-                          Math.floor((totalTime - elapsedTime) % 60)
-                        ).padStart(2, "0")}
-                      </span>
+                    <div className="mt-auto pt-3 flex-shrink-0 w-full">
+                      <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
+                        <div
+                          className="h-full bg-[#0a3667]"
+                          style={{
+                            width: `${
+                              totalTime > 0
+                                ? (elapsedTime / totalTime) * 100
+                                : 0
+                            }%`,
+                          }}
+                        />
+                      </div>
+                      <div className="font-chicago text-[16px] w-full h-[22px] flex justify-between text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+                        <span>
+                          {Math.floor(elapsedTime / 60)}:
+                          {String(Math.floor(elapsedTime % 60)).padStart(
+                            2,
+                            "0"
+                          )}
+                        </span>
+                        <span>
+                          -{Math.floor((totalTime - elapsedTime) / 60)}:
+                          {String(
+                            Math.floor((totalTime - elapsedTime) % 60)
+                          ).padStart(2, "0")}
+                        </span>
+                      </div>
                     </div>
                   </>
                 ) : (
