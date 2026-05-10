@@ -144,18 +144,12 @@ export function SongSearchDialog({
       if (isAppleMusicMode) {
         if (!appleMusicAuthorized) {
           throw new Error(
-            t(
-              "apps.ipod.dialogs.appleMusicSearchSignInRequired",
-              "Sign in to Apple Music to search"
-            )
+            t("apps.ipod.dialogs.appleMusicSearchSignInRequired")
           );
         }
         if (!onAppleMusicSearch) {
           throw new Error(
-            t(
-              "apps.ipod.dialogs.appleMusicSearchUnavailable",
-              "Apple Music search is unavailable"
-            )
+            t("apps.ipod.dialogs.appleMusicSearchUnavailable")
           );
         }
         const appleResults = await onAppleMusicSearch(
@@ -298,10 +292,10 @@ export function SongSearchDialog({
         >
           <ThemedTabsList className="w-full mb-2">
             <ThemedTabsTrigger value="catalog" className="flex-1">
-              {t("apps.ipod.dialogs.appleMusicSearchAppleMusic", "Apple Music")}
+              {t("apps.ipod.dialogs.appleMusicSearchAppleMusic")}
             </ThemedTabsTrigger>
             <ThemedTabsTrigger value="library" className="flex-1">
-              {t("apps.ipod.dialogs.appleMusicSearchLibrary", "Library")}
+              {t("apps.ipod.dialogs.appleMusicSearchLibrary")}
             </ThemedTabsTrigger>
           </ThemedTabsList>
         </Tabs>
@@ -318,10 +312,7 @@ export function SongSearchDialog({
           }}
           placeholder={
             isAppleMusicMode
-              ? t(
-                  "apps.ipod.dialogs.appleMusicSearchPlaceholder",
-                  "Search Apple Music..."
-                )
+              ? t("apps.ipod.dialogs.appleMusicSearchPlaceholder")
               : t("apps.ipod.dialogs.songSearchPlaceholder")
           }
           className={cn("shadow-none", fontClass)}
@@ -403,7 +394,12 @@ export function SongSearchDialog({
                 color: selected ? undefined : "#4b5563",
               }}
             >
-              {[result.artist, result.album].filter(Boolean).join(" · ")}
+              {[
+                result.artist?.trim() || t("apps.ipod.menu.unknownArtist"),
+                result.album,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </div>
           </div>
         </div>
@@ -486,10 +482,7 @@ export function SongSearchDialog({
         <div style={{ marginBottom: "12px" }}>
           <p className={cn("text-gray-500 mb-2", fontClass)} style={fontStyle}>
             {isAppleMusicMode
-              ? t(
-                  "apps.ipod.dialogs.appleMusicSearchSelectResult",
-                  "Select a song to add:"
-                )
+              ? t("apps.ipod.dialogs.appleMusicSearchSelectResult")
               : t("apps.ipod.dialogs.songSearchSelectResult")}
           </p>
           <div
@@ -557,7 +550,9 @@ export function SongSearchDialog({
                 {t("apps.ipod.dialogs.addSongTitle")}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                {t("apps.ipod.dialogs.songSearchDescription")}
+                {isAppleMusicMode
+                  ? t("apps.ipod.dialogs.appleMusicSearchDescription")
+                  : t("apps.ipod.dialogs.songSearchDescription")}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

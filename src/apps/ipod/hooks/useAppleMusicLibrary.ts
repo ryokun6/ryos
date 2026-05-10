@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 import {
   useIpodStore,
   type AppleMusicPlaylist,
@@ -223,7 +224,7 @@ export function libraryResourceToTrack(
     url: attrs.url?.startsWith("https://music.apple.com/")
       ? attrs.url
       : `applemusic:${stableId}`,
-    title: attrs.name || "Untitled",
+    title: attrs.name || i18n.t("apps.ipod.appleMusic.untitledSong"),
     artist: attrs.artistName || "",
     album: attrs.albumName || albumResource?.attributes?.name,
     albumArtist: attrs.albumArtistName || albumResource?.attributes?.artistName,
@@ -286,7 +287,7 @@ function libraryPlaylistResourceToPlaylist(
 
 export function appleMusicPlayableResourceToTrack(
   res: AppleMusicCatalogPlayableResource,
-  fallbackArtist = "Apple Music"
+  fallbackArtist?: string
 ): Track | null {
   const attrs = res.attributes;
   if (!attrs) return null;
@@ -294,14 +295,17 @@ export function appleMusicPlayableResourceToTrack(
   const playableId = playParams?.id || playParams?.catalogId || res.id;
   if (!playableId) return null;
 
+  const curatorFallback =
+    fallbackArtist ?? i18n.t("apps.ipod.appleMusic.fallbackCurator");
+
   if (res.type === "stations") {
     return {
       id: `am:station:${playableId}`,
       url: attrs.url?.startsWith("https://music.apple.com/")
         ? attrs.url
         : `applemusic:station:${playableId}`,
-      title: attrs.name || "Apple Music Radio",
-      artist: attrs.curatorName || fallbackArtist,
+      title: attrs.name || i18n.t("apps.ipod.appleMusic.fallbackRadioTitle"),
+      artist: attrs.curatorName || curatorFallback,
       cover: resolveArtworkUrl(attrs.artwork, 600),
       source: "appleMusic",
       appleMusicPlayParams: {
@@ -318,8 +322,8 @@ export function appleMusicPlayableResourceToTrack(
       url: attrs.url?.startsWith("https://music.apple.com/")
         ? attrs.url
         : `applemusic:playlist:${playableId}`,
-      title: attrs.name || "Apple Music Mix",
-      artist: attrs.curatorName || fallbackArtist,
+      title: attrs.name || i18n.t("apps.ipod.appleMusic.fallbackPlaylistTitle"),
+      artist: attrs.curatorName || curatorFallback,
       cover: resolveArtworkUrl(attrs.artwork, 600),
       source: "appleMusic",
       appleMusicPlayParams: {
@@ -473,7 +477,7 @@ export async function fetchAppleMusicRadioStations(
         .map((resource) =>
           appleMusicPlayableResourceToTrack(
             resource,
-            recommendation.attributes?.title?.stringForDisplay || "Apple Music"
+            recommendation.attributes?.title?.stringForDisplay
           )
         )
         .filter((track): track is Track => track !== null)
@@ -510,7 +514,7 @@ export async function fetchAppleMusicGeniusTrack(): Promise<Track | null> {
       .map((resource) =>
         appleMusicPlayableResourceToTrack(
           resource,
-          recommendation.attributes?.title?.stringForDisplay || "Apple Music"
+          recommendation.attributes?.title?.stringForDisplay
         )
       )
       .filter((track): track is Track => track !== null)

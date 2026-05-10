@@ -2140,6 +2140,12 @@
       "year": "年"
     },
     "ipod": {
+      "appleMusic": {
+        "fallbackCurator": "[TODO] Apple Music",
+        "fallbackPlaylistTitle": "[TODO] Apple Music Mix",
+        "fallbackRadioTitle": "[TODO] Apple Music Radio",
+        "untitledSong": "[TODO] Untitled"
+      },
       "ariaLabels": {
         "closeFullscreen": "フルスクリーンを閉じる",
         "cycleLyricFont": "歌詞フォントを切り替える",
@@ -2193,6 +2199,7 @@
         "appleMusicRadioFailed": "Apple Music ラジオの読み込みに失敗しました",
         "appleMusicRecentlyAddedFailed": "最近追加した曲の読み込みに失敗しました",
         "appleMusicSearchAppleMusic": "Apple Music",
+        "appleMusicSearchDescription": "[TODO] Search Apple Music and your library, then pick a song to add",
         "appleMusicSearchLibrary": "ライブラリ",
         "appleMusicSearchPlaceholder": "Apple Musicを検索...",
         "appleMusicSearchSelectResult": "追加する曲を選択してください:",
@@ -2263,13 +2270,13 @@
           "description": "カバー、ランドスケープ、ワープ、メッシュ、ウォーターのビジュアルを選べます。Apple Music はカバーを既定にし、ビデオモードを非表示にします",
           "title": "フルスクリーン・ビジュアル"
         },
-        "shareSongs": {
-          "description": "YouTube の曲は ryOS リンクで共有し、Apple Music の曲は Apple Music リンクをコピーします",
-          "title": "曲を共有"
-        },
         "lyricsPronunciation": {
           "description": "翻訳、ふりがな、ローマ字、ピンインに対応したリアルタイム同期歌詞を表示します。",
           "title": "同期歌詞"
+        },
+        "shareSongs": {
+          "description": "YouTube の曲は ryOS リンクで共有し、Apple Music の曲は Apple Music リンクをコピーします",
+          "title": "曲を共有"
         },
         "wheelNavigation": {
           "description": "ホイール（またはマウスのスクロールホイール）を回して、メニューやトラックをブラウズします。",

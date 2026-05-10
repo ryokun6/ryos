@@ -2140,6 +2140,12 @@
       "year": "Anno"
     },
     "ipod": {
+      "appleMusic": {
+        "fallbackCurator": "[TODO] Apple Music",
+        "fallbackPlaylistTitle": "[TODO] Apple Music Mix",
+        "fallbackRadioTitle": "[TODO] Apple Music Radio",
+        "untitledSong": "[TODO] Untitled"
+      },
       "ariaLabels": {
         "closeFullscreen": "Chiudi schermo intero",
         "cycleLyricFont": "Scorri carattere testi",
@@ -2193,6 +2199,7 @@
         "appleMusicRadioFailed": "Impossibile caricare la radio di Apple Music",
         "appleMusicRecentlyAddedFailed": "Impossibile caricare i brani aggiunti di recente",
         "appleMusicSearchAppleMusic": "Apple Music",
+        "appleMusicSearchDescription": "[TODO] Search Apple Music and your library, then pick a song to add",
         "appleMusicSearchLibrary": "Libreria",
         "appleMusicSearchPlaceholder": "Cerca su Apple Music...",
         "appleMusicSearchSelectResult": "Seleziona un brano da aggiungere:",
@@ -2263,13 +2270,13 @@
           "description": "Scegli visual cover, paesaggi, warp, mesh o acqua; Apple Music usa la cover per impostazione predefinita e nasconde la modalità video",
           "title": "Visualizzazioni a schermo intero"
         },
-        "shareSongs": {
-          "description": "I brani YouTube condividono link ryOS, mentre i brani Apple Music copiano il loro link Apple Music",
-          "title": "Condividi brani"
-        },
         "lyricsPronunciation": {
           "description": "Visualizza i testi sincronizzati in tempo reale con traduzioni, furigana, romaji e pinyin",
           "title": "Testi sincronizzati"
+        },
+        "shareSongs": {
+          "description": "I brani YouTube condividono link ryOS, mentre i brani Apple Music copiano il loro link Apple Music",
+          "title": "Condividi brani"
         },
         "wheelNavigation": {
           "description": "Ruota la ghiera (o la rotella di scorrimento) per sfogliare menu e brani",

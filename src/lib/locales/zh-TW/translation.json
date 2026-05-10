@@ -2140,6 +2140,12 @@
       "year": "年"
     },
     "ipod": {
+      "appleMusic": {
+        "fallbackCurator": "[TODO] Apple Music",
+        "fallbackPlaylistTitle": "[TODO] Apple Music Mix",
+        "fallbackRadioTitle": "[TODO] Apple Music Radio",
+        "untitledSong": "[TODO] Untitled"
+      },
       "ariaLabels": {
         "closeFullscreen": "關閉全螢幕",
         "cycleLyricFont": "循環歌詞字體",
@@ -2193,6 +2199,7 @@
         "appleMusicRadioFailed": "無法載入 Apple Music 廣播",
         "appleMusicRecentlyAddedFailed": "無法載入最近加入的歌曲",
         "appleMusicSearchAppleMusic": "Apple Music",
+        "appleMusicSearchDescription": "[TODO] Search Apple Music and your library, then pick a song to add",
         "appleMusicSearchLibrary": "資料庫",
         "appleMusicSearchPlaceholder": "搜尋 Apple Music...",
         "appleMusicSearchSelectResult": "選擇要加入的歌曲：",
@@ -2263,13 +2270,13 @@
           "description": "選擇封面、風景、扭曲、網格或水波視覺效果；Apple Music 預設使用封面並隱藏影片模式",
           "title": "全螢幕視覺效果"
         },
-        "shareSongs": {
-          "description": "YouTube 歌曲會分享 ryOS 連結，Apple Music 歌曲則會複製 Apple Music 連結",
-          "title": "分享歌曲"
-        },
         "lyricsPronunciation": {
           "description": "查看包含翻譯、振假名、羅馬拼音與漢語拼音的即時同步歌詞",
           "title": "同步歌詞"
+        },
+        "shareSongs": {
+          "description": "YouTube 歌曲會分享 ryOS 連結，Apple Music 歌曲則會複製 Apple Music 連結",
+          "title": "分享歌曲"
         },
         "wheelNavigation": {
           "description": "旋轉選盤（或滾輪）以瀏覽選單與曲目",

@@ -33,8 +33,22 @@ if (!browserGlobals.localStorage) {
   browserGlobals.localStorage = new MemoryStorage();
 }
 if (!browserGlobals.navigator) {
-  browserGlobals.navigator = { onLine: true, userAgent: "test" } as Navigator;
+  browserGlobals.navigator = {
+    onLine: true,
+    userAgent: "test",
+    language: "en-US",
+    languages: ["en-US"],
+  } as Navigator;
+} else {
+  const nav = browserGlobals.navigator as Navigator & {
+    languages?: string[];
+  };
+  if (!nav.language) nav.language = "en-US";
+  if (!nav.languages?.length) nav.languages = ["en-US"];
 }
+
+const { initializeI18n } = await import("../src/lib/i18n");
+await initializeI18n();
 
 const {
   appleMusicPlayableResourceToTrack,

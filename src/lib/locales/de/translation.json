@@ -2140,6 +2140,12 @@
       "year": "Jahr"
     },
     "ipod": {
+      "appleMusic": {
+        "fallbackCurator": "[TODO] Apple Music",
+        "fallbackPlaylistTitle": "[TODO] Apple Music Mix",
+        "fallbackRadioTitle": "[TODO] Apple Music Radio",
+        "untitledSong": "[TODO] Untitled"
+      },
       "ariaLabels": {
         "closeFullscreen": "Vollbild schließen",
         "cycleLyricFont": "Liedtext-Schriftart wechseln",
@@ -2193,6 +2199,7 @@
         "appleMusicRadioFailed": "Apple Music-Radio konnte nicht geladen werden",
         "appleMusicRecentlyAddedFailed": "Fehler beim Laden der zuletzt hinzugefügten Titel",
         "appleMusicSearchAppleMusic": "Apple Music",
+        "appleMusicSearchDescription": "[TODO] Search Apple Music and your library, then pick a song to add",
         "appleMusicSearchLibrary": "Mediathek",
         "appleMusicSearchPlaceholder": "Apple Music durchsuchen...",
         "appleMusicSearchSelectResult": "Wähle einen Titel zum Hinzufügen aus:",
@@ -2263,13 +2270,13 @@
           "description": "Wähle Cover-, Landschafts-, Warp-, Mesh- oder Wasser-Visualisierungen; Apple Music startet mit Cover und blendet den Videomodus aus",
           "title": "Vollbild-Visualisierungen"
         },
-        "shareSongs": {
-          "description": "YouTube-Songs teilen ryOS-Links, während Apple Music-Songs ihren Apple Music-Link kopieren",
-          "title": "Songs teilen"
-        },
         "lyricsPronunciation": {
           "description": "Sieh dir live-synchronisierte Songtexte mit Übersetzungen, Furigana, Romaji und Pinyin an",
           "title": "Synchrone Songtexte"
+        },
+        "shareSongs": {
+          "description": "YouTube-Songs teilen ryOS-Links, während Apple Music-Songs ihren Apple Music-Link kopieren",
+          "title": "Songs teilen"
         },
         "wheelNavigation": {
           "description": "Drehe das Rad (oder dein Scrollrad), um durch Menüs und Titel zu blättern",

@@ -1751,6 +1751,12 @@
     "ipod": {
       "name": "iPod",
       "description": "Music player",
+      "appleMusic": {
+        "untitledSong": "Untitled",
+        "fallbackCurator": "Apple Music",
+        "fallbackRadioTitle": "Apple Music Radio",
+        "fallbackPlaylistTitle": "Apple Music Mix"
+      },
       "menu": {
         "addSong": "Add Song...",
         "searchSongs": "Search Songs...",
@@ -1925,6 +1931,7 @@
         "appleMusicLibraryFailed": "Failed to load Apple Music library",
         "appleMusicSearchSignInRequired": "Sign in to Apple Music to search",
         "appleMusicSearchUnavailable": "Apple Music search is unavailable",
+        "appleMusicSearchDescription": "Search Apple Music and your library, then pick a song to add",
         "appleMusicSearchAppleMusic": "Apple Music",
         "appleMusicSearchLibrary": "Library",
         "appleMusicSearchPlaceholder": "Search Apple Music...",

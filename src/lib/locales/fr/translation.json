@@ -2140,6 +2140,12 @@
       "year": "Année"
     },
     "ipod": {
+      "appleMusic": {
+        "fallbackCurator": "[TODO] Apple Music",
+        "fallbackPlaylistTitle": "[TODO] Apple Music Mix",
+        "fallbackRadioTitle": "[TODO] Apple Music Radio",
+        "untitledSong": "[TODO] Untitled"
+      },
       "ariaLabels": {
         "closeFullscreen": "Quitter le mode plein écran",
         "cycleLyricFont": "Changer la police des paroles",
@@ -2193,6 +2199,7 @@
         "appleMusicRadioFailed": "Échec du chargement de la radio Apple Music",
         "appleMusicRecentlyAddedFailed": "Échec du chargement des morceaux ajoutés récemment",
         "appleMusicSearchAppleMusic": "Apple Music",
+        "appleMusicSearchDescription": "[TODO] Search Apple Music and your library, then pick a song to add",
         "appleMusicSearchLibrary": "Bibliothèque",
         "appleMusicSearchPlaceholder": "Rechercher dans Apple Music…",
         "appleMusicSearchSelectResult": "Sélectionnez un morceau à ajouter :",
@@ -2263,13 +2270,13 @@
           "description": "Choisissez les visuels pochette, paysage, warp, mesh ou eau; Apple Music utilise la pochette par défaut et masque le mode vidéo",
           "title": "Visuels plein écran"
         },
-        "shareSongs": {
-          "description": "Les morceaux YouTube se partagent avec des liens ryOS, tandis que les morceaux Apple Music copient leur lien Apple Music",
-          "title": "Partager des morceaux"
-        },
         "lyricsPronunciation": {
           "description": "Affichez les paroles synchronisées en direct avec traductions, furigana, romaji et pinyin.",
           "title": "Paroles synchronisées"
+        },
+        "shareSongs": {
+          "description": "Les morceaux YouTube se partagent avec des liens ryOS, tandis que les morceaux Apple Music copient leur lien Apple Music",
+          "title": "Partager des morceaux"
         },
         "wheelNavigation": {
           "description": "Faites tourner la molette (ou votre molette de défilement) pour parcourir les menus et les morceaux.",
