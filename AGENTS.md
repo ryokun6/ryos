@@ -76,6 +76,13 @@ The following environment variables are required for full functionality:
 - `IP_GEOLOCATION_URL_TEMPLATE` - Optional override for the IP-geolocation provider used as a fallback when Vercel's `geolocation()` returns nothing (defaults to `https://ipwho.is/{ip}`). Use this on Coolify / Docker / plain Bun deploys, or to switch to a paid provider. Use `{ip}` as the placeholder.
 - `IP_GEOLOCATION_DISABLED` - Set to `1`/`true` to disable the IP-geolocation fallback entirely (no outbound calls).
 
+### Non-Vercel Deployment Hardening
+
+These knobs only matter when the API is **not** running on Vercel (i.e. Coolify, Docker, plain Bun). On Vercel, the platform-managed `X-Vercel-Forwarded-For` is trusted automatically and these are unused.
+
+- `TRUSTED_PROXY_COUNT` - Number of trusted reverse-proxy hops in front of the API. **Defaults to `0`**, meaning client-supplied `X-Forwarded-For` / `X-Real-IP` are NOT trusted (the standalone Bun server's socket peer IP is used instead). Set to `1` if you have one trusted reverse proxy (nginx, Caddy, Render's edge, Fly.io's edge, etc.) injecting the client IP into the right-most XFF entry; set to `2`+ for chained proxies. Tests (`bun run dev:api`) export `TRUSTED_PROXY_COUNT=1` because integration tests use spoofed XFF to exercise per-IP rate limits.
+- `AUTH_COOKIE_SECURE` - Force the `Secure` flag on/off for the auth cookie. Set to `1`/`true` on any HTTPS-fronted self-hosted deployment if auto-detection is wrong. Auto-detection enables `Secure` whenever `APP_PUBLIC_ORIGIN` starts with `https://` or the runtime env is `production`/`preview`.
+
 ### Localization / Scripts
 - `GOOGLE_GENERATIVE_AI_API_KEY` - Google Generative AI (for machine translation of locale files)
 
