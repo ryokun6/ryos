@@ -562,6 +562,18 @@ interface FetchPlaylistTracksOptions {
   force?: boolean;
 }
 
+function isAppleMusicNotFoundError(err: unknown): boolean {
+  if (typeof err === "object" && err !== null) {
+    const maybeStatus = (err as { status?: unknown; statusCode?: unknown });
+    if (maybeStatus.status === 404 || maybeStatus.statusCode === 404) {
+      return true;
+    }
+    const maybeResponse = (err as { response?: { status?: unknown } }).response;
+    if (maybeResponse?.status === 404) return true;
+  }
+  return err instanceof Error && /\b404\b/.test(err.message);
+}
+
 async function fetchAppleMusicPlaylistsList(): Promise<AppleMusicPlaylist[]> {
   const instance = getMusicKitInstance();
   if (!instance) throw new Error("MusicKit instance is not configured");
@@ -748,18 +760,31 @@ export async function fetchAppleMusicPlaylistTracks(
   const aggregated: Track[] = [];
   try {
     let offset = 0;
+    let total: number | undefined;
     for (let page = 0; page < MAX_PAGES; page++) {
-      const response = await instance.api.music<LibraryPlaylistTracksResponse>(
-        `/v1/me/library/playlists/${encodeURIComponent(playlistId)}/tracks`,
-        {
-          limit: PAGE_SIZE,
-          offset,
-          "include[library-songs]": "catalog,albums",
+      let response: { data: LibraryPlaylistTracksResponse };
+      try {
+        response = await instance.api.music<LibraryPlaylistTracksResponse>(
+          `/v1/me/library/playlists/${encodeURIComponent(playlistId)}/tracks`,
+          {
+            limit: PAGE_SIZE,
+            offset,
+            "include[library-songs]": "catalog,albums",
+          }
+        );
+      } catch (err) {
+        if (offset > 0 && isAppleMusicNotFoundError(err)) {
+          console.warn(
+            `[apple music] playlist ${playlistId} returned 404 after ${aggregated.length} tracks; treating as end of pagination`
+          );
+          break;
         }
-      );
+        throw err;
+      }
       const data = response?.data as LibraryPlaylistTracksResponse | undefined;
       const items = data?.data ?? [];
       const albums = buildIncludedAlbumMap(data?.included);
+      total = data?.meta?.total ?? total;
 
       for (const item of items) {
         const track = libraryResourceToTrack(
@@ -769,6 +794,7 @@ export async function fetchAppleMusicPlaylistTracks(
         if (track) aggregated.push(track);
       }
 
+      if (typeof total === "number" && aggregated.length >= total) break;
       if (items.length < PAGE_SIZE) break;
       offset += items.length;
     }
