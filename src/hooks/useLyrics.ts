@@ -110,11 +110,20 @@ export function useLyrics({
   const [furiganaInfo, setFuriganaInfo] = useState<FuriganaStreamInfo | undefined>();
   const [soramimiInfo, setSoramimiInfo] = useState<SoramimiStreamInfo | undefined>();
 
-  // Refs for tracking state across renders
+  // Refs for tracking state across renders.
+  //
+  // `currentSongIdRef` is read inside async callbacks fired by the fetch
+  // pipeline below to bail out when the user has navigated to a different
+  // song while a request was in flight. Mutating a ref during render is
+  // unsafe under concurrent React (a render can be discarded and re-run);
+  // instead we sync the ref in a layout effect so the value is committed
+  // before any other effects observe it.
   const cachedKeyRef = useRef<string | null>(null);
   const lastTimeRef = useRef<number>(currentTime);
   const currentSongIdRef = useRef(songId);
-  currentSongIdRef.current = songId;
+  useEffect(() => {
+    currentSongIdRef.current = songId;
+  }, [songId]);
 
   // Cache bust and refetch triggers
   const { isForceRequest: isCacheBustRequest, markHandled: markCacheBustHandled } = useCacheBustTrigger();
