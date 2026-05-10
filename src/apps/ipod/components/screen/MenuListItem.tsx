@@ -37,7 +37,7 @@ export function MenuListItem({
 
   if (isModern) {
     // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection, no separator. Matches IpodScreen's compact modern row (**23px**) + uniform **15px** labels for title + rows. Classic unchanged (16px Chicago).
+    // selection, no separator. Matches IpodScreen's compact modern row (**21px**) + uniform **15px** labels for title + rows. Classic unchanged (16px Chicago).
     return (
       <div
         onClick={isLoading ? undefined : onClick}

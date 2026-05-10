@@ -1415,7 +1415,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  *   background: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
  *   border-bottom: 1px solid #7995a3;
  *
- * The modern titlebar is **23px** tall (`MENU_ITEM_HEIGHT_MODERN`; vs.
+ * The modern titlebar is **21px** tall (`MENU_ITEM_HEIGHT_MODERN`; vs.
  * classic's fixed **24px** title strip) — keeps list rhythm tight like the nano.
  * The hairline is drawn via inset box-shadow so it doesn't
  * add height when the existing border-b utility is also present. */
@@ -1489,8 +1489,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 .ipod-modern-battery-cap {
   background-color: #c4c4c4;
   border: 1px solid #626262;
-  border-left: 0;
-  border-radius: 0 1.5px 1.5px 0;
+  border-left-width: 0;
+  border-radius: 0 3px 3px 0;
 }
 
 /* macOS theme override: the `.ipod-force-font *` rule in themes.css sets
