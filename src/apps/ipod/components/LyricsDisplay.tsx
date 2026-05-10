@@ -79,7 +79,7 @@ interface LyricsDisplayProps {
   bottomPaddingClass?: string;
   /** Optional tailwind class for spacing between lyric items */
   gapClass?: string;
-  /** Optional font class to apply to lyric lines; defaults to Geneva */
+  /** Optional font class for lyric lines. Omit to use **`font-ipod-modern-ui font-semibold`** (600) on modern or Geneva on classic. */
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
@@ -1749,7 +1749,7 @@ export function LyricsDisplay({
   interactive = true,
   bottomPaddingClass = "pb-5",
   gapClass = "gap-2",
-  fontClassName = "font-geneva-12",
+  fontClassName: fontClassNameFromProp,
   containerStyle,
   furiganaMap = EMPTY_FURIGANA_MAP as Map<string, FuriganaSegment[]>,
   soramimiMap = EMPTY_SORAMIMI_MAP as Map<string, FuriganaSegment[]>,
@@ -1766,14 +1766,22 @@ export function LyricsDisplay({
     koreanDisplay: storeKoreanDisplay,
     japaneseFurigana: storeJapaneseFurigana,
     romanization: storeRomanization,
+    uiVariant: storeUiVariant,
   } = useIpodStore(
     useShallow((s) => ({
       lyricsAlignment: s.lyricsAlignment,
       koreanDisplay: s.koreanDisplay,
       japaneseFurigana: s.japaneseFurigana,
       romanization: s.romanization,
+      uiVariant: s.uiVariant,
     }))
   );
+
+  const fontClassName =
+    fontClassNameFromProp ??
+    (storeUiVariant === "modern"
+      ? "font-ipod-modern-ui font-semibold"
+      : "font-geneva-12");
 
   // Use override props if provided, otherwise use store values
   const alignment = alignmentOverride ?? storeAlignment;

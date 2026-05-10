@@ -187,6 +187,7 @@ export function IpodAppComponent({
   const setAppleMusicKitNowPlaying = useIpodStore(
     (s) => s.setAppleMusicKitNowPlaying
   );
+  const uiVariant = useIpodStore((s) => s.uiVariant);
 
   const handleClose = useCallback(() => {
     pauseBeforeWindowClose();
@@ -767,7 +768,11 @@ export function IpodAppComponent({
                         alignment={lyricsAlignment}
                         koreanDisplay={koreanDisplay}
                         japaneseFurigana={japaneseFurigana}
-                        fontClassName={lyricsFontClassName}
+                        fontClassName={
+                          uiVariant === "modern"
+                            ? "font-ipod-modern-ui font-semibold"
+                            : lyricsFontClassName
+                        }
                         onAdjustOffset={(delta) => {
                           adjustLyricOffset(currentIndex, delta);
                           const newOffset = (tracks[currentIndex]?.lyricOffset ?? 0) + delta;

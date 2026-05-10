@@ -240,6 +240,7 @@ function CoverImage({
   track,
   position,
   ipodMode = true,
+  compactIpodCarousel = false,
   showCD = false,
   isPlaying = false,
   onTogglePlay,
@@ -250,6 +251,8 @@ function CoverImage({
   track: Track;
   position: number;
   ipodMode?: boolean;
+  /** Tighter carousel geometry for nano-style modern LCD. */
+  compactIpodCarousel?: boolean;
   showCD?: boolean;
   isPlaying?: boolean;
   onTogglePlay?: () => void;
@@ -281,11 +284,14 @@ function CoverImage({
     }
   }, [selectedIndex, currentIndex, onPlayTrackInPlace, onTogglePlay]);
 
-  // Cover size: larger for iPod mode (extends downward more)
-  const coverSize = ipodMode ? 65 : 60; // cqmin units
-  // Side cover spacing adjusts based on cover size
-  const baseSpacing = ipodMode ? 26 : 16;
-  const positionSpacing = ipodMode ? 18 : 11;
+  // Cover size: larger for classic iPod; modern skin uses a tighter row.
+  const coverSize =
+    ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60; // cqmin units
+  // Side spacing — tighter on modern nano-style Cover Flow (small viewport).
+  const baseSpacing =
+    ipodMode && compactIpodCarousel ? 17 : ipodMode ? 26 : 16;
+  const positionSpacing =
+    ipodMode && compactIpodCarousel ? 12 : ipodMode ? 18 : 11;
 
   // Scale values: no scaling for iPod mode, subtle for karaoke
   const centerScale = 1.0;
@@ -802,8 +808,13 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             <div 
               className="relative flex items-center justify-center w-full"
               style={{ 
-                height: "75%",
-                marginTop: ipodMode ? "-8%" : "-2%",
+                height: ipodMode && isModernIpodCoverFlow ? "78%" : "75%",
+                marginTop:
+                  ipodMode && isModernIpodCoverFlow
+                    ? "-6%"
+                    : ipodMode
+                      ? "-8%"
+                      : "-2%",
                 perspective: `${(ipodMode ? 65 : 60) * 1.5}cqmin`,
                 transformStyle: "preserve-3d",
               }}
@@ -815,6 +826,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     track={item.track}
                     position={position}
                     ipodMode={ipodMode}
+                    compactIpodCarousel={isModernIpodCoverFlow}
                     showCD={showCD}
                     isPlaying={isPlaying && selectedIndex === currentCoverIndex}
                     onTogglePlay={onTogglePlay}
@@ -834,7 +846,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               isModernIpodCoverFlow ? "font-ipod-modern-ui" : "font-geneva-12",
               ipodMode ? "px-2" : "px-6"
             )}
-            style={{ bottom: ipodMode ? "6px" : "5cqmin" }}
+            style={{
+              bottom:
+                ipodMode && isModernIpodCoverFlow
+                  ? "3px"
+                  : ipodMode
+                    ? "6px"
+                    : "5cqmin",
+            }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -875,11 +894,11 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             )}
             
             {/* Track info */}
-            <div className="text-center min-w-0 flex-1">
+            <div className="text-center min-w-0 flex-1 [&>*]:leading-tight">
               <div
                 className={cn(
-                  "text-white truncate leading-tight",
-                  isModernIpodCoverFlow && "text-[15px]",
+                  "text-white truncate",
+                  isModernIpodCoverFlow && "text-[12px] font-semibold tracking-tight",
                   ipodMode && !isModernIpodCoverFlow && "text-[10px]",
                 )}
                 style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
@@ -889,9 +908,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               {currentItem?.artist && (
                 <div
                   className={cn(
-                    "text-white/60 truncate leading-tight",
-                    isModernIpodCoverFlow && "text-[15px]",
-                    ipodMode && !isModernIpodCoverFlow && "text-[8px]",
+                    "truncate",
+                    isModernIpodCoverFlow &&
+                      "text-[10px] text-white/58 mt-[1px] tracking-tight",
+                    ipodMode &&
+                      !isModernIpodCoverFlow &&
+                      "text-white/60 text-[8px]",
                   )}
                   style={
                     ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }
