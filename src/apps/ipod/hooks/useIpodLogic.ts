@@ -1490,7 +1490,7 @@ export function useIpodLogic({
       },
       {
         label: appleMusicAuthorized
-          ? t("apps.ipod.menuItems.appleMusicSignOut", "Apple Music: Sign Out")
+          ? t("apps.ipod.menuItems.libraryAppleMusic", "Apple Music")
           : t("apps.ipod.menuItems.appleMusicSignIn", "Apple Music: Sign In"),
         action: appleMusicAuthorized
           ? () => void handleAppleMusicSignOut()

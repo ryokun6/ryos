@@ -1965,7 +1965,14 @@
         "artists": "Artists",
         "albums": "Albums",
         "unknownAlbum": "Unknown Album",
-        "loading": "Loading…"
+        "loading": "Loading…",
+        "librarySource": "Library",
+        "libraryAppleMusic": "Apple Music",
+        "libraryYoutube": "YouTube",
+        "appleMusicSignIn": "Apple Music: Sign In",
+        "unconfigured": "Unconfigured",
+        "signedIn": "Signed In",
+        "signedOut": "Signed Out"
       },
       "musicQuiz": {
         "title": "Music Quiz",
