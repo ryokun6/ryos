@@ -2263,13 +2263,13 @@
           "description": "カバー、ランドスケープ、ワープ、メッシュ、ウォーターのビジュアルを選べます。Apple Music はカバーを既定にし、ビデオモードを非表示にします",
           "title": "フルスクリーン・ビジュアル"
         },
-        "shareSongs": {
-          "description": "YouTube の曲は ryOS リンクで共有し、Apple Music の曲は Apple Music リンクをコピーします",
-          "title": "曲を共有"
-        },
         "lyricsPronunciation": {
           "description": "翻訳、ふりがな、ローマ字、ピンインに対応したリアルタイム同期歌詞を表示します。",
           "title": "同期歌詞"
+        },
+        "shareSongs": {
+          "description": "YouTube の曲は ryOS リンクで共有し、Apple Music の曲は Apple Music リンクをコピーします",
+          "title": "曲を共有"
         },
         "wheelNavigation": {
           "description": "ホイール（またはマウスのスクロールホイール）を回して、メニューやトラックをブラウズします。",
@@ -2308,6 +2308,7 @@
         "clearLibrary": "ライブラリを消去...",
         "controls": "コントロール",
         "coverFlow": "カバーフロー",
+        "deviceTheme": "本体テーマ",
         "display": "表示",
         "displayCover": "カバー",
         "displayGradient": "グラデーション",
@@ -2354,6 +2355,9 @@
         "repeatAll": "全曲リピート",
         "repeatOne": "1曲リピート",
         "romanization": "読み仮名",
+        "screen": "画面",
+        "screenClassic": "クラシック",
+        "screenModern": "モダン",
         "searchSongs": "曲を検索...",
         "shareApp": "アプリを共有...",
         "shareSong": "曲を共有...",
@@ -2367,6 +2371,7 @@
         "traditionalChinese": "繁体字",
         "translate": "翻訳",
         "u2": "U2",
+        "uiTheme": "UI テーマ",
         "unknownArtist": "不明なアーティスト",
         "video": "ビデオ",
         "view": "表示"

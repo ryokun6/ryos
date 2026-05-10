@@ -2263,13 +2263,13 @@
           "description": "選擇封面、風景、扭曲、網格或水波視覺效果；Apple Music 預設使用封面並隱藏影片模式",
           "title": "全螢幕視覺效果"
         },
-        "shareSongs": {
-          "description": "YouTube 歌曲會分享 ryOS 連結，Apple Music 歌曲則會複製 Apple Music 連結",
-          "title": "分享歌曲"
-        },
         "lyricsPronunciation": {
           "description": "查看包含翻譯、振假名、羅馬拼音與漢語拼音的即時同步歌詞",
           "title": "同步歌詞"
+        },
+        "shareSongs": {
+          "description": "YouTube 歌曲會分享 ryOS 連結，Apple Music 歌曲則會複製 Apple Music 連結",
+          "title": "分享歌曲"
         },
         "wheelNavigation": {
           "description": "旋轉選盤（或滾輪）以瀏覽選單與曲目",
@@ -2308,6 +2308,7 @@
         "clearLibrary": "清除資料庫...",
         "controls": "控制",
         "coverFlow": "封面瀏覽",
+        "deviceTheme": "裝置主題",
         "display": "顯示",
         "displayCover": "封面",
         "displayGradient": "漸層",
@@ -2354,6 +2355,9 @@
         "repeatAll": "全部重複",
         "repeatOne": "單曲重複",
         "romanization": "羅馬拼音",
+        "screen": "螢幕",
+        "screenClassic": "經典",
+        "screenModern": "現代",
         "searchSongs": "搜尋歌曲...",
         "shareApp": "分享應用程式…",
         "shareSong": "分享歌曲...",
@@ -2367,6 +2371,7 @@
         "traditionalChinese": "繁體",
         "translate": "翻譯",
         "u2": "U2",
+        "uiTheme": "介面主題",
         "unknownArtist": "未知藝人",
         "video": "影片",
         "view": "檢視"

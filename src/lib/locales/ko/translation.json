@@ -2263,13 +2263,13 @@
           "description": "커버, 풍경, 워프, 메시 또는 워터 비주얼을 선택하세요. Apple Music은 기본적으로 커버를 사용하고 비디오 모드를 숨깁니다",
           "title": "전체 화면 비주얼"
         },
-        "shareSongs": {
-          "description": "YouTube 곡은 ryOS 링크로 공유되고, Apple Music 곡은 Apple Music 링크가 복사됩니다",
-          "title": "노래 공유"
-        },
         "lyricsPronunciation": {
           "description": "번역, 후리가나, 로마자, 병음이 포함된 실시간 동기화 가사를 확인하세요.",
           "title": "동기화된 가사"
+        },
+        "shareSongs": {
+          "description": "YouTube 곡은 ryOS 링크로 공유되고, Apple Music 곡은 Apple Music 링크가 복사됩니다",
+          "title": "노래 공유"
         },
         "wheelNavigation": {
           "description": "휠(또는 마우스 스크롤 휠)을 돌려 메뉴와 트랙을 탐색하세요.",
@@ -2308,6 +2308,7 @@
         "clearLibrary": "보관함 지우기...",
         "controls": "컨트롤",
         "coverFlow": "커버 플로우",
+        "deviceTheme": "기기 테마",
         "display": "표시",
         "displayCover": "커버",
         "displayGradient": "그라데이션",
@@ -2354,6 +2355,9 @@
         "repeatAll": "모두 반복",
         "repeatOne": "한 곡 반복",
         "romanization": "발음 표기",
+        "screen": "화면",
+        "screenClassic": "클래식",
+        "screenModern": "모던",
         "searchSongs": "노래 검색...",
         "shareApp": "앱 공유...",
         "shareSong": "노래 공유...",
@@ -2367,6 +2371,7 @@
         "traditionalChinese": "번체",
         "translate": "번역",
         "u2": "U2",
+        "uiTheme": "UI 테마",
         "unknownArtist": "알 수 없는 아티스트",
         "video": "동영상",
         "view": "보기"

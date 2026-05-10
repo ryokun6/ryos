@@ -18,7 +18,7 @@ import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { LyricsAlignment, DisplayMode } from "@/types/lyrics";
+import { LyricsAlignment, DisplayMode, LyricsFont } from "@/types/lyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
@@ -109,6 +109,7 @@ export function IpodMenuBar({
     uiVariant,
     showLyrics,
     lyricsAlignment,
+    lyricsFont,
     romanization,
     lyricsTranslationLanguage,
     // Actions
@@ -132,6 +133,7 @@ export function IpodMenuBar({
     setUiVariant,
     toggleLyrics,
     setLyricsAlignment,
+    setLyricsFont,
     refreshLyrics,
     clearLyricsCache,
     setRomanization,
@@ -157,6 +159,7 @@ export function IpodMenuBar({
     uiVariant: s.uiVariant ?? "modern",
     showLyrics: s.showLyrics,
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
+    lyricsFont: s.lyricsFont,
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     // Actions
@@ -180,6 +183,7 @@ export function IpodMenuBar({
     setUiVariant: s.setUiVariant,
     toggleLyrics: s.toggleLyrics,
     setLyricsAlignment: s.setLyricsAlignment,
+    setLyricsFont: s.setLyricsFont,
     refreshLyrics: s.refreshLyrics,
     clearLyricsCache: s.clearLyricsCache,
     setRomanization: s.setRomanization,
@@ -537,6 +541,50 @@ export function IpodMenuBar({
               >
                 {t("apps.ipod.menu.alternating")}
               </MenubarCheckboxItem>
+
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+              <MenubarRadioGroup
+                value={lyricsFont}
+                onValueChange={(v) => setLyricsFont(v as LyricsFont)}
+              >
+                <MenubarRadioItem
+                  value={LyricsFont.Rounded}
+                  className="text-md h-6 pr-3"
+                >
+                  {t("apps.ipod.menu.fontRounded")}
+                </MenubarRadioItem>
+                <MenubarRadioItem
+                  value={LyricsFont.Serif}
+                  className="text-md h-6 pr-3"
+                >
+                  {t("apps.ipod.menu.fontSerif")}
+                </MenubarRadioItem>
+                <MenubarRadioItem
+                  value={LyricsFont.SansSerif}
+                  className="text-md h-6 pr-3"
+                >
+                  {t("apps.ipod.menu.fontSansSerif")}
+                </MenubarRadioItem>
+                <MenubarRadioItem
+                  value={LyricsFont.SerifRed}
+                  className="text-md h-6 pr-3"
+                >
+                  {t("apps.ipod.menu.fontSerifRed")}
+                </MenubarRadioItem>
+                <MenubarRadioItem
+                  value={LyricsFont.GoldGlow}
+                  className="text-md h-6 pr-3"
+                >
+                  {t("apps.ipod.menu.fontGoldGlow")}
+                </MenubarRadioItem>
+                <MenubarRadioItem
+                  value={LyricsFont.Gradient}
+                  className="text-md h-6 pr-3"
+                >
+                  {t("apps.ipod.menu.fontGradient")}
+                </MenubarRadioItem>
+              </MenubarRadioGroup>
 
             </MenubarSubContent>
           </MenubarSub>

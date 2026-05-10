@@ -2263,13 +2263,13 @@
           "description": "Выбирайте обложку, пейзажи, деформацию, сетку или водные визуализации; Apple Music по умолчанию использует обложку и скрывает режим видео",
           "title": "Полноэкранные эффекты"
         },
-        "shareSongs": {
-          "description": "Песни YouTube отправляются ссылками ryOS, а для песен Apple Music копируется ссылка Apple Music",
-          "title": "Поделиться песнями"
-        },
         "lyricsPronunciation": {
           "description": "Просматривайте синхронизированный текст с переводом, фуриганой, ромадзи и пиньинем",
           "title": "Синхронизированный текст"
+        },
+        "shareSongs": {
+          "description": "Песни YouTube отправляются ссылками ryOS, а для песен Apple Music копируется ссылка Apple Music",
+          "title": "Поделиться песнями"
         },
         "wheelNavigation": {
           "description": "Вращайте колесо (или колесико мыши), чтобы просматривать меню и треки",
@@ -2308,6 +2308,7 @@
         "clearLibrary": "Очистить медиатеку...",
         "controls": "Управление",
         "coverFlow": "Cover Flow",
+        "deviceTheme": "Тема устройства",
         "display": "Отображение",
         "displayCover": "Обложка",
         "displayGradient": "Градиент",
@@ -2354,6 +2355,9 @@
         "repeatAll": "Повторить все",
         "repeatOne": "Повторить одну",
         "romanization": "Романизация",
+        "screen": "Экран",
+        "screenClassic": "Классический",
+        "screenModern": "Современный",
         "searchSongs": "Поиск песен...",
         "shareApp": "Поделиться приложением...",
         "shareSong": "Поделиться песней...",
@@ -2367,6 +2371,7 @@
         "traditionalChinese": "繁體",
         "translate": "Перевести",
         "u2": "U2",
+        "uiTheme": "Тема интерфейса",
         "unknownArtist": "Неизвестный исполнитель",
         "video": "Видео",
         "view": "Вид"

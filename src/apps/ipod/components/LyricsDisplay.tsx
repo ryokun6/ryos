@@ -2,9 +2,11 @@ import {
   LyricLine,
   LyricWord,
   LyricsAlignment,
+  LyricsFont,
   KoreanDisplay,
   JapaneseFurigana,
   RomanizationSettings,
+  getLyricsFontClassName,
 } from "@/types/lyrics";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -79,7 +81,7 @@ interface LyricsDisplayProps {
   bottomPaddingClass?: string;
   /** Optional tailwind class for spacing between lyric items */
   gapClass?: string;
-  /** Optional font class for lyric lines. Omit to use **`font-ipod-modern-ui font-semibold`** (600) on modern or Geneva on classic. */
+  /** Optional explicit font/stack. When omitted, classic LCD stays Geneva; modern uses Myriad (600) only for the Sans Serif lyric preset — other lyric display styles preserve their karaoke classes. */
   fontClassName?: string;
   /** Optional inline styles for the outer container (e.g., dynamic gap) */
   containerStyle?: CSSProperties;
@@ -1767,6 +1769,7 @@ export function LyricsDisplay({
     japaneseFurigana: storeJapaneseFurigana,
     romanization: storeRomanization,
     uiVariant: storeUiVariant,
+    lyricsFont: storeLyricsFont,
   } = useIpodStore(
     useShallow((s) => ({
       lyricsAlignment: s.lyricsAlignment,
@@ -1774,13 +1777,16 @@ export function LyricsDisplay({
       japaneseFurigana: s.japaneseFurigana,
       romanization: s.romanization,
       uiVariant: s.uiVariant,
+      lyricsFont: s.lyricsFont,
     }))
   );
 
   const fontClassName =
     fontClassNameFromProp ??
     (storeUiVariant === "modern"
-      ? "font-ipod-modern-ui font-semibold"
+      ? storeLyricsFont === LyricsFont.SansSerif
+        ? "font-ipod-modern-ui font-semibold"
+        : getLyricsFontClassName(storeLyricsFont)
       : "font-geneva-12");
 
   // Use override props if provided, otherwise use store values

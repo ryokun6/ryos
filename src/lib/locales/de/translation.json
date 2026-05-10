@@ -2263,13 +2263,13 @@
           "description": "Wähle Cover-, Landschafts-, Warp-, Mesh- oder Wasser-Visualisierungen; Apple Music startet mit Cover und blendet den Videomodus aus",
           "title": "Vollbild-Visualisierungen"
         },
-        "shareSongs": {
-          "description": "YouTube-Songs teilen ryOS-Links, während Apple Music-Songs ihren Apple Music-Link kopieren",
-          "title": "Songs teilen"
-        },
         "lyricsPronunciation": {
           "description": "Sieh dir live-synchronisierte Songtexte mit Übersetzungen, Furigana, Romaji und Pinyin an",
           "title": "Synchrone Songtexte"
+        },
+        "shareSongs": {
+          "description": "YouTube-Songs teilen ryOS-Links, während Apple Music-Songs ihren Apple Music-Link kopieren",
+          "title": "Songs teilen"
         },
         "wheelNavigation": {
           "description": "Drehe das Rad (oder dein Scrollrad), um durch Menüs und Titel zu blättern",
@@ -2308,6 +2308,7 @@
         "clearLibrary": "Mediathek leeren...",
         "controls": "Steuerung",
         "coverFlow": "Cover Flow",
+        "deviceTheme": "Gerätethema",
         "display": "Anzeige",
         "displayCover": "Cover",
         "displayGradient": "Farbverlauf",
@@ -2354,6 +2355,9 @@
         "repeatAll": "Alle wiederholen",
         "repeatOne": "Einen wiederholen",
         "romanization": "Romanisierung",
+        "screen": "Bildschirm",
+        "screenClassic": "Klassisch",
+        "screenModern": "Modern",
         "searchSongs": "Lieder suchen...",
         "shareApp": "App teilen...",
         "shareSong": "Titel teilen...",
@@ -2367,6 +2371,7 @@
         "traditionalChinese": "繁體",
         "translate": "Übersetzen",
         "u2": "U2",
+        "uiTheme": "Oberflächenthema",
         "unknownArtist": "Unbekannter Künstler",
         "video": "Video",
         "view": "Ansicht"
