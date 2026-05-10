@@ -888,6 +888,9 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                               maxHeight="100%"
                                               minHeight="100%"
                                               className="border-none rounded-none"
+                                              // AI-generated archive preview;
+                                              // trusted "ryo" authorship.
+                                              appletCreatedBy="ryo"
                                             />
                                           </motion.div>
                                         )}

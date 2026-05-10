@@ -932,6 +932,10 @@ export function InternetExplorerAppComponent({
                     playDingSound={playDingSound}
                     baseUrlForAiContent={url}
                     mode={mode}
+                    // AI-generated time-machine page: authored by the
+                    // trusted assistant ("ryo"), gets the same-origin
+                    // sandbox + auth bridge.
+                    appletCreatedBy="ryo"
                   />
                 </div>
               ) : (
