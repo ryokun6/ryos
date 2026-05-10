@@ -4,7 +4,6 @@ import { jwtVerify } from "jose";
 
 import {
   parseMusicKitPrivateKey,
-  signMusicKitJwt,
   listMusicKitMissingEnv,
 } from "../api/_utils/_musickit-jwt";
 

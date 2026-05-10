@@ -1823,7 +1823,15 @@
         "file": "File",
         "controls": "Controls",
         "view": "View",
-        "shareApp": "Share App..."
+        "shareApp": "Share App...",
+        "switchToAppleMusic": "Switch to Apple Music",
+        "switchToYoutubeLibrary": "Switch to YouTube Library",
+        "refreshAppleMusic": "Refresh Library",
+        "appleMusicSignOut": "Sign Out of Apple Music…",
+        "appleMusicSignIn": "Sign In to Apple Music…",
+        "libraryYoutube": "YouTube Library",
+        "libraryAppleMusic": "Apple Music",
+        "librarySource": "Library"
       },
       "status": {
         "shuffleOn": "Shuffle ON",

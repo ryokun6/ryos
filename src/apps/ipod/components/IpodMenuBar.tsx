@@ -43,10 +43,8 @@ interface IpodMenuBarProps {
   onAdjustTiming?: () => void;
   onToggleCoverFlow?: () => void;
   // Apple Music integration
-  librarySource?: "youtube" | "appleMusic";
   appleMusicAuthorized?: boolean;
   musicKitConfigured?: boolean;
-  appleMusicLibrarySize?: number;
   onSwitchLibrary?: (source: "youtube" | "appleMusic") => void;
   onAppleMusicSignIn?: () => void;
   onAppleMusicSignOut?: () => void;
@@ -64,10 +62,8 @@ export function IpodMenuBar({
   onRefreshLyrics,
   onAdjustTiming,
   onToggleCoverFlow,
-  librarySource = "youtube",
   appleMusicAuthorized = false,
   musicKitConfigured = true,
-  appleMusicLibrarySize = 0,
   onSwitchLibrary,
   onAppleMusicSignIn,
   onAppleMusicSignOut,
@@ -226,6 +222,12 @@ export function IpodMenuBar({
   // every player tick (for the Now Playing indicator) and the reduce/sort
   // becomes expensive once the Apple Music library is in the thousands.
   const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
+
+  const handleSwitchLibraryMenu = () => {
+    if (!onSwitchLibrary) return;
+    if (!isAppleMusic && !musicKitConfigured) return;
+    onSwitchLibrary(isAppleMusic ? "youtube" : "appleMusic");
+  };
   const tracksByArtist = useMemo(() => {
     const grouped: Record<
       string,
@@ -291,6 +293,71 @@ export function IpodMenuBar({
     input.click();
   };
 
+  const librarySourceActionsNodes = (
+    <>
+      {!isAppleMusic && (
+        <>
+          <MenubarItem
+            onClick={onClearLibrary}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.clearLibrary")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onSyncLibrary}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.syncLibrary")}
+          </MenubarItem>
+        </>
+      )}
+      {isAppleMusic && musicKitConfigured && (
+        <>
+          {appleMusicAuthorized ? (
+            <>
+              <MenubarItem
+                onClick={onAppleMusicRefresh}
+                className="text-md h-6 px-3"
+                disabled={!onAppleMusicRefresh}
+              >
+                {t("apps.ipod.menu.refreshAppleMusic")}
+              </MenubarItem>
+              <MenubarItem
+                onClick={onAppleMusicSignOut}
+                className="text-md h-6 px-3"
+                disabled={!onAppleMusicSignOut}
+              >
+                {t("apps.ipod.menu.appleMusicSignOut")}
+              </MenubarItem>
+            </>
+          ) : (
+            <MenubarItem
+              onClick={onAppleMusicSignIn}
+              className="text-md h-6 px-3"
+              disabled={!onAppleMusicSignIn}
+            >
+              {t("apps.ipod.menu.appleMusicSignIn")}
+            </MenubarItem>
+          )}
+        </>
+      )}
+    </>
+  );
+
+  const librarySwitchMenubarItem = (
+    <MenubarItem
+      onClick={handleSwitchLibraryMenu}
+      className="text-md h-6 px-3"
+      disabled={
+        !onSwitchLibrary || (!isAppleMusic && !musicKitConfigured)
+      }
+    >
+      {isAppleMusic
+        ? t("apps.ipod.menu.switchToYoutubeLibrary")
+        : t("apps.ipod.menu.switchToAppleMusic")}
+    </MenubarItem>
+  );
+
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       {/* File Menu */}
@@ -312,20 +379,28 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.shareSong")}
           </MenubarItem>
+          {!isAppleMusic && (
+            <>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
+                onClick={handleExportLibrary}
+                className="text-md h-6 px-3"
+                disabled={tracks.length === 0}
+              >
+                {t("apps.ipod.menu.exportLibrary")}
+              </MenubarItem>
+              <MenubarItem
+                onClick={handleImportLibrary}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.importLibrary")}
+              </MenubarItem>
+            </>
+          )}
           <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={handleExportLibrary}
-            className="text-md h-6 px-3"
-            disabled={tracks.length === 0}
-          >
-            {t("apps.ipod.menu.exportLibrary")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={handleImportLibrary}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.ipod.menu.importLibrary")}
-          </MenubarItem>
+          {librarySourceActionsNodes}
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          {librarySwitchMenubarItem}
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={onClose}
@@ -753,10 +828,12 @@ export function IpodMenuBar({
             {t("apps.ipod.menu.addToLibrary")}
           </MenubarItem>
 
+          {librarySourceActionsNodes}
+
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+
           {tracks.length > 0 && (
             <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-
               {/* All Tracks section. The Radix submenu has no built-in
                   virtualization, so a 5,000-song Apple Music library would
                   commit thousands of nodes when opened. Cap the dropdown
@@ -847,82 +924,7 @@ export function IpodMenuBar({
             </>
           )}
 
-          <MenubarItem
-            onClick={onClearLibrary}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.ipod.menu.clearLibrary")}
-          </MenubarItem>
-          <MenubarItem
-            onClick={onSyncLibrary}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.ipod.menu.syncLibrary")}
-          </MenubarItem>
-
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-
-          {/* Library source switch — toggles between the curated YouTube
-              library and the user's Apple Music library. */}
-          <MenubarCheckboxItem
-            checked={librarySource === "youtube"}
-            onCheckedChange={() => onSwitchLibrary?.("youtube")}
-            className="text-md h-6 pr-3"
-          >
-            {t("apps.ipod.menu.libraryYoutube", "YouTube Library")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={librarySource === "appleMusic"}
-            onCheckedChange={() => onSwitchLibrary?.("appleMusic")}
-            disabled={!musicKitConfigured}
-            className="text-md h-6 pr-3"
-          >
-            {t("apps.ipod.menu.libraryAppleMusic", "Apple Music")}
-            {appleMusicAuthorized && appleMusicLibrarySize > 0
-              ? ` (${appleMusicLibrarySize})`
-              : ""}
-          </MenubarCheckboxItem>
-
-          {musicKitConfigured && (
-            <>
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-              {appleMusicAuthorized ? (
-                <>
-                  <MenubarItem
-                    onClick={onAppleMusicRefresh}
-                    className="text-md h-6 px-3"
-                    disabled={!onAppleMusicRefresh}
-                  >
-                    {t(
-                      "apps.ipod.menu.refreshAppleMusic",
-                      "Refresh Apple Music"
-                    )}
-                  </MenubarItem>
-                  <MenubarItem
-                    onClick={onAppleMusicSignOut}
-                    className="text-md h-6 px-3"
-                    disabled={!onAppleMusicSignOut}
-                  >
-                    {t(
-                      "apps.ipod.menu.appleMusicSignOut",
-                      "Sign Out of Apple Music"
-                    )}
-                  </MenubarItem>
-                </>
-              ) : (
-                <MenubarItem
-                  onClick={onAppleMusicSignIn}
-                  className="text-md h-6 px-3"
-                  disabled={!onAppleMusicSignIn}
-                >
-                  {t(
-                    "apps.ipod.menu.appleMusicSignIn",
-                    "Sign In to Apple Music"
-                  )}
-                </MenubarItem>
-              )}
-            </>
-          )}
+          {librarySwitchMenubarItem}
         </MenubarContent>
       </MenubarMenu>
 

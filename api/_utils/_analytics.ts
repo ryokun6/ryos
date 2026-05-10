@@ -320,7 +320,7 @@ function normalizeProductPath(value: unknown): string | undefined {
       .filter(Boolean)
       .slice(0, 4)
       .map((part) => part.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 48));
-    return `/${parts.join("/")}` || "/";
+    return `/${parts.join("/")}`;
   } catch {
     const path = value.split("?")[0].split("#")[0].slice(0, 120);
     if (!path.startsWith("/")) return undefined;

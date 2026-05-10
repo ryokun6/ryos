@@ -34,7 +34,7 @@ import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 
 export function IpodAppComponent({
   isWindowOpen,
-  onClose,
+  onClose: _onClose,
   isForeground,
   skipInitialSound,
   initialData,
@@ -166,10 +166,8 @@ export function IpodAppComponent({
     adjustLyricOffset,
     getCurrentStoreTrack,
     // Apple Music
-    librarySource,
     appleMusicAuthorized,
     musicKitStatus,
-    appleMusicLibrarySize,
     handleAppleMusicSignIn,
     handleAppleMusicSignOut,
     handleAppleMusicRefresh,
@@ -221,10 +219,8 @@ export function IpodAppComponent({
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
-      librarySource={librarySource}
       appleMusicAuthorized={appleMusicAuthorized}
       musicKitConfigured={musicKitStatus !== "missing-token"}
-      appleMusicLibrarySize={appleMusicLibrarySize}
       onSwitchLibrary={(source) => {
         if (source === "appleMusic") {
           handleSwitchToAppleMusic();
