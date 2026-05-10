@@ -40,6 +40,7 @@ export interface AppleMusicLibrarySongResource {
     artistName?: string;
     albumArtistName?: string;
     albumName?: string;
+    url?: string;
     durationInMillis?: number;
     artwork?: {
       url?: string;
@@ -171,7 +172,9 @@ export function libraryResourceToTrack(
 
   return {
     id: `am:${stableId}`,
-    url: `applemusic:${stableId}`,
+    url: attrs.url?.startsWith("https://music.apple.com/")
+      ? attrs.url
+      : `applemusic:${stableId}`,
     title: attrs.name || "Untitled",
     artist: attrs.artistName || "",
     album: attrs.albumName || albumResource?.attributes?.name,

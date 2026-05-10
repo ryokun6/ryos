@@ -43,6 +43,10 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
+import {
+  generateIpodSongShareUrl,
+  shouldCacheSongMetadataForShare,
+} from "@/utils/sharedUrl";
 import { onAppUpdate } from "@/utils/appEventBus";
 import {
   BACKLIGHT_TIMEOUT_MS,
@@ -2890,9 +2894,9 @@ export function useIpodLogic({
   const handleShareSong = useCallback(() => {
     if (tracks.length > 0 && currentIndex >= 0) {
       const track = tracks[currentIndex];
-      // Save song metadata to cache when sharing (requires auth)
-      // Pass isShare: true to update createdBy (if allowed)
-      if (track) {
+      // YouTube ryOS shares are backed by cached song metadata. Apple Music
+      // shares should stay as public Apple Music links and not mark createdBy.
+      if (track && shouldCacheSongMetadataForShare(track)) {
         const { username, isAuthenticated } = useChatsStore.getState();
         const auth = username && isAuthenticated ? { username, isAuthenticated } : null;
         saveSongMetadataFromTrack(track, auth, { isShare: true }).catch((error) => {
@@ -2971,7 +2975,23 @@ export function useIpodLogic({
   }, [tracks, currentIndex, clearTrackLyricsSource, refreshLyrics]);
 
   const ipodGenerateShareUrl = useCallback(
-    (videoId: string): string => `${window.location.origin}/ipod/${videoId}`,
+    (songId: string): string => {
+      const state = useIpodStore.getState();
+      const sourceTracks =
+        state.librarySource === "appleMusic"
+          ? state.appleMusicTracks
+          : state.tracks;
+      const track = sourceTracks.find((candidate) => candidate.id === songId);
+      if (!track) {
+        return `${window.location.origin}/ipod/${encodeURIComponent(songId)}`;
+      }
+
+      return generateIpodSongShareUrl(
+        track,
+        window.location.origin,
+        state.appleMusicStorefrontId
+      );
+    },
     []
   );
 

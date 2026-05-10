@@ -51,6 +51,11 @@ const {
   isValidYouTubeVideoId,
   isValidSongId,
 } = await import("../api/songs/_utils");
+const {
+  generateAppleMusicSongShareUrl,
+  generateIpodSongShareUrl,
+  shouldCacheSongMetadataForShare,
+} = await import("../src/utils/sharedUrl");
 
 describe("Apple Music song ID validation", () => {
   test("accepts the canonical YouTube video ID format", () => {
@@ -132,6 +137,59 @@ describe("libraryResourceToTrack", () => {
       attributes: { name: "No params" },
     });
     expect(track).toBeNull();
+  });
+});
+
+describe("Apple Music song sharing", () => {
+  test("generates an Apple Music web link instead of an ryOS song share link", () => {
+    const track = {
+      id: "am:1616228595",
+      url: "applemusic:1616228595",
+      title: "Bohemian Rhapsody",
+      artist: "Queen",
+      source: "appleMusic" as const,
+      appleMusicPlayParams: {
+        catalogId: "1616228595",
+      },
+    };
+
+    expect(generateAppleMusicSongShareUrl(track, "jp")).toBe(
+      "https://music.apple.com/jp/song/1616228595"
+    );
+    expect(generateIpodSongShareUrl(track, "https://os.ryo.lu", "jp")).toBe(
+      "https://music.apple.com/jp/song/1616228595"
+    );
+  });
+
+  test("preserves Apple Music resource URLs when the API provides them", () => {
+    const track = {
+      id: "am:1616228595",
+      url: "https://music.apple.com/us/song/bohemian-rhapsody/1616228595",
+      title: "Bohemian Rhapsody",
+      source: "appleMusic" as const,
+    };
+
+    expect(generateAppleMusicSongShareUrl(track, "jp")).toBe(track.url);
+  });
+
+  test("does not cache Apple Music shares as ryOS shared-song metadata", () => {
+    expect(
+      shouldCacheSongMetadataForShare({
+        id: "am:1616228595",
+        url: "applemusic:1616228595",
+        title: "Bohemian Rhapsody",
+        source: "appleMusic",
+      })
+    ).toBe(false);
+
+    expect(
+      shouldCacheSongMetadataForShare({
+        id: "dQw4w9WgXcQ",
+        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        title: "Never Gonna Give You Up",
+        source: "youtube",
+      })
+    ).toBe(true);
   });
 });
 
