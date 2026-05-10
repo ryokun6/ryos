@@ -1,4 +1,11 @@
-import { useRef, useEffect, useMemo, useCallback } from "react";
+import {
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -25,6 +32,23 @@ import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
 import type { IpodScreenProps } from "../types";
+
+// Fixed row height for the iPod menu list. Each `MenuListItem` is a
+// single-line `font-chicago text-[16px]` row; 24px gives a touch more
+// vertical breathing room than the font's natural height while keeping
+// the same number of rows on-screen as the classic iPod (~5 rows in
+// the 124px menu area).
+//
+// We virtualize EVERY menu — not just huge ones — so item geometry
+// stays identical across the main menu, the artist list, and the
+// thousands-long All Songs list. Without this, the All Songs view
+// (virtualized at a fixed height) would render at a different row size
+// than the surrounding menus (whose rows used the font's natural
+// height) and the menu would visibly "shrink" when entering it.
+const MENU_ITEM_HEIGHT = 24;
+// Render this many extra items above and below the visible window so
+// scrolling doesn't reveal blank rows before React reconciles.
+const OVERSCAN_ITEMS = 6;
 
 // Animation variants for menu transitions
 const menuVariants = {
@@ -99,9 +123,23 @@ export function IpodScreen({
     : t("apps.ipod.menuItems.nowPlaying");
 
   // Refs
-  const menuScrollRef = useRef<HTMLDivElement>(null);
-  const menuItemsRef = useRef<(HTMLDivElement | null)[]>([]);
-  const needScrollRef = useRef(false);
+  //
+  // The menu motion.div uses a `key` that changes on every navigation,
+  // so AnimatePresence remounts it each time the user enters a new
+  // menu. With `mode="sync"` the OLD menu sticks around for ~200ms
+  // while its exit animation plays, and the NEW menu mounts on top.
+  // Both inner scroll containers point at the same `menuScrollRef`:
+  //   1. New menu mounts → React sets ref.current = newDiv ✓
+  //   2. ~200ms later, old menu finishes exiting → React calls the
+  //      ref cleanup for the OLD div → ref.current = null ✗
+  // After step 2, every wheel-scroll attempt early-exits because the
+  // ref is null. Use a callback ref that stores the latest mounted
+  // node and ignores null clears from the unmounting old menu — the
+  // ref then always points at the current menu's container.
+  const menuScrollRef = useRef<HTMLDivElement | null>(null);
+  const setMenuScrollRef = useCallback((el: HTMLDivElement | null) => {
+    if (el) menuScrollRef.current = el;
+  }, []);
 
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
@@ -123,87 +161,107 @@ export function IpodScreen({
     return formatKugouImageUrl(currentTrack.cover, 400) ?? youtubeThumbnail;
   }, [currentTrack, isAppleMusicTrack]);
 
-  // Reset refs when menu items change
-  const resetItemRefs = (count: number) => {
-    menuItemsRef.current = Array(count).fill(null);
-  };
+  // Current menu items (the deepest menu in the history stack).
+  const currentMenuItems = useMemo(
+    () =>
+      menuMode && menuHistory.length > 0
+        ? menuHistory[menuHistory.length - 1].items
+        : [],
+    [menuMode, menuHistory]
+  );
 
-  // Scroll to selected item
-  const forceScrollToSelected = useCallback(() => {
-    if (!menuMode || menuHistory.length === 0) return;
+  // Track scroll position + container height so we can compute the
+  // visible window for virtualization.
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
 
-    const container = document.querySelector(
-      ".ipod-menu-container"
-    ) as HTMLElement;
-    if (!container) return;
-
-    const menuItems = Array.from(container.querySelectorAll(".ipod-menu-item"));
-    if (!menuItems.length) return;
-
-    if (selectedMenuItem < 0 || selectedMenuItem >= menuItems.length) return;
-
-    const selectedItem = menuItems[selectedMenuItem] as HTMLElement;
-    if (!selectedItem) return;
-
-    const containerHeight = container.clientHeight;
-    const itemTop = selectedItem.offsetTop;
-    const itemHeight = selectedItem.offsetHeight;
-    const scrollTop = container.scrollTop;
-    const buffer = 2;
-
-    if (itemTop + itemHeight > scrollTop + containerHeight - buffer) {
-      container.scrollTo({
-        top: itemTop + itemHeight - containerHeight + buffer,
-        behavior: "instant" as ScrollBehavior,
-      });
-    } else if (itemTop < scrollTop + buffer) {
-      container.scrollTo({
-        top: Math.max(0, itemTop - buffer),
-        behavior: "instant" as ScrollBehavior,
-      });
-    }
-
-    if (selectedMenuItem === 0) {
-      container.scrollTo({
-        top: 0,
-        behavior: "instant" as ScrollBehavior,
-      });
-    }
-
-    if (selectedMenuItem === menuItems.length - 1) {
-      container.scrollTo({
-        top: Math.max(0, itemTop - (containerHeight - itemHeight) + buffer),
-        behavior: "instant" as ScrollBehavior,
-      });
-    }
-
-    needScrollRef.current = false;
-  }, [menuMode, menuHistory, selectedMenuItem]);
-
-  // Trigger scroll on various conditions
   useEffect(() => {
-    if (menuMode && menuHistory.length > 0) {
-      needScrollRef.current = true;
-      forceScrollToSelected();
+    const el = menuScrollRef.current;
+    if (!el) return;
+    const handleScroll = () => setScrollTop(el.scrollTop);
+    const handleResize = () => setContainerHeight(el.clientHeight);
+    handleScroll();
+    handleResize();
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    const ro = new ResizeObserver(handleResize);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      ro.disconnect();
+    };
+  }, [menuMode, currentMenuItems]);
 
-      const attempts = [50, 100, 250, 500, 1000];
-      attempts.forEach((delay) => {
-        setTimeout(() => {
-          if (needScrollRef.current) {
-            forceScrollToSelected();
-          }
-        }, delay);
-      });
-    }
-  }, [menuMode, selectedMenuItem, menuHistory, forceScrollToSelected]);
+  const visibleRange = useMemo(() => {
+    const start = Math.max(
+      0,
+      Math.floor(scrollTop / MENU_ITEM_HEIGHT) - OVERSCAN_ITEMS
+    );
+    const visibleCount =
+      Math.ceil((containerHeight || 124) / MENU_ITEM_HEIGHT) +
+      OVERSCAN_ITEMS * 2;
+    const end = Math.min(currentMenuItems.length, start + visibleCount);
+    return { start, end };
+  }, [scrollTop, containerHeight, currentMenuItems.length]);
 
-  // Prepare for a newly opened menu
-  useEffect(() => {
-    if (menuMode && menuHistory.length > 0) {
-      const currentMenu = menuHistory[menuHistory.length - 1];
-      resetItemRefs(currentMenu.items.length);
+  // Keep the selected item in view. We key on `menuHistory` (the array
+  // reference, not just its length) so EVERY menu transition triggers a
+  // scroll re-evaluation, even when:
+  //   - The previous and next menus happen to have the same length, OR
+  //   - The previous and next menus happen to use the same
+  //     `selectedMenuItem` value (e.g. both default to 0).
+  // Without this, navigating between, say, two equally-deep artist
+  // submenus left the menu scrolled to the previous menu's offset.
+  // Using useLayoutEffect prevents a flicker where the user briefly
+  // sees the wrong scroll position before the correction lands.
+  const lastMenuDepthRef = useRef(menuHistory.length);
+  useLayoutEffect(() => {
+    const el = menuScrollRef.current;
+    if (!el) return;
+    if (!menuMode || currentMenuItems.length === 0) {
+      lastMenuDepthRef.current = menuHistory.length;
+      return;
     }
-  }, [menuMode, menuHistory]);
+
+    const isMenuTransition = lastMenuDepthRef.current !== menuHistory.length;
+    lastMenuDepthRef.current = menuHistory.length;
+
+    const containerH = el.clientHeight || 124;
+
+    // On a menu transition, snap scrollTop based purely on the target
+    // index — we don't want to inherit the previous menu's offset.
+    if (isMenuTransition) {
+      const safeIndex = Math.max(
+        0,
+        Math.min(selectedMenuItem, currentMenuItems.length - 1)
+      );
+      const itemTop = safeIndex * MENU_ITEM_HEIGHT;
+      const itemBottom = itemTop + MENU_ITEM_HEIGHT;
+      let target = 0;
+      if (itemBottom > containerH) {
+        target = itemBottom - containerH;
+      } else if (itemTop < 0) {
+        target = 0;
+      }
+      el.scrollTop = target;
+      setScrollTop(target);
+      return;
+    }
+
+    // Within the same menu (e.g. wheel scrolling), only nudge the
+    // scroll when the selection has gone off-screen.
+    if (selectedMenuItem < 0 || selectedMenuItem >= currentMenuItems.length) {
+      return;
+    }
+    const itemTop = selectedMenuItem * MENU_ITEM_HEIGHT;
+    const itemBottom = itemTop + MENU_ITEM_HEIGHT;
+    const visibleTop = el.scrollTop;
+    const visibleBottom = visibleTop + containerH;
+    if (itemBottom > visibleBottom) {
+      el.scrollTop = itemBottom - containerH;
+    } else if (itemTop < visibleTop) {
+      el.scrollTop = itemTop;
+    }
+  }, [menuMode, selectedMenuItem, menuHistory, currentMenuItems]);
 
   const shouldShowLyrics = showLyrics;
 
@@ -507,42 +565,51 @@ export function IpodScreen({
               variants={menuVariants}
               transition={{ duration: 0.2, ease: "easeInOut" }}
               custom={menuDirection}
-              onAnimationComplete={() => {
-                needScrollRef.current = true;
-                forceScrollToSelected();
-              }}
             >
               <div className="flex-1 relative">
                 <div
-                  ref={menuScrollRef}
+                  ref={setMenuScrollRef}
                   className="absolute inset-0 overflow-auto ipod-menu-container"
                 >
-                  {menuHistory.length > 0 &&
-                    menuHistory[menuHistory.length - 1].items.map(
-                      (item, index) => (
-                        <div
-                          key={index}
-                          ref={(el) => {
-                            menuItemsRef.current[index] = el;
-                          }}
-                          className={`ipod-menu-item ${
-                            index === selectedMenuItem ? "selected" : ""
-                          }`}
-                        >
-                          <MenuListItem
-                            text={item.label}
-                            isSelected={index === selectedMenuItem}
-                            backlightOn={backlightOn}
-                            onClick={() => {
-                              onSelectMenuItem(index);
-                              onMenuItemAction(item.action);
+                  <div
+                    style={{
+                      position: "relative",
+                      height: currentMenuItems.length * MENU_ITEM_HEIGHT,
+                    }}
+                  >
+                    {currentMenuItems
+                      .slice(visibleRange.start, visibleRange.end)
+                      .map((item, i) => {
+                        const index = visibleRange.start + i;
+                        return (
+                          <div
+                            key={index}
+                            className={`ipod-menu-item ${
+                              index === selectedMenuItem ? "selected" : ""
+                            }`}
+                            style={{
+                              position: "absolute",
+                              top: index * MENU_ITEM_HEIGHT,
+                              left: 0,
+                              right: 0,
+                              height: MENU_ITEM_HEIGHT,
                             }}
-                            showChevron={item.showChevron !== false}
-                            value={item.value}
-                          />
-                        </div>
-                      )
-                    )}
+                          >
+                            <MenuListItem
+                              text={item.label}
+                              isSelected={index === selectedMenuItem}
+                              backlightOn={backlightOn}
+                              onClick={() => {
+                                onSelectMenuItem(index);
+                                onMenuItemAction(item.action);
+                              }}
+                              showChevron={item.showChevron !== false}
+                              value={item.value}
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
                 <Scrollbar
                   containerRef={menuScrollRef}

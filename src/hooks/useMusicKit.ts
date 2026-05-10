@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * Apple MusicKit JS v3 lazy loader / configurer.
@@ -373,7 +373,11 @@ export function useMusicKit(
     };
   }, [enabled, app]);
 
-  const authorize = async (): Promise<string | null> => {
+  // Memoize authorize/unauthorize so consumers can include them in
+  // useCallback / useMemo dependency arrays without triggering cascading
+  // re-renders. Closing over `instance` here is enough — when the
+  // configured instance changes, both callbacks get a fresh identity.
+  const authorize = useCallback(async (): Promise<string | null> => {
     const inst = instance ?? configuredInstance;
     if (!inst) return null;
     try {
@@ -385,9 +389,9 @@ export function useMusicKit(
       setError(err instanceof Error ? err.message : String(err));
       throw err;
     }
-  };
+  }, [instance]);
 
-  const unauthorize = async (): Promise<void> => {
+  const unauthorize = useCallback(async (): Promise<void> => {
     const inst = instance ?? configuredInstance;
     if (!inst) return;
     try {
@@ -396,7 +400,7 @@ export function useMusicKit(
     } catch (err) {
       console.error("[musickit] unauthorize failed", err);
     }
-  };
+  }, [instance]);
 
   return {
     status,

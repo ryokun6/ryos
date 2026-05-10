@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { getMusicKitInstance } from "@/hooks/useMusicKit";
 
@@ -186,26 +188,89 @@ export interface UseAppleMusicLibraryOptions {
  * Hook that auto-loads the user's Apple Music library the first time both
  * `enabled` and `isAuthorized` are true. Subsequent enabling reuses the
  * cached list (call `refresh()` to re-fetch).
+ *
+ * The initial load shows a live progress toast — Apple Music libraries
+ * routinely contain thousands of songs and pulling them takes long enough
+ * that without feedback the user has no idea anything is happening.
  */
 export function useAppleMusicLibrary({
   enabled,
   isAuthorized,
 }: UseAppleMusicLibraryOptions) {
+  const { t } = useTranslation();
   const hasLoadedRef = useRef(false);
+
+  // Reusable progress-toast helper so both the auto-load and `refresh()`
+  // share the same UX. Returns the toast id so callers can finalize it.
+  const runWithProgressToast = useCallback(
+    async (force: boolean): Promise<number> => {
+      const toastId = `apple-music-library-load`;
+      const initialMessage = t(
+        "apps.ipod.dialogs.appleMusicLibraryLoading",
+        "Loading Apple Music library…"
+      );
+      toast.loading(initialMessage, {
+        id: toastId,
+        duration: Infinity,
+      });
+      try {
+        const count = await fetchAppleMusicLibrary({
+          force,
+          onProgress: (loaded, total) => {
+            const message = total
+              ? t(
+                  "apps.ipod.dialogs.appleMusicLibraryProgressOf",
+                  `Loading Apple Music library… ${loaded} of ${total}`,
+                  { loaded, total }
+                )
+              : t(
+                  "apps.ipod.dialogs.appleMusicLibraryProgress",
+                  `Loading Apple Music library… ${loaded} songs`,
+                  { loaded }
+                );
+            toast.loading(message, { id: toastId, duration: Infinity });
+          },
+        });
+        toast.success(
+          t(
+            "apps.ipod.dialogs.appleMusicLibraryLoaded",
+            `Apple Music library loaded — ${count} songs`,
+            { count }
+          ),
+          { id: toastId, duration: 4000 }
+        );
+        return count;
+      } catch (err) {
+        toast.error(
+          t(
+            "apps.ipod.dialogs.appleMusicLibraryFailed",
+            "Failed to load Apple Music library"
+          ),
+          {
+            id: toastId,
+            description: err instanceof Error ? err.message : String(err),
+            duration: 6000,
+          }
+        );
+        throw err;
+      }
+    },
+    [t]
+  );
 
   const refresh = useCallback(async () => {
     if (!isAuthorized) return 0;
-    return fetchAppleMusicLibrary({ force: true });
-  }, [isAuthorized]);
+    return runWithProgressToast(true);
+  }, [isAuthorized, runWithProgressToast]);
 
   useEffect(() => {
     if (!enabled || !isAuthorized) return;
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    fetchAppleMusicLibrary().catch((err) => {
+    runWithProgressToast(false).catch((err) => {
       console.error("[apple music] initial library load failed", err);
     });
-  }, [enabled, isAuthorized]);
+  }, [enabled, isAuthorized, runWithProgressToast]);
 
   // Reset the "has loaded" guard whenever the user signs out so a new sign-in
   // triggers a fresh fetch.

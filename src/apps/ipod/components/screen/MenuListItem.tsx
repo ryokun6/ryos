@@ -21,7 +21,11 @@ export function MenuListItem({
     <div
       onClick={onClick}
       className={cn(
-        "pl-2 cursor-pointer font-chicago text-[16px] flex justify-between items-center",
+        // h-full + leading-none makes the row exactly fill its
+        // virtualization wrapper (MENU_ITEM_HEIGHT in IpodScreen) so
+        // items in every menu — main, music, artist, and All Songs —
+        // share the same vertical rhythm.
+        "h-full pl-2 cursor-pointer font-chicago text-[16px] leading-none flex justify-between items-center",
         showChevron || value ? "pr-4" : "pr-2",
         isSelected
           ? backlightOn

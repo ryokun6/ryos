@@ -24,6 +24,13 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
 
+// Caps for the in-menubar library browser. Radix's MenubarSub doesn't
+// virtualize, so a 5,000-song library would commit thousands of DOM
+// nodes the moment the user opens the dropdown. The full library is
+// always available inside the iPod itself (which IS virtualized).
+const MENUBAR_TRACK_LIMIT = 200;
+const MENUBAR_ARTIST_LIMIT = 100;
+
 interface IpodMenuBarProps {
   onClose: () => void;
   onShowHelp: () => void;
@@ -215,21 +222,30 @@ export function IpodMenuBar({
     }
   };
 
-  // Group tracks by artist
-  const tracksByArtist = tracks.reduce<
-    Record<string, { track: (typeof tracks)[0]; index: number }[]>
-  >((acc, track, index) => {
-    const artist = track.artist || t("apps.ipod.menu.unknownArtist");
-    if (!acc[artist]) {
-      acc[artist] = [];
+  // Group tracks by artist. Memoized because the menubar re-renders on
+  // every player tick (for the Now Playing indicator) and the reduce/sort
+  // becomes expensive once the Apple Music library is in the thousands.
+  const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
+  const tracksByArtist = useMemo(() => {
+    const grouped: Record<
+      string,
+      { track: (typeof tracks)[0]; index: number }[]
+    > = {};
+    for (let index = 0; index < tracks.length; index++) {
+      const track = tracks[index];
+      const artist = track.artist || unknownArtistLabel;
+      const bucket = grouped[artist] || (grouped[artist] = []);
+      bucket.push({ track, index });
     }
-    acc[artist].push({ track, index });
-    return acc;
-  }, {});
+    return grouped;
+  }, [tracks, unknownArtistLabel]);
 
-  // Get sorted list of artists
-  const artists = Object.keys(tracksByArtist).sort((a, b) =>
-    a.localeCompare(b, undefined, { sensitivity: "base" })
+  const artists = useMemo(
+    () =>
+      Object.keys(tracksByArtist).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      ),
+    [tracksByArtist]
   );
 
   const handleExportLibrary = () => {
@@ -741,7 +757,11 @@ export function IpodMenuBar({
             <>
               <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-              {/* All Tracks section */}
+              {/* All Tracks section. The Radix submenu has no built-in
+                  virtualization, so a 5,000-song Apple Music library would
+                  commit thousands of nodes when opened. Cap the dropdown
+                  to a sane size and tell the user to use the iPod itself
+                  for the full list. */}
               <MenubarSub>
                 <MenubarSubTrigger className="text-md h-6 px-3">
                   <div className="flex justify-between w-full items-center overflow-hidden">
@@ -749,7 +769,7 @@ export function IpodMenuBar({
                   </div>
                 </MenubarSubTrigger>
                 <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[400px] overflow-y-auto">
-                  {tracks.map((track, index) => (
+                  {tracks.slice(0, MENUBAR_TRACK_LIMIT).map((track, index) => (
                     <MenubarCheckboxItem
                       key={`all-${track.id}`}
                       checked={index === currentIndex}
@@ -759,12 +779,29 @@ export function IpodMenuBar({
                       <span className="truncate min-w-0">{track.title}</span>
                     </MenubarCheckboxItem>
                   ))}
+                  {tracks.length > MENUBAR_TRACK_LIMIT && (
+                    <MenubarItem
+                      disabled
+                      className="text-md h-6 px-3 italic opacity-70"
+                    >
+                      {t(
+                        "apps.ipod.menu.menubarTrackLimit",
+                        `Showing ${MENUBAR_TRACK_LIMIT} of ${tracks.length} — open iPod to browse all`,
+                        {
+                          limit: MENUBAR_TRACK_LIMIT,
+                          total: tracks.length,
+                        }
+                      )}
+                    </MenubarItem>
+                  )}
                 </MenubarSubContent>
               </MenubarSub>
 
-              {/* Individual Artist submenus */}
+              {/* Individual Artist submenus. Same reasoning — cap the
+                  outer artist list. The full grouping is still memoized
+                  above so the iPod screen can use it freely. */}
               <div className="max-h-[300px] overflow-y-auto">
-                {artists.map((artist) => (
+                {artists.slice(0, MENUBAR_ARTIST_LIMIT).map((artist) => (
                   <MenubarSub key={artist}>
                     <MenubarSubTrigger className="text-md h-6 px-3">
                       <div className="flex justify-between w-full items-center overflow-hidden">
@@ -772,21 +809,38 @@ export function IpodMenuBar({
                       </div>
                     </MenubarSubTrigger>
                     <MenubarSubContent className="px-0 max-w-[180px] sm:max-w-[220px] max-h-[200px] overflow-y-auto">
-                      {tracksByArtist[artist].map(({ track, index }) => (
-                        <MenubarCheckboxItem
-                          key={`${artist}-${track.id}`}
-                          checked={index === currentIndex}
-                          onCheckedChange={() => handlePlayTrack(index)}
-                          className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
-                        >
-                          <span className="truncate min-w-0">
-                            {track.title}
-                          </span>
-                        </MenubarCheckboxItem>
-                      ))}
+                      {tracksByArtist[artist]
+                        .slice(0, MENUBAR_TRACK_LIMIT)
+                        .map(({ track, index }) => (
+                          <MenubarCheckboxItem
+                            key={`${artist}-${track.id}`}
+                            checked={index === currentIndex}
+                            onCheckedChange={() => handlePlayTrack(index)}
+                            className="text-md h-6 pr-3 max-w-[160px] sm:max-w-[200px] truncate"
+                          >
+                            <span className="truncate min-w-0">
+                              {track.title}
+                            </span>
+                          </MenubarCheckboxItem>
+                        ))}
                     </MenubarSubContent>
                   </MenubarSub>
                 ))}
+                {artists.length > MENUBAR_ARTIST_LIMIT && (
+                  <MenubarItem
+                    disabled
+                    className="text-md h-6 px-3 italic opacity-70"
+                  >
+                    {t(
+                      "apps.ipod.menu.menubarArtistLimit",
+                      `Showing ${MENUBAR_ARTIST_LIMIT} of ${artists.length} artists`,
+                      {
+                        limit: MENUBAR_ARTIST_LIMIT,
+                        total: artists.length,
+                      }
+                    )}
+                  </MenubarItem>
+                )}
               </div>
 
               <MenubarSeparator className="h-[2px] bg-black my-1" />

@@ -480,6 +480,47 @@ export function useIpodLogic({
     memoizedChangeTheme(nextTheme);
   }, [memoizedChangeTheme]);
 
+  // Stable callback used by every "play this track from a menu" entry. We
+  // factor this out so per-track menu items can be memoized — without it,
+  // each render would build N new closures for an N-track library and
+  // every scroll click would invalidate the menu-history sync effect.
+  const playTrackFromMenu = useCallback(
+    (track: Track, trackIndexInActiveMenu: number) => {
+      registerActivity();
+      if (track.source !== "appleMusic" && isOffline) {
+        showOfflineStatus();
+        return;
+      }
+      setMenuHistory((prev) => {
+        const updatedHist = [...prev];
+        if (updatedHist.length > 0) {
+          updatedHist[updatedHist.length - 1] = {
+            ...updatedHist[updatedHist.length - 1],
+            selectedIndex: trackIndexInActiveMenu,
+          };
+        }
+        menuHistoryBeforeNowPlayingRef.current = updatedHist;
+        return updatedHist;
+      });
+      setCurrentSongId(track.id);
+      setIsPlaying(true);
+      setMenuDirection("forward");
+      setMenuMode(false);
+      setCameFromNowPlayingMenuItem(false);
+      if (useIpodStore.getState().showVideo) {
+        toggleVideo();
+      }
+    },
+    [
+      registerActivity,
+      isOffline,
+      showOfflineStatus,
+      setCurrentSongId,
+      setIsPlaying,
+      toggleVideo,
+    ]
+  );
+
   // -------------------------------------------------------------------
   // Apple Music handlers (defined here so the menu builders below can
   // reference them via useMemo).
@@ -519,6 +560,8 @@ export function useIpodLogic({
       return;
     }
     try {
+      // refresh() drives a progress toast itself, so don't double-toast on
+      // error here — just acknowledge success on the iPod screen.
       const count = await refreshAppleMusicLibrary();
       showStatus(
         t(
@@ -527,10 +570,8 @@ export function useIpodLogic({
           { count }
         )
       );
-    } catch (err) {
-      toast.error("Library refresh failed", {
-        description: err instanceof Error ? err.message : String(err),
-      });
+    } catch {
+      // Already surfaced by refresh()'s error toast.
     }
   }, [
     appleMusicAuthorized,
@@ -678,111 +719,106 @@ export function useIpodLogic({
     };
   }, []);
 
+  // Group tracks by artist once per `tracks` change. With large libraries
+  // (e.g. an Apple Music sync of several thousand songs) this is expensive
+  // enough that we don't want it running on every IpodScreen re-render.
+  const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
+  const tracksByArtist = useMemo(() => {
+    const grouped: Record<string, { track: Track; index: number }[]> = {};
+    for (let index = 0; index < tracks.length; index++) {
+      const track = tracks[index];
+      const artist = track.artist || unknownArtistLabel;
+      const bucket = grouped[artist] || (grouped[artist] = []);
+      bucket.push({ track, index });
+    }
+    return grouped;
+  }, [tracks, unknownArtistLabel]);
+
+  const sortedArtists = useMemo(
+    () =>
+      Object.keys(tracksByArtist).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      ),
+    [tracksByArtist]
+  );
+
+  // Memoize the entire "All Songs" submenu items array. Without this,
+  // every render rebuilt N closures, the menu-history sync effect saw a
+  // new `items` reference, called `setMenuHistory(updated)`, and re-ran.
+  const allSongsMenuItems = useMemo(
+    () =>
+      tracks.map((track, index) => ({
+        label: track.title,
+        action: () => playTrackFromMenu(track, index),
+        showChevron: false,
+      })),
+    [tracks, playTrackFromMenu]
+  );
+
+  // Per-artist submenu items, memoized as a map so `rebuildMenuItems` can
+  // return stable references and skip pointless `setMenuHistory` calls.
+  const artistMenuItemsByArtist = useMemo(() => {
+    const result: Record<
+      string,
+      { label: string; action: () => void; showChevron: boolean }[]
+    > = {};
+    for (const artist of sortedArtists) {
+      const artistTracks = tracksByArtist[artist];
+      result[artist] = artistTracks.map(({ track }, trackListIndex) => ({
+        label: track.title,
+        action: () => playTrackFromMenu(track, trackListIndex),
+        showChevron: false,
+      }));
+    }
+    return result;
+  }, [tracksByArtist, sortedArtists, playTrackFromMenu]);
+
   // Menu items
   const musicMenuItems = useMemo(() => {
-    const tracksByArtist = tracks.reduce<
-      Record<string, { track: Track; index: number }[]>
-    >((acc, track, index) => {
-      const artist = track.artist || t("apps.ipod.menu.unknownArtist");
-      if (!acc[artist]) {
-        acc[artist] = [];
-      }
-      acc[artist].push({ track, index });
-      return acc;
-    }, {});
-
-    const artists = Object.keys(tracksByArtist).sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    );
-
+    const allSongsLabel = t("apps.ipod.menuItems.allSongs");
     return [
       {
-        label: t("apps.ipod.menuItems.allSongs"),
+        label: allSongsLabel,
         action: () => {
           registerActivity();
           setMenuDirection("forward");
-          const allSongsLabel = t("apps.ipod.menuItems.allSongs");
-          const allTracksMenu = tracks.map((track, index) => ({
-            label: track.title,
-            action: () => {
-              registerActivity();
-              if (isOffline) {
-                showOfflineStatus();
-                return;
-              }
-              // Save current menu history with the selected index before entering Now Playing
-              setMenuHistory((prev) => {
-                const updatedHistory = [...prev];
-                if (updatedHistory.length > 0) {
-                  updatedHistory[updatedHistory.length - 1] = {
-                    ...updatedHistory[updatedHistory.length - 1],
-                    selectedIndex: index,
-                  };
-                }
-                menuHistoryBeforeNowPlayingRef.current = updatedHistory;
-                return updatedHistory;
-              });
-              setCurrentSongId(track.id);
-              setIsPlaying(true);
-              setMenuDirection("forward");
-              setMenuMode(false);
-              setCameFromNowPlayingMenuItem(false);
-              if (useIpodStore.getState().showVideo) {
-                toggleVideo();
-              }
-            },
-            showChevron: false,
-          }));
           setMenuHistory((prev) => [
             ...prev,
-            { title: allSongsLabel, items: allTracksMenu, selectedIndex: 0 },
+            {
+              title: allSongsLabel,
+              items: allSongsMenuItems,
+              selectedIndex: 0,
+            },
           ]);
           setSelectedMenuItem(0);
         },
         showChevron: true,
       },
-      ...artists.map((artist) => ({
+      ...sortedArtists.map((artist) => ({
         label: artist,
         action: () => {
           registerActivity();
           setMenuDirection("forward");
-          const artistTracks = tracksByArtist[artist].map(({ track }, trackListIndex) => ({
-            label: track.title,
-            action: () => {
-              registerActivity();
-              // Save current menu history with the selected index before entering Now Playing
-              setMenuHistory((prev) => {
-                const updatedHistory = [...prev];
-                if (updatedHistory.length > 0) {
-                  updatedHistory[updatedHistory.length - 1] = {
-                    ...updatedHistory[updatedHistory.length - 1],
-                    selectedIndex: trackListIndex,
-                  };
-                }
-                menuHistoryBeforeNowPlayingRef.current = updatedHistory;
-                return updatedHistory;
-              });
-              setCurrentSongId(track.id);
-              setIsPlaying(true);
-              setMenuDirection("forward");
-              setMenuMode(false);
-              setCameFromNowPlayingMenuItem(false);
-              if (useIpodStore.getState().showVideo) {
-                toggleVideo();
-              }
-            },
-            showChevron: false,
-          }));
           setMenuHistory((prev) => [
             ...prev,
-            { title: artist, items: artistTracks, selectedIndex: 0 },
+            {
+              title: artist,
+              items: artistMenuItemsByArtist[artist],
+              selectedIndex: 0,
+            },
           ]);
           setSelectedMenuItem(0);
         },
         showChevron: true,
       })),
     ];
-  }, [tracks, registerActivity, setCurrentSongId, setIsPlaying, toggleVideo, isOffline, showOfflineStatus, t]);
+  }, [
+    sortedArtists,
+    allSongsMenuItems,
+    artistMenuItemsByArtist,
+    registerActivity,
+    t,
+  ]);
 
   const settingsMenuItems = useMemo(() => {
     const sourceLabel = isAppleMusic
@@ -1009,74 +1045,21 @@ export function useIpodLogic({
       // Extras submenu has stable items; keep existing references to avoid stale closures.
       return menu.items;
     } else if (menu.title === t("apps.ipod.menuItems.allSongs")) {
-      // Rebuild "All Songs" submenu from current tracks
-      return tracks.map((track, trackIndex) => ({
-        label: track.title,
-        action: () => {
-          registerActivity();
-          if (isOffline) {
-            showOfflineStatus();
-            return;
-          }
-          setMenuHistory((prev) => {
-            const updatedHist = [...prev];
-            if (updatedHist.length > 0) {
-              updatedHist[updatedHist.length - 1] = {
-                ...updatedHist[updatedHist.length - 1],
-                selectedIndex: trackIndex,
-              };
-            }
-            menuHistoryBeforeNowPlayingRef.current = updatedHist;
-            return updatedHist;
-          });
-          setCurrentSongId(track.id);
-          setIsPlaying(true);
-          setMenuDirection("forward");
-          setMenuMode(false);
-          setCameFromNowPlayingMenuItem(false);
-          if (useIpodStore.getState().showVideo) {
-            toggleVideo();
-          }
-        },
-        showChevron: false,
-      }));
-    } else {
-      // Check if this is an artist submenu by looking for matching artist in tracks
-      const artistTracks = tracks.filter(
-        (track) => (track.artist || t("apps.ipod.menu.unknownArtist")) === menu.title
-      );
-      if (artistTracks.length > 0) {
-        // This is an artist submenu, rebuild it
-        return artistTracks.map((track, trackListIndex) => ({
-          label: track.title,
-          action: () => {
-            registerActivity();
-            setMenuHistory((prev) => {
-              const updatedHist = [...prev];
-              if (updatedHist.length > 0) {
-                updatedHist[updatedHist.length - 1] = {
-                  ...updatedHist[updatedHist.length - 1],
-                  selectedIndex: trackListIndex,
-                };
-              }
-              menuHistoryBeforeNowPlayingRef.current = updatedHist;
-              return updatedHist;
-            });
-            setCurrentSongId(track.id);
-            setIsPlaying(true);
-            setMenuDirection("forward");
-            setMenuMode(false);
-            setCameFromNowPlayingMenuItem(false);
-            if (useIpodStore.getState().showVideo) {
-              toggleVideo();
-            }
-          },
-          showChevron: false,
-        }));
-      }
+      // Return the memoized array — same reference unless tracks changed,
+      // so the menu-history sync effect skips a redundant setMenuHistory.
+      return allSongsMenuItems;
+    } else if (artistMenuItemsByArtist[menu.title]) {
+      return artistMenuItemsByArtist[menu.title];
     }
     return null;
-  }, [mainMenuItems, musicMenuItems, settingsMenuItems, tracks, t, registerActivity, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, toggleVideo]);
+  }, [
+    mainMenuItems,
+    musicMenuItems,
+    settingsMenuItems,
+    allSongsMenuItems,
+    artistMenuItemsByArtist,
+    t,
+  ]);
 
   // Update menu when items change - update ALL menus in history, not just the current one
   // Also update the saved menu history ref that's used when returning from Now Playing
@@ -1439,46 +1422,16 @@ export function useIpodLogic({
         // Fallback: go to All Songs menu with current track selected
         // This happens when restored from persisted state in Now Playing mode
         const allSongsLabel = t("apps.ipod.menuItems.allSongs");
-        const allSongsMenu = tracks.map((track, trackIndex) => ({
-          label: track.title,
-          action: () => {
-            registerActivity();
-            if (isOffline) {
-              showOfflineStatus();
-              return;
-            }
-            setMenuHistory((prev) => {
-              const updatedHist = [...prev];
-              if (updatedHist.length > 0) {
-                updatedHist[updatedHist.length - 1] = {
-                  ...updatedHist[updatedHist.length - 1],
-                  selectedIndex: trackIndex,
-                };
-              }
-              menuHistoryBeforeNowPlayingRef.current = updatedHist;
-              return updatedHist;
-            });
-            setCurrentSongId(track.id);
-            setIsPlaying(true);
-            setMenuDirection("forward");
-            setMenuMode(false);
-            setCameFromNowPlayingMenuItem(false);
-            if (useIpodStore.getState().showVideo) {
-              toggleVideo();
-            }
-          },
-          showChevron: false,
-        }));
         setMenuHistory([
           mainMenu,
           { title: t("apps.ipod.menuItems.music"), items: musicMenuItems, selectedIndex: 0 },
-          { title: allSongsLabel, items: allSongsMenu, selectedIndex: currentIndex },
+          { title: allSongsLabel, items: allSongsMenuItems, selectedIndex: currentIndex },
         ]);
         setSelectedMenuItem(currentIndex);
       }
       setMenuMode(true);
     }
-  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, tracks, currentIndex, cameFromNowPlayingMenuItem, isOffline, showOfflineStatus, setCurrentSongId, setIsPlaying, t]);
+  }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, currentIndex, cameFromNowPlayingMenuItem, t]);
 
   // Cover Flow handlers
   const handleCenterLongPress = useCallback(() => {
