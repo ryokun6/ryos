@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
+import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 
 /**
  * Apple Music playback bridge.
@@ -106,15 +107,20 @@ export const AppleMusicPlayerBridge = forwardRef<
   onEndedRef.current = onEnded;
 
   // Wire up MusicKit event listeners once the instance is available.
+  // We deliberately skip `playbackTimeDidChange` for progress updates:
+  // runtime logs (debug session b224e4) confirmed that MusicKit JS v3's
+  // `currentPlaybackTime` is rounded to integer seconds — both the
+  // polling read and the event payload return values like 7, 7, 7, 7,
+  // 8, 8, 8, 8, 9. That gives the lyrics view 1-second "step"
+  // updates, which renders as the stutter the user reported.
+  // Instead, the polling effect below interpolates using wall-clock
+  // time between MusicKit's integer ticks, producing smooth sub-second
+  // progress. The native time event is therefore not needed at all
+  // (it would just race the interpolated source with stale integer
+  // values). State + media-item events are still useful and remain.
   useEffect(() => {
     let cancelled = false;
     let activeInstance: MusicKit.MusicKitInstance | null = null;
-
-    const handleTime = (event: MusicKit.PlaybackTimeDidChangeEvent) => {
-      const seconds =
-        event?.currentPlaybackTime ?? activeInstance?.currentPlaybackTime ?? 0;
-      onProgressRef.current?.({ playedSeconds: seconds });
-    };
 
     const handleState = (event: MusicKit.PlaybackStateDidChangeEvent) => {
       const state = event?.state ?? activeInstance?.playbackState;
@@ -151,7 +157,6 @@ export const AppleMusicPlayerBridge = forwardRef<
       if (cancelled || !inst) return;
       if (activeInstance === inst) return;
       activeInstance = inst;
-      inst.addEventListener("playbackTimeDidChange", handleTime);
       inst.addEventListener("playbackStateDidChange", handleState);
       inst.addEventListener("mediaItemDidChange", handleMediaItem);
       // Some MusicKit builds emit nowPlayingItemDidChange instead.
@@ -165,7 +170,6 @@ export const AppleMusicPlayerBridge = forwardRef<
       cancelled = true;
       unsubscribe();
       if (activeInstance) {
-        activeInstance.removeEventListener("playbackTimeDidChange", handleTime);
         activeInstance.removeEventListener(
           "playbackStateDidChange",
           handleState
@@ -181,6 +185,94 @@ export const AppleMusicPlayerBridge = forwardRef<
       }
     };
   }, []);
+
+  // Steady-cadence progress polling with wall-clock interpolation.
+  //
+  // Why interpolate: MusicKit JS v3's `currentPlaybackTime` is rounded
+  // to integer seconds (verified in debug session b224e4). Polling
+  // every 200ms therefore yields five identical reads followed by a
+  // sudden +1 jump, which the lyrics view renders as visible stutter.
+  // Instead we snapshot a baseline every time the integer changes, and
+  // between updates report `baseSeconds + (now - baseWallClock) /
+  // 1000`, capped at +1s so we never run past the next integer tick
+  // (which would cause a tiny rewind when the next integer arrives).
+  //
+  // Why requestAnimationFrame: setInterval keeps firing even when the
+  // tab is hidden (just throttled to ~1Hz by the browser), wasting
+  // React render cycles for music nobody is looking at. rAF
+  // automatically pauses when the tab/page isn't visible. We still
+  // throttle React state pushes to ~PLAYER_PROGRESS_INTERVAL_MS using
+  // the wall clock, so the lyrics view sees the same ~5Hz update rate
+  // as before — just without background-tab waste.
+  useEffect(() => {
+    if (!playing || !currentTrack) return;
+    let cancelled = false;
+    let rafId: number | null = null;
+    let baseSeconds: number | null = null;
+    let baseWallClock = 0;
+    let lastReportedSeconds = -1;
+    let lastEmittedAt = 0;
+
+    const emit = (now: number) => {
+      const inst = instanceRef.current;
+      if (!inst) return;
+      const rawSeconds = inst.currentPlaybackTime ?? 0;
+
+      // First read or whenever the underlying integer changes (forward
+      // OR backward, e.g. seek), reset the interpolation baseline.
+      if (baseSeconds === null || rawSeconds !== lastReportedSeconds) {
+        baseSeconds = rawSeconds;
+        baseWallClock = now;
+        lastReportedSeconds = rawSeconds;
+      }
+
+      const elapsed = (now - baseWallClock) / 1000;
+      // Cap at just under 1s so we never overshoot the next tick — if
+      // MusicKit's clock jumped forward by exactly 1s, we'd otherwise
+      // briefly report the same value as the next integer and then
+      // visibly rewind when interpolation restarts.
+      const interpolated = baseSeconds + Math.min(elapsed, 0.99);
+
+      onProgressRef.current?.({ playedSeconds: interpolated });
+      lastEmittedAt = now;
+    };
+
+    const frame = () => {
+      if (cancelled) return;
+      const now = Date.now();
+      // Throttle to PLAYER_PROGRESS_INTERVAL_MS so we don't push 60
+      // updates/sec into React. rAF gives us automatic
+      // pause-on-hidden-tab; the throttle keeps the React workload
+      // identical to the old setInterval-based path.
+      if (now - lastEmittedAt >= PLAYER_PROGRESS_INTERVAL_MS) {
+        emit(now);
+      }
+      rafId = requestAnimationFrame(frame);
+    };
+
+    const startPolling = () => {
+      if (rafId !== null || cancelled) return;
+      const now = Date.now();
+      emit(now);
+      rafId = requestAnimationFrame(frame);
+    };
+
+    if (instanceRef.current) {
+      startPolling();
+    } else {
+      const unsubscribe = onMusicKitReady(() => startPolling());
+      return () => {
+        cancelled = true;
+        unsubscribe();
+        if (rafId !== null) cancelAnimationFrame(rafId);
+      };
+    }
+
+    return () => {
+      cancelled = true;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, [playing, currentTrack]);
 
   // Sync volume — MusicKit reads `volume` as a number in [0, 1].
   useEffect(() => {

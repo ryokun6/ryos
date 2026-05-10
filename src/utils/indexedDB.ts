@@ -1,7 +1,7 @@
 // Utility helpers for IndexedDB operations used across ryOS
 
 const DB_NAME = "ryOS";
-const DB_VERSION = 7; // Force APPLETS store creation
+const DB_VERSION = 8; // Add APPLE_MUSIC_LIBRARY store
 let hasLoggedOpenSuccess = false;
 
 export const STORES = {
@@ -10,6 +10,11 @@ export const STORES = {
   TRASH: "trash",
   CUSTOM_WALLPAPERS: "custom_wallpapers",
   APPLETS: "applets",
+  // Caches the user's Apple Music library so a page reload doesn't
+  // re-paginate thousands of songs against the Apple Music API. Lives
+  // in IndexedDB (not localStorage) because the library can easily
+  // exceed localStorage's 5–10MB per-origin quota.
+  APPLE_MUSIC_LIBRARY: "apple_music_library",
 } as const;
 
 /**

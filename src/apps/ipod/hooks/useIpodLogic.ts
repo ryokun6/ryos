@@ -15,6 +15,7 @@ import { useCustomEventListener, useEventListener } from "@/hooks/useEventListen
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import { useAppleMusicLibrary } from "./useAppleMusicLibrary";
 import { useMusicKit } from "@/hooks/useMusicKit";
+import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
 import {
   useIpodStore,
   Track,
@@ -306,8 +307,17 @@ export function useIpodLogic({
   const [isBrickGameOpen, setIsBrickGameOpen] = useState(false);
   const wasPlayingBeforeBrickGameRef = useRef(false);
 
-  // Playback state
-  const [elapsedTime, setElapsedTime] = useState(0);
+  // Playback state.
+  //
+  // `elapsedTime` lives in `useIpodStore` (single source of truth so
+  // every player path — YouTube + Apple Music + listen sessions — and
+  // every consumer reads the same value). We read it back here via a
+  // selector so this hook stays reactive to time changes for the
+  // pieces that need it (lyrics, fullscreen sync). Previously we kept
+  // a duplicate `useState(0)` in parallel and updated both on every
+  // progress tick — that just churned React state twice per tick for
+  // the same value.
+  const elapsedTime = useIpodStore((s) => s.elapsedTime);
   const [totalTime, setTotalTime] = useState(0);
   const playerRef = useRef<ReactPlayer | null>(null);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
@@ -550,6 +560,9 @@ export function useIpodLogic({
     setIsPlaying(false);
     await musicKitUnauthorize();
     useIpodStore.getState().setAppleMusicTracks([]);
+    // Drop the IndexedDB-cached library so a different user signing
+    // in next doesn't inherit the previous user's tracks.
+    void clearAppleMusicLibrary();
     showStatus(t("apps.ipod.status.appleMusicSignedOut", "Signed Out"));
   }, [musicKitUnauthorize, registerActivity, setIsPlaying, showStatus, t]);
 
@@ -684,7 +697,6 @@ export function useIpodLogic({
       const seekTarget = -newLyricOffset / 1000;
       
       if (newLyricOffset < 0 && seekTarget >= 1) {
-        setElapsedTime(seekTarget);
         useIpodStore.getState().setElapsedTime(seekTarget);
         
         trackSwitchTimeoutRef.current = setTimeout(() => {
@@ -697,7 +709,6 @@ export function useIpodLogic({
         }, 2000);
       } else {
         // Start from beginning for positive/zero offset or small negative offset
-        setElapsedTime(0);
         useIpodStore.getState().setElapsedTime(0);
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
@@ -1305,7 +1316,9 @@ export function useIpodLogic({
   }, [loopCurrent, nextTrack, setIsPlaying, isFullScreen, startTrackSwitch]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    setElapsedTime(state.playedSeconds);
+    // Single source of truth — zustand. The selector at the top of
+    // this hook re-subscribes us to the new value, so any code path
+    // that needs reactivity still gets it.
     useIpodStore.getState().setElapsedTime(state.playedSeconds);
   }, []);
 

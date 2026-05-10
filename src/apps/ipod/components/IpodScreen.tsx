@@ -426,9 +426,12 @@ export function IpodScreen({
             {showVideo && shouldShowLyrics && (
               <div className="absolute inset-0 bg-black/30 z-25" />
             )}
-            {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
+            {/* Cover overlay: shows when paused (any mode), always in
+                Cover mode, and always for Apple Music tracks (no video
+                stream to hide it for, so we keep the artwork as a
+                backdrop while lyrics play). */}
             <AnimatePresence>
-              {showVideo && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
+              {showVideo && coverUrl && (isAppleMusicTrack || displayMode === DisplayMode.Cover || !isPlaying) && (
                 <motion.div
                   className="absolute inset-0 z-15"
                   initial={{ opacity: 0 }}

@@ -19,6 +19,7 @@ import { useChatsStore } from "./useChatsStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
+import { saveAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -121,7 +122,11 @@ interface IpodData {
 
   /** Which library is currently active (default "youtube"). */
   librarySource: LibrarySource;
-  /** Tracks fetched from the user's Apple Music library (not persisted). */
+  /** Tracks fetched from the user's Apple Music library. Cached in
+   * IndexedDB (not localStorage — the library is too large for
+   * localStorage's per-origin quota) and re-hydrated on mount by
+   * `useAppleMusicLibrary`. The library hook treats anything younger
+   * than `APPLE_MUSIC_LIBRARY_STALE_AFTER_MS` (24h) as fresh. */
   appleMusicTracks: Track[];
   /** Currently selected song id within the Apple Music library. */
   appleMusicCurrentSongId: string | null;
@@ -376,7 +381,7 @@ export interface IpodState extends IpodData {
   setAppleMusicStorefrontId: (storefrontId: string | null) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 32; // Korean romanization on by default for lyrics
+const CURRENT_IPOD_STORE_VERSION = 34; // Move Apple Music library cache from localStorage to IndexedDB
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -1650,19 +1655,30 @@ export const useIpodStore = create<IpodState>()(
       },
       setAppleMusicTracks: (tracks) => {
         const validIds = new Set(tracks.map((t) => t.id));
+        const loadedAt = Date.now();
+        let storefrontIdAtSave: string | null = null;
         set((state) => {
           const stillValidCurrent =
             state.appleMusicCurrentSongId &&
             validIds.has(state.appleMusicCurrentSongId)
               ? state.appleMusicCurrentSongId
               : tracks[0]?.id ?? null;
+          storefrontIdAtSave = state.appleMusicStorefrontId;
           return {
             appleMusicTracks: tracks,
             appleMusicCurrentSongId: stillValidCurrent,
-            appleMusicLibraryLoadedAt: Date.now(),
+            appleMusicLibraryLoadedAt: loadedAt,
             appleMusicLibraryLoading: false,
             appleMusicLibraryError: null,
           };
+        });
+        // Persist to IndexedDB so the next mount can re-hydrate without
+        // a network round-trip. Fire-and-forget — failures are logged
+        // by the cache helper and the in-memory copy still works.
+        void saveAppleMusicLibrary({
+          tracks,
+          loadedAt,
+          storefrontId: storefrontIdAtSave,
         });
       },
       setAppleMusicLibraryLoading: (loading) =>
@@ -1793,8 +1809,11 @@ export const useIpodStore = create<IpodState>()(
         isFullScreen: state.isFullScreen,
         libraryState: state.libraryState,
         lastKnownVersion: state.lastKnownVersion,
-        // Apple Music: persist user choice + last-played track. The library
-        // itself is volatile and re-fetched on mode switch.
+        // Apple Music: persist user choice + last-played track only.
+        // The library itself goes to IndexedDB (see
+        // `appleMusicLibraryCache`) because it can easily exceed
+        // localStorage's 5–10MB per-origin quota for users with large
+        // libraries. The hook re-hydrates `appleMusicTracks` on mount.
         librarySource: state.librarySource,
         appleMusicCurrentSongId: state.appleMusicCurrentSongId,
       }),

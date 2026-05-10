@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { getMusicKitInstance } from "@/hooks/useMusicKit";
+import { loadAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
 
 /**
  * Apple Music library fetcher.
@@ -103,6 +104,19 @@ export function libraryResourceToTrack(
 const PAGE_SIZE = 100;
 const MAX_PAGES = 50; // safety cap (5,000 songs)
 
+/**
+ * Anything younger than this is treated as "fresh enough" — we use the
+ * cached library immediately without any network request. Older copies
+ * are still shown immediately, but we kick off a silent background
+ * refresh so the next interaction has up-to-date data.
+ *
+ * 24h is a reasonable trade-off: most users don't add hundreds of new
+ * songs in a single day, and Apple Music libraries can be very large
+ * (5,000+ songs = 50 paginated API calls), so re-fetching on every
+ * page reload is hugely wasteful.
+ */
+const APPLE_MUSIC_LIBRARY_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
 interface FetchOptions {
   /** Force a refetch even if a load is already in progress. */
   force?: boolean;
@@ -185,13 +199,21 @@ export interface UseAppleMusicLibraryOptions {
 }
 
 /**
- * Hook that auto-loads the user's Apple Music library the first time both
- * `enabled` and `isAuthorized` are true. Subsequent enabling reuses the
- * cached list (call `refresh()` to re-fetch).
+ * Hook that auto-loads the user's Apple Music library the first time
+ * both `enabled` and `isAuthorized` are true.
  *
- * The initial load shows a live progress toast — Apple Music libraries
- * routinely contain thousands of songs and pulling them takes long enough
- * that without feedback the user has no idea anything is happening.
+ * Caching strategy (stale-while-revalidate):
+ *   - The library is persisted to localStorage by `useIpodStore`, so
+ *     reloading the page or reopening the app does NOT re-fetch.
+ *   - On mount, if a cached copy exists:
+ *       - Fresh (< 24h): use it as-is, no network request.
+ *       - Stale (>= 24h): use it immediately, kick off a silent
+ *         background refresh that updates the store when it finishes.
+ *   - On mount with no cached copy: show the progress toast and fetch
+ *     paginated; this is the only path that ever blocks the UI on a
+ *     network round-trip.
+ *
+ * `refresh()` always forces a foreground fetch and shows the toast.
  */
 export function useAppleMusicLibrary({
   enabled,
@@ -200,8 +222,8 @@ export function useAppleMusicLibrary({
   const { t } = useTranslation();
   const hasLoadedRef = useRef(false);
 
-  // Reusable progress-toast helper so both the auto-load and `refresh()`
-  // share the same UX. Returns the toast id so callers can finalize it.
+  // Reusable progress-toast helper. Used for both the very first
+  // (cold) load and any explicit user-driven refresh.
   const runWithProgressToast = useCallback(
     async (force: boolean): Promise<number> => {
       const toastId = `apple-music-library-load`;
@@ -267,13 +289,75 @@ export function useAppleMusicLibrary({
     if (!enabled || !isAuthorized) return;
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    runWithProgressToast(false).catch((err) => {
-      console.error("[apple music] initial library load failed", err);
-    });
+
+    let cancelled = false;
+    const decideLoadStrategy = async () => {
+      // Hydrate from IndexedDB if the in-memory store is empty (always
+      // the case after a fresh page load — only librarySource and the
+      // current song id are persisted to localStorage).
+      let { appleMusicTracks, appleMusicLibraryLoadedAt } =
+        useIpodStore.getState();
+      if (appleMusicTracks.length === 0) {
+        const cached = await loadAppleMusicLibrary();
+        if (cancelled) return;
+        if (cached && cached.tracks.length > 0) {
+          // Use a direct `set` so we don't trigger another IndexedDB
+          // write — this is purely a hydration step.
+          useIpodStore.setState({
+            appleMusicTracks: cached.tracks,
+            appleMusicLibraryLoadedAt: cached.loadedAt,
+            appleMusicStorefrontId:
+              cached.storefrontId ??
+              useIpodStore.getState().appleMusicStorefrontId,
+          });
+          appleMusicTracks = cached.tracks;
+          appleMusicLibraryLoadedAt = cached.loadedAt;
+        }
+      }
+
+      const hasCachedLibrary = appleMusicTracks.length > 0;
+      const ageMs = appleMusicLibraryLoadedAt
+        ? Date.now() - appleMusicLibraryLoadedAt
+        : Infinity;
+      const isFresh =
+        hasCachedLibrary && ageMs < APPLE_MUSIC_LIBRARY_STALE_AFTER_MS;
+
+      if (isFresh) {
+        // Cached library is recent enough — nothing to do. The user
+        // sees their tracks instantly and we make zero network
+        // requests.
+        return;
+      }
+
+      if (hasCachedLibrary) {
+        // Stale-while-revalidate: keep showing the cached tracks, and
+        // refresh quietly in the background. Don't show the progress
+        // toast — the user already has a working library.
+        fetchAppleMusicLibrary({ force: true }).catch((err) => {
+          console.warn(
+            "[apple music] background library refresh failed (using cached copy)",
+            err
+          );
+        });
+        return;
+      }
+
+      // First-ever load (or library was cleared on sign-out): show the
+      // toast since the user has nothing to look at until this
+      // finishes.
+      runWithProgressToast(false).catch((err) => {
+        console.error("[apple music] initial library load failed", err);
+      });
+    };
+
+    void decideLoadStrategy();
+    return () => {
+      cancelled = true;
+    };
   }, [enabled, isAuthorized, runWithProgressToast]);
 
   // Reset the "has loaded" guard whenever the user signs out so a new sign-in
-  // triggers a fresh fetch.
+  // re-evaluates whether a fetch is needed.
   useEffect(() => {
     if (!isAuthorized) hasLoadedRef.current = false;
   }, [isAuthorized]);

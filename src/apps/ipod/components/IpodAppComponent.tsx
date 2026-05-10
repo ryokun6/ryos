@@ -671,9 +671,12 @@ export function IpodAppComponent({
                     />
                   )}
 
-                  {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
+                  {/* Cover overlay: shows when paused (any mode),
+                      always in Cover mode, and always for Apple Music
+                      tracks (no video stream backing them, so we keep
+                      the artwork as a backdrop while lyrics play). */}
                   <AnimatePresence>
-                    {tracks[currentIndex] && fullscreenCoverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
+                    {tracks[currentIndex] && fullscreenCoverUrl && (tracks[currentIndex]?.source === "appleMusic" || displayMode === DisplayMode.Cover || !isPlaying) && (
                       <motion.div
                         className="fixed inset-0 z-15"
                         initial={{ opacity: 0 }}
