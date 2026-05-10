@@ -516,7 +516,15 @@ export async function fetchAppleMusicGeniusTrack(): Promise<Track | null> {
       .filter((track): track is Track => track !== null)
   );
 
-  // Prefer playlists/songs for Genius; stations are already exposed in Radio.
+  // Prefer radio stations first so Music → Genius matches the Radio UX: LIVE
+  // label, station name in the title bar, dynamic now-playing metadata from
+  // MusicKit, and skip uses station queue advances. Playlists/songs remain
+  // as fallbacks when no station is offered in recommendations.
+  const stationTrack = playableTracks.find(
+    (track) => track.appleMusicPlayParams?.stationId
+  );
+  if (stationTrack) return stationTrack;
+
   return (
     playableTracks.find((track) => track.appleMusicPlayParams?.playlistId) ??
     playableTracks.find((track) => track.appleMusicPlayParams?.catalogId) ??
