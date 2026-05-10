@@ -16,12 +16,11 @@ import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import {
   useAppleMusicLibrary,
   fetchAppleMusicPlaylistTracks,
-  fetchAppleMusicFavoriteSongTracks,
-  fetchAppleMusicRecentlyAddedTracks,
+  refreshAppleMusicRecentlyAdded,
+  refreshAppleMusicFavorites,
   searchAppleMusicTracks,
   addAppleMusicTrackToFavorites,
   cacheAppleMusicFavoriteSongTrack,
-  APPLE_MUSIC_LIBRARY_STALE_AFTER_MS,
   type AppleMusicSearchScope,
 } from "./useAppleMusicLibrary";
 import { useMusicKit } from "@/hooks/useMusicKit";
@@ -353,14 +352,23 @@ export function useIpodLogic({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
-  const [appleMusicRecentlyAddedTracks, setAppleMusicRecentlyAddedTracks] =
-    useState<Track[]>([]);
-  const [isAppleMusicRecentlyAddedLoading, setIsAppleMusicRecentlyAddedLoading] =
-    useState(false);
-  const [appleMusicFavoriteTracks, setAppleMusicFavoriteTracks] =
-    useState<Track[]>([]);
-  const [isAppleMusicFavoritesLoading, setIsAppleMusicFavoritesLoading] =
-    useState(false);
+  // Recently Added + Favorites moved into the global iPod store (mirrored
+  // from IndexedDB on iPod open) so the opportunistic refresh path in
+  // `useAppleMusicLibrary` can update the same source the menu reads
+  // from. Selectors keep these in sync with the store without forcing a
+  // re-render of the entire hook on unrelated state changes.
+  const appleMusicRecentlyAddedTracks = useIpodStore(
+    (s) => s.appleMusicRecentlyAddedTracks
+  );
+  const isAppleMusicRecentlyAddedLoading = useIpodStore(
+    (s) => s.appleMusicRecentlyAddedLoading
+  );
+  const appleMusicFavoriteTracks = useIpodStore(
+    (s) => s.appleMusicFavoriteTracks
+  );
+  const isAppleMusicFavoritesLoading = useIpodStore(
+    (s) => s.appleMusicFavoritesLoading
+  );
   
   // Cover Flow state
   const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
@@ -749,23 +757,22 @@ export function useIpodLogic({
   );
 
   const requestPlaylistTracksIfNeeded = useCallback((playlistId: string) => {
-    const state = useIpodStore.getState();
-    const loadedAt = state.appleMusicPlaylistTracksLoadedAt[playlistId];
-    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
-    const hasTracks =
-      (state.appleMusicPlaylistTracks[playlistId]?.length ?? 0) > 0;
-    const isStale = ageMs >= APPLE_MUSIC_LIBRARY_STALE_AFTER_MS;
-
-    if (!hasTracks || isStale) {
-      void fetchAppleMusicPlaylistTracks(playlistId, {
-        force: isStale && hasTracks,
-      }).catch((err) => {
+    // Always trigger a background refresh on playlist open. The fetcher
+    // dedupes in-flight calls via `appleMusicPlaylistTracksLoading`, and
+    // the menu builder gates "Loading…" behind
+    // `playlistTracks.length === 0`, so cached tracks render
+    // immediately while the refresh updates them in place. This gives
+    // users a true SWR experience: opening a playlist shows cached
+    // contents instantly AND silently picks up any new songs added
+    // since the last view.
+    void fetchAppleMusicPlaylistTracks(playlistId, { force: true }).catch(
+      (err) => {
         console.warn(
           `[apple music] failed to load playlist tracks for ${playlistId}`,
           err
         );
-      });
-    }
+      }
+    );
   }, []);
 
   // -------------------------------------------------------------------
@@ -799,9 +806,16 @@ export function useIpodLogic({
     useIpodStore.getState().setAppleMusicTracks([]);
     useIpodStore.setState({
       appleMusicPlaylists: [],
+      appleMusicPlaylistsLoadedAt: null,
       appleMusicPlaylistTracks: {},
       appleMusicPlaylistTracksLoadedAt: {},
       appleMusicPlaylistTracksLoading: {},
+      appleMusicRecentlyAddedTracks: [],
+      appleMusicRecentlyAddedLoadedAt: null,
+      appleMusicRecentlyAddedLoading: false,
+      appleMusicFavoriteTracks: [],
+      appleMusicFavoriteTracksLoadedAt: null,
+      appleMusicFavoritesLoading: false,
       appleMusicPlaybackQueue: null,
     });
     // Drop the IndexedDB-cached library so a different user signing
@@ -872,69 +886,77 @@ export function useIpodLogic({
     [mergeAppleMusicTracks, setIsPlaying, showStatus, t]
   );
 
+  // Open the "Recently Added" menu.
+  //
+  // Reads cached tracks straight from the store (already populated via
+  // the IndexedDB hydration in `useAppleMusicLibrary`) and kicks off a
+  // background refresh that updates the store in-place when it
+  // resolves. The menu builder gates "Loading…" on cache emptiness, so
+  // the only time the user sees the placeholder is the very first
+  // load — every subsequent open shows cached entries instantly while
+  // the refresh runs invisibly.
   const loadAppleMusicRecentlyAdded = useCallback(async () => {
     if (!appleMusicAuthorized) {
       void handleAppleMusicSignIn();
       return;
     }
-    if (isAppleMusicRecentlyAddedLoading) return;
-    setIsAppleMusicRecentlyAddedLoading(true);
     try {
-      const recentTracks = await fetchAppleMusicRecentlyAddedTracks();
-      setAppleMusicRecentlyAddedTracks(recentTracks);
-      mergeAppleMusicTracks(recentTracks);
+      const tracks = await refreshAppleMusicRecentlyAdded({ force: true });
+      mergeAppleMusicTracks(tracks);
     } catch (err) {
-      toast.error(
-        t(
-          "apps.ipod.dialogs.appleMusicRecentlyAddedFailed",
-          "Failed to load recently added songs"
-        ),
-        {
-          description: err instanceof Error ? err.message : String(err),
-        }
-      );
-    } finally {
-      setIsAppleMusicRecentlyAddedLoading(false);
+      // Only surface the toast when there's no cached content to fall
+      // back on — otherwise the user already has a working menu and a
+      // background failure shouldn't pop a UI error.
+      const hasCached =
+        useIpodStore.getState().appleMusicRecentlyAddedTracks.length > 0;
+      if (!hasCached) {
+        toast.error(
+          t(
+            "apps.ipod.dialogs.appleMusicRecentlyAddedFailed",
+            "Failed to load recently added songs"
+          ),
+          {
+            description: err instanceof Error ? err.message : String(err),
+          }
+        );
+      } else {
+        console.warn(
+          "[apple music] recently added refresh failed (using cached collection)",
+          err
+        );
+      }
     }
-  }, [
-    appleMusicAuthorized,
-    handleAppleMusicSignIn,
-    isAppleMusicRecentlyAddedLoading,
-    mergeAppleMusicTracks,
-    t,
-  ]);
+  }, [appleMusicAuthorized, handleAppleMusicSignIn, mergeAppleMusicTracks, t]);
 
   const loadAppleMusicFavorites = useCallback(async () => {
     if (!appleMusicAuthorized) {
       void handleAppleMusicSignIn();
       return;
     }
-    if (isAppleMusicFavoritesLoading) return;
-    setIsAppleMusicFavoritesLoading(true);
     try {
-      const favoriteTracks = await fetchAppleMusicFavoriteSongTracks();
-      setAppleMusicFavoriteTracks(favoriteTracks);
-      mergeAppleMusicTracks(favoriteTracks);
+      const tracks = await refreshAppleMusicFavorites({ force: true });
+      mergeAppleMusicTracks(tracks);
     } catch (err) {
-      toast.error(
-        t(
-          "apps.ipod.dialogs.appleMusicFavoritesFailed",
-          "Failed to load favorite songs"
-        ),
-        {
-          description: err instanceof Error ? err.message : String(err),
-        }
-      );
-    } finally {
-      setIsAppleMusicFavoritesLoading(false);
+      const hasCached =
+        useIpodStore.getState().appleMusicFavoriteTracks.length > 0;
+      if (!hasCached) {
+        toast.error(
+          t(
+            "apps.ipod.dialogs.appleMusicFavoritesFailed",
+            "Failed to load favorite songs"
+          ),
+          {
+            description: err instanceof Error ? err.message : String(err),
+          }
+        );
+      } else {
+        console.warn(
+          "[apple music] favorites refresh failed (using cached collection)",
+          err
+        );
+      }
     }
-  }, [
-    appleMusicAuthorized,
-    handleAppleMusicSignIn,
-    isAppleMusicFavoritesLoading,
-    mergeAppleMusicTracks,
-    t,
-  ]);
+  }, [appleMusicAuthorized, handleAppleMusicSignIn, mergeAppleMusicTracks, t]);
 
   const handleAppleMusicAddToFavorites = useCallback(async () => {
     registerActivity();
@@ -945,10 +967,11 @@ export function useIpodLogic({
     if (!track) return;
     try {
       await addAppleMusicTrackToFavorites(track);
-      setAppleMusicFavoriteTracks((existingTracks) => [
-        track,
-        ...existingTracks.filter((candidate) => candidate.id !== track.id),
-      ]);
+      // Optimistically update the store + IndexedDB. We don't bump the
+      // freshness timestamp here so the next opportunistic refresh
+      // still revalidates against the server (which catches the eventual
+      // catalog ↔ library mapping for this favorite).
+      useIpodStore.getState().prependAppleMusicFavoriteTrack(track);
       void cacheAppleMusicFavoriteSongTrack(track);
       showStatus(
         t("apps.ipod.status.appleMusicAddedToFavorites", "Added to Favorites")

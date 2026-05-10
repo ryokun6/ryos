@@ -607,6 +607,284 @@ async function fetchAppleMusicPlaylistsList(): Promise<AppleMusicPlaylist[]> {
 }
 
 /**
+ * Opportunistic background refresh for the playlist list and per-playlist
+ * tracks. Tighter than the 24h library SWR window because both are cheap
+ * (one paginated call for the list, one per cached playlist) and the user
+ * notices "I added a playlist on my phone but it's not on the iPod" much
+ * faster than they notice missing songs.
+ */
+export const APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS = 15 * 60 * 1000; // 15 min
+export const APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS =
+  60 * 60 * 1000; // 1h
+
+let inFlightPlaylistsRefresh: Promise<AppleMusicPlaylist[]> | null = null;
+
+/**
+ * Refresh the Apple Music playlist list in the background and write the
+ * result to the store + IndexedDB. Safe to call from anywhere — the
+ * promise is shared across concurrent callers, and the function returns
+ * the cached list immediately when the user is unauthorized or MusicKit
+ * isn't ready (no error is thrown so opportunistic callers don't need to
+ * try/catch).
+ *
+ * Playback is unaffected: only `appleMusicPlaylists` /
+ * `appleMusicPlaylistsLoadedAt` are mutated, neither of which feeds the
+ * MusicKit player. The defensive empty-result check mirrors the library
+ * fetcher so a flaky network response can't wipe the cached list.
+ */
+export async function refreshAppleMusicPlaylists(
+  options: { force?: boolean } = {}
+): Promise<AppleMusicPlaylist[]> {
+  const store = useIpodStore.getState();
+
+  if (!options.force) {
+    const loadedAt = store.appleMusicPlaylistsLoadedAt;
+    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
+    if (
+      store.appleMusicPlaylists.length > 0 &&
+      ageMs < APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS
+    ) {
+      return store.appleMusicPlaylists;
+    }
+  }
+
+  if (inFlightPlaylistsRefresh) return inFlightPlaylistsRefresh;
+
+  const instance = getMusicKitInstance();
+  if (!instance || !instance.isAuthorized) {
+    return store.appleMusicPlaylists;
+  }
+
+  inFlightPlaylistsRefresh = (async () => {
+    try {
+      const playlists = await fetchAppleMusicPlaylistsList();
+      const existing = useIpodStore.getState().appleMusicPlaylists;
+      // Defensive: never overwrite a non-empty cached list with an empty
+      // refresh result. Apple Music occasionally returns 0 playlists when
+      // a token is mid-rotation; preserving the cached list keeps the
+      // menu populated.
+      if (playlists.length === 0 && existing.length > 0) {
+        console.warn(
+          "[apple music] playlist refresh returned 0; keeping cached list"
+        );
+        return existing;
+      }
+      const loadedAt = Date.now();
+      useIpodStore.getState().setAppleMusicPlaylists(playlists, loadedAt);
+      void saveAppleMusicPlaylists({ playlists, loadedAt });
+      return playlists;
+    } finally {
+      inFlightPlaylistsRefresh = null;
+    }
+  })();
+
+  return inFlightPlaylistsRefresh;
+}
+
+const inFlightPlaylistTracksRefresh = new Set<string>();
+
+/**
+ * Refresh stale tracks for every playlist that currently has a cached
+ * copy in memory or IndexedDB. Iterates with bounded concurrency so a
+ * user with 50 cached playlists doesn't fire 50 simultaneous Apple Music
+ * requests on iPod open.
+ *
+ * Playback safety: each refresh uses
+ * `setAppleMusicPlaylistTracks(playlistId, ...)`, which only mutates the
+ * per-playlist track map. The active playback queue (`appleMusicPlaybackQueue`)
+ * stores track ids, not direct references into the playlist tracks map, so
+ * updating a playlist's contents while a track from it is playing does not
+ * affect the running queue.
+ *
+ * Unlike `refreshAppleMusicPlaylists`, this function is fire-and-forget
+ * by design — failures per playlist are logged but never thrown.
+ */
+export async function refreshStaleAppleMusicPlaylistTracks(
+  options: { force?: boolean; concurrency?: number } = {}
+): Promise<void> {
+  const instance = getMusicKitInstance();
+  if (!instance || !instance.isAuthorized) return;
+
+  const state = useIpodStore.getState();
+  const loadedAtMap = state.appleMusicPlaylistTracksLoadedAt;
+  const playlistIds = Object.keys(loadedAtMap);
+  if (playlistIds.length === 0) return;
+
+  const stalePlaylistIds = options.force
+    ? playlistIds
+    : playlistIds.filter((id) => {
+        const loadedAt = loadedAtMap[id];
+        if (!loadedAt) return true;
+        return (
+          Date.now() - loadedAt >=
+          APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS
+        );
+      });
+  if (stalePlaylistIds.length === 0) return;
+
+  const queue = stalePlaylistIds.filter(
+    (id) => !inFlightPlaylistTracksRefresh.has(id)
+  );
+  if (queue.length === 0) return;
+
+  const concurrency = Math.max(1, options.concurrency ?? 2);
+  const workers: Promise<void>[] = [];
+  for (let i = 0; i < concurrency; i++) {
+    workers.push(
+      (async () => {
+        while (queue.length > 0) {
+          const id = queue.shift();
+          if (!id) break;
+          inFlightPlaylistTracksRefresh.add(id);
+          try {
+            await fetchAppleMusicPlaylistTracks(id, { force: true });
+          } catch (err) {
+            console.warn(
+              `[apple music] background refresh of playlist ${id} failed`,
+              err
+            );
+          } finally {
+            inFlightPlaylistTracksRefresh.delete(id);
+          }
+        }
+      })()
+    );
+  }
+
+  await Promise.all(workers);
+}
+
+let inFlightRecentlyAddedRefresh: Promise<Track[]> | null = null;
+let inFlightFavoritesRefresh: Promise<Track[]> | null = null;
+
+/**
+ * Refresh the "Recently Added" track collection in the background and
+ * mirror the result into the store. Mirrors `refreshAppleMusicPlaylists`
+ * for the menu-collection case so the menu can render cached content
+ * while a fresh fetch updates the store in-place when it finishes.
+ *
+ * `fetchAppleMusicRecentlyAddedTracks` already implements the cache /
+ * defensive empty-result logic (a flaky API returning 0 tracks won't
+ * wipe the cached collection), so this wrapper just adds the in-flight
+ * de-dup, the loading flag, and the store write.
+ *
+ * Playback safety: only `appleMusicRecentlyAddedTracks` is mutated. The
+ * AppleMusicPlayerBridge keys playback on `currentTrack.id` and the
+ * playback queue stores ids, so swapping this list while a track from
+ * it is playing keeps audio uninterrupted.
+ */
+export async function refreshAppleMusicRecentlyAdded(
+  options: { force?: boolean } = {}
+): Promise<Track[]> {
+  const store = useIpodStore.getState();
+
+  if (!options.force) {
+    const loadedAt = store.appleMusicRecentlyAddedLoadedAt;
+    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
+    if (
+      store.appleMusicRecentlyAddedTracks.length > 0 &&
+      ageMs < APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS
+    ) {
+      return store.appleMusicRecentlyAddedTracks;
+    }
+  }
+
+  if (inFlightRecentlyAddedRefresh) return inFlightRecentlyAddedRefresh;
+
+  const instance = getMusicKitInstance();
+  if (!instance || !instance.isAuthorized) {
+    return store.appleMusicRecentlyAddedTracks;
+  }
+
+  // Only flip the loading flag when there's nothing to display yet — a
+  // background refresh of an existing list should not flash "Loading…".
+  const hadCached = store.appleMusicRecentlyAddedTracks.length > 0;
+  if (!hadCached) {
+    store.setAppleMusicRecentlyAddedLoading(true);
+  }
+
+  inFlightRecentlyAddedRefresh = (async () => {
+    try {
+      const tracks = await fetchAppleMusicRecentlyAddedTracks({ force: true });
+      const existing = useIpodStore.getState().appleMusicRecentlyAddedTracks;
+      if (tracks.length === 0 && existing.length > 0) {
+        // The fetcher's defensive guard already returns the cached array
+        // in this case, but keep the second check here so the store
+        // never gets flipped to an empty array on a flaky refresh.
+        return existing;
+      }
+      useIpodStore
+        .getState()
+        .setAppleMusicRecentlyAddedTracks(tracks, Date.now());
+      return tracks;
+    } finally {
+      inFlightRecentlyAddedRefresh = null;
+      if (!hadCached) {
+        useIpodStore.getState().setAppleMusicRecentlyAddedLoading(false);
+      }
+    }
+  })();
+
+  return inFlightRecentlyAddedRefresh;
+}
+
+/**
+ * Refresh the "Favorite Songs" track collection in the background and
+ * mirror the result into the store. See `refreshAppleMusicRecentlyAdded`
+ * for the rationale and playback-safety notes — the only difference is
+ * which IndexedDB collection key + store slot is updated.
+ */
+export async function refreshAppleMusicFavorites(
+  options: { force?: boolean } = {}
+): Promise<Track[]> {
+  const store = useIpodStore.getState();
+
+  if (!options.force) {
+    const loadedAt = store.appleMusicFavoriteTracksLoadedAt;
+    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
+    if (
+      store.appleMusicFavoriteTracks.length > 0 &&
+      ageMs < APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS
+    ) {
+      return store.appleMusicFavoriteTracks;
+    }
+  }
+
+  if (inFlightFavoritesRefresh) return inFlightFavoritesRefresh;
+
+  const instance = getMusicKitInstance();
+  if (!instance || !instance.isAuthorized) {
+    return store.appleMusicFavoriteTracks;
+  }
+
+  const hadCached = store.appleMusicFavoriteTracks.length > 0;
+  if (!hadCached) {
+    store.setAppleMusicFavoritesLoading(true);
+  }
+
+  inFlightFavoritesRefresh = (async () => {
+    try {
+      const tracks = await fetchAppleMusicFavoriteSongTracks({ force: true });
+      const existing = useIpodStore.getState().appleMusicFavoriteTracks;
+      if (tracks.length === 0 && existing.length > 0) {
+        return existing;
+      }
+      useIpodStore
+        .getState()
+        .setAppleMusicFavoriteTracks(tracks, Date.now());
+      return tracks;
+    } finally {
+      inFlightFavoritesRefresh = null;
+      if (!hadCached) {
+        useIpodStore.getState().setAppleMusicFavoritesLoading(false);
+      }
+    }
+  })();
+
+  return inFlightFavoritesRefresh;
+}
+
+/**
  * Fetch the user's full Apple Music library and write the result into the
  * store. Resolves with the number of tracks loaded; rejects when MusicKit
  * is unavailable / the user is not authorized.
@@ -685,17 +963,11 @@ export async function fetchAppleMusicLibrary(
     }
 
     try {
-      const playlists = await fetchAppleMusicPlaylistsList();
-      const existingPlaylists = useIpodStore.getState().appleMusicPlaylists;
-      if (playlists.length === 0 && existingPlaylists.length > 0) {
-        console.warn(
-          "[apple music] playlist refresh returned 0; keeping cached list"
-        );
-      } else {
-        const loadedAt = Date.now();
-        store.setAppleMusicPlaylists(playlists);
-        void saveAppleMusicPlaylists({ playlists, loadedAt });
-      }
+      // Run via the standalone helper so the same in-flight de-dup,
+      // defensive empty-result guard, and cache write applies whether the
+      // refresh came from a full library fetch or the opportunistic
+      // background path.
+      await refreshAppleMusicPlaylists({ force: true });
     } catch (err) {
       console.warn("[apple music] playlist sync failed (songs kept)", err);
     }
@@ -960,6 +1232,10 @@ export function useAppleMusicLibrary({
           ) {
             useIpodStore.setState({
               appleMusicPlaylists: cachedPlaylists.playlists,
+              // Mirror the cached freshness timestamp so the opportunistic
+              // background refresh below treats this entry as a real
+              // (possibly stale) cache instead of "never synced".
+              appleMusicPlaylistsLoadedAt: cachedPlaylists.loadedAt,
             });
           }
         }
@@ -989,6 +1265,48 @@ export function useAppleMusicLibrary({
                 appleMusicPlaylistTracksLoadedAt: loadedAtMap,
               };
             });
+          }
+        }
+
+        // Recently Added & Favorites (each persisted under its own
+        // IndexedDB key by `saveAppleMusicTrackCollection`). Hydrating
+        // here means the menu shows cached entries instantly on iPod
+        // open instead of flashing "Loading…" while the lazy menu-open
+        // fetcher runs.
+        if (
+          useIpodStore.getState().appleMusicRecentlyAddedTracks.length === 0
+        ) {
+          const cached = await loadAppleMusicTrackCollection(
+            "recently-added"
+          );
+          if (cancelled) return;
+          if (
+            cached &&
+            cached.tracks.length > 0 &&
+            useIpodStore.getState().appleMusicRecentlyAddedTracks.length === 0
+          ) {
+            useIpodStore
+              .getState()
+              .setAppleMusicRecentlyAddedTracks(
+                cached.tracks,
+                cached.loadedAt
+              );
+          }
+        }
+
+        if (useIpodStore.getState().appleMusicFavoriteTracks.length === 0) {
+          const cached = await loadAppleMusicTrackCollection(
+            "favorite-songs"
+          );
+          if (cancelled) return;
+          if (
+            cached &&
+            cached.tracks.length > 0 &&
+            useIpodStore.getState().appleMusicFavoriteTracks.length === 0
+          ) {
+            useIpodStore
+              .getState()
+              .setAppleMusicFavoriteTracks(cached.tracks, cached.loadedAt);
           }
         }
       } finally {
@@ -1102,6 +1420,105 @@ export function useAppleMusicLibrary({
   useEffect(() => {
     if (!isAuthorized) hasLoadedRef.current = false;
   }, [isAuthorized]);
+
+  // Opportunistic background refresh of the playlists list and per-playlist
+  // tracks.
+  //
+  // The full library fetcher above only re-fetches when the library is
+  // older than 24h, and per-playlist tracks were only refreshed when the
+  // user explicitly opened that playlist. So a user who plays the iPod
+  // every day for a month and never reopens a playlist would see month-old
+  // playlist contents.
+  //
+  // This effect closes that gap by:
+  //   1. Running once a few seconds after the hook becomes enabled+authed
+  //      (hydration has had time to seed the in-memory store first).
+  //   2. Re-running whenever the document becomes visible (fast path for
+  //      "user came back to the tab").
+  //   3. Polling on a 15-min timer while the iPod is open as a backstop
+  //      for long-lived sessions.
+  //
+  // All paths are silent (no toast). The refresh helpers themselves
+  // short-circuit when the cache is fresh enough, so this is essentially
+  // free when nothing has actually expired. Track refresh uses bounded
+  // concurrency so a user with many cached playlists doesn't hammer the
+  // Apple Music API on every visibility change.
+  //
+  // Playback is unaffected: only the playlists list and per-playlist
+  // tracks map are mutated, neither of which is read by the
+  // AppleMusicPlayerBridge. The active queue stores ids, so swapping a
+  // playlist's tracks while one of them is playing keeps playback going.
+  useEffect(() => {
+    if (!enabled || !isAuthorized) return;
+
+    let cancelled = false;
+    let lastRunAt = 0;
+    const MIN_INTERVAL_MS = 60 * 1000; // throttle visibility-driven calls
+    const POLL_INTERVAL_MS = 15 * 60 * 1000;
+
+    const runOpportunisticRefresh = async () => {
+      if (cancelled) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      const now = Date.now();
+      if (now - lastRunAt < MIN_INTERVAL_MS) return;
+      lastRunAt = now;
+      try {
+        await refreshAppleMusicPlaylists();
+        if (cancelled) return;
+        await refreshStaleAppleMusicPlaylistTracks();
+        if (cancelled) return;
+        // Recently Added and Favorites have their own freshness windows
+        // (handled inside each helper). Run them in parallel since they
+        // hit separate Apple Music endpoints and don't share the same
+        // in-flight guard.
+        await Promise.allSettled([
+          refreshAppleMusicRecentlyAdded(),
+          refreshAppleMusicFavorites(),
+        ]);
+      } catch (err) {
+        // Each helper handles its own per-call errors; a top-level
+        // failure here would be unexpected (e.g. MusicKit instance went
+        // away mid-refresh). Log + swallow so opportunistic background
+        // work never bubbles into the UI.
+        console.warn(
+          "[apple music] opportunistic playlist refresh failed",
+          err
+        );
+      }
+    };
+
+    // Give hydration + the cold-load decision a head start before kicking
+    // off the first opportunistic pass — there's no point fetching
+    // playlists in the background while the foreground library load is
+    // still mid-flight.
+    const initialTimeout = setTimeout(() => {
+      void runOpportunisticRefresh();
+    }, 3000);
+
+    const interval = setInterval(() => {
+      void runOpportunisticRefresh();
+    }, POLL_INTERVAL_MS);
+
+    const onVisibilityChange = () => {
+      if (typeof document === "undefined" || document.hidden) return;
+      void runOpportunisticRefresh();
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
+
+    return () => {
+      cancelled = true;
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+      if (typeof document !== "undefined") {
+        document.removeEventListener(
+          "visibilitychange",
+          onVisibilityChange
+        );
+      }
+    };
+  }, [enabled, isAuthorized]);
 
   return { refresh };
 }

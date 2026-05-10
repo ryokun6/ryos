@@ -36,9 +36,15 @@ if (!browserGlobals.navigator) {
   browserGlobals.navigator = { onLine: true, userAgent: "test" } as Navigator;
 }
 
-const { libraryResourceToTrack } = await import(
-  "../src/apps/ipod/hooks/useAppleMusicLibrary"
-);
+const {
+  libraryResourceToTrack,
+  refreshAppleMusicPlaylists,
+  refreshStaleAppleMusicPlaylistTracks,
+  refreshAppleMusicRecentlyAdded,
+  refreshAppleMusicFavorites,
+  APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS,
+  APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
+} = await import("../src/apps/ipod/hooks/useAppleMusicLibrary");
 const { useIpodStore } = await import("../src/stores/useIpodStore");
 const {
   isValidAppleMusicSongId,
@@ -348,5 +354,273 @@ describe("useIpodStore Apple Music slice", () => {
     useIpodStore.getState().appleMusicNextTrack();
 
     expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:q2");
+  });
+});
+
+describe("Apple Music opportunistic playlist refresh", () => {
+  beforeEach(() => {
+    useIpodStore.setState({
+      appleMusicPlaylists: [],
+      appleMusicPlaylistsLoadedAt: null,
+      appleMusicPlaylistTracks: {},
+      appleMusicPlaylistTracksLoadedAt: {},
+      appleMusicPlaylistTracksLoading: {},
+    });
+  });
+
+  test("setAppleMusicPlaylists stamps loadedAt with the current time by default", () => {
+    const before = Date.now();
+    useIpodStore.getState().setAppleMusicPlaylists([
+      {
+        id: "p:1",
+        name: "Workout",
+        artworkUrl: undefined,
+        trackCount: 12,
+        canEdit: true,
+      },
+    ]);
+    const after = Date.now();
+    const state = useIpodStore.getState();
+    expect(state.appleMusicPlaylists).toHaveLength(1);
+    expect(state.appleMusicPlaylistsLoadedAt).not.toBeNull();
+    expect(state.appleMusicPlaylistsLoadedAt!).toBeGreaterThanOrEqual(before);
+    expect(state.appleMusicPlaylistsLoadedAt!).toBeLessThanOrEqual(after);
+  });
+
+  test("setAppleMusicPlaylists honours an explicit loadedAt (used by hydration from IndexedDB)", () => {
+    useIpodStore.getState().setAppleMusicPlaylists(
+      [
+        {
+          id: "p:1",
+          name: "Old",
+          artworkUrl: undefined,
+          trackCount: 0,
+          canEdit: false,
+        },
+      ],
+      12345
+    );
+    expect(useIpodStore.getState().appleMusicPlaylistsLoadedAt).toBe(12345);
+  });
+
+  test("refreshAppleMusicPlaylists short-circuits when the cache is fresh enough", async () => {
+    const cached = [
+      {
+        id: "p:1",
+        name: "Recent",
+        artworkUrl: undefined,
+        trackCount: 5,
+        canEdit: false,
+      },
+    ];
+    useIpodStore.setState({
+      appleMusicPlaylists: cached,
+      // Pretend the cache was written 1 second ago — well within the
+      // opportunistic TTL.
+      appleMusicPlaylistsLoadedAt: Date.now() - 1000,
+    });
+
+    const result = await refreshAppleMusicPlaylists();
+
+    // Returns the cached array as-is (no network call attempted).
+    expect(result).toBe(cached);
+    // Timestamp untouched.
+    expect(
+      Date.now() - (useIpodStore.getState().appleMusicPlaylistsLoadedAt ?? 0)
+    ).toBeGreaterThanOrEqual(1000);
+  });
+
+  test("refreshAppleMusicPlaylists returns cached list silently when MusicKit isn't available", async () => {
+    const cached = [
+      {
+        id: "p:1",
+        name: "Stale",
+        artworkUrl: undefined,
+        trackCount: 5,
+        canEdit: false,
+      },
+    ];
+    useIpodStore.setState({
+      appleMusicPlaylists: cached,
+      // Mark the cache as stale so the freshness check doesn't short-
+      // circuit and we exercise the "no MusicKit instance" branch.
+      appleMusicPlaylistsLoadedAt:
+        Date.now() - APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS - 1,
+    });
+
+    const result = await refreshAppleMusicPlaylists();
+
+    expect(result).toBe(cached);
+  });
+
+  test("refreshStaleAppleMusicPlaylistTracks no-ops when no playlist tracks have been cached yet", async () => {
+    // No cached playlist tracks → nothing to revalidate, no network call.
+    await refreshStaleAppleMusicPlaylistTracks();
+    const state = useIpodStore.getState();
+    expect(state.appleMusicPlaylistTracksLoadedAt).toEqual({});
+    expect(state.appleMusicPlaylistTracksLoading).toEqual({});
+  });
+
+  test("refreshStaleAppleMusicPlaylistTracks no-ops silently when MusicKit isn't available even with stale entries", async () => {
+    useIpodStore.setState({
+      appleMusicPlaylistTracks: { "p:1": [] },
+      appleMusicPlaylistTracksLoadedAt: { "p:1": 1 },
+    });
+
+    // Should not throw; should not flip any loading flags either.
+    await refreshStaleAppleMusicPlaylistTracks();
+    expect(useIpodStore.getState().appleMusicPlaylistTracksLoading).toEqual({});
+  });
+});
+
+describe("Apple Music Recently Added & Favorites store + refresh", () => {
+  beforeEach(() => {
+    useIpodStore.setState({
+      appleMusicRecentlyAddedTracks: [],
+      appleMusicRecentlyAddedLoadedAt: null,
+      appleMusicRecentlyAddedLoading: false,
+      appleMusicFavoriteTracks: [],
+      appleMusicFavoriteTracksLoadedAt: null,
+      appleMusicFavoritesLoading: false,
+    });
+  });
+
+  test("setAppleMusicRecentlyAddedTracks stamps loadedAt + clears the loading flag", () => {
+    useIpodStore.setState({ appleMusicRecentlyAddedLoading: true });
+    const before = Date.now();
+    useIpodStore
+      .getState()
+      .setAppleMusicRecentlyAddedTracks([
+        {
+          id: "am:1",
+          url: "applemusic:1",
+          title: "One",
+          source: "appleMusic",
+        },
+      ]);
+    const after = Date.now();
+    const state = useIpodStore.getState();
+    expect(state.appleMusicRecentlyAddedTracks).toHaveLength(1);
+    expect(state.appleMusicRecentlyAddedLoading).toBe(false);
+    expect(state.appleMusicRecentlyAddedLoadedAt!).toBeGreaterThanOrEqual(before);
+    expect(state.appleMusicRecentlyAddedLoadedAt!).toBeLessThanOrEqual(after);
+  });
+
+  test("setAppleMusicFavoriteTracks honours an explicit loadedAt (used by hydration)", () => {
+    useIpodStore.getState().setAppleMusicFavoriteTracks(
+      [
+        {
+          id: "am:1",
+          url: "applemusic:1",
+          title: "Liked",
+          source: "appleMusic",
+        },
+      ],
+      99999
+    );
+    expect(useIpodStore.getState().appleMusicFavoriteTracksLoadedAt).toBe(
+      99999
+    );
+  });
+
+  test("prependAppleMusicFavoriteTrack adds the track to the front and de-dupes by id", () => {
+    useIpodStore.setState({
+      appleMusicFavoriteTracks: [
+        {
+          id: "am:1",
+          url: "applemusic:1",
+          title: "One",
+          source: "appleMusic",
+        },
+        {
+          id: "am:2",
+          url: "applemusic:2",
+          title: "Two",
+          source: "appleMusic",
+        },
+      ],
+      appleMusicFavoriteTracksLoadedAt: 12345,
+    });
+
+    useIpodStore.getState().prependAppleMusicFavoriteTrack({
+      id: "am:2",
+      url: "applemusic:2",
+      title: "Two (renamed)",
+      source: "appleMusic",
+    });
+
+    const state = useIpodStore.getState();
+    expect(state.appleMusicFavoriteTracks.map((t) => t.id)).toEqual([
+      "am:2",
+      "am:1",
+    ]);
+    expect(state.appleMusicFavoriteTracks[0].title).toBe("Two (renamed)");
+    // Don't bump loadedAt so the next opportunistic refresh still
+    // revalidates against the server.
+    expect(state.appleMusicFavoriteTracksLoadedAt).toBe(12345);
+  });
+
+  test("refreshAppleMusicRecentlyAdded short-circuits when the cache is fresh enough", async () => {
+    const cached = [
+      {
+        id: "am:1",
+        url: "applemusic:1",
+        title: "Cached",
+        source: "appleMusic" as const,
+      },
+    ];
+    useIpodStore.setState({
+      appleMusicRecentlyAddedTracks: cached,
+      appleMusicRecentlyAddedLoadedAt: Date.now() - 1000,
+    });
+
+    const result = await refreshAppleMusicRecentlyAdded();
+
+    expect(result).toBe(cached);
+    expect(useIpodStore.getState().appleMusicRecentlyAddedLoading).toBe(false);
+  });
+
+  test("refreshAppleMusicRecentlyAdded silently returns cached when MusicKit isn't available + doesn't toggle loading on a stale-but-cached refresh", async () => {
+    const cached = [
+      {
+        id: "am:1",
+        url: "applemusic:1",
+        title: "Stale",
+        source: "appleMusic" as const,
+      },
+    ];
+    useIpodStore.setState({
+      appleMusicRecentlyAddedTracks: cached,
+      appleMusicRecentlyAddedLoadedAt:
+        Date.now() - APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS - 1,
+    });
+
+    const result = await refreshAppleMusicRecentlyAdded();
+
+    expect(result).toBe(cached);
+    // Loading flag stays false because there's already cached content
+    // for the menu — background refresh must never flash "Loading…".
+    expect(useIpodStore.getState().appleMusicRecentlyAddedLoading).toBe(false);
+  });
+
+  test("refreshAppleMusicFavorites short-circuits when the cache is fresh enough", async () => {
+    const cached = [
+      {
+        id: "am:liked",
+        url: "applemusic:liked",
+        title: "Liked",
+        source: "appleMusic" as const,
+      },
+    ];
+    useIpodStore.setState({
+      appleMusicFavoriteTracks: cached,
+      appleMusicFavoriteTracksLoadedAt:
+        Date.now() - APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS,
+    });
+
+    const result = await refreshAppleMusicFavorites();
+
+    expect(result).toBe(cached);
+    expect(useIpodStore.getState().appleMusicFavoritesLoading).toBe(false);
   });
 });
