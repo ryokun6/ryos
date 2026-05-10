@@ -169,28 +169,126 @@ function getHeaderValue(
   return value || "";
 }
 
+interface ClientIpRequest {
+  headers: Record<string, string | string[] | undefined>;
+  socket?: { remoteAddress?: string | null };
+  connection?: { remoteAddress?: string | null };
+}
+
+const isRunningOnVercel = (): boolean => {
+  return (
+    process.env.VERCEL === "1" ||
+    !!process.env.VERCEL_ENV ||
+    !!process.env.VERCEL_URL
+  );
+};
+
+/**
+ * Trusted-proxy depth.
+ *
+ * - On Vercel, headers are set authoritatively by the platform; we
+ *   always trust `x-vercel-forwarded-for` / `x-forwarded-for`.
+ * - On other deployments (Coolify, Docker, plain Bun), `X-Forwarded-For`
+ *   is supplied by the caller and is **not** trustworthy unless a
+ *   reverse proxy in front of us strips/rewrites it. Operators must
+ *   explicitly opt in via `TRUSTED_PROXY_COUNT=<N>`, where N is the
+ *   number of trusted proxies between the client and this process.
+ *   When set, we take the IP at index `length - N` of the XFF chain.
+ *   When unset (default), we fall back to the socket peer address —
+ *   which is the actual TCP client (the proxy itself if there is one,
+ *   otherwise the real client).
+ *
+ * `TRUSTED_PROXY_COUNT=0` is also accepted and means "ignore XFF".
+ */
+const getTrustedProxyCount = (): number | null => {
+  const raw = process.env.TRUSTED_PROXY_COUNT;
+  if (raw == null || raw === "") return null;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+};
+
+const normalizeIp = (raw: string): string => {
+  let ip = raw.trim();
+  if (!ip) return "";
+  // Strip RFC 3986 brackets around IPv6.
+  if (ip.startsWith("[") && ip.endsWith("]")) ip = ip.slice(1, -1);
+  // Strip the IPv4-mapped IPv6 prefix.
+  ip = ip.replace(/^::ffff:/i, "");
+  return ip;
+};
+
+const pickIpFromXff = (
+  xff: string,
+  trustedProxyCount: number
+): string => {
+  const parts = xff
+    .split(",")
+    .map((part) => normalizeIp(part))
+    .filter((part) => part.length > 0);
+  if (parts.length === 0) return "";
+  // With N trusted proxies in front of us, the rightmost N entries
+  // were appended by those proxies (the rightmost was added by the
+  // proxy closest to us). The entry at index `length - N` is the IP
+  // that hit our outermost trusted proxy — i.e. the real client (or
+  // the next untrusted hop if XFF is shorter than expected).
+  const idx = Math.max(0, parts.length - trustedProxyCount);
+  // Clamp to last index if the header is shorter than expected
+  // (treat as "use the closest proxy's reported client" rather than
+  // overshooting past the array end).
+  return parts[Math.min(idx, parts.length - 1)];
+};
+
+const getSocketIp = (req: ClientIpRequest): string => {
+  const raw =
+    req.socket?.remoteAddress || req.connection?.remoteAddress || "";
+  return normalizeIp(raw);
+};
+
 /**
  * Extract a best-effort client IP from common proxy headers (Node.js runtime).
+ *
+ * See `getTrustedProxyCount` for the deployment-specific trust model.
  */
-export function getClientIp(
-  req: { headers: Record<string, string | string[] | undefined> }
-): string {
+export function getClientIp(req: ClientIpRequest): string {
   try {
     const h = req.headers;
     const origin = getHeaderValue(h, "origin");
-    const xVercel = getHeaderValue(h, "x-vercel-forwarded-for");
-    const xForwarded = getHeaderValue(h, "x-forwarded-for");
-    const xRealIp = getHeaderValue(h, "x-real-ip");
-    const cfIp = getHeaderValue(h, "cf-connecting-ip");
-    const raw = xVercel || xForwarded || xRealIp || cfIp || "";
-    let ip = raw.split(",")[0].trim();
+    const isLocalOrigin = /^http:\/\/localhost(?::\d+)?$/.test(origin);
+
+    let ip = "";
+
+    if (isRunningOnVercel()) {
+      // Vercel sets these headers authoritatively; the caller cannot
+      // override them.
+      const xVercel = getHeaderValue(h, "x-vercel-forwarded-for");
+      const xForwarded = getHeaderValue(h, "x-forwarded-for");
+      const xRealIp = getHeaderValue(h, "x-real-ip");
+      const cfIp = getHeaderValue(h, "cf-connecting-ip");
+      const raw = xVercel || xForwarded || xRealIp || cfIp || "";
+      ip = normalizeIp(raw.split(",")[0]);
+    } else {
+      const trustedProxyCount = getTrustedProxyCount();
+      if (trustedProxyCount === null) {
+        // No explicit trust configured: ignore caller-supplied XFF
+        // entirely (it is spoofable) and use the actual TCP peer.
+        ip = getSocketIp(req);
+      } else {
+        const xForwarded = getHeaderValue(h, "x-forwarded-for");
+        if (xForwarded) {
+          ip = pickIpFromXff(xForwarded, trustedProxyCount);
+        }
+        if (!ip) {
+          // Fallback: real-ip / socket peer.
+          const xRealIp = getHeaderValue(h, "x-real-ip");
+          ip = normalizeIp(xRealIp) || getSocketIp(req);
+        }
+      }
+    }
 
     if (!ip) ip = "unknown-ip";
 
-    // Normalize IPv6-mapped IPv4 and loopback variants
-    ip = ip.replace(/^::ffff:/i, "");
     const lower = ip.toLowerCase();
-    const isLocalOrigin = /^http:\/\/localhost(?::\d+)?$/.test(origin);
     if (
       isLocalOrigin ||
       lower === "::1" ||

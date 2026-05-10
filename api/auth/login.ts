@@ -4,7 +4,6 @@
  * Authenticate user with password (Node.js runtime for bcrypt)
  */
 
-import type { VercelRequest } from "@vercel/node";
 import {
   generateAuthToken,
   storeToken,
@@ -16,6 +15,7 @@ import {
 import { verifyPassword, getUserPasswordHash } from "../_utils/auth/_password.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { buildSetAuthCookie } from "../_utils/_cookie.js";
+import { getClientIp } from "../_utils/_rate-limit.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -24,17 +24,6 @@ interface LoginRequest {
   username: string;
   password: string;
   oldToken?: string;
-}
-
-function getClientIp(req: VercelRequest): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    return forwarded.split(",")[0].trim();
-  }
-  if (Array.isArray(forwarded)) {
-    return forwarded[0];
-  }
-  return (req.headers["x-real-ip"] as string) || "unknown";
 }
 
 export default apiHandler(

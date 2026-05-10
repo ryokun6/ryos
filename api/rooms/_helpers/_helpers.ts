@@ -3,7 +3,7 @@
  */
 
 import type { VercelRequest } from "@vercel/node";
-import { getHeader } from "../../_utils/request-helpers.js";
+import { getClientIp as getCentralClientIp } from "../../_utils/_rate-limit.js";
 
 // ============================================================================
 // Response Helpers (used by internal helper modules)
@@ -54,13 +54,12 @@ export function addCorsHeaders(
 // ============================================================================
 
 /**
- * Extract client IP from request headers
+ * Extract client IP from request headers.
+ *
+ * Delegates to the central trusted-proxy aware implementation in
+ * `_rate-limit.ts`. Kept as a re-export so existing call sites under
+ * `api/rooms/_helpers/*` don't have to change their imports.
  */
 export function getClientIp(request: VercelRequest): string {
-  const xVercel = getHeader(request, "x-vercel-forwarded-for");
-  const xForwarded = getHeader(request, "x-forwarded-for");
-  const xRealIp = getHeader(request, "x-real-ip");
-  const raw = xVercel || xForwarded || xRealIp || "";
-  const ip = raw.split(",")[0].trim();
-  return ip || "unknown-ip";
+  return getCentralClientIp(request);
 }
