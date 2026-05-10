@@ -1684,15 +1684,11 @@ export function useInternetExplorerLogic({
         return;
       }
 
-      // Only accept messages from the current window origin.
-      // This blocks untrusted cross-origin frames from driving navigation.
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-
-      // For iframe-driven controls, ensure the sender is our active iframe.
-      // aiHtmlNavigation is emitted by HtmlPreview's internal iframe(s), so it
-      // is validated by same-origin only.
+      // Verify the sender is our active iframe (works for both
+      // same-origin and sandboxed/opaque-origin iframes — the latter
+      // report event.origin === "null", so origin alone is not a
+      // sufficient gate). event.source identity-checks are reliable
+      // even for cross-origin sources.
       const sourceWindow = event.source as Window | null;
       const currentIframeWindow = iframeRef.current?.contentWindow ?? null;
       const isFromActiveIframe =
@@ -1700,10 +1696,9 @@ export function useInternetExplorerLogic({
         !!currentIframeWindow &&
         sourceWindow === currentIframeWindow;
 
-      if (
-        messageData.type !== "aiHtmlNavigation" &&
-        !isFromActiveIframe
-      ) {
+      // For non-iframe message types, still require same-origin to
+      // block untrusted top-level pages from driving navigation.
+      if (!isFromActiveIframe && event.origin !== window.location.origin) {
         return;
       }
 

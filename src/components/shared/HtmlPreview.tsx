@@ -20,6 +20,11 @@ import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
+import {
+  TRUSTED_APPLET_SANDBOX,
+  UNTRUSTED_APPLET_SANDBOX,
+  isTrustedAppletAuthor,
+} from "@/utils/appletSandbox";
 import { useTranslation } from "react-i18next";
 import { useEventListener } from "@/hooks/useEventListener";
 import DOMPurify from "dompurify";
@@ -46,6 +51,16 @@ interface HtmlPreviewProps {
   isInternetExplorer?: boolean;
   baseUrlForAiContent?: string;
   mode?: "past" | "future" | "now";
+  /**
+   * Optional `createdBy` of the applet/content being rendered. When this
+   * resolves to a trusted author (currently: `ryo`), the iframe gets
+   * `allow-same-origin` and the applet auth bridge so it can call
+   * `/api/*` with credentials. Anything else runs in a strict
+   * opaque-origin sandbox.
+   *
+   * Defaults to undefined → untrusted.
+   */
+  appletCreatedBy?: string | null;
 }
 
 export default function HtmlPreview({
@@ -67,7 +82,14 @@ export default function HtmlPreview({
   isInternetExplorer = false,
   baseUrlForAiContent,
   mode = "now",
+  appletCreatedBy,
 }: HtmlPreviewProps) {
+  // Trust gate for the rendered HTML. Only ryo-authored content gets
+  // same-origin iframe powers + the applet auth bridge.
+  const isTrustedApplet = isTrustedAppletAuthor(appletCreatedBy);
+  const sandboxAttribute = isTrustedApplet
+    ? TRUSTED_APPLET_SANDBOX
+    : UNTRUSTED_APPLET_SANDBOX;
   const [isFullScreen, setIsFullScreen] = useState(initialFullScreen);
   const [copySuccess, setCopySuccess] = useState(false);
   const [showCode, setShowCode] = useState(false);
@@ -111,6 +133,10 @@ export default function HtmlPreview({
   const sendAuthPayload = useCallback(
     (target: Window | null | undefined) => {
       if (!target) return;
+      // Only trusted (ryo-authored) HTML content receives the user's
+      // identity. Untrusted iframes run with an opaque origin and could
+      // not authenticate to /api with the cookie anyway.
+      if (!isTrustedApplet) return;
       try {
         target.postMessage(
           {
@@ -124,7 +150,7 @@ export default function HtmlPreview({
         console.warn("[applet-html-preview] Failed to post auth payload:", error);
       }
     },
-    [username]
+    [username, isTrustedApplet]
   );
 
   // Ensure base URL has a protocol
@@ -239,7 +265,7 @@ export default function HtmlPreview({
     <link rel="stylesheet" href="/fonts/fonts.css">
     ${timestamp} 
     ${baseTag}
-    ${APPLET_AUTH_BRIDGE_SCRIPT}
+    ${isTrustedApplet ? APPLET_AUTH_BRIDGE_SCRIPT : ""}
     <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.min.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.16"></script>
   <script>
@@ -335,8 +361,10 @@ export default function HtmlPreview({
           try {
             // Resolve relative URLs against the document's base URI (if set) or window location
             const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
-            // Use a specific message type for AI HTML navigation
-            window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, window.location.origin);
+            // Use a specific message type for AI HTML navigation.
+            // targetOrigin is "*" because the iframe may be sandboxed
+            // (opaque origin); the parent verifies event.source.
+            window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, '*');
             console.log('Intercepted link click:', absoluteUrl);
           } catch (e) { console.error("Error resolving/posting URL:", e); }
         }
@@ -355,8 +383,8 @@ export default function HtmlPreview({
           try {
             // Resolve relative URLs against the document's base URI (if set) or window location
             const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
-            // Use a specific message type for AI HTML navigation
-            window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, window.location.origin);
+            // Same as above: parent verifies by event.source.
+            window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, '*');
             console.log('Intercepted link click (immediate handler):', absoluteUrl);
           } catch (e) { console.error("Error resolving/posting URL:", e); }
         }
@@ -1158,7 +1186,7 @@ export default function HtmlPreview({
             className={`border-0 block ${
               !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : ""
             }`}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+            sandbox={sandboxAttribute}
             style={{
               width: isInternetExplorer ? "calc(100% + 1px)" : "100%",
               height: isInternetExplorer
@@ -1307,7 +1335,7 @@ export default function HtmlPreview({
                         // srcDoc={processedHtmlContent()}
                         title={t("common.htmlPreview.codePreviewTitleFullscreen")}
                         className="border-0 bg-white w-full h-full"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+                        sandbox={sandboxAttribute}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
                         onLoad={() =>

@@ -18,6 +18,10 @@ import {
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
 import {
+  getAppletSandboxAttribute,
+  isTrustedAppletAuthor,
+} from "@/utils/appletSandbox";
+import {
   useFileSystem,
   dbOperations,
   DocumentContent,
@@ -50,6 +54,9 @@ export function useAppletViewerLogic({
   const [sharedContent, setSharedContent] = useState<string>("");
   const [sharedName, setSharedName] = useState<string | undefined>(undefined);
   const [sharedTitle, setSharedTitle] = useState<string | undefined>(undefined);
+  const [sharedCreatedBy, setSharedCreatedBy] = useState<string | undefined>(
+    undefined
+  );
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
@@ -230,9 +237,20 @@ export function useAppletViewerLogic({
     }
   }, [updatesAvailable, actions, checkForUpdates, t]);
 
+  // Tracks whether the currently displayed applet is trusted (i.e.
+  // authored by `ryo`). Only trusted applets get the user's identity
+  // postMessage'd in. Stored in a ref so `sendAuthPayload` can be
+  // declared before the trust value is computed below without TDZ
+  // problems.
+  const isTrustedAppletRef = useRef(false);
+
   const sendAuthPayload = useCallback(
     (target: Window | null | undefined) => {
       if (!target) return;
+      // Defense-in-depth: untrusted applets run with an opaque origin
+      // and could not authenticate to /api with the cookie even if
+      // they wanted to, but we also avoid leaking the username to them.
+      if (!isTrustedAppletRef.current) return;
       try {
         target.postMessage(
           {
@@ -784,44 +802,63 @@ export function useAppletViewerLogic({
     return `<!DOCTYPE html><html><head>${preload}${fontStyle}</head><body>${content}</body></html>`;
   };
 
-  const injectAppletAuthScript = useCallback((content: string): string => {
-    if (!content) return content;
-    if (content.includes(APPLET_AUTH_MESSAGE_TYPE)) {
-      return content;
-    }
+  // Determine trust based on the applet's createdBy. Trusted (ryo-authored)
+  // applets get same-origin sandbox + auth bridge so they can call
+  // /api/applet-ai with credentials. Everything else runs in a strict
+  // sandbox that cannot reach the parent origin.
+  const appletCreatedBy = shareCode
+    ? sharedCreatedBy
+    : fileItem?.createdBy ?? undefined;
+  const isTrustedApplet = isTrustedAppletAuthor(appletCreatedBy);
+  const sandboxAttribute = getAppletSandboxAttribute(appletCreatedBy);
+  isTrustedAppletRef.current = isTrustedApplet;
 
-    const lower = content.toLowerCase();
-    const headCloseIdx = lower.lastIndexOf("</head>");
-    if (headCloseIdx !== -1) {
-      return (
-        content.slice(0, headCloseIdx) +
-        APPLET_AUTH_BRIDGE_SCRIPT +
-        content.slice(headCloseIdx)
-      );
-    }
+  const injectAppletAuthScript = useCallback(
+    (content: string): string => {
+      if (!content) return content;
+      // Auth bridge is a no-op without same-origin: cookies cannot be
+      // sent and `/api/*` calls would be blocked by CORS for the
+      // iframe's opaque origin anyway. Skip injection so untrusted
+      // applets receive no auth signal at all.
+      if (!isTrustedApplet) return content;
+      if (content.includes(APPLET_AUTH_MESSAGE_TYPE)) {
+        return content;
+      }
 
-    const headOpenMatch = /<head[^>]*>/i.exec(content);
-    if (headOpenMatch) {
-      const insertIdx = headOpenMatch.index + headOpenMatch[0].length;
-      return (
-        content.slice(0, insertIdx) +
-        APPLET_AUTH_BRIDGE_SCRIPT +
-        content.slice(insertIdx)
-      );
-    }
+      const lower = content.toLowerCase();
+      const headCloseIdx = lower.lastIndexOf("</head>");
+      if (headCloseIdx !== -1) {
+        return (
+          content.slice(0, headCloseIdx) +
+          APPLET_AUTH_BRIDGE_SCRIPT +
+          content.slice(headCloseIdx)
+        );
+      }
 
-    const htmlOpenMatch = /<html[^>]*>/i.exec(content);
-    if (htmlOpenMatch) {
-      const insertIdx = htmlOpenMatch.index + htmlOpenMatch[0].length;
-      return (
-        content.slice(0, insertIdx) +
-        `<head>${APPLET_AUTH_BRIDGE_SCRIPT}</head>` +
-        content.slice(insertIdx)
-      );
-    }
+      const headOpenMatch = /<head[^>]*>/i.exec(content);
+      if (headOpenMatch) {
+        const insertIdx = headOpenMatch.index + headOpenMatch[0].length;
+        return (
+          content.slice(0, insertIdx) +
+          APPLET_AUTH_BRIDGE_SCRIPT +
+          content.slice(insertIdx)
+        );
+      }
 
-    return `<!DOCTYPE html><html><head>${APPLET_AUTH_BRIDGE_SCRIPT}</head><body>${content}</body></html>`;
-  }, []);
+      const htmlOpenMatch = /<html[^>]*>/i.exec(content);
+      if (htmlOpenMatch) {
+        const insertIdx = htmlOpenMatch.index + htmlOpenMatch[0].length;
+        return (
+          content.slice(0, insertIdx) +
+          `<head>${APPLET_AUTH_BRIDGE_SCRIPT}</head>` +
+          content.slice(insertIdx)
+        );
+      }
+
+      return `<!DOCTYPE html><html><head>${APPLET_AUTH_BRIDGE_SCRIPT}</head><body>${content}</body></html>`;
+    },
+    [isTrustedApplet]
+  );
 
   const launchApp = useLaunchApp();
   const { saveFile, files } = useFileSystem("/Applets");
@@ -1257,6 +1294,9 @@ export function useAppletViewerLogic({
           setSharedContent(data.content);
           setSharedName(data.name);
           setSharedTitle(data.title);
+          setSharedCreatedBy(
+            typeof data.createdBy === "string" ? data.createdBy : undefined
+          );
 
           if (instanceId && data.windowWidth && data.windowHeight) {
             const appStore = useAppStore.getState();
@@ -1384,6 +1424,7 @@ export function useAppletViewerLogic({
       setSharedContent("");
       setSharedName(undefined);
       setSharedTitle(undefined);
+      setSharedCreatedBy(undefined);
     }
   }, [
     shareCode,
@@ -1486,6 +1527,8 @@ export function useAppletViewerLogic({
     htmlContent,
     shareCode,
     windowTitle,
+    sandboxAttribute,
+    isTrustedApplet,
     injectAppletAuthScript,
     ensureMacFonts,
     sendAuthPayload,
