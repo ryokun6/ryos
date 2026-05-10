@@ -199,6 +199,10 @@ export function IpodMenuBar({
   const currentSongId = isAppleMusic
     ? appleMusicCurrentSongId
     : youtubeCurrentSongId;
+  const effectiveDisplayMode =
+    isAppleMusic && displayMode === DisplayMode.Video
+      ? DisplayMode.Cover
+      : displayMode;
   const setCurrentSongId = isAppleMusic
     ? setAppleMusicCurrentSongId
     : setYoutubeCurrentSongId;
@@ -667,17 +671,19 @@ export function IpodMenuBar({
               {t("apps.ipod.menu.display")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
+              {!isAppleMusic && (
+                <MenubarCheckboxItem
+                  checked={effectiveDisplayMode === DisplayMode.Video}
+                  onCheckedChange={(checked) => {
+                    if (checked) setDisplayMode(DisplayMode.Video);
+                  }}
+                  className="text-md h-6 pr-3"
+                >
+                  {t("apps.ipod.menu.displayVideo")}
+                </MenubarCheckboxItem>
+              )}
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Video}
-                onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Video);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {t("apps.ipod.menu.displayVideo")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Mesh}
+                checked={effectiveDisplayMode === DisplayMode.Mesh}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Mesh);
                 }}
@@ -686,7 +692,7 @@ export function IpodMenuBar({
                 {t("apps.ipod.menu.displayGradient")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Water}
+                checked={effectiveDisplayMode === DisplayMode.Water}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Water);
                 }}
@@ -695,7 +701,7 @@ export function IpodMenuBar({
                 {t("apps.ipod.menu.displayWater")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Shader}
+                checked={effectiveDisplayMode === DisplayMode.Shader}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Shader);
                 }}
@@ -704,7 +710,7 @@ export function IpodMenuBar({
                 {t("apps.ipod.menu.displayShader")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Landscapes}
+                checked={effectiveDisplayMode === DisplayMode.Landscapes}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Landscapes);
                 }}
@@ -713,7 +719,7 @@ export function IpodMenuBar({
                 {t("apps.ipod.menu.displayLandscapes")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Cover}
+                checked={effectiveDisplayMode === DisplayMode.Cover}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Cover);
                 }}

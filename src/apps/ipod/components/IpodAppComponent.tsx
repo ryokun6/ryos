@@ -185,24 +185,40 @@ export function IpodAppComponent({
     window.dispatchEvent(new Event(`closeWindow-${instanceId || "ipod"}`));
   }, [instanceId, pauseBeforeWindowClose]);
 
+  const effectiveDisplayMode =
+    isAppleMusic && displayMode === DisplayMode.Video
+      ? DisplayMode.Cover
+      : displayMode;
+
   // Memoized so the FullScreenPortal / FullscreenPlayerControls don't see a
   // freshly-allocated array on every parent render (this component re-renders
   // on every playback tick because elapsedTime is a hook return value).
   const displayModeOptions = useMemo(
-    () => [
-      { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-      { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
-      { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
-      { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-      { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
-      { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-    ],
-    [t]
+    () => {
+      const options = [
+        { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
+        { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
+        { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
+        { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
+        {
+          value: DisplayMode.Landscapes,
+          label: t("apps.ipod.menu.displayLandscapes"),
+        },
+        { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
+      ];
+
+      return isAppleMusic
+        ? options.filter((option) => option.value !== DisplayMode.Video)
+        : options;
+    },
+    [isAppleMusic, t]
   );
 
   const handleDisplayModeSelect = useCallback(
     (value: DisplayMode) => {
-      setDisplayMode(value);
+      const nextMode =
+        isAppleMusic && value === DisplayMode.Video ? DisplayMode.Cover : value;
+      setDisplayMode(nextMode);
       const labels: Record<DisplayMode, string> = {
         [DisplayMode.Video]: t("apps.ipod.menu.displayVideo"),
         [DisplayMode.Cover]: t("apps.ipod.menu.displayCover"),
@@ -211,10 +227,10 @@ export function IpodAppComponent({
         [DisplayMode.Mesh]: t("apps.ipod.menu.displayGradient"),
         [DisplayMode.Water]: t("apps.ipod.menu.displayWater"),
       };
-      const label = labels[value] ?? value;
+      const label = labels[nextMode] ?? nextMode;
       showStatus(`${t("apps.ipod.menu.display", "Display")}: ${label}`);
     },
-    [setDisplayMode, showStatus, t]
+    [isAppleMusic, setDisplayMode, showStatus, t]
   );
 
   const menuBar = (
@@ -246,7 +262,7 @@ export function IpodAppComponent({
   );
   const shouldAnimateFullScreenVisuals = isPlaying && (isForeground ?? true);
   const shouldRenderFullScreenAnimatedVisuals =
-    shouldAnimateFullScreenVisuals && displayMode !== DisplayMode.Video;
+    shouldAnimateFullScreenVisuals && effectiveDisplayMode !== DisplayMode.Video;
 
   if (!isWindowOpen) return null;
 
@@ -387,7 +403,7 @@ export function IpodAppComponent({
                   menuDirection={menuDirection}
                   onMenuItemAction={handleMenuItemAction}
                   showVideo={showVideo}
-                  displayMode={displayMode}
+                  displayMode={effectiveDisplayMode}
                   playerRef={playerRef}
                   handleTrackEnd={handleTrackEnd}
                   handleProgress={handleProgress}
@@ -527,7 +543,7 @@ export function IpodAppComponent({
             onRomanizationChange={setRomanization}
             onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
             isSyncModeOpen={isSyncModeOpen}
-            displayMode={displayMode}
+            displayMode={effectiveDisplayMode}
             onDisplayModeSelect={handleDisplayModeSelect}
             displayModeOptions={displayModeOptions}
             syncModeContent={
@@ -568,7 +584,11 @@ export function IpodAppComponent({
                 <div className="relative w-full h-full overflow-hidden">
                   <div
                     className="absolute inset-0 w-full h-full"
-                    style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+                    style={
+                      effectiveDisplayMode !== DisplayMode.Video
+                        ? { visibility: "hidden", pointerEvents: "none" }
+                        : undefined
+                    }
                   >
                     <div
                       className="w-full absolute"
@@ -645,7 +665,7 @@ export function IpodAppComponent({
                   </div>
 
                   {/* Landscape video background (fullscreen) */}
-                  {displayMode === DisplayMode.Landscapes &&
+                  {effectiveDisplayMode === DisplayMode.Landscapes &&
                     shouldRenderFullScreenAnimatedVisuals &&
                     tracks[currentIndex] && (
                     <LandscapeVideoBackground
@@ -655,7 +675,7 @@ export function IpodAppComponent({
                   )}
 
                   {/* Warp shader background (fullscreen) */}
-                  {displayMode === DisplayMode.Shader &&
+                  {effectiveDisplayMode === DisplayMode.Shader &&
                     shouldRenderFullScreenAnimatedVisuals &&
                     tracks[currentIndex] && (
                     <AmbientBackground
@@ -667,7 +687,7 @@ export function IpodAppComponent({
                   )}
 
                   {/* Mesh gradient background (fullscreen) */}
-                  {displayMode === DisplayMode.Mesh &&
+                  {effectiveDisplayMode === DisplayMode.Mesh &&
                     shouldRenderFullScreenAnimatedVisuals &&
                     tracks[currentIndex] && (
                     <MeshGradientBackground
@@ -678,7 +698,7 @@ export function IpodAppComponent({
                   )}
 
                   {/* Water shader background (fullscreen) */}
-                  {displayMode === DisplayMode.Water &&
+                  {effectiveDisplayMode === DisplayMode.Water &&
                     shouldRenderFullScreenAnimatedVisuals &&
                     tracks[currentIndex] && (
                     <WaterBackground
@@ -688,12 +708,13 @@ export function IpodAppComponent({
                     />
                   )}
 
-                  {/* Cover overlay: shows when paused (any mode),
-                      always in Cover mode, and always for Apple Music
-                      tracks (no video stream backing them, so we keep
-                      the artwork as a backdrop while lyrics play). */}
+                  {/* Cover overlay: shows when paused (any mode) or in Cover
+                      mode. Apple Music can still use animated visualizers. */}
                   <AnimatePresence>
-                    {tracks[currentIndex] && fullscreenCoverUrl && (tracks[currentIndex]?.source === "appleMusic" || displayMode === DisplayMode.Cover || !isPlaying) && (
+                    {tracks[currentIndex] &&
+                      fullscreenCoverUrl &&
+                      (effectiveDisplayMode === DisplayMode.Cover ||
+                        !isPlaying) && (
                       <motion.div
                         className="fixed inset-0 z-15"
                         initial={{ opacity: 0 }}

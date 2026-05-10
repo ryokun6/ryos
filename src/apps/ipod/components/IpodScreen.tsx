@@ -144,9 +144,12 @@ export function IpodScreen({
 
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
-  const shouldAnimateVisuals = showVideo && isPlaying;
-
   const isAppleMusicTrack = currentTrack?.source === "appleMusic";
+  const effectiveDisplayMode =
+    isAppleMusicTrack && displayMode === DisplayMode.Video
+      ? DisplayMode.Cover
+      : displayMode;
+  const shouldAnimateVisuals = showVideo && isPlaying;
 
   // Cover URL for paused state overlay
   const coverUrl = useMemo(() => {
@@ -347,12 +350,21 @@ export function IpodScreen({
                 onReady={!isFullScreen ? handleReady : undefined}
               />
             ) : (
-              <div className="w-full h-full" style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}>
+              <div
+                className="w-full h-full"
+                style={
+                  effectiveDisplayMode !== DisplayMode.Video
+                    ? { visibility: "hidden", pointerEvents: "none" }
+                    : undefined
+                }
+              >
                 <ReactPlayer
                   ref={playerRef}
                   url={currentTrack.url}
                   playing={isPlaying}
-                  controls={showVideo && displayMode === DisplayMode.Video}
+                  controls={
+                    showVideo && effectiveDisplayMode === DisplayMode.Video
+                  }
                   width="100%"
                   height="100%"
                   onEnded={!isFullScreen ? handleTrackEnd : undefined}
@@ -388,7 +400,7 @@ export function IpodScreen({
             )}
 
             {/* Landscape video background */}
-            {displayMode === DisplayMode.Landscapes && shouldAnimateVisuals && (
+            {effectiveDisplayMode === DisplayMode.Landscapes && shouldAnimateVisuals && (
               <LandscapeVideoBackground
                 isActive={shouldAnimateVisuals}
                 className="absolute inset-0 z-[5]"
@@ -396,7 +408,7 @@ export function IpodScreen({
             )}
 
             {/* Warp shader background */}
-            {displayMode === DisplayMode.Shader && shouldAnimateVisuals && (
+            {effectiveDisplayMode === DisplayMode.Shader && shouldAnimateVisuals && (
               <AmbientBackground
                 coverUrl={coverUrl}
                 variant="warp"
@@ -406,7 +418,7 @@ export function IpodScreen({
             )}
 
             {/* Mesh gradient background */}
-            {displayMode === DisplayMode.Mesh && shouldAnimateVisuals && (
+            {effectiveDisplayMode === DisplayMode.Mesh && shouldAnimateVisuals && (
               <MeshGradientBackground
                 coverUrl={coverUrl}
                 isActive={shouldAnimateVisuals}
@@ -415,7 +427,7 @@ export function IpodScreen({
             )}
 
             {/* Water shader background */}
-            {displayMode === DisplayMode.Water && shouldAnimateVisuals && (
+            {effectiveDisplayMode === DisplayMode.Water && shouldAnimateVisuals && (
               <WaterBackground
                 coverUrl={coverUrl}
                 isActive={shouldAnimateVisuals}
@@ -427,12 +439,12 @@ export function IpodScreen({
             {showVideo && shouldShowLyrics && (
               <div className="absolute inset-0 bg-black/30 z-25" />
             )}
-            {/* Cover overlay: shows when paused (any mode), always in
-                Cover mode, and always for Apple Music tracks (no video
-                stream to hide it for, so we keep the artwork as a
-                backdrop while lyrics play). */}
+            {/* Cover overlay: shows when paused (any mode) or in Cover mode.
+                Apple Music still gets animated visualizers in non-cover modes. */}
             <AnimatePresence>
-              {showVideo && coverUrl && (isAppleMusicTrack || displayMode === DisplayMode.Cover || !isPlaying) && (
+              {showVideo &&
+                coverUrl &&
+                (effectiveDisplayMode === DisplayMode.Cover || !isPlaying) && (
                 <motion.div
                   className="absolute inset-0 z-15"
                   initial={{ opacity: 0 }}
