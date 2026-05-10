@@ -24,6 +24,7 @@ export interface MenuItem {
 // Menu history entry
 export interface MenuHistoryEntry {
   title: string;
+  displayTitle?: string;
   items: MenuItem[];
   selectedIndex: number;
 }

@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef, useMemo } from "react";
 import { motion, AnimatePresence, PanInfo, useMotionValue, animate } from "framer-motion";
-import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
+import {
+  getYouTubeVideoId,
+  formatKugouImageUrl,
+  getAlbumGroupingKey,
+} from "../constants";
 import type { Track } from "@/stores/useIpodStore";
 import { Play, Pause, VinylRecord } from "@phosphor-icons/react";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -210,6 +214,17 @@ interface CoverFlowProps {
   onTogglePlay?: () => void;
   /** Callback to play a specific track without exiting CoverFlow */
   onPlayTrackInPlace?: (index: number) => void;
+  /** Group Apple Music tracks into album covers instead of per-song covers. */
+  groupAppleMusicAlbums?: boolean;
+}
+
+interface CoverFlowItem {
+  key: string;
+  track: Track;
+  trackIndex: number;
+  trackIndices: number[];
+  title: string;
+  artist?: string;
 }
 
 export interface CoverFlowRef {
@@ -486,9 +501,67 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   isPlaying = false,
   onTogglePlay,
   onPlayTrackInPlace,
+  groupAppleMusicAlbums = false,
 }, ref) {
   const { t } = useTranslation();
-  const [selectedIndex, setSelectedIndex] = useState(currentIndex);
+  const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
+  const unknownAlbumLabel = t("apps.ipod.menuItems.unknownAlbum");
+  const coverItems = useMemo<CoverFlowItem[]>(() => {
+    if (!groupAppleMusicAlbums) {
+      return tracks.map((track, index) => ({
+        key: track.id,
+        track,
+        trackIndex: index,
+        trackIndices: [index],
+        title: track.title,
+        artist: track.artist,
+      }));
+    }
+
+    const grouped = new Map<string, CoverFlowItem>();
+    for (let index = 0; index < tracks.length; index++) {
+      const track = tracks[index];
+      const artist = track.albumArtist || track.artist || unknownArtistLabel;
+      const album = track.album || unknownAlbumLabel;
+      const key = getAlbumGroupingKey(
+        track,
+        unknownAlbumLabel,
+        unknownArtistLabel
+      );
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.trackIndices.push(index);
+      } else {
+        grouped.set(key, {
+          key,
+          track,
+          trackIndex: index,
+          trackIndices: [index],
+          title: album,
+          artist,
+        });
+      }
+    }
+
+    return Array.from(grouped.values()).sort((a, b) => {
+      const artistCompare = (a.artist ?? "").localeCompare(b.artist ?? "", undefined, {
+        sensitivity: "base",
+      });
+      if (artistCompare !== 0) return artistCompare;
+      return a.title.localeCompare(b.title, undefined, {
+        sensitivity: "base",
+      });
+    });
+  }, [tracks, groupAppleMusicAlbums, unknownArtistLabel, unknownAlbumLabel]);
+
+  const currentCoverIndex = useMemo(() => {
+    const index = coverItems.findIndex((item) =>
+      item.trackIndices.includes(currentIndex)
+    );
+    return index >= 0 ? index : Math.min(currentIndex, coverItems.length - 1);
+  }, [coverItems, currentIndex]);
+
+  const [selectedIndex, setSelectedIndex] = useState(currentCoverIndex);
   const [showCD, setShowCD] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const currentTheme = useThemeStore((s) => s.current);
@@ -533,19 +606,19 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   // Reset selected index when opening
   useEffect(() => {
     if (isVisible) {
-      setSelectedIndex(currentIndex);
+      setSelectedIndex(currentCoverIndex);
     }
-  }, [isVisible, currentIndex]);
+  }, [isVisible, currentCoverIndex]);
 
   // Navigate to next/previous
   const navigateNext = useCallback(() => {
     setSelectedIndex((prev) => {
-      const next = Math.min(tracks.length - 1, prev + 1);
+      const next = Math.min(coverItems.length - 1, prev + 1);
       return next;
     });
     setShowCD(false); // Hide CD when navigating
     onRotation();
-  }, [tracks.length, onRotation]);
+  }, [coverItems.length, onRotation]);
 
   const navigatePrevious = useCallback(() => {
     setSelectedIndex((prev) => {
@@ -558,8 +631,9 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
 
   // Select the current track
   const selectCurrent = useCallback(() => {
-    onSelectTrack(selectedIndex);
-  }, [onSelectTrack, selectedIndex]);
+    const item = coverItems[selectedIndex];
+    if (item) onSelectTrack(item.trackIndex);
+  }, [coverItems, onSelectTrack, selectedIndex]);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -583,7 +657,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
         case "Enter":
         case " ":
           e.preventDefault();
-          onSelectTrack(selectedIndex);
+          selectCurrent();
           break;
         case "Escape":
           e.preventDefault();
@@ -591,7 +665,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           break;
       }
     },
-    [navigateNext, navigatePrevious, onSelectTrack, onExit, selectedIndex]
+    [navigateNext, navigatePrevious, selectCurrent, onExit]
   );
 
   useEventListener("keydown", handleKeyDown, isVisible ? window : null);
@@ -646,11 +720,11 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   // Get visible covers (optimize rendering)
   const getVisibleCovers = () => {
     const visibleRange = 3; // Show 3 covers on each side
-    const covers: { track: Track; index: number; position: number }[] = [];
+    const covers: { item: CoverFlowItem; index: number; position: number }[] = [];
     
-    for (let i = Math.max(0, selectedIndex - visibleRange); i <= Math.min(tracks.length - 1, selectedIndex + visibleRange); i++) {
+    for (let i = Math.max(0, selectedIndex - visibleRange); i <= Math.min(coverItems.length - 1, selectedIndex + visibleRange); i++) {
       covers.push({
-        track: tracks[i],
+        item: coverItems[i],
         index: i,
         position: i - selectedIndex,
       });
@@ -662,7 +736,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   
   const visibleCovers = getVisibleCovers();
 
-  const currentTrack = tracks[selectedIndex];
+  const currentItem = coverItems[selectedIndex];
+  const playItemInPlace = useCallback(
+    (coverIndex: number) => {
+      const item = coverItems[coverIndex];
+      if (item) onPlayTrackInPlace?.(item.trackIndex);
+    },
+    [coverItems, onPlayTrackInPlace]
+  );
 
   return (
     <AnimatePresence>
@@ -724,18 +805,18 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               }}
             >
               <AnimatePresence mode="popLayout">
-                {visibleCovers.map(({ track, position }) => (
+                {visibleCovers.map(({ item, position }) => (
                   <CoverImage
-                    key={track.id}
-                    track={track}
+                    key={item.key}
+                    track={item.track}
                     position={position}
                     ipodMode={ipodMode}
                     showCD={showCD}
-                    isPlaying={isPlaying && selectedIndex === currentIndex}
+                    isPlaying={isPlaying && selectedIndex === currentCoverIndex}
                     onTogglePlay={onTogglePlay}
                     selectedIndex={selectedIndex}
-                    currentIndex={currentIndex}
-                    onPlayTrackInPlace={onPlayTrackInPlace}
+                    currentIndex={currentCoverIndex}
+                    onPlayTrackInPlace={playItemInPlace}
                   />
                 ))}
               </AnimatePresence>
@@ -758,8 +839,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 onClick={(e) => {
                   e.stopPropagation();
                   // If viewing a different track, play it without exiting CoverFlow
-                  if (selectedIndex !== currentIndex) {
-                    onPlayTrackInPlace?.(selectedIndex);
+                  if (selectedIndex !== currentCoverIndex) {
+                    playItemInPlace(selectedIndex);
                   } else {
                     // Same track - just toggle play/pause
                     onTogglePlay?.();
@@ -776,10 +857,10 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     background: "rgba(255, 255, 255, 0.08)",
                   }),
                 }}
-                title={isPlaying && selectedIndex === currentIndex ? t("apps.ipod.menu.pause") : t("apps.ipod.menu.play")}
+                title={isPlaying && selectedIndex === currentCoverIndex ? t("apps.ipod.menu.pause") : t("apps.ipod.menu.play")}
               >
                 {isMacTheme && <AquaShineOverlay />}
-                {isPlaying && selectedIndex === currentIndex ? (
+                {isPlaying && selectedIndex === currentCoverIndex ? (
                   <Pause className="w-full h-full relative z-10" weight="fill" />
                 ) : (
                   <Play className="w-full h-full relative z-10" weight="fill" />
@@ -793,14 +874,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 className={`text-white truncate leading-tight ${ipodMode ? "text-[10px]" : ""}`}
                 style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
               >
-                {currentTrack?.title || t("apps.ipod.coverFlow.noTrack")}
+                {currentItem?.title || t("apps.ipod.coverFlow.noTrack")}
               </div>
-              {currentTrack?.artist && (
+              {currentItem?.artist && (
                 <div 
                   className={`text-white/60 truncate leading-tight ${ipodMode ? "text-[8px]" : ""}`}
                   style={ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }}
                 >
-                  {currentTrack.artist}
+                  {currentItem.artist}
                 </div>
               )}
             </div>

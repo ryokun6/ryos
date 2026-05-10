@@ -118,7 +118,8 @@ export function IpodScreen({
   // Current menu title
   const currentMenuTitle = menuMode
     ? menuHistory.length > 0
-      ? menuHistory[menuHistory.length - 1].title
+      ? menuHistory[menuHistory.length - 1].displayTitle ??
+        menuHistory[menuHistory.length - 1].title
       : t("apps.ipod.menuItems.ipod")
     : t("apps.ipod.menuItems.nowPlaying");
 

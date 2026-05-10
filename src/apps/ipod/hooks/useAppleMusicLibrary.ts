@@ -35,6 +35,7 @@ export interface AppleMusicLibrarySongResource {
   attributes?: {
     name?: string;
     artistName?: string;
+    albumArtistName?: string;
     albumName?: string;
     durationInMillis?: number;
     artwork?: {
@@ -50,10 +51,34 @@ export interface AppleMusicLibrarySongResource {
       reporting?: boolean;
     };
   };
+  relationships?: {
+    albums?: {
+      data?: { id: string; type: string }[];
+    };
+  };
+}
+
+interface AppleMusicAlbumResource {
+  id: string;
+  type: string;
+  attributes?: {
+    name?: string;
+    artistName?: string;
+    artwork?: {
+      url?: string;
+      width?: number;
+      height?: number;
+    };
+    playParams?: {
+      id?: string;
+      catalogId?: string;
+    };
+  };
 }
 
 interface LibrarySongsResponse {
   data?: AppleMusicLibrarySongResource[];
+  included?: AppleMusicAlbumResource[];
   next?: string;
   meta?: {
     total?: number;
@@ -88,6 +113,7 @@ interface LibraryPlaylistsResponse {
 
 interface LibraryPlaylistTracksResponse {
   data?: AppleMusicLibrarySongResource[];
+  included?: AppleMusicAlbumResource[];
   meta?: {
     total?: number;
   };
@@ -113,7 +139,8 @@ function resolveArtworkUrl(
  * Convert a v1 library-songs resource into the iPod Track type.
  */
 export function libraryResourceToTrack(
-  res: AppleMusicLibrarySongResource
+  res: AppleMusicLibrarySongResource,
+  albumResource?: AppleMusicAlbumResource
 ): Track | null {
   const attrs = res.attributes;
   const playParams = attrs?.playParams;
@@ -130,8 +157,13 @@ export function libraryResourceToTrack(
     url: `applemusic:${stableId}`,
     title: attrs.name || "Untitled",
     artist: attrs.artistName || "",
-    album: attrs.albumName,
-    cover: resolveArtworkUrl(attrs.artwork, 600),
+    album: attrs.albumName || albumResource?.attributes?.name,
+    albumArtist: attrs.albumArtistName || albumResource?.attributes?.artistName,
+    appleMusicAlbumId:
+      albumResource?.attributes?.playParams?.catalogId ||
+      albumResource?.attributes?.playParams?.id ||
+      albumResource?.id,
+    cover: resolveArtworkUrl(attrs.artwork, 600) ?? resolveArtworkUrl(albumResource?.attributes?.artwork, 600),
     durationMs: attrs.durationInMillis,
     source: "appleMusic",
     appleMusicPlayParams: {
@@ -143,6 +175,27 @@ export function libraryResourceToTrack(
     // Sensible default for offset; user can tweak per-track via the sync UI.
     lyricOffset: 0,
   };
+}
+
+function buildIncludedAlbumMap(
+  included: AppleMusicAlbumResource[] | undefined
+): Map<string, AppleMusicAlbumResource> {
+  const albums = new Map<string, AppleMusicAlbumResource>();
+  for (const item of included ?? []) {
+    if (item.type !== "albums" && item.type !== "library-albums") continue;
+    albums.set(`${item.type}:${item.id}`, item);
+    albums.set(item.id, item);
+  }
+  return albums;
+}
+
+function getIncludedAlbumForSong(
+  song: AppleMusicLibrarySongResource,
+  albums: Map<string, AppleMusicAlbumResource>
+): AppleMusicAlbumResource | undefined {
+  const ref = song.relationships?.albums?.data?.[0];
+  if (!ref) return undefined;
+  return albums.get(`${ref.type}:${ref.id}`) ?? albums.get(ref.id);
 }
 
 function libraryPlaylistResourceToPlaylist(
@@ -262,15 +315,19 @@ export async function fetchAppleMusicLibrary(
           offset,
           // Include catalog play params so we can reach the catalog version
           // of each library track for streaming + lyrics matching.
-          "include[library-songs]": "catalog",
+          "include[library-songs]": "catalog,albums",
         }
       );
       const data = response?.data as LibrarySongsResponse | undefined;
       const items = data?.data ?? [];
+      const albums = buildIncludedAlbumMap(data?.included);
       total = data?.meta?.total ?? total;
 
       for (const item of items) {
-        const track = libraryResourceToTrack(item);
+        const track = libraryResourceToTrack(
+          item,
+          getIncludedAlbumForSong(item, albums)
+        );
         if (track) aggregated.push(track);
       }
 
@@ -378,14 +435,18 @@ export async function fetchAppleMusicPlaylistTracks(
         {
           limit: PAGE_SIZE,
           offset,
-          "include[library-songs]": "catalog",
+          "include[library-songs]": "catalog,albums",
         }
       );
       const data = response?.data as LibraryPlaylistTracksResponse | undefined;
       const items = data?.data ?? [];
+      const albums = buildIncludedAlbumMap(data?.included);
 
       for (const item of items) {
-        const track = libraryResourceToTrack(item);
+        const track = libraryResourceToTrack(
+          item,
+          getIncludedAlbumForSong(item, albums)
+        );
         if (track) aggregated.push(track);
       }
 

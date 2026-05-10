@@ -64,6 +64,10 @@ export interface Track {
   title: string;
   artist?: string;
   album?: string;
+  /** Album-level artist for grouping compilations/collaborative albums. */
+  albumArtist?: string;
+  /** Apple Music album/library album id when available, used for album grouping. */
+  appleMusicAlbumId?: string;
   /** Cover image URL from Kugou */
   cover?: string;
   /** Offset in milliseconds to adjust lyrics timing for this track (positive = lyrics earlier) */
@@ -180,7 +184,7 @@ interface IpodData {
    * top-level menu.
    */
   ipodMenuBreadcrumb:
-    | { title: string; selectedIndex: number }[]
+    | { title: string; displayTitle?: string; selectedIndex: number }[]
     | null;
   /**
    * Whether the iPod was last in menu mode (true) or Now Playing mode
@@ -454,7 +458,9 @@ export interface IpodState extends IpodData {
 
   /** Persist the user's current menu navigation breadcrumb. */
   setIpodMenuBreadcrumb: (
-    breadcrumb: { title: string; selectedIndex: number }[] | null
+    breadcrumb:
+      | { title: string; displayTitle?: string; selectedIndex: number }[]
+      | null
   ) => void;
   /** Persist whether the iPod was last in menu mode. */
   setIpodMenuMode: (menuMode: boolean | null) => void;

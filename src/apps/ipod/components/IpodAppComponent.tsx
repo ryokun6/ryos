@@ -166,6 +166,7 @@ export function IpodAppComponent({
     adjustLyricOffset,
     getCurrentStoreTrack,
     // Apple Music
+    isAppleMusic,
     appleMusicAuthorized,
     musicKitStatus,
     handleAppleMusicSignIn,
@@ -443,6 +444,7 @@ export function IpodAppComponent({
                 isPlaying={isPlaying}
                 onTogglePlay={togglePlay}
                 onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                groupAppleMusicAlbums={isAppleMusic}
               />
 
               {/* Music Quiz overlay - positioned within screen bounds */}

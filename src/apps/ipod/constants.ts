@@ -2,6 +2,7 @@
 
 import { LyricsAlignment } from "@/types/lyrics";
 import i18n from "@/lib/i18n";
+import type { Track } from "@/stores/useIpodStore";
 
 // Translation language options
 export interface TranslationLanguage {
@@ -97,4 +98,20 @@ export function getTranslationBadge(code: string | null): string | null {
     return TRANSLATION_BADGES[actualLang] || actualLang[0]?.toUpperCase() || "?";
   }
   return TRANSLATION_BADGES[code] || code[0]?.toUpperCase() || "?";
+}
+
+export function getAlbumGroupingKey(
+  track: Track,
+  unknownAlbumLabel: string,
+  unknownArtistLabel: string
+): string {
+  const album = track.album || unknownAlbumLabel;
+  if (track.source === "appleMusic" && track.appleMusicAlbumId) {
+    return `am-album:${track.appleMusicAlbumId}`;
+  }
+  if (track.source === "appleMusic" && !track.albumArtist) {
+    return `am-album-name:${album.toLocaleLowerCase()}`;
+  }
+  const albumArtist = track.albumArtist || track.artist || unknownArtistLabel;
+  return `${albumArtist}\u0000${album}`;
 }
