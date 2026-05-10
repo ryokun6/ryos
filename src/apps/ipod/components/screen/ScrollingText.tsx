@@ -80,6 +80,8 @@ export function ScrollingText({
     ...style,
     maskImage,
     WebkitMaskImage: maskImage,
+    clipPath:
+      style?.clipPath ?? (shouldScroll ? "inset(-0.25em 0 -0.25em 0)" : undefined),
   };
   const alignClass = align === "left" ? "justify-start" : "justify-center";
   const textAlignClass = align === "left" ? "text-left" : "text-center";
@@ -98,7 +100,7 @@ export function ScrollingText({
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-x-hidden overflow-y-visible",
+        "relative overflow-visible",
         !shouldScroll && "flex",
         !shouldScroll && alignClass,
         className

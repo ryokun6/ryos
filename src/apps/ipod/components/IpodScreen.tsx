@@ -8,6 +8,7 @@ import {
 } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
+import { Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
@@ -87,6 +88,7 @@ export function IpodScreen({
   handlePause,
   handleReady,
   loopCurrent,
+  isShuffled,
   statusMessage,
   onToggleVideo,
   lcdFilterOn,
@@ -663,40 +665,55 @@ export function IpodScreen({
                 }
               }}
             >
-              <div className="flex-1 flex flex-col p-1 px-2 overflow-auto">
+              <div className="flex-1 flex flex-col p-1 px-2 overflow-visible">
                 {currentTrack ? (
                   <>
                     <div
                       className={cn(
-                        "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
-                        currentTrack.album ? "mb-0" : "mb-1"
+                        "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] flex items-center justify-between gap-2",
+                        currentTrack.album ? "mb-1" : "mb-1.5"
                       )}
                     >
-                      {currentIndex + 1} of {tracksLength}
+                      <span>
+                        {currentIndex + 1} of {tracksLength}
+                      </span>
+                      {isShuffled && (
+                        <Shuffle
+                          className="shrink-0"
+                          size={13}
+                          weight="bold"
+                          aria-label="shuffle on"
+                        />
+                      )}
                     </div>
-                    <div className="font-chicago text-[16px] text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] flex flex-col gap-px leading-snug min-h-0 overflow-visible">
+                    <div className="font-chicago text-[16px] text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] flex flex-col gap-0 leading-[1.05] min-h-0 overflow-visible">
                       <ScrollingText
                         text={currentTrack.title}
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
-                        className="leading-snug pb-px -mb-px"
+                        className="leading-[1.05] py-px"
                       />
                       <ScrollingText
                         text={currentTrack.artist || ""}
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
-                        className="leading-snug pb-px -mb-px"
+                        className="leading-[1.05] py-px"
                       />
                       {currentTrack.album && (
                         <ScrollingText
                           text={currentTrack.album}
                           isPlaying={isPlaying}
                           scrollStartDelaySec={1}
-                          className="leading-snug pb-px -mb-px"
+                          className="leading-[1.05] py-px"
                         />
                       )}
                     </div>
-                    <div className="mt-auto pt-3 flex-shrink-0 w-full">
+                    <div
+                      className={cn(
+                        "mt-auto flex-shrink-0 w-full",
+                        currentTrack.album ? "pt-1.5" : "pt-3"
+                      )}
+                    >
                       <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
                         <div
                           className="h-full bg-[#0a3667]"

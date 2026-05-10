@@ -48,6 +48,7 @@ export function IpodAppComponent({
     tracks,
     currentIndex,
     loopCurrent,
+    isShuffled,
     isPlaying,
     showVideo,
     backlightOn,
@@ -412,6 +413,7 @@ export function IpodAppComponent({
                   handlePause={handlePause}
                   handleReady={handleReady}
                   loopCurrent={loopCurrent}
+                  isShuffled={isShuffled}
                   statusMessage={statusMessage}
                   onToggleVideo={toggleVideo}
                   lcdFilterOn={lcdFilterOn}
