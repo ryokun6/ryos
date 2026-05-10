@@ -1812,6 +1812,8 @@
         "screen": "Screen",
         "screenClassic": "Classic",
         "screenModern": "Modern",
+        "uiTheme": "UI Theme",
+        "deviceTheme": "Device Theme",
         "fullScreen": "Full Screen",
         "library": "Library",
         "addToLibrary": "Add to Library...",

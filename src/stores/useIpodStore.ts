@@ -142,7 +142,8 @@ interface IpodData {
    *   hardware (click wheel, body) is unchanged — only the contents of
    *   the 150px LCD swap.
    *
-   * Persisted across reloads.
+   * Persisted across reloads. Defaults to **`"modern"`**; existing saved
+   * preferences (including **`"classic"`**) are kept on rehydrate.
    */
   uiVariant: "classic" | "modern";
   lcdFilterOn: boolean;
@@ -362,7 +363,7 @@ const initialIpodData: IpodData = {
   displayMode: DisplayMode.Video,
   backlightOn: true,
   theme: "classic",
-  uiVariant: "classic",
+  uiVariant: "modern",
   lcdFilterOn: true,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
@@ -2272,7 +2273,7 @@ export const useIpodStore = create<IpodState>()(
           uiVariant:
             state.uiVariant === "modern" || state.uiVariant === "classic"
               ? state.uiVariant
-              : "classic",
+              : "modern",
           lcdFilterOn: state.lcdFilterOn,
           showLyrics: state.showLyrics,
           lyricsAlignment: state.lyricsAlignment,

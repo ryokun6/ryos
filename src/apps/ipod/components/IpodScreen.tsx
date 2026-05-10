@@ -778,6 +778,7 @@ export function IpodScreen({
           text={titlebarTitle}
           isPlaying
           scrollStartDelaySec={1}
+          fadeEdges={isModernUi}
           className={cn(
             "flex-1 min-w-0 px-1 text-center leading-none",
             isModernUi &&
@@ -950,6 +951,7 @@ export function IpodScreen({
                             isPlaying={isPlaying}
                             scrollStartDelaySec={1}
                             align="left"
+                            fadeEdges
                             className="leading-[1.06] text-[15px] font-semibold text-black"
                           />
                           <ScrollingText
@@ -957,6 +959,7 @@ export function IpodScreen({
                             isPlaying={isPlaying}
                             scrollStartDelaySec={1}
                             align="left"
+                            fadeEdges
                             className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
                           />
                           {nowPlayingDisplayTrack.album && (
@@ -965,6 +968,7 @@ export function IpodScreen({
                               isPlaying={isPlaying}
                               scrollStartDelaySec={1}
                               align="left"
+                              fadeEdges
                               className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
                             />
                           )}

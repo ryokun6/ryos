@@ -154,7 +154,7 @@ export function IpodMenuBar({
     displayMode: s.displayMode ?? DisplayMode.Video,
     isLcdFilterOn: s.lcdFilterOn,
     currentTheme: s.theme,
-    uiVariant: s.uiVariant ?? "classic",
+    uiVariant: s.uiVariant ?? "modern",
     showLyrics: s.showLyrics,
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
     romanization: s.romanization,
@@ -766,87 +766,85 @@ export function IpodMenuBar({
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
-          <MenubarCheckboxItem
-            checked={isBacklightOn}
-            onCheckedChange={() => toggleBacklight()}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.ipod.menu.backlight")}
-          </MenubarCheckboxItem>
-
-          <MenubarCheckboxItem
-            checked={isLcdFilterOn}
-            onCheckedChange={() => toggleLcdFilter()}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.ipod.menu.lcdFilter")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={isVideoOn}
-            onCheckedChange={() => toggleVideo()}
-            className="text-md h-6 px-3"
-            disabled={!isPlaying}
-          >
-            {t("apps.ipod.menu.video")}
-          </MenubarCheckboxItem>
-
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-
-          {/* Screen UI variant: classic monochrome LCD vs. iOS 6 modern skin. */}
+          {/* Screen: backlight, monochrome filter, embedded video */}
           <MenubarSub>
             <MenubarSubTrigger className="text-md h-6 px-3">
-              {t("apps.ipod.menu.screen", "Screen")}
+              {t("apps.ipod.menu.screen")}
             </MenubarSubTrigger>
             <MenubarSubContent className="px-0">
               <MenubarCheckboxItem
-                checked={uiVariant === "classic"}
-                onCheckedChange={(checked) => {
-                  if (checked) setUiVariant("classic");
-                }}
-                className="text-md h-6 pr-3"
+                checked={isBacklightOn}
+                onCheckedChange={() => toggleBacklight()}
+                className="text-md h-6 px-3"
               >
-                {t("apps.ipod.menu.screenClassic", "Classic")}
+                {t("apps.ipod.menu.backlight")}
               </MenubarCheckboxItem>
+
               <MenubarCheckboxItem
-                checked={uiVariant === "modern"}
-                onCheckedChange={(checked) => {
-                  if (checked) setUiVariant("modern");
-                }}
-                className="text-md h-6 pr-3"
+                checked={isLcdFilterOn}
+                onCheckedChange={() => toggleLcdFilter()}
+                className="text-md h-6 px-3"
               >
-                {t("apps.ipod.menu.screenModern", "Modern")}
+                {t("apps.ipod.menu.lcdFilter")}
+              </MenubarCheckboxItem>
+
+              <MenubarCheckboxItem
+                checked={isVideoOn}
+                onCheckedChange={() => toggleVideo()}
+                className="text-md h-6 px-3"
+                disabled={!isPlaying}
+              >
+                {t("apps.ipod.menu.video")}
               </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarCheckboxItem
-            checked={currentTheme === "classic"}
-            onCheckedChange={(checked) => {
-              if (checked) setTheme("classic");
-            }}
-            className="text-md h-6 pr-3"
-          >
-            {t("apps.ipod.menu.classic")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={currentTheme === "black"}
-            onCheckedChange={(checked) => {
-              if (checked) setTheme("black");
-            }}
-            className="text-md h-6 pr-3"
-          >
-            {t("apps.ipod.menu.black")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
-            checked={currentTheme === "u2"}
-            onCheckedChange={(checked) => {
-              if (checked) setTheme("u2");
-            }}
-            className="text-md h-6 pr-3"
-          >
-            {t("apps.ipod.menu.u2")}
-          </MenubarCheckboxItem>
+          {/* LCD skin — classic monochrome vs modern iOS-6 */}
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("apps.ipod.menu.uiTheme")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
+              <MenubarRadioGroup
+                value={uiVariant}
+                onValueChange={(value) =>
+                  setUiVariant(value as "classic" | "modern")
+                }
+              >
+                <MenubarRadioItem value="classic" className="text-md h-6 pr-3">
+                  {t("apps.ipod.menu.screenClassic")}
+                </MenubarRadioItem>
+                <MenubarRadioItem value="modern" className="text-md h-6 pr-3">
+                  {t("apps.ipod.menu.screenModern")}
+                </MenubarRadioItem>
+              </MenubarRadioGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+
+          {/* Chassis / click wheel cosmetic */}
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("apps.ipod.menu.deviceTheme")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
+              <MenubarRadioGroup
+                value={currentTheme}
+                onValueChange={(value) =>
+                  setTheme(value as "classic" | "black" | "u2")
+                }
+              >
+                <MenubarRadioItem value="classic" className="text-md h-6 pr-3">
+                  {t("apps.ipod.menu.classic")}
+                </MenubarRadioItem>
+                <MenubarRadioItem value="black" className="text-md h-6 pr-3">
+                  {t("apps.ipod.menu.black")}
+                </MenubarRadioItem>
+                <MenubarRadioItem value="u2" className="text-md h-6 pr-3">
+                  {t("apps.ipod.menu.u2")}
+                </MenubarRadioItem>
+              </MenubarRadioGroup>
+            </MenubarSubContent>
+          </MenubarSub>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
