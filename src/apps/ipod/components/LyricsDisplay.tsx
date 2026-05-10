@@ -282,6 +282,13 @@ const GRADIENT_COLORS = "#00FFFF"; // Cyan starting color (hue-rotate will cycle
 const GRADIENT_GLOW_SHADOW = "0 0 6px rgba(0,255,255,0.5), 0 0 12px rgba(0,255,255,0.3), 0 0 4px rgba(0,0,0,0.3)";
 const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 6px rgba(0,255,255,0.5)) drop-shadow(0 0 12px rgba(0,255,255,0.3))";
 
+// Shared empty maps used as the default for furigana/soramimi props. Allocating
+// `new Map()` in the destructured defaults would create a fresh identity on
+// every render and bust downstream `useCallback`/`useMemo` deps that include
+// these maps (e.g. `renderWithFurigana`).
+const EMPTY_FURIGANA_MAP: ReadonlyMap<string, FuriganaSegment[]> = new Map();
+const EMPTY_SORAMIMI_MAP: ReadonlyMap<string, FuriganaSegment[]> = new Map();
+
 // Style category detection
 type StyleCategory = 'outline-blue' | 'outline-red' | 'glow-white' | 'glow-gold' | 'glow-gradient';
 
@@ -1744,8 +1751,8 @@ export function LyricsDisplay({
   gapClass = "gap-2",
   fontClassName = "font-geneva-12",
   containerStyle,
-  furiganaMap = new Map(),
-  soramimiMap = new Map(),
+  furiganaMap = EMPTY_FURIGANA_MAP as Map<string, FuriganaSegment[]>,
+  soramimiMap = EMPTY_SORAMIMI_MAP as Map<string, FuriganaSegment[]>,
   currentTimeMs,
   onSeekToTime,
   coverUrl,
@@ -1999,9 +2006,16 @@ export function LyricsDisplay({
   // For word-level timing, we still need to track Korean romanization state
   const showKoreanRomanization = romanization.enabled && romanization.korean;
 
-  // Detect style category and whether to use outline styling
-  const styleCategory = getStyleCategory(fontClassName);
-  const isOldSchoolKaraoke = styleCategory === 'outline-blue' || styleCategory === 'outline-red';
+  // Detect style category and whether to use outline styling. `styleCategory`
+  // only depends on `fontClassName`; bundling all derived style values into a
+  // single useMemo keeps every per-line render from re-running these tiny
+  // switches and avoids freshly-allocated string props that bust child memo.
+  const styleCategory = useMemo(
+    () => getStyleCategory(fontClassName),
+    [fontClassName]
+  );
+  const isOldSchoolKaraoke =
+    styleCategory === "outline-blue" || styleCategory === "outline-red";
 
   // Extract primary color from album art for the glow-gold style
   const palette = useCoverPalette(styleCategory === 'glow-gold' ? (coverUrl ?? null) : null);
@@ -2010,52 +2024,75 @@ export function LyricsDisplay({
     const boosted = boostGlowColor(raw);
     return makeGlowFromColor(boosted);
   }, [palette]);
-  
-  // Get the highlight color based on style category (returns gradient string for gradient style)
-  const getHighlightColor = (): string => {
+
+  const styleProps = useMemo(() => {
+    const isOutline =
+      styleCategory === "outline-blue" || styleCategory === "outline-red";
+    const isColoredGlow =
+      styleCategory === "glow-gold" || styleCategory === "glow-gradient";
+    const isGradient = styleCategory === "glow-gradient";
+
+    let highlight: string;
     switch (styleCategory) {
-      case 'outline-blue': return OLD_SCHOOL_HIGHLIGHT_COLOR;
-      case 'outline-red': return SERIF_RED_HIGHLIGHT_COLOR;
-      case 'glow-gold': return primaryGlow.color;
-      case 'glow-gradient': return GRADIENT_COLORS;
-      default: return "rgba(255, 255, 255, 1)";
+      case "outline-blue":
+        highlight = OLD_SCHOOL_HIGHLIGHT_COLOR;
+        break;
+      case "outline-red":
+        highlight = SERIF_RED_HIGHLIGHT_COLOR;
+        break;
+      case "glow-gold":
+        highlight = primaryGlow.color;
+        break;
+      case "glow-gradient":
+        highlight = GRADIENT_COLORS;
+        break;
+      default:
+        highlight = "rgba(255, 255, 255, 1)";
     }
-  };
-  
-  // Get the glow shadow based on style category
-  const getGlowShadow = (isHighlight: boolean): string => {
-    if (isOldSchoolKaraoke) return "none";
-    switch (styleCategory) {
-      case 'glow-gold': return isHighlight ? primaryGlow.shadow : BASE_SHADOW;
-      case 'glow-gradient': return isHighlight ? GRADIENT_GLOW_SHADOW : BASE_SHADOW;
-      default: return isHighlight ? GLOW_SHADOW : BASE_SHADOW;
+
+    let shadowHighlight: string;
+    if (isOutline) {
+      shadowHighlight = "none";
+    } else if (styleCategory === "glow-gold") {
+      shadowHighlight = primaryGlow.shadow;
+    } else if (styleCategory === "glow-gradient") {
+      shadowHighlight = GRADIENT_GLOW_SHADOW;
+    } else {
+      shadowHighlight = GLOW_SHADOW;
     }
-  };
-  
-  // Get the glow filter based on style category
-  const getGlowFilter = (): string => {
-    if (isOldSchoolKaraoke) return "none";
-    switch (styleCategory) {
-      case 'glow-gold': return primaryGlow.filter;
-      case 'glow-gradient': return GRADIENT_GLOW_FILTER;
-      default: return GLOW_FILTER;
+
+    let filter: string;
+    if (isOutline) {
+      filter = "none";
+    } else if (styleCategory === "glow-gold") {
+      filter = primaryGlow.filter;
+    } else if (styleCategory === "glow-gradient") {
+      filter = GRADIENT_GLOW_FILTER;
+    } else {
+      filter = GLOW_FILTER;
     }
-  };
-  
-  // Get base color for colored glow styles (inactive state). Gradient matches glow-white (semi-transparent white + opacity-55 on word layers).
-  const getBaseColor = (): string | undefined => {
-    switch (styleCategory) {
-      case 'glow-gold': return primaryGlow.baseColor;
-      default: return undefined;
-    }
-  };
-  
-  const highlightColor = getHighlightColor();
-  const isColoredGlow = styleCategory === 'glow-gold' || styleCategory === 'glow-gradient';
-  const isGradientStyle = styleCategory === 'glow-gradient';
-  const glowShadowHighlight = getGlowShadow(true);
-  const glowFilterStr = getGlowFilter();
-  const baseColorResolved = getBaseColor();
+
+    const base =
+      styleCategory === "glow-gold" ? primaryGlow.baseColor : undefined;
+
+    return {
+      highlightColor: highlight,
+      isColoredGlow,
+      isGradientStyle: isGradient,
+      glowShadowHighlight: shadowHighlight,
+      glowFilterStr: filter,
+      baseColorResolved: base,
+    };
+  }, [styleCategory, primaryGlow]);
+
+  const {
+    highlightColor,
+    isColoredGlow,
+    isGradientStyle,
+    glowShadowHighlight,
+    glowFilterStr,
+    baseColorResolved,
+  } = styleProps;
 
   const getTextAlign = (
     align: LyricsAlignment,
