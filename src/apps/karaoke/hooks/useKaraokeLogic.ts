@@ -27,6 +27,14 @@ import { helpItems } from "..";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track as trackAnalytics } from "@/utils/analytics";
 
+// User-agent sniffing is constant for the document lifetime, so compute once
+// at module load instead of re-running these regexes on every render of the
+// hook. Falling back to "" keeps the module import safe in non-browser envs.
+const UA = typeof navigator !== "undefined" ? navigator.userAgent : "";
+const IS_IOS = /iP(hone|od|ad)/.test(UA);
+const IS_SAFARI =
+  /Safari/.test(UA) && !/Chrome/.test(UA) && !/CriOS/.test(UA);
+
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;
   isForeground: boolean | undefined;
@@ -269,10 +277,9 @@ export function useKaraokeLogic({
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
 
-  // iOS/Safari detection for autoplay restrictions
-  const ua = navigator.userAgent;
-  const isIOS = /iP(hone|od|ad)/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
+  // iOS/Safari detection for autoplay restrictions (cached at module scope).
+  const isIOS = IS_IOS;
+  const isSafari = IS_SAFARI;
   // Track user interaction for autoplay guard (iOS Safari blocks autoplay until user interacts)
   const userHasInteractedRef = useRef(false);
 

@@ -53,6 +53,16 @@ import type { BrickGameRef } from "../components/BrickGame";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
 
+// User-agent sniffing is constant for the document lifetime, so compute once
+// at module load instead of re-running these regexes on every render of the
+// hook. The fallback for non-browser contexts (e.g. SSR, tests) keeps the
+// module import safe.
+const UA = typeof navigator !== "undefined" ? navigator.userAgent : "";
+const IS_IOS = /iP(hone|od|ad)/.test(UA);
+const IS_SAFARI =
+  /Safari/.test(UA) && !/Chrome/.test(UA) && !/CriOS/.test(UA);
+const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
+
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
   isForeground: boolean | undefined;
@@ -318,8 +328,10 @@ export function useIpodLogic({
 
   const joinListenSession = useListenSessionStore((s) => s.joinSession);
 
-  // Status management
-  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
+  // Status management. Use a lazy initializer for `Date.now()` so the
+  // timestamp is captured exactly once on mount instead of on every render
+  // (the result is immediately discarded after the first commit anyway).
+  const [lastActivityTime, setLastActivityTime] = useState(() => Date.now());
   const backlightTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -525,11 +537,10 @@ export function useIpodLogic({
     isWindowOpen && (isForeground ?? false)
   );
 
-  // iOS Safari detection
-  const ua = navigator.userAgent;
-  const isIOS = /iP(hone|od|ad)/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-  const isIOSSafari = isIOS && isSafari;
+  // iOS Safari detection (cached at module scope; see top of file).
+  const isIOS = IS_IOS;
+  const isSafari = IS_SAFARI;
+  const isIOSSafari = IS_IOS_SAFARI;
 
   // Status helper functions
   const showStatus = useCallback((message: string) => {
