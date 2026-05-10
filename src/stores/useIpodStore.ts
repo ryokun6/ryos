@@ -144,6 +144,13 @@ interface IpodData {
   appleMusicTracks: Track[];
   /** Playlists from the user's Apple Music library (IndexedDB-backed). */
   appleMusicPlaylists: AppleMusicPlaylist[];
+  /**
+   * Timestamp (epoch ms) when the playlist list itself was last synced.
+   * Drives the opportunistic background refresh in
+   * `useAppleMusicLibrary` independently of the heavier full-library
+   * fetch (which has its own `appleMusicLibraryLoadedAt`).
+   */
+  appleMusicPlaylistsLoadedAt: number | null;
   /** Tracks per playlist id; lazy-loaded on drill-down. */
   appleMusicPlaylistTracks: Record<string, Track[]>;
   /** Per-playlist cache timestamp for stale-while-revalidate. */
@@ -327,6 +334,7 @@ const initialIpodData: IpodData = {
   librarySource: "youtube",
   appleMusicTracks: [],
   appleMusicPlaylists: [],
+  appleMusicPlaylistsLoadedAt: null,
   appleMusicPlaylistTracks: {},
   appleMusicPlaylistTracksLoadedAt: {},
   appleMusicPlaylistTracksLoading: {},
@@ -448,8 +456,15 @@ export interface IpodState extends IpodData {
   setLibrarySource: (source: LibrarySource) => void;
   /** Replace the cached Apple Music library with the supplied tracks. */
   setAppleMusicTracks: (tracks: Track[]) => void;
-  /** Replace the cached Apple Music playlist list. */
-  setAppleMusicPlaylists: (playlists: AppleMusicPlaylist[]) => void;
+  /**
+   * Replace the cached Apple Music playlist list. When `loadedAt` is
+   * omitted, the freshness timestamp is set to `Date.now()`. Pass an
+   * explicit value (typically from IndexedDB) when hydrating from cache.
+   */
+  setAppleMusicPlaylists: (
+    playlists: AppleMusicPlaylist[],
+    loadedAt?: number | null
+  ) => void;
   /** Cache tracks for one playlist and mark it fresh. */
   setAppleMusicPlaylistTracks: (playlistId: string, tracks: Track[]) => void;
   /** Mark a per-playlist track fetch as in-flight (or finished). */
@@ -1812,8 +1827,15 @@ export const useIpodStore = create<IpodState>()(
           storefrontId: storefrontIdAtSave,
         });
       },
-      setAppleMusicPlaylists: (playlists) =>
-        set({ appleMusicPlaylists: playlists }),
+      setAppleMusicPlaylists: (playlists, loadedAt) =>
+        set({
+          appleMusicPlaylists: playlists,
+          // `null` is reserved for "never synced". When the caller doesn't
+          // pass a timestamp, treat this as a fresh sync (default behavior
+          // for opportunistic / foreground refresh paths).
+          appleMusicPlaylistsLoadedAt:
+            loadedAt === undefined ? Date.now() : loadedAt,
+        }),
       setAppleMusicPlaylistTracks: (playlistId, tracks) =>
         set((state) => ({
           appleMusicPlaylistTracks: {
@@ -2170,6 +2192,7 @@ if (import.meta.hot) {
       librarySource: s.librarySource,
       appleMusicTracks: s.appleMusicTracks,
       appleMusicPlaylists: s.appleMusicPlaylists,
+      appleMusicPlaylistsLoadedAt: s.appleMusicPlaylistsLoadedAt,
       appleMusicPlaylistTracks: s.appleMusicPlaylistTracks,
       appleMusicPlaylistTracksLoadedAt: s.appleMusicPlaylistTracksLoadedAt,
       appleMusicPlaylistTracksLoading: {},

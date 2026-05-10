@@ -799,6 +799,7 @@ export function useIpodLogic({
     useIpodStore.getState().setAppleMusicTracks([]);
     useIpodStore.setState({
       appleMusicPlaylists: [],
+      appleMusicPlaylistsLoadedAt: null,
       appleMusicPlaylistTracks: {},
       appleMusicPlaylistTracksLoadedAt: {},
       appleMusicPlaylistTracksLoading: {},
