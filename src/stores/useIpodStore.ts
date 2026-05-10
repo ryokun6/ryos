@@ -92,6 +92,28 @@ export interface Track {
   appleMusicPlayParams?: AppleMusicPlayParams;
 }
 
+/**
+ * Live now-playing row from MusicKit (`mediaItemDidChange`) while a station or
+ * catalog playlist queue is active. Drives LCD metadata, title bar rotation,
+ * and lyrics for air items (the store `currentTrack` stays the shell row).
+ */
+export interface AppleMusicKitNowPlaying {
+  id?: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  cover?: string;
+}
+
+/** Map a MusicKit media item id to the `am:…` form expected by `/api/songs`. */
+export function appleMusicKitIdToLyricsSongId(
+  kitId: string | undefined
+): string {
+  if (!kitId) return "";
+  if (kitId.startsWith("am:")) return kitId;
+  return `am:${kitId}`;
+}
+
 type LibraryState = "uninitialized" | "loaded" | "cleared";
 
 interface IpodData {
@@ -194,6 +216,8 @@ interface IpodData {
   appleMusicLibraryError: string | null;
   /** Cached storefront ID reported by MusicKit (e.g. "us"). */
   appleMusicStorefrontId: string | null;
+  /** Live MusicKit now-playing metadata during station / playlist queue playback. */
+  appleMusicKitNowPlaying: AppleMusicKitNowPlaying | null;
 
   // ---------- Menu navigation persistence ----------
 
@@ -370,6 +394,7 @@ const initialIpodData: IpodData = {
   appleMusicLibraryLoading: false,
   appleMusicLibraryError: null,
   appleMusicStorefrontId: null,
+  appleMusicKitNowPlaying: null,
 
   ipodMenuBreadcrumb: null,
   ipodMenuMode: null,
@@ -396,10 +421,12 @@ function resolveAppleMusicQueueTracks(state: IpodData): Track[] {
     .filter((track): track is Track => track !== null);
 }
 
-function isAppleMusicCollectionTrack(track: Track): boolean {
+export function isAppleMusicCollectionTrack(
+  track: Track | null | undefined
+): boolean {
   return Boolean(
-    track.appleMusicPlayParams?.stationId ||
-      track.appleMusicPlayParams?.playlistId
+    track?.appleMusicPlayParams?.stationId ||
+      track?.appleMusicPlayParams?.playlistId
   );
 }
 
@@ -547,6 +574,10 @@ export interface IpodState extends IpodData {
   appleMusicPreviousTrack: () => void;
   /** Cache the user's storefront for catalog API calls. */
   setAppleMusicStorefrontId: (storefrontId: string | null) => void;
+  /** Live MusicKit now-playing snapshot (station / playlist queue air item). */
+  setAppleMusicKitNowPlaying: (
+    snapshot: AppleMusicKitNowPlaying | null
+  ) => void;
 
   /** Persist the user's current menu navigation breadcrumb. */
   setIpodMenuBreadcrumb: (
@@ -1841,6 +1872,7 @@ export const useIpodStore = create<IpodState>()(
           totalTime: 0,
           currentLyrics: null,
           currentFuriganaMap: null,
+          appleMusicKitNowPlaying: null,
         });
       },
       setAppleMusicTracks: (tracks) => {
@@ -1970,6 +2002,7 @@ export const useIpodStore = create<IpodState>()(
           // Reset transient progress + lyrics whenever the active track changes.
           return {
             appleMusicCurrentSongId: songId,
+            appleMusicKitNowPlaying: null,
             currentLyrics: null,
             currentFuriganaMap: null,
             elapsedTime: 0,
@@ -2084,6 +2117,8 @@ export const useIpodStore = create<IpodState>()(
         }),
       setAppleMusicStorefrontId: (storefrontId) =>
         set({ appleMusicStorefrontId: storefrontId }),
+      setAppleMusicKitNowPlaying: (snapshot) =>
+        set({ appleMusicKitNowPlaying: snapshot }),
       setIpodMenuBreadcrumb: (breadcrumb) =>
         set({ ipodMenuBreadcrumb: breadcrumb }),
       setIpodMenuMode: (menuMode) => set({ ipodMenuMode: menuMode }),

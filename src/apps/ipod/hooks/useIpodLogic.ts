@@ -32,6 +32,8 @@ import {
   Track,
   getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
+  isAppleMusicCollectionTrack,
+  appleMusicKitIdToLyricsSongId,
 } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -74,13 +76,6 @@ const IS_IOS = /iP(hone|od|ad)/.test(UA);
 const IS_SAFARI =
   /Safari/.test(UA) && !/Chrome/.test(UA) && !/CriOS/.test(UA);
 const IS_IOS_SAFARI = IS_IOS && IS_SAFARI;
-
-function isAppleMusicCollectionTrack(track: Track | null | undefined): boolean {
-  return Boolean(
-    track?.appleMusicPlayParams?.stationId ||
-      track?.appleMusicPlayParams?.playlistId
-  );
-}
 
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;
@@ -2506,7 +2501,7 @@ export function useIpodLogic({
     }, 2000);
   }, []);
 
-  const getCurrentAppleMusicStationTrack = useCallback(() => {
+  const getCurrentAppleMusicCollectionShellTrack = useCallback(() => {
     const state = useIpodStore.getState();
     if (state.librarySource !== "appleMusic" || !state.appleMusicCurrentSongId) {
       return null;
@@ -2519,58 +2514,80 @@ export function useIpodLogic({
         (candidate) => candidate.id === state.appleMusicCurrentSongId
       ) ??
       null;
-    return track?.appleMusicPlayParams?.stationId ? track : null;
+    return track && isAppleMusicCollectionTrack(track) ? track : null;
   }, [appleMusicRadioTracks]);
 
-  const skipAppleMusicStationTrack = useCallback(async () => {
-    if (!getCurrentAppleMusicStationTrack()) return false;
-    const activePlayer = isFullScreen
-      ? fullScreenPlayerRef.current
-      : playerRef.current;
-    const instance = activePlayer?.getInternalPlayer?.();
-    if (!instance || typeof instance.skipToNextItem !== "function") {
-      return false;
-    }
+  const skipAppleMusicCollectionShell = useCallback(
+    async (direction: "next" | "previous") => {
+      const shellTrack = getCurrentAppleMusicCollectionShellTrack();
+      if (!shellTrack) return false;
+      const activePlayer = isFullScreen
+        ? fullScreenPlayerRef.current
+        : playerRef.current;
+      const instance = activePlayer?.getInternalPlayer?.();
+      if (!instance) return false;
 
-    try {
-      skipOperationRef.current = true;
-      startTrackSwitch();
-      useIpodStore.getState().setElapsedTime(0);
-      useIpodStore.getState().setTotalTime(0);
-      await instance.skipToNextItem();
-      setIsPlaying(true);
-      showStatus("⏭");
-      return true;
-    } catch (err) {
-      console.warn("[apple music] failed to skip radio station item", err);
-      return false;
-    }
-  }, [
-    getCurrentAppleMusicStationTrack,
-    isFullScreen,
-    setIsPlaying,
-    showStatus,
-    startTrackSwitch,
-  ]);
+      const isStation = Boolean(shellTrack.appleMusicPlayParams?.stationId);
+      const skipNext =
+        direction === "next" ||
+        isStation ||
+        typeof instance.skipToPreviousItem !== "function";
+      if (skipNext && typeof instance.skipToNextItem !== "function") {
+        return false;
+      }
+      if (!skipNext && typeof instance.skipToPreviousItem !== "function") {
+        return false;
+      }
+
+      try {
+        skipOperationRef.current = true;
+        startTrackSwitch();
+        useIpodStore.getState().setElapsedTime(0);
+        useIpodStore.getState().setTotalTime(0);
+        if (skipNext) {
+          await instance.skipToNextItem();
+        } else {
+          await instance.skipToPreviousItem();
+        }
+        setIsPlaying(true);
+        showStatus(direction === "previous" ? "⏮" : "⏭");
+        return true;
+      } catch (err) {
+        console.warn("[apple music] failed to skip collection queue item", err);
+        return false;
+      }
+    },
+    [
+      getCurrentAppleMusicCollectionShellTrack,
+      isFullScreen,
+      setIsPlaying,
+      showStatus,
+      startTrackSwitch,
+    ]
+  );
 
   const nextTrack = useCallback(() => {
-    if (getCurrentAppleMusicStationTrack()) {
-      void skipAppleMusicStationTrack();
+    if (getCurrentAppleMusicCollectionShellTrack()) {
+      void skipAppleMusicCollectionShell("next");
       return;
     }
     rawNextTrack();
-  }, [getCurrentAppleMusicStationTrack, rawNextTrack, skipAppleMusicStationTrack]);
+  }, [
+    getCurrentAppleMusicCollectionShellTrack,
+    rawNextTrack,
+    skipAppleMusicCollectionShell,
+  ]);
 
   const previousTrack = useCallback(() => {
-    if (getCurrentAppleMusicStationTrack()) {
-      void skipAppleMusicStationTrack();
+    if (getCurrentAppleMusicCollectionShellTrack()) {
+      void skipAppleMusicCollectionShell("previous");
       return;
     }
     rawPreviousTrack();
   }, [
-    getCurrentAppleMusicStationTrack,
+    getCurrentAppleMusicCollectionShellTrack,
     rawPreviousTrack,
-    skipAppleMusicStationTrack,
+    skipAppleMusicCollectionShell,
   ]);
 
   // Track handling
@@ -3039,8 +3056,8 @@ export function useIpodLogic({
           }
           if (isOffline) {
             showOfflineStatus();
-          } else if (getCurrentAppleMusicStationTrack()) {
-            void skipAppleMusicStationTrack();
+          } else if (getCurrentAppleMusicCollectionShellTrack()) {
+            void skipAppleMusicCollectionShell("next");
           } else {
             skipOperationRef.current = true;
             startTrackSwitch();
@@ -3077,8 +3094,8 @@ export function useIpodLogic({
           }
           if (isOffline) {
             showOfflineStatus();
-          } else if (getCurrentAppleMusicStationTrack()) {
-            void skipAppleMusicStationTrack();
+          } else if (getCurrentAppleMusicCollectionShellTrack()) {
+            void skipAppleMusicCollectionShell("previous");
           } else {
             skipOperationRef.current = true;
             startTrackSwitch();
@@ -3128,7 +3145,7 @@ export function useIpodLogic({
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicStationTrack, skipAppleMusicStationTrack, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
+    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicCollectionShellTrack, skipAppleMusicCollectionShell, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
   );
 
   // Wheel rotation handler
@@ -3371,6 +3388,7 @@ export function useIpodLogic({
 
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
+  const appleMusicKitNowPlaying = useIpodStore((s) => s.appleMusicKitNowPlaying);
 
   // Lyrics hook
   const selectedMatchForLyrics = useMemo(() => {
@@ -3390,16 +3408,45 @@ export function useIpodLogic({
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
     [lyricsTranslationLanguage, appLanguage]
   );
-  const lyricsSongId =
-    isAppleMusicCollectionTrack(currentTrack)
-      ? ""
-      : currentTrack?.id ?? "";
+  const lyricsTitle = useMemo(() => {
+    if (currentTrack && isAppleMusicCollectionTrack(currentTrack)) {
+      const live = appleMusicKitNowPlaying?.title?.trim();
+      if (live) return live;
+    }
+    return currentTrack?.title ?? "";
+  }, [currentTrack, appleMusicKitNowPlaying?.title]);
+
+  const lyricsArtist = useMemo(() => {
+    if (currentTrack && isAppleMusicCollectionTrack(currentTrack)) {
+      const live = appleMusicKitNowPlaying?.artist?.trim();
+      if (live) return live;
+    }
+    return currentTrack?.artist ?? "";
+  }, [currentTrack, appleMusicKitNowPlaying?.artist]);
+
+  const lyricsSongId = useMemo(() => {
+    if (!currentTrack) return "";
+    if (isAppleMusicCollectionTrack(currentTrack)) {
+      return appleMusicKitIdToLyricsSongId(appleMusicKitNowPlaying?.id);
+    }
+    return currentTrack.id ?? "";
+  }, [currentTrack, appleMusicKitNowPlaying?.id]);
+
+  const lyricsTimingOffsetMs = useMemo(() => {
+    if (
+      isAppleMusicCollectionTrack(currentTrack) &&
+      appleMusicKitNowPlaying?.id
+    ) {
+      return 0;
+    }
+    return currentTrack?.lyricOffset ?? 0;
+  }, [currentTrack, appleMusicKitNowPlaying?.id]);
 
   const fullScreenLyricsControls = useLyrics({
     songId: lyricsSongId,
-    title: currentTrack?.title ?? "",
-    artist: currentTrack?.artist ?? "",
-    currentTime: elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000,
+    title: lyricsTitle,
+    artist: lyricsArtist,
+    currentTime: elapsedTime + lyricsTimingOffsetMs / 1000,
     translateTo: effectiveTranslationLanguage,
     selectedMatch: selectedMatchForLyrics,
     includeFurigana: true, // Fetch furigana info with lyrics to reduce API calls

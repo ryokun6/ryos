@@ -46,7 +46,7 @@ const {
   APPLE_MUSIC_PLAYLISTS_OPPORTUNISTIC_TTL_MS,
   APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
 } = await import("../src/apps/ipod/hooks/useAppleMusicLibrary");
-const { useIpodStore } = await import("../src/stores/useIpodStore");
+const { useIpodStore, appleMusicKitIdToLyricsSongId } = await import("../src/stores/useIpodStore");
 const {
   isValidAppleMusicSongId,
   isValidYouTubeVideoId,
@@ -78,6 +78,12 @@ describe("Apple Music song ID validation", () => {
     expect(isValidSongId("not-a-real-id")).toBe(false);
     expect(isValidSongId("am:")).toBe(false);
     expect(isValidSongId("am:foo bar")).toBe(false);
+  });
+
+  test("normalizes MusicKit ids for lyrics API paths", () => {
+    expect(appleMusicKitIdToLyricsSongId(undefined)).toBe("");
+    expect(appleMusicKitIdToLyricsSongId("1616228595")).toBe("am:1616228595");
+    expect(appleMusicKitIdToLyricsSongId("am:1616228595")).toBe("am:1616228595");
   });
 });
 
@@ -287,6 +293,7 @@ describe("useIpodStore Apple Music slice", () => {
       isPlaying: true,
       elapsedTime: 42,
       totalTime: 200,
+      appleMusicKitNowPlaying: { title: "On Air", id: "1616228595" },
     });
     useIpodStore.getState().setLibrarySource("appleMusic");
     const state = useIpodStore.getState();
@@ -294,6 +301,17 @@ describe("useIpodStore Apple Music slice", () => {
     expect(state.isPlaying).toBe(false);
     expect(state.elapsedTime).toBe(0);
     expect(state.totalTime).toBe(0);
+    expect(state.appleMusicKitNowPlaying).toBeNull();
+  });
+
+  test("setAppleMusicCurrentSongId clears live MusicKit metadata snapshot", () => {
+    useIpodStore.setState({
+      librarySource: "appleMusic",
+      appleMusicCurrentSongId: "am:station:x",
+      appleMusicKitNowPlaying: { title: "Song", id: "999" },
+    });
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:1");
+    expect(useIpodStore.getState().appleMusicKitNowPlaying).toBeNull();
   });
 
   test("setAppleMusicTracks selects the first track when current is no longer in the list", () => {
