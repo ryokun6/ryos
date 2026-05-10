@@ -10,7 +10,7 @@ ryOS includes 26 built-in applications, each designed to replicate classic deskt
 | [TextEdit](/docs/textedit) | Rich text editor with markdown support | Productivity |
 | [Paint](/docs/paint) | Image drawing and editing tool | Creativity |
 | [Photo Booth](/docs/photo-booth) | Take photos with fun effects | Creativity |
-| [iPod](/docs/ipod) | Music player with YouTube integration & synced lyrics | Media |
+| [iPod](/docs/ipod) | Music player with YouTube, Apple Music, and synced lyrics | Media |
 | [Karaoke](/docs/karaoke) | Karaoke player with synced lyrics display | Media |
 | [Videos](/docs/videos) | Video player for watching media | Media |
 | [TV](/docs/tv) | Channel-surfing TV with CRT shader effects, MTV music videos with synced captions, and AI-generated channels | Media |

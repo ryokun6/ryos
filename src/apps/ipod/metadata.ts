@@ -1,8 +1,9 @@
 export const helpItems = [
   {
     icon: "🎵",
-    title: "Add from YouTube",
-    description: "Paste any YouTube URL to add the track straight into your library",
+    title: "YouTube & Apple Music",
+    description:
+      "Add YouTube tracks or switch to Apple Music to browse your library, playlists, recently added, and favorites",
   },
   {
     icon: "🔄",
@@ -20,14 +21,16 @@ export const helpItems = [
     description: "Long-press the screen to open Cover Flow and flip through albums",
   },
   {
-    icon: "🎶",
-    title: "Karaoke Sync",
-    description: "Library is shared with Karaoke — songs added here show up there too",
+    icon: "🔗",
+    title: "Share Songs",
+    description:
+      "YouTube songs share ryOS links, while Apple Music songs copy their Apple Music link",
   },
   {
     icon: "📺",
     title: "Fullscreen Visuals",
-    description: "Go fullscreen for music videos with warp, mesh, and water shader backdrops",
+    description:
+      "Choose cover, landscape, warp, mesh, or water visuals; Apple Music defaults to cover and hides video mode",
   },
 ];
 

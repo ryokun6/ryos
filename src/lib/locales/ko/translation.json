@@ -2249,20 +2249,20 @@
       },
       "help": {
         "addSongs": {
-          "description": "YouTube URL을 붙여넣어 트랙을 라이브러리에 바로 추가하세요.",
-          "title": "YouTube에서 추가"
+          "description": "YouTube 트랙을 추가하거나 Apple Music으로 전환해 라이브러리, 플레이리스트, 최근 추가 항목, 즐겨찾기를 둘러보세요",
+          "title": "YouTube 및 Apple Music"
         },
         "coverFlow": {
           "description": "화면을 길게 눌러 커버 플로우를 열고 앨범을 넘겨보세요.",
           "title": "커버 플로우"
         },
         "displayFullscreen": {
-          "description": "워프, 메시, 워터 셰이더 배경과 함께 뮤직 비디오를 전체 화면으로 감상하세요",
+          "description": "커버, 풍경, 워프, 메시 또는 워터 비주얼을 선택하세요. Apple Music은 기본적으로 커버를 사용하고 비디오 모드를 숨깁니다",
           "title": "전체 화면 비주얼"
         },
-        "karaokeSync": {
-          "description": "라이브러리가 가라오케와 공유됩니다 — 여기에 추가된 곡은 그곳에도 표시됩니다",
-          "title": "가라오케 동기화"
+        "shareSongs": {
+          "description": "YouTube 곡은 ryOS 링크로 공유되고, Apple Music 곡은 Apple Music 링크가 복사됩니다",
+          "title": "노래 공유"
         },
         "lyricsPronunciation": {
           "description": "번역, 후리가나, 로마자, 병음이 포함된 실시간 동기화 가사를 확인하세요.",

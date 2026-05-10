@@ -2249,20 +2249,20 @@
       },
       "help": {
         "addSongs": {
-          "description": "貼上任何 YouTube 網址，將曲目直接加入你的資料庫",
-          "title": "從 YouTube 新增"
+          "description": "新增 YouTube 曲目，或切換到 Apple Music 瀏覽你的資料庫、播放列表、最近加入和喜好項目",
+          "title": "YouTube 與 Apple Music"
         },
         "coverFlow": {
           "description": "長按螢幕以開啟 Cover Flow 並翻閱專輯",
           "title": "Cover Flow"
         },
         "displayFullscreen": {
-          "description": "以全螢幕播放音樂錄影帶，並搭配扭曲、網格與水波著色器背景",
+          "description": "選擇封面、風景、扭曲、網格或水波視覺效果；Apple Music 預設使用封面並隱藏影片模式",
           "title": "全螢幕視覺效果"
         },
-        "karaokeSync": {
-          "description": "資料庫與卡拉 OK 共享 — 在此新增的歌曲也會顯示在該處",
-          "title": "卡拉 OK 同步"
+        "shareSongs": {
+          "description": "YouTube 歌曲會分享 ryOS 連結，Apple Music 歌曲則會複製 Apple Music 連結",
+          "title": "分享歌曲"
         },
         "lyricsPronunciation": {
           "description": "查看包含翻譯、振假名、羅馬拼音與漢語拼音的即時同步歌詞",

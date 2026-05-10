@@ -89,7 +89,7 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "wheelNavigation",
     "lyricsPronunciation",
     "coverFlow",
-    "karaokeSync",
+    "shareSongs",
     "displayFullscreen",
   ],
   karaoke: [

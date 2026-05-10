@@ -2249,20 +2249,20 @@
       },
       "help": {
         "addSongs": {
-          "description": "Pega cualquier URL de YouTube para añadir la pista directamente a tu biblioteca",
-          "title": "Añadir desde YouTube"
+          "description": "Añade pistas de YouTube o cambia a Apple Music para explorar tu biblioteca, playlists, recién añadidas y favoritas",
+          "title": "YouTube y Apple Music"
         },
         "coverFlow": {
           "description": "Mantén presionada la pantalla para abrir Cover Flow y hojear los álbumes",
           "title": "Cover Flow"
         },
         "displayFullscreen": {
-          "description": "Pasa a pantalla completa en vídeos musicales con fondos de distorsión, malla y shaders de agua",
+          "description": "Elige visuales de carátula, paisajes, distorsión, malla o agua; Apple Music usa carátula por defecto y oculta el modo vídeo",
           "title": "Visualizaciones a pantalla completa"
         },
-        "karaokeSync": {
-          "description": "La biblioteca se comparte con Karaoke; las canciones añadidas aquí también aparecerán allí",
-          "title": "Sincronización de karaoke"
+        "shareSongs": {
+          "description": "Las canciones de YouTube comparten enlaces de ryOS, mientras que las de Apple Music copian su enlace de Apple Music",
+          "title": "Compartir canciones"
         },
         "lyricsPronunciation": {
           "description": "Mira letras sincronizadas en vivo con traducciones, furigana, romaji y pinyin",

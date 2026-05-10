@@ -2063,8 +2063,8 @@
       },
       "help": {
         "addSongs": {
-          "title": "Add from YouTube",
-          "description": "Paste any YouTube URL to add the track straight into your library"
+          "title": "YouTube & Apple Music",
+          "description": "Add YouTube tracks or switch to Apple Music to browse your library, playlists, recently added, and favorites"
         },
         "wheelNavigation": {
           "title": "Click Wheel",
@@ -2078,13 +2078,13 @@
           "title": "Cover Flow",
           "description": "Long-press the screen to open Cover Flow and flip through albums"
         },
-        "karaokeSync": {
-          "title": "Karaoke Sync",
-          "description": "Library is shared with Karaoke — songs added here show up there too"
+        "shareSongs": {
+          "title": "Share Songs",
+          "description": "YouTube songs share ryOS links, while Apple Music songs copy their Apple Music link"
         },
         "displayFullscreen": {
           "title": "Fullscreen Visuals",
-          "description": "Go fullscreen for music videos with warp, mesh, and water shader backdrops"
+          "description": "Choose cover, landscape, warp, mesh, or water visuals; Apple Music defaults to cover and hides video mode"
         }
       },
       "lyrics": {

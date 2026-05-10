@@ -2249,20 +2249,20 @@
       },
       "help": {
         "addSongs": {
-          "description": "Füge eine beliebige YouTube-URL ein, um den Titel direkt zu deiner Mediathek hinzuzufügen",
-          "title": "Von YouTube hinzufügen"
+          "description": "Füge YouTube-Titel hinzu oder wechsle zu Apple Music, um Mediathek, Playlists, Zuletzt hinzugefügt und Favoriten zu durchsuchen",
+          "title": "YouTube & Apple Music"
         },
         "coverFlow": {
           "description": "Halte den Bildschirm gedrückt, um Cover Flow zu öffnen und durch Alben zu blättern",
           "title": "Cover Flow"
         },
         "displayFullscreen": {
-          "description": "Musikvideos im Vollbildmodus mit Warp-, Mesh- und Wasser-Shader-Hintergründen ansehen",
+          "description": "Wähle Cover-, Landschafts-, Warp-, Mesh- oder Wasser-Visualisierungen; Apple Music startet mit Cover und blendet den Videomodus aus",
           "title": "Vollbild-Visualisierungen"
         },
-        "karaokeSync": {
-          "description": "Die Mediathek wird mit Karaoke geteilt – hier hinzugefügte Titel erscheinen auch dort",
-          "title": "Karaoke-Sync"
+        "shareSongs": {
+          "description": "YouTube-Songs teilen ryOS-Links, während Apple Music-Songs ihren Apple Music-Link kopieren",
+          "title": "Songs teilen"
         },
         "lyricsPronunciation": {
           "description": "Sieh dir live-synchronisierte Songtexte mit Übersetzungen, Furigana, Romaji und Pinyin an",

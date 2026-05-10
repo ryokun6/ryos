@@ -2249,20 +2249,20 @@
       },
       "help": {
         "addSongs": {
-          "description": "Incolla un URL di YouTube per aggiungere il brano direttamente nella tua libreria",
-          "title": "Aggiungi da YouTube"
+          "description": "Aggiungi brani da YouTube o passa ad Apple Music per sfogliare libreria, playlist, aggiunti di recente e preferiti",
+          "title": "YouTube e Apple Music"
         },
         "coverFlow": {
           "description": "Premi a lungo lo schermo per aprire Cover Flow e sfogliare gli album",
           "title": "Cover Flow"
         },
         "displayFullscreen": {
-          "description": "Passa a schermo intero per i video musicali con sfondi warp, mesh e water shader",
+          "description": "Scegli visual cover, paesaggi, warp, mesh o acqua; Apple Music usa la cover per impostazione predefinita e nasconde la modalità video",
           "title": "Visualizzazioni a schermo intero"
         },
-        "karaokeSync": {
-          "description": "La libreria è condivisa con Karaoke — i brani aggiunti qui appariranno anche lì",
-          "title": "Sincronizzazione Karaoke"
+        "shareSongs": {
+          "description": "I brani YouTube condividono link ryOS, mentre i brani Apple Music copiano il loro link Apple Music",
+          "title": "Condividi brani"
         },
         "lyricsPronunciation": {
           "description": "Visualizza i testi sincronizzati in tempo reale con traduzioni, furigana, romaji e pinyin",

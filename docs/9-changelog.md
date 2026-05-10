@@ -15,8 +15,9 @@ A summary of changes and updates to ryOS, organized by month.
 - Docs: **Maps** — add app documentation (MapKit search, pins, Home/Work/Favorites); **Directions** hands off to Apple Maps in a **new tab** (ryOS tab unchanged). **`mapsSearchPlaces`** in Chats opens a chosen place **inside ryOS Maps** without leaving the chat page; in-map turn-by-turn routing is not implemented yet.
 
 <details>
-<summary>Minor changes (8)</summary>
+<summary>Minor changes (9)</summary>
 
+- iPod: Apple Music sharing now copies Apple Music song links without touching the YouTube shared-song list; Apple Music display defaults to Cover, hides Video mode, keeps other visualizers available, and cleans up Now Playing marquee/shuffle status.
 - Localize Virtual PC UI and v86 preset catalog; translate remaining locale TODOs across all languages.
 - Add Cover Flow toggle to Karaoke and iPod title bars.
 - Karaoke: fix visual-effect gating order; further optimize hidden video visual effects.
