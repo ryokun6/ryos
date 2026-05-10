@@ -37,10 +37,7 @@ export function MenuListItem({
 
   if (isModern) {
     // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection, no separator. Modern mode uses the 20px row height
-    // configured in IpodScreen — slightly tighter than classic's 24px
-    // because Helvetica Neue at 12px doesn't need as much padding as
-    // 16px Chicago bitmap glyphs do.
+    // selection, no separator. Matches IpodScreen's compact modern row (**23px**) + uniform **15px** labels for title + rows. Classic unchanged (16px Chicago).
     return (
       <div
         onClick={isLoading ? undefined : onClick}
@@ -57,10 +54,7 @@ export function MenuListItem({
       >
         <span
           className={cn(
-            "whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2 leading-[1.15] font-medium",
-            // 13px MyriadPro / Helvetica Neue. CJK gets a touch smaller
-            // because Hiragino/Noto runs larger at the same nominal em.
-            hasCjkText ? "text-[12px]" : "text-[13px]"
+            "whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2 text-[15px] font-medium leading-[1.15]"
           )}
         >
           {text}
@@ -68,8 +62,7 @@ export function MenuListItem({
         {value ? (
           <span
             className={cn(
-              "flex-shrink-0 leading-[1.15] font-normal",
-              hasCjkText ? "text-[11px]" : "text-[12px]",
+              "flex-shrink-0 leading-[1.15] text-[15px] font-normal",
               isSelected && !isLoading
                 ? "text-white/90"
                 : "text-[rgb(99,101,103)]"
@@ -85,7 +78,7 @@ export function MenuListItem({
             <span
               className={cn(
                 "flex-shrink-0 leading-none font-normal",
-                "text-[13px]",
+                "text-[15px]",
                 isSelected && !isLoading ? "text-white/95" : "text-[#b8b8bc]"
               )}
               aria-hidden

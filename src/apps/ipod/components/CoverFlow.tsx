@@ -6,10 +6,12 @@ import {
   getAlbumGroupingKey,
 } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
+import { useIpodStore } from "@/stores/useIpodStore";
 import { Play, Pause, VinylRecord } from "@phosphor-icons/react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useEventListener } from "@/hooks/useEventListener";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
@@ -566,6 +568,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const containerRef = useRef<HTMLDivElement>(null);
   const currentTheme = useThemeStore((s) => s.current);
   const isMacTheme = currentTheme === "macosx";
+  const uiVariant = useIpodStore((s) => s.uiVariant);
+  const isModernIpodCoverFlow = ipodMode && uiVariant === "modern";
   
   // Track swipe state
   const swipeStartX = useRef<number | null>(null);
@@ -825,9 +829,11 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
 
           {/* Track info - fixed size for iPod, responsive for Karaoke */}
           <motion.div
-            className={`absolute left-0 right-0 font-geneva-12 flex items-center justify-center gap-2 ${
+            className={cn(
+              "absolute left-0 right-0 flex items-center justify-center gap-2",
+              isModernIpodCoverFlow ? "font-ipod-modern-ui" : "font-geneva-12",
               ipodMode ? "px-2" : "px-6"
-            }`}
+            )}
             style={{ bottom: ipodMode ? "6px" : "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
@@ -870,16 +876,26 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             
             {/* Track info */}
             <div className="text-center min-w-0 flex-1">
-              <div 
-                className={`text-white truncate leading-tight ${ipodMode ? "text-[10px]" : ""}`}
+              <div
+                className={cn(
+                  "text-white truncate leading-tight",
+                  isModernIpodCoverFlow && "text-[15px]",
+                  ipodMode && !isModernIpodCoverFlow && "text-[10px]",
+                )}
                 style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
               >
                 {currentItem?.title || t("apps.ipod.coverFlow.noTrack")}
               </div>
               {currentItem?.artist && (
-                <div 
-                  className={`text-white/60 truncate leading-tight ${ipodMode ? "text-[8px]" : ""}`}
-                  style={ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }}
+                <div
+                  className={cn(
+                    "text-white/60 truncate leading-tight",
+                    isModernIpodCoverFlow && "text-[15px]",
+                    ipodMode && !isModernIpodCoverFlow && "text-[8px]",
+                  )}
+                  style={
+                    ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }
+                  }
                 >
                   {currentItem.artist}
                 </div>

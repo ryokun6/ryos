@@ -1370,10 +1370,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  *
  *   - Header: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%)
  *             border-bottom: 1px solid #7995a3
- *             13px black, no text-shadow
+ *             15px black title (adjusted from reference for readability)
  *   - Selected row: linear-gradient(#3cb8ff 0%, #347ab5 100%)
  *                   white text, no shadow
- *   - Sublabel grey: rgb(99, 101, 103) at 12px
+ *   - Menu / value column grey: rgb(99, 101, 103) at **15px** (same em as title strip)
  *   - Battery: #54585b body w/ green #A5E07F gloss gradient, #c4c4c4 cap
  *
  * IMPORTANT: dimensions (titlebar height, menu row height, screen border,
@@ -1415,9 +1415,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  *   background: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
  *   border-bottom: 1px solid #7995a3;
  *
- * The titlebar in this app is 24px tall (vs. the reference's 20px) — we
- * keep our existing height so the menu/now-playing layout below isn't
- * disturbed. The hairline is drawn via inset box-shadow so it doesn't
+ * The modern titlebar is **23px** tall (`MENU_ITEM_HEIGHT_MODERN`; vs.
+ * classic's fixed **24px** title strip) — keeps list rhythm tight like the nano.
+ * The hairline is drawn via inset box-shadow so it doesn't
  * add height when the existing border-b utility is also present. */
 .ipod-modern-titlebar {
   background-image: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
@@ -1445,22 +1445,6 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     rgb(52, 122, 181) 100%
   );
   color: #ffffff;
-}
-
-/* Now-playing progress bar — inset grey track + glossy blue fill that
- * mirrors the selected-row gradient so the look is consistent. */
-.ipod-modern-progress-track {
-  background-color: #d8d8dd;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.18);
-}
-
-.ipod-modern-progress-fill {
-  background-image: linear-gradient(
-    180deg,
-    rgb(60, 184, 255) 0%,
-    rgb(52, 122, 181) 100%
-  );
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 /* iPod-classic-js BatteryIndicator (sampled directly):

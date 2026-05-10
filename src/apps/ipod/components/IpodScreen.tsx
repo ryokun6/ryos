@@ -5,6 +5,7 @@ import {
   useMemo,
   useState,
   useCallback,
+  type CSSProperties,
 } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,10 +39,9 @@ import type { IpodScreenProps } from "../types";
 import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore";
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
-// single-line row; the classic skin's Chicago glyphs need 24px to read
-// comfortably, while the modern (color screen) skin's Helvetica Neue
-// fits naturally at 20px and matches the visual density of the
-// iPod-classic-js / iPod nano 6G/7G reference.
+// single-line row; the classic skin's Chicago glyphs need 24px row height at
+// 16px type, while the modern (color) skin fits **23px** rows with **15px**
+// Myriad / system UI to match nano 6G/7G density without touching classic.
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
 // stays identical across the main menu, the artist list, and the
@@ -54,7 +54,7 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // per-menu choice, so a single value applies cleanly to all menus and
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
-const MENU_ITEM_HEIGHT_MODERN = 22;
+const MENU_ITEM_HEIGHT_MODERN = 23;
 // Modern titlebar matches the row height exactly so the menu reads as
 // a single continuous list and the silver header doesn't feel chunkier
 // than the content below.
@@ -69,6 +69,89 @@ function formatPlaybackTime(totalSeconds: number): string {
     2,
     "0"
   )}`;
+}
+
+
+/** `rotateY` + perspective for left↔right foreshortening; Karaoke-style reflection stacking. */
+const MODERN_NOW_PLAYING_ART_PX = 54;
+const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
+  background: "#1a1a1a",
+  borderRadius: "3px",
+};
+const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
+  transform: "scaleY(-1)",
+  opacity: 0.36,
+  maskImage:
+    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 50%)",
+  WebkitMaskImage:
+    "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 50%)",
+  borderRadius: "3px",
+};
+const MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX = 180;
+/** Left→right perspective (rotate around vertical axis). Negate angle to mirror. */
+const MODERN_NOW_PLAYING_ROTATE_Y = "15deg";
+
+const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
+  transformStyle: "preserve-3d",
+  transform: `rotateY(${MODERN_NOW_PLAYING_ROTATE_Y})`,
+  transformOrigin: "center center",
+  width: MODERN_NOW_PLAYING_ART_PX,
+};
+
+/** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
+function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
+  const reflectH = MODERN_NOW_PLAYING_ART_PX * 0.5;
+
+  return (
+    <div
+      className="relative shrink-0 self-start overflow-visible"
+      style={{
+        width: MODERN_NOW_PLAYING_ART_PX,
+        height: MODERN_NOW_PLAYING_ART_PX,
+        perspective: `${MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX}px`,
+        perspectiveOrigin: "50% 70%",
+      }}
+    >
+      <div style={MODERN_NOW_PLAYING_ART_3D}>
+        <div
+          className="relative overflow-hidden"
+          style={{
+            ...MODERN_NOW_PLAYING_SLEEVE,
+            height: MODERN_NOW_PLAYING_ART_PX,
+            width: MODERN_NOW_PLAYING_ART_PX,
+          }}
+        >
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt=""
+              draggable={false}
+              className="size-full object-cover"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
+              ♪
+            </div>
+          )}
+        </div>
+        {coverUrl ? (
+          <div
+            aria-hidden
+            className="pointer-events-none mt-0 w-full overflow-hidden"
+            style={{ height: reflectH }}
+          >
+            <img
+              src={coverUrl}
+              alt=""
+              draggable={false}
+              className="block w-full h-auto"
+              style={MODERN_NOW_PLAYING_REFLECT_IMG}
+            />
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 // Animation variants for menu transitions
@@ -370,11 +453,9 @@ export function IpodScreen({
         // is enabled.
         lcdFilterOn && !isModernUi ? "lcd-screen" : "",
         isModernUi
-          ? // iOS 6 chrome: white "scroll view" with a tiny base tint so
-            // ambient backgrounds bleed through subtly on shader/water modes.
-            backlightOn
-              ? "ipod-modern-screen bg-white"
-              : "ipod-modern-screen bg-neutral-300 brightness-90"
+          ? // White table surface; avoid neutral chassis fills—they read as
+            // gray stripes under the virtualized list and in empty space.
+            "ipod-modern-screen bg-white"
           : backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",
@@ -660,11 +741,11 @@ export function IpodScreen({
         className={cn(
           // Header height differs by skin:
           //   - Classic: 24px (h-6) — Chicago bitmap glyphs need the room.
-          //   - Modern: matches the row height (22px) so the silver
+          //   - Modern: matches the row height (23px) so the silver
           //     header reads as part of the same list rhythm.
           "shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
           isModernUi
-            ? "ipod-modern-titlebar text-black font-ipod-modern-ui text-[13px] font-semibold"
+            ? "ipod-modern-titlebar text-black font-ipod-modern-ui text-[15px]"
             : "h-6 min-h-6 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
         style={
@@ -680,14 +761,14 @@ export function IpodScreen({
           className={cn(
             "flex items-center justify-start",
             isModernUi
-              ? "w-5 font-ipod-modern-ui text-[12px] text-black/80"
+              ? "w-6 font-ipod-modern-ui font-normal text-[15px] text-black/80"
               : `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
           )}
         >
           <div
             className={cn(
               "flex items-center justify-center",
-              isModernUi ? "w-3.5 h-3.5" : "w-4 h-4 mt-0.5"
+              isModernUi ? "w-4 h-4" : "w-4 h-4 mt-0.5"
             )}
           >
             {isPlaying ? "▶" : "⏸︎"}
@@ -699,15 +780,14 @@ export function IpodScreen({
           scrollStartDelaySec={1}
           className={cn(
             "flex-1 min-w-0 px-1 text-center leading-none",
-            isModernUi && "font-ipod-modern-ui"
+            isModernUi &&
+              cn(
+                "font-ipod-modern-ui text-[15px] font-semibold",
+                "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+              )
           )}
         />
-        <div
-          className={cn(
-            "flex items-center justify-end",
-            isModernUi ? "w-5" : "w-6"
-          )}
-        >
+        <div className="flex w-6 items-center justify-end">
           <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
         </div>
       </div>
@@ -821,15 +901,19 @@ export function IpodScreen({
                 }
               }}
             >
-              <div className="flex-1 flex flex-col p-1 px-2 overflow-visible">
+              <div
+                className={cn(
+                  "flex-1 flex flex-col overflow-visible px-2",
+                  isModernUi ? "pt-1.5 pb-0.5" : "py-1"
+                )}
+              >
                 {currentTrack && nowPlayingDisplayTrack ? (
                   <>
                     <div
                       className={cn(
                         "flex items-center justify-between gap-2",
                         isModernUi
-                          ? // Modern: compact 10px Helvetica Neue secondary.
-                            "font-ipod-modern-ui text-[10px] font-medium text-[rgb(99,101,103)]"
+                          ? "font-ipod-modern-ui text-[12px] font-normal leading-[1.06] text-[rgb(99,101,103)]"
                           : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
                         nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
                       )}
@@ -844,56 +928,77 @@ export function IpodScreen({
                       {isShuffled && (
                         <Shuffle
                           className="shrink-0"
-                          size={isModernUi ? 11 : 13}
+                          size={isModernUi ? 12 : 13}
                           weight="bold"
                           aria-label="shuffle on"
                         />
                       )}
                     </div>
-                    <div
-                      className={cn(
-                        "text-center flex flex-col gap-0 leading-[1.05] min-h-0 overflow-visible",
-                        isModernUi
-                          ? // Modern: 12px bold black primary line. Smaller
-                            // than the reference's ~14.7px so the full
-                            // now-playing block fits the iPod's 150px
-                            // screen with the new compact rhythm.
-                            "font-ipod-modern-ui text-[12px] font-semibold text-black"
-                          : "font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
-                      )}
-                    >
-                      <ScrollingText
-                        text={nowPlayingDisplayTrack.title}
-                        isPlaying={isPlaying}
-                        scrollStartDelaySec={1}
+                    {isModernUi ? (
+                      <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
+                        <ModernNowPlayingArtwork coverUrl={coverUrl} />
+                        <div
+                          className={cn(
+                            "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
+                            "[&>*]:py-0",
+                            "[&>*:not(:first-child)]:-mt-[3px]",
+                            "font-ipod-modern-ui"
+                          )}
+                        >
+                          <ScrollingText
+                            text={nowPlayingDisplayTrack.title}
+                            isPlaying={isPlaying}
+                            scrollStartDelaySec={1}
+                            align="left"
+                            className="leading-[1.06] text-[15px] font-semibold text-black"
+                          />
+                          <ScrollingText
+                            text={nowPlayingDisplayTrack.artist || ""}
+                            isPlaying={isPlaying}
+                            scrollStartDelaySec={1}
+                            align="left"
+                            className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                          />
+                          {nowPlayingDisplayTrack.album && (
+                            <ScrollingText
+                              text={nowPlayingDisplayTrack.album}
+                              isPlaying={isPlaying}
+                              scrollStartDelaySec={1}
+                              align="left"
+                              className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
                         className={cn(
-                          isModernUi ? "leading-[1.2] py-px" : "leading-[1.05] py-px"
+                          "flex min-h-0 flex-col gap-0 overflow-visible text-center leading-[1.05]",
+                          "font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                         )}
-                      />
-                      <ScrollingText
-                        text={nowPlayingDisplayTrack.artist || ""}
-                        isPlaying={isPlaying}
-                        scrollStartDelaySec={1}
-                        className={cn(
-                          isModernUi
-                            ? // Modern artist: 10px regular grey subtext.
-                              "leading-[1.2] py-px text-[10px] font-normal text-[rgb(99,101,103)]"
-                            : "leading-[1.05] py-px"
-                        )}
-                      />
-                      {nowPlayingDisplayTrack.album && (
+                      >
                         <ScrollingText
-                          text={nowPlayingDisplayTrack.album}
+                          text={nowPlayingDisplayTrack.title}
                           isPlaying={isPlaying}
                           scrollStartDelaySec={1}
-                          className={cn(
-                            isModernUi
-                              ? "leading-[1.2] py-px text-[10px] font-normal text-[rgb(99,101,103)]"
-                              : "leading-[1.05] py-px"
-                          )}
+                          className="leading-[1.05] py-px"
                         />
-                      )}
-                    </div>
+                        <ScrollingText
+                          text={nowPlayingDisplayTrack.artist || ""}
+                          isPlaying={isPlaying}
+                          scrollStartDelaySec={1}
+                          className="leading-[1.05] py-px"
+                        />
+                        {nowPlayingDisplayTrack.album && (
+                          <ScrollingText
+                            text={nowPlayingDisplayTrack.album}
+                            isPlaying={isPlaying}
+                            scrollStartDelaySec={1}
+                            className="leading-[1.05] py-px"
+                          />
+                        )}
+                      </div>
+                    )}
                     <div
                       className={cn(
                         "mt-auto flex-shrink-0 w-full",
@@ -901,10 +1006,10 @@ export function IpodScreen({
                       )}
                     >
                       {isModernUi ? (
-                        // Modern: thin grey rounded track + glossy blue fill.
-                        <div className="w-full h-[4px] rounded-full overflow-hidden ipod-modern-progress-track">
+                        // Same aqua bar as About This Finder memory rows.
+                        <div className="aqua-progress h-[9px] w-full rounded-none">
                           <div
-                            className="h-full ipod-modern-progress-fill"
+                            className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
                             style={{
                               width: `${
                                 totalTime > 0
@@ -932,7 +1037,7 @@ export function IpodScreen({
                         className={cn(
                           "w-full flex justify-between",
                           isModernUi
-                            ? "font-ipod-modern-ui text-[10px] h-[14px] mt-0.5 text-[rgb(99,101,103)] font-medium tabular-nums"
+                            ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
                             : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                         )}
                       >
@@ -948,7 +1053,7 @@ export function IpodScreen({
                     className={cn(
                       "text-center h-full flex flex-col justify-center items-center",
                       isModernUi
-                        ? "font-ipod-modern-ui text-[10px] text-[rgb(99,101,103)]"
+                        ? "font-ipod-modern-ui text-[15px] text-[rgb(99,101,103)]"
                         : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                     )}
                   >

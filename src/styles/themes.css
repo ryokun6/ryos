@@ -2258,6 +2258,31 @@
   font-size: 10px !important;
 }
 
+/* Modern iPod + games — arbitrary Tailwind sizes not covered above */
+:root[data-os-theme="macosx"] .ipod-force-font .text-\[9px\] {
+  font-size: 9px !important;
+}
+
+:root[data-os-theme="macosx"] .ipod-force-font .text-\[11px\] {
+  font-size: 11px !important;
+}
+
+:root[data-os-theme="macosx"] .ipod-force-font .text-\[14px\] {
+  font-size: 14px !important;
+}
+
+:root[data-os-theme="macosx"] .ipod-force-font .text-\[15px\] {
+  font-size: 15px !important;
+}
+
+:root[data-os-theme="macosx"] .ipod-force-font .text-\[17px\] {
+  font-size: 17px !important;
+}
+
+:root[data-os-theme="macosx"] .ipod-force-font .text-\[22px\] {
+  font-size: 22px !important;
+}
+
 /* Preserve large desktop Hangul glyph size in iPod fullscreen */
 @media (min-width: 768px) {
   :root[data-os-theme="macosx"] .ipod-force-font .md\:text-\[20px\] {
@@ -2785,7 +2810,8 @@
 }
 
 /* macOS Memory/Progress bar styling */
-:root[data-os-theme="macosx"] .aqua-progress {
+:root[data-os-theme="macosx"] .aqua-progress,
+.ipod-modern-screen .aqua-progress {
   position: relative;
   background: 
     /* Top shine */
@@ -2807,15 +2833,18 @@
 }
 
 /* Square variant for boot screen */
-:root[data-os-theme="macosx"] .aqua-progress.rounded-none {
+:root[data-os-theme="macosx"] .aqua-progress.rounded-none,
+.ipod-modern-screen .aqua-progress.rounded-none {
   border-radius: 0 !important;
 }
 
-:root[data-os-theme="macosx"] .aqua-progress.rounded-none .aqua-progress-fill {
+:root[data-os-theme="macosx"] .aqua-progress.rounded-none .aqua-progress-fill,
+.ipod-modern-screen .aqua-progress.rounded-none .aqua-progress-fill {
   border-radius: 0 !important;
 }
 
-:root[data-os-theme="macosx"] .aqua-progress-fill {
+:root[data-os-theme="macosx"] .aqua-progress-fill,
+.ipod-modern-screen .aqua-progress-fill {
   position: relative;
   height: 100%;
   border-radius: 9999px; /* fully rounded */
