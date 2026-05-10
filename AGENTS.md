@@ -73,6 +73,7 @@ The following environment variables are required for full functionality:
 - `YOUTUBE_API_KEY_2` - YouTube Data API fallback key
 - `OPENAI_API_KEY` - OpenAI API (for audio transcription)
 - `MAPKIT_TEAM_ID` / `MAPKIT_KEY_ID` / `MAPKIT_PRIVATE_KEY` / `MAPKIT_ORIGIN` - Apple MapKit (powers the Maps app + the AI's `mapsSearchPlaces` tool via the Apple Maps Server API)
+- `MUSICKIT_TEAM_ID` / `MUSICKIT_KEY_ID` / `MUSICKIT_PRIVATE_KEY` / `MUSICKIT_ORIGIN` - MusicKit JS v3 (Apple Music) used by the iPod's "Apple Music" library mode. Reuse the same `.p8` key as MapKit if both services are enabled on the key — the signer falls back to `MAPKIT_TEAM_ID` / `MAPKIT_KEY_ID` / `MAPKIT_PRIVATE_KEY` when the `MUSICKIT_*` variants are unset.
 - `IP_GEOLOCATION_URL_TEMPLATE` - Optional override for the IP-geolocation provider used as a fallback when Vercel's `geolocation()` returns nothing (defaults to `https://ipwho.is/{ip}`). Use this on Coolify / Docker / plain Bun deploys, or to switch to a paid provider. Use `{ip}` as the placeholder.
 - `IP_GEOLOCATION_DISABLED` - Set to `1`/`true` to disable the IP-geolocation fallback entirely (no outbound calls).
 

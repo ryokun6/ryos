@@ -119,14 +119,16 @@ function getTeamId(): string | undefined {
 }
 
 function getKeyId(): string | undefined {
-  return process.env.MUSICKIT_KEY_ID;
+  // A single .p8 key can have both MapKit and MusicKit enabled in the Apple
+  // Developer portal — in that case the Key ID is the same. Fall back to
+  // MAPKIT_KEY_ID to make the common "one shared key" setup work without
+  // requiring duplicate env vars.
+  return process.env.MUSICKIT_KEY_ID || process.env.MAPKIT_KEY_ID;
 }
 
 export function listMusicKitMissingEnv(): string[] {
   const missing: string[] = [];
   if (!getTeamId()) missing.push("MUSICKIT_TEAM_ID");
-  // MUSICKIT_KEY_ID is mandatory and distinct from MAPKIT_KEY_ID — Apple
-  // issues a Music-specific Key ID even when reusing the same .p8 key.
   if (!getKeyId()) missing.push("MUSICKIT_KEY_ID");
   if (!readMusicKitPrivateKey()) missing.push("MUSICKIT_PRIVATE_KEY");
   return missing;

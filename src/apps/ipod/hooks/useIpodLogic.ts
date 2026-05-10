@@ -1984,6 +1984,14 @@ export function useIpodLogic({
 
   useEffect(() => {
     if (isFullScreen !== prevFullScreenRef.current) {
+      // Apple Music plays through a single shared MusicKit instance, so
+      // toggling fullscreen never needs the YouTube-style seek-and-resume
+      // dance between two iframes. Skip the sync entirely.
+      if (isAppleMusic) {
+        prevFullScreenRef.current = isFullScreen;
+        return;
+      }
+
       // Mark as track switching to prevent spurious play/pause events during sync
       isTrackSwitchingRef.current = true;
       if (trackSwitchTimeoutRef.current) {
@@ -2038,7 +2046,7 @@ export function useIpodLogic({
       }
       prevFullScreenRef.current = isFullScreen;
     }
-  }, [isFullScreen, elapsedTime, isPlaying, setIsPlaying, isIOSSafari]);
+  }, [isAppleMusic, isFullScreen, elapsedTime, isPlaying, setIsPlaying, isIOSSafari]);
 
   // Seek time for fullscreen (delta)
   const seekTime = useCallback(
@@ -2069,13 +2077,36 @@ export function useIpodLogic({
         const newTime = Math.max(0, playerTimeMs / 1000);
         fullScreenPlayerRef.current.seekTo(newTime);
         
-        // Start playing if paused - also call playVideo() directly for iOS Safari
+        // Start playing if paused — also poke the internal player directly
+        // so iOS Safari (YouTube) and MusicKit honour the user gesture.
         if (!isPlaying) {
           setIsPlaying(true);
-          // Directly call playVideo on the internal player to ensure it plays
-          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
-          if (internalPlayer && typeof internalPlayer.playVideo === "function") {
-            internalPlayer.playVideo();
+          const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.() as
+            | { playVideo?: () => void; play?: () => void }
+            | null
+            | undefined;
+          if (internalPlayer) {
+            if (typeof internalPlayer.playVideo === "function") {
+              internalPlayer.playVideo();
+            } else if (typeof internalPlayer.play === "function") {
+              // MusicKit bridge: call instance.play() to unblock autoplay.
+              try {
+                const result = (
+                  internalPlayer.play as () => unknown
+                )();
+                const maybeThenable = result as
+                  | { catch?: (cb: (err: unknown) => void) => void }
+                  | undefined;
+                if (
+                  maybeThenable &&
+                  typeof maybeThenable.catch === "function"
+                ) {
+                  maybeThenable.catch(() => undefined);
+                }
+              } catch {
+                /* MusicKit instances throw when not configured — ignore. */
+              }
+            }
           }
         }
         showStatus(`▶ ${Math.floor(newTime / 60)}:${String(Math.floor(newTime % 60)).padStart(2, "0")}`);

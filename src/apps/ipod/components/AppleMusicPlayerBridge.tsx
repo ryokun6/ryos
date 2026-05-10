@@ -203,13 +203,16 @@ export const AppleMusicPlayerBridge = forwardRef<
   // *track* (not unrelated prop changes) actually flips.
   const queueKey = useMemo(() => currentTrack?.id ?? null, [currentTrack]);
 
+  // Latest `playing` value, read inside the async setQueue effect to avoid
+  // stale closures when the user toggles play before the queue resolves.
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+
   // Drive `setQueue` on track change.
   useEffect(() => {
     const inst = instanceRef.current;
     if (!inst) return;
     if (!currentTrack) {
-      // No track — stop the player so we don't keep audio bleeding from
-      // the previously queued song after the user clears the library.
       try {
         inst.stop();
       } catch {
@@ -232,15 +235,15 @@ export const AppleMusicPlayerBridge = forwardRef<
     const localQueueKey = queueKey;
     queueLoadingRef.current = (async () => {
       try {
-        await inst.setQueue({ ...queueOptions, startPlaying: playing });
-        // Honour the requested duration immediately if MusicKit doesn't
-        // emit a media-item event before the next render.
+        await inst.setQueue({
+          ...queueOptions,
+          startPlaying: playingRef.current,
+        });
         if (currentTrack.durationMs && currentTrack.durationMs > 0) {
           onDurationRef.current?.(currentTrack.durationMs / 1000);
         }
-        if (lastQueuedTrackIdRef.current === localQueueKey) return; // re-entrancy
         lastQueuedTrackIdRef.current = localQueueKey;
-        if (playing) {
+        if (playingRef.current) {
           await inst.play().catch((err) => {
             // Browsers block autoplay until the user interacts; surface as
             // a paused state so the iPod's play button shows the right icon.
@@ -257,8 +260,6 @@ export const AppleMusicPlayerBridge = forwardRef<
         queueLoadingRef.current = null;
       }
     })();
-    // We intentionally only depend on `queueKey` here — `playing` toggling
-    // alone shouldn't trigger a re-queue (handled by the next effect).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueKey]);
 
@@ -267,7 +268,6 @@ export const AppleMusicPlayerBridge = forwardRef<
     const inst = instanceRef.current;
     if (!inst) return;
     if (!currentTrack) return;
-    // Wait for setQueue to finish if it's mid-flight.
     const pending = queueLoadingRef.current;
     const apply = async () => {
       try {
