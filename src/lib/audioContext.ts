@@ -5,11 +5,20 @@
 // "interrupted" states, or being closed when the page is backgrounded for a
 // while).
 
-// Safari pre-2017 requires webkitAudioContext prefix
+// Safari pre-2017 requires webkitAudioContext prefix.
+//
+// Guarded with `typeof window` so this module is safe to import in
+// non-browser environments (Bun's default test runner, Node-only API
+// handlers, SSR). Tests like `tests/test-ipod-apple-music.test.ts`
+// pull this module in transitively via the iPod store; without the
+// guard, just loading the module would throw `ReferenceError: window
+// is not defined` and abort the suite.
 const AudioContextClass =
-  window.AudioContext ||
-  (window as unknown as { webkitAudioContext?: typeof AudioContext })
-    .webkitAudioContext;
+  typeof window !== "undefined"
+    ? window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext
+    : undefined;
 
 let audioContext: AudioContext | null = null;
 
