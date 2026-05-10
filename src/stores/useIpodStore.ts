@@ -157,6 +157,22 @@ interface IpodData {
   appleMusicPlaylistTracksLoadedAt: Record<string, number>;
   /** Per-playlist in-flight fetch flags. */
   appleMusicPlaylistTracksLoading: Record<string, boolean>;
+  /**
+   * Tracks shown in the "Recently Added" menu, mirrored from IndexedDB
+   * so the menu can render cached content immediately on iPod open and
+   * the opportunistic refresh path in `useAppleMusicLibrary` can update
+   * the same source other consumers read from.
+   */
+  appleMusicRecentlyAddedTracks: Track[];
+  /** Last sync timestamp for `appleMusicRecentlyAddedTracks`. */
+  appleMusicRecentlyAddedLoadedAt: number | null;
+  /** True while a Recently Added refresh is in flight (drives the
+   *  one-time "Loading…" placeholder when the cache is empty). */
+  appleMusicRecentlyAddedLoading: boolean;
+  /** Tracks shown in the "Favorite Songs" menu (same shape as above). */
+  appleMusicFavoriteTracks: Track[];
+  appleMusicFavoriteTracksLoadedAt: number | null;
+  appleMusicFavoritesLoading: boolean;
   /** Currently selected song id within the Apple Music library. */
   appleMusicCurrentSongId: string | null;
   /**
@@ -338,6 +354,12 @@ const initialIpodData: IpodData = {
   appleMusicPlaylistTracks: {},
   appleMusicPlaylistTracksLoadedAt: {},
   appleMusicPlaylistTracksLoading: {},
+  appleMusicRecentlyAddedTracks: [],
+  appleMusicRecentlyAddedLoadedAt: null,
+  appleMusicRecentlyAddedLoading: false,
+  appleMusicFavoriteTracks: [],
+  appleMusicFavoriteTracksLoadedAt: null,
+  appleMusicFavoritesLoading: false,
   appleMusicCurrentSongId: null,
   appleMusicPlaybackQueue: null,
   appleMusicLibraryLoadedAt: null,
@@ -472,6 +494,29 @@ export interface IpodState extends IpodData {
     playlistId: string,
     loading: boolean
   ) => void;
+  /**
+   * Replace the cached "Recently Added" track list. When `loadedAt` is
+   * omitted, the freshness timestamp is set to `Date.now()`. Pass an
+   * explicit value when hydrating from IndexedDB.
+   */
+  setAppleMusicRecentlyAddedTracks: (
+    tracks: Track[],
+    loadedAt?: number | null
+  ) => void;
+  setAppleMusicRecentlyAddedLoading: (loading: boolean) => void;
+  /** Same as the Recently Added setters, but for "Favorite Songs". */
+  setAppleMusicFavoriteTracks: (
+    tracks: Track[],
+    loadedAt?: number | null
+  ) => void;
+  setAppleMusicFavoritesLoading: (loading: boolean) => void;
+  /**
+   * Optimistically prepend a track to the favorites list (used right
+   * after `addAppleMusicTrackToFavorites` succeeds). Doesn't bump
+   * `loadedAt` so the next opportunistic refresh still revalidates
+   * against the server (catches the eventual catalog ↔ library mapping).
+   */
+  prependAppleMusicFavoriteTrack: (track: Track) => void;
   /** Mark a library load as in-flight (or finished). */
   setAppleMusicLibraryLoading: (loading: boolean) => void;
   /** Persist any error from the latest library fetch. */
@@ -1858,6 +1903,31 @@ export const useIpodStore = create<IpodState>()(
             [playlistId]: loading,
           },
         })),
+      setAppleMusicRecentlyAddedTracks: (tracks, loadedAt) =>
+        set({
+          appleMusicRecentlyAddedTracks: tracks,
+          appleMusicRecentlyAddedLoadedAt:
+            loadedAt === undefined ? Date.now() : loadedAt,
+          appleMusicRecentlyAddedLoading: false,
+        }),
+      setAppleMusicRecentlyAddedLoading: (loading) =>
+        set({ appleMusicRecentlyAddedLoading: loading }),
+      setAppleMusicFavoriteTracks: (tracks, loadedAt) =>
+        set({
+          appleMusicFavoriteTracks: tracks,
+          appleMusicFavoriteTracksLoadedAt:
+            loadedAt === undefined ? Date.now() : loadedAt,
+          appleMusicFavoritesLoading: false,
+        }),
+      setAppleMusicFavoritesLoading: (loading) =>
+        set({ appleMusicFavoritesLoading: loading }),
+      prependAppleMusicFavoriteTrack: (track) =>
+        set((state) => ({
+          appleMusicFavoriteTracks: [
+            track,
+            ...state.appleMusicFavoriteTracks.filter((t) => t.id !== track.id),
+          ],
+        })),
       setAppleMusicLibraryLoading: (loading) =>
         set({ appleMusicLibraryLoading: loading }),
       setAppleMusicLibraryError: (error) =>
@@ -2196,6 +2266,12 @@ if (import.meta.hot) {
       appleMusicPlaylistTracks: s.appleMusicPlaylistTracks,
       appleMusicPlaylistTracksLoadedAt: s.appleMusicPlaylistTracksLoadedAt,
       appleMusicPlaylistTracksLoading: {},
+      appleMusicRecentlyAddedTracks: s.appleMusicRecentlyAddedTracks,
+      appleMusicRecentlyAddedLoadedAt: s.appleMusicRecentlyAddedLoadedAt,
+      appleMusicRecentlyAddedLoading: false,
+      appleMusicFavoriteTracks: s.appleMusicFavoriteTracks,
+      appleMusicFavoriteTracksLoadedAt: s.appleMusicFavoriteTracksLoadedAt,
+      appleMusicFavoritesLoading: false,
       appleMusicCurrentSongId: s.appleMusicCurrentSongId,
       appleMusicPlaybackQueue: s.appleMusicPlaybackQueue,
       appleMusicLibraryLoadedAt: s.appleMusicLibraryLoadedAt,
