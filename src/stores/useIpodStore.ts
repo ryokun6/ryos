@@ -341,6 +341,25 @@ const initialIpodData: IpodData = {
   ipodMenuMode: null,
 };
 
+function normalizeAppleMusicPlaybackQueue(
+  queue: string[] | null
+): string[] | null {
+  if (!queue) return null;
+  const ids = queue.filter((id) => typeof id === "string" && id.length > 0);
+  return ids.length > 0 ? ids : null;
+}
+
+function resolveAppleMusicQueueTracks(state: IpodData): Track[] {
+  const libraryTracks = state.appleMusicTracks;
+  const queue = normalizeAppleMusicPlaybackQueue(state.appleMusicPlaybackQueue);
+  if (!queue) return libraryTracks;
+
+  const libraryById = new Map(libraryTracks.map((track) => [track.id, track]));
+  return queue
+    .map((id) => libraryById.get(id) ?? null)
+    .filter((track): track is Track => track !== null);
+}
+
 /** Helper to get current index from song ID */
 function getIndexFromSongId(tracks: Track[], songId: string | null): number {
   if (!songId || tracks.length === 0) return -1;
@@ -1739,18 +1758,45 @@ export const useIpodStore = create<IpodState>()(
         });
       },
       setAppleMusicTracks: (tracks) => {
-        const validIds = new Set(tracks.map((t) => t.id));
         const loadedAt = Date.now();
         let storefrontIdAtSave: string | null = null;
+        let tracksToSave = tracks;
         set((state) => {
+          const incomingIds = new Set(tracks.map((track) => track.id));
+          const previousTracksById = new Map(
+            state.appleMusicTracks.map((track) => [track.id, track] as const)
+          );
+          const retainedQueueTracks = (
+            normalizeAppleMusicPlaybackQueue(state.appleMusicPlaybackQueue) ?? []
+          )
+            .map((id) => previousTracksById.get(id) ?? null)
+            .filter(
+              (track): track is Track =>
+                track !== null && !incomingIds.has(track.id)
+            );
+          const currentTrack =
+            state.appleMusicCurrentSongId &&
+            !incomingIds.has(state.appleMusicCurrentSongId)
+              ? previousTracksById.get(state.appleMusicCurrentSongId)
+              : null;
+          const retainedTracksById = new Map<string, Track>();
+          for (const track of retainedQueueTracks) {
+            retainedTracksById.set(track.id, track);
+          }
+          if (currentTrack) {
+            retainedTracksById.set(currentTrack.id, currentTrack);
+          }
+          const nextTracks = [...tracks, ...retainedTracksById.values()];
+          const validIds = new Set(nextTracks.map((track) => track.id));
           const stillValidCurrent =
             state.appleMusicCurrentSongId &&
             validIds.has(state.appleMusicCurrentSongId)
               ? state.appleMusicCurrentSongId
-              : tracks[0]?.id ?? null;
+              : nextTracks[0]?.id ?? null;
           storefrontIdAtSave = state.appleMusicStorefrontId;
+          tracksToSave = nextTracks;
           return {
-            appleMusicTracks: tracks,
+            appleMusicTracks: nextTracks,
             appleMusicCurrentSongId: stillValidCurrent,
             appleMusicLibraryLoadedAt: loadedAt,
             appleMusicLibraryLoading: false,
@@ -1761,7 +1807,7 @@ export const useIpodStore = create<IpodState>()(
         // a network round-trip. Fire-and-forget — failures are logged
         // by the cache helper and the in-memory copy still works.
         void saveAppleMusicLibrary({
-          tracks,
+          tracks: tracksToSave,
           loadedAt,
           storefrontId: storefrontIdAtSave,
         });
@@ -1810,25 +1856,16 @@ export const useIpodStore = create<IpodState>()(
           };
         }),
       setAppleMusicPlaybackQueue: (queue) =>
-        set({ appleMusicPlaybackQueue: queue }),
+        set({
+          appleMusicPlaybackQueue: normalizeAppleMusicPlaybackQueue(queue),
+        }),
       appleMusicNextTrack: () =>
         set((state) => {
           // Resolve the active queue: when a contextual queue is set
           // (e.g. user opened an Artist / Album / Playlist and tapped a
           // song), step through that ordered list. Otherwise fall back
           // to the full library so behaviour matches the old menu flow.
-          const libraryTracks = state.appleMusicTracks;
-          const libraryIndex = new Map(
-            libraryTracks.map((t, i) => [t.id, i] as const)
-          );
-          const queueTracks: Track[] = state.appleMusicPlaybackQueue
-            ? state.appleMusicPlaybackQueue
-                .map((id) => {
-                  const idx = libraryIndex.get(id);
-                  return idx === undefined ? null : libraryTracks[idx];
-                })
-                .filter((t): t is Track => t !== null)
-            : libraryTracks;
+          const queueTracks = resolveAppleMusicQueueTracks(state);
 
           if (queueTracks.length === 0) {
             return {
@@ -1877,18 +1914,7 @@ export const useIpodStore = create<IpodState>()(
         }),
       appleMusicPreviousTrack: () =>
         set((state) => {
-          const libraryTracks = state.appleMusicTracks;
-          const libraryIndex = new Map(
-            libraryTracks.map((t, i) => [t.id, i] as const)
-          );
-          const queueTracks: Track[] = state.appleMusicPlaybackQueue
-            ? state.appleMusicPlaybackQueue
-                .map((id) => {
-                  const idx = libraryIndex.get(id);
-                  return idx === undefined ? null : libraryTracks[idx];
-                })
-                .filter((t): t is Track => t !== null)
-            : libraryTracks;
+          const queueTracks = resolveAppleMusicQueueTracks(state);
 
           if (queueTracks.length === 0) {
             return {
@@ -1951,13 +1977,14 @@ export const useIpodStore = create<IpodState>()(
         isFullScreen: state.isFullScreen,
         libraryState: state.libraryState,
         lastKnownVersion: state.lastKnownVersion,
-        // Apple Music: persist user choice + last-played track only.
-        // The library itself goes to IndexedDB (see
-        // `appleMusicLibraryCache`) because it can easily exceed
-        // localStorage's 5–10MB per-origin quota for users with large
-        // libraries. The hook re-hydrates `appleMusicTracks` on mount.
+        // Apple Music: persist user choice, last-played track, and the
+        // compact contextual queue id list. The library itself goes to
+        // IndexedDB (see `appleMusicLibraryCache`) because it can easily
+        // exceed localStorage's 5–10MB per-origin quota for users with
+        // large libraries. The hook re-hydrates `appleMusicTracks` on mount.
         librarySource: state.librarySource,
         appleMusicCurrentSongId: state.appleMusicCurrentSongId,
+        appleMusicPlaybackQueue: state.appleMusicPlaybackQueue,
         // Persist navigation breadcrumb so reopening the iPod returns the
         // user to the same menu (and cursor position) they left.
         ipodMenuBreadcrumb: state.ipodMenuBreadcrumb,

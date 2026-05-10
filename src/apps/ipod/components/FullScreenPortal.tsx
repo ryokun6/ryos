@@ -98,8 +98,16 @@ export function FullScreenPortal({
       // YouTube player states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
       return playerState === 1;
     }
-    return false;
-  }, [fullScreenPlayerRef]);
+    if (
+      internalPlayer &&
+      typeof (internalPlayer as { playbackState?: unknown }).playbackState ===
+        "number"
+    ) {
+      // MusicKit playbackState 2 means playing.
+      return (internalPlayer as { playbackState: number }).playbackState === 2;
+    }
+    return isPlaying;
+  }, [fullScreenPlayerRef, isPlaying]);
 
   // Helper function to restart the auto-hide timer
   const restartAutoHideTimer = useCallback(() => {

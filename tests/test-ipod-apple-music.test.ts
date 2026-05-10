@@ -134,6 +134,7 @@ describe("useIpodStore Apple Music slice", () => {
     useIpodStore.setState({
       librarySource: "youtube",
       appleMusicTracks: [],
+      appleMusicPlaybackQueue: null,
       appleMusicCurrentSongId: null,
       isPlaying: false,
       currentSongId: null,
@@ -214,5 +215,84 @@ describe("useIpodStore Apple Music slice", () => {
     expect(useIpodStore.getState().appleMusicTracks[0].lyricOffset).toBe(250);
     // YouTube slice must remain untouched.
     expect(useIpodStore.getState().tracks).toEqual([]);
+  });
+
+  test("setAppleMusicTracks preserves active contextual queue tracks", () => {
+    useIpodStore.setState({
+      appleMusicTracks: [
+        {
+          id: "am:library",
+          url: "applemusic:library",
+          title: "Library",
+          source: "appleMusic",
+        },
+        {
+          id: "am:playlist",
+          url: "applemusic:playlist",
+          title: "Playlist",
+          source: "appleMusic",
+        },
+      ],
+      appleMusicPlaybackQueue: ["am:playlist"],
+      appleMusicCurrentSongId: "am:playlist",
+    });
+
+    useIpodStore.getState().setAppleMusicTracks([
+      {
+        id: "am:library",
+        url: "applemusic:library",
+        title: "Library",
+        source: "appleMusic",
+      },
+    ]);
+
+    const state = useIpodStore.getState();
+    expect(state.appleMusicTracks.map((track) => track.id)).toEqual([
+      "am:library",
+      "am:playlist",
+    ]);
+    expect(state.appleMusicPlaybackQueue).toEqual(["am:playlist"]);
+    expect(state.appleMusicCurrentSongId).toBe("am:playlist");
+  });
+
+  test("appleMusicNextTrack stays inside the contextual queue after a library refresh", () => {
+    useIpodStore.setState({
+      appleMusicTracks: [
+        {
+          id: "am:library",
+          url: "applemusic:library",
+          title: "Library",
+          source: "appleMusic",
+        },
+        {
+          id: "am:q1",
+          url: "applemusic:q1",
+          title: "Queue 1",
+          source: "appleMusic",
+        },
+        {
+          id: "am:q2",
+          url: "applemusic:q2",
+          title: "Queue 2",
+          source: "appleMusic",
+        },
+      ],
+      appleMusicPlaybackQueue: ["am:q1", "am:q2"],
+      appleMusicCurrentSongId: "am:q1",
+      loopAll: true,
+      isShuffled: false,
+    });
+
+    useIpodStore.getState().setAppleMusicTracks([
+      {
+        id: "am:library",
+        url: "applemusic:library",
+        title: "Library",
+        source: "appleMusic",
+      },
+    ]);
+    useIpodStore.getState().appleMusicNextTrack();
+
+    expect(useIpodStore.getState().appleMusicCurrentSongId).toBe("am:q2");
   });
 });
