@@ -25,7 +25,7 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodLogic } from "../hooks/useIpodLogic";
 import { DisplayMode } from "@/types/lyrics";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
@@ -181,14 +181,20 @@ export function IpodAppComponent({
     window.dispatchEvent(new Event(`closeWindow-${instanceId || "ipod"}`));
   }, [instanceId, pauseBeforeWindowClose]);
 
-  const displayModeOptions = [
-    { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-    { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
-    { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
-    { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-    { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
-    { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-  ];
+  // Memoized so the FullScreenPortal / FullscreenPlayerControls don't see a
+  // freshly-allocated array on every parent render (this component re-renders
+  // on every playback tick because elapsedTime is a hook return value).
+  const displayModeOptions = useMemo(
+    () => [
+      { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
+      { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
+      { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
+      { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
+      { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
+      { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
+    ],
+    [t]
+  );
 
   const handleDisplayModeSelect = useCallback(
     (value: DisplayMode) => {
