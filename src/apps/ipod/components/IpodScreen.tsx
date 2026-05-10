@@ -54,7 +54,11 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // per-menu choice, so a single value applies cleanly to all menus and
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
-const MENU_ITEM_HEIGHT_MODERN = 20;
+const MENU_ITEM_HEIGHT_MODERN = 22;
+// Modern titlebar matches the row height exactly so the menu reads as
+// a single continuous list and the silver header doesn't feel chunkier
+// than the content below.
+const MODERN_TITLEBAR_HEIGHT = MENU_ITEM_HEIGHT_MODERN;
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -656,27 +660,34 @@ export function IpodScreen({
         className={cn(
           // Header height differs by skin:
           //   - Classic: 24px (h-6) — Chicago bitmap glyphs need the room.
-          //   - Modern: 20px (h-5) — matches iPod-classic-js / nano 7G.
+          //   - Modern: matches the row height (22px) so the silver
+          //     header reads as part of the same list rhythm.
           "shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
           isModernUi
-            ? // iPod-classic-js Header: silver gradient + #7995a3 hairline,
-              // 11px black Helvetica Neue, no shadow.
-              "h-5 min-h-5 ipod-modern-titlebar text-black font-ipod-modern-ui text-[11px] font-semibold"
+            ? "ipod-modern-titlebar text-black font-ipod-modern-ui text-[13px] font-semibold"
             : "h-6 min-h-6 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
+        style={
+          isModernUi
+            ? {
+                height: MODERN_TITLEBAR_HEIGHT,
+                minHeight: MODERN_TITLEBAR_HEIGHT,
+              }
+            : undefined
+        }
       >
         <div
           className={cn(
             "flex items-center justify-start",
             isModernUi
-              ? "w-5 font-ipod-modern-ui text-[10px] text-black/80"
+              ? "w-5 font-ipod-modern-ui text-[12px] text-black/80"
               : `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
           )}
         >
           <div
             className={cn(
               "flex items-center justify-center",
-              isModernUi ? "w-3 h-3" : "w-4 h-4 mt-0.5"
+              isModernUi ? "w-3.5 h-3.5" : "w-4 h-4 mt-0.5"
             )}
           >
             {isPlaying ? "▶" : "⏸︎"}
@@ -702,14 +713,18 @@ export function IpodScreen({
       </div>
 
       {/* Content area - z-30 only when video is not showing so it can
-          receive events. Content height matches the titlebar above so
-          modern's shorter header gives the menu 4px more breathing room. */}
+          receive events. Content height subtracts the titlebar height
+          so the menu/now-playing area is the same in both skins. */}
       <div
         className={cn(
           "relative",
-          isModernUi ? "h-[calc(100%-20px)]" : "h-[calc(100%-24px)]",
           !showVideo && "z-30"
         )}
+        style={{
+          height: isModernUi
+            ? `calc(100% - ${MODERN_TITLEBAR_HEIGHT}px)`
+            : "calc(100% - 24px)",
+        }}
       >
         <AnimatePresence initial={false} custom={menuDirection} mode="sync">
           {menuMode ? (

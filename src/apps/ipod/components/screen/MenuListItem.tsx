@@ -58,9 +58,9 @@ export function MenuListItem({
         <span
           className={cn(
             "whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2 leading-[1.15] font-medium",
-            // 12px Helvetica Neue. CJK gets a touch smaller because
-            // Hiragino/Noto runs larger at the same nominal em.
-            hasCjkText ? "text-[11px]" : "text-[12px]"
+            // 13px MyriadPro / Helvetica Neue. CJK gets a touch smaller
+            // because Hiragino/Noto runs larger at the same nominal em.
+            hasCjkText ? "text-[12px]" : "text-[13px]"
           )}
         >
           {text}
@@ -69,7 +69,7 @@ export function MenuListItem({
           <span
             className={cn(
               "flex-shrink-0 leading-[1.15] font-normal",
-              hasCjkText ? "text-[10px]" : "text-[11px]",
+              hasCjkText ? "text-[11px]" : "text-[12px]",
               isSelected && !isLoading
                 ? "text-white/90"
                 : "text-[rgb(99,101,103)]"
@@ -85,7 +85,7 @@ export function MenuListItem({
             <span
               className={cn(
                 "flex-shrink-0 leading-none font-normal",
-                "text-[12px]",
+                "text-[13px]",
                 isSelected && !isLoading ? "text-white/95" : "text-[#b8b8bc]"
               )}
               aria-hidden
