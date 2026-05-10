@@ -301,13 +301,13 @@ export function IpodMenuBar({
         <>
           <MenubarItem
             onClick={onClearLibrary}
-            className="text-md h-6 px-3"
+            className="text-md h-6 px-3 whitespace-nowrap"
           >
             {t("apps.ipod.menu.clearLibrary")}
           </MenubarItem>
           <MenubarItem
             onClick={onSyncLibrary}
-            className="text-md h-6 px-3"
+            className="text-md h-6 px-3 whitespace-nowrap"
           >
             {t("apps.ipod.menu.syncLibrary")}
           </MenubarItem>
@@ -319,14 +319,14 @@ export function IpodMenuBar({
             <>
               <MenubarItem
                 onClick={onAppleMusicRefresh}
-                className="text-md h-6 px-3"
+                className="text-md h-6 px-3 whitespace-nowrap"
                 disabled={!onAppleMusicRefresh}
               >
                 {t("apps.ipod.menu.refreshAppleMusic")}
               </MenubarItem>
               <MenubarItem
                 onClick={onAppleMusicSignOut}
-                className="text-md h-6 px-3"
+                className="text-md h-6 px-3 whitespace-nowrap"
                 disabled={!onAppleMusicSignOut}
               >
                 {t("apps.ipod.menu.appleMusicSignOut")}
@@ -335,7 +335,7 @@ export function IpodMenuBar({
           ) : (
             <MenubarItem
               onClick={onAppleMusicSignIn}
-              className="text-md h-6 px-3"
+              className="text-md h-6 px-3 whitespace-nowrap"
               disabled={!onAppleMusicSignIn}
             >
               {t("apps.ipod.menu.appleMusicSignIn")}
@@ -349,7 +349,7 @@ export function IpodMenuBar({
   const librarySwitchMenubarItem = (
     <MenubarItem
       onClick={handleSwitchLibraryMenu}
-      className="text-md h-6 px-3"
+      className="text-md h-6 px-3 whitespace-nowrap"
       disabled={
         !onSwitchLibrary || (!isAppleMusic && !musicKitConfigured)
       }
@@ -835,11 +835,11 @@ export function IpodMenuBar({
         <MenubarContent
           align="start"
           sideOffset={1}
-          className="px-0 max-w-[180px] sm:max-w-[220px]"
+          className="px-0 max-w-[260px] sm:max-w-[280px]"
         >
           <MenubarItem
             onClick={onAddSong}
-            className="text-md h-6 px-3"
+            className="text-md h-6 px-3 whitespace-nowrap"
           >
             {t("apps.ipod.menu.addToLibrary")}
           </MenubarItem>
