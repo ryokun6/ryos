@@ -646,12 +646,13 @@ export function IpodScreen({
       {/* Title bar */}
       <div
         className={cn(
+          // 24px header for both variants so menu/now-playing geometry
+          // below stays identical between skins.
           "h-6 min-h-6 shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
           isModernUi
-            ? // iOS 6 UIBarStyleDefault: glossy blue gradient (top sheen ->
-              // mid blue -> darker bottom), 1px dark hairline at the
-              // bottom, white text with a soft inner shadow.
-              "ipod-modern-titlebar text-white font-ipod-modern-ui text-[13px] font-semibold [text-shadow:0_-1px_0_rgba(0,0,0,0.35)]"
+            ? // iPod-classic-js Header: silver gradient + #7995a3 hairline,
+              // 13px black text, no shadow.
+              "ipod-modern-titlebar text-black font-ipod-modern-ui text-[13px] font-semibold"
             : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
       >
@@ -659,7 +660,7 @@ export function IpodScreen({
           className={cn(
             "w-6 flex items-center justify-start",
             isModernUi
-              ? "font-ipod-modern-ui text-[13px]"
+              ? "font-ipod-modern-ui text-[12px] text-black/80"
               : `font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
           )}
         >
@@ -790,7 +791,9 @@ export function IpodScreen({
                       className={cn(
                         "flex items-center justify-between gap-2",
                         isModernUi
-                          ? "font-ipod-modern-ui text-[11px] font-semibold text-[#5a5a5a]"
+                          ? // iPod-classic-js NowPlaying Subtext color +
+                            // size: rgb(99,101,103) ~12px.
+                            "font-ipod-modern-ui text-[11px] font-medium text-[rgb(99,101,103)]"
                           : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
                         nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
                       )}
@@ -815,7 +818,8 @@ export function IpodScreen({
                       className={cn(
                         "text-center flex flex-col gap-0 leading-[1.05] min-h-0 overflow-visible",
                         isModernUi
-                          ? "font-ipod-modern-ui text-[14px] font-semibold text-[#222]"
+                          ? // iPod-classic-js NowPlaying Text: bold ~14.7px black.
+                            "font-ipod-modern-ui text-[14px] font-semibold text-black"
                           : "font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                       )}
                     >
@@ -833,7 +837,8 @@ export function IpodScreen({
                         scrollStartDelaySec={1}
                         className={cn(
                           isModernUi
-                            ? "leading-[1.15] py-px text-[12px] font-normal text-[#5a5a5a]"
+                            ? // iPod-classic-js Subtext: rgb(99,101,103) at 12px regular.
+                              "leading-[1.15] py-px text-[12px] font-normal text-[rgb(99,101,103)]"
                             : "leading-[1.05] py-px"
                         )}
                       />
@@ -844,7 +849,7 @@ export function IpodScreen({
                           scrollStartDelaySec={1}
                           className={cn(
                             isModernUi
-                              ? "leading-[1.15] py-px text-[11px] font-normal text-[#888]"
+                              ? "leading-[1.15] py-px text-[11px] font-normal text-[rgb(99,101,103)]"
                               : "leading-[1.05] py-px"
                           )}
                         />
@@ -889,7 +894,7 @@ export function IpodScreen({
                         className={cn(
                           "w-full flex justify-between",
                           isModernUi
-                            ? "font-ipod-modern-ui text-[11px] h-[18px] mt-0.5 text-[#5a5a5a] font-medium tabular-nums"
+                            ? "font-ipod-modern-ui text-[11px] h-[18px] mt-0.5 text-[rgb(99,101,103)] font-medium tabular-nums"
                             : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                         )}
                       >
@@ -905,7 +910,7 @@ export function IpodScreen({
                     className={cn(
                       "text-center h-full flex flex-col justify-center items-center",
                       isModernUi
-                        ? "font-ipod-modern-ui text-[12px] text-[#666]"
+                        ? "font-ipod-modern-ui text-[12px] text-[rgb(99,101,103)]"
                         : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                     )}
                   >

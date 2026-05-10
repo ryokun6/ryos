@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import type { BatteryManager } from "../../types";
 
 interface BatteryIndicatorProps {
   backlightOn: boolean;
-  /** Classic = monochrome blue; modern = white-on-blue iOS 6 nav style. */
+  /** Classic = monochrome blue 4-bar; modern = continuous green fill. */
   variant?: "classic" | "modern";
 }
 
@@ -63,24 +64,24 @@ export function BatteryIndicator({
   const filledBars = isCharging ? animationFrame : Math.ceil(level * 4);
 
   if (isModern) {
-    // iOS 6 status-bar battery: white outline + white tip on the glossy
-    // blue nav bar. We draw it slightly bigger than the classic one so
-    // the smaller bar count still reads cleanly at this DPR.
+    // iPod-classic-js BatteryIndicator: dark grey container with a
+    // glossy gradient, green continuous fill (red below 20%), light
+    // grey cap. We keep the same overall width as the classic 19px
+    // battery so the titlebar layout doesn't shift between skins.
+    const fillPercent = Math.max(0, Math.min(1, level)) * 100;
+    const isLow = !isCharging && level <= 0.2;
     return (
       <div className="flex items-center">
-        <div className="relative w-[20px] h-[10px] border border-white/95 rounded-[2px] bg-transparent">
-          <div className="absolute inset-[1px] flex gap-[1px]">
-            {[1, 2, 3, 4].map((bar) => (
-              <div
-                key={bar}
-                className={`flex-1 h-full transition-colors duration-200 ${
-                  bar <= filledBars ? "bg-white/95" : "bg-transparent"
-                }`}
-              />
-            ))}
-          </div>
+        <div className="relative w-[20px] h-[10px] ipod-modern-battery-container rounded-[1px]">
+          <div
+            className={cn(
+              "absolute top-0 bottom-0 left-0 ipod-modern-battery-fill transition-[width] duration-300",
+              isLow && "ipod-modern-battery-fill--low"
+            )}
+            style={{ width: `${fillPercent}%` }}
+          />
         </div>
-        <div className="w-[2px] h-[4px] bg-white/95 ml-[1px] rounded-r-[1px]" />
+        <div className="w-[2px] h-[4px] ml-[1px] ipod-modern-battery-cap" />
       </div>
     );
   }

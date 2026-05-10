@@ -1360,20 +1360,26 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 }
 
 /* =========================================================================
- * iPod modern (iOS-6 inspired) screen skin
+ * iPod modern (color screen) skin
  *
  * Toggled by the iPod app's "Screen → Modern" view option in the menubar.
- * Replaces the monochrome 1st-gen LCD look with the look of the Music app
- * shipped with iOS 6 on iPhone / iPod touch / iPod nano 7G: glossy blue
- * UINavigationBar (UIBarStyleDefault), white UITableView cells, Helvetica
- * Neue throughout, and a glossy blue UITableViewCellSelectionStyleBlue
- * selection highlight.
+ * Replaces the monochrome 1st-gen LCD look with the color screen UI used
+ * by the iPod nano 6G/7G and the iPod-classic-js simulator. Style values
+ * sampled directly from tvillarete/ipod-classic-js (MIT-licensed) so the
+ * gradients and hairlines match the established reference 1:1:
  *
- * Color references (sampled from iOS 6 system bars and table cells):
- *   - Nav bar gradient: #a3b9d6 → #5077a5 with a top sheen of rgba(255,255,255,.45)
- *     and a 1px dark hairline at the bottom (#1f3e6a → rgba(0,0,0,.4))
- *   - Selected cell: glossy blue #4a90e2 → #1d6fdc with white text
- *   - Separator: 1px hairline #c8c7cc (iOS 6 default cell separator)
+ *   - Header: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%)
+ *             border-bottom: 1px solid #7995a3
+ *             13px black, no text-shadow
+ *   - Selected row: linear-gradient(#3cb8ff 0%, #347ab5 100%)
+ *                   white text, no shadow
+ *   - Sublabel grey: rgb(99, 101, 103) at 12px
+ *   - Battery: #54585b body w/ green #A5E07F gloss gradient, #c4c4c4 cap
+ *
+ * IMPORTANT: dimensions (titlebar height, menu row height, screen border,
+ * progress bar height, paddings) are intentionally unchanged from the
+ * classic skin so the same scrollbar / virtualization / now-playing
+ * geometry can theme cleanly between the two variants.
  *
  * The `.font-ipod-modern-ui` utility class explicitly fights the macOS
  * theme override that forces `font-family: inherit` inside .ipod-force-font,
@@ -1381,10 +1387,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * ========================================================================= */
 
 .font-ipod-modern-ui {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Helvetica", "Arial",
-    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "PingFang SC",
-    "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic",
-    system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
+    "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-smooth: always;
@@ -1392,64 +1399,51 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 }
 
 .ipod-modern-screen {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Helvetica", "Arial",
-    system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: black;
 }
 
-/* iOS 6 UINavigationBar — UIBarStyleDefault (blue). The vertical stack:
- *   1. 1px top highlight (subtle white sheen)
- *   2. Main blue gradient (light steel → medium blue)
- *   3. 1px bottom hairline (dark navy fading into a soft drop shadow) */
+/* iPod-classic-js Header (sampled from app/components/Header/index.tsx):
+ *   background: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
+ *   border-bottom: 1px solid #7995a3;
+ *
+ * The titlebar in this app is 24px tall (vs. the reference's 20px) — we
+ * keep our existing height so the menu/now-playing layout below isn't
+ * disturbed. The hairline is drawn via inset box-shadow so it doesn't
+ * add height when the existing border-b utility is also present. */
 .ipod-modern-titlebar {
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.55) 0,
-      rgba(255, 255, 255, 0) 1px
-    ),
-    linear-gradient(
-      to bottom,
-      #a8bfdb 0%,
-      #7b9bc5 45%,
-      #5b80b1 80%,
-      #4b6fa1 100%
-    );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
-    0 1px 0 rgba(0, 0, 0, 0.18);
+  background-image: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
+  box-shadow: inset 0 -1px 0 #7995a3;
 }
 
-/* iOS 6 UITableViewCell — white cell with a single 1px bottom hairline.
- * Uses an inset box-shadow rather than a real border so it never adds
- * height to the row (the row is exactly MENU_ITEM_HEIGHT). */
+/* iPod-classic-js list rows are simple white cells with no separator —
+ * the only visual cue is the selection highlight. Hover gives a subtle
+ * grey for mouse users, since a real iPod has no hover state. */
 .ipod-modern-row {
   background-color: #ffffff;
-  box-shadow: inset 0 -1px 0 #c8c7cc;
 }
 
-/* iOS 6 UITableViewCellSelectionStyleBlue — glossy blue gradient with a
- * thin highlight along the top edge. White text + chevron sit on top.
- * We use `background-image` here (not the Tailwind gradient utility) so
- * the rule beats the row's solid `background-color`. */
+.ipod-modern-row:hover:not(.ipod-modern-row-selected) {
+  background-color: #f5f5f7;
+}
+
+/* iPod-classic-js SelectableListItem selection (sampled directly):
+ *   background: linear-gradient(rgb(60, 184, 255) 0%, rgb(52, 122, 181) 100%);
+ *   color: white; */
 .ipod-modern-row-selected {
-  background-image:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.35) 0,
-      rgba(255, 255, 255, 0) 2px
-    ),
-    linear-gradient(to bottom, #5aa0f2 0%, #2e7be4 50%, #1463c8 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+  background-image: linear-gradient(
+    180deg,
+    rgb(60, 184, 255) 0%,
+    rgb(52, 122, 181) 100%
+  );
   color: #ffffff;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.35);
 }
 
-/* Now-playing progress bar — inset grey track + glossy blue fill. */
+/* Now-playing progress bar — inset grey track + glossy blue fill that
+ * mirrors the selected-row gradient so the look is consistent. */
 .ipod-modern-progress-track {
   background-color: #d8d8dd;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.18);
@@ -1457,12 +1451,57 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 .ipod-modern-progress-fill {
   background-image: linear-gradient(
-    to bottom,
-    #5aa0f2 0%,
-    #2e7be4 60%,
-    #1463c8 100%
+    180deg,
+    rgb(60, 184, 255) 0%,
+    rgb(52, 122, 181) 100%
   );
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* iPod-classic-js BatteryIndicator (sampled directly):
+ *   ChargeLevelContainer: 1px solid #626262, background #54585b w/ a
+ *     gloss `linear-gradient(180deg, transparent 25%, 65%, rgba(255,255,255,.5))`
+ *   ChargeLevel: green #A5E07F (or red #D17F6B at <=20%) overlaid with a
+ *     specular highlight + dark base.
+ *   BatteryCap: light grey #c4c4c4 with a #626262 outline.
+ *
+ * The bar count is irrelevant in this skin — the CSS draws a continuous
+ * fill % rather than 4 segments. The component handles the percentage
+ * sampling. */
+.ipod-modern-battery-container {
+  border: 1px solid #626262;
+  background-color: #54585b;
+  background-image: linear-gradient(
+    180deg,
+    transparent 25%,
+    transparent 65%,
+    rgba(255, 255, 255, 0.5) 100%
+  );
+}
+
+.ipod-modern-battery-fill {
+  background-color: #a5e07f;
+  background-image: linear-gradient(
+    180deg,
+    transparent 10%,
+    rgba(255, 255, 255, 0.5) 20%,
+    transparent 35%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.2) 55%,
+    rgba(0, 0, 0, 0.3) 65%,
+    rgba(0, 0, 0, 0.4) 80%
+  );
+}
+
+.ipod-modern-battery-fill--low {
+  background-color: #d17f6b;
+}
+
+.ipod-modern-battery-cap {
+  background-color: #c4c4c4;
+  border: 1px solid #626262;
+  border-left: 0;
+  border-radius: 0 1.5px 1.5px 0;
 }
 
 /* macOS theme override: the `.ipod-force-font *` rule in themes.css sets
@@ -1471,10 +1510,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * `.font-chicago` further down in themes.css. */
 :root[data-os-theme="macosx"] .ipod-force-font .font-ipod-modern-ui,
 :root[data-os-theme="macosx"] .font-ipod-modern-ui {
-  font-family: "Helvetica Neue", "HelveticaNeue", "Helvetica", "Arial",
-    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "PingFang SC",
-    "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic",
-    system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", "HelveticaNeue", Helvetica, Arial, "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
+    "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
+    sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: always !important;
 }

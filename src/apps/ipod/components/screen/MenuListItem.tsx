@@ -36,31 +36,31 @@ export function MenuListItem({
   const isModern = variant === "modern";
 
   if (isModern) {
+    // iPod-classic-js SelectableListItem: white row, blue gradient
+    // selection, no separator. We keep the same 24px row height as the
+    // classic skin so the menu virtualization and scrollbar geometry
+    // stay identical.
     return (
       <div
         onClick={isLoading ? undefined : onClick}
         className={cn(
-          "h-full pl-3 pr-2 font-ipod-modern-ui flex justify-between items-center",
-          // 1px hairline separator. Drawn with a tiny inset box-shadow so
-          // it never adds layout height and it sits below the row's
-          // bottom edge like a real iOS 6 table-view cell.
+          "h-full pl-2 pr-2 font-ipod-modern-ui flex justify-between items-center",
           "ipod-modern-row",
           isLoading ? "cursor-default" : "cursor-pointer",
           isSelected && !isLoading
-            ? "ipod-modern-row-selected text-white"
+            ? "ipod-modern-row-selected"
             : isLoading
             ? "text-[#555] animate-pulse"
-            : "text-[#1f1f1f] hover:bg-[#eaeaea]"
+            : "text-black"
         )}
       >
         <span
           className={cn(
-            "whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2 leading-[1.15]",
-            // Match the visual rhythm of an iOS 6 row: Helvetica Neue at
-            // ~14px, slightly smaller for CJK because Hiragino/Noto runs
-            // visually larger at the same em.
-            hasCjkText ? "text-[12px]" : "text-[13px]",
-            isSelected && !isLoading ? "font-semibold" : "font-medium"
+            "whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2 leading-[1.15] font-medium",
+            // 14px black Helvetica matches iPod-classic-js Label exactly;
+            // CJK gets a touch smaller because Hiragino/Noto runs larger
+            // at the same nominal em.
+            hasCjkText ? "text-[13px]" : "text-[14px]"
           )}
         >
           {text}
@@ -69,20 +69,26 @@ export function MenuListItem({
           <span
             className={cn(
               "flex-shrink-0 leading-[1.15] font-normal",
-              hasCjkText ? "text-[11px]" : "text-[12px]",
+              hasCjkText ? "text-[12px]" : "text-[13px]",
               isSelected && !isLoading
-                ? "text-white/85"
-                : "text-[#8a8a8e]"
+                ? "text-white/90"
+                : "text-[rgb(99,101,103)]"
             )}
           >
             {value}
           </span>
         ) : (
           showChevron && !isLoading && (
+            // Right-arrow chevron: thin and light grey when idle, white
+            // when the row is selected — same affordance as the
+            // arrow_right.svg used in iPod-classic-js.
             <span
               className={cn(
-                "flex-shrink-0 text-[12px] leading-none font-normal",
-                isSelected && !isLoading ? "text-white/90" : "text-[#c4c4c8]"
+                "flex-shrink-0 leading-none font-normal",
+                // Keep the chevron a hair larger than the label so the
+                // arrowhead reads cleanly at this DPR.
+                "text-[14px]",
+                isSelected && !isLoading ? "text-white/95" : "text-[#b8b8bc]"
               )}
               aria-hidden
             >
