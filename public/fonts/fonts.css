@@ -99,6 +99,24 @@
   font-display: swap;
 }
 
+/* Adobe Myriad Pro Bold — the brand face Apple shipped on the iPod nano
+ * 6G/7G color screen and across iOS 6 system UI. Used for the iPod
+ * app's "Modern" screen variant (`.font-ipod-modern-ui`).
+ *
+ * Only the Bold cut is bundled, but we advertise it across the full
+ * 100–900 range so EVERY font-weight requested in modern UI resolves
+ * to this single face. That's the authentic look — iPod nano color
+ * UI used Myriad Bold throughout, not a multi-weight typographic
+ * hierarchy. Visual hierarchy in the iPod skin comes from size and
+ * color, not weight. */
+@font-face {
+  font-family: "MyriadPro";
+  src: url("/fonts/MyriadPro-Bold.woff") format("woff");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: "AquaKana";
   src: url("/fonts/AquaKana.woff2") format("woff2");
