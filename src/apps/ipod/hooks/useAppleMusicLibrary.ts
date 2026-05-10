@@ -754,6 +754,136 @@ export async function refreshStaleAppleMusicPlaylistTracks(
   await Promise.all(workers);
 }
 
+let inFlightRecentlyAddedRefresh: Promise<Track[]> | null = null;
+let inFlightFavoritesRefresh: Promise<Track[]> | null = null;
+
+/**
+ * Refresh the "Recently Added" track collection in the background and
+ * mirror the result into the store. Mirrors `refreshAppleMusicPlaylists`
+ * for the menu-collection case so the menu can render cached content
+ * while a fresh fetch updates the store in-place when it finishes.
+ *
+ * `fetchAppleMusicRecentlyAddedTracks` already implements the cache /
+ * defensive empty-result logic (a flaky API returning 0 tracks won't
+ * wipe the cached collection), so this wrapper just adds the in-flight
+ * de-dup, the loading flag, and the store write.
+ *
+ * Playback safety: only `appleMusicRecentlyAddedTracks` is mutated. The
+ * AppleMusicPlayerBridge keys playback on `currentTrack.id` and the
+ * playback queue stores ids, so swapping this list while a track from
+ * it is playing keeps audio uninterrupted.
+ */
+export async function refreshAppleMusicRecentlyAdded(
+  options: { force?: boolean } = {}
+): Promise<Track[]> {
+  const store = useIpodStore.getState();
+
+  if (!options.force) {
+    const loadedAt = store.appleMusicRecentlyAddedLoadedAt;
+    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
+    if (
+      store.appleMusicRecentlyAddedTracks.length > 0 &&
+      ageMs < APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS
+    ) {
+      return store.appleMusicRecentlyAddedTracks;
+    }
+  }
+
+  if (inFlightRecentlyAddedRefresh) return inFlightRecentlyAddedRefresh;
+
+  const instance = getMusicKitInstance();
+  if (!instance || !instance.isAuthorized) {
+    return store.appleMusicRecentlyAddedTracks;
+  }
+
+  // Only flip the loading flag when there's nothing to display yet — a
+  // background refresh of an existing list should not flash "Loading…".
+  const hadCached = store.appleMusicRecentlyAddedTracks.length > 0;
+  if (!hadCached) {
+    store.setAppleMusicRecentlyAddedLoading(true);
+  }
+
+  inFlightRecentlyAddedRefresh = (async () => {
+    try {
+      const tracks = await fetchAppleMusicRecentlyAddedTracks({ force: true });
+      const existing = useIpodStore.getState().appleMusicRecentlyAddedTracks;
+      if (tracks.length === 0 && existing.length > 0) {
+        // The fetcher's defensive guard already returns the cached array
+        // in this case, but keep the second check here so the store
+        // never gets flipped to an empty array on a flaky refresh.
+        return existing;
+      }
+      useIpodStore
+        .getState()
+        .setAppleMusicRecentlyAddedTracks(tracks, Date.now());
+      return tracks;
+    } finally {
+      inFlightRecentlyAddedRefresh = null;
+      if (!hadCached) {
+        useIpodStore.getState().setAppleMusicRecentlyAddedLoading(false);
+      }
+    }
+  })();
+
+  return inFlightRecentlyAddedRefresh;
+}
+
+/**
+ * Refresh the "Favorite Songs" track collection in the background and
+ * mirror the result into the store. See `refreshAppleMusicRecentlyAdded`
+ * for the rationale and playback-safety notes — the only difference is
+ * which IndexedDB collection key + store slot is updated.
+ */
+export async function refreshAppleMusicFavorites(
+  options: { force?: boolean } = {}
+): Promise<Track[]> {
+  const store = useIpodStore.getState();
+
+  if (!options.force) {
+    const loadedAt = store.appleMusicFavoriteTracksLoadedAt;
+    const ageMs = loadedAt ? Date.now() - loadedAt : Infinity;
+    if (
+      store.appleMusicFavoriteTracks.length > 0 &&
+      ageMs < APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS
+    ) {
+      return store.appleMusicFavoriteTracks;
+    }
+  }
+
+  if (inFlightFavoritesRefresh) return inFlightFavoritesRefresh;
+
+  const instance = getMusicKitInstance();
+  if (!instance || !instance.isAuthorized) {
+    return store.appleMusicFavoriteTracks;
+  }
+
+  const hadCached = store.appleMusicFavoriteTracks.length > 0;
+  if (!hadCached) {
+    store.setAppleMusicFavoritesLoading(true);
+  }
+
+  inFlightFavoritesRefresh = (async () => {
+    try {
+      const tracks = await fetchAppleMusicFavoriteSongTracks({ force: true });
+      const existing = useIpodStore.getState().appleMusicFavoriteTracks;
+      if (tracks.length === 0 && existing.length > 0) {
+        return existing;
+      }
+      useIpodStore
+        .getState()
+        .setAppleMusicFavoriteTracks(tracks, Date.now());
+      return tracks;
+    } finally {
+      inFlightFavoritesRefresh = null;
+      if (!hadCached) {
+        useIpodStore.getState().setAppleMusicFavoritesLoading(false);
+      }
+    }
+  })();
+
+  return inFlightFavoritesRefresh;
+}
+
 /**
  * Fetch the user's full Apple Music library and write the result into the
  * store. Resolves with the number of tracks loaded; rejects when MusicKit
@@ -1137,6 +1267,48 @@ export function useAppleMusicLibrary({
             });
           }
         }
+
+        // Recently Added & Favorites (each persisted under its own
+        // IndexedDB key by `saveAppleMusicTrackCollection`). Hydrating
+        // here means the menu shows cached entries instantly on iPod
+        // open instead of flashing "Loading…" while the lazy menu-open
+        // fetcher runs.
+        if (
+          useIpodStore.getState().appleMusicRecentlyAddedTracks.length === 0
+        ) {
+          const cached = await loadAppleMusicTrackCollection(
+            "recently-added"
+          );
+          if (cancelled) return;
+          if (
+            cached &&
+            cached.tracks.length > 0 &&
+            useIpodStore.getState().appleMusicRecentlyAddedTracks.length === 0
+          ) {
+            useIpodStore
+              .getState()
+              .setAppleMusicRecentlyAddedTracks(
+                cached.tracks,
+                cached.loadedAt
+              );
+          }
+        }
+
+        if (useIpodStore.getState().appleMusicFavoriteTracks.length === 0) {
+          const cached = await loadAppleMusicTrackCollection(
+            "favorite-songs"
+          );
+          if (cancelled) return;
+          if (
+            cached &&
+            cached.tracks.length > 0 &&
+            useIpodStore.getState().appleMusicFavoriteTracks.length === 0
+          ) {
+            useIpodStore
+              .getState()
+              .setAppleMusicFavoriteTracks(cached.tracks, cached.loadedAt);
+          }
+        }
       } finally {
         inFlight = false;
       }
@@ -1294,6 +1466,15 @@ export function useAppleMusicLibrary({
         await refreshAppleMusicPlaylists();
         if (cancelled) return;
         await refreshStaleAppleMusicPlaylistTracks();
+        if (cancelled) return;
+        // Recently Added and Favorites have their own freshness windows
+        // (handled inside each helper). Run them in parallel since they
+        // hit separate Apple Music endpoints and don't share the same
+        // in-flight guard.
+        await Promise.allSettled([
+          refreshAppleMusicRecentlyAdded(),
+          refreshAppleMusicFavorites(),
+        ]);
       } catch (err) {
         // Each helper handles its own per-call errors; a top-level
         // failure here would be unexpected (e.g. MusicKit instance went
