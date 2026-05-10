@@ -37,9 +37,10 @@ export function MenuListItem({
 
   if (isModern) {
     // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection, no separator. We keep the same 24px row height as the
-    // classic skin so the menu virtualization and scrollbar geometry
-    // stay identical.
+    // selection, no separator. Modern mode uses the 20px row height
+    // configured in IpodScreen — slightly tighter than classic's 24px
+    // because Helvetica Neue at 12px doesn't need as much padding as
+    // 16px Chicago bitmap glyphs do.
     return (
       <div
         onClick={isLoading ? undefined : onClick}
@@ -57,10 +58,9 @@ export function MenuListItem({
         <span
           className={cn(
             "whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2 leading-[1.15] font-medium",
-            // 14px black Helvetica matches iPod-classic-js Label exactly;
-            // CJK gets a touch smaller because Hiragino/Noto runs larger
-            // at the same nominal em.
-            hasCjkText ? "text-[13px]" : "text-[14px]"
+            // 12px Helvetica Neue. CJK gets a touch smaller because
+            // Hiragino/Noto runs larger at the same nominal em.
+            hasCjkText ? "text-[11px]" : "text-[12px]"
           )}
         >
           {text}
@@ -69,7 +69,7 @@ export function MenuListItem({
           <span
             className={cn(
               "flex-shrink-0 leading-[1.15] font-normal",
-              hasCjkText ? "text-[12px]" : "text-[13px]",
+              hasCjkText ? "text-[10px]" : "text-[11px]",
               isSelected && !isLoading
                 ? "text-white/90"
                 : "text-[rgb(99,101,103)]"
@@ -85,9 +85,7 @@ export function MenuListItem({
             <span
               className={cn(
                 "flex-shrink-0 leading-none font-normal",
-                // Keep the chevron a hair larger than the label so the
-                // arrowhead reads cleanly at this DPR.
-                "text-[14px]",
+                "text-[12px]",
                 isSelected && !isLoading ? "text-white/95" : "text-[#b8b8bc]"
               )}
               aria-hidden

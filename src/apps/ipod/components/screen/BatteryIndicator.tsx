@@ -72,7 +72,7 @@ export function BatteryIndicator({
     const isLow = !isCharging && level <= 0.2;
     return (
       <div className="flex items-center">
-        <div className="relative w-[20px] h-[10px] ipod-modern-battery-container rounded-[1px]">
+        <div className="relative w-[16px] h-[8px] ipod-modern-battery-container rounded-[1px]">
           <div
             className={cn(
               "absolute top-0 bottom-0 left-0 ipod-modern-battery-fill transition-[width] duration-300",
@@ -81,7 +81,7 @@ export function BatteryIndicator({
             style={{ width: `${fillPercent}%` }}
           />
         </div>
-        <div className="w-[2px] h-[4px] ml-[1px] ipod-modern-battery-cap" />
+        <div className="w-[2px] h-[3px] ml-[1px] ipod-modern-battery-cap" />
       </div>
     );
   }

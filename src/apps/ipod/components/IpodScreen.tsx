@@ -38,10 +38,10 @@ import type { IpodScreenProps } from "../types";
 import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore";
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
-// single-line `font-chicago text-[16px]` row; 24px gives a touch more
-// vertical breathing room than the font's natural height while keeping
-// the same number of rows on-screen as the classic iPod (~5 rows in
-// the 124px menu area).
+// single-line row; the classic skin's Chicago glyphs need 24px to read
+// comfortably, while the modern (color screen) skin's Helvetica Neue
+// fits naturally at 20px and matches the visual density of the
+// iPod-classic-js / iPod nano 6G/7G reference.
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
 // stays identical across the main menu, the artist list, and the
@@ -49,7 +49,12 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // (virtualized at a fixed height) would render at a different row size
 // than the surrounding menus (whose rows used the font's natural
 // height) and the menu would visibly "shrink" when entering it.
-const MENU_ITEM_HEIGHT = 24;
+//
+// Both heights are constants — the variant is global state, not a
+// per-menu choice, so a single value applies cleanly to all menus and
+// the scroll-position math.
+const MENU_ITEM_HEIGHT_CLASSIC = 24;
+const MENU_ITEM_HEIGHT_MODERN = 20;
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -174,6 +179,9 @@ export function IpodScreen({
   // toggling from the menubar updates the screen instantly.
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernUi = uiVariant === "modern";
+  const menuItemHeight = isModernUi
+    ? MENU_ITEM_HEIGHT_MODERN
+    : MENU_ITEM_HEIGHT_CLASSIC;
   const [showShellTitleInTitlebar, setShowShellTitleInTitlebar] =
     useState(false);
   const effectiveDisplayMode =
@@ -277,14 +285,14 @@ export function IpodScreen({
   const visibleRange = useMemo(() => {
     const start = Math.max(
       0,
-      Math.floor(scrollTop / MENU_ITEM_HEIGHT) - OVERSCAN_ITEMS
+      Math.floor(scrollTop / menuItemHeight) - OVERSCAN_ITEMS
     );
     const visibleCount =
-      Math.ceil((containerHeight || 124) / MENU_ITEM_HEIGHT) +
+      Math.ceil((containerHeight || 124) / menuItemHeight) +
       OVERSCAN_ITEMS * 2;
     const end = Math.min(currentMenuItems.length, start + visibleCount);
     return { start, end };
-  }, [scrollTop, containerHeight, currentMenuItems.length]);
+  }, [scrollTop, containerHeight, currentMenuItems.length, menuItemHeight]);
 
   // Keep the selected item in view. We key on `menuHistory` (the array
   // reference, not just its length) so EVERY menu transition triggers a
@@ -321,8 +329,8 @@ export function IpodScreen({
         0,
         Math.min(selectedMenuItem, currentMenuItems.length - 1)
       );
-      const itemTop = safeIndex * MENU_ITEM_HEIGHT;
-      const itemBottom = itemTop + MENU_ITEM_HEIGHT;
+      const itemTop = safeIndex * menuItemHeight;
+      const itemBottom = itemTop + menuItemHeight;
       const target = itemBottom > containerH ? itemBottom - containerH : 0;
       el.scrollTop = target;
       setScrollTop(target);
@@ -334,8 +342,8 @@ export function IpodScreen({
     if (selectedMenuItem < 0 || selectedMenuItem >= currentMenuItems.length) {
       return;
     }
-    const itemTop = selectedMenuItem * MENU_ITEM_HEIGHT;
-    const itemBottom = itemTop + MENU_ITEM_HEIGHT;
+    const itemTop = selectedMenuItem * menuItemHeight;
+    const itemBottom = itemTop + menuItemHeight;
     const visibleTop = el.scrollTop;
     const visibleBottom = visibleTop + containerH;
     if (itemBottom > visibleBottom) {
@@ -343,7 +351,7 @@ export function IpodScreen({
     } else if (itemTop < visibleTop) {
       el.scrollTop = itemTop;
     }
-  }, [menuMode, selectedMenuItem, menuHistory, currentMenuItems]);
+  }, [menuMode, selectedMenuItem, menuHistory, currentMenuItems, menuItemHeight]);
 
   const shouldShowLyrics = showLyrics;
 
@@ -646,28 +654,29 @@ export function IpodScreen({
       {/* Title bar */}
       <div
         className={cn(
-          // 24px header for both variants so menu/now-playing geometry
-          // below stays identical between skins.
-          "h-6 min-h-6 shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
+          // Header height differs by skin:
+          //   - Classic: 24px (h-6) — Chicago bitmap glyphs need the room.
+          //   - Modern: 20px (h-5) — matches iPod-classic-js / nano 7G.
+          "shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
           isModernUi
             ? // iPod-classic-js Header: silver gradient + #7995a3 hairline,
-              // 13px black text, no shadow.
-              "ipod-modern-titlebar text-black font-ipod-modern-ui text-[13px] font-semibold"
-            : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+              // 11px black Helvetica Neue, no shadow.
+              "h-5 min-h-5 ipod-modern-titlebar text-black font-ipod-modern-ui text-[11px] font-semibold"
+            : "h-6 min-h-6 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
       >
         <div
           className={cn(
-            "w-6 flex items-center justify-start",
+            "flex items-center justify-start",
             isModernUi
-              ? "font-ipod-modern-ui text-[12px] text-black/80"
-              : `font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
+              ? "w-5 font-ipod-modern-ui text-[10px] text-black/80"
+              : `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
           )}
         >
           <div
             className={cn(
               "flex items-center justify-center",
-              isModernUi ? "w-4 h-4" : "w-4 h-4 mt-0.5"
+              isModernUi ? "w-3 h-3" : "w-4 h-4 mt-0.5"
             )}
           >
             {isPlaying ? "▶" : "⏸︎"}
@@ -682,13 +691,26 @@ export function IpodScreen({
             isModernUi && "font-ipod-modern-ui"
           )}
         />
-        <div className="w-6 flex items-center justify-end">
+        <div
+          className={cn(
+            "flex items-center justify-end",
+            isModernUi ? "w-5" : "w-6"
+          )}
+        >
           <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
         </div>
       </div>
 
-      {/* Content area - z-30 only when video is not showing so it can receive events */}
-      <div className={cn("relative h-[calc(100%-24px)]", !showVideo && "z-30")}>
+      {/* Content area - z-30 only when video is not showing so it can
+          receive events. Content height matches the titlebar above so
+          modern's shorter header gives the menu 4px more breathing room. */}
+      <div
+        className={cn(
+          "relative",
+          isModernUi ? "h-[calc(100%-20px)]" : "h-[calc(100%-24px)]",
+          !showVideo && "z-30"
+        )}
+      >
         <AnimatePresence initial={false} custom={menuDirection} mode="sync">
           {menuMode ? (
             <motion.div
@@ -709,7 +731,7 @@ export function IpodScreen({
                   <div
                     style={{
                       position: "relative",
-                      height: currentMenuItems.length * MENU_ITEM_HEIGHT,
+                      height: currentMenuItems.length * menuItemHeight,
                     }}
                   >
                     {currentMenuItems
@@ -724,10 +746,10 @@ export function IpodScreen({
                             }`}
                             style={{
                               position: "absolute",
-                              top: index * MENU_ITEM_HEIGHT,
+                              top: index * menuItemHeight,
                               left: 0,
                               right: 0,
-                              height: MENU_ITEM_HEIGHT,
+                              height: menuItemHeight,
                             }}
                           >
                             <MenuListItem
@@ -791,9 +813,8 @@ export function IpodScreen({
                       className={cn(
                         "flex items-center justify-between gap-2",
                         isModernUi
-                          ? // iPod-classic-js NowPlaying Subtext color +
-                            // size: rgb(99,101,103) ~12px.
-                            "font-ipod-modern-ui text-[11px] font-medium text-[rgb(99,101,103)]"
+                          ? // Modern: compact 10px Helvetica Neue secondary.
+                            "font-ipod-modern-ui text-[10px] font-medium text-[rgb(99,101,103)]"
                           : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
                         nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
                       )}
@@ -808,7 +829,7 @@ export function IpodScreen({
                       {isShuffled && (
                         <Shuffle
                           className="shrink-0"
-                          size={13}
+                          size={isModernUi ? 11 : 13}
                           weight="bold"
                           aria-label="shuffle on"
                         />
@@ -818,8 +839,11 @@ export function IpodScreen({
                       className={cn(
                         "text-center flex flex-col gap-0 leading-[1.05] min-h-0 overflow-visible",
                         isModernUi
-                          ? // iPod-classic-js NowPlaying Text: bold ~14.7px black.
-                            "font-ipod-modern-ui text-[14px] font-semibold text-black"
+                          ? // Modern: 12px bold black primary line. Smaller
+                            // than the reference's ~14.7px so the full
+                            // now-playing block fits the iPod's 150px
+                            // screen with the new compact rhythm.
+                            "font-ipod-modern-ui text-[12px] font-semibold text-black"
                           : "font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                       )}
                     >
@@ -828,7 +852,7 @@ export function IpodScreen({
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
                         className={cn(
-                          isModernUi ? "leading-[1.15] py-px" : "leading-[1.05] py-px"
+                          isModernUi ? "leading-[1.2] py-px" : "leading-[1.05] py-px"
                         )}
                       />
                       <ScrollingText
@@ -837,8 +861,8 @@ export function IpodScreen({
                         scrollStartDelaySec={1}
                         className={cn(
                           isModernUi
-                            ? // iPod-classic-js Subtext: rgb(99,101,103) at 12px regular.
-                              "leading-[1.15] py-px text-[12px] font-normal text-[rgb(99,101,103)]"
+                            ? // Modern artist: 10px regular grey subtext.
+                              "leading-[1.2] py-px text-[10px] font-normal text-[rgb(99,101,103)]"
                             : "leading-[1.05] py-px"
                         )}
                       />
@@ -849,7 +873,7 @@ export function IpodScreen({
                           scrollStartDelaySec={1}
                           className={cn(
                             isModernUi
-                              ? "leading-[1.15] py-px text-[11px] font-normal text-[rgb(99,101,103)]"
+                              ? "leading-[1.2] py-px text-[10px] font-normal text-[rgb(99,101,103)]"
                               : "leading-[1.05] py-px"
                           )}
                         />
@@ -862,9 +886,8 @@ export function IpodScreen({
                       )}
                     >
                       {isModernUi ? (
-                        // iOS 6 progress: thin grey rounded track with an
-                        // inset shadow, glossy blue gradient fill.
-                        <div className="w-full h-[5px] rounded-full overflow-hidden ipod-modern-progress-track">
+                        // Modern: thin grey rounded track + glossy blue fill.
+                        <div className="w-full h-[4px] rounded-full overflow-hidden ipod-modern-progress-track">
                           <div
                             className="h-full ipod-modern-progress-fill"
                             style={{
@@ -894,7 +917,7 @@ export function IpodScreen({
                         className={cn(
                           "w-full flex justify-between",
                           isModernUi
-                            ? "font-ipod-modern-ui text-[11px] h-[18px] mt-0.5 text-[rgb(99,101,103)] font-medium tabular-nums"
+                            ? "font-ipod-modern-ui text-[10px] h-[14px] mt-0.5 text-[rgb(99,101,103)] font-medium tabular-nums"
                             : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                         )}
                       >
@@ -910,7 +933,7 @@ export function IpodScreen({
                     className={cn(
                       "text-center h-full flex flex-col justify-center items-center",
                       isModernUi
-                        ? "font-ipod-modern-ui text-[12px] text-[rgb(99,101,103)]"
+                        ? "font-ipod-modern-ui text-[10px] text-[rgb(99,101,103)]"
                         : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                     )}
                   >
