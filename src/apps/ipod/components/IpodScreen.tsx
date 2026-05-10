@@ -14,7 +14,6 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
 import {
   AppleMusicPlayerBridge,
-  type AppleMusicNowPlayingMetadata,
 } from "./AppleMusicPlayerBridge";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { useTranslation } from "react-i18next";
@@ -36,6 +35,7 @@ import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
 import type { IpodScreenProps } from "../types";
+import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore";
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line `font-chicago text-[16px]` row; 24px gives a touch more
@@ -158,12 +158,17 @@ export function IpodScreen({
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
   const isAppleMusicTrack = currentTrack?.source === "appleMusic";
-  const isAppleMusicStationTrack = Boolean(
-    currentTrack?.appleMusicPlayParams?.stationId
+  const isAppleMusicCollectionShell =
+    isAppleMusicCollectionTrack(currentTrack);
+  const collectionShellKey =
+    currentTrack?.appleMusicPlayParams?.stationId ??
+    currentTrack?.appleMusicPlayParams?.playlistId ??
+    null;
+  const appleMusicKitNowPlaying = useIpodStore((s) => s.appleMusicKitNowPlaying);
+  const setAppleMusicKitNowPlaying = useIpodStore(
+    (s) => s.setAppleMusicKitNowPlaying
   );
-  const [appleMusicNowPlayingItem, setAppleMusicNowPlayingItem] =
-    useState<AppleMusicNowPlayingMetadata | null>(null);
-  const [showStationTitleInTitlebar, setShowStationTitleInTitlebar] =
+  const [showShellTitleInTitlebar, setShowShellTitleInTitlebar] =
     useState(false);
   const effectiveDisplayMode =
     isAppleMusicTrack && displayMode === DisplayMode.Video
@@ -171,41 +176,39 @@ export function IpodScreen({
       : displayMode;
   const shouldAnimateVisuals = showVideo && isPlaying;
 
-  const stationId = currentTrack?.appleMusicPlayParams?.stationId ?? null;
   useEffect(() => {
-    setAppleMusicNowPlayingItem(null);
-    setShowStationTitleInTitlebar(false);
-  }, [stationId]);
+    setShowShellTitleInTitlebar(false);
+  }, [collectionShellKey]);
 
   useEffect(() => {
-    if (!stationId || menuMode || !isPlaying) {
-      setShowStationTitleInTitlebar(false);
+    if (!collectionShellKey || menuMode || !isPlaying) {
+      setShowShellTitleInTitlebar(false);
       return;
     }
     const intervalId = window.setInterval(() => {
-      setShowStationTitleInTitlebar((showStation) => !showStation);
+      setShowShellTitleInTitlebar((show) => !show);
     }, 5000);
     return () => window.clearInterval(intervalId);
-  }, [isPlaying, menuMode, stationId]);
+  }, [isPlaying, menuMode, collectionShellKey]);
 
   const nowPlayingDisplayTrack = useMemo(() => {
-    if (!currentTrack || !isAppleMusicStationTrack || !appleMusicNowPlayingItem) {
+    if (!currentTrack || !isAppleMusicCollectionShell || !appleMusicKitNowPlaying) {
       return currentTrack;
     }
     return {
       ...currentTrack,
-      title: appleMusicNowPlayingItem.title,
-      artist: appleMusicNowPlayingItem.artist ?? currentTrack.artist,
-      album: appleMusicNowPlayingItem.album,
-      cover: appleMusicNowPlayingItem.cover ?? currentTrack.cover,
+      title: appleMusicKitNowPlaying.title,
+      artist: appleMusicKitNowPlaying.artist ?? currentTrack.artist,
+      album: appleMusicKitNowPlaying.album,
+      cover: appleMusicKitNowPlaying.cover ?? currentTrack.cover,
     };
-  }, [appleMusicNowPlayingItem, currentTrack, isAppleMusicStationTrack]);
+  }, [appleMusicKitNowPlaying, currentTrack, isAppleMusicCollectionShell]);
 
   const titlebarTitle =
     !menuMode &&
-    isAppleMusicStationTrack &&
+    isAppleMusicCollectionShell &&
     isPlaying &&
-    showStationTitleInTitlebar &&
+    showShellTitleInTitlebar &&
     currentTrack?.title
       ? currentTrack.title
       : currentMenuTitle;
@@ -418,7 +421,7 @@ export function IpodScreen({
                 onPause={!isFullScreen ? handlePause : undefined}
                 onEnded={!isFullScreen ? handleTrackEnd : undefined}
                 onReady={!isFullScreen ? handleReady : undefined}
-                onNowPlayingItemChange={setAppleMusicNowPlayingItem}
+                onNowPlayingItemChange={setAppleMusicKitNowPlaying}
               />
             ) : (
               <div
@@ -749,9 +752,11 @@ export function IpodScreen({
                       )}
                     >
                       <span>
-                        {isAppleMusicStationTrack
+                        {currentTrack?.appleMusicPlayParams?.stationId
                           ? "LIVE"
-                          : `${currentIndex + 1} of ${tracksLength}`}
+                          : isAppleMusicCollectionShell
+                            ? "MIX"
+                            : `${currentIndex + 1} of ${tracksLength}`}
                       </span>
                       {isShuffled && (
                         <Shuffle

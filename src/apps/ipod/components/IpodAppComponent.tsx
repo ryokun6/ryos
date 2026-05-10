@@ -23,6 +23,7 @@ import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { SongSearchDialog } from "@/components/dialogs/SongSearchDialog";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import { useIpodStore } from "@/stores/useIpodStore";
 import { useIpodLogic } from "../hooks/useIpodLogic";
 import { DisplayMode } from "@/types/lyrics";
 import { useCallback, useMemo } from "react";
@@ -182,6 +183,10 @@ export function IpodAppComponent({
     handleSwitchToAppleMusic,
     pauseBeforeWindowClose,
   } = useIpodLogic({ isWindowOpen, isForeground, initialData, instanceId });
+
+  const setAppleMusicKitNowPlaying = useIpodStore(
+    (s) => s.setAppleMusicKitNowPlaying
+  );
 
   const handleClose = useCallback(() => {
     pauseBeforeWindowClose();
@@ -621,6 +626,7 @@ export function IpodAppComponent({
                               onPause={handlePause}
                               onEnded={handleTrackEnd}
                               onReady={handleReady}
+                              onNowPlayingItemChange={setAppleMusicKitNowPlaying}
                             />
                           ) : (
                             <ReactPlayer
