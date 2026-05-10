@@ -209,7 +209,7 @@ const CHAT_STREAMDOWN_PLUGINS = {
 };
 const CHAT_STREAMDOWN_ANIMATED = {
   animation: "fadeIn",
-  duration: 150,
+  duration: 400,
   easing: "ease-out",
   sep: "word",
 } as const;
