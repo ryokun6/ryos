@@ -1338,6 +1338,7 @@
       "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l'application",
       "bootScreen": "Écran de démarrage",
       "bootScreenDescription": "Tester l'animation de l'écran de démarrage",
+      "changePassword": "Changer le mot de passe",
       "chatSynth": "Synthétiseur de discussion",
       "chatSynthVolume": "Volume du synthé de chat",
       "checkForUpdates": "Rechercher les mises à jour",
@@ -1761,12 +1762,12 @@
         "emptyTrash": "Vider la corbeille...",
         "kind": "Type",
         "moveToTrash": "Placer dans la corbeille",
-        "putBack": "Remettre à sa place",
         "name": "Nom",
         "newFolder": "Nouveau dossier…",
         "noAirDropUsersAvailable": "Aucun utilisateur a proximité",
         "open": "Ouvrir",
         "openAirDrop": "Ouvrir AirDrop",
+        "putBack": "Remettre à sa place",
         "rename": "Renommer…",
         "searchingForAirDropUsers": "Recherche d’utilisateurs a proximité…",
         "shareViaAirDrop": "Partager via AirDrop",
@@ -2536,6 +2537,10 @@
     "maps": {
       "description": "Trouvez des lieux avec Apple Maps",
       "help": {
+        "directions": {
+          "description": "Depuis la fiche du lieu, ouvrez l'itinéraire en voiture dans Plans — s'ouvre dans un nouvel onglet pour laisser ryOS ouvert (l'itinéraire dans la carte n'est pas encore disponible).",
+          "title": "Itinéraire"
+        },
         "dropPins": {
           "description": "Choisissez un résultat dans la liste pour placer un repère et recentrer la carte dessus",
           "title": "Placer des repères"
@@ -2543,10 +2548,6 @@
         "locateMe": {
           "description": "Cliquez sur le bouton Me localiser pour recentrer la carte sur votre position actuelle",
           "title": "Me localiser"
-        },
-        "directions": {
-          "description": "Depuis la fiche du lieu, ouvrez l'itinéraire en voiture dans Plans — s'ouvre dans un nouvel onglet pour laisser ryOS ouvert (l'itinéraire dans la carte n'est pas encore disponible).",
-          "title": "Itinéraire"
         },
         "mapTypes": {
           "description": "Basculez entre les modes Standard, Hybride, Satellite et Standard atténué depuis le menu Présentation",
@@ -3790,6 +3791,24 @@
       "systemPreferences": "Préférences Système…"
     },
     "auth": {
+      "changePassword": {
+        "confirmPassword": "Confirmer le nouveau mot de passe",
+        "currentPassword": "Mot de passe actuel",
+        "currentPasswordRequired": "Le mot de passe actuel est requis",
+        "description": "Saisissez votre mot de passe actuel et choisissez-en un nouveau.",
+        "genericError": "Échec de la modification du mot de passe",
+        "mismatch": "Les nouveaux mots de passe ne correspondent pas",
+        "newPassword": "Nouveau mot de passe",
+        "sameAsCurrent": "Le nouveau mot de passe doit être différent de votre mot de passe actuel",
+        "saving": "Enregistrement...",
+        "submit": "Changer le mot de passe",
+        "title": "Changer le mot de passe",
+        "toastChangedDescription": "Votre mot de passe a été mis à jour",
+        "toastChangedTitle": "Mot de passe modifié",
+        "toastSetDescription": "Vous pouvez désormais utiliser votre mot de passe pour récupérer votre compte",
+        "toastSetTitle": "Mot de passe défini",
+        "tooShort": "Le mot de passe doit comporter au moins 8 caractères"
+      },
       "createAccount": "Créer un compte",
       "creatingAccount": "Création...",
       "dialogTitle": "Connexion ryOS",

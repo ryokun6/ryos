@@ -1338,6 +1338,7 @@
       "backupRestoreDescription": "Realiza una copia de seguridad o restaura todos los ajustes y archivos de la aplicación",
       "bootScreen": "Pantalla de arranque",
       "bootScreenDescription": "Probar la animación de la pantalla de arranque",
+      "changePassword": "Cambiar contraseña",
       "chatSynth": "Chat Synth",
       "chatSynthVolume": "Volumen del sintetizador de chat",
       "checkForUpdates": "Buscar actualizaciones",
@@ -1761,12 +1762,12 @@
         "emptyTrash": "Vaciar Papelera...",
         "kind": "Tipo",
         "moveToTrash": "Mover a la Papelera",
-        "putBack": "Volver a colocar",
         "name": "Nombre",
         "newFolder": "Nueva Carpeta…",
         "noAirDropUsersAvailable": "No hay usuarios cercanos",
         "open": "Abrir",
         "openAirDrop": "Abrir AirDrop",
+        "putBack": "Volver a colocar",
         "rename": "Cambiar nombre…",
         "searchingForAirDropUsers": "Buscando usuarios cercanos…",
         "shareViaAirDrop": "Compartir por AirDrop",
@@ -2536,6 +2537,10 @@
     "maps": {
       "description": "Busca lugares con Apple Maps",
       "help": {
+        "directions": {
+          "description": "Desde la tarjeta del lugar, abre las indicaciones de conducción en Apple Maps: se abre en una pestaña nueva para mantener ryOS abierto (no hay rutas dentro del mapa todavía).",
+          "title": "Indicaciones"
+        },
         "dropPins": {
           "description": "Elige un resultado de la lista para soltar un marcador y volver a centrar el mapa en él",
           "title": "Soltar marcadores"
@@ -2543,10 +2548,6 @@
         "locateMe": {
           "description": "Haz clic en el botón Ubicarme para volver a centrar el mapa en tu ubicación actual",
           "title": "Ubicarme"
-        },
-        "directions": {
-          "description": "Desde la tarjeta del lugar, abre las indicaciones de conducción en Apple Maps: se abre en una pestaña nueva para mantener ryOS abierto (no hay rutas dentro del mapa todavía).",
-          "title": "Indicaciones"
         },
         "mapTypes": {
           "description": "Cambia entre Estándar, Híbrido, Satélite y Estándar atenuado desde el menú Visualización",
@@ -3790,6 +3791,24 @@
       "systemPreferences": "Preferencias del Sistema…"
     },
     "auth": {
+      "changePassword": {
+        "confirmPassword": "Confirmar nueva contraseña",
+        "currentPassword": "Contraseña actual",
+        "currentPasswordRequired": "Se requiere la contraseña actual",
+        "description": "Introduce tu contraseña actual y elige una nueva.",
+        "genericError": "Error al cambiar la contraseña",
+        "mismatch": "Las nuevas contraseñas no coinciden",
+        "newPassword": "Nueva contraseña",
+        "sameAsCurrent": "La nueva contraseña debe ser diferente a la contraseña actual",
+        "saving": "Guardando...",
+        "submit": "Cambiar contraseña",
+        "title": "Cambiar contraseña",
+        "toastChangedDescription": "Tu contraseña se ha actualizado",
+        "toastChangedTitle": "Contraseña cambiada",
+        "toastSetDescription": "Ahora puedes usar tu contraseña para recuperar tu cuenta",
+        "toastSetTitle": "Contraseña establecida",
+        "tooShort": "La contraseña debe tener al menos 8 caracteres"
+      },
       "createAccount": "Crear cuenta",
       "creatingAccount": "Creando...",
       "dialogTitle": "Inicio de sesión de ryOS",

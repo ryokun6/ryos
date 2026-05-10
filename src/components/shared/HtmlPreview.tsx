@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
+  getAppletSandboxAttribute,
+  isTrustedAppletAuthor,
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
 import { useEventListener } from "@/hooks/useEventListener";
@@ -46,6 +48,22 @@ interface HtmlPreviewProps {
   isInternetExplorer?: boolean;
   baseUrlForAiContent?: string;
   mode?: "past" | "future" | "now";
+  /**
+   * Author of the applet/HTML being previewed. Determines the iframe
+   * sandbox level and whether the auth bridge is injected.
+   *
+   * - When the value matches the trusted author (`ryo`), the iframe gets
+   *   `allow-same-origin` plus the auth bridge so it can act on behalf
+   *   of the user (e.g. forward the auth cookie to `/api/applet-ai`).
+   * - Otherwise the iframe runs in a strict sandbox without
+   *   `allow-same-origin` and without the bridge — protecting the
+   *   user's session from third-party / untrusted applets.
+   *
+   * Defaults to `null` (untrusted). Internal AI-generated previews
+   * (Internet Explorer time machine, AI tool invocations, terminal
+   * output) explicitly pass `"ryo"` because the AI is the author.
+   */
+  appletCreatedBy?: string | null;
 }
 
 export default function HtmlPreview({
@@ -67,7 +85,10 @@ export default function HtmlPreview({
   isInternetExplorer = false,
   baseUrlForAiContent,
   mode = "now",
+  appletCreatedBy = null,
 }: HtmlPreviewProps) {
+  const isTrustedApplet = isTrustedAppletAuthor(appletCreatedBy);
+  const sandboxAttribute = getAppletSandboxAttribute(isTrustedApplet);
   const [isFullScreen, setIsFullScreen] = useState(initialFullScreen);
   const [copySuccess, setCopySuccess] = useState(false);
   const [showCode, setShowCode] = useState(false);
@@ -111,6 +132,11 @@ export default function HtmlPreview({
   const sendAuthPayload = useCallback(
     (target: Window | null | undefined) => {
       if (!target) return;
+      // Untrusted (sandboxed-without-same-origin) iframes must not receive
+      // the parent's username. They can't read it via DOM access either,
+      // so this is defence in depth — keeps the bridge inert for non-ryo
+      // applets even if a future change re-enables same-origin.
+      if (!isTrustedApplet) return;
       try {
         target.postMessage(
           {
@@ -124,7 +150,7 @@ export default function HtmlPreview({
         console.warn("[applet-html-preview] Failed to post auth payload:", error);
       }
     },
-    [username]
+    [username, isTrustedApplet]
   );
 
   // Ensure base URL has a protocol
@@ -235,11 +261,17 @@ export default function HtmlPreview({
 
     // Define the script tags and styles that should be added ONLY after streaming
     // Font link MUST be first for potentially faster loading/application
+    // Only trusted (ryo-authored) HTML receives the auth bridge.
+    // For untrusted previews, the iframe also runs without
+    // `allow-same-origin`, so even if a malicious script tried to
+    // postMessage the parent, it cannot read the response.
+    const authBridge = isTrustedApplet ? APPLET_AUTH_BRIDGE_SCRIPT : "";
+
     const postStreamHeadContent = `
     <link rel="stylesheet" href="/fonts/fonts.css">
     ${timestamp} 
     ${baseTag}
-    ${APPLET_AUTH_BRIDGE_SCRIPT}
+    ${authBridge}
     <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.min.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.16"></script>
   <script>
@@ -1158,7 +1190,7 @@ export default function HtmlPreview({
             className={`border-0 block ${
               !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : ""
             }`}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+            sandbox={sandboxAttribute}
             style={{
               width: isInternetExplorer ? "calc(100% + 1px)" : "100%",
               height: isInternetExplorer
@@ -1307,7 +1339,7 @@ export default function HtmlPreview({
                         // srcDoc={processedHtmlContent()}
                         title={t("common.htmlPreview.codePreviewTitleFullscreen")}
                         className="border-0 bg-white w-full h-full"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+                        sandbox={sandboxAttribute}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
                         onLoad={() =>

@@ -5,7 +5,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
-import { InputDialog } from "@/components/dialogs/InputDialog";
+import { ChangePasswordDialog } from "@/components/dialogs/ChangePasswordDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { appMetadata } from "..";
 import { Button } from "@/components/ui/button";
@@ -257,7 +257,6 @@ export function ControlPanelsAppComponent({
     setIsConfirmFormatOpen,
     isPasswordDialogOpen,
     setIsPasswordDialogOpen,
-    passwordInput,
     setPasswordInput,
     passwordError,
     setPasswordError,
@@ -1067,13 +1066,26 @@ export function ControlPanelsAppComponent({
                               {t("apps.control-panels.setPassword")}
                             </Button>
                           ) : (
-                            <Button
-                              variant="retro"
-                              onClick={logout}
-                              className="h-7"
-                            >
-                              {t("apps.control-panels.logOut")}
-                            </Button>
+                            <>
+                              <Button
+                                variant="retro"
+                                onClick={() => {
+                                  setPasswordInput("");
+                                  setPasswordError(null);
+                                  setIsPasswordDialogOpen(true);
+                                }}
+                                className="h-7"
+                              >
+                                {t("apps.control-panels.changePassword")}
+                              </Button>
+                              <Button
+                                variant="retro"
+                                onClick={logout}
+                                className="h-7"
+                              >
+                                {t("apps.control-panels.logOut")}
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -1559,20 +1571,26 @@ export function ControlPanelsAppComponent({
           isSignUpLoading={false}
           signUpError={null}
         />
-        <InputDialog
+        <ChangePasswordDialog
           isOpen={isPasswordDialogOpen}
-          onOpenChange={setIsPasswordDialogOpen}
-          onSubmit={handleSetPassword}
-          title={t("apps.control-panels.setPasswordDialog.title")}
-          description={t("apps.control-panels.setPasswordDialog.description")}
-          value={passwordInput}
-          onChange={(value) => {
-            setPasswordInput(value);
-            setPasswordError(null);
+          onOpenChange={(open) => {
+            setIsPasswordDialogOpen(open);
+            if (!open) {
+              setPasswordInput("");
+              setPasswordError(null);
+            }
           }}
+          hasPassword={hasPassword === true}
           isLoading={isSettingPassword}
           errorMessage={passwordError}
-          submitLabel={t("apps.control-panels.setPasswordDialog.submitLabel")}
+          onAnyInputChange={() => setPasswordError(null)}
+          onSubmit={async ({ currentPassword, newPassword }) => {
+            setPasswordInput(newPassword);
+            await handleSetPassword(
+              newPassword,
+              currentPassword || undefined
+            );
+          }}
         />
         <LogoutDialog
           isOpen={isLogoutConfirmDialogOpen}

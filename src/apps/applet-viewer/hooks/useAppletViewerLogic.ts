@@ -16,6 +16,7 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
+  isTrustedAppletAuthor,
 } from "@/utils/appletAuthBridge";
 import {
   useFileSystem,
@@ -50,6 +51,7 @@ export function useAppletViewerLogic({
   const [sharedContent, setSharedContent] = useState<string>("");
   const [sharedName, setSharedName] = useState<string | undefined>(undefined);
   const [sharedTitle, setSharedTitle] = useState<string | undefined>(undefined);
+  const [sharedCreatedBy, setSharedCreatedBy] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
@@ -230,9 +232,19 @@ export function useAppletViewerLogic({
     }
   }, [updatesAvailable, actions, checkForUpdates, t]);
 
+  // Track the latest trust state in a ref so the stable `sendAuthPayload`
+  // callback can read it without changing identity. The actual value is
+  // refreshed below once `appletPath` and `sharedCreatedBy` are resolved.
+  const isTrustedAppletRef = useRef(false);
+
   const sendAuthPayload = useCallback(
     (target: Window | null | undefined) => {
       if (!target) return;
+      // Untrusted applet iframes don't get the username. They run in a
+      // sandboxed-without-`allow-same-origin` iframe, so even attempting
+      // to read this message would fail (origin mismatch); this guard is
+      // belt-and-braces to keep the bridge inert for non-ryo authors.
+      if (!isTrustedAppletRef.current) return;
       try {
         target.postMessage(
           {
@@ -784,44 +796,67 @@ export function useAppletViewerLogic({
     return `<!DOCTYPE html><html><head>${preload}${fontStyle}</head><body>${content}</body></html>`;
   };
 
-  const injectAppletAuthScript = useCallback((content: string): string => {
-    if (!content) return content;
-    if (content.includes(APPLET_AUTH_MESSAGE_TYPE)) {
-      return content;
-    }
+  // Resolve the applet's author. For installed applets this comes from the
+  // file metadata; for the shared-applet preview path it comes from the
+  // server-trusted `createdBy` field returned by /api/share-applet.
+  // (`fileItem` is declared further up the hook from `useFilesStore`.)
+  const isTrustedApplet = isTrustedAppletAuthor(
+    (appletPath ? getFileItem(appletPath)?.createdBy : null) ||
+      sharedCreatedBy ||
+      null
+  );
 
-    const lower = content.toLowerCase();
-    const headCloseIdx = lower.lastIndexOf("</head>");
-    if (headCloseIdx !== -1) {
-      return (
-        content.slice(0, headCloseIdx) +
-        APPLET_AUTH_BRIDGE_SCRIPT +
-        content.slice(headCloseIdx)
-      );
-    }
+  // Mirror the latest trust state into the ref consumed by `sendAuthPayload`.
+  useEffect(() => {
+    isTrustedAppletRef.current = isTrustedApplet;
+  }, [isTrustedApplet]);
 
-    const headOpenMatch = /<head[^>]*>/i.exec(content);
-    if (headOpenMatch) {
-      const insertIdx = headOpenMatch.index + headOpenMatch[0].length;
-      return (
-        content.slice(0, insertIdx) +
-        APPLET_AUTH_BRIDGE_SCRIPT +
-        content.slice(insertIdx)
-      );
-    }
+  const injectAppletAuthScript = useCallback(
+    (content: string): string => {
+      if (!content) return content;
+      // Only ryo-authored applets receive the auth bridge. Untrusted applets
+      // run inside a strict sandbox without `allow-same-origin` (set on the
+      // iframe element), so even if they tried to postMessage the parent
+      // they wouldn't receive an auth payload.
+      if (!isTrustedApplet) return content;
+      if (content.includes(APPLET_AUTH_MESSAGE_TYPE)) {
+        return content;
+      }
 
-    const htmlOpenMatch = /<html[^>]*>/i.exec(content);
-    if (htmlOpenMatch) {
-      const insertIdx = htmlOpenMatch.index + htmlOpenMatch[0].length;
-      return (
-        content.slice(0, insertIdx) +
-        `<head>${APPLET_AUTH_BRIDGE_SCRIPT}</head>` +
-        content.slice(insertIdx)
-      );
-    }
+      const lower = content.toLowerCase();
+      const headCloseIdx = lower.lastIndexOf("</head>");
+      if (headCloseIdx !== -1) {
+        return (
+          content.slice(0, headCloseIdx) +
+          APPLET_AUTH_BRIDGE_SCRIPT +
+          content.slice(headCloseIdx)
+        );
+      }
 
-    return `<!DOCTYPE html><html><head>${APPLET_AUTH_BRIDGE_SCRIPT}</head><body>${content}</body></html>`;
-  }, []);
+      const headOpenMatch = /<head[^>]*>/i.exec(content);
+      if (headOpenMatch) {
+        const insertIdx = headOpenMatch.index + headOpenMatch[0].length;
+        return (
+          content.slice(0, insertIdx) +
+          APPLET_AUTH_BRIDGE_SCRIPT +
+          content.slice(insertIdx)
+        );
+      }
+
+      const htmlOpenMatch = /<html[^>]*>/i.exec(content);
+      if (htmlOpenMatch) {
+        const insertIdx = htmlOpenMatch.index + htmlOpenMatch[0].length;
+        return (
+          content.slice(0, insertIdx) +
+          `<head>${APPLET_AUTH_BRIDGE_SCRIPT}</head>` +
+          content.slice(insertIdx)
+        );
+      }
+
+      return `<!DOCTYPE html><html><head>${APPLET_AUTH_BRIDGE_SCRIPT}</head><body>${content}</body></html>`;
+    },
+    [isTrustedApplet]
+  );
 
   const launchApp = useLaunchApp();
   const { saveFile, files } = useFileSystem("/Applets");
@@ -1257,6 +1292,9 @@ export function useAppletViewerLogic({
           setSharedContent(data.content);
           setSharedName(data.name);
           setSharedTitle(data.title);
+          setSharedCreatedBy(
+            typeof data.createdBy === "string" ? data.createdBy : null
+          );
 
           if (instanceId && data.windowWidth && data.windowHeight) {
             const appStore = useAppStore.getState();
@@ -1384,6 +1422,7 @@ export function useAppletViewerLogic({
       setSharedContent("");
       setSharedName(undefined);
       setSharedTitle(undefined);
+      setSharedCreatedBy(null);
     }
   }, [
     shareCode,
@@ -1519,5 +1558,6 @@ export function useAppletViewerLogic({
     verifyError,
     handleVerifyTokenSubmit,
     getAppletTitle,
+    isTrustedApplet,
   };
 }

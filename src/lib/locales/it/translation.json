@@ -1338,6 +1338,7 @@
       "backupRestoreDescription": "Esegui il backup o ripristina tutte le impostazioni e i file dell'app",
       "bootScreen": "Schermata di Avvio",
       "bootScreenDescription": "Testa l'animazione della schermata di avvio",
+      "changePassword": "Modifica password",
       "chatSynth": "Synth Chat",
       "chatSynthVolume": "Volume sintetizzatore chat",
       "checkForUpdates": "Verifica aggiornamenti",
@@ -1761,12 +1762,12 @@
         "emptyTrash": "Svuota Cestino...",
         "kind": "Tipo",
         "moveToTrash": "Sposta nel Cestino",
-        "putBack": "Ripristina",
         "name": "Nome",
         "newFolder": "Nuova Cartella…",
         "noAirDropUsersAvailable": "Nessun utente nelle vicinanze",
         "open": "Apri",
         "openAirDrop": "Apri AirDrop",
+        "putBack": "Ripristina",
         "rename": "Rinomina…",
         "searchingForAirDropUsers": "Ricerca utenti vicini…",
         "shareViaAirDrop": "Condividi tramite AirDrop",
@@ -2536,6 +2537,10 @@
     "maps": {
       "description": "Trova luoghi con Mappe Apple",
       "help": {
+        "directions": {
+          "description": "Dalla scheda luogo, apri le indicazioni stradali in Mappe di Apple: si apre in una nuova scheda così ryOS resta aperto (itinerario nella mappa non ancora disponibile).",
+          "title": "Indicazioni"
+        },
         "dropPins": {
           "description": "Scegli un risultato dall'elenco per inserire un segnaposto e ricentrare la mappa su di esso",
           "title": "Inserisci segnaposto"
@@ -2543,10 +2548,6 @@
         "locateMe": {
           "description": "Fai clic sul pulsante Localizzami per ricentrare la mappa sulla tua posizione attuale",
           "title": "Localizzami"
-        },
-        "directions": {
-          "description": "Dalla scheda luogo, apri le indicazioni stradali in Mappe di Apple: si apre in una nuova scheda così ryOS resta aperto (itinerario nella mappa non ancora disponibile).",
-          "title": "Indicazioni"
         },
         "mapTypes": {
           "description": "Passa tra Standard, Ibrida, Satellitare e Standard attenuata dal menu Vista",
@@ -3790,6 +3791,24 @@
       "systemPreferences": "Preferenze di Sistema…"
     },
     "auth": {
+      "changePassword": {
+        "confirmPassword": "Conferma nuova password",
+        "currentPassword": "Password attuale",
+        "currentPasswordRequired": "La password attuale è obbligatoria",
+        "description": "Inserisci la password attuale e scegline una nuova.",
+        "genericError": "Impossibile modificare la password",
+        "mismatch": "Le nuove password non corrispondono",
+        "newPassword": "Nuova password",
+        "sameAsCurrent": "La nuova password deve essere diversa da quella attuale",
+        "saving": "Salvataggio in corso...",
+        "submit": "Modifica password",
+        "title": "Modifica password",
+        "toastChangedDescription": "La tua password è stata aggiornata",
+        "toastChangedTitle": "Password modificata",
+        "toastSetDescription": "Ora puoi usare la tua password per recuperare il tuo account",
+        "toastSetTitle": "Password impostata",
+        "tooShort": "La password deve contenere almeno 8 caratteri"
+      },
       "createAccount": "Crea account",
       "creatingAccount": "Creazione in corso...",
       "dialogTitle": "Accesso a ryOS",

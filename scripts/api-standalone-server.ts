@@ -414,11 +414,23 @@ function buildQueryMap(url: URL): QueryMap {
   return query;
 }
 
-function buildHeaderMap(request: Request): HeaderMap {
+// Header name kept in sync with `PEER_IP_HEADER` in `api/_utils/_rate-limit.ts`.
+// Rate limiter trusts this header unconditionally as the client IP source for
+// non-Vercel / non-Cloudflare deployments. Standalone server STRIPS any
+// incoming value and replaces it with the actual TCP socket peer address so
+// clients cannot spoof it.
+const PEER_IP_HEADER_NAME = "x-ryos-peer-ip";
+
+function buildHeaderMap(
+  request: Request,
+  peerIp: string | null
+): HeaderMap {
   const headers: HeaderMap = {};
 
   for (const [name, value] of request.headers.entries()) {
     const normalizedName = name.toLowerCase();
+    // Discard any client-supplied peer-IP header — only the server may set it.
+    if (normalizedName === PEER_IP_HEADER_NAME) continue;
     const current = headers[normalizedName];
     if (current === undefined) {
       headers[normalizedName] = value;
@@ -427,6 +439,10 @@ function buildHeaderMap(request: Request): HeaderMap {
     } else {
       headers[normalizedName] = [current, value];
     }
+  }
+
+  if (peerIp) {
+    headers[PEER_IP_HEADER_NAME] = peerIp;
   }
 
   return headers;
@@ -805,7 +821,21 @@ async function bootstrap(): Promise<void> {
         return jsonResponse({ error: "Not found" }, 404);
       }
 
-      const headers = buildHeaderMap(request);
+      // Resolve the actual TCP peer address from Bun's server. This is the
+      // ground truth client IP for self-hosted deployments and cannot be
+      // forged via X-Forwarded-For. We forward it via PEER_IP_HEADER_NAME
+      // for the rate limiter to consume.
+      let peerIp: string | null = null;
+      try {
+        const socket = server.requestIP(request);
+        if (socket && typeof socket.address === "string") {
+          peerIp = socket.address;
+        }
+      } catch {
+        peerIp = null;
+      }
+
+      const headers = buildHeaderMap(request, peerIp);
       const query = buildQueryMap(url);
       for (const [key, value] of Object.entries(matched.params)) {
         if (query[key] === undefined) {

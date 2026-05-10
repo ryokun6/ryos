@@ -162,7 +162,46 @@ describe("Auth Extra API Tests", () => {
       expect(res.status).toBe(405);
     });
 
-    test("Password set - success", async () => {
+    test("Password set - missing currentPassword for existing account", async () => {
+      if (!testToken || !testUsername) return;
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/auth/password/set`,
+        testUsername,
+        testToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: "anewpassword123" }),
+        }
+      );
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error?.toLowerCase().includes("current password")).toBe(true);
+    });
+
+    test("Password set - wrong currentPassword rejected", async () => {
+      if (!testToken || !testUsername) return;
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/auth/password/set`,
+        testUsername,
+        testToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password: "anewpassword123",
+            currentPassword: "definitely-wrong-password-zzz",
+          }),
+        }
+      );
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.error?.toLowerCase().includes("incorrect")).toBe(true);
+    });
+
+    test("Password set - same as current rejected", async () => {
       if (!testToken || !testUsername) return;
 
       const password = isAdminUser ? ADMIN_PASSWORD : "testpassword123";
@@ -174,12 +213,56 @@ describe("Auth Extra API Tests", () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password }),
+          body: JSON.stringify({
+            password,
+            currentPassword: password,
+          }),
         }
       );
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.success).toBe(true);
+      expect(data.error?.toLowerCase().includes("different")).toBe(true);
+    });
+
+    test("Password set - success with currentPassword + rotates back", async () => {
+      if (!testToken || !testUsername) return;
+
+      const originalPassword = isAdminUser ? ADMIN_PASSWORD : "testpassword123";
+      const newPassword = `${originalPassword}-temp`;
+
+      // Change password to a new one
+      const res1 = await fetchWithAuth(
+        `${BASE_URL}/api/auth/password/set`,
+        testUsername,
+        testToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password: newPassword,
+            currentPassword: originalPassword,
+          }),
+        }
+      );
+      expect(res1.status).toBe(200);
+      expect((await res1.json()).success).toBe(true);
+
+      // Rotate back so other tests / future runs aren't affected
+      const res2 = await fetchWithAuth(
+        `${BASE_URL}/api/auth/password/set`,
+        testUsername,
+        testToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password: originalPassword,
+            currentPassword: newPassword,
+          }),
+        }
+      );
+      expect(res2.status).toBe(200);
+      expect((await res2.json()).success).toBe(true);
     });
   });
 

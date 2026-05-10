@@ -1338,6 +1338,7 @@
       "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します",
       "bootScreen": "起動画面",
       "bootScreenDescription": "起動画面のアニメーションをテストします",
+      "changePassword": "パスワードを変更",
       "chatSynth": "チャットシンセ",
       "chatSynthVolume": "チャットシンセ音量",
       "checkForUpdates": "アップデートを確認",
@@ -1761,12 +1762,12 @@
         "emptyTrash": "ゴミ箱を空にする...",
         "kind": "種類",
         "moveToTrash": "ゴミ箱に入れる",
-        "putBack": "元に戻す",
         "name": "名前",
         "newFolder": "新規フォルダ…",
         "noAirDropUsersAvailable": "近くのユーザーはいません",
         "open": "開く",
         "openAirDrop": "AirDropを開く",
+        "putBack": "元に戻す",
         "rename": "名前の変更…",
         "searchingForAirDropUsers": "近くのユーザーを検索中…",
         "shareViaAirDrop": "AirDrop で共有",
@@ -2536,6 +2537,10 @@
     "maps": {
       "description": "Apple マップで場所を検索",
       "help": {
+        "directions": {
+          "description": "場所カードから Apple マップで車のルートを開きます。新しいタブで開くため ryOS はそのままです（地図内のルートは未対応）。",
+          "title": "ルート"
+        },
         "dropPins": {
           "description": "リストから結果を選択してピンをドロップし、マップの中心をその場所に合わせます",
           "title": "ピンをドロップ"
@@ -2543,10 +2548,6 @@
         "locateMe": {
           "description": "「現在地を表示」ボタンをクリックして、マップを現在地に合わせます",
           "title": "現在地を表示"
-        },
-        "directions": {
-          "description": "場所カードから Apple マップで車のルートを開きます。新しいタブで開くため ryOS はそのままです（地図内のルートは未対応）。",
-          "title": "ルート"
         },
         "mapTypes": {
           "description": "「表示」メニューから、標準、ハイブリッド、航空写真、落ち着いた配色（標準）を切り替えます",
@@ -3790,6 +3791,24 @@
       "systemPreferences": "システム環境設定…"
     },
     "auth": {
+      "changePassword": {
+        "confirmPassword": "新しいパスワード（確認用）",
+        "currentPassword": "現在のパスワード",
+        "currentPasswordRequired": "現在のパスワードが必要です",
+        "description": "現在のパスワードを入力し、新しいパスワードを設定してください。",
+        "genericError": "パスワードの変更に失敗しました",
+        "mismatch": "新しいパスワードが一致しません",
+        "newPassword": "新しいパスワード",
+        "sameAsCurrent": "新しいパスワードは現在のパスワードと異なる必要があります",
+        "saving": "保存中...",
+        "submit": "パスワードを変更",
+        "title": "パスワードを変更",
+        "toastChangedDescription": "パスワードが更新されました",
+        "toastChangedTitle": "パスワードを変更しました",
+        "toastSetDescription": "パスワードを使用してアカウントを復旧できるようになりました",
+        "toastSetTitle": "パスワードを設定しました",
+        "tooShort": "パスワードは8文字以上である必要があります"
+      },
       "createAccount": "アカウントを作成",
       "creatingAccount": "作成中...",
       "dialogTitle": "ryOSログイン",
