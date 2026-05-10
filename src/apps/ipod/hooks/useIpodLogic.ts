@@ -1016,9 +1016,11 @@ export function useIpodLogic({
       backlightTimerRef.current = setTimeout(() => {
         const currentShowVideo = useIpodStore.getState().showVideo;
         const currentIsPlaying = useIpodStore.getState().isPlaying;
+        const isGameOpen = isMusicQuizOpen || isBrickGameOpen;
         if (
           Date.now() - lastActivityTime >= BACKLIGHT_TIMEOUT_MS &&
-          !(currentShowVideo && currentIsPlaying)
+          !(currentShowVideo && currentIsPlaying) &&
+          !isGameOpen
         ) {
           toggleBacklight();
         }
@@ -1030,7 +1032,13 @@ export function useIpodLogic({
         clearTimeout(backlightTimerRef.current);
       }
     };
-  }, [backlightOn, lastActivityTime, toggleBacklight]);
+  }, [
+    backlightOn,
+    isBrickGameOpen,
+    isMusicQuizOpen,
+    lastActivityTime,
+    toggleBacklight,
+  ]);
 
   // Foreground handling
   useEffect(() => {

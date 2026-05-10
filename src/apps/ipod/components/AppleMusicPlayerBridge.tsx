@@ -4,6 +4,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
@@ -61,6 +62,17 @@ function getQueueOptions(track: Track): MusicKit.SetQueueOptions | null {
   return { song: id, startPlaying: true };
 }
 
+function getSafeStartSeconds(
+  track: Track,
+  startSeconds: number | undefined
+): number | null {
+  const seconds = startSeconds ?? 0;
+  const durationSeconds = track.durationMs ? track.durationMs / 1000 : null;
+  if (!Number.isFinite(seconds) || seconds <= 0.25) return null;
+  if (durationSeconds != null && seconds >= durationSeconds - 0.5) return null;
+  return seconds;
+}
+
 export const AppleMusicPlayerBridge = forwardRef<
   AppleMusicPlayerBridgeHandle,
   AppleMusicPlayerBridgeProps
@@ -80,6 +92,7 @@ export const AppleMusicPlayerBridge = forwardRef<
   ref
 ) {
   const instanceRef = useRef<MusicKit.MusicKitInstance | null>(null);
+  const [instanceReadyTick, setInstanceReadyTick] = useState(0);
   const lastQueuedTrackIdRef = useRef<string | null>(null);
   const queueLoadingRef = useRef<Promise<void> | null>(null);
   const onReadyRef = useRef(onReady);
@@ -89,10 +102,17 @@ export const AppleMusicPlayerBridge = forwardRef<
   // when the iPod first mounts, so we subscribe to the ready notification
   // and update state when the instance becomes available.
   useEffect(() => {
-    return onMusicKitReady((inst) => {
+    let cancelled = false;
+    const unsubscribe = onMusicKitReady((inst) => {
+      if (cancelled) return;
       instanceRef.current = inst;
+      setInstanceReadyTick((tick) => tick + 1);
       onReadyRef.current?.();
     });
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   // Stop MusicKit on unmount.
@@ -357,22 +377,19 @@ export const AppleMusicPlayerBridge = forwardRef<
     const localQueueKey = queueKey;
     queueLoadingRef.current = (async () => {
       try {
+        const resumeSeconds = getSafeStartSeconds(
+          currentTrack,
+          resumeAtSecondsRef.current
+        );
         await inst.setQueue({
           ...queueOptions,
+          startTime: resumeSeconds ?? undefined,
           // Queue paused first so a restored elapsedTime can be applied
           // before any audible playback starts.
           startPlaying: false,
         });
         if (cancelled) return;
-        const resumeSeconds = resumeAtSecondsRef.current ?? 0;
-        const durationSeconds = currentTrack.durationMs
-          ? currentTrack.durationMs / 1000
-          : null;
-        const shouldResumeFromSavedTime =
-          Number.isFinite(resumeSeconds) &&
-          resumeSeconds > 0.25 &&
-          (durationSeconds == null || resumeSeconds < durationSeconds - 0.5);
-        if (shouldResumeFromSavedTime) {
+        if (resumeSeconds != null) {
           await inst.seekToTime(resumeSeconds).catch((err) => {
             console.warn("[apple music] resume seek failed", err);
           });
@@ -403,7 +420,7 @@ export const AppleMusicPlayerBridge = forwardRef<
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queueKey]);
+  }, [queueKey, instanceReadyTick]);
 
   // Sync play/pause without re-queueing.
   useEffect(() => {
@@ -415,6 +432,15 @@ export const AppleMusicPlayerBridge = forwardRef<
       try {
         if (pending) await pending;
         if (playing) {
+          const startSeconds = getSafeStartSeconds(
+            currentTrack,
+            resumeAtSecondsRef.current
+          );
+          if (startSeconds != null) {
+            await inst.seekToTime(startSeconds).catch((err) => {
+              console.warn("[apple music] play seek failed", err);
+            });
+          }
           await inst.play();
         } else {
           inst.pause();
@@ -432,7 +458,12 @@ export const AppleMusicPlayerBridge = forwardRef<
       seekTo(seconds: number) {
         const inst = instanceRef.current;
         if (!inst) return;
-        inst.seekToTime(seconds).catch((err) => {
+        const apply = async () => {
+          const pending = queueLoadingRef.current;
+          if (pending) await pending;
+          await inst.seekToTime(seconds);
+        };
+        apply().catch((err) => {
           console.warn("[apple music] seekToTime failed", err);
         });
       },

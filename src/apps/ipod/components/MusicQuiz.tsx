@@ -5,6 +5,10 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import {
+  AppleMusicPlayerBridge,
+  type AppleMusicPlayerBridgeHandle,
+} from "./AppleMusicPlayerBridge";
 import { MenuListItem } from "./screen";
 import {
   computeSpeedScore,
@@ -102,7 +106,9 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   ref
 ) {
   const { t } = useTranslation();
-  const tracks = useIpodStore((s) => s.tracks);
+  const tracks = useIpodStore((s) =>
+    s.librarySource === "appleMusic" ? s.appleMusicTracks : s.tracks
+  );
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const ipodVolume = useAudioSettingsStore((s) => s.ipodVolume);
   const finalVolume = ipodVolume * masterVolume;
@@ -115,7 +121,8 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
 
-  const playerRef = useRef<ReactPlayer | null>(null);
+  const youtubePlayerRef = useRef<ReactPlayer | null>(null);
+  const appleMusicPlayerRef = useRef<AppleMusicPlayerBridgeHandle | null>(null);
   const snippetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadingWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -127,7 +134,18 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   // same ReactPlayer mounted across rounds so later auto-starts work.
   const hasUnlockedPlaybackRef = useRef(false);
 
-  const hasEnoughTracks = tracks.length >= 2;
+  const quizTracks = useMemo(
+    () =>
+      tracks.filter((track) =>
+        track.source === "appleMusic"
+          ? !!track.appleMusicPlayParams
+          : !!track.url
+      ),
+    [tracks]
+  );
+  const hasEnoughTracks = quizTracks.length >= 2;
+  const correctTrack = round?.options[round.correctIndex] ?? null;
+  const isAppleMusicRound = correctTrack?.source === "appleMusic";
 
   const clearTimers = useCallback(() => {
     if (snippetTimerRef.current) {
@@ -172,13 +190,15 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
       setPhase("idle");
       return;
     }
-    const next = pickRound(tracks);
+    const next = pickRound(quizTracks);
     if (!next) {
       setPhase("idle");
       return;
     }
     // Pick a provisional start; we'll re-pick once duration is known via onDuration.
-    const provisionalStart = SNIPPET_MIN_START_SEC + Math.random() * 30;
+    const provisionalStart = next.correct.durationMs
+      ? computeStartSec(next.correct.durationMs / 1000)
+      : SNIPPET_MIN_START_SEC + Math.random() * 30;
     startSecRef.current = provisionalStart;
     setRound({
       options: next.options,
@@ -190,9 +210,14 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     setRoundNumber((n) => n + 1);
     setSelectedIndex(0);
     snippetStartedAtRef.current = null;
-    const needsGesture = isIOSSafari && !hasUnlockedPlaybackRef.current;
-    setPhase(needsGesture ? "awaitingStart" : "loading");
-  }, [clearTimers, hasEnoughTracks, tracks]);
+    const isAppleMusicTrack = next.correct.source === "appleMusic";
+    setIsPlayerReady(isAppleMusicTrack);
+    const needsGesture =
+      (isIOSSafari || isAppleMusicTrack) && !hasUnlockedPlaybackRef.current;
+    setPhase(
+      needsGesture ? "awaitingStart" : isAppleMusicTrack ? "starting" : "loading"
+    );
+  }, [clearTimers, computeStartSec, hasEnoughTracks, quizTracks]);
 
   // When becoming visible, start the game.
   useEffect(() => {
@@ -292,6 +317,14 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     [round, phase, computeStartSec]
   );
 
+  const seekToSnippetStart = useCallback(() => {
+    if (isAppleMusicRound) {
+      appleMusicPlayerRef.current?.seekTo(startSecRef.current);
+      return;
+    }
+    youtubePlayerRef.current?.seekTo(startSecRef.current, "seconds");
+  }, [isAppleMusicRound]);
+
   const handleReady = useCallback(() => {
     if (loadingWatchdogRef.current) {
       clearTimeout(loadingWatchdogRef.current);
@@ -305,11 +338,9 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     // Seek first so playback resumes at the desired snippet start, then
     // transition to "starting". `playing={true}` follows from "starting",
     // and the countdown is armed only once the player fires onPlay.
-    if (playerRef.current) {
-      playerRef.current.seekTo(startSecRef.current, "seconds");
-    }
+    seekToSnippetStart();
     setPhase("starting");
-  }, [phase]);
+  }, [phase, seekToSnippetStart]);
 
   const handlePlay = useCallback(() => {
     // Only arm the snippet timer on the FIRST play after we requested the
@@ -365,7 +396,13 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   // iframe for autoplay on all subsequent rounds.
   const unlockAndStart = useCallback(() => {
     hasUnlockedPlaybackRef.current = true;
-    const internalPlayer = playerRef.current?.getInternalPlayer?.();
+    if (isAppleMusicRound) {
+      seekToSnippetStart();
+      setPhase("starting");
+      return;
+    }
+
+    const internalPlayer = youtubePlayerRef.current?.getInternalPlayer?.();
     // Invoke YT API methods directly (not via react-player's async layer)
     // so the browser attributes them to the active user gesture.
     if (internalPlayer) {
@@ -389,7 +426,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     // audio (signalled by onPlay). This is what excludes iOS gesture-to-
     // first-frame latency from the player's reaction window.
     setPhase("starting");
-  }, []);
+  }, [isAppleMusicRound, seekToSnippetStart]);
 
   // Imperative API exposed via ref
   useImperativeHandle(ref, () => ({
@@ -443,10 +480,13 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
       }
     },
     replaySnippet: () => {
-      if (phase === "playing" && playerRef.current) {
+      if (
+        phase === "playing" &&
+        (youtubePlayerRef.current || appleMusicPlayerRef.current)
+      ) {
         playClick?.();
         vibrate?.();
-        playerRef.current.seekTo(startSecRef.current, "seconds");
+        seekToSnippetStart();
         // Restart snippet timer
         clearTimers();
         snippetStartedAtRef.current = performance.now();
@@ -466,7 +506,21 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         }, SNIPPET_DURATION_MS);
       }
     },
-  }), [phase, round, selectedIndex, handleAnswer, playClick, playScroll, vibrate, clearTimers, roundNumber, startNextRound, unlockAndStart, isPlayerReady]);
+  }), [
+    phase,
+    round,
+    selectedIndex,
+    handleAnswer,
+    playClick,
+    playScroll,
+    vibrate,
+    clearTimers,
+    roundNumber,
+    startNextRound,
+    unlockAndStart,
+    isPlayerReady,
+    seekToSnippetStart,
+  ]);
 
   const headerTitle = useMemo(() => {
     if (phase === "finished") return t("apps.ipod.musicQuiz.results");
@@ -476,7 +530,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   if (!isVisible) return null;
 
   // Hidden ReactPlayer for the snippet (audio only)
-  const correctTrackUrl = round?.options[round.correctIndex]?.url;
+  const correctTrackUrl = correctTrack?.url;
 
   return (
     <div
@@ -652,45 +706,58 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         the quiz and only change its src via react-player's internal
         cueVideoById.
       */}
-      <div
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{ visibility: "hidden" }}
-        aria-hidden
-      >
-        {correctTrackUrl && phase !== "idle" && (
-          <ReactPlayer
-            ref={playerRef}
-            url={correctTrackUrl}
-            playing={phase === "playing" || phase === "starting"}
-            controls={false}
-            volume={finalVolume}
-            width="100%"
-            height="100%"
-            playsinline
-            onReady={handleReady}
-            onPlay={handlePlay}
-            onDuration={handleDuration}
-            config={{
-              youtube: {
-                playerVars: {
-                  modestbranding: 1,
-                  rel: 0,
-                  showinfo: 0,
-                  iv_load_policy: 3,
-                  fs: 0,
-                  disablekb: 1,
-                  playsinline: 1,
-                  enablejsapi: 1,
-                  origin: window.location.origin,
+      {isAppleMusicRound && correctTrack && phase !== "idle" ? (
+        <AppleMusicPlayerBridge
+          ref={appleMusicPlayerRef}
+          currentTrack={correctTrack}
+          playing={phase === "playing" || phase === "starting"}
+          resumeAtSeconds={round?.startSec ?? 0}
+          volume={finalVolume}
+          onReady={handleReady}
+          onPlay={handlePlay}
+          onDuration={handleDuration}
+        />
+      ) : (
+        <div
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{ visibility: "hidden" }}
+          aria-hidden
+        >
+          {correctTrackUrl && phase !== "idle" && (
+            <ReactPlayer
+              ref={youtubePlayerRef}
+              url={correctTrackUrl}
+              playing={phase === "playing" || phase === "starting"}
+              controls={false}
+              volume={finalVolume}
+              width="100%"
+              height="100%"
+              playsinline
+              onReady={handleReady}
+              onPlay={handlePlay}
+              onDuration={handleDuration}
+              config={{
+                youtube: {
+                  playerVars: {
+                    modestbranding: 1,
+                    rel: 0,
+                    showinfo: 0,
+                    iv_load_policy: 3,
+                    fs: 0,
+                    disablekb: 1,
+                    playsinline: 1,
+                    enablejsapi: 1,
+                    origin: window.location.origin,
+                  },
+                  embedOptions: {
+                    referrerPolicy: "strict-origin-when-cross-origin",
+                  },
                 },
-                embedOptions: {
-                  referrerPolicy: "strict-origin-when-cross-origin",
-                },
-              },
-            }}
-          />
-        )}
-      </div>
+              }}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 });
