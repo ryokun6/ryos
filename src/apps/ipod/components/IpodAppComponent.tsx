@@ -133,6 +133,9 @@ export function IpodAppComponent({
     handleAddSong,
     handleSongSearchSelect,
     handleAddUrl,
+    handleAppleMusicSearch,
+    handleAppleMusicSearchSelect,
+    handleAppleMusicAddToFavorites,
     handleRefreshLyrics,
     handleLyricsSearchSelect,
     handleLyricsSearchReset,
@@ -223,6 +226,7 @@ export function IpodAppComponent({
       onSyncLibrary={manualSync}
       onAddSong={handleAddSong}
       onShareSong={handleShareSong}
+      onAddToFavorites={handleAppleMusicAddToFavorites}
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
@@ -847,6 +851,10 @@ export function IpodAppComponent({
           onOpenChange={setIsSongSearchDialogOpen}
           onSelect={handleSongSearchSelect}
           onAddUrl={handleAddUrl}
+          mode={isAppleMusic ? "appleMusic" : "youtube"}
+          appleMusicAuthorized={appleMusicAuthorized}
+          onAppleMusicSearch={handleAppleMusicSearch}
+          onAppleMusicSelect={handleAppleMusicSearchSelect}
         />
 
         {/* Lyrics Sync Mode (non-fullscreen only - fullscreen renders in portal) */}

@@ -19,6 +19,9 @@ import type {
 
 const LIBRARY_KEY = "library";
 const PLAYLISTS_KEY = "playlists";
+const TRACK_COLLECTION_KEY_PREFIX = "track-collection:";
+
+export type AppleMusicTrackCollectionKey = "recently-added" | "favorite-songs";
 
 export interface CachedAppleMusicLibrary {
   tracks: Track[];
@@ -34,6 +37,14 @@ export interface CachedAppleMusicPlaylists {
 export interface CachedAppleMusicPlaylistTracks {
   tracks: Track[];
   loadedAt: number;
+}
+
+export type CachedAppleMusicTrackCollection = CachedAppleMusicPlaylistTracks;
+
+function getTrackCollectionStorageKey(
+  collectionKey: AppleMusicTrackCollectionKey
+): string {
+  return `${TRACK_COLLECTION_KEY_PREFIX}${collectionKey}`;
 }
 
 /** Persist the library to IndexedDB. Failures are logged but swallowed
@@ -129,6 +140,45 @@ export async function loadAppleMusicPlaylistTracks(
   }
 }
 
+export async function saveAppleMusicTrackCollection(
+  collectionKey: AppleMusicTrackCollectionKey,
+  payload: CachedAppleMusicTrackCollection
+): Promise<void> {
+  const storageKey = getTrackCollectionStorageKey(collectionKey);
+  try {
+    await dbOperations.put(
+      STORES.APPLE_MUSIC_PLAYLIST_TRACKS,
+      payload,
+      storageKey
+    );
+  } catch (err) {
+    console.warn(
+      `[apple music cache] failed to save track collection ${collectionKey}`,
+      err
+    );
+  }
+}
+
+export async function loadAppleMusicTrackCollection(
+  collectionKey: AppleMusicTrackCollectionKey
+): Promise<CachedAppleMusicTrackCollection | null> {
+  const storageKey = getTrackCollectionStorageKey(collectionKey);
+  try {
+    const cached = await dbOperations.get<CachedAppleMusicTrackCollection>(
+      STORES.APPLE_MUSIC_PLAYLIST_TRACKS,
+      storageKey
+    );
+    if (!cached || !Array.isArray(cached.tracks)) return null;
+    return cached;
+  } catch (err) {
+    console.warn(
+      `[apple music cache] failed to load track collection ${collectionKey}`,
+      err
+    );
+    return null;
+  }
+}
+
 /**
  * Read every cached playlist's tracks in one IndexedDB round-trip and
  * return them keyed by playlist id. Used to bulk-hydrate the in-memory
@@ -160,6 +210,7 @@ export async function loadAllAppleMusicPlaylistTracks(): Promise<
             const val = vals[i];
             if (
               typeof key === "string" &&
+              !key.startsWith(TRACK_COLLECTION_KEY_PREFIX) &&
               val &&
               Array.isArray(val.tracks) &&
               val.tracks.length > 0

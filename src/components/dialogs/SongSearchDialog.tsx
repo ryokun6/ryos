@@ -9,12 +9,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tabs } from "@/components/ui/tabs";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import {
+  ThemedTabsList,
+  ThemedTabsTrigger,
+} from "@/components/shared/ThemedTabs";
+import type { Track } from "@/stores/useIpodStore";
 
 // Check if input looks like a YouTube URL
 function isYouTubeUrl(input: string): boolean {
@@ -35,12 +41,22 @@ export interface SongSearchResult {
   publishedAt: string;
 }
 
+type AppleMusicSearchScope = "catalog" | "library";
+type SearchMode = "youtube" | "appleMusic";
+
 interface SongSearchDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (result: SongSearchResult) => void;
   onAddUrl?: (url: string) => Promise<void>;
   initialQuery?: string;
+  mode?: SearchMode;
+  appleMusicAuthorized?: boolean;
+  onAppleMusicSearch?: (
+    query: string,
+    scope: AppleMusicSearchScope
+  ) => Promise<Track[]>;
+  onAppleMusicSelect?: (track: Track) => Promise<void> | void;
 }
 
 export function SongSearchDialog({
@@ -49,6 +65,10 @@ export function SongSearchDialog({
   onSelect,
   onAddUrl,
   initialQuery = "",
+  mode = "youtube",
+  appleMusicAuthorized = false,
+  onAppleMusicSearch,
+  onAppleMusicSelect,
 }: SongSearchDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -57,10 +77,14 @@ export function SongSearchDialog({
 
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SongSearchResult[]>([]);
+  const [appleMusicResults, setAppleMusicResults] = useState<Track[]>([]);
+  const [activeAppleMusicTab, setActiveAppleMusicTab] =
+    useState<AppleMusicSearchScope>("catalog");
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isAppleMusicMode = mode === "appleMusic";
 
   // Detect if input is a YouTube URL
   const isUrl = useMemo(() => isYouTubeUrl(query), [query]);
@@ -69,10 +93,17 @@ export function SongSearchDialog({
     if (isOpen) {
       setQuery(initialQuery);
       setResults([]);
+      setAppleMusicResults([]);
       setSelectedIndex(-1);
       setError(null);
     }
   }, [isOpen, initialQuery]);
+
+  useEffect(() => {
+    setAppleMusicResults([]);
+    setSelectedIndex(-1);
+    setError(null);
+  }, [activeAppleMusicTab]);
 
   const handleAddUrl = async () => {
     if (!onAddUrl || !query.trim()) return;
@@ -98,7 +129,7 @@ export function SongSearchDialog({
     }
 
     // If it's a URL, add directly instead of searching
-    if (isUrl && onAddUrl) {
+    if (!isAppleMusicMode && isUrl && onAddUrl) {
       await handleAddUrl();
       return;
     }
@@ -106,9 +137,38 @@ export function SongSearchDialog({
     setIsSearching(true);
     setError(null);
     setResults([]);
+    setAppleMusicResults([]);
     setSelectedIndex(-1);
 
     try {
+      if (isAppleMusicMode) {
+        if (!appleMusicAuthorized) {
+          throw new Error(
+            t(
+              "apps.ipod.dialogs.appleMusicSearchSignInRequired",
+              "Sign in to Apple Music to search"
+            )
+          );
+        }
+        if (!onAppleMusicSearch) {
+          throw new Error(
+            t(
+              "apps.ipod.dialogs.appleMusicSearchUnavailable",
+              "Apple Music search is unavailable"
+            )
+          );
+        }
+        const appleResults = await onAppleMusicSearch(
+          query.trim(),
+          activeAppleMusicTab
+        );
+        setAppleMusicResults(appleResults);
+        if (appleResults.length === 0) {
+          setError(t("apps.ipod.dialogs.songSearchNoResults"));
+        }
+        return;
+      }
+
       const response = await abortableFetch(getApiUrl("/api/youtube-search"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,20 +200,80 @@ export function SongSearchDialog({
     }
   };
 
-  const handleAddSelected = useCallback(() => {
+  const handleAddSelected = useCallback(async () => {
+    if (isAppleMusicMode) {
+      if (
+        selectedIndex >= 0 &&
+        selectedIndex < appleMusicResults.length &&
+        onAppleMusicSelect
+      ) {
+        setIsAdding(true);
+        try {
+          await onAppleMusicSelect(appleMusicResults[selectedIndex]);
+          onOpenChange(false);
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : t("apps.ipod.dialogs.songSearchError")
+          );
+        } finally {
+          setIsAdding(false);
+        }
+      }
+      return;
+    }
+
     if (selectedIndex >= 0 && selectedIndex < results.length) {
       onSelect(results[selectedIndex]);
       onOpenChange(false);
     }
-  }, [selectedIndex, results, onSelect, onOpenChange]);
+  }, [
+    isAppleMusicMode,
+    selectedIndex,
+    appleMusicResults,
+    onAppleMusicSelect,
+    results,
+    onSelect,
+    onOpenChange,
+    t,
+  ]);
 
-  const handleSelectAndAdd = useCallback((index: number) => {
+  const handleSelectAndAdd = useCallback(async (index: number) => {
+    if (isAppleMusicMode) {
+      if (index >= 0 && index < appleMusicResults.length && onAppleMusicSelect) {
+        setSelectedIndex(index);
+        setIsAdding(true);
+        try {
+          await onAppleMusicSelect(appleMusicResults[index]);
+          onOpenChange(false);
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : t("apps.ipod.dialogs.songSearchError")
+          );
+        } finally {
+          setIsAdding(false);
+        }
+      }
+      return;
+    }
+
     if (index >= 0 && index < results.length) {
       setSelectedIndex(index);
       onSelect(results[index]);
       onOpenChange(false);
     }
-  }, [results, onSelect, onOpenChange]);
+  }, [
+    isAppleMusicMode,
+    appleMusicResults,
+    onAppleMusicSelect,
+    results,
+    onSelect,
+    onOpenChange,
+    t,
+  ]);
 
   const fontStyle = isXpTheme
     ? { fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial', fontSize: "11px" }
@@ -163,11 +283,29 @@ export function SongSearchDialog({
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
     : "font-geneva-12 text-[12px]";
 
-  const dialogContent = (
-    <div className={cn(isXpTheme ? "p-2 px-4" : "p-4 px-6", "overflow-hidden w-full box-border")}>
-      <p className={cn("text-gray-500 mb-2", fontClass)} style={fontStyle}>
-        {t("apps.ipod.dialogs.songSearchDescription")}
-      </p>
+  const displayedResults = isAppleMusicMode ? appleMusicResults : results;
+  const hasResults = displayedResults.length > 0;
+
+  const searchControls = (
+    <>
+      {isAppleMusicMode && (
+        <Tabs
+          value={activeAppleMusicTab}
+          onValueChange={(value) =>
+            setActiveAppleMusicTab(value as AppleMusicSearchScope)
+          }
+          className="w-full"
+        >
+          <ThemedTabsList className="w-full mb-2">
+            <ThemedTabsTrigger value="catalog" className="flex-1">
+              {t("apps.ipod.dialogs.appleMusicSearchAppleMusic", "Apple Music")}
+            </ThemedTabsTrigger>
+            <ThemedTabsTrigger value="library" className="flex-1">
+              {t("apps.ipod.dialogs.appleMusicSearchLibrary", "Library")}
+            </ThemedTabsTrigger>
+          </ThemedTabsList>
+        </Tabs>
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
         <Input
@@ -178,7 +316,14 @@ export function SongSearchDialog({
             e.stopPropagation();
             if (e.key === "Enter" && !isSearching && !isAdding) handleSearch();
           }}
-          placeholder={t("apps.ipod.dialogs.songSearchPlaceholder")}
+          placeholder={
+            isAppleMusicMode
+              ? t(
+                  "apps.ipod.dialogs.appleMusicSearchPlaceholder",
+                  "Search Apple Music..."
+                )
+              : t("apps.ipod.dialogs.songSearchPlaceholder")
+          }
           className={cn("shadow-none", fontClass)}
           style={fontStyle}
           disabled={isSearching || isAdding}
@@ -191,10 +336,145 @@ export function SongSearchDialog({
           style={fontStyle}
         >
           {isSearching || isAdding
-            ? (isUrl ? t("apps.ipod.dialogs.songSearchAdding") : t("apps.ipod.dialogs.songSearchSearching"))
-            : (isUrl ? t("apps.ipod.dialogs.songSearchAdd") : t("apps.ipod.dialogs.songSearchSearch"))}
+            ? isUrl && !isAppleMusicMode
+              ? t("apps.ipod.dialogs.songSearchAdding")
+              : t("apps.ipod.dialogs.songSearchSearching")
+            : isUrl && !isAppleMusicMode
+            ? t("apps.ipod.dialogs.songSearchAdd")
+            : t("apps.ipod.dialogs.songSearchSearch")}
         </Button>
       </div>
+    </>
+  );
+
+  const renderResult = (index: number) => {
+    const selected = selectedIndex === index;
+    if (isAppleMusicMode) {
+      const result = appleMusicResults[index];
+      return (
+        <div
+          key={`${result.id}-${index}`}
+          onClick={() => setSelectedIndex(index)}
+          onDoubleClick={() => void handleSelectAndAdd(index)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              void handleSelectAndAdd(index);
+            }
+          }}
+          tabIndex={0}
+          role="button"
+          className={cn(fontClass, "w-full")}
+          data-selected={selected ? "true" : undefined}
+          style={{
+            ...fontStyle,
+            padding: "8px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            boxSizing: "border-box",
+            background: selected
+              ? undefined
+              : index % 2 === 1
+              ? "#f3f4f6"
+              : "white",
+          }}
+        >
+          {result.cover && (
+            <img
+              src={result.cover}
+              alt=""
+              style={{
+                width: "42px",
+                height: "42px",
+                objectFit: "cover",
+                borderRadius: "4px",
+                flexShrink: 0,
+              }}
+            />
+          )}
+          <div style={{ flex: 1, minWidth: 0, width: 0 }}>
+            <div className="font-semibold truncate">{result.title}</div>
+            <div
+              className="truncate"
+              style={{
+                opacity: selected ? 0.8 : 1,
+                color: selected ? undefined : "#4b5563",
+              }}
+            >
+              {[result.artist, result.album].filter(Boolean).join(" · ")}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const result = results[index];
+    return (
+      <div
+        key={result.videoId}
+        onClick={() => setSelectedIndex(index)}
+        onDoubleClick={() => void handleSelectAndAdd(index)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            void handleSelectAndAdd(index);
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        className={cn(fontClass, "w-full")}
+        data-selected={selected ? "true" : undefined}
+        style={{
+          ...fontStyle,
+          padding: "8px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          boxSizing: "border-box",
+          background: selected
+            ? undefined
+            : index % 2 === 1
+            ? "#f3f4f6"
+            : "white",
+        }}
+      >
+        {result.thumbnail && (
+          <img
+            src={result.thumbnail}
+            alt=""
+            style={{ width: "48px", height: "36px", objectFit: "cover", borderRadius: "4px", flexShrink: 0 }}
+          />
+        )}
+        <div style={{ flex: 1, minWidth: 0, width: 0 }}>
+          <div className="font-semibold truncate">
+            {decodeHtmlEntities(result.title)}
+          </div>
+          <div
+            className="truncate"
+            style={{
+              opacity: selected ? 0.8 : 1,
+              color: selected ? undefined : "#4b5563",
+            }}
+          >
+            {decodeHtmlEntities(result.channelTitle)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const dialogContent = (
+    <div className={cn(isXpTheme ? "p-2 px-4" : "p-4 px-6", "overflow-hidden w-full box-border")}>
+      {!isAppleMusicMode && (
+        <p className={cn("text-gray-500 mb-2", fontClass)} style={fontStyle}>
+          {t("apps.ipod.dialogs.songSearchDescription")}
+        </p>
+      )}
+
+      {searchControls}
 
       {error && (
         <p className={cn("text-red-600 mb-2", fontClass)} style={fontStyle}>
@@ -202,10 +482,15 @@ export function SongSearchDialog({
         </p>
       )}
 
-      {results.length > 0 && (
+      {hasResults && (
         <div style={{ marginBottom: "12px" }}>
           <p className={cn("text-gray-500 mb-2", fontClass)} style={fontStyle}>
-            {t("apps.ipod.dialogs.songSearchSelectResult")}
+            {isAppleMusicMode
+              ? t(
+                  "apps.ipod.dialogs.appleMusicSearchSelectResult",
+                  "Select a song to add:"
+                )
+              : t("apps.ipod.dialogs.songSearchSelectResult")}
           </p>
           <div
             style={{
@@ -217,64 +502,12 @@ export function SongSearchDialog({
               overflowX: "hidden",
             }}
           >
-            {results.map((result, index) => (
-              <div
-                key={result.videoId}
-                onClick={() => setSelectedIndex(index)}
-                onDoubleClick={() => handleSelectAndAdd(index)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleSelectAndAdd(index);
-                  }
-                }}
-                tabIndex={0}
-                role="button"
-                className={cn(fontClass, "w-full")}
-                data-selected={selectedIndex === index ? "true" : undefined}
-                style={{
-                  ...fontStyle,
-                  padding: "8px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  boxSizing: "border-box",
-                  background: selectedIndex !== index
-                    ? (index % 2 === 1 ? "#f3f4f6" : "white")
-                    : undefined,
-                }}
-              >
-                {result.thumbnail && (
-                  <img
-                    src={result.thumbnail}
-                    alt=""
-                    style={{ width: "48px", height: "36px", objectFit: "cover", borderRadius: "4px", flexShrink: 0 }}
-                  />
-                )}
-                <div style={{ flex: 1, minWidth: 0, width: 0 }}>
-                  <div
-                    className="font-semibold truncate"
-                  >
-                    {decodeHtmlEntities(result.title)}
-                  </div>
-                  <div
-                    className="truncate"
-                    style={{
-                      opacity: selectedIndex === index ? 0.8 : 1,
-                      color: selectedIndex === index ? undefined : "#4b5563",
-                    }}
-                  >
-                    {decodeHtmlEntities(result.channelTitle)}
-                  </div>
-                </div>
-              </div>
-            ))}
+            {displayedResults.map((_, index) => renderResult(index))}
           </div>
         </div>
       )}
 
-      {results.length > 0 && (
+      {hasResults && (
         <DialogFooter className="mt-4 gap-1 sm:justify-end">
           <div className="flex flex-col-reverse gap-2 w-full sm:w-auto sm:flex-row">
             <Button
@@ -288,8 +521,8 @@ export function SongSearchDialog({
             </Button>
             <Button
               variant={isMacTheme ? "default" : "retro"}
-              onClick={handleAddSelected}
-              disabled={isSearching || selectedIndex < 0}
+              onClick={() => void handleAddSelected()}
+              disabled={isSearching || isAdding || selectedIndex < 0}
               className={cn("w-full sm:w-auto", !isMacTheme && "h-7", fontClass)}
               style={fontStyle}
             >

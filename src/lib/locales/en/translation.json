@@ -1831,7 +1831,8 @@
         "appleMusicSignIn": "Sign In to Apple Music…",
         "libraryYoutube": "YouTube Library",
         "libraryAppleMusic": "Apple Music",
-        "librarySource": "Library"
+        "librarySource": "Library",
+        "addToFavorites": "Add to Favorites"
       },
       "status": {
         "shuffleOn": "Shuffle ON",
@@ -1862,7 +1863,13 @@
         "loadingLyrics": "Loading lyrics…",
         "translatingLyrics": "Translating lyrics…",
         "loadingFurigana": "Loading furigana…",
-        "offset": "Offset"
+        "offset": "Offset",
+        "appleMusicSignedIn": "Apple Music ✓",
+        "appleMusicSignedOut": "Signed Out",
+        "appleMusicLibrarySynced": "Library: {{count}} songs",
+        "libraryYoutube": "Library: YouTube",
+        "libraryAppleMusic": "Library: Apple Music",
+        "appleMusicAddedToFavorites": "Added to Favorites"
       },
       "syncMode": {
         "instructions": "Tap the line you're hearing to sync lyrics",
@@ -1915,6 +1922,16 @@
         "appleMusicLibraryProgressOf": "Loading Apple Music library… {{loaded}} of {{total}}",
         "appleMusicLibraryLoaded": "Apple Music library loaded — {{count}} songs",
         "appleMusicLibraryFailed": "Failed to load Apple Music library",
+        "appleMusicSearchSignInRequired": "Sign in to Apple Music to search",
+        "appleMusicSearchUnavailable": "Apple Music search is unavailable",
+        "appleMusicSearchAppleMusic": "Apple Music",
+        "appleMusicSearchLibrary": "Library",
+        "appleMusicSearchPlaceholder": "Search Apple Music...",
+        "appleMusicSearchSelectResult": "Select a song to add:",
+        "appleMusicRecentlyAddedFailed": "Failed to load recently added songs",
+        "appleMusicFavoritesFailed": "Failed to load favorite songs",
+        "appleMusicAddedToFavorites": "Added to Favorites",
+        "appleMusicAddToFavoritesFailed": "Failed to add to favorites",
         "lyricsSearchTitle": "Search Lyrics",
         "lyricsSearchDescription": "Search for lyrics for \"{{title}}\" by {{artist}}",
         "lyricsSearchPlaceholder": "Enter search query (e.g., song title, artist)",
@@ -1965,7 +1982,18 @@
         "artists": "Artists",
         "albums": "Albums",
         "unknownAlbum": "Unknown Album",
-        "loading": "Loading…"
+        "loading": "Loading…",
+        "recentlyAdded": "Recently Added",
+        "favoriteSongs": "Favorite Songs",
+        "noSongs": "No Songs",
+        "librarySource": "Library",
+        "libraryAppleMusic": "Apple Music",
+        "libraryYoutube": "YouTube",
+        "appleMusicSignIn": "Apple Music: Sign In",
+        "appleMusicSignOut": "Apple Music: Sign Out",
+        "unconfigured": "Unconfigured",
+        "signedIn": "Signed In",
+        "signedOut": "Signed Out"
       },
       "musicQuiz": {
         "title": "Music Quiz",

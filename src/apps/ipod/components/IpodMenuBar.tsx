@@ -39,6 +39,7 @@ interface IpodMenuBarProps {
   onSyncLibrary: () => void;
   onAddSong: () => void;
   onShareSong: () => void;
+  onAddToFavorites?: () => void;
   onRefreshLyrics?: () => void;
   onAdjustTiming?: () => void;
   onToggleCoverFlow?: () => void;
@@ -59,6 +60,7 @@ export function IpodMenuBar({
   onSyncLibrary,
   onAddSong,
   onShareSong,
+  onAddToFavorites,
   onRefreshLyrics,
   onAdjustTiming,
   onToggleCoverFlow,
@@ -379,6 +381,20 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.shareSong")}
           </MenubarItem>
+          {isAppleMusic && (
+            <MenubarItem
+              onClick={onAddToFavorites}
+              className="text-md h-6 px-3"
+              disabled={
+                !appleMusicAuthorized ||
+                !onAddToFavorites ||
+                tracks.length === 0 ||
+                currentIndex === -1
+              }
+            >
+              {t("apps.ipod.menu.addToFavorites", "Add to Favorites")}
+            </MenubarItem>
+          )}
           {!isAppleMusic && (
             <>
               <MenubarSeparator className="h-[2px] bg-black my-1" />

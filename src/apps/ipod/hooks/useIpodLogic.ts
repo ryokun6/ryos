@@ -16,7 +16,13 @@ import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import {
   useAppleMusicLibrary,
   fetchAppleMusicPlaylistTracks,
+  fetchAppleMusicFavoriteSongTracks,
+  fetchAppleMusicRecentlyAddedTracks,
+  searchAppleMusicTracks,
+  addAppleMusicTrackToFavorites,
+  cacheAppleMusicFavoriteSongTrack,
   APPLE_MUSIC_LIBRARY_STALE_AFTER_MS,
+  type AppleMusicSearchScope,
 } from "./useAppleMusicLibrary";
 import { useMusicKit } from "@/hooks/useMusicKit";
 import { clearAppleMusicLibrary } from "@/utils/appleMusicLibraryCache";
@@ -347,6 +353,14 @@ export function useIpodLogic({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
+  const [appleMusicRecentlyAddedTracks, setAppleMusicRecentlyAddedTracks] =
+    useState<Track[]>([]);
+  const [isAppleMusicRecentlyAddedLoading, setIsAppleMusicRecentlyAddedLoading] =
+    useState(false);
+  const [appleMusicFavoriteTracks, setAppleMusicFavoriteTracks] =
+    useState<Track[]>([]);
+  const [isAppleMusicFavoritesLoading, setIsAppleMusicFavoritesLoading] =
+    useState(false);
   
   // Cover Flow state
   const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
@@ -825,6 +839,136 @@ export function useIpodLogic({
     t,
   ]);
 
+  const mergeAppleMusicTracks = useCallback((incomingTracks: Track[]) => {
+    if (incomingTracks.length === 0) return;
+    const state = useIpodStore.getState();
+    const existingIds = new Set(state.appleMusicTracks.map((track) => track.id));
+    const additions = incomingTracks.filter((track) => !existingIds.has(track.id));
+    if (additions.length > 0) {
+      state.setAppleMusicTracks([...additions, ...state.appleMusicTracks]);
+    }
+  }, []);
+
+  const handleAppleMusicSearch = useCallback(
+    async (query: string, scope: AppleMusicSearchScope) => {
+      if (!appleMusicAuthorized) {
+        await handleAppleMusicSignIn();
+        if (!useIpodStore.getState().appleMusicTracks) return [];
+      }
+      return searchAppleMusicTracks(query, scope);
+    },
+    [appleMusicAuthorized, handleAppleMusicSignIn]
+  );
+
+  const handleAppleMusicSearchSelect = useCallback(
+    async (track: Track) => {
+      mergeAppleMusicTracks([track]);
+      useIpodStore.getState().setLibrarySource("appleMusic");
+      useIpodStore.getState().setAppleMusicPlaybackQueue(null);
+      useIpodStore.getState().setAppleMusicCurrentSongId(track.id);
+      setIsPlaying(true);
+      showStatus(t("apps.ipod.status.added"));
+    },
+    [mergeAppleMusicTracks, setIsPlaying, showStatus, t]
+  );
+
+  const loadAppleMusicRecentlyAdded = useCallback(async () => {
+    if (!appleMusicAuthorized) {
+      void handleAppleMusicSignIn();
+      return;
+    }
+    if (isAppleMusicRecentlyAddedLoading) return;
+    setIsAppleMusicRecentlyAddedLoading(true);
+    try {
+      const recentTracks = await fetchAppleMusicRecentlyAddedTracks();
+      setAppleMusicRecentlyAddedTracks(recentTracks);
+      mergeAppleMusicTracks(recentTracks);
+    } catch (err) {
+      toast.error(
+        t(
+          "apps.ipod.dialogs.appleMusicRecentlyAddedFailed",
+          "Failed to load recently added songs"
+        ),
+        {
+          description: err instanceof Error ? err.message : String(err),
+        }
+      );
+    } finally {
+      setIsAppleMusicRecentlyAddedLoading(false);
+    }
+  }, [
+    appleMusicAuthorized,
+    handleAppleMusicSignIn,
+    isAppleMusicRecentlyAddedLoading,
+    mergeAppleMusicTracks,
+    t,
+  ]);
+
+  const loadAppleMusicFavorites = useCallback(async () => {
+    if (!appleMusicAuthorized) {
+      void handleAppleMusicSignIn();
+      return;
+    }
+    if (isAppleMusicFavoritesLoading) return;
+    setIsAppleMusicFavoritesLoading(true);
+    try {
+      const favoriteTracks = await fetchAppleMusicFavoriteSongTracks();
+      setAppleMusicFavoriteTracks(favoriteTracks);
+      mergeAppleMusicTracks(favoriteTracks);
+    } catch (err) {
+      toast.error(
+        t(
+          "apps.ipod.dialogs.appleMusicFavoritesFailed",
+          "Failed to load favorite songs"
+        ),
+        {
+          description: err instanceof Error ? err.message : String(err),
+        }
+      );
+    } finally {
+      setIsAppleMusicFavoritesLoading(false);
+    }
+  }, [
+    appleMusicAuthorized,
+    handleAppleMusicSignIn,
+    isAppleMusicFavoritesLoading,
+    mergeAppleMusicTracks,
+    t,
+  ]);
+
+  const handleAppleMusicAddToFavorites = useCallback(async () => {
+    registerActivity();
+    const track = useIpodStore.getState().appleMusicTracks.find(
+      (candidate) =>
+        candidate.id === useIpodStore.getState().appleMusicCurrentSongId
+    );
+    if (!track) return;
+    try {
+      await addAppleMusicTrackToFavorites(track);
+      setAppleMusicFavoriteTracks((existingTracks) => [
+        track,
+        ...existingTracks.filter((candidate) => candidate.id !== track.id),
+      ]);
+      void cacheAppleMusicFavoriteSongTrack(track);
+      showStatus(
+        t("apps.ipod.status.appleMusicAddedToFavorites", "Added to Favorites")
+      );
+      toast.success(
+        t("apps.ipod.dialogs.appleMusicAddedToFavorites", "Added to Favorites")
+      );
+    } catch (err) {
+      toast.error(
+        t(
+          "apps.ipod.dialogs.appleMusicAddToFavoritesFailed",
+          "Failed to add to favorites"
+        ),
+        {
+          description: err instanceof Error ? err.message : String(err),
+        }
+      );
+    }
+  }, [registerActivity, showStatus, t]);
+
   const handleSwitchToYoutube = useCallback(() => {
     registerActivity();
     if (librarySource === "youtube") return;
@@ -1079,6 +1223,90 @@ export function useIpodLogic({
       })),
     [tracks, playTrackFromMenu]
   );
+
+  const appleMusicRecentlyAddedMenuItems = useMemo(() => {
+    const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
+    if (isAppleMusicRecentlyAddedLoading && appleMusicRecentlyAddedTracks.length === 0) {
+      return [
+        {
+          label: loadingLabel,
+          action: () => {},
+          showChevron: false,
+          isLoading: true,
+        },
+      ];
+    }
+
+    if (appleMusicRecentlyAddedTracks.length === 0) {
+      return [
+        {
+          label: t("apps.ipod.menuItems.noSongs", "No Songs"),
+          action: () => {},
+          showChevron: false,
+        },
+      ];
+    }
+
+    const queueIds = appleMusicRecentlyAddedTracks.map((track) => track.id);
+    return appleMusicRecentlyAddedTracks.map((track, index) => ({
+      label: track.title,
+      action: () =>
+        playAppleMusicTrackFromMenu(
+          track,
+          index,
+          queueIds,
+          appleMusicRecentlyAddedTracks
+        ),
+      showChevron: false,
+    }));
+  }, [
+    appleMusicRecentlyAddedTracks,
+    isAppleMusicRecentlyAddedLoading,
+    playAppleMusicTrackFromMenu,
+    t,
+  ]);
+
+  const appleMusicFavoritesMenuItems = useMemo(() => {
+    const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
+    if (isAppleMusicFavoritesLoading && appleMusicFavoriteTracks.length === 0) {
+      return [
+        {
+          label: loadingLabel,
+          action: () => {},
+          showChevron: false,
+          isLoading: true,
+        },
+      ];
+    }
+
+    if (appleMusicFavoriteTracks.length === 0) {
+      return [
+        {
+          label: t("apps.ipod.menuItems.noSongs", "No Songs"),
+          action: () => {},
+          showChevron: false,
+        },
+      ];
+    }
+
+    const queueIds = appleMusicFavoriteTracks.map((track) => track.id);
+    return appleMusicFavoriteTracks.map((track, index) => ({
+      label: track.title,
+      action: () =>
+        playAppleMusicTrackFromMenu(
+          track,
+          index,
+          queueIds,
+          appleMusicFavoriteTracks
+        ),
+      showChevron: false,
+    }));
+  }, [
+    appleMusicFavoriteTracks,
+    isAppleMusicFavoritesLoading,
+    playAppleMusicTrackFromMenu,
+    t,
+  ]);
 
   const artistAllSongsMenuItemsByTitle = useMemo(() => {
     const result: Record<
@@ -1364,6 +1592,14 @@ export function useIpodLogic({
     const artistsLabel = t("apps.ipod.menuItems.artists");
     const albumsLabel = t("apps.ipod.menuItems.albums");
     const coverFlowLabel = t("apps.ipod.menu.coverFlow", "Cover Flow");
+    const recentlyAddedLabel = t(
+      "apps.ipod.menuItems.recentlyAdded",
+      "Recently Added"
+    );
+    const favoriteSongsLabel = t(
+      "apps.ipod.menuItems.favoriteSongs",
+      "Favorite Songs"
+    );
 
     const pushSubmenu = (
       title: string,
@@ -1385,6 +1621,32 @@ export function useIpodLogic({
     if (isAppleMusic) {
       return [
         coverFlowItem,
+        {
+          label: recentlyAddedLabel,
+          action: () => {
+            registerActivity();
+            pushMenuChild({
+              title: recentlyAddedLabel,
+              items: appleMusicRecentlyAddedMenuItems,
+              selectedIndex: 0,
+            });
+            void loadAppleMusicRecentlyAdded();
+          },
+          showChevron: true,
+        },
+        {
+          label: favoriteSongsLabel,
+          action: () => {
+            registerActivity();
+            pushMenuChild({
+              title: favoriteSongsLabel,
+              items: appleMusicFavoritesMenuItems,
+              selectedIndex: 0,
+            });
+            void loadAppleMusicFavorites();
+          },
+          showChevron: true,
+        },
         {
           label: playlistsLabel,
           action: () => pushSubmenu(playlistsLabel, applePlaylistsMenuItems),
@@ -1429,9 +1691,13 @@ export function useIpodLogic({
   }, [
     isAppleMusic,
     allSongsMenuItems,
+    appleMusicFavoritesMenuItems,
+    appleMusicRecentlyAddedMenuItems,
     artistsListMenuItems,
     albumsListMenuItems,
     applePlaylistsMenuItems,
+    loadAppleMusicFavorites,
+    loadAppleMusicRecentlyAdded,
     registerActivity,
     pushMenuChild,
     t,
@@ -1650,6 +1916,14 @@ export function useIpodLogic({
       return musicMenuItems;
     } else if (menu.title === t("apps.ipod.menuItems.settings")) {
       return settingsMenuItems;
+    } else if (
+      menu.title === t("apps.ipod.menuItems.recentlyAdded", "Recently Added")
+    ) {
+      return appleMusicRecentlyAddedMenuItems;
+    } else if (
+      menu.title === t("apps.ipod.menuItems.favoriteSongs", "Favorite Songs")
+    ) {
+      return appleMusicFavoritesMenuItems;
     } else if (menu.title === t("apps.ipod.menuItems.extras")) {
       // Extras submenu has stable items; keep existing references to avoid stale closures.
       return menu.items;
@@ -1687,6 +1961,8 @@ export function useIpodLogic({
     mainMenuItems,
     musicMenuItems,
     settingsMenuItems,
+    appleMusicFavoritesMenuItems,
+    appleMusicRecentlyAddedMenuItems,
     allSongsMenuItems,
     artistAllSongsMenuItemsByTitle,
     artistAlbumMenuItemsByTitle,
@@ -3133,6 +3409,9 @@ export function useIpodLogic({
     handleAddSong,
     handleSongSearchSelect,
     handleAddUrl,
+    handleAppleMusicSearch,
+    handleAppleMusicSearchSelect,
+    handleAppleMusicAddToFavorites,
     handleRefreshLyrics,
     handleLyricsSearchSelect,
     handleLyricsSearchReset,

@@ -12,8 +12,11 @@ import {
   loadAppleMusicLibrary,
   loadAppleMusicPlaylists,
   loadAppleMusicPlaylistTracks,
+  loadAppleMusicTrackCollection,
   saveAppleMusicPlaylists,
   saveAppleMusicPlaylistTracks,
+  saveAppleMusicTrackCollection,
+  type AppleMusicTrackCollectionKey,
 } from "@/utils/appleMusicLibraryCache";
 
 /**
@@ -119,6 +122,20 @@ interface LibraryPlaylistTracksResponse {
   };
 }
 
+interface AppleMusicTrackSearchResponse {
+  results?: {
+    songs?: { data?: AppleMusicLibrarySongResource[] };
+    "library-songs"?: { data?: AppleMusicLibrarySongResource[] };
+    "library-playlists"?: { data?: AppleMusicLibraryPlaylistResource[] };
+  };
+}
+
+interface RecentlyAddedResponse {
+  data?: AppleMusicLibrarySongResource[];
+}
+
+export type AppleMusicSearchScope = "catalog" | "library";
+
 /**
  * Resolve an artwork URL with the supplied resolution. Apple Music returns
  * URL templates like `https://.../{w}x{h}bb.jpg` — we substitute reasonable
@@ -217,6 +234,308 @@ function libraryPlaylistResourceToPlaylist(
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 50; // safety cap (5,000 songs)
+const SEARCH_RESULT_LIMIT = 15;
+const RECENTLY_ADDED_RESOURCE_LIMIT = 25;
+const RECENTLY_ADDED_TRACK_LIMIT = 100;
+const RECENTLY_ADDED_COLLECTION_KEY: AppleMusicTrackCollectionKey =
+  "recently-added";
+const FAVORITE_SONGS_COLLECTION_KEY: AppleMusicTrackCollectionKey =
+  "favorite-songs";
+
+function getAppleMusicInstanceForUser() {
+  const instance = getMusicKitInstance();
+  if (!instance) throw new Error("MusicKit instance is not configured");
+  if (!instance.isAuthorized) {
+    throw new Error("Apple Music user is not authorized");
+  }
+  return instance;
+}
+
+function getCatalogStorefront(instance: MusicKit.MusicKitInstance): string {
+  return (
+    instance.storefrontId ||
+    useIpodStore.getState().appleMusicStorefrontId ||
+    "us"
+  );
+}
+
+function isAppleMusicCacheFresh(loadedAt: number | undefined): boolean {
+  return (
+    typeof loadedAt === "number" &&
+    Date.now() - loadedAt < APPLE_MUSIC_LIBRARY_STALE_AFTER_MS
+  );
+}
+
+export async function searchAppleMusicTracks(
+  query: string,
+  scope: AppleMusicSearchScope
+): Promise<Track[]> {
+  const term = query.trim();
+  if (!term) return [];
+
+  const instance = getAppleMusicInstanceForUser();
+  const response =
+    scope === "catalog"
+      ? await instance.api.music<AppleMusicTrackSearchResponse>(
+          `/v1/catalog/${encodeURIComponent(getCatalogStorefront(instance))}/search`,
+          {
+            term,
+            types: "songs",
+            limit: SEARCH_RESULT_LIMIT,
+          }
+        )
+      : await instance.api.music<AppleMusicTrackSearchResponse>(
+          "/v1/me/library/search",
+          {
+            term,
+            types: "library-songs",
+            limit: SEARCH_RESULT_LIMIT,
+          }
+        );
+
+  const data = response?.data as AppleMusicTrackSearchResponse | undefined;
+  const resources =
+    scope === "catalog"
+      ? data?.results?.songs?.data
+      : data?.results?.["library-songs"]?.data;
+
+  return (resources ?? [])
+    .map((resource) => libraryResourceToTrack(resource))
+    .filter((track): track is Track => track !== null);
+}
+
+async function fetchLibraryAlbumTracks(albumId: string): Promise<Track[]> {
+  const instance = getAppleMusicInstanceForUser();
+  const response = await instance.api.music<LibraryPlaylistTracksResponse>(
+    `/v1/me/library/albums/${encodeURIComponent(albumId)}/tracks`,
+    {
+      limit: PAGE_SIZE,
+      "include[library-songs]": "catalog,albums",
+    }
+  );
+  const data = response?.data as LibraryPlaylistTracksResponse | undefined;
+  const albums = buildIncludedAlbumMap(data?.included);
+  return (data?.data ?? [])
+    .map((resource) =>
+      libraryResourceToTrack(resource, getIncludedAlbumForSong(resource, albums))
+    )
+    .filter((track): track is Track => track !== null);
+}
+
+async function fetchAppleMusicRecentlyAddedTracksFromApi(): Promise<Track[]> {
+  const instance = getAppleMusicInstanceForUser();
+  const response = await instance.api.music<RecentlyAddedResponse>(
+    "/v1/me/library/recently-added",
+    {
+      limit: RECENTLY_ADDED_RESOURCE_LIMIT,
+    }
+  );
+
+  const data = response?.data as RecentlyAddedResponse | undefined;
+  const tracks: Track[] = [];
+  const seenIds = new Set<string>();
+
+  for (const resource of data?.data ?? []) {
+    if (tracks.length >= RECENTLY_ADDED_TRACK_LIMIT) break;
+
+    const addTrack = (track: Track) => {
+      if (seenIds.has(track.id)) return;
+      seenIds.add(track.id);
+      tracks.push(track);
+    };
+
+    if (resource.type === "library-songs") {
+      const track = libraryResourceToTrack(resource);
+      if (track) addTrack(track);
+      continue;
+    }
+
+    if (resource.type === "library-albums") {
+      try {
+        const albumTracks = await fetchLibraryAlbumTracks(resource.id);
+        for (const track of albumTracks) {
+          if (tracks.length >= RECENTLY_ADDED_TRACK_LIMIT) break;
+          addTrack(track);
+        }
+      } catch (err) {
+        console.warn(
+          `[apple music] failed to load recently added album ${resource.id}`,
+          err
+        );
+      }
+    }
+  }
+
+  return tracks;
+}
+
+export async function fetchAppleMusicRecentlyAddedTracks(
+  options: FetchPlaylistTracksOptions = {}
+): Promise<Track[]> {
+  const cached = await loadAppleMusicTrackCollection(
+    RECENTLY_ADDED_COLLECTION_KEY
+  );
+  if (
+    !options.force &&
+    cached?.tracks.length &&
+    isAppleMusicCacheFresh(cached.loadedAt)
+  ) {
+    return cached.tracks;
+  }
+
+  try {
+    const tracks = await fetchAppleMusicRecentlyAddedTracksFromApi();
+    if (tracks.length === 0 && cached?.tracks.length) {
+      console.warn(
+        "[apple music] recently added refresh returned 0 songs; keeping cached collection"
+      );
+      return cached.tracks;
+    }
+
+    void saveAppleMusicTrackCollection(RECENTLY_ADDED_COLLECTION_KEY, {
+      tracks,
+      loadedAt: Date.now(),
+    });
+    return tracks;
+  } catch (err) {
+    if (cached?.tracks.length) {
+      console.warn(
+        "[apple music] recently added refresh failed (using cached collection)",
+        err
+      );
+      return cached.tracks;
+    }
+    throw err;
+  }
+}
+
+function isFavoriteSongsPlaylist(playlist: AppleMusicPlaylist): boolean {
+  const normalizedName = playlist.name.trim().toLocaleLowerCase();
+  return (
+    normalizedName === "favorite songs" ||
+    normalizedName === "favourite songs"
+  );
+}
+
+async function findFavoriteSongsPlaylist(): Promise<AppleMusicPlaylist | null> {
+  const cachedPlaylist = useIpodStore
+    .getState()
+    .appleMusicPlaylists.find(isFavoriteSongsPlaylist);
+  if (cachedPlaylist) return cachedPlaylist;
+
+  const instance = getAppleMusicInstanceForUser();
+  const response = await instance.api.music<AppleMusicTrackSearchResponse>(
+    "/v1/me/library/search",
+    {
+      term: "Favorite Songs",
+      types: "library-playlists",
+      limit: 10,
+    }
+  );
+  const data = response?.data as AppleMusicTrackSearchResponse | undefined;
+  const playlists = (data?.results?.["library-playlists"]?.data ?? [])
+    .map((resource) => libraryPlaylistResourceToPlaylist(resource))
+    .filter((playlist): playlist is AppleMusicPlaylist => playlist !== null);
+
+  return playlists.find(isFavoriteSongsPlaylist) ?? playlists[0] ?? null;
+}
+
+export async function fetchAppleMusicFavoriteSongTracks(
+  options: FetchPlaylistTracksOptions = {}
+): Promise<Track[]> {
+  const cached = await loadAppleMusicTrackCollection(
+    FAVORITE_SONGS_COLLECTION_KEY
+  );
+  if (
+    !options.force &&
+    cached?.tracks.length &&
+    isAppleMusicCacheFresh(cached.loadedAt)
+  ) {
+    return cached.tracks;
+  }
+
+  try {
+    const playlist = await findFavoriteSongsPlaylist();
+    if (!playlist) return cached?.tracks ?? [];
+
+    const tracks = await fetchAppleMusicPlaylistTracks(playlist.id, {
+      force: options.force,
+    });
+    if (tracks.length === 0 && cached?.tracks.length) {
+      console.warn(
+        "[apple music] favorite songs refresh returned 0 songs; keeping cached collection"
+      );
+      return cached.tracks;
+    }
+
+    void saveAppleMusicTrackCollection(FAVORITE_SONGS_COLLECTION_KEY, {
+      tracks,
+      loadedAt: Date.now(),
+    });
+    return tracks;
+  } catch (err) {
+    if (cached?.tracks.length) {
+      console.warn(
+        "[apple music] favorite songs refresh failed (using cached collection)",
+        err
+      );
+      return cached.tracks;
+    }
+    throw err;
+  }
+}
+
+export async function cacheAppleMusicFavoriteSongTrack(
+  track: Track
+): Promise<void> {
+  const cached = await loadAppleMusicTrackCollection(
+    FAVORITE_SONGS_COLLECTION_KEY
+  );
+  const tracks = [
+    track,
+    ...(cached?.tracks ?? []).filter((candidate) => candidate.id !== track.id),
+  ];
+  await saveAppleMusicTrackCollection(FAVORITE_SONGS_COLLECTION_KEY, {
+    tracks,
+    // If we only know about the newly favorited track, keep the cache stale
+    // so the next menu open still asks Apple Music for the complete playlist.
+    loadedAt: cached?.tracks.length ? Date.now() : 0,
+  });
+}
+
+export async function addAppleMusicTrackToFavorites(track: Track): Promise<void> {
+  const instance = getAppleMusicInstanceForUser();
+  const params = track.appleMusicPlayParams;
+  const catalogId = params?.catalogId || track.id.replace(/^am:/, "");
+  const libraryId = params?.libraryId;
+
+  const searchParams = new URLSearchParams();
+  if (catalogId && !catalogId.startsWith("i.")) {
+    searchParams.set("ids[songs]", catalogId);
+  } else if (libraryId || catalogId) {
+    searchParams.set("ids[library-songs]", libraryId || catalogId);
+  } else {
+    throw new Error("Current Apple Music track is missing a favorite-able ID");
+  }
+
+  const response = await fetch(
+    `https://api.music.apple.com/v1/me/favorites?${searchParams.toString()}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${instance.developerToken}`,
+        "Music-User-Token": instance.musicUserToken,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      errorText || `Apple Music favorites request failed (${response.status})`
+    );
+  }
+}
 
 /**
  * Anything younger than this is treated as "fresh enough" — we use the
