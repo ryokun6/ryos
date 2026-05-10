@@ -255,6 +255,60 @@ describe("useIpodStore Apple Music slice", () => {
     expect(state.appleMusicCurrentSongId).toBe("am:playlist");
   });
 
+  test("appleMusicNextTrack resets elapsedTime/totalTime so the new track starts at 0", () => {
+    useIpodStore.getState().setAppleMusicTracks([
+      { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+      { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+    ]);
+    useIpodStore.setState({ loopAll: true, isShuffled: false });
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:1");
+    // Simulate the previous song being mid-playback.
+    useIpodStore.setState({ elapsedTime: 95, totalTime: 240 });
+
+    useIpodStore.getState().appleMusicNextTrack();
+
+    const state = useIpodStore.getState();
+    expect(state.appleMusicCurrentSongId).toBe("am:2");
+    expect(state.elapsedTime).toBe(0);
+    expect(state.totalTime).toBe(0);
+  });
+
+  test("appleMusicPreviousTrack resets elapsedTime/totalTime so the new track starts at 0", () => {
+    useIpodStore.getState().setAppleMusicTracks([
+      { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+      { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+    ]);
+    useIpodStore.setState({ isShuffled: false });
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:2");
+    useIpodStore.setState({ elapsedTime: 60, totalTime: 180 });
+
+    useIpodStore.getState().appleMusicPreviousTrack();
+
+    const state = useIpodStore.getState();
+    expect(state.appleMusicCurrentSongId).toBe("am:1");
+    expect(state.elapsedTime).toBe(0);
+    expect(state.totalTime).toBe(0);
+  });
+
+  test("appleMusicNextTrack at end of queue without loopAll preserves elapsedTime when staying on the last track", () => {
+    useIpodStore.getState().setAppleMusicTracks([
+      { id: "am:1", url: "applemusic:1", title: "One", source: "appleMusic" },
+      { id: "am:2", url: "applemusic:2", title: "Two", source: "appleMusic" },
+    ]);
+    useIpodStore.setState({ loopAll: false, isShuffled: false });
+    useIpodStore.getState().setAppleMusicCurrentSongId("am:2");
+    useIpodStore.setState({ elapsedTime: 30, totalTime: 200 });
+
+    useIpodStore.getState().appleMusicNextTrack();
+
+    const state = useIpodStore.getState();
+    expect(state.appleMusicCurrentSongId).toBe("am:2");
+    expect(state.isPlaying).toBe(false);
+    // Same track ⇒ don't reset position; we only stop playback.
+    expect(state.elapsedTime).toBe(30);
+    expect(state.totalTime).toBe(200);
+  });
+
   test("appleMusicNextTrack stays inside the contextual queue after a library refresh", () => {
     useIpodStore.setState({
       appleMusicTracks: [

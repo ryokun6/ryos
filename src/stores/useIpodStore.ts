@@ -770,6 +770,12 @@ export const useIpodStore = create<IpodState>()(
               historyPosition: -1,
               currentLyrics: null, // Clear stale lyrics from previous song
               currentFuriganaMap: null, // Clear stale furigana from previous song
+              // Snap playback position to the start of the new track so any
+              // player wired to `elapsedTime` (e.g. AppleMusicPlayerBridge's
+              // `resumeAtSeconds`) doesn't carry the previous song's offset
+              // into the new song.
+              elapsedTime: 0,
+              totalTime: 0,
             };
           }
           return {};
@@ -943,6 +949,7 @@ export const useIpodStore = create<IpodState>()(
                 currentLyrics: isSameTrack ? state.currentLyrics : null,
                 currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
                 isPlaying: false,
+                ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
               };
             }
             nextSongId = state.tracks[nextIndex]?.id ?? null;
@@ -956,6 +963,9 @@ export const useIpodStore = create<IpodState>()(
             isPlaying: true,
             playbackHistory: newPlaybackHistory,
             historyPosition: -1, // Always reset to end when moving forward
+            // Reset playback position so the new track starts at 0 instead
+            // of inheriting the previous track's elapsedTime.
+            ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
           };
         }),
       previousTrack: () =>
@@ -997,14 +1007,17 @@ export const useIpodStore = create<IpodState>()(
             prevSongId = state.tracks[prevIndex]?.id ?? null;
           }
 
+          const isSameTrack = prevSongId === state.currentSongId;
           return {
             currentSongId: prevSongId,
-            currentLyrics: prevSongId === state.currentSongId ? state.currentLyrics : null,
-            currentFuriganaMap:
-              prevSongId === state.currentSongId ? state.currentFuriganaMap : null,
+            currentLyrics: isSameTrack ? state.currentLyrics : null,
+            currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             isPlaying: true,
             playbackHistory: newPlaybackHistory,
             historyPosition: -1,
+            // Reset playback position so the new track starts at 0 instead
+            // of inheriting the previous track's elapsedTime.
+            ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
           };
         }),
       setShowVideo: (show) => set({ showVideo: show }),
@@ -1895,10 +1908,13 @@ export const useIpodStore = create<IpodState>()(
                 ? 0
                 : (currentIndex + 1) % queueTracks.length;
             if (!state.loopAll && nextIndex === 0 && currentIndex !== -1) {
+              const lastSongId =
+                queueTracks[queueTracks.length - 1]?.id ?? null;
+              const isSameTrack = lastSongId === state.appleMusicCurrentSongId;
               return {
-                appleMusicCurrentSongId:
-                  queueTracks[queueTracks.length - 1]?.id ?? null,
+                appleMusicCurrentSongId: lastSongId,
                 isPlaying: false,
+                ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
               };
             }
             nextSongId = queueTracks[nextIndex]?.id ?? null;
@@ -1910,6 +1926,12 @@ export const useIpodStore = create<IpodState>()(
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             isPlaying: true,
+            // Reset playback position so the new track starts at 0 instead
+            // of inheriting the previous track's elapsedTime — otherwise the
+            // AppleMusicPlayerBridge resumes the new song from the previous
+            // song's current time (visible as a mid-song start in Apple
+            // Music mode).
+            ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
           };
         }),
       appleMusicPreviousTrack: () =>
@@ -1947,6 +1969,9 @@ export const useIpodStore = create<IpodState>()(
             currentLyrics: isSameTrack ? state.currentLyrics : null,
             currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             isPlaying: true,
+            // Reset playback position so the new track starts at 0 instead
+            // of inheriting the previous track's elapsedTime.
+            ...(isSameTrack ? {} : { elapsedTime: 0, totalTime: 0 }),
           };
         }),
       setAppleMusicStorefrontId: (storefrontId) =>
