@@ -240,14 +240,18 @@ function CoverImage({
   currentIndex: number;
   onPlayTrackInPlace?: (index: number) => void;
 }) {
-  // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
-  // Use higher resolution images for karaoke mode (non-iPod)
+  // Use track's cover. Apple Music supplies a fully resolved URL; YouTube
+  // tracks fall back to a thumbnail derived from the video ID. Karaoke mode
+  // uses higher-res variants.
   const videoId = track?.url ? getYouTubeVideoId(track.url) : null;
   const youtubeThumbnail = videoId
     ? `https://img.youtube.com/vi/${videoId}/${ipodMode ? "mqdefault" : "hqdefault"}.jpg`
     : null;
   const kugouImageSize = ipodMode ? 400 : 800;
-  const coverUrl = formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
+  const coverUrl =
+    track?.source === "appleMusic"
+      ? track.cover ?? null
+      : formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
   // Handle disc click - play track if different, otherwise toggle play/pause
   const handleDiscClick = useCallback(() => {

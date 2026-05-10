@@ -19,6 +19,12 @@ export const KRC_DECRYPTION_KEY = [64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49,
 // YouTube video ID format: 11 characters, alphanumeric with - and _
 export const YOUTUBE_VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
 
+// Apple Music ID format: prefixed with `am:` followed by a catalog song ID
+// (numeric, e.g. "1616228595") or a library song ID (e.g. "i.uUZAkT3").
+// We use `am:` to namespace these alongside YouTube IDs so both can share
+// the song metadata / lyrics cache infrastructure in Redis.
+export const APPLE_MUSIC_ID_REGEX = /^am:[A-Za-z0-9._-]{1,64}$/;
+
 /**
  * Prefixes to skip when parsing lyrics (credits, production info, etc.)
  * Must match client-side parser (krcParser.ts) for consistent line counts

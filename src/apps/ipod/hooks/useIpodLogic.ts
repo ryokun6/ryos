@@ -13,6 +13,8 @@ import { useActivityState } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
+import { useAppleMusicLibrary } from "./useAppleMusicLibrary";
+import { useMusicKit } from "@/hooks/useMusicKit";
 import {
   useIpodStore,
   Track,
@@ -68,8 +70,11 @@ export function useIpodLogic({
 
   // Store state
   const {
-    tracks,
-    currentSongId,
+    youtubeTracks,
+    youtubeCurrentSongId,
+    appleMusicTracks,
+    appleMusicCurrentSongId,
+    librarySource,
     loopCurrent,
     loopAll,
     isShuffled,
@@ -78,8 +83,11 @@ export function useIpodLogic({
     backlightOn,
   } = useIpodStore(
     useShallow((s) => ({
-      tracks: s.tracks,
-      currentSongId: s.currentSongId,
+      youtubeTracks: s.tracks,
+      youtubeCurrentSongId: s.currentSongId,
+      appleMusicTracks: s.appleMusicTracks,
+      appleMusicCurrentSongId: s.appleMusicCurrentSongId,
+      librarySource: s.librarySource,
       loopCurrent: s.loopCurrent,
       loopAll: s.loopAll,
       isShuffled: s.isShuffled,
@@ -88,6 +96,15 @@ export function useIpodLogic({
       backlightOn: s.backlightOn,
     }))
   );
+
+  // Active library — when the user toggles between YouTube and Apple Music,
+  // the iPod displays whichever slice is selected without rewriting the rest
+  // of the hook's logic. Each slice has its own current-song pointer.
+  const isAppleMusic = librarySource === "appleMusic";
+  const tracks = isAppleMusic ? appleMusicTracks : youtubeTracks;
+  const currentSongId = isAppleMusic
+    ? appleMusicCurrentSongId
+    : youtubeCurrentSongId;
 
   // Compute currentIndex from currentSongId
   const currentIndex = useMemo(() => {
@@ -110,7 +127,9 @@ export function useIpodLogic({
     lyricsTranslationLanguage,
     isFullScreen,
     toggleFullScreen,
-    setCurrentSongId,
+    setYoutubeCurrentSongId,
+    setAppleMusicCurrentSongId,
+    setLibrarySource,
     toggleLoopAll,
     toggleLoopCurrent,
     toggleShuffle,
@@ -122,8 +141,10 @@ export function useIpodLogic({
     setTheme,
     clearLibrary,
     // addTrackFromVideoId - accessed via store.getState() directly
-    nextTrack,
-    previousTrack,
+    youtubeNextTrack,
+    youtubePreviousTrack,
+    appleMusicNextTrack,
+    appleMusicPreviousTrack,
     refreshLyrics,
     setTrackLyricsSource,
     clearTrackLyricsSource,
@@ -143,7 +164,9 @@ export function useIpodLogic({
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     isFullScreen: s.isFullScreen,
     toggleFullScreen: s.toggleFullScreen,
-    setCurrentSongId: s.setCurrentSongId,
+    setYoutubeCurrentSongId: s.setCurrentSongId,
+    setAppleMusicCurrentSongId: s.setAppleMusicCurrentSongId,
+    setLibrarySource: s.setLibrarySource,
     toggleLoopAll: s.toggleLoopAll,
     toggleLoopCurrent: s.toggleLoopCurrent,
     toggleShuffle: s.toggleShuffle,
@@ -153,8 +176,10 @@ export function useIpodLogic({
     toggleBacklight: s.toggleBacklight,
     setTheme: s.setTheme,
     clearLibrary: s.clearLibrary,
-    nextTrack: s.nextTrack,
-    previousTrack: s.previousTrack,
+    youtubeNextTrack: s.nextTrack,
+    youtubePreviousTrack: s.previousTrack,
+    appleMusicNextTrack: s.appleMusicNextTrack,
+    appleMusicPreviousTrack: s.appleMusicPreviousTrack,
     refreshLyrics: s.refreshLyrics,
     setTrackLyricsSource: s.setTrackLyricsSource,
     clearTrackLyricsSource: s.clearTrackLyricsSource,
@@ -162,6 +187,17 @@ export function useIpodLogic({
     setLyricOffset: s.setLyricOffset,
     setCurrentFuriganaMap: s.setCurrentFuriganaMap,
   }));
+
+  // Pick navigation methods + setter based on the active library. Apple
+  // Music has its own queue / shuffle pointers in the store so YouTube
+  // history isn't mixed with Apple Music playback.
+  const setCurrentSongId = isAppleMusic
+    ? setAppleMusicCurrentSongId
+    : setYoutubeCurrentSongId;
+  const nextTrack = isAppleMusic ? appleMusicNextTrack : youtubeNextTrack;
+  const previousTrack = isAppleMusic
+    ? appleMusicPreviousTrack
+    : youtubePreviousTrack;
 
   // Auth for protected operations (force refresh, change lyrics source)
   const { username, isAuthenticated } = useChatsStore(
@@ -172,12 +208,51 @@ export function useIpodLogic({
     [username, isAuthenticated]
   );
 
+  // ---------------------------------------------------------------------
+  // MusicKit (Apple Music) integration
+  // ---------------------------------------------------------------------
+  // Lazily configure MusicKit only after the iPod window is open at least
+  // once OR the user has already opted into Apple Music. This avoids
+  // pulling the v3 script on first paint for users that never use the
+  // Apple Music mode.
+  const enableMusicKit =
+    isAppleMusic || isWindowOpen || appleMusicCurrentSongId !== null;
+  const {
+    instance: musicKitInstance,
+    isAuthorized: appleMusicAuthorized,
+    status: musicKitStatus,
+    authorize: musicKitAuthorize,
+    unauthorize: musicKitUnauthorize,
+  } = useMusicKit({ enabled: enableMusicKit });
+
+  // Auto-load library after auth + when Apple Music is the active source.
+  const { refresh: refreshAppleMusicLibrary } = useAppleMusicLibrary({
+    enabled: isAppleMusic,
+    isAuthorized: appleMusicAuthorized,
+  });
+
+  const appleMusicLibraryLoading = useIpodStore(
+    (s) => s.appleMusicLibraryLoading
+  );
+  const appleMusicLibraryError = useIpodStore(
+    (s) => s.appleMusicLibraryError
+  );
+  const appleMusicLibrarySize = useIpodStore(
+    (s) => s.appleMusicTracks.length
+  );
+
 
   const lyricOffset = useIpodStore(
     (s) => {
-      const track = s.currentSongId 
-        ? s.tracks.find((t) => t.id === s.currentSongId) 
-        : s.tracks[0];
+      const sourceTracks =
+        s.librarySource === "appleMusic" ? s.appleMusicTracks : s.tracks;
+      const sourceCurrentId =
+        s.librarySource === "appleMusic"
+          ? s.appleMusicCurrentSongId
+          : s.currentSongId;
+      const track = sourceCurrentId
+        ? sourceTracks.find((t) => t.id === sourceCurrentId)
+        : sourceTracks[0];
       return track?.lyricOffset ?? 0;
     }
   );
@@ -405,6 +480,104 @@ export function useIpodLogic({
     memoizedChangeTheme(nextTheme);
   }, [memoizedChangeTheme]);
 
+  // -------------------------------------------------------------------
+  // Apple Music handlers (defined here so the menu builders below can
+  // reference them via useMemo).
+  // -------------------------------------------------------------------
+
+  const handleAppleMusicSignIn = useCallback(async () => {
+    registerActivity();
+    if (musicKitStatus === "missing-token") {
+      toast.error("Apple Music is not configured", {
+        description:
+          "Set MUSICKIT_TEAM_ID, MUSICKIT_KEY_ID, and MUSICKIT_PRIVATE_KEY.",
+      });
+      return;
+    }
+    try {
+      await musicKitAuthorize();
+      showStatus(t("apps.ipod.status.appleMusicSignedIn", "Apple Music ✓"));
+    } catch (err) {
+      toast.error("Sign in failed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [musicKitAuthorize, musicKitStatus, registerActivity, showStatus, t]);
+
+  const handleAppleMusicSignOut = useCallback(async () => {
+    registerActivity();
+    setIsPlaying(false);
+    await musicKitUnauthorize();
+    useIpodStore.getState().setAppleMusicTracks([]);
+    showStatus(t("apps.ipod.status.appleMusicSignedOut", "Signed Out"));
+  }, [musicKitUnauthorize, registerActivity, setIsPlaying, showStatus, t]);
+
+  const handleAppleMusicRefresh = useCallback(async () => {
+    registerActivity();
+    if (!appleMusicAuthorized) {
+      void handleAppleMusicSignIn();
+      return;
+    }
+    try {
+      const count = await refreshAppleMusicLibrary();
+      showStatus(
+        t(
+          "apps.ipod.status.appleMusicLibrarySynced",
+          `Library: ${count} songs`,
+          { count }
+        )
+      );
+    } catch (err) {
+      toast.error("Library refresh failed", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [
+    appleMusicAuthorized,
+    handleAppleMusicSignIn,
+    refreshAppleMusicLibrary,
+    registerActivity,
+    showStatus,
+    t,
+  ]);
+
+  const handleSwitchToYoutube = useCallback(() => {
+    registerActivity();
+    if (librarySource === "youtube") return;
+    setLibrarySource("youtube");
+    setMenuMode(true);
+    showStatus(t("apps.ipod.status.libraryYoutube", "Library: YouTube"));
+  }, [librarySource, registerActivity, setLibrarySource, showStatus, t]);
+
+  const handleSwitchToAppleMusic = useCallback(() => {
+    registerActivity();
+    if (librarySource === "appleMusic") return;
+    setLibrarySource("appleMusic");
+    setMenuMode(true);
+    showStatus(
+      t("apps.ipod.status.libraryAppleMusic", "Library: Apple Music")
+    );
+    if (musicKitStatus === "missing-token") {
+      toast.error("Apple Music is not configured", {
+        description:
+          "Set MUSICKIT_TEAM_ID / MUSICKIT_KEY_ID / MUSICKIT_PRIVATE_KEY",
+      });
+      return;
+    }
+    if (!appleMusicAuthorized) {
+      void handleAppleMusicSignIn();
+    }
+  }, [
+    appleMusicAuthorized,
+    handleAppleMusicSignIn,
+    librarySource,
+    musicKitStatus,
+    registerActivity,
+    setLibrarySource,
+    showStatus,
+    t,
+  ]);
+
   // Backlight timer
   useEffect(() => {
     if (backlightTimerRef.current) {
@@ -612,6 +785,10 @@ export function useIpodLogic({
   }, [tracks, registerActivity, setCurrentSongId, setIsPlaying, toggleVideo, isOffline, showOfflineStatus, t]);
 
   const settingsMenuItems = useMemo(() => {
+    const sourceLabel = isAppleMusic
+      ? t("apps.ipod.menuItems.libraryAppleMusic", "Apple Music")
+      : t("apps.ipod.menuItems.libraryYoutube", "YouTube");
+
     return [
       {
         label: t("apps.ipod.menuItems.repeat"),
@@ -646,8 +823,53 @@ export function useIpodLogic({
             ? t("apps.ipod.menu.black")
             : t("apps.ipod.menu.u2"),
       },
+      {
+        label: t("apps.ipod.menuItems.librarySource", "Library"),
+        action: () => {
+          if (isAppleMusic) {
+            handleSwitchToYoutube();
+          } else {
+            handleSwitchToAppleMusic();
+          }
+        },
+        showChevron: false,
+        value: sourceLabel,
+      },
+      {
+        label: appleMusicAuthorized
+          ? t("apps.ipod.menuItems.appleMusicSignOut", "Apple Music: Sign Out")
+          : t("apps.ipod.menuItems.appleMusicSignIn", "Apple Music: Sign In"),
+        action: appleMusicAuthorized
+          ? () => void handleAppleMusicSignOut()
+          : () => void handleAppleMusicSignIn(),
+        showChevron: false,
+        value:
+          musicKitStatus === "missing-token"
+            ? t("apps.ipod.menuItems.unconfigured", "Unconfigured")
+            : appleMusicAuthorized
+            ? t("apps.ipod.menuItems.signedIn", "Signed In")
+            : t("apps.ipod.menuItems.signedOut", "Signed Out"),
+      },
     ];
-  }, [loopCurrent, loopAll, isShuffled, backlightOn, theme, memoizedToggleRepeat, memoizedToggleShuffle, memoizedToggleBacklight, memoizedHandleThemeChange, t]);
+  }, [
+    loopCurrent,
+    loopAll,
+    isShuffled,
+    backlightOn,
+    theme,
+    memoizedToggleRepeat,
+    memoizedToggleShuffle,
+    memoizedToggleBacklight,
+    memoizedHandleThemeChange,
+    isAppleMusic,
+    appleMusicAuthorized,
+    musicKitStatus,
+    handleSwitchToYoutube,
+    handleSwitchToAppleMusic,
+    handleAppleMusicSignIn,
+    handleAppleMusicSignOut,
+    t,
+  ]);
 
   const mainMenuItems = useMemo(() => {
     const musicLabel = t("apps.ipod.menuItems.music");
@@ -937,6 +1159,13 @@ export function useIpodLogic({
 
   const processVideoId = useCallback(
     async (videoId: string) => {
+      // YouTube share URLs always target the YouTube library — switch the
+      // active source first so the shared track lands in the right slice
+      // and uses the right setter / nav methods.
+      if (useIpodStore.getState().librarySource !== "youtube") {
+        setLibrarySource("youtube");
+      }
+
       const currentTracks = useIpodStore.getState().tracks;
       const existingTrack = currentTracks.find((track) => track.id === videoId);
       const shouldAutoplay = !(isIOS || isSafari);
@@ -944,7 +1173,7 @@ export function useIpodLogic({
       if (existingTrack) {
         toast.info(t("apps.ipod.dialogs.openedSharedTrack"));
         startTrackSwitch();
-        setCurrentSongId(videoId);
+        setYoutubeCurrentSongId(videoId);
         if (shouldAutoplay) setIsPlaying(true);
         setMenuMode(false);
       } else {
@@ -961,7 +1190,7 @@ export function useIpodLogic({
         }
       }
     },
-    [setCurrentSongId, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
+    [setLibrarySource, setYoutubeCurrentSongId, setIsPlaying, handleAddTrack, isOffline, showOfflineStatus, t, isIOS, isSafari, startTrackSwitch]
   );
 
   // Initial data handling
@@ -1593,6 +1822,12 @@ export function useIpodLogic({
   // Cover URL for paused state overlay in fullscreen
   const fullscreenCoverUrl = useMemo(() => {
     if (!currentTrack) return null;
+    if (currentTrack.source === "appleMusic") {
+      // Apple Music returns a templated URL ({w}/{h} placeholders) which is
+      // already substituted to 600px when we ingest the library track. Use
+      // it as-is in fullscreen as well.
+      return currentTrack.cover ?? null;
+    }
     const videoId = getYouTubeVideoId(currentTrack.url);
     const youtubeThumbnail = videoId
       ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
@@ -1629,7 +1864,13 @@ export function useIpodLogic({
   );
 
   const getCurrentStoreTrack = useCallback(() => {
-    return useIpodStore.getState().getCurrentTrack();
+    const state = useIpodStore.getState();
+    if (state.librarySource === "appleMusic") {
+      const id = state.appleMusicCurrentSongId;
+      if (!id) return state.appleMusicTracks[0] ?? null;
+      return state.appleMusicTracks.find((t) => t.id === id) ?? null;
+    }
+    return state.getCurrentTrack();
   }, []);
 
   // Volume from audio settings store
@@ -1927,6 +2168,22 @@ export function useIpodLogic({
     // Translation
     t,
     translatedHelpItems,
+
+    // Apple Music / library source
+    librarySource,
+    isAppleMusic,
+    musicKitInstance,
+    musicKitStatus,
+    appleMusicAuthorized,
+    appleMusicLibraryLoading,
+    appleMusicLibraryError,
+    appleMusicLibrarySize,
+    handleAppleMusicSignIn,
+    handleAppleMusicSignOut,
+    handleAppleMusicRefresh,
+    handleSwitchToYoutube,
+    handleSwitchToAppleMusic,
+    setLibrarySource,
 
     // Store state
     tracks,

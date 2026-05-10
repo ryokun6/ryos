@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { AppProps, IpodInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { IpodMenuBar } from "./IpodMenuBar";
+import { AppleMusicPlayerBridge } from "./AppleMusicPlayerBridge";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -163,6 +164,16 @@ export function IpodAppComponent({
     setLyricOffset,
     adjustLyricOffset,
     getCurrentStoreTrack,
+    // Apple Music
+    librarySource,
+    appleMusicAuthorized,
+    musicKitStatus,
+    appleMusicLibrarySize,
+    handleAppleMusicSignIn,
+    handleAppleMusicSignOut,
+    handleAppleMusicRefresh,
+    handleSwitchToYoutube,
+    handleSwitchToAppleMusic,
   } = useIpodLogic({ isWindowOpen, isForeground, initialData, instanceId });
 
   const displayModeOptions = [
@@ -203,6 +214,20 @@ export function IpodAppComponent({
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
+      librarySource={librarySource}
+      appleMusicAuthorized={appleMusicAuthorized}
+      musicKitConfigured={musicKitStatus !== "missing-token"}
+      appleMusicLibrarySize={appleMusicLibrarySize}
+      onSwitchLibrary={(source) => {
+        if (source === "appleMusic") {
+          handleSwitchToAppleMusic();
+        } else {
+          handleSwitchToYoutube();
+        }
+      }}
+      onAppleMusicSignIn={handleAppleMusicSignIn}
+      onAppleMusicSignOut={handleAppleMusicSignOut}
+      onAppleMusicRefresh={handleAppleMusicRefresh}
     />
   );
   const shouldAnimateFullScreenVisuals = isPlaying && (isForeground ?? true);
@@ -538,41 +563,65 @@ export function IpodAppComponent({
                     >
                       {tracks[currentIndex] && (
                         <div className="w-full h-full pointer-events-none">
-                          <ReactPlayer
-                            ref={fullScreenPlayerRef}
-                            url={tracks[currentIndex].url}
-                            playing={isPlaying && isFullScreen}
-                            controls
-                            width="100%"
-                            height="100%"
-                            volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
-                            loop={loopCurrent}
-                            onEnded={handleTrackEnd}
-                            onProgress={handleProgress}
-                            onDuration={handleDuration}
-                            onPlay={handlePlay}
-                            onPause={handlePause}
-                            onReady={handleReady}
-                            config={{
-                              youtube: {
-                                playerVars: {
-                                  modestbranding: 1,
-                                  rel: 0,
-                                  showinfo: 0,
-                                  iv_load_policy: 3,
-                                  cc_load_policy: 0,
-                                  fs: 1,
-                                  playsinline: 1,
-                                  enablejsapi: 1,
-                                  origin: window.location.origin,
+                          {tracks[currentIndex].source === "appleMusic" ? (
+                            <AppleMusicPlayerBridge
+                              ref={
+                                fullScreenPlayerRef as unknown as React.RefObject<never>
+                              }
+                              currentTrack={tracks[currentIndex]}
+                              playing={isPlaying && isFullScreen}
+                              volume={
+                                ipodVolume *
+                                useAudioSettingsStore.getState().masterVolume
+                              }
+                              onProgress={handleProgress}
+                              onDuration={handleDuration}
+                              onPlay={handlePlay}
+                              onPause={handlePause}
+                              onEnded={handleTrackEnd}
+                              onReady={handleReady}
+                            />
+                          ) : (
+                            <ReactPlayer
+                              ref={fullScreenPlayerRef}
+                              url={tracks[currentIndex].url}
+                              playing={isPlaying && isFullScreen}
+                              controls
+                              width="100%"
+                              height="100%"
+                              volume={
+                                ipodVolume *
+                                useAudioSettingsStore.getState().masterVolume
+                              }
+                              loop={loopCurrent}
+                              onEnded={handleTrackEnd}
+                              onProgress={handleProgress}
+                              onDuration={handleDuration}
+                              onPlay={handlePlay}
+                              onPause={handlePause}
+                              onReady={handleReady}
+                              config={{
+                                youtube: {
+                                  playerVars: {
+                                    modestbranding: 1,
+                                    rel: 0,
+                                    showinfo: 0,
+                                    iv_load_policy: 3,
+                                    cc_load_policy: 0,
+                                    fs: 1,
+                                    playsinline: 1,
+                                    enablejsapi: 1,
+                                    origin: window.location.origin,
+                                  },
+                                  embedOptions: {
+                                    referrerPolicy:
+                                      "strict-origin-when-cross-origin",
+                                  },
                                 },
-                                embedOptions: {
-                                  referrerPolicy: "strict-origin-when-cross-origin",
-                                },
-                              },
-                            }}
-                            progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
-                          />
+                              }}
+                              progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
+                            />
+                          )}
                         </div>
                       )}
                     </div>

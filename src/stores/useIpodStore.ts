@@ -32,6 +32,20 @@ export interface LyricsSource {
   album?: string;
 }
 
+/** Library source the iPod is currently displaying. */
+export type LibrarySource = "youtube" | "appleMusic";
+
+/** Apple Music play parameters needed for `setQueue` (catalog vs library). */
+export interface AppleMusicPlayParams {
+  /** Catalog song ID (numeric string) when available — preferred for setQueue. */
+  catalogId?: string;
+  /** Library song ID (`i.<hash>` form) for personal library tracks. */
+  libraryId?: string;
+  /** MusicKit kind, e.g. "song", "library-song". */
+  kind: string;
+  isLibrary?: boolean;
+}
+
 // Define the Track type (can be shared or defined here)
 export interface Track {
   id: string;
@@ -51,6 +65,12 @@ export interface Track {
   importOrder?: number;
   /** Last metadata update from server (ms); tiebreaker for list order */
   updatedAt?: number;
+  /** Origin of this track. Defaults to "youtube" when unset for back-compat. */
+  source?: LibrarySource;
+  /** Track duration in milliseconds (Apple Music exposes this up front). */
+  durationMs?: number;
+  /** Apple Music play parameters used to drive MusicKit playback. */
+  appleMusicPlayParams?: AppleMusicPlayParams;
 }
 
 type LibraryState = "uninitialized" | "loaded" | "cleared";
@@ -96,6 +116,23 @@ interface IpodData {
   elapsedTime: number;
   /** Total duration of current track in seconds (not persisted, synced from ReactPlayer) */
   totalTime: number;
+
+  // ---------- Apple Music slice ----------
+
+  /** Which library is currently active (default "youtube"). */
+  librarySource: LibrarySource;
+  /** Tracks fetched from the user's Apple Music library (not persisted). */
+  appleMusicTracks: Track[];
+  /** Currently selected song id within the Apple Music library. */
+  appleMusicCurrentSongId: string | null;
+  /** Last time the Apple Music library was synced (epoch ms). */
+  appleMusicLibraryLoadedAt: number | null;
+  /** True while a library refresh is in flight. */
+  appleMusicLibraryLoading: boolean;
+  /** Error from the most recent library fetch, if any. */
+  appleMusicLibraryError: string | null;
+  /** Cached storefront ID reported by MusicKit (e.g. "us"). */
+  appleMusicStorefrontId: string | null;
 }
 
 // ============================================================================
@@ -227,6 +264,14 @@ const initialIpodData: IpodData = {
   historyPosition: -1,
   elapsedTime: 0,
   totalTime: 0,
+
+  librarySource: "youtube",
+  appleMusicTracks: [],
+  appleMusicCurrentSongId: null,
+  appleMusicLibraryLoadedAt: null,
+  appleMusicLibraryLoading: false,
+  appleMusicLibraryError: null,
+  appleMusicStorefrontId: null,
 };
 
 /** Helper to get current index from song ID */
@@ -310,6 +355,25 @@ export interface IpodState extends IpodData {
   setElapsedTime: (time: number) => void;
   /** Update total duration of current track (called from ReactPlayer) */
   setTotalTime: (time: number) => void;
+
+  // ---------- Apple Music actions ----------
+
+  /** Switch between the YouTube and Apple Music libraries. */
+  setLibrarySource: (source: LibrarySource) => void;
+  /** Replace the cached Apple Music library with the supplied tracks. */
+  setAppleMusicTracks: (tracks: Track[]) => void;
+  /** Mark a library load as in-flight (or finished). */
+  setAppleMusicLibraryLoading: (loading: boolean) => void;
+  /** Persist any error from the latest library fetch. */
+  setAppleMusicLibraryError: (error: string | null) => void;
+  /** Update the currently selected Apple Music song. */
+  setAppleMusicCurrentSongId: (songId: string | null) => void;
+  /** Move to the next Apple Music track (respects shuffle/loop settings). */
+  appleMusicNextTrack: () => void;
+  /** Move to the previous Apple Music track (respects shuffle/loop). */
+  appleMusicPreviousTrack: () => void;
+  /** Cache the user's storefront for catalog API calls. */
+  setAppleMusicStorefrontId: (storefrontId: string | null) => void;
 }
 
 const CURRENT_IPOD_STORE_VERSION = 32; // Korean romanization on by default for lyrics
@@ -880,48 +944,70 @@ export const useIpodStore = create<IpodState>()(
       adjustLyricOffset: (trackIndex, deltaMs) => {
         // Validate before calling set() to avoid unnecessary state updates
         const state = get();
+        const sourceTracks =
+          state.librarySource === "appleMusic"
+            ? state.appleMusicTracks
+            : state.tracks;
         if (
           trackIndex < 0 ||
-          trackIndex >= state.tracks.length ||
+          trackIndex >= sourceTracks.length ||
           Number.isNaN(deltaMs)
         ) {
           return;
         }
 
-        const current = state.tracks[trackIndex];
+        const current = sourceTracks[trackIndex];
         const newOffset = (current.lyricOffset || 0) + deltaMs;
 
-        // Only update the single track that changed using map
-        set((s) => ({
-          tracks: s.tracks.map((track, i) =>
-            i === trackIndex ? { ...track, lyricOffset: newOffset } : track
-          ),
-        }));
+        if (state.librarySource === "appleMusic") {
+          set((s) => ({
+            appleMusicTracks: s.appleMusicTracks.map((track, i) =>
+              i === trackIndex ? { ...track, lyricOffset: newOffset } : track
+            ),
+          }));
+        } else {
+          set((s) => ({
+            tracks: s.tracks.map((track, i) =>
+              i === trackIndex ? { ...track, lyricOffset: newOffset } : track
+            ),
+          }));
+        }
 
-        // Side effect moved outside set() for cleaner separation
+        // Persist server-side. The endpoint accepts both YouTube (11-char)
+        // and Apple Music (`am:<id>`) keys via the relaxed validator.
         debouncedSaveLyricOffset(current.id, newOffset);
       },
       setLyricOffset: (trackIndex, offsetMs) => {
         // Validate before calling set() to avoid unnecessary state updates
         const state = get();
+        const sourceTracks =
+          state.librarySource === "appleMusic"
+            ? state.appleMusicTracks
+            : state.tracks;
         if (
           trackIndex < 0 ||
-          trackIndex >= state.tracks.length ||
+          trackIndex >= sourceTracks.length ||
           Number.isNaN(offsetMs)
         ) {
           return;
         }
 
-        const trackId = state.tracks[trackIndex].id;
+        const trackId = sourceTracks[trackIndex].id;
 
-        // Only update the single track that changed using map
-        set((s) => ({
-          tracks: s.tracks.map((track, i) =>
-            i === trackIndex ? { ...track, lyricOffset: offsetMs } : track
-          ),
-        }));
+        if (state.librarySource === "appleMusic") {
+          set((s) => ({
+            appleMusicTracks: s.appleMusicTracks.map((track, i) =>
+              i === trackIndex ? { ...track, lyricOffset: offsetMs } : track
+            ),
+          }));
+        } else {
+          set((s) => ({
+            tracks: s.tracks.map((track, i) =>
+              i === trackIndex ? { ...track, lyricOffset: offsetMs } : track
+            ),
+          }));
+        }
 
-        // Side effect moved outside set() for cleaner separation
         debouncedSaveLyricOffset(trackId, offsetMs);
       },
       setLyricsAlignment: (alignment) => {
@@ -1544,6 +1630,146 @@ export const useIpodStore = create<IpodState>()(
       },
       setElapsedTime: (time) => set({ elapsedTime: time }),
       setTotalTime: (time) => set({ totalTime: time }),
+
+      // -----------------------------------------------------------------
+      // Apple Music actions
+      // -----------------------------------------------------------------
+      setLibrarySource: (source) => {
+        if (get().librarySource === source) return;
+        // Pause and reset transient playback state so the YouTube /
+        // Apple Music players don't fight for the audio element when
+        // we hot-swap libraries.
+        set({
+          librarySource: source,
+          isPlaying: false,
+          elapsedTime: 0,
+          totalTime: 0,
+          currentLyrics: null,
+          currentFuriganaMap: null,
+        });
+      },
+      setAppleMusicTracks: (tracks) => {
+        const validIds = new Set(tracks.map((t) => t.id));
+        set((state) => {
+          const stillValidCurrent =
+            state.appleMusicCurrentSongId &&
+            validIds.has(state.appleMusicCurrentSongId)
+              ? state.appleMusicCurrentSongId
+              : tracks[0]?.id ?? null;
+          return {
+            appleMusicTracks: tracks,
+            appleMusicCurrentSongId: stillValidCurrent,
+            appleMusicLibraryLoadedAt: Date.now(),
+            appleMusicLibraryLoading: false,
+            appleMusicLibraryError: null,
+          };
+        });
+      },
+      setAppleMusicLibraryLoading: (loading) =>
+        set({ appleMusicLibraryLoading: loading }),
+      setAppleMusicLibraryError: (error) =>
+        set({
+          appleMusicLibraryError: error,
+          appleMusicLibraryLoading: false,
+        }),
+      setAppleMusicCurrentSongId: (songId) =>
+        set((state) => {
+          if (state.appleMusicCurrentSongId === songId) return {};
+          // Reset transient progress + lyrics whenever the active track changes.
+          return {
+            appleMusicCurrentSongId: songId,
+            currentLyrics: null,
+            currentFuriganaMap: null,
+            elapsedTime: 0,
+            totalTime: 0,
+          };
+        }),
+      appleMusicNextTrack: () =>
+        set((state) => {
+          const tracks = state.appleMusicTracks;
+          if (tracks.length === 0) {
+            return {
+              appleMusicCurrentSongId: null,
+              currentLyrics: null,
+              currentFuriganaMap: null,
+            };
+          }
+
+          let nextSongId: string | null;
+
+          if (state.loopCurrent) {
+            nextSongId = state.appleMusicCurrentSongId;
+          } else if (state.isShuffled) {
+            // Lightweight shuffle — avoid the current track when possible.
+            const others = tracks.filter(
+              (t) => t.id !== state.appleMusicCurrentSongId
+            );
+            const pool = others.length > 0 ? others : tracks;
+            nextSongId = pool[Math.floor(Math.random() * pool.length)]?.id ?? null;
+          } else {
+            const currentIndex = tracks.findIndex(
+              (t) => t.id === state.appleMusicCurrentSongId
+            );
+            const nextIndex =
+              currentIndex === -1
+                ? 0
+                : (currentIndex + 1) % tracks.length;
+            if (!state.loopAll && nextIndex === 0 && currentIndex !== -1) {
+              return {
+                appleMusicCurrentSongId:
+                  tracks[tracks.length - 1]?.id ?? null,
+                isPlaying: false,
+              };
+            }
+            nextSongId = tracks[nextIndex]?.id ?? null;
+          }
+
+          const isSameTrack = nextSongId === state.appleMusicCurrentSongId;
+          return {
+            appleMusicCurrentSongId: nextSongId,
+            currentLyrics: isSameTrack ? state.currentLyrics : null,
+            currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
+            isPlaying: true,
+          };
+        }),
+      appleMusicPreviousTrack: () =>
+        set((state) => {
+          const tracks = state.appleMusicTracks;
+          if (tracks.length === 0) {
+            return {
+              appleMusicCurrentSongId: null,
+              currentLyrics: null,
+              currentFuriganaMap: null,
+            };
+          }
+
+          let prevSongId: string | null;
+
+          if (state.isShuffled) {
+            const others = tracks.filter(
+              (t) => t.id !== state.appleMusicCurrentSongId
+            );
+            const pool = others.length > 0 ? others : tracks;
+            prevSongId = pool[Math.floor(Math.random() * pool.length)]?.id ?? null;
+          } else {
+            const currentIndex = tracks.findIndex(
+              (t) => t.id === state.appleMusicCurrentSongId
+            );
+            const prevIndex =
+              currentIndex <= 0 ? tracks.length - 1 : currentIndex - 1;
+            prevSongId = tracks[prevIndex]?.id ?? null;
+          }
+
+          const isSameTrack = prevSongId === state.appleMusicCurrentSongId;
+          return {
+            appleMusicCurrentSongId: prevSongId,
+            currentLyrics: isSameTrack ? state.currentLyrics : null,
+            currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
+            isPlaying: true,
+          };
+        }),
+      setAppleMusicStorefrontId: (storefrontId) =>
+        set({ appleMusicStorefrontId: storefrontId }),
     }),
     {
       name: "ryos:ipod", // Unique name for localStorage persistence
@@ -1567,6 +1793,10 @@ export const useIpodStore = create<IpodState>()(
         isFullScreen: state.isFullScreen,
         libraryState: state.libraryState,
         lastKnownVersion: state.lastKnownVersion,
+        // Apple Music: persist user choice + last-played track. The library
+        // itself is volatile and re-fetched on mode switch.
+        librarySource: state.librarySource,
+        appleMusicCurrentSongId: state.appleMusicCurrentSongId,
       }),
       migrate: (persistedState, version) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1669,6 +1899,9 @@ export const useIpodStore = create<IpodState>()(
           lyricsTranslationLanguage: state.lyricsTranslationLanguage,
           isFullScreen: state.isFullScreen,
           libraryState: state.libraryState,
+          librarySource:
+            (state.librarySource as LibrarySource) ?? "youtube",
+          appleMusicCurrentSongId: state.appleMusicCurrentSongId ?? null,
         } as IpodState;
       },
       onRehydrateStorage: () => {

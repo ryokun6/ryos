@@ -35,6 +35,15 @@ interface IpodMenuBarProps {
   onRefreshLyrics?: () => void;
   onAdjustTiming?: () => void;
   onToggleCoverFlow?: () => void;
+  // Apple Music integration
+  librarySource?: "youtube" | "appleMusic";
+  appleMusicAuthorized?: boolean;
+  musicKitConfigured?: boolean;
+  appleMusicLibrarySize?: number;
+  onSwitchLibrary?: (source: "youtube" | "appleMusic") => void;
+  onAppleMusicSignIn?: () => void;
+  onAppleMusicSignOut?: () => void;
+  onAppleMusicRefresh?: () => void;
 }
 
 export function IpodMenuBar({
@@ -48,6 +57,14 @@ export function IpodMenuBar({
   onRefreshLyrics,
   onAdjustTiming,
   onToggleCoverFlow,
+  librarySource = "youtube",
+  appleMusicAuthorized = false,
+  musicKitConfigured = true,
+  appleMusicLibrarySize = 0,
+  onSwitchLibrary,
+  onAppleMusicSignIn,
+  onAppleMusicSignOut,
+  onAppleMusicRefresh,
 }: IpodMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -70,8 +87,11 @@ export function IpodMenuBar({
     { label: "Русский", code: "ru" },
   ];
   const {
-    tracks,
-    currentSongId,
+    youtubeTracks,
+    youtubeCurrentSongId,
+    appleMusicTracks,
+    appleMusicCurrentSongId,
+    activeLibrarySource,
     isLoopAll,
     isLoopCurrent,
     isPlaying,
@@ -86,14 +106,17 @@ export function IpodMenuBar({
     romanization,
     lyricsTranslationLanguage,
     // Actions
-    setCurrentSongId,
+    setYoutubeCurrentSongId,
+    setAppleMusicCurrentSongId,
     setIsPlaying,
     toggleLoopAll,
     toggleLoopCurrent,
     toggleShuffle,
     togglePlay,
-    nextTrack,
-    previousTrack,
+    youtubeNext,
+    youtubePrevious,
+    appleMusicNext,
+    appleMusicPrevious,
     toggleBacklight,
     toggleVideo,
     setDisplayMode,
@@ -110,8 +133,11 @@ export function IpodMenuBar({
     exportLibrary,
   } = useIpodStoreShallow((s) => ({
     // State
-    tracks: s.tracks,
-    currentSongId: s.currentSongId,
+    youtubeTracks: s.tracks,
+    youtubeCurrentSongId: s.currentSongId,
+    appleMusicTracks: s.appleMusicTracks,
+    appleMusicCurrentSongId: s.appleMusicCurrentSongId,
+    activeLibrarySource: s.librarySource,
     isLoopAll: s.loopAll,
     isLoopCurrent: s.loopCurrent,
     isPlaying: s.isPlaying,
@@ -126,14 +152,17 @@ export function IpodMenuBar({
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     // Actions
-    setCurrentSongId: s.setCurrentSongId,
+    setYoutubeCurrentSongId: s.setCurrentSongId,
+    setAppleMusicCurrentSongId: s.setAppleMusicCurrentSongId,
     setIsPlaying: s.setIsPlaying,
     toggleLoopAll: s.toggleLoopAll,
     toggleLoopCurrent: s.toggleLoopCurrent,
     toggleShuffle: s.toggleShuffle,
     togglePlay: s.togglePlay,
-    nextTrack: s.nextTrack,
-    previousTrack: s.previousTrack,
+    youtubeNext: s.nextTrack,
+    youtubePrevious: s.previousTrack,
+    appleMusicNext: s.appleMusicNextTrack,
+    appleMusicPrevious: s.appleMusicPreviousTrack,
     toggleBacklight: s.toggleBacklight,
     toggleVideo: s.toggleVideo,
     setDisplayMode: s.setDisplayMode,
@@ -156,6 +185,20 @@ export function IpodMenuBar({
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";
+
+  // The menubar reflects whichever library is currently active so the
+  // "All Songs" / per-artist views stay in sync with what the iPod is
+  // actually showing on its screen.
+  const isAppleMusic = activeLibrarySource === "appleMusic";
+  const tracks = isAppleMusic ? appleMusicTracks : youtubeTracks;
+  const currentSongId = isAppleMusic
+    ? appleMusicCurrentSongId
+    : youtubeCurrentSongId;
+  const setCurrentSongId = isAppleMusic
+    ? setAppleMusicCurrentSongId
+    : setYoutubeCurrentSongId;
+  const nextTrack = isAppleMusic ? appleMusicNext : youtubeNext;
+  const previousTrack = isAppleMusic ? appleMusicPrevious : youtubePrevious;
 
   // Compute currentIndex from currentSongId
   const currentIndex = useMemo(() => {
@@ -762,6 +805,70 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.syncLibrary")}
           </MenubarItem>
+
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+          {/* Library source switch — toggles between the curated YouTube
+              library and the user's Apple Music library. */}
+          <MenubarCheckboxItem
+            checked={librarySource === "youtube"}
+            onCheckedChange={() => onSwitchLibrary?.("youtube")}
+            className="text-md h-6 pr-3"
+          >
+            {t("apps.ipod.menu.libraryYoutube", "YouTube Library")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={librarySource === "appleMusic"}
+            onCheckedChange={() => onSwitchLibrary?.("appleMusic")}
+            disabled={!musicKitConfigured}
+            className="text-md h-6 pr-3"
+          >
+            {t("apps.ipod.menu.libraryAppleMusic", "Apple Music")}
+            {appleMusicAuthorized && appleMusicLibrarySize > 0
+              ? ` (${appleMusicLibrarySize})`
+              : ""}
+          </MenubarCheckboxItem>
+
+          {musicKitConfigured && (
+            <>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              {appleMusicAuthorized ? (
+                <>
+                  <MenubarItem
+                    onClick={onAppleMusicRefresh}
+                    className="text-md h-6 px-3"
+                    disabled={!onAppleMusicRefresh}
+                  >
+                    {t(
+                      "apps.ipod.menu.refreshAppleMusic",
+                      "Refresh Apple Music"
+                    )}
+                  </MenubarItem>
+                  <MenubarItem
+                    onClick={onAppleMusicSignOut}
+                    className="text-md h-6 px-3"
+                    disabled={!onAppleMusicSignOut}
+                  >
+                    {t(
+                      "apps.ipod.menu.appleMusicSignOut",
+                      "Sign Out of Apple Music"
+                    )}
+                  </MenubarItem>
+                </>
+              ) : (
+                <MenubarItem
+                  onClick={onAppleMusicSignIn}
+                  className="text-md h-6 px-3"
+                  disabled={!onAppleMusicSignIn}
+                >
+                  {t(
+                    "apps.ipod.menu.appleMusicSignIn",
+                    "Sign In to Apple Music"
+                  )}
+                </MenubarItem>
+              )}
+            </>
+          )}
         </MenubarContent>
       </MenubarMenu>
 

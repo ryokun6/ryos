@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
+import { AppleMusicPlayerBridge } from "./AppleMusicPlayerBridge";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { useTranslation } from "react-i18next";
 import {
@@ -106,15 +107,21 @@ export function IpodScreen({
   const finalIpodVolume = ipodVolume * masterVolume;
   const shouldAnimateVisuals = showVideo && isPlaying;
 
+  const isAppleMusicTrack = currentTrack?.source === "appleMusic";
+
   // Cover URL for paused state overlay
   const coverUrl = useMemo(() => {
     if (!currentTrack) return null;
+    if (isAppleMusicTrack) {
+      // Apple Music supplies an https URL directly; no Kugou template here.
+      return currentTrack.cover ?? null;
+    }
     const videoId = getYouTubeVideoId(currentTrack.url);
     const youtubeThumbnail = videoId
       ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
       : null;
     return formatKugouImageUrl(currentTrack.cover, 400) ?? youtubeThumbnail;
-  }, [currentTrack]);
+  }, [currentTrack, isAppleMusicTrack]);
 
   // Reset refs when menu items change
   const resetItemRefs = (count: number) => {
@@ -263,45 +270,63 @@ export function IpodScreen({
               }
             }}
           >
-            {/* YouTube player - hidden when display mode is not Video (still provides audio) */}
-            <div className="w-full h-full" style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}>
-              <ReactPlayer
-                ref={playerRef}
-                url={currentTrack.url}
-                playing={isPlaying}
-                controls={showVideo && displayMode === DisplayMode.Video}
-                width="100%"
-                height="100%"
-                onEnded={!isFullScreen ? handleTrackEnd : undefined}
+            {/* Player — swaps between YouTube (ReactPlayer) and Apple Music
+                (MusicKit bridge) based on the active track's source. The
+                YouTube embed is hidden when display mode is not Video, but
+                still provides audio. */}
+            {isAppleMusicTrack ? (
+              <AppleMusicPlayerBridge
+                ref={playerRef as unknown as React.RefObject<never>}
+                currentTrack={currentTrack}
+                playing={isPlaying && !isFullScreen}
+                volume={finalIpodVolume}
                 onProgress={!isFullScreen ? handleProgress : undefined}
                 onDuration={!isFullScreen ? handleDuration : undefined}
                 onPlay={!isFullScreen ? handlePlay : undefined}
                 onPause={!isFullScreen ? handlePause : undefined}
+                onEnded={!isFullScreen ? handleTrackEnd : undefined}
                 onReady={!isFullScreen ? handleReady : undefined}
-                loop={loopCurrent}
-                volume={finalIpodVolume}
-                playsinline={true}
-                progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
-                config={{
-                  youtube: {
-                    playerVars: {
-                      modestbranding: 1,
-                      rel: 0,
-                      showinfo: 0,
-                      iv_load_policy: 3,
-                      fs: 0,
-                      disablekb: 1,
-                      playsinline: 1,
-                      enablejsapi: 1,
-                      origin: window.location.origin,
-                    },
-                    embedOptions: {
-                      referrerPolicy: "strict-origin-when-cross-origin",
-                    },
-                  },
-                }}
               />
-            </div>
+            ) : (
+              <div className="w-full h-full" style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}>
+                <ReactPlayer
+                  ref={playerRef}
+                  url={currentTrack.url}
+                  playing={isPlaying}
+                  controls={showVideo && displayMode === DisplayMode.Video}
+                  width="100%"
+                  height="100%"
+                  onEnded={!isFullScreen ? handleTrackEnd : undefined}
+                  onProgress={!isFullScreen ? handleProgress : undefined}
+                  onDuration={!isFullScreen ? handleDuration : undefined}
+                  onPlay={!isFullScreen ? handlePlay : undefined}
+                  onPause={!isFullScreen ? handlePause : undefined}
+                  onReady={!isFullScreen ? handleReady : undefined}
+                  loop={loopCurrent}
+                  volume={finalIpodVolume}
+                  playsinline={true}
+                  progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
+                  config={{
+                    youtube: {
+                      playerVars: {
+                        modestbranding: 1,
+                        rel: 0,
+                        showinfo: 0,
+                        iv_load_policy: 3,
+                        fs: 0,
+                        disablekb: 1,
+                        playsinline: 1,
+                        enablejsapi: 1,
+                        origin: window.location.origin,
+                      },
+                      embedOptions: {
+                        referrerPolicy: "strict-origin-when-cross-origin",
+                      },
+                    },
+                  }}
+                />
+              </div>
+            )}
 
             {/* Landscape video background */}
             {displayMode === DisplayMode.Landscapes && shouldAnimateVisuals && (

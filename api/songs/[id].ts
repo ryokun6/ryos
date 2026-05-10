@@ -48,7 +48,7 @@ import {
 } from "./_constants.js";
 
 import {
-  isValidYouTubeVideoId,
+  isValidSongId,
   stripParentheses,
   parseYouTubeTitleWithAI,
   msToLrcTime,
@@ -155,12 +155,17 @@ export default apiHandler<Record<string, unknown>>(
     return errorResponse("Song ID is required", 400);
   }
 
-  // Validate YouTube video ID format (allow GET to return 404 for unknown IDs)
-  if (!isValidYouTubeVideoId(songId)) {
+  // Validate song ID format. Accepts YouTube video IDs and Apple Music
+  // namespaced IDs (`am:<id>`). GET returns 404 for unknown IDs, other
+  // methods 400 so clients see a clear validation error.
+  if (!isValidSongId(songId)) {
     if (req.method === "GET") {
       return errorResponse("Song not found", 404);
     }
-    return errorResponse("Invalid song ID format. Expected YouTube video ID (11 characters, alphanumeric with - and _)", 400);
+    return errorResponse(
+      "Invalid song ID format. Expected YouTube video ID (11 chars) or Apple Music ID (am:<id>)",
+      400
+    );
   }
 
   try {

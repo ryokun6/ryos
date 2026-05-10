@@ -7,7 +7,11 @@ import pako from "pako";
 import { Converter } from "opencc-js";
 import { google } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
-import { KRC_DECRYPTION_KEY, YOUTUBE_VIDEO_ID_REGEX } from "./_constants.js";
+import {
+  APPLE_MUSIC_ID_REGEX,
+  KRC_DECRYPTION_KEY,
+  YOUTUBE_VIDEO_ID_REGEX,
+} from "./_constants.js";
 
 /** Traditional → Simplified for cross-strait lyric metadata matching (KuGou is Simplified) */
 const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
@@ -65,6 +69,22 @@ export function logError(id: string, message: string, error: unknown) {
  */
 export function isValidYouTubeVideoId(id: string): boolean {
   return YOUTUBE_VIDEO_ID_REGEX.test(id);
+}
+
+/**
+ * Validate that a string is a valid Apple Music namespaced song ID
+ * (`am:<catalogId or libraryId>`).
+ */
+export function isValidAppleMusicSongId(id: string): boolean {
+  return APPLE_MUSIC_ID_REGEX.test(id);
+}
+
+/**
+ * Validate that a string is a valid song ID for any backed source.
+ * Currently supports YouTube video IDs and Apple Music namespaced IDs.
+ */
+export function isValidSongId(id: string): boolean {
+  return isValidYouTubeVideoId(id) || isValidAppleMusicSongId(id);
 }
 
 // =============================================================================
