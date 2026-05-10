@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
 import ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -81,6 +81,7 @@ export function useIpodLogic({
     appleMusicPlaylists,
     appleMusicPlaylistTracks,
     appleMusicPlaylistTracksLoading,
+    appleMusicPlaybackQueue,
     appleMusicCurrentSongId,
     librarySource,
     loopCurrent,
@@ -97,6 +98,7 @@ export function useIpodLogic({
       appleMusicPlaylists: s.appleMusicPlaylists,
       appleMusicPlaylistTracks: s.appleMusicPlaylistTracks,
       appleMusicPlaylistTracksLoading: s.appleMusicPlaylistTracksLoading,
+      appleMusicPlaybackQueue: s.appleMusicPlaybackQueue,
       appleMusicCurrentSongId: s.appleMusicCurrentSongId,
       librarySource: s.librarySource,
       loopCurrent: s.loopCurrent,
@@ -123,6 +125,33 @@ export function useIpodLogic({
     const index = tracks.findIndex((t) => t.id === currentSongId);
     return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
   }, [tracks, currentSongId]);
+
+  // Now Playing "X of Y" should reflect the active playback context. When
+  // the user picked a song from inside an Artist / Album / Playlist
+  // submenu, an Apple Music playback queue is set on the store; in that
+  // case scope the counter to that ordered list. Otherwise fall back to
+  // the full library count.
+  const nowPlayingScope = useMemo(() => {
+    if (!isAppleMusic || !appleMusicPlaybackQueue || appleMusicPlaybackQueue.length === 0) {
+      return { index: currentIndex, total: tracks.length };
+    }
+    const validIds = new Set(tracks.map((t) => t.id));
+    const queue = appleMusicPlaybackQueue.filter((id) => validIds.has(id));
+    if (queue.length === 0) {
+      return { index: currentIndex, total: tracks.length };
+    }
+    const idx = currentSongId ? queue.indexOf(currentSongId) : -1;
+    // If the current song isn't part of the active queue, fall back to
+    // the full-library counter rather than showing "0 of N".
+    if (idx < 0) return { index: currentIndex, total: tracks.length };
+    return { index: idx, total: queue.length };
+  }, [
+    isAppleMusic,
+    appleMusicPlaybackQueue,
+    tracks,
+    currentSongId,
+    currentIndex,
+  ]);
 
   const {
     theme,
@@ -336,6 +365,62 @@ export function useIpodLogic({
   const coverFlowRef = useRef<CoverFlowRef | null>(null);
   const musicQuizRef = useRef<MusicQuizRef | null>(null);
   const brickGameRef = useRef<BrickGameRef | null>(null);
+
+  const pauseBeforeWindowClose = useCallback(() => {
+    const store = useIpodStore.getState();
+    const activePlayer = isFullScreen
+      ? fullScreenPlayerRef.current
+      : playerRef.current;
+    const playerTime = activePlayer?.getCurrentTime?.();
+    const internalPlayer = (
+      activePlayer as unknown as
+        | {
+            getInternalPlayer?: () => unknown;
+          }
+        | null
+        | undefined
+    )?.getInternalPlayer?.();
+    const musicKitTime =
+      typeof (internalPlayer as { currentPlaybackTime?: unknown } | null)
+        ?.currentPlaybackTime === "number"
+        ? (internalPlayer as { currentPlaybackTime: number }).currentPlaybackTime
+        : typeof musicKitInstance?.currentPlaybackTime === "number"
+        ? musicKitInstance.currentPlaybackTime
+        : undefined;
+    const currentTime =
+      typeof playerTime === "number" && Number.isFinite(playerTime)
+        ? playerTime
+        : musicKitTime;
+
+    if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
+      store.setElapsedTime(Math.max(0, currentTime));
+    }
+
+    // Update the store before the parent closes the window so reopening
+    // never sees a stale "playing" flag while MusicKit is already paused.
+    if (store.isPlaying) {
+      store.setIsPlaying(false);
+    }
+
+    if (store.librarySource === "appleMusic") {
+      const maybeMusicKit =
+        (internalPlayer as { pause?: () => void } | null | undefined) ??
+        musicKitInstance;
+      try {
+        maybeMusicKit?.pause?.();
+      } catch (err) {
+        console.warn("[apple music] pause before close failed", err);
+      }
+    }
+  }, [isFullScreen, musicKitInstance]);
+
+  // Fallback for close paths that bypass the WindowFrame close button and
+  // directly flip the app instance closed. By the time this runs refs may
+  // already be cleared, so `pauseBeforeWindowClose` also reads directly from
+  // the shared MusicKit instance.
+  useLayoutEffect(() => {
+    if (!isWindowOpen) pauseBeforeWindowClose();
+  }, [isWindowOpen, pauseBeforeWindowClose]);
   
   // Screen long press for CoverFlow toggle
   const screenLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -375,6 +460,65 @@ export function useIpodLogic({
   const [cameFromNowPlayingMenuItem, setCameFromNowPlayingMenuItem] = useState(false);
   // Save menu history before entering Now Playing from a song selection
   const menuHistoryBeforeNowPlayingRef = useRef<typeof menuHistory | null>(null);
+
+  // Mirror the latest cursor position for use inside callbacks (especially
+  // setMenuHistory updaters) without forcing every menu-item factory to
+  // re-memoize on every wheel tick.
+  const selectedMenuItemRef = useRef(selectedMenuItem);
+  useEffect(() => {
+    selectedMenuItemRef.current = selectedMenuItem;
+  }, [selectedMenuItem]);
+
+  // Remember the last cursor position for each menu title. This keeps
+  // forward navigation symmetric with back navigation: if the user backs
+  // out of a playlist/artist/album and then enters it again, we restore
+  // the item they were on instead of resetting that child menu to row 0.
+  const rememberedMenuSelectedIndexRef = useRef<Record<string, number>>({});
+
+  const getRememberedMenuSelectedIndex = useCallback(
+    (title: string, fallback: number, itemCount: number) => {
+      const remembered = rememberedMenuSelectedIndexRef.current[title];
+      const next =
+        typeof remembered === "number" && Number.isFinite(remembered)
+          ? remembered
+          : fallback;
+      if (itemCount <= 0) return Math.max(0, next);
+      return Math.max(0, Math.min(next, Math.max(0, itemCount - 1)));
+    },
+    []
+  );
+
+  // Push a child menu while stamping the current cursor position onto the
+  // *parent* breadcrumb entry. Without this, every parent's selectedIndex
+  // stays at 0 forever, so back navigation always lands at the top of the
+  // parent — not at the item the user originally drilled in from.
+  const pushMenuChild = useCallback(
+    (child: (typeof menuHistory)[number]) => {
+      setMenuDirection("forward");
+      const childWithRememberedSelection = {
+        ...child,
+        selectedIndex: getRememberedMenuSelectedIndex(
+          child.title,
+          child.selectedIndex,
+          child.items.length
+        ),
+      };
+      setMenuHistory((prev) => {
+        if (prev.length === 0) return [childWithRememberedSelection];
+        const updated = prev.slice();
+        const parent = updated[updated.length - 1];
+        rememberedMenuSelectedIndexRef.current[parent.title] =
+          selectedMenuItemRef.current;
+        updated[updated.length - 1] = {
+          ...parent,
+          selectedIndex: selectedMenuItemRef.current,
+        };
+        return [...updated, childWithRememberedSelection];
+      });
+      setSelectedMenuItem(childWithRememberedSelection.selectedIndex);
+    },
+    [getRememberedMenuSelectedIndex]
+  );
 
   // Library update checker
   const { manualSync } = useLibraryUpdateChecker(
@@ -504,8 +648,17 @@ export function useIpodLogic({
   // factor this out so per-track menu items can be memoized — without it,
   // each render would build N new closures for an N-track library and
   // every scroll click would invalidate the menu-history sync effect.
+  //
+  // `queueIds` scopes Apple Music next/previous to the ordered list the
+  // user picked from (artist, album, playlist, or full library). Pass
+  // `null` to fall back to the full library; pass `undefined` to leave
+  // the existing queue in place.
   const playTrackFromMenu = useCallback(
-    (track: Track, trackIndexInActiveMenu: number) => {
+    (
+      track: Track,
+      trackIndexInActiveMenu: number,
+      queueIds?: string[] | null
+    ) => {
       registerActivity();
       if (track.source !== "appleMusic" && isOffline) {
         showOfflineStatus();
@@ -522,6 +675,11 @@ export function useIpodLogic({
         menuHistoryBeforeNowPlayingRef.current = updatedHist;
         return updatedHist;
       });
+      // Update the contextual queue BEFORE flipping the current song so
+      // any next/previous fired immediately after sees the right scope.
+      if (queueIds !== undefined && useIpodStore.getState().librarySource === "appleMusic") {
+        useIpodStore.getState().setAppleMusicPlaybackQueue(queueIds);
+      }
       setCurrentSongId(track.id);
       setIsPlaying(true);
       setMenuDirection("forward");
@@ -542,12 +700,23 @@ export function useIpodLogic({
   );
 
   const playAppleMusicTrackFromMenu = useCallback(
-    (track: Track, trackIndexInActiveMenu: number) => {
+    (
+      track: Track,
+      trackIndexInActiveMenu: number,
+      queueIds?: string[] | null,
+      queueTracks?: Track[]
+    ) => {
       const state = useIpodStore.getState();
-      if (!state.appleMusicTracks.some((entry) => entry.id === track.id)) {
-        state.setAppleMusicTracks([...state.appleMusicTracks, track]);
+      // Merge any queue tracks that aren't already in the cached
+      // library so next/previous can resolve them. Playlist drill-downs
+      // can include songs not present in the user's full library.
+      const toMerge = queueTracks ?? [track];
+      const existingIds = new Set(state.appleMusicTracks.map((t) => t.id));
+      const additions = toMerge.filter((t) => !existingIds.has(t.id));
+      if (additions.length > 0) {
+        state.setAppleMusicTracks([...state.appleMusicTracks, ...additions]);
       }
-      playTrackFromMenu(track, trackIndexInActiveMenu);
+      playTrackFromMenu(track, trackIndexInActiveMenu, queueIds);
     },
     [playTrackFromMenu]
   );
@@ -606,6 +775,7 @@ export function useIpodLogic({
       appleMusicPlaylistTracks: {},
       appleMusicPlaylistTracksLoadedAt: {},
       appleMusicPlaylistTracksLoading: {},
+      appleMusicPlaybackQueue: null,
     });
     // Drop the IndexedDB-cached library so a different user signing
     // in next doesn't inherit the previous user's tracks.
@@ -827,7 +997,8 @@ export function useIpodLogic({
     () =>
       tracks.map((track, index) => ({
         label: track.title,
-        action: () => playTrackFromMenu(track, index),
+        // Full library queue → pass null to clear any contextual queue.
+        action: () => playTrackFromMenu(track, index, null),
         showChevron: false,
       })),
     [tracks, playTrackFromMenu]
@@ -842,9 +1013,10 @@ export function useIpodLogic({
     > = {};
     for (const artist of sortedArtists) {
       const artistTracks = tracksByArtist[artist];
+      const queueIds = artistTracks.map(({ track }) => track.id);
       result[artist] = artistTracks.map(({ track }, trackListIndex) => ({
         label: track.title,
-        action: () => playTrackFromMenu(track, trackListIndex),
+        action: () => playTrackFromMenu(track, trackListIndex, queueIds),
         showChevron: false,
       }));
     }
@@ -858,9 +1030,10 @@ export function useIpodLogic({
     > = {};
     for (const album of sortedAlbums) {
       const albumTracks = tracksByAlbum[album];
-      result[album] = albumTracks.map(({ track, index }) => ({
+      const queueIds = albumTracks.map(({ track }) => track.id);
+      result[album] = albumTracks.map(({ track }, trackListIndex) => ({
         label: track.title,
-        action: () => playTrackFromMenu(track, index),
+        action: () => playTrackFromMenu(track, trackListIndex, queueIds),
         showChevron: false,
       }));
     }
@@ -873,20 +1046,15 @@ export function useIpodLogic({
         label: artist,
         action: () => {
           registerActivity();
-          setMenuDirection("forward");
-          setMenuHistory((prev) => [
-            ...prev,
-            {
-              title: artist,
-              items: artistMenuItemsByArtist[artist],
-              selectedIndex: 0,
-            },
-          ]);
-          setSelectedMenuItem(0);
+          pushMenuChild({
+            title: artist,
+            items: artistMenuItemsByArtist[artist],
+            selectedIndex: 0,
+          });
         },
         showChevron: true,
       })),
-    [sortedArtists, artistMenuItemsByArtist, registerActivity]
+    [sortedArtists, artistMenuItemsByArtist, registerActivity, pushMenuChild]
   );
 
   const albumsListMenuItems = useMemo(
@@ -895,20 +1063,15 @@ export function useIpodLogic({
         label: album,
         action: () => {
           registerActivity();
-          setMenuDirection("forward");
-          setMenuHistory((prev) => [
-            ...prev,
-            {
-              title: album,
-              items: albumMenuItemsByAlbum[album],
-              selectedIndex: 0,
-            },
-          ]);
-          setSelectedMenuItem(0);
+          pushMenuChild({
+            title: album,
+            items: albumMenuItemsByAlbum[album],
+            selectedIndex: 0,
+          });
         },
         showChevron: true,
       })),
-    [sortedAlbums, albumMenuItemsByAlbum, registerActivity]
+    [sortedAlbums, albumMenuItemsByAlbum, registerActivity, pushMenuChild]
   );
 
   const loadingLabel = t("apps.ipod.menuItems.loading", "Loading…");
@@ -937,9 +1100,16 @@ export function useIpodLogic({
           },
         ];
       } else {
+        const queueIds = playlistTracks.map((t) => t.id);
         result[playlist.id] = playlistTracks.map((track, trackListIndex) => ({
           label: track.title,
-          action: () => playAppleMusicTrackFromMenu(track, trackListIndex),
+          action: () =>
+            playAppleMusicTrackFromMenu(
+              track,
+              trackListIndex,
+              queueIds,
+              playlistTracks
+            ),
           showChevron: false,
         }));
       }
@@ -960,16 +1130,11 @@ export function useIpodLogic({
         action: () => {
           registerActivity();
           requestPlaylistTracksIfNeeded(playlist.id);
-          setMenuDirection("forward");
-          setMenuHistory((prev) => [
-            ...prev,
-            {
-              title: playlist.name,
-              items: applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? [],
-              selectedIndex: 0,
-            },
-          ]);
-          setSelectedMenuItem(0);
+          pushMenuChild({
+            title: playlist.name,
+            items: applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? [],
+            selectedIndex: 0,
+          });
         },
         showChevron: true,
       })),
@@ -978,6 +1143,7 @@ export function useIpodLogic({
       applePlaylistTrackMenuItemsByPlaylist,
       registerActivity,
       requestPlaylistTracksIfNeeded,
+      pushMenuChild,
     ]
   );
 
@@ -994,9 +1160,7 @@ export function useIpodLogic({
       items: { label: string; action: () => void; showChevron: boolean }[]
     ) => {
       registerActivity();
-      setMenuDirection("forward");
-      setMenuHistory((prev) => [...prev, { title, items, selectedIndex: 0 }]);
-      setSelectedMenuItem(0);
+      pushMenuChild({ title, items, selectedIndex: 0 });
     };
 
     if (isAppleMusic) {
@@ -1034,16 +1198,11 @@ export function useIpodLogic({
         label: artist,
         action: () => {
           registerActivity();
-          setMenuDirection("forward");
-          setMenuHistory((prev) => [
-            ...prev,
-            {
-              title: artist,
-              items: artistMenuItemsByArtist[artist],
-              selectedIndex: 0,
-            },
-          ]);
-          setSelectedMenuItem(0);
+          pushMenuChild({
+            title: artist,
+            items: artistMenuItemsByArtist[artist],
+            selectedIndex: 0,
+          });
         },
         showChevron: true,
       })),
@@ -1057,6 +1216,7 @@ export function useIpodLogic({
     albumsListMenuItems,
     applePlaylistsMenuItems,
     registerActivity,
+    pushMenuChild,
     t,
   ]);
 
@@ -1156,12 +1316,11 @@ export function useIpodLogic({
         action: () => {
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
-          setMenuDirection("forward");
-          setMenuHistory((prev) => [
-            ...prev,
-            { title: musicLabel, items: musicMenuItems, selectedIndex: 0 },
-          ]);
-          setSelectedMenuItem(0);
+          pushMenuChild({
+            title: musicLabel,
+            items: musicMenuItems,
+            selectedIndex: 0,
+          });
         },
         showChevron: true,
       },
@@ -1170,7 +1329,6 @@ export function useIpodLogic({
         action: () => {
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
-          setMenuDirection("forward");
           const extrasLabel = t("apps.ipod.menuItems.extras");
           const extrasItems = [
             {
@@ -1214,11 +1372,11 @@ export function useIpodLogic({
               showChevron: false,
             },
           ];
-          setMenuHistory((prev) => [
-            ...prev,
-            { title: extrasLabel, items: extrasItems, selectedIndex: 0 },
-          ]);
-          setSelectedMenuItem(0);
+          pushMenuChild({
+            title: extrasLabel,
+            items: extrasItems,
+            selectedIndex: 0,
+          });
         },
         showChevron: true,
       },
@@ -1227,12 +1385,11 @@ export function useIpodLogic({
         action: () => {
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
-          setMenuDirection("forward");
-          setMenuHistory((prev) => [
-            ...prev,
-            { title: settingsLabel, items: settingsMenuItems, selectedIndex: 0 },
-          ]);
-          setSelectedMenuItem(0);
+          pushMenuChild({
+            title: settingsLabel,
+            items: settingsMenuItems,
+            selectedIndex: 0,
+          });
         },
         showChevron: true,
       },
@@ -1241,6 +1398,10 @@ export function useIpodLogic({
         action: () => {
           registerActivity();
           if (useIpodStore.getState().showVideo) toggleVideo();
+          // Shuffle across the full library — drop any contextual queue.
+          if (useIpodStore.getState().librarySource === "appleMusic") {
+            useIpodStore.getState().setAppleMusicPlaybackQueue(null);
+          }
           memoizedToggleShuffle();
           setMenuMode(false);
         },
@@ -1262,16 +1423,7 @@ export function useIpodLogic({
         showChevron: true,
       },
     ];
-  }, [registerActivity, toggleVideo, musicMenuItems, settingsMenuItems, memoizedToggleShuffle, memoizedToggleBacklight, t, isOffline, showOfflineStatus, setIsPlaying]);
-
-  // Initialize menu history
-  useEffect(() => {
-    if (menuHistory.length === 0) {
-      setMenuHistory([
-        { title: t("apps.ipod.menuItems.ipod"), items: mainMenuItems, selectedIndex: 0 },
-      ]);
-    }
-  }, [t, mainMenuItems, menuHistory.length]);
+  }, [registerActivity, toggleVideo, musicMenuItems, settingsMenuItems, memoizedToggleShuffle, memoizedToggleBacklight, t, isOffline, showOfflineStatus, setIsPlaying, pushMenuChild]);
 
   // Helper function to rebuild menu items based on current tracks
   const rebuildMenuItems = useCallback((menu: typeof menuHistory[0]): typeof menuHistory[0]["items"] | null => {
@@ -1325,6 +1477,112 @@ export function useIpodLogic({
     t,
   ]);
 
+  // Restore menu navigation from the persisted breadcrumb on first mount.
+  //
+  // The breadcrumb stores only `{ title, selectedIndex }` per level (action
+  // closures and rebuilt items aren't serializable). Reconstruct the full
+  // `menuHistory` by walking the breadcrumb through `rebuildMenuItems` so
+  // every level is freshly bound to the current handler closures.
+  //
+  // Some menus depend on async-loaded data (Apple Music playlists,
+  // playlist tracks). If a level can't be rebuilt yet, the menu-sync
+  // effect below will fill in the items as soon as the data arrives.
+  const hasInitializedMenuRef = useRef(false);
+  useEffect(() => {
+    if (hasInitializedMenuRef.current) return;
+    if (menuHistory.length > 0) {
+      hasInitializedMenuRef.current = true;
+      return;
+    }
+
+    const breadcrumb = useIpodStore.getState().ipodMenuBreadcrumb;
+    const ipodLabel = t("apps.ipod.menuItems.ipod");
+    const baseMenu = {
+      title: ipodLabel,
+      items: mainMenuItems,
+      selectedIndex: 0,
+    };
+
+    if (!breadcrumb || breadcrumb.length === 0) {
+      setMenuHistory([baseMenu]);
+      hasInitializedMenuRef.current = true;
+      return;
+    }
+    for (const entry of breadcrumb) {
+      rememberedMenuSelectedIndexRef.current[entry.title] =
+        entry.selectedIndex;
+    }
+
+    // Walk the breadcrumb. The first entry should be the iPod root —
+    // tolerate a missing/renamed root and synthesize one when needed so
+    // we never strand the user with an empty menu.
+    const restored: typeof menuHistory = [];
+    for (let i = 0; i < breadcrumb.length; i++) {
+      const entry = breadcrumb[i];
+      if (i === 0) {
+        // Force the first entry to be the localized root label so back
+        // navigation always lands at the iPod main menu.
+        restored.push({
+          title: ipodLabel,
+          items: mainMenuItems,
+          selectedIndex: Math.max(0, Math.min(entry.selectedIndex, mainMenuItems.length - 1)),
+        });
+        continue;
+      }
+      const skeleton = { title: entry.title, items: [], selectedIndex: 0 };
+      const rebuilt = rebuildMenuItems(skeleton);
+      // If we can't rebuild a level (e.g. the menu shape changed after an
+      // app update, or async data hasn't arrived yet), stop walking — the
+      // menu-sync effect will pick it up later, but for now show the user
+      // the deepest level we *can* rebuild rather than dropping them at
+      // the root.
+      if (!rebuilt) break;
+      const safeIdx =
+        rebuilt.length > 0
+          ? Math.max(
+              0,
+              Math.min(entry.selectedIndex, Math.max(0, rebuilt.length - 1))
+            )
+          : Math.max(0, entry.selectedIndex);
+      restored.push({
+        title: entry.title,
+        items: rebuilt,
+        selectedIndex: safeIdx,
+      });
+    }
+
+    setMenuHistory(restored);
+    const deepest = restored[restored.length - 1];
+    if (deepest) setSelectedMenuItem(deepest.selectedIndex);
+
+    // Restore menuMode from the persisted state if available — but only
+    // when the user actually has a current track to fall back to (no
+    // sense restoring "Now Playing" when there's nothing playable).
+    const persistedMenuMode = useIpodStore.getState().ipodMenuMode;
+    if (typeof persistedMenuMode === "boolean") {
+      const storeState = useIpodStore.getState();
+      const tracksForMode =
+        storeState.librarySource === "appleMusic"
+          ? storeState.appleMusicTracks
+          : storeState.tracks;
+      const sourceCurrent =
+        storeState.librarySource === "appleMusic"
+          ? storeState.appleMusicCurrentSongId
+          : storeState.currentSongId;
+      const hasValidTrack =
+        tracksForMode.length > 0 &&
+        (!sourceCurrent || tracksForMode.some((t) => t.id === sourceCurrent));
+      if (persistedMenuMode === true || hasValidTrack) {
+        setMenuMode(persistedMenuMode);
+      }
+    }
+
+    hasInitializedMenuRef.current = true;
+    // Run once on mount with whatever data is currently available; the
+    // menu-sync effect upgrades empty levels as data flows in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Update menu when items change - update ALL menus in history, not just the current one
   // Also update the saved menu history ref that's used when returning from Now Playing
   useEffect(() => {
@@ -1371,6 +1629,49 @@ export function useIpodLogic({
       }
     }
   }, [rebuildMenuItems, selectedMenuItem]);
+
+  // Persist the menu navigation breadcrumb whenever the user moves around
+  // the menus or moves the cursor. We only store `{ title, selectedIndex }`
+  // per level — actions and item arrays are recomputed on restore via
+  // `rebuildMenuItems`. The deepest entry's `selectedIndex` mirrors the
+  // live cursor (`selectedMenuItem`) so reopening lands the user on the
+  // exact item they were sitting on.
+  useEffect(() => {
+    if (!hasInitializedMenuRef.current) return;
+    if (menuHistory.length === 0) return;
+
+    const breadcrumb = menuHistory.map((menu, i) => ({
+      title: menu.title,
+      selectedIndex:
+        i === menuHistory.length - 1 ? selectedMenuItem : menu.selectedIndex,
+    }));
+    for (const entry of breadcrumb) {
+      rememberedMenuSelectedIndexRef.current[entry.title] =
+        entry.selectedIndex;
+    }
+
+    const store = useIpodStore.getState();
+    const prev = store.ipodMenuBreadcrumb;
+    const isSame =
+      prev != null &&
+      prev.length === breadcrumb.length &&
+      prev.every(
+        (entry, i) =>
+          entry.title === breadcrumb[i].title &&
+          entry.selectedIndex === breadcrumb[i].selectedIndex
+      );
+    if (!isSame) store.setIpodMenuBreadcrumb(breadcrumb);
+  }, [menuHistory, selectedMenuItem]);
+
+  // Persist menuMode separately — small enough that we don't bother
+  // batching with the breadcrumb effect.
+  useEffect(() => {
+    if (!hasInitializedMenuRef.current) return;
+    const store = useIpodStore.getState();
+    if (store.ipodMenuMode !== menuMode) {
+      store.setIpodMenuMode(menuMode);
+    }
+  }, [menuMode]);
 
   // Helper to mark track switch start and schedule end
   const startTrackSwitch = useCallback(() => {
@@ -1678,15 +1979,28 @@ export function useIpodLogic({
         setMenuHistory([mainMenu]);
         setSelectedMenuItem(mainMenu?.selectedIndex || 0);
         setCameFromNowPlayingMenuItem(false);
-      } else if (menuHistoryBeforeNowPlayingRef.current && menuHistoryBeforeNowPlayingRef.current.length > 0) {
-        // Restore the menu history that was saved when entering Now Playing
+      } else if (
+        menuHistoryBeforeNowPlayingRef.current &&
+        menuHistoryBeforeNowPlayingRef.current.length > 0
+      ) {
+        // Restore the in-session "menu the user came from" when they
+        // tapped a song to enter Now Playing.
         const savedHistory = menuHistoryBeforeNowPlayingRef.current;
         setMenuHistory(savedHistory);
         const lastMenu = savedHistory[savedHistory.length - 1];
         setSelectedMenuItem(lastMenu?.selectedIndex || 0);
+      } else if (menuHistory.length > 1) {
+        // Reopen-after-close path: `menuHistoryBeforeNowPlayingRef` is
+        // null because it doesn't survive unmount, but `menuHistory`
+        // was rehydrated from the persisted breadcrumb on mount and
+        // already represents the originating menu (playlist, artist,
+        // album, etc.). Use it directly so back-from-Now-Playing lands
+        // the user where they actually were — not always at All Songs.
+        const lastMenu = menuHistory[menuHistory.length - 1];
+        setSelectedMenuItem(lastMenu?.selectedIndex || 0);
       } else {
-        // Fallback: go to All Songs menu with current track selected
-        // This happens when restored from persisted state in Now Playing mode
+        // Last-resort fallback (truly empty navigation history): go to
+        // All Songs with the current track highlighted.
         const allSongsLabel = t("apps.ipod.menuItems.allSongs");
         setMenuHistory([
           mainMenu,
@@ -1724,6 +2038,10 @@ export function useIpodLogic({
     const track = tracks[index];
     if (track) {
       startTrackSwitch();
+      // CoverFlow walks the full library — clear any contextual queue.
+      if (useIpodStore.getState().librarySource === "appleMusic") {
+        useIpodStore.getState().setAppleMusicPlaybackQueue(null);
+      }
       setCurrentSongId(track.id);
       setIsPlaying(true);
       setIsCoverFlowOpen(false);
@@ -1744,6 +2062,9 @@ export function useIpodLogic({
     const track = tracks[index];
     if (track) {
       startTrackSwitch();
+      if (useIpodStore.getState().librarySource === "appleMusic") {
+        useIpodStore.getState().setAppleMusicPlaybackQueue(null);
+      }
       setCurrentSongId(track.id);
       setIsPlaying(true);
       // Don't close CoverFlow - stay in place
@@ -2433,12 +2754,14 @@ export function useIpodLogic({
     handleAppleMusicRefresh,
     handleSwitchToYoutube,
     handleSwitchToAppleMusic,
+    pauseBeforeWindowClose,
     setLibrarySource,
 
     // Store state
     tracks,
     currentSongId,
     currentIndex,
+    nowPlayingScope,
     loopCurrent,
     loopAll,
     isShuffled,

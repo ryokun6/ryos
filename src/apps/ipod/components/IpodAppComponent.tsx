@@ -76,6 +76,7 @@ export function IpodAppComponent({
     statusMessage,
     elapsedTime,
     totalTime,
+    nowPlayingScope,
     scale,
     menuMode,
     selectedMenuItem,
@@ -174,7 +175,13 @@ export function IpodAppComponent({
     handleAppleMusicRefresh,
     handleSwitchToYoutube,
     handleSwitchToAppleMusic,
+    pauseBeforeWindowClose,
   } = useIpodLogic({ isWindowOpen, isForeground, initialData, instanceId });
+
+  const handleClose = useCallback(() => {
+    pauseBeforeWindowClose();
+    window.dispatchEvent(new Event(`closeWindow-${instanceId || "ipod"}`));
+  }, [instanceId, pauseBeforeWindowClose]);
 
   const displayModeOptions = [
     { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
@@ -204,7 +211,7 @@ export function IpodAppComponent({
 
   const menuBar = (
     <IpodMenuBar
-      onClose={onClose}
+      onClose={handleClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onClearLibrary={() => setIsConfirmClearOpen(true)}
@@ -241,9 +248,10 @@ export function IpodAppComponent({
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
         title={getTranslatedAppName("ipod")}
-        onClose={onClose}
+        onClose={handleClose}
         isForeground={isForeground}
         appId="ipod"
+        interceptClose
         material="transparent"
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
@@ -366,8 +374,8 @@ export function IpodAppComponent({
                   menuHistory={menuHistory}
                   selectedMenuItem={selectedMenuItem}
                   onSelectMenuItem={setSelectedMenuItem}
-                  currentIndex={currentIndex}
-                  tracksLength={tracks.length}
+                  currentIndex={nowPlayingScope.index}
+                  tracksLength={nowPlayingScope.total}
                   backlightOn={backlightOn}
                   menuDirection={menuDirection}
                   onMenuItemAction={handleMenuItemAction}
@@ -570,6 +578,7 @@ export function IpodAppComponent({
                               }
                               currentTrack={tracks[currentIndex]}
                               playing={isPlaying && isFullScreen}
+                              resumeAtSeconds={elapsedTime}
                               volume={
                                 ipodVolume *
                                 useAudioSettingsStore.getState().masterVolume

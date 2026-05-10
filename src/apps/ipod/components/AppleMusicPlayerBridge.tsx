@@ -30,6 +30,8 @@ export interface AppleMusicPlayerBridgeProps {
   currentTrack: Track | null;
   /** Whether playback should be active. */
   playing: boolean;
+  /** Saved playback position to seek to after queueing a track. */
+  resumeAtSeconds?: number;
   /** Volume in [0, 1]. */
   volume: number;
   onProgress?: (state: { playedSeconds: number }) => void;
@@ -66,6 +68,7 @@ export const AppleMusicPlayerBridge = forwardRef<
   {
     currentTrack,
     playing,
+    resumeAtSeconds,
     volume,
     onProgress,
     onDuration,
@@ -90,6 +93,30 @@ export const AppleMusicPlayerBridge = forwardRef<
       instanceRef.current = inst;
       onReadyRef.current?.();
     });
+  }, []);
+
+  // Stop MusicKit on unmount.
+  //
+  // MusicKit JS owns its own internal `<audio>` element that is NOT a child
+  // of this React tree, so unmounting the bridge does not stop playback on
+  // its own — the song would keep playing in the background after the iPod
+  // window closes (or the librarySource flips back to YouTube). Force a
+  // stop here so closing the iPod always silences Apple Music.
+  useEffect(() => {
+    return () => {
+      const inst = instanceRef.current;
+      if (!inst) return;
+      try {
+        inst.stop();
+      } catch (err) {
+        try {
+          inst.pause();
+        } catch {
+          /* ignore — unmount is best-effort */
+        }
+        console.warn("[apple music] stop() on unmount failed", err);
+      }
+    };
   }, []);
 
   // Track latest callbacks via refs to avoid resubscribing event listeners
@@ -299,9 +326,12 @@ export const AppleMusicPlayerBridge = forwardRef<
   // stale closures when the user toggles play before the queue resolves.
   const playingRef = useRef(playing);
   playingRef.current = playing;
+  const resumeAtSecondsRef = useRef(resumeAtSeconds);
+  resumeAtSecondsRef.current = resumeAtSeconds;
 
   // Drive `setQueue` on track change.
   useEffect(() => {
+    let cancelled = false;
     const inst = instanceRef.current;
     if (!inst) return;
     if (!currentTrack) {
@@ -329,8 +359,25 @@ export const AppleMusicPlayerBridge = forwardRef<
       try {
         await inst.setQueue({
           ...queueOptions,
-          startPlaying: playingRef.current,
+          // Queue paused first so a restored elapsedTime can be applied
+          // before any audible playback starts.
+          startPlaying: false,
         });
+        if (cancelled) return;
+        const resumeSeconds = resumeAtSecondsRef.current ?? 0;
+        const durationSeconds = currentTrack.durationMs
+          ? currentTrack.durationMs / 1000
+          : null;
+        const shouldResumeFromSavedTime =
+          Number.isFinite(resumeSeconds) &&
+          resumeSeconds > 0.25 &&
+          (durationSeconds == null || resumeSeconds < durationSeconds - 0.5);
+        if (shouldResumeFromSavedTime) {
+          await inst.seekToTime(resumeSeconds).catch((err) => {
+            console.warn("[apple music] resume seek failed", err);
+          });
+        }
+        if (cancelled) return;
         if (currentTrack.durationMs && currentTrack.durationMs > 0) {
           onDurationRef.current?.(currentTrack.durationMs / 1000);
         }
@@ -352,6 +399,9 @@ export const AppleMusicPlayerBridge = forwardRef<
         queueLoadingRef.current = null;
       }
     })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueKey]);
 

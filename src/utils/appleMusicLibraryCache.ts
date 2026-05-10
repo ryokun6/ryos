@@ -129,6 +129,64 @@ export async function loadAppleMusicPlaylistTracks(
   }
 }
 
+/**
+ * Read every cached playlist's tracks in one IndexedDB round-trip and
+ * return them keyed by playlist id. Used to bulk-hydrate the in-memory
+ * store on iPod open so previously-viewed playlists render instantly
+ * instead of flashing an empty list while the lazy fetcher runs.
+ */
+export async function loadAllAppleMusicPlaylistTracks(): Promise<
+  Record<string, CachedAppleMusicPlaylistTracks>
+> {
+  try {
+    const { ensureIndexedDBInitialized } = await import("@/utils/indexedDB");
+    const db = await ensureIndexedDBInitialized();
+    return await new Promise((resolve, reject) => {
+      try {
+        const tx = db.transaction(
+          STORES.APPLE_MUSIC_PLAYLIST_TRACKS,
+          "readonly"
+        );
+        const store = tx.objectStore(STORES.APPLE_MUSIC_PLAYLIST_TRACKS);
+        const keysReq = store.getAllKeys();
+        const valsReq = store.getAll();
+        const result: Record<string, CachedAppleMusicPlaylistTracks> = {};
+        tx.oncomplete = () => {
+          db.close();
+          const keys = (keysReq.result || []) as IDBValidKey[];
+          const vals = (valsReq.result || []) as CachedAppleMusicPlaylistTracks[];
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            const val = vals[i];
+            if (
+              typeof key === "string" &&
+              val &&
+              Array.isArray(val.tracks) &&
+              val.tracks.length > 0
+            ) {
+              result[key] = val;
+            }
+          }
+          resolve(result);
+        };
+        tx.onerror = () => {
+          db.close();
+          reject(tx.error);
+        };
+      } catch (err) {
+        db.close();
+        reject(err);
+      }
+    });
+  } catch (err) {
+    console.warn(
+      "[apple music cache] failed to load all playlist tracks",
+      err
+    );
+    return {};
+  }
+}
+
 async function clearAppleMusicPlaylists(): Promise<void> {
   try {
     await dbOperations.delete(STORES.APPLE_MUSIC_PLAYLISTS, PLAYLISTS_KEY);

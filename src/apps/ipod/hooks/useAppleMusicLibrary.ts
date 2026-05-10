@@ -8,6 +8,7 @@ import {
 } from "@/stores/useIpodStore";
 import { getMusicKitInstance } from "@/hooks/useMusicKit";
 import {
+  loadAllAppleMusicPlaylistTracks,
   loadAppleMusicLibrary,
   loadAppleMusicPlaylists,
   loadAppleMusicPlaylistTracks,
@@ -279,18 +280,39 @@ export async function fetchAppleMusicLibrary(
       offset += items.length;
     }
 
-    store.setAppleMusicTracks(aggregated);
+    // Defensive: never overwrite a non-empty cached library with an empty
+    // refresh result. A flaky network or rate-limit response can return zero
+    // pages even when the user has thousands of songs — wiping the cache
+    // (and its IndexedDB copy) makes the iPod look empty until the next
+    // successful fetch. Treat empty-after-non-empty as a refresh failure
+    // and keep the existing tracks.
+    const existingTracks = useIpodStore.getState().appleMusicTracks;
+    if (aggregated.length === 0 && existingTracks.length > 0) {
+      store.setAppleMusicLibraryLoading(false);
+      console.warn(
+        "[apple music] refresh returned 0 songs; keeping cached library"
+      );
+    } else {
+      store.setAppleMusicTracks(aggregated);
+    }
 
     try {
       const playlists = await fetchAppleMusicPlaylistsList();
-      const loadedAt = Date.now();
-      store.setAppleMusicPlaylists(playlists);
-      void saveAppleMusicPlaylists({ playlists, loadedAt });
+      const existingPlaylists = useIpodStore.getState().appleMusicPlaylists;
+      if (playlists.length === 0 && existingPlaylists.length > 0) {
+        console.warn(
+          "[apple music] playlist refresh returned 0; keeping cached list"
+        );
+      } else {
+        const loadedAt = Date.now();
+        store.setAppleMusicPlaylists(playlists);
+        void saveAppleMusicPlaylists({ playlists, loadedAt });
+      }
     } catch (err) {
       console.warn("[apple music] playlist sync failed (songs kept)", err);
     }
 
-    return aggregated.length;
+    return aggregated.length || existingTracks.length;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     store.setAppleMusicLibraryError(message);
@@ -478,6 +500,125 @@ export function useAppleMusicLibrary({
     return runWithProgressToast(true);
   }, [isAuthorized, runWithProgressToast]);
 
+  // Hydrate from IndexedDB as soon as the iPod opens — auth not required.
+  //
+  // Important: do NOT guard this behind a `useRef(false)` flag. React Fast
+  // Refresh preserves component state across HMR, but Vite invalidation
+  // cascades through `useIpodStore.ts` whenever any of its dependencies
+  // change — and the recreated store starts with empty Apple Music
+  // collections (those fields are excluded from the localStorage
+  // `partialize` because they live in IndexedDB). A surviving ref would
+  // prevent re-hydration after that reset, leaving the library blank.
+  //
+  // Instead, the body is idempotent: every branch checks the live store
+  // first and only fills the slot when it is empty. We also subscribe to
+  // the store so a *runtime* reset (HMR, sign-out + back-in, etc.) fires
+  // a fresh hydration pass.
+  useEffect(() => {
+    if (!enabled) return;
+
+    let cancelled = false;
+    let inFlight = false;
+
+    const hydrateFromCache = async () => {
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      try {
+        // Library tracks --------------------------------------------------
+        if (useIpodStore.getState().appleMusicTracks.length === 0) {
+          const cached = await loadAppleMusicLibrary();
+          if (cancelled) return;
+          const latest = useIpodStore.getState();
+          if (
+            cached &&
+            cached.tracks.length > 0 &&
+            latest.appleMusicTracks.length === 0
+          ) {
+            useIpodStore.setState({
+              appleMusicTracks: cached.tracks,
+              appleMusicLibraryLoadedAt: cached.loadedAt,
+              appleMusicStorefrontId:
+                cached.storefrontId ?? latest.appleMusicStorefrontId,
+            });
+          }
+        }
+
+        // Playlist list ---------------------------------------------------
+        if (useIpodStore.getState().appleMusicPlaylists.length === 0) {
+          const cachedPlaylists = await loadAppleMusicPlaylists();
+          if (cancelled) return;
+          if (
+            cachedPlaylists &&
+            cachedPlaylists.playlists.length > 0 &&
+            useIpodStore.getState().appleMusicPlaylists.length === 0
+          ) {
+            useIpodStore.setState({
+              appleMusicPlaylists: cachedPlaylists.playlists,
+            });
+          }
+        }
+
+        // Per-playlist tracks (bulk hydrate every cached playlist) -------
+        if (
+          Object.keys(useIpodStore.getState().appleMusicPlaylistTracks)
+            .length === 0
+        ) {
+          const all = await loadAllAppleMusicPlaylistTracks();
+          if (cancelled) return;
+          const playlistIds = Object.keys(all);
+          if (playlistIds.length > 0) {
+            useIpodStore.setState((state) => {
+              const tracksMap = { ...state.appleMusicPlaylistTracks };
+              const loadedAtMap = {
+                ...state.appleMusicPlaylistTracksLoadedAt,
+              };
+              for (const id of playlistIds) {
+                if (!tracksMap[id] || tracksMap[id].length === 0) {
+                  tracksMap[id] = all[id].tracks;
+                  loadedAtMap[id] = all[id].loadedAt;
+                }
+              }
+              return {
+                appleMusicPlaylistTracks: tracksMap,
+                appleMusicPlaylistTracksLoadedAt: loadedAtMap,
+              };
+            });
+          }
+        }
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    void hydrateFromCache();
+
+    // Re-hydrate when the store gets reset out from under us. HMR is the
+    // common cause in development; signing out + signing back in via the
+    // menu hits the same code path so this is also load-bearing in prod.
+    const unsubscribe = useIpodStore.subscribe((state, prev) => {
+      if (cancelled) return;
+      const tracksCleared =
+        state.appleMusicTracks.length === 0 &&
+        prev.appleMusicTracks.length > 0;
+      const playlistsCleared =
+        state.appleMusicPlaylists.length === 0 &&
+        prev.appleMusicPlaylists.length > 0;
+      const playlistTracksCleared =
+        Object.keys(state.appleMusicPlaylistTracks).length === 0 &&
+        Object.keys(prev.appleMusicPlaylistTracks).length > 0;
+      if (tracksCleared || playlistsCleared || playlistTracksCleared) {
+        void hydrateFromCache();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [enabled]);
+
+  // Decide whether the cache is fresh enough or needs a network refresh.
+  // Auth IS required here because this path may hit the Apple Music API.
   useEffect(() => {
     if (!enabled || !isAuthorized) return;
     if (hasLoadedRef.current) return;
@@ -485,17 +626,17 @@ export function useAppleMusicLibrary({
 
     let cancelled = false;
     const decideLoadStrategy = async () => {
-      // Hydrate from IndexedDB if the in-memory store is empty (always
-      // the case after a fresh page load — only librarySource and the
-      // current song id are persisted to localStorage).
-      let { appleMusicTracks, appleMusicLibraryLoadedAt, appleMusicPlaylists } =
+      // Make sure hydration has had a chance to run before we decide.
+      // The hydration effect above is fire-and-forget; if the in-memory
+      // store is still empty, do the IndexedDB read inline so we don't
+      // accidentally fall into the "first-ever load" branch and pop a
+      // toast for users who already have a cached library.
+      let { appleMusicTracks, appleMusicLibraryLoadedAt } =
         useIpodStore.getState();
       if (appleMusicTracks.length === 0) {
         const cached = await loadAppleMusicLibrary();
         if (cancelled) return;
         if (cached && cached.tracks.length > 0) {
-          // Use a direct `set` so we don't trigger another IndexedDB
-          // write — this is purely a hydration step.
           useIpodStore.setState({
             appleMusicTracks: cached.tracks,
             appleMusicLibraryLoadedAt: cached.loadedAt,
@@ -505,17 +646,6 @@ export function useAppleMusicLibrary({
           });
           appleMusicTracks = cached.tracks;
           appleMusicLibraryLoadedAt = cached.loadedAt;
-        }
-      }
-
-      if (appleMusicPlaylists.length === 0) {
-        const cachedPlaylists = await loadAppleMusicPlaylists();
-        if (cancelled) return;
-        if (cachedPlaylists && cachedPlaylists.playlists.length > 0) {
-          useIpodStore.setState({
-            appleMusicPlaylists: cachedPlaylists.playlists,
-          });
-          appleMusicPlaylists = cachedPlaylists.playlists;
         }
       }
 
@@ -560,8 +690,9 @@ export function useAppleMusicLibrary({
     };
   }, [enabled, isAuthorized, runWithProgressToast]);
 
-  // Reset the "has loaded" guard whenever the user signs out so a new sign-in
-  // re-evaluates whether a fetch is needed.
+  // Reset the refresh-decision guard whenever the user signs out so a new
+  // sign-in re-evaluates whether a fetch is needed. Hydration runs once
+  // per mount and doesn't need to retry on sign-out.
   useEffect(() => {
     if (!isAuthorized) hasLoadedRef.current = false;
   }, [isAuthorized]);

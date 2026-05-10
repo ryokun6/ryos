@@ -229,6 +229,10 @@ export function IpodScreen({
 
     // On a menu transition, snap scrollTop based purely on the target
     // index — we don't want to inherit the previous menu's offset.
+    //
+    // Match classic iPod list behavior: restore the selected row at the
+    // nearest viewport edge (top for early rows, bottom for deeper rows),
+    // not centered with extra context around it.
     if (isMenuTransition) {
       const safeIndex = Math.max(
         0,
@@ -236,12 +240,7 @@ export function IpodScreen({
       );
       const itemTop = safeIndex * MENU_ITEM_HEIGHT;
       const itemBottom = itemTop + MENU_ITEM_HEIGHT;
-      let target = 0;
-      if (itemBottom > containerH) {
-        target = itemBottom - containerH;
-      } else if (itemTop < 0) {
-        target = 0;
-      }
+      const target = itemBottom > containerH ? itemBottom - containerH : 0;
       el.scrollTop = target;
       setScrollTop(target);
       return;
@@ -337,6 +336,7 @@ export function IpodScreen({
                 ref={playerRef as unknown as React.RefObject<never>}
                 currentTrack={currentTrack}
                 playing={isPlaying && !isFullScreen}
+                resumeAtSeconds={elapsedTime}
                 volume={finalIpodVolume}
                 onProgress={!isFullScreen ? handleProgress : undefined}
                 onDuration={!isFullScreen ? handleDuration : undefined}

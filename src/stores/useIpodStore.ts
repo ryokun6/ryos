@@ -148,6 +148,13 @@ interface IpodData {
   appleMusicPlaylistTracksLoading: Record<string, boolean>;
   /** Currently selected song id within the Apple Music library. */
   appleMusicCurrentSongId: string | null;
+  /**
+   * Ordered list of Apple Music track ids that scopes next/previous
+   * navigation. When non-null, prev/next walk through these ids
+   * (intersected with `appleMusicTracks` so unknown ids are dropped).
+   * `null` falls back to the full library order.
+   */
+  appleMusicPlaybackQueue: string[] | null;
   /** Last time the Apple Music library was synced (epoch ms). */
   appleMusicLibraryLoadedAt: number | null;
   /** True while a library refresh is in flight. */
@@ -156,6 +163,31 @@ interface IpodData {
   appleMusicLibraryError: string | null;
   /** Cached storefront ID reported by MusicKit (e.g. "us"). */
   appleMusicStorefrontId: string | null;
+
+  // ---------- Menu navigation persistence ----------
+
+  /**
+   * Slim breadcrumb of the iPod's menu navigation: an entry per level
+   * with the menu's title and the cursor position the user left it at.
+   * The deepest entry's `selectedIndex` mirrors the live cursor.
+   *
+   * Only titles + indices are persisted (action closures and rebuilt
+   * item arrays are not serializable). On iPod open the breadcrumb is
+   * walked through `rebuildMenuItems` to reconstruct the full
+   * `menuHistory` with fresh actions.
+   *
+   * `null` means "no saved breadcrumb yet" — the iPod will start at the
+   * top-level menu.
+   */
+  ipodMenuBreadcrumb:
+    | { title: string; selectedIndex: number }[]
+    | null;
+  /**
+   * Whether the iPod was last in menu mode (true) or Now Playing mode
+   * (false). Restored on open so reopening returns the user to the same
+   * surface they left from.
+   */
+  ipodMenuMode: boolean | null;
 }
 
 // ============================================================================
@@ -295,10 +327,14 @@ const initialIpodData: IpodData = {
   appleMusicPlaylistTracksLoadedAt: {},
   appleMusicPlaylistTracksLoading: {},
   appleMusicCurrentSongId: null,
+  appleMusicPlaybackQueue: null,
   appleMusicLibraryLoadedAt: null,
   appleMusicLibraryLoading: false,
   appleMusicLibraryError: null,
   appleMusicStorefrontId: null,
+
+  ipodMenuBreadcrumb: null,
+  ipodMenuMode: null,
 };
 
 /** Helper to get current index from song ID */
@@ -404,15 +440,27 @@ export interface IpodState extends IpodData {
   setAppleMusicLibraryError: (error: string | null) => void;
   /** Update the currently selected Apple Music song. */
   setAppleMusicCurrentSongId: (songId: string | null) => void;
+  /**
+   * Set or clear the Apple Music playback queue. Pass `null` to fall back
+   * to the full library order for next/previous.
+   */
+  setAppleMusicPlaybackQueue: (queue: string[] | null) => void;
   /** Move to the next Apple Music track (respects shuffle/loop settings). */
   appleMusicNextTrack: () => void;
   /** Move to the previous Apple Music track (respects shuffle/loop). */
   appleMusicPreviousTrack: () => void;
   /** Cache the user's storefront for catalog API calls. */
   setAppleMusicStorefrontId: (storefrontId: string | null) => void;
+
+  /** Persist the user's current menu navigation breadcrumb. */
+  setIpodMenuBreadcrumb: (
+    breadcrumb: { title: string; selectedIndex: number }[] | null
+  ) => void;
+  /** Persist whether the iPod was last in menu mode. */
+  setIpodMenuMode: (menuMode: boolean | null) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 34; // Move Apple Music library cache from localStorage to IndexedDB
+const CURRENT_IPOD_STORE_VERSION = 35; // Persist iPod menu navigation breadcrumb + menuMode
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -1755,10 +1803,28 @@ export const useIpodStore = create<IpodState>()(
             totalTime: 0,
           };
         }),
+      setAppleMusicPlaybackQueue: (queue) =>
+        set({ appleMusicPlaybackQueue: queue }),
       appleMusicNextTrack: () =>
         set((state) => {
-          const tracks = state.appleMusicTracks;
-          if (tracks.length === 0) {
+          // Resolve the active queue: when a contextual queue is set
+          // (e.g. user opened an Artist / Album / Playlist and tapped a
+          // song), step through that ordered list. Otherwise fall back
+          // to the full library so behaviour matches the old menu flow.
+          const libraryTracks = state.appleMusicTracks;
+          const libraryIndex = new Map(
+            libraryTracks.map((t, i) => [t.id, i] as const)
+          );
+          const queueTracks: Track[] = state.appleMusicPlaybackQueue
+            ? state.appleMusicPlaybackQueue
+                .map((id) => {
+                  const idx = libraryIndex.get(id);
+                  return idx === undefined ? null : libraryTracks[idx];
+                })
+                .filter((t): t is Track => t !== null)
+            : libraryTracks;
+
+          if (queueTracks.length === 0) {
             return {
               appleMusicCurrentSongId: null,
               currentLyrics: null,
@@ -1772,27 +1838,27 @@ export const useIpodStore = create<IpodState>()(
             nextSongId = state.appleMusicCurrentSongId;
           } else if (state.isShuffled) {
             // Lightweight shuffle — avoid the current track when possible.
-            const others = tracks.filter(
+            const others = queueTracks.filter(
               (t) => t.id !== state.appleMusicCurrentSongId
             );
-            const pool = others.length > 0 ? others : tracks;
+            const pool = others.length > 0 ? others : queueTracks;
             nextSongId = pool[Math.floor(Math.random() * pool.length)]?.id ?? null;
           } else {
-            const currentIndex = tracks.findIndex(
+            const currentIndex = queueTracks.findIndex(
               (t) => t.id === state.appleMusicCurrentSongId
             );
             const nextIndex =
               currentIndex === -1
                 ? 0
-                : (currentIndex + 1) % tracks.length;
+                : (currentIndex + 1) % queueTracks.length;
             if (!state.loopAll && nextIndex === 0 && currentIndex !== -1) {
               return {
                 appleMusicCurrentSongId:
-                  tracks[tracks.length - 1]?.id ?? null,
+                  queueTracks[queueTracks.length - 1]?.id ?? null,
                 isPlaying: false,
               };
             }
-            nextSongId = tracks[nextIndex]?.id ?? null;
+            nextSongId = queueTracks[nextIndex]?.id ?? null;
           }
 
           const isSameTrack = nextSongId === state.appleMusicCurrentSongId;
@@ -1805,8 +1871,20 @@ export const useIpodStore = create<IpodState>()(
         }),
       appleMusicPreviousTrack: () =>
         set((state) => {
-          const tracks = state.appleMusicTracks;
-          if (tracks.length === 0) {
+          const libraryTracks = state.appleMusicTracks;
+          const libraryIndex = new Map(
+            libraryTracks.map((t, i) => [t.id, i] as const)
+          );
+          const queueTracks: Track[] = state.appleMusicPlaybackQueue
+            ? state.appleMusicPlaybackQueue
+                .map((id) => {
+                  const idx = libraryIndex.get(id);
+                  return idx === undefined ? null : libraryTracks[idx];
+                })
+                .filter((t): t is Track => t !== null)
+            : libraryTracks;
+
+          if (queueTracks.length === 0) {
             return {
               appleMusicCurrentSongId: null,
               currentLyrics: null,
@@ -1817,18 +1895,18 @@ export const useIpodStore = create<IpodState>()(
           let prevSongId: string | null;
 
           if (state.isShuffled) {
-            const others = tracks.filter(
+            const others = queueTracks.filter(
               (t) => t.id !== state.appleMusicCurrentSongId
             );
-            const pool = others.length > 0 ? others : tracks;
+            const pool = others.length > 0 ? others : queueTracks;
             prevSongId = pool[Math.floor(Math.random() * pool.length)]?.id ?? null;
           } else {
-            const currentIndex = tracks.findIndex(
+            const currentIndex = queueTracks.findIndex(
               (t) => t.id === state.appleMusicCurrentSongId
             );
             const prevIndex =
-              currentIndex <= 0 ? tracks.length - 1 : currentIndex - 1;
-            prevSongId = tracks[prevIndex]?.id ?? null;
+              currentIndex <= 0 ? queueTracks.length - 1 : currentIndex - 1;
+            prevSongId = queueTracks[prevIndex]?.id ?? null;
           }
 
           const isSameTrack = prevSongId === state.appleMusicCurrentSongId;
@@ -1841,6 +1919,9 @@ export const useIpodStore = create<IpodState>()(
         }),
       setAppleMusicStorefrontId: (storefrontId) =>
         set({ appleMusicStorefrontId: storefrontId }),
+      setIpodMenuBreadcrumb: (breadcrumb) =>
+        set({ ipodMenuBreadcrumb: breadcrumb }),
+      setIpodMenuMode: (menuMode) => set({ ipodMenuMode: menuMode }),
     }),
     {
       name: "ryos:ipod", // Unique name for localStorage persistence
@@ -1871,6 +1952,10 @@ export const useIpodStore = create<IpodState>()(
         // libraries. The hook re-hydrates `appleMusicTracks` on mount.
         librarySource: state.librarySource,
         appleMusicCurrentSongId: state.appleMusicCurrentSongId,
+        // Persist navigation breadcrumb so reopening the iPod returns the
+        // user to the same menu (and cursor position) they left.
+        ipodMenuBreadcrumb: state.ipodMenuBreadcrumb,
+        ipodMenuMode: state.ipodMenuMode,
       }),
       migrate: (persistedState, version) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1976,6 +2061,13 @@ export const useIpodStore = create<IpodState>()(
           librarySource:
             (state.librarySource as LibrarySource) ?? "youtube",
           appleMusicCurrentSongId: state.appleMusicCurrentSongId ?? null,
+          ipodMenuBreadcrumb: Array.isArray(state.ipodMenuBreadcrumb)
+            ? state.ipodMenuBreadcrumb
+            : null,
+          ipodMenuMode:
+            typeof state.ipodMenuMode === "boolean"
+              ? state.ipodMenuMode
+              : null,
         } as IpodState;
       },
       onRehydrateStorage: () => {
@@ -2005,4 +2097,57 @@ export function getEffectiveTranslationLanguage(storedValue: string | null): str
     return i18n.language;
   }
   return storedValue;
+}
+
+// ---------------------------------------------------------------------------
+// HMR state preservation
+//
+// `partialize` deliberately excludes the Apple Music collections (they live in
+// IndexedDB to escape localStorage's 5–10MB quota) along with a handful of
+// transient runtime fields. That works fine for full page reloads — the
+// `useAppleMusicLibrary` hook re-hydrates from IndexedDB on mount.
+//
+// Vite HMR is different: any edit to a file imported (transitively) by this
+// store cascades invalidation through us, re-running `create()` with
+// `initialIpodData` and wiping every non-`partialize`d field. The
+// `useAppleMusicLibrary` subscriber will refill from IndexedDB on the next
+// pass, but the user still sees a brief flash of empty library. Preserve the
+// in-memory snapshot across HMR so the swap is invisible.
+// ---------------------------------------------------------------------------
+if (import.meta.hot) {
+  const HMR_KEY = "ipodStoreSnapshot";
+  const previousSnapshot = (
+    import.meta.hot.data as { [HMR_KEY]?: Partial<IpodData> }
+  )[HMR_KEY];
+  if (previousSnapshot) {
+    useIpodStore.setState(previousSnapshot);
+  }
+  import.meta.hot.dispose((data) => {
+    const s = useIpodStore.getState();
+    // Snapshot only data fields — not actions. The new module ships its own
+    // action references; keeping the old ones would silently use stale
+    // closures whenever the store implementation changes.
+    const snapshot: Partial<IpodData> = {
+      tracks: s.tracks,
+      currentSongId: s.currentSongId,
+      libraryState: s.libraryState,
+      lastKnownVersion: s.lastKnownVersion,
+      playbackHistory: s.playbackHistory,
+      historyPosition: s.historyPosition,
+      librarySource: s.librarySource,
+      appleMusicTracks: s.appleMusicTracks,
+      appleMusicPlaylists: s.appleMusicPlaylists,
+      appleMusicPlaylistTracks: s.appleMusicPlaylistTracks,
+      appleMusicPlaylistTracksLoadedAt: s.appleMusicPlaylistTracksLoadedAt,
+      appleMusicPlaylistTracksLoading: {},
+      appleMusicCurrentSongId: s.appleMusicCurrentSongId,
+      appleMusicPlaybackQueue: s.appleMusicPlaybackQueue,
+      appleMusicLibraryLoadedAt: s.appleMusicLibraryLoadedAt,
+      appleMusicLibraryError: s.appleMusicLibraryError,
+      appleMusicStorefrontId: s.appleMusicStorefrontId,
+      ipodMenuBreadcrumb: s.ipodMenuBreadcrumb,
+      ipodMenuMode: s.ipodMenuMode,
+    };
+    (data as { [HMR_KEY]?: Partial<IpodData> })[HMR_KEY] = snapshot;
+  });
 }
