@@ -126,7 +126,26 @@ export default apiHandler(
         if (storedHash) {
           const passwordValid = await verifyPassword(password, storedHash);
           if (passwordValid) {
-            // Password matches - log them in
+            // Refuse banned accounts before issuing a token. Without
+            // this check, /api/auth/register doubles as a login that
+            // bypasses the admin ban (which only revokes tokens).
+            try {
+              const parsedUser =
+                typeof existingUser === "string"
+                  ? JSON.parse(existingUser)
+                  : existingUser;
+              if (
+                parsedUser &&
+                (parsedUser as { banned?: boolean }).banned === true
+              ) {
+                res.status(403).json({ error: "Account is banned" });
+                return;
+              }
+            } catch {
+              res.status(500).json({ error: "Failed to read account state" });
+              return;
+            }
+
             const token = generateAuthToken();
             await storeToken(redis, username, token);
             res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));

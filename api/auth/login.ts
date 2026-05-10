@@ -91,6 +91,21 @@ export default apiHandler(
       return;
     }
 
+    // Refuse banned accounts. Admin "ban" deletes existing tokens but
+    // without this check a banned user could simply re-authenticate.
+    try {
+      const parsedUser =
+        typeof userData === "string" ? JSON.parse(userData) : userData;
+      if (parsedUser && (parsedUser as { banned?: boolean }).banned === true) {
+        res.status(403).json({ error: "Account is banned" });
+        return;
+      }
+    } catch {
+      // If we can't parse the record, fail closed.
+      res.status(500).json({ error: "Failed to read account state" });
+      return;
+    }
+
     // Handle old token if provided (rotation)
     if (oldToken) {
       await storeLastValidToken(
