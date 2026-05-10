@@ -7,13 +7,17 @@ interface ScrollbarProps {
     | React.MutableRefObject<HTMLDivElement | null>;
   backlightOn: boolean;
   menuMode: boolean;
+  /** Classic = monochrome blue track; modern = thin iOS 6 indicator. */
+  variant?: "classic" | "modern";
 }
 
 export function Scrollbar({
   containerRef,
   backlightOn,
   menuMode,
+  variant = "classic",
 }: ScrollbarProps) {
+  const isModern = variant === "modern";
   const thumbRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +71,28 @@ export function Scrollbar({
   }, [containerRef, menuMode]);
 
   if (!menuMode) return null;
+
+  if (isModern) {
+    // iOS 6 scroll indicator: no visible track, only a thin rounded grey
+    // pill thumb that appears alongside the content.
+    return (
+      <div className="absolute right-[1px] top-[1px] bottom-[1px] w-[3px] z-20 pointer-events-none">
+        <div
+          ref={trackRef}
+          className="w-full h-full bg-transparent"
+          style={{ opacity: 0 }}
+        />
+        <div
+          ref={thumbRef}
+          className="absolute right-0 bg-black/35 rounded-full"
+          style={{
+            width: "3px",
+            display: "none",
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="absolute right-0 top-[-1px] bottom-[-2px] w-2 z-20">

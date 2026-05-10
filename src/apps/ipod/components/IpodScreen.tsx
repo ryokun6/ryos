@@ -168,6 +168,12 @@ export function IpodScreen({
   const setAppleMusicKitNowPlaying = useIpodStore(
     (s) => s.setAppleMusicKitNowPlaying
   );
+  // iOS-6 inspired modern skin (color screen + Helvetica Neue + glossy
+  // blue gradients) vs. classic monochrome iPod LCD. Read directly from
+  // the store so the parent doesn't have to thread one more prop, and so
+  // toggling from the menubar updates the screen instantly.
+  const uiVariant = useIpodStore((s) => s.uiVariant);
+  const isModernUi = uiVariant === "modern";
   const [showShellTitleInTitlebar, setShowShellTitleInTitlebar] =
     useState(false);
   const effectiveDisplayMode =
@@ -345,12 +351,24 @@ export function IpodScreen({
     <div
       className={cn(
         "relative w-full h-[150px] border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
-        lcdFilterOn ? "lcd-screen" : "",
-        backlightOn
+        // The classic LCD filter scan-lines/flicker overlay only makes
+        // sense for the monochrome 1st-gen LCD look. The modern iOS 6
+        // skin is rendered on a Retina-style high-DPI display, so we
+        // skip the CRT-style filter even when the underlying setting
+        // is enabled.
+        lcdFilterOn && !isModernUi ? "lcd-screen" : "",
+        isModernUi
+          ? // iOS 6 chrome: white "scroll view" with a tiny base tint so
+            // ambient backgrounds bleed through subtly on shader/water modes.
+            backlightOn
+              ? "ipod-modern-screen bg-white"
+              : "ipod-modern-screen bg-neutral-300 brightness-90"
+          : backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",
         lcdFilterOn &&
           backlightOn &&
+          !isModernUi &&
           "shadow-[0_0_10px_2px_rgba(197,224,245,0.05)]"
       )}
       style={{
@@ -364,13 +382,13 @@ export function IpodScreen({
         WebkitTouchCallout: "none",
       }}
     >
-      {/* LCD screen overlay with scan lines */}
-      {lcdFilterOn && (
+      {/* LCD screen overlay with scan lines (classic skin only) */}
+      {lcdFilterOn && !isModernUi && (
         <div className="absolute inset-0 pointer-events-none z-25 lcd-scan-lines"></div>
       )}
 
-      {/* Glass reflection effect */}
-      {lcdFilterOn && (
+      {/* Glass reflection effect (classic skin only) */}
+      {lcdFilterOn && !isModernUi && (
         <div className="absolute inset-0 pointer-events-none z-25 lcd-reflection"></div>
       )}
 
@@ -566,7 +584,7 @@ export function IpodScreen({
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <StatusDisplay message={statusMessage} />
+                  <StatusDisplay message={statusMessage} variant={uiVariant} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -626,13 +644,31 @@ export function IpodScreen({
       )}
 
       {/* Title bar */}
-      <div className="h-6 min-h-6 shrink-0 border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center sticky top-0 z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+      <div
+        className={cn(
+          "h-6 min-h-6 shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
+          isModernUi
+            ? // iOS 6 UIBarStyleDefault: glossy blue gradient (top sheen ->
+              // mid blue -> darker bottom), 1px dark hairline at the
+              // bottom, white text with a soft inner shadow.
+              "ipod-modern-titlebar text-white font-ipod-modern-ui text-[13px] font-semibold [text-shadow:0_-1px_0_rgba(0,0,0,0.35)]"
+            : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+        )}
+      >
         <div
-          className={`w-6 flex items-center justify-start font-chicago ${
-            isPlaying ? "text-xs" : "text-[18px]"
-          }`}
+          className={cn(
+            "w-6 flex items-center justify-start",
+            isModernUi
+              ? "font-ipod-modern-ui text-[13px]"
+              : `font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
+          )}
         >
-          <div className="w-4 h-4 mt-0.5 flex items-center justify-center">
+          <div
+            className={cn(
+              "flex items-center justify-center",
+              isModernUi ? "w-4 h-4" : "w-4 h-4 mt-0.5"
+            )}
+          >
             {isPlaying ? "▶" : "⏸︎"}
           </div>
         </div>
@@ -640,10 +676,13 @@ export function IpodScreen({
           text={titlebarTitle}
           isPlaying
           scrollStartDelaySec={1}
-          className="flex-1 min-w-0 px-1 text-center leading-none"
+          className={cn(
+            "flex-1 min-w-0 px-1 text-center leading-none",
+            isModernUi && "font-ipod-modern-ui"
+          )}
         />
         <div className="w-6 flex items-center justify-end">
-          <BatteryIndicator backlightOn={backlightOn} />
+          <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
         </div>
       </div>
 
@@ -694,6 +733,7 @@ export function IpodScreen({
                               text={item.label}
                               isSelected={index === selectedMenuItem}
                               backlightOn={backlightOn}
+                              variant={uiVariant}
                               onClick={() => {
                                 onSelectMenuItem(index);
                                 onMenuItemAction(item.action);
@@ -711,6 +751,7 @@ export function IpodScreen({
                   containerRef={menuScrollRef}
                   backlightOn={backlightOn}
                   menuMode={menuMode}
+                  variant={uiVariant}
                 />
               </div>
             </motion.div>
@@ -747,7 +788,10 @@ export function IpodScreen({
                   <>
                     <div
                       className={cn(
-                        "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] flex items-center justify-between gap-2",
+                        "flex items-center justify-between gap-2",
+                        isModernUi
+                          ? "font-ipod-modern-ui text-[11px] font-semibold text-[#5a5a5a]"
+                          : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
                         nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
                       )}
                     >
@@ -767,25 +811,42 @@ export function IpodScreen({
                         />
                       )}
                     </div>
-                    <div className="font-chicago text-[16px] text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] flex flex-col gap-0 leading-[1.05] min-h-0 overflow-visible">
+                    <div
+                      className={cn(
+                        "text-center flex flex-col gap-0 leading-[1.05] min-h-0 overflow-visible",
+                        isModernUi
+                          ? "font-ipod-modern-ui text-[14px] font-semibold text-[#222]"
+                          : "font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                      )}
+                    >
                       <ScrollingText
                         text={nowPlayingDisplayTrack.title}
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
-                        className="leading-[1.05] py-px"
+                        className={cn(
+                          isModernUi ? "leading-[1.15] py-px" : "leading-[1.05] py-px"
+                        )}
                       />
                       <ScrollingText
                         text={nowPlayingDisplayTrack.artist || ""}
                         isPlaying={isPlaying}
                         scrollStartDelaySec={1}
-                        className="leading-[1.05] py-px"
+                        className={cn(
+                          isModernUi
+                            ? "leading-[1.15] py-px text-[12px] font-normal text-[#5a5a5a]"
+                            : "leading-[1.05] py-px"
+                        )}
                       />
                       {nowPlayingDisplayTrack.album && (
                         <ScrollingText
                           text={nowPlayingDisplayTrack.album}
                           isPlaying={isPlaying}
                           scrollStartDelaySec={1}
-                          className="leading-[1.05] py-px"
+                          className={cn(
+                            isModernUi
+                              ? "leading-[1.15] py-px text-[11px] font-normal text-[#888]"
+                              : "leading-[1.05] py-px"
+                          )}
                         />
                       )}
                     </div>
@@ -795,19 +856,43 @@ export function IpodScreen({
                         nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
                       )}
                     >
-                      <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
-                        <div
-                          className="h-full bg-[#0a3667]"
-                          style={{
-                            width: `${
-                              totalTime > 0
-                                ? (elapsedTime / totalTime) * 100
-                                : 0
-                            }%`,
-                          }}
-                        />
-                      </div>
-                      <div className="font-chicago text-[16px] w-full h-[22px] flex justify-between text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+                      {isModernUi ? (
+                        // iOS 6 progress: thin grey rounded track with an
+                        // inset shadow, glossy blue gradient fill.
+                        <div className="w-full h-[5px] rounded-full overflow-hidden ipod-modern-progress-track">
+                          <div
+                            className="h-full ipod-modern-progress-fill"
+                            style={{
+                              width: `${
+                                totalTime > 0
+                                  ? (elapsedTime / totalTime) * 100
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
+                          <div
+                            className="h-full bg-[#0a3667]"
+                            style={{
+                              width: `${
+                                totalTime > 0
+                                  ? (elapsedTime / totalTime) * 100
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div
+                        className={cn(
+                          "w-full flex justify-between",
+                          isModernUi
+                            ? "font-ipod-modern-ui text-[11px] h-[18px] mt-0.5 text-[#5a5a5a] font-medium tabular-nums"
+                            : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                        )}
+                      >
                         <span>
                           {formatPlaybackTime(displayElapsedSeconds)}
                         </span>
@@ -816,7 +901,14 @@ export function IpodScreen({
                     </div>
                   </>
                 ) : (
-                  <div className="text-center font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] h-full flex flex-col justify-center items-center">
+                  <div
+                    className={cn(
+                      "text-center h-full flex flex-col justify-center items-center",
+                      isModernUi
+                        ? "font-ipod-modern-ui text-[12px] text-[#666]"
+                        : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                    )}
+                  >
                     <p>Don't steal music</p>
                     <p>Ne volez pas la musique</p>
                     <p>Bitte keine Musik stehlen</p>

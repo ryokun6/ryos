@@ -3,9 +3,15 @@ import type { BatteryManager } from "../../types";
 
 interface BatteryIndicatorProps {
   backlightOn: boolean;
+  /** Classic = monochrome blue; modern = white-on-blue iOS 6 nav style. */
+  variant?: "classic" | "modern";
 }
 
-export function BatteryIndicator({ backlightOn }: BatteryIndicatorProps) {
+export function BatteryIndicator({
+  backlightOn,
+  variant = "classic",
+}: BatteryIndicatorProps) {
+  const isModern = variant === "modern";
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const [isCharging, setIsCharging] = useState<boolean>(false);
   const [animationFrame, setAnimationFrame] = useState<number>(1);
@@ -55,6 +61,29 @@ export function BatteryIndicator({ backlightOn }: BatteryIndicatorProps) {
   // Use fallback if no battery level detected
   const level = batteryLevel ?? 1.0;
   const filledBars = isCharging ? animationFrame : Math.ceil(level * 4);
+
+  if (isModern) {
+    // iOS 6 status-bar battery: white outline + white tip on the glossy
+    // blue nav bar. We draw it slightly bigger than the classic one so
+    // the smaller bar count still reads cleanly at this DPR.
+    return (
+      <div className="flex items-center">
+        <div className="relative w-[20px] h-[10px] border border-white/95 rounded-[2px] bg-transparent">
+          <div className="absolute inset-[1px] flex gap-[1px]">
+            {[1, 2, 3, 4].map((bar) => (
+              <div
+                key={bar}
+                className={`flex-1 h-full transition-colors duration-200 ${
+                  bar <= filledBars ? "bg-white/95" : "bg-transparent"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="w-[2px] h-[4px] bg-white/95 ml-[1px] rounded-r-[1px]" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center">

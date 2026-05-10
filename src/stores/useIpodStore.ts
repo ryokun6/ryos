@@ -129,6 +129,22 @@ interface IpodData {
   displayMode: DisplayMode;
   backlightOn: boolean;
   theme: "classic" | "black" | "u2";
+  /**
+   * On-screen UI variant for the iPod display.
+   *
+   * - `"classic"` keeps the monochrome 1st/4th-gen iPod LCD look — blue
+   *   Chicago-font menu rows on a pale blue background, the original
+   *   look that's been there forever.
+   * - `"modern"` switches the screen to an iOS 6 inspired skin: glossy
+   *   blue gradient navigation bar (à la `UIBarStyleDefault`), white
+   *   table-view cells with thin grey separators and a glossy blue
+   *   selection highlight, and Helvetica Neue typography. The classic
+   *   hardware (click wheel, body) is unchanged — only the contents of
+   *   the 150px LCD swap.
+   *
+   * Persisted across reloads.
+   */
+  uiVariant: "classic" | "modern";
   lcdFilterOn: boolean;
   showLyrics: boolean;
   lyricsAlignment: LyricsAlignment;
@@ -346,6 +362,7 @@ const initialIpodData: IpodData = {
   displayMode: DisplayMode.Video,
   backlightOn: true,
   theme: "classic",
+  uiVariant: "classic",
   lcdFilterOn: true,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
@@ -456,6 +473,8 @@ export interface IpodState extends IpodData {
   toggleLcdFilter: () => void;
   toggleFullScreen: () => void;
   setTheme: (theme: "classic" | "black" | "u2") => void;
+  /** Switch between the monochrome classic LCD and the iOS-6 modern skin. */
+  setUiVariant: (variant: "classic" | "modern") => void;
   addTrack: (track: Track) => void;
   /** Remove one track from the library by id (e.g. TV playlist trash). */
   removeTrackById: (trackId: string) => void;
@@ -589,7 +608,7 @@ export interface IpodState extends IpodData {
   setIpodMenuMode: (menuMode: boolean | null) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 35; // Persist iPod menu navigation breadcrumb + menuMode
+const CURRENT_IPOD_STORE_VERSION = 36; // Persist new uiVariant ("classic" | "modern") screen skin
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -935,6 +954,7 @@ export const useIpodStore = create<IpodState>()(
       toggleFullScreen: () =>
         set((state) => ({ isFullScreen: !state.isFullScreen })),
       setTheme: (theme) => set({ theme }),
+      setUiVariant: (variant) => set({ uiVariant: variant }),
       addTrack: (track) =>
         set((state) => ({
           tracks: [
@@ -2133,6 +2153,7 @@ export const useIpodStore = create<IpodState>()(
         loopCurrent: state.loopCurrent,
         isShuffled: state.isShuffled,
         theme: state.theme,
+        uiVariant: state.uiVariant,
         lcdFilterOn: state.lcdFilterOn,
         showLyrics: state.showLyrics,
         lyricsAlignment: state.lyricsAlignment,
@@ -2248,6 +2269,10 @@ export const useIpodStore = create<IpodState>()(
           loopCurrent: state.loopCurrent,
           isShuffled: state.isShuffled,
           theme: state.theme,
+          uiVariant:
+            state.uiVariant === "modern" || state.uiVariant === "classic"
+              ? state.uiVariant
+              : "classic",
           lcdFilterOn: state.lcdFilterOn,
           showLyrics: state.showLyrics,
           lyricsAlignment: state.lyricsAlignment,

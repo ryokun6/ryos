@@ -1359,6 +1359,126 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   display: none; /* WebKit browsers */
 }
 
+/* =========================================================================
+ * iPod modern (iOS-6 inspired) screen skin
+ *
+ * Toggled by the iPod app's "Screen → Modern" view option in the menubar.
+ * Replaces the monochrome 1st-gen LCD look with the look of the Music app
+ * shipped with iOS 6 on iPhone / iPod touch / iPod nano 7G: glossy blue
+ * UINavigationBar (UIBarStyleDefault), white UITableView cells, Helvetica
+ * Neue throughout, and a glossy blue UITableViewCellSelectionStyleBlue
+ * selection highlight.
+ *
+ * Color references (sampled from iOS 6 system bars and table cells):
+ *   - Nav bar gradient: #a3b9d6 → #5077a5 with a top sheen of rgba(255,255,255,.45)
+ *     and a 1px dark hairline at the bottom (#1f3e6a → rgba(0,0,0,.4))
+ *   - Selected cell: glossy blue #4a90e2 → #1d6fdc with white text
+ *   - Separator: 1px hairline #c8c7cc (iOS 6 default cell separator)
+ *
+ * The `.font-ipod-modern-ui` utility class explicitly fights the macOS
+ * theme override that forces `font-family: inherit` inside .ipod-force-font,
+ * mirroring how `.font-chicago` is preserved.
+ * ========================================================================= */
+
+.font-ipod-modern-ui {
+  font-family: "Helvetica Neue", "HelveticaNeue", "Helvetica", "Arial",
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "PingFang SC",
+    "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic",
+    system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: always;
+  letter-spacing: 0;
+}
+
+.ipod-modern-screen {
+  font-family: "Helvetica Neue", "HelveticaNeue", "Helvetica", "Arial",
+    system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* iOS 6 UINavigationBar — UIBarStyleDefault (blue). The vertical stack:
+ *   1. 1px top highlight (subtle white sheen)
+ *   2. Main blue gradient (light steel → medium blue)
+ *   3. 1px bottom hairline (dark navy fading into a soft drop shadow) */
+.ipod-modern-titlebar {
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.55) 0,
+      rgba(255, 255, 255, 0) 1px
+    ),
+    linear-gradient(
+      to bottom,
+      #a8bfdb 0%,
+      #7b9bc5 45%,
+      #5b80b1 80%,
+      #4b6fa1 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* iOS 6 UITableViewCell — white cell with a single 1px bottom hairline.
+ * Uses an inset box-shadow rather than a real border so it never adds
+ * height to the row (the row is exactly MENU_ITEM_HEIGHT). */
+.ipod-modern-row {
+  background-color: #ffffff;
+  box-shadow: inset 0 -1px 0 #c8c7cc;
+}
+
+/* iOS 6 UITableViewCellSelectionStyleBlue — glossy blue gradient with a
+ * thin highlight along the top edge. White text + chevron sit on top.
+ * We use `background-image` here (not the Tailwind gradient utility) so
+ * the rule beats the row's solid `background-color`. */
+.ipod-modern-row-selected {
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.35) 0,
+      rgba(255, 255, 255, 0) 2px
+    ),
+    linear-gradient(to bottom, #5aa0f2 0%, #2e7be4 50%, #1463c8 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+  color: #ffffff;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* Now-playing progress bar — inset grey track + glossy blue fill. */
+.ipod-modern-progress-track {
+  background-color: #d8d8dd;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.18);
+}
+
+.ipod-modern-progress-fill {
+  background-image: linear-gradient(
+    to bottom,
+    #5aa0f2 0%,
+    #2e7be4 60%,
+    #1463c8 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* macOS theme override: the `.ipod-force-font *` rule in themes.css sets
+ * `font-family: inherit !important`, which would clobber Helvetica Neue.
+ * Restore it for the modern skin classes — same approach used for
+ * `.font-chicago` further down in themes.css. */
+:root[data-os-theme="macosx"] .ipod-force-font .font-ipod-modern-ui,
+:root[data-os-theme="macosx"] .font-ipod-modern-ui {
+  font-family: "Helvetica Neue", "HelveticaNeue", "Helvetica", "Arial",
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "PingFang SC",
+    "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic",
+    system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: always !important;
+}
+
 .widget-strip-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
