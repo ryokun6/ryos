@@ -169,7 +169,10 @@ export interface ChatsStoreState {
   setAuthenticated: (authenticated: boolean) => void;
   setHasPassword: (hasPassword: boolean | null) => void; // Set password status
   checkHasPassword: () => Promise<{ ok: boolean; error?: string }>; // Check if user has password
-  setPassword: (password: string) => Promise<{ ok: boolean; error?: string }>; // Set password for user
+  setPassword: (
+    password: string,
+    oldPassword?: string
+  ) => Promise<{ ok: boolean; error?: string }>; // Set password for user
   setRooms: (rooms: ChatRoom[]) => void;
   setCurrentRoomId: (roomId: string | null) => void;
   setRoomMessagesForCurrentRoom: (messages: ChatMessage[]) => void; // Sets messages for the *current* room
@@ -380,7 +383,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             };
           }
         },
-        setPassword: async (password) => {
+        setPassword: async (password, oldPassword) => {
           const currentUsername = get().username;
 
           if (!currentUsername) {
@@ -395,7 +398,9 @@ export const useChatsStore = create<ChatsStoreState>()(
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ password }),
+                body: JSON.stringify(
+                  oldPassword ? { password, oldPassword } : { password }
+                ),
                 timeout: 15000,
                 throwOnHttpError: false,
                 retry: { maxAttempts: 1, initialDelayMs: 250 },

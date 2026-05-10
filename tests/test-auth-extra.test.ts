@@ -162,7 +162,7 @@ describe("Auth Extra API Tests", () => {
       expect(res.status).toBe(405);
     });
 
-    test("Password set - success", async () => {
+    test("Password set - rejected without old password when one exists", async () => {
       if (!testToken || !testUsername) return;
 
       const password = isAdminUser ? ADMIN_PASSWORD : "testpassword123";
@@ -175,6 +175,56 @@ describe("Auth Extra API Tests", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ password }),
+        }
+      );
+      // With S-01 hardening, changing a password that already exists
+      // requires the caller to prove they know it. Session-token alone
+      // is no longer sufficient.
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(typeof data.error).toBe("string");
+      expect(data.error.toLowerCase()).toContain("current password");
+    });
+
+    test("Password set - rejected with wrong old password", async () => {
+      if (!testToken || !testUsername) return;
+
+      const password = isAdminUser ? ADMIN_PASSWORD : "testpassword123";
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/auth/password/set`,
+        testUsername,
+        testToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password,
+            oldPassword: "definitely-not-the-real-password-xyz",
+          }),
+        }
+      );
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(typeof data.error).toBe("string");
+      expect(data.error.toLowerCase()).toContain("incorrect");
+    });
+
+    test("Password set - success with correct old password", async () => {
+      if (!testToken || !testUsername) return;
+
+      const password = isAdminUser ? ADMIN_PASSWORD : "testpassword123";
+
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/auth/password/set`,
+        testUsername,
+        testToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // Re-set the password to the same value, but supply the
+          // existing password so the change is authorized.
+          body: JSON.stringify({ password, oldPassword: password }),
         }
       );
       expect(res.status).toBe(200);
