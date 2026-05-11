@@ -19,6 +19,16 @@ export interface MenuItem {
   value?: string;
   /** When true, the row renders as a non-interactive loading placeholder. */
   isLoading?: boolean;
+  /**
+   * Optional artwork URL associated with this row. When the modern UI
+   * is in split menu mode, the right-hand Ken Burns artwork panel
+   * cross-fades to this image as the row becomes selected — letting
+   * songs / albums / artists / playlists each preview their own
+   * cover. Rows that omit this field fall back to the now-playing
+   * track's cover (or stay on the previous selection's art if the
+   * now-playing track also has no cover).
+   */
+  coverUrl?: string | null;
 }
 
 // Menu history entry

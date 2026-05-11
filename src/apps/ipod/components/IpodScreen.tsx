@@ -516,12 +516,63 @@ export function IpodScreen({
 
   const shouldShowLyrics = showLyrics;
 
+  // ----- Split-menu Ken Burns artwork carousel ---------------------
+  //
+  // Build a deduped list of cover URLs sourced from the items in the
+  // *current* menu (not the selected row). Each menu item carries an
+  // optional `coverUrl` (e.g. songs, albums, artists, playlists), and
+  // we cycle through them on a slow timer so the right-hand panel
+  // reads as a slideshow of "what's in this list".
+  //
+  // Falls back to the now-playing track's cover when the current
+  // menu has no artwork-bearing items, so the panel still has
+  // something to render in plain settings menus.
+  const splitArtUrlPool = useMemo(() => {
+    if (!isModernUi || !menuMode) return [] as string[];
+    const seen = new Set<string>();
+    const urls: string[] = [];
+    for (const item of currentMenuItems) {
+      const url = item.coverUrl;
+      if (typeof url !== "string" || url.length === 0) continue;
+      if (seen.has(url)) continue;
+      seen.add(url);
+      urls.push(url);
+    }
+    if (urls.length === 0 && coverUrl) urls.push(coverUrl);
+    return urls;
+  }, [isModernUi, menuMode, currentMenuItems, coverUrl]);
+
+  const [splitArtIndex, setSplitArtIndex] = useState(0);
+
+  // Reset the carousel index whenever the pool changes (i.e. the user
+  // navigates into a different menu) so each new menu starts on its
+  // first artwork instead of jumping mid-cycle into a stale offset.
+  useEffect(() => {
+    setSplitArtIndex(0);
+  }, [splitArtUrlPool]);
+
+  // Cycle through the pool on a slow interval. Skip the timer when
+  // there's nothing to cycle (≤ 1 image) so React doesn't keep an
+  // idle timer alive on simple menus. 7000ms ≈ a comfortable
+  // slideshow cadence that lets the Ken Burns animation play through
+  // a meaningful arc on each cover.
+  useEffect(() => {
+    if (splitArtUrlPool.length <= 1) return;
+    const id = window.setInterval(() => {
+      setSplitArtIndex((prev) => (prev + 1) % splitArtUrlPool.length);
+    }, 7000);
+    return () => window.clearInterval(id);
+  }, [splitArtUrlPool]);
+
+  const splitArtUrl =
+    splitArtUrlPool[splitArtIndex] ?? splitArtUrlPool[0] ?? null;
+
   // True when the modern UI should render its iPod 6G/7G classic
   // "Music + Now Playing" split: titlebar + menu list clamped to the
   // left half, full-height Ken Burns album art on the right half.
   // Only meaningful in menu mode with an actual cover URL — otherwise
   // the screen falls back to the standard full-width chrome.
-  const showSplitMenuArt = isModernUi && menuMode && Boolean(coverUrl);
+  const showSplitMenuArt = isModernUi && menuMode && Boolean(splitArtUrl);
 
   return (
     <div
@@ -824,19 +875,28 @@ export function IpodScreen({
        *  otherwise sit) all the way to the bottom — matching the iPod
        *  classic 6G/7G "Music + Now Playing" reference photo where the
        *  album art has no titlebar above it. The titlebar + menu below
-       *  are clamped to the left half so they don't bleed underneath. */}
-      {showSplitMenuArt && coverUrl && (
+       *  are clamped to the left half so they don't bleed underneath.
+       *  AnimatePresence cross-fades between covers as the slideshow
+       *  cycles through `splitArtUrlPool`. */}
+      {showSplitMenuArt && splitArtUrl && (
         <div
           className="ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[15] overflow-hidden"
           style={{ width: MODERN_SPLIT_HALF }}
           aria-hidden
         >
-          <img
-            src={coverUrl}
-            alt=""
-            draggable={false}
-            className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
-          />
+          <AnimatePresence initial={false}>
+            <motion.img
+              key={splitArtUrl}
+              src={splitArtUrl}
+              alt=""
+              draggable={false}
+              className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: "easeInOut" }}
+            />
+          </AnimatePresence>
         </div>
       )}
 

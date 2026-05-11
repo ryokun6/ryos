@@ -58,6 +58,7 @@ import {
   getYouTubeVideoId,
   formatKugouImageUrl,
   getAlbumGroupingKey,
+  resolveTrackCoverUrl,
 } from "../constants";
 import type { WheelArea, RotationDirection } from "../types";
 import type { IpodInitialData } from "../../base/types";
@@ -1468,6 +1469,7 @@ export function useIpodLogic({
         // Full library queue → pass null to clear any contextual queue.
         action: () => playTrackFromMenu(track, index, null),
         showChevron: false,
+        coverUrl: resolveTrackCoverUrl(track),
       })),
     [browsableTracks, playTrackFromMenu]
   );
@@ -1506,6 +1508,7 @@ export function useIpodLogic({
           appleMusicRecentlyAddedTracks
         ),
       showChevron: false,
+      coverUrl: resolveTrackCoverUrl(track),
     }));
   }, [
     appleMusicRecentlyAddedTracks,
@@ -1548,6 +1551,7 @@ export function useIpodLogic({
           appleMusicFavoriteTracks
         ),
       showChevron: false,
+      coverUrl: resolveTrackCoverUrl(track),
     }));
   }, [
     appleMusicFavoriteTracks,
@@ -1584,6 +1588,7 @@ export function useIpodLogic({
       action: () =>
         playAppleMusicTrackFromMenu(track, index, [track.id], [track]),
       showChevron: false,
+      coverUrl: resolveTrackCoverUrl(track),
     }));
   }, [
     appleMusicRadioTracks,
@@ -1606,6 +1611,7 @@ export function useIpodLogic({
         label: track.title,
         action: () => playTrackFromMenu(track, trackListIndex, queueIds),
         showChevron: false,
+        coverUrl: resolveTrackCoverUrl(track),
       }));
     }
     return result;
@@ -1626,6 +1632,7 @@ export function useIpodLogic({
           label: track.title,
           action: () => playTrackFromMenu(track, trackListIndex, queueIds),
           showChevron: false,
+          coverUrl: resolveTrackCoverUrl(track),
         }));
       }
     }
@@ -1648,9 +1655,17 @@ export function useIpodLogic({
     const allSongsLabel = t("apps.ipod.menuItems.allSongs");
     for (const artist of sortedArtists) {
       const allSongsTitle = `${artist} - ${allSongsLabel}`;
+      const artistTracks = tracksByArtist[artist] ?? [];
+      const artistAllCoverTrack = artistTracks.find(
+        ({ track }) => resolveTrackCoverUrl(track) !== null
+      )?.track ?? artistTracks[0]?.track ?? null;
       const albumItems = (sortedAlbumsByArtist[artist] ?? []).map((albumKey) => {
         const album = albumGroupsByKey[albumKey]?.album ?? albumKey;
         const albumTitle = `${artist}\u0000${albumKey}`;
+        const albumTracks = tracksByArtistAlbum[artist]?.[albumKey] ?? [];
+        const albumCoverTrack = albumTracks.find(
+          ({ track }) => resolveTrackCoverUrl(track) !== null
+        )?.track ?? albumTracks[0]?.track ?? null;
         return {
           label: album,
           action: () => {
@@ -1663,6 +1678,7 @@ export function useIpodLogic({
             });
           },
           showChevron: true,
+          coverUrl: resolveTrackCoverUrl(albumCoverTrack),
         };
       });
 
@@ -1678,6 +1694,7 @@ export function useIpodLogic({
             });
           },
           showChevron: true,
+          coverUrl: resolveTrackCoverUrl(artistAllCoverTrack),
         },
         ...albumItems,
       ];
@@ -1689,6 +1706,8 @@ export function useIpodLogic({
     albumGroupsByKey,
     artistAllSongsMenuItemsByTitle,
     artistAlbumMenuItemsByTitle,
+    tracksByArtist,
+    tracksByArtistAlbum,
     registerActivity,
     pushMenuChild,
     t,
@@ -1706,6 +1725,7 @@ export function useIpodLogic({
         label: track.title,
         action: () => playTrackFromMenu(track, trackListIndex, queueIds),
         showChevron: false,
+        coverUrl: resolveTrackCoverUrl(track),
       }));
     }
     return result;
@@ -1728,19 +1748,26 @@ export function useIpodLogic({
           },
           showChevron: true,
         },
-        ...sortedAlbums.map((albumKey) => ({
-          label: albumGroupsByKey[albumKey].album,
-          action: () => {
-            registerActivity();
-            pushMenuChild({
-              title: albumKey,
-              displayTitle: albumGroupsByKey[albumKey].album,
-              items: albumMenuItemsByAlbum[albumKey],
-              selectedIndex: 0,
-            });
-          },
-          showChevron: true,
-        })),
+        ...sortedAlbums.map((albumKey) => {
+          const albumTracks = albumGroupsByKey[albumKey]?.tracks ?? [];
+          const albumCoverTrack = albumTracks.find(
+            ({ track }) => resolveTrackCoverUrl(track) !== null
+          )?.track ?? albumTracks[0]?.track ?? null;
+          return {
+            label: albumGroupsByKey[albumKey].album,
+            action: () => {
+              registerActivity();
+              pushMenuChild({
+                title: albumKey,
+                displayTitle: albumGroupsByKey[albumKey].album,
+                items: albumMenuItemsByAlbum[albumKey],
+                selectedIndex: 0,
+              });
+            },
+            showChevron: true,
+            coverUrl: resolveTrackCoverUrl(albumCoverTrack),
+          };
+        }),
       ];
     },
     [
@@ -1771,24 +1798,32 @@ export function useIpodLogic({
           },
           showChevron: true,
         },
-        ...sortedArtists.map((artist) => ({
-          label: artist,
-          action: () => {
-            registerActivity();
-            pushMenuChild({
-              title: artist,
-              items: artistMenuItemsByArtist[artist],
-              selectedIndex: 0,
-            });
-          },
-          showChevron: true,
-        })),
+        ...sortedArtists.map((artist) => {
+          const artistTracks = tracksByArtist[artist] ?? [];
+          const artistCoverTrack = artistTracks.find(
+            ({ track }) => resolveTrackCoverUrl(track) !== null
+          )?.track ?? artistTracks[0]?.track ?? null;
+          return {
+            label: artist,
+            action: () => {
+              registerActivity();
+              pushMenuChild({
+                title: artist,
+                items: artistMenuItemsByArtist[artist],
+                selectedIndex: 0,
+              });
+            },
+            showChevron: true,
+            coverUrl: resolveTrackCoverUrl(artistCoverTrack),
+          };
+        }),
       ];
     },
     [
       sortedArtists,
       artistMenuItemsByArtist,
       albumsListMenuItems,
+      tracksByArtist,
       registerActivity,
       pushMenuChild,
       t,
@@ -1832,6 +1867,7 @@ export function useIpodLogic({
               playlistTracks
             ),
           showChevron: false,
+          coverUrl: resolveTrackCoverUrl(track),
         }));
       }
     }
@@ -1846,21 +1882,36 @@ export function useIpodLogic({
 
   const applePlaylistsMenuItems = useMemo(
     () =>
-      appleMusicPlaylists.map((playlist) => ({
-        label: playlist.name,
-        action: () => {
-          registerActivity();
-          requestPlaylistTracksIfNeeded(playlist.id);
-          pushMenuChild({
-            title: playlist.name,
-            items: applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? [],
-            selectedIndex: 0,
-          });
-        },
-        showChevron: true,
-      })),
+      appleMusicPlaylists.map((playlist) => {
+        // Prefer the playlist's own artwork (Apple Music supplies it
+        // directly via MusicKit). Fall back to the first cached track
+        // with usable artwork so playlists imported before the artwork
+        // arrived still show something representative.
+        const playlistTracks = appleMusicPlaylistTracks[playlist.id] ?? [];
+        const firstTrackWithCover = playlistTracks.find(
+          (track) => resolveTrackCoverUrl(track) !== null
+        );
+        const coverUrl =
+          playlist.artworkUrl ??
+          (firstTrackWithCover ? resolveTrackCoverUrl(firstTrackWithCover) : null);
+        return {
+          label: playlist.name,
+          action: () => {
+            registerActivity();
+            requestPlaylistTracksIfNeeded(playlist.id);
+            pushMenuChild({
+              title: playlist.name,
+              items: applePlaylistTrackMenuItemsByPlaylist[playlist.id] ?? [],
+              selectedIndex: 0,
+            });
+          },
+          showChevron: true,
+          coverUrl,
+        };
+      }),
     [
       appleMusicPlaylists,
+      appleMusicPlaylistTracks,
       applePlaylistTrackMenuItemsByPlaylist,
       registerActivity,
       requestPlaylistTracksIfNeeded,
