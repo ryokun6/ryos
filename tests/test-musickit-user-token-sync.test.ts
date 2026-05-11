@@ -52,11 +52,17 @@ if (!browserGlobals.navigator) {
   browserGlobals.navigator = { onLine: true, userAgent: "test" } as Navigator;
 }
 
-// Server-side imports — no browser globals needed.
+// Server-side imports — no browser globals needed, and crucially no
+// Redis-side imports either. Importing the route module
+// `../api/sync/musickit-user-token` would transitively pull in
+// `apiHandler` → `_rate-limit.ts`, which calls `createRedis()` at
+// module load and crashes in Redis-less environments (PR CI). The
+// pure helpers live in a `_`-prefixed utility module that the route
+// also imports from.
 import {
   parseStoredToken,
   MAX_TOKEN_LENGTH,
-} from "../api/sync/musickit-user-token";
+} from "../api/sync/_musickit-user-token-utils";
 import { musickitUserTokenKey } from "../api/sync/_keys";
 
 // Client-side imports — must run *after* the browser-global stubs.

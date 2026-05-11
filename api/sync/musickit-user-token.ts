@@ -45,17 +45,22 @@ import type { VercelResponse } from "@vercel/node";
 import type { Redis } from "../_utils/redis.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { musickitUserTokenKey } from "./_keys.js";
+import {
+  MAX_TOKEN_LENGTH,
+  parseStoredToken,
+  type StoredUserToken,
+} from "./_musickit-user-token-utils.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
-export const MAX_TOKEN_LENGTH = 4096;
-
-export interface StoredUserToken {
-  musicUserToken: string;
-  expiresAt: number | null;
-  storedAt: number;
-}
+// Re-export the pure helpers so existing consumers (and the
+// associated unit-test suite) keep working — but the canonical home
+// for them is `./_musickit-user-token-utils.ts`, which has no
+// dependency on `apiHandler` / Redis-side modules and can therefore
+// be loaded in Redis-less environments (e.g. PR CI).
+export { MAX_TOKEN_LENGTH, parseStoredToken };
+export type { StoredUserToken };
 
 interface PutBody {
   musicUserToken?: unknown;
@@ -78,34 +83,6 @@ interface DeleteBody {
 }
 
 type RequestBody = PutBody & DeleteBody;
-
-export function parseStoredToken(raw: unknown): StoredUserToken | null {
-  if (!raw) return null;
-  let candidate: unknown = raw;
-  if (typeof raw === "string") {
-    try {
-      candidate = JSON.parse(raw);
-    } catch {
-      return null;
-    }
-  }
-  if (!candidate || typeof candidate !== "object") return null;
-  const obj = candidate as Partial<StoredUserToken>;
-  if (typeof obj.musicUserToken !== "string" || obj.musicUserToken.length === 0) {
-    return null;
-  }
-  return {
-    musicUserToken: obj.musicUserToken,
-    expiresAt:
-      typeof obj.expiresAt === "number" && Number.isFinite(obj.expiresAt)
-        ? obj.expiresAt
-        : null,
-    storedAt:
-      typeof obj.storedAt === "number" && Number.isFinite(obj.storedAt)
-        ? obj.storedAt
-        : Date.now(),
-  };
-}
 
 async function handleGet(
   res: VercelResponse,
