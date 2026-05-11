@@ -843,12 +843,16 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             className="relative flex items-center justify-center w-full"
             style={{
               height: ipodMode && isModernIpodCoverFlow ? "76%" : "75%",
-              marginTop:
-                ipodMode && isModernIpodCoverFlow
-                  ? "0%"
-                  : ipodMode
-                    ? "-8%"
-                    : "-2%",
+              // Pull the carousel up so the covers sit closer to the
+              // titlebar instead of being optically centered inside the
+              // menu-panel content area. Modern iPod nano/classic 6G
+              // photos show the album row riding noticeably higher than
+              // mid-screen, with the title/artist row anchored to the
+              // bottom — the previous 0% offset left the covers
+              // floating low. -8% matches the classic iPod variant and
+              // gives a consistent "covers up, label down" feel across
+              // skins.
+              marginTop: ipodMode ? "-8%" : "-2%",
               perspective: `${(ipodMode ? 65 : 60) * 1.5}cqmin`,
               transformStyle: "preserve-3d",
             }}
@@ -1051,12 +1055,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               className="relative flex items-center justify-center w-full"
               style={{ 
                 height: ipodMode && isModernIpodCoverFlow ? "76%" : "75%",
-                marginTop:
-                  ipodMode && isModernIpodCoverFlow
-                    ? "0%"
-                    : ipodMode
-                      ? "-8%"
-                      : "-2%",
+                // Pull the carousel up so the covers ride higher in
+                // the iPod screen — matches the inline modern variant
+                // and the classic skin. Karaoke (non-iPod) keeps its
+                // smaller -2% offset because its viewport is wider and
+                // the carousel is already lifted by other padding.
+                marginTop: ipodMode ? "-8%" : "-2%",
                 perspective: `${(ipodMode ? 65 : 60) * 1.5}cqmin`,
                 transformStyle: "preserve-3d",
               }}
