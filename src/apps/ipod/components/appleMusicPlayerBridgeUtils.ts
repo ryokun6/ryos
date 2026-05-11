@@ -28,3 +28,41 @@ export function shouldFireEndedForPlaybackState(
   if (state === 5) return !isAppleMusicCollectionTrack(currentTrack);
   return false;
 }
+
+/**
+ * Dedup window for `onEnded` fan-out.
+ *
+ * MusicKit JS fires *both* `ended` (state=5) and `completed` (state=10) when
+ * a single-song queue (`setQueue({ song: id })`) finishes its only item:
+ *   - state=5 fires when the song itself ends.
+ *   - state=10 fires immediately afterwards because the queue is now empty.
+ *
+ * If the bridge forwards both events to the parent's `onEnded`, our
+ * `handleTrackEnd` → `nextTrack` runs *twice*. In shuffle mode each call
+ * picks a different random song; in sequential mode each call advances
+ * one step. The two back-to-back `setQueue(...)` calls then race inside
+ * MusicKit so the song the user actually hears can mismatch the song the
+ * iPod displays (the display reflects the *latest* store update, but the
+ * audio can settle on whichever `setQueue` resolves last). Suppress the
+ * second fan-out within a window long enough to span the state 5 → state
+ * 10 transition for the same item, but short enough never to swallow a
+ * subsequent track's own end-of-playback signal.
+ */
+export const ENDED_FANOUT_DEDUP_WINDOW_MS = 1500;
+
+/**
+ * Returns true when an `onEnded` fan-out at `now` should be suppressed
+ * because we already fanned out for the same song-ending event at
+ * `lastFiredAt`. `lastFiredAt <= 0` means we haven't fanned out yet.
+ *
+ * Exported so the regression test pinning the dedup behavior can run
+ * without spinning up React + MusicKit.
+ */
+export function isWithinEndedFanoutDedupWindow(
+  now: number,
+  lastFiredAt: number,
+  windowMs: number = ENDED_FANOUT_DEDUP_WINDOW_MS
+): boolean {
+  if (lastFiredAt <= 0) return false;
+  return now - lastFiredAt < windowMs;
+}

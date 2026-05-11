@@ -47,7 +47,11 @@ const {
   APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
 } = await import("../src/apps/ipod/hooks/useAppleMusicLibrary");
 const { useIpodStore, appleMusicKitIdToLyricsSongId } = await import("../src/stores/useIpodStore");
-const { shouldFireEndedForPlaybackState } = await import(
+const {
+  shouldFireEndedForPlaybackState,
+  isWithinEndedFanoutDedupWindow,
+  ENDED_FANOUT_DEDUP_WINDOW_MS,
+} = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
 type Track = import("../src/stores/useIpodStore").Track;
@@ -863,5 +867,56 @@ describe("AppleMusicPlayerBridge playback-state fan-out", () => {
     // Defensive: if the current track is unknown, prefer the legacy
     // behavior of advancing on `ended` over getting stuck silent.
     expect(shouldFireEndedForPlaybackState(5, null)).toBe(true);
+  });
+});
+
+describe("AppleMusicPlayerBridge ended fan-out dedup window", () => {
+  // Regression: even for non-shell single-song queues
+  // (`setQueue({ song: id })`), MusicKit JS fires both `ended` (5) and
+  // `completed` (10) when the song finishes. Forwarding both to the
+  // parent runs `nextTrack` twice — the second pick races MusicKit's
+  // first `setQueue`, so the audio the user actually hears can mismatch
+  // the song the iPod displays. The dedup window collapses the pair so
+  // `onEnded` fans out at most once per song-ending event.
+  test("first fire after never having fired is allowed", () => {
+    expect(isWithinEndedFanoutDedupWindow(1_000, 0)).toBe(false);
+    expect(isWithinEndedFanoutDedupWindow(1_000, -1)).toBe(false);
+  });
+
+  test("second fire inside the window is suppressed (state 5 → state 10 collapse)", () => {
+    // state 5 fires at t=1000, state 10 follows at t=1100 — same song.
+    expect(isWithinEndedFanoutDedupWindow(1_100, 1_000)).toBe(true);
+    // Even with hundreds of ms between events, dedup still bites.
+    expect(isWithinEndedFanoutDedupWindow(1_999, 1_000)).toBe(true);
+  });
+
+  test("subsequent song's own ended event (well outside window) fans out", () => {
+    // Songs are at minimum a few seconds long, so the next track's end
+    // is always well past the dedup window.
+    expect(
+      isWithinEndedFanoutDedupWindow(
+        1_000 + ENDED_FANOUT_DEDUP_WINDOW_MS,
+        1_000
+      )
+    ).toBe(false);
+    expect(
+      isWithinEndedFanoutDedupWindow(
+        1_000 + ENDED_FANOUT_DEDUP_WINDOW_MS + 1,
+        1_000
+      )
+    ).toBe(false);
+    expect(isWithinEndedFanoutDedupWindow(60_000, 1_000)).toBe(false);
+  });
+
+  test("dedup window is comfortably wider than typical state 5 → state 10 latency, narrower than song length", () => {
+    // Sanity: window is in the realm of "a beat between events" (>= 1s)
+    // but never long enough to swallow a real song's end (< 30s).
+    expect(ENDED_FANOUT_DEDUP_WINDOW_MS).toBeGreaterThanOrEqual(1_000);
+    expect(ENDED_FANOUT_DEDUP_WINDOW_MS).toBeLessThan(30_000);
+  });
+
+  test("custom window override works (used by tests + future hardening)", () => {
+    expect(isWithinEndedFanoutDedupWindow(100, 50, 100)).toBe(true);
+    expect(isWithinEndedFanoutDedupWindow(150, 50, 100)).toBe(false);
   });
 });

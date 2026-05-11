@@ -9,7 +9,10 @@ import {
 import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
-import { shouldFireEndedForPlaybackState } from "./appleMusicPlayerBridgeUtils";
+import {
+  isWithinEndedFanoutDedupWindow,
+  shouldFireEndedForPlaybackState,
+} from "./appleMusicPlayerBridgeUtils";
 
 /**
  * Apple Music playback bridge.
@@ -203,6 +206,15 @@ export const AppleMusicPlayerBridge = forwardRef<
   const currentTrackRef = useRef(currentTrack);
   currentTrackRef.current = currentTrack;
 
+  // Wall-clock timestamp of the last `onEnded` fan-out. Used to dedup the
+  // back-to-back `ended` (5) + `completed` (10) MusicKit events that both
+  // fire when a single-song queue's only item finishes. Without this the
+  // parent's `nextTrack` runs twice and the second pick races MusicKit's
+  // first `setQueue`, so the audio the user hears can mismatch the song
+  // the iPod displays (the display reflects the *second* pick, the audio
+  // can settle on either). See `isWithinEndedFanoutDedupWindow`.
+  const lastEndedFiredAtRef = useRef(0);
+
   // Wire up MusicKit event listeners once the instance is available.
   // We deliberately skip `playbackTimeDidChange` for progress updates:
   // runtime logs (debug session b224e4) confirmed that MusicKit JS v3's
@@ -233,6 +245,16 @@ export const AppleMusicPlayerBridge = forwardRef<
         (state === 5 || state === 10) &&
         shouldFireEndedForPlaybackState(state, currentTrackRef.current)
       ) {
+        // MusicKit fires both `ended` (5) and `completed` (10) when a
+        // single-song queue's only item finishes — dedup so the parent's
+        // next-track handler runs once per song-ending event.
+        const now = Date.now();
+        if (
+          isWithinEndedFanoutDedupWindow(now, lastEndedFiredAtRef.current)
+        ) {
+          return;
+        }
+        lastEndedFiredAtRef.current = now;
         onEndedRef.current?.();
         return;
       }
@@ -431,7 +453,29 @@ export const AppleMusicPlayerBridge = forwardRef<
     }
 
     const localQueueKey = queueKey;
-    queueLoadingRef.current = (async () => {
+    // Serialize back-to-back queue swaps. If another track change is
+    // already in flight (rapid `nextTrack` clicks, an `onEnded` advance
+    // racing a user press, etc.), wait for it to settle before issuing
+    // our own `setQueue`. Two concurrent `setQueue` calls inside
+    // MusicKit can resolve out of order — without serialization the
+    // older queue can briefly start playing after the newer one
+    // landed, so the audio mismatches the song the iPod displays
+    // (display reflects the *latest* React state, audio reflects
+    // whichever `setQueue` resolved last). Capture the *previous* ref
+    // so the new chain awaits the old one rather than itself.
+    const previousQueueLoading = queueLoadingRef.current;
+    let thisLoad: Promise<void> | null = null;
+    thisLoad = (async () => {
+      if (previousQueueLoading) {
+        // Best-effort wait — failures of the previous queue load
+        // shouldn't block a fresh user action.
+        try {
+          await previousQueueLoading;
+        } catch {
+          /* ignore — the previous load already logged its own error */
+        }
+        if (cancelled) return;
+      }
       try {
         const resumeSeconds = getSafeStartSeconds(
           currentTrack,
@@ -469,9 +513,17 @@ export const AppleMusicPlayerBridge = forwardRef<
       } catch (err) {
         console.error("[apple music] setQueue failed", err);
       } finally {
-        queueLoadingRef.current = null;
+        // Only clear the shared ref when *we* are still the most recent
+        // load. A newer track change already replaced `queueLoadingRef`
+        // with its own promise; nulling here would let play/pause sync
+        // think there's no pending queue load and race the newer
+        // `setQueue` mid-flight.
+        if (queueLoadingRef.current === thisLoad) {
+          queueLoadingRef.current = null;
+        }
       }
     })();
+    queueLoadingRef.current = thisLoad;
     return () => {
       cancelled = true;
     };
