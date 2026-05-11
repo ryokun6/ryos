@@ -886,6 +886,13 @@ export function IpodScreen({
           isPlaying
           scrollStartDelaySec={1}
           fadeEdges={isModernUi}
+          // ScrollingText defaults align to "center", which forces
+          // `justify-center` and overrides any `text-left` class. The
+          // modern titlebar wants the title hard-aligned to the left
+          // (matching the iPod nano 6G/7G "iPod" / "Now Playing"
+          // header in the reference photo); the classic skin keeps
+          // its centered Chicago glyphs.
+          align={isModernUi ? "left" : "center"}
           className={cn(
             "flex-1 min-w-0 leading-none",
             isModernUi
@@ -895,10 +902,10 @@ export function IpodScreen({
                   // 11px Helvetica Neue used by iOS 6 status bars but
                   // still well under the 15px MyriadPro list rows so the
                   // header reads as secondary chrome.
-                  "text-left text-[12px] font-semibold",
+                  "text-[12px] font-semibold",
                   "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
                 )
-              : "px-1 text-center"
+              : "px-1"
           )}
         />
         <div
