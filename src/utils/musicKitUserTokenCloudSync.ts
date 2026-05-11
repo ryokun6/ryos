@@ -1,5 +1,5 @@
 /**
- * Cloud-sync + local cache for the Apple Music Music User Token.
+ * Cloud-sync + local cache for the Apple Music **Music User Token**.
  *
  * MusicKit JS normally persists the Music User Token in `localStorage`
  * (and a same-origin cookie on `music.apple.com`). Some embedded
@@ -8,34 +8,43 @@
  * re-authorize Apple Music every single time they open the iPod.
  *
  * This module provides two cooperating fallbacks so the iPod can
- * resume the authorized session on reload even when MusicKit JS's own
- * persistence is wiped:
+ * resume the authorized session on reload (and across devices) even
+ * when MusicKit JS's own persistence is wiped:
  *
- *   1. **Local IndexedDB cache.** Resilient to localStorage being
- *      cleared (IndexedDB and localStorage are governed by separate
- *      caps in some browsers). Sync-checked first because it's a
- *      synchronous, zero-network round trip.
+ *   1. **Local IndexedDB cache.** Always used, regardless of cloud
+ *      sync state — resilient to `localStorage` being cleared without
+ *      a network round trip. Cleared on every ryOS sign-out so the
+ *      next ryOS user on the device starts fresh.
  *
- *   2. **Cloud-sync account.** When the user is logged into ryOS, the
- *      Music User Token is mirrored to `/api/musickit-user-token`,
- *      scoped to the authenticated user. This survives the entire
- *      origin storage being wiped (Tesla, private-mode-with-no-quota,
- *      a different device entirely), at the cost of one round trip
- *      on iPod open when no local cache is available.
+ *   2. **The user's ryOS cloud-sync account.** Mirrors the token
+ *      under `/api/sync/musickit-user-token` so it survives the
+ *      entire origin storage being wiped (Tesla, a fresh device, a
+ *      sign-out + sign-in cycle on the same browser). The token is
+ *      **bound to the ryOS account**, not the device — we
+ *      intentionally do NOT delete the cloud copy on ryOS sign-out.
+ *      Only the explicit Apple Music `unauthorize()` flow clears the
+ *      cloud copy. Cloud reads / writes are gated on
+ *      `useCloudSyncStore.autoSyncEnabled`, mirroring the other
+ *      `/api/sync/*` clients in this codebase.
  *
- * Both paths are best-effort: they never throw to the iPod UI, and
- * any failure (offline, unauthenticated, network blip) gracefully
- * degrades to the existing "show the Sign in button" flow.
+ * Every public function is best-effort: a network failure, a 401, a
+ * disabled `autoSyncEnabled`, or a missing IndexedDB never throws to
+ * the iPod UI. Failures gracefully degrade to the existing
+ * "Sign in" flow.
  */
 
+import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import { useChatsStore } from "@/stores/useChatsStore";
+import { subscribeToCloudSyncCheckRequests } from "@/utils/cloudSyncEvents";
 
 const INDEXEDDB_NAME = "ryOS-musickit";
 const INDEXEDDB_VERSION = 1;
 const INDEXEDDB_STORE = "user-token";
 const INDEXEDDB_KEY = "default";
-const ENDPOINT_PATH = "/api/musickit-user-token";
 
+const ENDPOINT_PATH = "/api/sync/musickit-user-token";
 const REQUEST_TIMEOUT_MS = 8000;
 
 export interface CachedMusicKitUserToken {
@@ -69,7 +78,14 @@ type CloudTokenResponse = CloudTokenResponseSuccess | CloudTokenResponseEmpty;
 // returns/accepts the `CachedMusicKitUserToken` shape).
 // ---------------------------------------------------------------------------
 
-function isBrowser(): boolean {
+/**
+ * The IndexedDB helpers are guarded separately from the cloud
+ * helpers: IndexedDB only exists in a real browser, but `fetch` is
+ * universal in modern Bun / Node / SSR runtimes, so the cloud-side
+ * guards only check for those environments. This keeps the cloud
+ * sync layer testable without a `fake-indexeddb` dependency.
+ */
+function hasIndexedDb(): boolean {
   return (
     typeof window !== "undefined" && typeof window.indexedDB !== "undefined"
   );
@@ -90,7 +106,7 @@ function openTokenDb(): Promise<IDBDatabase> {
 }
 
 async function readFromIndexedDb(): Promise<CachedMusicKitUserToken | null> {
-  if (!isBrowser()) return null;
+  if (!hasIndexedDb()) return null;
   try {
     const db = await openTokenDb();
     return await new Promise<CachedMusicKitUserToken | null>(
@@ -126,7 +142,7 @@ async function readFromIndexedDb(): Promise<CachedMusicKitUserToken | null> {
 }
 
 async function writeToIndexedDb(value: CachedMusicKitUserToken): Promise<void> {
-  if (!isBrowser()) return;
+  if (!hasIndexedDb()) return;
   try {
     const db = await openTokenDb();
     await new Promise<void>((resolve, reject) => {
@@ -147,7 +163,7 @@ async function writeToIndexedDb(value: CachedMusicKitUserToken): Promise<void> {
 }
 
 async function deleteFromIndexedDb(): Promise<void> {
-  if (!isBrowser()) return;
+  if (!hasIndexedDb()) return;
   try {
     const db = await openTokenDb();
     await new Promise<void>((resolve, reject) => {
@@ -168,69 +184,73 @@ async function deleteFromIndexedDb(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Cloud helpers
+// Gating: cloud reads / writes only happen when (1) the user is signed in
+// to ryOS and (2) they have Auto Sync turned on. This matches every other
+// `/api/sync/*` client in this codebase (`autoSyncPreference`,
+// `useAutoCloudSync`, etc.) — Auto Sync is the single user-facing switch
+// that gates cross-device propagation of their state.
 // ---------------------------------------------------------------------------
+
+function isCloudSyncActive(): boolean {
+  const chats = useChatsStore.getState();
+  if (!chats.isAuthenticated || !chats.username) return false;
+  const sync = useCloudSyncStore.getState();
+  return sync.autoSyncEnabled === true;
+}
 
 function endpointUrl(): string {
   return getApiUrl(ENDPOINT_PATH);
 }
 
-async function fetchWithTimeout(
-  url: string,
-  init: RequestInit
-): Promise<Response | null> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(
-    () => controller.abort(new DOMException("Timeout", "TimeoutError")),
-    REQUEST_TIMEOUT_MS
-  );
+async function safeFetch(init: RequestInit): Promise<Response | null> {
   try {
-    return await fetch(url, {
+    // `credentials: "include"` matches the other /api/sync/* callers and
+    // keeps the auth cookie flowing through dev proxies + cross-origin
+    // production setups.
+    return await abortableFetch(endpointUrl(), {
       ...init,
-      // Same-origin works for both deployed Vercel (frontend + API on the
-      // same origin) and the local dev proxy which forwards /api/* to the
-      // standalone Bun server.
-      credentials: "same-origin",
-      signal: controller.signal,
+      credentials: "include",
+      timeout: REQUEST_TIMEOUT_MS,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
   } catch (err) {
-    if ((err as Error)?.name === "AbortError") {
-      console.warn("[musickit cloud sync] request aborted (timeout)");
-    } else {
-      console.warn("[musickit cloud sync] request failed", err);
-    }
+    console.warn("[musickit cloud sync] request failed", err);
     return null;
-  } finally {
-    clearTimeout(timeoutId);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Cloud helpers — caller-driven, all guarded by `isCloudSyncActive()`. The
+// `force` overload bypasses the gate for the unauthorize() path so a user
+// can revoke the cloud copy even when Auto Sync is off.
+// ---------------------------------------------------------------------------
 
 /**
  * Fetch the Music User Token saved in the user's ryOS account.
  * Returns `null` when:
- *   - the user is not authenticated (401)
- *   - the server has no token stored for them
+ *   - Auto Sync is off / user not signed in to ryOS
+ *   - the user has no saved token (404-style empty response)
  *   - the saved token has expired
  *   - the network call fails
  *
  * NEVER throws — designed to be safe to call on every iPod open.
  */
 export async function fetchMusicKitUserTokenFromCloud(): Promise<CachedMusicKitUserToken | null> {
-  if (!isBrowser()) return null;
-  const response = await fetchWithTimeout(endpointUrl(), {
+  if (typeof fetch === "undefined") return null;
+  if (!isCloudSyncActive()) return null;
+
+  const response = await safeFetch({
     method: "GET",
     headers: { Accept: "application/json" },
   });
   if (!response) return null;
   if (response.status === 401 || response.status === 403) {
-    // Not signed in — nothing to fetch, and this is the normal case for
-    // anonymous users. Don't log noise.
+    // Auth state went stale mid-request. Silently bail.
     return null;
   }
   if (!response.ok) {
-    console.warn(
-      `[musickit cloud sync] GET returned ${response.status}`
-    );
+    console.warn(`[musickit cloud sync] GET returned ${response.status}`);
     return null;
   }
   let data: CloudTokenResponse | null = null;
@@ -254,16 +274,18 @@ export async function fetchMusicKitUserTokenFromCloud(): Promise<CachedMusicKitU
 }
 
 /**
- * Save the Music User Token to the user's ryOS account. Safe to call
- * for anonymous users — the server will respond 401 and we'll silently
- * swallow it (the IndexedDB write still happens, so anonymous sessions
- * still benefit from the local-cache fallback).
+ * Save the Music User Token to the user's ryOS account. Gated on
+ * `isCloudSyncActive()` — no-ops silently when Auto Sync is off or
+ * the user isn't signed in to ryOS. Local IDB caching is handled
+ * separately by {@link persistMusicKitUserToken}.
  */
 export async function saveMusicKitUserTokenToCloud(
   value: CachedMusicKitUserToken
 ): Promise<void> {
-  if (!isBrowser()) return;
-  const response = await fetchWithTimeout(endpointUrl(), {
+  if (typeof fetch === "undefined") return;
+  if (!isCloudSyncActive()) return;
+
+  const response = await safeFetch({
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -277,30 +299,36 @@ export async function saveMusicKitUserTokenToCloud(
   if (!response) return;
   if (response.status === 401 || response.status === 403) return;
   if (!response.ok) {
-    console.warn(
-      `[musickit cloud sync] PUT returned ${response.status}`
-    );
+    console.warn(`[musickit cloud sync] PUT returned ${response.status}`);
   }
 }
 
 /**
- * Clear the Music User Token saved in the user's ryOS account. Best
- * effort — called from `unauthorize()` and on ryOS sign-out so a
- * different ryOS user signing in on the same device doesn't inherit
- * the previous user's Apple Music session.
+ * Clear the Music User Token saved in the user's ryOS account.
+ *
+ * Bypasses the Auto Sync gate — this is only called from the explicit
+ * Apple Music `unauthorize()` flow, where the user has actively asked
+ * us to revoke the token. The ryOS-sign-out path uses
+ * {@link clearLocalMusicKitUserTokenCache} instead, because the cloud
+ * copy is bound to the account and meant to survive sign-out cycles.
  */
 export async function clearMusicKitUserTokenInCloud(): Promise<void> {
-  if (!isBrowser()) return;
-  const response = await fetchWithTimeout(endpointUrl(), {
+  if (typeof fetch === "undefined") return;
+  const chats = useChatsStore.getState();
+  // Skip the network call when there's no way to authenticate it — but
+  // unlike fetch/save, we don't gate on `autoSyncEnabled`: an
+  // unauthorize() that happened while Auto Sync was off should still
+  // wipe a previously-mirrored cloud copy if the user is signed in.
+  if (!chats.isAuthenticated || !chats.username) return;
+
+  const response = await safeFetch({
     method: "DELETE",
     headers: { Accept: "application/json" },
   });
   if (!response) return;
   if (response.status === 401 || response.status === 403) return;
   if (!response.ok) {
-    console.warn(
-      `[musickit cloud sync] DELETE returned ${response.status}`
-    );
+    console.warn(`[musickit cloud sync] DELETE returned ${response.status}`);
   }
 }
 
@@ -310,11 +338,11 @@ export async function clearMusicKitUserTokenInCloud(): Promise<void> {
 
 /**
  * Try to recover a previously-authorized Music User Token, preferring
- * the fastest source. The IndexedDB cache is consulted first because
- * it's a sync, zero-network round trip; if absent, the cloud-sync
- * account is consulted (assuming the user is signed in). On a
- * successful cloud read, the result is mirrored back into IndexedDB
- * so subsequent loads are instant.
+ * the fastest source. The local IndexedDB cache is consulted first
+ * because it's a sync, zero-network round trip; if absent (or stale)
+ * and cloud sync is active, the user's ryOS account is consulted.
+ * Successful cloud reads are mirrored back into IndexedDB so
+ * subsequent reloads are instant.
  */
 export async function loadCachedMusicKitUserToken(): Promise<CachedMusicKitUserToken | null> {
   const local = await readFromIndexedDb();
@@ -324,15 +352,10 @@ export async function loadCachedMusicKitUserToken(): Promise<CachedMusicKitUserT
 
   const cloud = await fetchMusicKitUserTokenFromCloud();
   if (cloud) {
-    // Mirror back to local so the next reload doesn't need a round trip
-    // — even on Tesla, where the next reload would re-hit cloud anyway
-    // if IndexedDB gets wiped, this is harmless.
     void writeToIndexedDb(cloud);
     return cloud;
   }
 
-  // If we had a stale local entry but no cloud copy, treat it as gone
-  // — we intentionally don't return expired tokens.
   if (local && isExpired(local)) {
     void deleteFromIndexedDb();
   }
@@ -340,9 +363,10 @@ export async function loadCachedMusicKitUserToken(): Promise<CachedMusicKitUserT
 }
 
 /**
- * Mirror a fresh Music User Token into IndexedDB and the cloud.
- * Returns a promise that resolves once both writes have settled —
- * callers may safely fire-and-forget, the function never throws.
+ * Mirror a fresh Music User Token into IndexedDB and (when cloud sync
+ * is active) the cloud. Returns a promise that resolves once both
+ * writes have settled — callers may safely fire-and-forget, the
+ * function never throws.
  */
 export async function persistMusicKitUserToken(
   value: CachedMusicKitUserToken
@@ -354,14 +378,81 @@ export async function persistMusicKitUserToken(
 }
 
 /**
- * Remove the Music User Token from both IndexedDB and the cloud.
- * Called from MusicKit's `unauthorize()` and ryOS sign-out.
+ * Wipe the IndexedDB cache only. Used by the ryOS sign-out path so
+ * the next ryOS user on this device doesn't start a session with a
+ * locally-cached token; the cloud copy is preserved so signing back
+ * in restores the Apple Music auth automatically.
+ */
+export async function clearLocalMusicKitUserTokenCache(): Promise<void> {
+  await deleteFromIndexedDb();
+}
+
+/**
+ * Wipe both the IndexedDB cache and the cloud copy. Used only by the
+ * explicit Apple Music `unauthorize()` flow.
  */
 export async function clearCachedMusicKitUserToken(): Promise<void> {
   await Promise.allSettled([
     deleteFromIndexedDb(),
     clearMusicKitUserTokenInCloud(),
   ]);
+}
+
+// ---------------------------------------------------------------------------
+// Cloud-sync trigger plumbing
+//
+// The `cloudSyncEvents` bus already fires on every "sync now" /
+// post-login / visibility-driven check via `requestCloudSyncCheck()`.
+// Subscribing here means the Music User Token rides along with the
+// existing sync cadence — the iPod doesn't need to spin up its own
+// timer, and the user's "Sync now" button works for this state too.
+//
+// `subscribeToMusicKitUserTokenAutoSync` is idempotent and returns an
+// unsubscribe function. It's wired up at app startup (alongside
+// `useAutoCloudSync`) so the subscription lifetime tracks the app
+// itself rather than any individual iPod window.
+// ---------------------------------------------------------------------------
+
+let activeSubscription: (() => void) | null = null;
+
+/**
+ * Subscribe to global cloud-sync check requests and refresh the local
+ * Music User Token cache from cloud when one fires. Returns an
+ * unsubscribe function. Calling twice in a row is a no-op — the
+ * second call returns a no-op unsubscriber so the caller can still
+ * release deterministically.
+ */
+export function subscribeToMusicKitUserTokenAutoSync(): () => void {
+  if (activeSubscription) {
+    return () => {
+      /* already-subscribed; primary subscriber owns lifecycle */
+    };
+  }
+
+  const unsubscribe = subscribeToCloudSyncCheckRequests(() => {
+    if (!isCloudSyncActive()) return;
+    void (async () => {
+      const cloud = await fetchMusicKitUserTokenFromCloud();
+      if (cloud) {
+        await writeToIndexedDb(cloud);
+        return;
+      }
+      // Nothing in cloud — promote whatever we have locally so other
+      // devices (or this same device after a wipe) can pick it up
+      // next time. Skipping the upload silently when the local cache
+      // is also empty.
+      const local = await readFromIndexedDb();
+      if (local && !isExpired(local)) {
+        await saveMusicKitUserTokenToCloud(local);
+      }
+    })();
+  });
+
+  activeSubscription = () => {
+    unsubscribe();
+    activeSubscription = null;
+  };
+  return activeSubscription;
 }
 
 /**

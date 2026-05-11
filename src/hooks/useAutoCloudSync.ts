@@ -58,6 +58,7 @@ import {
   fetchAutoSyncPreferenceFromServer,
   persistAutoSyncPreferenceToServer,
 } from "@/utils/autoSyncPreference";
+import { subscribeToMusicKitUserTokenAutoSync } from "@/utils/musicKitUserTokenCloudSync";
 import {
   getLatestSettingsSectionTimestamp,
   isApplyingRemoteSettingsSection,
@@ -297,6 +298,17 @@ function alignLocalChangeWithRemoteApply(
 }
 
 export function useAutoCloudSync() {
+  // Subscribe the Apple Music user-token cloud-sync helper to the
+  // shared cloud-sync check bus. The helper handles its own
+  // idempotency + cloud-sync-active gating; this just ties its
+  // lifetime to the app root. Safe to run during SSR — the inner
+  // subscription is a no-op when `subscribeToCloudSyncCheckRequests`
+  // is called multiple times for the same observer.
+  useEffect(() => {
+    const unsubscribe = subscribeToMusicKitUserTokenAutoSync();
+    return () => unsubscribe();
+  }, []);
+
   const username = useChatsStore((state) => state.username);
   const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
   const autoSyncEnabled = useCloudSyncStore((state) => state.autoSyncEnabled);
