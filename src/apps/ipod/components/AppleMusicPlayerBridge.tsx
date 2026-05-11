@@ -9,6 +9,11 @@ import {
 import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
+import {
+  getMusicKitEventItemId,
+  isWithinEndedFanoutDedupWindow,
+  shouldFireEndedForPlaybackState,
+} from "./appleMusicPlayerBridgeUtils";
 
 /**
  * Apple Music playback bridge.
@@ -197,6 +202,28 @@ export const AppleMusicPlayerBridge = forwardRef<
   onEndedRef.current = onEnded;
   onNowPlayingItemChangeRef.current = onNowPlayingItemChange;
 
+  // Track latest currentTrack so the once-only event listeners can read it
+  // without resubscribing on every render.
+  const currentTrackRef = useRef(currentTrack);
+  currentTrackRef.current = currentTrack;
+
+  // Dedup state for `onEnded` fan-out. MusicKit JS fires both `ended`
+  // (5) and `completed` (10) when a single-song queue's only item
+  // finishes. Without dedup the parent's `nextTrack` runs twice — the
+  // second pick races MusicKit's first `setQueue`, so the audio the user
+  // hears can mismatch the song the iPod displays. With shuffle on the
+  // mismatch is the most visible because each call picks a different
+  // random song.
+  //
+  // Two layers (either match suppresses):
+  //  - `lastEndedFiredForItemIdRef`: the just-ended item id. State 5 and
+  //    state 10 reference the SAME item, so identical ids dedup
+  //    regardless of timing.
+  //  - `lastEndedFiredAtRef`: wall-clock timestamp + window. Backstop for
+  //    builds that strip `event.item` from the second event.
+  const lastEndedFiredForItemIdRef = useRef<string | null>(null);
+  const lastEndedFiredAtRef = useRef(0);
+
   // Wire up MusicKit event listeners once the instance is available.
   // We deliberately skip `playbackTimeDidChange` for progress updates:
   // runtime logs (debug session b224e4) confirmed that MusicKit JS v3's
@@ -215,23 +242,47 @@ export const AppleMusicPlayerBridge = forwardRef<
 
     const handleState = (event: MusicKit.PlaybackStateDidChangeEvent) => {
       const state = event?.state ?? activeInstance?.playbackState;
-      switch (state) {
-        case 2: // playing
-          onPlayRef.current?.();
-          break;
-        case 3: // paused
-        case 4: // stopped
-          onPauseRef.current?.();
-          break;
-        case 5: // ended
-        case 10: // completed
-          onEndedRef.current?.();
-          break;
-        default:
-          // loading/seeking/waiting/stalled — no-op for the iPod UI;
-          // the activity indicator is driven separately.
-          break;
+      if (state === 2) {
+        onPlayRef.current?.();
+        return;
       }
+      if (state === 3 || state === 4) {
+        onPauseRef.current?.();
+        return;
+      }
+      if (
+        (state === 5 || state === 10) &&
+        shouldFireEndedForPlaybackState(state, currentTrackRef.current)
+      ) {
+        // MusicKit fires both `ended` (5) and `completed` (10) when a
+        // single-song queue's only item finishes — dedup so the parent's
+        // next-track handler runs once per song-ending event. Most
+        // visible with shuffle on, where two fan-outs would pick two
+        // different random songs and race two `setQueue` calls in
+        // MusicKit, leaving the audio on a different song than the
+        // display.
+        const now = Date.now();
+        const eventItemId = getMusicKitEventItemId(event?.item);
+        const itemIdMatches =
+          eventItemId !== null &&
+          lastEndedFiredForItemIdRef.current === eventItemId;
+        const withinTimeWindow = isWithinEndedFanoutDedupWindow(
+          now,
+          lastEndedFiredAtRef.current
+        );
+        if (itemIdMatches || withinTimeWindow) {
+          return;
+        }
+        if (eventItemId !== null) {
+          lastEndedFiredForItemIdRef.current = eventItemId;
+        }
+        lastEndedFiredAtRef.current = now;
+        onEndedRef.current?.();
+        return;
+      }
+      // loading/seeking/waiting/stalled and the suppressed mid-queue
+      // `ended` for shells — no-op for the iPod UI; the activity
+      // indicator is driven separately.
     };
 
     const handleMediaItem = (event: MusicKit.MediaItemDidChangeEvent) => {
@@ -424,7 +475,29 @@ export const AppleMusicPlayerBridge = forwardRef<
     }
 
     const localQueueKey = queueKey;
-    queueLoadingRef.current = (async () => {
+    // Serialize back-to-back queue swaps. If another track change is
+    // already in flight (rapid `nextTrack` clicks, an `onEnded` advance
+    // racing a user press, etc.), wait for it to settle before issuing
+    // our own `setQueue`. Two concurrent `setQueue` calls inside
+    // MusicKit can resolve out of order — without serialization the
+    // older queue can briefly start playing after the newer one
+    // landed, so the audio mismatches the song the iPod displays
+    // (display reflects the *latest* React state, audio reflects
+    // whichever `setQueue` resolved last). Capture the *previous* ref
+    // so the new chain awaits the old one rather than itself.
+    const previousQueueLoading = queueLoadingRef.current;
+    let thisLoad: Promise<void> | null = null;
+    thisLoad = (async () => {
+      if (previousQueueLoading) {
+        // Best-effort wait — failures of the previous queue load
+        // shouldn't block a fresh user action.
+        try {
+          await previousQueueLoading;
+        } catch {
+          /* ignore — the previous load already logged its own error */
+        }
+        if (cancelled) return;
+      }
       try {
         const resumeSeconds = getSafeStartSeconds(
           currentTrack,
@@ -462,9 +535,17 @@ export const AppleMusicPlayerBridge = forwardRef<
       } catch (err) {
         console.error("[apple music] setQueue failed", err);
       } finally {
-        queueLoadingRef.current = null;
+        // Only clear the shared ref when *we* are still the most recent
+        // load. A newer track change already replaced `queueLoadingRef`
+        // with its own promise; nulling here would let play/pause sync
+        // think there's no pending queue load and race the newer
+        // `setQueue` mid-flight.
+        if (queueLoadingRef.current === thisLoad) {
+          queueLoadingRef.current = null;
+        }
       }
     })();
+    queueLoadingRef.current = thisLoad;
     return () => {
       cancelled = true;
     };

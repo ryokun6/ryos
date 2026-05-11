@@ -48,6 +48,15 @@ const {
 } = await import("../src/apps/ipod/hooks/useAppleMusicLibrary");
 const { useIpodStore, appleMusicKitIdToLyricsSongId } = await import("../src/stores/useIpodStore");
 const {
+  shouldFireEndedForPlaybackState,
+  isWithinEndedFanoutDedupWindow,
+  ENDED_FANOUT_DEDUP_WINDOW_MS,
+  getMusicKitEventItemId,
+} = await import(
+  "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
+);
+type Track = import("../src/stores/useIpodStore").Track;
+const {
   isValidAppleMusicSongId,
   isValidYouTubeVideoId,
   isValidSongId,
@@ -793,5 +802,166 @@ describe("Apple Music Recently Added & Favorites store + refresh", () => {
 
     expect(result).toBe(cached);
     expect(useIpodStore.getState().appleMusicFavoritesLoading).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge playback-state fan-out", () => {
+  // Regression: when MusicKit JS plays a multi-item queue (catalog
+  // station / playlist), `playbackState=5 (ended)` fires once for
+  // every track that finishes — including intermediate items that
+  // MusicKit then auto-advances past. Forwarding that to our parent
+  // calls `nextTrack` → `skipToNextItem`, which skips the song
+  // MusicKit just moved to. The displayed Now Playing entry then
+  // mismatches the song actually playing in the queue. The bridge
+  // must suppress the parent fan-out for shells and rely on the
+  // terminal `completed` (10) signal instead.
+  const baseTrack: Track = {
+    id: "am:1616228595",
+    url: "applemusic:1616228595",
+    title: "Bohemian Rhapsody",
+    source: "appleMusic",
+    appleMusicPlayParams: { catalogId: "1616228595" },
+  };
+  const stationShell: Track = {
+    id: "am:station:ra.u-personal",
+    url: "applemusic:station:ra.u-personal",
+    title: "My Station",
+    source: "appleMusic",
+    appleMusicPlayParams: { stationId: "ra.u-personal", kind: "radioStation" },
+  };
+  const playlistShell: Track = {
+    id: "am:playlist:pl.pm-mix",
+    url: "applemusic:playlist:pl.pm-mix",
+    title: "Favorites Mix",
+    source: "appleMusic",
+    appleMusicPlayParams: { playlistId: "pl.pm-mix", kind: "playlist" },
+  };
+
+  test("non-shell single-song queue: ended (5) fans out so we pick the next song", () => {
+    expect(shouldFireEndedForPlaybackState(5, baseTrack)).toBe(true);
+  });
+
+  test("station shell: ended (5) is suppressed so MusicKit's auto-advance wins", () => {
+    expect(shouldFireEndedForPlaybackState(5, stationShell)).toBe(false);
+  });
+
+  test("playlist shell: ended (5) is suppressed so MusicKit's auto-advance wins", () => {
+    expect(shouldFireEndedForPlaybackState(5, playlistShell)).toBe(false);
+  });
+
+  test("completed (10) always fans out — terminal signal for both shells and single-song queues", () => {
+    expect(shouldFireEndedForPlaybackState(10, baseTrack)).toBe(true);
+    expect(shouldFireEndedForPlaybackState(10, stationShell)).toBe(true);
+    expect(shouldFireEndedForPlaybackState(10, playlistShell)).toBe(true);
+    expect(shouldFireEndedForPlaybackState(10, null)).toBe(true);
+  });
+
+  test("non-terminal states never fan out as ended", () => {
+    for (const state of [0, 1, 2, 3, 4, 6, 8, 9, undefined]) {
+      expect(shouldFireEndedForPlaybackState(state, baseTrack)).toBe(false);
+      expect(shouldFireEndedForPlaybackState(state, stationShell)).toBe(false);
+      expect(shouldFireEndedForPlaybackState(state, playlistShell)).toBe(false);
+    }
+  });
+
+  test("null currentTrack with ended (5) fans out (no shell context to suppress)", () => {
+    // Defensive: if the current track is unknown, prefer the legacy
+    // behavior of advancing on `ended` over getting stuck silent.
+    expect(shouldFireEndedForPlaybackState(5, null)).toBe(true);
+  });
+});
+
+describe("AppleMusicPlayerBridge ended fan-out dedup window", () => {
+  // Regression: even for non-shell single-song queues
+  // (`setQueue({ song: id })`), MusicKit JS fires both `ended` (5) and
+  // `completed` (10) when the song finishes. Forwarding both to the
+  // parent runs `nextTrack` twice — the second pick races MusicKit's
+  // first `setQueue`, so the audio the user actually hears can mismatch
+  // the song the iPod displays. The dedup window collapses the pair so
+  // `onEnded` fans out at most once per song-ending event.
+  test("first fire after never having fired is allowed", () => {
+    expect(isWithinEndedFanoutDedupWindow(1_000, 0)).toBe(false);
+    expect(isWithinEndedFanoutDedupWindow(1_000, -1)).toBe(false);
+  });
+
+  test("second fire inside the window is suppressed (state 5 → state 10 collapse)", () => {
+    // state 5 fires at t=1000, state 10 follows at t=1100 — same song.
+    expect(isWithinEndedFanoutDedupWindow(1_100, 1_000)).toBe(true);
+    // Even with seconds between events the dedup still bites — covers
+    // builds where state 10 lags behind state 5 noticeably.
+    expect(isWithinEndedFanoutDedupWindow(1_000 + 2_999, 1_000)).toBe(true);
+  });
+
+  test("subsequent song's own ended event (well outside window) fans out", () => {
+    // Real songs are minimum tens of seconds, so the next track's end
+    // is always well past the dedup window.
+    expect(
+      isWithinEndedFanoutDedupWindow(
+        1_000 + ENDED_FANOUT_DEDUP_WINDOW_MS,
+        1_000
+      )
+    ).toBe(false);
+    expect(
+      isWithinEndedFanoutDedupWindow(
+        1_000 + ENDED_FANOUT_DEDUP_WINDOW_MS + 1,
+        1_000
+      )
+    ).toBe(false);
+    expect(isWithinEndedFanoutDedupWindow(120_000, 1_000)).toBe(false);
+  });
+
+  test("dedup window is comfortably wider than typical state 5 → state 10 latency, narrower than song length", () => {
+    // Sanity: window is in the realm of "a beat between events" (>= 1s)
+    // but never long enough to swallow a real song's end (< 30s).
+    expect(ENDED_FANOUT_DEDUP_WINDOW_MS).toBeGreaterThanOrEqual(1_000);
+    expect(ENDED_FANOUT_DEDUP_WINDOW_MS).toBeLessThan(30_000);
+  });
+
+  test("custom window override works (used by tests + future hardening)", () => {
+    expect(isWithinEndedFanoutDedupWindow(100, 50, 100)).toBe(true);
+    expect(isWithinEndedFanoutDedupWindow(150, 50, 100)).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge MusicKit event item id extraction", () => {
+  // Primary dedup key for `onEnded` fan-out: state=5 and state=10 reference
+  // the SAME just-ended item, so identical ids let us suppress the second
+  // fan-out regardless of timing — important when state 10 lags more than
+  // the timestamp window. Falls back through the multiple shapes MusicKit
+  // JS uses across versions so the dedup keeps working when one shape is
+  // empty.
+  test("returns null for nullish items (avoids spurious dedup)", () => {
+    expect(getMusicKitEventItemId(null)).toBeNull();
+    expect(getMusicKitEventItemId(undefined)).toBeNull();
+    expect(getMusicKitEventItemId({})).toBeNull();
+    // Empty string ids are falsy → fallback chain → null.
+    expect(getMusicKitEventItemId({ id: "" })).toBeNull();
+  });
+
+  test("prefers the top-level item.id when present", () => {
+    expect(
+      getMusicKitEventItemId({
+        id: "1616228595",
+        attributes: {
+          playParams: { id: "other", catalogId: "another" },
+        },
+      })
+    ).toBe("1616228595");
+  });
+
+  test("falls back to attributes.playParams.id when item.id is absent", () => {
+    expect(
+      getMusicKitEventItemId({
+        attributes: { playParams: { id: "i.uUZAkT3" } },
+      })
+    ).toBe("i.uUZAkT3");
+  });
+
+  test("falls back to attributes.playParams.catalogId for library songs", () => {
+    expect(
+      getMusicKitEventItemId({
+        attributes: { playParams: { catalogId: "1616228595" } },
+      })
+    ).toBe("1616228595");
   });
 });
