@@ -9,6 +9,7 @@ import {
 import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
+import { shouldFireEndedForPlaybackState } from "./appleMusicPlayerBridgeUtils";
 
 /**
  * Apple Music playback bridge.
@@ -197,6 +198,11 @@ export const AppleMusicPlayerBridge = forwardRef<
   onEndedRef.current = onEnded;
   onNowPlayingItemChangeRef.current = onNowPlayingItemChange;
 
+  // Track latest currentTrack so the once-only event listeners can read it
+  // without resubscribing on every render.
+  const currentTrackRef = useRef(currentTrack);
+  currentTrackRef.current = currentTrack;
+
   // Wire up MusicKit event listeners once the instance is available.
   // We deliberately skip `playbackTimeDidChange` for progress updates:
   // runtime logs (debug session b224e4) confirmed that MusicKit JS v3's
@@ -215,23 +221,24 @@ export const AppleMusicPlayerBridge = forwardRef<
 
     const handleState = (event: MusicKit.PlaybackStateDidChangeEvent) => {
       const state = event?.state ?? activeInstance?.playbackState;
-      switch (state) {
-        case 2: // playing
-          onPlayRef.current?.();
-          break;
-        case 3: // paused
-        case 4: // stopped
-          onPauseRef.current?.();
-          break;
-        case 5: // ended
-        case 10: // completed
-          onEndedRef.current?.();
-          break;
-        default:
-          // loading/seeking/waiting/stalled — no-op for the iPod UI;
-          // the activity indicator is driven separately.
-          break;
+      if (state === 2) {
+        onPlayRef.current?.();
+        return;
       }
+      if (state === 3 || state === 4) {
+        onPauseRef.current?.();
+        return;
+      }
+      if (
+        (state === 5 || state === 10) &&
+        shouldFireEndedForPlaybackState(state, currentTrackRef.current)
+      ) {
+        onEndedRef.current?.();
+        return;
+      }
+      // loading/seeking/waiting/stalled and the suppressed mid-queue
+      // `ended` for shells — no-op for the iPod UI; the activity
+      // indicator is driven separately.
     };
 
     const handleMediaItem = (event: MusicKit.MediaItemDidChangeEvent) => {

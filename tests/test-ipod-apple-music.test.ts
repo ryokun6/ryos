@@ -47,6 +47,10 @@ const {
   APPLE_MUSIC_PLAYLIST_TRACKS_OPPORTUNISTIC_TTL_MS,
 } = await import("../src/apps/ipod/hooks/useAppleMusicLibrary");
 const { useIpodStore, appleMusicKitIdToLyricsSongId } = await import("../src/stores/useIpodStore");
+const { shouldFireEndedForPlaybackState } = await import(
+  "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
+);
+type Track = import("../src/stores/useIpodStore").Track;
 const {
   isValidAppleMusicSongId,
   isValidYouTubeVideoId,
@@ -793,5 +797,71 @@ describe("Apple Music Recently Added & Favorites store + refresh", () => {
 
     expect(result).toBe(cached);
     expect(useIpodStore.getState().appleMusicFavoritesLoading).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge playback-state fan-out", () => {
+  // Regression: when MusicKit JS plays a multi-item queue (catalog
+  // station / playlist), `playbackState=5 (ended)` fires once for
+  // every track that finishes — including intermediate items that
+  // MusicKit then auto-advances past. Forwarding that to our parent
+  // calls `nextTrack` → `skipToNextItem`, which skips the song
+  // MusicKit just moved to. The displayed Now Playing entry then
+  // mismatches the song actually playing in the queue. The bridge
+  // must suppress the parent fan-out for shells and rely on the
+  // terminal `completed` (10) signal instead.
+  const baseTrack: Track = {
+    id: "am:1616228595",
+    url: "applemusic:1616228595",
+    title: "Bohemian Rhapsody",
+    source: "appleMusic",
+    appleMusicPlayParams: { catalogId: "1616228595" },
+  };
+  const stationShell: Track = {
+    id: "am:station:ra.u-personal",
+    url: "applemusic:station:ra.u-personal",
+    title: "My Station",
+    source: "appleMusic",
+    appleMusicPlayParams: { stationId: "ra.u-personal", kind: "radioStation" },
+  };
+  const playlistShell: Track = {
+    id: "am:playlist:pl.pm-mix",
+    url: "applemusic:playlist:pl.pm-mix",
+    title: "Favorites Mix",
+    source: "appleMusic",
+    appleMusicPlayParams: { playlistId: "pl.pm-mix", kind: "playlist" },
+  };
+
+  test("non-shell single-song queue: ended (5) fans out so we pick the next song", () => {
+    expect(shouldFireEndedForPlaybackState(5, baseTrack)).toBe(true);
+  });
+
+  test("station shell: ended (5) is suppressed so MusicKit's auto-advance wins", () => {
+    expect(shouldFireEndedForPlaybackState(5, stationShell)).toBe(false);
+  });
+
+  test("playlist shell: ended (5) is suppressed so MusicKit's auto-advance wins", () => {
+    expect(shouldFireEndedForPlaybackState(5, playlistShell)).toBe(false);
+  });
+
+  test("completed (10) always fans out — terminal signal for both shells and single-song queues", () => {
+    expect(shouldFireEndedForPlaybackState(10, baseTrack)).toBe(true);
+    expect(shouldFireEndedForPlaybackState(10, stationShell)).toBe(true);
+    expect(shouldFireEndedForPlaybackState(10, playlistShell)).toBe(true);
+    expect(shouldFireEndedForPlaybackState(10, null)).toBe(true);
+  });
+
+  test("non-terminal states never fan out as ended", () => {
+    for (const state of [0, 1, 2, 3, 4, 6, 8, 9, undefined]) {
+      expect(shouldFireEndedForPlaybackState(state, baseTrack)).toBe(false);
+      expect(shouldFireEndedForPlaybackState(state, stationShell)).toBe(false);
+      expect(shouldFireEndedForPlaybackState(state, playlistShell)).toBe(false);
+    }
+  });
+
+  test("null currentTrack with ended (5) fans out (no shell context to suppress)", () => {
+    // Defensive: if the current track is unknown, prefer the legacy
+    // behavior of advancing on `ended` over getting stuck silent.
+    expect(shouldFireEndedForPlaybackState(5, null)).toBe(true);
   });
 });
