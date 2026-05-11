@@ -1,38 +1,50 @@
 /**
- * Cloud-synced Apple Music user token (Music User Token) storage.
+ * Cross-device sync for the Apple Music **Music User Token**.
  *
- *   GET    /api/musickit-user-token  → fetch stored Music User Token
- *   PUT    /api/musickit-user-token  → save Music User Token + expiresAt
- *   DELETE /api/musickit-user-token  → clear stored Music User Token
+ *   GET    /api/sync/musickit-user-token  → fetch stored Music User Token
+ *   PUT    /api/sync/musickit-user-token  → save Music User Token + expiresAt
+ *   DELETE /api/sync/musickit-user-token  → clear stored Music User Token
  *
- * Why this exists:
+ * MusicKit JS v3 persists the per-user "Music User Token" in
+ * `localStorage`. Some embedded browsers — most prominently the Tesla
+ * in-car browser — wipe `localStorage` on every page load, so the
+ * iPod's Apple Music mode forces a re-authorize on every visit even
+ * though the user is already signed in to ryOS.
  *
- *   MusicKit JS v3 normally persists the per-user "Music User Token" in
- *   `localStorage` (and a cookie on apple-music origins). Some embedded
- *   browsers — most notably the Tesla in-car browser — wipe localStorage
- *   on every page load, so the user is forced to re-authorize Apple
- *   Music every single time they open the iPod app.
+ * This endpoint mirrors the Music User Token into the user's ryOS
+ * account so the iPod can restore the authorized session on reload
+ * (or on a brand-new device the user signs in to). It lives under
+ * `/api/sync/*` alongside the other cross-device sync primitives
+ * (`auto-sync-preference`, `backup`, the per-domain sync routes) and
+ * reuses the same auth pipeline + Redis key prefix (`sync:*`).
  *
- *   This endpoint mirrors the Music User Token into the user's ryOS
- *   account so the iPod can restore the authorized session on reload
- *   without prompting again. The stored token is no more sensitive than
- *   what MusicKit JS already keeps in localStorage on the device, and
- *   it's scoped per ryOS user via the standard `apiHandler` auth.
+ * Lifecycle:
  *
- *   Storage: Redis key `musickit:user-token:<username>` (90-day TTL,
- *   matched to the user-record TTL so a deleted user's stored token
- *   doesn't outlive their account).
+ *   - The token is bound to the **ryOS account**, not the device. We
+ *     intentionally do not delete it from cloud on ryOS sign-out — the
+ *     user expects the saved Apple Music auth to follow them between
+ *     devices and across sign-out/sign-in cycles on the same device.
+ *   - The 90-day TTL matches `USER_TTL_SECONDS`, so a deleted user's
+ *     stored token doesn't outlive the account itself.
+ *   - The DELETE method is reserved for the Apple Music
+ *     `unauthorize()` flow — the explicit "I want this gone" path.
+ *   - Expired tokens (per the client-supplied `expiresAt`) are
+ *     filtered on read and the row is opportunistically pruned.
+ *
+ * The stored token is no more sensitive than what MusicKit JS already
+ * keeps in `localStorage` on the device, and the endpoint is
+ * username-scoped via the standard `apiHandler` auth.
  */
 
 import type { VercelResponse } from "@vercel/node";
-import type { Redis } from "./_utils/redis.js";
-import { apiHandler } from "./_utils/api-handler.js";
-import { USER_TTL_SECONDS } from "./_utils/auth/index.js";
+import type { Redis } from "../_utils/redis.js";
+import { apiHandler } from "../_utils/api-handler.js";
+import { USER_TTL_SECONDS } from "../_utils/auth/index.js";
+import { musickitUserTokenKey } from "./_keys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
-export const TOKEN_KEY_PREFIX = "musickit:user-token:";
 export const STORE_TTL_SECONDS = USER_TTL_SECONDS;
 export const MAX_TOKEN_LENGTH = 4096;
 
@@ -45,10 +57,6 @@ export interface StoredUserToken {
 interface PutBody {
   musicUserToken?: unknown;
   expiresAt?: unknown;
-}
-
-export function getTokenKey(username: string): string {
-  return `${TOKEN_KEY_PREFIX}${username.toLowerCase()}`;
 }
 
 export function parseStoredToken(raw: unknown): StoredUserToken | null {
@@ -84,16 +92,18 @@ async function handleGet(
   redis: Redis,
   username: string
 ): Promise<void> {
-  const raw = await redis.get<string | StoredUserToken>(getTokenKey(username));
+  const raw = await redis.get<string | StoredUserToken>(
+    musickitUserTokenKey(username)
+  );
   const parsed = parseStoredToken(raw);
   if (!parsed) {
     res.status(200).json({ musicUserToken: null });
     return;
   }
-  // Treat expired tokens as missing — saves the client an extra round trip
-  // and forces a fresh `authorize()` instead of trying a dead token.
+  // Treat expired tokens as missing — saves the client an extra round
+  // trip and forces a fresh `authorize()` instead of trying a dead token.
   if (parsed.expiresAt && parsed.expiresAt <= Date.now()) {
-    await redis.del(getTokenKey(username)).catch(() => undefined);
+    await redis.del(musickitUserTokenKey(username)).catch(() => undefined);
     res.status(200).json({ musicUserToken: null, reason: "expired" });
     return;
   }
@@ -133,7 +143,7 @@ async function handlePut(
     storedAt: Date.now(),
   };
 
-  await redis.set(getTokenKey(username), JSON.stringify(payload), {
+  await redis.set(musickitUserTokenKey(username), JSON.stringify(payload), {
     ex: STORE_TTL_SECONDS,
   });
   res.status(200).json({ ok: true, expiresAt });
@@ -144,7 +154,7 @@ async function handleDelete(
   redis: Redis,
   username: string
 ): Promise<void> {
-  await redis.del(getTokenKey(username));
+  await redis.del(musickitUserTokenKey(username));
   res.status(200).json({ ok: true });
 }
 
@@ -158,8 +168,8 @@ export default apiHandler<PutBody>(
     const username = user?.username;
     if (!username) {
       // apiHandler with auth: "required" already enforces this, but the
-      // type system can't see through that — keep a defensive check so the
-      // Redis key never collapses to `musickit:user-token:`.
+      // type system can't see through that — keep a defensive check so
+      // the Redis key never collapses to `sync:musickit-user-token:`.
       res.status(401).json({ error: "Unauthorized" });
       return;
     }

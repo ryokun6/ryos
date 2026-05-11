@@ -20,3 +20,15 @@ export function redisStateMetaKey(username: string): string {
 export function autoSyncPreferenceKey(username: string): string {
   return `sync:pref:autoSync:${username.toLowerCase()}`;
 }
+
+/**
+ * Cross-device storage for the Apple Music **Music User Token** so the
+ * iPod can restore an authorized session on browsers that wipe site
+ * storage between visits (notably Tesla's in-car browser). Bound to the
+ * ryOS account — survives ryOS sign-out + sign-in on a new device.
+ *
+ * @see api/sync/musickit-user-token.ts
+ */
+export function musickitUserTokenKey(username: string): string {
+  return `sync:musickit-user-token:${username.toLowerCase()}`;
+}
