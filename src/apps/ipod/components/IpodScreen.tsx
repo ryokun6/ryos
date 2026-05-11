@@ -1090,12 +1090,10 @@ export function IpodScreen({
                         <div
                           className={cn(
                             "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
-                            // Nudge the title / artist / album column
-                            // down so the first line sits roughly at the
-                            // cover's optical center-top instead of
-                            // hugging the cover's top edge — matches
+                            // Small downward nudge so the first line
+                            // doesn't hug the cover's top edge — matches
                             // the iPod nano 6G/7G "Now Playing" baseline.
-                            "pt-2",
+                            "pt-1",
                             "[&>*]:py-0",
                             "[&>*:not(:first-child)]:-mt-[3px]",
                             "font-ipod-modern-ui"
