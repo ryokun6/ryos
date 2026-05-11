@@ -1,9 +1,9 @@
 /**
  * Unit tests for the MusicKit user-token cloud-sync surface.
  *
- *   - `parseStoredToken` (server) — input validation / shape handling
- *   - `getTokenKey`               — Redis key derivation
- *   - `isExpired`                 — client-side expiry predicate
+ *   - `parseStoredToken`    (server)  — input validation / shape handling
+ *   - `musickitUserTokenKey` (server) — Redis key derivation
+ *   - `isExpired`           (client)  — client-side expiry predicate
  *
  * Integration coverage for the HTTP endpoint itself
  * (GET / PUT / DELETE round trip with auth) lives in the standalone
@@ -13,13 +13,62 @@
 
 import { describe, expect, test } from "bun:test";
 
+// Browser globals must be installed before importing the client-side
+// sync helper, because it transitively touches zustand stores that
+// read from localStorage at module init. Static `import` is hoisted,
+// so we install the globals first and then resolve every browser-side
+// module via top-level `await import(...)` (mirrors
+// test-ipod-apple-music.test.ts).
+class MemoryStorage implements Storage {
+  private readonly map = new Map<string, string>();
+  get length(): number {
+    return this.map.size;
+  }
+  clear(): void {
+    this.map.clear();
+  }
+  getItem(key: string): string | null {
+    return this.map.get(key) ?? null;
+  }
+  key(index: number): string | null {
+    return Array.from(this.map.keys())[index] ?? null;
+  }
+  removeItem(key: string): void {
+    this.map.delete(key);
+  }
+  setItem(key: string, value: string): void {
+    this.map.set(key, value);
+  }
+}
+
+const browserGlobals = globalThis as typeof globalThis & {
+  localStorage?: Storage;
+  navigator?: Navigator;
+};
+if (!browserGlobals.localStorage) {
+  browserGlobals.localStorage = new MemoryStorage();
+}
+if (!browserGlobals.navigator) {
+  browserGlobals.navigator = { onLine: true, userAgent: "test" } as Navigator;
+}
+
+// Server-side imports — no browser globals needed.
 import {
   parseStoredToken,
-  getTokenKey,
-  TOKEN_KEY_PREFIX,
   MAX_TOKEN_LENGTH,
-} from "../api/musickit-user-token";
-import { isExpired } from "../src/utils/musicKitUserTokenCloudSync";
+} from "../api/sync/musickit-user-token";
+import { musickitUserTokenKey } from "../api/sync/_keys";
+
+// Client-side imports — must run *after* the browser-global stubs.
+const {
+  fetchMusicKitUserTokenFromCloud,
+  isExpired,
+  saveMusicKitUserTokenToCloud,
+} = await import("../src/utils/musicKitUserTokenCloudSync");
+const { useChatsStore } = await import("../src/stores/useChatsStore");
+const { useCloudSyncStore } = await import(
+  "../src/stores/useCloudSyncStore"
+);
 
 describe("parseStoredToken (server)", () => {
   test("returns null for falsy / non-object inputs", () => {
@@ -83,14 +132,19 @@ describe("parseStoredToken (server)", () => {
   });
 });
 
-describe("getTokenKey (server)", () => {
-  test("namespaces under the documented Redis prefix", () => {
-    expect(getTokenKey("ryo")).toBe(`${TOKEN_KEY_PREFIX}ryo`);
+describe("musickitUserTokenKey (server)", () => {
+  test("namespaces under the shared sync:* Redis prefix", () => {
+    // Sharing the prefix with other /api/sync/* keys keeps this
+    // entry visible to operator tooling that scans the sync
+    // namespace (TTL reports, backfills, deletion-on-account-purge).
+    expect(musickitUserTokenKey("ryo")).toBe(
+      "sync:musickit-user-token:ryo"
+    );
   });
 
   test("lowercases the username so case-variants share storage", () => {
-    expect(getTokenKey("RYO")).toBe(`${TOKEN_KEY_PREFIX}ryo`);
-    expect(getTokenKey("Ryo")).toBe(`${TOKEN_KEY_PREFIX}ryo`);
+    expect(musickitUserTokenKey("RYO")).toBe("sync:musickit-user-token:ryo");
+    expect(musickitUserTokenKey("Ryo")).toBe("sync:musickit-user-token:ryo");
   });
 
   test("MAX_TOKEN_LENGTH is large enough for real Apple-issued user tokens", () => {
@@ -98,6 +152,141 @@ describe("getTokenKey (server)", () => {
     // 4 KiB cap leaves headroom for future format changes without
     // accepting nonsense-sized payloads.
     expect(MAX_TOKEN_LENGTH).toBeGreaterThan(1024);
+  });
+});
+
+describe("cloud-sync gating (client)", () => {
+  // The cloud helpers must silently no-op whenever (a) the user isn't
+  // signed in to ryOS, or (b) Auto Sync is off. Local IndexedDB
+  // persistence is intentionally untouched here — only the
+  // /api/sync/musickit-user-token network call is gated.
+
+  type FetchCall = { url: string; method?: string };
+  const originalFetch = globalThis.fetch;
+  const calls: FetchCall[] = [];
+
+  function installFakeFetch(response: Response) {
+    calls.length = 0;
+    globalThis.fetch = (async (
+      input: string | URL | Request,
+      init?: RequestInit
+    ) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      calls.push({ url, method: init?.method });
+      return response.clone();
+    }) as typeof fetch;
+  }
+
+  function restoreFetch() {
+    globalThis.fetch = originalFetch;
+  }
+
+  function setAuthAndSync(opts: {
+    authenticated: boolean;
+    autoSyncEnabled: boolean;
+  }) {
+    useChatsStore.setState({
+      username: opts.authenticated ? "syncuser" : null,
+      isAuthenticated: opts.authenticated,
+    });
+    useCloudSyncStore.setState({ autoSyncEnabled: opts.autoSyncEnabled });
+  }
+
+  test("fetch is skipped entirely when the user isn't signed in", async () => {
+    installFakeFetch(
+      new Response(JSON.stringify({ musicUserToken: "should-not-reach" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    try {
+      setAuthAndSync({ authenticated: false, autoSyncEnabled: true });
+      const result = await fetchMusicKitUserTokenFromCloud();
+      expect(result).toBeNull();
+      expect(calls).toHaveLength(0);
+    } finally {
+      restoreFetch();
+    }
+  });
+
+  test("fetch is skipped when signed in but Auto Sync is off", async () => {
+    installFakeFetch(
+      new Response(JSON.stringify({ musicUserToken: "should-not-reach" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    try {
+      setAuthAndSync({ authenticated: true, autoSyncEnabled: false });
+      const result = await fetchMusicKitUserTokenFromCloud();
+      expect(result).toBeNull();
+      expect(calls).toHaveLength(0);
+    } finally {
+      restoreFetch();
+    }
+  });
+
+  test("PUT is skipped when Auto Sync is off (local-only world)", async () => {
+    installFakeFetch(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    try {
+      setAuthAndSync({ authenticated: true, autoSyncEnabled: false });
+      await saveMusicKitUserTokenToCloud({
+        musicUserToken: "abc",
+        expiresAt: null,
+        storedAt: Date.now(),
+      });
+      expect(calls).toHaveLength(0);
+    } finally {
+      restoreFetch();
+    }
+  });
+
+  test("PUT fires when signed in AND Auto Sync is on", async () => {
+    installFakeFetch(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    try {
+      setAuthAndSync({ authenticated: true, autoSyncEnabled: true });
+      await saveMusicKitUserTokenToCloud({
+        musicUserToken: "abc.def.ghi",
+        expiresAt: null,
+        storedAt: Date.now(),
+      });
+      expect(calls).toHaveLength(1);
+      expect(calls[0].method).toBe("PUT");
+      expect(calls[0].url).toContain("/api/sync/musickit-user-token");
+    } finally {
+      restoreFetch();
+    }
+  });
+
+  test("GET fires when signed in AND Auto Sync is on, and parses the response", async () => {
+    installFakeFetch(
+      new Response(
+        JSON.stringify({
+          musicUserToken: "fetched-from-cloud",
+          expiresAt: Date.now() + 60_000,
+          storedAt: Date.now() - 1000,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      )
+    );
+    try {
+      setAuthAndSync({ authenticated: true, autoSyncEnabled: true });
+      const result = await fetchMusicKitUserTokenFromCloud();
+      expect(result?.musicUserToken).toBe("fetched-from-cloud");
+      expect(calls).toHaveLength(1);
+      expect(calls[0].method).toBe("GET");
+      expect(calls[0].url).toContain("/api/sync/musickit-user-token");
+    } finally {
+      restoreFetch();
+    }
   });
 });
 
