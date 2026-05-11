@@ -62,6 +62,23 @@ interface PutBody {
   expiresAt?: unknown;
 }
 
+interface DeleteBody {
+  /**
+   * Optional compare-and-swap guard. When present, the server only
+   * deletes if the currently-stored token equals this value — which
+   * lets a device clean up after a token Apple has revoked
+   * (`authorizationStatusDidChange` going to false) without
+   * clobbering a newer token that another device has already
+   * written to cloud in the meantime.
+   *
+   * When absent, the DELETE is unconditional (matches the historical
+   * shape, used e.g. by tooling / explicit account-purge flows).
+   */
+  ifMusicUserToken?: unknown;
+}
+
+type RequestBody = PutBody & DeleteBody;
+
 export function parseStoredToken(raw: unknown): StoredUserToken | null {
   if (!raw) return null;
   let candidate: unknown = raw;
@@ -157,13 +174,47 @@ async function handlePut(
 async function handleDelete(
   res: VercelResponse,
   redis: Redis,
-  username: string
+  username: string,
+  body: DeleteBody | null
 ): Promise<void> {
-  await redis.del(musickitUserTokenKey(username));
-  res.status(200).json({ ok: true });
+  const ifToken =
+    body && typeof body.ifMusicUserToken === "string" && body.ifMusicUserToken
+      ? body.ifMusicUserToken
+      : null;
+
+  if (!ifToken) {
+    // Unconditional delete — historical shape, used by callers that
+    // intentionally want to revoke the cloud copy regardless of what's
+    // there (e.g. account-purge tooling).
+    await redis.del(musickitUserTokenKey(username));
+    res.status(200).json({ ok: true, deleted: true });
+    return;
+  }
+
+  // Compare-and-swap: only delete when the stored token matches.
+  // The get / del pair isn't atomic, but Apple Music user tokens
+  // change infrequently relative to our sync cadence (minutes-to-
+  // hours), so the window for a lost write is negligible. If we ever
+  // do need true atomicity we can switch to a Lua script.
+  const raw = await redis.get<string | StoredUserToken>(
+    musickitUserTokenKey(username)
+  );
+  const parsed = parseStoredToken(raw);
+  const matches = Boolean(parsed && parsed.musicUserToken === ifToken);
+
+  if (matches) {
+    await redis.del(musickitUserTokenKey(username));
+    res.status(200).json({ ok: true, deleted: true });
+  } else {
+    // A newer token (or no token at all) is in cloud. Leave it alone
+    // so a fresh write from another device wins. The client can take
+    // this `deleted: false` signal as 'someone else's session is
+    // active, mine is just stale'.
+    res.status(200).json({ ok: true, deleted: false });
+  }
 }
 
-export default apiHandler<PutBody>(
+export default apiHandler<RequestBody>(
   {
     methods: ["GET", "PUT", "DELETE"],
     auth: "required",
@@ -189,7 +240,12 @@ export default apiHandler<PutBody>(
       return;
     }
     if (method === "DELETE") {
-      await handleDelete(res, redis, username);
+      await handleDelete(
+        res,
+        redis,
+        username,
+        (req.body as DeleteBody) ?? null
+      );
       return;
     }
     res.status(405).json({ error: "Method not allowed" });
