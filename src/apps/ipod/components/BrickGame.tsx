@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useIpodStore } from "@/stores/useIpodStore";
 
 // Game-world dimensions in CSS pixels. The iPod screen is 150px tall ×
 // ~218px wide (250px device − 2×16px padding); the title bar takes 26px,
@@ -137,6 +138,10 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
   ref
 ) {
   const { t } = useTranslation();
+  const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
+  const isModernUi = uiVariant === "modern";
+  /** Body offset for `calc(100% - …)` — classic chrome ~26px */
+  const bodyTopOffsetPx = isModernUi ? 24 : 26;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stateRef = useRef<GameState>(initialState());
   const phaseRef = useRef<Phase>("ready");
@@ -201,7 +206,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     // Default 2d context is transparent so the LCD gradient behind the canvas shows through.
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    const fg = "#0a3667";
+    const fg = isModernUi ? "#1c1c1e" : "#0a3667";
     ctx.fillStyle = fg;
 
     const s = stateRef.current;
@@ -219,7 +224,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     ctx.beginPath();
     ctx.arc(s.ballX, s.ballY, BALL_RADIUS, 0, Math.PI * 2);
     ctx.fill();
-  }, []);
+  }, [isModernUi]);
 
   const stopLoop = useCallback(() => {
     if (rafRef.current != null) {
@@ -474,50 +479,101 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
   return (
     <div
       className={cn(
-        "absolute inset-0 z-50 flex h-full max-h-full flex-col overflow-hidden select-none font-chicago",
+        "absolute inset-0 z-50 flex h-full max-h-full flex-col overflow-hidden select-none",
+        !isModernUi && "font-chicago",
+        isModernUi ? "font-ipod-modern-ui" : "",
         "border border-black border-2 rounded-[2px]",
-        lcdFilterOn ? "lcd-screen" : "",
-        backlightOn
+        lcdFilterOn && !isModernUi ? "lcd-screen" : "",
+        isModernUi
+          ? "ipod-modern-screen bg-white"
+          : backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",
         lcdFilterOn &&
           backlightOn &&
+          !isModernUi &&
           "shadow-[0_0_10px_2px_rgba(197,224,245,0.05)]"
       )}
     >
-      {lcdFilterOn && (
+      {lcdFilterOn && !isModernUi && (
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-scan-lines" />
       )}
-      {lcdFilterOn && (
+      {lcdFilterOn && !isModernUi && (
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-reflection" />
       )}
 
       {/* Title bar */}
-      <div className="shrink-0 border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-        <div className="w-10 flex items-center justify-start text-xs tabular-nums">
+      <div
+        className={cn(
+          "shrink-0 flex items-center z-10 py-0 px-2 tabular-nums",
+          isModernUi
+            ? "ipod-modern-titlebar font-ipod-modern-ui text-[15px] font-semibold text-black"
+            : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+        )}
+        style={isModernUi ? { height: 24, minHeight: 24 } : undefined}
+      >
+        <div
+          className={cn(
+            "flex w-10 items-center justify-start",
+            isModernUi ? "text-[15px] font-semibold text-black/80" : "text-xs"
+          )}
+        >
           {isResultsScreen ? t("apps.ipod.brickGame.results") : `♥ ${lives}`}
         </div>
-        <div className="flex-1 truncate text-center">
+        <div
+          className={cn(
+            "flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-center",
+            isModernUi && "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+          )}
+        >
           {t("apps.ipod.brickGame.title")}
         </div>
-        <div className="w-10 flex items-center justify-end text-xs tabular-nums">
+        <div
+          className={cn(
+            "flex w-10 items-center justify-end",
+            isModernUi ? "text-[15px] font-semibold text-black/80" : "text-xs"
+          )}
+        >
           {score}
         </div>
       </div>
 
-      <div className="relative z-30 h-[calc(100%-26px)] w-full min-h-0 overflow-hidden">
+      <div
+        className="relative z-30 w-full min-h-0 overflow-hidden"
+        style={{ height: `calc(100% - ${bodyTopOffsetPx}px)` }}
+      >
         {/* Results screen replaces the canvas entirely */}
         {isResultsScreen ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-            <span className="font-chicago text-[16px] tabular-nums leading-4">
+          <div
+            className={cn(
+              "absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center",
+              isModernUi ? "font-ipod-modern-ui" : "font-chicago text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+            )}
+          >
+            <span
+              className={cn(
+                "tabular-nums leading-4 text-[16px]",
+                isModernUi ? "font-semibold text-black" : ""
+              )}
+            >
               {score} {t("apps.ipod.brickGame.pts")}
             </span>
-            <span className="font-chicago text-[14px] leading-4">
+            <span
+              className={cn(
+                "leading-4 text-[14px]",
+                isModernUi ? "font-normal text-[rgb(99,101,103)]" : ""
+              )}
+            >
               {phase === "won"
                 ? t("apps.ipod.brickGame.youWin")
                 : t("apps.ipod.brickGame.gameOverTitle")}
             </span>
-            <div className="flex flex-col font-chicago text-[14px] leading-4 opacity-85">
+            <div
+              className={cn(
+                "flex flex-col leading-4 opacity-85 text-[14px]",
+                isModernUi ? "font-normal text-[rgb(99,101,103)]" : ""
+              )}
+            >
               <span>{t("apps.ipod.brickGame.pressCenterToReplay")}</span>
               <span>{t("apps.ipod.brickGame.menuToExit")}</span>
             </div>
@@ -535,7 +591,14 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
                 className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
                 aria-live="polite"
               >
-                <div className="rounded-[2px] border border-[#0a3667] bg-[#c5e0f5]/85 px-2 py-0.5 font-chicago text-[11px] leading-tight text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)] text-center whitespace-nowrap">
+                <div
+                  className={cn(
+                    "rounded-[2px] border px-2 py-0.5 text-center whitespace-nowrap text-[11px] leading-tight",
+                    isModernUi
+                      ? "border-[rgb(200,200,205)] bg-white/90 font-ipod-modern-ui font-semibold text-black"
+                      : "border-[#0a3667] bg-[#c5e0f5]/85 font-chicago text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                  )}
+                >
                   {pauseOverlay}
                 </div>
               </div>

@@ -109,6 +109,11 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const tracks = useIpodStore((s) =>
     s.librarySource === "appleMusic" ? s.appleMusicTracks : s.tracks
   );
+  const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
+  const isModernUi = uiVariant === "modern";
+
+  /** Body area below title bar (`calc(100% - …)`) — classic bar ~26px incl. hairline */
+  const bodyTopOffsetPx = isModernUi ? 24 : 26;
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const ipodVolume = useAudioSettingsStore((s) => s.ipodVolume);
   const finalVolume = ipodVolume * masterVolume;
@@ -535,56 +540,116 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   return (
     <div
       className={cn(
-        "relative z-50 flex h-full min-h-[150px] w-full flex-col overflow-hidden select-none font-chicago",
+        "relative z-50 flex h-full min-h-[150px] w-full flex-col overflow-hidden select-none",
+        !isModernUi && "font-chicago",
+        isModernUi ? "font-ipod-modern-ui" : "",
         "border border-black border-2 rounded-[2px]",
-        lcdFilterOn ? "lcd-screen" : "",
-        backlightOn
+        lcdFilterOn && !isModernUi ? "lcd-screen" : "",
+        isModernUi
+          ? "ipod-modern-screen bg-white"
+          : backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",
         lcdFilterOn &&
           backlightOn &&
+          !isModernUi &&
           "shadow-[0_0_10px_2px_rgba(197,224,245,0.05)]"
       )}
     >
-      {lcdFilterOn && (
+      {lcdFilterOn && !isModernUi && (
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-scan-lines" />
       )}
-      {lcdFilterOn && (
+      {lcdFilterOn && !isModernUi && (
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-reflection" />
       )}
 
-      {/* Title bar — match IpodScreen */}
-      <div className="border-b border-[#0a3667] py-0 px-2 font-chicago text-[16px] flex items-center sticky top-0 z-10 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-        <div className="w-6 flex items-center justify-start text-xs tabular-nums">
+      {/* Title bar — classic LCD vs modern (IpodScreen) */}
+      <div
+        className={cn(
+          "shrink-0 flex items-center sticky top-0 z-10 py-0 px-2 tabular-nums",
+          isModernUi
+            ? "ipod-modern-titlebar font-ipod-modern-ui text-[15px] font-semibold text-black"
+            : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+        )}
+        style={isModernUi ? { height: 24, minHeight: 24 } : undefined}
+      >
+        <div
+          className={cn(
+            "flex w-6 items-center justify-start",
+            isModernUi ? "font-semibold text-[15px] text-black/80" : "text-xs"
+          )}
+        >
           {phase !== "finished" && hasEnoughTracks && (
             <span>
               {Math.min(roundNumber, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
             </span>
           )}
         </div>
-        <div className="flex-1 truncate text-center">{headerTitle}</div>
-        <div className="w-6 flex items-center justify-end text-xs tabular-nums">
+        <div
+          className={cn(
+            "flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-center",
+            isModernUi && "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+          )}
+        >
+          {headerTitle}
+        </div>
+        <div
+          className={cn(
+            "flex w-6 items-center justify-end",
+            isModernUi ? "font-semibold text-[15px] text-black/80" : "text-xs"
+          )}
+        >
           {phase !== "finished" && hasEnoughTracks && <span>{score}</span>}
         </div>
       </div>
 
       {/* Body */}
-      <div className="relative h-[calc(100%-26px)] overflow-hidden z-30">
+      <div
+        className="relative overflow-hidden z-30"
+        style={{ height: `calc(100% - ${bodyTopOffsetPx}px)` }}
+      >
         {!hasEnoughTracks ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-            <p className="text-[14px]">
+          <div
+            className={cn(
+              "absolute inset-0 flex flex-col items-center justify-center px-3 text-center",
+              isModernUi
+                ? "text-[rgb(99,101,103)] font-ipod-modern-ui font-normal text-[14px]"
+                : "font-chicago text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+            )}
+          >
+            <p className={cn(!isModernUi && "text-[14px]")}>
               {t("apps.ipod.musicQuiz.notEnoughTracks")}
             </p>
           </div>
         ) : phase === "finished" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-            <span className="font-chicago text-[16px] tabular-nums leading-4">
+          <div
+            className={cn(
+              "absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center",
+              isModernUi ? "font-ipod-modern-ui" : "font-chicago text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+            )}
+          >
+            <span
+              className={cn(
+                "tabular-nums leading-4 text-[16px]",
+                isModernUi ? "font-semibold text-black" : ""
+              )}
+            >
               {score}/{MAX_GAME_SCORE}
             </span>
-            <span className="font-chicago text-[14px] leading-4">
+            <span
+              className={cn(
+                "leading-4 text-[14px]",
+                isModernUi ? "font-normal text-[rgb(99,101,103)]" : ""
+              )}
+            >
               {t(scoreMessageKey(score, MAX_GAME_SCORE))}
             </span>
-            <div className="flex flex-col font-chicago text-[14px] leading-4 opacity-85">
+            <div
+              className={cn(
+                "flex flex-col leading-4 opacity-85 text-[14px]",
+                isModernUi ? "font-normal text-[rgb(99,101,103)]" : ""
+              )}
+            >
               <span>
                 {t("apps.ipod.musicQuiz.pressCenterToReplay")}
               </span>
@@ -592,15 +657,25 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
             </div>
           </div>
         ) : phase === "loading" || phase === "starting" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
-            <div className="text-[14px] animate-pulse">
+          <div
+            className={cn(
+              "absolute inset-0 flex flex-col items-center justify-center px-3 text-center",
+              isModernUi
+                ? "font-ipod-modern-ui font-normal text-[14px] text-[rgb(99,101,103)]"
+                : "font-chicago text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+            )}
+          >
+            <div className="animate-pulse">
               {t("apps.ipod.musicQuiz.loading")}
             </div>
           </div>
         ) : phase === "awaitingStart" ? (
           <div
             className={cn(
-              "absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+              "absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3 text-center",
+              isModernUi
+                ? "font-ipod-modern-ui text-[rgb(99,101,103)]"
+                : "font-chicago text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
               isPlayerReady ? "cursor-pointer" : ""
             )}
             onClick={() => {
@@ -614,11 +689,16 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
             }}
           >
             {isPlayerReady ? (
-              <div className="font-chicago text-[14px] leading-4">
+              <div
+                className={cn(
+                  "text-[14px] leading-4",
+                  isModernUi ? "font-normal" : "font-chicago"
+                )}
+              >
                 {t("apps.ipod.musicQuiz.pressCenterToStart")}
               </div>
             ) : (
-              <div className="text-[14px] animate-pulse">
+              <div className={cn("text-[14px] animate-pulse", isModernUi && "font-normal")}>
                 {t("apps.ipod.musicQuiz.loading")}
               </div>
             )}
@@ -626,10 +706,24 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         ) : (
           <div className="absolute inset-0 flex flex-col">
             {/* Snippet progress or feedback — fixed slot height */}
-            <div className="border-b border-[#0a3667] px-2 py-px text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]">
+            <div
+              className={cn(
+                "border-b px-2 py-px",
+                isModernUi
+                  ? "border-[rgb(229,229,234)] text-black"
+                  : "border-[#0a3667] font-chicago text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+              )}
+            >
               <div className="flex h-5 w-full items-center justify-center">
                 {phase === "feedback" ? (
-                  <div className="w-full truncate text-center font-chicago text-[16px] leading-4">
+                  <div
+                    className={cn(
+                      "block w-full overflow-x-clip overflow-y-visible text-ellipsis whitespace-nowrap text-center",
+                      isModernUi
+                        ? "font-ipod-modern-ui font-semibold text-[15px] leading-normal text-black"
+                        : "font-chicago text-[16px] leading-4 text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                    )}
+                  >
                     {round?.isCorrect
                       ? t("apps.ipod.musicQuiz.correctWithPoints", { points: lastRoundPoints })
                       : round?.selectedIndex == null
@@ -641,6 +735,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
                     key={`${roundNumber}-playing`}
                     durationMs={SNIPPET_DURATION_MS}
                     running={phase === "playing"}
+                    isModernUi={isModernUi}
                   />
                 )}
               </div>
@@ -659,7 +754,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
                   <div
                     key={`${roundNumber}-${idx}-${option.id}`}
                     className={cn(
-                      "ipod-menu-item",
+                      "ipod-menu-item h-6",
                       isSelected ? "selected" : "",
                       isCorrectOption && "bg-[#1c8a3a]/30",
                       isWrongPicked && "bg-[#a83232]/30"
@@ -669,6 +764,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
                       text={formatOption(option)}
                       isSelected={isSelected}
                       backlightOn={backlightOn}
+                      variant={isModernUi ? "modern" : "classic"}
                       onClick={() => {
                         if (phase === "playing") {
                           setSelectedIndex(idx);
@@ -775,13 +871,33 @@ function scoreMessageKey(score: number, maxScore: number): string {
   return "apps.ipod.musicQuiz.keepPracticing";
 }
 
-function SnippetProgressBar({ durationMs, running }: { durationMs: number; running: boolean }) {
+function SnippetProgressBar({
+  durationMs,
+  running,
+  isModernUi,
+}: {
+  durationMs: number;
+  running: boolean;
+  isModernUi: boolean;
+}) {
   return (
-    <div className="h-[6px] w-full shrink-0 rounded-full border border-[#0a3667] overflow-hidden">
+    <div
+      className={cn(
+        "h-[6px] w-full shrink-0 rounded-full overflow-hidden",
+        isModernUi
+          ? "border border-[rgb(200,200,205)] bg-[rgb(245,245,247)]"
+          : "border border-[#0a3667]"
+      )}
+    >
       <AnimatePresence mode="wait">
         <motion.div
           key={running ? "run" : "stop"}
-          className="h-full bg-[#0a3667]"
+          className={cn(
+            "h-full",
+            isModernUi
+              ? "bg-gradient-to-b from-[rgb(96,176,246)] to-[rgb(52,122,181)]"
+              : "bg-[#0a3667]"
+          )}
           initial={{ width: "0%" }}
           animate={{ width: running ? "100%" : "0%" }}
           transition={{ duration: running ? durationMs / 1000 : 0, ease: "linear" }}
