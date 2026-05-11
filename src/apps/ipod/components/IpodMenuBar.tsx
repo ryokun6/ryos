@@ -874,30 +874,34 @@ export function IpodMenuBar({
             </MenubarSub>
           )}
 
-          {/* Chassis / click wheel cosmetic */}
-          <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3">
-              {t("apps.ipod.menu.deviceTheme")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
-              <MenubarRadioGroup
-                value={currentTheme}
-                onValueChange={(value) =>
-                  setTheme(value as "classic" | "black" | "u2")
-                }
-              >
-                <MenubarRadioItem value="classic" className="text-md h-6 pr-3">
-                  {t("apps.ipod.menu.classic")}
-                </MenubarRadioItem>
-                <MenubarRadioItem value="black" className="text-md h-6 pr-3">
-                  {t("apps.ipod.menu.black")}
-                </MenubarRadioItem>
-                <MenubarRadioItem value="u2" className="text-md h-6 pr-3">
-                  {t("apps.ipod.menu.u2")}
-                </MenubarRadioItem>
-              </MenubarRadioGroup>
-            </MenubarSubContent>
-          </MenubarSub>
+          {/* Chassis / click wheel cosmetic.
+              Hidden on XP/98: the iPod chassis is force-skinned to Zune
+              there, so the classic/black/u2 picker would have no effect. */}
+          {!isXpTheme && (
+            <MenubarSub>
+              <MenubarSubTrigger className="text-md h-6 px-3">
+                {t("apps.ipod.menu.deviceTheme")}
+              </MenubarSubTrigger>
+              <MenubarSubContent className="px-0">
+                <MenubarRadioGroup
+                  value={currentTheme}
+                  onValueChange={(value) =>
+                    setTheme(value as "classic" | "black" | "u2")
+                  }
+                >
+                  <MenubarRadioItem value="classic" className="text-md h-6 pr-3">
+                    {t("apps.ipod.menu.classic")}
+                  </MenubarRadioItem>
+                  <MenubarRadioItem value="black" className="text-md h-6 pr-3">
+                    {t("apps.ipod.menu.black")}
+                  </MenubarRadioItem>
+                  <MenubarRadioItem value="u2" className="text-md h-6 pr-3">
+                    {t("apps.ipod.menu.u2")}
+                  </MenubarRadioItem>
+                </MenubarRadioGroup>
+              </MenubarSubContent>
+            </MenubarSub>
+          )}
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 

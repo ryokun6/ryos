@@ -300,8 +300,17 @@ export function IpodAppComponent({
         >
           <div
             className={cn(
-              "ipod-force-font w-[250px] h-[400px] rounded-2xl shadow-xl border border-black/40 flex flex-col items-center p-4 pb-8",
-              theme === "classic" ? "bg-white/85" : "bg-black/85"
+              "ipod-force-font w-[250px] h-[400px] rounded-2xl shadow-xl border flex flex-col items-center p-4 pb-8",
+              // The Zune chassis is a derived skin — it pre-empts whichever
+              // device theme the user has stored ("classic" / "black" / "u2")
+              // whenever the active OS theme is XP or Win98. Keep the
+              // chassis dimensions identical so the wheel/screen geometry
+              // doesn't shift between skins.
+              isXpTheme
+                ? "ipod-zune-chassis border-black/60"
+                : theme === "classic"
+                ? "bg-white/85 border-black/40"
+                : "bg-black/85 border-black/40"
             )}
             style={{
               transform: `scale(${scale})`,
@@ -501,7 +510,7 @@ export function IpodAppComponent({
             </div>
 
             <IpodWheel
-              theme={theme}
+              theme={isXpTheme ? "zune" : theme}
               onWheelClick={handleWheelClick}
               onWheelRotation={handleWheelRotation}
               onMenuButton={handleMenuButton}

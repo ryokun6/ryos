@@ -373,11 +373,18 @@ export function IpodWheel({
     window.addEventListener("mouseup", handleMouseUp);
   };
 
+  const isZune = theme === "zune";
   return (
     <div
       className={cn(
         "mt-6 relative w-[180px] h-[180px] rounded-full flex items-center justify-center select-none no-select-gesture",
-        theme === "classic"
+        // Zune Pad: the click wheel keeps its functional ring shape but
+        // adopts a deep matte-black gradient with a faint magenta inner
+        // glow to echo the LCD selection accent. The rest of the chassis
+        // (rendered by IpodAppComponent) carries the same Zune-black wash.
+        isZune
+          ? "ipod-zune-wheel"
+          : theme === "classic"
           ? "bg-gray-300/60"
           : theme === "u2"
           ? "bg-red-700/60"
@@ -436,7 +443,9 @@ export function IpodWheel({
         }}
         className={cn(
           "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none select-none no-select-gesture",
-          theme === "classic"
+          isZune
+            ? "ipod-zune-wheel-center"
+            : theme === "classic"
             ? "bg-white/30"
             : theme === "u2"
             ? "bg-black/70"
@@ -454,24 +463,54 @@ export function IpodWheel({
         onTouchEnd={handleTouchEnd}
         onWheel={handleMouseWheel}
       >
-        {/* Wheel labels - no click handlers */}
+        {/* Wheel labels - no click handlers
+         *  Classic (and black/u2) skins use the original bitmap Chicago label
+         *  glyphs in pure white. The Zune Pad swaps them for lowercase Segoe
+         *  UI in a soft magenta-leaning white — Zune devices always wrote
+         *  their navigation cues in Segoe lowercase ("menu", "back", etc.). */}
         <div
-          className="absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 font-chicago text-xs text-white menu-button cursor-default select-none no-select-gesture"
+          className={cn(
+            "absolute top-1.5 text-center left-1/2 transform -translate-x-1/2 menu-button cursor-default select-none no-select-gesture",
+            isZune
+              ? "font-ipod-zune-ui text-[11px] font-semibold text-white/85 lowercase tracking-tight"
+              : "font-chicago text-xs text-white"
+          )}
           onClick={(e) => {
             if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
             e.stopPropagation(); // Prevent triggering wheel mousedown
             onMenuButton();
           }}
         >
-          MENU
+          {isZune ? "menu" : "MENU"}
         </div>
-        <div className="absolute right-2 text-right top-1/2 transform -translate-y-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
+        <div
+          className={cn(
+            "absolute right-2 text-right top-1/2 transform -translate-y-1/2 cursor-default select-none no-select-gesture",
+            isZune
+              ? "font-ipod-zune-ui text-[11px] text-white/75"
+              : "font-chicago text-[12px] text-white"
+          )}
+        >
           ⏭
         </div>
-        <div className="absolute bottom-1 text-center left-1/2 transform -translate-x-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
+        <div
+          className={cn(
+            "absolute bottom-1 text-center left-1/2 transform -translate-x-1/2 cursor-default select-none no-select-gesture",
+            isZune
+              ? "font-ipod-zune-ui text-[11px] text-white/75"
+              : "font-chicago text-[12px] text-white"
+          )}
+        >
           ⏯
         </div>
-        <div className="absolute left-2 text-left top-1/2 transform -translate-y-1/2 font-chicago text-[12px] text-white cursor-default select-none no-select-gesture">
+        <div
+          className={cn(
+            "absolute left-2 text-left top-1/2 transform -translate-y-1/2 cursor-default select-none no-select-gesture",
+            isZune
+              ? "font-ipod-zune-ui text-[11px] text-white/75"
+              : "font-chicago text-[12px] text-white"
+          )}
+        >
           ⏮
         </div>
       </div>

@@ -292,6 +292,11 @@ export function useIpodLogic({
     [username, isAuthenticated]
   );
 
+  // Active OS theme — used both to switch the iPod's chassis/wheel/LCD
+  // skin (XP & Win98 force the Zune skin) and by the menu builders below
+  // to hide rows that don't apply to the forced skin.
+  const currentTheme = useThemeStore((state) => state.current);
+
   // ---------------------------------------------------------------------
   // MusicKit (Apple Music) integration
   // ---------------------------------------------------------------------
@@ -2018,6 +2023,10 @@ export function useIpodLogic({
     const sourceLabel = isAppleMusic
       ? t("apps.ipod.menuItems.libraryAppleMusic", "Apple Music")
       : t("apps.ipod.menuItems.libraryYoutube", "YouTube");
+    // On XP/98 the device chassis is force-skinned to Zune (see
+    // IpodAppComponent / IpodWheel) — the classic↔black↔u2 toggle has no
+    // effect there, so the row is omitted to avoid a dead control.
+    const isXpOrWin98 = currentTheme === "xp" || currentTheme === "win98";
 
     return [
       {
@@ -2042,17 +2051,21 @@ export function useIpodLogic({
         showChevron: false,
         value: backlightOn ? t("apps.ipod.menuItems.on") : t("apps.ipod.menuItems.off"),
       },
-      {
-        label: t("apps.ipod.menuItems.theme"),
-        action: memoizedHandleThemeChange,
-        showChevron: false,
-        value:
-          theme === "classic"
-            ? t("apps.ipod.menu.classic")
-            : theme === "black"
-            ? t("apps.ipod.menu.black")
-            : t("apps.ipod.menu.u2"),
-      },
+      ...(isXpOrWin98
+        ? []
+        : [
+            {
+              label: t("apps.ipod.menuItems.theme"),
+              action: memoizedHandleThemeChange,
+              showChevron: false,
+              value:
+                theme === "classic"
+                  ? t("apps.ipod.menu.classic")
+                  : theme === "black"
+                  ? t("apps.ipod.menu.black")
+                  : t("apps.ipod.menu.u2"),
+            },
+          ]),
       {
         label: t("apps.ipod.menuItems.librarySource", "Library"),
         action: () => {
@@ -2087,6 +2100,7 @@ export function useIpodLogic({
     isShuffled,
     backlightOn,
     theme,
+    currentTheme,
     memoizedToggleRepeat,
     memoizedToggleShuffle,
     memoizedToggleBacklight,
@@ -3739,7 +3753,6 @@ export function useIpodLogic({
     }
   );
 
-  const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   return {

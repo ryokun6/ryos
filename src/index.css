@@ -1618,6 +1618,64 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background-color: #ed008c;
 }
 
+/* Zune device chassis: matte obsidian black with a subtle vertical
+ * gradient and a faint magenta-ish bloom at the bottom that bleeds
+ * toward the Zune Pad. Real Zune 30/80 devices were available in glossy
+ * black with a smoky-pink "halo" where the touch pad sat — this is the
+ * tasteful 2-D approximation. The chassis dimensions / spacing are
+ * unchanged from the iPod skins so the screen + wheel geometry stays
+ * pixel-stable across themes. */
+.ipod-zune-chassis {
+  background-image: linear-gradient(
+      180deg,
+      rgba(20, 20, 23, 0.94) 0%,
+      rgba(10, 10, 12, 0.96) 60%,
+      rgba(0, 0, 0, 0.97) 100%
+    ),
+    radial-gradient(
+      90% 60% at 50% 100%,
+      rgba(237, 0, 140, 0.18) 0%,
+      rgba(237, 0, 140, 0.06) 35%,
+      transparent 70%
+    );
+  background-color: #0a0a0c;
+}
+
+/* Zune Pad: dark gunmetal disc with a soft magenta ring and a hairline
+ * outer rim. The disc keeps the click-wheel hit-target geometry intact —
+ * only the surface is reskinned. */
+.ipod-zune-wheel {
+  background-image: radial-gradient(
+      circle at 50% 35%,
+      rgba(60, 60, 64, 0.95) 0%,
+      rgba(28, 28, 30, 0.95) 55%,
+      rgba(14, 14, 16, 0.95) 100%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(237, 0, 140, 0.12) 0%,
+      rgba(237, 0, 140, 0) 65%
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -8px 18px rgba(237, 0, 140, 0.08);
+}
+
+/* Center select button: deeper black well with a thin magenta inner
+ * stroke — the canonical Zune Pad center dot. */
+.ipod-zune-wheel-center {
+  background-image: radial-gradient(
+    circle at 50% 35%,
+    rgba(40, 40, 42, 0.95) 0%,
+    rgba(8, 8, 10, 0.98) 75%
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(237, 0, 140, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
 /* macOS theme override mirror — the `.ipod-force-font *` rule in
  * themes.css force-inherits font-family inside the iPod chassis. The
  * Zune skin only renders under XP/98 so this guard is defensive, but
