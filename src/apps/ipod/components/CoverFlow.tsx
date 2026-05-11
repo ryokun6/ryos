@@ -12,6 +12,16 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useEventListener } from "@/hooks/useEventListener";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import {
+  BatteryIndicator,
+  IpodModernPlayPauseIcon,
+  ScrollingText,
+} from "./screen";
+
+// Modern-UI titlebar height. Matches `MODERN_TITLEBAR_HEIGHT` in
+// IpodScreen.tsx so the Cover Flow status bar lines up exactly with the
+// main menu's silver header strip when toggling between the two.
+const MODERN_TITLEBAR_HEIGHT = 17;
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
@@ -287,15 +297,24 @@ function CoverImage({
   // Cover size: larger for classic iPod; modern skin uses a tighter row.
   const coverSize =
     ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60; // cqmin units
-  // Side spacing — tighter on modern nano-style Cover Flow (small viewport).
+  // Side spacing — modern compact carousel uses slightly larger
+  // offsets (18 / 25) than classic so its 1.2x-scaled neighbouring
+  // covers don't collide with the center sleeve. Karaoke (non-iPod)
+  // stays tight because its wider viewport keeps everything in frame.
   const baseSpacing =
-    ipodMode && compactIpodCarousel ? 17 : ipodMode ? 26 : 16;
+    ipodMode && compactIpodCarousel ? 18 : ipodMode ? 26 : 16;
   const positionSpacing =
-    ipodMode && compactIpodCarousel ? 12 : ipodMode ? 18 : 11;
+    ipodMode && compactIpodCarousel ? 25 : ipodMode ? 18 : 11;
 
-  // Scale values: no scaling for iPod mode, subtle for karaoke
+  // Scale values: the modern compact carousel scales the neighbouring
+  // covers up so they fill more of the horizontal space without
+  // having to push the offset out (which clustered them at the far
+  // side). Classic stays 1.0 (matches the iPod hardware look
+  // verbatim) and karaoke uses a subtle 0.9 falloff that pairs with
+  // its wider viewport.
   const centerScale = 1.0;
-  const sideScale = ipodMode ? 1.0 : 0.9;
+  const sideScale =
+    ipodMode && compactIpodCarousel ? 1.2 : ipodMode ? 1.0 : 0.9;
   
   const isCenter = position === 0;
 
@@ -576,7 +595,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const isMacTheme = currentTheme === "macosx";
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernIpodCoverFlow = ipodMode && uiVariant === "modern";
-  
+
   // Track swipe state
   const swipeStartX = useRef<number | null>(null);
   const lastMoveX = useRef<number | null>(null);
@@ -759,21 +778,84 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className={`absolute inset-0 z-50 bg-black overflow-hidden ${ipodMode ? "ipod-force-font" : "karaoke-force-font"}`}
+          className={cn(
+            "absolute inset-0 z-50 overflow-hidden",
+            // Modern UI: white surface to match the rest of the modern
+            // skin (Music + Now Playing, settings menus). Classic /
+            // karaoke variants keep the original deep-black backdrop.
+            isModernIpodCoverFlow ? "bg-white" : "bg-black",
+            // Retain the iPod screen's black bezel + rounded corners
+            // when Cover Flow is open. The overlay is rendered as a
+            // sibling of `IpodScreen` (not a child), so without its
+            // own border it would obscure the bezel and the carousel
+            // would read as a different frame than every other view.
+            // Karaoke Cover Flow opens full-bleed inside its own
+            // window chrome and skips the bezel.
+            ipodMode && "border border-black border-2 rounded-[2px]",
+            ipodMode ? "ipod-force-font" : "karaoke-force-font",
+          )}
           style={{ containerType: "size" }}
           initial={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
           transition={{ duration: ipodMode ? 0.2 : 0.35, ease: "easeOut" }}
         >
-          {/* Reflective floor gradient - bottom only */}
-          <div 
+          {/* Reflective floor gradient — softer on the white modern skin so
+              it reads as a faint stage shadow under the album row instead
+              of a heavy vignette. Classic / karaoke still get the original
+              deep gradient that sells the reflective floor against black. */}
+          <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to bottom, transparent 40%, rgba(38,38,38,0.5) 70%, rgba(64,64,64,0.3) 100%)",
+              background: isModernIpodCoverFlow
+                ? "linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.06) 78%, rgba(0,0,0,0.12) 100%)"
+                : "linear-gradient(to bottom, transparent 40%, rgba(38,38,38,0.5) 70%, rgba(64,64,64,0.3) 100%)",
               pointerEvents: "none",
             }}
           />
+
+          {/* Modern UI status bar — same silver gradient + 12px MyriadPro
+              header used by the main menu titlebar so Cover Flow reads as
+              another screen of the same UI rather than an overlay. Shows
+              the "Cover Flow" label on the left, play/pause status icon
+              and battery on the right. Classic / karaoke variants keep
+              their full-bleed black backdrop with no status bar. */}
+          {isModernIpodCoverFlow && (
+            <div
+              className={cn(
+                "absolute top-0 left-0 right-0 z-20",
+                "ipod-modern-titlebar font-ipod-modern-ui font-semibold text-black",
+                "flex items-center pl-1.5 pr-1.5 gap-1.5",
+              )}
+              style={{
+                height: MODERN_TITLEBAR_HEIGHT,
+                minHeight: MODERN_TITLEBAR_HEIGHT,
+              }}
+            >
+              <ScrollingText
+                text={t("apps.ipod.menu.coverFlow")}
+                isPlaying
+                scrollStartDelaySec={1}
+                fadeEdges
+                align="left"
+                className={cn(
+                  "flex-1 min-w-0 leading-none text-[12px] font-semibold",
+                  "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]",
+                )}
+              />
+              <div className="flex shrink-0 items-center gap-1">
+                <div
+                  className={cn(
+                    "flex items-center justify-center w-[14px] h-[14px]",
+                    "[filter:drop-shadow(0_1px_0_rgba(255,255,255,0.9))]",
+                  )}
+                >
+                  <IpodModernPlayPauseIcon playing={isPlaying} size={14} />
+                </div>
+                <BatteryIndicator backlightOn variant="modern" />
+              </div>
+            </div>
+          )}
           
           {/* Cover Flow container */}
           <motion.div
@@ -804,14 +886,20 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             onTouchCancel={showCD ? undefined : () => endLongPress()}
             style={{ touchAction: showCD ? "auto" : "none", overflow: "visible" }}
           >
-            {/* Covers - centered with slight upward offset for track info space */}
+            {/* Covers - centered with a slight vertical offset so the
+                title/artist row at the bottom always has clearance. The
+                modern skin also reserves room at the top for the 17px
+                status bar, so we shift the carousel down by half the
+                status bar height (vs. classic which has no titlebar in
+                Cover Flow) to keep it visually centered between the
+                two pieces of chrome. */}
             <div 
               className="relative flex items-center justify-center w-full"
               style={{ 
-                height: ipodMode && isModernIpodCoverFlow ? "78%" : "75%",
+                height: ipodMode && isModernIpodCoverFlow ? "76%" : "75%",
                 marginTop:
                   ipodMode && isModernIpodCoverFlow
-                    ? "-6%"
+                    ? "0%"
                     : ipodMode
                       ? "-8%"
                       : "-2%",
@@ -893,12 +981,27 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               </button>
             )}
             
-            {/* Track info */}
-            <div className="text-center min-w-0 flex-1 [&>*]:leading-tight">
+            {/* Track info — modern skin uses black title / gray artist
+                on the white surface. `leading-[1.15]` + no extra
+                margin tightens the pair compared to the previous
+                `leading-tight` + `mt-[1px]` while still leaving a
+                small visible gap between descenders / ascenders.
+                Classic / karaoke variants keep the original
+                light-on-black look. */}
+            <div
+              className={cn(
+                "text-center min-w-0 flex-1",
+                isModernIpodCoverFlow
+                  ? "[&>*]:leading-[1.15]"
+                  : "[&>*]:leading-tight",
+              )}
+            >
               <div
                 className={cn(
-                  "text-white truncate",
-                  isModernIpodCoverFlow && "text-[12px] font-semibold tracking-tight",
+                  "truncate",
+                  isModernIpodCoverFlow
+                    ? "text-black text-[12px] font-semibold tracking-tight"
+                    : "text-white",
                   ipodMode && !isModernIpodCoverFlow && "text-[10px]",
                 )}
                 style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
@@ -910,7 +1013,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   className={cn(
                     "truncate",
                     isModernIpodCoverFlow &&
-                      "text-[10px] text-white/58 mt-[1px] tracking-tight",
+                      "text-[10px] text-[rgb(99,101,103)] tracking-tight",
                     ipodMode &&
                       !isModernIpodCoverFlow &&
                       "text-white/60 text-[8px]",
