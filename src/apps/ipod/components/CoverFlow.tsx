@@ -973,16 +973,17 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             )}
             
             {/* Track info — modern skin uses black title / gray artist
-                on the white surface, with `leading-[1.06]` + a -2px
-                pull on the artist line so the two labels read as a
-                tight pair (matches the iPod nano 6G/7G Cover Flow
-                reference photo). Classic / karaoke variants keep the
-                original light-on-black look. */}
+                on the white surface. `leading-[1.15]` + no extra
+                margin tightens the pair compared to the previous
+                `leading-tight` + `mt-[1px]` while still leaving a
+                small visible gap between descenders / ascenders.
+                Classic / karaoke variants keep the original
+                light-on-black look. */}
             <div
               className={cn(
                 "text-center min-w-0 flex-1",
                 isModernIpodCoverFlow
-                  ? "[&>*]:leading-[1.06]"
+                  ? "[&>*]:leading-[1.15]"
                   : "[&>*]:leading-tight",
               )}
             >
@@ -1003,7 +1004,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   className={cn(
                     "truncate",
                     isModernIpodCoverFlow &&
-                      "text-[10px] text-[rgb(99,101,103)] -mt-[2px] tracking-tight",
+                      "text-[10px] text-[rgb(99,101,103)] tracking-tight",
                     ipodMode &&
                       !isModernIpodCoverFlow &&
                       "text-white/60 text-[8px]",
