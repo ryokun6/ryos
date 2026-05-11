@@ -32,6 +32,50 @@
   font-display: swap;
 }
 
+/* Segoe UI — Microsoft's Vista/7/Zune UI face. The five weights are pulled
+ * from Microsoft's own static CDN (`c.s-microsoft.com/static/fonts/segoe-ui/
+ * west-european/{weight}/latest.woff2`) and bundled here so the iPod's Zune
+ * skin renders correctly on macOS / Linux / iOS / Android — without them
+ * the skin would silently fall through to Tahoma / system-ui on non-Windows
+ * users. Names use the canonical Segoe family so anywhere `font-family:
+ * "Segoe UI"` appears in app or theme CSS will resolve the local file
+ * before walking down the fallback chain. */
+@font-face {
+  font-family: "Segoe UI";
+  src: url("/fonts/segoe-ui/segoeui-light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: url("/fonts/segoe-ui/segoeui-semilight.woff2") format("woff2");
+  font-weight: 350;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: url("/fonts/segoe-ui/segoeui-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: url("/fonts/segoe-ui/segoeui-semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Segoe UI";
+  src: url("/fonts/segoe-ui/segoeui-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
