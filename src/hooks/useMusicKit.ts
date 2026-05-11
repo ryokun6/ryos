@@ -1,14 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
+import {
+  clearCachedMusicKitUserToken,
+  loadCachedMusicKitUserToken,
+  persistMusicKitUserToken,
+  type CachedMusicKitUserToken,
+} from "@/utils/musicKitUserTokenCloudSync";
 
 /**
  * Apple MusicKit JS v3 lazy loader / configurer.
  *
  * MusicKit JS exposes a singleton on `window.MusicKit`. We:
  *   1. Resolve a developer token from `/api/musickit-token` (cached server-side).
- *   2. Inject the v3 script tag and wait for the `musickitloaded` document
+ *   2. Try to recover a previously-authorized Music User Token from
+ *      IndexedDB / the user's ryOS cloud-sync account so embedded
+ *      browsers that wipe MusicKit's own localStorage on every reload
+ *      (most famously: Tesla's in-car browser) don't force the user to
+ *      re-authorize on every visit.
+ *   3. Inject the v3 script tag and wait for the `musickitloaded` document
  *      event (or for `window.MusicKit` to appear, since some builds attach
  *      synchronously after the script's `load` event fires).
- *   3. Call `MusicKit.configure({ developerToken, app })` exactly once.
+ *   4. Call `MusicKit.configure({ developerToken, app, musicUserToken? })`
+ *      exactly once.
  *
  * Repeated mounts reuse the same configured instance — that keeps user
  * authorization, queue state, and the audio element alive as the user
@@ -197,7 +209,8 @@ function loadScript(): Promise<void> {
 
 async function configureMusicKit(
   developerToken: string,
-  app: MusicKit.AppMetadata
+  app: MusicKit.AppMetadata,
+  musicUserToken?: string | null
 ): Promise<MusicKit.MusicKitInstance> {
   if (configuredInstance) return configuredInstance;
   if (configurePromise) return configurePromise;
@@ -208,11 +221,23 @@ async function configureMusicKit(
   configurePromise = (async () => {
     // `configure()` returns a Promise in MusicKit JS v3. Awaiting also
     // forces script-side init to complete before we hand the instance back.
+    //
+    // Passing `musicUserToken` here lets us restore an authorized session
+    // even when MusicKit's own localStorage cache is unavailable (Tesla
+    // in-car browser, private modes that don't survive reloads, etc).
+    // MusicKit treats this as the source of truth and immediately marks
+    // the instance as authorized — if Apple later rejects it as expired
+    // the SDK will fire `authorizationStatusDidChange` and the user can
+    // re-authorize through the normal Sign in button.
+    const configureOptions: MusicKit.ConfigureOptions = {
+      developerToken,
+      app,
+    };
+    if (musicUserToken) {
+      configureOptions.musicUserToken = musicUserToken;
+    }
     const result = await Promise.resolve(
-      window.MusicKit!.configure({
-        developerToken,
-        app,
-      })
+      window.MusicKit!.configure(configureOptions)
     );
     const instance = result ?? window.MusicKit!.getInstance?.();
     if (!instance) {
@@ -228,6 +253,31 @@ async function configureMusicKit(
     configurePromise = null;
     throw err;
   }
+}
+
+/**
+ * Persist the current Music User Token snapshot from the MusicKit
+ * instance into IndexedDB + the user's ryOS cloud-sync account. Safe
+ * to call from any event handler — silently no-ops when there is no
+ * authorized user or no readable token.
+ */
+function persistCurrentUserTokenSnapshot(
+  instance: MusicKit.MusicKitInstance | null
+): void {
+  if (!instance) return;
+  if (!instance.isAuthorized) return;
+  const token = instance.musicUserToken;
+  if (!token) return;
+  const snapshot: CachedMusicKitUserToken = {
+    musicUserToken: token,
+    // Apple does not expose an `exp` for Music User Tokens via the
+    // MusicKit instance, so we don't try to invent one — `null`
+    // signals "unknown, just try it" to consumers. The server-side
+    // store has its own TTL as a backstop.
+    expiresAt: null,
+    storedAt: Date.now(),
+  };
+  void persistMusicKitUserToken(snapshot);
 }
 
 /** Return the singleton MusicKit instance if it has already been configured. */
@@ -255,6 +305,16 @@ export function onMusicKitReady(
 export function clearMusicKitTokenCache(): void {
   cachedDeveloperToken = null;
   inFlightTokenFetch = null;
+}
+
+/**
+ * Drop the cached Music User Token from both IndexedDB and the ryOS
+ * cloud-sync account. Called when the ryOS user signs out of their
+ * account so a different ryOS user signing in on the same device
+ * doesn't inherit the previous user's Apple Music session.
+ */
+export async function clearMusicKitUserTokenCache(): Promise<void> {
+  await clearCachedMusicKitUserToken();
 }
 
 export interface UseMusicKitOptions {
@@ -310,9 +370,21 @@ export function useMusicKit(
   // event payload isn't strongly typed by MusicKit, so we re-read the
   // instance's `isAuthorized` getter to stay in sync regardless of payload
   // shape across versions.
+  //
+  // We also mirror the Music User Token into IndexedDB + the user's ryOS
+  // cloud-sync account whenever it changes, so the next reload (even on
+  // browsers that nuke localStorage between sessions, like Tesla's
+  // in-car browser) can restore the authorized session through
+  // `configure({ musicUserToken })`.
   useEffect(() => {
     if (!instance) return;
-    const refresh = () => setIsAuthorized(Boolean(instance.isAuthorized));
+    const refresh = () => {
+      const nowAuthorized = Boolean(instance.isAuthorized);
+      setIsAuthorized(nowAuthorized);
+      if (nowAuthorized) {
+        persistCurrentUserTokenSnapshot(instance);
+      }
+    };
     instance.addEventListener("authorizationStatusDidChange", refresh);
     instance.addEventListener("userTokenDidChange", refresh);
     refresh();
@@ -342,15 +414,41 @@ export function useMusicKit(
         if (cancelled) return;
         setHasToken(true);
 
+        // Kick off recovery of any previously-saved Music User Token in
+        // parallel with the MusicKit script load. Best-effort: when the
+        // user isn't signed in to ryOS, when neither IndexedDB nor the
+        // cloud has a saved copy, or when the network blip prevents the
+        // cloud fetch, we fall back to MusicKit JS's own persistence
+        // (which is the historical behavior). The recovered token only
+        // matters for the very first `configure()` call — once a
+        // singleton instance exists, re-mounts short-circuit before
+        // reaching here.
+        const cachedUserTokenPromise: Promise<CachedMusicKitUserToken | null> =
+          loadCachedMusicKitUserToken().catch(() => null);
+
         await loadScript();
         if (cancelled) return;
 
+        const cachedUserToken = await cachedUserTokenPromise;
+        if (cancelled) return;
+
         try {
-          const inst = await configureMusicKit(token, app);
+          const inst = await configureMusicKit(
+            token,
+            app,
+            cachedUserToken?.musicUserToken ?? null
+          );
           if (cancelled) return;
           setInstance(inst);
           setIsAuthorized(Boolean(inst.isAuthorized));
           setStatus("ready");
+          if (inst.isAuthorized) {
+            // Either MusicKit restored its own auth from localStorage,
+            // or our cached user token unlocked the session. In both
+            // cases, write the current snapshot back so the cloud copy
+            // stays in lockstep with whatever MusicKit ended up using.
+            persistCurrentUserTokenSnapshot(inst);
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : String(err));
           setStatus("error");
@@ -383,6 +481,12 @@ export function useMusicKit(
     try {
       const token = await inst.authorize();
       setIsAuthorized(Boolean(inst.isAuthorized));
+      // Belt-and-suspenders: the `userTokenDidChange` event handler
+      // above also persists, but some MusicKit JS builds don't fan that
+      // event out reliably after the initial authorize flow. Persisting
+      // here guarantees the very first authorize on a Tesla / private
+      // window survives the next reload.
+      persistCurrentUserTokenSnapshot(inst);
       return token ?? null;
     } catch (err) {
       console.error("[musickit] authorize failed", err);
@@ -397,6 +501,10 @@ export function useMusicKit(
     try {
       await inst.unauthorize();
       setIsAuthorized(false);
+      // Wipe the cached token from both IndexedDB and the user's ryOS
+      // cloud-sync account so a future configure() doesn't try to
+      // restore a token the user just explicitly revoked.
+      void clearCachedMusicKitUserToken();
     } catch (err) {
       console.error("[musickit] unauthorize failed", err);
     }
