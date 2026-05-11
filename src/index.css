@@ -1495,6 +1495,45 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   border-radius: 0 3px 3px 0;
 }
 
+/* iPod 6G/7G "split menu" view: a square-ish strip on the right side of
+ * a menu screen that shows the now-playing album art with a slow
+ * Ken Burns zoom + pan. Matches the artwork peek visible on real
+ * iPod nano 6G/7G + classic 6G/7G menus. The container clips the
+ * over-scaled image; the inner image animates `transform`.
+ *
+ * The art column is divided from the menu by a thin grey hairline
+ * (same hue family as the titlebar bottom border) so the menu list
+ * still reads as a distinct surface. */
+.ipod-modern-split-art {
+  background: #1a1a1a;
+  box-shadow: inset 1px 0 0 #cfd2d4;
+}
+
+.ipod-modern-split-art-img {
+  transform-origin: center center;
+  animation: ipod-modern-ken-burns 16s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes ipod-modern-ken-burns {
+  0% {
+    transform: scale(1.08) translate(-3%, -2%);
+  }
+  50% {
+    transform: scale(1.18) translate(2%, 1%);
+  }
+  100% {
+    transform: scale(1.1) translate(3%, 3%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ipod-modern-split-art-img {
+    animation: none;
+    transform: scale(1.08);
+  }
+}
+
 /* macOS theme override: the `.ipod-force-font *` rule in themes.css sets
  * `font-family: inherit !important`, which would clobber Helvetica Neue.
  * Restore it for the modern skin classes — same approach used for

@@ -59,11 +59,20 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = 21;
-// Modern titlebar matches the row height exactly so the menu reads as
-// a single continuous list and the silver header doesn't feel chunkier
-// than the content below. Keep this linked to the row height so the
-// "titlebar + 6 rows" rhythm stays in sync if either is retuned.
-const MODERN_TITLEBAR_HEIGHT = MENU_ITEM_HEIGHT_MODERN;
+// Modern titlebar is intentionally tighter than the row height. The
+// nano 6G/7G + iPod classic 6G silver header is a slim 17px strip with
+// 12px MyriadPro semibold text — slimmer than each list row so the
+// header reads as a separator, not as another row. Six 21px rows still
+// fit cleanly inside the remaining 133px of screen (21 × 6 = 126), with
+// a 7px tail for the optional Ken Burns split-art column to breathe
+// against the bottom edge.
+const MODERN_TITLEBAR_HEIGHT = 17;
+// Width of the Ken Burns split-art strip rendered alongside the menu in
+// modern UI when a track is playing — sized as a fixed pixel column so
+// the menu list keeps a predictable text width across screen widths
+// (the screen is ~218px wide). Matches the right-hand artwork peek on
+// the real iPod nano/classic 6G+ menu.
+const MODERN_SPLIT_ART_WIDTH = 90;
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -741,17 +750,21 @@ export function IpodScreen({
         </div>
       )}
 
-      {/* Title bar */}
+      {/* Title bar
+       *
+       * Modern (nano 6G/7G + iPod classic 6G silver header):
+       *   - Slim 17px strip, 12px MyriadPro semibold black text.
+       *   - Title left-aligned (no centering).
+       *   - Status icons (play/pause + battery) clustered on the right.
+       *
+       * Classic (1st-gen LCD): unchanged — Chicago glyphs centered with
+       *   play indicator on the left and battery on the right. */}
       <div
         className={cn(
-          // Header height differs by skin:
-          //   - Classic: 24px (h-6) — Chicago bitmap glyphs need the room.
-          //   - Modern: matches the row height (24px) so the silver
-          //     header reads as part of the same list rhythm.
-          "shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
+          "shrink-0 py-0 flex items-center sticky top-0 z-10",
           isModernUi
-            ? "ipod-modern-titlebar text-black font-ipod-modern-ui text-[15px] font-semibold"
-            : "h-6 min-h-6 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+            ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-2 pr-1.5 gap-1.5"
+            : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
         style={
           isModernUi
@@ -762,54 +775,57 @@ export function IpodScreen({
             : undefined
         }
       >
-        <div
-          className={cn(
-            "flex items-center justify-start",
-            isModernUi
-              ? "w-6 font-ipod-modern-ui font-semibold text-[15px] text-black/80"
-              : `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
-          )}
-        >
+        {!isModernUi && (
           <div
             className={cn(
-              "flex items-center justify-center",
-              isModernUi ? "w-4 h-4" : "w-4 h-4 mt-0.5"
+              "flex items-center justify-start",
+              `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
             )}
           >
-            {isModernUi ? (
-              isPlaying ? (
-                <Play
-                  size={12}
-                  weight="fill"
-                  aria-label="playing"
-                />
-              ) : (
-                <Pause
-                  size={12}
-                  weight="fill"
-                  aria-label="paused"
-                />
-              )
-            ) : (
-              isPlaying ? "▶" : "⏸︎"
-            )}
+            <div className="flex items-center justify-center w-4 h-4 mt-0.5">
+              {isPlaying ? "▶" : "⏸︎"}
+            </div>
           </div>
-        </div>
+        )}
         <ScrollingText
           text={titlebarTitle}
           isPlaying
           scrollStartDelaySec={1}
           fadeEdges={isModernUi}
           className={cn(
-            "flex-1 min-w-0 px-1 text-center leading-none",
-            isModernUi &&
-              cn(
-                "font-ipod-modern-ui text-[15px] font-semibold",
-                "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
-              )
+            "flex-1 min-w-0 leading-none",
+            isModernUi
+              ? cn(
+                  // Slimmer 12px header type matches the iPod 6G/7G photo
+                  // we were referenced to — one full pixel above the
+                  // 11px Helvetica Neue used by iOS 6 status bars but
+                  // still well under the 15px MyriadPro list rows so the
+                  // header reads as secondary chrome.
+                  "text-left text-[12px] font-semibold",
+                  "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+                )
+              : "px-1 text-center"
           )}
         />
-        <div className="flex w-6 items-center justify-end">
+        <div
+          className={cn(
+            "flex items-center justify-end",
+            isModernUi ? "shrink-0 gap-1" : "w-6"
+          )}
+        >
+          {isModernUi && (
+            // Compact play/pause status glyph mirroring the green-arrow
+            // affordance from the classic-iPod silver header. Render in
+            // the iPod's signature green tint (#3ea73e ≈ Apple green) so
+            // it pops against the brushed-silver gradient like the photo.
+            <div className="flex items-center justify-center w-3 h-3 text-[#3ea73e]">
+              {isPlaying ? (
+                <Play size={10} weight="fill" aria-label="playing" />
+              ) : (
+                <Pause size={10} weight="fill" aria-label="paused" />
+              )}
+            </div>
+          )}
           <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
         </div>
       </div>
@@ -832,7 +848,7 @@ export function IpodScreen({
           {menuMode ? (
             <motion.div
               key={`menu-${menuHistory.length}-${currentMenuTitle}`}
-              className="absolute inset-0 flex flex-col h-full"
+              className="absolute inset-0 flex h-full"
               initial="enter"
               animate="center"
               exit="exit"
@@ -840,7 +856,10 @@ export function IpodScreen({
               transition={{ duration: 0.2, ease: "easeInOut" }}
               custom={menuDirection}
             >
-              <div className="flex-1 relative">
+              {/* Left column: scrolling menu list. Shrinks when the
+                  Ken Burns split-art column is visible (modern UI +
+                  active track) so both fit cleanly side-by-side. */}
+              <div className="flex-1 min-w-0 relative">
                 <div
                   ref={setMenuScrollRef}
                   className="absolute inset-0 overflow-auto ipod-menu-container"
@@ -894,6 +913,27 @@ export function IpodScreen({
                   variant={uiVariant}
                 />
               </div>
+              {/* Right column: Ken Burns album art "split menu" peek
+                  shown when the modern UI has a current track with
+                  artwork — the same right-hand artwork strip the
+                  iPod nano 6G/7G + classic 6G/7G show beside menus.
+                  Hidden when no artwork is available so the menu
+                  reverts to full-width and we never render an
+                  empty black bar. */}
+              {isModernUi && coverUrl && (
+                <div
+                  className="ipod-modern-split-art relative shrink-0 overflow-hidden"
+                  style={{ width: MODERN_SPLIT_ART_WIDTH }}
+                  aria-hidden
+                >
+                  <img
+                    src={coverUrl}
+                    alt=""
+                    draggable={false}
+                    className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
+                  />
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div
