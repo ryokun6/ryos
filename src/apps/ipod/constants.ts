@@ -89,6 +89,35 @@ export function formatKugouImageUrl(imgUrl: string | undefined, size: number = 4
   return url;
 }
 
+/**
+ * Resolve the best available cover URL for a track, used by the menu
+ * split-art panel and any other surface that wants the canonical
+ * "what should I show as artwork" answer.
+ *
+ * Source priority:
+ *  1. Apple Music tracks supply an https URL directly via `cover`.
+ *  2. Kugou-style URLs use `formatKugouImageUrl` to expand the
+ *     `{size}` placeholder.
+ *  3. YouTube tracks fall back to the maxres thumbnail derived from
+ *     the video URL.
+ *
+ * Returns null when nothing usable is available so callers can fall
+ * back gracefully (e.g. to the now-playing track's cover).
+ */
+export function resolveTrackCoverUrl(
+  track: { url?: string; cover?: string; source?: string } | null | undefined
+): string | null {
+  if (!track) return null;
+  if (track.source === "appleMusic") {
+    return track.cover ?? null;
+  }
+  const videoId = track.url ? getYouTubeVideoId(track.url) : null;
+  const youtubeThumbnail = videoId
+    ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+    : null;
+  return formatKugouImageUrl(track.cover, 400) ?? youtubeThumbnail;
+}
+
 // Helper to get translation badge from code
 export function getTranslationBadge(code: string | null): string | null {
   if (!code) return null;
