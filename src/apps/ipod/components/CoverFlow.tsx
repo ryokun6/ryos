@@ -297,25 +297,21 @@ function CoverImage({
   // Cover size: larger for classic iPod; modern skin uses a tighter row.
   const coverSize =
     ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60; // cqmin units
-  // Side spacing. The transform formula `direction * (baseSpacing +
-  // absPos * positionSpacing)` collapses to `direction * absPos *
-  // positionSpacing` when `baseSpacing` is 0, which gives uniform
-  // center-to-center distance between every cover (center ↔ pos 1
-  // matches pos 1 ↔ pos 2 ↔ pos 3 …). Modern Cover Flow uses that
-  // uniform spread so the neighbouring covers don't cluster
-  // immediately past the center sleeve. 30 cqmin lands pos 1 just
-  // past the 29 cqmin half-width of the center sleeve so the center
-  // cover stays fully visible even though every adjacent pair shares
-  // the same step. Classic / karaoke keep their existing
-  // tucked-against-center offsets.
+  // Side spacing — tighter on modern nano-style Cover Flow (small viewport).
   const baseSpacing =
-    ipodMode && compactIpodCarousel ? 0 : ipodMode ? 26 : 16;
+    ipodMode && compactIpodCarousel ? 17 : ipodMode ? 26 : 16;
   const positionSpacing =
-    ipodMode && compactIpodCarousel ? 30 : ipodMode ? 18 : 11;
+    ipodMode && compactIpodCarousel ? 12 : ipodMode ? 18 : 11;
 
-  // Scale values: no scaling for iPod mode, subtle for karaoke
+  // Scale values: the modern compact carousel scales the neighbouring
+  // covers up so they sit clearly past the center sleeve's edge
+  // without having to push the offset out (which clustered them at
+  // the far side). Classic stays 1.0 (matches the iPod hardware look
+  // verbatim) and karaoke uses a subtle 0.9 falloff that pairs with
+  // its wider viewport.
   const centerScale = 1.0;
-  const sideScale = ipodMode ? 1.0 : 0.9;
+  const sideScale =
+    ipodMode && compactIpodCarousel ? 1.2 : ipodMode ? 1.0 : 0.9;
   
   const isCenter = position === 0;
 
