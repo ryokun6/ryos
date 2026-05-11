@@ -37,8 +37,11 @@ export function MenuListItem({
 
   if (isModern) {
     // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection highlight, no separator. Rows are compact (**24px**) with **15px** type;
-    // leading-normal + horizontal-only ellipsis keeps ascenders/descenders intact. Classic unchanged (16px Chicago).
+    // selection highlight, no separator. Rows are compact (**21px**) with **15px** type so
+    // titlebar + six rows fit inside the 150px screen (nano 6G/7G density).
+    // leading-normal + horizontal-only ellipsis keeps ascenders/descenders intact even though
+    // the 22.5px line-box slightly exceeds the row — `overflow-y-visible` on the inner span
+    // lets glyphs breathe without clipping. Classic unchanged (16px Chicago, 24px rows).
     return (
       <div
         onClick={isLoading ? undefined : onClick}

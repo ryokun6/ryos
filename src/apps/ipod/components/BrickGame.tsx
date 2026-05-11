@@ -140,8 +140,10 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
   const { t } = useTranslation();
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
   const isModernUi = uiVariant === "modern";
-  /** Body offset for `calc(100% - …)` — classic chrome ~26px */
-  const bodyTopOffsetPx = isModernUi ? 24 : 26;
+  /** Body offset for `calc(100% - …)` — classic chrome ~26px.
+   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (21px) so the
+   *  brick game's chrome lines up with the main menu's titlebar. */
+  const bodyTopOffsetPx = isModernUi ? 21 : 26;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stateRef = useRef<GameState>(initialState());
   const phaseRef = useRef<Phase>("ready");
@@ -510,7 +512,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
             ? "ipod-modern-titlebar font-ipod-modern-ui text-[15px] font-semibold text-black"
             : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
-        style={isModernUi ? { height: 24, minHeight: 24 } : undefined}
+        style={isModernUi ? { height: 21, minHeight: 21 } : undefined}
       >
         <div
           className={cn(

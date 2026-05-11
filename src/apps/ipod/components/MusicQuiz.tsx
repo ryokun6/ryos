@@ -112,8 +112,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
   const isModernUi = uiVariant === "modern";
 
-  /** Body area below title bar (`calc(100% - …)`) — classic bar ~26px incl. hairline */
-  const bodyTopOffsetPx = isModernUi ? 24 : 26;
+  /** Body area below title bar (`calc(100% - …)`) — classic bar ~26px incl. hairline.
+   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (21px) so the
+   *  quiz view's chrome lines up with the main menu's titlebar. */
+  const bodyTopOffsetPx = isModernUi ? 21 : 26;
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const ipodVolume = useAudioSettingsStore((s) => s.ipodVolume);
   const finalVolume = ipodVolume * masterVolume;
@@ -571,7 +573,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
             ? "ipod-modern-titlebar font-ipod-modern-ui text-[15px] font-semibold text-black"
             : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
-        style={isModernUi ? { height: 24, minHeight: 24 } : undefined}
+        style={isModernUi ? { height: 21, minHeight: 21 } : undefined}
       >
         <div
           className={cn(
