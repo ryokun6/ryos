@@ -918,7 +918,11 @@ export function IpodScreen({
        *  cycles through `splitArtUrlPool`. */}
       {showSplitMenuArt && splitArtUrl && (
         <div
-          className="ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[15] overflow-hidden"
+          // Sits BELOW the titlebar (z-10) and content area (z-30) so
+          // the menu panel's drop shadow can render OVER the artwork
+          // and read as the menu casting onto the art. Still above
+          // the menu-mode video block (z-0) and the LCD overlays.
+          className="ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[5] overflow-hidden"
           style={{ width: MODERN_SPLIT_HALF }}
           aria-hidden
         >
