@@ -40,8 +40,12 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
-// 16px type, while the modern (color) skin fits **24px** rows with **15px**
-// Myriad / system UI to match nano 6G/7G density without touching classic.
+// 16px type, while the modern (color) skin uses tighter **21px** rows with
+// **15px** Myriad / system UI. At 21px we can fit the titlebar plus
+// six full menu rows inside the 150px screen (21 × 7 = 147, leaving a
+// 3px tail at the bottom of the scroll container) which matches the
+// nano 6G/7G density much more closely than the previous 24px rows
+// (which only fit five rows + a sliver).
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
 // stays identical across the main menu, the artist list, and the
@@ -54,10 +58,11 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // per-menu choice, so a single value applies cleanly to all menus and
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
-const MENU_ITEM_HEIGHT_MODERN = 24;
+const MENU_ITEM_HEIGHT_MODERN = 21;
 // Modern titlebar matches the row height exactly so the menu reads as
 // a single continuous list and the silver header doesn't feel chunkier
-// than the content below.
+// than the content below. Keep this linked to the row height so the
+// "titlebar + 6 rows" rhythm stays in sync if either is retuned.
 const MODERN_TITLEBAR_HEIGHT = MENU_ITEM_HEIGHT_MODERN;
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
