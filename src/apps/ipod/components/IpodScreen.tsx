@@ -67,12 +67,14 @@ const MENU_ITEM_HEIGHT_MODERN = 21;
 // a 7px tail for the optional Ken Burns split-art column to breathe
 // against the bottom edge.
 const MODERN_TITLEBAR_HEIGHT = 17;
-// Width of the Ken Burns split-art strip rendered alongside the menu in
-// modern UI when a track is playing — sized as a fixed pixel column so
-// the menu list keeps a predictable text width across screen widths
-// (the screen is ~218px wide). Matches the right-hand artwork peek on
-// the real iPod nano/classic 6G+ menu.
-const MODERN_SPLIT_ART_WIDTH = 90;
+// The Ken Burns album-art strip rendered alongside the menu in the
+// modern UI takes exactly **half** of the screen width and the FULL
+// screen height — the art panel covers the right half from the very
+// top of the screen down (including the area where the titlebar
+// would otherwise extend), exactly like the iPod classic 6G/7G
+// "Music + Now Playing" split shown in the reference photo. The
+// titlebar + menu list are clamped to the left half in split mode.
+const MODERN_SPLIT_HALF = "50%";
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -456,6 +458,13 @@ export function IpodScreen({
 
   const shouldShowLyrics = showLyrics;
 
+  // True when the modern UI should render its iPod 6G/7G classic
+  // "Music + Now Playing" split: titlebar + menu list clamped to the
+  // left half, full-height Ken Burns album art on the right half.
+  // Only meaningful in menu mode with an actual cover URL — otherwise
+  // the screen falls back to the standard full-width chrome.
+  const showSplitMenuArt = isModernUi && menuMode && Boolean(coverUrl);
+
   return (
     <div
       className={cn(
@@ -750,18 +759,43 @@ export function IpodScreen({
         </div>
       )}
 
+      {/* Full-height Ken Burns album art panel covering the right half
+       *  of the screen when the modern UI is in split menu mode.
+       *  Rendered as an absolutely-positioned overlay so it can extend
+       *  from the very top of the screen (over where the titlebar would
+       *  otherwise sit) all the way to the bottom — matching the iPod
+       *  classic 6G/7G "Music + Now Playing" reference photo where the
+       *  album art has no titlebar above it. The titlebar + menu below
+       *  are clamped to the left half so they don't bleed underneath. */}
+      {showSplitMenuArt && coverUrl && (
+        <div
+          className="ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[15] overflow-hidden"
+          style={{ width: MODERN_SPLIT_HALF }}
+          aria-hidden
+        >
+          <img
+            src={coverUrl}
+            alt=""
+            draggable={false}
+            className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
+          />
+        </div>
+      )}
+
       {/* Title bar
        *
        * Modern (nano 6G/7G + iPod classic 6G silver header):
        *   - Slim 17px strip, 12px MyriadPro semibold black text.
        *   - Title left-aligned (no centering).
        *   - Status icons (play/pause + battery) clustered on the right.
+       *   - Clamped to the LEFT HALF of the screen in split menu mode
+       *     so the album art column extends to the very top edge.
        *
        * Classic (1st-gen LCD): unchanged — Chicago glyphs centered with
        *   play indicator on the left and battery on the right. */}
       <div
         className={cn(
-          "shrink-0 py-0 flex items-center sticky top-0 z-10",
+          "shrink-0 py-0 flex items-center sticky top-0 z-20",
           isModernUi
             ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-2 pr-1.5 gap-1.5"
             : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
@@ -771,6 +805,7 @@ export function IpodScreen({
             ? {
                 height: MODERN_TITLEBAR_HEIGHT,
                 minHeight: MODERN_TITLEBAR_HEIGHT,
+                width: showSplitMenuArt ? MODERN_SPLIT_HALF : undefined,
               }
             : undefined
         }
@@ -832,7 +867,10 @@ export function IpodScreen({
 
       {/* Content area - z-30 only when video is not showing so it can
           receive events. Content height subtracts the titlebar height
-          so the menu/now-playing area is the same in both skins. */}
+          so the menu/now-playing area is the same in both skins.
+          Width clamps to the LEFT HALF of the screen when the split
+          menu Ken Burns art column is showing so the menu list doesn't
+          bleed under the album art. */}
       <div
         className={cn(
           "relative",
@@ -842,13 +880,14 @@ export function IpodScreen({
           height: isModernUi
             ? `calc(100% - ${MODERN_TITLEBAR_HEIGHT}px)`
             : "calc(100% - 24px)",
+          width: showSplitMenuArt ? MODERN_SPLIT_HALF : undefined,
         }}
       >
         <AnimatePresence initial={false} custom={menuDirection} mode="sync">
           {menuMode ? (
             <motion.div
               key={`menu-${menuHistory.length}-${currentMenuTitle}`}
-              className="absolute inset-0 flex h-full"
+              className="absolute inset-0 flex flex-col h-full"
               initial="enter"
               animate="center"
               exit="exit"
@@ -856,10 +895,7 @@ export function IpodScreen({
               transition={{ duration: 0.2, ease: "easeInOut" }}
               custom={menuDirection}
             >
-              {/* Left column: scrolling menu list. Shrinks when the
-                  Ken Burns split-art column is visible (modern UI +
-                  active track) so both fit cleanly side-by-side. */}
-              <div className="flex-1 min-w-0 relative">
+              <div className="flex-1 relative">
                 <div
                   ref={setMenuScrollRef}
                   className="absolute inset-0 overflow-auto ipod-menu-container"
@@ -913,27 +949,6 @@ export function IpodScreen({
                   variant={uiVariant}
                 />
               </div>
-              {/* Right column: Ken Burns album art "split menu" peek
-                  shown when the modern UI has a current track with
-                  artwork — the same right-hand artwork strip the
-                  iPod nano 6G/7G + classic 6G/7G show beside menus.
-                  Hidden when no artwork is available so the menu
-                  reverts to full-width and we never render an
-                  empty black bar. */}
-              {isModernUi && coverUrl && (
-                <div
-                  className="ipod-modern-split-art relative shrink-0 overflow-hidden"
-                  style={{ width: MODERN_SPLIT_ART_WIDTH }}
-                  aria-hidden
-                >
-                  <img
-                    src={coverUrl}
-                    alt=""
-                    draggable={false}
-                    className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
-                  />
-                </div>
-              )}
             </motion.div>
           ) : (
             <motion.div
