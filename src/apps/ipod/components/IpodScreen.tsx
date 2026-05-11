@@ -546,20 +546,40 @@ export function IpodScreen({
 
   // Reset the carousel index whenever the pool changes (i.e. the user
   // navigates into a different menu) so each new menu starts on its
-  // first artwork instead of jumping mid-cycle into a stale offset.
+  // own random pick rather than jumping mid-cycle into a stale offset.
+  // We seed the first index randomly so two consecutive entries into
+  // the same menu don't always open on the same cover.
   useEffect(() => {
-    setSplitArtIndex(0);
+    if (splitArtUrlPool.length <= 1) {
+      setSplitArtIndex(0);
+      return;
+    }
+    setSplitArtIndex(Math.floor(Math.random() * splitArtUrlPool.length));
   }, [splitArtUrlPool]);
 
-  // Cycle through the pool on a slow interval. Skip the timer when
-  // there's nothing to cycle (≤ 1 image) so React doesn't keep an
-  // idle timer alive on simple menus. 7000ms ≈ a comfortable
+  // Cycle through the pool on a slow interval, picking each next
+  // cover at RANDOM (instead of strict round-robin) so a long menu
+  // surfaces a variety of artwork over time. We exclude the current
+  // index from the random pick so the same cover never replaces
+  // itself — that would look like a missed transition. Skip the
+  // timer when there's nothing to cycle (≤ 1 image) so React doesn't
+  // keep an idle timer alive on simple menus. 7000ms ≈ a comfortable
   // slideshow cadence that lets the Ken Burns animation play through
   // a meaningful arc on each cover.
   useEffect(() => {
     if (splitArtUrlPool.length <= 1) return;
     const id = window.setInterval(() => {
-      setSplitArtIndex((prev) => (prev + 1) % splitArtUrlPool.length);
+      setSplitArtIndex((prev) => {
+        if (splitArtUrlPool.length <= 1) return 0;
+        // Pick from the pool minus the current index, then map back
+        // into the original index space — guarantees a different
+        // cover than the one currently showing without rejection
+        // sampling.
+        const pick = Math.floor(
+          Math.random() * (splitArtUrlPool.length - 1)
+        );
+        return pick >= prev ? pick + 1 : pick;
+      });
     }, 7000);
     return () => window.clearInterval(id);
   }, [splitArtUrlPool]);
