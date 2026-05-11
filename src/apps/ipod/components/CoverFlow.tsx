@@ -297,15 +297,21 @@ function CoverImage({
   // Cover size: larger for classic iPod; modern skin uses a tighter row.
   const coverSize =
     ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60; // cqmin units
-  // Side spacing — modern Cover Flow spreads its row out closer to the
-  // iPod classic 6G/7G look so the neighbouring covers are clearly
-  // visible past the edge of the center sleeve, matching the reference
-  // photo. Karaoke (non-iPod) stays tight because its full-screen
-  // viewport keeps everything comfortably in frame.
+  // Side spacing. The transform formula `direction * (baseSpacing +
+  // absPos * positionSpacing)` collapses to `direction * absPos *
+  // positionSpacing` when `baseSpacing` is 0, which gives uniform
+  // center-to-center distance between every cover (center ↔ pos 1
+  // matches pos 1 ↔ pos 2 ↔ pos 3 …). Modern Cover Flow uses that
+  // uniform spread so the neighbouring covers don't cluster
+  // immediately past the center sleeve. 30 cqmin lands pos 1 just
+  // past the 29 cqmin half-width of the center sleeve so the center
+  // cover stays fully visible even though every adjacent pair shares
+  // the same step. Classic / karaoke keep their existing
+  // tucked-against-center offsets.
   const baseSpacing =
-    ipodMode && compactIpodCarousel ? 23 : ipodMode ? 26 : 16;
+    ipodMode && compactIpodCarousel ? 0 : ipodMode ? 26 : 16;
   const positionSpacing =
-    ipodMode && compactIpodCarousel ? 15 : ipodMode ? 18 : 11;
+    ipodMode && compactIpodCarousel ? 30 : ipodMode ? 18 : 11;
 
   // Scale values: no scaling for iPod mode, subtle for karaoke
   const centerScale = 1.0;
