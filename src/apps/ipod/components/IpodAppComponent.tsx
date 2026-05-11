@@ -189,6 +189,14 @@ export function IpodAppComponent({
   const setAppleMusicKitNowPlaying = useIpodStore(
     (s) => s.setAppleMusicKitNowPlaying
   );
+  // The modern iPod skin renders Cover Flow inline inside the menu
+  // panel so the menu↔nowplaying chrome width transition (50%↔100%)
+  // carries the user into and out of Cover Flow exactly the same way
+  // as menu→now-playing. The classic 1st-gen LCD / karaoke skins keep
+  // the original full-bleed Cover Flow overlay rendered as a sibling
+  // of `IpodScreen` because their chrome has no width transition.
+  const uiVariant = useIpodStore((s) => s.uiVariant);
+  const isModernIpodUi = uiVariant === "modern";
 
   const handleClose = useCallback(() => {
     pauseBeforeWindowClose();
@@ -440,6 +448,31 @@ export function IpodAppComponent({
                   furiganaMap={furiganaMap}
                   soramimiMap={soramimiMap}
                   activityState={activityState}
+                  isCoverFlowOpen={isCoverFlowOpen}
+                  // Modern UI: render Cover Flow inline inside the menu
+                  // panel so the panel's own width transition (50%↔100%
+                  // — the same chrome animation as menu→now-playing)
+                  // carries the user into and out of Cover Flow. The
+                  // classic skin keeps the standalone overlay below
+                  // because it has no equivalent panel chrome.
+                  coverFlowSlot={
+                    isModernIpodUi ? (
+                      <CoverFlow
+                        ref={coverFlowRef}
+                        tracks={coverFlowTracks}
+                        currentIndex={coverFlowCurrentIndex}
+                        onSelectTrack={handleCoverFlowSelect}
+                        onExit={handleCoverFlowExit}
+                        onRotation={handleCoverFlowRotation}
+                        isVisible={isCoverFlowOpen}
+                        isPlaying={isPlaying}
+                        onTogglePlay={togglePlay}
+                        onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                        groupAppleMusicAlbums={isAppleMusic}
+                        inline
+                      />
+                    ) : undefined
+                  }
                   onNextTrack={() => {
                     if (isOffline) {
                       showOfflineStatus();
@@ -463,20 +496,27 @@ export function IpodAppComponent({
                 />
               )}
 
-              {/* Cover Flow overlay - positioned within screen bounds */}
-              <CoverFlow
-                ref={coverFlowRef}
-                tracks={coverFlowTracks}
-                currentIndex={coverFlowCurrentIndex}
-                onSelectTrack={handleCoverFlowSelect}
-                onExit={handleCoverFlowExit}
-                onRotation={handleCoverFlowRotation}
-                isVisible={isCoverFlowOpen}
-                isPlaying={isPlaying}
-                onTogglePlay={togglePlay}
-                onPlayTrackInPlace={handleCoverFlowPlayInPlace}
-                groupAppleMusicAlbums={isAppleMusic}
-              />
+              {/* Cover Flow overlay — only used by the classic 1st-gen
+               *  LCD / karaoke skins. The modern skin renders Cover
+               *  Flow inline above (via `coverFlowSlot`), so we skip
+               *  the standalone overlay there to avoid double-mounting
+               *  the carousel and to let the menu panel's width
+               *  transition own the entry/exit animation. */}
+              {!isModernIpodUi && (
+                <CoverFlow
+                  ref={coverFlowRef}
+                  tracks={coverFlowTracks}
+                  currentIndex={coverFlowCurrentIndex}
+                  onSelectTrack={handleCoverFlowSelect}
+                  onExit={handleCoverFlowExit}
+                  onRotation={handleCoverFlowRotation}
+                  isVisible={isCoverFlowOpen}
+                  isPlaying={isPlaying}
+                  onTogglePlay={togglePlay}
+                  onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+                  groupAppleMusicAlbums={isAppleMusic}
+                />
+              )}
 
               {/* Music Quiz overlay - positioned within screen bounds */}
               <MusicQuiz

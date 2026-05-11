@@ -234,6 +234,8 @@ export function IpodScreen({
   furiganaMap,
   soramimiMap,
   activityState,
+  isCoverFlowOpen = false,
+  coverFlowSlot,
 }: IpodScreenProps) {
   const { t } = useTranslation();
   
@@ -243,13 +245,17 @@ export function IpodScreen({
     activityState.isFetchingSoramimi || 
     activityState.isAddingSong;
 
-  // Current menu title
-  const currentMenuTitle = menuMode
-    ? menuHistory.length > 0
-      ? menuHistory[menuHistory.length - 1].displayTitle ??
-        menuHistory[menuHistory.length - 1].title
-      : t("apps.ipod.menuItems.ipod")
-    : t("apps.ipod.menuItems.nowPlaying");
+  // Current menu title — Cover Flow takes priority because it covers
+  // the entire menu panel, regardless of the underlying menu/now-
+  // playing state behind it.
+  const currentMenuTitle = isCoverFlowOpen
+    ? t("apps.ipod.menu.coverFlow")
+    : menuMode
+      ? menuHistory.length > 0
+        ? menuHistory[menuHistory.length - 1].displayTitle ??
+          menuHistory[menuHistory.length - 1].title
+        : t("apps.ipod.menuItems.ipod")
+      : t("apps.ipod.menuItems.nowPlaying");
 
   // Refs
   //
@@ -289,6 +295,15 @@ export function IpodScreen({
   // toggling from the menubar updates the screen instantly.
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernUi = uiVariant === "modern";
+  // Modern UI renders Cover Flow inline as a third state in the menu
+  // panel's AnimatePresence (alongside menu list + now-playing) so the
+  // menu↔nowplaying chrome width transition (50%↔100%) seamlessly
+  // carries the user into and out of Cover Flow. Classic / karaoke
+  // skins keep Cover Flow as a full-bleed overlay rendered outside
+  // `IpodScreen` and never receive a `coverFlowSlot`.
+  const showInlineCoverFlow = Boolean(
+    isModernUi && isCoverFlowOpen && coverFlowSlot
+  );
   const menuItemHeight = isModernUi
     ? MENU_ITEM_HEIGHT_MODERN
     : MENU_ITEM_HEIGHT_CLASSIC;
@@ -329,6 +344,10 @@ export function IpodScreen({
   }, [appleMusicKitNowPlaying, currentTrack, isAppleMusicCollectionShell]);
 
   const titlebarTitle =
+    // When Cover Flow is open inline, always show the "Cover Flow"
+    // label in the titlebar — the now-playing-shell title alternation
+    // below is for actual now-playing screens, not Cover Flow.
+    !isCoverFlowOpen &&
     !menuMode &&
     isAppleMusicCollectionShell &&
     isPlaying &&
@@ -486,8 +505,13 @@ export function IpodScreen({
     () =>
       isModernUi &&
       menuMode &&
+      // When Cover Flow is open inline, the menu panel grows to 100%
+      // and the split-art column collapses to 0% — same shape as
+      // menu→now-playing — so we suppress the split-art carousel
+      // entirely while Cover Flow is on screen.
+      !showInlineCoverFlow &&
       currentMenuItems.some((item) => item.showChevron === true),
-    [isModernUi, menuMode, currentMenuItems]
+    [isModernUi, menuMode, showInlineCoverFlow, currentMenuItems]
   );
 
   const splitArtUrlPool = useMemo(() => {
@@ -748,7 +772,29 @@ export function IpodScreen({
         }
       >
         <AnimatePresence initial={false} custom={menuDirection} mode="sync">
-          {menuMode ? (
+          {showInlineCoverFlow ? (
+            // Cover Flow inline state — rendered as the third option
+            // in the menu panel's AnimatePresence so the existing
+            // chrome width transition (the wrapping `ipod-modern-menu-
+            // panel` div animates 50%↔100% via `transition-[width]
+            // duration-300 ease-in-out` while the split-art column
+            // collapses to 0%) carries the user smoothly into and out
+            // of Cover Flow — exactly the same motion as menu→now
+            // playing. The slot itself is a `<CoverFlow inline />`
+            // node supplied by the parent.
+            <motion.div
+              key="coverflow"
+              className="absolute inset-0 flex flex-col h-full"
+              initial="enter"
+              animate="center"
+              exit="exit"
+              variants={menuVariants}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              custom={menuDirection}
+            >
+              {coverFlowSlot}
+            </motion.div>
+          ) : menuMode ? (
             <motion.div
               key={`menu-${menuHistory.length}-${currentMenuTitle}`}
               className="absolute inset-0 flex flex-col h-full"

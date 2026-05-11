@@ -1953,6 +1953,10 @@ export function useIpodLogic({
       label: coverFlowLabel,
       action: () => {
         registerActivity();
+        // Forward slide direction so the modern UI's inline Cover
+        // Flow enters from the right (x: 100% → 0) — same as
+        // navigating from menu into now-playing.
+        setMenuDirection("forward");
         setIsCoverFlowOpen(true);
       },
       showChevron: true,
@@ -2898,8 +2902,12 @@ export function useIpodLogic({
     vibrate();
     registerActivity();
 
-    // Exit Cover Flow if open
+    // Exit Cover Flow if open. Backward direction so the modern UI's
+    // inline Cover Flow exits to the right (x: 0 → 100%) and the menu
+    // (or now-playing) slides back in from the left — same shape as
+    // pressing menu from now-playing.
     if (isCoverFlowOpen) {
+      setMenuDirection("backward");
       setIsCoverFlowOpen(false);
       return;
     }
@@ -2995,7 +3003,10 @@ export function useIpodLogic({
     registerActivity();
 
     if (isCoverFlowOpen) {
-      // Exit cover flow
+      // Exit cover flow — backward direction so the modern UI's
+      // inline Cover Flow slides out to the right and now-playing
+      // slides back in from the left.
+      setMenuDirection("backward");
       setIsCoverFlowOpen(false);
     } else if (
       !menuMode &&
@@ -3003,7 +3014,10 @@ export function useIpodLogic({
       !isBrickGameOpen &&
       browsableTracks.length > 0
     ) {
-      // Enter cover flow only when in Now Playing mode and no overlay is active
+      // Enter cover flow only when in Now Playing mode and no overlay is active.
+      // Forward direction so the modern UI's inline Cover Flow slides in
+      // from the right (matching menu→now-playing).
+      setMenuDirection("forward");
       setIsCoverFlowOpen(true);
     }
   }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, menuMode, isMusicQuizOpen, isBrickGameOpen, browsableTracks.length]);
@@ -3081,6 +3095,10 @@ export function useIpodLogic({
   const handleCoverFlowExit = useCallback(() => {
     playClickSound();
     vibrate();
+    // Backward direction so the modern UI's inline Cover Flow slides
+    // out to the right (and the menu / now-playing screen behind it
+    // slides in from the left).
+    setMenuDirection("backward");
     setIsCoverFlowOpen(false);
   }, [playClickSound, vibrate]);
 

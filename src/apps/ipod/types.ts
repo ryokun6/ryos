@@ -140,6 +140,24 @@ export interface IpodScreenProps {
   soramimiMap?: Map<string, FuriganaSegment[]>;
   /** Activity state for loading indicators */
   activityState: ActivityInfo;
+  /**
+   * Whether Cover Flow is open. In the modern iPod UI we render Cover
+   * Flow inline inside the menu panel so the menu↔nowplaying chrome
+   * width transition (50%↔100%) seamlessly carries the user into and
+   * out of Cover Flow. The parent passes the actual `<CoverFlow inline />`
+   * element through `coverFlowSlot`; this `IpodScreen` only swaps it
+   * into the existing menu/now-playing AnimatePresence as a third
+   * keyed state.
+   */
+  isCoverFlowOpen?: boolean;
+  /**
+   * Pre-rendered `<CoverFlow inline />` element supplied by the parent.
+   * Rendered as the third state in the menu panel's AnimatePresence
+   * when `isCoverFlowOpen` is true. Only used by the modern UI; the
+   * classic LCD / karaoke skins render their own full-bleed Cover Flow
+   * overlay outside `IpodScreen` and leave this slot undefined.
+   */
+  coverFlowSlot?: React.ReactNode;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery

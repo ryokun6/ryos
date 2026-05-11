@@ -228,6 +228,14 @@ interface CoverFlowProps {
   onPlayTrackInPlace?: (index: number) => void;
   /** Group Apple Music tracks into album covers instead of per-song covers. */
   groupAppleMusicAlbums?: boolean;
+  /**
+   * Render inline inside a host panel (e.g. the modern iPod menu
+   * panel) instead of a full-screen `AnimatePresence` overlay. In
+   * this mode CoverFlow drops its own bezel / status bar / fade
+   * animation so the host's chrome can run the menu↔nowplaying width
+   * transition without us drawing a competing border or background.
+   */
+  inline?: boolean;
 }
 
 interface CoverFlowItem {
@@ -529,6 +537,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   onTogglePlay,
   onPlayTrackInPlace,
   groupAppleMusicAlbums = false,
+  inline = false,
 }, ref) {
   const { t } = useTranslation();
   const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
@@ -774,28 +783,157 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     [coverItems, onPlayTrackInPlace]
   );
 
+  // When `inline` is set, this CoverFlow renders inside another
+  // animated container (the modern iPod menu panel that owns the
+  // width transition). In that mode we skip our own border / bezel /
+  // background / status bar and rely on the host panel's chrome.
+  if (inline) {
+    return (
+      <div
+        className={cn(
+          "relative w-full h-full overflow-hidden",
+          isModernIpodCoverFlow ? "bg-white" : "bg-black",
+          ipodMode ? "ipod-force-font" : "karaoke-force-font",
+        )}
+        style={{ containerType: "size" }}
+      >
+        {/* Reflective floor — same softer modern-skin gradient. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: isModernIpodCoverFlow
+              ? "linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.06) 78%, rgba(0,0,0,0.12) 100%)"
+              : "linear-gradient(to bottom, transparent 40%, rgba(38,38,38,0.5) 70%, rgba(64,64,64,0.3) 100%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Gesture-capturing carousel stage (motion.div for framer
+            pan/wheel handlers). */}
+        <motion.div
+          ref={containerRef}
+          className={cn(
+            "absolute inset-0 flex items-center justify-center",
+            showCD ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+          )}
+          onPanStart={showCD ? undefined : handlePanStart}
+          onPan={showCD ? undefined : handlePan}
+          onPanEnd={showCD ? undefined : handlePanEnd}
+          onWheel={showCD ? undefined : handleWheel}
+          onClick={() => {
+            if (isPanningRef.current || longPressFiredRef.current) {
+              longPressFiredRef.current = false;
+              return;
+            }
+            if (showCD) {
+              setShowCD(false);
+              return;
+            }
+            selectCurrent();
+          }}
+          onMouseDown={showCD ? undefined : () => startLongPress()}
+          onMouseUp={showCD ? undefined : () => endLongPress()}
+          onMouseLeave={showCD ? undefined : () => endLongPress()}
+          onTouchStart={showCD ? undefined : () => startLongPress()}
+          onTouchEnd={showCD ? undefined : () => endLongPress()}
+          onTouchCancel={showCD ? undefined : () => endLongPress()}
+          style={{ touchAction: showCD ? "auto" : "none", overflow: "visible" }}
+        >
+          <div
+            className="relative flex items-center justify-center w-full"
+            style={{
+              height: ipodMode && isModernIpodCoverFlow ? "76%" : "75%",
+              marginTop:
+                ipodMode && isModernIpodCoverFlow
+                  ? "0%"
+                  : ipodMode
+                    ? "-8%"
+                    : "-2%",
+              perspective: `${(ipodMode ? 65 : 60) * 1.5}cqmin`,
+              transformStyle: "preserve-3d",
+            }}
+          >
+            <AnimatePresence mode="popLayout">
+              {visibleCovers.map(({ item, position }) => (
+                <CoverImage
+                  key={item.key}
+                  track={item.track}
+                  position={position}
+                  ipodMode={ipodMode}
+                  compactIpodCarousel={isModernIpodCoverFlow}
+                  showCD={showCD}
+                  isPlaying={isPlaying && selectedIndex === currentCoverIndex}
+                  onTogglePlay={onTogglePlay}
+                  selectedIndex={selectedIndex}
+                  currentIndex={currentCoverIndex}
+                  onPlayTrackInPlace={playItemInPlace}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* Track info — bottom row */}
+        <div
+          className={cn(
+            "absolute left-0 right-0 flex items-center justify-center gap-2 pointer-events-none",
+            isModernIpodCoverFlow ? "font-ipod-modern-ui" : "font-geneva-12",
+            ipodMode ? "px-2" : "px-6",
+          )}
+          style={{
+            bottom:
+              ipodMode && isModernIpodCoverFlow
+                ? "3px"
+                : ipodMode
+                  ? "6px"
+                  : "5cqmin",
+          }}
+        >
+          <div
+            className={cn(
+              "text-center min-w-0 flex-1",
+              isModernIpodCoverFlow
+                ? "[&>*]:leading-[1.15]"
+                : "[&>*]:leading-tight",
+            )}
+          >
+            <div
+              className={cn(
+                "truncate",
+                isModernIpodCoverFlow
+                  ? "text-black text-[12px] font-semibold tracking-tight"
+                  : "text-white",
+                ipodMode && !isModernIpodCoverFlow && "text-[10px]",
+              )}
+            >
+              {currentItem?.title || t("apps.ipod.coverFlow.noTrack")}
+            </div>
+            {currentItem?.artist && (
+              <div
+                className={cn(
+                  "truncate",
+                  isModernIpodCoverFlow &&
+                    "text-[10px] text-[rgb(99,101,103)] tracking-tight",
+                  ipodMode &&
+                    !isModernIpodCoverFlow &&
+                    "text-white/60 text-[8px]",
+                )}
+              >
+                {currentItem.artist}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
           className={cn(
-            "absolute z-50 overflow-hidden",
-            // Modern UI uses a width-based slide-in pulled from the
-            // RIGHT edge (anchored top/right/bottom; left is free so
-            // the inline `width` controls how far the panel extends
-            // leftward). This mirrors the menu ↔ now-playing chrome
-            // width animation in IpodScreen (`transition-[width]
-            // duration-300 ease-in-out`) — the now-playing panel
-            // grows from 50% to 100% as the split-art column
-            // collapses; Cover Flow likewise grows from 0% to 100%
-            // anchored at the right edge so it reads as "the same
-            // chrome animation, one screen further". Classic /
-            // karaoke variants keep the full-bleed opacity/scale
-            // overlay because they have no equivalent width
-            // transition to match.
-            isModernIpodCoverFlow
-              ? "top-0 right-0 bottom-0"
-              : "inset-0",
+            "absolute inset-0 z-50 overflow-hidden",
             // Modern UI: white surface to match the rest of the modern
             // skin (Music + Now Playing, settings menus). Classic /
             // karaoke variants keep the original deep-black backdrop.
@@ -807,43 +945,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             // would read as a different frame than every other view.
             // Karaoke Cover Flow opens full-bleed inside its own
             // window chrome and skips the bezel.
-            //
-            // Modern UI variant drops the LEFT border + left rounded
-            // corners during the width slide so we don't draw a stray
-            // 2px black vertical line down the middle of the iPod
-            // screen mid-animation (the underlying IpodScreen still
-            // owns the full bezel; CoverFlow's right/top/bottom edges
-            // sit flush on top of it, and the missing left edge stays
-            // hidden because right edge stays anchored at right:0).
-            ipodMode && !isModernIpodCoverFlow &&
-              "border border-black border-2 rounded-[2px]",
-            ipodMode && isModernIpodCoverFlow &&
-              "border-y-2 border-r-2 border-black rounded-tr-[2px] rounded-br-[2px]",
+            ipodMode && "border border-black border-2 rounded-[2px]",
             ipodMode ? "ipod-force-font" : "karaoke-force-font",
           )}
           style={{ containerType: "size" }}
-          initial={
-            isModernIpodCoverFlow
-              ? { width: "0%" }
-              : { opacity: 0, scale: ipodMode ? 1 : 1.05 }
-          }
-          animate={
-            isModernIpodCoverFlow
-              ? { width: "100%" }
-              : { opacity: 1, scale: 1 }
-          }
-          exit={
-            isModernIpodCoverFlow
-              ? { width: "0%" }
-              : { opacity: 0, scale: ipodMode ? 1 : 1.05 }
-          }
-          transition={
-            isModernIpodCoverFlow
-              ? // Mirror the IpodScreen menu↔now-playing chrome:
-                // `transition-[width] duration-300 ease-in-out`.
-                { duration: 0.3, ease: "easeInOut" }
-              : { duration: ipodMode ? 0.2 : 0.35, ease: "easeOut" }
-          }
+          initial={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
+          transition={{ duration: ipodMode ? 0.2 : 0.35, ease: "easeOut" }}
         >
           {/* Reflective floor gradient — softer on the white modern skin so
               it reads as a faint stage shadow under the album row instead
