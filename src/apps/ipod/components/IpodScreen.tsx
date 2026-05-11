@@ -9,7 +9,7 @@ import {
 } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shuffle } from "@phosphor-icons/react";
+import { Pause, Play, Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
@@ -776,7 +776,23 @@ export function IpodScreen({
               isModernUi ? "w-4 h-4" : "w-4 h-4 mt-0.5"
             )}
           >
-            {isPlaying ? "▶" : "⏸︎"}
+            {isModernUi ? (
+              isPlaying ? (
+                <Play
+                  size={12}
+                  weight="fill"
+                  aria-label="playing"
+                />
+              ) : (
+                <Pause
+                  size={12}
+                  weight="fill"
+                  aria-label="paused"
+                />
+              )
+            ) : (
+              isPlaying ? "▶" : "⏸︎"
+            )}
           </div>
         </div>
         <ScrollingText
