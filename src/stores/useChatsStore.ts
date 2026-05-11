@@ -10,6 +10,7 @@ import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { ApiRequestError } from "@/api/core";
+import { clearCachedMusicKitUserToken } from "@/utils/musicKitUserTokenCloudSync";
 import {
   type CreateRoomPayload,
   createRoom as createRoomApi,
@@ -120,6 +121,9 @@ function forceLogoutOnUnauthorized() {
   console.log("[ChatsStore] Unauthorized — clearing auth state for", store.username);
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
   clearLegacyTokenRecovery();
+  // Best-effort cleanup of the Apple Music user token so the next ryOS
+  // user on this device doesn't inherit the previous session.
+  void clearCachedMusicKitUserToken();
   useChatsStore.setState({
     username: null,
     isAuthenticated: false,
@@ -693,6 +697,12 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           clearLegacyTokenRecovery();
+
+          // Drop the cached Apple Music user token so a different ryOS
+          // user signing in on this device doesn't inherit the previous
+          // user's Apple Music session. Best-effort: never blocks the
+          // logout flow.
+          void clearCachedMusicKitUserToken();
 
           set((state) => ({
             ...state,
