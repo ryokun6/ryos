@@ -779,7 +779,23 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       {isVisible && (
         <motion.div
           className={cn(
-            "absolute inset-0 z-50 overflow-hidden",
+            "absolute z-50 overflow-hidden",
+            // Modern UI uses a width-based slide-in pulled from the
+            // RIGHT edge (anchored top/right/bottom; left is free so
+            // the inline `width` controls how far the panel extends
+            // leftward). This mirrors the menu ↔ now-playing chrome
+            // width animation in IpodScreen (`transition-[width]
+            // duration-300 ease-in-out`) — the now-playing panel
+            // grows from 50% to 100% as the split-art column
+            // collapses; Cover Flow likewise grows from 0% to 100%
+            // anchored at the right edge so it reads as "the same
+            // chrome animation, one screen further". Classic /
+            // karaoke variants keep the full-bleed opacity/scale
+            // overlay because they have no equivalent width
+            // transition to match.
+            isModernIpodCoverFlow
+              ? "top-0 right-0 bottom-0"
+              : "inset-0",
             // Modern UI: white surface to match the rest of the modern
             // skin (Music + Now Playing, settings menus). Classic /
             // karaoke variants keep the original deep-black backdrop.
@@ -791,14 +807,43 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             // would read as a different frame than every other view.
             // Karaoke Cover Flow opens full-bleed inside its own
             // window chrome and skips the bezel.
-            ipodMode && "border border-black border-2 rounded-[2px]",
+            //
+            // Modern UI variant drops the LEFT border + left rounded
+            // corners during the width slide so we don't draw a stray
+            // 2px black vertical line down the middle of the iPod
+            // screen mid-animation (the underlying IpodScreen still
+            // owns the full bezel; CoverFlow's right/top/bottom edges
+            // sit flush on top of it, and the missing left edge stays
+            // hidden because right edge stays anchored at right:0).
+            ipodMode && !isModernIpodCoverFlow &&
+              "border border-black border-2 rounded-[2px]",
+            ipodMode && isModernIpodCoverFlow &&
+              "border-y-2 border-r-2 border-black rounded-tr-[2px] rounded-br-[2px]",
             ipodMode ? "ipod-force-font" : "karaoke-force-font",
           )}
           style={{ containerType: "size" }}
-          initial={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: ipodMode ? 1 : 1.05 }}
-          transition={{ duration: ipodMode ? 0.2 : 0.35, ease: "easeOut" }}
+          initial={
+            isModernIpodCoverFlow
+              ? { width: "0%" }
+              : { opacity: 0, scale: ipodMode ? 1 : 1.05 }
+          }
+          animate={
+            isModernIpodCoverFlow
+              ? { width: "100%" }
+              : { opacity: 1, scale: 1 }
+          }
+          exit={
+            isModernIpodCoverFlow
+              ? { width: "0%" }
+              : { opacity: 0, scale: ipodMode ? 1 : 1.05 }
+          }
+          transition={
+            isModernIpodCoverFlow
+              ? // Mirror the IpodScreen menu↔now-playing chrome:
+                // `transition-[width] duration-300 ease-in-out`.
+                { duration: 0.3, ease: "easeInOut" }
+              : { duration: ipodMode ? 0.2 : 0.35, ease: "easeOut" }
+          }
         >
           {/* Reflective floor gradient — softer on the white modern skin so
               it reads as a faint stage shadow under the album row instead
