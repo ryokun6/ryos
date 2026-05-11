@@ -1515,16 +1515,18 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
 /* LEFT-side menu surface in split mode: must clip its contents (so menu
  * row chrome and the silver titlebar gradient never bleed past the
- * panel edge) and cast a soft drop shadow onto the album art panel
- * to its right. The inset shadow on `.ipod-modern-split-art` does
- * most of the depth work — this rule just adds a crisp 1px right
- * edge + a short outer falloff so the menu reads as a foreground
- * surface in front of the artwork. */
+ * panel edge) and cast a pronounced drop shadow onto the album art
+ * panel to its right. The deeper outer falloff (5px offset, 12px
+ * blur) reads as a real elevation difference between the menu
+ * surface and the artwork, mirroring the iPod 6G/7G menu+art
+ * "panel over panel" feel from the reference photo. The inset
+ * hairline keeps the menu's right edge crisp. */
 .ipod-modern-menu-panel {
   overflow: hidden;
   box-shadow:
-    2px 0 4px -1px rgba(0, 0, 0, 0.25),
-    inset -1px 0 0 rgba(0, 0, 0, 0.18);
+    5px 0 12px -2px rgba(0, 0, 0, 0.55),
+    2px 0 4px 0 rgba(0, 0, 0, 0.35),
+    inset -1px 0 0 rgba(0, 0, 0, 0.22);
 }
 
 .ipod-modern-split-art-img {

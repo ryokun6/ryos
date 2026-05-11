@@ -524,11 +524,25 @@ export function IpodScreen({
   // we cycle through them on a slow timer so the right-hand panel
   // reads as a slideshow of "what's in this list".
   //
-  // Falls back to the now-playing track's cover when the current
-  // menu has no artwork-bearing items, so the panel still has
-  // something to render in plain settings menus.
+  // Heuristic: only show the split panel for **browseable** menus —
+  // those whose items drill deeper (`showChevron: true`). Track-list
+  // leaves like "All Songs", "Recently Added", album/artist/playlist
+  // track lists, and settings menus all use `showChevron: false` and
+  // should render full-width per the reference photo (the iPod nano
+  // / classic 6G+ only shows the now-playing artwork strip on
+  // hierarchical browse menus, not on flat song lists or Settings).
+  // The root iPod / Music submenus still qualify because their rows
+  // include chevron-bearing categories.
+  const isBrowseableMenu = useMemo(
+    () =>
+      isModernUi &&
+      menuMode &&
+      currentMenuItems.some((item) => item.showChevron === true),
+    [isModernUi, menuMode, currentMenuItems]
+  );
+
   const splitArtUrlPool = useMemo(() => {
-    if (!isModernUi || !menuMode) return [] as string[];
+    if (!isBrowseableMenu) return [] as string[];
     const seen = new Set<string>();
     const urls: string[] = [];
     for (const item of currentMenuItems) {
@@ -538,9 +552,13 @@ export function IpodScreen({
       seen.add(url);
       urls.push(url);
     }
+    // When the browseable menu has no artwork-bearing items (e.g. the
+    // root menu before any track has loaded), fall back to the
+    // now-playing cover so the split panel still has something to
+    // show. Non-browseable menus stay full-width.
     if (urls.length === 0 && coverUrl) urls.push(coverUrl);
     return urls;
-  }, [isModernUi, menuMode, currentMenuItems, coverUrl]);
+  }, [isBrowseableMenu, currentMenuItems, coverUrl]);
 
   const [splitArtIndex, setSplitArtIndex] = useState(0);
 
