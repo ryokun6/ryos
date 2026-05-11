@@ -228,6 +228,14 @@ interface CoverFlowProps {
   onPlayTrackInPlace?: (index: number) => void;
   /** Group Apple Music tracks into album covers instead of per-song covers. */
   groupAppleMusicAlbums?: boolean;
+  /**
+   * Render inline inside a host panel (e.g. the modern iPod menu
+   * panel) instead of a full-screen `AnimatePresence` overlay. In
+   * this mode CoverFlow drops its own bezel / status bar / fade
+   * animation so the host's chrome can run the menu↔nowplaying width
+   * transition without us drawing a competing border or background.
+   */
+  inline?: boolean;
 }
 
 interface CoverFlowItem {
@@ -529,6 +537,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   onTogglePlay,
   onPlayTrackInPlace,
   groupAppleMusicAlbums = false,
+  inline = false,
 }, ref) {
   const { t } = useTranslation();
   const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
@@ -774,6 +783,155 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     [coverItems, onPlayTrackInPlace]
   );
 
+  // When `inline` is set, this CoverFlow renders inside another
+  // animated container (the modern iPod menu panel that owns the
+  // width transition). In that mode we skip our own border / bezel /
+  // background / status bar and rely on the host panel's chrome.
+  if (inline) {
+    return (
+      <div
+        className={cn(
+          "relative w-full h-full overflow-hidden",
+          isModernIpodCoverFlow ? "bg-white" : "bg-black",
+          ipodMode ? "ipod-force-font" : "karaoke-force-font",
+        )}
+        style={{ containerType: "size" }}
+      >
+        {/* Reflective floor — same softer modern-skin gradient. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: isModernIpodCoverFlow
+              ? "linear-gradient(to bottom, transparent 55%, rgba(0,0,0,0.06) 78%, rgba(0,0,0,0.12) 100%)"
+              : "linear-gradient(to bottom, transparent 40%, rgba(38,38,38,0.5) 70%, rgba(64,64,64,0.3) 100%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Gesture-capturing carousel stage (motion.div for framer
+            pan/wheel handlers). */}
+        <motion.div
+          ref={containerRef}
+          className={cn(
+            "absolute inset-0 flex items-center justify-center",
+            showCD ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+          )}
+          onPanStart={showCD ? undefined : handlePanStart}
+          onPan={showCD ? undefined : handlePan}
+          onPanEnd={showCD ? undefined : handlePanEnd}
+          onWheel={showCD ? undefined : handleWheel}
+          onClick={() => {
+            if (isPanningRef.current || longPressFiredRef.current) {
+              longPressFiredRef.current = false;
+              return;
+            }
+            if (showCD) {
+              setShowCD(false);
+              return;
+            }
+            selectCurrent();
+          }}
+          onMouseDown={showCD ? undefined : () => startLongPress()}
+          onMouseUp={showCD ? undefined : () => endLongPress()}
+          onMouseLeave={showCD ? undefined : () => endLongPress()}
+          onTouchStart={showCD ? undefined : () => startLongPress()}
+          onTouchEnd={showCD ? undefined : () => endLongPress()}
+          onTouchCancel={showCD ? undefined : () => endLongPress()}
+          style={{ touchAction: showCD ? "auto" : "none", overflow: "visible" }}
+        >
+          <div
+            className="relative flex items-center justify-center w-full"
+            style={{
+              height: ipodMode && isModernIpodCoverFlow ? "76%" : "75%",
+              // Pull the carousel up so the covers sit closer to the
+              // titlebar instead of being optically centered inside the
+              // menu-panel content area. Modern iPod nano/classic 6G
+              // photos show the album row riding noticeably higher than
+              // mid-screen, with the title/artist row anchored to the
+              // bottom — the previous 0% offset left the covers
+              // floating low. -8% matches the classic iPod variant and
+              // gives a consistent "covers up, label down" feel across
+              // skins.
+              marginTop: ipodMode ? "-8%" : "-2%",
+              perspective: `${(ipodMode ? 65 : 60) * 1.5}cqmin`,
+              transformStyle: "preserve-3d",
+            }}
+          >
+            <AnimatePresence mode="popLayout">
+              {visibleCovers.map(({ item, position }) => (
+                <CoverImage
+                  key={item.key}
+                  track={item.track}
+                  position={position}
+                  ipodMode={ipodMode}
+                  compactIpodCarousel={isModernIpodCoverFlow}
+                  showCD={showCD}
+                  isPlaying={isPlaying && selectedIndex === currentCoverIndex}
+                  onTogglePlay={onTogglePlay}
+                  selectedIndex={selectedIndex}
+                  currentIndex={currentCoverIndex}
+                  onPlayTrackInPlace={playItemInPlace}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* Track info — bottom row */}
+        <div
+          className={cn(
+            "absolute left-0 right-0 flex items-center justify-center gap-2 pointer-events-none",
+            isModernIpodCoverFlow ? "font-ipod-modern-ui" : "font-geneva-12",
+            ipodMode ? "px-2" : "px-6",
+          )}
+          style={{
+            bottom:
+              ipodMode && isModernIpodCoverFlow
+                ? "3px"
+                : ipodMode
+                  ? "6px"
+                  : "5cqmin",
+          }}
+        >
+          <div
+            className={cn(
+              "text-center min-w-0 flex-1",
+              isModernIpodCoverFlow
+                ? "[&>*]:leading-[1.15]"
+                : "[&>*]:leading-tight",
+            )}
+          >
+            <div
+              className={cn(
+                "truncate",
+                isModernIpodCoverFlow
+                  ? "text-black text-[12px] font-semibold tracking-tight"
+                  : "text-white",
+                ipodMode && !isModernIpodCoverFlow && "text-[10px]",
+              )}
+            >
+              {currentItem?.title || t("apps.ipod.coverFlow.noTrack")}
+            </div>
+            {currentItem?.artist && (
+              <div
+                className={cn(
+                  "truncate",
+                  isModernIpodCoverFlow &&
+                    "text-[10px] text-[rgb(99,101,103)] tracking-tight",
+                  ipodMode &&
+                    !isModernIpodCoverFlow &&
+                    "text-white/60 text-[8px]",
+                )}
+              >
+                {currentItem.artist}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -897,12 +1055,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               className="relative flex items-center justify-center w-full"
               style={{ 
                 height: ipodMode && isModernIpodCoverFlow ? "76%" : "75%",
-                marginTop:
-                  ipodMode && isModernIpodCoverFlow
-                    ? "0%"
-                    : ipodMode
-                      ? "-8%"
-                      : "-2%",
+                // Pull the carousel up so the covers ride higher in
+                // the iPod screen — matches the inline modern variant
+                // and the classic skin. Karaoke (non-iPod) keeps its
+                // smaller -2% offset because its viewport is wider and
+                // the carousel is already lifted by other padding.
+                marginTop: ipodMode ? "-8%" : "-2%",
                 perspective: `${(ipodMode ? 65 : 60) * 1.5}cqmin`,
                 transformStyle: "preserve-3d",
               }}
