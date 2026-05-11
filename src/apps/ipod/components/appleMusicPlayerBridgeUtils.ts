@@ -39,16 +39,18 @@ export function shouldFireEndedForPlaybackState(
  *
  * If the bridge forwards both events to the parent's `onEnded`, our
  * `handleTrackEnd` → `nextTrack` runs *twice*. In shuffle mode each call
- * picks a different random song; in sequential mode each call advances
- * one step. The two back-to-back `setQueue(...)` calls then race inside
- * MusicKit so the song the user actually hears can mismatch the song the
- * iPod displays (the display reflects the *latest* store update, but the
- * audio can settle on whichever `setQueue` resolves last). Suppress the
- * second fan-out within a window long enough to span the state 5 → state
- * 10 transition for the same item, but short enough never to swallow a
- * subsequent track's own end-of-playback signal.
+ * picks a *different* random song (so the bug is most obvious with shuffle
+ * on); in sequential mode each call advances one step (skipping a song).
+ * The two back-to-back `setQueue(...)` calls then race inside MusicKit so
+ * the song the user actually hears can mismatch the song the iPod displays
+ * (the display reflects the *latest* store update, but the audio can
+ * settle on whichever `setQueue` resolved last). Suppress the second
+ * fan-out within a window long enough to span the state 5 → state 10
+ * transition for the same item, but short enough never to swallow a
+ * subsequent track's own end-of-playback signal (real songs are minimum
+ * tens of seconds long).
  */
-export const ENDED_FANOUT_DEDUP_WINDOW_MS = 1500;
+export const ENDED_FANOUT_DEDUP_WINDOW_MS = 3000;
 
 /**
  * Returns true when an `onEnded` fan-out at `now` should be suppressed
@@ -65,4 +67,35 @@ export function isWithinEndedFanoutDedupWindow(
 ): boolean {
   if (lastFiredAt <= 0) return false;
   return now - lastFiredAt < windowMs;
+}
+
+/**
+ * Pull a stable identifier out of a MusicKit `playbackStateDidChange` /
+ * `mediaItemDidChange` event payload. Used as the *primary* dedup key for
+ * `onEnded` fan-out: when state=5 and state=10 reference the same item
+ * (the just-ended song), the second event's id matches the first and we
+ * suppress regardless of timing.
+ *
+ * Falls back through the multiple shapes MusicKit JS uses across versions
+ * (`item.id`, `item.attributes.playParams.id`,
+ * `item.attributes.playParams.catalogId`).
+ */
+export function getMusicKitEventItemId(
+  item:
+    | {
+        id?: string;
+        attributes?: {
+          playParams?: { id?: string; catalogId?: string };
+        };
+      }
+    | null
+    | undefined
+): string | null {
+  if (!item) return null;
+  return (
+    item.id ||
+    item.attributes?.playParams?.id ||
+    item.attributes?.playParams?.catalogId ||
+    null
+  );
 }

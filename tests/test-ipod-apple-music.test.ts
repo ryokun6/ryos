@@ -51,6 +51,7 @@ const {
   shouldFireEndedForPlaybackState,
   isWithinEndedFanoutDedupWindow,
   ENDED_FANOUT_DEDUP_WINDOW_MS,
+  getMusicKitEventItemId,
 } = await import(
   "../src/apps/ipod/components/appleMusicPlayerBridgeUtils"
 );
@@ -886,12 +887,13 @@ describe("AppleMusicPlayerBridge ended fan-out dedup window", () => {
   test("second fire inside the window is suppressed (state 5 → state 10 collapse)", () => {
     // state 5 fires at t=1000, state 10 follows at t=1100 — same song.
     expect(isWithinEndedFanoutDedupWindow(1_100, 1_000)).toBe(true);
-    // Even with hundreds of ms between events, dedup still bites.
-    expect(isWithinEndedFanoutDedupWindow(1_999, 1_000)).toBe(true);
+    // Even with seconds between events the dedup still bites — covers
+    // builds where state 10 lags behind state 5 noticeably.
+    expect(isWithinEndedFanoutDedupWindow(1_000 + 2_999, 1_000)).toBe(true);
   });
 
   test("subsequent song's own ended event (well outside window) fans out", () => {
-    // Songs are at minimum a few seconds long, so the next track's end
+    // Real songs are minimum tens of seconds, so the next track's end
     // is always well past the dedup window.
     expect(
       isWithinEndedFanoutDedupWindow(
@@ -905,7 +907,7 @@ describe("AppleMusicPlayerBridge ended fan-out dedup window", () => {
         1_000
       )
     ).toBe(false);
-    expect(isWithinEndedFanoutDedupWindow(60_000, 1_000)).toBe(false);
+    expect(isWithinEndedFanoutDedupWindow(120_000, 1_000)).toBe(false);
   });
 
   test("dedup window is comfortably wider than typical state 5 → state 10 latency, narrower than song length", () => {
@@ -918,5 +920,48 @@ describe("AppleMusicPlayerBridge ended fan-out dedup window", () => {
   test("custom window override works (used by tests + future hardening)", () => {
     expect(isWithinEndedFanoutDedupWindow(100, 50, 100)).toBe(true);
     expect(isWithinEndedFanoutDedupWindow(150, 50, 100)).toBe(false);
+  });
+});
+
+describe("AppleMusicPlayerBridge MusicKit event item id extraction", () => {
+  // Primary dedup key for `onEnded` fan-out: state=5 and state=10 reference
+  // the SAME just-ended item, so identical ids let us suppress the second
+  // fan-out regardless of timing — important when state 10 lags more than
+  // the timestamp window. Falls back through the multiple shapes MusicKit
+  // JS uses across versions so the dedup keeps working when one shape is
+  // empty.
+  test("returns null for nullish items (avoids spurious dedup)", () => {
+    expect(getMusicKitEventItemId(null)).toBeNull();
+    expect(getMusicKitEventItemId(undefined)).toBeNull();
+    expect(getMusicKitEventItemId({})).toBeNull();
+    // Empty string ids are falsy → fallback chain → null.
+    expect(getMusicKitEventItemId({ id: "" })).toBeNull();
+  });
+
+  test("prefers the top-level item.id when present", () => {
+    expect(
+      getMusicKitEventItemId({
+        id: "1616228595",
+        attributes: {
+          playParams: { id: "other", catalogId: "another" },
+        },
+      })
+    ).toBe("1616228595");
+  });
+
+  test("falls back to attributes.playParams.id when item.id is absent", () => {
+    expect(
+      getMusicKitEventItemId({
+        attributes: { playParams: { id: "i.uUZAkT3" } },
+      })
+    ).toBe("i.uUZAkT3");
+  });
+
+  test("falls back to attributes.playParams.catalogId for library songs", () => {
+    expect(
+      getMusicKitEventItemId({
+        attributes: { playParams: { catalogId: "1616228595" } },
+      })
+    ).toBe("1616228595");
   });
 });

@@ -10,6 +10,7 @@ import type { Track } from "@/stores/useIpodStore";
 import { onMusicKitReady } from "@/hooks/useMusicKit";
 import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 import {
+  getMusicKitEventItemId,
   isWithinEndedFanoutDedupWindow,
   shouldFireEndedForPlaybackState,
 } from "./appleMusicPlayerBridgeUtils";
@@ -206,13 +207,21 @@ export const AppleMusicPlayerBridge = forwardRef<
   const currentTrackRef = useRef(currentTrack);
   currentTrackRef.current = currentTrack;
 
-  // Wall-clock timestamp of the last `onEnded` fan-out. Used to dedup the
-  // back-to-back `ended` (5) + `completed` (10) MusicKit events that both
-  // fire when a single-song queue's only item finishes. Without this the
-  // parent's `nextTrack` runs twice and the second pick races MusicKit's
-  // first `setQueue`, so the audio the user hears can mismatch the song
-  // the iPod displays (the display reflects the *second* pick, the audio
-  // can settle on either). See `isWithinEndedFanoutDedupWindow`.
+  // Dedup state for `onEnded` fan-out. MusicKit JS fires both `ended`
+  // (5) and `completed` (10) when a single-song queue's only item
+  // finishes. Without dedup the parent's `nextTrack` runs twice — the
+  // second pick races MusicKit's first `setQueue`, so the audio the user
+  // hears can mismatch the song the iPod displays. With shuffle on the
+  // mismatch is the most visible because each call picks a different
+  // random song.
+  //
+  // Two layers (either match suppresses):
+  //  - `lastEndedFiredForItemIdRef`: the just-ended item id. State 5 and
+  //    state 10 reference the SAME item, so identical ids dedup
+  //    regardless of timing.
+  //  - `lastEndedFiredAtRef`: wall-clock timestamp + window. Backstop for
+  //    builds that strip `event.item` from the second event.
+  const lastEndedFiredForItemIdRef = useRef<string | null>(null);
   const lastEndedFiredAtRef = useRef(0);
 
   // Wire up MusicKit event listeners once the instance is available.
@@ -247,12 +256,25 @@ export const AppleMusicPlayerBridge = forwardRef<
       ) {
         // MusicKit fires both `ended` (5) and `completed` (10) when a
         // single-song queue's only item finishes — dedup so the parent's
-        // next-track handler runs once per song-ending event.
+        // next-track handler runs once per song-ending event. Most
+        // visible with shuffle on, where two fan-outs would pick two
+        // different random songs and race two `setQueue` calls in
+        // MusicKit, leaving the audio on a different song than the
+        // display.
         const now = Date.now();
-        if (
-          isWithinEndedFanoutDedupWindow(now, lastEndedFiredAtRef.current)
-        ) {
+        const eventItemId = getMusicKitEventItemId(event?.item);
+        const itemIdMatches =
+          eventItemId !== null &&
+          lastEndedFiredForItemIdRef.current === eventItemId;
+        const withinTimeWindow = isWithinEndedFanoutDedupWindow(
+          now,
+          lastEndedFiredAtRef.current
+        );
+        if (itemIdMatches || withinTimeWindow) {
           return;
+        }
+        if (eventItemId !== null) {
+          lastEndedFiredForItemIdRef.current = eventItemId;
         }
         lastEndedFiredAtRef.current = now;
         onEndedRef.current?.();
