@@ -9,7 +9,7 @@ import {
 } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pause, Play, Shuffle } from "@phosphor-icons/react";
+import { Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
@@ -85,6 +85,57 @@ function formatPlaybackTime(totalSeconds: number): string {
     2,
     "0"
   )}`;
+}
+
+/**
+ * Inline SVG play/pause indicator for the modern iPod titlebar.
+ *
+ * Uses an embedded `<linearGradient>` so the glyph can be filled with
+ * the same vertical blue gradient as the row-selection highlight
+ * (`linear-gradient(180deg, rgb(60, 184, 255) 0%, rgb(52, 122, 181) 100%)`).
+ * Phosphor icons render with `currentColor` and don't expose a way to
+ * paint a gradient, so this small custom SVG is the cleanest way to
+ * land that look without adding a new icon dep.
+ *
+ * Each instance gets a unique gradient ID — multiple icons may render
+ * in the same DOM (e.g. mini-player + screen titlebar) and SVG defs
+ * are document-scoped.
+ */
+function IpodModernPlayPauseIcon({
+  playing,
+  size = 10,
+}: {
+  playing: boolean;
+  size?: number;
+}) {
+  const gradientId = useMemo(
+    () => `ipod-modern-titlebar-grad-${Math.random().toString(36).slice(2)}`,
+    []
+  );
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-label={playing ? "playing" : "paused"}
+      role="img"
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgb(60, 184, 255)" />
+          <stop offset="100%" stopColor="rgb(52, 122, 181)" />
+        </linearGradient>
+      </defs>
+      {playing ? (
+        <path d="M8 5v14l11-7z" fill={`url(#${gradientId})`} />
+      ) : (
+        <g fill={`url(#${gradientId})`}>
+          <rect x="6" y="5" width="4" height="14" rx="0.5" />
+          <rect x="14" y="5" width="4" height="14" rx="0.5" />
+        </g>
+      )}
+    </svg>
+  );
 }
 
 
@@ -786,7 +837,8 @@ export function IpodScreen({
        *
        * Modern (nano 6G/7G + iPod classic 6G silver header):
        *   - Slim 17px strip, 12px MyriadPro semibold black text.
-       *   - Title left-aligned (no centering).
+       *   - Title left-aligned with 6px padding to match the menu
+       *     row text indent (`MenuListItem` uses `pl-1.5 pr-2`).
        *   - Status icons (play/pause + battery) clustered on the right.
        *   - Clamped to the LEFT HALF of the screen in split menu mode
        *     so the album art column extends to the very top edge.
@@ -797,8 +849,9 @@ export function IpodScreen({
         className={cn(
           "shrink-0 py-0 flex items-center sticky top-0 z-20",
           isModernUi
-            ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-2 pr-1.5 gap-1.5"
-            : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+            ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-1.5 pr-1.5 gap-1.5"
+            : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+          showSplitMenuArt && "ipod-modern-menu-panel"
         )}
         style={
           isModernUi
@@ -849,16 +902,13 @@ export function IpodScreen({
           )}
         >
           {isModernUi && (
-            // Compact play/pause status glyph mirroring the green-arrow
-            // affordance from the classic-iPod silver header. Render in
-            // the iPod's signature green tint (#3ea73e ≈ Apple green) so
-            // it pops against the brushed-silver gradient like the photo.
-            <div className="flex items-center justify-center w-3 h-3 text-[#3ea73e]">
-              {isPlaying ? (
-                <Play size={10} weight="fill" aria-label="playing" />
-              ) : (
-                <Pause size={10} weight="fill" aria-label="paused" />
-              )}
+            // Compact play/pause status glyph painted with the same
+            // top-to-bottom blue gradient as the row-selection
+            // highlight, matching the iOS 6 / iPod nano 6G "tinted"
+            // status-bar look. Inline SVG with an embedded gradient
+            // so it stays a single sharp shape on any DPI.
+            <div className="flex items-center justify-center w-3 h-3">
+              <IpodModernPlayPauseIcon playing={isPlaying} size={10} />
             </div>
           )}
           <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
@@ -874,7 +924,8 @@ export function IpodScreen({
       <div
         className={cn(
           "relative",
-          !showVideo && "z-30"
+          !showVideo && "z-30",
+          showSplitMenuArt && "ipod-modern-menu-panel bg-white"
         )}
         style={{
           height: isModernUi

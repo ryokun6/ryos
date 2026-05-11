@@ -1495,18 +1495,37 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   border-radius: 0 3px 3px 0;
 }
 
-/* iPod 6G/7G "split menu" view: a square-ish strip on the right side of
- * a menu screen that shows the now-playing album art with a slow
- * Ken Burns zoom + pan. Matches the artwork peek visible on real
- * iPod nano 6G/7G + classic 6G/7G menus. The container clips the
- * over-scaled image; the inner image animates `transform`.
+/* iPod 6G/7G "split menu" view: the right HALF of the screen shows
+ * the now-playing album art with a slow Ken Burns zoom + pan, while
+ * the menu list + titlebar are clamped to the left half. Matches the
+ * "Music + Now Playing" layout on the iPod classic 6G/7G reference
+ * photo. The container clips the over-scaled image; the inner image
+ * animates `transform`.
  *
- * The art column is divided from the menu by a thin grey hairline
- * (same hue family as the titlebar bottom border) so the menu list
- * still reads as a distinct surface. */
+ * The art panel sits *behind* the menu surface with a soft inset
+ * shadow on its left edge, making it look like the menu (foreground
+ * white panel) is casting a shadow onto the art (background image).
+ * That depth read matches the reference photo where the menu has a
+ * crisp right edge with the art visibly receding behind it. */
 .ipod-modern-split-art {
   background: #1a1a1a;
-  box-shadow: inset 1px 0 0 #cfd2d4;
+  box-shadow:
+    inset 8px 0 10px -4px rgba(0, 0, 0, 0.55),
+    inset 1px 0 0 rgba(0, 0, 0, 0.35);
+}
+
+/* LEFT-side menu surface in split mode: must clip its contents (so menu
+ * row chrome and the silver titlebar gradient never bleed past the
+ * panel edge) and cast a soft drop shadow onto the album art panel
+ * to its right. The inset shadow on `.ipod-modern-split-art` does
+ * most of the depth work — this rule just adds a crisp 1px right
+ * edge + a short outer falloff so the menu reads as a foreground
+ * surface in front of the artwork. */
+.ipod-modern-menu-panel {
+  overflow: hidden;
+  box-shadow:
+    2px 0 4px -1px rgba(0, 0, 0, 0.25),
+    inset -1px 0 0 rgba(0, 0, 0, 0.18);
 }
 
 .ipod-modern-split-art-img {
