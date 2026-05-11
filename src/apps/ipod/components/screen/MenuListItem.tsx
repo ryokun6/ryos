@@ -13,9 +13,12 @@ interface MenuListItemProps {
    * Chicago-font row from the original 1st-gen LCD. `"modern"` switches
    * to an iOS 6 UITableViewCell look — Helvetica Neue, white background
    * with a 1px hairline separator, and a glossy blue gradient
-   * selection highlight with white text.
+   * selection highlight with white text. `"zune"` is a Microsoft Zune
+   * (2006) inspired skin: pure black canvas, big lowercase Segoe UI
+   * type, hot-pink magenta accent on the selected row. Only available
+   * when the OS theme is XP or Windows 98.
    */
-  variant?: "classic" | "modern";
+  variant?: "classic" | "modern" | "zune";
 }
 
 const CJK_TEXT_PATTERN =
@@ -34,6 +37,61 @@ export function MenuListItem({
   const hasCjkText =
     CJK_TEXT_PATTERN.test(text) || (value ? CJK_TEXT_PATTERN.test(value) : false);
   const isModern = variant === "modern";
+  const isZune = variant === "zune";
+
+  if (isZune) {
+    // Zune (2006) menu row: black canvas, generous left padding, lowercase
+    // Segoe UI. Selected row paints white text + tiny magenta accent bar at
+    // left edge; idle rows fade to ~55% white. No row backgrounds — the
+    // entire menu reads as a typographic list, the way the original Zune
+    // twist-menu did. No row separator hairlines.
+    return (
+      <div
+        onClick={isLoading ? undefined : onClick}
+        className={cn(
+          "h-full pl-3 pr-2 flex justify-between items-center font-ipod-zune-ui",
+          "ipod-zune-row",
+          isLoading ? "cursor-default" : "cursor-pointer",
+          isSelected && !isLoading
+            ? "ipod-zune-row-selected text-white"
+            : isLoading
+            ? "text-white/55 animate-pulse"
+            : "text-white/55 hover:text-white/80"
+        )}
+      >
+        <span
+          className={cn(
+            "min-w-0 flex-1 mr-2 whitespace-nowrap overflow-hidden text-ellipsis lowercase",
+            "text-[15px] font-semibold tracking-tight leading-none"
+          )}
+        >
+          {text}
+        </span>
+        {value ? (
+          <span
+            className={cn(
+              "shrink-0 lowercase text-[13px] font-normal leading-none tracking-tight",
+              isSelected && !isLoading ? "text-white/85" : "text-white/45"
+            )}
+          >
+            {value}
+          </span>
+        ) : (
+          showChevron && !isLoading && (
+            <span
+              className={cn(
+                "shrink-0 text-[16px] leading-none font-normal",
+                isSelected && !isLoading ? "text-white/90" : "text-white/35"
+              )}
+              aria-hidden
+            >
+              {"›"}
+            </span>
+          )
+        )}
+      </div>
+    );
+  }
 
   if (isModern) {
     // iPod-classic-js SelectableListItem: white row, blue gradient

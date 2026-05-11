@@ -1812,6 +1812,7 @@
         "screen": "Screen",
         "screenClassic": "Classic",
         "screenModern": "Modern",
+        "screenZune": "Zune",
         "uiTheme": "UI Theme",
         "deviceTheme": "Device Theme",
         "fullScreen": "Full Screen",

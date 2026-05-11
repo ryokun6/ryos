@@ -7,8 +7,9 @@ interface ScrollbarProps {
     | React.MutableRefObject<HTMLDivElement | null>;
   backlightOn: boolean;
   menuMode: boolean;
-  /** Classic = monochrome blue track; modern = thin iOS 6 indicator. */
-  variant?: "classic" | "modern";
+  /** Classic = monochrome blue track; modern = thin iOS 6 indicator;
+   *  zune = thin white pill on black (matches Zune's minimal chrome). */
+  variant?: "classic" | "modern" | "zune";
 }
 
 export function Scrollbar({
@@ -18,6 +19,7 @@ export function Scrollbar({
   variant = "classic",
 }: ScrollbarProps) {
   const isModern = variant === "modern";
+  const isZune = variant === "zune";
   const thumbRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -71,6 +73,27 @@ export function Scrollbar({
   }, [containerRef, menuMode]);
 
   if (!menuMode) return null;
+
+  if (isZune) {
+    // Zune scroll indicator: thin white pill, no visible track.
+    return (
+      <div className="absolute right-[2px] top-[1px] bottom-[1px] w-[2px] z-20 pointer-events-none">
+        <div
+          ref={trackRef}
+          className="w-full h-full bg-transparent"
+          style={{ opacity: 0 }}
+        />
+        <div
+          ref={thumbRef}
+          className="absolute right-0 bg-white/60 rounded-full"
+          style={{
+            width: "2px",
+            display: "none",
+          }}
+        />
+      </div>
+    );
+  }
 
   if (isModern) {
     // iOS 6 scroll indicator: no visible track, only a thin rounded grey

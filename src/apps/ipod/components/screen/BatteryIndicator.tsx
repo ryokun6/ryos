@@ -4,8 +4,9 @@ import type { BatteryManager } from "../../types";
 
 interface BatteryIndicatorProps {
   backlightOn: boolean;
-  /** Classic = monochrome blue 4-bar; modern = continuous green fill. */
-  variant?: "classic" | "modern";
+  /** Classic = monochrome blue 4-bar; modern = continuous green fill;
+   *  zune = white outline + white fill (matches the all-white Zune chrome). */
+  variant?: "classic" | "modern" | "zune";
 }
 
 export function BatteryIndicator({
@@ -13,6 +14,7 @@ export function BatteryIndicator({
   variant = "classic",
 }: BatteryIndicatorProps) {
   const isModern = variant === "modern";
+  const isZune = variant === "zune";
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const [isCharging, setIsCharging] = useState<boolean>(false);
   const [animationFrame, setAnimationFrame] = useState<number>(1);
@@ -62,6 +64,27 @@ export function BatteryIndicator({
   // Use fallback if no battery level detected
   const level = batteryLevel ?? 1.0;
   const filledBars = isCharging ? animationFrame : Math.ceil(level * 4);
+
+  if (isZune) {
+    // Zune status bar battery: hairline white outline with a continuous
+    // white fill. Low (<=20%) tints with the Zune magenta accent.
+    const fillPercent = Math.max(0, Math.min(1, level)) * 100;
+    const isLow = !isCharging && level <= 0.2;
+    return (
+      <div className="flex items-center">
+        <div className="relative h-[8px] w-[17px] shrink-0 overflow-hidden border border-white/80 bg-transparent">
+          <div
+            className={cn(
+              "absolute inset-y-0 left-0 transition-[width] duration-300",
+              isLow ? "bg-[#ed008c]" : "bg-white"
+            )}
+            style={{ width: `${fillPercent}%` }}
+          />
+        </div>
+        <div className="-ml-[1px] h-[4px] w-[2px] shrink-0 bg-white/80" />
+      </div>
+    );
+  }
 
   if (isModern) {
     // Glossy grey shell (rounded), green fill clipped inside shell; nib overlaps the

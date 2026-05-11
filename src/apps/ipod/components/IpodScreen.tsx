@@ -37,6 +37,7 @@ import { MeshGradientBackground } from "@/components/shared/MeshGradientBackgrou
 import { WaterBackground } from "@/components/shared/WaterBackground";
 import type { IpodScreenProps } from "../types";
 import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore";
+import { useThemeStore } from "@/stores/useThemeStore";
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
@@ -55,10 +56,15 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = 24;
+// Zune reuses the same 24px row rhythm as classic/modern so the shared
+// virtualization geometry (scroll offsets, item snapping) doesn't have to
+// branch on variant.
+const MENU_ITEM_HEIGHT_ZUNE = 24;
 // Modern titlebar matches the row height exactly so the menu reads as
 // a single continuous list and the silver header doesn't feel chunkier
 // than the content below.
 const MODERN_TITLEBAR_HEIGHT = MENU_ITEM_HEIGHT_MODERN;
+const ZUNE_TITLEBAR_HEIGHT = MENU_ITEM_HEIGHT_ZUNE;
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -264,9 +270,22 @@ export function IpodScreen({
   // blue gradients) vs. classic monochrome iPod LCD. Read directly from
   // the store so the parent doesn't have to thread one more prop, and so
   // toggling from the menubar updates the screen instantly.
-  const uiVariant = useIpodStore((s) => s.uiVariant);
-  const isModernUi = uiVariant === "modern";
-  const menuItemHeight = isModernUi
+  const storedUiVariant = useIpodStore((s) => s.uiVariant);
+  // The Zune skin is auto-applied for the Windows XP and Windows 98 OS
+  // themes — it does not appear under System 7 or macOS Aqua. Computed
+  // here so the entire screen subtree (titlebar, rows, scrollbar,
+  // battery, status overlay, now-playing) themes from a single source.
+  const osTheme = useThemeStore((s) => s.current);
+  const isXpOrWin98Theme = osTheme === "xp" || osTheme === "win98";
+  const effectiveUiVariant: "classic" | "modern" | "zune" = isXpOrWin98Theme
+    ? "zune"
+    : storedUiVariant;
+  const uiVariant = effectiveUiVariant;
+  const isModernUi = effectiveUiVariant === "modern";
+  const isZuneUi = effectiveUiVariant === "zune";
+  const menuItemHeight = isZuneUi
+    ? MENU_ITEM_HEIGHT_ZUNE
+    : isModernUi
     ? MENU_ITEM_HEIGHT_MODERN
     : MENU_ITEM_HEIGHT_CLASSIC;
   const [showShellTitleInTitlebar, setShowShellTitleInTitlebar] =
@@ -448,11 +467,15 @@ export function IpodScreen({
         "relative w-full h-[150px] border border-black border-2 rounded-[2px] overflow-hidden transition-all duration-500 select-none no-select-all",
         // The classic LCD filter scan-lines/flicker overlay only makes
         // sense for the monochrome 1st-gen LCD look. The modern iOS 6
-        // skin is rendered on a Retina-style high-DPI display, so we
+        // skin and Zune skin are rendered on flat color displays, so we
         // skip the CRT-style filter even when the underlying setting
         // is enabled.
-        lcdFilterOn && !isModernUi ? "lcd-screen" : "",
-        isModernUi
+        lcdFilterOn && !isModernUi && !isZuneUi ? "lcd-screen" : "",
+        isZuneUi
+          ? // Pure black Zune canvas; LCD reflection/scan-lines are
+            // intentionally suppressed so the white type stays crisp.
+            "ipod-zune-screen bg-black"
+          : isModernUi
           ? // White table surface; avoid neutral chassis fills—they read as
             // gray stripes under the virtualized list and in empty space.
             "ipod-modern-screen bg-white"
@@ -462,6 +485,7 @@ export function IpodScreen({
         lcdFilterOn &&
           backlightOn &&
           !isModernUi &&
+          !isZuneUi &&
           "shadow-[0_0_10px_2px_rgba(197,224,245,0.05)]"
       )}
       style={{
@@ -476,12 +500,12 @@ export function IpodScreen({
       }}
     >
       {/* LCD screen overlay with scan lines (classic skin only) */}
-      {lcdFilterOn && !isModernUi && (
+      {lcdFilterOn && !isModernUi && !isZuneUi && (
         <div className="absolute inset-0 pointer-events-none z-25 lcd-scan-lines"></div>
       )}
 
       {/* Glass reflection effect (classic skin only) */}
-      {lcdFilterOn && !isModernUi && (
+      {lcdFilterOn && !isModernUi && !isZuneUi && (
         <div className="absolute inset-0 pointer-events-none z-25 lcd-reflection"></div>
       )}
 
@@ -743,13 +767,22 @@ export function IpodScreen({
           //   - Classic: 24px (h-6) — Chicago bitmap glyphs need the room.
           //   - Modern: matches the row height (24px) so the silver
           //     header reads as part of the same list rhythm.
+          //   - Zune: same 24px rhythm; flat black strip with a faint
+          //     1px white hairline below it.
           "shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
-          isModernUi
+          isZuneUi
+            ? "ipod-zune-titlebar text-white font-ipod-zune-ui text-[14px] font-semibold lowercase tracking-tight"
+            : isModernUi
             ? "ipod-modern-titlebar text-black font-ipod-modern-ui text-[15px] font-semibold"
             : "h-6 min-h-6 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
         style={
-          isModernUi
+          isZuneUi
+            ? {
+                height: ZUNE_TITLEBAR_HEIGHT,
+                minHeight: ZUNE_TITLEBAR_HEIGHT,
+              }
+            : isModernUi
             ? {
                 height: MODERN_TITLEBAR_HEIGHT,
                 minHeight: MODERN_TITLEBAR_HEIGHT,
@@ -760,7 +793,9 @@ export function IpodScreen({
         <div
           className={cn(
             "flex items-center justify-start",
-            isModernUi
+            isZuneUi
+              ? "w-6 font-ipod-zune-ui text-[13px] font-semibold text-white/90"
+              : isModernUi
               ? "w-6 font-ipod-modern-ui font-semibold text-[15px] text-black/80"
               : `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
           )}
@@ -768,7 +803,7 @@ export function IpodScreen({
           <div
             className={cn(
               "flex items-center justify-center",
-              isModernUi ? "w-4 h-4" : "w-4 h-4 mt-0.5"
+              isZuneUi ? "w-4 h-4" : isModernUi ? "w-4 h-4" : "w-4 h-4 mt-0.5"
             )}
           >
             {isPlaying ? "▶" : "⏸︎"}
@@ -778,9 +813,11 @@ export function IpodScreen({
           text={titlebarTitle}
           isPlaying
           scrollStartDelaySec={1}
-          fadeEdges={isModernUi}
+          fadeEdges={isModernUi || isZuneUi}
           className={cn(
             "flex-1 min-w-0 px-1 text-center leading-none",
+            isZuneUi &&
+              "font-ipod-zune-ui text-[14px] font-semibold text-white lowercase tracking-tight",
             isModernUi &&
               cn(
                 "font-ipod-modern-ui text-[15px] font-semibold",
@@ -802,7 +839,9 @@ export function IpodScreen({
           !showVideo && "z-30"
         )}
         style={{
-          height: isModernUi
+          height: isZuneUi
+            ? `calc(100% - ${ZUNE_TITLEBAR_HEIGHT}px)`
+            : isModernUi
             ? `calc(100% - ${MODERN_TITLEBAR_HEIGHT}px)`
             : "calc(100% - 24px)",
         }}
@@ -905,7 +944,7 @@ export function IpodScreen({
               <div
                 className={cn(
                   "flex-1 flex flex-col overflow-visible px-2",
-                  isModernUi ? "pt-1.5 pb-0.5" : "py-1"
+                  isZuneUi ? "pt-1.5 pb-0.5" : isModernUi ? "pt-1.5 pb-0.5" : "py-1"
                 )}
               >
                 {currentTrack && nowPlayingDisplayTrack ? (
@@ -913,7 +952,9 @@ export function IpodScreen({
                     <div
                       className={cn(
                         "flex items-center justify-between gap-2",
-                        isModernUi
+                        isZuneUi
+                          ? "font-ipod-zune-ui text-[11px] font-normal leading-[1.06] text-white/60 lowercase tracking-tight"
+                          : isModernUi
                           ? "font-ipod-modern-ui text-[12px] font-normal leading-[1.06] text-[rgb(99,101,103)]"
                           : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
                         nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
@@ -921,21 +962,87 @@ export function IpodScreen({
                     >
                       <span>
                         {currentTrack?.appleMusicPlayParams?.stationId
-                          ? "LIVE"
+                          ? isZuneUi
+                            ? "live"
+                            : "LIVE"
                           : isAppleMusicCollectionShell
-                            ? "MIX"
-                            : `${currentIndex + 1} of ${tracksLength}`}
+                            ? isZuneUi
+                              ? "mix"
+                              : "MIX"
+                            : isZuneUi
+                              ? `${currentIndex + 1} of ${tracksLength}`
+                              : `${currentIndex + 1} of ${tracksLength}`}
                       </span>
                       {isShuffled && (
                         <Shuffle
                           className="shrink-0"
-                          size={isModernUi ? 12 : 13}
+                          size={isZuneUi ? 12 : isModernUi ? 12 : 13}
                           weight="bold"
                           aria-label="shuffle on"
                         />
                       )}
                     </div>
-                    {isModernUi ? (
+                    {isZuneUi ? (
+                      <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
+                        {/* Zune now-playing artwork: hard-edged square sleeve, no
+                            reflection — Zune showed flat covers, not Cover Flow. */}
+                        <div
+                          className="relative shrink-0 self-start overflow-hidden bg-neutral-900"
+                          style={{
+                            width: MODERN_NOW_PLAYING_ART_PX,
+                            height: MODERN_NOW_PLAYING_ART_PX,
+                          }}
+                        >
+                          {coverUrl ? (
+                            <img
+                              src={coverUrl}
+                              alt=""
+                              draggable={false}
+                              className="size-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex size-full items-center justify-center text-[22px] leading-none text-white/30 select-none">
+                              ♪
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          className={cn(
+                            "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
+                            "[&>*]:py-0",
+                            "[&>*:not(:first-child)]:-mt-[2px]",
+                            "font-ipod-zune-ui"
+                          )}
+                        >
+                          <ScrollingText
+                            text={nowPlayingDisplayTrack.title}
+                            isPlaying={isPlaying}
+                            scrollStartDelaySec={1}
+                            align="left"
+                            fadeEdges
+                            className="leading-[1.08] text-[16px] font-semibold text-white lowercase tracking-tight"
+                          />
+                          <ScrollingText
+                            text={nowPlayingDisplayTrack.artist || ""}
+                            isPlaying={isPlaying}
+                            scrollStartDelaySec={1}
+                            align="left"
+                            fadeEdges
+                            className="leading-[1.08] text-[12px] font-normal text-white/65 lowercase tracking-tight"
+                          />
+                          {nowPlayingDisplayTrack.album && (
+                            <ScrollingText
+                              text={nowPlayingDisplayTrack.album}
+                              isPlaying={isPlaying}
+                              scrollStartDelaySec={1}
+                              align="left"
+                              fadeEdges
+                              className="leading-[1.08] text-[12px] font-normal text-white/45 lowercase tracking-tight"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ) : isModernUi ? (
                       <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
                         <ModernNowPlayingArtwork coverUrl={coverUrl} />
                         <div
@@ -1009,7 +1116,22 @@ export function IpodScreen({
                         nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
                       )}
                     >
-                      {isModernUi ? (
+                      {isZuneUi ? (
+                        // Thin Zune progress bar — flat hairline track with
+                        // a magenta accent fill (Zune's signature pink).
+                        <div className="ipod-zune-progress h-[3px] w-full overflow-hidden">
+                          <div
+                            className="ipod-zune-progress-fill h-full transition-all duration-200 ease-out"
+                            style={{
+                              width: `${
+                                totalTime > 0
+                                  ? (elapsedTime / totalTime) * 100
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      ) : isModernUi ? (
                         // Same aqua bar as About This Finder memory rows.
                         <div className="aqua-progress h-[9px] w-full rounded-none">
                           <div
@@ -1040,7 +1162,9 @@ export function IpodScreen({
                       <div
                         className={cn(
                           "w-full flex justify-between",
-                          isModernUi
+                          isZuneUi
+                            ? "font-ipod-zune-ui text-[11px] min-h-[14px] leading-[1.06] mt-1 text-white/55 font-normal tabular-nums lowercase tracking-tight"
+                            : isModernUi
                             ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
                             : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                         )}
@@ -1056,7 +1180,9 @@ export function IpodScreen({
                   <div
                     className={cn(
                       "text-center h-full flex flex-col justify-center items-center",
-                      isModernUi
+                      isZuneUi
+                        ? "font-ipod-zune-ui text-[14px] text-white/55 lowercase tracking-tight"
+                        : isModernUi
                         ? "font-ipod-modern-ui text-[15px] text-[rgb(99,101,103)]"
                         : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
                     )}

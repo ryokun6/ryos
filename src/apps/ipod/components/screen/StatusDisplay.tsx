@@ -1,6 +1,6 @@
 interface StatusDisplayProps {
   message: string;
-  variant?: "classic" | "modern";
+  variant?: "classic" | "modern" | "zune";
 }
 
 export function StatusDisplay({
@@ -8,11 +8,22 @@ export function StatusDisplay({
   variant = "classic",
 }: StatusDisplayProps) {
   const isModern = variant === "modern";
+  const isZune = variant === "zune";
 
   return (
     <div className="absolute top-4 left-4 pointer-events-none">
       <div className="relative">
-        {isModern ? (
+        {isZune ? (
+          <div
+            className="font-ipod-zune-ui text-white text-[15px] font-semibold leading-none lowercase tracking-tight"
+            style={{
+              textShadow:
+                "0 1px 2px rgba(0,0,0,0.6), 0 0 8px rgba(0,0,0,0.45)",
+            }}
+          >
+            {message}
+          </div>
+        ) : isModern ? (
           <div
             className="font-ipod-modern-ui text-white text-[15px] font-semibold leading-none"
             style={{

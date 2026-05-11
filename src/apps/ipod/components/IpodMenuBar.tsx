@@ -847,27 +847,32 @@ export function IpodMenuBar({
             </MenubarSubContent>
           </MenubarSub>
 
-          {/* LCD skin — classic monochrome vs modern iOS-6 */}
-          <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3">
-              {t("apps.ipod.menu.uiTheme")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
-              <MenubarRadioGroup
-                value={uiVariant}
-                onValueChange={(value) =>
-                  setUiVariant(value as "classic" | "modern")
-                }
-              >
-                <MenubarRadioItem value="classic" className="text-md h-6 pr-3">
-                  {t("apps.ipod.menu.screenClassic")}
-                </MenubarRadioItem>
-                <MenubarRadioItem value="modern" className="text-md h-6 pr-3">
-                  {t("apps.ipod.menu.screenModern")}
-                </MenubarRadioItem>
-              </MenubarRadioGroup>
-            </MenubarSubContent>
-          </MenubarSub>
+          {/* LCD skin — classic monochrome vs modern iOS-6.
+              Hidden on XP/98 themes: those auto-apply the Zune skin
+              (set in IpodScreen via `effectiveUiVariant`) and offer no
+              alternate iPod LCD style. */}
+          {!isXpTheme && (
+            <MenubarSub>
+              <MenubarSubTrigger className="text-md h-6 px-3">
+                {t("apps.ipod.menu.uiTheme")}
+              </MenubarSubTrigger>
+              <MenubarSubContent className="px-0">
+                <MenubarRadioGroup
+                  value={uiVariant}
+                  onValueChange={(value) =>
+                    setUiVariant(value as "classic" | "modern")
+                  }
+                >
+                  <MenubarRadioItem value="classic" className="text-md h-6 pr-3">
+                    {t("apps.ipod.menu.screenClassic")}
+                  </MenubarRadioItem>
+                  <MenubarRadioItem value="modern" className="text-md h-6 pr-3">
+                    {t("apps.ipod.menu.screenModern")}
+                  </MenubarRadioItem>
+                </MenubarRadioGroup>
+              </MenubarSubContent>
+            </MenubarSub>
+          )}
 
           {/* Chassis / click wheel cosmetic */}
           <MenubarSub>

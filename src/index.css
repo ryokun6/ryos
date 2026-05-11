@@ -1509,6 +1509,83 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   font-smooth: always !important;
 }
 
+/* =========================================================================
+ * iPod "Zune" UI skin (variant === "zune")
+ *
+ * Microsoft Zune (2006-2012) inspired LCD. Auto-applied on the iPod when
+ * the OS theme is Windows XP or Windows 98 — it does not appear under
+ * System 7 or macOS Aqua. Black canvas, big lowercase Segoe UI type, and
+ * the signature Zune magenta accent (#ed008c).
+ *
+ * IMPORTANT: row/titlebar dimensions match the classic + modern skins so
+ * the shared menu virtualization geometry stays identical across variants.
+ * ========================================================================= */
+
+.font-ipod-zune-ui {
+  /* Segoe UI is XP/Vista/Win7's UI face and the closest stock match to
+   * Zune's typography. Falls back through the same Windows + cross-platform
+   * stack as the rest of the OS chrome. */
+  font-family: "Segoe UI", "Segoe UI Variable", Tahoma, Geneva, Verdana,
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial,
+    system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: always;
+  letter-spacing: -0.005em;
+}
+
+.ipod-zune-screen {
+  background-color: #000000;
+  color: #ffffff;
+  font-family: "Segoe UI", "Segoe UI Variable", Tahoma, Geneva, Verdana,
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial,
+    system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Zune titlebar: flat dark strip, hairline white underline so the menu
+ * title separates from the list rhythm without breaking the all-black look. */
+.ipod-zune-titlebar {
+  background-color: #000000;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* Selected row: transparent fill so the row reads as typography, plus a
+ * 2px magenta accent bar on the left edge — the canonical Zune selection
+ * affordance. */
+.ipod-zune-row {
+  background-color: transparent;
+  position: relative;
+}
+
+.ipod-zune-row-selected {
+  background-color: rgba(237, 0, 140, 0.12);
+  box-shadow: inset 3px 0 0 #ed008c;
+}
+
+/* Progress bar: thin white track, magenta fill (matches the now-playing
+ * pink accent used across the Zune software player). */
+.ipod-zune-progress {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+.ipod-zune-progress-fill {
+  background-color: #ed008c;
+}
+
+/* macOS theme override mirror — the `.ipod-force-font *` rule in
+ * themes.css force-inherits font-family inside the iPod chassis. The
+ * Zune skin only renders under XP/98 so this guard is defensive, but
+ * we still want Segoe UI to win there for parity. */
+:root[data-os-theme="macosx"] .ipod-force-font .font-ipod-zune-ui,
+:root[data-os-theme="macosx"] .font-ipod-zune-ui {
+  font-family: "Segoe UI", "Segoe UI Variable", Tahoma, Geneva, Verdana,
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial,
+    system-ui, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
 .widget-strip-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
