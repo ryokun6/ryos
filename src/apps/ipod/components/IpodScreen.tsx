@@ -915,13 +915,15 @@ export function IpodScreen({
           )}
         >
           {isModernUi && (
-            // Compact play/pause status glyph painted with the same
-            // top-to-bottom blue gradient as the row-selection
-            // highlight, matching the iOS 6 / iPod nano 6G "tinted"
-            // status-bar look. Inline SVG with an embedded gradient
-            // so it stays a single sharp shape on any DPI.
-            <div className="flex items-center justify-center w-3 h-3">
-              <IpodModernPlayPauseIcon playing={isPlaying} size={10} />
+            // Play/pause status glyph painted with the same top-to-
+            // bottom blue gradient as the row-selection highlight,
+            // matching the iOS 6 / iPod nano 6G "tinted" status-bar
+            // look. Inline SVG with an embedded gradient so it stays
+            // a single sharp shape on any DPI. Sized at 14px to
+            // dominate the 17px titlebar (visually matches the title
+            // type x-height + ascender).
+            <div className="flex items-center justify-center w-[14px] h-[14px]">
+              <IpodModernPlayPauseIcon playing={isPlaying} size={14} />
             </div>
           )}
           <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />

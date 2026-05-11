@@ -1449,24 +1449,23 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   color: #ffffff;
 }
 
-/* iPod nano 6G/7G battery, "half-glossy" treatment:
- *   - Container: dark grey shell with a 1px hairline and a glossy white
- *     highlight covering ONLY the top half (fades to transparent at
- *     the midline) — same lacquer look as the iOS 6 status bar
- *     battery icon.
- *   - Fill: green (or red at ≤20%) carrying the same top-half gloss so
- *     the charge level reads as a single glossy lozenge.
- *   - Cap: tiny matched-grey nib protruding past the right curve.
+/* iPod-classic-js BatteryIndicator (sampled directly):
+ *   ChargeLevelContainer: 1px solid #626262, background #54585b w/ a
+ *     gloss `linear-gradient(180deg, transparent 25%, 65%, rgba(255,255,255,.5))`
+ *   ChargeLevel: green #A5E07F (or red #D17F6B at <=20%) overlaid with a
+ *     specular highlight + dark base.
+ *   BatteryCap: light grey #c4c4c4 with a #626262 outline.
  *
- * Sized at 14×7 with a 2×3 cap for the slim 17px modern titlebar. */
+ * Sized at 14×7 with a 2×3 cap for the slim 17px modern titlebar — the
+ * gradient stops are unchanged from the iPod-classic-js reference. */
 .ipod-modern-battery-container {
   border: 1px solid #626262;
   background-color: #54585b;
   background-image: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.55) 0%,
-    rgba(255, 255, 255, 0.18) 45%,
-    transparent 50%
+    transparent 25%,
+    transparent 65%,
+    rgba(255, 255, 255, 0.5) 100%
   );
 }
 
@@ -1474,9 +1473,13 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background-color: #a5e07f;
   background-image: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.6) 0%,
-    rgba(255, 255, 255, 0.15) 45%,
-    transparent 50%
+    transparent 10%,
+    rgba(255, 255, 255, 0.5) 20%,
+    transparent 35%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.2) 55%,
+    rgba(0, 0, 0, 0.3) 65%,
+    rgba(0, 0, 0, 0.4) 80%
   );
 }
 
