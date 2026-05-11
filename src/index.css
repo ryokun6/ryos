@@ -1505,9 +1505,14 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * the menu's drop shadow lands on top of the artwork. We keep only
  * a 1px hairline at the very left edge here — the depth illusion
  * comes from `.ipod-modern-menu-panel`'s drop shadow, not from a
- * second inset shadow stacked on top of it. */
+ * second inset shadow stacked on top of it.
+ *
+ * Background is pure black so it reads as a "backface" behind the
+ * cover artwork — as the cover art image fades out during the
+ * split→full transition the visible backing is solid black instead
+ * of leaking the white screen color through. */
 .ipod-modern-split-art {
-  background: #1a1a1a;
+  background: #000;
   box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.18);
 }
 
@@ -1521,9 +1526,22 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * split mode, so the shadow runs unbroken down the entire right
  * edge of the menu surface. No inset line on the right — that read
  * as a hard border next to the art; depth comes from the outer
- * drop-shadow layers only. */
+ * drop-shadow layers only.
+ *
+ * The class is kept mounted on the menu wrapper for every modern UI
+ * frame so the box-shadow can transition smoothly as the menu width
+ * animates split↔full. Default state has both shadow layers at zero
+ * alpha; the `.is-split` modifier fades them in. Combined with a
+ * `transition: box-shadow ...` on the wrapper this gives a smooth
+ * fade of the depth shadow in lock-step with the width animation. */
 .ipod-modern-menu-panel {
   overflow: hidden;
+  box-shadow:
+    4px 0 8px -2px rgba(0, 0, 0, 0),
+    2px 0 3px -1px rgba(0, 0, 0, 0);
+}
+
+.ipod-modern-menu-panel.is-split {
   box-shadow:
     4px 0 8px -2px rgba(0, 0, 0, 0.28),
     2px 0 3px -1px rgba(0, 0, 0, 0.18);

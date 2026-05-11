@@ -1382,40 +1382,68 @@ export function IpodScreen({
       {isModernUi && menuMode && (
         <div
           className={cn(
+            // Outer container: width animates 50% ↔ 0% in lock-step with
+            // the menu panel's 50% ↔ 100% width animation. We do NOT
+            // fade the container's own opacity — the panel's solid-black
+            // background must remain visible as the cover image fades
+            // off so it reads as a true "black backface" peeking out
+            // from under the covers (instead of letting the white
+            // screen leak through a half-faded panel).
             "ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[5] overflow-hidden",
             splitLayoutTransitionReady &&
-              "transition-[width,opacity] duration-300 ease-in-out motion-reduce:transition-none"
+              "transition-[width] duration-300 ease-in-out motion-reduce:transition-none"
           )}
           style={{
             width: showSplitMenuArt ? MODERN_SPLIT_HALF : "0%",
-            opacity: showSplitMenuArt ? 1 : 0,
           }}
           aria-hidden
         >
-          {splitArtUrl ? (
-            <AnimatePresence initial={false} mode="sync">
-              <motion.img
-                key={splitArtUrl}
-                src={splitArtUrl}
-                alt=""
-                draggable={false}
-                className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.35, ease: "easeInOut" }}
-              />
-            </AnimatePresence>
-          ) : null}
+          {/* Cover art layer: fades on its OWN opacity track, leaving
+           *  the parent panel at full opacity. When `showSplitMenuArt`
+           *  flips off, the image fades to 0 over the same 300ms
+           *  window as the width transition — revealing the solid
+           *  black backface beneath before the column clips away. */}
+          <div
+            className={cn(
+              "absolute inset-0",
+              splitLayoutTransitionReady &&
+                "transition-opacity duration-300 ease-in-out motion-reduce:transition-none"
+            )}
+            style={{ opacity: showSplitMenuArt ? 1 : 0 }}
+          >
+            {splitArtUrl ? (
+              <AnimatePresence initial={false} mode="sync">
+                <motion.img
+                  key={splitArtUrl}
+                  src={splitArtUrl}
+                  alt=""
+                  draggable={false}
+                  className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                />
+              </AnimatePresence>
+            ) : null}
+          </div>
         </div>
       )}
       {isModernUi ? (
         <div
           className={cn(
-            "relative flex min-h-0 flex-col overflow-hidden z-10 h-full",
-            showSplitMenuArt && "ipod-modern-menu-panel",
+            // `ipod-modern-menu-panel` is kept mounted on every modern
+            // UI frame (not gated on `showSplitMenuArt`) so its
+            // box-shadow can transition smoothly. The `.is-split`
+            // modifier fades the shadow alphas in/out as the menu
+            // animates 50%↔100%, in lock-step with the width transition
+            // below. The split-art column to the right meanwhile fades
+            // its cover image off, revealing the panel's solid-black
+            // backface (see `.ipod-modern-split-art`).
+            "relative flex min-h-0 flex-col overflow-hidden z-10 h-full ipod-modern-menu-panel",
+            showSplitMenuArt && "is-split",
             splitLayoutTransitionReady &&
-              "transition-[width] duration-300 ease-in-out motion-reduce:transition-none"
+              "transition-[width,box-shadow] duration-300 ease-in-out motion-reduce:transition-none"
           )}
           style={{
             width: menuMode
