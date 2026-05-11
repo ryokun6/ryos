@@ -113,6 +113,9 @@ export function IpodAppComponent({
     setIsSyncModeOpen,
     currentTrack,
     lyricsSourceOverride,
+    lyricsTitle,
+    lyricsArtist,
+    lyricsSongId,
     fullscreenCoverUrl,
     fullScreenLyricsControls,
     furiganaMap,
@@ -861,10 +864,21 @@ export function IpodAppComponent({
           <LyricsSearchDialog
             isOpen={isLyricsSearchDialogOpen}
             onOpenChange={setIsLyricsSearchDialogOpen}
-            trackId={currentTrack.id}
-            trackTitle={currentTrack.title}
-            trackArtist={currentTrack.artist}
-            initialQuery={`${currentTrack.title} ${currentTrack.artist || ""}`.trim()}
+            // Search lyrics for the *actual song* that's playing, not
+            // the iPod track shell. For Apple Music stations and
+            // playlists `lyricsTitle` / `lyricsArtist` / `lyricsSongId`
+            // come from MusicKit's live `mediaItemDidChange` metadata,
+            // so we never use the station / playlist name as the
+            // search query. For library tracks they fall through to
+            // `currentTrack`. They are empty for a collection that
+            // hasn't received its first MusicKit media-item event
+            // yet — let the dialog render with an empty query so the
+            // user can still type one manually rather than searching
+            // for "Today's Hits".
+            trackId={lyricsSongId || currentTrack.id}
+            trackTitle={lyricsTitle}
+            trackArtist={lyricsArtist}
+            initialQuery={`${lyricsTitle} ${lyricsArtist || ""}`.trim()}
             onSelect={handleLyricsSearchSelect}
             onReset={handleLyricsSearchReset}
             hasOverride={!!lyricsSourceOverride}
