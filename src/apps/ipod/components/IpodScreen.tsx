@@ -40,7 +40,7 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 
 // Fixed row height for the iPod menu list. Each `MenuListItem` is a
 // single-line row; the classic skin's Chicago glyphs need 24px row height at
-// 16px type, while the modern (color) skin fits **21px** rows with **15px**
+// 16px type, while the modern (color) skin fits **24px** rows with **15px**
 // Myriad / system UI to match nano 6G/7G density without touching classic.
 //
 // We virtualize EVERY menu — not just huge ones — so item geometry
@@ -54,7 +54,7 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // per-menu choice, so a single value applies cleanly to all menus and
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
-const MENU_ITEM_HEIGHT_MODERN = 21;
+const MENU_ITEM_HEIGHT_MODERN = 24;
 // Modern titlebar matches the row height exactly so the menu reads as
 // a single continuous list and the silver header doesn't feel chunkier
 // than the content below.
@@ -741,11 +741,11 @@ export function IpodScreen({
         className={cn(
           // Header height differs by skin:
           //   - Classic: 24px (h-6) — Chicago bitmap glyphs need the room.
-          //   - Modern: matches the row height (21px) so the silver
+          //   - Modern: matches the row height (24px) so the silver
           //     header reads as part of the same list rhythm.
           "shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
           isModernUi
-            ? "ipod-modern-titlebar text-black font-ipod-modern-ui text-[15px]"
+            ? "ipod-modern-titlebar text-black font-ipod-modern-ui text-[15px] font-semibold"
             : "h-6 min-h-6 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
         style={
@@ -761,7 +761,7 @@ export function IpodScreen({
           className={cn(
             "flex items-center justify-start",
             isModernUi
-              ? "w-6 font-ipod-modern-ui font-normal text-[15px] text-black/80"
+              ? "w-6 font-ipod-modern-ui font-semibold text-[15px] text-black/80"
               : `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
           )}
         >

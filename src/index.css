@@ -1415,8 +1415,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  *   background: linear-gradient(180deg, #feffff 0%, #b1b6b9 100%);
  *   border-bottom: 1px solid #7995a3;
  *
- * The modern titlebar is **21px** tall (`MENU_ITEM_HEIGHT_MODERN`; vs.
- * classic's fixed **24px** title strip) — keeps list rhythm tight like the nano.
+ * The modern titlebar is **24px** tall (`MENU_ITEM_HEIGHT_MODERN`, same rhythm as
+ * classic's title strip height) — enough line-height room so row labels avoid clipping
+ * ascenders/descenders next to nano-style typography.
  * The hairline is drawn via inset box-shadow so it doesn't
  * add height when the existing border-b utility is also present. */
 .ipod-modern-titlebar {

@@ -37,12 +37,14 @@ export function MenuListItem({
 
   if (isModern) {
     // iPod-classic-js SelectableListItem: white row, blue gradient
-    // selection, no separator. Matches IpodScreen's compact modern row (**21px**) + uniform **15px** labels for title + rows. Classic unchanged (16px Chicago).
+    // selection highlight, no separator. Rows are compact (**24px**) with **15px** type;
+    // leading-normal + horizontal-only ellipsis keeps ascenders/descenders intact. Classic unchanged (16px Chicago).
     return (
       <div
         onClick={isLoading ? undefined : onClick}
         className={cn(
-          "h-full pl-2 pr-2 font-ipod-modern-ui flex justify-between items-center",
+          /* items-stretch + inner flex items-center: line-box ascent no longer floats labels high */
+          "h-full pl-1.5 pr-2 font-ipod-modern-ui flex justify-between items-stretch",
           "ipod-modern-row",
           isLoading ? "cursor-default" : "cursor-pointer",
           isSelected && !isLoading
@@ -52,17 +54,21 @@ export function MenuListItem({
             : "text-black"
         )}
       >
-        <span
-          className={cn(
-            "whitespace-nowrap overflow-hidden text-ellipsis flex-1 mr-2 text-[15px] font-medium leading-[1.15]"
-          )}
-        >
-          {text}
+        <span className="flex min-h-0 min-w-0 flex-1 items-center mr-2">
+          <span
+            className={cn(
+              /* ellipsis needs overflow control; truncate uses overflow:hidden and clips glyphs vertically */
+              "max-w-full min-w-0 block overflow-x-clip overflow-y-visible text-ellipsis whitespace-nowrap",
+              "text-[15px] font-semibold leading-normal"
+            )}
+          >
+            {text}
+          </span>
         </span>
         {value ? (
           <span
             className={cn(
-              "flex-shrink-0 leading-[1.15] text-[15px] font-normal",
+              "flex shrink-0 items-center text-[15px] font-semibold leading-normal",
               isSelected && !isLoading
                 ? "text-white/90"
                 : "text-[rgb(99,101,103)]"
@@ -77,8 +83,8 @@ export function MenuListItem({
             // arrow_right.svg used in iPod-classic-js.
             <span
               className={cn(
-                "flex-shrink-0 leading-none font-normal",
-                "text-[15px]",
+                "flex shrink-0 items-center justify-center font-normal leading-none",
+                "text-[19px]",
                 isSelected && !isLoading ? "text-white/95" : "text-[#b8b8bc]"
               )}
               aria-hidden
