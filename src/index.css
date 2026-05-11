@@ -1456,9 +1456,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  *     specular highlight + dark base.
  *   BatteryCap: light grey #c4c4c4 with a #626262 outline.
  *
- * The bar count is irrelevant in this skin — the CSS draws a continuous
- * fill % rather than 4 segments. The component handles the percentage
- * sampling. */
+ * Sized at 14×7 with a 2×3 cap for the slim 17px modern titlebar — the
+ * gradient stops are unchanged from the iPod-classic-js reference. */
 .ipod-modern-battery-container {
   border: 1px solid #626262;
   background-color: #54585b;
@@ -1492,7 +1491,65 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background-color: #c4c4c4;
   border: 1px solid #626262;
   border-left-width: 0;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 2px 2px 0;
+}
+
+/* iPod 6G/7G "split menu" view: the right HALF of the screen shows
+ * the now-playing album art with a slow Ken Burns zoom + pan, while
+ * the menu list + titlebar are clamped to the left half. Matches the
+ * "Music + Now Playing" layout on the iPod classic 6G/7G reference
+ * photo. The container clips the over-scaled image; the inner image
+ * animates `transform`.
+ *
+ * The art panel sits *behind* the menu surface with a soft inset
+ * shadow on its left edge, making it look like the menu (foreground
+ * white panel) is casting a shadow onto the art (background image).
+ * That depth read matches the reference photo where the menu has a
+ * crisp right edge with the art visibly receding behind it. */
+.ipod-modern-split-art {
+  background: #1a1a1a;
+  box-shadow:
+    inset 8px 0 10px -4px rgba(0, 0, 0, 0.55),
+    inset 1px 0 0 rgba(0, 0, 0, 0.35);
+}
+
+/* LEFT-side menu surface in split mode: must clip its contents (so menu
+ * row chrome and the silver titlebar gradient never bleed past the
+ * panel edge) and cast a soft drop shadow onto the album art panel
+ * to its right. The inset shadow on `.ipod-modern-split-art` does
+ * most of the depth work — this rule just adds a crisp 1px right
+ * edge + a short outer falloff so the menu reads as a foreground
+ * surface in front of the artwork. */
+.ipod-modern-menu-panel {
+  overflow: hidden;
+  box-shadow:
+    2px 0 4px -1px rgba(0, 0, 0, 0.25),
+    inset -1px 0 0 rgba(0, 0, 0, 0.18);
+}
+
+.ipod-modern-split-art-img {
+  transform-origin: center center;
+  animation: ipod-modern-ken-burns 16s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes ipod-modern-ken-burns {
+  0% {
+    transform: scale(1.08) translate(-3%, -2%);
+  }
+  50% {
+    transform: scale(1.18) translate(2%, 1%);
+  }
+  100% {
+    transform: scale(1.1) translate(3%, 3%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ipod-modern-split-art-img {
+    animation: none;
+    transform: scale(1.08);
+  }
 }
 
 /* macOS theme override: the `.ipod-force-font *` rule in themes.css sets

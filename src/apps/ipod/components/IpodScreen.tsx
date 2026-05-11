@@ -9,7 +9,7 @@ import {
 } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pause, Play, Shuffle } from "@phosphor-icons/react";
+import { Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { LyricsDisplay } from "./LyricsDisplay";
@@ -59,11 +59,22 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = 21;
-// Modern titlebar matches the row height exactly so the menu reads as
-// a single continuous list and the silver header doesn't feel chunkier
-// than the content below. Keep this linked to the row height so the
-// "titlebar + 6 rows" rhythm stays in sync if either is retuned.
-const MODERN_TITLEBAR_HEIGHT = MENU_ITEM_HEIGHT_MODERN;
+// Modern titlebar is intentionally tighter than the row height. The
+// nano 6G/7G + iPod classic 6G silver header is a slim 17px strip with
+// 12px MyriadPro semibold text — slimmer than each list row so the
+// header reads as a separator, not as another row. Six 21px rows still
+// fit cleanly inside the remaining 133px of screen (21 × 6 = 126), with
+// a 7px tail for the optional Ken Burns split-art column to breathe
+// against the bottom edge.
+const MODERN_TITLEBAR_HEIGHT = 17;
+// The Ken Burns album-art strip rendered alongside the menu in the
+// modern UI takes exactly **half** of the screen width and the FULL
+// screen height — the art panel covers the right half from the very
+// top of the screen down (including the area where the titlebar
+// would otherwise extend), exactly like the iPod classic 6G/7G
+// "Music + Now Playing" split shown in the reference photo. The
+// titlebar + menu list are clamped to the left half in split mode.
+const MODERN_SPLIT_HALF = "50%";
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -76,9 +87,67 @@ function formatPlaybackTime(totalSeconds: number): string {
   )}`;
 }
 
+/**
+ * Inline SVG play/pause indicator for the modern iPod titlebar.
+ *
+ * Uses an embedded `<linearGradient>` so the glyph can be filled with
+ * the same vertical blue gradient as the row-selection highlight
+ * (`linear-gradient(180deg, rgb(60, 184, 255) 0%, rgb(52, 122, 181) 100%)`).
+ * Phosphor icons render with `currentColor` and don't expose a way to
+ * paint a gradient, so this small custom SVG is the cleanest way to
+ * land that look without adding a new icon dep.
+ *
+ * Each instance gets a unique gradient ID — multiple icons may render
+ * in the same DOM (e.g. mini-player + screen titlebar) and SVG defs
+ * are document-scoped.
+ */
+function IpodModernPlayPauseIcon({
+  playing,
+  size = 10,
+}: {
+  playing: boolean;
+  size?: number;
+}) {
+  const gradientId = useMemo(
+    () => `ipod-modern-titlebar-grad-${Math.random().toString(36).slice(2)}`,
+    []
+  );
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-label={playing ? "playing" : "paused"}
+      role="img"
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgb(60, 184, 255)" />
+          <stop offset="100%" stopColor="rgb(52, 122, 181)" />
+        </linearGradient>
+      </defs>
+      {playing ? (
+        <path d="M8 5v14l11-7z" fill={`url(#${gradientId})`} />
+      ) : (
+        <g fill={`url(#${gradientId})`}>
+          <rect x="6" y="5" width="4" height="14" rx="0.5" />
+          <rect x="14" y="5" width="4" height="14" rx="0.5" />
+        </g>
+      )}
+    </svg>
+  );
+}
 
-/** `rotateY` + perspective for left↔right foreshortening; Karaoke-style reflection stacking. */
-const MODERN_NOW_PLAYING_ART_PX = 54;
+
+/** `rotateY` + perspective for left↔right foreshortening; Karaoke-style reflection stacking.
+ *
+ * Cover sized at 60px — comfortably bigger than the original 54px
+ * without crowding the title / artist / album text column to its
+ * right or pushing the reflection down into the progress bar.
+ * Reflection ratio kept at 0.3 (subtler than the prior 0.5) so the
+ * stack stays inside the now-playing row. */
+const MODERN_NOW_PLAYING_ART_PX = 60;
+const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
 const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
   background: "#1a1a1a",
   borderRadius: "3px",
@@ -105,7 +174,7 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
 
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
-  const reflectH = MODERN_NOW_PLAYING_ART_PX * 0.5;
+  const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
 
   return (
     <div
@@ -447,6 +516,13 @@ export function IpodScreen({
 
   const shouldShowLyrics = showLyrics;
 
+  // True when the modern UI should render its iPod 6G/7G classic
+  // "Music + Now Playing" split: titlebar + menu list clamped to the
+  // left half, full-height Ken Burns album art on the right half.
+  // Only meaningful in menu mode with an actual cover URL — otherwise
+  // the screen falls back to the standard full-width chrome.
+  const showSplitMenuArt = isModernUi && menuMode && Boolean(coverUrl);
+
   return (
     <div
       className={cn(
@@ -741,91 +817,143 @@ export function IpodScreen({
         </div>
       )}
 
-      {/* Title bar */}
+      {/* Full-height Ken Burns album art panel covering the right half
+       *  of the screen when the modern UI is in split menu mode.
+       *  Rendered as an absolutely-positioned overlay so it can extend
+       *  from the very top of the screen (over where the titlebar would
+       *  otherwise sit) all the way to the bottom — matching the iPod
+       *  classic 6G/7G "Music + Now Playing" reference photo where the
+       *  album art has no titlebar above it. The titlebar + menu below
+       *  are clamped to the left half so they don't bleed underneath. */}
+      {showSplitMenuArt && coverUrl && (
+        <div
+          className="ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[15] overflow-hidden"
+          style={{ width: MODERN_SPLIT_HALF }}
+          aria-hidden
+        >
+          <img
+            src={coverUrl}
+            alt=""
+            draggable={false}
+            className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
+          />
+        </div>
+      )}
+
+      {/* Title bar
+       *
+       * Modern (nano 6G/7G + iPod classic 6G silver header):
+       *   - Slim 17px strip, 12px MyriadPro semibold black text.
+       *   - Title left-aligned with 6px padding to match the menu
+       *     row text indent (`MenuListItem` uses `pl-1.5 pr-2`).
+       *   - Status icons (play/pause + battery) clustered on the right.
+       *   - Clamped to the LEFT HALF of the screen in split menu mode
+       *     so the album art column extends to the very top edge.
+       *
+       * Classic (1st-gen LCD): unchanged — Chicago glyphs centered with
+       *   play indicator on the left and battery on the right. */}
       <div
         className={cn(
-          // Header height differs by skin:
-          //   - Classic: 24px (h-6) — Chicago bitmap glyphs need the room.
-          //   - Modern: matches the row height (24px) so the silver
-          //     header reads as part of the same list rhythm.
-          "shrink-0 py-0 px-2 flex items-center sticky top-0 z-10",
+          // z-10 (NOT z-20) so the video / lyrics overlay (z-20) cleanly
+          // covers the titlebar when active — the user wants the screen
+          // to read as full-bleed video / lyrics with no chrome on top.
+          // In all other states (menu, now-playing without video, split
+          // menu) the titlebar still renders normally because nothing
+          // higher-z is drawn over it.
+          "shrink-0 py-0 flex items-center sticky top-0 z-10",
           isModernUi
-            ? "ipod-modern-titlebar text-black font-ipod-modern-ui text-[15px] font-semibold"
-            : "h-6 min-h-6 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+            ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-1.5 pr-1.5 gap-1.5"
+            : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+          showSplitMenuArt && "ipod-modern-menu-panel"
         )}
         style={
           isModernUi
             ? {
                 height: MODERN_TITLEBAR_HEIGHT,
                 minHeight: MODERN_TITLEBAR_HEIGHT,
+                width: showSplitMenuArt ? MODERN_SPLIT_HALF : undefined,
               }
             : undefined
         }
       >
-        <div
-          className={cn(
-            "flex items-center justify-start",
-            isModernUi
-              ? "w-6 font-ipod-modern-ui font-semibold text-[15px] text-black/80"
-              : `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
-          )}
-        >
+        {!isModernUi && (
           <div
             className={cn(
-              "flex items-center justify-center",
-              isModernUi ? "w-4 h-4" : "w-4 h-4 mt-0.5"
+              "flex items-center justify-start",
+              `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
             )}
           >
-            {isModernUi ? (
-              isPlaying ? (
-                <Play
-                  size={12}
-                  weight="fill"
-                  aria-label="playing"
-                />
-              ) : (
-                <Pause
-                  size={12}
-                  weight="fill"
-                  aria-label="paused"
-                />
-              )
-            ) : (
-              isPlaying ? "▶" : "⏸︎"
-            )}
+            <div className="flex items-center justify-center w-4 h-4 mt-0.5">
+              {isPlaying ? "▶" : "⏸︎"}
+            </div>
           </div>
-        </div>
+        )}
         <ScrollingText
           text={titlebarTitle}
           isPlaying
           scrollStartDelaySec={1}
           fadeEdges={isModernUi}
+          // ScrollingText defaults align to "center", which forces
+          // `justify-center` and overrides any `text-left` class. The
+          // modern titlebar wants the title hard-aligned to the left
+          // (matching the iPod nano 6G/7G "iPod" / "Now Playing"
+          // header in the reference photo); the classic skin keeps
+          // its centered Chicago glyphs.
+          align={isModernUi ? "left" : "center"}
           className={cn(
-            "flex-1 min-w-0 px-1 text-center leading-none",
-            isModernUi &&
-              cn(
-                "font-ipod-modern-ui text-[15px] font-semibold",
-                "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
-              )
+            "flex-1 min-w-0 leading-none",
+            isModernUi
+              ? cn(
+                  // Slimmer 12px header type matches the iPod 6G/7G photo
+                  // we were referenced to — one full pixel above the
+                  // 11px Helvetica Neue used by iOS 6 status bars but
+                  // still well under the 15px MyriadPro list rows so the
+                  // header reads as secondary chrome.
+                  "text-[12px] font-semibold",
+                  "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+                )
+              : "px-1"
           )}
         />
-        <div className="flex w-6 items-center justify-end">
+        <div
+          className={cn(
+            "flex items-center justify-end",
+            isModernUi ? "shrink-0 gap-1" : "w-6"
+          )}
+        >
+          {isModernUi && (
+            // Play/pause status glyph painted with the same top-to-
+            // bottom blue gradient as the row-selection highlight,
+            // matching the iOS 6 / iPod nano 6G "tinted" status-bar
+            // look. Inline SVG with an embedded gradient so it stays
+            // a single sharp shape on any DPI. Sized at 14px to
+            // dominate the 17px titlebar (visually matches the title
+            // type x-height + ascender).
+            <div className="flex items-center justify-center w-[14px] h-[14px]">
+              <IpodModernPlayPauseIcon playing={isPlaying} size={14} />
+            </div>
+          )}
           <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
         </div>
       </div>
 
       {/* Content area - z-30 only when video is not showing so it can
           receive events. Content height subtracts the titlebar height
-          so the menu/now-playing area is the same in both skins. */}
+          so the menu/now-playing area is the same in both skins.
+          Width clamps to the LEFT HALF of the screen when the split
+          menu Ken Burns art column is showing so the menu list doesn't
+          bleed under the album art. */}
       <div
         className={cn(
           "relative",
-          !showVideo && "z-30"
+          !showVideo && "z-30",
+          showSplitMenuArt && "ipod-modern-menu-panel bg-white"
         )}
         style={{
           height: isModernUi
             ? `calc(100% - ${MODERN_TITLEBAR_HEIGHT}px)`
             : "calc(100% - 24px)",
+          width: showSplitMenuArt ? MODERN_SPLIT_HALF : undefined,
         }}
       >
         <AnimatePresence initial={false} custom={menuDirection} mode="sync">
@@ -962,6 +1090,10 @@ export function IpodScreen({
                         <div
                           className={cn(
                             "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
+                            // Small downward nudge so the first line
+                            // doesn't hug the cover's top edge — matches
+                            // the iPod nano 6G/7G "Now Playing" baseline.
+                            "pt-1",
                             "[&>*]:py-0",
                             "[&>*:not(:first-child)]:-mt-[3px]",
                             "font-ipod-modern-ui"

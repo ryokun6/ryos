@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { ScrollingText } from "./ScrollingText";
 
 interface MenuListItemProps {
   text: string;
@@ -39,9 +40,14 @@ export function MenuListItem({
     // iPod-classic-js SelectableListItem: white row, blue gradient
     // selection highlight, no separator. Rows are compact (**21px**) with **15px** type so
     // titlebar + six rows fit inside the 150px screen (nano 6G/7G density).
-    // leading-normal + horizontal-only ellipsis keeps ascenders/descenders intact even though
-    // the 22.5px line-box slightly exceeds the row — `overflow-y-visible` on the inner span
-    // lets glyphs breathe without clipping. Classic unchanged (16px Chicago, 24px rows).
+    //
+    // Long labels truncate via `ScrollingText` with `fadeEdges`:
+    //   - When the label fits, ScrollingText renders static text.
+    //   - When it overflows, a fade-to-transparent mask appears on the
+    //     right edge (truncation hint) instead of an ellipsis.
+    //   - When the row is also `isSelected`, the marquee animates and
+    //     both edges fade — matches the iPod nano 6G/7G's behavior of
+    //     scrolling the highlighted row's text horizontally.
     return (
       <div
         onClick={isLoading ? undefined : onClick}
@@ -58,15 +64,14 @@ export function MenuListItem({
         )}
       >
         <span className="flex min-h-0 min-w-0 flex-1 items-center mr-2">
-          <span
-            className={cn(
-              /* ellipsis needs overflow control; truncate uses overflow:hidden and clips glyphs vertically */
-              "max-w-full min-w-0 block overflow-x-clip overflow-y-visible text-ellipsis whitespace-nowrap",
-              "text-[15px] font-semibold leading-normal"
-            )}
-          >
-            {text}
-          </span>
+          <ScrollingText
+            text={text}
+            align="left"
+            fadeEdges
+            isPlaying={isSelected && !isLoading}
+            scrollStartDelaySec={0.5}
+            className="max-w-full min-w-0 block text-[15px] font-semibold leading-normal"
+          />
         </span>
         {value ? (
           <span
