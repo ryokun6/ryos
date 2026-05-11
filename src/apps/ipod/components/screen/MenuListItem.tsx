@@ -10,6 +10,11 @@ interface MenuListItemProps {
   value?: string;
   isLoading?: boolean;
   /**
+   * When false, long labels stay static (no horizontal marquee) until the
+   * parent layout has settled — e.g. during split-menu width animation.
+   */
+  allowScrollingMarquee?: boolean;
+  /**
    * Visual skin. `"classic"` keeps the monochrome blue-on-blue
    * Chicago-font row from the original 1st-gen LCD. `"modern"` switches
    * to an iOS 6 UITableViewCell look — Helvetica Neue, white background
@@ -30,6 +35,7 @@ export function MenuListItem({
   showChevron = true,
   value,
   isLoading = false,
+  allowScrollingMarquee = true,
   variant = "classic",
 }: MenuListItemProps) {
   const hasCjkText =
@@ -68,6 +74,7 @@ export function MenuListItem({
             text={text}
             align="left"
             fadeEdges
+            allowMarquee={allowScrollingMarquee}
             isPlaying={isSelected && !isLoading}
             scrollStartDelaySec={0.5}
             className="max-w-full min-w-0 block text-[15px] font-semibold leading-normal"

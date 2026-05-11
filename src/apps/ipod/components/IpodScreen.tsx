@@ -612,6 +612,469 @@ export function IpodScreen({
   // the screen falls back to the standard full-width chrome.
   const showSplitMenuArt = isModernUi && menuMode && Boolean(splitArtUrl);
 
+  // Defer width/opacity transitions until after the first paint so
+  // mounting in split or full layout does not animate from a default.
+  const [splitLayoutTransitionReady, setSplitLayoutTransitionReady] =
+    useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setSplitLayoutTransitionReady(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // While the modern chrome column width animates (split ↔ full menu, or
+  // menu ↔ now playing 50% → 100%) or the menu / now-playing panels swap,
+  // marquee measurement sees unstable clientWidth — suppress until settled.
+  const skipModernChromeMarqueeCooldown = useRef(true);
+  const [modernChromeWidthMarqueeBlocked, setModernChromeWidthMarqueeBlocked] =
+    useState(false);
+  useEffect(() => {
+    if (!isModernUi) {
+      setModernChromeWidthMarqueeBlocked(false);
+      return;
+    }
+    if (skipModernChromeMarqueeCooldown.current) {
+      skipModernChromeMarqueeCooldown.current = false;
+      return;
+    }
+    setModernChromeWidthMarqueeBlocked(true);
+    const id = window.setTimeout(() => {
+      setModernChromeWidthMarqueeBlocked(false);
+    }, 320);
+    return () => window.clearTimeout(id);
+  }, [showSplitMenuArt, menuMode, isModernUi]);
+
+  const skipModernMenuRouteMarqueeCooldown = useRef(true);
+  const [modernMenuRouteMarqueeBlocked, setModernMenuRouteMarqueeBlocked] =
+    useState(false);
+  useEffect(() => {
+    if (!isModernUi) {
+      setModernMenuRouteMarqueeBlocked(false);
+      return;
+    }
+    if (skipModernMenuRouteMarqueeCooldown.current) {
+      skipModernMenuRouteMarqueeCooldown.current = false;
+      return;
+    }
+    setModernMenuRouteMarqueeBlocked(true);
+    const id = window.setTimeout(() => {
+      setModernMenuRouteMarqueeBlocked(false);
+    }, 240);
+    return () => window.clearTimeout(id);
+  }, [menuMode, isModernUi]);
+
+  const modernScrollingMarqueeAllowed =
+    !isModernUi ||
+    (splitLayoutTransitionReady &&
+      !modernChromeWidthMarqueeBlocked &&
+      !modernMenuRouteMarqueeBlocked);
+
+  const menuChrome = (
+    <>
+      {/* Title bar
+       *
+       * Modern (nano 6G/7G + iPod classic 6G silver header):
+       *   - Slim 17px strip, 12px MyriadPro semibold black text.
+       *   - Title left-aligned with 6px padding to match the menu
+       *     row text indent (`MenuListItem` uses `pl-1.5 pr-2`).
+       *   - Status icons (play/pause + battery) clustered on the right.
+       *   - Clamped to the LEFT HALF of the screen in split menu mode
+       *     so the album art column extends to the very top edge.
+       *
+       * Classic (1st-gen LCD): unchanged — Chicago glyphs centered with
+       *   play indicator on the left and battery on the right. */}
+      <div
+        className={cn(
+          // z-10 (NOT z-20) so the video / lyrics overlay (z-20) cleanly
+          // covers the titlebar when active — the user wants the screen
+          // to read as full-bleed video / lyrics with no chrome on top.
+          // In all other states (menu, now-playing without video, split
+          // menu) the titlebar still renders normally because nothing
+          // higher-z is drawn over it.
+          "shrink-0 py-0 flex items-center sticky top-0 z-10",
+          isModernUi
+            ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-1.5 pr-1.5 gap-1.5"
+            : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+        )}
+        style={
+          isModernUi
+            ? {
+                height: MODERN_TITLEBAR_HEIGHT,
+                minHeight: MODERN_TITLEBAR_HEIGHT,
+              }
+            : undefined
+        }
+      >
+        {!isModernUi && (
+          <div
+            className={cn(
+              "flex items-center justify-start",
+              `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
+            )}
+          >
+            <div className="flex items-center justify-center w-4 h-4 mt-0.5">
+              {isPlaying ? "▶" : "⏸︎"}
+            </div>
+          </div>
+        )}
+        <ScrollingText
+          text={titlebarTitle}
+          isPlaying
+          scrollStartDelaySec={1}
+          fadeEdges={isModernUi}
+          allowMarquee={modernScrollingMarqueeAllowed}
+          // ScrollingText defaults align to "center", which forces
+          // `justify-center` and overrides any `text-left` class. The
+          // modern titlebar wants the title hard-aligned to the left
+          // (matching the iPod nano 6G/7G "iPod" / "Now Playing"
+          // header in the reference photo); the classic skin keeps
+          // its centered Chicago glyphs.
+          align={isModernUi ? "left" : "center"}
+          className={cn(
+            "flex-1 min-w-0 leading-none",
+            isModernUi
+              ? cn(
+                  // Slimmer 12px header type matches the iPod 6G/7G photo
+                  // we were referenced to — one full pixel above the
+                  // 11px Helvetica Neue used by iOS 6 status bars but
+                  // still well under the 15px MyriadPro list rows so the
+                  // header reads as secondary chrome.
+                  "text-[12px] font-semibold",
+                  "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
+                )
+              : "px-1"
+          )}
+        />
+        <div
+          className={cn(
+            "flex items-center justify-end",
+            isModernUi ? "shrink-0 gap-1" : "w-6"
+          )}
+        >
+          {isModernUi && (
+            // Play/pause status glyph painted with the same top-to-
+            // bottom blue gradient as the row-selection highlight,
+            // matching the iOS 6 / iPod nano 6G "tinted" status-bar
+            // look. Inline SVG with an embedded gradient so it stays
+            // a single sharp shape on any DPI. Sized at 14px to
+            // dominate the 17px titlebar (visually matches the title
+            // type x-height + ascender).
+            <div
+              className={cn(
+                "flex items-center justify-center w-[14px] h-[14px]",
+                // Same light top highlight as the title line — title uses
+                // [text-shadow:0_1px_0_rgba(255,255,255,0.9)]; SVG paths
+                // use filter drop-shadow so the blue gradient reads with
+                // identical gloss on the status bar chrome.
+                "[filter:drop-shadow(0_1px_0_rgba(255,255,255,0.9))]"
+              )}
+            >
+              <IpodModernPlayPauseIcon playing={isPlaying} size={14} />
+            </div>
+          )}
+          <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
+        </div>
+      </div>
+
+      {/* Content area - z-30 only when video is not showing so it can
+          receive events. Content height subtracts the titlebar height
+          so the menu/now-playing area is the same in both skins.
+          Width clamps to the LEFT HALF of the screen when the split
+          menu Ken Burns art column is showing so the menu list doesn't
+          bleed under the album art. */}
+      <div
+        className={cn(
+          "relative",
+          !showVideo && "z-30",
+          isModernUi && showSplitMenuArt && "bg-white",
+          isModernUi && "flex-1 min-h-0"
+        )}
+        style={
+          isModernUi
+            ? undefined
+            : {
+                height: "calc(100% - 24px)",
+              }
+        }
+      >
+        <AnimatePresence initial={false} custom={menuDirection} mode="sync">
+          {menuMode ? (
+            <motion.div
+              key={`menu-${menuHistory.length}-${currentMenuTitle}`}
+              className="absolute inset-0 flex flex-col h-full"
+              initial="enter"
+              animate="center"
+              exit="exit"
+              variants={menuVariants}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              custom={menuDirection}
+            >
+              <div className="flex-1 relative">
+                <div
+                  ref={setMenuScrollRef}
+                  className="absolute inset-0 overflow-auto ipod-menu-container"
+                >
+                  <div
+                    style={{
+                      position: "relative",
+                      height: currentMenuItems.length * menuItemHeight,
+                    }}
+                  >
+                    {currentMenuItems
+                      .slice(visibleRange.start, visibleRange.end)
+                      .map((item, i) => {
+                        const index = visibleRange.start + i;
+                        return (
+                          <div
+                            key={index}
+                            className={`ipod-menu-item ${
+                              index === selectedMenuItem ? "selected" : ""
+                            }`}
+                            style={{
+                              position: "absolute",
+                              top: index * menuItemHeight,
+                              left: 0,
+                              right: 0,
+                              height: menuItemHeight,
+                            }}
+                          >
+                            <MenuListItem
+                              text={item.label}
+                              isSelected={index === selectedMenuItem}
+                              backlightOn={backlightOn}
+                              variant={uiVariant}
+                              allowScrollingMarquee={modernScrollingMarqueeAllowed}
+                              onClick={() => {
+                                onSelectMenuItem(index);
+                                onMenuItemAction(item.action);
+                              }}
+                              showChevron={item.showChevron !== false}
+                              value={item.value}
+                              isLoading={item.isLoading}
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+                <Scrollbar
+                  containerRef={menuScrollRef}
+                  backlightOn={backlightOn}
+                  menuMode={menuMode}
+                  variant={uiVariant}
+                />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="nowplaying"
+              className="absolute inset-0 flex flex-col h-full"
+              initial="enter"
+              animate="center"
+              exit="exit"
+              variants={menuVariants}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              custom={menuDirection}
+              onClick={() => {
+                if (!menuMode && currentTrack) {
+                  registerActivity();
+                  if (!isPlaying) {
+                    if (!showVideo) {
+                      onToggleVideo();
+                      setTimeout(() => {
+                        handlePlay();
+                      }, 100);
+                    } else {
+                      handlePlay();
+                    }
+                  } else {
+                    onToggleVideo();
+                  }
+                }
+              }}
+            >
+              <div
+                className={cn(
+                  "flex-1 flex flex-col overflow-visible px-2",
+                  isModernUi ? "pt-1.5 pb-0.5" : "py-1"
+                )}
+              >
+                {currentTrack && nowPlayingDisplayTrack ? (
+                  <>
+                    <div
+                      className={cn(
+                        "flex items-center justify-between gap-2",
+                        isModernUi
+                          ? "font-ipod-modern-ui text-[12px] font-normal leading-[1.06] text-[rgb(99,101,103)]"
+                          : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
+                        nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
+                      )}
+                    >
+                      <span>
+                        {currentTrack?.appleMusicPlayParams?.stationId
+                          ? "LIVE"
+                          : isAppleMusicCollectionShell
+                            ? "MIX"
+                            : `${currentIndex + 1} of ${tracksLength}`}
+                      </span>
+                      {isShuffled && (
+                        <Shuffle
+                          className="shrink-0"
+                          size={isModernUi ? 12 : 13}
+                          weight="bold"
+                          aria-label="shuffle on"
+                        />
+                      )}
+                    </div>
+                    {isModernUi ? (
+                      <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
+                        <ModernNowPlayingArtwork coverUrl={coverUrl} />
+                        <div
+                          className={cn(
+                            "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
+                            // Small downward nudge so the first line
+                            // doesn't hug the cover's top edge — matches
+                            // the iPod nano 6G/7G "Now Playing" baseline.
+                            "pt-1",
+                            "[&>*]:py-0",
+                            "[&>*:not(:first-child)]:-mt-[3px]",
+                            "font-ipod-modern-ui"
+                          )}
+                        >
+                          <ScrollingText
+                            text={nowPlayingDisplayTrack.title}
+                            isPlaying={isPlaying}
+                            scrollStartDelaySec={1}
+                            align="left"
+                            fadeEdges
+                            allowMarquee={modernScrollingMarqueeAllowed}
+                            className="leading-[1.06] text-[15px] font-semibold text-black"
+                          />
+                          <ScrollingText
+                            text={nowPlayingDisplayTrack.artist || ""}
+                            isPlaying={isPlaying}
+                            scrollStartDelaySec={1}
+                            align="left"
+                            fadeEdges
+                            allowMarquee={modernScrollingMarqueeAllowed}
+                            className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                          />
+                          {nowPlayingDisplayTrack.album && (
+                            <ScrollingText
+                              text={nowPlayingDisplayTrack.album}
+                              isPlaying={isPlaying}
+                              scrollStartDelaySec={1}
+                              align="left"
+                              fadeEdges
+                              allowMarquee={modernScrollingMarqueeAllowed}
+                              className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className={cn(
+                          "flex min-h-0 flex-col gap-0 overflow-visible text-center leading-[1.05]",
+                          "font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                        )}
+                      >
+                        <ScrollingText
+                          text={nowPlayingDisplayTrack.title}
+                          isPlaying={isPlaying}
+                          scrollStartDelaySec={1}
+                          className="leading-[1.05] py-px"
+                        />
+                        <ScrollingText
+                          text={nowPlayingDisplayTrack.artist || ""}
+                          isPlaying={isPlaying}
+                          scrollStartDelaySec={1}
+                          className="leading-[1.05] py-px"
+                        />
+                        {nowPlayingDisplayTrack.album && (
+                          <ScrollingText
+                            text={nowPlayingDisplayTrack.album}
+                            isPlaying={isPlaying}
+                            scrollStartDelaySec={1}
+                            className="leading-[1.05] py-px"
+                          />
+                        )}
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "mt-auto flex-shrink-0 w-full",
+                        nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
+                      )}
+                    >
+                      {isModernUi ? (
+                        // Same aqua bar as About This Finder memory rows.
+                        <div className="aqua-progress h-[9px] w-full rounded-none">
+                          <div
+                            className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
+                            style={{
+                              width: `${
+                                totalTime > 0
+                                  ? (elapsedTime / totalTime) * 100
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
+                          <div
+                            className="h-full bg-[#0a3667]"
+                            style={{
+                              width: `${
+                                totalTime > 0
+                                  ? (elapsedTime / totalTime) * 100
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div
+                        className={cn(
+                          "w-full flex justify-between",
+                          isModernUi
+                            ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
+                            : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                        )}
+                      >
+                        <span>
+                          {formatPlaybackTime(displayElapsedSeconds)}
+                        </span>
+                        <span>-{formatPlaybackTime(displayRemainingSeconds)}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    className={cn(
+                      "text-center h-full flex flex-col justify-center items-center",
+                      isModernUi
+                        ? "font-ipod-modern-ui text-[15px] text-[rgb(99,101,103)]"
+                        : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                    )}
+                  >
+                    <p>Don't steal music</p>
+                    <p>Ne volez pas la musique</p>
+                    <p>Bitte keine Musik stehlen</p>
+                    <p>音楽を盗用しないでください</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
+  );
+
+
   return (
     <div
       className={cn(
@@ -916,417 +1379,63 @@ export function IpodScreen({
        *  are clamped to the left half so they don't bleed underneath.
        *  AnimatePresence cross-fades between covers as the slideshow
        *  cycles through `splitArtUrlPool`. */}
-      {showSplitMenuArt && splitArtUrl && (
+      {/* Right-half artwork: width animates 0% <-> 50% in sync with the
+       *  menu chrome so entering/leaving split view feels smooth.
+       *  Kept mounted for every modern menu frame (not only when art
+       *  is visible) so collapsing to full-width still runs the exit
+       *  transition. */}
+      {isModernUi && menuMode && (
         <div
-          // Sits BELOW the titlebar (z-10) and content area (z-30) so
-          // the menu panel's drop shadow can render OVER the artwork
-          // and read as the menu casting onto the art. Still above
-          // the menu-mode video block (z-0) and the LCD overlays.
-          className="ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[5] overflow-hidden"
-          style={{ width: MODERN_SPLIT_HALF }}
+          className={cn(
+            "ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[5] overflow-hidden",
+            splitLayoutTransitionReady &&
+              "transition-[width,opacity] duration-300 ease-in-out motion-reduce:transition-none"
+          )}
+          style={{
+            width: showSplitMenuArt ? MODERN_SPLIT_HALF : "0%",
+            opacity: showSplitMenuArt ? 1 : 0,
+          }}
           aria-hidden
         >
-          <AnimatePresence initial={false}>
-            <motion.img
-              key={splitArtUrl}
-              src={splitArtUrl}
-              alt=""
-              draggable={false}
-              className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.9, ease: "easeInOut" }}
-            />
-          </AnimatePresence>
+          {splitArtUrl ? (
+            <AnimatePresence initial={false} mode="sync">
+              <motion.img
+                key={splitArtUrl}
+                src={splitArtUrl}
+                alt=""
+                draggable={false}
+                className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.35, ease: "easeInOut" }}
+              />
+            </AnimatePresence>
+          ) : null}
         </div>
       )}
-
-      {/* Title bar
-       *
-       * Modern (nano 6G/7G + iPod classic 6G silver header):
-       *   - Slim 17px strip, 12px MyriadPro semibold black text.
-       *   - Title left-aligned with 6px padding to match the menu
-       *     row text indent (`MenuListItem` uses `pl-1.5 pr-2`).
-       *   - Status icons (play/pause + battery) clustered on the right.
-       *   - Clamped to the LEFT HALF of the screen in split menu mode
-       *     so the album art column extends to the very top edge.
-       *
-       * Classic (1st-gen LCD): unchanged — Chicago glyphs centered with
-       *   play indicator on the left and battery on the right. */}
-      <div
-        className={cn(
-          // z-10 (NOT z-20) so the video / lyrics overlay (z-20) cleanly
-          // covers the titlebar when active — the user wants the screen
-          // to read as full-bleed video / lyrics with no chrome on top.
-          // In all other states (menu, now-playing without video, split
-          // menu) the titlebar still renders normally because nothing
-          // higher-z is drawn over it.
-          "shrink-0 py-0 flex items-center sticky top-0 z-10",
-          isModernUi
-            ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-1.5 pr-1.5 gap-1.5"
-            : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
-          showSplitMenuArt && "ipod-modern-menu-panel"
-        )}
-        style={
-          isModernUi
-            ? {
-                height: MODERN_TITLEBAR_HEIGHT,
-                minHeight: MODERN_TITLEBAR_HEIGHT,
-                width: showSplitMenuArt ? MODERN_SPLIT_HALF : undefined,
-              }
-            : undefined
-        }
-      >
-        {!isModernUi && (
-          <div
-            className={cn(
-              "flex items-center justify-start",
-              `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
-            )}
-          >
-            <div className="flex items-center justify-center w-4 h-4 mt-0.5">
-              {isPlaying ? "▶" : "⏸︎"}
-            </div>
-          </div>
-        )}
-        <ScrollingText
-          text={titlebarTitle}
-          isPlaying
-          scrollStartDelaySec={1}
-          fadeEdges={isModernUi}
-          // ScrollingText defaults align to "center", which forces
-          // `justify-center` and overrides any `text-left` class. The
-          // modern titlebar wants the title hard-aligned to the left
-          // (matching the iPod nano 6G/7G "iPod" / "Now Playing"
-          // header in the reference photo); the classic skin keeps
-          // its centered Chicago glyphs.
-          align={isModernUi ? "left" : "center"}
-          className={cn(
-            "flex-1 min-w-0 leading-none",
-            isModernUi
-              ? cn(
-                  // Slimmer 12px header type matches the iPod 6G/7G photo
-                  // we were referenced to — one full pixel above the
-                  // 11px Helvetica Neue used by iOS 6 status bars but
-                  // still well under the 15px MyriadPro list rows so the
-                  // header reads as secondary chrome.
-                  "text-[12px] font-semibold",
-                  "[text-shadow:0_1px_0_rgba(255,255,255,0.9)]"
-                )
-              : "px-1"
-          )}
-        />
+      {isModernUi ? (
         <div
           className={cn(
-            "flex items-center justify-end",
-            isModernUi ? "shrink-0 gap-1" : "w-6"
+            "relative flex min-h-0 flex-col overflow-hidden z-10 h-full",
+            showSplitMenuArt && "ipod-modern-menu-panel",
+            splitLayoutTransitionReady &&
+              "transition-[width] duration-300 ease-in-out motion-reduce:transition-none"
           )}
+          style={{
+            width: menuMode
+              ? showSplitMenuArt
+                ? MODERN_SPLIT_HALF
+                : "100%"
+              : "100%",
+          }}
         >
-          {isModernUi && (
-            // Play/pause status glyph painted with the same top-to-
-            // bottom blue gradient as the row-selection highlight,
-            // matching the iOS 6 / iPod nano 6G "tinted" status-bar
-            // look. Inline SVG with an embedded gradient so it stays
-            // a single sharp shape on any DPI. Sized at 14px to
-            // dominate the 17px titlebar (visually matches the title
-            // type x-height + ascender).
-            <div className="flex items-center justify-center w-[14px] h-[14px]">
-              <IpodModernPlayPauseIcon playing={isPlaying} size={14} />
-            </div>
-          )}
-          <BatteryIndicator backlightOn={backlightOn} variant={uiVariant} />
+          {menuChrome}
         </div>
-      </div>
+      ) : (
+        menuChrome
+      )}
 
-      {/* Content area - z-30 only when video is not showing so it can
-          receive events. Content height subtracts the titlebar height
-          so the menu/now-playing area is the same in both skins.
-          Width clamps to the LEFT HALF of the screen when the split
-          menu Ken Burns art column is showing so the menu list doesn't
-          bleed under the album art. */}
-      <div
-        className={cn(
-          "relative",
-          !showVideo && "z-30",
-          showSplitMenuArt && "ipod-modern-menu-panel bg-white"
-        )}
-        style={{
-          height: isModernUi
-            ? `calc(100% - ${MODERN_TITLEBAR_HEIGHT}px)`
-            : "calc(100% - 24px)",
-          width: showSplitMenuArt ? MODERN_SPLIT_HALF : undefined,
-        }}
-      >
-        <AnimatePresence initial={false} custom={menuDirection} mode="sync">
-          {menuMode ? (
-            <motion.div
-              key={`menu-${menuHistory.length}-${currentMenuTitle}`}
-              className="absolute inset-0 flex flex-col h-full"
-              initial="enter"
-              animate="center"
-              exit="exit"
-              variants={menuVariants}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              custom={menuDirection}
-            >
-              <div className="flex-1 relative">
-                <div
-                  ref={setMenuScrollRef}
-                  className="absolute inset-0 overflow-auto ipod-menu-container"
-                >
-                  <div
-                    style={{
-                      position: "relative",
-                      height: currentMenuItems.length * menuItemHeight,
-                    }}
-                  >
-                    {currentMenuItems
-                      .slice(visibleRange.start, visibleRange.end)
-                      .map((item, i) => {
-                        const index = visibleRange.start + i;
-                        return (
-                          <div
-                            key={index}
-                            className={`ipod-menu-item ${
-                              index === selectedMenuItem ? "selected" : ""
-                            }`}
-                            style={{
-                              position: "absolute",
-                              top: index * menuItemHeight,
-                              left: 0,
-                              right: 0,
-                              height: menuItemHeight,
-                            }}
-                          >
-                            <MenuListItem
-                              text={item.label}
-                              isSelected={index === selectedMenuItem}
-                              backlightOn={backlightOn}
-                              variant={uiVariant}
-                              onClick={() => {
-                                onSelectMenuItem(index);
-                                onMenuItemAction(item.action);
-                              }}
-                              showChevron={item.showChevron !== false}
-                              value={item.value}
-                              isLoading={item.isLoading}
-                            />
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-                <Scrollbar
-                  containerRef={menuScrollRef}
-                  backlightOn={backlightOn}
-                  menuMode={menuMode}
-                  variant={uiVariant}
-                />
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="nowplaying"
-              className="absolute inset-0 flex flex-col h-full"
-              initial="enter"
-              animate="center"
-              exit="exit"
-              variants={menuVariants}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              custom={menuDirection}
-              onClick={() => {
-                if (!menuMode && currentTrack) {
-                  registerActivity();
-                  if (!isPlaying) {
-                    if (!showVideo) {
-                      onToggleVideo();
-                      setTimeout(() => {
-                        handlePlay();
-                      }, 100);
-                    } else {
-                      handlePlay();
-                    }
-                  } else {
-                    onToggleVideo();
-                  }
-                }
-              }}
-            >
-              <div
-                className={cn(
-                  "flex-1 flex flex-col overflow-visible px-2",
-                  isModernUi ? "pt-1.5 pb-0.5" : "py-1"
-                )}
-              >
-                {currentTrack && nowPlayingDisplayTrack ? (
-                  <>
-                    <div
-                      className={cn(
-                        "flex items-center justify-between gap-2",
-                        isModernUi
-                          ? "font-ipod-modern-ui text-[12px] font-normal leading-[1.06] text-[rgb(99,101,103)]"
-                          : "font-chicago text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
-                        nowPlayingDisplayTrack.album ? "mb-1" : "mb-1.5"
-                      )}
-                    >
-                      <span>
-                        {currentTrack?.appleMusicPlayParams?.stationId
-                          ? "LIVE"
-                          : isAppleMusicCollectionShell
-                            ? "MIX"
-                            : `${currentIndex + 1} of ${tracksLength}`}
-                      </span>
-                      {isShuffled && (
-                        <Shuffle
-                          className="shrink-0"
-                          size={isModernUi ? 12 : 13}
-                          weight="bold"
-                          aria-label="shuffle on"
-                        />
-                      )}
-                    </div>
-                    {isModernUi ? (
-                      <div className="flex min-h-0 flex-1 items-start gap-3 overflow-visible pt-1 pb-0">
-                        <ModernNowPlayingArtwork coverUrl={coverUrl} />
-                        <div
-                          className={cn(
-                            "flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-0 overflow-visible text-left",
-                            // Small downward nudge so the first line
-                            // doesn't hug the cover's top edge — matches
-                            // the iPod nano 6G/7G "Now Playing" baseline.
-                            "pt-1",
-                            "[&>*]:py-0",
-                            "[&>*:not(:first-child)]:-mt-[3px]",
-                            "font-ipod-modern-ui"
-                          )}
-                        >
-                          <ScrollingText
-                            text={nowPlayingDisplayTrack.title}
-                            isPlaying={isPlaying}
-                            scrollStartDelaySec={1}
-                            align="left"
-                            fadeEdges
-                            className="leading-[1.06] text-[15px] font-semibold text-black"
-                          />
-                          <ScrollingText
-                            text={nowPlayingDisplayTrack.artist || ""}
-                            isPlaying={isPlaying}
-                            scrollStartDelaySec={1}
-                            align="left"
-                            fadeEdges
-                            className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
-                          />
-                          {nowPlayingDisplayTrack.album && (
-                            <ScrollingText
-                              text={nowPlayingDisplayTrack.album}
-                              isPlaying={isPlaying}
-                              scrollStartDelaySec={1}
-                              align="left"
-                              fadeEdges
-                              className="leading-[1.06] text-[12px] font-normal text-[rgb(99,101,103)]"
-                            />
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        className={cn(
-                          "flex min-h-0 flex-col gap-0 overflow-visible text-center leading-[1.05]",
-                          "font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
-                        )}
-                      >
-                        <ScrollingText
-                          text={nowPlayingDisplayTrack.title}
-                          isPlaying={isPlaying}
-                          scrollStartDelaySec={1}
-                          className="leading-[1.05] py-px"
-                        />
-                        <ScrollingText
-                          text={nowPlayingDisplayTrack.artist || ""}
-                          isPlaying={isPlaying}
-                          scrollStartDelaySec={1}
-                          className="leading-[1.05] py-px"
-                        />
-                        {nowPlayingDisplayTrack.album && (
-                          <ScrollingText
-                            text={nowPlayingDisplayTrack.album}
-                            isPlaying={isPlaying}
-                            scrollStartDelaySec={1}
-                            className="leading-[1.05] py-px"
-                          />
-                        )}
-                      </div>
-                    )}
-                    <div
-                      className={cn(
-                        "mt-auto flex-shrink-0 w-full",
-                        nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
-                      )}
-                    >
-                      {isModernUi ? (
-                        // Same aqua bar as About This Finder memory rows.
-                        <div className="aqua-progress h-[9px] w-full rounded-none">
-                          <div
-                            className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
-                            style={{
-                              width: `${
-                                totalTime > 0
-                                  ? (elapsedTime / totalTime) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
-                          <div
-                            className="h-full bg-[#0a3667]"
-                            style={{
-                              width: `${
-                                totalTime > 0
-                                  ? (elapsedTime / totalTime) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      )}
-                      <div
-                        className={cn(
-                          "w-full flex justify-between",
-                          isModernUi
-                            ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
-                            : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
-                        )}
-                      >
-                        <span>
-                          {formatPlaybackTime(displayElapsedSeconds)}
-                        </span>
-                        <span>-{formatPlaybackTime(displayRemainingSeconds)}</span>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div
-                    className={cn(
-                      "text-center h-full flex flex-col justify-center items-center",
-                      isModernUi
-                        ? "font-ipod-modern-ui text-[15px] text-[rgb(99,101,103)]"
-                        : "font-geneva-12 text-[12px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
-                    )}
-                  >
-                    <p>Don't steal music</p>
-                    <p>Ne volez pas la musique</p>
-                    <p>Bitte keine Musik stehlen</p>
-                    <p>音楽を盗用しないでください</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
     </div>
   );
 }

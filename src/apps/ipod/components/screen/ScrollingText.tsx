@@ -14,6 +14,8 @@ interface ScrollingTextProps {
   isPlaying?: boolean;
   align?: "center" | "left";
   fadeEdges?: boolean;
+  /** When false, overflow is ignored for marquee — static text only (e.g. while a parent width is animating). */
+  allowMarquee?: boolean;
   /** Seconds to wait before the marquee starts (each scroll cycle still runs full duration). */
   scrollStartDelaySec?: number;
   style?: CSSProperties;
@@ -25,6 +27,7 @@ export function ScrollingText({
   isPlaying = true,
   align = "center",
   fadeEdges = false,
+  allowMarquee = true,
   scrollStartDelaySec = 0,
   style,
 }: ScrollingTextProps) {
@@ -56,11 +59,13 @@ export function ScrollingText({
     resizeObserver.observe(textElement);
 
     return () => resizeObserver.disconnect();
-  }, [text]);
+  }, [text, allowMarquee]);
+
+  const showMarquee = shouldScroll && allowMarquee;
 
   useEffect(() => {
     setEdgeFadeActive(false);
-  }, [text, shouldScroll, scrollStartDelaySec, fadeEdges]);
+  }, [text, shouldScroll, allowMarquee, scrollStartDelaySec, fadeEdges]);
 
   const handleMarqueeAnimationStart = useCallback((e: AnimationEvent<HTMLDivElement>) => {
     if (!e.animationName.includes("scrolling-text-marquee")) return;
@@ -69,7 +74,7 @@ export function ScrollingText({
 
   const fadeInset = "0.75em";
   const maskImage =
-    shouldScroll && fadeEdges
+    showMarquee && fadeEdges
       ? edgeFadeActive
         ? // Full fade: hides seam at both edges while looping
           `linear-gradient(to right, transparent 0, black ${fadeInset}, black calc(100% - ${fadeInset}), transparent 100%)`
@@ -81,7 +86,8 @@ export function ScrollingText({
     maskImage,
     WebkitMaskImage: maskImage,
     clipPath:
-      style?.clipPath ?? (shouldScroll ? "inset(-0.25em 0 -0.25em 0)" : undefined),
+      style?.clipPath ??
+      (showMarquee ? "inset(-0.25em 0 -0.25em 0)" : undefined),
   };
   const alignClass = align === "left" ? "justify-start" : "justify-center";
   const textAlignClass = align === "left" ? "text-left" : "text-center";
@@ -101,13 +107,13 @@ export function ScrollingText({
       ref={containerRef}
       className={cn(
         "relative overflow-visible",
-        !shouldScroll && "flex",
-        !shouldScroll && alignClass,
+        !showMarquee && "flex",
+        !showMarquee && alignClass,
         className
       )}
       style={mergedStyle}
     >
-      {shouldScroll ? (
+      {showMarquee ? (
         <div className="inline-block min-w-0 max-w-full whitespace-nowrap">
           <div
             className="scrolling-text-marquee-track inline-flex"
