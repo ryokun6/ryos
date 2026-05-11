@@ -306,29 +306,56 @@ export async function saveMusicKitUserTokenToCloud(
 /**
  * Clear the Music User Token saved in the user's ryOS account.
  *
- * Bypasses the Auto Sync gate — this is only called from the explicit
- * Apple Music `unauthorize()` flow, where the user has actively asked
- * us to revoke the token. The ryOS-sign-out path uses
+ * Bypasses the Auto Sync gate — this is called from Apple Music
+ * `unauthorize()` and the stale-token recovery path, where the user
+ * has actively asked us to revoke (or Apple has rejected) the token.
+ * The ryOS-sign-out path uses
  * {@link clearLocalMusicKitUserTokenCache} instead, because the cloud
  * copy is bound to the account and meant to survive sign-out cycles.
+ *
+ * **Compare-and-swap behavior.** When `ifMusicUserToken` is provided,
+ * the server only deletes when the currently-stored cloud value
+ * matches — so a stale-token cleanup running on one device cannot
+ * clobber a fresh token that another device already wrote. Returns
+ * `true` when the deletion happened, `false` when the server
+ * preserved a different (newer) token, and `null` when the request
+ * never made it out (offline, unauthenticated, etc).
  */
-export async function clearMusicKitUserTokenInCloud(): Promise<void> {
-  if (typeof fetch === "undefined") return;
+export async function clearMusicKitUserTokenInCloud(
+  ifMusicUserToken?: string | null
+): Promise<boolean | null> {
+  if (typeof fetch === "undefined") return null;
   const chats = useChatsStore.getState();
   // Skip the network call when there's no way to authenticate it — but
   // unlike fetch/save, we don't gate on `autoSyncEnabled`: an
   // unauthorize() that happened while Auto Sync was off should still
   // wipe a previously-mirrored cloud copy if the user is signed in.
-  if (!chats.isAuthenticated || !chats.username) return;
+  if (!chats.isAuthenticated || !chats.username) return null;
 
-  const response = await safeFetch({
+  const init: RequestInit = {
     method: "DELETE",
     headers: { Accept: "application/json" },
-  });
-  if (!response) return;
-  if (response.status === 401 || response.status === 403) return;
+  };
+  if (ifMusicUserToken) {
+    init.headers = {
+      ...(init.headers as Record<string, string>),
+      "Content-Type": "application/json",
+    };
+    init.body = JSON.stringify({ ifMusicUserToken });
+  }
+
+  const response = await safeFetch(init);
+  if (!response) return null;
+  if (response.status === 401 || response.status === 403) return null;
   if (!response.ok) {
     console.warn(`[musickit cloud sync] DELETE returned ${response.status}`);
+    return null;
+  }
+  try {
+    const data = (await response.json()) as { deleted?: boolean };
+    return data.deleted === true;
+  } catch {
+    return null;
   }
 }
 
@@ -388,13 +415,46 @@ export async function clearLocalMusicKitUserTokenCache(): Promise<void> {
 }
 
 /**
- * Wipe both the IndexedDB cache and the cloud copy. Used only by the
- * explicit Apple Music `unauthorize()` flow.
+ * Wipe both the IndexedDB cache and the cloud copy. Used by the
+ * explicit Apple Music `unauthorize()` flow and the stale-token
+ * recovery path.
+ *
+ * `ifMusicUserToken` (optional) requests **compare-and-swap** behavior
+ * on cloud: the cloud row is deleted only when the currently-stored
+ * value matches. This is the safe default for multi-device
+ * scenarios, where another device may have written a fresh token to
+ * cloud while this device's session went stale. Pass `null` /
+ * `undefined` to do an unconditional cloud delete (rarely needed).
  */
-export async function clearCachedMusicKitUserToken(): Promise<void> {
+export async function clearCachedMusicKitUserToken(
+  ifMusicUserToken?: string | null
+): Promise<void> {
   await Promise.allSettled([
     deleteFromIndexedDb(),
-    clearMusicKitUserTokenInCloud(),
+    clearMusicKitUserTokenInCloud(ifMusicUserToken ?? null),
+  ]);
+}
+
+/**
+ * Stale-token recovery: when MusicKit reports that a previously-
+ * loaded token has been rejected by Apple
+ * (`authorizationStatusDidChange` flipping `isAuthorized` to false
+ * after we'd cached a token), wipe local IDB unconditionally and
+ * CAS-clear the cloud copy with the now-known-dead token.
+ *
+ * The CAS guard is what protects multi-device users: if a phone
+ * detects a dead token but a laptop has just written a fresh one,
+ * the phone's cleanup leaves the laptop's session intact in cloud.
+ *
+ * Always wipes the local cache regardless of cloud state, so the
+ * next reload on this device doesn't loop on the dead token.
+ */
+export async function clearMusicKitUserTokenIfStale(
+  staleToken: string
+): Promise<void> {
+  await Promise.allSettled([
+    deleteFromIndexedDb(),
+    clearMusicKitUserTokenInCloud(staleToken),
   ]);
 }
 

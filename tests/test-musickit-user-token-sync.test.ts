@@ -64,6 +64,8 @@ const {
   fetchMusicKitUserTokenFromCloud,
   isExpired,
   saveMusicKitUserTokenToCloud,
+  clearCachedMusicKitUserToken,
+  clearMusicKitUserTokenIfStale,
 } = await import("../src/utils/musicKitUserTokenCloudSync");
 const { useChatsStore } = await import("../src/stores/useChatsStore");
 const { useCloudSyncStore } = await import(
@@ -284,6 +286,131 @@ describe("cloud-sync gating (client)", () => {
       expect(calls).toHaveLength(1);
       expect(calls[0].method).toBe("GET");
       expect(calls[0].url).toContain("/api/sync/musickit-user-token");
+    } finally {
+      restoreFetch();
+    }
+  });
+});
+
+describe("CAS-DELETE for stale-token cleanup (client)", () => {
+  // The compare-and-swap delete is what protects multi-device users:
+  // a device that discovers its token went stale shouldn't wipe a
+  // fresh token another device just wrote to cloud. The client always
+  // wipes the local IDB cache, but the cloud DELETE goes out with an
+  // `ifMusicUserToken` body that the server uses to decide whether to
+  // delete the row at all.
+
+  type FetchCall = { url: string; method?: string; body?: unknown };
+  const originalFetch = globalThis.fetch;
+  const calls: FetchCall[] = [];
+
+  function installFakeFetch(response: Response) {
+    calls.length = 0;
+    globalThis.fetch = (async (
+      input: string | URL | Request,
+      init?: RequestInit
+    ) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      let parsedBody: unknown = init?.body;
+      if (typeof init?.body === "string") {
+        try {
+          parsedBody = JSON.parse(init.body);
+        } catch {
+          parsedBody = init.body;
+        }
+      }
+      calls.push({ url, method: init?.method, body: parsedBody });
+      return response.clone();
+    }) as typeof fetch;
+  }
+
+  function restoreFetch() {
+    globalThis.fetch = originalFetch;
+  }
+
+  function setAuth(authenticated: boolean) {
+    useChatsStore.setState({
+      username: authenticated ? "syncuser" : null,
+      isAuthenticated: authenticated,
+    });
+    // The DELETE path intentionally bypasses the autoSyncEnabled
+    // gate — but we still need the user signed in for the network
+    // call to fire at all.
+    useCloudSyncStore.setState({ autoSyncEnabled: false });
+  }
+
+  test("clearMusicKitUserTokenIfStale sends an ifMusicUserToken body for CAS", async () => {
+    installFakeFetch(
+      new Response(JSON.stringify({ ok: true, deleted: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    try {
+      setAuth(true);
+      await clearMusicKitUserTokenIfStale("stale-token-abc");
+      const deleteCall = calls.find((c) => c.method === "DELETE");
+      expect(deleteCall).toBeDefined();
+      expect(deleteCall!.url).toContain("/api/sync/musickit-user-token");
+      expect(deleteCall!.body).toEqual({ ifMusicUserToken: "stale-token-abc" });
+    } finally {
+      restoreFetch();
+    }
+  });
+
+  test("clearCachedMusicKitUserToken passes the CAS guard through to cloud", async () => {
+    installFakeFetch(
+      new Response(JSON.stringify({ ok: true, deleted: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    try {
+      setAuth(true);
+      await clearCachedMusicKitUserToken("user-revoked-this-one");
+      const deleteCall = calls.find((c) => c.method === "DELETE");
+      expect(deleteCall).toBeDefined();
+      expect(deleteCall!.body).toEqual({
+        ifMusicUserToken: "user-revoked-this-one",
+      });
+    } finally {
+      restoreFetch();
+    }
+  });
+
+  test("clearCachedMusicKitUserToken without a token argument falls back to unconditional DELETE", async () => {
+    installFakeFetch(
+      new Response(JSON.stringify({ ok: true, deleted: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    try {
+      setAuth(true);
+      await clearCachedMusicKitUserToken();
+      const deleteCall = calls.find((c) => c.method === "DELETE");
+      expect(deleteCall).toBeDefined();
+      // No body == unconditional DELETE (historical shape, used by
+      // account-purge tooling).
+      expect(deleteCall!.body).toBeUndefined();
+    } finally {
+      restoreFetch();
+    }
+  });
+
+  test("clearMusicKitUserTokenIfStale silently no-ops when the user isn't signed in", async () => {
+    installFakeFetch(
+      new Response(JSON.stringify({ ok: true, deleted: true }), { status: 200 })
+    );
+    try {
+      setAuth(false);
+      await clearMusicKitUserTokenIfStale("any-token");
+      expect(calls.filter((c) => c.method === "DELETE")).toHaveLength(0);
     } finally {
       restoreFetch();
     }

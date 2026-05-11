@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   clearCachedMusicKitUserToken,
   clearLocalMusicKitUserTokenCache,
+  clearMusicKitUserTokenIfStale,
   loadCachedMusicKitUserToken,
   persistMusicKitUserToken,
   type CachedMusicKitUserToken,
@@ -51,6 +52,18 @@ let inFlightTokenFetch: Promise<string> | null = null;
 let scriptPromise: Promise<void> | null = null;
 let configurePromise: Promise<MusicKit.MusicKitInstance> | null = null;
 let configuredInstance: MusicKit.MusicKitInstance | null = null;
+
+/**
+ * Latest Music User Token we successfully *configured MusicKit with*
+ * or *persisted to cloud*. Used by the stale-token detection path:
+ * when MusicKit transitions from authorized → unauthorized at
+ * runtime, this is the token Apple just rejected, and the value we
+ * compare against on the CAS-DELETE so we don't clobber a fresh
+ * token written by another device. Always read inside event handlers
+ * (never at module init), and reset on every successful re-authorize
+ * + on stale-cleanup.
+ */
+let lastKnownMusicUserToken: string | null = null;
 
 /** Subscribers notified when the singleton instance becomes available. */
 const readyListeners = new Set<(instance: MusicKit.MusicKitInstance) => void>();
@@ -236,6 +249,10 @@ async function configureMusicKit(
     };
     if (musicUserToken) {
       configureOptions.musicUserToken = musicUserToken;
+      // Seed the stale-token CAS guard now so a runtime auth-loss
+      // detected before any explicit re-persist still has the
+      // original token value to compare against on cleanup.
+      lastKnownMusicUserToken = musicUserToken;
     }
     const result = await Promise.resolve(
       window.MusicKit!.configure(configureOptions)
@@ -260,7 +277,9 @@ async function configureMusicKit(
  * Persist the current Music User Token snapshot from the MusicKit
  * instance into IndexedDB + the user's ryOS cloud-sync account. Safe
  * to call from any event handler — silently no-ops when there is no
- * authorized user or no readable token.
+ * authorized user or no readable token. Also updates the stale-token
+ * CAS guard (`lastKnownMusicUserToken`) so any subsequent runtime
+ * auth-loss can be cleaned up safely.
  */
 function persistCurrentUserTokenSnapshot(
   instance: MusicKit.MusicKitInstance | null
@@ -269,16 +288,39 @@ function persistCurrentUserTokenSnapshot(
   if (!instance.isAuthorized) return;
   const token = instance.musicUserToken;
   if (!token) return;
+  lastKnownMusicUserToken = token;
   const snapshot: CachedMusicKitUserToken = {
     musicUserToken: token,
     // Apple does not expose an `exp` for Music User Tokens via the
     // MusicKit instance, so we don't try to invent one — `null`
-    // signals "unknown, just try it" to consumers. The server-side
-    // store has its own TTL as a backstop.
+    // signals "unknown, just try it" to consumers. Stale tokens
+    // detected at runtime are pruned via `clearMusicKitUserTokenIfStale`
+    // (CAS-guarded so we don't clobber other devices' fresh writes).
     expiresAt: null,
     storedAt: Date.now(),
   };
   void persistMusicKitUserToken(snapshot);
+}
+
+/**
+ * Stale-token recovery handler. Called when MusicKit transitions
+ * from authorized → unauthorized at runtime (Apple rejected the
+ * token, user revoked access elsewhere, subscription lapsed, etc).
+ *
+ * Wipes the local IDB cache unconditionally — the next reload must
+ * not loop on the dead token — and CAS-clears the cloud copy so
+ * another device's fresh token isn't clobbered. Resets the
+ * `lastKnownMusicUserToken` guard so subsequent transitions don't
+ * try to clean up the same dead token twice.
+ *
+ * No-ops when we never had a token (the user simply never
+ * authorized) — in that case the cache layers are already empty.
+ */
+function handleRuntimeAuthLoss(): void {
+  const stale = lastKnownMusicUserToken;
+  lastKnownMusicUserToken = null;
+  if (!stale) return;
+  void clearMusicKitUserTokenIfStale(stale);
 }
 
 /** Return the singleton MusicKit instance if it has already been configured. */
@@ -382,13 +424,30 @@ export function useMusicKit(
   // browsers that nuke localStorage between sessions, like Tesla's
   // in-car browser) can restore the authorized session through
   // `configure({ musicUserToken })`.
+  //
+  // Transition handling: when we go from authorized → unauthorized at
+  // runtime, Apple has rejected the previously-loaded token (revoked,
+  // subscription lapsed, age-out, …). The stale-token recovery path
+  // wipes the local IDB cache and CAS-clears the cloud copy so the
+  // next reload can't loop on a dead token — and so a fresh token
+  // from another device isn't clobbered.
+  const wasAuthorizedRef = useRef<boolean>(false);
   useEffect(() => {
     if (!instance) return;
     const refresh = () => {
       const nowAuthorized = Boolean(instance.isAuthorized);
+      const wasAuthorized = wasAuthorizedRef.current;
+      wasAuthorizedRef.current = nowAuthorized;
       setIsAuthorized(nowAuthorized);
       if (nowAuthorized) {
         persistCurrentUserTokenSnapshot(instance);
+      } else if (wasAuthorized) {
+        // authorized → unauthorized transition at runtime. Don't
+        // touch caches on the *initial* fire (refresh() at mount
+        // time on an instance that's already unauthorized) — that
+        // path is just 'the user never signed in', and the wipe
+        // would be a no-op anyway because we never persisted.
+        handleRuntimeAuthLoss();
       }
     };
     instance.addEventListener("authorizationStatusDidChange", refresh);
@@ -504,13 +563,26 @@ export function useMusicKit(
   const unauthorize = useCallback(async (): Promise<void> => {
     const inst = instance ?? configuredInstance;
     if (!inst) return;
+    // Snapshot the token *before* calling unauthorize — MusicKit
+    // clears `musicUserToken` synchronously when unauthorize fires, and
+    // we need the original value for the CAS guard on cloud.
+    const tokenBeforeRevoke =
+      lastKnownMusicUserToken || inst.musicUserToken || null;
     try {
       await inst.unauthorize();
       setIsAuthorized(false);
       // Wipe the cached token from both IndexedDB and the user's ryOS
       // cloud-sync account so a future configure() doesn't try to
       // restore a token the user just explicitly revoked.
-      void clearCachedMusicKitUserToken();
+      //
+      // Use CAS on the cloud side so that 'sign out on phone' doesn't
+      // wipe a fresh token that another device (laptop, car, …) just
+      // wrote: the server only deletes when the stored token still
+      // matches `tokenBeforeRevoke`. Falls back to an unconditional
+      // delete when we somehow don't have a token to compare against,
+      // matching the historical shape.
+      lastKnownMusicUserToken = null;
+      void clearCachedMusicKitUserToken(tokenBeforeRevoke);
     } catch (err) {
       console.error("[musickit] unauthorize failed", err);
     }
