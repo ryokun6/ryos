@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   clearCachedMusicKitUserToken,
+  clearLocalMusicKitUserTokenCache,
   loadCachedMusicKitUserToken,
   persistMusicKitUserToken,
   type CachedMusicKitUserToken,
@@ -308,13 +309,18 @@ export function clearMusicKitTokenCache(): void {
 }
 
 /**
- * Drop the cached Music User Token from both IndexedDB and the ryOS
- * cloud-sync account. Called when the ryOS user signs out of their
- * account so a different ryOS user signing in on the same device
- * doesn't inherit the previous user's Apple Music session.
+ * Drop the **local** Music User Token cache. Used by the ryOS
+ * sign-out path so the next ryOS user on this device starts fresh,
+ * without revoking the cloud copy — the token is bound to the ryOS
+ * account, so signing back in restores Apple Music auth
+ * automatically.
+ *
+ * Use {@link clearCachedMusicKitUserToken} (re-exported below) when
+ * the user has explicitly revoked Apple Music access and the cloud
+ * copy should be wiped too.
  */
-export async function clearMusicKitUserTokenCache(): Promise<void> {
-  await clearCachedMusicKitUserToken();
+export async function clearMusicKitUserTokenLocalCache(): Promise<void> {
+  await clearLocalMusicKitUserTokenCache();
 }
 
 export interface UseMusicKitOptions {

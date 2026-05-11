@@ -10,7 +10,7 @@ import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { ApiRequestError } from "@/api/core";
-import { clearCachedMusicKitUserToken } from "@/utils/musicKitUserTokenCloudSync";
+import { clearLocalMusicKitUserTokenCache } from "@/utils/musicKitUserTokenCloudSync";
 import {
   type CreateRoomPayload,
   createRoom as createRoomApi,
@@ -121,9 +121,11 @@ function forceLogoutOnUnauthorized() {
   console.log("[ChatsStore] Unauthorized — clearing auth state for", store.username);
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
   clearLegacyTokenRecovery();
-  // Best-effort cleanup of the Apple Music user token so the next ryOS
-  // user on this device doesn't inherit the previous session.
-  void clearCachedMusicKitUserToken();
+  // Best-effort: wipe the *local* Apple Music user token cache so the
+  // next ryOS user on this device doesn't inherit the previous
+  // session. The cloud copy is bound to the account and intentionally
+  // preserved — signing back in restores it automatically.
+  void clearLocalMusicKitUserTokenCache();
   useChatsStore.setState({
     username: null,
     isAuthenticated: false,
@@ -698,11 +700,13 @@ export const useChatsStore = create<ChatsStoreState>()(
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           clearLegacyTokenRecovery();
 
-          // Drop the cached Apple Music user token so a different ryOS
-          // user signing in on this device doesn't inherit the previous
-          // user's Apple Music session. Best-effort: never blocks the
-          // logout flow.
-          void clearCachedMusicKitUserToken();
+          // Wipe the *local* Apple Music user token cache so a
+          // different ryOS user signing in on this device doesn't
+          // inherit the previous user's Apple Music session. The
+          // cloud copy is intentionally kept — it's bound to the ryOS
+          // account, so signing back in (here or on another device)
+          // restores the Apple Music auth automatically.
+          void clearLocalMusicKitUserTokenCache();
 
           set((state) => ({
             ...state,
