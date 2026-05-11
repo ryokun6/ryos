@@ -33,8 +33,11 @@ import {
   getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
   isAppleMusicCollectionTrack,
-  appleMusicKitIdToLyricsSongId,
 } from "@/stores/useIpodStore";
+import {
+  resolveLyricsOverrideTargetId as resolveLyricsOverrideTargetIdHelper,
+  resolveLyricsTrackMetadata,
+} from "../utils/lyricsTrackMetadata";
 import { useShallow } from "zustand/react/shallow";
 import {
   useIpodStoreShallow,
@@ -3387,24 +3390,44 @@ export function useIpodLogic({
     if (tracks.length > 0 && currentIndex >= 0) setIsLyricsSearchDialogOpen(true);
   }, [tracks, currentIndex]);
 
+  // Live MusicKit metadata for the currently-streaming song. Read here
+  // (earlier than the rest of the lyrics block below) so the
+  // override-target / search-handler callbacks can depend on it.
+  const appleMusicKitNowPlaying = useIpodStore((s) => s.appleMusicKitNowPlaying);
+
+  // Resolve the id we should persist a manual lyrics-source override
+  // against. For Apple Music stations / playlists this MUST be the
+  // live MusicKit song id, not the shell — otherwise every song
+  // streamed through the same station / playlist would inherit the
+  // user's pick. Pure logic lives in `resolveLyricsOverrideTargetId`
+  // so it's unit-testable in isolation.
+  const resolveLyricsOverrideTargetId = useCallback(
+    (): string | null =>
+      resolveLyricsOverrideTargetIdHelper(
+        tracks[currentIndex] ?? null,
+        appleMusicKitNowPlaying
+      ),
+    [tracks, currentIndex, appleMusicKitNowPlaying]
+  );
+
   const handleLyricsSearchSelect = useCallback(
     (result: { hash: string; albumId: string | number; title: string; artist: string; album?: string }) => {
-      const track = tracks[currentIndex];
-      if (track) {
-        setTrackLyricsSource(track.id, result);
+      const targetId = resolveLyricsOverrideTargetId();
+      if (targetId) {
+        setTrackLyricsSource(targetId, result);
         refreshLyrics();
       }
     },
-    [tracks, currentIndex, setTrackLyricsSource, refreshLyrics]
+    [resolveLyricsOverrideTargetId, setTrackLyricsSource, refreshLyrics]
   );
 
   const handleLyricsSearchReset = useCallback(() => {
-    const track = tracks[currentIndex];
-    if (track) {
-      clearTrackLyricsSource(track.id);
+    const targetId = resolveLyricsOverrideTargetId();
+    if (targetId) {
+      clearTrackLyricsSource(targetId);
       refreshLyrics();
     }
-  }, [tracks, currentIndex, clearTrackLyricsSource, refreshLyrics]);
+  }, [resolveLyricsOverrideTargetId, clearTrackLyricsSource, refreshLyrics]);
 
   const ipodGenerateShareUrl = useCallback(
     (songId: string): string => {
@@ -3439,7 +3462,6 @@ export function useIpodLogic({
 
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
-  const appleMusicKitNowPlaying = useIpodStore((s) => s.appleMusicKitNowPlaying);
 
   // Lyrics hook
   const selectedMatchForLyrics = useMemo(() => {
@@ -3459,29 +3481,18 @@ export function useIpodLogic({
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
     [lyricsTranslationLanguage, appLanguage]
   );
-  const lyricsTitle = useMemo(() => {
-    if (currentTrack && isAppleMusicCollectionTrack(currentTrack)) {
-      const live = appleMusicKitNowPlaying?.title?.trim();
-      if (live) return live;
-    }
-    return currentTrack?.title ?? "";
-  }, [currentTrack, appleMusicKitNowPlaying?.title]);
-
-  const lyricsArtist = useMemo(() => {
-    if (currentTrack && isAppleMusicCollectionTrack(currentTrack)) {
-      const live = appleMusicKitNowPlaying?.artist?.trim();
-      if (live) return live;
-    }
-    return currentTrack?.artist ?? "";
-  }, [currentTrack, appleMusicKitNowPlaying?.artist]);
-
-  const lyricsSongId = useMemo(() => {
-    if (!currentTrack) return "";
-    if (isAppleMusicCollectionTrack(currentTrack)) {
-      return appleMusicKitIdToLyricsSongId(appleMusicKitNowPlaying?.id);
-    }
-    return currentTrack.id ?? "";
-  }, [currentTrack, appleMusicKitNowPlaying?.id]);
+  // For Apple Music stations / playlists the iPod's `currentTrack` is
+  // a *shell* — its title / artist describe the station or playlist
+  // itself ("Today's Hits" / "Apple Music"), NOT the song that's
+  // currently playing through it. Resolution lives in
+  // `resolveLyricsTrackMetadata` so the rule is unit-tested in
+  // isolation (see `tests/test-ipod-lyrics-track-metadata.test.ts`).
+  const lyricsMetadata = useMemo(
+    () => resolveLyricsTrackMetadata(currentTrack, appleMusicKitNowPlaying),
+    [currentTrack, appleMusicKitNowPlaying]
+  );
+  const { title: lyricsTitle, artist: lyricsArtist, songId: lyricsSongId } =
+    lyricsMetadata;
 
   const lyricsTimingOffsetMs = useMemo(() => {
     if (
@@ -3905,6 +3916,16 @@ export function useIpodLogic({
     furiganaMap,
     soramimiMap,
     effectiveTranslationLanguage,
+    /** Title to use when fetching/searching lyrics (live MusicKit
+     *  metadata for stations / playlists, currentTrack title otherwise). */
+    lyricsTitle,
+    /** Artist to use when fetching/searching lyrics (mirrors lyricsTitle). */
+    lyricsArtist,
+    /** Song id to use when fetching/searching lyrics (live MusicKit id
+     *  for collections, currentTrack.id otherwise). May be empty for a
+     *  station / playlist that hasn't received its first
+     *  `mediaItemDidChange` event yet. */
+    lyricsSongId,
 
     // Audio
     ipodVolume,
