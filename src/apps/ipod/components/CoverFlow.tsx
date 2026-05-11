@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence, PanInfo, useMotionValue, animate } from "framer-motion";
 import {
   getYouTubeVideoId,
@@ -257,6 +258,7 @@ function CoverImage({
   selectedIndex,
   currentIndex,
   onPlayTrackInPlace,
+  tunables,
 }: {
   track: Track;
   position: number;
@@ -269,6 +271,15 @@ function CoverImage({
   selectedIndex: number;
   currentIndex: number;
   onPlayTrackInPlace?: (index: number) => void;
+  /** Optional override knobs. When provided, these win over the
+   *  defaults below — the modern Cover Flow uses this so the debug
+   *  slider panel can tweak the geometry live. */
+  tunables?: {
+    coverSize?: number;
+    baseSpacing?: number;
+    positionSpacing?: number;
+    sideScale?: number;
+  };
 }) {
   // Use track's cover. Apple Music supplies a fully resolved URL; YouTube
   // tracks fall back to a thumbnail derived from the video ID. Karaoke mode
@@ -296,12 +307,15 @@ function CoverImage({
 
   // Cover size: larger for classic iPod; modern skin uses a tighter row.
   const coverSize =
-    ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60; // cqmin units
+    tunables?.coverSize ??
+    (ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60); // cqmin units
   // Side spacing — tighter on modern nano-style Cover Flow (small viewport).
   const baseSpacing =
-    ipodMode && compactIpodCarousel ? 17 : ipodMode ? 26 : 16;
+    tunables?.baseSpacing ??
+    (ipodMode && compactIpodCarousel ? 17 : ipodMode ? 26 : 16);
   const positionSpacing =
-    ipodMode && compactIpodCarousel ? 12 : ipodMode ? 18 : 11;
+    tunables?.positionSpacing ??
+    (ipodMode && compactIpodCarousel ? 12 : ipodMode ? 18 : 11);
 
   // Scale values: the modern compact carousel scales the neighbouring
   // covers up so they sit clearly past the center sleeve's edge
@@ -311,7 +325,8 @@ function CoverImage({
   // its wider viewport.
   const centerScale = 1.0;
   const sideScale =
-    ipodMode && compactIpodCarousel ? 1.2 : ipodMode ? 1.0 : 0.9;
+    tunables?.sideScale ??
+    (ipodMode && compactIpodCarousel ? 1.2 : ipodMode ? 1.0 : 0.9);
   
   const isCenter = position === 0;
 
@@ -592,7 +607,36 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const isMacTheme = currentTheme === "macosx";
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernIpodCoverFlow = ipodMode && uiVariant === "modern";
-  
+
+  // ----------------- TEMPORARY DEBUG TUNER ------------------------
+  //
+  // Floating slider panel for tweaking the modern Cover Flow geometry
+  // live. The four knobs feed straight into `CoverImage` (via the
+  // `tunables` prop) so changes are reflected without a rebuild. Keep
+  // this scoped to the modern compact carousel — classic / karaoke
+  // keep their original hard-coded defaults.
+  //
+  // TODO(remove): delete this block + the tunables prop + the panel
+  // JSX once the final values are locked in. The defaults below are
+  // the production values; the panel just lets us iterate quickly.
+  const DEFAULT_TUNABLES = {
+    coverSize: 58,
+    baseSpacing: 17,
+    positionSpacing: 12,
+    sideScale: 1.2,
+  };
+  const [tunables, setTunables] = useState(DEFAULT_TUNABLES);
+  const [tunerPanelOpen, setTunerPanelOpen] = useState(true);
+  const updateTunable = useCallback(
+    (key: keyof typeof DEFAULT_TUNABLES, value: number) =>
+      setTunables((prev) => ({ ...prev, [key]: value })),
+    []
+  );
+  const copyTunables = useCallback(() => {
+    const text = `coverSize: ${tunables.coverSize}, baseSpacing: ${tunables.baseSpacing}, positionSpacing: ${tunables.positionSpacing}, sideScale: ${tunables.sideScale}`;
+    navigator.clipboard?.writeText(text).catch(() => {});
+  }, [tunables]);
+
   // Track swipe state
   const swipeStartX = useRef<number | null>(null);
   const lastMoveX = useRef<number | null>(null);
@@ -772,6 +816,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   );
 
   return (
+    <>
     <AnimatePresence>
       {isVisible && (
         <motion.div
@@ -918,6 +963,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     selectedIndex={selectedIndex}
                     currentIndex={currentCoverIndex}
                     onPlayTrackInPlace={playItemInPlace}
+                    tunables={isModernIpodCoverFlow ? tunables : undefined}
                   />
                 ))}
               </AnimatePresence>
@@ -1056,5 +1102,82 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
         </motion.div>
       )}
     </AnimatePresence>
+    {/* TEMPORARY: debug slider panel for tweaking the modern Cover
+        Flow geometry. Rendered through a portal to document.body so
+        the iPod app's transformed parent doesn't capture the fixed
+        positioning. Remove this whole block + the `tunables` prop
+        once the final values are locked in. */}
+    {isVisible &&
+      isModernIpodCoverFlow &&
+      typeof document !== "undefined" &&
+      createPortal(
+        <div
+          className="fixed top-4 right-4 z-[9999] w-[260px] rounded-md bg-white/95 shadow-[0_8px_28px_rgba(0,0,0,0.25)] ring-1 ring-black/10 p-3 font-sans text-[12px] text-black backdrop-blur"
+          style={{ pointerEvents: "auto" }}
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <div className="font-semibold">Cover Flow tuner</div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={copyTunables}
+                className="rounded border border-black/15 bg-white px-1.5 py-0.5 text-[11px] hover:bg-black/5"
+                title="Copy current values"
+              >
+                Copy
+              </button>
+              <button
+                type="button"
+                onClick={() => setTunables(DEFAULT_TUNABLES)}
+                className="rounded border border-black/15 bg-white px-1.5 py-0.5 text-[11px] hover:bg-black/5"
+                title="Reset to defaults"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setTunerPanelOpen((v) => !v)}
+                className="rounded border border-black/15 bg-white px-1.5 py-0.5 text-[11px] hover:bg-black/5"
+                title="Toggle panel"
+              >
+                {tunerPanelOpen ? "–" : "+"}
+              </button>
+            </div>
+          </div>
+          {tunerPanelOpen && (
+            <div className="space-y-2">
+              {[
+                { key: "coverSize", label: "coverSize (cqmin)", min: 30, max: 90, step: 1 },
+                { key: "baseSpacing", label: "baseSpacing (cqmin)", min: 0, max: 50, step: 1 },
+                { key: "positionSpacing", label: "positionSpacing (cqmin)", min: 0, max: 40, step: 1 },
+                { key: "sideScale", label: "sideScale", min: 0.6, max: 1.6, step: 0.05 },
+              ].map((row) => {
+                const k = row.key as keyof typeof DEFAULT_TUNABLES;
+                return (
+                  <label key={row.key} className="block">
+                    <div className="mb-0.5 flex items-center justify-between text-[11px]">
+                      <span>{row.label}</span>
+                      <span className="tabular-nums">{tunables[k]}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={row.min}
+                      max={row.max}
+                      step={row.step}
+                      value={tunables[k]}
+                      onChange={(e) =>
+                        updateTunable(k, Number(e.target.value))
+                      }
+                      className="w-full"
+                    />
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>,
+        document.body
+      )}
+    </>
   );
 });
