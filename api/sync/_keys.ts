@@ -22,10 +22,15 @@ export function autoSyncPreferenceKey(username: string): string {
 }
 
 /**
- * Cross-device storage for the Apple Music **Music User Token** so the
- * iPod can restore an authorized session on browsers that wipe site
- * storage between visits (notably Tesla's in-car browser). Bound to the
- * ryOS account — survives ryOS sign-out + sign-in on a new device.
+ * Cross-device storage for the Apple Music **Music User Token** so
+ * the iPod can restore an authorized session on browsers that wipe
+ * site storage between visits (notably Tesla's in-car browser).
+ *
+ * Bound to the ryOS account: survives ryOS sign-out + sign-in on a
+ * new device, and stored without a Redis TTL (consistent with the
+ * rest of `sync:*` state in this codebase). The only server-side
+ * garbage-collection path is read-time pruning of tokens whose
+ * client-supplied `expiresAt` is in the past.
  *
  * @see api/sync/musickit-user-token.ts
  */

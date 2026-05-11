@@ -24,12 +24,17 @@
  *     intentionally do not delete it from cloud on ryOS sign-out — the
  *     user expects the saved Apple Music auth to follow them between
  *     devices and across sign-out/sign-in cycles on the same device.
- *   - The 90-day TTL matches `USER_TTL_SECONDS`, so a deleted user's
- *     stored token doesn't outlive the account itself.
+ *   - Stored **without a TTL**, matching the rest of `sync:*` state
+ *     (auto-sync preference, per-domain redis state, etc.). User
+ *     records in ryOS themselves have no TTL — only auth-token rows
+ *     do — so a long-idle user who re-signs-in should find their
+ *     synced state, including this token, intact.
  *   - The DELETE method is reserved for the Apple Music
  *     `unauthorize()` flow — the explicit "I want this gone" path.
- *   - Expired tokens (per the client-supplied `expiresAt`) are
- *     filtered on read and the row is opportunistically pruned.
+ *   - Expired tokens (per the client-supplied `expiresAt`, which
+ *     reflects Apple's own validity window) are filtered on read and
+ *     the row is opportunistically pruned. This is the only
+ *     server-side garbage-collection path.
  *
  * The stored token is no more sensitive than what MusicKit JS already
  * keeps in `localStorage` on the device, and the endpoint is
@@ -39,13 +44,11 @@
 import type { VercelResponse } from "@vercel/node";
 import type { Redis } from "../_utils/redis.js";
 import { apiHandler } from "../_utils/api-handler.js";
-import { USER_TTL_SECONDS } from "../_utils/auth/index.js";
 import { musickitUserTokenKey } from "./_keys.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
-export const STORE_TTL_SECONDS = USER_TTL_SECONDS;
 export const MAX_TOKEN_LENGTH = 4096;
 
 export interface StoredUserToken {
@@ -143,9 +146,11 @@ async function handlePut(
     storedAt: Date.now(),
   };
 
-  await redis.set(musickitUserTokenKey(username), JSON.stringify(payload), {
-    ex: STORE_TTL_SECONDS,
-  });
+  // Stored without a TTL on purpose — see the module header. Apple's
+  // own validity window (carried in `expiresAt`) is the canonical
+  // 'this token is dead' signal; we prune on read instead of relying
+  // on a Redis-side timer.
+  await redis.set(musickitUserTokenKey(username), JSON.stringify(payload));
   res.status(200).json({ ok: true, expiresAt });
 }
 
