@@ -141,12 +141,12 @@ function IpodModernPlayPauseIcon({
 
 /** `rotateY` + perspective for left↔right foreshortening; Karaoke-style reflection stacking.
  *
- * Cover sized at 72px (up from 54px) so it dominates the now-playing
- * row like the iPod nano 6G/7G reference photo, where the artwork
- * occupies roughly the left third of the screen. Reflection ratio
- * dropped from 0.5 → 0.3 so the taller cover doesn't push its
- * mirrored copy down into the progress bar. */
-const MODERN_NOW_PLAYING_ART_PX = 72;
+ * Cover sized at 60px — comfortably bigger than the original 54px
+ * without crowding the title / artist / album text column to its
+ * right or pushing the reflection down into the progress bar.
+ * Reflection ratio kept at 0.3 (subtler than the prior 0.5) so the
+ * stack stays inside the now-playing row. */
+const MODERN_NOW_PLAYING_ART_PX = 60;
 const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
 const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
   background: "#1a1a1a",
