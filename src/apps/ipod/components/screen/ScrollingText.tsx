@@ -18,6 +18,18 @@ interface ScrollingTextProps {
   allowMarquee?: boolean;
   /** Seconds to wait before the marquee starts (each scroll cycle still runs full duration). */
   scrollStartDelaySec?: number;
+  /**
+   * When `true`, toggling `isPlaying` to `false` snaps the text back to its
+   * starting position (the marquee track is unmounted instead of pausing
+   * mid-scroll). The right-edge truncation fade still renders so overflowing
+   * labels remain hinted. Use for selection-driven marquees (e.g. iPod menu
+   * rows) where deselection should reset the row.
+   *
+   * Defaults to `false` — legacy "freeze in place" behavior that matches the
+   * real iPod Now Playing screen, which keeps the marquee paused at the
+   * current offset when the user pauses playback.
+   */
+  resetOnPause?: boolean;
   style?: CSSProperties;
 }
 
@@ -29,6 +41,7 @@ export function ScrollingText({
   fadeEdges = false,
   allowMarquee = true,
   scrollStartDelaySec = 0,
+  resetOnPause = false,
   style,
 }: ScrollingTextProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,11 +74,17 @@ export function ScrollingText({
     return () => resizeObserver.disconnect();
   }, [text, allowMarquee]);
 
-  const showMarquee = shouldScroll && allowMarquee;
+  // When `resetOnPause` is enabled and we're paused, drop the marquee track
+  // entirely so the duplicated text snaps back to translate(0). The static
+  // branch still gets the right-edge truncation fade below.
+  const isResetPaused = resetOnPause && !isPlaying;
+  const showMarquee = shouldScroll && allowMarquee && !isResetPaused;
+  const showStaticOverflowFade =
+    shouldScroll && allowMarquee && isResetPaused && fadeEdges;
 
   useEffect(() => {
     setEdgeFadeActive(false);
-  }, [text, shouldScroll, allowMarquee, scrollStartDelaySec, fadeEdges]);
+  }, [text, showMarquee, scrollStartDelaySec, fadeEdges]);
 
   const handleMarqueeAnimationStart = useCallback((e: AnimationEvent<HTMLDivElement>) => {
     if (!e.animationName.includes("scrolling-text-marquee")) return;
@@ -73,13 +92,19 @@ export function ScrollingText({
   }, []);
 
   const fadeInset = "0.75em";
-  const maskImage =
-    showMarquee && fadeEdges
-      ? edgeFadeActive
-        ? // Full fade: hides seam at both edges while looping
-          `linear-gradient(to right, transparent 0, black ${fadeInset}, black calc(100% - ${fadeInset}), transparent 100%)`
-        : // Pre-start / idle: keep text crisp on the left, hint overflow on the right
-          `linear-gradient(to right, black 0, black calc(100% - ${fadeInset}), transparent 100%)`
+  // Right-only fade: keep text crisp on the left, hint overflow on the right.
+  // Used for the idle/pre-start frame of the marquee AND for the
+  // `resetOnPause` static fallback (so deselected overflowing rows still
+  // render a truncation hint instead of a hard cut).
+  const rightOnlyFadeGradient = `linear-gradient(to right, black 0, black calc(100% - ${fadeInset}), transparent 100%)`;
+  // Full fade: hides the seam at both edges while the marquee loops.
+  const bothEdgesFadeGradient = `linear-gradient(to right, transparent 0, black ${fadeInset}, black calc(100% - ${fadeInset}), transparent 100%)`;
+  const maskImage = showMarquee && fadeEdges
+    ? edgeFadeActive
+      ? bothEdgesFadeGradient
+      : rightOnlyFadeGradient
+    : showStaticOverflowFade
+      ? rightOnlyFadeGradient
       : undefined;
   const mergedStyle: CSSProperties = {
     ...style,

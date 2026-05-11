@@ -54,6 +54,9 @@ export function MenuListItem({
     //   - When the row is also `isSelected`, the marquee animates and
     //     both edges fade — matches the iPod nano 6G/7G's behavior of
     //     scrolling the highlighted row's text horizontally.
+    //   - `resetOnPause` is enabled so deselecting a row snaps the
+    //     marquee back to translate(0) instead of leaving the text
+    //     frozen at whatever offset it had scrolled to.
     return (
       <div
         onClick={isLoading ? undefined : onClick}
@@ -76,6 +79,7 @@ export function MenuListItem({
             fadeEdges
             allowMarquee={allowScrollingMarquee}
             isPlaying={isSelected && !isLoading}
+            resetOnPause
             scrollStartDelaySec={0.5}
             className="max-w-full min-w-0 block text-[15px] font-semibold leading-normal"
           />
