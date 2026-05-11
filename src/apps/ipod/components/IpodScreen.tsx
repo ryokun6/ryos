@@ -847,7 +847,13 @@ export function IpodScreen({
        *   play indicator on the left and battery on the right. */}
       <div
         className={cn(
-          "shrink-0 py-0 flex items-center sticky top-0 z-20",
+          // z-10 (NOT z-20) so the video / lyrics overlay (z-20) cleanly
+          // covers the titlebar when active — the user wants the screen
+          // to read as full-bleed video / lyrics with no chrome on top.
+          // In all other states (menu, now-playing without video, split
+          // menu) the titlebar still renders normally because nothing
+          // higher-z is drawn over it.
+          "shrink-0 py-0 flex items-center sticky top-0 z-10",
           isModernUi
             ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-1.5 pr-1.5 gap-1.5"
             : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
