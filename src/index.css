@@ -1449,24 +1449,24 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   color: #ffffff;
 }
 
-/* iPod-classic-js BatteryIndicator (sampled directly):
- *   ChargeLevelContainer: 1px solid #626262, background #54585b w/ a
- *     gloss `linear-gradient(180deg, transparent 25%, 65%, rgba(255,255,255,.5))`
- *   ChargeLevel: green #A5E07F (or red #D17F6B at <=20%) overlaid with a
- *     specular highlight + dark base.
- *   BatteryCap: light grey #c4c4c4 with a #626262 outline.
+/* iPod nano 6G/7G battery, "half-glossy" treatment:
+ *   - Container: dark grey shell with a 1px hairline and a glossy white
+ *     highlight covering ONLY the top half (fades to transparent at
+ *     the midline) — same lacquer look as the iOS 6 status bar
+ *     battery icon.
+ *   - Fill: green (or red at ≤20%) carrying the same top-half gloss so
+ *     the charge level reads as a single glossy lozenge.
+ *   - Cap: tiny matched-grey nib protruding past the right curve.
  *
- * The bar count is irrelevant in this skin — the CSS draws a continuous
- * fill % rather than 4 segments. The component handles the percentage
- * sampling. */
+ * Sized at 14×7 with a 2×3 cap for the slim 17px modern titlebar. */
 .ipod-modern-battery-container {
   border: 1px solid #626262;
   background-color: #54585b;
   background-image: linear-gradient(
     180deg,
-    transparent 25%,
-    transparent 65%,
-    rgba(255, 255, 255, 0.5) 100%
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.18) 45%,
+    transparent 50%
   );
 }
 
@@ -1474,13 +1474,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background-color: #a5e07f;
   background-image: linear-gradient(
     180deg,
-    transparent 10%,
-    rgba(255, 255, 255, 0.5) 20%,
-    transparent 35%,
-    transparent 40%,
-    rgba(0, 0, 0, 0.2) 55%,
-    rgba(0, 0, 0, 0.3) 65%,
-    rgba(0, 0, 0, 0.4) 80%
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.15) 45%,
+    transparent 50%
   );
 }
 
@@ -1492,7 +1488,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background-color: #c4c4c4;
   border: 1px solid #626262;
   border-left-width: 0;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 2px 2px 0;
 }
 
 /* iPod 6G/7G "split menu" view: the right HALF of the screen shows

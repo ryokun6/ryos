@@ -64,13 +64,16 @@ export function BatteryIndicator({
   const filledBars = isCharging ? animationFrame : Math.ceil(level * 4);
 
   if (isModern) {
-    // Glossy grey shell (rounded), green fill clipped inside shell; nib overlaps the
-    // right curve (-ml-[2px]) so there's no slit, protrudes farther right vs prior 2×6 cap.
+    // Compact iPod nano 6G/7G battery: smaller pill (14×7) sized for the
+    // slim 17px titlebar, with a "half-glossy" highlight that brightens
+    // the top half only and fades to transparent at the midline. The
+    // green fill carries the same half-gloss so charge level reads as
+    // a single glossy lozenge rather than a flat bar.
     const fillPercent = Math.max(0, Math.min(1, level)) * 100;
     const isLow = !isCharging && level <= 0.2;
     return (
       <div className="flex items-center">
-        <div className="relative h-[10px] w-[19px] shrink-0 overflow-hidden rounded-[2px] ipod-modern-battery-container">
+        <div className="relative h-[7px] w-[14px] shrink-0 overflow-hidden rounded-[1.5px] ipod-modern-battery-container">
           <div
             className={cn(
               "absolute inset-y-0 left-0 ipod-modern-battery-fill transition-[width] duration-300",
@@ -79,7 +82,7 @@ export function BatteryIndicator({
             style={{ width: `${fillPercent}%` }}
           />
         </div>
-        <div className="-ml-[2px] h-[5px] w-[4px] shrink-0 ipod-modern-battery-cap" />
+        <div className="-ml-[1px] h-[3px] w-[2px] shrink-0 ipod-modern-battery-cap" />
       </div>
     );
   }
