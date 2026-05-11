@@ -775,6 +775,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             // skin (Music + Now Playing, settings menus). Classic /
             // karaoke variants keep the original deep-black backdrop.
             isModernIpodCoverFlow ? "bg-white" : "bg-black",
+            // Retain the iPod screen's black bezel + rounded corners
+            // when Cover Flow is open. The overlay is rendered as a
+            // sibling of `IpodScreen` (not a child), so without its
+            // own border it would obscure the bezel and the carousel
+            // would read as a different frame than every other view.
+            // Karaoke Cover Flow opens full-bleed inside its own
+            // window chrome and skips the bezel.
+            ipodMode && "border border-black border-2 rounded-[2px]",
             ipodMode ? "ipod-force-font" : "karaoke-force-font",
           )}
           style={{ containerType: "size" }}
