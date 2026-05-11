@@ -284,14 +284,18 @@ function CoverImage({
     }
   }, [selectedIndex, currentIndex, onPlayTrackInPlace, onTogglePlay]);
 
-  // Cover size: larger for classic iPod; modern skin uses a tighter row.
+  // Cover size: classic iPod stays at 65; modern (nano-style) skin uses
+  // a wider/taller cover that fills more of the small viewport — closer
+  // to the actual nano 6G/7G Cover Flow proportions.
   const coverSize =
-    ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60; // cqmin units
-  // Side spacing — tighter on modern nano-style Cover Flow (small viewport).
+    ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 70 : 60; // cqmin units
+  // Side spacing — bumped slightly on modern to keep the carousel
+  // breathing room after the larger covers (otherwise the side cards
+  // overlap the center cover too aggressively).
   const baseSpacing =
-    ipodMode && compactIpodCarousel ? 17 : ipodMode ? 26 : 16;
+    ipodMode && compactIpodCarousel ? 19 : ipodMode ? 26 : 16;
   const positionSpacing =
-    ipodMode && compactIpodCarousel ? 12 : ipodMode ? 18 : 11;
+    ipodMode && compactIpodCarousel ? 13 : ipodMode ? 18 : 11;
 
   // Scale values: no scaling for iPod mode, subtle for karaoke
   const centerScale = 1.0;
@@ -808,10 +812,11 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             <div 
               className="relative flex items-center justify-center w-full"
               style={{ 
-                height: ipodMode && isModernIpodCoverFlow ? "78%" : "75%",
+                height:
+                  ipodMode && isModernIpodCoverFlow ? "90%" : "75%",
                 marginTop:
                   ipodMode && isModernIpodCoverFlow
-                    ? "-6%"
+                    ? "-14%"
                     : ipodMode
                       ? "-8%"
                       : "-2%",
