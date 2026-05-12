@@ -136,12 +136,20 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
 
-  // Track when the main sleeve image has finished loading so the
-  // reflection can fade in alongside it (instead of popping in
-  // independently when the duplicate <img> resolves).
-  const [coverLoaded, setCoverLoaded] = useState(false);
+  // Track the reflection's own load independently of the sleeve's
+  // FadeInImage so the mirror always fades in to its target
+  // opacity once its bitmap is ready, without relying on a
+  // callback chain through the sleeve. The browser cache makes
+  // both <img> loads land within a frame of each other in
+  // practice (same URL).
+  const reflectionImgRef = useRef<HTMLImageElement>(null);
+  const [reflectionLoaded, setReflectionLoaded] = useState(false);
   useEffect(() => {
-    setCoverLoaded(false);
+    setReflectionLoaded(false);
+    const img = reflectionImgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setReflectionLoaded(true);
+    }
   }, [coverUrl]);
 
   return (
@@ -173,7 +181,6 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
               // FadeInImage's own placeholder div would just stack
               // on top of the same color. Disable it here.
               showPlaceholder={false}
-              onLoaded={() => setCoverLoaded(true)}
             />
           ) : (
             <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
@@ -188,18 +195,19 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
             style={{ height: reflectH }}
           >
             <img
+              ref={reflectionImgRef}
               src={coverUrl}
               alt=""
               draggable={false}
+              onLoad={() => setReflectionLoaded(true)}
               className="block w-full h-auto"
               style={{
                 ...MODERN_NOW_PLAYING_REFLECT_IMG,
-                // Fade the mirrored reflection in once the main
-                // sleeve image has loaded so both surfaces appear
-                // together. `MODERN_NOW_PLAYING_REFLECT_IMG`
+                // Fade the mirrored reflection in once its own
+                // bitmap is ready. `MODERN_NOW_PLAYING_REFLECT_IMG`
                 // already supplies the original 0.36 opacity for
                 // the loaded state.
-                opacity: coverLoaded
+                opacity: reflectionLoaded
                   ? (MODERN_NOW_PLAYING_REFLECT_IMG.opacity as number)
                   : 0,
                 transition: "opacity 250ms ease-out",

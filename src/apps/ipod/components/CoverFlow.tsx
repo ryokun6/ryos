@@ -292,12 +292,22 @@ function CoverImage({
       ? track.cover ?? null
       : formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
-  // Track when the main sleeve image has finished loading so the
-  // mirrored reflection underneath can fade in alongside it (instead
-  // of popping in independently when the duplicate <img> resolves).
-  const [coverLoaded, setCoverLoaded] = useState(false);
+  // Track the mirrored reflection's own load so we can fade it in
+  // independently of the sleeve. Tying it to the sleeve's
+  // FadeInImage `onLoaded` callback was fragile — when that
+  // callback didn't fire (e.g. for cached cross-origin images on
+  // certain code paths), the reflection stayed at opacity 0 and
+  // looked "lost". Since the reflection uses the same URL as the
+  // sleeve, the browser cache makes both loads land within a frame
+  // of each other in practice.
+  const reflectionImgRef = useRef<HTMLImageElement>(null);
+  const [reflectionLoaded, setReflectionLoaded] = useState(false);
   useEffect(() => {
-    setCoverLoaded(false);
+    setReflectionLoaded(false);
+    const img = reflectionImgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setReflectionLoaded(true);
+    }
   }, [coverUrl]);
 
   // Handle disc click - play track if different, otherwise toggle play/pause
@@ -494,7 +504,6 @@ function CoverImage({
             // own placeholder div so the brightness overlay stays
             // the topmost layer.
             showPlaceholder={false}
-            onLoaded={() => setCoverLoaded(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
@@ -512,9 +521,11 @@ function CoverImage({
       </motion.div>
       
       {/* Reflection - moves down with cover when CD is shown.
-          Gated on `coverLoaded` so the mirror image fades in in
-          lock-step with the main sleeve rather than popping in
-          when the duplicate <img> resolves separately. */}
+          Tracks its own load via the duplicate <img>'s onLoad
+          (plus an `img.complete` cached-image check on src change)
+          so it fades in to its 0.3 target opacity once the
+          mirrored bitmap is ready, without relying on the sleeve's
+          FadeInImage callback. */}
       <motion.div
         className="absolute w-full pointer-events-none"
         style={{
@@ -532,12 +543,14 @@ function CoverImage({
         }}
       >
         <img
+          ref={reflectionImgRef}
           src={coverUrl || ""}
           alt=""
           className="w-full h-auto"
+          onLoad={() => setReflectionLoaded(true)}
           style={{
             transform: "scaleY(-1)",
-            opacity: coverUrl && coverLoaded ? 0.3 : 0,
+            opacity: coverUrl && reflectionLoaded ? 0.3 : 0,
             transition: "opacity 250ms ease-out",
             maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
