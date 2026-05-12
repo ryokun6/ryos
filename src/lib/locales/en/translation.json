@@ -2001,8 +2001,8 @@
         "librarySource": "Library",
         "libraryAppleMusic": "Apple Music",
         "libraryYoutube": "YouTube",
-        "appleMusicSignIn": "Apple Music: Sign In",
-        "appleMusicSignOut": "Apple Music: Sign Out",
+        "appleMusicSignIn": "Apple Music",
+        "appleMusicSignOut": "Apple Music",
         "unconfigured": "Unconfigured",
         "signedIn": "Signed In",
         "signedOut": "Signed Out"
