@@ -406,7 +406,9 @@ export function useMusicKit(
         typeof event === "object" && event !== null && "token" in event
           ? (event as { token?: unknown }).token
           : undefined;
-      const token = normalizeMusicUserToken(tokenFromEvent ?? instance.musicUserToken);
+      const token = normalizeMusicUserToken(
+        tokenFromEvent ?? instance.musicUserToken
+      );
       if (token) {
         void saveSyncedMusicUserToken(token).catch((err) => {
           console.warn("[musickit] failed to save synced user token", err);
