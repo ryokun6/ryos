@@ -1017,6 +1017,18 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   // album-scoped: navigating to a different cover snaps back to the
   // un-flipped state (matches the iPod nano/classic 6G behavior).
   const [isFlipped, setIsFlipped] = useState(false);
+  // True while the album-flip overlay is mid-rotation (in either
+  // direction). Lets us keep the underlying carousel center sleeve
+  // hidden for the full back-flip duration so the reverse animation
+  // actually shows the tracklist rotating away — without this the
+  // sleeve pops back to visible the instant Menu is pressed and the
+  // reverse rotation reads as "the tracklist just disappeared". Same
+  // pattern the dashboard widget flip uses (`WidgetChrome.tsx`).
+  const [isFlipAnimating, setIsFlipAnimating] = useState(false);
+  const flipAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const isInitialFlipRef = useRef(true);
   // Selected row inside the tracklist while flipped. Reset whenever
   // the active album changes so wheel rotation always starts at the
   // currently-playing track (or the first track if none of this album
@@ -1089,6 +1101,28 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   useEffect(() => {
     setIsFlipped(false);
   }, [selectedIndex]);
+
+  // Track flip-animation duration so the carousel sleeve stays
+  // hidden for the entire forward + reverse rotation. Skipped on the
+  // very first run (initial mount, no animation actually playing).
+  useEffect(() => {
+    if (isInitialFlipRef.current) {
+      isInitialFlipRef.current = false;
+      return;
+    }
+    setIsFlipAnimating(true);
+    if (flipAnimationTimerRef.current) {
+      clearTimeout(flipAnimationTimerRef.current);
+    }
+    flipAnimationTimerRef.current = setTimeout(() => {
+      setIsFlipAnimating(false);
+    }, 600);
+    return () => {
+      if (flipAnimationTimerRef.current) {
+        clearTimeout(flipAnimationTimerRef.current);
+      }
+    };
+  }, [isFlipped]);
 
   // Compute the current cover item + its tracklist (in browsableTracks
   // order). For un-grouped covers (one cover per song) this is just a
@@ -1465,7 +1499,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   selectedIndex={selectedIndex}
                   currentIndex={currentCoverIndex}
                   onPlayTrackInPlace={playItemInPlace}
-                  hideSleeveAtCenter={isFlipped && position === 0}
+                  hideSleeveAtCenter={(isFlipped || isFlipAnimating) && position === 0}
                 />
               ))}
             </AnimatePresence>
@@ -1748,7 +1782,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     selectedIndex={selectedIndex}
                     currentIndex={currentCoverIndex}
                     onPlayTrackInPlace={playItemInPlace}
-                    hideSleeveAtCenter={isFlipped && position === 0}
+                    hideSleeveAtCenter={(isFlipped || isFlipAnimating) && position === 0}
                   />
                 ))}
               </AnimatePresence>
