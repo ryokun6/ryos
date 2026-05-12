@@ -1196,11 +1196,18 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 <div
                   className={cn(
                     "truncate",
-                    isModernIpodCoverFlow &&
-                      "text-[10px] text-[rgb(99,101,103)] tracking-tight",
-                    ipodMode &&
-                      !isModernIpodCoverFlow &&
-                      "text-white/60 text-[8px]",
+                    isModernIpodCoverFlow
+                      ? "text-[10px] text-[rgb(99,101,103)] tracking-tight"
+                      : // Classic iPod and karaoke share the same
+                        // light-on-black treatment — the parent
+                        // backdrop is `bg-black` and the title above
+                        // is already `text-white`, so the artist
+                        // sits one rung down at 60% white. Without
+                        // this, karaoke artist text inherited the
+                        // default near-black colour and disappeared
+                        // against the black Cover Flow stage.
+                        "text-white/60",
+                    ipodMode && !isModernIpodCoverFlow && "text-[8px]",
                   )}
                   style={
                     ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }
