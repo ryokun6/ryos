@@ -791,9 +791,15 @@ export function IpodScreen({
             // a single sharp shape on any DPI. Sized at 14px to
             // dominate the 17px titlebar (visually matches the title
             // type x-height + ascender).
+            //
+            // `-translate-y-px` nudges the glyph up 1px to compensate
+            // for the titlebar's 1px inset bottom hairline + the icon's
+            // own downward `drop-shadow(0 1px 0 …)`, which together
+            // pulled the shape's optical center half a pixel below the
+            // titlebar's visible (above-the-hairline) midline.
             <div
               className={cn(
-                "flex items-center justify-center w-[14px] h-[14px]",
+                "flex items-center justify-center w-[14px] h-[14px] -translate-y-px",
                 // Same light top highlight as the title line — title uses
                 // [text-shadow:0_1px_0_rgba(255,255,255,0.9)]; SVG paths
                 // use filter drop-shadow so the blue gradient reads with
