@@ -2906,7 +2906,14 @@ export function useIpodLogic({
     // inline Cover Flow exits to the right (x: 0 → 100%) and the menu
     // (or now-playing) slides back in from the left — same shape as
     // pressing menu from now-playing.
+    //
+    // First give Cover Flow a chance to consume the back press itself
+    // — it does so when the album cover is currently flipped to its
+    // tracklist (Menu unflips back to the carousel before exiting).
     if (isCoverFlowOpen) {
+      if (coverFlowRef.current?.handleMenuButton?.()) {
+        return;
+      }
       setMenuDirection("backward");
       setIsCoverFlowOpen(false);
       return;
