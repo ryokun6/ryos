@@ -2,7 +2,7 @@ import { system7 } from "./system7";
 import { macosx } from "./macosx";
 import { xp } from "./xp";
 import { win98 } from "./win98";
-import { OsTheme, OsThemeId, ThemeMetadata } from "./types";
+import { OsPlatform, OsTheme, OsThemeId, ThemeMetadata } from "./types";
 
 export const themes: Record<OsThemeId, OsTheme> = {
   system7,
@@ -24,6 +24,14 @@ export function getThemeMetadata(id: OsThemeId): ThemeMetadata {
 }
 
 /**
+ * Platform bucket for CSS and layout rules shared by multiple themes
+ * (e.g. Windows XP + Windows 98).
+ */
+export function getOsPlatform(id: OsThemeId): OsPlatform {
+  return themes[id].metadata.isWindows ? "windows" : "mac";
+}
+
+/**
  * Check if a theme is Windows-style (XP, 98).
  * Replaces scattered `currentTheme === "xp" || currentTheme === "win98"` checks.
  */
@@ -38,4 +46,9 @@ export function isMacTheme(id: OsThemeId): boolean {
   return themes[id].metadata.isMac;
 }
 
-export type { OsTheme, OsThemeId, ThemeMetadata } from "./types";
+export type {
+  OsPlatform,
+  OsTheme,
+  OsThemeId,
+  ThemeMetadata,
+} from "./types";

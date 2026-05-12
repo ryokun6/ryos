@@ -1,3 +1,15 @@
+/*
+ * OS theme CSS architecture (see docs/theme-architecture.md)
+ *
+ * Layers (source → consumer):
+ *   1) Token blocks — :root[data-os-theme="…"] { --os-* } (per-theme palette + metrics)
+ *   2) Family blocks — :root[data-os-platform="mac|windows"] { shared chrome overrides }
+ *   3) Structural / component rules — classes and nested selectors (Aqua, brushed metal, …)
+ *   4) Third-party containment — e.g. #webamp resets
+ *
+ * Prefer extending tokens or family rules over new duplicated :root[data-os-theme="xp|win98"] lists.
+ */
+
 /* Default/fallback values */
 :root {
   --os-font-ui: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
@@ -37,6 +49,15 @@
   --os-metrics-titlebar-height: 1.5rem;
   --os-metrics-menubar-height: 28px;
   --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
+  /* Menus (menubar + dropdown); Windows sizes in platform block, Aqua in macosx tokens */
+  --os-menu-item-font-size: inherit;
+  --os-menu-subtrigger-font-size: inherit;
+}
+
+/* Windows family — values identical for XP + Classic; theme tokens still set colors */
+:root[data-os-platform="windows"] {
+  --os-menu-item-font-size: 11px;
+  --os-menu-subtrigger-font-size: 11px;
 }
 
 /* Selection styling utility — replaces 12+ inline style blocks */
@@ -95,17 +116,14 @@
   font-size: revert !important;
 }
 
-/* Win98/XP - reset input/button overrides from 98-custom.css/xp-custom.css so Webamp skin displays correctly (seek bar color, seek button offset) */
-:root[data-os-theme="win98"] #webamp input[type="range"],
-:root[data-os-theme="xp"] #webamp input[type="range"] {
+/* Win98/XP — reset input/button overrides from 98-custom.css/xp-custom.css so Webamp skin displays correctly (seek bar color, seek button offset) */
+:root[data-os-platform="windows"] #webamp input[type="range"] {
   -webkit-appearance: auto !important;
   appearance: auto !important;
   transform: none !important;
 }
-:root[data-os-theme="win98"] #webamp input[type="range"]::-webkit-slider-thumb,
-:root[data-os-theme="win98"] #webamp input[type="range"]::-moz-range-thumb,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-webkit-slider-thumb,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-thumb {
+:root[data-os-platform="windows"] #webamp input[type="range"]::-webkit-slider-thumb,
+:root[data-os-platform="windows"] #webamp input[type="range"]::-moz-range-thumb {
   -webkit-appearance: auto !important;
   appearance: auto !important;
   background: revert !important;
@@ -113,16 +131,13 @@
   box-shadow: none !important;
   border: none !important;
 }
-:root[data-os-theme="win98"] #webamp input[type="range"]::-webkit-slider-runnable-track,
-:root[data-os-theme="win98"] #webamp input[type="range"]::-moz-range-track,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-webkit-slider-runnable-track,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-track {
+:root[data-os-platform="windows"] #webamp input[type="range"]::-webkit-slider-runnable-track,
+:root[data-os-platform="windows"] #webamp input[type="range"]::-moz-range-track {
   background: revert !important;
   box-shadow: none !important;
   border: none !important;
 }
-:root[data-os-theme="win98"] #webamp button,
-:root[data-os-theme="xp"] #webamp button {
+:root[data-os-platform="windows"] #webamp button {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
@@ -233,6 +248,8 @@
   --os-metrics-titlebar-height: 1.375rem;
   --os-metrics-menubar-height: 25px;
   --os-window-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  --os-menu-item-font-size: 13px;
+  --os-menu-subtrigger-font-size: 12px;
   /* Shared texture variables */
   --os-texture-toolbar-image: url("/assets/brushed-metal.jpg");
   --os-texture-toolbar-size: cover;
@@ -575,21 +592,6 @@
   --os-color-selection-text: #000000;
 }
 
-/* Ensure all UI elements in Windows 98 theme use the theme font with ArkPixel fallback */
-:root[data-os-theme="win98"] button,
-:root[data-os-theme="win98"] input,
-:root[data-os-theme="win98"] label,
-:root[data-os-theme="win98"] select,
-:root[data-os-theme="win98"] textarea,
-:root[data-os-theme="win98"] [role="menuitem"],
-:root[data-os-theme="win98"] [role="menuitemcheckbox"],
-:root[data-os-theme="win98"] [role="menuitemradio"],
-:root[data-os-theme="win98"] [role="option"] {
-  font-family: var(--os-font-ui) !important;
-  font-smooth: antialiased !important;
-  -webkit-font-smoothing: antialiased !important;
-}
-
 /* Windows XP Theme */
 :root[data-os-theme="xp"] {
   --os-font-ui: Tahoma, "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
@@ -638,32 +640,30 @@
   --os-color-selection-text: #000000;
 }
 
-/* Ensure all UI elements in Windows XP theme use the theme font with ArkPixel fallback */
-:root[data-os-theme="xp"] button,
-:root[data-os-theme="xp"] input,
-:root[data-os-theme="xp"] label,
-:root[data-os-theme="xp"] select,
-:root[data-os-theme="xp"] textarea,
-:root[data-os-theme="xp"] [role="menuitem"],
-:root[data-os-theme="xp"] [role="menuitemcheckbox"],
-:root[data-os-theme="xp"] [role="menuitemradio"],
-:root[data-os-theme="xp"] [role="option"] {
+/* Windows — native widget font (Luna + Classic; --os-font-ui is per-theme above) */
+:root[data-os-platform="windows"] button,
+:root[data-os-platform="windows"] input,
+:root[data-os-platform="windows"] label,
+:root[data-os-platform="windows"] select,
+:root[data-os-platform="windows"] textarea,
+:root[data-os-platform="windows"] [role="menuitem"],
+:root[data-os-platform="windows"] [role="menuitemcheckbox"],
+:root[data-os-platform="windows"] [role="menuitemradio"],
+:root[data-os-platform="windows"] [role="option"] {
   font-family: var(--os-font-ui) !important;
   font-smooth: antialiased !important;
   -webkit-font-smoothing: antialiased !important;
 }
 
-/* Reset XP/Win98 button styles for menubar triggers - they should look like plain text */
-:root[data-os-theme="xp"] .menubar-trigger,
-:root[data-os-theme="win98"] .menubar-trigger {
+/* Reset Windows button styles for menubar triggers - they should look like plain text */
+:root[data-os-platform="windows"] .menubar-trigger {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
 }
 
-:root[data-os-theme="xp"] .menubar-trigger:active,
-:root[data-os-theme="win98"] .menubar-trigger:active {
+:root[data-os-platform="windows"] .menubar-trigger:active {
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -672,38 +672,31 @@
    Those stylesheets handle the button icons via background-image.
    No override needed here - CSS specificity handles it. */
 
-/* Reset XP/Win98 button styles for iPod/Karaoke fullscreen toolbar buttons */
-:root[data-os-theme="xp"] .ipod-force-font button,
-:root[data-os-theme="xp"] .karaoke-force-font button,
-:root[data-os-theme="win98"] .ipod-force-font button,
-:root[data-os-theme="win98"] .karaoke-force-font button {
+/* Reset Windows button styles for iPod/Karaoke fullscreen toolbar buttons */
+:root[data-os-platform="windows"] .ipod-force-font button,
+:root[data-os-platform="windows"] .karaoke-force-font button {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 9999px !important;
 }
 
-:root[data-os-theme="xp"] .ipod-force-font button:active,
-:root[data-os-theme="xp"] .karaoke-force-font button:active,
-:root[data-os-theme="win98"] .ipod-force-font button:active,
-:root[data-os-theme="win98"] .karaoke-force-font button:active {
+:root[data-os-platform="windows"] .ipod-force-font button:active,
+:root[data-os-platform="windows"] .karaoke-force-font button:active {
   background: rgba(255, 255, 255, 0.1) !important;
   box-shadow: none !important;
 }
 
-/* Reset XP/Win98 button styles for ghost variant buttons (toolbar buttons, etc.)
+/* Reset Windows button styles for ghost variant buttons (toolbar buttons, etc.)
    These buttons want to be fully transparent - no background at all */
-:root[data-os-theme="xp"] button.\!bg-transparent,
-:root[data-os-theme="win98"] button.\!bg-transparent {
+:root[data-os-platform="windows"] button.\!bg-transparent {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
 
-:root[data-os-theme="xp"] button.\!bg-transparent:hover,
-:root[data-os-theme="xp"] button.\!bg-transparent:active,
-:root[data-os-theme="win98"] button.\!bg-transparent:hover,
-:root[data-os-theme="win98"] button.\!bg-transparent:active {
+:root[data-os-platform="windows"] button.\!bg-transparent:hover,
+:root[data-os-platform="windows"] button.\!bg-transparent:active {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -1500,35 +1493,30 @@
   font-smooth: auto !important;
 }
 
-/* XP / Win98 Spotlight: reset button styles from xp-custom.css / 98-custom.css
+/* Windows (Luna + Classic) Spotlight: reset button styles from xp-custom.css / 98-custom.css
    Those stylesheets apply background + 3D box-shadow to ALL <button> elements.
    Spotlight rows are <button> so they inherit the raised 3D look. Reset them.
    Use :not([data-selected]) to preserve the selection highlight background. */
-:root[data-os-theme="xp"] .spotlight-panel button:not([data-selected]),
-:root[data-os-theme="win98"] .spotlight-panel button:not([data-selected]) {
+:root[data-os-platform="windows"] .spotlight-panel button:not([data-selected]) {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
 }
-:root[data-os-theme="xp"] .spotlight-panel button[data-selected],
-:root[data-os-theme="win98"] .spotlight-panel button[data-selected] {
+:root[data-os-platform="windows"] .spotlight-panel button[data-selected] {
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
 }
-:root[data-os-theme="xp"] .spotlight-panel button:active,
-:root[data-os-theme="win98"] .spotlight-panel button:active,
-:root[data-os-theme="xp"] .spotlight-panel button:focus,
-:root[data-os-theme="win98"] .spotlight-panel button:focus {
+:root[data-os-platform="windows"] .spotlight-panel button:active,
+:root[data-os-platform="windows"] .spotlight-panel button:focus {
   box-shadow: none !important;
   border: none !important;
   outline: none !important;
 }
 
-/* XP / Win98 Spotlight: reset input styles */
-:root[data-os-theme="xp"] .spotlight-panel input,
-:root[data-os-theme="win98"] .spotlight-panel input {
+/* Windows Spotlight: reset input styles */
+:root[data-os-platform="windows"] .spotlight-panel input {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;

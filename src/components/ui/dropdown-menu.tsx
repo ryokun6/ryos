@@ -2,7 +2,7 @@ import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, CaretRight, Circle } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import { cn } from "@/lib/utils";
@@ -37,14 +37,13 @@ const DropdownMenuTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
 >(({ className, style, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isMacOSTheme } = useThemeFlags();
 
-  const macosTextShadow =
-    currentTheme === "macosx"
-      ? {
-          textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
-        }
-      : {};
+  const macosTextShadow = isMacOSTheme
+    ? {
+        textShadow: "0 2px 3px rgba(0, 0, 0, 0.25)",
+      }
+    : {};
 
   return (
     <DropdownMenuPrimitive.Trigger
@@ -71,7 +70,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     inset?: boolean;
   }
 >(({ className, inset, children, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.SubTrigger
@@ -83,18 +82,14 @@ const DropdownMenuSubTrigger = React.forwardRef<
       )}
       style={{
         fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-            : undefined,
+          isWindowsTheme || isMacOSTheme ? "var(--os-font-ui)" : undefined,
         fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? "11px"
-            : currentTheme === "macosx"
-            ? "12px !important"
+          isWindowsTheme || isMacOSTheme
+            ? isMacOSTheme
+              ? "var(--os-menu-subtrigger-font-size) !important"
+              : "var(--os-menu-subtrigger-font-size)"
             : undefined,
-        ...(currentTheme === "macosx" && {
+        ...(isMacOSTheme && {
           borderRadius: "0px",
           padding: "6px 12px 6px 16px",
           margin: "1px 0",
@@ -116,8 +111,7 @@ const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
 >(({ className, style, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSTheme = currentTheme === "macosx";
+  const { isMacOSTheme } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
@@ -156,8 +150,7 @@ const DropdownMenuContent = React.forwardRef<
     container?: HTMLElement | null;
   }
 >(({ className, sideOffset = 4, style, container, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSTheme = currentTheme === "macosx";
+  const { isMacOSTheme } = useThemeFlags();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
@@ -198,9 +191,7 @@ const DropdownMenuItem = React.forwardRef<
     inset?: boolean;
   }
 >(({ className, inset, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.Item
@@ -212,16 +203,14 @@ const DropdownMenuItem = React.forwardRef<
         "data-[state=checked]:!bg-transparent data-[state=checked]:text-foreground"
       )}
       style={{
-        fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-          : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-          : undefined,
-        fontSize: isXpTheme
-          ? "11px"
-          : isMacOSTheme
-          ? "13px !important"
-          : undefined,
+        fontFamily:
+          isWindowsTheme || isMacOSTheme ? "var(--os-font-ui)" : undefined,
+        fontSize:
+          isWindowsTheme || isMacOSTheme
+            ? isMacOSTheme
+              ? "var(--os-menu-item-font-size) !important"
+              : "var(--os-menu-item-font-size)"
+            : undefined,
         ...(isMacOSTheme && {
           borderRadius: "0px",
           padding: "6px 20px 6px 16px",
@@ -240,10 +229,12 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
 >(({ className, children, checked, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isSystem7 = currentTheme === "system7";
+  const {
+    isWindowsTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isAquaMenuChrome,
+  } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.CheckboxItem
@@ -251,28 +242,22 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       className={cn(
         "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Theme-specific hover/focus styles
-        isSystem7 && "rounded-none focus:bg-black focus:text-white hover:bg-black hover:text-white mx-0",
+        isSystem7Theme && "rounded-none focus:bg-black focus:text-white hover:bg-black hover:text-white mx-0",
         isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white hover:bg-[rgba(39,101,202,0.88)] hover:text-white",
-        !isSystem7 && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
+        !isSystem7Theme && !isMacOSTheme && "rounded-sm focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
         className,
         "data-[state=checked]:text-foreground"
       )}
       style={{
-        fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-          : isMacOSTheme
-          ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-          : undefined,
-        fontSize: isXpTheme
-          ? "11px"
-          : isMacOSTheme
-          ? "13px !important"
-          : undefined,
-        ...(isSystem7 && {
-          padding: "2px 12px 2px 32px",
-          margin: "0",
-        }),
-        ...(isXpTheme && {
+        fontFamily:
+          isWindowsTheme || isMacOSTheme ? "var(--os-font-ui)" : undefined,
+        fontSize:
+          isWindowsTheme || isMacOSTheme
+            ? isMacOSTheme
+              ? "var(--os-menu-item-font-size) !important"
+              : "var(--os-menu-item-font-size)"
+            : undefined,
+        ...(!isAquaMenuChrome && {
           padding: "2px 12px 2px 32px",
           margin: "0",
         }),
@@ -303,7 +288,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
 >(({ className, children, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.RadioItem
@@ -314,15 +299,8 @@ const DropdownMenuRadioItem = React.forwardRef<
       )}
       style={{
         fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-            : undefined,
-        fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? "11px"
-            : undefined,
+          isWindowsTheme || isMacOSTheme ? "var(--os-font-ui)" : undefined,
+        fontSize: isWindowsTheme ? "var(--os-menu-item-font-size)" : undefined,
       }}
       {...props}
     >
@@ -343,7 +321,7 @@ const DropdownMenuLabel = React.forwardRef<
     inset?: boolean;
   }
 >(({ className, inset, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.Label
@@ -355,15 +333,8 @@ const DropdownMenuLabel = React.forwardRef<
       )}
       style={{
         fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : currentTheme === "macosx"
-            ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
-            : undefined,
-        fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
-            ? "11px"
-            : undefined,
+          isWindowsTheme || isMacOSTheme ? "var(--os-font-ui)" : undefined,
+        fontSize: isWindowsTheme ? "var(--os-menu-item-font-size)" : undefined,
       }}
       {...props}
     />
@@ -375,9 +346,7 @@ const DropdownMenuSeparator = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
 >(({ className, ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isSystem7 = currentTheme === "system7";
-  const isMacOSTheme = currentTheme === "macosx";
+  const { isSystem7Theme, isMacOSTheme } = useThemeFlags();
 
   return (
     <DropdownMenuPrimitive.Separator
@@ -386,8 +355,8 @@ const DropdownMenuSeparator = React.forwardRef<
         className,
         "-mx-1 my-1 h-[1px] border-b-0",
         !isMacOSTheme && "border-t border-muted",
-        isSystem7 && "border-dotted",
-        !isSystem7 && !isMacOSTheme && "border-solid"
+        isSystem7Theme && "border-dotted",
+        !isSystem7Theme && !isMacOSTheme && "border-solid"
       )}
       style={{
         ...(isMacOSTheme && {

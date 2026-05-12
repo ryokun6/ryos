@@ -1,5 +1,8 @@
 export type OsThemeId = "system7" | "macosx" | "xp" | "win98";
 
+/** OS family for shared chrome rules (`data-os-platform` on `<html>`). */
+export type OsPlatform = "mac" | "windows";
+
 /**
  * Theme metadata for conditional rendering and layout decisions.
  * Centralizes theme-based checks that were previously scattered throughout the codebase.

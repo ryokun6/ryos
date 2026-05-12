@@ -16,6 +16,8 @@ description: Design and style UI components for ryOS following the 4 OS themes (
 
 ## Essential Utilities
 
+Root attributes: `data-os-theme` (exact id) and **`data-os-platform`** (`mac` | `windows`) — prefer Tailwind `os-mac:` / `os-windows:` / `os-theme-*:` variants (see `docs/theme-architecture.md`).
+
 ```tsx
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";

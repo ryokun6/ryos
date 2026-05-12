@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { themes } from "@/themes";
+import { getOsPlatform, themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 
@@ -60,6 +60,12 @@ async function ensureLegacyCss(theme: OsThemeId) {
 const THEME_KEY = "ryos:theme";
 const LEGACY_THEME_KEY = "os_theme";
 
+function applyRootThemeAttributes(theme: OsThemeId) {
+  const root = document.documentElement;
+  root.dataset.osTheme = theme;
+  root.dataset.osPlatform = getOsPlatform(theme);
+}
+
 const createThemeStore = () => create<ThemeState>((set) => ({
   current: "macosx",
   setTheme: (theme) => {
@@ -69,7 +75,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
     localStorage.setItem(THEME_KEY, safe);
     // Clean up legacy key
     localStorage.removeItem(LEGACY_THEME_KEY);
-    document.documentElement.dataset.osTheme = safe;
+    applyRootThemeAttributes(safe);
     ensureLegacyCss(safe);
     // Note: No need to invalidate icon cache on theme switch.
     // Theme switching changes the icon PATH (e.g., /icons/default/ → /icons/macosx/),
@@ -95,7 +101,7 @@ const createThemeStore = () => create<ThemeState>((set) => ({
       localStorage.setItem(THEME_KEY, theme);
     }
     set({ current: theme });
-    document.documentElement.dataset.osTheme = theme;
+    applyRootThemeAttributes(theme);
     ensureLegacyCss(theme);
   },
 }));
