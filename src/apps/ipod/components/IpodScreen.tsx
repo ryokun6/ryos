@@ -1404,10 +1404,12 @@ export function IpodScreen({
        *  cycles through `splitArtUrlPool`. */}
       {/* Right-half artwork: width animates 0% <-> 50% in sync with the
        *  menu chrome so entering/leaving split view feels smooth.
-       *  Kept mounted for every modern menu frame (not only when art
-       *  is visible) so collapsing to full-width still runs the exit
-       *  transition. */}
-      {isModernUi && menuMode && (
+       *  Kept mounted for EVERY modern UI frame (not gated on
+       *  `menuMode`) so collapsing to full-width AND collapsing to
+       *  now-playing both run the same exit transition — the image
+       *  fades off while the panel's solid-black backface stays put
+       *  through the 300ms window, exactly like menu → Cover Flow. */}
+      {isModernUi && (
         <div
           className={cn(
             // Outer container: width animates 50% ↔ 0% in lock-step with
