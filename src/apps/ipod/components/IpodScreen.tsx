@@ -76,6 +76,13 @@ const MODERN_TITLEBAR_HEIGHT = 17;
 // "Music + Now Playing" split shown in the reference photo. The
 // titlebar + menu list are clamped to the left half in split mode.
 const MODERN_SPLIT_HALF = "50%";
+// Shared timing for every property that animates during the modern UI
+// split↔full transition: menu panel width + box-shadow, split-art
+// column width, and the cover-art image's opacity. Keeping all four
+// on the same 300ms `ease-in-out` curve is what makes the move read
+// as one continuous motion instead of overlapping easings.
+const SPLIT_LAYOUT_TRANSITION_TIMING =
+  "duration-300 ease-in-out motion-reduce:transition-none";
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -584,6 +591,27 @@ export function IpodScreen({
   // Only meaningful in menu mode with an actual cover URL — otherwise
   // the screen falls back to the standard full-width chrome.
   const showSplitMenuArt = isModernUi && menuMode && Boolean(splitArtUrl);
+
+  // The cover image is rendered against the LAST non-null
+  // `splitArtUrl` (not the live value) so it stays mounted through
+  // the fade-out when `splitArtUrl` flips null in the same render
+  // that `showSplitMenuArt` does — e.g. navigating from a browseable
+  // menu (Music root) into a flat song list / settings menu, which
+  // empties `splitArtUrlPool` immediately. Without this, the
+  // `{splitArtUrl ? <motion.img/> : null}` branch would unmount
+  // before the wrapper had a chance to animate its opacity / width
+  // to zero, and the cover would pop instead of fading. We only
+  // update on a real (non-null) value so the previous artwork
+  // remains rendered behind the fading cover-art layer for the full
+  // 300ms transition window.
+  const [renderedSplitArtUrl, setRenderedSplitArtUrl] = useState<
+    string | null
+  >(splitArtUrl);
+  useEffect(() => {
+    if (splitArtUrl) {
+      setRenderedSplitArtUrl(splitArtUrl);
+    }
+  }, [splitArtUrl]);
 
   // Defer width/opacity transitions until after the first paint so
   // mounting in split or full layout does not animate from a default.
@@ -1382,47 +1410,82 @@ export function IpodScreen({
       {isModernUi && menuMode && (
         <div
           className={cn(
+            // Outer container: width animates 50% ↔ 0% in lock-step with
+            // the menu panel's 50% ↔ 100% width animation. We do NOT
+            // fade the container's own opacity — the panel's solid-black
+            // background must remain visible as the cover image fades
+            // off so it reads as a true "black backface" peeking out
+            // from under the covers (instead of letting the white
+            // screen leak through a half-faded panel).
             "ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[5] overflow-hidden",
             splitLayoutTransitionReady &&
-              "transition-[width,opacity] duration-300 ease-in-out motion-reduce:transition-none"
+              `transition-[width] ${SPLIT_LAYOUT_TRANSITION_TIMING}`
           )}
           style={{
             width: showSplitMenuArt ? MODERN_SPLIT_HALF : "0%",
-            opacity: showSplitMenuArt ? 1 : 0,
           }}
           aria-hidden
         >
-          {splitArtUrl ? (
-            <AnimatePresence initial={false} mode="sync">
-              <motion.img
-                key={splitArtUrl}
-                src={splitArtUrl}
-                alt=""
-                draggable={false}
-                className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.35, ease: "easeInOut" }}
-              />
-            </AnimatePresence>
-          ) : null}
+          {/* Cover art layer: fades on its OWN opacity track, leaving
+           *  the parent panel at full opacity. When `showSplitMenuArt`
+           *  flips off, the image fades to 0 over the same 300ms
+           *  window as the width transition — revealing the solid
+           *  black backface beneath before the column clips away.
+           *
+           *  We render against `renderedSplitArtUrl` (the last non-null
+           *  cover) instead of the live `splitArtUrl` so the image
+           *  stays mounted while the layer fades out — otherwise the
+           *  image would unmount in the same render that
+           *  `showSplitMenuArt` flips false and the cover would pop
+           *  instead of fading. */}
+          <div
+            className={cn(
+              "absolute inset-0",
+              splitLayoutTransitionReady &&
+                `transition-opacity ${SPLIT_LAYOUT_TRANSITION_TIMING}`
+            )}
+            style={{ opacity: showSplitMenuArt ? 1 : 0 }}
+          >
+            {renderedSplitArtUrl ? (
+              <AnimatePresence initial={false} mode="sync">
+                <motion.img
+                  key={renderedSplitArtUrl}
+                  src={renderedSplitArtUrl}
+                  alt=""
+                  draggable={false}
+                  className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                />
+              </AnimatePresence>
+            ) : null}
+          </div>
         </div>
       )}
       {isModernUi ? (
         <div
           className={cn(
-            "relative flex min-h-0 flex-col overflow-hidden z-10 h-full",
-            showSplitMenuArt && "ipod-modern-menu-panel",
+            // `ipod-modern-menu-panel` is kept mounted on every modern
+            // UI frame (not gated on `showSplitMenuArt`) so its
+            // box-shadow can transition smoothly. The `.is-split`
+            // modifier fades the shadow alphas in/out as the menu
+            // animates 50%↔100%, in lock-step with the width transition
+            // below. The split-art column to the right meanwhile fades
+            // its cover image off, revealing the panel's solid-black
+            // backface (see `.ipod-modern-split-art`).
+            "relative flex min-h-0 flex-col overflow-hidden z-10 h-full ipod-modern-menu-panel",
+            showSplitMenuArt && "is-split",
             splitLayoutTransitionReady &&
-              "transition-[width] duration-300 ease-in-out motion-reduce:transition-none"
+              `transition-[width,box-shadow] ${SPLIT_LAYOUT_TRANSITION_TIMING}`
           )}
+          // `showSplitMenuArt` already implies `menuMode` (see its
+          // definition above), so the `menuMode ?` ternary collapses:
+          // both !menuMode and (menuMode && !showSplitMenuArt) want
+          // 100%, only showSplitMenuArt wants the split half.
           style={{
-            width: menuMode
-              ? showSplitMenuArt
-                ? MODERN_SPLIT_HALF
-                : "100%"
-              : "100%",
+            width: showSplitMenuArt ? MODERN_SPLIT_HALF : "100%",
           }}
         >
           {menuChrome}
