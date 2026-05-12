@@ -759,36 +759,31 @@ function AlbumTracklist({
               )}
               style={{ minHeight: rowHeight, height: rowHeight }}
             >
-              <div className="flex items-center min-w-0 flex-1 gap-1">
-                {/* Now-playing affordance: a tiny play/pause glyph
-                    in front of the song that's actually playing. We
-                    use a simple text triangle rather than the full
-                    `IpodModernPlayPauseIcon` so it fits inline with
-                    the row text and doesn't change the row height
-                    when toggled. */}
+              <span
+                className={cn(
+                  "truncate min-w-0 flex-1",
+                  isModern
+                    ? "text-[12px] font-semibold leading-[1.15] tracking-tight"
+                    : "text-[12px] leading-[1.15]"
+                )}
+                title={track.title}
+              >
+                {track.title}
+              </span>
+              {/* Now-playing affordance — small play/pause glyph
+                  to the right of the title, before the duration. We
+                  only render it when the row is the active song so
+                  non-playing rows don't reserve any horizontal space
+                  (keeps every title's left edge flush with the album
+                  title in the header above). */}
+              {isNowPlaying && (
                 <span
-                  className={cn(
-                    "shrink-0 leading-none",
-                    isModern ? "text-[10px]" : "text-[10px]",
-                    isNowPlaying ? "opacity-100" : "opacity-0"
-                  )}
-                  style={{ width: 8 }}
+                  className="shrink-0 leading-none text-[10px]"
                   aria-hidden
                 >
                   {isPlaying ? "▶" : "❚❚"}
                 </span>
-                <span
-                  className={cn(
-                    "truncate min-w-0",
-                    isModern
-                      ? "text-[12px] font-semibold leading-[1.15] tracking-tight"
-                      : "text-[12px] leading-[1.15]"
-                  )}
-                  title={track.title}
-                >
-                  {track.title}
-                </span>
-              </div>
+              )}
               <span
                 className={cn(
                   "shrink-0",
