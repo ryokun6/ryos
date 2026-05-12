@@ -110,12 +110,14 @@ function formatPlaybackTime(totalSeconds: number): string {
  * stack stays inside the now-playing row. */
 const MODERN_NOW_PLAYING_ART_PX = 60;
 const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
+/** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
+const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
 // Neutral mid-gray placeholder shown while the cover image is in
 // flight. Cross-fades to the loaded image via `FadeInImage` so the
 // art panel never flashes from a near-black square to a cover.
 const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
   background: "#a8a8a8",
-  borderRadius: "3px",
+  borderRadius: `${MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX}px`,
 };
 const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
   transform: "scaleY(-1)",
@@ -124,7 +126,7 @@ const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
     "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 50%)",
   WebkitMaskImage:
     "linear-gradient(to top, rgba(0, 0, 0, 1) 0%, transparent 50%)",
-  borderRadius: "3px",
+  borderRadius: `${MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX}px`,
 };
 const MODERN_NOW_PLAYING_3D_PERSPECTIVE_PX = 180;
 /** Left→right perspective (rotate around vertical axis). Negate angle to mirror. */
