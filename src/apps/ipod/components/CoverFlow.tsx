@@ -704,7 +704,7 @@ function AlbumTracklist({
               ? "font-geneva-12"
               : "font-os-ui"
         )}
-        style={{ minHeight: isModern ? 26 : 22, paddingTop: 1, paddingBottom: 1 }}
+        style={{ minHeight: isModern ? 24 : 22, paddingTop: 1, paddingBottom: 1 }}
       >
         <div
           className={cn(
@@ -722,7 +722,13 @@ function AlbumTracklist({
         {artist && (
           <div
             className={cn(
-              "truncate leading-none mt-[1px]",
+              "truncate leading-none",
+              // Modern stack reads tightest with no extra gap between
+              // the two lines (the font's natural metrics already
+              // give a small visible separation). Classic / karaoke
+              // get a 1px nudge so the bitmap / OS font lines don't
+              // visually collide.
+              isModern ? "" : "mt-[1px]",
               isModern
                 ? "text-[10px] text-white/85 tracking-tight"
                 : ipodMode
@@ -771,7 +777,14 @@ function AlbumTracklist({
               className={cn(
                 "flex items-center justify-between gap-2 cursor-pointer select-none",
                 "pl-1.5 pr-2",
-                isModern ? "font-ipod-modern-ui" : "font-os-ui",
+                // Same font policy as the header: modern → iPod-
+                // modern UI font; classic iPod → Geneva-12 bitmap;
+                // karaoke → theme-aware OS sans.
+                isModern
+                  ? "font-ipod-modern-ui"
+                  : ipodMode
+                    ? "font-geneva-12"
+                    : "font-os-ui",
                 isSelected
                   ? isModern
                     ? "ipod-modern-row-selected"
