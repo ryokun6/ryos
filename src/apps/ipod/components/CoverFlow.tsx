@@ -289,6 +289,37 @@ export interface CoverFlowRef {
   handleMenuButton: () => boolean;
 }
 
+// Resolve the best cover URL for a track. Apple Music supplies a
+// fully resolved URL; YouTube tracks fall back to a thumbnail derived
+// from the video ID. The CoverFlow root + the per-cover renderer both
+// need this same logic to drive the album-flip front face, so it
+// lives here as a small helper instead of being duplicated.
+function resolveCoverUrl(
+  track: Track | undefined | null,
+  ipodMode: boolean
+): string | null {
+  if (!track) return null;
+  const videoId = track.url ? getYouTubeVideoId(track.url) : null;
+  const youtubeThumbnail = videoId
+    ? `https://img.youtube.com/vi/${videoId}/${ipodMode ? "mqdefault" : "hqdefault"}.jpg`
+    : null;
+  const kugouImageSize = ipodMode ? 400 : 800;
+  return track.source === "appleMusic"
+    ? track.cover ?? null
+    : formatKugouImageUrl(track.cover, kugouImageSize) ?? youtubeThumbnail;
+}
+
+// Cover size in `cqmin` units for a given Cover Flow variant. Used by
+// `CoverImage` for the carousel and by the album-flip overlay so the
+// flip's front face perfectly aligns with the underlying carousel
+// cover before it rotates away.
+function getCoverSizeCqmin(
+  ipodMode: boolean,
+  compactIpodCarousel: boolean
+): number {
+  return ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60;
+}
+
 // Individual cover component - uses track's cover directly (fetched during sync)
 function CoverImage({
   track,
@@ -301,6 +332,7 @@ function CoverImage({
   selectedIndex,
   currentIndex,
   onPlayTrackInPlace,
+  hideSleeveAtCenter = false,
 }: {
   track: Track;
   position: number;
@@ -313,19 +345,16 @@ function CoverImage({
   selectedIndex: number;
   currentIndex: number;
   onPlayTrackInPlace?: (index: number) => void;
+  /**
+   * Hide the center cover's sleeve while the album-flip overlay is
+   * doing its 3D flip. Keeps the carousel mounted (side covers + the
+   * floor reflection still visible underneath) so the tracklist reads
+   * as a true overlay on Cover Flow, while preventing a second
+   * "ghost" cover from sitting beneath the rotating flip element.
+   */
+  hideSleeveAtCenter?: boolean;
 }) {
-  // Use track's cover. Apple Music supplies a fully resolved URL; YouTube
-  // tracks fall back to a thumbnail derived from the video ID. Karaoke mode
-  // uses higher-res variants.
-  const videoId = track?.url ? getYouTubeVideoId(track.url) : null;
-  const youtubeThumbnail = videoId
-    ? `https://img.youtube.com/vi/${videoId}/${ipodMode ? "mqdefault" : "hqdefault"}.jpg`
-    : null;
-  const kugouImageSize = ipodMode ? 400 : 800;
-  const coverUrl =
-    track?.source === "appleMusic"
-      ? track.cover ?? null
-      : formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
+  const coverUrl = resolveCoverUrl(track, ipodMode);
 
   // Sleeve and reflection each track their own load (same URL, so
   // the browser cache lands them within a frame in practice). Two
@@ -346,8 +375,7 @@ function CoverImage({
   }, [selectedIndex, currentIndex, onPlayTrackInPlace, onTogglePlay]);
 
   // Cover size: larger for classic iPod; modern skin uses a tighter row.
-  const coverSize =
-    ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60; // cqmin units
+  const coverSize = getCoverSizeCqmin(ipodMode, compactIpodCarousel); // cqmin units
   // Side spacing — modern compact carousel uses slightly larger
   // offsets (18 / 25) than classic so its 1.2x-scaled neighbouring
   // covers don't collide with the center sleeve. Karaoke (non-iPod)
@@ -489,18 +517,26 @@ function CoverImage({
           // through the brightness overlay on side covers and on
           // the dimmed CD-flip state.
           background: "#a8a8a8",
-          pointerEvents: isCenter && showCD ? "none" : "auto",
+          pointerEvents:
+            isCenter && (showCD || hideSleeveAtCenter) ? "none" : "auto",
           zIndex: 10,
           borderRadius: "1%",
         }}
         initial={false}
         animate={{
           y: isCenter && showCD ? "105%" : "0%",
+          // Fade the center sleeve to invisible while the album-flip
+          // overlay above is doing its 3D rotation. The flip overlay
+          // renders its own copy of the cover as the front face, so
+          // hiding this one prevents a "double cover" ghost during
+          // the rotation. The transition is instant (duration 0) so
+          // the swap is invisible — the overlay's front face is in
+          // place by the time the sleeve fades.
+          opacity: isCenter && hideSleeveAtCenter ? 0 : 1,
         }}
         transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 25,
+          y: { type: "spring", stiffness: 200, damping: 25 },
+          opacity: { duration: 0 },
         }}
       >
         {/* Brightness overlay */}
@@ -556,7 +592,7 @@ function CoverImage({
         }}
         initial={false}
         animate={{
-          opacity: isCenter && showCD ? 0 : 1,
+          opacity: isCenter && (showCD || hideSleeveAtCenter) ? 0 : 1,
           y: isCenter && showCD ? "105%" : "0%",
         }}
         transition={{
@@ -603,7 +639,6 @@ function AlbumTracklist({
   isModern,
   ipodMode,
   onPlayTrack,
-  topOffset = 0,
 }: {
   album: string;
   artist?: string;
@@ -614,7 +649,6 @@ function AlbumTracklist({
   isModern: boolean;
   ipodMode: boolean;
   onPlayTrack: (indexInAlbum: number) => void;
-  topOffset?: number;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -641,7 +675,6 @@ function AlbumTracklist({
         isModern ? "bg-white" : ipodMode ? "bg-black" : "bg-black",
         ipodMode ? "ipod-force-font" : "karaoke-force-font"
       )}
-      style={{ top: topOffset }}
     >
       {/* Album header — same blue gradient as the modern list selection
           highlight so the band reads as a "this is the album" anchor.
@@ -778,6 +811,137 @@ function AlbumTracklist({
         })}
       </div>
     </div>
+  );
+}
+
+// Album-flip overlay. Sits above the carousel and does a real 3D
+// rotateY transition: the *front* face is a copy of the album cover
+// positioned at the carousel center cover's exact size/location, so
+// the flip visually originates from the album art itself. The *back*
+// face is the tracklist filling the remaining screen area, and
+// becomes visible once the rotation crosses 90°. Backface-visibility
+// keeps each side cleanly hidden when it's facing away.
+//
+// The carousel underneath stays mounted (the side covers + the
+// reflection floor are still visible during the flip and at the edges
+// of the rotated card), so the opened album reads as an overlay
+// stacked on top of Cover Flow rather than a separate screen.
+function AlbumFlipOverlay({
+  album,
+  artist,
+  coverUrl,
+  coverSizeCqmin,
+  tracks: albumTracks,
+  selectedIndex,
+  currentlyPlayingIndex,
+  isPlaying,
+  isModern,
+  ipodMode,
+  onPlayTrack,
+  topOffset = 0,
+}: {
+  album: string;
+  artist?: string;
+  coverUrl: string | null;
+  coverSizeCqmin: number;
+  tracks: Track[];
+  selectedIndex: number;
+  currentlyPlayingIndex: number;
+  isPlaying: boolean;
+  isModern: boolean;
+  ipodMode: boolean;
+  onPlayTrack: (indexInAlbum: number) => void;
+  topOffset?: number;
+}) {
+  return (
+    <motion.div
+      className="absolute z-30"
+      style={{
+        // Sit below any chrome the host renders above us (the modern
+        // overlay-mode titlebar). Inline / classic modes pass 0.
+        top: topOffset,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        perspective: 1500,
+        pointerEvents: "auto",
+      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+    >
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          transformStyle: "preserve-3d",
+          transformOrigin: "center center",
+        }}
+        initial={{ rotateY: 0 }}
+        animate={{ rotateY: 180 }}
+        exit={{ rotateY: 0 }}
+        transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+      >
+        {/* FRONT FACE — the album cover, sized + positioned to match
+            the carousel center cover so the flip looks like that
+            cover rotating away. We render our own <img> here (rather
+            than reusing the carousel's CoverImage) so the front of
+            the flip is a single static element with backface-
+            visibility hidden. */}
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ backfaceVisibility: "hidden" }}
+        >
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt=""
+              draggable={false}
+              className="object-cover bg-neutral-400"
+              style={{
+                width: `${coverSizeCqmin}cqmin`,
+                height: `${coverSizeCqmin}cqmin`,
+                borderRadius: "1%",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+              }}
+            />
+          ) : (
+            <div
+              className="bg-neutral-400"
+              style={{
+                width: `${coverSizeCqmin}cqmin`,
+                height: `${coverSizeCqmin}cqmin`,
+                borderRadius: "1%",
+              }}
+            />
+          )}
+        </div>
+
+        {/* BACK FACE — the album tracklist, filling the full overlay
+            area. The pre-applied 180° rotation cancels with the
+            wrapper's animated 180° to leave the tracklist
+            front-facing once the flip completes. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}
+        >
+          <AlbumTracklist
+            album={album}
+            artist={artist}
+            tracks={albumTracks}
+            selectedIndex={selectedIndex}
+            currentlyPlayingIndex={currentlyPlayingIndex}
+            isPlaying={isPlaying}
+            isModern={isModern}
+            ipodMode={ipodMode}
+            onPlayTrack={onPlayTrack}
+          />
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -1160,6 +1324,19 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   
   const visibleCovers = getVisibleCovers();
 
+  // Geometry shared by the carousel + the album-flip overlay so the
+  // overlay's front face perfectly matches the size of the carousel
+  // center cover (the flip then reads as the cover itself rotating
+  // away to reveal the tracklist on its back).
+  const flipCoverSizeCqmin = getCoverSizeCqmin(
+    ipodMode,
+    isModernIpodCoverFlow
+  );
+  const flipCoverUrl = useMemo(
+    () => resolveCoverUrl(currentItem?.track ?? null, ipodMode),
+    [currentItem, ipodMode]
+  );
+
   const playItemInPlace = useCallback(
     (coverIndex: number) => {
       const item = coverItems[coverIndex];
@@ -1297,6 +1474,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   selectedIndex={selectedIndex}
                   currentIndex={currentCoverIndex}
                   onPlayTrackInPlace={playItemInPlace}
+                  hideSleeveAtCenter={isFlipped && position === 0}
                 />
               ))}
             </AnimatePresence>
@@ -1355,49 +1533,26 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           </div>
         </div>
 
-        {/* Album tracklist flip overlay. Mounts on top of the carousel
-            with a 3D rotateY transition so the cover visually flips
-            into the tracklist (and back) when the user wheel-clicks
-            an album. The overlay sits at z-30 (above the carousel +
-            bottom info row) and owns its own click handlers, so any
-            stray bubbled clicks land on a row instead of the
-            carousel's "select" handler underneath. */}
+        {/* Album-flip overlay (inline branch). Flips the actual album
+            cover over to reveal the tracklist on its back face. The
+            host menu panel renders the "Cover Flow" titlebar above
+            this CoverFlow div, so we don't need a top offset here. */}
         <AnimatePresence>
           {isFlipped && currentItem && (
-            <motion.div
-              key={`tracklist-${currentItem.key}`}
-              className="absolute inset-0 z-30"
-              style={{ perspective: 1200, transformStyle: "preserve-3d" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <motion.div
-                className="absolute inset-0"
-                style={{
-                  transformOrigin: "center center",
-                  transformStyle: "preserve-3d",
-                  backfaceVisibility: "hidden",
-                }}
-                initial={{ rotateY: -90 }}
-                animate={{ rotateY: 0 }}
-                exit={{ rotateY: -90 }}
-                transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-              >
-                <AlbumTracklist
-                  album={currentItem.title}
-                  artist={currentItem.artist}
-                  tracks={albumTracks}
-                  selectedIndex={selectedTrackInAlbum}
-                  currentlyPlayingIndex={playingPositionInAlbum}
-                  isPlaying={isPlaying}
-                  isModern={isModernIpodCoverFlow}
-                  ipodMode={ipodMode}
-                  onPlayTrack={handleSelectAlbumTrack}
-                />
-              </motion.div>
-            </motion.div>
+            <AlbumFlipOverlay
+              key={`flip-${currentItem.key}`}
+              album={currentItem.title}
+              artist={currentItem.artist}
+              coverUrl={flipCoverUrl}
+              coverSizeCqmin={flipCoverSizeCqmin}
+              tracks={albumTracks}
+              selectedIndex={selectedTrackInAlbum}
+              currentlyPlayingIndex={playingPositionInAlbum}
+              isPlaying={isPlaying}
+              isModern={isModernIpodCoverFlow}
+              ipodMode={ipodMode}
+              onPlayTrack={handleSelectAlbumTrack}
+            />
           )}
         </AnimatePresence>
       </div>
@@ -1580,6 +1735,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     selectedIndex={selectedIndex}
                     currentIndex={currentCoverIndex}
                     onPlayTrackInPlace={playItemInPlace}
+                    hideSleeveAtCenter={isFlipped && position === 0}
                   />
                 ))}
               </AnimatePresence>
@@ -1723,47 +1879,27 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             )}
           </motion.div>
 
-          {/* Album tracklist flip overlay (overlay branch). Same as
-              the inline branch above, but offset below the modern
-              titlebar (the inline branch's titlebar is rendered by
-              `IpodScreen`, so it's outside this component there). */}
+          {/* Album-flip overlay (overlay branch). Sits below the
+              modern titlebar (this branch renders the titlebar
+              inside CoverFlow, unlike the inline branch where the
+              host owns it). */}
           <AnimatePresence>
             {isFlipped && currentItem && (
-              <motion.div
-                key={`tracklist-${currentItem.key}`}
-                className="absolute inset-0 z-30"
-                style={{ perspective: 1200, transformStyle: "preserve-3d" }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <motion.div
-                  className="absolute inset-0"
-                  style={{
-                    transformOrigin: "center center",
-                    transformStyle: "preserve-3d",
-                    backfaceVisibility: "hidden",
-                  }}
-                  initial={{ rotateY: -90 }}
-                  animate={{ rotateY: 0 }}
-                  exit={{ rotateY: -90 }}
-                  transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-                >
-                  <AlbumTracklist
-                    album={currentItem.title}
-                    artist={currentItem.artist}
-                    tracks={albumTracks}
-                    selectedIndex={selectedTrackInAlbum}
-                    currentlyPlayingIndex={playingPositionInAlbum}
-                    isPlaying={isPlaying}
-                    isModern={isModernIpodCoverFlow}
-                    ipodMode={ipodMode}
-                    onPlayTrack={handleSelectAlbumTrack}
-                    topOffset={isModernIpodCoverFlow ? MODERN_TITLEBAR_HEIGHT : 0}
-                  />
-                </motion.div>
-              </motion.div>
+              <AlbumFlipOverlay
+                key={`flip-${currentItem.key}`}
+                album={currentItem.title}
+                artist={currentItem.artist}
+                coverUrl={flipCoverUrl}
+                coverSizeCqmin={flipCoverSizeCqmin}
+                tracks={albumTracks}
+                selectedIndex={selectedTrackInAlbum}
+                currentlyPlayingIndex={playingPositionInAlbum}
+                isPlaying={isPlaying}
+                isModern={isModernIpodCoverFlow}
+                ipodMode={ipodMode}
+                onPlayTrack={handleSelectAlbumTrack}
+                topOffset={isModernIpodCoverFlow ? MODERN_TITLEBAR_HEIGHT : 0}
+              />
             )}
           </AnimatePresence>
         </motion.div>
