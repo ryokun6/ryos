@@ -17,6 +17,12 @@ import {
   IpodModernPlayPauseIcon,
   ScrollingText,
 } from "./screen";
+import { useImageLoaded } from "../hooks/useImageLoaded";
+
+// Shared cross-fade for cover images: stay invisible while
+// loading (the wrapping element's gray background reads as the
+// placeholder), then fade up to the loaded state in 250ms.
+const COVER_FADE_TRANSITION = "opacity 250ms ease-out" as const;
 
 // Modern-UI titlebar height. Matches `MODERN_TITLEBAR_HEIGHT` in
 // IpodScreen.tsx so the Cover Flow status bar lines up exactly with the
@@ -46,6 +52,7 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
   const initialRotation = useRef(Math.random() * 60);
   const rotation = useMotionValue(initialRotation.current);
   const animationRef = useRef<ReturnType<typeof animate> | null>(null);
+  const albumArt = useImageLoaded(coverUrl);
 
   useEffect(() => {
     if (isPlaying) {
@@ -127,10 +134,12 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
           rotate: rotation,
         }}
       >
-        {/* Album art on CD (circular mask) */}
+        {/* Album art on CD (circular mask). Wrapper's gray bg
+            reads as the loading placeholder; the <img> fades in
+            on top once the bitmap is ready. */}
         {coverUrl && (
           <div
-            className="absolute rounded-full overflow-hidden"
+            className="absolute rounded-full overflow-hidden bg-neutral-400"
             style={{
               top: "30%",
               left: "30%",
@@ -139,10 +148,16 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
             }}
           >
             <img
+              ref={albumArt.ref}
               src={coverUrl}
               alt=""
-              className="w-full h-full object-cover"
               draggable={false}
+              onLoad={albumArt.onLoad}
+              className="w-full h-full object-cover"
+              style={{
+                opacity: albumArt.loaded ? 1 : 0,
+                transition: COVER_FADE_TRANSITION,
+              }}
             />
           </div>
         )}
@@ -291,6 +306,13 @@ function CoverImage({
       ? track.cover ?? null
       : formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
+  // Sleeve and reflection each track their own load (same URL, so
+  // the browser cache lands them within a frame in practice). Two
+  // independent state machines keep each <img>'s fade-in self-
+  // contained — neither depends on the other firing onLoad.
+  const sleeve = useImageLoaded(coverUrl);
+  const reflection = useImageLoaded(coverUrl);
+
   // Handle disc click - play track if different, otherwise toggle play/pause
   const handleDiscClick = useCallback(() => {
     if (selectedIndex !== currentIndex) {
@@ -438,7 +460,14 @@ function CoverImage({
       <motion.div
         className="absolute inset-0 w-full h-full overflow-hidden"
         style={{
-          background: "#1a1a1a",
+          // Neutral mid-gray so the sleeve reads as a "loading"
+          // placeholder while the cover image is in flight. Once
+          // the image has loaded the FadeInImage below cross-fades
+          // over this surface so users never see an empty black
+          // hole pop into a cover. The same gray reads acceptably
+          // through the brightness overlay on side covers and on
+          // the dimmed CD-flip state.
+          background: "#a8a8a8",
           pointerEvents: isCenter && showCD ? "none" : "auto",
           zIndex: 10,
           borderRadius: "1%",
@@ -469,10 +498,16 @@ function CoverImage({
         />
         {coverUrl ? (
           <img
+            ref={sleeve.ref}
             src={coverUrl}
             alt={track?.title || ""}
-            className="w-full h-full object-cover"
             draggable={false}
+            onLoad={sleeve.onLoad}
+            className="w-full h-full object-cover"
+            style={{
+              opacity: sleeve.loaded ? 1 : 0,
+              transition: COVER_FADE_TRANSITION,
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
@@ -489,7 +524,9 @@ function CoverImage({
         )}
       </motion.div>
       
-      {/* Reflection - moves down with cover when CD is shown */}
+      {/* Reflection - moves down with cover when CD is shown.
+          Fades in to its 0.3 target opacity once the mirrored
+          bitmap is ready, independent of the sleeve. */}
       <motion.div
         className="absolute w-full pointer-events-none"
         style={{
@@ -507,18 +544,21 @@ function CoverImage({
         }}
       >
         <img
+          ref={reflection.ref}
           src={coverUrl || ""}
           alt=""
+          draggable={false}
+          onLoad={reflection.onLoad}
           className="w-full h-auto"
           style={{
             transform: "scaleY(-1)",
-            opacity: 0.3,
+            opacity: coverUrl && reflection.loaded ? 0.3 : 0,
+            transition: COVER_FADE_TRANSITION,
             maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             display: coverUrl ? "block" : "none",
             borderRadius: "1%",
           }}
-          draggable={false}
         />
       </motion.div>
     </motion.div>
@@ -1170,11 +1210,18 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 <div
                   className={cn(
                     "truncate",
-                    isModernIpodCoverFlow &&
-                      "text-[10px] text-[rgb(99,101,103)] tracking-tight",
-                    ipodMode &&
-                      !isModernIpodCoverFlow &&
-                      "text-white/60 text-[8px]",
+                    isModernIpodCoverFlow
+                      ? "text-[10px] text-[rgb(99,101,103)] tracking-tight"
+                      : // Classic iPod and karaoke share the same
+                        // light-on-black treatment — the parent
+                        // backdrop is `bg-black` and the title above
+                        // is already `text-white`, so the artist
+                        // sits one rung down at 60% white. Without
+                        // this, karaoke artist text inherited the
+                        // default near-black colour and disappeared
+                        // against the black Cover Flow stage.
+                        "text-white/60",
+                    ipodMode && !isModernIpodCoverFlow && "text-[8px]",
                   )}
                   style={
                     ipodMode ? undefined : { fontSize: "clamp(12px, 4cqmin, 18px)" }

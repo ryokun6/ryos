@@ -26,6 +26,12 @@ import {
   StatusDisplay,
   IpodModernPlayPauseIcon,
 } from "./screen";
+import { useImageLoaded } from "../hooks/useImageLoaded";
+
+// Shared cross-fade for cover images: stay invisible while
+// loading (the wrapping element's gray background reads as the
+// placeholder), then fade up to the loaded state in 250ms.
+const COVER_FADE_TRANSITION = "opacity 250ms ease-out" as const;
 import {
   PLAYER_PROGRESS_INTERVAL_MS,
   getYouTubeVideoId,
@@ -104,8 +110,11 @@ function formatPlaybackTime(totalSeconds: number): string {
  * stack stays inside the now-playing row. */
 const MODERN_NOW_PLAYING_ART_PX = 60;
 const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
+// Neutral mid-gray placeholder shown while the cover image is in
+// flight. Cross-fades to the loaded image via `FadeInImage` so the
+// art panel never flashes from a near-black square to a cover.
 const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
-  background: "#1a1a1a",
+  background: "#a8a8a8",
   borderRadius: "3px",
 };
 const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
@@ -131,6 +140,15 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
+  // Sleeve and reflection each track their own load. Same URL, so
+  // the browser cache lands them within a frame in practice, but
+  // each fade is self-contained — the sleeve's gray
+  // (`MODERN_NOW_PLAYING_SLEEVE.background`) reads as the
+  // placeholder until the bitmap arrives.
+  const sleeve = useImageLoaded(coverUrl);
+  const reflection = useImageLoaded(coverUrl);
+  const reflectTargetOpacity =
+    MODERN_NOW_PLAYING_REFLECT_IMG.opacity as number;
 
   return (
     <div
@@ -153,10 +171,16 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
         >
           {coverUrl ? (
             <img
+              ref={sleeve.ref}
               src={coverUrl}
               alt=""
               draggable={false}
+              onLoad={sleeve.onLoad}
               className="size-full object-cover"
+              style={{
+                opacity: sleeve.loaded ? 1 : 0,
+                transition: COVER_FADE_TRANSITION,
+              }}
             />
           ) : (
             <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
@@ -171,11 +195,17 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
             style={{ height: reflectH }}
           >
             <img
+              ref={reflection.ref}
               src={coverUrl}
               alt=""
               draggable={false}
+              onLoad={reflection.onLoad}
               className="block w-full h-auto"
-              style={MODERN_NOW_PLAYING_REFLECT_IMG}
+              style={{
+                ...MODERN_NOW_PLAYING_REFLECT_IMG,
+                opacity: reflection.loaded ? reflectTargetOpacity : 0,
+                transition: COVER_FADE_TRANSITION,
+              }}
             />
           </div>
         ) : null}
