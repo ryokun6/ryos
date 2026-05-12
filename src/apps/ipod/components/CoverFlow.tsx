@@ -1207,10 +1207,13 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   }, [isFlipped, onRotation]);
 
   // Select the current item.
-  //   Un-flipped → flip to reveal the tracklist (always, for
-  //     consistency — single-track covers just flip into a one-row
-  //     tracklist that the user can confirm by pressing center
-  //     again).
+  //   Un-flipped + album-grouped (Apple Music) → flip to reveal the
+  //     album's tracklist on the cover's back face.
+  //   Un-flipped + per-track covers (e.g. ungrouped YouTube) → play
+  //     the song directly. The flip-into-tracklist gesture only
+  //     makes sense when the cover represents an album that contains
+  //     multiple tracks; for one-cover-per-song libraries we keep
+  //     the original "tap plays" shortcut.
   //   Flipped → play the highlighted row in the album.
   const selectCurrent = useCallback(() => {
     const item = coverItems[selectedIndex];
@@ -1221,14 +1224,19 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       onSelectTrack(trackIndex);
       return;
     }
-    setShowCD(false);
-    setIsFlipped(true);
+    if (groupAppleMusicAlbums) {
+      setShowCD(false);
+      setIsFlipped(true);
+      return;
+    }
+    onSelectTrack(item.trackIndex);
   }, [
     coverItems,
     isFlipped,
     onSelectTrack,
     selectedIndex,
     selectedTrackInAlbum,
+    groupAppleMusicAlbums,
   ]);
 
   // Wheel `Menu` press: when flipped we eat the press to flip back to
