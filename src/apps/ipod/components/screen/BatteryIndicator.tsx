@@ -69,11 +69,16 @@ export function BatteryIndicator({
     // the top half only and fades to transparent at the midline. The
     // green fill carries the same half-gloss so charge level reads as
     // a single glossy lozenge rather than a flat bar.
+    //
+    // Sharp 90° corners (no border-radius) on both the body and the cap
+    // — the iPod classic 6G/7G silver header in the reference photo
+    // uses a flat rectangular battery, not the rounded pill the iOS 6
+    // status-bar battery has.
     const fillPercent = Math.max(0, Math.min(1, level)) * 100;
     const isLow = !isCharging && level <= 0.2;
     return (
       <div className="flex items-center">
-        <div className="relative h-[9px] w-[14px] shrink-0 overflow-hidden rounded-[2px] ipod-modern-battery-container">
+        <div className="relative h-[9px] w-[14px] shrink-0 overflow-hidden ipod-modern-battery-container">
           <div
             className={cn(
               "absolute inset-y-0 left-0 ipod-modern-battery-fill transition-[width] duration-300",

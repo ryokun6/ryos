@@ -1491,7 +1491,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background-color: #c4c4c4;
   border: 1px solid #626262;
   border-left-width: 0;
-  border-radius: 0 2px 2px 0;
+  /* No rounded corners — the iPod classic 6G/7G silver header battery
+   * is a flat rectangle (cap included), not the iOS 6 rounded pill. */
+  border-radius: 0;
 }
 
 /* iPod 6G/7G "split menu" view: the right HALF of the screen shows
@@ -1502,10 +1504,17 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * animates `transform`.
  *
  * The art panel sits *behind* the menu (z-5 < menu's z-10/z-30) so
- * the menu's drop shadow lands on top of the artwork. We keep only
- * a 1px hairline at the very left edge here — the depth illusion
- * comes from `.ipod-modern-menu-panel`'s drop shadow, not from a
- * second inset shadow stacked on top of it.
+ * the menu's drop shadow lands on top of the artwork. The depth
+ * illusion comes from two stacked sources: an inset gradient on the
+ * art column itself that darkens the leftmost slice of the cover (so
+ * the shadow reads as falling ON the artwork rather than a flat
+ * gutter), plus the soft drop shadow cast by `.ipod-modern-menu-panel`.
+ *
+ * The inner box-shadow uses an inset spread so it darkens roughly
+ * the leftmost ~12px of the cover with a smooth falloff — without
+ * this, the cast shadow alone leaves the cover edge looking too
+ * bright next to the menu, and the split read more like two flat
+ * panels than a layered stack.
  *
  * Background is pure black so it reads as a "backface" behind the
  * cover artwork — as the cover art image fades out during the
@@ -1513,7 +1522,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
  * of leaking the white screen color through. */
 .ipod-modern-split-art {
   background: #000;
-  box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.18);
+  box-shadow:
+    inset 8px 0 12px -4px rgba(0, 0, 0, 0.65),
+    inset 3px 0 5px -1px rgba(0, 0, 0, 0.55),
+    inset 1px 0 0 rgba(0, 0, 0, 0.4);
 }
 
 /* LEFT-side menu surface in split mode: must clip its contents (so menu
@@ -1537,14 +1549,20 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 .ipod-modern-menu-panel {
   overflow: hidden;
   box-shadow:
-    4px 0 8px -2px rgba(0, 0, 0, 0),
-    2px 0 3px -1px rgba(0, 0, 0, 0);
+    8px 0 16px -2px rgba(0, 0, 0, 0),
+    4px 0 8px -1px rgba(0, 0, 0, 0),
+    1px 0 0 rgba(0, 0, 0, 0);
 }
 
+/* Deeper, longer-throw shadow stack so the menu reads as a thick card
+ * floating above the album art column — matches the heavy gutter
+ * shadow visible in the iPod classic 6G/7G reference photo where the
+ * cover artwork's left edge is noticeably darker than its center. */
 .ipod-modern-menu-panel.is-split {
   box-shadow:
-    4px 0 8px -2px rgba(0, 0, 0, 0.28),
-    2px 0 3px -1px rgba(0, 0, 0, 0.18);
+    8px 0 16px -2px rgba(0, 0, 0, 0.55),
+    4px 0 8px -1px rgba(0, 0, 0, 0.45),
+    1px 0 0 rgba(0, 0, 0, 0.35);
 }
 
 .ipod-modern-split-art-img {
