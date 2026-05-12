@@ -17,7 +17,12 @@ import {
   IpodModernPlayPauseIcon,
   ScrollingText,
 } from "./screen";
-import { FadeInImage } from "./FadeInImage";
+import { useImageLoaded } from "../hooks/useImageLoaded";
+
+// Shared cross-fade for cover images: stay invisible while
+// loading (the wrapping element's gray background reads as the
+// placeholder), then fade up to the loaded state in 250ms.
+const COVER_FADE_TRANSITION = "opacity 250ms ease-out" as const;
 
 // Modern-UI titlebar height. Matches `MODERN_TITLEBAR_HEIGHT` in
 // IpodScreen.tsx so the Cover Flow status bar lines up exactly with the
@@ -47,6 +52,7 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
   const initialRotation = useRef(Math.random() * 60);
   const rotation = useMotionValue(initialRotation.current);
   const animationRef = useRef<ReturnType<typeof animate> | null>(null);
+  const albumArt = useImageLoaded(coverUrl);
 
   useEffect(() => {
     if (isPlaying) {
@@ -128,10 +134,12 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
           rotate: rotation,
         }}
       >
-        {/* Album art on CD (circular mask) */}
+        {/* Album art on CD (circular mask). Wrapper's gray bg
+            reads as the loading placeholder; the <img> fades in
+            on top once the bitmap is ready. */}
         {coverUrl && (
           <div
-            className="absolute rounded-full overflow-hidden"
+            className="absolute rounded-full overflow-hidden bg-neutral-400"
             style={{
               top: "30%",
               left: "30%",
@@ -139,11 +147,17 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
               height: "40%",
             }}
           >
-            <FadeInImage
+            <img
+              ref={albumArt.ref}
               src={coverUrl}
-              className="w-full h-full object-cover"
+              alt=""
               draggable={false}
-              placeholderClassName="bg-neutral-400 rounded-full"
+              onLoad={albumArt.onLoad}
+              className="w-full h-full object-cover"
+              style={{
+                opacity: albumArt.loaded ? 1 : 0,
+                transition: COVER_FADE_TRANSITION,
+              }}
             />
           </div>
         )}
@@ -292,23 +306,12 @@ function CoverImage({
       ? track.cover ?? null
       : formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
-  // Track the mirrored reflection's own load so we can fade it in
-  // independently of the sleeve. Tying it to the sleeve's
-  // FadeInImage `onLoaded` callback was fragile — when that
-  // callback didn't fire (e.g. for cached cross-origin images on
-  // certain code paths), the reflection stayed at opacity 0 and
-  // looked "lost". Since the reflection uses the same URL as the
-  // sleeve, the browser cache makes both loads land within a frame
-  // of each other in practice.
-  const reflectionImgRef = useRef<HTMLImageElement>(null);
-  const [reflectionLoaded, setReflectionLoaded] = useState(false);
-  useEffect(() => {
-    setReflectionLoaded(false);
-    const img = reflectionImgRef.current;
-    if (img && img.complete && img.naturalWidth > 0) {
-      setReflectionLoaded(true);
-    }
-  }, [coverUrl]);
+  // Sleeve and reflection each track their own load (same URL, so
+  // the browser cache lands them within a frame in practice). Two
+  // independent state machines keep each <img>'s fade-in self-
+  // contained — neither depends on the other firing onLoad.
+  const sleeve = useImageLoaded(coverUrl);
+  const reflection = useImageLoaded(coverUrl);
 
   // Handle disc click - play track if different, otherwise toggle play/pause
   const handleDiscClick = useCallback(() => {
@@ -494,16 +497,17 @@ function CoverImage({
           }}
         />
         {coverUrl ? (
-          <FadeInImage
+          <img
+            ref={sleeve.ref}
             src={coverUrl}
             alt={track?.title || ""}
-            className="absolute inset-0 w-full h-full object-cover"
             draggable={false}
-            // The wrapper already renders the gray placeholder via
-            // its `background: "#a8a8a8"`. Suppress FadeInImage's
-            // own placeholder div so the brightness overlay stays
-            // the topmost layer.
-            showPlaceholder={false}
+            onLoad={sleeve.onLoad}
+            className="w-full h-full object-cover"
+            style={{
+              opacity: sleeve.loaded ? 1 : 0,
+              transition: COVER_FADE_TRANSITION,
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
@@ -521,11 +525,8 @@ function CoverImage({
       </motion.div>
       
       {/* Reflection - moves down with cover when CD is shown.
-          Tracks its own load via the duplicate <img>'s onLoad
-          (plus an `img.complete` cached-image check on src change)
-          so it fades in to its 0.3 target opacity once the
-          mirrored bitmap is ready, without relying on the sleeve's
-          FadeInImage callback. */}
+          Fades in to its 0.3 target opacity once the mirrored
+          bitmap is ready, independent of the sleeve. */}
       <motion.div
         className="absolute w-full pointer-events-none"
         style={{
@@ -543,21 +544,21 @@ function CoverImage({
         }}
       >
         <img
-          ref={reflectionImgRef}
+          ref={reflection.ref}
           src={coverUrl || ""}
           alt=""
+          draggable={false}
+          onLoad={reflection.onLoad}
           className="w-full h-auto"
-          onLoad={() => setReflectionLoaded(true)}
           style={{
             transform: "scaleY(-1)",
-            opacity: coverUrl && reflectionLoaded ? 0.3 : 0,
-            transition: "opacity 250ms ease-out",
+            opacity: coverUrl && reflection.loaded ? 0.3 : 0,
+            transition: COVER_FADE_TRANSITION,
             maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             display: coverUrl ? "block" : "none",
             borderRadius: "1%",
           }}
-          draggable={false}
         />
       </motion.div>
     </motion.div>

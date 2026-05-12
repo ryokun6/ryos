@@ -26,7 +26,12 @@ import {
   StatusDisplay,
   IpodModernPlayPauseIcon,
 } from "./screen";
-import { FadeInImage } from "./FadeInImage";
+import { useImageLoaded } from "../hooks/useImageLoaded";
+
+// Shared cross-fade for cover images: stay invisible while
+// loading (the wrapping element's gray background reads as the
+// placeholder), then fade up to the loaded state in 250ms.
+const COVER_FADE_TRANSITION = "opacity 250ms ease-out" as const;
 import {
   PLAYER_PROGRESS_INTERVAL_MS,
   getYouTubeVideoId,
@@ -135,22 +140,15 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
 /** Sleeve + reflection in one `preserve-3d` group tipped with rotateY + perspective. */
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
-
-  // Track the reflection's own load independently of the sleeve's
-  // FadeInImage so the mirror always fades in to its target
-  // opacity once its bitmap is ready, without relying on a
-  // callback chain through the sleeve. The browser cache makes
-  // both <img> loads land within a frame of each other in
-  // practice (same URL).
-  const reflectionImgRef = useRef<HTMLImageElement>(null);
-  const [reflectionLoaded, setReflectionLoaded] = useState(false);
-  useEffect(() => {
-    setReflectionLoaded(false);
-    const img = reflectionImgRef.current;
-    if (img && img.complete && img.naturalWidth > 0) {
-      setReflectionLoaded(true);
-    }
-  }, [coverUrl]);
+  // Sleeve and reflection each track their own load. Same URL, so
+  // the browser cache lands them within a frame in practice, but
+  // each fade is self-contained — the sleeve's gray
+  // (`MODERN_NOW_PLAYING_SLEEVE.background`) reads as the
+  // placeholder until the bitmap arrives.
+  const sleeve = useImageLoaded(coverUrl);
+  const reflection = useImageLoaded(coverUrl);
+  const reflectTargetOpacity =
+    MODERN_NOW_PLAYING_REFLECT_IMG.opacity as number;
 
   return (
     <div
@@ -172,15 +170,17 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
           }}
         >
           {coverUrl ? (
-            <FadeInImage
+            <img
+              ref={sleeve.ref}
               src={coverUrl}
+              alt=""
               draggable={false}
-              className="absolute inset-0 size-full object-cover"
-              // The wrapper already provides the `#a8a8a8` gray
-              // placeholder via `MODERN_NOW_PLAYING_SLEEVE`, so the
-              // FadeInImage's own placeholder div would just stack
-              // on top of the same color. Disable it here.
-              showPlaceholder={false}
+              onLoad={sleeve.onLoad}
+              className="size-full object-cover"
+              style={{
+                opacity: sleeve.loaded ? 1 : 0,
+                transition: COVER_FADE_TRANSITION,
+              }}
             />
           ) : (
             <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
@@ -195,22 +195,16 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
             style={{ height: reflectH }}
           >
             <img
-              ref={reflectionImgRef}
+              ref={reflection.ref}
               src={coverUrl}
               alt=""
               draggable={false}
-              onLoad={() => setReflectionLoaded(true)}
+              onLoad={reflection.onLoad}
               className="block w-full h-auto"
               style={{
                 ...MODERN_NOW_PLAYING_REFLECT_IMG,
-                // Fade the mirrored reflection in once its own
-                // bitmap is ready. `MODERN_NOW_PLAYING_REFLECT_IMG`
-                // already supplies the original 0.36 opacity for
-                // the loaded state.
-                opacity: reflectionLoaded
-                  ? (MODERN_NOW_PLAYING_REFLECT_IMG.opacity as number)
-                  : 0,
-                transition: "opacity 250ms ease-out",
+                opacity: reflection.loaded ? reflectTargetOpacity : 0,
+                transition: COVER_FADE_TRANSITION,
               }}
             />
           </div>
