@@ -930,8 +930,13 @@ function AlbumFlipFaces({
           pulled up to roughly meet the cover's upper edge so the
           flip stays anchored to the album art. The pre-applied 180°
           rotation cancels with the wrapper's animated 180° to leave
-          the tracklist front-facing once the flip completes. */}
-      <div
+          the tracklist front-facing once the flip completes.
+
+          The shadow is animated rather than static so it grows in
+          as the card rotates into view (and shrinks back out on the
+          back-flip) — both keyframes use the same comma-separated
+          structure so framer-motion can interpolate the values. */}
+      <motion.div
         className="absolute"
         style={{
           top: ipodMode ? "5%" : "15%",
@@ -942,8 +947,23 @@ function AlbumFlipFaces({
           WebkitBackfaceVisibility: "hidden",
           transform: "rotateY(180deg) translateZ(0)",
           overflow: "hidden",
+        }}
+        initial={{
           boxShadow:
-            "0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25)",
+            "0 0 0 0 rgba(0, 0, 0, 0), 0 0 0 0 rgba(0, 0, 0, 0)",
+        }}
+        animate={{
+          boxShadow:
+            "0 12px 32px 0 rgba(0, 0, 0, 0.45), 0 2px 8px 0 rgba(0, 0, 0, 0.25)",
+        }}
+        exit={{
+          boxShadow:
+            "0 0 0 0 rgba(0, 0, 0, 0), 0 0 0 0 rgba(0, 0, 0, 0)",
+        }}
+        transition={{
+          duration: 0.45,
+          delay: 0.15,
+          ease: [0.42, 0, 0.58, 1],
         }}
       >
         <AlbumTracklist
@@ -958,7 +978,7 @@ function AlbumFlipFaces({
           onPlayTrack={onPlayTrack}
           onExitFlip={onExitFlip}
         />
-      </div>
+      </motion.div>
     </>
   );
 }
