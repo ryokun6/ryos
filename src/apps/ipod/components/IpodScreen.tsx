@@ -76,13 +76,28 @@ const MODERN_TITLEBAR_HEIGHT = 17;
 // "Music + Now Playing" split shown in the reference photo. The
 // titlebar + menu list are clamped to the left half in split mode.
 const MODERN_SPLIT_HALF = "50%";
-// Shared timing for every property that animates during the modern UI
-// split↔full transition: menu panel width + box-shadow, split-art
-// column width, and the cover-art image's opacity. Keeping all four
-// on the same 300ms `ease-in-out` curve is what makes the move read
-// as one continuous motion instead of overlapping easings.
+// Shared timing for the chrome-width animation (menu panel width +
+// box-shadow, split-art column width). Kept on a 300ms `ease-in-out`
+// curve so the menu panel growing 50%↔100% and the split-art column
+// shrinking 50%↔0% read as one continuous motion.
 const SPLIT_LAYOUT_TRANSITION_TIMING =
   "duration-300 ease-in-out motion-reduce:transition-none";
+// The cover-art image fades on a SHORTER, directional curve so the
+// "black backface" effect actually reads as one. On EXIT the image
+// fades to 0 in the first half of the 300ms window, leaving the
+// panel's solid-black backface visible (with no faint image
+// overlay) for the remaining 150ms while the column shrinks. On
+// ENTRY the image fades back in only after the column has grown to
+// its final width, so a wider image crop doesn't keep snapping as
+// `object-cover` re-fits during the grow. Without the asymmetric
+// delay, the cover would otherwise track the panel collapse 1:1
+// (matching widths) and the fade would never visibly resolve to
+// pure black before the column clipped away — defeating the
+// backface illusion described above for `.ipod-modern-split-art`.
+const SPLIT_ART_IMAGE_FADE_OUT =
+  "duration-150 delay-0 ease-in-out motion-reduce:transition-none";
+const SPLIT_ART_IMAGE_FADE_IN =
+  "duration-150 delay-150 ease-in-out motion-reduce:transition-none";
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -1429,10 +1444,24 @@ export function IpodScreen({
           aria-hidden
         >
           {/* Cover art layer: fades on its OWN opacity track, leaving
-           *  the parent panel at full opacity. When `showSplitMenuArt`
-           *  flips off, the image fades to 0 over the same 300ms
-           *  window as the width transition — revealing the solid
-           *  black backface beneath before the column clips away.
+           *  the parent panel at full opacity. The fade is timed
+           *  ASYMMETRICALLY against the 300ms width animation so the
+           *  black backface actually shows:
+           *    - Exiting (split→full): image fades 1→0 over the first
+           *      150ms with no delay. The remaining 150ms of the
+           *      width shrink runs against a now-empty (pure black)
+           *      backface, so the user sees "image fades into black,
+           *      black collapses to the right" — matching the
+           *      `.ipod-modern-split-art` comment. Without the
+           *      shorter fade, the image's opacity tracked the panel
+           *      width 1:1 and never resolved to pure black before
+           *      the column clipped away.
+           *    - Entering (full→split): image fades 0→1 over 150ms
+           *      after a 150ms delay. The panel column grows to its
+           *      final 50% width FIRST (so `object-cover` doesn't
+           *      keep re-cropping while it's wider every frame),
+           *      then the cover fades in against the now-stable
+           *      backface.
            *
            *  We render against `renderedSplitArtUrl` (the last non-null
            *  cover) instead of the live `splitArtUrl` so the image
@@ -1444,7 +1473,11 @@ export function IpodScreen({
             className={cn(
               "absolute inset-0",
               splitLayoutTransitionReady &&
-                `transition-opacity ${SPLIT_LAYOUT_TRANSITION_TIMING}`
+                "transition-opacity",
+              splitLayoutTransitionReady &&
+                (showSplitMenuArt
+                  ? SPLIT_ART_IMAGE_FADE_IN
+                  : SPLIT_ART_IMAGE_FADE_OUT)
             )}
             style={{ opacity: showSplitMenuArt ? 1 : 0 }}
           >
