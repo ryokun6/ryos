@@ -592,6 +592,27 @@ export function IpodScreen({
   // the screen falls back to the standard full-width chrome.
   const showSplitMenuArt = isModernUi && menuMode && Boolean(splitArtUrl);
 
+  // The cover image is rendered against the LAST non-null
+  // `splitArtUrl` (not the live value) so it stays mounted through
+  // the fade-out when `splitArtUrl` flips null in the same render
+  // that `showSplitMenuArt` does — e.g. navigating from a browseable
+  // menu (Music root) into a flat song list / settings menu, which
+  // empties `splitArtUrlPool` immediately. Without this, the
+  // `{splitArtUrl ? <motion.img/> : null}` branch would unmount
+  // before the wrapper had a chance to animate its opacity / width
+  // to zero, and the cover would pop instead of fading. We only
+  // update on a real (non-null) value so the previous artwork
+  // remains rendered behind the fading cover-art layer for the full
+  // 300ms transition window.
+  const [renderedSplitArtUrl, setRenderedSplitArtUrl] = useState<
+    string | null
+  >(splitArtUrl);
+  useEffect(() => {
+    if (splitArtUrl) {
+      setRenderedSplitArtUrl(splitArtUrl);
+    }
+  }, [splitArtUrl]);
+
   // Defer width/opacity transitions until after the first paint so
   // mounting in split or full layout does not animate from a default.
   const [splitLayoutTransitionReady, setSplitLayoutTransitionReady] =
@@ -1409,7 +1430,14 @@ export function IpodScreen({
            *  the parent panel at full opacity. When `showSplitMenuArt`
            *  flips off, the image fades to 0 over the same 300ms
            *  window as the width transition — revealing the solid
-           *  black backface beneath before the column clips away. */}
+           *  black backface beneath before the column clips away.
+           *
+           *  We render against `renderedSplitArtUrl` (the last non-null
+           *  cover) instead of the live `splitArtUrl` so the image
+           *  stays mounted while the layer fades out — otherwise the
+           *  image would unmount in the same render that
+           *  `showSplitMenuArt` flips false and the cover would pop
+           *  instead of fading. */}
           <div
             className={cn(
               "absolute inset-0",
@@ -1418,11 +1446,11 @@ export function IpodScreen({
             )}
             style={{ opacity: showSplitMenuArt ? 1 : 0 }}
           >
-            {splitArtUrl ? (
+            {renderedSplitArtUrl ? (
               <AnimatePresence initial={false} mode="sync">
                 <motion.img
-                  key={splitArtUrl}
-                  src={splitArtUrl}
+                  key={renderedSplitArtUrl}
+                  src={renderedSplitArtUrl}
                   alt=""
                   draggable={false}
                   className="ipod-modern-split-art-img absolute inset-0 size-full object-cover select-none"
