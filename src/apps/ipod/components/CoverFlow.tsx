@@ -917,7 +917,6 @@ function AlbumFlipFaces({
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
           transform: "rotateY(180deg) translateZ(0)",
-          borderRadius: 6,
           overflow: "hidden",
           boxShadow:
             "0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25)",
