@@ -861,13 +861,22 @@ function AlbumFlipFaces({
   ipodMode: boolean;
   onPlayTrack: (indexInAlbum: number) => void;
 }) {
+  // The carousel's center cover is offset *up* from the screen
+  // center by `marginTop: -8%` (iPod) / `-2%` (karaoke) of the
+  // container WIDTH (CSS quirk: percentage vertical margins resolve
+  // against the parent's width). Mirror that exact offset on the
+  // flip's front face so the cover image sits in the same spot as
+  // the carousel cover, and on the rotating wrapper's
+  // `transform-origin` so the rotation pivots around the cover
+  // (instead of the visual screen center, which would make the cover
+  // arc in/out instead of flipping in place).
+  const carouselMarginTop = ipodMode ? "-8%" : "-2%";
   return (
     <>
       {/* FRONT FACE — the album cover, sized + positioned to match
-          the carousel center cover so the flip looks like that cover
-          rotating away. We render our own <img> here (rather than
-          reusing the carousel's CoverImage) so the front of the flip
-          is a single static element with backface-visibility hidden. */}
+          the carousel center cover (same flex centering + marginTop
+          the carousel uses) so the flip starts from the actual album
+          art instead of the screen center. */}
       <div
         className="absolute inset-0 flex items-center justify-center"
         style={{
@@ -876,44 +885,48 @@ function AlbumFlipFaces({
           transform: "translateZ(0)",
         }}
       >
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt=""
-            draggable={false}
-            className="object-cover bg-neutral-400"
-            style={{
-              width: `${coverSizeCqmin}cqmin`,
-              height: `${coverSizeCqmin}cqmin`,
-              borderRadius: "1%",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-            }}
-          />
-        ) : (
-          <div
-            className="bg-neutral-400"
-            style={{
-              width: `${coverSizeCqmin}cqmin`,
-              height: `${coverSizeCqmin}cqmin`,
-              borderRadius: "1%",
-            }}
-          />
-        )}
+        <div
+          style={{
+            marginTop: carouselMarginTop,
+            width: `${coverSizeCqmin}cqmin`,
+            height: `${coverSizeCqmin}cqmin`,
+          }}
+        >
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt=""
+              draggable={false}
+              className="w-full h-full object-cover bg-neutral-400"
+              style={{
+                borderRadius: "1%",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+              }}
+            />
+          ) : (
+            <div
+              className="w-full h-full bg-neutral-400"
+              style={{ borderRadius: "1%" }}
+            />
+          )}
+        </div>
       </div>
 
-      {/* BACK FACE — the album tracklist as a smaller inset card so
-          the carousel underneath still peeks through at the edges
-          and the panel reads as a real overlay on Cover Flow rather
-          than another full screen. The pre-applied 180° rotation
-          cancels with the wrapper's animated 180° to leave the
-          tracklist front-facing once the flip completes. */}
+      {/* BACK FACE — the album tracklist as an inset card. No bottom
+          inset so it extends to the screen bottom edge; larger
+          horizontal inset (12% iPod, 10% karaoke) so the carousel
+          covers underneath still show through at the sides; top is
+          pulled up to roughly meet the cover's upper edge so the
+          flip stays anchored to the album art. The pre-applied 180°
+          rotation cancels with the wrapper's animated 180° to leave
+          the tracklist front-facing once the flip completes. */}
       <div
         className="absolute"
         style={{
-          top: "6%",
-          bottom: "6%",
-          left: "6%",
-          right: "6%",
+          top: ipodMode ? "5%" : "15%",
+          bottom: 0,
+          left: ipodMode ? "12%" : "10%",
+          right: ipodMode ? "12%" : "10%",
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
           transform: "rotateY(180deg) translateZ(0)",
@@ -1577,7 +1590,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 style={{
                   transformStyle: "preserve-3d",
                   WebkitTransformStyle: "preserve-3d",
-                  transformOrigin: "center center",
+                  // Pivot around the carousel cover (which sits a few
+                  // percent above the visual screen center because of
+                  // the carousel's marginTop offset), not the screen
+                  // center — so the cover stays put while the card
+                  // flips around it instead of arcing in/out.
+                  transformOrigin: ipodMode
+                    ? "50% 35%"
+                    : "50% 47%",
                   pointerEvents: "auto",
                 }}
                 initial={{ rotateY: 0 }}
@@ -1950,7 +1970,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   style={{
                     transformStyle: "preserve-3d",
                     WebkitTransformStyle: "preserve-3d",
-                    transformOrigin: "center center",
+                    // Pivot around the carousel cover (a few percent
+                    // above the visual screen center) so the cover
+                    // stays put while the card flips around it.
+                    transformOrigin: ipodMode
+                      ? "50% 35%"
+                      : "50% 47%",
                     pointerEvents: "auto",
                   }}
                   initial={{ rotateY: 0 }}
