@@ -1523,9 +1523,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 .ipod-modern-split-art {
   background: #000;
   box-shadow:
-    inset 8px 0 12px -4px rgba(0, 0, 0, 0.65),
-    inset 3px 0 5px -1px rgba(0, 0, 0, 0.55),
-    inset 1px 0 0 rgba(0, 0, 0, 0.4);
+    inset 8px 0 12px -4px rgba(0, 0, 0, 0.40),
+    inset 3px 0 5px -1px rgba(0, 0, 0, 0.30),
+    inset 1px 0 0 rgba(0, 0, 0, 0.18);
 }
 
 /* LEFT-side menu surface in split mode: must clip its contents (so menu
@@ -1554,15 +1554,18 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     1px 0 0 rgba(0, 0, 0, 0);
 }
 
-/* Deeper, longer-throw shadow stack so the menu reads as a thick card
- * floating above the album art column — matches the heavy gutter
- * shadow visible in the iPod classic 6G/7G reference photo where the
- * cover artwork's left edge is noticeably darker than its center. */
+/* Long-throw shadow stack so the menu reads as a card floating above
+ * the album art column — matches the gutter shadow visible in the
+ * iPod classic 6G/7G reference photo where the cover artwork's left
+ * edge sits a touch darker than its center. Alphas are kept on the
+ * softer side so the seam never reads as a hard inked rule (the
+ * inset gutter on `.ipod-modern-split-art` adds the rest of the
+ * depth on top). */
 .ipod-modern-menu-panel.is-split {
   box-shadow:
-    8px 0 16px -2px rgba(0, 0, 0, 0.55),
-    4px 0 8px -1px rgba(0, 0, 0, 0.45),
-    1px 0 0 rgba(0, 0, 0, 0.35);
+    8px 0 16px -2px rgba(0, 0, 0, 0.32),
+    4px 0 8px -1px rgba(0, 0, 0, 0.22),
+    1px 0 0 rgba(0, 0, 0, 0.15);
 }
 
 .ipod-modern-split-art-img {

@@ -1044,7 +1044,11 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               <div className="flex shrink-0 items-center gap-1">
                 <div
                   className={cn(
-                    "flex items-center justify-center w-[14px] h-[14px]",
+                    // `translateY(-0.5px)` matches the main IpodScreen
+                    // titlebar so the play/pause glyph reads as
+                    // optically centered above the 1px bottom hairline
+                    // (and isn't pulled low by its own 1px drop-shadow).
+                    "flex items-center justify-center w-[14px] h-[14px] [transform:translateY(-0.5px)]",
                     "[filter:drop-shadow(0_1px_0_rgba(255,255,255,0.9))]",
                   )}
                 >
