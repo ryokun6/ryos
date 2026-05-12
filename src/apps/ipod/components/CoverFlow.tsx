@@ -1155,8 +1155,10 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   }, [isFlipped, onRotation]);
 
   // Select the current item.
-  //   Un-flipped + multi-track album → flip to reveal the tracklist.
-  //   Un-flipped + single-track cover (e.g. ungrouped YouTube) → play.
+  //   Un-flipped → flip to reveal the tracklist (always, for
+  //     consistency — single-track covers just flip into a one-row
+  //     tracklist that the user can confirm by pressing center
+  //     again).
   //   Flipped → play the highlighted row in the album.
   const selectCurrent = useCallback(() => {
     const item = coverItems[selectedIndex];
@@ -1167,12 +1169,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       onSelectTrack(trackIndex);
       return;
     }
-    if (item.trackIndices.length > 1) {
-      setShowCD(false);
-      setIsFlipped(true);
-      return;
-    }
-    onSelectTrack(item.trackIndex);
+    setShowCD(false);
+    setIsFlipped(true);
   }, [
     coverItems,
     isFlipped,
