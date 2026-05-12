@@ -694,14 +694,26 @@ function AlbumTracklist({
         className={cn(
           "shrink-0 px-1.5 flex flex-col justify-center cursor-pointer select-none",
           isModern ? "ipod-modern-row-selected" : "bg-[#0a3667] text-white",
-          isModern ? "font-ipod-modern-ui" : "font-os-ui"
+          // Modern iPod keeps its iOS-style UI font; classic iPod
+          // uses Geneva-12 (the 1st-gen iPod's own UI bitmap font);
+          // karaoke uses the theme-aware OS sans-serif so it blends
+          // with whichever desktop theme is active.
+          isModern
+            ? "font-ipod-modern-ui"
+            : ipodMode
+              ? "font-geneva-12"
+              : "font-os-ui"
         )}
-        style={{ minHeight: isModern ? 26 : 24, paddingTop: 2, paddingBottom: 2 }}
+        style={{ minHeight: isModern ? 26 : 22, paddingTop: 1, paddingBottom: 1 }}
       >
         <div
           className={cn(
-            "truncate font-semibold leading-[1.15]",
-            isModern ? "text-[12px] tracking-tight" : "text-[13px]"
+            "truncate font-semibold leading-none",
+            isModern
+              ? "text-[12px] tracking-tight"
+              : ipodMode
+                ? "text-[11px]"
+                : "text-[13px]"
           )}
           title={album}
         >
@@ -710,10 +722,12 @@ function AlbumTracklist({
         {artist && (
           <div
             className={cn(
-              "truncate leading-[1.15]",
+              "truncate leading-none mt-[1px]",
               isModern
                 ? "text-[10px] text-white/85 tracking-tight"
-                : "text-[11px] text-white/70"
+                : ipodMode
+                  ? "text-[9px] text-white/70"
+                  : "text-[11px] text-white/70"
             )}
             title={artist}
           >
