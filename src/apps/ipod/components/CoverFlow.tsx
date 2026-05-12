@@ -17,6 +17,7 @@ import {
   IpodModernPlayPauseIcon,
   ScrollingText,
 } from "./screen";
+import { FadeInImage } from "./FadeInImage";
 
 // Modern-UI titlebar height. Matches `MODERN_TITLEBAR_HEIGHT` in
 // IpodScreen.tsx so the Cover Flow status bar lines up exactly with the
@@ -138,11 +139,11 @@ function SpinningCD({ coverUrl, size, isPlaying, onClick }: { coverUrl: string |
               height: "40%",
             }}
           >
-            <img
+            <FadeInImage
               src={coverUrl}
-              alt=""
               className="w-full h-full object-cover"
               draggable={false}
+              placeholderClassName="bg-neutral-400 rounded-full"
             />
           </div>
         )}
@@ -291,6 +292,14 @@ function CoverImage({
       ? track.cover ?? null
       : formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
+  // Track when the main sleeve image has finished loading so the
+  // mirrored reflection underneath can fade in alongside it (instead
+  // of popping in independently when the duplicate <img> resolves).
+  const [coverLoaded, setCoverLoaded] = useState(false);
+  useEffect(() => {
+    setCoverLoaded(false);
+  }, [coverUrl]);
+
   // Handle disc click - play track if different, otherwise toggle play/pause
   const handleDiscClick = useCallback(() => {
     if (selectedIndex !== currentIndex) {
@@ -438,7 +447,14 @@ function CoverImage({
       <motion.div
         className="absolute inset-0 w-full h-full overflow-hidden"
         style={{
-          background: "#1a1a1a",
+          // Neutral mid-gray so the sleeve reads as a "loading"
+          // placeholder while the cover image is in flight. Once
+          // the image has loaded the FadeInImage below cross-fades
+          // over this surface so users never see an empty black
+          // hole pop into a cover. The same gray reads acceptably
+          // through the brightness overlay on side covers and on
+          // the dimmed CD-flip state.
+          background: "#a8a8a8",
           pointerEvents: isCenter && showCD ? "none" : "auto",
           zIndex: 10,
           borderRadius: "1%",
@@ -468,11 +484,17 @@ function CoverImage({
           }}
         />
         {coverUrl ? (
-          <img
+          <FadeInImage
             src={coverUrl}
             alt={track?.title || ""}
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
             draggable={false}
+            // The wrapper already renders the gray placeholder via
+            // its `background: "#a8a8a8"`. Suppress FadeInImage's
+            // own placeholder div so the brightness overlay stays
+            // the topmost layer.
+            showPlaceholder={false}
+            onLoaded={() => setCoverLoaded(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
@@ -489,7 +511,10 @@ function CoverImage({
         )}
       </motion.div>
       
-      {/* Reflection - moves down with cover when CD is shown */}
+      {/* Reflection - moves down with cover when CD is shown.
+          Gated on `coverLoaded` so the mirror image fades in in
+          lock-step with the main sleeve rather than popping in
+          when the duplicate <img> resolves separately. */}
       <motion.div
         className="absolute w-full pointer-events-none"
         style={{
@@ -512,7 +537,8 @@ function CoverImage({
           className="w-full h-auto"
           style={{
             transform: "scaleY(-1)",
-            opacity: 0.3,
+            opacity: coverUrl && coverLoaded ? 0.3 : 0,
+            transition: "opacity 250ms ease-out",
             maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 50%)",
             display: coverUrl ? "block" : "none",

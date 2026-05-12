@@ -26,6 +26,7 @@ import {
   StatusDisplay,
   IpodModernPlayPauseIcon,
 } from "./screen";
+import { FadeInImage } from "./FadeInImage";
 import {
   PLAYER_PROGRESS_INTERVAL_MS,
   getYouTubeVideoId,
@@ -104,8 +105,11 @@ function formatPlaybackTime(totalSeconds: number): string {
  * stack stays inside the now-playing row. */
 const MODERN_NOW_PLAYING_ART_PX = 60;
 const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
+// Neutral mid-gray placeholder shown while the cover image is in
+// flight. Cross-fades to the loaded image via `FadeInImage` so the
+// art panel never flashes from a near-black square to a cover.
 const MODERN_NOW_PLAYING_SLEEVE: CSSProperties = {
-  background: "#1a1a1a",
+  background: "#a8a8a8",
   borderRadius: "3px",
 };
 const MODERN_NOW_PLAYING_REFLECT_IMG: CSSProperties = {
@@ -132,6 +136,14 @@ const MODERN_NOW_PLAYING_ART_3D: CSSProperties = {
 function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
   const reflectH = MODERN_NOW_PLAYING_ART_PX * MODERN_NOW_PLAYING_REFLECT_RATIO;
 
+  // Track when the main sleeve image has finished loading so the
+  // reflection can fade in alongside it (instead of popping in
+  // independently when the duplicate <img> resolves).
+  const [coverLoaded, setCoverLoaded] = useState(false);
+  useEffect(() => {
+    setCoverLoaded(false);
+  }, [coverUrl]);
+
   return (
     <div
       className="relative shrink-0 self-start overflow-visible"
@@ -152,11 +164,16 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
           }}
         >
           {coverUrl ? (
-            <img
+            <FadeInImage
               src={coverUrl}
-              alt=""
               draggable={false}
-              className="size-full object-cover"
+              className="absolute inset-0 size-full object-cover"
+              // The wrapper already provides the `#a8a8a8` gray
+              // placeholder via `MODERN_NOW_PLAYING_SLEEVE`, so the
+              // FadeInImage's own placeholder div would just stack
+              // on top of the same color. Disable it here.
+              showPlaceholder={false}
+              onLoaded={() => setCoverLoaded(true)}
             />
           ) : (
             <div className="flex size-full items-center justify-center bg-gradient-to-br from-neutral-600 to-neutral-900 text-[22px] leading-none text-white/25 select-none">
@@ -175,7 +192,18 @@ function ModernNowPlayingArtwork({ coverUrl }: { coverUrl: string | null }) {
               alt=""
               draggable={false}
               className="block w-full h-auto"
-              style={MODERN_NOW_PLAYING_REFLECT_IMG}
+              style={{
+                ...MODERN_NOW_PLAYING_REFLECT_IMG,
+                // Fade the mirrored reflection in once the main
+                // sleeve image has loaded so both surfaces appear
+                // together. `MODERN_NOW_PLAYING_REFLECT_IMG`
+                // already supplies the original 0.36 opacity for
+                // the loaded state.
+                opacity: coverLoaded
+                  ? (MODERN_NOW_PLAYING_REFLECT_IMG.opacity as number)
+                  : 0,
+                transition: "opacity 250ms ease-out",
+              }}
             />
           </div>
         ) : null}
