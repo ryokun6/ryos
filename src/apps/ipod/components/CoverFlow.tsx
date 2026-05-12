@@ -333,6 +333,7 @@ function CoverImage({
   currentIndex,
   onPlayTrackInPlace,
   hideSleeveAtCenter = false,
+  isAlbumViewOpen = false,
 }: {
   track: Track;
   position: number;
@@ -353,6 +354,14 @@ function CoverImage({
    * "ghost" cover from sitting beneath the rotating flip element.
    */
   hideSleeveAtCenter?: boolean;
+  /**
+   * Whether the album view (flipped state) is currently OPEN, not
+   * including the back-flip animation window. Drives the reflection
+   * fade independently of `hideSleeveAtCenter` so the reflection can
+   * fade in DURING the back-flip rotation rather than waiting for it
+   * to finish (otherwise it pops in 600ms late).
+   */
+  isAlbumViewOpen?: boolean;
 }) {
   const coverUrl = resolveCoverUrl(track, ipodMode);
 
@@ -494,10 +503,10 @@ function CoverImage({
               opacity: 1,
               y: "0%",
             }}
-            exit={{ opacity: 1, y: "15%" }}
-            transition={{ 
+            exit={{ opacity: 0, y: "18%" }}
+            transition={{
               y: { type: "spring", stiffness: 200, damping: 25 },
-              opacity: { duration: 0.15, ease: "easeOut" },
+              opacity: { duration: 0.22, ease: [0.4, 0, 0.2, 1] },
             }}
           >
             <SpinningCD coverUrl={coverUrl} size="100%" isPlaying={isPlaying} onClick={handleDiscClick} />
@@ -583,7 +592,17 @@ function CoverImage({
       
       {/* Reflection - moves down with cover when CD is shown.
           Fades in to its 0.3 target opacity once the mirrored
-          bitmap is ready, independent of the sleeve. */}
+          bitmap is ready, independent of the sleeve.
+
+          The fade is tied to `isAlbumViewOpen` (i.e. just `isFlipped`)
+          rather than `hideSleeveAtCenter` so it tracks the actual
+          flip rotation rather than the 600ms post-flip sleeve-hide
+          window. Opening: reflection fades OUT immediately,
+          synchronized with the first half of the 0.6s card flip
+          (gone by the time the card hits 90° edge-on). Closing:
+          reflection fades IN with a 0.3s delay so it appears on the
+          back half of the flip — by the time the card returns to
+          0° (cover front-facing) the reflection is fully back. */}
       <motion.div
         className="absolute w-full pointer-events-none"
         style={{
@@ -592,12 +611,16 @@ function CoverImage({
         }}
         initial={false}
         animate={{
-          opacity: isCenter && (showCD || hideSleeveAtCenter) ? 0 : 1,
+          opacity: isCenter && (showCD || isAlbumViewOpen) ? 0 : 1,
           y: isCenter && showCD ? "105%" : "0%",
         }}
         transition={{
           y: { type: "spring", stiffness: 200, damping: 25 },
-          opacity: { duration: 0.15, ease: "easeOut" },
+          opacity: {
+            duration: 0.3,
+            ease: "easeOut",
+            delay: isCenter && isAlbumViewOpen ? 0 : 0.3,
+          },
         }}
       >
         <img
@@ -936,10 +959,7 @@ function AlbumFlipFaces({
               alt=""
               draggable={false}
               className="w-full h-full object-cover bg-neutral-400"
-              style={{
-                borderRadius: "1%",
-                boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-              }}
+              style={{ borderRadius: "1%" }}
             />
           ) : (
             <div
@@ -959,10 +979,16 @@ function AlbumFlipFaces({
           rotation cancels with the wrapper's animated 180° to leave
           the tracklist front-facing once the flip completes.
 
-          The shadow is animated rather than static so it grows in
-          as the card rotates into view (and shrinks back out on the
-          back-flip) — both keyframes use the same comma-separated
-          structure so framer-motion can interpolate the values. */}
+          The shadow lives on the OUTER wrapper (no overflow:hidden)
+          so the soft outset box-shadow can actually paint outside
+          the card bounds — putting `overflow: hidden` on the same
+          element clips the shadow entirely, which is what was
+          happening before. The inner `overflow:hidden` div is what
+          actually clips the tracklist content. The shadow is
+          animated rather than static so it grows in as the card
+          rotates into view (and shrinks back out on the back-flip)
+          — both keyframes use the same comma-separated structure so
+          framer-motion can interpolate the values. */}
       <motion.div
         className="absolute"
         style={{
@@ -973,7 +999,6 @@ function AlbumFlipFaces({
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
           transform: "rotateY(180deg) translateZ(0)",
-          overflow: "hidden",
         }}
         initial={{
           boxShadow:
@@ -993,18 +1018,20 @@ function AlbumFlipFaces({
           ease: [0.42, 0, 0.58, 1],
         }}
       >
-        <AlbumTracklist
-          album={album}
-          artist={artist}
-          tracks={albumTracks}
-          selectedIndex={selectedIndex}
-          currentlyPlayingIndex={currentlyPlayingIndex}
-          isPlaying={isPlaying}
-          isModern={isModern}
-          ipodMode={ipodMode}
-          onPlayTrack={onPlayTrack}
-          onExitFlip={onExitFlip}
-        />
+        <div className="absolute inset-0 overflow-hidden">
+          <AlbumTracklist
+            album={album}
+            artist={artist}
+            tracks={albumTracks}
+            selectedIndex={selectedIndex}
+            currentlyPlayingIndex={currentlyPlayingIndex}
+            isPlaying={isPlaying}
+            isModern={isModern}
+            ipodMode={ipodMode}
+            onPlayTrack={onPlayTrack}
+            onExitFlip={onExitFlip}
+          />
+        </div>
       </motion.div>
     </>
   );
@@ -1100,7 +1127,17 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const flipAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
-  const isInitialFlipRef = useRef(true);
+  // Track the previous `isFlipped` value so the animation-window
+  // effect below can detect *real* transitions (true↔false) rather
+  // than relying on a "skip first run" ref. The ref pattern breaks
+  // in React 18 StrictMode dev where effects unmount + re-mount,
+  // causing the second run to fire setIsFlipAnimating(true) on the
+  // initial mount — which then hid the center sleeve for 600ms even
+  // though the user never flipped (read as: "center cover shows up
+  // with a delay when opening Cover Flow"). Comparing against the
+  // previous value is StrictMode-safe: a no-op transition (false →
+  // false) returns early on every effect run.
+  const prevFlippedRef = useRef(isFlipped);
   // Selected row inside the tracklist while flipped. Reset whenever
   // the active album changes so wheel rotation always starts at the
   // currently-playing track (or the first track if none of this album
@@ -1175,13 +1212,13 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   }, [selectedIndex]);
 
   // Track flip-animation duration so the carousel sleeve stays
-  // hidden for the entire forward + reverse rotation. Skipped on the
-  // very first run (initial mount, no animation actually playing).
+  // hidden for the entire forward + reverse rotation. Only fires
+  // when `isFlipped` actually changes (compared against the previous
+  // value via a ref) so it's a no-op on the initial mount even when
+  // StrictMode dev double-invokes effects.
   useEffect(() => {
-    if (isInitialFlipRef.current) {
-      isInitialFlipRef.current = false;
-      return;
-    }
+    if (prevFlippedRef.current === isFlipped) return;
+    prevFlippedRef.current = isFlipped;
     setIsFlipAnimating(true);
     if (flipAnimationTimerRef.current) {
       clearTimeout(flipAnimationTimerRef.current);
@@ -1580,6 +1617,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   currentIndex={currentCoverIndex}
                   onPlayTrackInPlace={playItemInPlace}
                   hideSleeveAtCenter={(isFlipped || isFlipAnimating) && position === 0}
+                  isAlbumViewOpen={isFlipped && position === 0}
                 />
               ))}
             </AnimatePresence>
@@ -1872,6 +1910,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     currentIndex={currentCoverIndex}
                     onPlayTrackInPlace={playItemInPlace}
                     hideSleeveAtCenter={(isFlipped || isFlipAnimating) && position === 0}
+                    isAlbumViewOpen={isFlipped && position === 0}
                   />
                 ))}
               </AnimatePresence>
