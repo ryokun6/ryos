@@ -367,7 +367,7 @@ const initialIpodData: IpodData = {
   lcdFilterOn: true,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
-  lyricsFont: LyricsFont.SerifRed,
+  lyricsFont: LyricsFont.SansSerif,
   koreanDisplay: KoreanDisplay.Original,
   japaneseFurigana: JapaneseFurigana.On,
   romanization: {
@@ -2251,8 +2251,8 @@ export const useIpodStore = create<IpodState>()(
             showLyrics: state.showLyrics ?? true,
             lyricsAlignment: state.lyricsAlignment ?? LyricsAlignment.Alternating,
             lyricsFont: shouldUpgradeLegacyDefaultLyricsFont
-              ? LyricsFont.SerifRed
-              : state.lyricsFont ?? LyricsFont.SerifRed,
+              ? LyricsFont.SansSerif
+              : state.lyricsFont ?? LyricsFont.SansSerif,
             displayMode: state.displayMode ?? DisplayMode.Video,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
