@@ -639,6 +639,7 @@ function AlbumTracklist({
   isModern,
   ipodMode,
   onPlayTrack,
+  onExitFlip,
 }: {
   album: string;
   artist?: string;
@@ -649,6 +650,9 @@ function AlbumTracklist({
   isModern: boolean;
   ipodMode: boolean;
   onPlayTrack: (indexInAlbum: number) => void;
+  /** Tap-to-exit handler. Header tap exits the flip; row taps still
+   *  fall through to onPlayTrack and exit Cover Flow entirely. */
+  onExitFlip?: () => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -672,20 +676,25 @@ function AlbumTracklist({
     <div
       className={cn(
         "absolute inset-0 flex flex-col",
-        isModern ? "bg-white" : ipodMode ? "bg-black" : "bg-black",
+        isModern ? "bg-white" : "bg-black",
         ipodMode ? "ipod-force-font" : "karaoke-force-font"
       )}
     >
       {/* Album header — same blue gradient as the modern list selection
-          highlight so the band reads as a "this is the album" anchor.
-          Two lines: album title (bold, white) + artist (lighter,
-          slightly translucent). Truncates with ellipsis to avoid
-          wrapping inside the 150px-tall iPod screen. */}
+          highlight on modern, deep blue on classic / karaoke. Tap on
+          the header exits the flip back to the carousel; row taps
+          below stop propagation so they still play their song
+          instead of just unflipping. */}
       <div
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onExitFlip?.();
+        }}
         className={cn(
-          "shrink-0 px-1.5 flex flex-col justify-center",
+          "shrink-0 px-1.5 flex flex-col justify-center cursor-pointer select-none",
           isModern ? "ipod-modern-row-selected" : "bg-[#0a3667] text-white",
-          isModern ? "font-ipod-modern-ui" : "font-chicago"
+          isModern ? "font-ipod-modern-ui" : "font-os-ui"
         )}
         style={{ minHeight: isModern ? 26 : 24, paddingTop: 2, paddingBottom: 2 }}
       >
@@ -748,14 +757,14 @@ function AlbumTracklist({
               className={cn(
                 "flex items-center justify-between gap-2 cursor-pointer select-none",
                 "pl-1.5 pr-2",
-                isModern ? "font-ipod-modern-ui" : "font-chicago",
+                isModern ? "font-ipod-modern-ui" : "font-os-ui",
                 isSelected
                   ? isModern
                     ? "ipod-modern-row-selected"
-                    : "bg-[#0a3667] text-[#c5e0f5]"
+                    : "bg-[#0a3667] text-white"
                   : isModern
                     ? "ipod-modern-row text-black"
-                    : "text-[#c5e0f5] hover:bg-[#0a3667]/20"
+                    : "text-white hover:bg-white/10"
               )}
               style={{ minHeight: rowHeight, height: rowHeight }}
             >
@@ -793,10 +802,10 @@ function AlbumTracklist({
                   isSelected
                     ? isModern
                       ? "text-white/90"
-                      : "text-[#c5e0f5]/85"
+                      : "text-white/85"
                     : isModern
                       ? "text-[rgb(99,101,103)]"
-                      : "text-[#c5e0f5]/60"
+                      : "text-white/60"
                 )}
               >
                 {formatTrackDuration(track.durationMs)}
@@ -848,6 +857,7 @@ function AlbumFlipFaces({
   isModern,
   ipodMode,
   onPlayTrack,
+  onExitFlip,
 }: {
   album: string;
   artist?: string;
@@ -860,6 +870,7 @@ function AlbumFlipFaces({
   isModern: boolean;
   ipodMode: boolean;
   onPlayTrack: (indexInAlbum: number) => void;
+  onExitFlip?: () => void;
 }) {
   // The carousel's center cover is offset *up* from the screen
   // center by `marginTop: -8%` (iPod) / `-2%` (karaoke) of the
@@ -945,6 +956,7 @@ function AlbumFlipFaces({
           isModern={isModern}
           ipodMode={ipodMode}
           onPlayTrack={onPlayTrack}
+          onExitFlip={onExitFlip}
         />
       </div>
     </>
@@ -1604,6 +1616,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 animate={{ rotateY: 180 }}
                 exit={{ rotateY: 0 }}
                 transition={{ duration: 0.6, ease: [0.42, 0, 0.58, 1] }}
+                onClick={() => setIsFlipped(false)}
               >
                 <AlbumFlipFaces
                   album={currentItem.title}
@@ -1617,6 +1630,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   isModern={isModernIpodCoverFlow}
                   ipodMode={ipodMode}
                   onPlayTrack={handleSelectAlbumTrack}
+                  onExitFlip={() => setIsFlipped(false)}
                 />
               </motion.div>
             )}
@@ -1982,6 +1996,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   animate={{ rotateY: 180 }}
                   exit={{ rotateY: 0 }}
                   transition={{ duration: 0.6, ease: [0.42, 0, 0.58, 1] }}
+                  onClick={() => setIsFlipped(false)}
                 >
                   <AlbumFlipFaces
                     album={currentItem.title}
@@ -1995,6 +2010,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     isModern={isModernIpodCoverFlow}
                     ipodMode={ipodMode}
                     onPlayTrack={handleSelectAlbumTrack}
+                    onExitFlip={() => setIsFlipped(false)}
                   />
                 </motion.div>
               )}
