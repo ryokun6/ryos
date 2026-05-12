@@ -65,6 +65,14 @@ export function FadeInImage({
 }: FadeInImageProps) {
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  // Stash `onLoaded` in a ref so callers can pass a fresh arrow
+  // function each render without us re-running the reset effect
+  // (which would flash the placeholder back on every parent
+  // re-render for in-flight images).
+  const onLoadedRef = useRef(onLoaded);
+  useEffect(() => {
+    onLoadedRef.current = onLoaded;
+  }, [onLoaded]);
 
   useEffect(() => {
     setLoaded(false);
@@ -72,9 +80,9 @@ export function FadeInImage({
     if (!img) return;
     if (img.complete && img.naturalWidth > 0) {
       setLoaded(true);
-      onLoaded?.();
+      onLoadedRef.current?.();
     }
-  }, [src, onLoaded]);
+  }, [src]);
 
   const showImage = loaded && visible;
 
@@ -107,7 +115,7 @@ export function FadeInImage({
         }}
         onLoad={() => {
           setLoaded(true);
-          onLoaded?.();
+          onLoadedRef.current?.();
         }}
       />
     </>
