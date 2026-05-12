@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from "react";
 const MUSICKIT_SCRIPT_SRC = "https://js-cdn.music.apple.com/musickit/v3/musickit.js";
 const MUSICKIT_SCRIPT_ID = "ryos-musickit-js-v3";
 const MUSICKIT_TOKEN_ENDPOINT = "/api/musickit-token";
+const MUSICKIT_USER_TOKEN_ENDPOINT = "/api/musickit-user-token";
 const TOKEN_REFRESH_BUFFER_MS = 60 * 60 * 1000; // refresh if <1h left
 
 export type MusicKitStatus =
@@ -34,6 +35,8 @@ interface CachedDeveloperToken {
 
 let cachedDeveloperToken: CachedDeveloperToken | null = null;
 let inFlightTokenFetch: Promise<string> | null = null;
+let inFlightUserTokenFetch: Promise<string | null> | null = null;
+let lastPersistedUserToken: string | null = null;
 
 let scriptPromise: Promise<void> | null = null;
 let configurePromise: Promise<MusicKit.MusicKitInstance> | null = null;
@@ -114,6 +117,86 @@ async function resolveDeveloperToken(): Promise<string> {
     }
     throw err;
   }
+}
+
+function normalizeMusicUserToken(token: unknown): string | null {
+  if (typeof token !== "string") return null;
+  const trimmed = token.trim();
+  return trimmed ? trimmed : null;
+}
+
+async function fetchSyncedMusicUserToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  if (inFlightUserTokenFetch) return inFlightUserTokenFetch;
+
+  inFlightUserTokenFetch = (async () => {
+    const res = await fetch(MUSICKIT_USER_TOKEN_ENDPOINT, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+
+    if (res.status === 401 || res.status === 403) return null;
+    if (!res.ok) {
+      throw new Error(`MusicKit user token endpoint returned ${res.status}`);
+    }
+
+    const data = (await res.json()) as {
+      hasToken?: boolean;
+      token?: unknown;
+    };
+    if (!data.hasToken) return null;
+    const token = normalizeMusicUserToken(data.token);
+    if (token) lastPersistedUserToken = token;
+    return token;
+  })();
+
+  try {
+    return await inFlightUserTokenFetch;
+  } catch (err) {
+    console.warn("[musickit] failed to load synced user token", err);
+    return null;
+  } finally {
+    inFlightUserTokenFetch = null;
+  }
+}
+
+async function saveSyncedMusicUserToken(token: string): Promise<void> {
+  const normalized = normalizeMusicUserToken(token);
+  if (!normalized || normalized === lastPersistedUserToken) return;
+
+  const res = await fetch(MUSICKIT_USER_TOKEN_ENDPOINT, {
+    method: "PUT",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ token: normalized }),
+  });
+
+  if (res.status === 401 || res.status === 403) return;
+  if (!res.ok) {
+    throw new Error(`MusicKit user token save returned ${res.status}`);
+  }
+  lastPersistedUserToken = normalized;
+}
+
+async function deleteSyncedMusicUserToken(): Promise<void> {
+  const res = await fetch(MUSICKIT_USER_TOKEN_ENDPOINT, {
+    method: "DELETE",
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    lastPersistedUserToken = null;
+    return;
+  }
+  if (!res.ok) {
+    throw new Error(`MusicKit user token delete returned ${res.status}`);
+  }
+  lastPersistedUserToken = null;
 }
 
 function loadScript(): Promise<void> {
@@ -197,7 +280,8 @@ function loadScript(): Promise<void> {
 
 async function configureMusicKit(
   developerToken: string,
-  app: MusicKit.AppMetadata
+  app: MusicKit.AppMetadata,
+  musicUserToken?: string | null
 ): Promise<MusicKit.MusicKitInstance> {
   if (configuredInstance) return configuredInstance;
   if (configurePromise) return configurePromise;
@@ -212,6 +296,7 @@ async function configureMusicKit(
       window.MusicKit!.configure({
         developerToken,
         app,
+        ...(musicUserToken ? { musicUserToken } : {}),
       })
     );
     const instance = result ?? window.MusicKit!.getInstance?.();
@@ -312,7 +397,20 @@ export function useMusicKit(
   // shape across versions.
   useEffect(() => {
     if (!instance) return;
-    const refresh = () => setIsAuthorized(Boolean(instance.isAuthorized));
+    const refresh = (event?: { token?: string }) => {
+      const authorized = Boolean(instance.isAuthorized);
+      setIsAuthorized(authorized);
+      if (!authorized) return;
+
+      const token = normalizeMusicUserToken(
+        event?.token ?? instance.musicUserToken
+      );
+      if (token) {
+        void saveSyncedMusicUserToken(token).catch((err) => {
+          console.warn("[musickit] failed to save synced user token", err);
+        });
+      }
+    };
     instance.addEventListener("authorizationStatusDidChange", refresh);
     instance.addEventListener("userTokenDidChange", refresh);
     refresh();
@@ -342,11 +440,14 @@ export function useMusicKit(
         if (cancelled) return;
         setHasToken(true);
 
+        const musicUserToken = await fetchSyncedMusicUserToken();
+        if (cancelled) return;
+
         await loadScript();
         if (cancelled) return;
 
         try {
-          const inst = await configureMusicKit(token, app);
+          const inst = await configureMusicKit(token, app, musicUserToken);
           if (cancelled) return;
           setInstance(inst);
           setIsAuthorized(Boolean(inst.isAuthorized));
@@ -383,6 +484,11 @@ export function useMusicKit(
     try {
       const token = await inst.authorize();
       setIsAuthorized(Boolean(inst.isAuthorized));
+      if (token) {
+        void saveSyncedMusicUserToken(token).catch((err) => {
+          console.warn("[musickit] failed to save synced user token", err);
+        });
+      }
       return token ?? null;
     } catch (err) {
       console.error("[musickit] authorize failed", err);
@@ -397,6 +503,9 @@ export function useMusicKit(
     try {
       await inst.unauthorize();
       setIsAuthorized(false);
+      void deleteSyncedMusicUserToken().catch((err) => {
+        console.warn("[musickit] failed to delete synced user token", err);
+      });
     } catch (err) {
       console.error("[musickit] unauthorize failed", err);
     }
