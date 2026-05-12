@@ -32,6 +32,18 @@ const MODERN_TITLEBAR_HEIGHT = 17;
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
 
+// Format a track duration in milliseconds as `m:ss`. Returns an empty
+// string when the duration is unknown so the tracklist row collapses
+// gracefully instead of showing "0:00" for songs that haven't reported
+// their length yet (mostly a YouTube-only edge case).
+function formatTrackDuration(durationMs?: number): string {
+  if (!durationMs || durationMs <= 0) return "";
+  const totalSeconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 // Aqua-style shine overlay for macOS X theme buttons
 function AquaShineOverlay() {
   return (
@@ -266,6 +278,46 @@ export interface CoverFlowRef {
   navigateNext: () => void;
   navigatePrevious: () => void;
   selectCurrent: () => void;
+  /**
+   * Handle a "back" press (Menu button on the wheel). Returns `true`
+   * when Cover Flow consumed the press — currently only when the
+   * album cover is flipped to its tracklist, in which case the press
+   * unflips back to the carousel instead of exiting Cover Flow.
+   * Returns `false` otherwise so the caller can run its default exit
+   * behavior.
+   */
+  handleMenuButton: () => boolean;
+}
+
+// Resolve the best cover URL for a track. Apple Music supplies a
+// fully resolved URL; YouTube tracks fall back to a thumbnail derived
+// from the video ID. The CoverFlow root + the per-cover renderer both
+// need this same logic to drive the album-flip front face, so it
+// lives here as a small helper instead of being duplicated.
+function resolveCoverUrl(
+  track: Track | undefined | null,
+  ipodMode: boolean
+): string | null {
+  if (!track) return null;
+  const videoId = track.url ? getYouTubeVideoId(track.url) : null;
+  const youtubeThumbnail = videoId
+    ? `https://img.youtube.com/vi/${videoId}/${ipodMode ? "mqdefault" : "hqdefault"}.jpg`
+    : null;
+  const kugouImageSize = ipodMode ? 400 : 800;
+  return track.source === "appleMusic"
+    ? track.cover ?? null
+    : formatKugouImageUrl(track.cover, kugouImageSize) ?? youtubeThumbnail;
+}
+
+// Cover size in `cqmin` units for a given Cover Flow variant. Used by
+// `CoverImage` for the carousel and by the album-flip overlay so the
+// flip's front face perfectly aligns with the underlying carousel
+// cover before it rotates away.
+function getCoverSizeCqmin(
+  ipodMode: boolean,
+  compactIpodCarousel: boolean
+): number {
+  return ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60;
 }
 
 // Individual cover component - uses track's cover directly (fetched during sync)
@@ -280,6 +332,7 @@ function CoverImage({
   selectedIndex,
   currentIndex,
   onPlayTrackInPlace,
+  hideSleeveAtCenter = false,
 }: {
   track: Track;
   position: number;
@@ -292,19 +345,16 @@ function CoverImage({
   selectedIndex: number;
   currentIndex: number;
   onPlayTrackInPlace?: (index: number) => void;
+  /**
+   * Hide the center cover's sleeve while the album-flip overlay is
+   * doing its 3D flip. Keeps the carousel mounted (side covers + the
+   * floor reflection still visible underneath) so the tracklist reads
+   * as a true overlay on Cover Flow, while preventing a second
+   * "ghost" cover from sitting beneath the rotating flip element.
+   */
+  hideSleeveAtCenter?: boolean;
 }) {
-  // Use track's cover. Apple Music supplies a fully resolved URL; YouTube
-  // tracks fall back to a thumbnail derived from the video ID. Karaoke mode
-  // uses higher-res variants.
-  const videoId = track?.url ? getYouTubeVideoId(track.url) : null;
-  const youtubeThumbnail = videoId
-    ? `https://img.youtube.com/vi/${videoId}/${ipodMode ? "mqdefault" : "hqdefault"}.jpg`
-    : null;
-  const kugouImageSize = ipodMode ? 400 : 800;
-  const coverUrl =
-    track?.source === "appleMusic"
-      ? track.cover ?? null
-      : formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
+  const coverUrl = resolveCoverUrl(track, ipodMode);
 
   // Sleeve and reflection each track their own load (same URL, so
   // the browser cache lands them within a frame in practice). Two
@@ -325,8 +375,7 @@ function CoverImage({
   }, [selectedIndex, currentIndex, onPlayTrackInPlace, onTogglePlay]);
 
   // Cover size: larger for classic iPod; modern skin uses a tighter row.
-  const coverSize =
-    ipodMode && !compactIpodCarousel ? 65 : ipodMode ? 58 : 60; // cqmin units
+  const coverSize = getCoverSizeCqmin(ipodMode, compactIpodCarousel); // cqmin units
   // Side spacing — modern compact carousel uses slightly larger
   // offsets (18 / 25) than classic so its 1.2x-scaled neighbouring
   // covers don't collide with the center sleeve. Karaoke (non-iPod)
@@ -468,18 +517,26 @@ function CoverImage({
           // through the brightness overlay on side covers and on
           // the dimmed CD-flip state.
           background: "#a8a8a8",
-          pointerEvents: isCenter && showCD ? "none" : "auto",
+          pointerEvents:
+            isCenter && (showCD || hideSleeveAtCenter) ? "none" : "auto",
           zIndex: 10,
           borderRadius: "1%",
         }}
         initial={false}
         animate={{
           y: isCenter && showCD ? "105%" : "0%",
+          // Fade the center sleeve to invisible while the album-flip
+          // overlay above is doing its 3D rotation. The flip overlay
+          // renders its own copy of the cover as the front face, so
+          // hiding this one prevents a "double cover" ghost during
+          // the rotation. The transition is instant (duration 0) so
+          // the swap is invisible — the overlay's front face is in
+          // place by the time the sleeve fades.
+          opacity: isCenter && hideSleeveAtCenter ? 0 : 1,
         }}
         transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 25,
+          y: { type: "spring", stiffness: 200, damping: 25 },
+          opacity: { duration: 0 },
         }}
       >
         {/* Brightness overlay */}
@@ -535,7 +592,7 @@ function CoverImage({
         }}
         initial={false}
         animate={{
-          opacity: isCenter && showCD ? 0 : 1,
+          opacity: isCenter && (showCD || hideSleeveAtCenter) ? 0 : 1,
           y: isCenter && showCD ? "105%" : "0%",
         }}
         transition={{
@@ -562,6 +619,394 @@ function CoverImage({
         />
       </motion.div>
     </motion.div>
+  );
+}
+
+// Album tracklist shown when the user clicks/taps an album cover in
+// Cover Flow. Mirrors the iPod nano/classic 6G "flip the album cover
+// over to reveal its tracklist" gesture: header band shows album +
+// artist, rows below list every song in the album with its duration.
+// The currently-selected row uses the same glossy blue gradient
+// (`ipod-modern-row-selected`) as the menu list so the affordance reads
+// as a single design system across the device.
+function AlbumTracklist({
+  album,
+  artist,
+  tracks,
+  selectedIndex,
+  currentlyPlayingIndex,
+  isPlaying,
+  isModern,
+  ipodMode,
+  onPlayTrack,
+  onExitFlip,
+}: {
+  album: string;
+  artist?: string;
+  tracks: Track[];
+  selectedIndex: number;
+  currentlyPlayingIndex: number;
+  isPlaying: boolean;
+  isModern: boolean;
+  ipodMode: boolean;
+  onPlayTrack: (indexInAlbum: number) => void;
+  /** Tap-to-exit handler. Header tap exits the flip; row taps still
+   *  fall through to onPlayTrack and exit Cover Flow entirely. */
+  onExitFlip?: () => void;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const rowRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  // Auto-scroll the selected row into view as the user wheels through
+  // the list. `block: nearest` keeps the existing scroll position when
+  // the row is already visible (matches the iPod's behavior of only
+  // scrolling when the highlight would leave the viewport).
+  useEffect(() => {
+    const el = rowRefs.current[selectedIndex];
+    if (!el) return;
+    el.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
+
+  // Row height matches the modern menu list (21px) so the panel sits
+  // at the same density as the surrounding chrome. Classic skin gets
+  // slightly taller rows because Chicago has more vertical metric.
+  const rowHeight = isModern ? 21 : 22;
+
+  return (
+    <div
+      className={cn(
+        "absolute inset-0 flex flex-col",
+        isModern ? "bg-white" : "bg-black",
+        ipodMode ? "ipod-force-font" : "karaoke-force-font"
+      )}
+    >
+      {/* Album header — same blue gradient as the modern list selection
+          highlight on modern, deep blue on classic / karaoke. Tap on
+          the header exits the flip back to the carousel; row taps
+          below stop propagation so they still play their song
+          instead of just unflipping. */}
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onExitFlip?.();
+        }}
+        className={cn(
+          "shrink-0 px-1.5 flex flex-col justify-center cursor-pointer select-none",
+          isModern ? "ipod-modern-row-selected" : "bg-[#0a3667] text-white",
+          // Modern iPod keeps its iOS-style UI font; classic iPod
+          // uses Geneva-12 (the 1st-gen iPod's own UI bitmap font);
+          // karaoke uses the theme-aware OS sans-serif so it blends
+          // with whichever desktop theme is active.
+          isModern
+            ? "font-ipod-modern-ui"
+            : ipodMode
+              ? "font-geneva-12"
+              : "font-os-ui"
+        )}
+        style={{ minHeight: isModern ? 24 : 22, paddingTop: 1, paddingBottom: 1 }}
+      >
+        <div
+          className={cn(
+            "truncate font-semibold leading-none",
+            isModern
+              ? "text-[12px] tracking-tight"
+              : ipodMode
+                ? "text-[11px]"
+                : "text-[13px]"
+          )}
+          title={album}
+        >
+          {album}
+        </div>
+        {artist && (
+          <div
+            className={cn(
+              "truncate leading-none",
+              // Modern stack reads tightest with no extra gap between
+              // the two lines (the font's natural metrics already
+              // give a small visible separation). Classic / karaoke
+              // get a 1px nudge so the bitmap / OS font lines don't
+              // visually collide.
+              isModern ? "" : "mt-[1px]",
+              isModern
+                ? "text-[10px] text-white/85 tracking-tight"
+                : ipodMode
+                  ? "text-[9px] text-white/70"
+                  : "text-[11px] text-white/70"
+            )}
+            title={artist}
+          >
+            {artist}
+          </div>
+        )}
+      </div>
+
+      {/* Tracklist body — fills the remaining vertical space and
+          scrolls when the album has more rows than fit. Each row is a
+          flex container so the duration anchors to the right edge
+          regardless of the title's length. Click/tap on a row plays
+          that track via `onPlayTrack` (which routes through the iPod
+          logic's `handleCoverFlowSelect`, so it also exits Cover Flow
+          back to Now Playing). */}
+      <div
+        ref={listRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={{
+          // Hide the native scrollbar — we mirror the iPod nano look
+          // which has no visible scrollbar inside Cover Flow's
+          // tracklist (the highlight tells you where you are).
+          scrollbarWidth: "none",
+        }}
+      >
+        {tracks.map((track, index) => {
+          const isSelected = index === selectedIndex;
+          const isNowPlaying = index === currentlyPlayingIndex;
+          return (
+            <div
+              key={track.id}
+              ref={(el) => {
+                rowRefs.current[index] = el;
+              }}
+              data-track-row-index={index}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onPlayTrack(index);
+              }}
+              className={cn(
+                "flex items-center justify-between gap-2 cursor-pointer select-none",
+                "pl-1.5 pr-2",
+                // Same font policy as the header: modern → iPod-
+                // modern UI font; classic iPod → Geneva-12 bitmap;
+                // karaoke → theme-aware OS sans.
+                isModern
+                  ? "font-ipod-modern-ui"
+                  : ipodMode
+                    ? "font-geneva-12"
+                    : "font-os-ui",
+                isSelected
+                  ? isModern
+                    ? "ipod-modern-row-selected"
+                    : "bg-[#0a3667] text-white"
+                  : isModern
+                    ? "ipod-modern-row text-black"
+                    : "text-white hover:bg-white/10"
+              )}
+              style={{ minHeight: rowHeight, height: rowHeight }}
+            >
+              <span
+                className={cn(
+                  "truncate min-w-0 flex-1",
+                  isModern
+                    ? "text-[12px] font-semibold leading-[1.15] tracking-tight"
+                    : "text-[12px] leading-[1.15]"
+                )}
+                title={track.title}
+              >
+                {track.title}
+              </span>
+              {/* Now-playing affordance — small play/pause glyph
+                  to the right of the title, before the duration. We
+                  only render it when the row is the active song so
+                  non-playing rows don't reserve any horizontal space
+                  (keeps every title's left edge flush with the album
+                  title in the header above). */}
+              {isNowPlaying && (
+                <span
+                  className="shrink-0 leading-none text-[10px]"
+                  aria-hidden
+                >
+                  {isPlaying ? "▶" : "❚❚"}
+                </span>
+              )}
+              <span
+                className={cn(
+                  "shrink-0",
+                  isModern
+                    ? "text-[11px] tracking-tight font-semibold"
+                    : "text-[11px]",
+                  isSelected
+                    ? isModern
+                      ? "text-white/90"
+                      : "text-white/85"
+                    : isModern
+                      ? "text-[rgb(99,101,103)]"
+                      : "text-white/60"
+                )}
+              >
+                {formatTrackDuration(track.durationMs)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Album-flip overlay. Sits above the carousel and does a real 3D
+// rotateY transition: the *front* face is a copy of the album cover
+// positioned at the carousel center cover's exact size/location, so
+// the flip visually originates from the album art itself. The *back*
+// face is the tracklist filling the remaining screen area, and
+// becomes visible once the rotation crosses 90°. Backface-visibility
+// keeps each side cleanly hidden when it's facing away.
+//
+// The carousel underneath stays mounted (the side covers + the
+// reflection floor are still visible during the flip and at the edges
+// of the rotated card), so the opened album reads as an overlay
+// stacked on top of Cover Flow rather than a separate screen.
+// Render the front + back faces of the album flip card. Returns a
+// fragment so the caller (a motion.div that animates rotateY) is the
+// direct AnimatePresence child — that way the back-flip exit
+// animation actually runs to completion before the overlay unmounts.
+//
+// Mirrors the dashboard widget flip recipe (`WidgetChrome.tsx`):
+//   - perspective on a STATIC parent (so the viewer's POV stays put
+//     while the card itself spins),
+//   - one rotating motion.div with `transformStyle: preserve-3d`,
+//   - both faces use `backface-visibility: hidden` (+ -webkit-),
+//   - front face gets a `translateZ(0)` to help Safari composite the
+//     two stacked faces correctly,
+//   - 0.6s + cubic-bezier(0.42, 0, 0.58, 1) ease — same curve the
+//     dashboard uses, which feels noticeably smoother on the
+//     back-flip than the previous ease-out we had.
+function AlbumFlipFaces({
+  album,
+  artist,
+  coverUrl,
+  coverSizeCqmin,
+  tracks: albumTracks,
+  selectedIndex,
+  currentlyPlayingIndex,
+  isPlaying,
+  isModern,
+  ipodMode,
+  onPlayTrack,
+  onExitFlip,
+}: {
+  album: string;
+  artist?: string;
+  coverUrl: string | null;
+  coverSizeCqmin: number;
+  tracks: Track[];
+  selectedIndex: number;
+  currentlyPlayingIndex: number;
+  isPlaying: boolean;
+  isModern: boolean;
+  ipodMode: boolean;
+  onPlayTrack: (indexInAlbum: number) => void;
+  onExitFlip?: () => void;
+}) {
+  // The carousel's center cover is offset *up* from the screen
+  // center by `marginTop: -8%` (iPod) / `-2%` (karaoke) of the
+  // container WIDTH (CSS quirk: percentage vertical margins resolve
+  // against the parent's width). Mirror that exact offset on the
+  // flip's front face so the cover image sits in the same spot as
+  // the carousel cover, and on the rotating wrapper's
+  // `transform-origin` so the rotation pivots around the cover
+  // (instead of the visual screen center, which would make the cover
+  // arc in/out instead of flipping in place).
+  const carouselMarginTop = ipodMode ? "-8%" : "-2%";
+  return (
+    <>
+      {/* FRONT FACE — the album cover, sized + positioned to match
+          the carousel center cover (same flex centering + marginTop
+          the carousel uses) so the flip starts from the actual album
+          art instead of the screen center. */}
+      <div
+        className="absolute inset-0 flex items-center justify-center"
+        style={{
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
+          transform: "translateZ(0)",
+        }}
+      >
+        <div
+          style={{
+            marginTop: carouselMarginTop,
+            width: `${coverSizeCqmin}cqmin`,
+            height: `${coverSizeCqmin}cqmin`,
+          }}
+        >
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt=""
+              draggable={false}
+              className="w-full h-full object-cover bg-neutral-400"
+              style={{
+                borderRadius: "1%",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+              }}
+            />
+          ) : (
+            <div
+              className="w-full h-full bg-neutral-400"
+              style={{ borderRadius: "1%" }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* BACK FACE — the album tracklist as an inset card. No bottom
+          inset so it extends to the screen bottom edge; larger
+          horizontal inset (12% iPod, 10% karaoke) so the carousel
+          covers underneath still show through at the sides; top is
+          pulled up to roughly meet the cover's upper edge so the
+          flip stays anchored to the album art. The pre-applied 180°
+          rotation cancels with the wrapper's animated 180° to leave
+          the tracklist front-facing once the flip completes.
+
+          The shadow is animated rather than static so it grows in
+          as the card rotates into view (and shrinks back out on the
+          back-flip) — both keyframes use the same comma-separated
+          structure so framer-motion can interpolate the values. */}
+      <motion.div
+        className="absolute"
+        style={{
+          top: ipodMode ? "5%" : "15%",
+          bottom: 0,
+          left: ipodMode ? "12%" : "10%",
+          right: ipodMode ? "12%" : "10%",
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
+          transform: "rotateY(180deg) translateZ(0)",
+          overflow: "hidden",
+        }}
+        initial={{
+          boxShadow:
+            "0 0 0 0 rgba(0, 0, 0, 0), 0 0 0 0 rgba(0, 0, 0, 0)",
+        }}
+        animate={{
+          boxShadow:
+            "0 12px 32px 0 rgba(0, 0, 0, 0.45), 0 2px 8px 0 rgba(0, 0, 0, 0.25)",
+        }}
+        exit={{
+          boxShadow:
+            "0 0 0 0 rgba(0, 0, 0, 0), 0 0 0 0 rgba(0, 0, 0, 0)",
+        }}
+        transition={{
+          duration: 0.45,
+          delay: 0.15,
+          ease: [0.42, 0, 0.58, 1],
+        }}
+      >
+        <AlbumTracklist
+          album={album}
+          artist={artist}
+          tracks={albumTracks}
+          selectedIndex={selectedIndex}
+          currentlyPlayingIndex={currentlyPlayingIndex}
+          isPlaying={isPlaying}
+          isModern={isModern}
+          ipodMode={ipodMode}
+          onPlayTrack={onPlayTrack}
+          onExitFlip={onExitFlip}
+        />
+      </motion.div>
+    </>
   );
 }
 
@@ -639,6 +1084,28 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
 
   const [selectedIndex, setSelectedIndex] = useState(currentCoverIndex);
   const [showCD, setShowCD] = useState(false);
+  // When the user presses the wheel center on an album cover, the
+  // cover flips over to reveal that album's tracklist. The flip is
+  // album-scoped: navigating to a different cover snaps back to the
+  // un-flipped state (matches the iPod nano/classic 6G behavior).
+  const [isFlipped, setIsFlipped] = useState(false);
+  // True while the album-flip overlay is mid-rotation (in either
+  // direction). Lets us keep the underlying carousel center sleeve
+  // hidden for the full back-flip duration so the reverse animation
+  // actually shows the tracklist rotating away — without this the
+  // sleeve pops back to visible the instant Menu is pressed and the
+  // reverse rotation reads as "the tracklist just disappeared". Same
+  // pattern the dashboard widget flip uses (`WidgetChrome.tsx`).
+  const [isFlipAnimating, setIsFlipAnimating] = useState(false);
+  const flipAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const isInitialFlipRef = useRef(true);
+  // Selected row inside the tracklist while flipped. Reset whenever
+  // the active album changes so wheel rotation always starts at the
+  // currently-playing track (or the first track if none of this album
+  // is playing).
+  const [selectedTrackInAlbum, setSelectedTrackInAlbum] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const currentTheme = useThemeStore((s) => s.current);
   const isMacTheme = currentTheme === "macosx";
@@ -688,37 +1155,158 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     }
   }, [isVisible, currentCoverIndex]);
 
+  // When Cover Flow closes, snap the flip back to the carousel side
+  // so re-opening lands the user on the album row rather than
+  // momentarily flashing the previous album's tracklist as the open
+  // animation runs.
+  useEffect(() => {
+    if (!isVisible) {
+      setIsFlipped(false);
+    }
+  }, [isVisible]);
+
+  // Navigating to a different album cover collapses any open
+  // tracklist back to the carousel face. Without this, scrolling
+  // through albums while flipped would either swap tracklists under
+  // the user's selection or strand the highlight on a row that no
+  // longer corresponds to the visible album.
+  useEffect(() => {
+    setIsFlipped(false);
+  }, [selectedIndex]);
+
+  // Track flip-animation duration so the carousel sleeve stays
+  // hidden for the entire forward + reverse rotation. Skipped on the
+  // very first run (initial mount, no animation actually playing).
+  useEffect(() => {
+    if (isInitialFlipRef.current) {
+      isInitialFlipRef.current = false;
+      return;
+    }
+    setIsFlipAnimating(true);
+    if (flipAnimationTimerRef.current) {
+      clearTimeout(flipAnimationTimerRef.current);
+    }
+    flipAnimationTimerRef.current = setTimeout(() => {
+      setIsFlipAnimating(false);
+    }, 600);
+    return () => {
+      if (flipAnimationTimerRef.current) {
+        clearTimeout(flipAnimationTimerRef.current);
+      }
+    };
+  }, [isFlipped]);
+
+  // Compute the current cover item + its tracklist (in browsableTracks
+  // order). For un-grouped covers (one cover per song) this is just a
+  // single-item list, which we never actually flip into — we keep the
+  // existing "tap plays the song" shortcut for that case.
+  const currentItem = coverItems[selectedIndex];
+  const albumTracks = useMemo<Track[]>(() => {
+    if (!currentItem) return [];
+    return currentItem.trackIndices
+      .map((idx) => tracks[idx])
+      .filter((t): t is Track => Boolean(t));
+  }, [currentItem, tracks]);
+
+  // Default the tracklist highlight to the currently-playing song
+  // inside this album (so flipping while a track from this album is
+  // playing puts the highlight on it). Falls back to the first row.
+  useEffect(() => {
+    if (!currentItem) {
+      setSelectedTrackInAlbum(0);
+      return;
+    }
+    const playingPos = currentItem.trackIndices.findIndex(
+      (idx) => idx === currentIndex
+    );
+    setSelectedTrackInAlbum(playingPos >= 0 ? playingPos : 0);
+  }, [currentItem, currentIndex]);
+
   // Navigate to next/previous
   const navigateNext = useCallback(() => {
+    if (isFlipped) {
+      setSelectedTrackInAlbum((prev) =>
+        Math.min(albumTracks.length - 1, prev + 1)
+      );
+      onRotation();
+      return;
+    }
     setSelectedIndex((prev) => {
       const next = Math.min(coverItems.length - 1, prev + 1);
       return next;
     });
     setShowCD(false); // Hide CD when navigating
     onRotation();
-  }, [coverItems.length, onRotation]);
+  }, [isFlipped, albumTracks.length, coverItems.length, onRotation]);
 
   const navigatePrevious = useCallback(() => {
+    if (isFlipped) {
+      setSelectedTrackInAlbum((prev) => Math.max(0, prev - 1));
+      onRotation();
+      return;
+    }
     setSelectedIndex((prev) => {
       const next = Math.max(0, prev - 1);
       return next;
     });
     setShowCD(false); // Hide CD when navigating
     onRotation();
-  }, [onRotation]);
+  }, [isFlipped, onRotation]);
 
-  // Select the current track
+  // Select the current item.
+  //   Un-flipped + album-grouped (Apple Music) → flip to reveal the
+  //     album's tracklist on the cover's back face.
+  //   Un-flipped + per-track covers (e.g. ungrouped YouTube) → play
+  //     the song directly. The flip-into-tracklist gesture only
+  //     makes sense when the cover represents an album that contains
+  //     multiple tracks; for one-cover-per-song libraries we keep
+  //     the original "tap plays" shortcut.
+  //   Flipped → play the highlighted row in the album.
   const selectCurrent = useCallback(() => {
     const item = coverItems[selectedIndex];
-    if (item) onSelectTrack(item.trackIndex);
-  }, [coverItems, onSelectTrack, selectedIndex]);
+    if (!item) return;
+    if (isFlipped) {
+      const trackIndex =
+        item.trackIndices[selectedTrackInAlbum] ?? item.trackIndex;
+      onSelectTrack(trackIndex);
+      return;
+    }
+    if (groupAppleMusicAlbums) {
+      setShowCD(false);
+      setIsFlipped(true);
+      return;
+    }
+    onSelectTrack(item.trackIndex);
+  }, [
+    coverItems,
+    isFlipped,
+    onSelectTrack,
+    selectedIndex,
+    selectedTrackInAlbum,
+    groupAppleMusicAlbums,
+  ]);
+
+  // Wheel `Menu` press: when flipped we eat the press to flip back to
+  // the carousel; otherwise we let the caller exit Cover Flow.
+  const handleMenuButton = useCallback(() => {
+    if (isFlipped) {
+      setIsFlipped(false);
+      return true;
+    }
+    return false;
+  }, [isFlipped]);
 
   // Expose methods via ref
-  useImperativeHandle(ref, () => ({
-    navigateNext,
-    navigatePrevious,
-    selectCurrent,
-  }), [navigateNext, navigatePrevious, selectCurrent]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      navigateNext,
+      navigatePrevious,
+      selectCurrent,
+      handleMenuButton,
+    }),
+    [navigateNext, navigatePrevious, selectCurrent, handleMenuButton]
+  );
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
@@ -732,6 +1320,23 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           e.preventDefault();
           navigatePrevious();
           break;
+        // While flipped, the wheel rotation maps to row navigation in
+        // the tracklist — arrow up/down should follow the same
+        // mapping for keyboard users so they can step through songs.
+        // Up/Down do nothing on the carousel (it's a horizontal-only
+        // gesture surface).
+        case "ArrowDown":
+          if (isFlipped) {
+            e.preventDefault();
+            navigateNext();
+          }
+          break;
+        case "ArrowUp":
+          if (isFlipped) {
+            e.preventDefault();
+            navigatePrevious();
+          }
+          break;
         case "Enter":
         case " ":
           e.preventDefault();
@@ -739,11 +1344,21 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           break;
         case "Escape":
           e.preventDefault();
+          // Mirrors the Menu wheel button: unflip first if needed,
+          // otherwise close Cover Flow entirely.
+          if (handleMenuButton()) return;
           onExit();
           break;
       }
     },
-    [navigateNext, navigatePrevious, selectCurrent, onExit]
+    [
+      navigateNext,
+      navigatePrevious,
+      selectCurrent,
+      handleMenuButton,
+      onExit,
+      isFlipped,
+    ]
   );
 
   useEventListener("keydown", handleKeyDown, isVisible ? window : null);
@@ -814,7 +1429,19 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   
   const visibleCovers = getVisibleCovers();
 
-  const currentItem = coverItems[selectedIndex];
+  // Geometry shared by the carousel + the album-flip overlay so the
+  // overlay's front face perfectly matches the size of the carousel
+  // center cover (the flip then reads as the cover itself rotating
+  // away to reveal the tracklist on its back).
+  const flipCoverSizeCqmin = getCoverSizeCqmin(
+    ipodMode,
+    isModernIpodCoverFlow
+  );
+  const flipCoverUrl = useMemo(
+    () => resolveCoverUrl(currentItem?.track ?? null, ipodMode),
+    [currentItem, ipodMode]
+  );
+
   const playItemInPlace = useCallback(
     (coverIndex: number) => {
       const item = coverItems[coverIndex];
@@ -822,6 +1449,28 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     },
     [coverItems, onPlayTrackInPlace]
   );
+
+  // Click on a row inside the album tracklist: route through the
+  // standard select handler so the song starts playing and Cover Flow
+  // exits back to Now Playing — same UX as picking a song from the
+  // All Songs menu list.
+  const handleSelectAlbumTrack = useCallback(
+    (indexInAlbum: number) => {
+      if (!currentItem) return;
+      const trackIndex =
+        currentItem.trackIndices[indexInAlbum] ?? currentItem.trackIndex;
+      onSelectTrack(trackIndex);
+    },
+    [currentItem, onSelectTrack]
+  );
+
+  // The currently-playing position inside the active album, or -1 if
+  // none of this album's tracks are the active song. Drives the small
+  // play/pause glyph in the tracklist.
+  const playingPositionInAlbum = useMemo(() => {
+    if (!currentItem) return -1;
+    return currentItem.trackIndices.findIndex((idx) => idx === currentIndex);
+  }, [currentItem, currentIndex]);
 
   // When `inline` is set, this CoverFlow renders inside another
   // animated container (the modern iPod menu panel that owns the
@@ -854,12 +1503,14 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           ref={containerRef}
           className={cn(
             "absolute inset-0 flex items-center justify-center",
-            showCD ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+            showCD || isFlipped
+              ? "cursor-default"
+              : "cursor-grab active:cursor-grabbing",
           )}
-          onPanStart={showCD ? undefined : handlePanStart}
-          onPan={showCD ? undefined : handlePan}
-          onPanEnd={showCD ? undefined : handlePanEnd}
-          onWheel={showCD ? undefined : handleWheel}
+          onPanStart={showCD || isFlipped ? undefined : handlePanStart}
+          onPan={showCD || isFlipped ? undefined : handlePan}
+          onPanEnd={showCD || isFlipped ? undefined : handlePanEnd}
+          onWheel={showCD || isFlipped ? undefined : handleWheel}
           onClick={() => {
             if (isPanningRef.current || longPressFiredRef.current) {
               longPressFiredRef.current = false;
@@ -869,15 +1520,32 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               setShowCD(false);
               return;
             }
+            // While flipped the AlbumTracklist overlay (which sits on
+            // top with its own row click handlers) consumes clicks,
+            // so this handler typically won't fire. Skip out anyway
+            // as a safety so we don't accidentally re-flip on stray
+            // bubbled clicks.
+            if (isFlipped) return;
             selectCurrent();
           }}
-          onMouseDown={showCD ? undefined : () => startLongPress()}
-          onMouseUp={showCD ? undefined : () => endLongPress()}
-          onMouseLeave={showCD ? undefined : () => endLongPress()}
-          onTouchStart={showCD ? undefined : () => startLongPress()}
-          onTouchEnd={showCD ? undefined : () => endLongPress()}
-          onTouchCancel={showCD ? undefined : () => endLongPress()}
-          style={{ touchAction: showCD ? "auto" : "none", overflow: "visible" }}
+          onMouseDown={
+            showCD || isFlipped ? undefined : () => startLongPress()
+          }
+          onMouseUp={showCD || isFlipped ? undefined : () => endLongPress()}
+          onMouseLeave={
+            showCD || isFlipped ? undefined : () => endLongPress()
+          }
+          onTouchStart={
+            showCD || isFlipped ? undefined : () => startLongPress()
+          }
+          onTouchEnd={showCD || isFlipped ? undefined : () => endLongPress()}
+          onTouchCancel={
+            showCD || isFlipped ? undefined : () => endLongPress()
+          }
+          style={{
+            touchAction: showCD || isFlipped ? "auto" : "none",
+            overflow: "visible",
+          }}
         >
           <div
             className="relative flex items-center justify-center w-full"
@@ -911,6 +1579,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   selectedIndex={selectedIndex}
                   currentIndex={currentCoverIndex}
                   onPlayTrackInPlace={playItemInPlace}
+                  hideSleeveAtCenter={(isFlipped || isFlipAnimating) && position === 0}
                 />
               ))}
             </AnimatePresence>
@@ -967,6 +1636,60 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               </div>
             )}
           </div>
+        </div>
+
+        {/* Album-flip overlay (inline branch). Flips the actual album
+            cover over to reveal the tracklist on its back face. The
+            host menu panel renders the "Cover Flow" titlebar above
+            this CoverFlow div, so we don't need a top offset here.
+            The static `perspective` wrapper keeps the viewer's POV
+            put while the inner motion.div spins (matches the
+            dashboard widget flip recipe). */}
+        <div
+          className="absolute inset-0 z-30 pointer-events-none"
+          style={{ perspective: 1500, WebkitPerspective: 1500 }}
+        >
+          <AnimatePresence>
+            {isFlipped && currentItem && (
+              <motion.div
+                key={`flip-${currentItem.key}`}
+                className="absolute inset-0"
+                style={{
+                  transformStyle: "preserve-3d",
+                  WebkitTransformStyle: "preserve-3d",
+                  // Pivot around the carousel cover (which sits a few
+                  // percent above the visual screen center because of
+                  // the carousel's marginTop offset), not the screen
+                  // center — so the cover stays put while the card
+                  // flips around it instead of arcing in/out.
+                  transformOrigin: ipodMode
+                    ? "50% 35%"
+                    : "50% 47%",
+                  pointerEvents: "auto",
+                }}
+                initial={{ rotateY: 0 }}
+                animate={{ rotateY: 180 }}
+                exit={{ rotateY: 0 }}
+                transition={{ duration: 0.6, ease: [0.42, 0, 0.58, 1] }}
+                onClick={() => setIsFlipped(false)}
+              >
+                <AlbumFlipFaces
+                  album={currentItem.title}
+                  artist={currentItem.artist}
+                  coverUrl={flipCoverUrl}
+                  coverSizeCqmin={flipCoverSizeCqmin}
+                  tracks={albumTracks}
+                  selectedIndex={selectedTrackInAlbum}
+                  currentlyPlayingIndex={playingPositionInAlbum}
+                  isPlaying={isPlaying}
+                  isModern={isModernIpodCoverFlow}
+                  ipodMode={ipodMode}
+                  onPlayTrack={handleSelectAlbumTrack}
+                  onExitFlip={() => setIsFlipped(false)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
@@ -1062,11 +1785,16 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           {/* Cover Flow container */}
           <motion.div
             ref={containerRef}
-            className={`absolute inset-0 flex items-center justify-center ${showCD ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}
-            onPanStart={showCD ? undefined : handlePanStart}
-            onPan={showCD ? undefined : handlePan}
-            onPanEnd={showCD ? undefined : handlePanEnd}
-            onWheel={showCD ? undefined : handleWheel}
+            className={cn(
+              "absolute inset-0 flex items-center justify-center",
+              showCD || isFlipped
+                ? "cursor-default"
+                : "cursor-grab active:cursor-grabbing"
+            )}
+            onPanStart={showCD || isFlipped ? undefined : handlePanStart}
+            onPan={showCD || isFlipped ? undefined : handlePan}
+            onPanEnd={showCD || isFlipped ? undefined : handlePanEnd}
+            onWheel={showCD || isFlipped ? undefined : handleWheel}
             onClick={() => {
               // Don't select if panning or long press was fired
               if (isPanningRef.current || longPressFiredRef.current) {
@@ -1078,15 +1806,35 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 setShowCD(false);
                 return;
               }
+              // While flipped, the AlbumTracklist overlay above
+              // captures clicks. Bail out so this fallback doesn't
+              // accidentally re-trigger the flip (or play the
+              // currently-highlighted row).
+              if (isFlipped) return;
               selectCurrent();
             }}
-            onMouseDown={showCD ? undefined : () => startLongPress()}
-            onMouseUp={showCD ? undefined : () => endLongPress()}
-            onMouseLeave={showCD ? undefined : () => endLongPress()}
-            onTouchStart={showCD ? undefined : () => startLongPress()}
-            onTouchEnd={showCD ? undefined : () => endLongPress()}
-            onTouchCancel={showCD ? undefined : () => endLongPress()}
-            style={{ touchAction: showCD ? "auto" : "none", overflow: "visible" }}
+            onMouseDown={
+              showCD || isFlipped ? undefined : () => startLongPress()
+            }
+            onMouseUp={
+              showCD || isFlipped ? undefined : () => endLongPress()
+            }
+            onMouseLeave={
+              showCD || isFlipped ? undefined : () => endLongPress()
+            }
+            onTouchStart={
+              showCD || isFlipped ? undefined : () => startLongPress()
+            }
+            onTouchEnd={
+              showCD || isFlipped ? undefined : () => endLongPress()
+            }
+            onTouchCancel={
+              showCD || isFlipped ? undefined : () => endLongPress()
+            }
+            style={{
+              touchAction: showCD || isFlipped ? "auto" : "none",
+              overflow: "visible",
+            }}
           >
             {/* Covers - centered with a slight vertical offset so the
                 title/artist row at the bottom always has clearance. The
@@ -1123,6 +1871,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     selectedIndex={selectedIndex}
                     currentIndex={currentCoverIndex}
                     onPlayTrackInPlace={playItemInPlace}
+                    hideSleeveAtCenter={(isFlipped || isFlipAnimating) && position === 0}
                   />
                 ))}
               </AnimatePresence>
@@ -1265,6 +2014,63 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               </button>
             )}
           </motion.div>
+
+          {/* Album-flip overlay (overlay branch). Sits below the
+              modern titlebar (this branch renders the titlebar
+              inside CoverFlow, unlike the inline branch where the
+              host owns it). Static perspective wrapper keeps the
+              viewer's POV put while the inner motion.div rotates. */}
+          <div
+            className="absolute z-30 pointer-events-none"
+            style={{
+              top: isModernIpodCoverFlow ? MODERN_TITLEBAR_HEIGHT : 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              perspective: 1500,
+              WebkitPerspective: 1500,
+            }}
+          >
+            <AnimatePresence>
+              {isFlipped && currentItem && (
+                <motion.div
+                  key={`flip-${currentItem.key}`}
+                  className="absolute inset-0"
+                  style={{
+                    transformStyle: "preserve-3d",
+                    WebkitTransformStyle: "preserve-3d",
+                    // Pivot around the carousel cover (a few percent
+                    // above the visual screen center) so the cover
+                    // stays put while the card flips around it.
+                    transformOrigin: ipodMode
+                      ? "50% 35%"
+                      : "50% 47%",
+                    pointerEvents: "auto",
+                  }}
+                  initial={{ rotateY: 0 }}
+                  animate={{ rotateY: 180 }}
+                  exit={{ rotateY: 0 }}
+                  transition={{ duration: 0.6, ease: [0.42, 0, 0.58, 1] }}
+                  onClick={() => setIsFlipped(false)}
+                >
+                  <AlbumFlipFaces
+                    album={currentItem.title}
+                    artist={currentItem.artist}
+                    coverUrl={flipCoverUrl}
+                    coverSizeCqmin={flipCoverSizeCqmin}
+                    tracks={albumTracks}
+                    selectedIndex={selectedTrackInAlbum}
+                    currentlyPlayingIndex={playingPositionInAlbum}
+                    isPlaying={isPlaying}
+                    isModern={isModernIpodCoverFlow}
+                    ipodMode={ipodMode}
+                    onPlayTrack={handleSelectAlbumTrack}
+                    onExitFlip={() => setIsFlipped(false)}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
