@@ -76,6 +76,13 @@ const MODERN_TITLEBAR_HEIGHT = 17;
 // "Music + Now Playing" split shown in the reference photo. The
 // titlebar + menu list are clamped to the left half in split mode.
 const MODERN_SPLIT_HALF = "50%";
+// Shared timing for every property that animates during the modern UI
+// split↔full transition: menu panel width + box-shadow, split-art
+// column width, and the cover-art image's opacity. Keeping all four
+// on the same 300ms `ease-in-out` curve is what makes the move read
+// as one continuous motion instead of overlapping easings.
+const SPLIT_LAYOUT_TRANSITION_TIMING =
+  "duration-300 ease-in-out motion-reduce:transition-none";
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
@@ -1391,7 +1398,7 @@ export function IpodScreen({
             // screen leak through a half-faded panel).
             "ipod-modern-split-art absolute top-0 right-0 bottom-0 z-[5] overflow-hidden",
             splitLayoutTransitionReady &&
-              "transition-[width] duration-300 ease-in-out motion-reduce:transition-none"
+              `transition-[width] ${SPLIT_LAYOUT_TRANSITION_TIMING}`
           )}
           style={{
             width: showSplitMenuArt ? MODERN_SPLIT_HALF : "0%",
@@ -1407,7 +1414,7 @@ export function IpodScreen({
             className={cn(
               "absolute inset-0",
               splitLayoutTransitionReady &&
-                "transition-opacity duration-300 ease-in-out motion-reduce:transition-none"
+                `transition-opacity ${SPLIT_LAYOUT_TRANSITION_TIMING}`
             )}
             style={{ opacity: showSplitMenuArt ? 1 : 0 }}
           >
@@ -1443,14 +1450,14 @@ export function IpodScreen({
             "relative flex min-h-0 flex-col overflow-hidden z-10 h-full ipod-modern-menu-panel",
             showSplitMenuArt && "is-split",
             splitLayoutTransitionReady &&
-              "transition-[width,box-shadow] duration-300 ease-in-out motion-reduce:transition-none"
+              `transition-[width,box-shadow] ${SPLIT_LAYOUT_TRANSITION_TIMING}`
           )}
+          // `showSplitMenuArt` already implies `menuMode` (see its
+          // definition above), so the `menuMode ?` ternary collapses:
+          // both !menuMode and (menuMode && !showSplitMenuArt) want
+          // 100%, only showSplitMenuArt wants the split half.
           style={{
-            width: menuMode
-              ? showSplitMenuArt
-                ? MODERN_SPLIT_HALF
-                : "100%"
-              : "100%",
+            width: showSplitMenuArt ? MODERN_SPLIT_HALF : "100%",
           }}
         >
           {menuChrome}
