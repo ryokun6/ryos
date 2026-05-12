@@ -397,14 +397,16 @@ export function useMusicKit(
   // shape across versions.
   useEffect(() => {
     if (!instance) return;
-    const refresh = (event?: { token?: string }) => {
+    const refresh = (event?: unknown) => {
       const authorized = Boolean(instance.isAuthorized);
       setIsAuthorized(authorized);
       if (!authorized) return;
 
-      const token = normalizeMusicUserToken(
-        event?.token ?? instance.musicUserToken
-      );
+      const tokenFromEvent =
+        typeof event === "object" && event !== null && "token" in event
+          ? (event as { token?: unknown }).token
+          : undefined;
+      const token = normalizeMusicUserToken(tokenFromEvent ?? instance.musicUserToken);
       if (token) {
         void saveSyncedMusicUserToken(token).catch((err) => {
           console.warn("[musickit] failed to save synced user token", err);
