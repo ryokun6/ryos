@@ -5,12 +5,11 @@ import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import type { DialogState, Soundboard } from "@/types/types";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
 import { useTranslation } from "react-i18next";
 import { helpItems as sharedHelpItems } from "..";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { track } from "@/utils/analytics";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface ImportedSlot {
   audioData: string | null;
@@ -55,8 +54,7 @@ export function useSoundboardLogic({
   const hasInitialized = useSoundboardStore((state) => state.hasInitialized);
 
   // Get current theme
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = isWindowsTheme(currentTheme);
+  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
 
   useEffect(() => {
     if (!hasInitialized) {

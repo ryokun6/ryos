@@ -7,7 +7,7 @@ import {
   useSpotlightSearch,
   type SpotlightResult,
 } from "@/hooks/useSpotlightSearch";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -54,10 +54,13 @@ export function SpotlightSearch() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const proxyInputRef = useRef<HTMLInputElement>(null);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isSystem7 = currentTheme === "system7";
-  const isMac = currentTheme === "macosx" || isSystem7;
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacTheme: isMac,
+    isMacOSTheme,
+    isSystem7Theme: isSystem7,
+    isWinXp,
+  } = useThemeFlags();
   const isMobile = useIsMobile();
 
   // Focus input when opening. For XP/98, Start menu dropdown steals focus on close
@@ -177,7 +180,7 @@ export function SpotlightSearch() {
 
   // ── Theme-specific container styles ──────────────────────────────
   const containerStyles = (() => {
-    if (currentTheme === "macosx") {
+    if (isMacOSTheme) {
       return {
         background: "var(--os-pinstripe-window)",
         borderRadius: isMobile ? "var(--os-metrics-radius, 0.45rem)" : "0px",
@@ -194,7 +197,7 @@ export function SpotlightSearch() {
         boxShadow: "2px 2px 0px 0px rgba(0, 0, 0, 0.5)",
       } as React.CSSProperties;
     }
-    if (currentTheme === "xp") {
+    if (isWinXp) {
       // Clean XP menu style — thin border, soft shadow
       return {
         background: "#FFFFFF",
@@ -240,7 +243,7 @@ export function SpotlightSearch() {
   // ── Position ─────────────────────────────────────────────────────
   const needsCenter = isMobile || !isMac;
   const useTwoColumn =
-    currentTheme === "macosx" && !isMobile && groupedResults.length > 0;
+    isMacOSTheme && !isMobile && groupedResults.length > 0;
   const panelPositionClass = isMobile
     ? "fixed z-[10004] w-[calc(100vw-24px)] max-w-[480px]"
     : isMac
@@ -343,7 +346,7 @@ export function SpotlightSearch() {
             >
               <div style={{ ...containerStyles, fontFamily }} className="overflow-hidden spotlight-panel">
                 {/* Search Input Row */}
-                {currentTheme === "macosx" ? (
+                {isMacOSTheme ? (
                   <div
                     className="flex items-center gap-2.5"
                     style={{
@@ -452,7 +455,7 @@ export function SpotlightSearch() {
                 )}
 
                 {/* Divider between input and results (not needed for macosx — blue header has border) */}
-                {results.length > 0 && currentTheme !== "macosx" && (
+                {results.length > 0 && !isMacOSTheme && (
                   <div
                     style={
                       isSystem7
@@ -799,7 +802,7 @@ export function SpotlightSearch() {
                                   style={{
                                     width: iconPx,
                                     height: iconPx,
-                                    borderRadius: currentTheme === "macosx" ? "3px" : "1px",
+                                    borderRadius: isMacOSTheme ? "3px" : "1px",
                                   }}
                                   loading="lazy"
                                   onError={(e) => {

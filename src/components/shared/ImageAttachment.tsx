@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface ImageAttachmentProps {
   /** Image source - can be a data URL or regular URL */
@@ -23,8 +23,7 @@ export function ImageAttachment({
   onRemove,
   className,
 }: ImageAttachmentProps) {
-  const theme = useThemeStore((s) => s.current);
-  const isMacTheme = theme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
 
   return (
     <motion.div

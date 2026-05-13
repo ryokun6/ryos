@@ -6,8 +6,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getNonFinderApps } from "@/config/appRegistry";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { cn } from "@/lib/utils";
@@ -35,11 +35,10 @@ export function AboutFinderDialog({
   const { t } = useTranslation();
   const instances = useAppStore((state) => state.instances);
   const launchApp = useAppStore((state) => state.launchApp);
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWindowsTheme: isXpTheme, currentTheme } = useThemeFlags();
   const version = useAppStore((state) => state.ryOSVersion);
   const buildNumber = useAppStore((state) => state.ryOSBuildNumber);
   const buildTime = useAppStore((state) => state.ryOSBuildTime);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const [versionDisplayMode, setVersionDisplayMode] = useState(0); // 0: version, 1: commit, 2: date
   const [desktopVersion, setDesktopVersion] = useState<string | null>(null);
   const isMac = useMemo(() => 

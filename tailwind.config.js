@@ -233,6 +233,15 @@ module.exports = {
   plugins: [
     require("tailwindcss-animate"),
     require("@tailwindcss/typography"),
+    function ({ addVariant }) {
+      addVariant("os-mac", ':root[data-os-platform="mac"] &');
+      addVariant("os-windows", ':root[data-os-platform="windows"] &');
+      addVariant("os-mac-aqua", ':root[data-os-mac-chrome="aqua"] &');
+      addVariant("os-mac-system7", ':root[data-os-mac-chrome="system7"] &');
+      for (const id of ["system7", "macosx", "xp", "win98"]) {
+        addVariant(`os-theme-${id}`, `:root[data-os-theme="${id}"] &`);
+      }
+    },
     function ({ addBase }) {
       addBase({
         img: {

@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from "react";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useCallback } from "react";
 import { useDockStore } from "@/stores/useDockStore";
-import { getThemeMetadata, type ThemeMetadata } from "@/themes";
+import type { ThemeMetadata } from "@/themes";
+import { useThemeFlags } from "./useThemeFlags";
 
 export interface WindowInsets {
   menuBarHeight: number;
@@ -18,17 +18,20 @@ export interface WindowInsets {
  * and safe areas for window positioning/sizing.
  */
 export function useWindowInsets() {
-  const currentTheme = useThemeStore((state) => state.current);
+  const {
+    currentTheme,
+    metadata: themeMetadata,
+    isWindowsTheme,
+    isMacTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isWinXp,
+    isWin98,
+  } = useThemeFlags();
   const dockScale = useDockStore((state) => state.scale);
   const dockHiding = useDockStore((state) => state.hiding);
 
-  // Get theme metadata from centralized theme definitions
-  const themeMetadata: ThemeMetadata = useMemo(
-    () => getThemeMetadata(currentTheme),
-    [currentTheme]
-  );
-
-  const { isWindows: isXpTheme, isMac: isMacTheme } = themeMetadata;
+  const themeMetaTyped = themeMetadata as ThemeMetadata;
 
   const getSafeAreaBottomInset = useCallback(() => {
     const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
@@ -50,14 +53,14 @@ export function useWindowInsets() {
     const needsTauriMenubar = isTauriApp && isMacTheme;
     const menuBarHeight = needsTauriMenubar
       ? 32
-      : themeMetadata.menuBarHeight;
+      : themeMetaTyped.menuBarHeight;
 
-    const taskbarHeight = themeMetadata.taskbarHeight;
+    const taskbarHeight = themeMetaTyped.taskbarHeight;
 
     // Use scaled dock height for accurate constraints (0 if dock hiding is enabled)
     const dockHeight =
-      themeMetadata.hasDock && !dockHiding
-        ? Math.round(themeMetadata.baseDockHeight * dockScale)
+      themeMetaTyped.hasDock && !dockHiding
+        ? Math.round(themeMetaTyped.baseDockHeight * dockScale)
         : 0;
 
     const topInset = menuBarHeight;
@@ -73,7 +76,7 @@ export function useWindowInsets() {
       dockHeight,
     };
   }, [
-    themeMetadata,
+    themeMetaTyped,
     isMacTheme,
     getSafeAreaBottomInset,
     dockScale,
@@ -83,9 +86,15 @@ export function useWindowInsets() {
   return {
     computeInsets,
     getSafeAreaBottomInset,
-    isXpTheme,
+    /** @deprecated Prefer {@link isWindowsTheme}; legacy name used by window chrome. */
+    isXpTheme: isWindowsTheme,
     isMacTheme,
     currentTheme,
-    themeMetadata,
+    themeMetadata: themeMetaTyped,
+    isWindowsTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isWinXp,
+    isWin98,
   };
 }

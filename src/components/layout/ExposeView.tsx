@@ -7,7 +7,7 @@ import { getAppIconPath } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { AppInstance } from "@/stores/useAppStore";
@@ -40,8 +40,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   }));
 
   const getFileItem = useFilesStore((s) => s.getItem);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSXTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacOSXTheme } = useThemeFlags();
   const isMobile = useIsMobile();
 
   // Sounds for expose view open/close

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type WeatherWidgetConfig } from "@/stores/useDashboardStore";
 import { MapPin, MagnifyingGlass, NavigationArrow } from "@phosphor-icons/react";
 import { Emoji } from "@/components/shared/Emoji";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface DailyForecast {
   dayLabel: string;
@@ -130,8 +130,7 @@ interface WeatherWidgetProps {
 export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language || "en";
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const cityConfig = widget?.config as WeatherWidgetConfig | undefined;
@@ -437,8 +436,7 @@ export function WeatherEmojiOverflow({ widgetId }: { widgetId: string }) {
 export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDone?: () => void }) {
   const { t } = useTranslation();
   const popularCities = useMemo(() => getPopularCities(t), [t]);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
   const [searchQuery, setSearchQuery] = useState("");

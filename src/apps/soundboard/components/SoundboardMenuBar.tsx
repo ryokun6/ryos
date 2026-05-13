@@ -6,12 +6,11 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { AppProps } from "../../base/types";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { useState, useEffect } from "react";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -56,9 +55,8 @@ export function SoundboardMenuBar({
   const appId = "soundboard";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const [isOptionPressed, setIsOptionPressed] = useState(false);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = isWindowsTheme(currentTheme);
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

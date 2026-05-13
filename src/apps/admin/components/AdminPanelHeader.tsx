@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 export function AdminPanelHeader({
   title,
@@ -9,9 +9,8 @@ export function AdminPanelHeader({
   title: string;
   actions?: ReactNode;
 }) {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSXTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isMacOSTheme: isMacOSXTheme, isWindowsTheme: isXpTheme } =
+    useThemeFlags();
 
   return (
     <div

@@ -14,7 +14,7 @@ import { useState, useRef, useEffect, memo, useCallback } from "react";
 import { useLongPress } from "@/hooks/useLongPress";
 import { isTouchDevice } from "@/utils/device";
 import { getFinderDisplayName } from "@/utils/finderDisplay";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import {
@@ -386,9 +386,10 @@ export function FileList({
     start: SelectionPoint;
     end: SelectionPoint;
   } | null>(null);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSXTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacOSXTheme,
+  } = useThemeFlags();
 
   // Add refs for rename timing
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);

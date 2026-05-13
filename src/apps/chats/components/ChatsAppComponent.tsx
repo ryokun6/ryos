@@ -23,7 +23,7 @@ import { CaretDown } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { toast } from "sonner";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
@@ -417,10 +417,9 @@ export function ChatsAppComponent({
     setIsNewRoomDialogOpen(true);
   }, [setIsNewRoomDialogOpen]);
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+    useThemeFlags();
   const isWindowsLegacyTheme = isXpTheme;
-  const isMacTheme = currentTheme === "macosx";
   const isOffline = useOffline();
   const {
     telegramLinkedAccount,

@@ -15,7 +15,7 @@ import { useFinderStore } from "@/stores/useFinderStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
 import { MenuItem } from "@/components/ui/right-click-menu";
 import { useLongPress } from "@/hooks/useLongPress";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -142,7 +142,11 @@ export function useFinderLogic({
 }: UseFinderLogicProps) {
   const { t, i18n } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("finder", helpItems);
-  const currentTheme = useThemeStore((state) => state.current);
+  const {
+    currentTheme,
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacOSXTheme,
+  } = useThemeFlags();
 
   // Dialog state
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
@@ -1299,10 +1303,6 @@ export function useFinderLogic({
     ];
   };
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOSXTheme = currentTheme === "macosx";
-
-  // Sidebar state
   const [showSidebar, setShowSidebar] = useState(() => window.innerWidth >= 500);
 
   const handleAirDropSendFile = useCallback(

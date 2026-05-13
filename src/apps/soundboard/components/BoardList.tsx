@@ -10,8 +10,8 @@ import { SelectableListItem } from "@/components/ui/selectable-list-item";
 import { Plus } from "@phosphor-icons/react";
 import { Soundboard } from "@/types/types";
 
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface BoardListProps {
   boards: Soundboard[];
@@ -34,9 +34,10 @@ export function BoardList({
   audioDevices,
   micPermissionGranted,
 }: BoardListProps) {
-  // Theme detection for border styling
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme,
+  } = useThemeFlags();
   const isWindowsLegacyTheme = isXpTheme;
   const { t } = useTranslation();
 
@@ -45,7 +46,7 @@ export function BoardList({
       className={`w-full bg-neutral-100 flex flex-col max-h-44 overflow-hidden md:w-56 md:max-h-full font-geneva-12 text-[12px] ${
         isWindowsLegacyTheme
           ? "border-b border-[#919b9c] md:border-r md:border-b-0"
-          : currentTheme === "macosx"
+          : isMacOSTheme
           ? "border-b border-black/10 md:border-r md:border-b-0"
           : "border-b border-black md:border-r md:border-b-0"
       }`}

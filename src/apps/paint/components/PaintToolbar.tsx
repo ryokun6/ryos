@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 
 interface PaintToolbarProps {
@@ -72,8 +72,7 @@ export const PaintToolbar: React.FC<PaintToolbarProps> = ({
   onToolSelect,
 }) => {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
 
   return (
     <TooltipProvider>

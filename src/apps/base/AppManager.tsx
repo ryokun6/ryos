@@ -10,7 +10,7 @@ import type { AppId } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { toast } from "sonner";
 import { requestCloseWindow } from "@/utils/windowUtils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import type { SwitcherApp } from "@/components/layout/AppSwitcher";
@@ -64,9 +64,7 @@ export function AppManager({ apps }: AppManagerProps) {
     exposeMode: state.exposeMode,
   }));
 
-  // Get current theme to determine if we should show the desktop menubar
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const [crashedInstanceIds, setCrashedInstanceIds] = useState<Set<string>>(
     () => new Set()

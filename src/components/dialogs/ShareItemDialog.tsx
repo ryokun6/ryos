@@ -7,10 +7,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { QRCodeSVG } from "qrcode.react";
 import { useTranslation } from "react-i18next";
@@ -44,9 +44,11 @@ export function ShareItemDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacOsxTheme,
+    isWinXp,
+  } = useThemeFlags();
 
   // Translate itemType (e.g., "Page" -> translated "Page", "Song" -> translated "Song")
   const translatedItemType = t(`common.dialog.share.itemTypes.${itemType.toLowerCase()}`, { defaultValue: itemType });
@@ -251,7 +253,7 @@ export function ShareItemDialog({
         <DialogContent
           className={cn(
             "p-0 overflow-hidden max-w-xs border-0", // Remove border but keep box-shadow
-            currentTheme === "xp" ? "window" : "window", // Use window class for both themes
+            isWinXp ? "window" : "window", // Use window class for both themes
             contentClassName
           )}
           overlayClassName={overlayClassName}
@@ -262,7 +264,7 @@ export function ShareItemDialog({
         >
           <div
             className="title-bar"
-            style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
+            style={isWinXp ? { minHeight: "30px" } : undefined}
           >
             <div className="title-bar-text">{t("common.dialog.share.shareItem", { itemType: translatedItemType })}</div>
             <div className="title-bar-controls">

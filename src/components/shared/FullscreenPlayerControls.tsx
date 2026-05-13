@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 // Aqua-style shine overlays for macOS X theme (dark glass style)
 function AquaShineOverlays({ variant }: { variant: "compact" | "responsive" }) {
@@ -147,8 +147,7 @@ export function FullscreenPlayerControls({
   hideLyricsControls = false,
 }: FullscreenPlayerControlsProps) {
   const { t, i18n } = useTranslation();
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
 
   const translationBadge = getTranslationBadge(currentTranslationCode);

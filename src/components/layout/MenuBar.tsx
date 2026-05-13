@@ -29,7 +29,7 @@ import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsSto
 import { Slider } from "@/components/ui/slider";
 import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear, CaretUp, DotsThree, MagnifyingGlass, ArrowsClockwise } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getAppIconPath, appRegistry } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistry";
 import type { AnyApp } from "@/apps/base/types";
@@ -263,8 +263,7 @@ interface ClockProps {
 function Clock({ enableExposeToggle = false, enableCalendarOpen = false }: ClockProps) {
   const [time, setTime] = useState(new Date());
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
   const { t, i18n: i18nInstance } = useTranslation();
   
   // Get current locale from i18n (reactive to language changes)
@@ -380,10 +379,9 @@ function Clock({ enableExposeToggle = false, enableCalendarOpen = false }: Clock
       role="presentation"
       className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} whitespace-nowrap`}
       style={{
-        textShadow:
-          currentTheme === "macosx"
-            ? "0 2px 3px rgba(0, 0, 0, 0.25)"
-            : undefined,
+        textShadow: isMacOSTheme
+          ? "0 2px 3px rgba(0, 0, 0, 0.25)"
+          : undefined,
       }}
       onClick={handleClick}
       title={enableCalendarOpen ? t("apps.calendar.title") : enableExposeToggle ? t("common.menuBar.showAllWindows") : undefined}
@@ -832,8 +830,7 @@ function VolumeControl() {
   const { play: playVolumeChangeSound } = useSound(Sounds.VOLUME_CHANGE);
   const launchApp = useLaunchApp();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isWin98 } = useThemeFlags();
 
   const getVolumeIcon = () => {
     if (masterVolume === 0) {
@@ -858,7 +855,7 @@ function VolumeControl() {
           } ${isXpTheme ? "" : "mr-2"}`}
           style={{
             color:
-              isXpTheme && currentTheme === "win98" ? "#000000" : "inherit",
+              isXpTheme && isWin98 ? "#000000" : "inherit",
           }}
         >
           {getVolumeIcon()}
@@ -925,10 +922,13 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const foregroundInstance = getForegroundInstance();
   const hasActiveApp = !!foregroundInstance;
 
-  // Get current theme
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  
+  const {
+    currentTheme,
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme,
+    isMacTheme,
+  } = useThemeFlags();
+
   // Check if on phone (must be called before any early returns)
   const isPhone = useIsPhone();
 
@@ -1093,8 +1093,10 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
   // For XP/98 themes, render taskbar at bottom instead of top menubar
   if (isXpTheme && !inWindowFrame) {
+    const isWinXp = currentTheme === "xp";
+    const isWin98 = currentTheme === "win98";
     const taskbarBackground =
-      currentTheme === "xp"
+      isWinXp
         ? "linear-gradient(0deg, #042b8e 0%, #0551f6 6%, #0453ff 51%, #0551f6 63%, #0551f6 81%, #3a8be8 90%, #0453ff 100%)"
         : "#c0c0c0";
     return (
@@ -1104,7 +1106,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           background: taskbarBackground,
           fontFamily: "var(--font-ms-sans)",
           fontSize: "11px",
-          color: currentTheme === "xp" ? "#ffffff" : "#000000",
+          color: isWinXp ? "#ffffff" : "#000000",
           userSelect: "none",
           width: "100vw",
           height: "calc(30px + env(safe-area-inset-bottom, 0px))",
@@ -1180,22 +1182,22 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       marginTop: "2px",
                       marginRight: "2px",
                       background: isForeground && !isMinimized
-                        ? currentTheme === "xp"
+                        ? isWinXp
                           ? "#3980f4"
                           : "#c0c0c0"
-                        : currentTheme === "xp"
+                        : isWinXp
                         ? "#1658dd"
                         : "#c0c0c0",
                       border:
-                        currentTheme === "xp"
+                        isWinXp
                           ? isForeground && !isMinimized
                             ? "1px solid #255be1"
                             : "1px solid #255be1"
                           : "none",
-                      color: currentTheme === "xp" ? "#ffffff" : "#000000",
+                      color: isWinXp ? "#ffffff" : "#000000",
                       fontSize: "11px",
                       boxShadow:
-                        currentTheme === "xp"
+                        isWinXp
                           ? "2px 2px 5px rgba(255, 255, 255, 0.267) inset"
                           : isForeground && !isMinimized
                           ? "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey"
@@ -1203,7 +1205,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       transition: "background 0.1s ease, box-shadow 0.1s ease, border-color 0.1s ease",
                     }}
                     onMouseEnter={(e) => {
-                      if (currentTheme === "xp") {
+                      if (isWinXp) {
                         if (isForeground && !isMinimized) {
                           e.currentTarget.style.background = "#4a92f9";
                           e.currentTarget.style.borderColor = "#2c64e3";
@@ -1211,13 +1213,13 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                           e.currentTarget.style.background = "#2a6ef1";
                           e.currentTarget.style.borderColor = "#1e56c9";
                         }
-                      } else if (currentTheme === "win98" && (!isForeground || isMinimized)) {
+                      } else if (isWin98 && (!isForeground || isMinimized)) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (currentTheme === "xp") {
+                      if (isWinXp) {
                         if (isForeground && !isMinimized) {
                           e.currentTarget.style.background = "#3980f4";
                           e.currentTarget.style.borderColor = "#255be1";
@@ -1225,7 +1227,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                           e.currentTarget.style.background = "#1658dd";
                           e.currentTarget.style.borderColor = "#255be1";
                         }
-                      } else if (currentTheme === "win98" && (!isForeground || isMinimized)) {
+                      } else if (isWin98 && (!isForeground || isMinimized)) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
@@ -1270,51 +1272,51 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       width: "36px",
                       marginTop: "2px",
                       marginRight: "2px",
-                      background: currentTheme === "xp" ? "#1658dd" : "#c0c0c0",
+                      background: isWinXp ? "#1658dd" : "#c0c0c0",
                       border:
-                        currentTheme === "xp" ? "1px solid #255be1" : "none",
-                      color: currentTheme === "xp" ? "#ffffff" : "#000000",
+                        isWinXp ? "1px solid #255be1" : "none",
+                      color: isWinXp ? "#ffffff" : "#000000",
                       fontSize: "11px",
                       boxShadow:
-                        currentTheme === "xp"
+                        isWinXp
                           ? "2px 2px 5px rgba(255, 255, 255, 0.267) inset"
                           : "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf",
                       transition: "all 0.1s ease",
                     }}
                     onMouseEnter={(e) => {
-                      if (currentTheme === "xp") {
+                      if (isWinXp) {
                         e.currentTarget.style.background = "#2a6ef1";
                         e.currentTarget.style.borderColor = "#1e56c9";
-                      } else if (currentTheme === "win98") {
+                      } else if (isWin98) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
                     }}
                     onMouseDown={(e) => {
-                      if (currentTheme === "xp") {
+                      if (isWinXp) {
                         e.currentTarget.style.background = "#4a92f9";
                         e.currentTarget.style.borderColor = "#2c64e3";
-                      } else if (currentTheme === "win98") {
+                      } else if (isWin98) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey";
                       }
                     }}
                     onMouseUp={(e) => {
-                      if (currentTheme === "xp") {
+                      if (isWinXp) {
                         // return to hover shade; mouseleave will handle base
                         e.currentTarget.style.background = "#2a6ef1";
                         e.currentTarget.style.borderColor = "#1e56c9";
-                      } else if (currentTheme === "win98") {
+                      } else if (isWin98) {
                         // return to raised hover state
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (currentTheme === "xp") {
+                      if (isWinXp) {
                         e.currentTarget.style.background = "#1658dd";
                         e.currentTarget.style.borderColor = "#255be1";
-                      } else if (currentTheme === "win98") {
+                      } else if (isWin98) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
                       }
@@ -1386,26 +1388,26 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           <div
             className="flex items-center gap-1 px-2 text-white border box-border flex items-center justify-end text-sm"
             style={{
-              height: currentTheme === "win98" ? "85%" : "100%",
-              marginTop: currentTheme === "win98" ? "2px" : "0px",
-              marginRight: currentTheme === "win98" ? "4px" : "0px",
+              height: isWin98 ? "85%" : "100%",
+              marginTop: isWin98 ? "2px" : "0px",
+              marginRight: isWin98 ? "4px" : "0px",
               background:
-                currentTheme === "xp"
+                isWinXp
                   ? "linear-gradient(0deg, #0a5bc6 0%, #1198e9 6%, #1198e9 51%, #1198e9 63%, #1198e9 77%, #19b9f3 85%, #19b9f3 93%, #075dca 97%)"
                   : "#c0c0c0", // Flat gray for Windows 98
               boxShadow:
-                currentTheme === "xp"
+                isWinXp
                   ? "2px -0px 3px #20e2fc inset"
                   : "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey", // Windows 98 inset
               borderTop:
-                currentTheme === "xp" ? "1px solid #075dca" : "transparent",
+                isWinXp ? "1px solid #075dca" : "transparent",
               borderBottom:
-                currentTheme === "xp" ? "1px solid #0a5bc6" : "transparent",
+                isWinXp ? "1px solid #0a5bc6" : "transparent",
               borderRight:
-                currentTheme === "xp" ? "transparent" : "transparent",
+                isWinXp ? "transparent" : "transparent",
               borderLeft:
-                currentTheme === "xp" ? "1px solid #000000" : "transparent",
-              paddingTop: currentTheme === "xp" ? "1px" : "0px",
+                isWinXp ? "1px solid #000000" : "transparent",
+              paddingTop: isWinXp ? "1px" : "0px",
             }}
           >
             <OfflineIndicator />
@@ -1418,19 +1420,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
               }`}
               style={{
                 color:
-                  currentTheme === "win98"
+                  isWin98
                     ? "#000000"
                     : isXpTheme
                     ? "#ffffff"
                     : "#000000",
-                textShadow:
-                  currentTheme === "xp"
-                    ? "1px 1px 1px rgba(0,0,0,0.5)"
-                    : currentTheme === "win98"
-                    ? "none"
-                    : currentTheme === "macosx"
-                    ? "0 2px 3px rgba(0, 0, 0, 0.25)"
-                    : "none",
+                textShadow: isWinXp
+                  ? "1px 1px 1px rgba(0,0,0,0.5)"
+                  : "none",
               }}
             >
               <Clock />
@@ -1450,7 +1447,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const isTauriMacMenubar =
     isTauriApp &&
     !isWindowsPlatform &&
-    (currentTheme === "macosx" || currentTheme === "system7");
+    isMacTheme;
   const needsTrafficLightClearance = isTauriMacMenubar && !isFullscreen;
   const menuBarHeight = needsTrafficLightClearance
     ? "32px"
@@ -1461,16 +1458,16 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       className={`fixed top-0 left-0 right-0 flex border-b-[length:var(--os-metrics-border-width)] border-os-menubar items-center font-os-ui ${exposeMode ? "z-[9997]" : "z-[10002]"}`}
       style={{
         background:
-          currentTheme === "macosx"
+          isMacOSTheme
             ? "rgba(248, 248, 248, 0.85)"
             : "var(--os-color-menubar-bg)",
         backgroundImage:
-          currentTheme === "macosx" ? "var(--os-pinstripe-menubar)" : undefined,
-        backdropFilter: currentTheme === "macosx" ? "blur(20px)" : undefined,
+          isMacOSTheme ? "var(--os-pinstripe-menubar)" : undefined,
+        backdropFilter: isMacOSTheme ? "blur(20px)" : undefined,
         WebkitBackdropFilter:
-          currentTheme === "macosx" ? "blur(20px)" : undefined,
+          isMacOSTheme ? "blur(20px)" : undefined,
         boxShadow:
-          currentTheme === "macosx"
+          isMacOSTheme
             ? "0 2px 8px rgba(0, 0, 0, 0.15)"
             : undefined,
         fontFamily: "var(--os-font-ui)",
@@ -1494,7 +1491,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         >
           <AppleMenu />
           {/* App Menu - only shown in macOS X theme */}
-          {currentTheme === "macosx" && hasActiveApp && foregroundInstance && (
+          {isMacOSTheme && hasActiveApp && foregroundInstance && (
             <AppMenu
               appId={foregroundInstance.appId}
               appName={getTranslatedAppName(foregroundInstance.appId) || foregroundInstance.appId}
@@ -1502,7 +1499,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
             />
           )}
           {/* Finder App Menu - shown in macOS X theme when no app is active (desktop) */}
-          {currentTheme === "macosx" && !hasActiveApp && (
+          {isMacOSTheme && !hasActiveApp && (
             <FinderAppMenu />
           )}
           {hasActiveApp ? children : <DefaultMenuItems />}
@@ -1548,8 +1545,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 
 function SpotlightMenuBarButton() {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
   const isSpotlightOpen = useSpotlightStore((state) => state.isOpen);
 
   // Only show on Mac themes — Windows themes use Start Menu "Run..."
@@ -1569,7 +1565,7 @@ function SpotlightMenuBarButton() {
         marginRight: "4px",
         color: isSpotlightOpen ? "#FFFFFF" : "inherit",
         background: isSpotlightOpen
-          ? currentTheme === "macosx"
+          ? isMacOSTheme
             ? "linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)"
             : "#000000"
           : "transparent",
@@ -1593,8 +1589,7 @@ function SpotlightMenuBarButton() {
 function OfflineIndicator() {
   const { t } = useTranslation();
   const isOffline = useOffline();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isWin98 } = useThemeFlags();
 
   if (!isOffline) return null;
 
@@ -1604,7 +1599,7 @@ function OfflineIndicator() {
       style={{
         marginRight: isXpTheme ? "4px" : "8px",
         color:
-          currentTheme === "win98"
+          isWin98
             ? "#000000"
             : isXpTheme
             ? "#ffffff"
@@ -1625,9 +1620,8 @@ function OfflineIndicator() {
 
 function ExposeButton() {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
+
   // Don't show on Windows themes (they have their own taskbar)
   if (isXpTheme) return null;
 
@@ -1653,8 +1647,11 @@ function ExposeButton() {
 
 function CloudSyncIndicator() {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+  } = useThemeFlags();
   const isPhone = useIsPhone();
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1725,11 +1722,10 @@ function CloudSyncIndicator() {
           className="h-3.5 w-3.5 animate-spin"
           weight="bold"
           style={{
-            opacity: currentTheme === "system7" ? 1 : 0.82,
-            textShadow:
-              currentTheme === "macosx"
-                ? "0 2px 3px rgba(0, 0, 0, 0.25)"
-                : undefined,
+            opacity: isSystem7Theme ? 1 : 0.82,
+            textShadow: isMacOSTheme
+              ? "0 2px 3px rgba(0, 0, 0, 0.25)"
+              : undefined,
           }}
         />
       </motion.button>

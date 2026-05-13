@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import { LinkPreview } from "@/components/shared/LinkPreview";
 import { ImageAttachment } from "@/components/shared/ImageAttachment";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
@@ -266,8 +266,7 @@ interface ChatMessagesProps {
 // Component to render the scroll-to-bottom button using the library's context
 function ScrollToBottomButton() {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
 
   return (
@@ -353,7 +352,7 @@ interface ChatMessageItemProps {
   isLoadingGreeting: boolean;
   isRoomView: boolean;
   fontSize: number;
-  currentTheme: string;
+  isMacOSTheme: boolean;
   copiedMessageId: string | null;
   playingMessageId: string | null;
   speechLoadingId: string | null;
@@ -386,7 +385,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     isLoadingGreeting,
     isRoomView,
     fontSize,
-    currentTheme,
+    isMacOSTheme,
     copiedMessageId,
     playingMessageId,
     speechLoadingId,
@@ -524,7 +523,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     >
       <div
         className={`${
-          currentTheme === "macosx" ? "text-[10px]" : "text-[16px]"
+          isMacOSTheme ? "text-[10px]" : "text-[16px]"
         } chat-messages-meta text-gray-500 mb-0.5 font-['Geneva-9'] mb-[-2px] select-text flex items-center gap-2`}
       >
         {message.role === "user" && (
@@ -1048,7 +1047,7 @@ function ChatMessagesContent({
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const { speak, stop, isSpeaking: localTtsSpeaking } = useTtsQueue();
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
-  const currentTheme = useThemeStore((s) => s.current);
+  const { isMacOSTheme } = useThemeFlags();
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [speechLoadingId, setSpeechLoadingId] = useState<string | null>(null);
 
@@ -1264,7 +1263,7 @@ function ChatMessagesContent({
             isLoadingGreeting={!!isLoadingGreeting}
             isRoomView={isRoomView}
             fontSize={fontSize}
-            currentTheme={currentTheme}
+            isMacOSTheme={isMacOSTheme}
             copiedMessageId={copiedMessageId}
             playingMessageId={playingMessageId}
             speechLoadingId={speechLoadingId}

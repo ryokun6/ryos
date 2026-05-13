@@ -5,9 +5,9 @@ import {
   useSynthStore,
   type SynthPreset,
 } from "@/stores/useSynthStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useLatestRef } from "@/hooks/useLatestRef";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
@@ -127,11 +127,12 @@ export const useSynthLogic = ({
   const { play } = useSound(Sounds.CLICK);
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("synth", helpItems);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isSystem7Theme = currentTheme === "system7";
-  const isClassicTheme = currentTheme === "macosx" || isXpTheme;
-  const isMacOSTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isSystem7Theme,
+    isMacOSTheme,
+  } = useThemeFlags();
+  const isClassicTheme = isMacOSTheme || isXpTheme;
 
   // Define keyboard layout with extended range
   const allWhiteKeys = [

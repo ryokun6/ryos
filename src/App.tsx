@@ -8,7 +8,7 @@ import { useAppStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/hel
 import { BootScreen } from "./components/dialogs/BootScreen";
 import { getNextBootMessage, clearNextBootMessage, isBootDebugMode } from "./utils/bootMessage";
 import { AnyApp } from "./apps/base/types";
-import { useThemeStore } from "./stores/useThemeStore";
+import { useThemeFlags } from "./hooks/useThemeFlags";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
@@ -36,7 +36,7 @@ export function App() {
     })
   );
   const displayMode = useDisplaySettingsStoreShallow((state) => state.displayMode);
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
   const isMobile = useIsMobile();
   // Initialize offline detection
   useOffline();
@@ -45,10 +45,9 @@ export function App() {
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
-    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
-    const dockHeight = currentTheme === "macosx" ? 56 : 0;
+    const dockHeight = isMacOSTheme ? 56 : 0;
     const taskbarHeight = isWindowsTheme ? 30 : 0;
-    
+
     // Mobile: always show at bottom-center with dock/taskbar and safe area clearance
     if (isMobile) {
       const bottomOffset = dockHeight + taskbarHeight + 16;
@@ -66,13 +65,13 @@ export function App() {
       };
     } else {
       // macOS themes: top-right with menubar clearance
-      const menuBarHeight = currentTheme === "system7" ? 30 : 25;
+      const menuBarHeight = isSystem7Theme ? 30 : 25;
       return {
         position: "top-right" as const,
         offset: `${menuBarHeight + 12}px`,
       };
     }
-  }, [currentTheme, isMobile]);
+  }, [isWindowsTheme, isMacOSTheme, isSystem7Theme, isMobile]);
 
   const [bootScreenMessage, setBootScreenMessage] = useState<string | null>(
     null

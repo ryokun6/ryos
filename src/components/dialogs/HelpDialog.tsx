@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName, type AppId } from "@/utils/i18n";
@@ -27,9 +27,8 @@ interface HelpCardProps {
 }
 
 function HelpCard({ icon, title, description }: HelpCardProps) {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+    useThemeFlags();
 
   return (
     <div className="p-4 bg-black/5 rounded-os transition-colors">
@@ -87,9 +86,8 @@ export function HelpDialog({
   appId,
 }: HelpDialogProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+    useThemeFlags();
   const launchApp = useAppStore((state) => state.launchApp);
 
   // Use localized app name if appId is provided, otherwise fall back to appName

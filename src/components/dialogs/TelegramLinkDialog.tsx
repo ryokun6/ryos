@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type {
   TelegramLinkSession,
   TelegramLinkedAccount,
@@ -46,9 +46,11 @@ export function TelegramLinkDialog({
   onDisconnectTelegramLink,
 }: TelegramLinkDialogProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacOsxTheme,
+    isWinXp,
+  } = useThemeFlags();
 
   const linkedAccountLabel = linkedAccount
     ? getTelegramLinkedAccountLabel(linkedAccount)
@@ -227,7 +229,7 @@ export function TelegramLinkDialog({
         >
           <div
             className="title-bar"
-            style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
+            style={isWinXp ? { minHeight: "30px" } : undefined}
           >
             <div className="title-bar-text">
               {t("apps.control-panels.telegram.title")}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Trash, Star, ArrowLeft, Sparkle, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
@@ -35,10 +35,15 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const username = useChatsStore((state) => state.username);
   const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
   const isAdmin = username?.toLowerCase() === "ryo" && !!isAuthenticated;
+  const {
+    isMacOSTheme: osIsMac,
+    isSystem7Theme: osIsSystem7,
+    isWindowsTheme: isXpTheme,
+  } = useThemeFlags();
+  const isMacChrome = theme === "macosx" || osIsMac;
+  const isSystem7Chrome = theme === "system7" || osIsSystem7;
   const isMacTheme = theme === "macosx";
   const isSystem7Theme = theme === "system7";
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   
   const actions = useAppletActions();
   const lastUpdateToastKeyRef = useRef<string | null>(null);
@@ -647,17 +652,17 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             className={`flex items-center gap-3 px-3 py-2 ${
               isXpTheme
                 ? "border-b border-[#919b9c]"
-                : currentTheme === "macosx"
+                : isMacChrome
                 ? ""
-                : currentTheme === "system7"
+                : isSystem7Chrome
                 ? "bg-gray-100 border-b border-black"
                 : "bg-gray-100 border-b border-gray-200"
             }`}
             style={{
               background: isXpTheme ? "transparent" : undefined,
-              backgroundImage: currentTheme === "macosx" ? "var(--os-pinstripe-window)" : undefined,
+              backgroundImage: isMacChrome ? "var(--os-pinstripe-window)" : undefined,
               borderBottom:
-                currentTheme === "macosx"
+                isMacChrome
                   ? `var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))`
                   : undefined,
             }}
@@ -784,17 +789,17 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               className={`px-3 py-2 flex items-center gap-1 ${
                 isXpTheme
                   ? "border-b border-[#919b9c]"
-                  : currentTheme === "macosx"
+                  : isMacChrome
                   ? ""
-                  : currentTheme === "system7"
+                  : isSystem7Chrome
                   ? "bg-gray-100 border-b border-black"
                   : "bg-gray-100 border-b border-gray-200"
               }`}
               style={{
                 background: isXpTheme ? "transparent" : undefined,
-                backgroundImage: currentTheme === "macosx" ? "var(--os-pinstripe-window)" : undefined,
+                backgroundImage: isMacChrome ? "var(--os-pinstripe-window)" : undefined,
                 borderBottom:
-                  currentTheme === "macosx"
+                  isMacChrome
                     ? `var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))`
                     : undefined,
               }}
@@ -807,12 +812,12 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 className={`flex-1 pl-2 ${
                   isXpTheme
                     ? "!text-[11px]"
-                    : currentTheme === "macosx"
+                    : isMacChrome
                     ? "!text-[12px] h-[26px]"
                     : "!text-[16px]"
                 }`}
                 style={
-                  currentTheme === "macosx"
+                  isMacChrome
                     ? {
                         paddingTop: "2px",
                         paddingBottom: "2px",

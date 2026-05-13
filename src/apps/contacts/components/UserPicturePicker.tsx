@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { ALL_USER_PICTURES } from "@/utils/userPictures";
 import { resizeImageToBase64 } from "@/utils/imageResize";
@@ -28,9 +28,10 @@ export function UserPicturePicker({
   onSelect,
 }: UserPicturePickerProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
 
   const fontClassName = isXpTheme
     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
@@ -150,7 +151,7 @@ export function UserPicturePicker({
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacTheme ? (
           <>
             <DialogHeader>{title}</DialogHeader>
             {dialogContent}

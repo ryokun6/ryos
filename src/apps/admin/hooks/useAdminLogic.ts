@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useAuth } from "@/hooks/useAuth";
 import { useOffline } from "@/hooks/useOffline";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { toast } from "sonner";
 import {
   bulkImportSongMetadata,
@@ -179,8 +179,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const translatedHelpItems = useTranslatedHelpItems("admin", helpItems);
   const { username, isAuthenticated } = useAuth();
   const isOffline = useOffline();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);

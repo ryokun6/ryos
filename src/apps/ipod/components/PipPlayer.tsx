@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { useIsPhone } from "@/hooks/useIsPhone";
@@ -20,23 +20,25 @@ export function PipPlayer({
 }: PipPlayerProps) {
   const { t } = useTranslation();
   const isOffline = useOffline();
-  const currentTheme = useThemeStore((state) => state.current);
+  const {
+    isWindowsTheme: isWinFamily,
+    isMacOSTheme: isMacOSX,
+  } = useThemeFlags();
   const isPhone = useIsPhone();
 
   // Calculate bottom offset based on theme (similar to Sonner positioning)
   const bottomOffset = useMemo(() => {
-    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
-    if (isWindowsTheme) {
+    if (isWinFamily) {
       // Windows themes: taskbar height (30px) + padding
       return "calc(env(safe-area-inset-bottom, 0px) + 42px)";
-    } else if (currentTheme === "macosx") {
+    } else if (isMacOSX) {
       // macOS X: dock height (56px) + padding
       return "calc(env(safe-area-inset-bottom, 0px) + 72px)";
     } else {
       // System 7 and others: just safe area + small padding
       return "calc(env(safe-area-inset-bottom, 0px) + 16px)";
     }
-  }, [currentTheme]);
+  }, [isWinFamily, isMacOSX]);
 
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   const youtubeVideoId = currentTrack?.url
@@ -48,7 +50,6 @@ export function PipPlayer({
   const thumbnailUrl = formatKugouImageUrl(currentTrack?.cover) ?? youtubeThumbnail;
 
   // Determine horizontal positioning based on theme
-  const isMacOSX = currentTheme === "macosx";
   // On phones, match the dock's centered width + side padding/margins
   const shouldCenter = isPhone || isMacOSX;
 

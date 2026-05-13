@@ -4,7 +4,7 @@ import { helpItems } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { Game, loadGames } from "@/stores/usePcStore";
 import { useJsDos, DosProps, DosEvent } from "./useJsDos";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface UsePcLogicProps {
   isWindowOpen: boolean;
@@ -29,8 +29,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
   const dosPropsRef = useRef<DosProps | null>(null);
 
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
   const translatedHelpItems = useTranslatedHelpItems("pc", helpItems);
 
   const handleLoadGame = useCallback(

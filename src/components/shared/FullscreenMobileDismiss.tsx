@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
@@ -22,8 +22,7 @@ export function FullscreenMobileDismiss({
   forceVisible = false,
 }: FullscreenMobileDismissProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
 
   const show = visible || forceVisible;

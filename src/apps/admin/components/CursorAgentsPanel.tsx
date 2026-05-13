@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { CursorRepoAgentChatCard } from "@/components/shared/CursorRepoAgentChatCard";
 
 export interface AdminCursorAgentRunRow {
@@ -79,9 +79,8 @@ function CursorAgentsToolbar({
   refreshDisabled?: boolean;
 }) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSXTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isMacOSTheme: isMacOSXTheme, isWindowsTheme: isXpTheme } =
+    useThemeFlags();
 
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();

@@ -11,9 +11,9 @@ import {
   MenubarSubContent,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import React, { useState } from "react";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -52,9 +52,8 @@ export function TextEditMenuBar({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "textedit";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
   const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);

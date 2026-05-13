@@ -2,11 +2,11 @@ import { memo, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getChannelLogo, type Channel } from "@/apps/tv/data/channels";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Trash } from "@phosphor-icons/react";
 import { AppDrawer, DRAWER_WIDTH, DRAWER_TRANSITION } from "@/components/shared/AppDrawer";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 // Re-export so callers that previously imported from this module still work.
 export { DRAWER_WIDTH, DRAWER_TRANSITION };
@@ -178,11 +178,12 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
   const { t } = useTranslation();
   const isMobileUi = useIsMobile();
   const showTrashAlways = isMobileUi;
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacOSTheme = currentTheme === "macosx";
-  const isSystem7 = currentTheme === "system7";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isWin98 = currentTheme === "win98";
+  const {
+    isMacOSTheme,
+    isSystem7Theme: isSystem7,
+    isWindowsTheme: isXpTheme,
+    isWin98,
+  } = useThemeFlags();
 
   const videos = channel?.videos ?? [];
   const listRef = useRef<HTMLUListElement>(null);

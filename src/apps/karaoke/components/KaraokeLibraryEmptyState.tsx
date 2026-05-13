@@ -2,7 +2,7 @@ import type { CSSProperties, MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
 
 /** Matches ListenSessionToolbar / FullscreenPlayerControls top shine */
@@ -33,8 +33,7 @@ export function KaraokeLibraryEmptyState({
   className,
 }: KaraokeLibraryEmptyStateProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
 
   // ListenSessionToolbar — segment + icon button + text label

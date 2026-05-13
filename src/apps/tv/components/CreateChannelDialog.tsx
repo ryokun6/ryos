@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useCreateTvChannel } from "../hooks/useCreateTvChannel";
 import { AnimatedEllipsis } from "@/apps/terminal/components/AnimatedEllipsis";
 
@@ -42,9 +42,10 @@ export function CreateChannelDialog({
   initialDescription = "",
 }: CreateChannelDialogProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
 
   const { create } = useCreateTvChannel();
 

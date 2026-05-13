@@ -29,7 +29,7 @@ import {
   useCloudSyncStore,
   type CloudSyncDeletionBucket,
 } from "@/stores/useCloudSyncStore";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FINDER_ANALYTICS, track } from "@/utils/analytics";
 
 // Interface for content stored in IndexedDB
@@ -422,7 +422,7 @@ export function useFileSystem(
   // Get current username for admin check
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";
-  const currentTheme = useThemeStore((state) => state.current);
+  const { currentTheme, isWindowsTheme } = useThemeFlags();
   const finderInstance = instanceId ? finderInstances[instanceId] : null;
 
   // Use instance-based state if available, otherwise use local state
@@ -905,7 +905,7 @@ export function useFileSystem(
                   name: "Macintosh HD",
                   isDirectory: true,
                   icon:
-                    currentTheme === "xp" || currentTheme === "win98"
+                    isWindowsTheme
                       ? "/icons/default/pc.png"
                       : "/icons/default/disk.png",
                   type: "directory",

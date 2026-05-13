@@ -4,7 +4,7 @@ import { WarningCircle, MusicNote, ArrowSquareOut, Microphone } from "@phosphor-
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
 
@@ -39,10 +39,10 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
     return isYouTubeUrl(url);
   });
   const launchApp = useLaunchApp();
-  const theme = useThemeStore((s) => s.current);
+  const { isMacOSTheme } = useThemeFlags();
 
   // Force full width thumbnail in macOS theme
-  const displayFullWidthThumbnail = theme === "macosx" || isFullWidthThumbnail;
+  const displayFullWidthThumbnail = isMacOSTheme || isFullWidthThumbnail;
 
   // Helper function to extract YouTube video ID
   const extractYouTubeVideoId = (url: string): string | null => {
@@ -412,7 +412,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "link-preview-container relative overflow-hidden cursor-pointer font-geneva-12 group max-w-[420px]",
-        theme === "macosx"
+        isMacOSTheme
           ? "chat-bubble macosx-link-preview bg-gray-100 border-none shadow-none"
           : "bg-white border border-gray-200 rounded",
         className
@@ -431,7 +431,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           <div
             className={cn(
               "relative aspect-video bg-gray-100 overflow-hidden",
-              theme === "macosx" && "-mx-3 -mt-[6px] rounded-t-[14px]"
+              isMacOSTheme && "-mx-3 -mt-[6px] rounded-t-[14px]"
             )}
           >
             <img
@@ -478,28 +478,28 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     onClick={handleAddToIpod}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
-                      theme === "macosx"
+                      isMacOSTheme
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openIpod")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <MusicNote className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <MusicNote className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openIpod")}</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
-                      theme === "macosx"
+                      isMacOSTheme
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -509,28 +509,28 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     onClick={handleOpenInKaraoke}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
-                      theme === "macosx"
+                      isMacOSTheme
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openKaraoke")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <Microphone className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <Microphone className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openKaraoke")}</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
-                      theme === "macosx"
+                      isMacOSTheme
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -540,28 +540,28 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     onClick={handleAddToIpod}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
-                      theme === "macosx"
+                      isMacOSTheme
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.addToIpod")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <MusicNote className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <MusicNote className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.addToIpod")}</span>
                   </button>
                   <button
                     onClick={handleOpenYouTube}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
-                      theme === "macosx"
+                      isMacOSTheme
                         ? "aqua-button secondary flex-1"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                     )}
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -572,14 +572,14 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                   onClick={handleOpenExternally}
                   onTouchStart={(e) => e.stopPropagation()}
                   className={cn(
-                    theme === "macosx"
+                    isMacOSTheme
                       ? "aqua-button secondary w-full"
                       : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors w-full"
                   )}
                   title="Open Externally"
                   data-link-preview
                 >
-                  {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                  {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                   <span>Open Externally</span>
                 </button>
               </div>
@@ -594,7 +594,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
               <div
                 className={cn(
                   "w-18 h-18 bg-gray-100 relative overflow-hidden flex-shrink-0",
-                  theme === "macosx" && "hidden"
+                  isMacOSTheme && "hidden"
                 )}
               >
                 <img
@@ -681,7 +681,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           {/* Action buttons */}
           <div className={cn(
             "pb-2 border-t",
-            theme === "macosx" 
+            isMacOSTheme 
               ? "border-gray-300" 
               : "border-gray-200"
           )}>
@@ -693,28 +693,28 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       onClick={handleAddToIpod}
                       onTouchStart={(e) => e.stopPropagation()}
                       className={cn(
-                        theme === "macosx"
+                        isMacOSTheme
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openIpod")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && <MusicNote className="h-3 w-3" weight="bold" />}
+                      {!isMacOSTheme && <MusicNote className="h-3 w-3" weight="bold" />}
                       <span>{t("components.linkPreview.openIpod")}</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}
                       onTouchStart={(e) => e.stopPropagation()}
                       className={cn(
-                        theme === "macosx"
+                        isMacOSTheme
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openYouTube")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && (
+                      {!isMacOSTheme && (
                         <ArrowSquareOut className="h-3 w-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
@@ -726,28 +726,28 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       onClick={handleOpenInKaraoke}
                       onTouchStart={(e) => e.stopPropagation()}
                       className={cn(
-                        theme === "macosx"
+                        isMacOSTheme
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openKaraoke")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && <Microphone className="h-3 w-3" weight="bold" />}
+                      {!isMacOSTheme && <Microphone className="h-3 w-3" weight="bold" />}
                       <span>{t("components.linkPreview.openKaraoke")}</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}
                       onTouchStart={(e) => e.stopPropagation()}
                       className={cn(
-                        theme === "macosx"
+                        isMacOSTheme
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openYouTube")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && (
+                      {!isMacOSTheme && (
                         <ArrowSquareOut className="h-3 w-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
@@ -759,28 +759,28 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       onClick={handleAddToIpod}
                       onTouchStart={(e) => e.stopPropagation()}
                       className={cn(
-                        theme === "macosx"
+                        isMacOSTheme
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.addToIpod")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && <MusicNote className="h-3 w-3" weight="bold" />}
+                      {!isMacOSTheme && <MusicNote className="h-3 w-3" weight="bold" />}
                       <span>{t("components.linkPreview.addToIpod")}</span>
                     </button>
                     <button
                       onClick={handleOpenYouTube}
                       onTouchStart={(e) => e.stopPropagation()}
                       className={cn(
-                        theme === "macosx"
+                        isMacOSTheme
                           ? "aqua-button secondary flex-1"
                           : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex-1"
                       )}
                       title={t("components.linkPreview.openYouTube")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && (
+                      {!isMacOSTheme && (
                         <ArrowSquareOut className="h-3 w-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
@@ -793,14 +793,14 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     onClick={handleOpenExternally}
                     onTouchStart={(e) => e.stopPropagation()}
                     className={cn(
-                      theme === "macosx"
+                      isMacOSTheme
                         ? "aqua-button secondary w-full"
                         : "flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] bg-gray-100 hover:bg-gray-200 rounded-md transition-colors w-full"
                     )}
                     title="Open Externally"
                     data-link-preview
                   >
-                    {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
+                    {!isMacOSTheme && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                     <span>Open Externally</span>
                   </button>
                 </div>

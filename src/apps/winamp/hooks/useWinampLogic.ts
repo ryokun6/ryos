@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { helpItems } from "..";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 export function useWinampLogic() {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("winamp", helpItems);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);

@@ -11,7 +11,7 @@ import {
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { cn } from "@/lib/utils";
 import type { AppId } from "@/config/appRegistry";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   reportRuntimeCrash,
   RYOS_ERROR_BOUNDARY_TEST_EVENT,
@@ -147,15 +147,15 @@ function CrashDialog({
   onSecondaryAction,
   error,
 }: CrashDialogProps) {
-  const currentTheme = useThemeStore((state) => state.current);
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
   const { t } = useTranslation();
   const primaryActionButtonRef = React.useRef<HTMLButtonElement>(null);
   const secondaryActionButtonRef = React.useRef<HTMLButtonElement>(null);
   const headingId = React.useId();
   const descriptionId = React.useId();
-
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
 
   const bodyTextClasses = cn(
     "leading-[1.45] text-black",
@@ -326,7 +326,7 @@ export function AppErrorBoundary({
   onQuit,
   onCrash,
 }: AppErrorBoundaryProps) {
-  const currentTheme = useThemeStore((state) => state.current);
+  const { currentTheme } = useThemeFlags();
   const { t } = useTranslation();
 
   return (
@@ -376,7 +376,7 @@ export function AppErrorBoundary({
 export function DesktopErrorBoundary({
   children,
 }: DesktopErrorBoundaryProps) {
-  const currentTheme = useThemeStore((state) => state.current);
+  const { currentTheme } = useThemeFlags();
   const { t } = useTranslation();
 
   return (

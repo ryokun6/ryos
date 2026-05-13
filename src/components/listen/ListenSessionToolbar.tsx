@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type { ListenSession } from "@/stores/useListenSessionStore";
 import {
   connectionLabel,
@@ -98,8 +98,7 @@ export function ListenSessionToolbar({
   className,
 }: ListenSessionToolbarProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
 
   const handleClick =

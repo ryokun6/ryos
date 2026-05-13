@@ -7,9 +7,9 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
@@ -62,9 +62,10 @@ export function LyricsSearchDialog({
   currentSelection,
 }: LyricsSearchDialogProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
 
   const [query, setQuery] = useState(initialQuery || "");
   const [results, setResults] = useState<LyricsSearchResult[]>([]);
@@ -506,7 +507,7 @@ export function LyricsSearchDialog({
             </DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacTheme ? (
           <>
             <DialogHeader>
               {t("apps.ipod.dialogs.lyricsSearchTitle")}

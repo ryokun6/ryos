@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { motion, AnimatePresence } from "framer-motion";
@@ -43,7 +43,11 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const appletsLengthRef = useLatestRef(applets.length);
   const hasFetchedRef = useRef(false);
   const sessionSeedRef = useRef(Math.floor(Math.random() * 1000000));
-  const currentTheme = useThemeStore((state) => state.current);
+  const {
+    isMacOSTheme: osIsMac,
+    isSystem7Theme: osIsSystem7,
+    isWindowsTheme: osIsXp,
+  } = useThemeFlags();
   const { username, isAuthenticated } = useChatsStoreShallow((state) => ({
     username: state.username,
     isAuthenticated: state.isAuthenticated,
@@ -54,9 +58,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const PREVIEW_Z_SPACING = -80;
   const PREVIEW_SCALE_FACTOR = 0.05;
   const PREVIEW_Y_SPACING = -28;
-  const isMacTheme = theme === "macosx" || currentTheme === "macosx";
-  const isSystem7Theme = theme === "system7" || currentTheme === "system7";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = theme === "macosx" || osIsMac;
+  const isSystem7Theme = theme === "system7" || osIsSystem7;
+  const isXpTheme = osIsXp;
 
   const actions = useAppletActions();
 
@@ -570,18 +574,18 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
           className={`absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-3 py-2 ${
             isXpTheme
               ? "border-b border-[#919b9c]"
-              : currentTheme === "macosx"
+              : isMacTheme
               ? ""
-              : currentTheme === "system7"
+              : isSystem7Theme
               ? "bg-gray-100 border-b border-black"
               : "bg-gray-100 border-b border-gray-200"
           }`}
           style={{
             flexWrap: "nowrap",
             background: isXpTheme ? "transparent" : undefined,
-            backgroundImage: currentTheme === "macosx" ? "var(--os-pinstripe-window)" : undefined,
+            backgroundImage: isMacTheme ? "var(--os-pinstripe-window)" : undefined,
             borderBottom:
-              currentTheme === "macosx"
+              isMacTheme
                 ? `var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))`
                 : undefined,
           }}

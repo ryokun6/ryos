@@ -8,14 +8,13 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { type ChatRoom } from "@/types/chat";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useAudioSettingsStoreShallow } from "@/stores/helpers";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -120,9 +119,8 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
   const [isTelegramDialogOpen, setIsTelegramDialogOpen] = useState(false);
   const appId = "chats";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = isWindowsTheme(currentTheme);
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
 
   const handleVerifyDialogOpenChange = useCallback(
     (open: boolean) => {

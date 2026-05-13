@@ -5,7 +5,6 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useTvStore } from "@/stores/useTvStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { helpItems } from "..";
 import { buildTvChannelLineup, type Channel } from "@/apps/tv/data/channels";
@@ -17,6 +16,7 @@ import {
   randomTuneInOffset,
   shuffleArray,
 } from "@/apps/tv/utils";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { isMobileSafari } from "@/utils/device";
 import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
 
@@ -61,9 +61,7 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     [customChannels, hiddenDefaultChannelIds]
   );
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOSTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
   const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);

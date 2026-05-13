@@ -1360,6 +1360,7 @@ export function useAutoCloudSync() {
       }
     );
 
+    // OS theme id is owned by useThemeStore; subscribe so settings sync runs when it changes.
     const themeUnsubscribe = useThemeStore.subscribe((state, prevState) => {
       if (state.current !== prevState.current) {
         if (isApplyingRemoteSettingsSection("theme")) return;

@@ -291,9 +291,7 @@ export function MtvLyricsOverlay({
   return (
     <div
       className={cn(
-        // `tv-cc-force-font` escapes macOSX theme Lucida/global 13px div
-        // rules — see themes.css alongside ipod-force-font /
-        // karaoke-force-font.
+        // `tv-cc-force-font` resets Aqua window typography for captions
         "tv-cc-force-font pointer-events-none absolute inset-x-0 z-[15] flex justify-start",
         isFullscreen
           ? "bottom-[18%] sm:bottom-[17%]"

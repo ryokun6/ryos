@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 
@@ -32,9 +32,8 @@ export function ListenSessionInvite({
   const { t } = useTranslation();
   const [shareUrl, setShareUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme, isWinXp } =
+    useThemeFlags();
 
   const baseUrl = useMemo(() => {
     if (typeof window !== "undefined") {
@@ -161,7 +160,7 @@ export function ListenSessionInvite({
         >
           <div
             className="title-bar"
-            style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
+            style={isWinXp ? { minHeight: "30px" } : undefined}
           >
             <div className="title-bar-text">{t("apps.karaoke.liveListen.inviteToListen")}</div>
             <div className="title-bar-controls">

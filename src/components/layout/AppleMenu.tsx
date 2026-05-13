@@ -15,7 +15,7 @@ import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { AppId, appRegistry } from "@/config/appRegistry";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppStore, RecentDocument } from "@/stores/useAppStore";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -70,8 +70,7 @@ export function AppleMenu() {
   const { t } = useTranslation();
   const [aboutFinderOpen, setAboutFinderOpen] = useState(false);
   const launchApp = useLaunchApp();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacOsxTheme } = useThemeFlags();
 
   // Recent items from store
   const recentApps = useAppStore((state) => state.recentApps);

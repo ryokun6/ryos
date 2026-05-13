@@ -7,7 +7,6 @@ import { useVideoStore, DEFAULT_VIDEOS } from "@/stores/useVideoStore";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useAppStore } from "@/stores/useAppStore";
 import { getApiUrl } from "@/utils/platform";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useCustomEventListener } from "@/hooks/useEventListener";
 import { helpItems } from "..";
@@ -15,6 +14,7 @@ import type { VideosInitialData } from "../../base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
 import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface Video {
   id: string;
@@ -66,9 +66,11 @@ export function useVideosLogic({
   );
 
   // Theme and audio settings
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOSTheme = currentTheme === "macosx";
+  const {
+    currentTheme,
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme,
+  } = useThemeFlags();
   const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
 
   // Safe setter that ensures currentVideoId is valid

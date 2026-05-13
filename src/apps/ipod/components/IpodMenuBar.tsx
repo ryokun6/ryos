@@ -19,7 +19,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { LyricsAlignment, DisplayMode, LyricsFont } from "@/types/lyrics";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -192,9 +192,8 @@ export function IpodMenuBar({
     exportLibrary: s.exportLibrary,
   }));
 
-  const appTheme = useThemeStore((state) => state.current);
-  const isXpTheme = appTheme === "xp" || appTheme === "win98";
-  const isMacOsxTheme = appTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";

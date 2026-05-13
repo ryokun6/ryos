@@ -8,7 +8,7 @@ import { usePaintStore } from "@/stores/usePaintStore";
 import type { Filter } from "../components/PaintFiltersMenu";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 import { helpItems } from "..";
 import type { PaintInitialData } from "../../base/types";
@@ -444,8 +444,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
     });
   }, []);
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const windowTitle = currentFilePath
     ? currentFilePath.split("/").pop() || t("apps.paint.untitled")

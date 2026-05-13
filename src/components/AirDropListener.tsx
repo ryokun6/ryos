@@ -4,9 +4,9 @@ import {
   useAirDropStore,
   type AirDropTransfer,
 } from "@/stores/useAirDropStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -50,7 +50,7 @@ export function AirDropListener() {
   const { t } = useTranslation();
   const username = useChatsStore((s) => s.username);
   const isAuthenticated = useChatsStore((s) => s.isAuthenticated);
-  const currentTheme = useThemeStore((s) => s.current);
+  const { currentTheme } = useThemeFlags();
   const getFileItem = useFilesStore((s) => s.getItem);
   const pendingTransfers = useAirDropStore((s) => s.pendingTransfers);
   const respondToTransfer = useAirDropStore((s) => s.respondToTransfer);
