@@ -13,6 +13,8 @@ export function useThemeFlags() {
   const isMacTheme = metadata.isMac;
   const isMacOSTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
+  const isWinXp = currentTheme === "xp";
+  const isWin98 = currentTheme === "win98";
   const isXpTheme = isWindowsTheme;
   const isClassicTheme = isXpTheme || isSystem7Theme;
   /** Menu / menubar styling for Mac OS X Aqua only (not System 7). */
@@ -28,6 +30,8 @@ export function useThemeFlags() {
     isMacTheme,
     isMacOSTheme,
     isSystem7Theme,
+    isWinXp,
+    isWin98,
     isXpTheme,
     isClassicTheme,
     isAquaMenuChrome,

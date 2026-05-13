@@ -8,8 +8,8 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -41,9 +41,8 @@ export function TerminalMenuBar({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "terminal";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

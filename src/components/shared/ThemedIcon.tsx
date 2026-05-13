@@ -1,6 +1,6 @@
 import React from "react";
 import { resolveIconLegacyAware, useIconPath } from "@/utils/icons";
-import { useThemeStore } from "@/stores/useThemeStore"; // assuming this exists
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 
 export interface ThemedIconProps
@@ -78,7 +78,7 @@ export const ThemedIcon: React.FC<ThemedIconProps> = ({
   themeOverride,
   ...imgProps
 }) => {
-  const currentTheme = useThemeStore((s) => s.current);
+  const { currentTheme } = useThemeFlags();
   const { className, style, ...restImgProps } = imgProps;
   const composedClassName = cn("themed-icon", className);
 

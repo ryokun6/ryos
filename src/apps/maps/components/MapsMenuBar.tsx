@@ -7,8 +7,7 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 import type { MapsMapType } from "../hooks/useMapsLogic";
 
@@ -32,9 +31,8 @@ export function MapsMenuBar({
   canUseMap,
 }: MapsMenuBarProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = isWindowsTheme(currentTheme);
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

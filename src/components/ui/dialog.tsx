@@ -146,14 +146,14 @@ const DialogHeader = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
   const { t } = useTranslation();
-  const { currentTheme, isXpTheme, isMacOSTheme } = useThemeFlags();
+  const { isWinXp, isXpTheme, isMacOSTheme } = useThemeFlags();
   const closeRef = React.useRef<HTMLButtonElement>(null);
 
   if (isXpTheme) {
     return (
       <div
         className={cn("title-bar", className)}
-        style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
+        style={isWinXp ? { minHeight: "30px" } : undefined}
         {...props}
       >
         <div className="title-bar-text">{children}</div>

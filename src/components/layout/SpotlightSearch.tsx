@@ -55,11 +55,11 @@ export function SpotlightSearch() {
   const listRef = useRef<HTMLDivElement>(null);
   const proxyInputRef = useRef<HTMLInputElement>(null);
   const {
-    currentTheme,
     isWindowsTheme: isXpTheme,
     isMacTheme: isMac,
     isMacOSTheme,
     isSystem7Theme: isSystem7,
+    isWinXp,
   } = useThemeFlags();
   const isMobile = useIsMobile();
 
@@ -197,7 +197,7 @@ export function SpotlightSearch() {
         boxShadow: "2px 2px 0px 0px rgba(0, 0, 0, 0.5)",
       } as React.CSSProperties;
     }
-    if (currentTheme === "xp") {
+    if (isWinXp) {
       // Clean XP menu style — thin border, soft shadow
       return {
         background: "#FFFFFF",

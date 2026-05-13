@@ -9,7 +9,7 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -51,9 +51,8 @@ export function PhotoBoothMenuBar({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "photo-booth";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

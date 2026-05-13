@@ -8,10 +8,9 @@ import {
   MenubarSeparator,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { FileItem } from "./FileList";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
@@ -88,9 +87,8 @@ export function FinderMenuBar({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "finder";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = isWindowsTheme(currentTheme);
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
   const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
 
   const canMoveToTrash =

@@ -7,7 +7,7 @@ import {
   MenubarSeparator,
   MenubarTrigger,
 } from "@/components/ui/menubar";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 import type { AdminSection } from "../utils/navigationState";
 
@@ -33,9 +33,8 @@ export function AdminMenuBar({
   onSectionChange,
 }: AdminMenuBarProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

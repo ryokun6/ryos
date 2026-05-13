@@ -19,7 +19,7 @@ import {
   LocationOption,
 } from "@/stores/useInternetExplorerStore";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
@@ -198,9 +198,8 @@ export function InternetExplorerMenuBar({
     ).filter((yr) => parseInt(yr) !== currentYear),
   ].reverse();
 
-  const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

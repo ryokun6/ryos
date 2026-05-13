@@ -830,7 +830,7 @@ function VolumeControl() {
   const { play: playVolumeChangeSound } = useSound(Sounds.VOLUME_CHANGE);
   const launchApp = useLaunchApp();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme: isXpTheme, isWin98 } = useThemeFlags();
 
   const getVolumeIcon = () => {
     if (masterVolume === 0) {
@@ -855,7 +855,7 @@ function VolumeControl() {
           } ${isXpTheme ? "" : "mr-2"}`}
           style={{
             color:
-              isXpTheme && currentTheme === "win98" ? "#000000" : "inherit",
+              isXpTheme && isWin98 ? "#000000" : "inherit",
           }}
         >
           {getVolumeIcon()}
@@ -1589,7 +1589,7 @@ function SpotlightMenuBarButton() {
 function OfflineIndicator() {
   const { t } = useTranslation();
   const isOffline = useOffline();
-  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
+  const { isWindowsTheme: isXpTheme, isWin98 } = useThemeFlags();
 
   if (!isOffline) return null;
 
@@ -1599,7 +1599,7 @@ function OfflineIndicator() {
       style={{
         marginRight: isXpTheme ? "4px" : "8px",
         color:
-          currentTheme === "win98"
+          isWin98
             ? "#000000"
             : isXpTheme
             ? "#ffffff"

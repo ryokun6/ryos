@@ -41,6 +41,20 @@ export function getOsMacChrome(id: OsThemeId): OsMacChrome | null {
 }
 
 /**
+ * Windows XP (Luna) — subset of {@link isWindowsTheme}. Use when Luna-specific chrome applies.
+ */
+export function isThemeWinXp(id: OsThemeId): boolean {
+  return id === "xp";
+}
+
+/**
+ * Windows 98 (Classic) — subset of {@link isWindowsTheme}.
+ */
+export function isThemeWin98(id: OsThemeId): boolean {
+  return id === "win98";
+}
+
+/**
  * Check if a theme is Windows-style (XP, 98).
  * Replaces scattered `currentTheme === "xp" || currentTheme === "win98"` checks.
  */

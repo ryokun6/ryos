@@ -8,7 +8,7 @@ import React, {
   memo,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { AppId, getAppIconPath, appRegistry, getNonFinderApps } from "@/config/appRegistry";
@@ -2550,7 +2550,7 @@ function MacDock() {
 }
 
 export function Dock() {
-  const currentTheme = useThemeStore((s) => s.current);
-  if (currentTheme !== "macosx") return null;
+  const { isMacOSTheme } = useThemeFlags();
+  if (!isMacOSTheme) return null;
   return <MacDock />;
 }

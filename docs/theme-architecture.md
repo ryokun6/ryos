@@ -10,7 +10,7 @@ This document describes how ryOS applies the four OS themes today and how to ext
    - `data-os-mac-chrome` — `aqua` or `system7` when `data-os-platform="mac"`; attribute removed on Windows themes (see **`getOsMacChrome()`**).
 2. **`src/styles/themes.css`** defines CSS variables (`--os-*`) under `:root[data-os-theme="…"]`, plus structural rules (Aqua, brushed metal, innocuous third-party resets).
 3. **Legacy Windows** (`public/css/xp-custom.css`, `98-custom.css`) is loaded only for `xp` / `win98` by `ensureLegacyCss` in the theme store.
-4. **TypeScript** definitions in `src/themes/*.ts` hold canonical metadata (`ThemeMetadata`); use **`getThemeMetadata`**, **`isWindowsTheme`**, **`isMacTheme`**, **`getOsPlatform`**, **`getOsMacChrome`**, or the **`useThemeFlags()`** hook instead of ad hoc `current === "xp"` chains in new code.
+4. **TypeScript** definitions in `src/themes/*.ts` hold canonical metadata (`ThemeMetadata`); use **`getThemeMetadata`**, **`isWindowsTheme`**, **`isMacTheme`**, **`isThemeWinXp`**, **`isThemeWin98`**, **`getOsPlatform`**, **`getOsMacChrome`**, or the **`useThemeFlags()`** hook instead of ad hoc `current === "xp"` chains in new code.
 5. **`OS_NATIVE_CHROME_SKIP_CLASS`** / **`OS_SHELL_TEXT_SCALE_CLASS`** (`src/lib/themeChrome.ts`) — use **`OS_NATIVE_CHROME_SKIP_CLASS`** on an ancestor so **macOS Aqua** global `:where(…)` typography chains skip your subtree (alongside legacy `*-force-font` classes). Use **`OS_SHELL_TEXT_SCALE_CLASS`** on shell wrappers outside `WindowFrame` so copy picks up `--os-typography-window`.
 
 ## CSS layers (order of precedence / mental model)
@@ -56,6 +56,6 @@ Use these for small, theme-scoped utilities instead of growing `cn(...)` theme b
 
 ## Migration notes
 
-- Prefer **`useThemeFlags()`** (`isWindowsTheme`, `isMacOSTheme`, `isAquaMenuChrome`, `macChrome`, `isMacAquaChrome`, …) over duplicating OR-of-theme-id checks in components.
+- Prefer **`useThemeFlags()`** (`isWindowsTheme`, `isWinXp`, `isWin98`, `isMacOSTheme`, `isAquaMenuChrome`, `macChrome`, `isMacAquaChrome`, …) over duplicating OR-of-theme-id checks in components.
 - **`isAquaMenuChrome`** means “Mac OS X Aqua menus” only; System 7 uses classic metrics shared with Windows for some menu padding patterns.
 - User-facing overview remains in [Theme System](./3.3-theme-system.md); this file is for implementers.

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/menubar";
 import { Filter } from "./PaintFiltersMenu";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
@@ -642,13 +642,11 @@ export function PaintMenuBar({
 }: PaintMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
   const appId = "paint";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
 
   if (!isWindowOpen) return null;
 

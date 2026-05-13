@@ -11,7 +11,7 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { MenuBar } from "@/components/layout/MenuBar";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import React from "react";
@@ -60,9 +60,8 @@ export function AppletViewerMenuBar({
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "applet-viewer";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
   const launchApp = useLaunchApp();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const bringInstanceToForeground = useAppStore(

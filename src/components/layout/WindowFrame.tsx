@@ -178,7 +178,9 @@ export function WindowFrame({
   // Use shared window insets hook for theme-dependent constraints
   const {
     isXpTheme,
-    currentTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isWinXp,
   } = useWindowInsets();
 
   
@@ -189,7 +191,7 @@ export function WindowFrame({
   
   // Treat all macOS windows as using a transparent outer background so titlebar/content can be styled separately
   const effectiveTransparentBackground =
-    currentTheme === "macosx" ? true : isTransparent;
+    isMacOSTheme ? true : isTransparent;
   
   // Hover state for notitlebar material (shows titlebar on hover/interaction)
   // If auto-hide is disabled, keep titlebar always visible
@@ -232,7 +234,7 @@ export function WindowFrame({
   // - XP/Win98: below titlebar controls (avoid occluding close button)
   // - Others: default above content
   const resizerZIndexClass =
-    currentTheme === "macosx" ? "z-[60]" : isXpTheme ? "z-40" : "z-50";
+    isMacOSTheme ? "z-[60]" : isXpTheme ? "z-40" : "z-50";
 
   // Setup swipe navigation for phones only
   const {
@@ -1040,7 +1042,7 @@ export function WindowFrame({
           border: "3px solid rgba(255, 255, 255, 0.8)",
           backgroundColor: "rgba(255, 255, 255, 0.1)",
           boxShadow: "0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.1)",
-          borderRadius: currentTheme === "macosx" ? 12 : 4,
+          borderRadius: isMacOSTheme ? 12 : 4,
         }}
       />
     </motion.div>,
@@ -1158,7 +1160,7 @@ export function WindowFrame({
                 : isMobile
                 ? isXpTheme
                   ? "top-0 h-4" // Start from top but be shorter for XP/98 themes
-                  : currentTheme === "macosx"
+                  : isMacOSTheme
                   ? "top-1 h-2" // Extend above window for macOS to avoid traffic lights
                   : "top-0 h-8"
                 : "top-1 h-2"
@@ -1285,15 +1287,15 @@ export function WindowFrame({
           className={cn(
             isXpTheme
               ? "window flex flex-col h-full" // Use xp.css window class with flex layout
-              : isNoTitlebar && currentTheme === "macosx"
+              : isNoTitlebar && isMacOSTheme
               ? "window w-full h-full flex flex-col rounded-os overflow-hidden relative" // No border for notitlebar
               : "window w-full h-full flex flex-col border-[length:var(--os-metrics-border-width)] border-os-window rounded-os overflow-hidden relative",
             !effectiveTransparentBackground && !isXpTheme && "bg-os-window-bg",
-            !isXpTheme && (currentTheme !== "system7" || isForeground)
+            !isXpTheme && (!isSystem7Theme || isForeground)
               ? "shadow-os-window"
               : "",
             isForeground ? "is-foreground" : "",
-            isBrushedMetal && currentTheme === "macosx" && "window-material-brushedmetal"
+            isBrushedMetal && isMacOSTheme && "window-material-brushedmetal"
           )}
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
@@ -1392,7 +1394,7 @@ export function WindowFrame({
                 !isForeground && "inactive" // Add inactive class when not in foreground
               )}
               style={{
-                ...(currentTheme === "xp" ? { minHeight: "30px" } : undefined),
+                ...(isWinXp ? { minHeight: "30px" } : undefined),
                 ...(!isForeground
                   ? {
                       background: "var(--os-color-titlebar-inactive-bg)",
@@ -1519,7 +1521,7 @@ export function WindowFrame({
                 />
               </div>
             </div>
-          ) : currentTheme === "macosx" ? (
+          ) : isMacOSTheme ? (
             // Mac OS X theme title bar with traffic light buttons
             <div
               className={cn(
@@ -1747,12 +1749,12 @@ export function WindowFrame({
           <div
             className={cn(
               "window-body flex flex-1 min-h-0 flex-col md:flex-row relative",
-              isBrushedMetal && currentTheme === "macosx" && "ml-[8px] mr-[8px] mb-[8px] rounded-none overflow-hidden"
+              isBrushedMetal && isMacOSTheme && "ml-[8px] mr-[8px] mb-[8px] rounded-none overflow-hidden"
             )}
             style={
               isXpTheme
-                ? { margin: currentTheme === "xp" ? "0px 3px" : "0" }
-                : currentTheme === "macosx"
+                ? { margin: isWinXp ? "0px 3px" : "0" }
+                : isMacOSTheme
                 ? isTransparent
                   ? undefined
                   : isBrushedMetal

@@ -9,7 +9,7 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 import type { Channel } from "@/apps/tv/data/channels";
 
@@ -71,9 +71,8 @@ export function TvMenuBar({
   onToggleDrawer,
 }: TvMenuBarProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacOsxTheme } =
+    useThemeFlags();
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

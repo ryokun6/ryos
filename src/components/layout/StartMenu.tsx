@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +24,7 @@ export function StartMenu({ apps }: StartMenuProps) {
   const launchApp = useLaunchApp();
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const [aboutFinderOpen, setAboutFinderOpen] = useState(false);
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWinXp, isWin98, isWindowsTheme } = useThemeFlags();
 
   const handleAppClick = (appId: string) => {
     launchApp(appId as AppId);
@@ -38,25 +38,25 @@ export function StartMenu({ apps }: StartMenuProps) {
           <button
             className="flex items-center gap-1 px-2 text-white font-bold transition-all"
             style={{
-              width: currentTheme === "xp" ? "auto" : "auto",
-              minWidth: currentTheme === "xp" ? "100px" : "auto",
-              height: currentTheme === "xp" ? "100%" : "85%",
-              marginTop: currentTheme === "win98" ? "2px" : "0px",
-              marginLeft: currentTheme === "win98" ? "4px" : "0px",
-              borderRadius: currentTheme === "xp" ? "0 12px 12px 0" : "0",
+              width: isWinXp ? "auto" : "auto",
+              minWidth: isWinXp ? "100px" : "auto",
+              height: isWinXp ? "100%" : "85%",
+              marginTop: isWin98 ? "2px" : "0px",
+              marginLeft: isWin98 ? "4px" : "0px",
+              borderRadius: isWinXp ? "0 12px 12px 0" : "0",
               background:
-                currentTheme === "xp"
+                isWinXp
                   ? isStartMenuOpen
                     ? "linear-gradient(0deg, #2f892f 0%, #4eb64e 6%, #4eb64e 51%, #4eb64e 63%, #4eb64e 77%, #c4ffc4 85%, #c4ffc4 93%, #2f892f 97%)"
                     : "linear-gradient(0deg, #0c450c 0%, #308f2f 6%, #308f2f 51%, #308f2f 63%, #308f2f 77%, #97c597 85%, #97c597 93%, #308f2f 97%)"
                   : "#c0c0c0", // Flat gray for Windows 98
-              border: currentTheme === "xp" ? "none" : "none", // Windows 98 uses box-shadow instead of border
-              color: currentTheme === "xp" ? "#ffffff" : "#000000",
-              fontWeight: currentTheme === "xp" ? "500" : "bold",
-              fontSize: currentTheme === "xp" ? "1.1rem" : "11px",
-              fontStyle: currentTheme === "xp" ? "italic" : "normal",
+              border: isWinXp ? "none" : "none", // Windows 98 uses box-shadow instead of border
+              color: isWinXp ? "#ffffff" : "#000000",
+              fontWeight: isWinXp ? "500" : "bold",
+              fontSize: isWinXp ? "1.1rem" : "11px",
+              fontStyle: isWinXp ? "italic" : "normal",
               boxShadow:
-                currentTheme === "xp"
+                isWinXp
                   ? "-2px -2px 10px #0000008e inset"
                   : isStartMenuOpen
                   ? "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey" // Windows 98 pressed
@@ -66,14 +66,14 @@ export function StartMenu({ apps }: StartMenuProps) {
               justifyContent: "center",
             }}
             onMouseEnter={(e) => {
-              if (currentTheme === "win98" && !isStartMenuOpen) {
+              if (isWin98 && !isStartMenuOpen) {
                 // Windows 98 hover - keep raised style, don't depress
                 e.currentTarget.style.boxShadow =
                   "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
               }
             }}
             onMouseLeave={(e) => {
-              if (currentTheme === "win98" && !isStartMenuOpen) {
+              if (isWin98 && !isStartMenuOpen) {
                 // Windows 98 return to normal raised state
                 e.currentTarget.style.boxShadow =
                   "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
@@ -84,27 +84,27 @@ export function StartMenu({ apps }: StartMenuProps) {
               name="apple.png"
               alt="Start"
               className={`[image-rendering:pixelated] ${
-                currentTheme === "xp" ? "w-5 h-4" : "w-5 h-5"
+                isWinXp ? "w-5 h-4" : "w-5 h-5"
               }`}
               style={{
                 filter:
-                  currentTheme === "xp"
+                  isWinXp
                     ? "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.705))"
                     : "none",
               }}
             />
             <span
               className={`tracking-wider whitespace-nowrap ${
-                currentTheme === "xp" ? "pr-2" : ""
+                isWinXp ? "pr-2" : ""
               }`}
               style={{
                 textShadow:
-                  currentTheme === "xp"
+                  isWinXp
                     ? "2px 2px 2px rgba(0, 0, 0, 0.685)"
                     : "none",
               }}
             >
-              {currentTheme === "xp" ? t("common.startMenu.start").toLowerCase() : t("common.startMenu.start")}
+              {isWinXp ? t("common.startMenu.start").toLowerCase() : t("common.startMenu.start")}
             </span>
           </button>
         </DropdownMenuTrigger>
@@ -118,26 +118,26 @@ export function StartMenu({ apps }: StartMenuProps) {
             width: "280px",
             maxHeight: "80vh",
             background:
-              currentTheme === "xp" || currentTheme === "win98"
+              isWindowsTheme
                 ? "#ece9d8"
                 : "#c0c0c0",
             border:
-              currentTheme === "xp"
+              isWinXp
                 ? "3px solid #0855dd"
-                : currentTheme === "win98"
+                : isWin98
                 ? "2px outset #c0c0c0"
                 : "2px outset #c0c0c0",
-            borderRadius: currentTheme === "xp" ? "5px 5px 0 0" : "0",
+            borderRadius: isWinXp ? "5px 5px 0 0" : "0",
           }}
         >
           <div className="flex h-full">
             {/* Left Panel with rotated text */}
-            {(currentTheme === "xp" || currentTheme === "win98") && (
+            {(isWindowsTheme) && (
               <div
                 className="relative w-[32px] overflow-hidden"
                 style={{
                   background:
-                    currentTheme === "xp"
+                    isWinXp
                       ? "linear-gradient(to bottom, #3a6fd8, #2559ce)"
                       : "linear-gradient(to bottom, #1e4096, #143366)",
                   borderRight: "1px solid #1f4788",
@@ -158,7 +158,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                 >
                   ryOS{" "}
                   <span style={{ fontWeight: "100" }}>
-                    {currentTheme === "xp" ? t("common.startMenu.ryosProfessional") : t("common.startMenu.ryos98")}
+                    {isWinXp ? t("common.startMenu.ryosProfessional") : t("common.startMenu.ryos98")}
                   </span>
                 </div>
               </div>
@@ -169,7 +169,7 @@ export function StartMenu({ apps }: StartMenuProps) {
               className="flex-1 flex flex-col"
               style={{
                 background:
-                  currentTheme === "xp" || currentTheme === "win98"
+                  isWindowsTheme
                     ? "#ffffff"
                     : "#c0c0c0",
                 maxHeight: "80vh", // Responsive height to enable scrolling
