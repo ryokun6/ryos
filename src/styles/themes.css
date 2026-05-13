@@ -1081,12 +1081,18 @@
   line-height: 1 !important;
 }
 
-/* Chat meta (username/timestamp) override BEFORE generic Control Panels override anchor */
+/* Chat meta (username/timestamp) override BEFORE generic Control Panels override anchor.
+ * font-family override replaces the removed `:root[data-os-theme="macosx"] *` wildcard
+ * so the meta row uses Lucida Grande instead of the inline `font-['Geneva-9']` class
+ * (which would otherwise render the username + timestamp as pixelated bitmap text). */
 :root[data-os-theme="macosx"] .chat-messages-meta {
+  font-family: var(--os-font-ui) !important;
   font-size: 11px !important;
   line-height: 1.1 !important;
   padding-bottom: 0.5rem !important;
   padding-top: 0.5rem !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
 }
 
 /* Control Panels sub text override - higher specificity */
