@@ -15,8 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AI_MODELS } from "@/types/aiModels";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
 import { preprocessImage } from "@/utils/imagePreprocessing";
@@ -152,9 +151,8 @@ export const ChatInput = memo(function ChatInput({
   const debugMode = useDisplaySettingsStoreShallow((s) => s.debugMode);
   // AI model from app store
   const aiModel = useAppStoreShallow((s) => s.aiModel);
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacTheme = currentTheme === "macosx";
-  const isXpTheme = isWindowsTheme(currentTheme);
+  const { isMacOSTheme: isMacTheme, isWindowsTheme: isXpTheme } =
+    useThemeFlags();
 
   // Get the model display name for debug information
   const modelDisplayName = aiModel ? AI_MODELS[aiModel]?.name : null;

@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   useListenSessionStore,
   type ListenSessionSummary,
@@ -60,11 +60,9 @@ export function JoinSessionDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+    useThemeFlags();
   const fetchSessions = useListenSessionStore((state) => state.fetchSessions);
-
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
 
   const loadSessions = useCallback(async () => {
     setIsLoading(true);

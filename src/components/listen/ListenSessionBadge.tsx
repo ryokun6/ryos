@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface ListenSessionBadgeProps {
   listenerCount: number;
@@ -23,8 +23,7 @@ export function ListenSessionBadge({
   className,
 }: ListenSessionBadgeProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const buttonClassName = cn(
     "h-6 px-2 text-[11px]",

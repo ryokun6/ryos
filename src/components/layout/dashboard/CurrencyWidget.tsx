@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type CurrencyWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
 import { ArrowsDownUp, ArrowsLeftRight } from "@phosphor-icons/react";
@@ -12,6 +11,7 @@ import {
   parseAmountInput,
   positionAfterNthDigit,
 } from "@/lib/currency/frankfurter";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 const MAIN_CURRENCIES = [
   "USD",
@@ -57,8 +57,7 @@ interface CurrencyWidgetProps {
 
 export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
   const { t, i18n } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) =>
     widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined
@@ -587,8 +586,7 @@ export function CurrencyBackPanel({
   onDone?: () => void;
 }) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const config = widget?.config as CurrencyWidgetConfig | undefined;

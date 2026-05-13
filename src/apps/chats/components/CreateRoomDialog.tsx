@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { X, Trash, Plus, ArrowClockwise } from "@phosphor-icons/react";
 import { type User } from "@/types/chat";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -114,8 +114,7 @@ export function CreateRoomDialog({
   const initialUsersKey = initialUsers.join("\0");
 
   // Theme detection
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
 
   // Reset form when the dialog opens or when the prefilled user list actually changes.
   useEffect(() => {
@@ -1107,7 +1106,7 @@ export function CreateRoomDialog({
             </DialogHeader>
             <div className="window-body min-w-0">{dialogContent}</div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacOSTheme ? (
           <>
             <DialogHeader>
               {t("apps.chats.dialogs.newChatTitle")}

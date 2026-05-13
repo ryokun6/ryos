@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useAppStore } from "@/stores/useAppStore";
@@ -14,6 +13,7 @@ import {
   Repeat,
   RepeatOnce,
 } from "@phosphor-icons/react";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 
 interface IpodWidgetProps {
@@ -177,8 +177,7 @@ function ClickWheel({
 
 export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const controlMode = (widget?.config as IpodWidgetConfig | undefined)?.controlMode ?? "ipod";
@@ -520,8 +519,7 @@ export function IpodBackPanel({
   onDone?: () => void;
 }) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
   const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));

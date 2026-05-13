@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect, type ReactNode } from "react";
 import { X, Info } from "@phosphor-icons/react";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface WidgetChromeProps {
   children: ReactNode | ((isFlipped: boolean) => ReactNode);
@@ -44,8 +44,7 @@ export function WidgetChrome({
 }: WidgetChromeProps) {
   const isStacked = layout === "stacked";
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
   const [isHovered, setIsHovered] = useState(false);
   const [isTouchActive, setIsTouchActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);

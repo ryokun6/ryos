@@ -6,8 +6,7 @@ import { type ChatRoom } from "@/types/chat";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   Tooltip,
   TooltipContent,
@@ -47,8 +46,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
   const unreadCounts = useChatsStore((state) => state.unreadCounts);
 
   // Theme detection for border styling
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = isWindowsTheme(currentTheme);
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
 
   // Section headings are non-interactive; show all lists by default
 
@@ -167,14 +165,14 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
           ? `w-full border-b ${
               isXpTheme
                 ? "border-[#919b9c]"
-                : currentTheme === "macosx"
+                : isMacOSTheme
                 ? "border-black/10"
                 : "border-black"
             }`
           : `w-56 border-r h-full overflow-hidden ${
               isXpTheme
                 ? "border-[#919b9c]"
-                : currentTheme === "macosx"
+                : isMacOSTheme
                 ? "border-black/10"
                 : "border-black"
             }`

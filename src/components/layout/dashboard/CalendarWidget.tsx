@@ -1,9 +1,9 @@
 import { useMemo, useCallback } from "react";
 import { useCalendarStore, type CalendarEvent, type EventColor } from "@/stores/useCalendarStore";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { requestAppLaunch } from "@/utils/appEventBus";
 import { useTranslation } from "react-i18next";
 import { useDashboardStore, type CalendarWidgetConfig } from "@/stores/useDashboardStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 function getLocalizedDayHeaders(locale: string): string[] {
   const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
@@ -34,8 +34,7 @@ interface CalendarWidgetProps {
 export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   const { i18n } = useTranslation();
   const locale = i18n.language || "en";
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const calConfig = widget?.config as CalendarWidgetConfig | undefined;
@@ -273,8 +272,7 @@ const ALL_COLORS: { id: EventColor; hex: string }[] = [
 
 export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const calConfig = widget?.config as CalendarWidgetConfig | undefined;

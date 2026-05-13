@@ -2,8 +2,7 @@ import React from "react";
 import { CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { SelectableListItem } from "@/components/ui/selectable-list-item";
 import { useTranslation } from "react-i18next";
 import type { AdminSection } from "../utils/navigationState";
@@ -46,8 +45,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isWindowsLegacyTheme = isWindowsTheme(currentTheme);
+  const { isWindowsTheme: isWindowsLegacyTheme, isMacOSTheme } =
+    useThemeFlags();
 
   const publicRooms = rooms.filter((r) => r.type !== "private");
 
@@ -61,7 +60,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         "flex flex-col font-geneva-12 text-[12px] bg-neutral-100 w-56 border-r h-full overflow-hidden",
         isWindowsLegacyTheme
           ? "border-[#919b9c]"
-          : currentTheme === "macosx"
+          : isMacOSTheme
           ? "border-black/10"
           : "border-black"
       )}
