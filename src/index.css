@@ -1905,7 +1905,7 @@ ruby.lyrics-furigana {
   overflow: visible;
 }
 
-/* Use !important to override macOS theme's blanket font-size rules */
+/* Use !important to override theme window-body typography sizing where applied */
 /* Inherit opacity and text-shadow from parent lyrics for consistency */
 rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] rt.lyrics-furigana-rt,

@@ -260,6 +260,15 @@
     rgba(255, 255, 255, 0.55) 1.5px,
     rgba(255, 255, 255, 0.55) 4px
   );
+  /* Typography scale (.window-body is applied to WindowFrame content for all themes) */
+  --os-typography-root: 12px;
+  --os-typography-window: 13px;
+  --os-typography-menubar: 14px;
+  --os-typography-titlebar: 13px;
+  --os-typography-label: 11px;
+  --os-typography-input: 12px;
+  --os-typography-button: 13px;
+  --os-typography-native-select: 14px;
 }
 
 /* Shared toolbar texture utility. Uses variables defined by the active theme. */
@@ -892,16 +901,15 @@
   color: black;
 }
 
-/* macOS Theme Font Overrides */
+/* macOS theme typography: scale lives in `:root[data-os-theme="macosx"]` tokens above.
+ * Window chrome inherits from `.window-body` on the WindowFrame content shell (see WindowFrame.tsx)
+ * instead of brittle global `div`/`p` overrides. Force-font wrappers reset nested sizing as needed.
+ */
 :root[data-os-theme="macosx"] body {
   font-family: var(--os-font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   font-smooth: auto !important;
-  font-size: 12px !important;
-}
-
-:root[data-os-theme="macosx"] * {
-  font-family: inherit;
+  font-size: var(--os-typography-root) !important;
 }
 
 /* Ensure all UI elements in macOS theme use proper antialiasing */
@@ -928,7 +936,7 @@
 
 /* macOS specific font sizes and gloss effect */
 :root[data-os-theme="macosx"] .menubar {
-  font-size: 14px !important;
+  font-size: var(--os-typography-menubar) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   font-weight: 500 !important;
   position: relative;
@@ -965,12 +973,12 @@
 
 
 :root[data-os-theme="macosx"] .title-bar {
-  font-size: 13px !important;
+  font-size: var(--os-typography-titlebar) !important;
   font-weight: 500 !important;
 }
 
 :root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
-  font-size: 13px !important;
+  font-size: var(--os-typography-button) !important;
   font-weight: normal !important;
 }
 
@@ -982,20 +990,15 @@
 :root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
 :root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
 :root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)) {
-  font-size: 12px !important;
+  font-size: var(--os-typography-input) !important;
 }
 
 :root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
-  font-size: 11px !important;
+  font-size: var(--os-typography-label) !important;
 }
 
 :root[data-os-theme="macosx"] .window-body {
-  font-size: 12px !important;
-}
-
-:root[data-os-theme="macosx"] p:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)),
-:root[data-os-theme="macosx"] div:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
-  font-size: 13px !important;
+  font-size: var(--os-typography-window) !important;
 }
 
 /* Allow Terminal to use its own font size in macOS theme */
@@ -1206,10 +1209,8 @@
 
 /* macOS select styling - similar to aqua buttons */
 :root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)) {
-  font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
-  font-size: 14px !important;
+  font-family: var(--os-font-ui) !important;
+  font-size: var(--os-typography-native-select) !important;
   line-height: 1;
   height: 22px;
   padding: 2px 24px 2px 8px;
@@ -1458,8 +1459,9 @@
   --os-color-selection-glow: rgba(0, 0, 0, 0.22);
 }
 
-/* ── Spotlight Search panel: pinstripe background + prevent font-size overrides ── */
+/* Spotlight sits outside `.window-body`; set rhythm here + targeted row sizes */
 :root[data-os-theme="macosx"] .spotlight-panel {
+  font-size: var(--os-typography-window) !important;
   background: var(--os-pinstripe-window) !important;
   background-attachment: fixed !important;
 }
@@ -1467,30 +1469,21 @@
 :root[data-os-theme="macosx"] .spotlight-panel tbody {
   background: transparent !important;
 }
-/* The macOS theme sets font-size !important on div, p, button, input, label.
-   We counter with inherit !important so inline styles on each element win. */
-:root[data-os-theme="macosx"] .spotlight-panel,
-:root[data-os-theme="macosx"] .spotlight-panel div,
-:root[data-os-theme="macosx"] .spotlight-panel p,
-:root[data-os-theme="macosx"] .spotlight-panel span,
-:root[data-os-theme="macosx"] .spotlight-panel button,
-:root[data-os-theme="macosx"] .spotlight-panel label {
-  font-size: inherit !important;
-}
+/* Targeted Spotlight row typography (panel is outside WindowFrame `.window-body`) */
 :root[data-os-theme="macosx"] .spotlight-panel input.spotlight-input {
-  font-size: 12px !important;
+  font-size: var(--os-typography-input) !important;
 }
 :root[data-os-theme="macosx"] .spotlight-panel .spotlight-title {
-  font-size: 12px !important;
+  font-size: var(--os-typography-input) !important;
 }
 :root[data-os-theme="macosx"] .spotlight-panel .spotlight-section-header {
-  font-size: 11px !important;
+  font-size: var(--os-typography-label) !important;
 }
 :root[data-os-theme="macosx"] .spotlight-panel .spotlight-row {
-  font-size: 13px !important;
+  font-size: var(--os-typography-window) !important;
 }
 :root[data-os-theme="macosx"] .spotlight-panel .spotlight-no-results {
-  font-size: 13px !important;
+  font-size: var(--os-typography-window) !important;
 }
 
 /* System 7 Spotlight: use normal antialiased rendering (not pixelated) */
@@ -1655,7 +1648,7 @@
 
 :root[data-os-theme="macosx"] .ipod-force-font * {
   font-family: inherit !important;
-  font-size: unset !important; /* Reset macOS overrides */
+  font-size: unset !important; /* Reset window-body / component typography inside iPod chrome */
 }
 
 /* Preserve small rt font size in toolbar buttons */
@@ -1677,7 +1670,7 @@
 
 :root[data-os-theme="macosx"] .karaoke-force-font * {
   font-family: inherit !important;
-  font-size: unset !important; /* Reset macOS overrides */
+  font-size: unset !important; /* Reset window-body / component typography inside karaoke chrome */
 }
 
 /* Reset div and p font sizes within Karaoke */
@@ -1686,7 +1679,7 @@
   font-size: unset !important;
 }
 
-/* TV app (MTV) closed captions: beat macOSX Lucida/global 13px div rule */
+/* TV app closed captions — reset nested sizing so CC chrome controls its rhythm */
 :root[data-os-theme="macosx"] .tv-cc-force-font {
   font-family: inherit !important;
   font-size: 16px !important;

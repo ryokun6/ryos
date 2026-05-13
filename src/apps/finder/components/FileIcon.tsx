@@ -222,7 +222,7 @@ export function FileIcon({
         <span
           className={`relative ${sizes.icon} flex items-center justify-center leading-none`}
           style={{
-            // Explicit font size avoids macOS theme global div/p font overrides
+            // Explicit sizing — emoji glyphs don't follow normal text metrics
             fontSize: size === "large" ? 48 : 32,
             lineHeight: 1,
             display: "flex",
