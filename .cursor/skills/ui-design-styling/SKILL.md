@@ -16,7 +16,7 @@ description: Design and style UI components for ryOS following the 4 OS themes (
 
 ## Essential Utilities
 
-Root attributes: `data-os-theme` (exact id) and **`data-os-platform`** (`mac` | `windows`) — prefer Tailwind `os-mac:` / `os-windows:` / `os-theme-*:` variants (see `docs/theme-architecture.md`).
+Root attributes: `data-os-theme` (exact id), **`data-os-platform`** (`mac` | `windows`), and **`data-os-mac-chrome`** (`aqua` | `system7`, Mac only). Prefer Tailwind `os-mac:` / `os-windows:` / `os-mac-aqua:` / `os-mac-system7:` / `os-theme-*:` variants (see `docs/theme-architecture.md`). For Aqua global typography opt-out, use **`OS_NATIVE_CHROME_SKIP_CLASS`** from `@/lib/themeChrome`.
 
 ```tsx
 import { cn } from "@/lib/utils";

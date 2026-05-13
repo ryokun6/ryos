@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { getOsPlatform, getThemeMetadata } from "@/themes";
-import type { OsPlatform } from "@/themes/types";
+import { getOsMacChrome, getOsPlatform, getThemeMetadata } from "@/themes";
+import type { OsMacChrome, OsPlatform } from "@/themes/types";
 
 export function useThemeFlags() {
   const currentTheme = useThemeStore((state) => state.current);
   const metadata = useMemo(() => getThemeMetadata(currentTheme), [currentTheme]);
   const osPlatform: OsPlatform = getOsPlatform(currentTheme);
+  const macChrome: OsMacChrome | null = getOsMacChrome(currentTheme);
 
   const isWindowsTheme = metadata.isWindows;
   const isMacTheme = metadata.isMac;
@@ -20,6 +21,8 @@ export function useThemeFlags() {
   return {
     currentTheme,
     osPlatform,
+    macChrome,
+    isMacAquaChrome: macChrome === "aqua",
     metadata,
     isWindowsTheme,
     isMacTheme,

@@ -3,6 +3,9 @@ export type OsThemeId = "system7" | "macosx" | "xp" | "win98";
 /** OS family for shared chrome rules (`data-os-platform` on `<html>`). */
 export type OsPlatform = "mac" | "windows";
 
+/** Mac subset for Aqua vs System 7 (`data-os-mac-chrome` on `<html>`); unset on Windows themes. */
+export type OsMacChrome = "aqua" | "system7";
+
 /**
  * Theme metadata for conditional rendering and layout decisions.
  * Centralizes theme-based checks that were previously scattered throughout the codebase.

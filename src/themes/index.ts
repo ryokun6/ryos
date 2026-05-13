@@ -2,7 +2,7 @@ import { system7 } from "./system7";
 import { macosx } from "./macosx";
 import { xp } from "./xp";
 import { win98 } from "./win98";
-import { OsPlatform, OsTheme, OsThemeId, ThemeMetadata } from "./types";
+import { OsMacChrome, OsPlatform, OsTheme, OsThemeId, ThemeMetadata } from "./types";
 
 export const themes: Record<OsThemeId, OsTheme> = {
   system7,
@@ -32,6 +32,15 @@ export function getOsPlatform(id: OsThemeId): OsPlatform {
 }
 
 /**
+ * Mac chrome variant for `data-os-mac-chrome` (null when not a Mac theme).
+ */
+export function getOsMacChrome(id: OsThemeId): OsMacChrome | null {
+  if (id === "macosx") return "aqua";
+  if (id === "system7") return "system7";
+  return null;
+}
+
+/**
  * Check if a theme is Windows-style (XP, 98).
  * Replaces scattered `currentTheme === "xp" || currentTheme === "win98"` checks.
  */
@@ -47,6 +56,7 @@ export function isMacTheme(id: OsThemeId): boolean {
 }
 
 export type {
+  OsMacChrome,
   OsPlatform,
   OsTheme,
   OsThemeId,

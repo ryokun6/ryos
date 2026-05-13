@@ -2,7 +2,7 @@ import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, CaretDown, CaretUp } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { isWindowsTheme } from "@/themes";
 
 import { cn } from "@/lib/utils";
@@ -37,9 +37,7 @@ const SelectTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const currentTheme = useThemeStore((state) => state.current);
-
-  const isMacOSTheme = currentTheme === "macosx";
+  const { currentTheme, isMacOSTheme } = useThemeFlags();
   const isXpTheme = isWindowsTheme(currentTheme);
 
   return (
@@ -53,10 +51,8 @@ const SelectTrigger = React.forwardRef<
         className
       )}
       style={{
-        fontFamily: isXpTheme
-          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-          : undefined,
-        fontSize: isXpTheme ? "11px" : undefined,
+        fontFamily: isXpTheme ? "var(--os-font-ui)" : undefined,
+        fontSize: isXpTheme ? "var(--os-menu-item-font-size)" : undefined,
         ...(isXpTheme && { color: "black" }),
       }}
       onClick={() => playClick()}
@@ -112,8 +108,7 @@ const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
 >(({ className, children, position = "popper", ...props }, ref) => {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSTheme = currentTheme === "macosx";
+  const { isMacOSTheme } = useThemeFlags();
 
   return (
     <SelectPrimitive.Portal>

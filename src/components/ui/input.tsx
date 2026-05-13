@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { isWindowsTheme } from "@/themes";
 
 import { cn } from "@/lib/utils";
@@ -10,9 +10,7 @@ interface InputProps extends React.ComponentProps<"input"> {
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, unstyled = false, type, style, ...props }, ref) => {
-    const currentTheme = useThemeStore((state) => state.current);
-    const isMacOSTheme = currentTheme === "macosx";
-    const isSystem7Theme = currentTheme === "system7";
+    const { currentTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
     const isWinTheme = isWindowsTheme(currentTheme);
 
     return (

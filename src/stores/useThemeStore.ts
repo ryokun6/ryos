@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getOsPlatform, themes } from "@/themes";
+import { getOsMacChrome, getOsPlatform, themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
 import { SETTINGS_ANALYTICS, track } from "@/utils/analytics";
 
@@ -64,6 +64,9 @@ function applyRootThemeAttributes(theme: OsThemeId) {
   const root = document.documentElement;
   root.dataset.osTheme = theme;
   root.dataset.osPlatform = getOsPlatform(theme);
+  const macChrome = getOsMacChrome(theme);
+  if (macChrome) root.dataset.osMacChrome = macChrome;
+  else delete root.dataset.osMacChrome;
 }
 
 const createThemeStore = () => create<ThemeState>((set) => ({

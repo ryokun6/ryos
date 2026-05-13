@@ -1,6 +1,6 @@
 import * as React from "react";
 import { MagnifyingGlass, XCircle } from "@phosphor-icons/react";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 
 interface SearchInputProps {
@@ -22,8 +22,7 @@ export function SearchInput({
   ariaLabel,
   onKeyDown,
 }: SearchInputProps) {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSTheme = currentTheme === "macosx";
+  const { isMacOSTheme } = useThemeFlags();
 
   return (
     <div

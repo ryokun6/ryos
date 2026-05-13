@@ -885,6 +885,8 @@
   color: black;
 }
 
+/* macOS Aqua: immersive apps can opt a subtree out of global typography via .os-native-chrome-skip
+   (see src/lib/themeChrome.ts). Listed alongside legacy *-force-font exclusions in :where() chains below. */
 /* macOS Theme Font Overrides */
 :root[data-os-theme="macosx"] body {
   font-family: var(--os-font-ui) !important;
@@ -899,11 +901,11 @@
 
 /* Ensure all UI elements in macOS theme use proper antialiasing */
 /* :where() wraps ancestry exclusions to avoid specificity inflation */
-:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
-:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
-:root[data-os-theme="macosx"] button:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
-:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
-:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
+:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)),
+:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)),
+:root[data-os-theme="macosx"] button:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)),
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)),
+:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)),
 :root[data-os-theme="macosx"] .menubar,
 :root[data-os-theme="macosx"] .window,
 :root[data-os-theme="macosx"] .title-bar {
@@ -962,7 +964,7 @@
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
+:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
   font-size: 13px !important;
   font-weight: normal !important;
 }
@@ -972,13 +974,13 @@
   font-weight: bold !important;
 }
 
-:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
-:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)),
-:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)) {
+:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)),
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)),
+:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
+:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
   font-size: 11px !important;
 }
 
@@ -986,8 +988,8 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] p:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)),
-:root[data-os-theme="macosx"] div:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *)) {
+:root[data-os-theme="macosx"] p:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)),
+:root[data-os-theme="macosx"] div:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.os-sidebar *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.admin-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
   font-size: 13px !important;
 }
 
@@ -1198,7 +1200,7 @@
 }
 
 /* macOS select styling - similar to aqua buttons */
-:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *)) {
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *):not(.tv-cc-force-font *):not(.os-native-chrome-skip *)) {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;

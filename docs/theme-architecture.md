@@ -7,9 +7,11 @@ This document describes how ryOS applies the four OS themes today and how to ext
 1. **`useThemeStore`** persists `current` (`system7` | `macosx` | `xp` | `win98`) and calls **`applyRootThemeAttributes`** so `<html>` has:
    - `data-os-theme` — exact theme id (drives token blocks and Tailwind `os-theme-*` variants).
    - `data-os-platform` — `mac` or `windows` (drives shared Luna + Classic rules and Tailwind `os-mac` / `os-windows` variants).
+   - `data-os-mac-chrome` — `aqua` or `system7` when `data-os-platform="mac"`; attribute removed on Windows themes (see **`getOsMacChrome()`**).
 2. **`src/styles/themes.css`** defines CSS variables (`--os-*`) under `:root[data-os-theme="…"]`, plus structural rules (Aqua, brushed metal, innocuous third-party resets).
 3. **Legacy Windows** (`public/css/xp-custom.css`, `98-custom.css`) is loaded only for `xp` / `win98` by `ensureLegacyCss` in the theme store.
-4. **TypeScript** definitions in `src/themes/*.ts` hold canonical metadata (`ThemeMetadata`); use **`getThemeMetadata`**, **`isWindowsTheme`**, **`isMacTheme`**, **`getOsPlatform`**, or the **`useThemeFlags()`** hook instead of ad hoc `current === "xp"` chains in new code.
+4. **TypeScript** definitions in `src/themes/*.ts` hold canonical metadata (`ThemeMetadata`); use **`getThemeMetadata`**, **`isWindowsTheme`**, **`isMacTheme`**, **`getOsPlatform`**, **`getOsMacChrome`**, or the **`useThemeFlags()`** hook instead of ad hoc `current === "xp"` chains in new code.
+5. **`OS_NATIVE_CHROME_SKIP_CLASS`** (`src/lib/themeChrome.ts`) — add on an ancestor so **macOS Aqua** global `:where(…)` typography chains skip your subtree (alongside legacy `*-force-font` classes).
 
 ## CSS layers (order of precedence / mental model)
 
@@ -38,16 +40,18 @@ Defined in `themes.css` (defaults, `[data-os-platform="windows"]`, and `:root[da
 
 - `os-mac:` → `:root[data-os-platform="mac"] &`
 - `os-windows:` → `:root[data-os-platform="windows"] &`
+- `os-mac-aqua:` → `:root[data-os-mac-chrome="aqua"] &` (Mac OS X only)
+- `os-mac-system7:` → `:root[data-os-mac-chrome="system7"] &`
 - `os-theme-system7:`, `os-theme-macosx:`, `os-theme-xp:`, `os-theme-win98:` → exact theme
 
 Use these for small, theme-scoped utilities instead of growing `cn(...)` theme branches.
 
 ## HTML defaults
 
-`index.html` sets `data-os-theme` and `data-os-platform` on `<html>` so the first paint matches the store default before hydration.
+`index.html` sets `data-os-theme`, `data-os-platform`, and `data-os-mac-chrome` on `<html>` so the first paint matches the store default before hydration.
 
 ## Migration notes
 
-- Prefer **`useThemeFlags()`** (`isWindowsTheme`, `isMacOSTheme`, `isAquaMenuChrome`, …) over duplicating OR-of-theme-id checks in components.
+- Prefer **`useThemeFlags()`** (`isWindowsTheme`, `isMacOSTheme`, `isAquaMenuChrome`, `macChrome`, `isMacAquaChrome`, …) over duplicating OR-of-theme-id checks in components.
 - **`isAquaMenuChrome`** means “Mac OS X Aqua menus” only; System 7 uses classic metrics shared with Windows for some menu padding patterns.
 - User-facing overview remains in [Theme System](./3.3-theme-system.md); this file is for implementers.
