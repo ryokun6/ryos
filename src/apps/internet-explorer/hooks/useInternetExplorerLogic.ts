@@ -22,7 +22,7 @@ import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { IE_ANALYTICS, normalizeUrlForAnalytics, track } from "@/utils/analytics";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
@@ -430,7 +430,7 @@ export function useInternetExplorerLogic({
   const { playElevatorMusic, stopElevatorMusic, playDingSound } =
     useTerminalSounds();
 
-  const currentTheme = useThemeStore((state) => state.current);
+  const { currentTheme, isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const currentYear = new Date().getFullYear();
   const pastYears = [
@@ -1897,7 +1897,6 @@ export function useInternetExplorerLogic({
     setIsShareDialogOpen(true);
   }, []);
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isOffline = useOffline();
 
   return {

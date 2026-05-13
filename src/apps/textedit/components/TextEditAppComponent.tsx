@@ -17,12 +17,12 @@ import {
 } from "../utils/textEditUtils";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { markdownToHtml } from "@/utils/markdown";
 import { useTranslation } from "react-i18next";
 import { onDocumentUpdated } from "@/utils/appEventBus";
 import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { getTextAnalytics, TEXTEDIT_ANALYTICS, track } from "@/utils/analytics";
 
 // Inner component that has access to editor context
@@ -46,9 +46,8 @@ function TextEditContent({
     (state) => state.clearInstanceInitialData
   );
   const launchAppInstance = useAppStore((state) => state.launchApp);
-  const currentTheme = useThemeStore((state) => state.current);
+  const { isWindowsTheme: isXpTheme, currentTheme } = useThemeFlags();
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   // Local UI-only state for Save dialog filename
   const [saveFileName, setSaveFileName] = useState("");
   const [closeSaveFileName, setCloseSaveFileName] = useState("");

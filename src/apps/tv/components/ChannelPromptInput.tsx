@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useId } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { AnimatedEllipsis } from "@/apps/terminal/components/AnimatedEllipsis";
 
 interface ChannelPromptInputProps {
@@ -33,8 +33,7 @@ export function ChannelPromptInput({
   width,
   className,
 }: ChannelPromptInputProps) {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOSTheme = currentTheme === "macosx";
+  const { isMacOSTheme } = useThemeFlags();
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
 

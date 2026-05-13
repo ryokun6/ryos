@@ -3,8 +3,7 @@ import { useTranslation } from "react-i18next";
 import { helpItems } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { isWindowsTheme } from "@/themes";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { MINESWEEPER_ANALYTICS, track } from "@/utils/analytics";
 
 const BOARD_SIZE = 9;
@@ -314,9 +313,8 @@ export function useMinesweeperLogic() {
     });
   }, [initializeBoard]);
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = isWindowsTheme(currentTheme);
-  const isMacTheme = currentTheme === "macosx";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
+    useThemeFlags();
 
   return {
     t,

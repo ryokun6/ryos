@@ -22,7 +22,7 @@ import { useEventListener } from "@/hooks/useEventListener";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import TimeNavigationControls from "./TimeNavigationControls";
 import { useTranslation } from "react-i18next";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { abortableFetch } from "@/utils/abortableFetch";
 
 // Define type for preview content source
@@ -46,8 +46,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   currentSelectedYear, // Destructure the new prop
 }) => {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
   // Index of the year currently in focus (0 is the newest/frontmost)
   const [activeYearIndex, setActiveYearIndex] = useState<number>(0);
   const [scrollState, setScrollState] = useState({

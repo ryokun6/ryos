@@ -5,6 +5,7 @@ import {
   dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { STORES } from "@/utils/indexedDB";
 import { useTerminalStoreShallow } from "@/stores/helpers";
 import { useTerminalStore } from "@/stores/useTerminalStore";
@@ -21,7 +22,6 @@ import { generateHtmlFromJsonSync } from "@/utils/tiptapHtml";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { CommandHistory, CommandContext, ToolInvocationData } from "../types";
@@ -367,8 +367,7 @@ export const useTerminalLogic = ({
   } = useTerminalSounds();
 
   const username = useChatsStore((state) => state.username);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   // Load command history from store
   useEffect(() => {

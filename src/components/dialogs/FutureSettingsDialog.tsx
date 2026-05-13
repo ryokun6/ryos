@@ -5,6 +5,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/select";
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import {
   DEFAULT_TIMELINE,
@@ -33,9 +33,10 @@ const FutureSettingsDialog = ({
   onOpenChange,
 }: FutureSettingsDialogProps) => {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
   const [selectedYear, setSelectedYear] = useState<string>("2030");
   const saveButtonRef = useRef<HTMLButtonElement>(null);
 

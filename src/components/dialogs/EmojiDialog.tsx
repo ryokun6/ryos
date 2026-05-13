@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -233,8 +233,7 @@ export function EmojiDialog({
   onEmojiSelect,
 }: EmojiDialogProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
 
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4 pt-0" : "p-4 py-6"}>
@@ -283,7 +282,7 @@ export function EmojiDialog({
             <DialogHeader>{t("common.dialog.emoji.setEmoji")}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacOSTheme ? (
           <>
             <DialogHeader>{t("common.dialog.emoji.setEmoji")}</DialogHeader>
             {dialogContent}

@@ -8,7 +8,7 @@ import {
 } from "@/stores/useDisplaySettingsStore";
 import { useSound, Sounds } from "../../hooks/useSound";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
@@ -126,8 +126,7 @@ export default function HtmlPreview({
   const terminalSoundsEnabled = useAudioSettingsStore(
     (state) => state.terminalSoundsEnabled
   );
-  const currentTheme = useThemeStore((state) => state.current);
-  const isMacOsXTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacOsXTheme } = useThemeFlags();
 
   const sendAuthPayload = useCallback(
     (target: Window | null | undefined) => {

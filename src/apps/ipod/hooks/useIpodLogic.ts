@@ -46,7 +46,7 @@ import {
 } from "@/stores/helpers";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
@@ -3826,8 +3826,7 @@ export function useIpodLogic({
     }
   );
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   return {
     // Translation

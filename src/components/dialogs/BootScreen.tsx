@@ -4,7 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface BootScreenProps {
   isOpen: boolean;
@@ -24,11 +24,14 @@ export function BootScreen({
   const { play } = useSound(Sounds.BOOT, 0.5);
   const [progress, setProgress] = useState(0);
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
+  const {
+    currentTheme,
+    isWindowsTheme,
+    isMacOSTheme: isMacOSX,
+    isWinXp,
+    isWin98,
+  } = useThemeFlags();
   const localizedTitle = title ?? t("common.system.systemRestoring");
-  
-  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOSX = currentTheme === "macosx";
 
   const handleDone = () => {
     onBootComplete?.();
@@ -146,8 +149,8 @@ export function BootScreen({
             >
               <img
                 src={getSplashImage()}
-                alt={currentTheme === "xp" ? "Windows XP" : "Windows 98"}
-                className={currentTheme === "win98" ? "w-full h-full object-fill" : "max-w-full max-h-full object-contain"}
+                alt={isWinXp ? "Windows XP" : "Windows 98"}
+                className={isWin98 ? "w-full h-full object-fill" : "max-w-full max-h-full object-contain"}
                 style={{ display: "block" }}
               />
             </div>

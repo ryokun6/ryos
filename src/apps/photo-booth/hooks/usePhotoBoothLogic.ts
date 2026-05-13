@@ -6,13 +6,13 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { usePhotoBoothStore } from "@/stores/usePhotoBoothStore";
 import type { PhotoReference } from "@/stores/usePhotoBoothStore";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTimeout } from "@/hooks/useTimeout";
 import { helpItems } from "..";
 import { useShallow } from "zustand/react/shallow";
 import { PHOTO_BOOTH_ANALYTICS, track } from "@/utils/analytics";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface Effect {
   name: string;
@@ -191,9 +191,10 @@ export function usePhotoBoothLogic({
   const activeCameraIdRef = useRef<string | null>(null);
   const recentPhotoPreviewsRef = useRef<Map<string, string>>(new Map());
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
 
   const windowTitle = getTranslatedAppName("photo-booth");
 

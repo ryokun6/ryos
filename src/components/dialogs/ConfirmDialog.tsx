@@ -6,10 +6,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Button } from "@/components/ui/button";
 import { useRef, useEffect } from "react";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
@@ -32,9 +32,10 @@ export function ConfirmDialog({
   const { t } = useTranslation();
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const { play: playAlertSound } = useSound(Sounds.ALERT_SOSUMI);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
 
   // Play sound when dialog opens
   useEffect(() => {
@@ -127,7 +128,7 @@ export function ConfirmDialog({
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacTheme ? (
           <>
             <DialogHeader>{title}</DialogHeader>
             {dialogContent}

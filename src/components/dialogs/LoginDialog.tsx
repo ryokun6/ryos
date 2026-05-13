@@ -7,11 +7,11 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
@@ -68,8 +68,7 @@ export function LoginDialog({
   signUpError,
 }: LoginDialogProps) {
   const [activeTab, setActiveTab] = useState<"login" | "signup">(initialTab);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
   const { t } = useTranslation();
   const dialogTitle = t("common.auth.dialogTitle");
 
@@ -292,7 +291,7 @@ export function LoginDialog({
             <DialogHeader>{dialogTitle}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacOSTheme ? (
           <>
             <DialogHeader>{dialogTitle}</DialogHeader>
             {dialogContent}

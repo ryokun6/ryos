@@ -7,9 +7,9 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -49,9 +49,10 @@ export function InputDialog({
   showCancel = true,
 }: InputDialogProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const {
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
   const defaultSubmitLabel = submitLabel || t("common.dialog.save");
 
   const handleSubmit = () => {
@@ -217,7 +218,7 @@ export function InputDialog({
             <DialogHeader>{title}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacTheme ? (
           <>
             <DialogHeader>{title}</DialogHeader>
             {dialogContent}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { helpItems, AppletViewerInitialData } from "../index";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
@@ -54,9 +54,11 @@ export function useAppletViewerLogic({
   const [sharedCreatedBy, setSharedCreatedBy] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacTheme = currentTheme === "macosx";
+  const {
+    currentTheme,
+    isWindowsTheme: isXpTheme,
+    isMacOSTheme: isMacTheme,
+  } = useThemeFlags();
   const username = useChatsStore((state) => state.username);
   const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
   const { t } = useTranslation();

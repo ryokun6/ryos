@@ -18,6 +18,7 @@ import { AI_MODEL_METADATA } from "@/types/aiModels";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getApiUrl } from "@/utils/platform";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -282,7 +283,7 @@ export function useControlPanelsLogic({
   }));
 
   // Theme state
-  const currentTheme = useThemeStore((state) => state.current);
+  const { currentTheme } = useThemeFlags();
   const setTheme = useThemeStore((state) => state.setTheme);
 
   // Language state

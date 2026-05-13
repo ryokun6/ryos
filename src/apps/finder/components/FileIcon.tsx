@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { isTouchDevice } from "@/utils/device";
 import { useLongPress } from "@/hooks/useLongPress";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 
 interface FileIconProps {
@@ -39,10 +39,8 @@ export function FileIcon({
 }: FileIconProps) {
   const { t } = useTranslation();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp";
-  const isWin98Theme = currentTheme === "win98";
-  const isMacOSXTheme = currentTheme === "macosx";
+  const { isWinXp: isXpTheme, isWin98: isWin98Theme, isMacOSTheme: isMacOSXTheme } =
+    useThemeFlags();
   const isFinderContext = context === "finder";
   const [imgSrc, setImgSrc] = useState<string | undefined>(contentUrl);
   const [fallbackToIcon, setFallbackToIcon] = useState(false);

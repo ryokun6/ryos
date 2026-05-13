@@ -22,7 +22,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { motion, type Transition } from "framer-motion";
 import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useWindowFrameDrawerContext } from "@/components/shared/WindowFrameDrawerContext";
 import {
@@ -93,11 +93,12 @@ export function AppDrawer({
   className,
   ...dataAttrs
 }: AppDrawerProps) {
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacOSTheme = currentTheme === "macosx";
-  const isSystem7 = currentTheme === "system7";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isWin98 = currentTheme === "win98";
+  const {
+    isMacOSTheme,
+    isSystem7Theme: isSystem7,
+    isWindowsTheme: isXpTheme,
+    isWin98,
+  } = useThemeFlags();
   const useGeneva = isMacOSTheme || isSystem7;
 
   /** True on narrow viewports — mirrors TvVideoDrawer's compact detection. */

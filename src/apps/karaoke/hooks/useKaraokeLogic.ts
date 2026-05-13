@@ -11,7 +11,7 @@ import {
   useAudioSettingsStoreShallow,
   useAppStoreShallow,
 } from "@/stores/helpers";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import { useListenSync } from "@/hooks/useListenSync";
@@ -1569,8 +1569,7 @@ export function useKaraokeLogic({
     return onAppUpdate(handleUpdateApp);
   }, [processVideoId, bringInstanceToForeground, joinListenSession, username, instanceId]);
 
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme } = useThemeFlags();
 
   const getCurrentKaraokeTrack = useCallback(() => {
     return useKaraokeStore.getState().getCurrentTrack();

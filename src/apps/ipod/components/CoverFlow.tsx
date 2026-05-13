@@ -8,7 +8,7 @@ import {
 import type { Track } from "@/stores/useIpodStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { Play, Pause, VinylRecord } from "@phosphor-icons/react";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useEventListener } from "@/hooks/useEventListener";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -1144,8 +1144,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   // is playing).
   const [selectedTrackInAlbum, setSelectedTrackInAlbum] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentTheme = useThemeStore((s) => s.current);
-  const isMacTheme = currentTheme === "macosx";
+  const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const uiVariant = useIpodStore((s) => s.uiVariant);
   const isModernIpodCoverFlow = ipodMode && uiVariant === "modern";
 

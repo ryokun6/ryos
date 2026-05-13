@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
@@ -40,8 +40,7 @@ export function AboutDialog({
   appId,
 }: AboutDialogProps) {
   const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { isWindowsTheme: isXpTheme, isMacOSTheme } = useThemeFlags();
   const launchApp = useAppStore((state) => state.launchApp);
   
   // Use translated app name if appId is provided, otherwise fall back to metadata.name
@@ -137,7 +136,7 @@ export function AboutDialog({
               {dialogContent}
             </div>
           </>
-        ) : currentTheme === "macosx" ? (
+        ) : isMacOSTheme ? (
           <>
             <DialogHeader>{t("common.dialog.aboutApp", { appName: displayName })}</DialogHeader>
             {dialogContent}
