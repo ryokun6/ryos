@@ -11,7 +11,7 @@ This document describes how ryOS applies the four OS themes today and how to ext
 2. **`src/styles/themes.css`** defines CSS variables (`--os-*`) under `:root[data-os-theme="…"]`, plus structural rules (Aqua, brushed metal, innocuous third-party resets).
 3. **Legacy Windows** (`public/css/xp-custom.css`, `98-custom.css`) is loaded only for `xp` / `win98` by `ensureLegacyCss` in the theme store.
 4. **TypeScript** definitions in `src/themes/*.ts` hold canonical metadata (`ThemeMetadata`); use **`getThemeMetadata`**, **`isWindowsTheme`**, **`isMacTheme`**, **`getOsPlatform`**, **`getOsMacChrome`**, or the **`useThemeFlags()`** hook instead of ad hoc `current === "xp"` chains in new code.
-5. **`OS_NATIVE_CHROME_SKIP_CLASS`** (`src/lib/themeChrome.ts`) — add on an ancestor so **macOS Aqua** global `:where(…)` typography chains skip your subtree (alongside legacy `*-force-font` classes).
+5. **`OS_NATIVE_CHROME_SKIP_CLASS`** / **`OS_SHELL_TEXT_SCALE_CLASS`** (`src/lib/themeChrome.ts`) — use **`OS_NATIVE_CHROME_SKIP_CLASS`** on an ancestor so **macOS Aqua** global `:where(…)` typography chains skip your subtree (alongside legacy `*-force-font` classes). Use **`OS_SHELL_TEXT_SCALE_CLASS`** on shell wrappers outside `WindowFrame` so copy picks up `--os-typography-window`.
 
 ## CSS layers (order of precedence / mental model)
 
@@ -33,6 +33,10 @@ Radix menubar / dropdown items use:
 - `--os-menu-subtrigger-font-size` — `11px` on Windows, `12px` on `macosx`.
 
 Defined in `themes.css` (defaults, `[data-os-platform="windows"]`, and `:root[data-os-theme="macosx"]`).
+
+## macOS Aqua window vs. shell copy
+
+Typography tokens (`--os-typography-*`) live on the theme root. **`window-body`** (always on `WindowFrame` content) uses **`--os-typography-window`**. Surfaces **outside** frames—desktop shell, portaled dialog innards—should not rely on removed global `div`/`p` rules. Add class **`os-shell-text-scale`** on a shell wrapper so children inherit **`--os-typography-window`** (see `themes.css`).
 
 ## Tailwind variants
 

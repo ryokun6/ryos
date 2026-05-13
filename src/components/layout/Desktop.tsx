@@ -8,7 +8,7 @@ import { INDEXEDDB_PREFIX } from "@/stores/useDisplaySettingsStore";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { SortType } from "@/apps/finder/components/FinderMenuBar";
 import { useLongPress } from "@/hooks/useLongPress";
-import { useThemeStore } from "@/stores/useThemeStore";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { useShallow } from "zustand/react/shallow";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -19,6 +19,8 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName, getTranslatedFolderName } from "@/utils/i18n";
 import { useEventListener } from "@/hooks/useEventListener";
+import { cn } from "@/lib/utils";
+import { OS_SHELL_TEXT_SCALE_CLASS } from "@/lib/themeChrome";
 import {
   createSelectionRect,
   getIntersectingSelectionIds,
@@ -103,9 +105,8 @@ export function Desktop({
   const [contextMenuShortcutPath, setContextMenuShortcutPath] = useState<string | null>(null);
   const [isEmptyTrashDialogOpen, setIsEmptyTrashDialogOpen] = useState(false);
 
-  // Get current theme for layout adjustments
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const { currentTheme, isWindowsTheme: isXpTheme, isMacOSTheme, isSystem7Theme } =
+    useThemeFlags();
   
   // Check if running in Tauri
   const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;
@@ -162,7 +163,7 @@ export function Desktop({
             }
             if (b.aliasType === "app") {
               const bIndex = DEFAULT_SHORTCUT_ORDER.indexOf(b.aliasTarget as AppId);
-              if (currentTheme === "system7") {
+              if (isSystem7Theme) {
                 if (bIndex >= 0 && bIndex <= 3) return 1;
                 return -1;
               }
@@ -174,7 +175,7 @@ export function Desktop({
           if (b.aliasType === "file" && b.aliasTarget === "/Applications") {
             if (a.aliasType === "app") {
               const aIndex = DEFAULT_SHORTCUT_ORDER.indexOf(a.aliasTarget as AppId);
-              if (currentTheme === "system7") {
+              if (isSystem7Theme) {
                 if (aIndex >= 0 && aIndex <= 3) return -1;
                 return 1;
               }
@@ -187,7 +188,7 @@ export function Desktop({
           if (a.aliasType !== "app" && b.aliasType === "app") return 1;
           return a.name.localeCompare(b.name);
         }),
-    [desktopAndTrashItems, currentTheme]
+    [desktopAndTrashItems, currentTheme, isSystem7Theme]
   );
 
   // Get display name for desktop shortcuts (with translation)
@@ -592,7 +593,7 @@ export function Desktop({
 
   // macOS X: Only show iPod and Applet Store icons by default (with Macintosh HD shown above)
   const displayedApps =
-    currentTheme === "macosx"
+    isMacOSTheme
       ? sortedApps.filter(
           (app) => app.id === "ipod" || app.id === "applet-viewer"
         )
@@ -623,7 +624,7 @@ export function Desktop({
       );
     }
 
-    if (currentTheme !== "macosx") {
+    if (!isMacOSTheme) {
       items.push({
         id: getDesktopAppItemId("trash"),
         kind: "app",
@@ -631,7 +632,7 @@ export function Desktop({
     }
 
     return items;
-  }, [currentTheme, desktopShortcuts, displayedApps]);
+  }, [isMacOSTheme, desktopShortcuts, displayedApps]);
 
   const clearSelection = useCallback(() => {
     setSelectedItemIds([]);
@@ -948,11 +949,13 @@ export function Desktop({
         />
       )}
       <div
-        className={`flex flex-col relative z-[1] ${
+        className={cn(
+          "flex flex-col relative z-[1]",
+          isMacOSTheme && OS_SHELL_TEXT_SCALE_CLASS,
           isXpTheme
             ? "items-start pt-2" // Reserve space via height, not padding, to avoid clipping
             : "items-end pt-8" // Account for top menubar - keep right alignment for other themes
-        }`}
+        )}
         style={
           isXpTheme
             ? {
@@ -1100,7 +1103,7 @@ export function Desktop({
             </div>
           ))}
           {/* Display Trash icon at the end for non-macOS X themes */}
-          {currentTheme !== "macosx" && (
+          {!isMacOSTheme && (
             <div data-desktop-item-id={getDesktopAppItemId("trash")}>
               <FileIcon
                 name={t("common.menu.trash")}

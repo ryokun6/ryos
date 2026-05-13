@@ -994,6 +994,12 @@
   font-size: var(--os-typography-window) !important;
 }
 
+/* Outside WindowFrame (desktop shell, portaled dialogs, etc.): match window copy scale
+   without resurrecting global `div`/`p` !important rules. */
+:root[data-os-theme="macosx"] .os-shell-text-scale {
+  font-size: var(--os-typography-window);
+}
+
 /* Allow Terminal to use its own font size in macOS theme */
 /* Use CSS custom property to override !important rules */
 :root[data-os-theme="macosx"] div.terminal-content,
