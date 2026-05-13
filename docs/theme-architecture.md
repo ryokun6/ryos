@@ -56,7 +56,7 @@ Use these for small, theme-scoped utilities instead of growing `cn(...)` theme b
 
 ## Migration notes
 
-- Prefer **`useThemeFlags()`** (`isWindowsTheme`, `isWinXp`, `isWin98`, `isMacOSTheme`, `isAquaMenuChrome`, `macChrome`, `isMacAquaChrome`, …) over duplicating OR-of-theme-id checks in components.
+- Prefer **`useThemeFlags()`** (`isWindowsTheme`, `isWinXp`, `isWin98`, `isMacOSTheme`, `isAquaMenuChrome`, `macChrome`, `isMacAquaChrome`, …) over duplicating OR-of-theme-id checks in components. Most dialogs, shared surfaces (`LinkPreview`, `HtmlPreview`, `AppDrawer`, fullscreen controls), AirDrop, applet store feeds, and app hooks now read theme through this hook.
 - **Outside React** (sync jobs, tool handlers): use **`useThemeStore.getState().current`** or **`isWindowsTheme(id)`** / **`isThemeWinXp`**. For **`useThemeStore.subscribe`**, keep the subscription on the store (e.g. cloud sync marking settings dirty on theme change).
 - **`isAquaMenuChrome`** means “Mac OS X Aqua menus” only; System 7 uses classic metrics shared with Windows for some menu padding patterns.
 - User-facing overview remains in [Theme System](./3.3-theme-system.md); this file is for implementers.
