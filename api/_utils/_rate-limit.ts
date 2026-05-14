@@ -336,8 +336,10 @@ export const getClientIpFromVercel = getClientIp;
 export function makeKey(
   parts: Array<string | null | undefined>
 ): string {
-  return parts
-    .filter((p): p is string => p !== undefined && p !== null && p !== "")
-    .map((p) => encodeURIComponent(String(p)))
-    .join(":");
+  return parts.reduce<string[]>((acc, part) => {
+    if (part !== undefined && part !== null && part !== "") {
+      acc.push(encodeURIComponent(String(part)));
+    }
+    return acc;
+  }, []).join(":");
 }

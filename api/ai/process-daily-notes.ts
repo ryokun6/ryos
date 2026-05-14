@@ -257,20 +257,20 @@ async function _processDailyNotesForUserInner(
     // Time budget check — stop gracefully if running low
     const elapsed = Date.now() - startTime;
     if (elapsed > PROCESSING_TIME_BUDGET_MS) {
+      const remainingDates = unprocessedNotes.reduce<string[]>((acc, dailyNote) => {
+        if (!processedDateSet.has(dailyNote.date)) {
+          acc.push(dailyNote.date);
+        }
+        return acc;
+      }, []);
       log("[processDailyNotes] Time budget exceeded, stopping gracefully", {
         username,
         elapsedMs: elapsed,
         processedSoFar: totalProcessed,
-        remainingDates: unprocessedNotes
-          .filter(n => !processedDateSet.has(n.date))
-          .map(n => n.date),
+        remainingDates,
       });
       // Track remaining dates as skipped (they'll be picked up next run)
-      skippedDates.push(
-        ...unprocessedNotes
-          .filter(n => !processedDateSet.has(n.date))
-          .map(n => n.date)
-      );
+      skippedDates.push(...remainingDates);
       break;
     }
 
@@ -432,9 +432,13 @@ async function _processSingleDayBatch(
     let finalContent = mem.content;
     const keysToDelete: string[] = [];
 
-    const relatedKeys = (mem.relatedKeys || [])
-      .map(k => k.toLowerCase().replace(/[^a-z0-9_]/g, "_"))
-      .filter(k => k !== key && existingKeySet.has(k));
+    const relatedKeys = (mem.relatedKeys || []).reduce<string[]>((acc, relatedKey) => {
+      const normalizedKey = relatedKey.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+      if (normalizedKey !== key && existingKeySet.has(normalizedKey)) {
+        acc.push(normalizedKey);
+      }
+      return acc;
+    }, []);
 
     const targetKeyExists = existingKeySet.has(key);
 

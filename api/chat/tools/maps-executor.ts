@@ -22,10 +22,16 @@ const SEARCH_TIMEOUT_MS = 12_000;
 
 function joinAddressLines(lines: string[] | undefined): string {
   if (!lines || lines.length === 0) return "";
-  return lines
-    .map((line) => (typeof line === "string" ? line.trim() : ""))
-    .filter((line) => line.length > 0)
-    .join(", ");
+  return lines.reduce<string[]>((acc, line) => {
+    if (typeof line !== "string") {
+      return acc;
+    }
+    const trimmedLine = line.trim();
+    if (trimmedLine.length > 0) {
+      acc.push(trimmedLine);
+    }
+    return acc;
+  }, []).join(", ");
 }
 
 function buildAppleMapsUrl(

@@ -91,13 +91,14 @@ export default apiHandler(
         )
       );
 
-      const quotes: StockQuote[] = quoteResults
-        .map((r, i) => {
-          if (r.status === "fulfilled") return r.value;
-          logger.error(`Quote failed for ${symbols[i]}`, r.reason);
-          return null;
-        })
-        .filter((q): q is StockQuote => q !== null);
+      const quotes: StockQuote[] = quoteResults.reduce<StockQuote[]>((acc, result, index) => {
+        if (result.status === "fulfilled") {
+          acc.push(result.value);
+        } else {
+          logger.error(`Quote failed for ${symbols[index]}`, result.reason);
+        }
+        return acc;
+      }, []);
 
       const response: StocksApiResponse = { quotes };
 
@@ -110,15 +111,18 @@ export default apiHandler(
           });
 
           if (chartResult?.quotes) {
-            response.chart = chartResult.quotes
-              .filter(
-                (q: Record<string, unknown>) =>
-                  q.date != null && q.close != null
-              )
-              .map((q: Record<string, unknown>) => ({
-                timestamp: new Date(q.date as string | number | Date).getTime(),
-                close: q.close as number,
-              }));
+            response.chart = chartResult.quotes.reduce<
+              { timestamp: number; close: number }[]
+            >((acc, quoteEntry) => {
+              if (quoteEntry.date == null || quoteEntry.close == null) {
+                return acc;
+              }
+              acc.push({
+                timestamp: new Date(quoteEntry.date as string | number | Date).getTime(),
+                close: quoteEntry.close as number,
+              });
+              return acc;
+            }, []);
           }
         } catch (chartErr) {
           logger.error(`Chart failed for ${chartSymbol}`, chartErr);

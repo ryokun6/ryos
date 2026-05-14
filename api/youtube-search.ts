@@ -201,18 +201,26 @@ export default apiHandler(
           return;
         }
 
-        const results: SearchResultItem[] = (data.items || [])
-          .filter((item) => item.id.videoId)
-          .map((item) => ({
-            videoId: item.id.videoId,
-            title: item.snippet.title,
-            channelTitle: item.snippet.channelTitle,
-            thumbnail:
-              item.snippet.thumbnails.medium?.url ||
-              item.snippet.thumbnails.default?.url ||
-              "",
-            publishedAt: item.snippet.publishedAt,
-          }));
+        const results: SearchResultItem[] = (data.items || []).reduce<SearchResultItem[]>(
+          (acc, item) => {
+            if (!item.id.videoId) {
+              return acc;
+            }
+
+            acc.push({
+              videoId: item.id.videoId,
+              title: item.snippet.title,
+              channelTitle: item.snippet.channelTitle,
+              thumbnail:
+                item.snippet.thumbnails.medium?.url ||
+                item.snippet.thumbnails.default?.url ||
+                "",
+              publishedAt: item.snippet.publishedAt,
+            });
+            return acc;
+          },
+          []
+        );
 
         logger.info("Search completed", { resultsCount: results.length, keyLabel });
         logger.response(200, Date.now() - startTime);

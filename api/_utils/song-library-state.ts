@@ -141,9 +141,13 @@ function normalizeSongsSnapshotData(value: unknown): SongsSnapshotData | null {
     return null;
   }
 
-  const tracks = candidate.tracks
-    .map((track) => normalizeTrack(track))
-    .filter((track): track is Track => Boolean(track));
+  const tracks = candidate.tracks.reduce<Track[]>((acc, track) => {
+    const normalizedTrack = normalizeTrack(track);
+    if (normalizedTrack) {
+      acc.push(normalizedTrack);
+    }
+    return acc;
+  }, []);
 
   const seenIds = new Set<string>();
   const dedupedTracks = tracks.filter((track) => {
@@ -241,9 +245,13 @@ async function readStoredSongsState(
 
   return {
     data: {
-      tracks: trackOrder
-        .map((id) => trackMap.get(id))
-        .filter((track): track is Track => Boolean(track)),
+      tracks: trackOrder.reduce<Track[]>((acc, id) => {
+        const track = trackMap.get(id);
+        if (track) {
+          acc.push(track);
+        }
+        return acc;
+      }, []),
       libraryState: isLibraryState(meta.libraryState) ? meta.libraryState : "uninitialized",
       lastKnownVersion:
         typeof meta.lastKnownVersion === "number" && Number.isFinite(meta.lastKnownVersion)
@@ -322,9 +330,12 @@ export async function writeSongsState(
   const trackOrder = buildTrackOrder(normalized.tracks);
   const previousTrackIds = new Set(existingState?.data.tracks.map((track) => track.id) ?? []);
   const nextTrackIds = new Set(trackOrder);
-  const trackKeysToDelete = Array.from(previousTrackIds)
-    .filter((id) => !nextTrackIds.has(id))
-    .map((id) => getSongLibraryTrackKey(username, id));
+  const trackKeysToDelete = Array.from(previousTrackIds).reduce<string[]>((acc, id) => {
+    if (!nextTrackIds.has(id)) {
+      acc.push(getSongLibraryTrackKey(username, id));
+    }
+    return acc;
+  }, []);
 
   const pipeline = redis.pipeline();
   for (const track of normalized.tracks) {

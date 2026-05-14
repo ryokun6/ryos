@@ -143,10 +143,12 @@ export function useAiGeneration({
 
     // Extract HTML content from the final message (use parts in v5)
     const textContent =
-      message.parts
-        ?.filter((p) => p.type === "text")
-        .map((p) => (p as { type: string; text: string }).text)
-        .join("") || "";
+      message.parts?.reduce<string[]>((acc, part) => {
+        if (part.type === "text") {
+          acc.push((part as { type: string; text: string }).text);
+        }
+        return acc;
+      }, []).join("") || "";
 
     const htmlContent = textContent
       .replace(/^\s*```(?:html)?\s*\n?|\n?\s*```\s*$/g, "")
@@ -509,10 +511,12 @@ IMPORTANT NAVIGATION CONTEXT:
       const lastMessage = aiMessages[aiMessages.length - 1];
       if (lastMessage.role === "assistant") {
         const textContent =
-          lastMessage.parts
-            ?.filter((p) => p.type === "text")
-            .map((p) => (p as { type: string; text: string }).text)
-            .join("") || "";
+          lastMessage.parts?.reduce<string[]>((acc, part) => {
+            if (part.type === "text") {
+              acc.push((part as { type: string; text: string }).text);
+            }
+            return acc;
+          }, []).join("") || "";
 
         const htmlContent = textContent
           .replace(/^\s*```(?:html)?\s*\n?|\n?\s*```\s*$/g, "")

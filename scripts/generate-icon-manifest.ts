@@ -12,11 +12,15 @@ const ICONS_ROOT = "public/icons";
 async function detectThemeDirs(): Promise<string[]> {
   try {
     const entries = await readdir(ICONS_ROOT, { withFileTypes: true });
-    return entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name)
-      .filter((name) => !name.startsWith("."))
-      .sort();
+    return entries.reduce<string[]>((acc, entry) => {
+      if (!entry.isDirectory()) {
+        return acc;
+      }
+      if (!entry.name.startsWith(".")) {
+        acc.push(entry.name);
+      }
+      return acc;
+    }, []).sort();
   } catch (e) {
     console.warn(
       "[manifest] Failed to detect theme directories:",

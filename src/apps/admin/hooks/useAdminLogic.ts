@@ -801,9 +801,12 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       // Fetch in batches to avoid oversized responses for large libraries.
       const songIds = Array.from(
         new Set(
-          songs
-            .map((song) => song.youtubeId)
-            .filter((id): id is string => Boolean(id))
+          songs.reduce<string[]>((acc, song) => {
+            if (song.youtubeId) {
+              acc.push(song.youtubeId);
+            }
+            return acc;
+          }, [])
         )
       );
       const idBatches = chunkArray(songIds, EXPORT_FETCH_BATCH_SIZE);
@@ -821,9 +824,13 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
       // Preserve UI ordering in the exported file.
       const songMap = new Map(fetchedSongs.map((song) => [song.id, song]));
-      const fullSongs = songIds
-        .map((id) => songMap.get(id))
-        .filter((song): song is ExportSongDocument => Boolean(song));
+      const fullSongs = songIds.reduce<ExportSongDocument[]>((acc, id) => {
+        const song = songMap.get(id);
+        if (song) {
+          acc.push(song);
+        }
+        return acc;
+      }, []);
 
       // Map songs to export format with compressed content
       const exportVideos: Record<string, unknown>[] = [];

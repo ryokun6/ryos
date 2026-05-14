@@ -151,6 +151,9 @@ export const getIntersectingSelectionIds = <Id extends string>(
   selectionRect: SelectionRect,
   selectableRects: readonly SelectableRect<Id>[]
 ): Id[] =>
-  selectableRects
-    .filter((item) => rectanglesIntersect(selectionRect, item.rect))
-    .map((item) => item.id);
+  selectableRects.reduce<Id[]>((acc, item) => {
+    if (rectanglesIntersect(selectionRect, item.rect)) {
+      acc.push(item.id);
+    }
+    return acc;
+  }, []);

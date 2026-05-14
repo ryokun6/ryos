@@ -415,9 +415,13 @@ export async function searchAppleMusicTracks(
       ? data?.results?.songs?.data
       : data?.results?.["library-songs"]?.data;
 
-  return (resources ?? [])
-    .map((resource) => libraryResourceToTrack(resource))
-    .filter((track): track is Track => track !== null);
+  return (resources ?? []).reduce<Track[]>((acc, resource) => {
+    const track = libraryResourceToTrack(resource);
+    if (track) {
+      acc.push(track);
+    }
+    return acc;
+  }, []);
 }
 
 async function fetchAppleMusicRecommendations(): Promise<
@@ -457,9 +461,16 @@ export async function fetchAppleMusicRadioStations(
     const personalStationData = personalStationResponse?.data as
       | AppleMusicStationsResponse
       | undefined;
-    const personalStations = (personalStationData?.data ?? [])
-      .map((resource) => appleMusicPlayableResourceToTrack(resource))
-      .filter((track): track is Track => track !== null);
+    const personalStations = (personalStationData?.data ?? []).reduce<Track[]>(
+      (acc, resource) => {
+        const track = appleMusicPlayableResourceToTrack(resource);
+        if (track) {
+          acc.push(track);
+        }
+        return acc;
+      },
+      []
+    );
 
     const recommendations = await fetchAppleMusicRecommendations().catch(
       (err) => {
@@ -468,15 +479,22 @@ export async function fetchAppleMusicRadioStations(
       }
     );
     const recommendationStations = recommendations.flatMap((recommendation) =>
-      (recommendation.relationships?.contents?.data ?? [])
-        .filter((resource) => resource.type === "stations")
-        .map((resource) =>
-          appleMusicPlayableResourceToTrack(
+      (recommendation.relationships?.contents?.data ?? []).reduce<Track[]>(
+        (acc, resource) => {
+          if (resource.type !== "stations") {
+            return acc;
+          }
+          const track = appleMusicPlayableResourceToTrack(
             resource,
             recommendation.attributes?.title?.stringForDisplay || "Apple Music"
-          )
-        )
-        .filter((track): track is Track => track !== null)
+          );
+          if (track) {
+            acc.push(track);
+          }
+          return acc;
+        },
+        []
+      )
     );
 
     const stations = dedupeTracksById([
@@ -506,14 +524,19 @@ export async function fetchAppleMusicRadioStations(
 export async function fetchAppleMusicGeniusTrack(): Promise<Track | null> {
   const recommendations = await fetchAppleMusicRecommendations();
   const playableTracks = recommendations.flatMap((recommendation) =>
-    (recommendation.relationships?.contents?.data ?? [])
-      .map((resource) =>
-        appleMusicPlayableResourceToTrack(
+    (recommendation.relationships?.contents?.data ?? []).reduce<Track[]>(
+      (acc, resource) => {
+        const track = appleMusicPlayableResourceToTrack(
           resource,
           recommendation.attributes?.title?.stringForDisplay || "Apple Music"
-        )
-      )
-      .filter((track): track is Track => track !== null)
+        );
+        if (track) {
+          acc.push(track);
+        }
+        return acc;
+      },
+      []
+    )
   );
 
   // Prefer playlists/songs for Genius; stations are already exposed in Radio.
@@ -536,11 +559,16 @@ async function fetchLibraryAlbumTracks(albumId: string): Promise<Track[]> {
   );
   const data = response?.data as LibraryPlaylistTracksResponse | undefined;
   const albums = buildIncludedAlbumMap(data?.included);
-  return (data?.data ?? [])
-    .map((resource) =>
-      libraryResourceToTrack(resource, getIncludedAlbumForSong(resource, albums))
-    )
-    .filter((track): track is Track => track !== null);
+  return (data?.data ?? []).reduce<Track[]>((acc, resource) => {
+    const track = libraryResourceToTrack(
+      resource,
+      getIncludedAlbumForSong(resource, albums)
+    );
+    if (track) {
+      acc.push(track);
+    }
+    return acc;
+  }, []);
 }
 
 async function fetchAppleMusicRecentlyAddedTracksFromApi(): Promise<Track[]> {
@@ -654,9 +682,15 @@ async function findFavoriteSongsPlaylist(): Promise<AppleMusicPlaylist | null> {
     }
   );
   const data = response?.data as AppleMusicTrackSearchResponse | undefined;
-  const playlists = (data?.results?.["library-playlists"]?.data ?? [])
-    .map((resource) => libraryPlaylistResourceToPlaylist(resource))
-    .filter((playlist): playlist is AppleMusicPlaylist => playlist !== null);
+  const playlists = (data?.results?.["library-playlists"]?.data ?? []).reduce<
+    AppleMusicPlaylist[]
+  >((acc, resource) => {
+    const playlist = libraryPlaylistResourceToPlaylist(resource);
+    if (playlist) {
+      acc.push(playlist);
+    }
+    return acc;
+  }, []);
 
   return playlists.find(isFavoriteSongsPlaylist) ?? playlists[0] ?? null;
 }

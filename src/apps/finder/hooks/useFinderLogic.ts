@@ -955,16 +955,20 @@ export function useFinderLogic({
   // Get all root folders for the Go menu using fileStore
   // This will always show root folders regardless of current path
   const rootFolders = useMemo(() => {
-    return getItemsInPath("/")
-      .filter(
-        (item) => item.isDirectory && item.path !== "/Trash" // We'll add Trash separately in the menu
-      )
-      .map((item) => ({
+    return getItemsInPath("/").reduce<
+      { name: string; isDirectory: true; path: string; icon: string }[]
+    >((acc, item) => {
+      if (!item.isDirectory || item.path === "/Trash") {
+        return acc;
+      }
+      acc.push({
         name: item.name,
         isDirectory: true,
         path: item.path,
         icon: item.icon || "/icons/default/directory.png",
-      }));
+      });
+      return acc;
+    }, []);
   }, [getItemsInPath]);
 
   // Add a new handler for rename requests

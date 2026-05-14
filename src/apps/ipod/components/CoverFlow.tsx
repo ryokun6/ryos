@@ -3,7 +3,6 @@ import {
   useRef,
   useCallback,
   useImperativeHandle,
-  forwardRef,
   useMemo,
   useReducer,
 } from "react";
@@ -1098,20 +1097,25 @@ function AlbumFlipFaces({
   );
 }
 
-export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function CoverFlow({
-  tracks,
-  currentIndex,
-  onSelectTrack,
-  onExit,
-  onRotation,
-  isVisible,
-  ipodMode = true,
-  isPlaying = false,
-  onTogglePlay,
-  onPlayTrackInPlace,
-  groupAppleMusicAlbums = false,
-  inline = false,
-}, ref) {
+export const CoverFlow = function CoverFlow(
+  {
+    ref,
+    tracks,
+    currentIndex,
+    onSelectTrack,
+    onExit,
+    onRotation,
+    isVisible,
+    ipodMode = true,
+    isPlaying = false,
+    onTogglePlay,
+    onPlayTrackInPlace,
+    groupAppleMusicAlbums = false,
+    inline = false
+  }: CoverFlowProps & {
+    ref?: React.Ref<CoverFlowRef>;
+  }
+) {
   const { t } = useTranslation();
   const unknownArtistLabel = t("apps.ipod.menu.unknownArtist");
   const unknownAlbumLabel = t("apps.ipod.menuItems.unknownAlbum");
@@ -1330,9 +1334,13 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   const currentItem = coverItems[selectedIndex];
   const albumTracks = useMemo<Track[]>(() => {
     if (!currentItem) return [];
-    return currentItem.trackIndices
-      .map((idx) => tracks[idx])
-      .filter((t): t is Track => Boolean(t));
+    return currentItem.trackIndices.reduce<Track[]>((acc, index) => {
+      const track = tracks[index];
+      if (track) {
+        acc.push(track);
+      }
+      return acc;
+    }, []);
   }, [currentItem, tracks]);
 
   // Default the tracklist highlight to the currently-playing song
@@ -2204,4 +2212,4 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
       )}
     </AnimatePresence>
   );
-});
+};

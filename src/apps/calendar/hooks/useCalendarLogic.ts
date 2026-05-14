@@ -186,7 +186,14 @@ export function useCalendarLogic() {
 
   // Visible calendar IDs for filtering
   const visibleCalendarIds = useMemo(() => {
-    return new Set(calendars.filter((c) => c.visible).map((c) => c.id));
+    return new Set(
+      calendars.reduce<string[]>((acc, calendar) => {
+        if (calendar.visible) {
+          acc.push(calendar.id);
+        }
+        return acc;
+      }, [])
+    );
   }, [calendars]);
 
   // Filtered events (only from visible calendars)

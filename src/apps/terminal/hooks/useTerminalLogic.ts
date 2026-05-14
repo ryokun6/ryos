@@ -96,29 +96,43 @@ const getSystemState = () => {
   const userOS = detectUserOS();
 
   // Use new instance-based model instead of legacy apps
-  const runningInstances = Object.entries(appStore.instances)
-    .filter(([, instance]) => instance.isOpen)
-    .map(([instanceId, instance]) => {
-      const base = {
-        instanceId,
-        appId: instance.appId,
-        isForeground: instance.isForeground || false,
-        title: instance.title,
+  const runningInstances = Object.entries(appStore.instances).reduce<
+    {
+      instanceId: string;
+      appId: string;
+      isForeground: boolean;
+      title?: string;
+      appletPath?: string;
+      appletId?: string;
+    }[]
+  >((acc, [instanceId, instance]) => {
+    if (!instance.isOpen) {
+      return acc;
+    }
+
+    const base = {
+      instanceId,
+      appId: instance.appId,
+      isForeground: instance.isForeground || false,
+      title: instance.title,
+    };
+    // For applet-viewer instances, include the applet path
+    if (instance.appId === "applet-viewer" && instance.initialData) {
+      const appletData = instance.initialData as {
+        path?: string;
+        shareCode?: string;
       };
-      // For applet-viewer instances, include the applet path
-      if (instance.appId === "applet-viewer" && instance.initialData) {
-        const appletData = instance.initialData as {
-          path?: string;
-          shareCode?: string;
-        };
-        return {
-          ...base,
-          appletPath: appletData.path || undefined,
-          appletId: appletData.shareCode || undefined,
-        };
-      }
-      return base;
-    });
+      acc.push({
+        ...base,
+        appletPath: appletData.path || undefined,
+        appletId: appletData.shareCode || undefined,
+      });
+      return acc;
+    }
+
+    acc.push(base);
+    return acc;
+  }, []);
 
   const foregroundInstance =
     runningInstances.find((inst) => inst.isForeground) || null;
@@ -647,11 +661,12 @@ export const useTerminalLogic = ({
     else if (["cd", "cat", "rm", "edit", "vim", "grep"].includes(cmd)) {
       const lastArg = args.length > 0 ? args[args.length - 1] : "";
 
-      const matches = files
-        .filter((file) =>
-          file.name.toLowerCase().startsWith(lastArg.toLowerCase())
-        )
-        .map((file) => file.name);
+      const matches = files.reduce<string[]>((acc, file) => {
+        if (file.name.toLowerCase().startsWith(lastArg.toLowerCase())) {
+          acc.push(file.name);
+        }
+        return acc;
+      }, []);
 
       if (matches.length === 1) {
         // Exact match, replace the last part

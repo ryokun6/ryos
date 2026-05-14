@@ -397,9 +397,13 @@ export async function saveBlobDomainMetadata(
       }
 
       const nextStorageUrls = new Set(
-        Object.values(nextItems)
-          .map((item) => getStoredLocation(item))
-          .filter((value): value is string => Boolean(value))
+        Object.values(nextItems).reduce<string[]>((acc, item) => {
+          const value = getStoredLocation(item);
+          if (value) {
+            acc.push(value);
+          }
+          return acc;
+        }, [])
       );
 
       const previousStorageUrl = previous ? getStoredLocation(previous) : null;

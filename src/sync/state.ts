@@ -92,13 +92,13 @@ function readLocalChangeState(): LocalChangeTimestampMap {
 
     const parsed = value as Record<string, unknown>;
     return Object.fromEntries(
-      CLOUD_SYNC_DOMAINS.map((domain) => {
+      CLOUD_SYNC_DOMAINS.reduce<[CloudSyncDomain, string][]>((acc, domain) => {
         const timestamp = parsed[domain];
-        return [domain, typeof timestamp === "string" ? timestamp : undefined];
-      }).filter(
-        (entry): entry is [CloudSyncDomain, string] =>
-          typeof entry[1] === "string"
-      )
+        if (typeof timestamp === "string") {
+          acc.push([domain, timestamp]);
+        }
+        return acc;
+      }, [])
     );
   });
 }

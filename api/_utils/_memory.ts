@@ -1227,9 +1227,12 @@ export async function cleanupStaleTemporaryMemories(
     })
   );
 
-  const removedKeys = candidateDetails
-    .filter((candidate) => isLikelyTemporaryMemory(candidate.key, candidate.summary, candidate.content))
-    .map((candidate) => candidate.key);
+  const removedKeys = candidateDetails.reduce<string[]>((acc, candidate) => {
+    if (isLikelyTemporaryMemory(candidate.key, candidate.summary, candidate.content)) {
+      acc.push(candidate.key);
+    }
+    return acc;
+  }, []);
 
   if (removedKeys.length === 0) {
     return {

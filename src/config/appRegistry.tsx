@@ -581,18 +581,23 @@ export const getNonFinderApps = (isAdmin: boolean = false): Array<{
   icon: string;
   id: AppId;
 }> => {
-  return Object.entries(appRegistry)
-    .filter(([id, app]) => {
-      if (id === "finder") return false;
+  return Object.entries(appRegistry).reduce<
+    {
+      name: string;
+      icon: string;
+      id: AppId;
+    }[]
+  >((acc, [id, app]) => {
+      if (id === "finder") return acc;
       // Filter out admin-only apps for non-admin users
-      if ((app as { adminOnly?: boolean }).adminOnly && !isAdmin) return false;
-      return true;
-    })
-    .map(([id, app]) => ({
-      name: app.name,
-      icon: getAppIconPath(id as AppId),
-      id: id as AppId,
-    }));
+      if ((app as { adminOnly?: boolean }).adminOnly && !isAdmin) return acc;
+      acc.push({
+        name: app.name,
+        icon: getAppIconPath(id as AppId),
+        id: id as AppId,
+      });
+      return acc;
+    }, []);
 };
 
 function resolveRegistryAppId(appId: AppId): AppId {

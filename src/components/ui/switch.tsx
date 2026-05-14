@@ -5,10 +5,16 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 import { cn } from "@/lib/utils";
 
-const Switch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
->(({ className, onCheckedChange, ...props }, ref) => {
+const Switch = (
+  {
+    ref,
+    className,
+    onCheckedChange,
+    ...props
+  }: React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
+    ref?: React.Ref<React.ElementRef<typeof SwitchPrimitives.Root>>;
+  }
+) => {
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const { isMacOSTheme } = useThemeFlags();
   const [isChecked, setIsChecked] = React.useState(
@@ -58,7 +64,7 @@ const Switch = React.forwardRef<
       />
     </SwitchPrimitives.Root>
   );
-});
+};
 Switch.displayName = SwitchPrimitives.Root.displayName;
 
 export { Switch };

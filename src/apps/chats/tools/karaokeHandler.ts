@@ -301,9 +301,12 @@ const handlePlayKnown = (
   // Find matching tracks
   let candidateIndices: number[] = [];
   if (id) {
-    candidateIndices = tracks
-      .map((track, index) => (track.id === id ? index : -1))
-      .filter((index) => index !== -1);
+    candidateIndices = tracks.reduce<number[]>((acc, track, index) => {
+      if (track.id === id) {
+        acc.push(index);
+      }
+      return acc;
+    }, []);
   }
 
   if (candidateIndices.length === 0 && title) {
@@ -321,13 +324,21 @@ const handlePlayKnown = (
 
     const validMatches = scoredTracks.filter((t) => t.score >= threshold);
     const maxScore = Math.max(...validMatches.map((m) => m.score), 0);
-    candidateIndices = validMatches.filter((m) => m.score === maxScore).map(({ index }) => index);
+    candidateIndices = validMatches.reduce<number[]>((acc, match) => {
+      if (match.score === maxScore) {
+        acc.push(match.index);
+      }
+      return acc;
+    }, []);
   }
 
   if (candidateIndices.length === 0 && artist) {
-    candidateIndices = tracks
-      .map((track, index) => (ciIncludes(track.artist, artist) ? index : -1))
-      .filter((index) => index !== -1);
+    candidateIndices = tracks.reduce<number[]>((acc, track, index) => {
+      if (ciIncludes(track.artist, artist)) {
+        acc.push(index);
+      }
+      return acc;
+    }, []);
   }
 
   if (candidateIndices.length === 0) {

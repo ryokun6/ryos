@@ -11,11 +11,13 @@ export function formatPrivateRoomName(
   if (!currentUsername) return roomName;
 
   // Parse the room name to extract usernames
-  const users = roomName
-    .split(", ")
-    .map((u) => u.trim())
-    .filter((u) => u.startsWith("@"))
-    .map((u) => u.substring(1)); // Remove @ prefix
+  const users = roomName.split(", ").reduce<string[]>((acc, username) => {
+    const trimmedUsername = username.trim();
+    if (trimmedUsername.startsWith("@")) {
+      acc.push(trimmedUsername.substring(1)); // Remove @ prefix
+    }
+    return acc;
+  }, []);
 
   // Filter out the current user (case-sensitive) so that variations like "Ryo" (AI) remain visible
   const otherUsers = users.filter((u) => u !== currentUsername);

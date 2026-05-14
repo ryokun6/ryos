@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  useImperativeHandle,
-  forwardRef,
-  useCallback,
-} from "react";
+import { useEffect, useRef, useState, useImperativeHandle, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -164,8 +157,9 @@ function launchBall(state: GameState) {
   state.ballVY = -Math.sin(angle) * speed;
 }
 
-export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function BrickGame(
+export const BrickGame = function BrickGame(
   {
+    ref,
     isVisible,
     onExit: _onExit,
     lcdFilterOn = false,
@@ -173,9 +167,10 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
     onEnter,
     playClick,
     playScroll: _playScroll,
-    vibrate,
-  },
-  ref
+    vibrate
+  }: BrickGameProps & {
+    ref?: React.Ref<BrickGameRef>;
+  }
 ) {
   const { t } = useTranslation();
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
@@ -823,4 +818,4 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
       </div>
     </div>
   );
-});
+};

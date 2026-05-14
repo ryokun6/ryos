@@ -1225,40 +1225,40 @@ export const useFilesStore = create<FilesStoreState>()(
           set((state) => {
             const newItems = { ...state.items };
             // Ensure all root-level directories (including "/") exist
-            data.directories
-              .filter(
-                (dir) => dir.path === "/" || getParentPath(dir.path) === "/"
-              )
-              .forEach((dir) => {
-                const existing = newItems[dir.path];
-                if (!existing) {
+            for (const dir of data.directories) {
+              if (!(dir.path === "/" || getParentPath(dir.path) === "/")) {
+                continue;
+              }
+
+              const existing = newItems[dir.path];
+              if (!existing) {
+                newItems[dir.path] = {
+                  ...dir,
+                  status: "active",
+                  createdAt: now,
+                  modifiedAt: now,
+                };
+              } else {
+                // If it exists but is trashed or missing essential fields, bring it back and align minimal metadata
+                const needsUpdate =
+                  existing.status !== "active" ||
+                  existing.isDirectory !== true ||
+                  !existing.name ||
+                  !existing.type ||
+                  existing.icon !== (dir.icon || existing.icon);
+                if (needsUpdate) {
                   newItems[dir.path] = {
-                    ...dir,
+                    ...existing,
+                    name: dir.name || existing.name,
+                    isDirectory: true,
+                    type: dir.type || existing.type || "directory",
+                    icon: dir.icon || existing.icon,
                     status: "active",
-                    createdAt: now,
                     modifiedAt: now,
                   };
-                } else {
-                  // If it exists but is trashed or missing essential fields, bring it back and align minimal metadata
-                  const needsUpdate =
-                    existing.status !== "active" ||
-                    existing.isDirectory !== true ||
-                    !existing.name ||
-                    !existing.type ||
-                    existing.icon !== (dir.icon || existing.icon);
-                  if (needsUpdate) {
-                    newItems[dir.path] = {
-                      ...existing,
-                      name: dir.name || existing.name,
-                      isDirectory: true,
-                      type: dir.type || existing.type || "directory",
-                      icon: dir.icon || existing.icon,
-                      status: "active",
-                      modifiedAt: now,
-                    };
-                  }
                 }
-              });
+              }
+            }
             return { items: newItems };
           });
         } catch (err) {

@@ -4,7 +4,6 @@ import {
   useMemo,
   useCallback,
   useImperativeHandle,
-  forwardRef,
   useReducer,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -174,8 +173,9 @@ function pickRound(tracks: Track[]): { options: Track[]; correctIndex: number; c
   return { options, correctIndex, correct: options[correctIndex] };
 }
 
-export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function MusicQuiz(
+export const MusicQuiz = function MusicQuiz(
   {
+    ref,
     isVisible,
     onExit: _onExit,
     lcdFilterOn = false,
@@ -183,9 +183,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
     onEnter,
     playClick,
     playScroll,
-    vibrate,
-  },
-  ref
+    vibrate
+  }: MusicQuizProps & {
+    ref?: React.Ref<MusicQuizRef>;
+  }
 ) {
   const { t } = useTranslation();
   const tracks = useIpodStore((s) =>
@@ -979,7 +980,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
       )}
     </div>
   );
-});
+};
 
 function formatOption(track: Track): string {
   const artist = track.artist ? ` — ${track.artist}` : "";

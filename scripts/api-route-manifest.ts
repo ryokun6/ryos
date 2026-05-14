@@ -171,14 +171,20 @@ export interface ViteApiRewrite {
 export function buildViteApiRewrites(
   manifest: ApiRouteManifestEntry[]
 ): ViteApiRewrite[] {
-  return manifest
-    .filter((route) => route.isIndexRoute)
-    .filter((route) => !route.routePath.includes(":"))
-    .filter((route) => route.routePath !== "/api")
-    .map((route) => ({
+  return manifest.reduce<ViteApiRewrite[]>((acc, route) => {
+    if (
+      !route.isIndexRoute ||
+      route.routePath.includes(":") ||
+      route.routePath === "/api"
+    ) {
+      return acc;
+    }
+    acc.push({
       source: route.routePath,
       destination: `${route.routePath}/index`,
-    }))
+    });
+    return acc;
+  }, [])
     .sort((a, b) => b.source.length - a.source.length || a.source.localeCompare(b.source));
 }
 

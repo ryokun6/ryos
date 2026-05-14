@@ -3130,17 +3130,19 @@ export function useIpodLogic({
         unknownAlbumLabel,
         unknownArtistLabel
       );
-      return browsableTracks
-        .filter(
-          (candidate) =>
-            candidate.source === "appleMusic" &&
-            getAlbumGroupingKey(
-              candidate,
-              unknownAlbumLabel,
-              unknownArtistLabel
-            ) === albumKey
-        )
-        .map((candidate) => candidate.id);
+      return browsableTracks.reduce<string[]>((acc, candidate) => {
+        if (
+          candidate.source === "appleMusic" &&
+          getAlbumGroupingKey(
+            candidate,
+            unknownAlbumLabel,
+            unknownArtistLabel
+          ) === albumKey
+        ) {
+          acc.push(candidate.id);
+        }
+        return acc;
+      }, []);
     },
     [browsableTracks, unknownAlbumLabel, unknownArtistLabel]
   );

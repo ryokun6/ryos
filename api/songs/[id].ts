@@ -1307,19 +1307,23 @@ export default apiHandler<Record<string, unknown>>(
           };
           
           // Clean cached data
-          const cleanedSoramimi = cachedSoramimi.map(lineSegments => 
-            lineSegments
-              .map(seg => {
-                if (seg.reading && targetLanguage === "zh-TW") {
-                  const cleanedReading = cleanSoramimiReading(seg.reading);
-                  return cleanedReading ? { ...seg, reading: cleanedReading } : { text: seg.text };
-                }
-                return seg;
-              })
-              .filter(seg => {
-                if (seg.reading) return true;
-                return !containsKoreanOrJapanese(seg.text);
-              })
+          const cleanedSoramimi = cachedSoramimi.map((lineSegments) =>
+            lineSegments.reduce<Array<(typeof lineSegments)[number]>>((acc, seg) => {
+              const candidate =
+                seg.reading && targetLanguage === "zh-TW"
+                  ? (() => {
+                      const cleanedReading = cleanSoramimiReading(seg.reading);
+                      return cleanedReading
+                        ? { ...seg, reading: cleanedReading }
+                        : { text: seg.text };
+                    })()
+                  : seg;
+
+              if (candidate.reading || !containsKoreanOrJapanese(candidate.text)) {
+                acc.push(candidate);
+              }
+              return acc;
+            }, [])
           );
           
           sendSSEResponse(res, effectiveOrigin, {

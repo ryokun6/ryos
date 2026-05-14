@@ -368,9 +368,11 @@ const isRemovedBrowserFavorite = (favorite: Favorite): boolean => {
 export const removeRemovedDefaultFavorites = (
   favorites: Favorite[]
 ): Favorite[] =>
-  favorites
-    .filter((favorite) => !isRemovedBrowserFavorite(favorite))
-    .map((favorite) =>
+  favorites.reduce<Favorite[]>((acc, favorite) => {
+    if (isRemovedBrowserFavorite(favorite)) {
+      return acc;
+    }
+    acc.push(
       favorite.children
         ? {
             ...favorite,
@@ -378,6 +380,8 @@ export const removeRemovedDefaultFavorites = (
           }
         : favorite
     );
+    return acc;
+  }, []);
 
 // Helper function to classify year into navigation mode
 function classifyYear(year: string): NavigationMode {
