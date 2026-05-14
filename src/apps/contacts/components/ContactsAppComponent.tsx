@@ -61,11 +61,11 @@ function ContactListItem({
         <img
           src={contact.picture}
           alt=""
-          className="shrink-0 w-5 h-5 rounded-full bg-white/70 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] object-contain"
+          className="shrink-0 size-5 rounded-full bg-white/70 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] object-contain"
         />
       ) : (
         <div
-          className="shrink-0 w-5 h-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] bg-[linear-gradient(to_bottom,#e0e0e0,#c8c8c8)] flex items-center justify-center text-[8px] font-semibold text-white"
+          className="shrink-0 size-5 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] bg-[linear-gradient(to_bottom,#e0e0e0,#c8c8c8)] flex items-center justify-center text-[8px] font-semibold text-white"
           style={{ textShadow: smallAvatarInitialsTextShadow }}
         >
           {getContactInitials(contact)}
@@ -281,7 +281,7 @@ export function ContactsAppComponent({
         <div
           ref={containerRef}
           className={cn(
-            "h-full w-full flex flex-col font-os-ui overflow-hidden",
+            "size-full flex flex-col font-os-ui overflow-hidden",
             isMacOsxTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
           )}
         >
@@ -383,7 +383,7 @@ export function ContactsAppComponent({
                       variant={isSystem7Theme ? "player" : "ghost"}
                       onClick={() => setShowGroupSidebar((current) => !current)}
                       data-state={showGroupSidebar && !isCardOnlyView ? "on" : "off"}
-                      className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                      className={cn("size-6 px-0", isXpTheme && "text-black")}
                       title={t("apps.contacts.views.toggleGroups", { defaultValue: "Toggle Groups" })}
                     >
                       <SidebarSimple size={14} />
@@ -394,7 +394,7 @@ export function ContactsAppComponent({
                     variant={isSystem7Theme ? "player" : "ghost"}
                     onClick={() => setIsCardOnlyView((current) => !current)}
                     data-state={isCardOnlyView ? "on" : "off"}
-                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    className={cn("size-6 px-0", isXpTheme && "text-black")}
                     title={t("apps.contacts.views.cardOnly", { defaultValue: "Card Only" })}
                   >
                     <IdentificationCard size={14} />
@@ -403,7 +403,7 @@ export function ContactsAppComponent({
                     type="button"
                     variant={isSystem7Theme ? "player" : "ghost"}
                     onClick={handleCreateContactAndEdit}
-                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    className={cn("size-6 px-0", isXpTheme && "text-black")}
                     title={t("apps.contacts.menu.newContact")}
                   >
                     <Plus size={12} weight="bold" />
@@ -412,7 +412,7 @@ export function ContactsAppComponent({
                     type="button"
                     variant={isSystem7Theme ? "player" : "ghost"}
                     onClick={handleImport}
-                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    className={cn("size-6 px-0", isXpTheme && "text-black")}
                     title={t("apps.contacts.menu.importVCard")}
                   >
                     <DownloadSimple size={12} weight="bold" />
@@ -546,7 +546,7 @@ export function ContactsAppComponent({
                     <button
                       type="button"
                       onClick={() => setIsPicturePickerOpen(true)}
-                      className="w-12 h-12 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-base font-semibold text-white overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      className="size-12 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] flex items-center justify-center text-base font-semibold text-white overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                       style={
                         selectedContact.picture
                           ? { background: "rgba(255, 255, 255, 0.72)" }
@@ -561,7 +561,7 @@ export function ContactsAppComponent({
                         <img
                           src={selectedContact.picture}
                           alt={selectedContact.displayName}
-                          className="w-full h-full object-contain"
+                          className="size-full object-contain"
                         />
                       ) : (
                         getContactInitials(selectedContact)

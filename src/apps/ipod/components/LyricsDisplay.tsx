@@ -1896,12 +1896,15 @@ export function LyricsDisplay({
           }
           return (
             <>
-              {soramimiSegments.map((segment, index) => {
+              {(() => {
+                let segmentOffset = 0;
+                return soramimiSegments.map((segment) => {
+                  const segmentKey = `soramimi-${segmentOffset}-${segment.text}-${segment.reading ?? ""}`;
+                  segmentOffset += Math.max(segment.text.length, 1);
                 // If there's a reading (the soramimi phonetic), display as ruby
                 if (segment.reading) {
                   return (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
-                    <ruby key={index} className="lyrics-furigana lyrics-soramimi">
+                    <ruby key={segmentKey} className="lyrics-furigana lyrics-soramimi">
                       {segment.text}
                       <rp>(</rp>
                       <rt className="lyrics-furigana-rt lyrics-soramimi-rt">{segment.reading}</rt>
@@ -1909,9 +1912,9 @@ export function LyricsDisplay({
                     </ruby>
                   );
                 }
-                // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
-                return <span key={index}>{segment.text}</span>;
-              })}
+                  return <span key={segmentKey}>{segment.text}</span>;
+                });
+              })()}
             </>
           );
         }
@@ -1983,7 +1986,11 @@ export function LyricsDisplay({
       // Render furigana segments with all romanization options (ruby annotations)
       return (
         <>
-          {segments.map((segment, index) => {
+          {(() => {
+            let segmentOffset = 0;
+            return segments.map((segment) => {
+              const segmentKey = `furigana-${segmentOffset}-${segment.text}-${segment.reading ?? ""}`;
+              segmentOffset += Math.max(segment.text.length, 1);
             // Handle Japanese furigana (hiragana reading over kanji)
             const displayReadingSource = getDisplayReading(segment);
             if (displayReadingSource) {
@@ -1991,8 +1998,7 @@ export function LyricsDisplay({
                 ? toRomaji(displayReadingSource)
                 : displayReadingSource;
               return (
-                // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
-                <ruby key={index} className="lyrics-furigana">
+                <ruby key={segmentKey} className="lyrics-furigana">
                   {segment.text}
                   <rp>(</rp>
                   <rt className="lyrics-furigana-rt">{displayReading}</rt>
@@ -2003,22 +2009,22 @@ export function LyricsDisplay({
             
             // Korean romanization for mixed content
             if (romanization.korean && hasKoreanText(segment.text)) {
-              return renderKoreanWithRomanization(segment.text, `seg-${index}`);
+              return renderKoreanWithRomanization(segment.text, `${segmentKey}-kr`);
             }
             
             // Chinese pinyin for mixed content
             if (romanization.chinese && isChineseText(segment.text)) {
-              return renderChineseWithPinyin(segment.text, `seg-${index}`);
+              return renderChineseWithPinyin(segment.text, `${segmentKey}-cn`);
             }
             
             // Standalone kana to romaji
             if (romanization.japaneseRomaji && hasKanaTextLocal(segment.text)) {
-              return renderKanaWithRomaji(segment.text, `seg-${index}`);
+              return renderKanaWithRomaji(segment.text, `${segmentKey}-jp`);
             }
             
-            // biome-ignore lint/suspicious/noArrayIndexKey: segments are stable and don't reorder
-            return <span key={index}>{segment.text}</span>;
-          })}
+              return <span key={segmentKey}>{segment.text}</span>;
+            });
+          })()}
         </>
       );
     },

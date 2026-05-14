@@ -654,7 +654,7 @@ export function CreateRoomDialog({
                             className={cn(themeFont, "text-blue-600")}
                           >
                             <span className="inline-flex items-center gap-1">
-                              <Plus className="h-3 w-3" weight="bold" />
+                              <Plus className="size-3" weight="bold" />
                               Add new server…
                             </span>
                           </SelectItem>
@@ -671,11 +671,11 @@ export function CreateRoomDialog({
                       size="sm"
                       onClick={() => handleDeleteIrcServer(selectedServer)}
                       disabled={isLoading}
-                      className="h-8 w-8 p-0"
+                      className="size-8 p-0"
                       title="Remove server"
                       aria-label="Remove server"
                     >
-                      <Trash className="h-3 w-3" weight="bold" />
+                      <Trash className="size-3" weight="bold" />
                     </Button>
                   )}
                 </div>
@@ -740,7 +740,7 @@ export function CreateRoomDialog({
                         id="new-irc-tls"
                         checked={newServerTls}
                         onCheckedChange={(v) => setNewServerTls(Boolean(v))}
-                        className="h-4 w-4"
+                        className="size-4"
                         disabled={isAddingServer}
                       />
                       <span>TLS</span>
@@ -815,7 +815,7 @@ export function CreateRoomDialog({
                     >
                       <ArrowClockwise
                         className={cn(
-                          "h-3 w-3",
+                          "size-3",
                           isLoadingChannels && "animate-spin"
                         )}
                         weight="bold"
@@ -1077,7 +1077,7 @@ export function CreateRoomDialog({
                           className="ml-1 hover:bg-gray-300 rounded-sm p-0.5"
                           disabled={isLoading}
                         >
-                          <X className="h-3 w-3" weight="bold" />
+                          <X className="size-3" weight="bold" />
                         </button>
                       </Badge>
                     ))}
@@ -1103,7 +1103,7 @@ export function CreateRoomDialog({
                           onCheckedChange={() =>
                             toggleUserSelection(user.username)
                           }
-                          className="h-4 w-4"
+                          className="size-4"
                           disabled={isLoading}
                         />
                         <span className="ml-2">@{user.username}</span>

@@ -67,6 +67,17 @@ import { useIpodStore, isAppleMusicCollectionTrack } from "@/stores/useIpodStore
 // the scroll-position math.
 const MENU_ITEM_HEIGHT_CLASSIC = 24;
 const MENU_ITEM_HEIGHT_MODERN = 21;
+const menuItemKeyCache = new WeakMap<object, string>();
+let menuItemKeySeed = 0;
+
+function getMenuItemKey(item: object): string {
+  const cached = menuItemKeyCache.get(item);
+  if (cached) return cached;
+  menuItemKeySeed += 1;
+  const key = `ipod-menu-${menuItemKeySeed}`;
+  menuItemKeyCache.set(item, key);
+  return key;
+}
 // Modern titlebar is intentionally tighter than the row height. The
 // nano 6G/7G + iPod classic 6G silver header is a slim 17px strip with
 // 12px MyriadPro semibold text — slimmer than each list row so the
@@ -782,7 +793,7 @@ export function IpodScreen({
               `w-6 font-chicago ${isPlaying ? "text-xs" : "text-[18px]"}`
             )}
           >
-            <div className="flex items-center justify-center w-4 h-4 mt-0.5">
+            <div className="flex items-center justify-center size-4 mt-0.5">
               {isPlaying ? "▶" : "⏸︎"}
             </div>
           </div>
@@ -839,7 +850,7 @@ export function IpodScreen({
             // overshoots and reads slightly high.
             <div
               className={cn(
-                "flex items-center justify-center w-[14px] h-[14px] [transform:translateY(-0.5px)]",
+                "flex items-center justify-center size-[14px] [transform:translateY(-0.5px)]",
                 // Same light top highlight as the title line — title uses
                 // [text-shadow:0_1px_0_rgba(255,255,255,0.9)]; SVG paths
                 // use filter drop-shadow so the blue gradient reads with
@@ -928,7 +939,7 @@ export function IpodScreen({
                         const index = visibleRange.start + i;
                         return (
                           <div
-                            key={index}
+                            key={getMenuItemKey(item)}
                             className={`ipod-menu-item ${
                               index === selectedMenuItem ? "selected" : ""
                             }`}
@@ -1270,7 +1281,7 @@ export function IpodScreen({
               />
             ) : (
               <div
-                className="w-full h-full"
+                className="size-full"
                 style={
                   effectiveDisplayMode !== DisplayMode.Video
                     ? { visibility: "hidden", pointerEvents: "none" }
@@ -1378,7 +1389,7 @@ export function IpodScreen({
                   <motion.img
                     src={coverUrl}
                     alt={currentTrack?.title}
-                    className="w-full h-full object-cover brightness-50 pointer-events-none"
+                    className="size-full object-cover brightness-50 pointer-events-none"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

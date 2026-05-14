@@ -76,7 +76,7 @@ function PlaceRow({
       )}
     >
       <div
-        className="aqua-icon-badge flex h-6 w-6 shrink-0 items-center justify-center text-white"
+        className="aqua-icon-badge flex size-6 shrink-0 items-center justify-center text-white"
         style={{ backgroundImage: poiVisualGradient(visual) }}
         aria-hidden="true"
       >

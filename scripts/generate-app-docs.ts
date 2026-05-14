@@ -46,6 +46,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
+const APP_ID_SET = new Set<string>(APP_IDS);
 
 interface AppMetadata {
   name: string;
@@ -609,13 +610,16 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
  */
 async function main() {
   const args = process.argv.slice(2);
-  const dryRun = args.includes("--dry-run");
-  const force = args.includes("--force");
-  const appArg = args.find((arg) => arg.startsWith("--app="))?.split("=")[1] || 
-                 (args.includes("--app") && args[args.indexOf("--app") + 1]) || 
-                 undefined;
+  const argSet = new Set(args);
+  const dryRun = argSet.has("--dry-run");
+  const force = argSet.has("--force");
+  const appArgFromEquals = args.find((arg) => arg.startsWith("--app="))?.split("=")[1];
+  const appFlagIndex = args.indexOf("--app");
+  const appArgFromFlag =
+    appFlagIndex >= 0 ? args[appFlagIndex + 1] : undefined;
+  const appArg = appArgFromEquals || appArgFromFlag || undefined;
 
-  if (args.includes("--help") || args.includes("-h")) {
+  if (argSet.has("--help") || argSet.has("-h")) {
     console.log(`
 Usage: bun run scripts/generate-app-docs.ts [options]
 
@@ -672,8 +676,8 @@ Environment:
   let successCount = 0;
   let failCount = 0;
 
-  for (const appId of appsToProcess) {
-    if (!(APP_IDS as readonly string[]).includes(appId)) {
+  for (const [index, appId] of appsToProcess.entries()) {
+    if (!APP_ID_SET.has(appId)) {
       console.error(`❌ Invalid app ID: ${appId}`);
       failCount++;
       continue;
@@ -684,7 +688,7 @@ Environment:
       successCount++;
       
       // Small delay to avoid rate limiting
-      if (!dryRun && appsToProcess.indexOf(appId) < appsToProcess.length - 1) {
+      if (!dryRun && index < appsToProcess.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     } catch (error) {

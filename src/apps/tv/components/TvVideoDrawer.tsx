@@ -239,7 +239,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       videos.map((video, index) => {
         const isActive = index === currentVideoIndex;
         return (
-          <li key={`${video.id}-${index}`} ref={isActive ? activeItemRef : undefined} className="group relative min-w-0">
+          <li key={video.id} ref={isActive ? activeItemRef : undefined} className="group relative min-w-0">
             <button
               type="button"
               onClick={() => onSelectVideo(index)}
@@ -287,7 +287,7 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
       videos.map((video, index) => {
         const isActive = index === currentVideoIndex;
         return (
-          <li key={`${video.id}-${index}`} ref={isActive ? activeItemRef : undefined} className="group relative min-w-0">
+          <li key={video.id} ref={isActive ? activeItemRef : undefined} className="group relative min-w-0">
             <button
               type="button"
               onClick={() => onSelectVideo(index)}

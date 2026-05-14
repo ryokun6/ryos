@@ -35,11 +35,11 @@ export const PaintColorPalette: React.FC<PaintColorPaletteProps> = ({
         <Button
           key={color}
           variant="ghost"
-          className="w-10 h-10 p-0.5"
+          className="size-10 p-0.5"
           onClick={() => onColorSelect(color)}
         >
           <div
-            className={`w-full h-full rounded-sm ${
+            className={`size-full rounded-sm ${
               selectedColor === color ? "ring-2 ring-blue-500" : ""
             }`}
             style={{ backgroundColor: color }}

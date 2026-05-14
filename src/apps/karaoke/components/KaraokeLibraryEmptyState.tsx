@@ -50,8 +50,8 @@ export function KaraokeLibraryEmptyState({
     : {};
 
   const buttonClasses = isMacTheme
-    ? "w-8 h-8 flex items-center justify-center rounded-full transition-colors focus:outline-none relative z-10"
-    : "w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none";
+    ? "size-8 flex items-center justify-center rounded-full transition-colors focus:outline-none relative z-10"
+    : "size-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none";
 
   const iconClasses = isMacTheme
     ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
@@ -73,7 +73,7 @@ export function KaraokeLibraryEmptyState({
       <ThemedIcon
         name="/icons/default/karaoke.png"
         alt=""
-        className="h-16 w-16 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
+        className="size-16 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
         aria-hidden
       />
       <div className="flex max-w-sm flex-col gap-1.5">

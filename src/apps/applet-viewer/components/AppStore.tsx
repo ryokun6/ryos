@@ -560,7 +560,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     return (
       <>
         <style>{appletIconStyles}</style>
-        <div className="h-full w-full flex items-center justify-center">
+        <div className="size-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-sm text-neutral-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
           </div>
@@ -660,7 +660,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                   title={applet.featured ? t("apps.applet-viewer.labels.removeFromFeatured") : t("apps.applet-viewer.labels.addToFeatured")}
                 >
                   <Star
-                    className={`h-4 w-4 ${applet.featured ? "text-yellow-400" : "text-gray-400"}`}
+                    className={`size-4 ${applet.featured ? "text-yellow-400" : "text-gray-400"}`}
                     weight={applet.featured ? "fill" : "bold"}
                   />
                 </button>
@@ -672,7 +672,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                   className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 inline-flex md:hidden md:group-hover:inline-flex"
                   title={t("apps.applet-viewer.labels.deleteApplet")}
                 >
-                  <Trash className="h-4 w-4" weight="bold" />
+                  <Trash className="size-4" weight="bold" />
                 </button>
               </div>
             )}
@@ -713,7 +713,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     return (
       <>
         <style>{appletIconStyles}</style>
-        <div className="h-full w-full flex items-center justify-center">
+        <div className="size-full flex items-center justify-center">
           <div className="text-center px-6 font-geneva-12">
             <p className="text-[11px] text-neutral-600 font-geneva-12">
               {t("apps.applet-viewer.dialogs.noAppletsAvailable")}
@@ -732,7 +732,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     return (
       <>
         <style>{appletIconStyles}</style>
-        <div className="h-full w-full flex flex-col">
+        <div className="size-full flex flex-col">
           {/* Detail view toolbar */}
           <div
             className={`flex items-center gap-3 px-3 py-2 ${
@@ -759,9 +759,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               onClick={() => {
                 dispatch({ type: "clearSelectedAppletDetail" });
               }}
-              className="h-7 w-7 flex-shrink-0"
+              className="size-7 flex-shrink-0"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </Button>
             <div 
               className="!text-2xl flex-shrink-0 applet-icon flex items-center justify-center"
@@ -798,7 +798,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               <iframe
                 srcDoc={ensureMacFonts(selectedAppletContent)}
                 title={displayName}
-                className="w-full h-full border-0"
+                className="size-full border-0"
                 sandbox={getAppletSandboxAttribute(
                   isTrustedAppletAuthor(selectedApplet?.createdBy)
                 )}
@@ -822,7 +822,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   return (
     <>
       <style>{appletIconStyles}</style>
-      <div className="h-full w-full flex flex-col">
+      <div className="size-full flex flex-col">
         {!showListView ? (
             <div className="flex-1 overflow-hidden relative">
               <AppStoreFeed
@@ -840,12 +840,12 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 variant={isMacTheme ? "aqua" : "default"}
                 size="sm"
                 onClick={() => feedRef.current?.goToPrevious()}
-                className={`h-7 w-7 p-0 flex items-center justify-center ${
+                className={`size-7 p-0 flex items-center justify-center ${
                   isMacTheme ? "rounded-full" : "rounded-none"
                 }`}
                 style={{ height: "28px", width: "28px" }}
               >
-                <CaretLeft className="h-4 w-4" weight="bold" />
+                <CaretLeft className="size-4" weight="bold" />
               </Button>
               <Button
                 variant={isMacTheme ? "aqua" : "default"}
@@ -859,12 +859,12 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 variant={isMacTheme ? "aqua" : "default"}
                 size="sm"
                 onClick={() => feedRef.current?.goToNext()}
-                className={`h-7 w-7 p-0 flex items-center justify-center ${
+                className={`size-7 p-0 flex items-center justify-center ${
                   isMacTheme ? "rounded-full" : "rounded-none"
                 }`}
                 style={{ height: "28px", width: "28px" }}
               >
-                <CaretRight className="h-4 w-4" weight="bold" />
+                <CaretRight className="size-4" weight="bold" />
               </Button>
             </div>
           </div>
@@ -916,7 +916,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 onClick={() => setShowListView(false)}
                 className="flex items-center gap-1 px-1"
               >
-                <Sparkle className="h-4 w-4" weight="fill" />
+                <Sparkle className="size-4" weight="fill" />
                 <span className="text-xs font-geneva-12">{t("apps.applet-viewer.labels.discover")}</span>
               </Button>
             </div>

@@ -69,6 +69,10 @@ interface SongDetailPanelProps {
   onSongDeleted: () => void;
 }
 
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
+);
+
 export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   youtubeId,
   onBack,
@@ -554,20 +558,15 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     return `${sign}${ms}ms (${(ms / 1000).toFixed(2)}s)`;
   };
 
-  // Skeleton placeholder component
-  const Skeleton = ({ className }: { className?: string }) => (
-    <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
-  );
-
   if (!isLoading && !song) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2">
-        <Warning className="h-8 w-8 text-neutral-400" weight="bold" />
+        <Warning className="size-8 text-neutral-400" weight="bold" />
         <span className="text-[11px] text-neutral-500">
           {t("apps.admin.song.notFound", "Song not found")}
         </span>
         <Button variant="ghost" size="sm" onClick={onBack} className="text-[11px]">
-          <ArrowLeft className="h-3 w-3 mr-1" weight="bold" />
+          <ArrowLeft className="size-3 mr-1" weight="bold" />
           {t("apps.admin.profile.back", "Back")}
         </Button>
       </div>
@@ -582,14 +581,14 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="h-6 w-6 p-0"
+          className="size-6 p-0"
         >
-          <ArrowLeft className="h-3.5 w-3.5" weight="bold" />
+          <ArrowLeft className="size-3.5" weight="bold" />
         </Button>
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div
             className={cn(
-              "w-10 h-10 rounded flex items-center justify-center text-sm font-medium text-neutral-600 flex-shrink-0 overflow-hidden",
+              "size-10 rounded flex items-center justify-center text-sm font-medium text-neutral-600 flex-shrink-0 overflow-hidden",
               isLoading ? "bg-neutral-200 animate-pulse" : "bg-neutral-200"
             )}
           >
@@ -597,7 +596,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               <img
                 src={formatKugouImageUrl(song?.cover, 150) || `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
                 alt=""
-                className="w-full h-full object-cover"
+                className="size-full object-cover"
                 onError={(e) => {
                   // Fall back to YouTube thumbnail if Kugou cover fails
                   // Use proper URL parsing to check hostname (not substring match which could be bypassed)
@@ -638,22 +637,22 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           size="sm"
           onClick={() => setIsDeleteDialogOpen(true)}
           disabled={isLoading}
-          className="h-6 w-6 p-0 flex-shrink-0"
+          className="size-6 p-0 flex-shrink-0"
           title={t("apps.admin.song.delete", "Delete Song")}
         >
-          <Trash className="h-3.5 w-3.5" weight="bold" />
+          <Trash className="size-3.5" weight="bold" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={fetchSong}
           disabled={isLoading}
-          className="h-6 w-6 p-0 flex-shrink-0"
+          className="size-6 p-0 flex-shrink-0"
         >
           {isLoading ? (
             <ActivityIndicator size={14} />
           ) : (
-            <ArrowsClockwise className="h-3.5 w-3.5" weight="bold" />
+            <ArrowsClockwise className="size-3.5" weight="bold" />
           )}
         </Button>
       </div>
@@ -732,7 +731,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             <div className="space-y-2">
               {/* Title */}
               <div className="flex items-start gap-2 py-1.5">
-                <MusicNote className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <MusicNote className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.tableHeaders.title", "Title")}</div>
                   {isLoading ? (
@@ -789,7 +788,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
               {/* Artist */}
               <div className="flex items-start gap-2 py-1.5">
-                <User className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <User className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.tableHeaders.artist", "Artist")}</div>
                   {isLoading ? (
@@ -846,7 +845,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
               {/* Album */}
               <div className="flex items-start gap-2 py-1.5">
-                <VinylRecord className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <VinylRecord className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.album", "Album")}</div>
                   {isLoading ? (
@@ -903,7 +902,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
               {/* Lyric Offset */}
               <div className="flex items-start gap-2 py-1.5">
-                <Clock className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <Clock className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.lyricsOffset", "Lyrics Offset")}</div>
                   {isLoading ? (
@@ -962,7 +961,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
               {/* YouTube ID */}
               <div className="flex items-start gap-2 py-1.5">
-                <Hash className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <Hash className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.youtubeId", "YouTube ID")}</div>
                   {isLoading ? (
@@ -987,7 +986,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                           rel="noopener noreferrer"
                           className="text-blue-500 hover:text-blue-600"
                         >
-                          <ArrowSquareOut className="h-3 w-3" weight="bold" />
+                          <ArrowSquareOut className="size-3" weight="bold" />
                         </a>
                       </div>
                     </>
@@ -1005,7 +1004,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             <div className="space-y-2">
               {/* Lyrics Source */}
               <div className="flex items-start gap-2 py-1.5">
-                <FileText className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <FileText className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.lyricsSource", "Lyrics")}</div>
                   {isLoading ? (
@@ -1014,7 +1013,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div className="flex items-center gap-1 mt-0.5">
                       {song?.lyrics?.lrc ? (
                         <>
-                          <Check className="h-3 w-3 text-green-500" weight="bold" />
+                          <Check className="size-3 text-green-500" weight="bold" />
                           <span className="text-[11px] text-green-600">
                             {song.lyrics.parsedLines?.length || 0} {t("apps.admin.song.lines", "lines")}
                             {song.lyrics.krc && (
@@ -1026,7 +1025,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         </>
                       ) : (
                         <>
-                          <X className="h-3 w-3 text-neutral-400" weight="bold" />
+                          <X className="size-3 text-neutral-400" weight="bold" />
                           <span className="text-[11px] text-neutral-400">
                             {t("apps.admin.song.notAvailable", "Not available")}
                           </span>
@@ -1044,7 +1043,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
               {/* Furigana */}
               <div className="flex items-start gap-2 py-1.5">
-                <TextT className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <TextT className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.furigana", "Furigana")}</div>
                   {isLoading ? (
@@ -1053,14 +1052,14 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div className="flex items-center gap-1 mt-0.5">
                       {song?.furigana && song.furigana.length > 0 ? (
                         <>
-                          <Check className="h-3 w-3 text-green-500" weight="bold" />
+                          <Check className="size-3 text-green-500" weight="bold" />
                           <span className="text-[11px] text-green-600">
                             {song.furigana.length} {t("apps.admin.song.lines", "lines")}
                           </span>
                         </>
                       ) : (
                         <>
-                          <X className="h-3 w-3 text-neutral-400" weight="bold" />
+                          <X className="size-3 text-neutral-400" weight="bold" />
                           <span className="text-[11px] text-neutral-400">
                             {t("apps.admin.song.notGenerated", "Not generated")}
                           </span>
@@ -1073,7 +1072,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
               {/* Translations */}
               <div className="flex items-start gap-2 py-1.5">
-                <Translate className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <Translate className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.translations", "Translations")}</div>
                   {isLoading ? (
@@ -1082,7 +1081,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div className="flex items-center gap-1 mt-0.5">
                       {song?.translations && Object.keys(song.translations).length > 0 ? (
                         <>
-                          <Check className="h-3 w-3 text-green-500" weight="bold" />
+                          <Check className="size-3 text-green-500" weight="bold" />
                           <span className="text-[11px] text-green-600">
                             {Object.keys(song.translations).map(lang => 
                               t(`apps.admin.languages.${lang}`, lang)
@@ -1091,7 +1090,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         </>
                       ) : (
                         <>
-                          <X className="h-3 w-3 text-neutral-400" weight="bold" />
+                          <X className="size-3 text-neutral-400" weight="bold" />
                           <span className="text-[11px] text-neutral-400">
                             {t("apps.admin.song.notGenerated", "Not generated")}
                           </span>
@@ -1104,7 +1103,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
               {/* Soramimi */}
               <div className="flex items-start gap-2 py-1.5">
-                <Ear className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
+                <Ear className="size-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.soramimi", "Soramimi (空耳)")}</div>
                   {isLoading ? (
@@ -1126,7 +1125,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                           }
                           return (
                             <>
-                              <Check className="h-3 w-3 text-green-500" weight="bold" />
+                              <Check className="size-3 text-green-500" weight="bold" />
                               <span className="text-[11px] text-green-600">
                                 {languages.map(l => t(`apps.admin.languages.${l}`, l)).join(", ")}
                               </span>
@@ -1135,7 +1134,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                         }
                         return (
                           <>
-                            <X className="h-3 w-3 text-neutral-400" weight="bold" />
+                            <X className="size-3 text-neutral-400" weight="bold" />
                             <span className="text-[11px] text-neutral-400">
                               {t("apps.admin.song.notGenerated", "Not generated")}
                             </span>

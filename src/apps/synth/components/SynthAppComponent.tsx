@@ -94,7 +94,7 @@ const PianoKey: FC<{
               isPressed ? "bg-[#ff33ff]" : "bg-black hover:bg-[#333333]"
             )
           : cn(
-              "h-full w-full border border-[#333333] rounded-b-md",
+              "size-full border border-[#333333] rounded-b-md",
               isPressed ? "bg-[#ff33ff]" : "bg-white hover:bg-[#f5f5f5]"
             )
       )}
@@ -208,7 +208,7 @@ export function SynthAppComponent({
         <div
           ref={appContainerRef}
           className={cn(
-            "flex flex-col h-full w-full text-white overflow-hidden select-none synth-force-font",
+            "flex flex-col size-full text-white overflow-hidden select-none synth-force-font",
             !isMacOSTheme && "bg-[#1a1a1a]"
           )}
         >
@@ -313,10 +313,10 @@ export function SynthAppComponent({
                 {isMacOSTheme ? (
                   <div className="metal-inset-btn-group">
                     <button type="button" className="metal-inset-btn metal-inset-icon select-none" onClick={handleOctaveDown}>
-                      <CaretLeft weight="bold" className="h-3 w-3" />
+                      <CaretLeft weight="bold" className="size-3" />
                     </button>
                     <button type="button" className="metal-inset-btn metal-inset-icon select-none" onClick={handleOctaveUp}>
-                      <CaretRight weight="bold" className="h-3 w-3" />
+                      <CaretRight weight="bold" className="size-3" />
                     </button>
                     <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px] select-none" onClick={toggleControls}>
                       {t("apps.synth.controls")}
@@ -329,14 +329,14 @@ export function SynthAppComponent({
                       onClick={handleOctaveDown}
                       className={cn("h-[22px] px-2 select-none", isXpTheme && "text-black")}
                     >
-                      <CaretLeft weight="bold" className="h-3 w-3" />
+                      <CaretLeft weight="bold" className="size-3" />
                     </Button>
                     <Button
                       variant={isSystem7Theme ? "player" : "default"}
                       onClick={handleOctaveUp}
                       className={cn("h-[22px] px-2 select-none", isXpTheme && "text-black")}
                     >
-                      <CaretRight weight="bold" className="h-3 w-3" />
+                      <CaretRight weight="bold" className="size-3" />
                     </Button>
                     <Button
                       variant={isSystem7Theme ? "player" : "default"}
@@ -833,7 +833,7 @@ export function SynthAppComponent({
               "flex-grow flex flex-col justify-end min-h-[160px] w-full",
               isMacOSTheme ? "p-0" : "bg-black p-4"
             )}>
-              <div ref={keyboardContainerRef} className="relative h-full w-full">
+              <div ref={keyboardContainerRef} className="relative size-full">
                 {/* Keyboard */}
                 {/* White keys container */}
                 <div className="absolute inset-0 h-full flex w-full">
@@ -854,13 +854,15 @@ export function SynthAppComponent({
                 </div>
 
                 {/* Black keys container */}
-                <div className="absolute inset-0 h-full w-full flex pointer-events-none">
+                <div className="absolute inset-0 size-full flex pointer-events-none">
                   {blackKeys.map((note, index) => {
+                    const prevNote = blackKeys[index - 1] ?? "none";
+                    const nextNote = blackKeys[index + 1] ?? "none";
                     // Only hide black keys at the end of the visible range
                     if (visibleKeyCount > 0 && index === blackKeys.length - 1) {
                       return (
                         <div
-                          key={`empty-${index}`}
+                          key={`empty-trailing-${prevNote}`}
                           className="flex-1 relative"
                         />
                       );
@@ -868,7 +870,7 @@ export function SynthAppComponent({
 
                     return (
                       <div
-                        key={note || `empty-${index}`}
+                        key={note ?? `empty-${prevNote}-${nextNote}`}
                         className="flex-1 relative"
                       >
                         {note && (

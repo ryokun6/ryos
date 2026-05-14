@@ -164,7 +164,7 @@ export function App() {
         // New version available - show update toast (both web and Tauri)
         toast(`ryOS ${result.version} for Mac is available`, {
           id: 'desktop-update',
-          icon: <DownloadSimple className="h-4 w-4" weight="bold" />,
+          icon: <DownloadSimple className="size-4" weight="bold" />,
           duration: Infinity,
           action: {
             label: "Download",
@@ -182,7 +182,7 @@ export function App() {
         // First time user on web - show initial download toast (not in Tauri)
         toast("ryOS is available as a Mac app", {
           id: 'desktop-update',
-          icon: <DownloadSimple className="h-4 w-4" weight="bold" />,
+          icon: <DownloadSimple className="size-4" weight="bold" />,
           duration: Infinity,
           action: {
             label: "Download",

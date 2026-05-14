@@ -541,6 +541,9 @@ const SYSTEM7_PROMINENT_DESKTOP_APP_IDS: readonly string[] = [
   "internet-explorer",
   "karaoke",
 ];
+const SYSTEM7_PROMINENT_DESKTOP_APP_ID_SET = new Set<string>(
+  SYSTEM7_PROMINENT_DESKTOP_APP_IDS
+);
 
 const THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS: OsThemeId[] = [
   "macosx",
@@ -617,16 +620,17 @@ function migrateV13System7ProminentDesktopApps(
       getParentPath(oldItem.path) !== "/Desktop" ||
       oldItem.aliasType !== "app" ||
       !oldItem.aliasTarget ||
-      !SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(oldItem.aliasTarget)
+      !SYSTEM7_PROMINENT_DESKTOP_APP_ID_SET.has(oldItem.aliasTarget)
     ) {
       continue;
     }
     const h = oldItem.hiddenOnThemes;
+    const hiddenThemeSet = new Set(h || []);
     const looksLikeFullSparse =
-      h?.length === sparse.length && sparse.every((t) => h.includes(t));
+      h?.length === sparse.length && sparse.every((t) => hiddenThemeSet.has(t));
     const missingProminentHides =
-      !h?.length || want.some((theme) => !h.includes(theme));
-    const wronglyHidesOnSystem7 = h?.includes("system7");
+      !h?.length || want.some((theme) => !hiddenThemeSet.has(theme));
+    const wronglyHidesOnSystem7 = hiddenThemeSet.has("system7");
     if (looksLikeFullSparse || missingProminentHides || wronglyHidesOnSystem7) {
       newState[path] = {
         ...oldItem,
@@ -1326,7 +1330,7 @@ export const useFilesStore = create<FilesStoreState>()(
                   hiddenOnThemes = [
                     ...THEMES_HIDE_DEFAULT_APPLET_STORE_DESKTOP_SHORTCUT,
                   ];
-                } else if (SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(appId)) {
+                } else if (SYSTEM7_PROMINENT_DESKTOP_APP_ID_SET.has(appId)) {
                   hiddenOnThemes = [
                     ...THEMES_HIDE_SYSTEM7_PROMINENT_DESKTOP_APPS,
                   ];
@@ -1453,11 +1457,12 @@ export const useFilesStore = create<FilesStoreState>()(
                 item.aliasTarget === "applet-viewer"
               ) {
                 const h = item.hiddenOnThemes;
+                const hiddenThemeSet = new Set(h || []);
                 const wronglyMacosxOnly =
                   h?.length === 1 && h[0] === "macosx";
                 const missingNonMacosxHides =
                   !h?.length ||
-                  wantAppletHidden.some((theme) => !h.includes(theme));
+                  wantAppletHidden.some((theme) => !hiddenThemeSet.has(theme));
                 if (wronglyMacosxOnly || missingNonMacosxHides) {
                   items[path] = {
                     ...item,
@@ -1472,10 +1477,11 @@ export const useFilesStore = create<FilesStoreState>()(
                 item.aliasTarget === "/Applications"
               ) {
                 const h = item.hiddenOnThemes;
+                const hiddenThemeSet = new Set(h || []);
                 const needsApplicationsHideFix =
                   !h?.length ||
                   h.length !== wantApplicationsHidden.length ||
-                  wantApplicationsHidden.some((theme) => !h.includes(theme));
+                  wantApplicationsHidden.some((theme) => !hiddenThemeSet.has(theme));
                 if (needsApplicationsHideFix) {
                   items[path] = {
                     ...item,
@@ -1488,16 +1494,19 @@ export const useFilesStore = create<FilesStoreState>()(
               if (
                 item.aliasType === "app" &&
                 item.aliasTarget &&
-                SYSTEM7_PROMINENT_DESKTOP_APP_IDS.includes(item.aliasTarget)
+                SYSTEM7_PROMINENT_DESKTOP_APP_ID_SET.has(item.aliasTarget)
               ) {
                 const h = item.hiddenOnThemes;
+                const hiddenThemeSet = new Set(h || []);
                 const looksLikeFullSparse =
                   h?.length === sparseThemes.length &&
-                  sparseThemes.every((t) => h.includes(t));
+                  sparseThemes.every((t) => hiddenThemeSet.has(t));
                 const missingProminentHides =
                   !h?.length ||
-                  wantSystem7ProminentHidden.some((theme) => !h.includes(theme));
-                const wronglyHidesOnSystem7 = h?.includes("system7");
+                  wantSystem7ProminentHidden.some(
+                    (theme) => !hiddenThemeSet.has(theme)
+                  );
+                const wronglyHidesOnSystem7 = hiddenThemeSet.has("system7");
                 if (
                   looksLikeFullSparse ||
                   missingProminentHides ||

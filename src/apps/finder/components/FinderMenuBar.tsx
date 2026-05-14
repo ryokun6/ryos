@@ -333,7 +333,7 @@ export function FinderMenuBar({
             <ThemedIcon
               name="/icons/default/cloud-sync.png"
               alt=""
-              className="w-4 h-4 [image-rendering:pixelated]"
+              className="size-4 [image-rendering:pixelated]"
             />
             {t("apps.finder.airdrop.title")}
           </MenubarItem>
@@ -349,7 +349,7 @@ export function FinderMenuBar({
               <ThemedIcon
                 name={folder.icon || "/icons/directory.png"}
                 alt=""
-                className="w-4 h-4 [image-rendering:pixelated]"
+                className="size-4 [image-rendering:pixelated]"
               />
               {folder.name}
             </MenubarItem>
@@ -367,7 +367,7 @@ export function FinderMenuBar({
                   : "/icons/trash-full.png"
               }
               alt=""
-              className="w-4 h-4 [image-rendering:pixelated]"
+              className="size-4 [image-rendering:pixelated]"
             />
             {t("common.menu.trash")}
           </MenubarItem>

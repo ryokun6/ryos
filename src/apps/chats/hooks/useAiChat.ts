@@ -1888,7 +1888,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Only target server-side tools (client-side tools already called
       // addToolResult from their handlers, so they don't need recovery).
       if (isError) {
-        const SERVER_SIDE_TOOLS = [
+        const SERVER_SIDE_TOOL_SET = new Set([
           "generateHtml",
           "searchSongs",
           "memoryWrite",
@@ -1898,16 +1898,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           "cursorCloudAgent",
           "listCursorCloudAgentRuns",
           "mapsSearchPlaces",
-        ];
+        ]);
         const toolParts = lastMsg.parts.filter(
           (part: { type?: string; state?: string }) =>
             typeof part.type === "string" &&
             part.type.startsWith("tool-") &&
             (part.state === "output-available" ||
               part.state === "output-error") &&
-            SERVER_SIDE_TOOLS.includes(
-              (part.type as string).replace(/^tool-/, ""),
-            ),
+            SERVER_SIDE_TOOL_SET.has((part.type as string).replace(/^tool-/, "")),
         );
         if (toolParts.length > 0) {
           console.log(

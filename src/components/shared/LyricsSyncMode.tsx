@@ -25,7 +25,6 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 // because `Object.is` comparison on prop functions would always fail, and
 // every progress tick (~10/s for the seek bar) would re-render every row.
 const LyricLineItem = memo(function LyricLineItem({
-  line,
   index,
   isCurrent,
   isPast,
@@ -34,7 +33,6 @@ const LyricLineItem = memo(function LyricLineItem({
   onClick,
   setRef,
 }: {
-  line: LyricLine;
   index: number;
   isCurrent: boolean;
   isPast: boolean;
@@ -55,7 +53,6 @@ const LyricLineItem = memo(function LyricLineItem({
   return (
     <button
       type="button"
-      key={`${line.startTimeMs}-${index}`}
       ref={handleRef}
       onClick={handleClick}
       className={cn(
@@ -348,7 +345,7 @@ export function LyricsSyncMode({
 
   return (
     <div
-      className="w-full h-full flex flex-col bg-black/90"
+      className="size-full flex flex-col bg-black/90"
       style={{ borderRadius: "inherit" }}
     >
       {/* Header - pt-7 to accommodate notitlebar hover titlebar */}
@@ -363,7 +360,7 @@ export function LyricsSyncMode({
               className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
               aria-label={t("apps.ipod.syncMode.decreaseOffset", "Decrease offset")}
             >
-              <Minus className="w-4 h-4" weight="bold" />
+              <Minus className="size-4" weight="bold" />
             </button>
             <div className="text-white text-sm font-medium min-w-[70px] text-center">
               {formatOffset(currentOffset)}
@@ -374,7 +371,7 @@ export function LyricsSyncMode({
               className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
               aria-label={t("apps.ipod.syncMode.increaseOffset", "Increase offset")}
             >
-              <Plus className="w-4 h-4" weight="bold" />
+              <Plus className="size-4" weight="bold" />
             </button>
           </div>
 
@@ -389,7 +386,7 @@ export function LyricsSyncMode({
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white"
               aria-label={t("apps.ipod.syncMode.syncScroll", "Sync Scroll")}
             >
-              <CaretDoubleDown className="w-4 h-4" weight="bold" />
+              <CaretDoubleDown className="size-4" weight="bold" />
             </button>
           )}
 
@@ -401,7 +398,7 @@ export function LyricsSyncMode({
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white"
               aria-label={t("apps.ipod.syncMode.searchLyrics", "Search Lyrics")}
             >
-              <MagnifyingGlass className="w-4 h-4" weight="bold" />
+              <MagnifyingGlass className="size-4" weight="bold" />
             </button>
           )}
 
@@ -448,8 +445,7 @@ export function LyricsSyncMode({
           <div className="space-y-0.5">
             {lines.map((line, index) => (
               <LyricLineItem
-                key={`${line.startTimeMs}-${index}`}
-                line={line}
+                key={line.startTimeMs}
                 index={index}
                 isCurrent={index === currentLineIndex}
                 isPast={index < currentLineIndex}

@@ -49,14 +49,14 @@ export function AppSwitcher({ isVisible, apps, selectedIndex }: AppSwitcherProps
                     }`}
                   >
                     {isEmojiIcon ? (
-                      <span className="flex h-16 w-16 items-center justify-center text-5xl leading-none">
+                      <span className="flex size-16 items-center justify-center text-5xl leading-none">
                         {iconSrc}
                       </span>
                     ) : (
                       <ThemedIcon
                         name={iconSrc}
                         alt={appRegistry[appId]?.name ?? appId}
-                        className="w-16 h-16 object-contain"
+                        className="size-16 object-contain"
                         draggable={false}
                       />
                     )}

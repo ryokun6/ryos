@@ -463,7 +463,9 @@ export function KaraokeMenuBar({
               >
                 {translationLanguages.map((lang, index) => {
                   if (lang.separator) {
-                    return <MenubarSeparator key={`sep-${index}`} className="h-[2px] bg-black my-1" />;
+                    const prevCode = translationLanguages[index - 1]?.code || "start";
+                    const nextCode = translationLanguages[index + 1]?.code || "end";
+                    return <MenubarSeparator key={`sep-${prevCode}-${nextCode}`} className="h-[2px] bg-black my-1" />;
                   }
                   const value = lang.code || "off";
                   return (

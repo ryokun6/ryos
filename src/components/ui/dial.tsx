@@ -188,9 +188,9 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
 
     // Size classes
     const sizeClasses = {
-      sm: "w-8 h-8",
-      md: "w-12 h-12",
-      lg: "w-14 h-14",
+      sm: "size-8",
+      md: "size-12",
+      lg: "size-14",
     };
 
     // Calculate the percentage for the background fill
@@ -236,7 +236,7 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
           onTouchStart={handleTouchStart}
         >
           {/* Center circle */}
-          <div className="absolute top-1/2 left-1/2 w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#222]"></div>
+          <div className="absolute top-1/2 left-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#222]"></div>
         </div>
       </div>
     );

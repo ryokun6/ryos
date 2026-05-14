@@ -35,7 +35,7 @@ export const parseSimpleMarkdown = (text: string): React.ReactNode[] => {
   }
 
   // Now process italic in each text segment
-  result = result.flatMap((segment, i) => {
+  result = result.flatMap((segment) => {
     if (typeof segment !== "string") return segment;
 
     const italicParts: React.ReactNode[] = [];
@@ -52,7 +52,7 @@ export const parseSimpleMarkdown = (text: string): React.ReactNode[] => {
       // Add the italic text
       const italicContent = italicMatch[0].replace(/^\*|\*$|^_|_$/g, "");
       italicParts.push(
-        <span key={`italic-${i}-${italicMatch.index}`} className="italic">
+        <span key={`italic-${italicMatch.index}-${italicContent}`} className="italic">
           {italicContent}
         </span>
       );

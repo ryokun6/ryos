@@ -697,12 +697,12 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
           className="flex shrink-0 items-center gap-[3px]"
           aria-label={`${lives} lives remaining`}
         >
-          {Array.from({ length: STARTING_LIVES }, (_, i) => {
-            const filled = i < lives;
+          {Array.from({ length: STARTING_LIVES }, (_, slotNumber) => slotNumber + 1).map((slotNumber) => {
+            const filled = slotNumber <= lives;
             if (isModernUi) {
               return (
                 <span
-                  key={i}
+                  key={`life-${slotNumber}`}
                   className="block size-[6px] rounded-full"
                   style={
                     filled
@@ -717,7 +717,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
             }
             return (
               <span
-                key={i}
+                key={`life-${slotNumber}`}
                 className={cn(
                   "block size-[5px] rounded-full",
                   filled

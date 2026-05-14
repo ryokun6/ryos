@@ -64,7 +64,7 @@ export function FullscreenMobileDismiss({
             onInteraction?.();
             onDismiss();
           }}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+          className="size-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
           aria-label={t("apps.ipod.ariaLabels.closeFullscreen")}
           title={t("common.dialog.close")}
         >

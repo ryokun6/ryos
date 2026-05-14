@@ -139,7 +139,7 @@ export function AboutFinderDialog({
               <ThemedIcon
                 name="mac-classic.png"
                 alt="Happy Mac"
-                className="w-10 h-10 mb-1 mr-0"
+                className="size-10 mb-1 mr-0"
               />
               <div
                 className={cn(
@@ -258,8 +258,8 @@ export function AboutFinderDialog({
               fontSize: isXpTheme ? "10px" : undefined,
             }}
           >
-            {memoryUsage.map((app, index) => (
-              <div className="flex flex-row items-center gap-1" key={index}>
+            {memoryUsage.map((app) => (
+              <div className="flex flex-row items-center gap-1" key={app.name}>
                 <div className="flex justify-between w-full">
                   <div className="w-1/2 truncate">{app.name}</div>
                   <div className="w-1/3">{app.memoryMB.toFixed(1)} {t("common.aboutThisMac.mb")}</div>

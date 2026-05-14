@@ -90,7 +90,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
         <div className="flex items-center">
           {isPrivateOnline && (
             <span
-              className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 flex-shrink-0"
+              className="inline-block size-1.5 rounded-full bg-green-500 mr-1.5 flex-shrink-0"
               title="Online"
             />
           )}
@@ -150,7 +150,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
                 room.type === "private" ? t("apps.chats.ariaLabels.leaveConversation") : t("apps.chats.ariaLabels.deleteRoom")
               }
             >
-              <Trash className="w-3 h-3 text-black/30" weight="bold" />
+              <Trash className="size-3 text-black/30" weight="bold" />
             </button>
           )}
       </div>
@@ -196,9 +196,9 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
                     variant="ghost"
                     size="sm"
                     onClick={onAddRoom}
-                    className="flex items-center text-xs hover:bg-black/5 w-[24px] h-[24px]"
+                    className="flex items-center text-xs hover:bg-black/5 size-[24px]"
                   >
-                    <Plus className="w-3 h-3" weight="bold" />
+                    <Plus className="size-3" weight="bold" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -270,7 +270,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
                               <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <CaretRight
                                   className={cn(
-                                    "w-2.5 h-2.5 text-black/50 transition-transform",
+                                    "size-2.5 text-black/50 transition-transform",
                                     isChannelsOpen ? "rotate-90" : "rotate-0"
                                   )}
                                 />
@@ -297,7 +297,7 @@ export const ChatRoomSidebar = React.memo(function ChatRoomSidebar({
                             <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <CaretRight
                                 className={cn(
-                                  "w-2.5 h-2.5 text-black/50 transition-transform",
+                                  "size-2.5 text-black/50 transition-transform",
                                   isPrivateOpen ? "rotate-90" : "rotate-0"
                                 )}
                               />

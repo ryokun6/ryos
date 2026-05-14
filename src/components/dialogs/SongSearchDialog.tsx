@@ -471,7 +471,7 @@ export function SongSearchDialog({
       const result = appleMusicResults[index];
       return (
         <div
-          key={`${result.id}-${index}`}
+          key={result.id}
           onClick={() => dispatch({ type: "setSelectedIndex", index })}
           onDoubleClick={() => void handleSelectAndAdd(index)}
           onKeyDown={(e) => {

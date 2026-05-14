@@ -135,7 +135,7 @@ export function BootScreen({
             }}
           />
           <DialogPrimitive.Content
-            className="fixed inset-0 z-[80] bg-black p-0 w-full h-full max-w-none border-none shadow-none outline-none rounded-none m-0"
+            className="fixed inset-0 z-[80] bg-black p-0 size-full max-w-none border-none shadow-none outline-none rounded-none m-0"
             style={{ 
               position: "fixed",
               top: 0,
@@ -155,7 +155,7 @@ export function BootScreen({
               <DialogTitle>{localizedTitle}</DialogTitle>
             </VisuallyHidden>
             <div 
-              className="flex flex-col items-center justify-center w-full h-full bg-black"
+              className="flex flex-col items-center justify-center size-full bg-black"
               onClick={debugMode ? handleDone : undefined}
               style={{
                 width: "100%",
@@ -167,7 +167,7 @@ export function BootScreen({
               <img
                 src={getSplashImage()}
                 alt={isWinXp ? "Windows XP" : "Windows 98"}
-                className={isWin98 ? "w-full h-full object-fill" : "max-w-full max-h-full object-contain"}
+                className={isWin98 ? "size-full object-fill" : "max-w-full max-h-full object-contain"}
                 style={{ display: "block" }}
               />
             </div>
@@ -215,7 +215,7 @@ export function BootScreen({
               <img
                 src="/icons/macosx/apple.png"
                 alt="Apple"
-                className="w-[120px] h-[120px] object-contain"
+                className="size-[120px] object-contain"
                 style={{ marginBottom: "-30px", filter: "grayscale(50%) brightness(1.25)" }}
               />
               {/* ryOS X text */}

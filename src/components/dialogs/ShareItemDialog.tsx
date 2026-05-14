@@ -149,7 +149,7 @@ export function ShareItemDialog({
       <div className="flex flex-col items-center space-y-3 w-full">
         {/* QR Code */}
         {isLoading ? (
-          <div className="w-32 h-32 flex items-center justify-center bg-gray-100 rounded">
+          <div className="size-32 flex items-center justify-center bg-gray-100 rounded">
             <p
               className={cn(
                 "text-gray-500",
@@ -168,17 +168,17 @@ export function ShareItemDialog({
             </p>
           </div>
         ) : shareUrl ? (
-          <div className="bg-white p-1.5 w-32 h-32 flex items-center justify-center">
+          <div className="bg-white p-1.5 size-32 flex items-center justify-center">
             <QRCodeSVG
               value={shareUrl}
               size={112}
               level="M"
               includeMargin={false}
-              className="w-28 h-28"
+              className="size-28"
             />
           </div>
         ) : (
-          <div className="w-32 h-32 flex items-center justify-center bg-gray-100 rounded">
+          <div className="size-32 flex items-center justify-center bg-gray-100 rounded">
             <p
               className={cn(
                 "text-gray-500",

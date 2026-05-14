@@ -1445,7 +1445,7 @@ export function MapsAppComponent({
           />
         }
       >
-        <div className="relative h-full w-full min-h-0 flex-1 overflow-hidden bg-transparent font-os-ui">
+        <div className="relative size-full min-h-0 flex-1 overflow-hidden bg-transparent font-os-ui">
           <div
             ref={mapContainerRef}
             className="absolute inset-0 bg-[#e5e3df]"
@@ -1529,7 +1529,7 @@ export function MapsAppComponent({
                             )}
                           >
                             <div
-                              className="aqua-icon-badge flex h-7 w-7 shrink-0 items-center justify-center text-white"
+                              className="aqua-icon-badge flex size-7 shrink-0 items-center justify-center text-white"
                               style={{
                                 backgroundImage: poiVisualGradient(visual),
                               }}

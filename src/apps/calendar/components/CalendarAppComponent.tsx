@@ -57,6 +57,7 @@ const HOUR_END = 24;
 const TODAY_RED = "#E25B4F";
 const TODAY_RED_XP = "#B53325";
 const SEARCH_DIM_OPACITY = 0.28;
+const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 function matchesSearchQuery(value: string | undefined, normalizedQuery: string) {
   if (!normalizedQuery) return true;
@@ -372,15 +373,18 @@ function MiniCalendar({
       </div>
 
       <div className="grid grid-cols-7 mb-0.5">
-        {narrowDayNames.map((d, i) => (
-          <div
-            key={i}
-            className={cn("text-center font-medium", useGeneva && "font-geneva-12")}
-            style={{ opacity: 0.5, fontSize: 9 }}
-          >
-            {d}
-          </div>
-        ))}
+        {WEEKDAY_KEYS.map((dayKey) => {
+          const dayLabel = narrowDayNames[WEEKDAY_KEYS.indexOf(dayKey)] ?? "";
+          return (
+            <div
+              key={dayKey}
+              className={cn("text-center font-medium", useGeneva && "font-geneva-12")}
+              style={{ opacity: 0.5, fontSize: 9 }}
+            >
+              {dayLabel}
+            </div>
+          );
+        })}
       </div>
 
       {calendarGrid.map((week, wi) => (
@@ -614,14 +618,15 @@ function WeekTimeGrid({
                 className="flex-1 relative min-w-0"
                 style={{ borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)" }}
               >
-                {Array.from({ length: totalHours }, (_, i) => (
+                {Array.from({ length: totalHours }, (_, hourOffset) => HOUR_START + hourOffset).map((hour) => (
                   <button
-                    key={i}
+                    key={hour}
                     type="button"
-                    onClick={() => onTimeSlotClick(day.date, HOUR_START + i)}
+                    onClick={() => onTimeSlotClick(day.date, hour)}
                     className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
                     style={{
-                      top: i * hourHeight, height: hourHeight,
+                      top: (hour - HOUR_START) * hourHeight,
+                      height: hourHeight,
                       borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
                     }}
                   />
@@ -654,7 +659,7 @@ function WeekTimeGrid({
                   return (
                     <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                       <div className="flex items-center">
-                        <div className="w-2 h-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
+                        <div className="size-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                         <div className="flex-1 h-px" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                       </div>
                     </div>
@@ -789,10 +794,17 @@ function DayTimeGrid({
           </div>
 
           <div className="flex-1 relative min-w-0">
-            {Array.from({ length: totalHours }, (_, i) => (
-              <button key={i} type="button" onClick={() => onTimeSlotClick(date, HOUR_START + i)}
+            {Array.from({ length: totalHours }, (_, hourOffset) => HOUR_START + hourOffset).map((hour) => (
+              <button
+                key={hour}
+                type="button"
+                onClick={() => onTimeSlotClick(date, hour)}
                 className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
-                style={{ top: i * hourHeight, height: hourHeight, borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)" }}
+                style={{
+                  top: (hour - HOUR_START) * hourHeight,
+                  height: hourHeight,
+                  borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+                }}
               />
             ))}
 
@@ -822,7 +834,7 @@ function DayTimeGrid({
               return (
                 <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full -ml-1 shrink-0" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
+                    <div className="size-2 rounded-full -ml-1 shrink-0" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                     <div className="flex-1 h-px min-w-0" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                   </div>
                 </div>
@@ -876,9 +888,18 @@ function MonthGrid({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="grid grid-cols-7 border-b" style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}>
-        {narrowDayNames.map((d, i) => (
-          <div key={i} className="text-center text-[10px] font-medium py-1 select-none" style={{ opacity: 0.5 }}>{d}</div>
-        ))}
+        {WEEKDAY_KEYS.map((dayKey) => {
+          const dayLabel = narrowDayNames[WEEKDAY_KEYS.indexOf(dayKey)] ?? "";
+          return (
+            <div
+              key={dayKey}
+              className="text-center text-[10px] font-medium py-1 select-none"
+              style={{ opacity: 0.5 }}
+            >
+              {dayLabel}
+            </div>
+          );
+        })}
       </div>
       <div className="flex-1 grid grid-rows-6">
         {calendarGrid.map((week, wi) => (
@@ -1002,7 +1023,7 @@ function BottomToolbar({
           <div className="shrink-0">
             <div className="metal-inset-btn-group">
               <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onPrev}>
-                <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
+                <span className="inline-block size-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
               </button>
               {views.map((v) => (
                 <button key={v.id} type="button" className="metal-inset-btn font-geneva-12 !text-[11px] w-[48px] justify-center px-0"
@@ -1011,7 +1032,7 @@ function BottomToolbar({
                 </button>
               ))}
               <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNext}>
-                <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[5px] border-l-current" />
+                <span className="inline-block size-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[5px] border-l-current" />
               </button>
             </div>
           </div>
@@ -1048,7 +1069,7 @@ function BottomToolbar({
                   variant={isSystem7Theme ? "player" : "ghost"}
                   onClick={onToggleCalendarSidebar}
                   data-state={showCalendarSidebar ? "on" : "off"}
-                  className={cn("h-6 w-6", isXpTheme && "text-black")}
+                  className={cn("size-6", isXpTheme && "text-black")}
                   title={t("apps.calendar.sidebar.calendars")}
                 >
                   <SidebarSimple size={14} />
@@ -1057,7 +1078,7 @@ function BottomToolbar({
                   variant={isSystem7Theme ? "player" : "ghost"}
                   onClick={onToggleMiniCalendar}
                   data-state={showMiniCalendar ? "on" : "off"}
-                  className={cn("h-6 w-6", isXpTheme && "text-black")}
+                  className={cn("size-6", isXpTheme && "text-black")}
                 >
                   <CalendarBlank size={14} />
                 </Button>
@@ -1094,12 +1115,12 @@ function BottomToolbar({
           )}
           <div className="flex items-center gap-0 shrink-0">
             <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onNewEvent}
-              className={cn("h-6 w-6", isXpTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
+              className={cn("size-6", isXpTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
               <Plus size={12} weight="bold" />
             </Button>
             <Button variant={isSystem7Theme ? "player" : "ghost"}
               onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"}
-              className={cn("h-6 w-6", isXpTheme && "text-black")} title={t("apps.calendar.sidebar.toDoItems")}>
+              className={cn("size-6", isXpTheme && "text-black")} title={t("apps.calendar.sidebar.toDoItems")}>
               <ListChecks size={12} weight="bold" />
             </Button>
           </div>
@@ -1365,7 +1386,7 @@ export function CalendarAppComponent({
       >
         <div
           ref={containerRef}
-          className={cn("flex flex-col h-full w-full font-os-ui overflow-hidden", isMacOSTheme ? "bg-transparent" : "bg-white")}
+          className={cn("flex flex-col size-full font-os-ui overflow-hidden", isMacOSTheme ? "bg-transparent" : "bg-white")}
         >
           {/* Main content area */}
           <div className={cn("flex-1 flex overflow-hidden", isMacOSTheme && "gap-[5px]")}>

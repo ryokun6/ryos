@@ -618,9 +618,9 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
             {t("apps.dashboard.weather.noResults")}
           </div>
         ) : (
-          citiesToShow.map((city, i) => (
+          citiesToShow.map((city) => (
             <button
-              key={`${city.lat}-${city.lon}-${i}`}
+              key={`${city.lat}-${city.lon}`}
               type="button"
               onClick={() => selectCity(city)}
               className="w-full flex items-center gap-1.5 px-3 py-1.5 text-left transition-colors"

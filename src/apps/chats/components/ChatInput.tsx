@@ -499,6 +499,11 @@ export const ChatInput = memo(function ChatInput({
     };
   }, [isForeground, isFocused, isTranscribing]);
 
+  const waveformBars = waveformFrequencies.map((freq, position) => ({
+    freq,
+    barKey: `wave-${position + 1}`,
+  }));
+
   return (
     <AnimatePresence initial={false}>
       <motion.div
@@ -558,7 +563,7 @@ export const ChatInput = memo(function ChatInput({
                 <button
                   type="button"
                   onClick={handleImageClear}
-                  className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center z-20 ${
+                  className={`absolute -top-1.5 -right-1.5 size-5 flex items-center justify-center z-20 ${
                     isMacTheme 
                       ? "rounded-full overflow-hidden" 
                       : "rounded-sm bg-black/40 backdrop-blur-sm hover:bg-black/60"
@@ -588,7 +593,7 @@ export const ChatInput = memo(function ChatInput({
                       }}
                     />
                   )}
-                  <X className={`h-2.5 w-2.5 relative z-[3] ${isMacTheme ? "text-neutral-500" : "text-white"}`} weight="bold" />
+                  <X className={`size-2.5 relative z-[3] ${isMacTheme ? "text-neutral-500" : "text-white"}`} weight="bold" />
                 </button>
               </div>
             </motion.div>
@@ -673,15 +678,15 @@ export const ChatInput = memo(function ChatInput({
                     className="flex gap-[2px] items-center justify-between w-full"
                     style={{ opacity: waveformIsSilent ? 0.4 : 1 }}
                   >
-                    {waveformFrequencies.map((freq, index) => (
+                    {waveformBars.map((bar) => (
                       <motion.div
-                        key={index}
+                        key={bar.barKey}
                         className="flex-1 max-w-[2px] rounded-full origin-center bg-neutral-300"
                         initial={{ scaleY: 0.3 }}
                         animate={{
                           scaleY: waveformIsSilent
                             ? 0.3
-                            : Math.max(0.3, Math.min(freq * 2, 1)),
+                            : Math.max(0.3, Math.min(bar.freq * 2, 1)),
                         }}
                         style={{
                           height: 20,
@@ -745,7 +750,7 @@ export const ChatInput = memo(function ChatInput({
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute top-0 left-0 w-full h-full pointer-events-none flex items-center pl-3"
+                      className="absolute top-0 left-0 size-full pointer-events-none flex items-center pl-3"
                     >
                       <span className="text-gray-500 opacity-70 shimmer-gray text-[13px] font-geneva-12">
                         {t("apps.chats.status.thinking")}
@@ -763,7 +768,7 @@ export const ChatInput = memo(function ChatInput({
                             <button
                               type="button"
                               onClick={handleNudgeClick}
-                              className={`w-[22px] h-[22px] flex items-center justify-center ${
+                              className={`size-[22px] flex items-center justify-center ${
                                 isMacTheme
                                   ? "text-neutral-400 hover:text-neutral-800 transition-colors"
                                   : ""
@@ -771,7 +776,7 @@ export const ChatInput = memo(function ChatInput({
                               disabled={isLoading}
                               aria-label={t("apps.chats.ariaLabels.sendNudge")}
                             >
-                              <Hand className="h-4 w-4 -rotate-40" weight="bold" />
+                              <Hand className="size-4 -rotate-40" weight="bold" />
                             </button>
                           </div>
                         </TooltipTrigger>
@@ -789,7 +794,7 @@ export const ChatInput = memo(function ChatInput({
                             <button
                               type="button"
                               onClick={handleMentionClick}
-                              className={`w-[22px] h-[22px] flex items-center justify-center ${
+                              className={`size-[22px] flex items-center justify-center ${
                                 isMacTheme
                                   ? "text-neutral-400 hover:text-neutral-800 transition-colors"
                                   : ""
@@ -797,7 +802,7 @@ export const ChatInput = memo(function ChatInput({
                               disabled={isLoading}
                               aria-label={t("apps.chats.ariaLabels.mentionRyo")}
                             >
-                              <At className="h-4 w-4" weight="bold" />
+                              <At className="size-4" weight="bold" />
                             </button>
                           </div>
                         </TooltipTrigger>
@@ -814,7 +819,7 @@ export const ChatInput = memo(function ChatInput({
                           <button
                             type="button"
                             onClick={() => imageInputRef.current?.click()}
-                            className={`w-[22px] h-[22px] flex items-center justify-center ${
+                            className={`size-[22px] flex items-center justify-center ${
                               isMacTheme
                                 ? "text-neutral-400 hover:text-neutral-800 transition-colors"
                                 : ""
@@ -822,7 +827,7 @@ export const ChatInput = memo(function ChatInput({
                             disabled={isLoading || isProcessingImage}
                             aria-label={t("apps.chats.ariaLabels.attachImage") || "Attach image"}
                           >
-                            <ImageSquare className="h-4 w-4" weight="bold" />
+                            <ImageSquare className="size-4" weight="bold" />
                           </button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -837,7 +842,7 @@ export const ChatInput = memo(function ChatInput({
                         <button
                           type="button"
                           onClick={() => audioButtonRef.current?.click()}
-                          className={`w-[22px] h-[22px] flex items-center justify-center ${
+                          className={`size-[22px] flex items-center justify-center ${
                             isMacTheme
                               ? "text-neutral-400 hover:text-neutral-800 transition-colors"
                               : ""
@@ -845,7 +850,7 @@ export const ChatInput = memo(function ChatInput({
                           disabled={isTranscribing}
                           aria-label={t("apps.chats.ariaLabels.pushToTalk")}
                         >
-                          <Microphone className="h-4 w-4" weight="bold" />
+                          <Microphone className="size-4" weight="bold" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -877,7 +882,7 @@ export const ChatInput = memo(function ChatInput({
                       onManualStop?.();
                     }
                   }}
-                  className={`text-xs w-9 h-9 p-0 flex items-center justify-center ${
+                  className={`text-xs size-9 p-0 flex items-center justify-center ${
                     isMacTheme ? "rounded-full" : "rounded-none"
                   } ${
                     isMacTheme
@@ -931,7 +936,7 @@ export const ChatInput = memo(function ChatInput({
                     </>
                   )}
                   <Square
-                    className={`h-4 w-4 ${
+                    className={`size-4 ${
                       isMacTheme
                         ? "text-black/70 relative z-10"
                         : isXpTheme
@@ -952,7 +957,7 @@ export const ChatInput = memo(function ChatInput({
               >
                 <Button
                   type="submit"
-                  className={`text-xs w-9 h-9 p-0 flex items-center justify-center ${
+                  className={`text-xs size-9 p-0 flex items-center justify-center ${
                     isMacTheme ? "rounded-full" : "rounded-none"
                   } ${
                     isMacTheme
@@ -1007,7 +1012,7 @@ export const ChatInput = memo(function ChatInput({
                     </>
                   )}
                   <ArrowUp
-                    className={`h-4 w-4 ${
+                    className={`size-4 ${
                       isMacTheme
                         ? "text-black/70 relative z-10"
                         : isXpTheme

@@ -873,10 +873,10 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                         }}
                       >
                         {/* Placeholder Content / HtmlPreview container */}
-                        <div className="w-full h-full">
+                        <div className="size-full">
                           {/* Only render content for the active pane */}
                           {distance === 0 && (
-                            <div className="w-full h-full flex items-center justify-center">
+                            <div className="size-full flex items-center justify-center">
                               <AnimatePresence mode="wait">
                                 <motion.div
                                   key={previewStatus} // Animate based on status change
@@ -884,11 +884,11 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                   animate={{ opacity: 1 }}
                                   exit={{ opacity: 0 }}
                                   transition={{ duration: 0.2 }}
-                                  className="w-full h-full"
+                                  className="size-full"
                                 >
                                   {previewStatus === "loading" && (
                                     <motion.div
-                                      className="w-full h-full flex items-center justify-center bg-transparent"
+                                      className="size-full flex items-center justify-center bg-transparent"
                                       variants={pulsingAnimationVariants}
                                       animate="loading"
                                     >
@@ -898,7 +898,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                     </motion.div>
                                   )}
                                   {previewStatus === "error" && (
-                                    <div className="w-full h-full flex items-center justify-center p-4">
+                                    <div className="size-full flex items-center justify-center p-4">
                                       <p className="text-red-400 text-center">
                                         {previewError ||
                                           t("apps.internet-explorer.errorLoadingPreview")}
@@ -914,7 +914,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                           duration: 0.5,
                                           delay: 0.1,
                                         }}
-                                        className="w-full h-full overflow-hidden"
+                                        className="size-full overflow-hidden"
                                       >
                                         {previewSourceType === "url" && (
                                           <motion.div // Animate iframe opacity based on load state
@@ -925,7 +925,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                                 ? "loaded"
                                                 : "loading"
                                             } // Use pulsing when loading, solid when loaded
-                                            className="w-full h-full relative"
+                                            className="size-full relative"
                                           >
                                             <AnimatePresence>
                                               {!isIframeLoaded && (
@@ -942,7 +942,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                             </AnimatePresence>
                                             <iframe
                                               src={previewContent}
-                                              className="w-full h-full border-none bg-white"
+                                              className="size-full border-none bg-white"
                                               sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
                                               title={`Preview for ${previewYear}`}
                                               onLoad={() => {
@@ -969,7 +969,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                             initial={{ opacity: 0 }} // Start transparent
                                             animate={{ opacity: 1 }} // Always fade in fully for HTML content
                                             transition={{ duration: 0.5 }} // Match iframe fade duration
-                                            className="w-full h-full"
+                                            className="size-full"
                                           >
                                             <HtmlPreview
                                               htmlContent={previewContent}
@@ -989,7 +989,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                                   {(previewStatus === "idle" ||
                                     (previewStatus === "success" &&
                                       !previewContent)) && (
-                                    <div className="w-full h-full flex items-center justify-center">
+                                    <div className="size-full flex items-center justify-center">
                                       {" "}
                                       {/* Placeholder/Idle */}{" "}
                                     </div>
@@ -1000,7 +1000,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                           )}
                           {/* Add a subtle background or placeholder for non-active cards */}
                           {distance !== 0 && (
-                            <div className="w-full h-full bg-neutral-900/30"></div> // Simple background
+                            <div className="size-full bg-neutral-900/30"></div> // Simple background
                           )}
                         </div>
                       </motion.div>
@@ -1166,7 +1166,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 rounded-full hover:bg-white/10 opacity-60 hover:opacity-100 transition-opacity"
+                  className="size-7 rounded-full hover:bg-white/10 opacity-60 hover:opacity-100 transition-opacity"
                   onClick={handleSharePage}
                   aria-label={t("apps.internet-explorer.shareThisPageAndTime")}
                 >
@@ -1235,7 +1235,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full hover:bg-white/10 opacity-60 hover:opacity-100 transition-opacity"
+                      className="size-7 rounded-full hover:bg-white/10 opacity-60 hover:opacity-100 transition-opacity"
                     >
                       <Sparkle size={16} className="text-neutral-300" weight="bold" />
                     </Button>

@@ -100,8 +100,8 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
 
       <div className="mt-2 flex items-center justify-center space-x-8 py-4">
         <div className="flex flex-col items-center">
-          <div className="relative w-16 h-16 flex items-center justify-center">
-            <div className="absolute border-2 border-black rounded-md w-12 h-12 bg-gray-100" />
+          <div className="relative size-16 flex items-center justify-center">
+            <div className="absolute border-2 border-black rounded-md size-12 bg-gray-100" />
             <svg
               width="24"
               height="24"
@@ -122,8 +122,8 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
         </div>
 
         <div className="flex flex-col items-center">
-          <div className="relative w-16 h-16 flex items-center justify-center">
-            <div className="absolute border-2 border-black rounded-md w-12 h-12 bg-gray-100" />
+          <div className="relative size-16 flex items-center justify-center">
+            <div className="absolute border-2 border-black rounded-md size-12 bg-gray-100" />
             <svg
               width="24"
               height="24"

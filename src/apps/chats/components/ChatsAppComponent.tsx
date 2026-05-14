@@ -611,7 +611,7 @@ export function ChatsAppComponent({
       >
         <div
           ref={containerRef}
-          className={`relative h-full w-full ${
+          className={`relative size-full ${
             isWindowsLegacyTheme ? "border-t border-[#919b9c]" : ""
           }`}
         >
@@ -748,7 +748,7 @@ export function ChatsAppComponent({
                           : `#${currentRoom.name}`
                         : "@ryo"}
                     </h2>
-                    <CaretDown className="h-2.5 w-2.5 transform transition-transform duration-200 text-neutral-400" weight="bold" />
+                    <CaretDown className="size-2.5 transform transition-transform duration-200 text-neutral-400" weight="bold" />
                   </Button>
 
                   {currentRoom &&
