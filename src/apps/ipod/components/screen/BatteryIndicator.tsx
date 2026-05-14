@@ -75,32 +75,36 @@ export function BatteryIndicator({
   );
 
   useEffect(() => {
-    let removeBatteryListeners: (() => void) | undefined;
+    let batteryRef: BatteryManager | null = null;
     let isDisposed = false;
+
+    const updateLevel = () => {
+      if (batteryRef) {
+        setBatteryLevel(batteryRef.level);
+      }
+    };
+
+    const updateCharging = () => {
+      if (batteryRef) {
+        setIsCharging(batteryRef.charging);
+      }
+    };
 
     const getBattery = async () => {
       try {
         if ("getBattery" in navigator) {
-          const battery = await (
+          batteryRef = await (
             navigator as unknown as { getBattery: () => Promise<BatteryManager> }
           ).getBattery();
           if (isDisposed) return;
           dispatch({
             type: "setBatteryStatus",
-            batteryLevel: battery.level,
-            isCharging: battery.charging,
+            batteryLevel: batteryRef.level,
+            isCharging: batteryRef.charging,
           });
 
-          const updateLevel = () => setBatteryLevel(battery.level);
-          const updateCharging = () => setIsCharging(battery.charging);
-
-          battery.addEventListener("levelchange", updateLevel);
-          battery.addEventListener("chargingchange", updateCharging);
-
-          removeBatteryListeners = () => {
-            battery.removeEventListener("levelchange", updateLevel);
-            battery.removeEventListener("chargingchange", updateCharging);
-          };
+          batteryRef.addEventListener("levelchange", updateLevel);
+          batteryRef.addEventListener("chargingchange", updateCharging);
         }
       } catch {
         if (isDisposed) return;
@@ -113,7 +117,10 @@ export function BatteryIndicator({
 
     return () => {
       isDisposed = true;
-      removeBatteryListeners?.();
+      if (batteryRef) {
+        batteryRef.removeEventListener("levelchange", updateLevel);
+        batteryRef.removeEventListener("chargingchange", updateCharging);
+      }
     };
   }, []);
 
