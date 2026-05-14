@@ -719,13 +719,11 @@ export function IpodScreen({
        *   play indicator on the left and battery on the right. */}
       <div
         className={cn(
-          // z-10 (NOT z-20) so the video / lyrics overlay (z-20) cleanly
-          // covers the titlebar when active — the user wants the screen
-          // to read as full-bleed video / lyrics with no chrome on top.
-          // In all other states (menu, now-playing without video, split
-          // menu) the titlebar still renders normally because nothing
-          // higher-z is drawn over it.
-          "shrink-0 py-0 flex items-center sticky top-0 z-10",
+          // Above menu / now-playing content (z-10) so the blue selection
+          // highlight cannot paint over the titlebar hairline. The parent
+          // panel stays z-10, so full-bleed video (sibling z-20) still
+          // stacks over this chrome when playing.
+          "shrink-0 py-0 flex items-center sticky top-0 z-20",
           isModernUi
             ? "ipod-modern-titlebar text-black font-ipod-modern-ui font-semibold pl-1.5 pr-1.5 gap-1.5"
             : "h-6 min-h-6 px-2 border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]",
@@ -818,16 +816,18 @@ export function IpodScreen({
         </div>
       </div>
 
-      {/* Content area - z-30 only when video is not showing so it can
-          receive events. Content height subtracts the titlebar height
-          so the menu/now-playing area is the same in both skins.
+      {/* Content area - z-10 (below the titlebar z-20) when video is not
+          showing so list/now-playing paint under the silver header.
+          The screen wrapper stays above the z-0 video layer in menu mode
+          via the parent panel. Content height subtracts the titlebar
+          height so the menu/now-playing area is the same in both skins.
           Width clamps to the LEFT HALF of the screen when the split
           menu Ken Burns art column is showing so the menu list doesn't
           bleed under the album art. */}
       <div
         className={cn(
           "relative",
-          !showVideo && "z-30",
+          !showVideo && "z-10",
           isModernUi && showSplitMenuArt && "bg-white",
           isModernUi && "flex-1 min-h-0"
         )}
