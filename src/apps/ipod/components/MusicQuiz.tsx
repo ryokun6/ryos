@@ -113,9 +113,10 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const isModernUi = uiVariant === "modern";
 
   /** Body area below title bar (`calc(100% - …)`) — classic bar ~26px incl. hairline.
-   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (21px) so the
-   *  quiz view's chrome lines up with the main menu's titlebar. */
-  const bodyTopOffsetPx = isModernUi ? 21 : 26;
+   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (17px) so the
+   *  quiz view's chrome lines up exactly with the main menu's titlebar
+   *  (nano 6G/7G silver header). */
+  const bodyTopOffsetPx = isModernUi ? 17 : 26;
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const ipodVolume = useAudioSettingsStore((s) => s.ipodVolume);
   const finalVolume = ipodVolume * masterVolume;
@@ -565,20 +566,23 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         <div className="absolute inset-0 pointer-events-none z-[25] lcd-reflection" />
       )}
 
-      {/* Title bar — classic LCD vs modern (IpodScreen) */}
+      {/* Title bar — classic LCD vs modern (IpodScreen). Modern uses the
+       *  slim 17px silver header (matches `MODERN_TITLEBAR_HEIGHT` in
+       *  IpodScreen.tsx) + 12px MyriadPro semibold type so it lines up
+       *  pixel-for-pixel with the main menu titlebar. */}
       <div
         className={cn(
           "shrink-0 flex items-center sticky top-0 z-10 py-0 px-2 tabular-nums",
           isModernUi
-            ? "ipod-modern-titlebar font-ipod-modern-ui text-[15px] font-semibold text-black"
+            ? "ipod-modern-titlebar font-ipod-modern-ui text-[12px] font-semibold text-black"
             : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
-        style={isModernUi ? { height: 21, minHeight: 21 } : undefined}
+        style={isModernUi ? { height: 17, minHeight: 17 } : undefined}
       >
         <div
           className={cn(
             "flex w-6 items-center justify-start",
-            isModernUi ? "font-semibold text-[15px] text-black/80" : "text-xs"
+            isModernUi ? "font-semibold text-[12px] text-black/80" : "text-xs"
           )}
         >
           {phase !== "finished" && hasEnoughTracks && (
@@ -598,7 +602,7 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
         <div
           className={cn(
             "flex w-6 items-center justify-end",
-            isModernUi ? "font-semibold text-[15px] text-black/80" : "text-xs"
+            isModernUi ? "font-semibold text-[12px] text-black/80" : "text-xs"
           )}
         >
           {phase !== "finished" && hasEnoughTracks && <span>{score}</span>}

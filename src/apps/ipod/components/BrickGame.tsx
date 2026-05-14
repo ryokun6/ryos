@@ -177,9 +177,10 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
   const uiVariant = useIpodStore((s) => s.uiVariant ?? "modern");
   const isModernUi = uiVariant === "modern";
   /** Body offset for `calc(100% - …)` — classic chrome ~26px.
-   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (21px) so the
-   *  brick game's chrome lines up with the main menu's titlebar. */
-  const bodyTopOffsetPx = isModernUi ? 21 : 26;
+   *  Modern bar matches `MODERN_TITLEBAR_HEIGHT` in IpodScreen (17px) so the
+   *  brick game's chrome lines up pixel-for-pixel with the main menu's
+   *  slim nano 6G/7G silver header. */
+  const bodyTopOffsetPx = isModernUi ? 17 : 26;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stateRef = useRef<GameState>(initialState());
   const phaseRef = useRef<Phase>("ready");
@@ -639,7 +640,7 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
             ? "ipod-modern-titlebar font-ipod-modern-ui text-[12px] font-semibold text-black pl-1.5 pr-1.5"
             : "border-b border-[#0a3667] font-chicago text-[16px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
         )}
-        style={isModernUi ? { height: 21, minHeight: 21 } : undefined}
+        style={isModernUi ? { height: 17, minHeight: 17 } : undefined}
       >
         {/* Play/pause indicator. ▶ while a level is actively in motion,
          *  ⏸ for every other phase (ready, paused, lifeLost, won,
@@ -667,23 +668,40 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
           </div>
         )}
 
-        {/* Life dots — three pips that drain as the player loses lives. */}
+        {/* Life dots — three pips that drain as the player loses lives.
+         *  Modern: each filled dot is a tiny glossy sphere using the same
+         *  upper-left-biased radial gradient as the brick-game ball
+         *  (white core → graphite → near-black rim) so the pips read as
+         *  a row of little balls. Empty dots fade to a soft black/15
+         *  shadow. Classic stays a flat #0a3667 LCD dot. */}
         <div
           className="flex shrink-0 items-center gap-[3px]"
           aria-label={`${lives} lives remaining`}
         >
           {Array.from({ length: STARTING_LIVES }, (_, i) => {
             const filled = i < lives;
+            if (isModernUi) {
+              return (
+                <span
+                  key={i}
+                  className="block size-[6px] rounded-full"
+                  style={
+                    filled
+                      ? {
+                          background:
+                            "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95) 0%, #6e6e72 45%, #101012 100%)",
+                        }
+                      : { backgroundColor: "rgba(0,0,0,0.15)" }
+                  }
+                />
+              );
+            }
             return (
               <span
                 key={i}
                 className={cn(
                   "block size-[5px] rounded-full",
-                  isModernUi
-                    ? filled
-                      ? "bg-black/65 [box-shadow:0_1px_0_rgba(255,255,255,0.85)]"
-                      : "bg-black/15"
-                    : filled
+                  filled
                     ? "bg-[#0a3667]"
                     : "bg-transparent border border-[#0a3667]/50"
                 )}
