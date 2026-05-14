@@ -44,19 +44,23 @@ const MODERN_BRICK_COLORS: Array<{
   body: string;
   shadow: string;
   topGloss: string;
+  /** Thin 1-game-unit border drawn on top of the fill to give bricks a
+   *  defined edge, matching the subtle outline visible on each brick in
+   *  the nano 6G/7G reference photo. */
+  border: string;
 }> = [
   // red
-  { highlight: "#ff8a78", body: "#e34a3a", shadow: "#a0231a", topGloss: "rgba(255,255,255,0.55)" },
+  { highlight: "#ff8a78", body: "#e34a3a", shadow: "#a0231a", topGloss: "rgba(255,255,255,0.3)", border: "rgba(74,15,8,0.55)" },
   // orange
-  { highlight: "#ffb673", body: "#ef892c", shadow: "#a8540f", topGloss: "rgba(255,255,255,0.5)" },
+  { highlight: "#ffb673", body: "#ef892c", shadow: "#a8540f", topGloss: "rgba(255,255,255,0.28)", border: "rgba(85,40,5,0.5)" },
   // yellow
-  { highlight: "#ffe572", body: "#ebc935", shadow: "#9c810e", topGloss: "rgba(255,255,255,0.6)" },
+  { highlight: "#ffe572", body: "#ebc935", shadow: "#9c810e", topGloss: "rgba(255,255,255,0.32)", border: "rgba(80,60,5,0.5)" },
   // green
-  { highlight: "#a8e879", body: "#5cbf3f", shadow: "#2c761a", topGloss: "rgba(255,255,255,0.5)" },
+  { highlight: "#a8e879", body: "#5cbf3f", shadow: "#2c761a", topGloss: "rgba(255,255,255,0.28)", border: "rgba(20,55,12,0.55)" },
   // blue
-  { highlight: "#7a96ff", body: "#3a5fd6", shadow: "#193a96", topGloss: "rgba(255,255,255,0.5)" },
+  { highlight: "#7a96ff", body: "#3a5fd6", shadow: "#193a96", topGloss: "rgba(255,255,255,0.28)", border: "rgba(12,25,70,0.6)" },
   // purple
-  { highlight: "#9d70ff", body: "#5d3dc4", shadow: "#31197e", topGloss: "rgba(255,255,255,0.5)" },
+  { highlight: "#9d70ff", body: "#5d3dc4", shadow: "#31197e", topGloss: "rgba(255,255,255,0.28)", border: "rgba(25,10,60,0.6)" },
 ];
 
 // Paddle / ball
@@ -270,11 +274,17 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         grad.addColorStop(1, color.shadow);
         ctx.fillStyle = grad;
         ctx.fillRect(b.x, b.y, b.w, b.h);
-        // Top gloss: thin lit strip across the upper ~28% of the brick to
-        // sharpen the convex "shine" highlight that the 3-stop gradient
-        // alone reads as a soft fade.
+        // Soft top gloss: lit band over the upper ~22% of the brick, low
+        // alpha so the shine reads as a gentle wash rather than a hard
+        // white stripe.
         ctx.fillStyle = color.topGloss;
-        ctx.fillRect(b.x, b.y, b.w, Math.max(1, b.h * 0.28));
+        ctx.fillRect(b.x, b.y, b.w, Math.max(1, b.h * 0.22));
+        // 1-game-unit border traced inside the brick rectangle. Drawn
+        // with lineWidth=1 and inset by 0.5 so the stroke sits flush
+        // with the brick edge (canvas stroke is centered on the path).
+        ctx.strokeStyle = color.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
       } else {
         ctx.fillStyle = fg;
         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -601,10 +611,13 @@ export const BrickGame = forwardRef<BrickGameRef, BrickGameProps>(function Brick
         "border border-black border-2 rounded-[2px]",
         lcdFilterOn && !isModernUi ? "lcd-screen" : "",
         isModernUi
-          ? // Sky-blue gradient matches the nano 6G/7G "Brick" game
-            // reference photo — light at the top, saturated mid-blue near
-            // the paddle so the colored bricks pop against it.
-            "ipod-modern-screen bg-gradient-to-b from-[#b6d4f0] via-[#85b5dc] to-[#4f87c2]"
+          ? // Sky-blue gradient — darker mid-sky at the top fading to a
+            // pale, almost-white blue at the paddle. Overall lighter and
+            // softer than a saturated sea, so the colored bricks pop
+            // against the contrasting top while the paddle sits on a
+            // calm light wash that doesn't compete with the bar's
+            // graphite gloss.
+            "ipod-modern-screen bg-gradient-to-b from-[#5d97c4] via-[#a4cbe6] to-[#dcecf6]"
           : backlightOn
           ? "bg-[#c5e0f5] bg-gradient-to-b from-[#d1e8fa] to-[#e0f0fc]"
           : "bg-[#8a9da9] contrast-65 saturate-50",
