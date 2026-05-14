@@ -79,8 +79,18 @@ function ErrorPage({
       <p className="mb-3">Please try the following:</p>
 
       <ul className="list-disc pl-6 mb-5 space-y-2">
-        {suggestions.map((suggestion, index) => (
-          <li key={index}>
+        {(() => {
+          const suggestionKeyCounts = new Map<string, number>();
+          return suggestions.map((suggestion) => {
+            const baseKey =
+              typeof suggestion === "string"
+                ? `text-${suggestion}`
+                : `node-${String(suggestion)}`;
+            const count = (suggestionKeyCounts.get(baseKey) ?? 0) + 1;
+            suggestionKeyCounts.set(baseKey, count);
+            const suggestionKey = `${baseKey}-${count}`;
+            return (
+              <li key={suggestionKey}>
             {typeof suggestion === "string" && suggestion.includes("{hostname}")
               ? suggestion.split("{hostname}").map((part, i) =>
                   i === 0 ? (
@@ -146,8 +156,10 @@ function ErrorPage({
                   )
                 )
               : suggestion}
-          </li>
-        ))}
+              </li>
+            );
+          });
+        })()}
       </ul>
 
       {details && !footerText.includes("HTTP") && (
@@ -576,121 +588,130 @@ export function InternetExplorerAppComponent({
                         className="absolute top-full left-0 right-0 mt-[2px] bg-white border border-neutral-300 shadow-md rounded-md z-50 max-h-48 overflow-y-auto font-geneva-12"
                         data-dropdown-content
                       >
-                        {filteredSuggestions.map((suggestion, index) => (
-                          <div
-                            key={`${suggestion.type}-${index}`}
-                            className="px-2 py-1.5 hover:bg-gray-100 focus:bg-gray-200 cursor-pointer flex items-center gap-2 text-sm outline-none"
-                            onClick={() => {
-                              setSelectedSuggestionIndex(index);
-                              if (suggestion.type === "search") {
-                                const searchQuery =
-                                  suggestion.url.substring(5); // Remove "bing:"
-                                handleNavigateWithHistory(
-                                  `https://www.bing.com/search?q=${encodeURIComponent(
-                                    searchQuery
-                                  )}`,
-                                  "current"
-                                );
-                              } else {
-                                handleNavigateWithHistory(
-                                  suggestion.url,
-                                  suggestion.year
-                                );
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                if (suggestion.type === "search") {
-                                  const searchQuery =
-                                    suggestion.url.substring(5); // Remove "bing:"
-                                  handleNavigateWithHistory(
-                                    `https://www.bing.com/search?q=${encodeURIComponent(
-                                      searchQuery
-                                    )}`,
-                                    "current"
-                                  );
-                                } else {
-                                  handleNavigateWithHistory(
-                                    suggestion.url,
-                                    suggestion.year
-                                  );
-                                }
-                              } else if (e.key === "ArrowDown") {
-                                e.preventDefault();
-                                const nextItem = e.currentTarget
-                                  .nextElementSibling as HTMLElement;
-                                if (nextItem) {
-                                  setSelectedSuggestionIndex(index + 1);
-                                  nextItem.focus();
-                                }
-                              } else if (e.key === "ArrowUp") {
-                                e.preventDefault();
-                                const prevItem = e.currentTarget
-                                  .previousElementSibling as HTMLElement;
-                                if (prevItem) {
-                                  setSelectedSuggestionIndex(index - 1);
-                                  prevItem.focus();
-                                } else urlInputRef.current?.focus();
-                              } else if (e.key === "Escape") {
-                                e.preventDefault();
-                                setIsUrlDropdownOpen(false);
-                                urlInputRef.current?.focus();
-                              }
-                            }}
-                            onFocus={() => {
-                              // Keep dropdown open when focus moves to dropdown items
-                              setIsUrlDropdownOpen(true);
-                              setSelectedSuggestionIndex(index);
-                            }}
-                            tabIndex={0}
-                            data-dropdown-item
-                          >
-                            {suggestion.type === "search" ? (
-                              <MagnifyingGlass
-                                className="size-4 text-neutral-400"
-                                weight="bold"
-                              />
-                            ) : suggestion.favicon && !isOffline ? (
-                              <img
-                                src={suggestion.favicon}
-                                alt=""
-                                className="size-4"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "/icons/default/ie-site.png";
+                        {(() => {
+                          const suggestionKeyCounts = new Map<string, number>();
+                          return filteredSuggestions.map((suggestion, index) => {
+                            const baseKey = `${suggestion.type}-${suggestion.url}-${suggestion.year || "current"}-${suggestion.title}`;
+                            const count = (suggestionKeyCounts.get(baseKey) ?? 0) + 1;
+                            suggestionKeyCounts.set(baseKey, count);
+                            const suggestionKey = `${baseKey}-${count}`;
+                            return (
+                              <div
+                                key={suggestionKey}
+                                className="px-2 py-1.5 hover:bg-gray-100 focus:bg-gray-200 cursor-pointer flex items-center gap-2 text-sm outline-none"
+                                onClick={() => {
+                                  setSelectedSuggestionIndex(index);
+                                  if (suggestion.type === "search") {
+                                    const searchQuery =
+                                      suggestion.url.substring(5); // Remove "bing:"
+                                    handleNavigateWithHistory(
+                                      `https://www.bing.com/search?q=${encodeURIComponent(
+                                        searchQuery
+                                      )}`,
+                                      "current"
+                                    );
+                                  } else {
+                                    handleNavigateWithHistory(
+                                      suggestion.url,
+                                      suggestion.year
+                                    );
+                                  }
                                 }}
-                              />
-                            ) : (
-                              <ThemedIcon
-                                name="ie-site.png"
-                                alt=""
-                                className="size-4 [image-rendering:pixelated]"
-                              />
-                            )}
-                            <div className="flex-1 truncate">
-                              <div className="font-medium font-geneva-12 text-[11px]">
-                                {suggestion.title}
-                                {suggestion.year &&
-                                  suggestion.year !== "current" && (
-                                    <span className="font-normal text-gray-500 ml-1">
-                                      ({suggestion.year})
-                                    </span>
-                                  )}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    if (suggestion.type === "search") {
+                                      const searchQuery =
+                                        suggestion.url.substring(5); // Remove "bing:"
+                                      handleNavigateWithHistory(
+                                        `https://www.bing.com/search?q=${encodeURIComponent(
+                                          searchQuery
+                                        )}`,
+                                        "current"
+                                      );
+                                    } else {
+                                      handleNavigateWithHistory(
+                                        suggestion.url,
+                                        suggestion.year
+                                      );
+                                    }
+                                  } else if (e.key === "ArrowDown") {
+                                    e.preventDefault();
+                                    const nextItem = e.currentTarget
+                                      .nextElementSibling as HTMLElement;
+                                    if (nextItem) {
+                                      setSelectedSuggestionIndex(index + 1);
+                                      nextItem.focus();
+                                    }
+                                  } else if (e.key === "ArrowUp") {
+                                    e.preventDefault();
+                                    const prevItem = e.currentTarget
+                                      .previousElementSibling as HTMLElement;
+                                    if (prevItem) {
+                                      setSelectedSuggestionIndex(index - 1);
+                                      prevItem.focus();
+                                    } else urlInputRef.current?.focus();
+                                  } else if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    setIsUrlDropdownOpen(false);
+                                    urlInputRef.current?.focus();
+                                  }
+                                }}
+                                onFocus={() => {
+                                  // Keep dropdown open when focus moves to dropdown items
+                                  setIsUrlDropdownOpen(true);
+                                  setSelectedSuggestionIndex(index);
+                                }}
+                                tabIndex={0}
+                                data-dropdown-item
+                              >
+                                {suggestion.type === "search" ? (
+                                  <MagnifyingGlass
+                                    className="size-4 text-neutral-400"
+                                    weight="bold"
+                                  />
+                                ) : suggestion.favicon && !isOffline ? (
+                                  <img
+                                    src={suggestion.favicon}
+                                    alt=""
+                                    className="size-4"
+                                    onError={(e) => {
+                                      e.currentTarget.src =
+                                        "/icons/default/ie-site.png";
+                                    }}
+                                  />
+                                ) : (
+                                  <ThemedIcon
+                                    name="ie-site.png"
+                                    alt=""
+                                    className="size-4 [image-rendering:pixelated]"
+                                  />
+                                )}
+                                <div className="flex-1 truncate">
+                                  <div className="font-medium font-geneva-12 text-[11px]">
+                                    {suggestion.title}
+                                    {suggestion.year &&
+                                      suggestion.year !== "current" && (
+                                        <span className="font-normal text-gray-500 ml-1">
+                                          ({suggestion.year})
+                                        </span>
+                                      )}
+                                  </div>
+                                  <div className="font-geneva-12 text-[10px] text-gray-500 truncate">
+                                    {suggestion.type === "search"
+                                      ? "bing.com"
+                                      : stripProtocol(suggestion.url)}
+                                  </div>
+                                </div>
+                                <div className="font-geneva-12 text-[10px] ml-2 text-gray-500 whitespace-nowrap hidden sm:block">
+                                  {suggestion.type === "favorite" && "Favorite"}
+                                  {suggestion.type === "history" && "History"}
+                                  {suggestion.type === "search" && "Search"}
+                                </div>
                               </div>
-                              <div className="font-geneva-12 text-[10px] text-gray-500 truncate">
-                                {suggestion.type === "search"
-                                  ? "bing.com"
-                                  : stripProtocol(suggestion.url)}
-                              </div>
-                            </div>
-                            <div className="font-geneva-12 text-[10px] ml-2 text-gray-500 whitespace-nowrap hidden sm:block">
-                              {suggestion.type === "favorite" && "Favorite"}
-                              {suggestion.type === "history" && "History"}
-                              {suggestion.type === "search" && "Search"}
-                            </div>
-                          </div>
-                        ))}
+                            );
+                          });
+                        })()}
                       </div>
                     )}
                   <Tooltip>
@@ -786,11 +807,19 @@ export function InternetExplorerAppComponent({
                   className="overflow-x-auto scrollbar-none relative flex-1"
                 >
                   <div className="flex items-center min-w-full w-max">
-                    {favorites.map((favorite, index) => {
+                    {(() => {
+                      const favoriteKeyCounts = new Map<string, number>();
+                      return favorites.map((favorite) => {
+                      const baseKey = favorite.url
+                        ? `fav-${favorite.url}-${favorite.year || "current"}`
+                        : `dir-${favorite.title}-${favorite.children?.length ?? 0}`;
+                      const count = (favoriteKeyCounts.get(baseKey) ?? 0) + 1;
+                      favoriteKeyCounts.set(baseKey, count);
+                      const favoriteKey = `${baseKey}-${count}`;
                       // Check if the favorite is a folder
                       if (favorite.children && favorite.children.length > 0) {
                         return (
-                          <DropdownMenu key={index}>
+                          <DropdownMenu key={favoriteKey}>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
@@ -856,7 +885,7 @@ export function InternetExplorerAppComponent({
                         // Render regular favorite button
                         return (
                           <Button
-                            key={index}
+                            key={favoriteKey}
                             variant="ghost"
                             size="sm"
                             className="whitespace-nowrap hover:bg-gray-200 font-geneva-12 text-[10px] gap-1 px-1 mr-1 w-content min-w-[60px] max-w-[120px] flex-shrink-0"
@@ -898,7 +927,8 @@ export function InternetExplorerAppComponent({
                       } else {
                         return null; // Should not happen
                       }
-                    })}
+                      });
+                    })()}
                   </div>
                 </div>
                 {favorites.length > 0 && hasMoreToScroll && (

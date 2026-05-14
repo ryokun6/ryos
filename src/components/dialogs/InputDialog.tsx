@@ -122,9 +122,9 @@ export function InputDialog({
       )}
       <DialogFooter className="mt-4 gap-1 sm:justify-between">
         <div className="flex gap-1 w-full sm:w-auto">
-          {actionGroups.left.map((action, index) => (
+          {actionGroups.left.map((action) => (
               <Button
-                key={`left-${index}`}
+                key={`left-${action.label}-${action.variant || "retro"}`}
                 variant={action.variant || "retro"}
                 onClick={action.onClick}
                 disabled={isLoading}
@@ -146,9 +146,9 @@ export function InputDialog({
             ))}
         </div>
         <div className="flex flex-col-reverse gap-2 w-full sm:w-auto sm:flex-row">
-          {actionGroups.right.map((action, index) => (
+          {actionGroups.right.map((action) => (
               <Button
-                key={`right-${index}`}
+                key={`right-${action.label}-${action.variant || "retro"}`}
                 variant={action.variant || "retro"}
                 onClick={action.onClick}
                 disabled={isLoading}

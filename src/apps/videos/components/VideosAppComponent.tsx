@@ -64,10 +64,18 @@ function AnimatedNumber({ number }: { number: number }) {
   }, [number]);
 
   const digits = String(number).padStart(2, "0").split("");
+  const digitEntries = digits.map((digit, position) => ({
+    digit,
+    slotKey: position === 0 ? "tens" : "ones",
+  }));
   return (
     <div className="flex">
-      {digits.map((digit, index) => (
-        <AnimatedDigit key={index} digit={digit} direction={direction} />
+      {digitEntries.map((entry) => (
+        <AnimatedDigit
+          key={entry.slotKey}
+          digit={entry.digit}
+          direction={direction}
+        />
       ))}
     </div>
   );

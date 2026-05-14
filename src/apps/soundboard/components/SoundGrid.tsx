@@ -1,6 +1,18 @@
 import { Input } from "@/components/ui/input";
 import { SoundSlot } from "./SoundSlot";
-import { Soundboard, PlaybackState } from "@/types/types";
+import { Soundboard, PlaybackState, SoundSlot as SoundSlotData } from "@/types/types";
+
+const soundSlotKeyCache = new WeakMap<object, string>();
+let soundSlotKeySeed = 0;
+
+function getSoundSlotKey(slot: SoundSlotData): string {
+  const cached = soundSlotKeyCache.get(slot);
+  if (cached) return cached;
+  soundSlotKeySeed += 1;
+  const key = `sound-slot-${soundSlotKeySeed}`;
+  soundSlotKeyCache.set(slot, key);
+  return key;
+}
 
 interface SoundGridProps {
   board: Soundboard;
@@ -57,7 +69,7 @@ export function SoundGrid({
           <div className="grid grid-cols-3 gap-2 md:gap-4 flex-1">
             {board.slots.map((slot, index) => (
               <SoundSlot
-                key={index}
+                key={getSoundSlotKey(slot)}
                 slot={slot}
                 isRecording={playbackStates[index].isRecording}
                 isPlaying={playbackStates[index].isPlaying}

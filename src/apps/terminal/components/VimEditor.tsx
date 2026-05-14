@@ -12,24 +12,24 @@ function renderLineWithHighlights(
   if (!searchPattern || searchPattern.length === 0) return line;
   try {
     const re = new RegExp(escapeRegex(searchPattern), "gi");
-    const parts: { text: string; highlight: boolean }[] = [];
+    const parts: { text: string; highlight: boolean; start: number }[] = [];
     let last = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(line)) !== null) {
-      parts.push({ text: line.slice(last, m.index), highlight: false });
-      parts.push({ text: m[0], highlight: true });
+      parts.push({ text: line.slice(last, m.index), highlight: false, start: last });
+      parts.push({ text: m[0], highlight: true, start: m.index });
       last = m.index + m[0].length;
     }
-    parts.push({ text: line.slice(last), highlight: false });
+    parts.push({ text: line.slice(last), highlight: false, start: last });
     return (
       <>
-        {parts.map((p, i) =>
+        {parts.map((p) =>
           p.highlight ? (
-            <span key={i} className="bg-yellow-600/60 text-black">
+            <span key={`h-${p.start}-${p.text}`} className="bg-yellow-600/60 text-black">
               {p.text}
             </span>
           ) : (
-            <span key={i}>{p.text}</span>
+            <span key={`t-${p.start}-${p.text}`}>{p.text}</span>
           )
         )}
       </>
@@ -106,7 +106,7 @@ export function VimEditor({
 
         return (
           <div
-            key={i}
+            key={`line-${lineNumber}`}
             className={`vim-line flex ${isCursorLine ? "bg-white/10" : ""} ${isVisualSelected ? "bg-blue-900/40" : ""}`}
           >
             <span className="text-gray-500 w-6 text-right mr-2 shrink-0">

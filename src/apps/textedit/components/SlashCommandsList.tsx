@@ -67,7 +67,7 @@ export const SlashCommandsList = forwardRef<
     <div className="z-50 h-auto max-h-[330px] w-72 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-lg">
       {props.items.map((item, index) => (
         <button
-          key={index}
+          key={`${item.title}-${item.description}`}
           className={`flex w-full items-start gap-2 rounded-md px-2 py-1 text-left ${
             index === selectedIndex ? "bg-gray-100" : ""
           }`}

@@ -332,9 +332,9 @@ export function MtvLyricsOverlay({
           className={cn(lineTypography, "invisible")}
           style={LINE_TONE_STYLE}
         >
-          {tokens.map((t, i) => (
+          {tokens.map((t) => (
             <span
-              key={`s-${lineKey}-${i}`}
+              key={`s-${lineKey}-${t.revealAtMs}-${t.text}`}
               className={WORD_PLATE_CLASS_NAME}
               style={WORD_PLATE_STYLE}
             >
@@ -357,7 +357,7 @@ export function MtvLyricsOverlay({
                 const isRevealed = i < revealedTokens;
                 return (
                   <span
-                    key={`tok-${lineKey}-${i}`}
+                    key={`tok-${lineKey}-${t.revealAtMs}-${t.text}`}
                     aria-hidden={!isRevealed}
                     // Unrevealed tokens use the same plate class as
                     // revealed ones — only `opacity-0` differs — so

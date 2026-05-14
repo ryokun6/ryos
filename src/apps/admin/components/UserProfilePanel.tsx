@@ -95,6 +95,53 @@ interface UserProfilePanelProps {
   onUserDeleted: () => void;
 }
 
+const SECTION_HEADER_CLASS = "!text-[11px] uppercase tracking-wide text-black/50";
+
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
+);
+
+interface SectionHeaderProps {
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  onClick?: () => void;
+  isOpen?: boolean;
+  showCaret?: boolean;
+  className?: string;
+}
+
+const SectionHeader = ({
+  children,
+  icon,
+  onClick,
+  isOpen,
+  showCaret,
+  className,
+}: SectionHeaderProps) => {
+  const Component = onClick ? "button" : "div";
+  return (
+    <Component
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      aria-expanded={onClick ? isOpen : undefined}
+      className={cn(
+        SECTION_HEADER_CLASS,
+        onClick && "flex items-center gap-1.5 text-left",
+        className
+      )}
+    >
+      {showCaret && (
+        <CaretRight
+          className={cn("h-3 w-3 transition-transform", isOpen && "rotate-90")}
+          weight="bold"
+        />
+      )}
+      {icon}
+      <span>{children}</span>
+    </Component>
+  );
+};
+
 export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   username,
   onBack,
@@ -440,50 +487,6 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     ? messages.length
     : Math.min(profile?.messageCount ?? 0, RECENT_MESSAGES_LIMIT);
 
-  // Skeleton placeholder component
-  const Skeleton = ({ className }: { className?: string }) => (
-    <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
-  );
-  const sectionHeaderClass = "!text-[11px] uppercase tracking-wide text-black/50";
-  const SectionHeader = ({
-    children,
-    icon,
-    onClick,
-    isOpen,
-    showCaret,
-    className,
-  }: {
-    children: React.ReactNode;
-    icon?: React.ReactNode;
-    onClick?: () => void;
-    isOpen?: boolean;
-    showCaret?: boolean;
-    className?: string;
-  }) => {
-    const Component = onClick ? "button" : "div";
-    return (
-      <Component
-        type={onClick ? "button" : undefined}
-        onClick={onClick}
-        aria-expanded={onClick ? isOpen : undefined}
-        className={cn(
-          sectionHeaderClass,
-          onClick && "flex items-center gap-1.5 text-left",
-          className
-        )}
-      >
-        {showCaret && (
-          <CaretRight
-            className={cn("size-3 transition-transform", isOpen && "rotate-90")}
-            weight="bold"
-          />
-        )}
-        {icon}
-        <span>{children}</span>
-      </Component>
-    );
-  };
-
   return (
     <div className="flex flex-col h-full font-geneva-12">
       {/* Header */}
@@ -827,14 +830,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                                   </button>
                                   {isExpanded && (
                                     <div className="pl-5 mt-1 space-y-1">
-                                      {note.entries.map((entry, i) => {
+                                      {note.entries.map((entry) => {
                                         const time = new Date(entry.timestamp).toLocaleTimeString("en-US", {
                                           hour: "numeric",
                                           minute: "2-digit",
                                           hour12: true,
                                         });
                                         return (
-                                          <div key={i} className="text-[11px] flex gap-2">
+                                          <div key={`${entry.timestamp}-${entry.content.slice(0, 24)}`} className="text-[11px] flex gap-2">
                                             <span className="text-neutral-400 whitespace-nowrap flex-shrink-0">{time}</span>
                                             <span className="text-neutral-600">{entry.content}</span>
                                           </div>
