@@ -1405,13 +1405,6 @@ export function useInternetExplorerLogic({
   }, [url, stripProtocol]);
 
   useEffect(() => {
-    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
-    const scheduleTimeout = (callback: () => void, delay: number) => {
-      const timeoutId = setTimeout(callback, delay);
-      timeoutIds.add(timeoutId);
-      return timeoutId;
-    };
-
     // Only run initial navigation logic once when the window opens
     if (!initialNavigationRef.current && isWindowOpen) {
       initialNavigationRef.current = true;
@@ -1438,18 +1431,12 @@ export function useInternetExplorerLogic({
             }`,
             duration: 4000,
           });
-          // Navigate using decoded data
-          scheduleTimeout(() => {
-            handleNavigate(
-              decodedData.url,
-              decodedData.year || "current",
-              false
-            );
-            // Clear initialData after navigation is initiated
-            if (instanceId) {
-              clearInstanceInitialData(instanceId);
-            }
-          }, 0);
+          // Navigate synchronously to avoid cleanup races dropping first-open navigation
+          handleNavigate(decodedData.url, decodedData.year || "current", false);
+          // Clear initialData after navigation is initiated
+          if (instanceId) {
+            clearInstanceInitialData(instanceId);
+          }
           // Mark this initialData as processed
           lastProcessedInitialDataRef.current = initialData;
           shouldRunDefaultNavigation = false;
@@ -1484,15 +1471,13 @@ export function useInternetExplorerLogic({
         setUrl(initialUrl);
         setYear(initialYear);
         // --- END FIX ---
-        scheduleTimeout(() => {
-          // --- FIX: Pass initialUrl and initialYear directly ---
-          handleNavigate(initialUrl, initialYear, false);
-          // Clear initialData after navigation is initiated
-          if (instanceId) {
-            clearInstanceInitialData(instanceId);
-          }
-          // --- END FIX ---
-        }, 0);
+        // --- FIX: Pass initialUrl and initialYear directly ---
+        handleNavigate(initialUrl, initialYear, false);
+        // Clear initialData after navigation is initiated
+        if (instanceId) {
+          clearInstanceInitialData(instanceId);
+        }
+        // --- END FIX ---
         // Mark this initialData as processed
         lastProcessedInitialDataRef.current = initialData;
         shouldRunDefaultNavigation = false;
@@ -1502,14 +1487,9 @@ export function useInternetExplorerLogic({
       // Proceed with default navigation if no initialData navigation was queued
       if (shouldRunDefaultNavigation) {
         console.log("[IE] Proceeding with default navigation.");
-        scheduleTimeout(() => {
-          handleNavigate(url, year, false);
-        }, 0);
+        handleNavigate(url, year, false);
       }
     }
-    return () => {
-      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
-    };
   }, [
     initialData,
     isWindowOpen,
