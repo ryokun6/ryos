@@ -1533,7 +1533,13 @@ export function IpodScreen({
           {menuChrome}
         </div>
       ) : (
-        menuChrome
+        // Classic skin: keep menu/now-playing chrome in a z-10 stacking
+        // context so the full-bleed video + lyrics overlay (sibling z-20)
+        // paints over the titlebar during playback — same layering as the
+        // modern `ipod-modern-menu-panel` wrapper above.
+        <div className="relative z-10 h-full flex flex-col min-h-0">
+          {menuChrome}
+        </div>
       )}
 
     </div>
