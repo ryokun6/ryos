@@ -1405,6 +1405,15 @@ export function useInternetExplorerLogic({
   }, [url, stripProtocol]);
 
   useEffect(() => {
+    const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+    const scheduleTimeout = (callback: () => void, delay: number) => {
+      const timeoutId = setTimeout(callback, delay);
+      timeoutIds.push(timeoutId);
+    };
+    const clearScheduledTimeouts = () => {
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+    };
+
     // Only run initial navigation logic once when the window opens
     if (!initialNavigationRef.current && isWindowOpen) {
       initialNavigationRef.current = true;
@@ -1431,7 +1440,7 @@ export function useInternetExplorerLogic({
             duration: 4000,
           });
           // Navigate using decoded data
-          setTimeout(() => {
+          scheduleTimeout(() => {
             handleNavigate(
               decodedData.url,
               decodedData.year || "current",
@@ -1444,7 +1453,7 @@ export function useInternetExplorerLogic({
           }, 0);
           // Mark this initialData as processed
           lastProcessedInitialDataRef.current = initialData;
-          return; // Skip other initial navigation
+          return clearScheduledTimeouts; // Skip other initial navigation
         } else {
           console.warn(
             "[IE] Failed to decode share link code from initialData prop."
@@ -1472,7 +1481,7 @@ export function useInternetExplorerLogic({
         setUrl(initialUrl);
         setYear(initialYear);
         // --- END FIX ---
-        setTimeout(() => {
+        scheduleTimeout(() => {
           // --- FIX: Pass initialUrl and initialYear directly ---
           handleNavigate(initialUrl, initialYear, false);
           // Clear initialData after navigation is initiated
@@ -1483,16 +1492,17 @@ export function useInternetExplorerLogic({
         }, 0);
         // Mark this initialData as processed
         lastProcessedInitialDataRef.current = initialData;
-        return; // Skip default navigation
+        return clearScheduledTimeouts; // Skip default navigation
       }
       // --- END NEW ---
 
       // Proceed with default navigation if not a share link or if decoding failed
       console.log("[IE] Proceeding with default navigation.");
-      setTimeout(() => {
+      scheduleTimeout(() => {
         handleNavigate(url, year, false);
       }, 0);
     }
+    return clearScheduledTimeouts;
   }, [
     initialData,
     isWindowOpen,
@@ -1507,6 +1517,8 @@ export function useInternetExplorerLogic({
 
   // --- Watch for initialData changes when app is already open ---
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     // Only react to initialData changes if the window is already open and we have initialData
     if (!isWindowOpen || !initialData) return;
 
@@ -1538,7 +1550,7 @@ export function useInternetExplorerLogic({
             }`,
             duration: 4000,
           });
-          setTimeout(() => {
+          timeoutId = setTimeout(() => {
             handleNavigate(
               decodedData.url,
               decodedData.year || "current",
@@ -1566,7 +1578,7 @@ export function useInternetExplorerLogic({
           `[IE] Navigating to direct url/year: ${navUrl} (${navYear})`
         );
 
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           handleNavigate(navUrl, navYear, false);
           // Clear initialData after navigation
           if (instanceId) {
@@ -1577,6 +1589,11 @@ export function useInternetExplorerLogic({
         lastProcessedInitialDataRef.current = initialData;
       }
     }
+    return () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [
     isWindowOpen,
     initialData,
@@ -1587,6 +1604,16 @@ export function useInternetExplorerLogic({
 
   // --- Add listener for updateApp event (handles share links when app is already open) ---
   useEffect(() => {
+    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
+    const scheduleTimeout = (callback: () => void, delay: number) => {
+      const timeoutId = setTimeout(() => {
+        timeoutIds.delete(timeoutId);
+        callback();
+      }, delay);
+      timeoutIds.add(timeoutId);
+      return timeoutId;
+    };
+
     // Define a type for the initialData expected in the event detail
     interface AppUpdateInitialData {
       shareCode?: string;
@@ -1632,7 +1659,7 @@ export function useInternetExplorerLogic({
               duration: 4000,
             });
             // Use timeout to allow potential state updates (like foreground) to settle
-            setTimeout(() => {
+            scheduleTimeout(() => {
               handleNavigate(
                 decodedData.url,
                 decodedData.year || "current",
@@ -1660,7 +1687,7 @@ export function useInternetExplorerLogic({
           );
 
           // Use timeout to allow potential state updates (like foreground) to settle
-          setTimeout(() => {
+          scheduleTimeout(() => {
             handleNavigate(directUrl, directYear, false);
           }, 50); // Small delay
           // Mark this initialData as processed
@@ -1670,7 +1697,12 @@ export function useInternetExplorerLogic({
       }
     };
 
-    return onAppUpdate(handleUpdateApp);
+    const unsubscribe = onAppUpdate(handleUpdateApp);
+    return () => {
+      unsubscribe();
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIds.clear();
+    };
     // Add isForeground to dependencies to refresh navigation when focus changes
   }, [handleNavigate, isForeground, instanceId]);
   // --- End updateApp listener ---

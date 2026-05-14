@@ -1915,55 +1915,49 @@ function MacDock() {
   // Disable magnification on mobile/touch (coarse pointer or no hover)
   const [magnifyEnabled, setMagnifyEnabled] = useState(true);
   useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      setMagnifyEnabled(true);
+      return;
+    }
+
+    const mqlPointerCoarse = window.matchMedia("(pointer: coarse)");
+    const mqlHoverNone = window.matchMedia("(hover: none)");
     const compute = () => {
-      if (
-        typeof window === "undefined" ||
-        typeof window.matchMedia !== "function"
-      ) {
-        setMagnifyEnabled(true);
-        return;
-      }
-      const coarse = window.matchMedia("(pointer: coarse)").matches;
-      const noHover = window.matchMedia("(hover: none)").matches;
+      const coarse = mqlPointerCoarse.matches;
+      const noHover = mqlHoverNone.matches;
       setMagnifyEnabled(!(coarse || noHover));
     };
     compute();
 
-    const mqlPointerCoarse = window.matchMedia("(pointer: coarse)");
-    const mqlHoverNone = window.matchMedia("(hover: none)");
-
     const onChange = () => compute();
 
-    const removeListeners: Array<() => void> = [];
+    const legacyPointerListener = () => onChange();
+    const legacyHoverListener = () => onChange();
 
-    const addListener = (mql: MediaQueryList) => {
-      if (typeof mql.addEventListener === "function") {
-        const listener = onChange as EventListener;
-        mql.addEventListener("change", listener);
-        removeListeners.push(() => mql.removeEventListener("change", listener));
-      } else if (
-        typeof (
-          mql as {
-            addListener?: (
-              this: MediaQueryList,
-              listener: (ev: MediaQueryListEvent) => void
-            ) => void;
-          }
-        ).addListener === "function"
-      ) {
-        const legacyListener = () => onChange();
-        (mql as MediaQueryList).addListener!(legacyListener);
-        removeListeners.push(() =>
-          (mql as MediaQueryList).removeListener!(legacyListener)
-        );
-      }
-    };
+    if (typeof mqlPointerCoarse.addEventListener === "function") {
+      mqlPointerCoarse.addEventListener("change", onChange as EventListener);
+    } else if (typeof mqlPointerCoarse.addListener === "function") {
+      mqlPointerCoarse.addListener(legacyPointerListener);
+    }
 
-    addListener(mqlPointerCoarse);
-    addListener(mqlHoverNone);
+    if (typeof mqlHoverNone.addEventListener === "function") {
+      mqlHoverNone.addEventListener("change", onChange as EventListener);
+    } else if (typeof mqlHoverNone.addListener === "function") {
+      mqlHoverNone.addListener(legacyHoverListener);
+    }
 
     return () => {
-      removeListeners.forEach((fn) => fn());
+      if (typeof mqlPointerCoarse.removeEventListener === "function") {
+        mqlPointerCoarse.removeEventListener("change", onChange as EventListener);
+      } else if (typeof mqlPointerCoarse.removeListener === "function") {
+        mqlPointerCoarse.removeListener(legacyPointerListener);
+      }
+
+      if (typeof mqlHoverNone.removeEventListener === "function") {
+        mqlHoverNone.removeEventListener("change", onChange as EventListener);
+      } else if (typeof mqlHoverNone.removeListener === "function") {
+        mqlHoverNone.removeListener(legacyHoverListener);
+      }
     };
   }, []);
 

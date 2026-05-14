@@ -578,6 +578,8 @@ export function useKaraokeLogic({
   // Using null as initial value ensures first render triggers the auto-skip check
   const prevCurrentIndexRef = useRef<number | null>(null);
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
     if (prevCurrentIndexRef.current !== currentIndex) {
       isTrackSwitchingRef.current = true;
@@ -599,7 +601,7 @@ export function useKaraokeLogic({
       if (newLyricOffset < 0 && seekTarget >= 1) {
         setStoreElapsedTime(seekTarget);
         
-        trackSwitchTimeoutRef.current = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           isTrackSwitchingRef.current = false;
           const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
           if (activePlayer) {
@@ -607,15 +609,25 @@ export function useKaraokeLogic({
             showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
           }
         }, 2000);
+        trackSwitchTimeoutRef.current = timeoutId;
       } else {
         // Start from beginning for positive/zero offset or small negative offset
         setStoreElapsedTime(0);
-        trackSwitchTimeoutRef.current = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           isTrackSwitchingRef.current = false;
         }, 2000);
+        trackSwitchTimeoutRef.current = timeoutId;
       }
     }
     prevCurrentIndexRef.current = currentIndex;
+    return () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        if (trackSwitchTimeoutRef.current === timeoutId) {
+          trackSwitchTimeoutRef.current = null;
+        }
+      }
+    };
   }, [currentIndex, tracks, isFullScreen, showStatus, setStoreElapsedTime]);
 
   // Cleanup
@@ -661,6 +673,16 @@ export function useKaraokeLogic({
   const prevFullScreenRef = useRef(isFullScreen);
 
   useEffect(() => {
+    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
+    const scheduleTimeout = (callback: () => void, delay: number) => {
+      const timeoutId = setTimeout(() => {
+        timeoutIds.delete(timeoutId);
+        callback();
+      }, delay);
+      timeoutIds.add(timeoutId);
+      return timeoutId;
+    };
+
     if (isFullScreen !== prevFullScreenRef.current) {
       // Mark as track switching to prevent spurious play/pause events during sync
       isTrackSwitchingRef.current = true;
@@ -686,23 +708,23 @@ export function useKaraokeLogic({
                 internalPlayer.playVideo();
               }
               // End track switch after sync complete
-              trackSwitchTimeoutRef.current = setTimeout(() => {
+              trackSwitchTimeoutRef.current = scheduleTimeout(() => {
                 isTrackSwitchingRef.current = false;
               }, 500);
               return;
             }
           }
           // Player not ready, retry
-          setTimeout(checkAndSync, 100);
+          scheduleTimeout(checkAndSync, 100);
         };
-        setTimeout(checkAndSync, 100);
+        scheduleTimeout(checkAndSync, 100);
       } else {
         trackAnalytics(MEDIA_ANALYTICS.FULLSCREEN, { appId: "karaoke", isOpen: false });
         // Exiting fullscreen - sync position from fullscreen player to main player
         const currentTime = fullScreenPlayerRef.current?.getCurrentTime() ?? useKaraokeStore.getState().elapsedTime;
         const wasPlaying = isPlaying;
 
-        setTimeout(() => {
+        scheduleTimeout(() => {
           if (playerRef.current) {
             playerRef.current.seekTo(currentTime);
             if (wasPlaying) {
@@ -710,13 +732,17 @@ export function useKaraokeLogic({
             }
           }
           // End track switch after sync complete
-          trackSwitchTimeoutRef.current = setTimeout(() => {
+          trackSwitchTimeoutRef.current = scheduleTimeout(() => {
             isTrackSwitchingRef.current = false;
           }, 500);
         }, 200);
       }
       prevFullScreenRef.current = isFullScreen;
     }
+    return () => {
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIds.clear();
+    };
   }, [isFullScreen, isPlaying, setIsPlaying]);
 
   // Handle closing sync mode - flush pending offset saves
@@ -1453,11 +1479,13 @@ export function useKaraokeLogic({
 
   // Handle initial data (shared track) - process video ID to add/play
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     if (isWindowOpen && initialData?.videoId && typeof initialData.videoId === "string") {
       if (lastProcessedInitialDataRef.current === initialData) return;
 
       const videoIdToProcess = initialData.videoId;
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         processVideoId(videoIdToProcess)
           .then(() => {
             if (instanceId) clearInstanceInitialData(instanceId);
@@ -1477,6 +1505,11 @@ export function useKaraokeLogic({
       // Reset to first track if current song no longer exists in library
       setCurrentSongId(tracks[0]?.id ?? null);
     }
+    return () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [
     isWindowOpen,
     initialData,
@@ -1490,6 +1523,8 @@ export function useKaraokeLogic({
   ]);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     if (
       isWindowOpen &&
       initialData?.listenSessionId &&
@@ -1498,7 +1533,7 @@ export function useKaraokeLogic({
       if (lastProcessedListenSessionRef.current === initialData.listenSessionId) return;
 
       const sessionIdToProcess = initialData.listenSessionId;
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         joinListenSession(sessionIdToProcess, username || undefined)
           .then((result) => {
             if (!result.ok) {
@@ -1514,6 +1549,11 @@ export function useKaraokeLogic({
       }, 100);
       lastProcessedListenSessionRef.current = initialData.listenSessionId;
     }
+    return () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [isWindowOpen, initialData, joinListenSession, username, clearInstanceInitialData, instanceId]);
 
   // Handle updateApp event for when app is already open and receives new video

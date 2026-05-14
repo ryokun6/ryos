@@ -2113,6 +2113,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     if (progress >= content.length) return;
 
     let scanPos = progress;
+    const highlightTimeoutIds: ReturnType<typeof setTimeout>[] = [];
     const processChunk = (endPos: number) => {
       const rawChunk = content.slice(scanPos, endPos);
       const cleaned = cleanTextForSpeech(rawChunk);
@@ -2121,11 +2122,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         highlightQueueRef.current.push(seg);
         if (!highlightSegment) {
           // Delay highlighting slightly so text sync aligns closer to actual speech start
-          setTimeout(() => {
+          const highlightTimeoutId = setTimeout(() => {
             if (highlightQueueRef.current[0] === seg) {
               setHighlightSegment(seg);
             }
           }, 80);
+          highlightTimeoutIds.push(highlightTimeoutId);
         }
 
         speak(cleaned, () => {
@@ -2155,6 +2157,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Record updated progress so subsequent effect runs start after the newline
       speechProgressRef.current[lastMsg.id] = scanPos;
     }
+    return () => {
+      highlightTimeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+    };
   }, [currentSdkMessages, isLoading, speechEnabled, speak, highlightSegment]);
 
   // Clear rate limit error when username is set

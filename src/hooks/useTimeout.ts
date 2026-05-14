@@ -51,18 +51,23 @@ export function useTimeout(
     }
   }, [delay, clear]);
 
-  // Set up the timeout
   useEffect(() => {
     // Don't schedule if delay is null
     if (delay === null) {
       return;
     }
 
-    timeoutRef.current = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       savedCallback.current();
     }, delay);
+    timeoutRef.current = timeoutId;
 
-    return clear;
+    return () => {
+      clearTimeout(timeoutId);
+      if (timeoutRef.current === timeoutId) {
+        timeoutRef.current = null;
+      }
+    };
   }, [delay, clear]);
 
   return { clear, reset };

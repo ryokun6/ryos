@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
@@ -55,6 +55,14 @@ export function ReactionOverlay({ className }: ReactionOverlayProps) {
   // Track all processed reaction IDs to prevent re-showing after animation completes
   const processedIdsRef = useRef<Set<string>>(new Set());
 
+  const scheduleReactionRemoval = useCallback((reactionId: string) => {
+    const timeout = setTimeout(() => {
+      setVisible((prev) => prev.filter((item) => item.id !== reactionId));
+      delete timeoutsRef.current[reactionId];
+    }, REACTION_LIFETIME_MS);
+    timeoutsRef.current[reactionId] = timeout;
+  }, []);
+
   useEffect(() => {
     // Filter to only truly new reactions (not yet processed)
     const newReactions = reactions.filter(
@@ -82,13 +90,9 @@ export function ReactionOverlay({ className }: ReactionOverlayProps) {
     ]);
 
     newReactions.forEach((reaction) => {
-      const timeout = setTimeout(() => {
-        setVisible((prev) => prev.filter((item) => item.id !== reaction.id));
-        delete timeoutsRef.current[reaction.id];
-      }, REACTION_LIFETIME_MS);
-      timeoutsRef.current[reaction.id] = timeout;
+      scheduleReactionRemoval(reaction.id);
     });
-  }, [reactions]);
+  }, [reactions, scheduleReactionRemoval]);
 
   useEffect(() => {
     return () => {
