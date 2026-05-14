@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useReducer, useRef, useEffect, useCallback } from "react";
 import ReactPlayer from "react-player";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -108,26 +108,131 @@ export function useVideosLogic({
   );
 
   // Component state
-  const [animationDirection, setAnimationDirection] = useState<"next" | "prev">(
-    "next"
-  );
-  const [originalOrder, setOriginalOrder] = useState<Video[]>(videos);
-  const [urlInput, setUrlInput] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
-  const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
-  const [isAddingVideo, setIsAddingVideo] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [playedSeconds, setPlayedSeconds] = useState(0);
-  const [isVideoHovered, setIsVideoHovered] = useState(false);
-  const [isDraggingSeek, setIsDraggingSeek] = useState(false);
-  const [dragSeekTime, setDragSeekTime] = useState(0);
+  interface VideosUiState {
+    animationDirection: "next" | "prev";
+    originalOrder: Video[];
+    urlInput: string;
+    isAddDialogOpen: boolean;
+    isHelpDialogOpen: boolean;
+    isAboutDialogOpen: boolean;
+    isConfirmClearOpen: boolean;
+    isConfirmResetOpen: boolean;
+    isAddingVideo: boolean;
+    isFullScreen: boolean;
+    elapsedTime: number;
+    statusMessage: string | null;
+    isShareDialogOpen: boolean;
+    duration: number;
+    playedSeconds: number;
+    isVideoHovered: boolean;
+    isDraggingSeek: boolean;
+    dragSeekTime: number;
+  }
+
+  const initialState: VideosUiState = {
+    animationDirection: "next",
+    originalOrder: videos,
+    urlInput: "",
+    isAddDialogOpen: false,
+    isHelpDialogOpen: false,
+    isAboutDialogOpen: false,
+    isConfirmClearOpen: false,
+    isConfirmResetOpen: false,
+    isAddingVideo: false,
+    isFullScreen: false,
+    elapsedTime: 0,
+    statusMessage: null,
+    isShareDialogOpen: false,
+    duration: 0,
+    playedSeconds: 0,
+    isVideoHovered: false,
+    isDraggingSeek: false,
+    dragSeekTime: 0,
+  };
+
+  type VideosUiAction = { type: "patch"; payload: Partial<VideosUiState> };
+
+  const reducer = (state: VideosUiState, action: VideosUiAction): VideosUiState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      default:
+        return state;
+    }
+  };
+
+  const [uiState, dispatchUi] = useReducer(reducer, initialState);
+  const {
+    animationDirection,
+    originalOrder,
+    urlInput,
+    isAddDialogOpen,
+    isHelpDialogOpen,
+    isAboutDialogOpen,
+    isConfirmClearOpen,
+    isConfirmResetOpen,
+    isAddingVideo,
+    isFullScreen,
+    elapsedTime,
+    statusMessage,
+    isShareDialogOpen,
+    duration,
+    playedSeconds,
+    isVideoHovered,
+    isDraggingSeek,
+    dragSeekTime,
+  } = uiState;
+  const setAnimationDirection = useCallback((value: "next" | "prev") => {
+    dispatchUi({ type: "patch", payload: { animationDirection: value } });
+  }, []);
+  const setOriginalOrder = useCallback((value: Video[]) => {
+    dispatchUi({ type: "patch", payload: { originalOrder: value } });
+  }, []);
+  const setUrlInput = useCallback((value: string) => {
+    dispatchUi({ type: "patch", payload: { urlInput: value } });
+  }, []);
+  const setIsAddDialogOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isAddDialogOpen: value } });
+  }, []);
+  const setIsHelpDialogOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isHelpDialogOpen: value } });
+  }, []);
+  const setIsAboutDialogOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isAboutDialogOpen: value } });
+  }, []);
+  const setIsConfirmClearOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isConfirmClearOpen: value } });
+  }, []);
+  const setIsConfirmResetOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isConfirmResetOpen: value } });
+  }, []);
+  const setIsAddingVideo = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isAddingVideo: value } });
+  }, []);
+  const setIsFullScreen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isFullScreen: value } });
+  }, []);
+  const setElapsedTime = useCallback((value: number) => {
+    dispatchUi({ type: "patch", payload: { elapsedTime: value } });
+  }, []);
+  const setStatusMessage = useCallback((value: string | null) => {
+    dispatchUi({ type: "patch", payload: { statusMessage: value } });
+  }, []);
+  const setIsShareDialogOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isShareDialogOpen: value } });
+  }, []);
+  const setDuration = useCallback((value: number) => {
+    dispatchUi({ type: "patch", payload: { duration: value } });
+  }, []);
+  const setIsVideoHovered = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isVideoHovered: value } });
+  }, []);
+  const setIsDraggingSeek = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isDraggingSeek: value } });
+  }, []);
+  const setDragSeekTime = useCallback((value: number) => {
+    dispatchUi({ type: "patch", payload: { dragSeekTime: value } });
+  }, []);
 
   // Refs
   const playerRef = useRef<ReactPlayer | null>(null);
@@ -253,8 +358,13 @@ export function useVideosLogic({
           safeSetCurrentVideoId(existing.id);
           setIsPlaying(true);
           showStatus(t("apps.videos.status.videoAdded"));
-          setUrlInput("");
-          setIsAddDialogOpen(false);
+          dispatchUi({
+            type: "patch",
+            payload: {
+              urlInput: "",
+              isAddDialogOpen: false,
+            },
+          });
           return;
         }
 
@@ -353,8 +463,13 @@ export function useVideosLogic({
 
         showStatus(t("apps.videos.status.videoAdded"));
 
-        setUrlInput("");
-        setIsAddDialogOpen(false);
+        dispatchUi({
+          type: "patch",
+          payload: {
+            urlInput: "",
+            isAddDialogOpen: false,
+          },
+        });
       } catch (error) {
         console.error("Failed to add video:", error);
         showStatus(
@@ -556,8 +671,13 @@ export function useVideosLogic({
   }, [loopCurrent, setIsPlaying, nextVideo]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    setPlayedSeconds(state.playedSeconds);
-    setElapsedTime(Math.floor(state.playedSeconds));
+    dispatchUi({
+      type: "patch",
+      payload: {
+        playedSeconds: state.playedSeconds,
+        elapsedTime: Math.floor(state.playedSeconds),
+      },
+    });
   }, []);
 
   const handleDuration = useCallback((duration: number) => {

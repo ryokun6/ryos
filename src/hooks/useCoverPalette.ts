@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useReducer, useEffect } from "react";
 
 const DEFAULT_PALETTE = [
   "#274754",
@@ -133,11 +133,34 @@ function extractPaletteFromImage(img: HTMLImageElement): string[] {
  * Returns default palette while loading or on CORS/load error.
  */
 export function useCoverPalette(coverUrl: string | null): string[] {
-  const [palette, setPalette] = useState<string[]>(DEFAULT_PALETTE);
+  interface CoverPaletteState {
+    palette: string[];
+  }
+
+  const initialState: CoverPaletteState = {
+    palette: DEFAULT_PALETTE,
+  };
+
+  type CoverPaletteAction = { type: "setPalette"; palette: string[] };
+
+  const reducer = (
+    state: CoverPaletteState,
+    action: CoverPaletteAction
+  ): CoverPaletteState => {
+    switch (action.type) {
+      case "setPalette":
+        return { ...state, palette: action.palette };
+      default:
+        return state;
+    }
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { palette } = state;
 
   useEffect(() => {
     if (!coverUrl) {
-      setPalette(DEFAULT_PALETTE);
+      dispatch({ type: "setPalette", palette: DEFAULT_PALETTE });
       return;
     }
 
@@ -146,14 +169,14 @@ export function useCoverPalette(coverUrl: string | null): string[] {
 
     img.onload = () => {
       try {
-        setPalette(extractPaletteFromImage(img));
+        dispatch({ type: "setPalette", palette: extractPaletteFromImage(img) });
       } catch {
-        setPalette(DEFAULT_PALETTE);
+        dispatch({ type: "setPalette", palette: DEFAULT_PALETTE });
       }
     };
 
     img.onerror = () => {
-      setPalette(DEFAULT_PALETTE);
+      dispatch({ type: "setPalette", palette: DEFAULT_PALETTE });
     };
 
     img.src = coverUrl;

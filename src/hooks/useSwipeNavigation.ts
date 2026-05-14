@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useReducer } from "react";
 import { AppId } from "@/config/appRegistry";
 
 interface SwipeNavigationOptions {
@@ -9,6 +9,54 @@ interface SwipeNavigationOptions {
   isActive: boolean;
 }
 
+interface SwipeState {
+  touchStartX: number | null;
+  touchEndX: number | null;
+  isSwiping: boolean;
+  swipeDirection: "left" | "right" | null;
+}
+
+const initialState: SwipeState = {
+  touchStartX: null,
+  touchEndX: null,
+  isSwiping: false,
+  swipeDirection: null,
+};
+
+type SwipeAction =
+  | { type: "reset" }
+  | { type: "touchStart"; x: number }
+  | { type: "touchMove"; x: number; direction: "left" | "right" | null }
+  | { type: "setIsSwiping"; value: boolean };
+
+function reducer(state: SwipeState, action: SwipeAction): SwipeState {
+  switch (action.type) {
+    case "reset":
+      return initialState;
+    case "touchStart":
+      return {
+        ...state,
+        touchStartX: action.x,
+        touchEndX: null,
+        isSwiping: true,
+        swipeDirection: null,
+      };
+    case "touchMove":
+      return {
+        ...state,
+        touchEndX: action.x,
+        swipeDirection: action.direction,
+      };
+    case "setIsSwiping":
+      return {
+        ...state,
+        isSwiping: action.value,
+      };
+    default:
+      return state;
+  }
+}
+
 export function useSwipeNavigation({
   threshold = 100,
   onSwipeLeft,
@@ -16,47 +64,36 @@ export function useSwipeNavigation({
   currentAppId,
   isActive,
 }: SwipeNavigationOptions) {
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchEndX, setTouchEndX] = useState<number | null>(null);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(
-    null
-  );
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { touchStartX, touchEndX, isSwiping, swipeDirection } = state;
 
   // Reset swipe state when the currentAppId changes
   useEffect(() => {
-    setTouchStartX(null);
-    setTouchEndX(null);
-    setIsSwiping(false);
-    setSwipeDirection(null);
+    dispatch({ type: "reset" });
   }, [currentAppId]);
 
   const handleTouchStart = (e: React.TouchEvent<HTMLElement>) => {
     if (!isActive) return;
-    setTouchStartX(e.touches[0].clientX);
-    setIsSwiping(true);
-    setSwipeDirection(null);
+    dispatch({ type: "touchStart", x: e.touches[0].clientX });
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLElement>) => {
     if (!isActive || touchStartX === null) return;
 
     const currentX = e.touches[0].clientX;
-    setTouchEndX(currentX);
 
     // Calculate direction for visual feedback
     const diff = touchStartX - currentX;
-    if (Math.abs(diff) > 20) {
-      // Small threshold for visual feedback
-      setSwipeDirection(diff > 0 ? "left" : "right");
-    } else {
-      setSwipeDirection(null);
-    }
+    dispatch({
+      type: "touchMove",
+      x: currentX,
+      direction: Math.abs(diff) > 20 ? (diff > 0 ? "left" : "right") : null,
+    });
   };
 
   const handleTouchEnd = () => {
     if (!isActive || touchStartX === null || touchEndX === null) {
-      setIsSwiping(false);
+      dispatch({ type: "setIsSwiping", value: false });
       return;
     }
 
@@ -74,10 +111,7 @@ export function useSwipeNavigation({
     }
 
     // Reset touch coordinates
-    setTouchStartX(null);
-    setTouchEndX(null);
-    setIsSwiping(false);
-    setSwipeDirection(null);
+    dispatch({ type: "reset" });
   };
 
   return {

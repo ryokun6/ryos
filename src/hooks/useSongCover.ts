@@ -2,7 +2,7 @@
  * Hook to fetch song cover art from the song metadata cache.
  * Returns the Kugou cover URL if available, otherwise falls back to YouTube thumbnail.
  */
-import { useState, useEffect } from "react";
+import { useReducer, useEffect } from "react";
 import { ApiRequestError } from "@/api/core";
 import { getSongById } from "@/api/songs";
 
@@ -39,29 +39,49 @@ export function useSongCover(
   youtubeId: string | null | undefined,
   fallbackThumbnail?: string | null
 ): string | null {
-  const [coverUrl, setCoverUrl] = useState<string | null>(() => {
-    // Check cache first
-    if (youtubeId && coverCache.has(youtubeId)) {
-      return coverCache.get(youtubeId) ?? fallbackThumbnail ?? null;
+  interface SongCoverState {
+    coverUrl: string | null;
+  }
+
+  const initialState: SongCoverState = {
+    coverUrl:
+      youtubeId && coverCache.has(youtubeId)
+        ? coverCache.get(youtubeId) ?? fallbackThumbnail ?? null
+        : fallbackThumbnail ?? null,
+  };
+
+  type SongCoverAction = { type: "setCoverUrl"; coverUrl: string | null };
+
+  const reducer = (state: SongCoverState, action: SongCoverAction): SongCoverState => {
+    switch (action.type) {
+      case "setCoverUrl":
+        return { ...state, coverUrl: action.coverUrl };
+      default:
+        return state;
     }
-    return fallbackThumbnail ?? null;
-  });
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { coverUrl } = state;
 
   useEffect(() => {
     if (!youtubeId) {
-      setCoverUrl(null);
+      dispatch({ type: "setCoverUrl", coverUrl: null });
       return;
     }
 
     // Check cache first
     if (coverCache.has(youtubeId)) {
       const cached = coverCache.get(youtubeId);
-      setCoverUrl(cached ?? fallbackThumbnail ?? null);
+      dispatch({
+        type: "setCoverUrl",
+        coverUrl: cached ?? fallbackThumbnail ?? null,
+      });
       return;
     }
 
     // Set fallback immediately while fetching
-    setCoverUrl(fallbackThumbnail ?? null);
+    dispatch({ type: "setCoverUrl", coverUrl: fallbackThumbnail ?? null });
 
     // Fetch cover from song metadata API
     const controller = new AbortController();
@@ -74,19 +94,28 @@ export function useSongCover(
         });
         const formattedCover = formatKugouImageUrl(data.cover, 400);
         coverCache.set(youtubeId, formattedCover);
-        setCoverUrl(formattedCover ?? fallbackThumbnail ?? null);
+        dispatch({
+          type: "setCoverUrl",
+          coverUrl: formattedCover ?? fallbackThumbnail ?? null,
+        });
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           return;
         }
         if (error instanceof ApiRequestError && error.status === 404) {
           coverCache.set(youtubeId, null);
-          setCoverUrl(fallbackThumbnail ?? null);
+          dispatch({
+            type: "setCoverUrl",
+            coverUrl: fallbackThumbnail ?? null,
+          });
           return;
         }
         console.warn(`[useSongCover] Failed to fetch cover for ${youtubeId}:`, error);
         coverCache.set(youtubeId, null);
-        setCoverUrl(fallbackThumbnail ?? null);
+        dispatch({
+          type: "setCoverUrl",
+          coverUrl: fallbackThumbnail ?? null,
+        });
       }
     })();
 

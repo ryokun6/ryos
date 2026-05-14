@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useReducer, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { StickyNote as StickyNoteType, StickyColor } from "@/stores/useStickiesStore";
 import { cn } from "@/lib/utils";
@@ -73,11 +73,44 @@ export function StickyNote({
   
   const noteRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [draftPosition, setDraftPosition] = useState(note.position);
-  const [draftSize, setDraftSize] = useState(note.size);
+  interface StickyNoteUiState {
+    isDragging: boolean;
+    isResizing: boolean;
+    dragOffset: { x: number; y: number };
+    draftPosition: StickyNoteType["position"];
+    draftSize: StickyNoteType["size"];
+  }
+
+  const initialState: StickyNoteUiState = {
+    isDragging: false,
+    isResizing: false,
+    dragOffset: { x: 0, y: 0 },
+    draftPosition: note.position,
+    draftSize: note.size,
+  };
+
+  type StickyNoteUiAction = { type: "patch"; payload: Partial<StickyNoteUiState> };
+
+  const reducer = (
+    state: StickyNoteUiState,
+    action: StickyNoteUiAction
+  ): StickyNoteUiState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      default:
+        return state;
+    }
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { isDragging, isResizing, dragOffset, draftPosition, draftSize } = state;
+  const setDraftPosition = useCallback((value: StickyNoteType["position"]) => {
+    dispatch({ type: "patch", payload: { draftPosition: value } });
+  }, []);
+  const setDraftSize = useCallback((value: StickyNoteType["size"]) => {
+    dispatch({ type: "patch", payload: { draftSize: value } });
+  }, []);
   const draftPositionRef = useRef(note.position);
   const draftSizeRef = useRef(note.size);
 
@@ -93,14 +126,14 @@ export function StickyNote({
 
   useEffect(() => {
     if (!isDragging) {
-      setDraftPosition(note.position);
+      dispatch({ type: "patch", payload: { draftPosition: note.position } });
       draftPositionRef.current = note.position;
     }
   }, [note.position, isDragging]);
 
   useEffect(() => {
     if (!isResizing) {
-      setDraftSize(note.size);
+      dispatch({ type: "patch", payload: { draftSize: note.size } });
       draftSizeRef.current = note.size;
     }
   }, [note.size, isResizing]);
@@ -112,10 +145,15 @@ export function StickyNote({
       if ((e.target as HTMLElement).closest("button")) return;
       e.preventDefault();
       onSelect();
-      setIsDragging(true);
-      setDragOffset({
-        x: e.clientX - draftPositionRef.current.x,
-        y: e.clientY - draftPositionRef.current.y,
+      dispatch({
+        type: "patch",
+        payload: {
+          isDragging: true,
+          dragOffset: {
+            x: e.clientX - draftPositionRef.current.x,
+            y: e.clientY - draftPositionRef.current.y,
+          },
+        },
       });
     },
     [onSelect]
@@ -130,10 +168,15 @@ export function StickyNote({
       e.preventDefault();
       onSelect();
       const touch = e.touches[0];
-      setIsDragging(true);
-      setDragOffset({
-        x: touch.clientX - draftPositionRef.current.x,
-        y: touch.clientY - draftPositionRef.current.y,
+      dispatch({
+        type: "patch",
+        payload: {
+          isDragging: true,
+          dragOffset: {
+            x: touch.clientX - draftPositionRef.current.x,
+            y: touch.clientY - draftPositionRef.current.y,
+          },
+        },
       });
     },
     [onSelect]
@@ -145,7 +188,7 @@ export function StickyNote({
       e.preventDefault();
       e.stopPropagation();
       onSelect();
-      setIsResizing(true);
+      dispatch({ type: "patch", payload: { isResizing: true } });
     },
     [onSelect]
   );
@@ -157,7 +200,7 @@ export function StickyNote({
       e.preventDefault();
       e.stopPropagation();
       onSelect();
-      setIsResizing(true);
+      dispatch({ type: "patch", payload: { isResizing: true } });
     },
     [onSelect]
   );
@@ -230,8 +273,13 @@ export function StickyNote({
         }
       }
 
-      setIsDragging(false);
-      setIsResizing(false);
+      dispatch({
+        type: "patch",
+        payload: {
+          isDragging: false,
+          isResizing: false,
+        },
+      });
 
       if (Object.keys(updates).length > 0) {
         onUpdate(updates);

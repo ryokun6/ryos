@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useReducer, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { parseSimpleMarkdown } from "./parseSimpleMarkdown";
 
@@ -9,26 +9,55 @@ interface TypewriterTextProps {
   renderMarkdown?: boolean;
 }
 
+interface TypewriterState {
+  displayedText: string;
+  isComplete: boolean;
+}
+
+const initialState: TypewriterState = {
+  displayedText: "",
+  isComplete: false,
+};
+
+type TypewriterAction =
+  | { type: "reset" }
+  | { type: "completeImmediately"; text: string }
+  | { type: "appendChunk"; chunk: string }
+  | { type: "complete" };
+
+function reducer(state: TypewriterState, action: TypewriterAction): TypewriterState {
+  switch (action.type) {
+    case "reset":
+      return initialState;
+    case "completeImmediately":
+      return { displayedText: action.text, isComplete: true };
+    case "appendChunk":
+      return { ...state, displayedText: state.displayedText + action.chunk };
+    case "complete":
+      return { ...state, isComplete: true };
+    default:
+      return state;
+  }
+}
+
 export function TypewriterText({
   text,
   className,
   speed = 15,
   renderMarkdown = false,
 }: TypewriterTextProps) {
-  const [displayedText, setDisplayedText] = useState("");
-  const [isComplete, setIsComplete] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { displayedText, isComplete } = state;
   const textRef = useRef(text);
 
   useEffect(() => {
     // Reset when text changes
-    setDisplayedText("");
-    setIsComplete(false);
+    dispatch({ type: "reset" });
     textRef.current = text;
 
     // Skip animation for long text (performance)
     if (text.length > 200) {
-      setDisplayedText(text);
-      setIsComplete(true);
+      dispatch({ type: "completeImmediately", text });
       return;
     }
 
@@ -52,7 +81,7 @@ export function TypewriterText({
     const typeNextChunk = () => {
       if (currentIndex < chunks.length) {
         const chunk = chunks[currentIndex];
-        setDisplayedText((prev) => prev + chunk);
+        dispatch({ type: "appendChunk", chunk });
         currentIndex++;
 
         // Pause longer after punctuation for natural rhythm
@@ -61,7 +90,7 @@ export function TypewriterText({
 
         timeoutId = setTimeout(typeNextChunk, delay);
       } else {
-        setIsComplete(true);
+        dispatch({ type: "complete" });
       }
     };
 

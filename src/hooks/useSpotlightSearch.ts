@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { appRegistry, getAppIconPath, getNonFinderApps } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistry";
@@ -275,8 +275,43 @@ export function useSpotlightSearch(query: string): SpotlightSearchState {
   const currentQueryRef = useRef(query);
   const latestQueryRequestIdRef = useRef(0);
   const hasPostedIndexRef = useRef(false);
-  const [dynamicResults, setDynamicResults] = useState<SpotlightWorkerResultPayload[]>([]);
-  const [isSearchingDynamicResults, setIsSearchingDynamicResults] = useState(false);
+  interface DynamicSearchState {
+    dynamicResults: SpotlightWorkerResultPayload[];
+    isSearchingDynamicResults: boolean;
+  }
+
+  const initialState: DynamicSearchState = {
+    dynamicResults: [],
+    isSearchingDynamicResults: false,
+  };
+
+  type DynamicSearchAction =
+    | { type: "setIdle" }
+    | { type: "startSearch" }
+    | { type: "setResults"; results: SpotlightWorkerResultPayload[] };
+
+  const reducer = (
+    state: DynamicSearchState,
+    action: DynamicSearchAction
+  ): DynamicSearchState => {
+    switch (action.type) {
+      case "setIdle":
+        return { ...state, dynamicResults: [], isSearchingDynamicResults: false };
+      case "startSearch":
+        return { ...state, dynamicResults: [], isSearchingDynamicResults: true };
+      case "setResults":
+        return {
+          ...state,
+          dynamicResults: action.results,
+          isSearchingDynamicResults: false,
+        };
+      default:
+        return state;
+    }
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { dynamicResults, isSearchingDynamicResults } = state;
 
   useEffect(() => {
     currentQueryRef.current = query;
@@ -302,15 +337,13 @@ export function useSpotlightSearch(query: string): SpotlightSearchState {
       latestQueryRequestIdRef.current += 1;
 
       if (!trimmedQuery) {
-        setDynamicResults([]);
-        setIsSearchingDynamicResults(false);
+        dispatch({ type: "setIdle" });
         return;
       }
 
       const worker = workerRef.current;
       if (!worker) {
-        setDynamicResults([]);
-        setIsSearchingDynamicResults(false);
+        dispatch({ type: "setIdle" });
         return;
       }
 
@@ -319,8 +352,7 @@ export function useSpotlightSearch(query: string): SpotlightSearchState {
       }
 
       const requestId = latestQueryRequestIdRef.current;
-      setDynamicResults([]);
-      setIsSearchingDynamicResults(true);
+      dispatch({ type: "startSearch" });
       worker.postMessage({
         type: "query",
         query: trimmedQuery,
@@ -350,8 +382,7 @@ export function useSpotlightSearch(query: string): SpotlightSearchState {
         return;
       }
 
-      setDynamicResults(message.results);
-      setIsSearchingDynamicResults(false);
+      dispatch({ type: "setResults", results: message.results });
     };
 
     const refreshWorkerIndex = () => {

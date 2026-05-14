@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -8,10 +8,41 @@ interface SwipeInstructionsProps {
   className?: string;
 }
 
+interface SwipeInstructionsState {
+  isVisible: boolean;
+  shouldRender: boolean;
+}
+
+const initialState: SwipeInstructionsState = {
+  isVisible: false,
+  shouldRender: false,
+};
+
+type SwipeInstructionsAction =
+  | { type: "showContainer" }
+  | { type: "setVisible"; value: boolean }
+  | { type: "hideContainer" };
+
+function reducer(
+  state: SwipeInstructionsState,
+  action: SwipeInstructionsAction
+): SwipeInstructionsState {
+  switch (action.type) {
+    case "showContainer":
+      return { ...state, shouldRender: true };
+    case "setVisible":
+      return { ...state, isVisible: action.value };
+    case "hideContainer":
+      return { ...state, shouldRender: false };
+    default:
+      return state;
+  }
+}
+
 export function SwipeInstructions({ className }: SwipeInstructionsProps) {
   const { t } = useTranslation();
-  const [isVisible, setIsVisible] = useState(false);
-  const [shouldRender, setShouldRender] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { isVisible, shouldRender } = state;
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -24,9 +55,12 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
     if (shouldShow) {
       // Delay showing the instructions to not interfere with initial app loading
       const timer = setTimeout(() => {
-        setShouldRender(true);
+        dispatch({ type: "showContainer" });
         // Use a separate state for animation
-        const animationTimer = setTimeout(() => setIsVisible(true), 100);
+        const animationTimer = setTimeout(
+          () => dispatch({ type: "setVisible", value: true }),
+          100
+        );
         return () => clearTimeout(animationTimer);
       }, 1500);
 
@@ -35,13 +69,13 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
   }, [isMobile]);
 
   const handleDismiss = () => {
-    setIsVisible(false);
+    dispatch({ type: "setVisible", value: false });
     localStorage.setItem("ryos:has-seen-swipe-instructions", "true");
     // Clean up legacy key
     localStorage.removeItem("hasSeenSwipeInstructions");
 
     // Remove from DOM after animation completes
-    setTimeout(() => setShouldRender(false), 300);
+    setTimeout(() => dispatch({ type: "hideContainer" }), 300);
   };
 
   if (!shouldRender) return null;

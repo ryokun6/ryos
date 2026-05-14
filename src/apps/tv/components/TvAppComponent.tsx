@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type RefObject,
@@ -450,25 +451,170 @@ export function TvAppComponent({
   // early `return null` for a closed window happens AFTER the local hooks
   // below — moving the return above them violates the Rules of Hooks and
   // crashes on close (mismatched hook count between renders).
-  const [lcdSlot, setLcdSlot] = useState<"now" | "next">("now");
-  const [scheduleAnimDirection, setScheduleAnimDirection] = useState<
-    "next" | "prev"
-  >("next");
-  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const isMobileSafariDevice = useRef(isMobileSafari()).current;
+
+  interface TvLocalState {
+    lcdSlot: "now" | "next";
+    scheduleAnimDirection: "next" | "prev";
+    isCreateChannelOpen: boolean;
+    pendingDeleteId: string | null;
+    isResetConfirmOpen: boolean;
+    isDrawerOpen: boolean;
+    isYoutubePasteLoading: boolean;
+    powerOnKey: number;
+    channelSwitchKey: number;
+    poweringOff: boolean;
+    isBuffering: boolean;
+    screenOff: boolean;
+    isTransitioningCc: boolean;
+  }
+
+  const initialState: TvLocalState = {
+    lcdSlot: "now",
+    scheduleAnimDirection: "next",
+    isCreateChannelOpen: false,
+    pendingDeleteId: null,
+    isResetConfirmOpen: false,
+    isDrawerOpen: false,
+    isYoutubePasteLoading: false,
+    powerOnKey: 0,
+    channelSwitchKey: 0,
+    poweringOff: false,
+    isBuffering: false,
+    screenOff: isMobileSafariDevice,
+    isTransitioningCc: false,
+  };
+
+  type TvLocalAction =
+    | { type: "patch"; payload: Partial<TvLocalState> }
+    | {
+        type: "setField";
+        key: keyof TvLocalState;
+        value:
+          | TvLocalState[keyof TvLocalState]
+          | ((prev: TvLocalState[keyof TvLocalState]) => TvLocalState[keyof TvLocalState]);
+      }
+    | { type: "toggleLcdSlotWithDirection" };
+
+  const reducer = (state: TvLocalState, action: TvLocalAction): TvLocalState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      case "setField": {
+        const currentValue = state[action.key];
+        const nextValue =
+          typeof action.value === "function"
+            ? (
+                action.value as (
+                  prev: TvLocalState[keyof TvLocalState]
+                ) => TvLocalState[keyof TvLocalState]
+              )(currentValue)
+            : action.value;
+        return { ...state, [action.key]: nextValue } as TvLocalState;
+      }
+      case "toggleLcdSlotWithDirection": {
+        const nextSlot = state.lcdSlot === "now" ? "next" : "now";
+        return {
+          ...state,
+          lcdSlot: nextSlot,
+          scheduleAnimDirection: nextSlot === "next" ? "next" : "prev",
+        };
+      }
+      default:
+        return state;
+    }
+  };
+
+  const [localState, dispatchLocal] = useReducer(reducer, initialState);
+  const {
+    lcdSlot,
+    scheduleAnimDirection,
+    isCreateChannelOpen,
+    pendingDeleteId,
+    isResetConfirmOpen,
+    isDrawerOpen,
+    isYoutubePasteLoading,
+    powerOnKey,
+    channelSwitchKey,
+    poweringOff,
+    isBuffering,
+    screenOff,
+    isTransitioningCc,
+  } = localState;
+  const setField = useCallback(
+    <K extends keyof TvLocalState>(
+      key: K,
+      value: TvLocalState[K] | ((prev: TvLocalState[K]) => TvLocalState[K])
+    ) => {
+      dispatchLocal({
+        type: "setField",
+        key,
+        value: value as TvLocalState[keyof TvLocalState],
+      });
+    },
+    []
+  );
+  const setLcdSlot = useCallback(
+    (
+      value:
+        | TvLocalState["lcdSlot"]
+        | ((prev: TvLocalState["lcdSlot"]) => TvLocalState["lcdSlot"])
+    ) => setField("lcdSlot", value),
+    [setField]
+  );
+  const setIsCreateChannelOpen = useCallback(
+    (value: boolean) => setField("isCreateChannelOpen", value),
+    [setField]
+  );
+  const setPendingDeleteId = useCallback(
+    (value: string | null) => setField("pendingDeleteId", value),
+    [setField]
+  );
+  const setIsResetConfirmOpen = useCallback(
+    (value: boolean) => setField("isResetConfirmOpen", value),
+    [setField]
+  );
+  const setIsDrawerOpen = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => setField("isDrawerOpen", value),
+    [setField]
+  );
+  const setIsYoutubePasteLoading = useCallback(
+    (value: boolean) => setField("isYoutubePasteLoading", value),
+    [setField]
+  );
+  const setPowerOnKey = useCallback(
+    (value: number | ((prev: number) => number)) => setField("powerOnKey", value),
+    [setField]
+  );
+  const setChannelSwitchKey = useCallback(
+    (value: number | ((prev: number) => number)) =>
+      setField("channelSwitchKey", value),
+    [setField]
+  );
+  const setPoweringOff = useCallback(
+    (value: boolean) => setField("poweringOff", value),
+    [setField]
+  );
+  const setIsBuffering = useCallback(
+    (value: boolean) => setField("isBuffering", value),
+    [setField]
+  );
+  const setScreenOff = useCallback(
+    (value: boolean) => setField("screenOff", value),
+    [setField]
+  );
+  const setIsTransitioningCc = useCallback(
+    (value: boolean) => setField("isTransitioningCc", value),
+    [setField]
+  );
+
   // Classic-Mac-OS-X-style drawer that lists every video on the
   // current channel. Closed by default so the picture-and-LCD layout
   // stays the focal point on first open.
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isYoutubePasteLoading, setIsYoutubePasteLoading] = useState(false);
 
   // CRT shader effect triggers. Bumping these counters re-keys the
   // animations inside TvCrtEffects so a new burst plays on every event.
-  const [powerOnKey, setPowerOnKey] = useState(0);
-  const [channelSwitchKey, setChannelSwitchKey] = useState(0);
-  const [poweringOff, setPoweringOff] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(false);
+  
   // While true, the picture is squeezed away and a black "screen-off"
   // overlay holds until the user un-pauses. Driven by isPlaying
   // transitions below.
@@ -477,8 +623,6 @@ export function TvAppComponent({
   // their hooks). The user wakes it up by tapping play, which flips
   // `isPlaying` true and routes through the existing
   // `screenOff && isPlaying` resume path below.
-  const isMobileSafariDevice = useRef(isMobileSafari()).current;
-  const [screenOff, setScreenOff] = useState(isMobileSafariDevice);
 
   // Procedural CRT sound effects synced to the shader animations above.
   const {
@@ -814,7 +958,6 @@ export function TvAppComponent({
   // burst before the new video's lyrics load. Cleared after a short
   // timeout that's a touch longer than the channel-switch animation
   // so the overlay doesn't pop back in mid-burst.
-  const [isTransitioningCc, setIsTransitioningCc] = useState(false);
   const ccTransitionMountedRef = useRef(false);
   useEffect(() => {
     if (!ccTransitionMountedRef.current) {
@@ -951,11 +1094,7 @@ export function TvAppComponent({
   useEffect(() => {
     if (!isPlaying || !scheduleNextTitle) return;
     const id = window.setInterval(() => {
-      setLcdSlot((s) => {
-        const next = s === "now" ? "next" : "now";
-        setScheduleAnimDirection(next === "next" ? "next" : "prev");
-        return next;
-      });
+      dispatchLocal({ type: "toggleLcdSlotWithDirection" });
     }, 4500);
     return () => window.clearInterval(id);
   }, [isPlaying, scheduleNextTitle]);

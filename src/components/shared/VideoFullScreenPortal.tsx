@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
+import { useReducer, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import type ReactPlayer from "react-player";
@@ -43,6 +43,31 @@ interface VideoFullScreenPortalProps {
   videoOverlay?: ReactNode;
 }
 
+interface PortalUiState {
+  showControls: boolean;
+  isLangMenuOpen: boolean;
+}
+
+const initialState: PortalUiState = {
+  showControls: true,
+  isLangMenuOpen: false,
+};
+
+type PortalUiAction =
+  | { type: "setShowControls"; value: boolean }
+  | { type: "setLangMenuOpen"; value: boolean };
+
+function reducer(state: PortalUiState, action: PortalUiAction): PortalUiState {
+  switch (action.type) {
+    case "setShowControls":
+      return { ...state, showControls: action.value };
+    case "setLangMenuOpen":
+      return { ...state, isLangMenuOpen: action.value };
+    default:
+      return state;
+  }
+}
+
 export function VideoFullScreenPortal({
   isOpen,
   onClose,
@@ -71,8 +96,17 @@ export function VideoFullScreenPortal({
 }: VideoFullScreenPortalProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [showControls, setShowControls] = useState(true);
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { showControls, isLangMenuOpen } = state;
+  const setIsLangMenuOpen = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      dispatch({
+        type: "setLangMenuOpen",
+        value: typeof value === "function" ? value(state.isLangMenuOpen) : value,
+      });
+    },
+    [state.isLangMenuOpen]
+  );
   const hideControlsTimeoutRef = useRef<number | null>(null);
 
   const getActualPlayerState = useCallback(() => {
@@ -85,14 +119,14 @@ export function VideoFullScreenPortal({
   }, [playerRef, isPlaying]);
 
   const restartAutoHideTimer = useCallback(() => {
-    setShowControls(true);
+    dispatch({ type: "setShowControls", value: true });
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current);
     }
     const actuallyPlaying = getActualPlayerState();
     if (actuallyPlaying && !isLangMenuOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
-        setShowControls(false);
+        dispatch({ type: "setShowControls", value: false });
       }, 2000);
     }
   }, [getActualPlayerState, isLangMenuOpen]);
@@ -130,14 +164,14 @@ export function VideoFullScreenPortal({
     if (!isOpen) return;
 
     const handleActivity = () => {
-      setShowControls(true);
+      dispatch({ type: "setShowControls", value: true });
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
       }
       const actuallyPlaying = getActualPlayerState();
       if (actuallyPlaying && !isLangMenuOpen) {
         hideControlsTimeoutRef.current = window.setTimeout(() => {
-          setShowControls(false);
+          dispatch({ type: "setShowControls", value: false });
         }, 2000);
       }
     };
@@ -150,7 +184,7 @@ export function VideoFullScreenPortal({
     const actuallyPlayingOnMount = getActualPlayerState();
     if (actuallyPlayingOnMount && !isLangMenuOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
-        setShowControls(false);
+        dispatch({ type: "setShowControls", value: false });
       }, 2000);
     }
 

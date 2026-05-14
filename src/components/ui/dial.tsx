@@ -15,6 +15,54 @@ interface DialProps {
   className?: string;
 }
 
+interface DialDragState {
+  isDragging: boolean;
+  isDraggingValue: boolean;
+  startX: number;
+  startValue: number;
+}
+
+const initialState: DialDragState = {
+  isDragging: false,
+  isDraggingValue: false,
+  startX: 0,
+  startValue: 0,
+};
+
+type DialDragAction =
+  | { type: "startDialDrag"; startX: number; startValue: number }
+  | { type: "startValueDrag"; startX: number; startValue: number }
+  | { type: "stopDragging" };
+
+function reducer(state: DialDragState, action: DialDragAction): DialDragState {
+  switch (action.type) {
+    case "startDialDrag":
+      return {
+        ...state,
+        isDragging: true,
+        isDraggingValue: false,
+        startX: action.startX,
+        startValue: action.startValue,
+      };
+    case "startValueDrag":
+      return {
+        ...state,
+        isDragging: false,
+        isDraggingValue: true,
+        startX: action.startX,
+        startValue: action.startValue,
+      };
+    case "stopDragging":
+      return {
+        ...state,
+        isDragging: false,
+        isDraggingValue: false,
+      };
+    default:
+      return state;
+  }
+}
+
 const Dial = React.forwardRef<HTMLDivElement, DialProps>(
   (
     {
@@ -34,39 +82,45 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
   ) => {
     const dialRef = React.useRef<HTMLDivElement>(null);
     const valueRef = React.useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = React.useState(false);
-    const [isDraggingValue, setIsDraggingValue] = React.useState(false);
-    const [startX, setStartX] = React.useState(0);
-    const [startValue, setStartValue] = React.useState(0);
+    const [dragState, dispatch] = React.useReducer(reducer, initialState);
+    const { isDragging, isDraggingValue, startX, startValue } = dragState;
 
     const handleMouseDown = (e: React.MouseEvent) => {
       e.preventDefault();
-      setIsDragging(true);
-      setStartX(e.clientX);
-      setStartValue(value);
+      dispatch({
+        type: "startDialDrag",
+        startX: e.clientX,
+        startValue: value,
+      });
     };
 
     const handleValueMouseDown = (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setIsDraggingValue(true);
-      setStartX(e.clientX);
-      setStartValue(value);
+      dispatch({
+        type: "startValueDrag",
+        startX: e.clientX,
+        startValue: value,
+      });
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {
       e.preventDefault();
-      setIsDragging(true);
-      setStartX(e.touches[0].clientX);
-      setStartValue(value);
+      dispatch({
+        type: "startDialDrag",
+        startX: e.touches[0].clientX,
+        startValue: value,
+      });
     };
 
     const handleValueTouchStart = (e: React.TouchEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setIsDraggingValue(true);
-      setStartX(e.touches[0].clientX);
-      setStartValue(value);
+      dispatch({
+        type: "startValueDrag",
+        startX: e.touches[0].clientX,
+        startValue: value,
+      });
     };
 
     const handleMove = React.useCallback(
@@ -110,13 +164,11 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
       };
 
       const handleGlobalMouseUp = () => {
-        setIsDragging(false);
-        setIsDraggingValue(false);
+        dispatch({ type: "stopDragging" });
       };
 
       const handleGlobalTouchEnd = () => {
-        setIsDragging(false);
-        setIsDraggingValue(false);
+        dispatch({ type: "stopDragging" });
       };
 
       if (isDragging || isDraggingValue) {
