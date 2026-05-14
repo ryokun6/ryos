@@ -178,7 +178,7 @@ function CrashDialog({
         <ThemedIcon
           name="warn.png"
           alt={t("common.dialog.close", { defaultValue: "Warning" })}
-          className="mt-0.5 h-8 w-8 shrink-0 [image-rendering:pixelated]"
+          className="mt-0.5 size-8 shrink-0 [image-rendering:pixelated]"
           width={32}
           height={32}
         />

@@ -369,7 +369,7 @@ export function InternetExplorerAppComponent({
           onNavigatePrevious={onNavigatePrevious}
           menuBar={isXpTheme ? menuBar : undefined}
         >
-          <div className="flex flex-col h-full w-full relative">
+          <div className="flex flex-col size-full relative">
             <div
               className={`flex flex-col gap-1 p-1 ${
                 isXpTheme
@@ -394,7 +394,7 @@ export function InternetExplorerAppComponent({
                     size="icon"
                     onClick={handleGoBack}
                     disabled={isOffline || historyIndex >= history.length - 1}
-                    className="h-8 w-8"
+                    className="size-8"
                   >
                     <ArrowLeft size={14} weight="bold" />
                   </Button>
@@ -403,7 +403,7 @@ export function InternetExplorerAppComponent({
                     size="icon"
                     onClick={handleGoForward}
                     disabled={isOffline || historyIndex <= 0}
-                    className="h-8 w-8"
+                    className="size-8"
                   >
                     <ArrowRight size={14} weight="bold" />
                   </Button>
@@ -413,7 +413,7 @@ export function InternetExplorerAppComponent({
                         variant="ghost"
                         size="icon"
                         onClick={handleSharePage}
-                        className="h-8 w-8 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="size-8 focus-visible:ring-0 focus-visible:ring-offset-0"
                         aria-label="Share this page"
                       >
                         <Export size={14} weight="bold" />
@@ -648,14 +648,14 @@ export function InternetExplorerAppComponent({
                           >
                             {suggestion.type === "search" ? (
                               <MagnifyingGlass
-                                className="w-4 h-4 text-neutral-400"
+                                className="size-4 text-neutral-400"
                                 weight="bold"
                               />
                             ) : suggestion.favicon && !isOffline ? (
                               <img
                                 src={suggestion.favicon}
                                 alt=""
-                                className="w-4 h-4"
+                                className="size-4"
                                 onError={(e) => {
                                   e.currentTarget.src =
                                     "/icons/default/ie-site.png";
@@ -665,7 +665,7 @@ export function InternetExplorerAppComponent({
                               <ThemedIcon
                                 name="ie-site.png"
                                 alt=""
-                                className="w-4 h-4 [image-rendering:pixelated]"
+                                className="size-4 [image-rendering:pixelated]"
                               />
                             )}
                             <div className="flex-1 truncate">
@@ -702,7 +702,7 @@ export function InternetExplorerAppComponent({
                         disabled={
                           isFetchingCachedYears || cachedYears.length <= 1
                         }
-                        className={`h-7 w-7 absolute right-1 top-1/2 -translate-y-1/2 focus-visible:ring-0 focus-visible:ring-offset-0 ${
+                        className={`size-7 absolute right-1 top-1/2 -translate-y-1/2 focus-visible:ring-0 focus-visible:ring-offset-0 ${
                           cachedYears.length > 1
                             ? ""
                             : "opacity-50 cursor-not-allowed"
@@ -714,7 +714,7 @@ export function InternetExplorerAppComponent({
                         }}
                       >
                         <ClockCounterClockwise
-                          className={`h-4 w-4 ${
+                          className={`size-4 ${
                             cachedYears.length > 1
                               ? "text-orange-500"
                               : "text-neutral-400"
@@ -800,7 +800,7 @@ export function InternetExplorerAppComponent({
                                 <ThemedIcon
                                   name="directory.png"
                                   alt="Folder"
-                                  className="w-4 h-4 mr-1 [image-rendering:pixelated]"
+                                  className="size-4 mr-1 [image-rendering:pixelated]"
                                 />
                                 <span className="truncate">
                                   {favorite.title}
@@ -828,7 +828,7 @@ export function InternetExplorerAppComponent({
                                     <img
                                       src={child.favicon}
                                       alt=""
-                                      className="w-4 h-4"
+                                      className="size-4"
                                       onError={(e) => {
                                         e.currentTarget.src =
                                           "/icons/default/ie-site.png";
@@ -838,7 +838,7 @@ export function InternetExplorerAppComponent({
                                     <ThemedIcon
                                       name="ie-site.png"
                                       alt=""
-                                      className="w-4 h-4 [image-rendering:pixelated]"
+                                      className="size-4 [image-rendering:pixelated]"
                                     />
                                   )}
                                   {child.title}
@@ -879,7 +879,7 @@ export function InternetExplorerAppComponent({
                               <img
                                 src={favorite.favicon}
                                 alt="Site"
-                                className="w-4 h-4 mr-1"
+                                className="size-4 mr-1"
                                 onError={(e) => {
                                   e.currentTarget.src =
                                     "/icons/default/ie-site.png";
@@ -889,7 +889,7 @@ export function InternetExplorerAppComponent({
                               <ThemedIcon
                                 name="ie-site.png"
                                 alt="Site"
-                                className="w-4 h-4 mr-1 [image-rendering:pixelated]"
+                                className="size-4 mr-1 [image-rendering:pixelated]"
                               />
                             )}
                             <span className="truncate">{favorite.title}</span>
@@ -913,7 +913,7 @@ export function InternetExplorerAppComponent({
               ) : isFutureYear ||
                 (mode === "past" &&
                   (isAiLoading || aiGeneratedHtml !== null)) ? (
-                <div className="w-full h-full overflow-hidden absolute inset-0 font-geneva-12">
+                <div className="size-full overflow-hidden absolute inset-0 font-geneva-12">
                   <HtmlPreview
                     htmlContent={
                       isAiLoading ? generatedHtml || "" : aiGeneratedHtml || ""

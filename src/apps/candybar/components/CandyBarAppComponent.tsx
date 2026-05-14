@@ -264,7 +264,7 @@ export function CandyBarAppComponent({
       >
         <div
           className={cn(
-            "flex flex-col h-full w-full relative",
+            "flex flex-col size-full relative",
             isMacOSXTheme ? "bg-transparent" : ""
           )}
         >
@@ -330,7 +330,7 @@ export function CandyBarAppComponent({
                   size="icon"
                   onClick={navigateBack}
                   disabled={!canNavigateBack}
-                  className="h-8 w-8"
+                  className="size-8"
                 >
                   <ArrowLeft size={14} weight="bold" />
                 </Button>
@@ -339,7 +339,7 @@ export function CandyBarAppComponent({
                   size="icon"
                   onClick={navigateForward}
                   disabled={!canNavigateForward}
-                  className="h-8 w-8"
+                  className="size-8"
                 >
                   <ArrowRight size={14} weight="bold" />
                 </Button>

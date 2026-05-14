@@ -137,7 +137,7 @@ export function EditorToolbar({
                     : getCurrentHeading() === "h3"
                     ? "H3"
                     : t("apps.textedit.text")}
-                  <CaretDown className="ml-1 h-3 w-3" weight="bold" />
+                  <CaretDown className="ml-1 size-3" weight="bold" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-[80px]">
@@ -290,7 +290,7 @@ export function EditorToolbar({
                 ) : isSpeaking ? (
                   <PlaybackBars color="black" />
                 ) : (
-                  <SpeakerHigh className="h-4 w-4" weight="bold" />
+                  <SpeakerHigh className="size-4" weight="bold" />
                 )}
               </button>
             )}
@@ -323,12 +323,12 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="size-7"
           onClick={() => editor?.chain().focus().toggleBold().run()}
           aria-label={t("apps.textedit.bold")}
         >
           <BoldIcon
-            className={`h-4 w-4 ${
+            className={`size-4 ${
               editor?.isActive("bold")
                 ? "text-black"
                 : "text-neutral-500"
@@ -339,12 +339,12 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="size-7"
           onClick={() => editor?.chain().focus().toggleItalic().run()}
           aria-label={t("apps.textedit.italic")}
         >
           <ItalicIcon
-            className={`h-4 w-4 ${
+            className={`size-4 ${
               editor?.isActive("italic")
                 ? "text-black"
                 : "text-neutral-500"
@@ -355,14 +355,14 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="size-7"
           onClick={() =>
             editor?.chain().focus().toggleUnderline().run()
           }
           aria-label={t("apps.textedit.underline")}
         >
           <UnderlineIcon
-            className={`h-4 w-4 ${
+            className={`size-4 ${
               editor?.isActive("underline")
                 ? "text-black"
                 : "text-neutral-500"
@@ -403,7 +403,7 @@ export function EditorToolbar({
                   : getCurrentHeading() === "h3"
                   ? "H3"
                   : t("apps.textedit.text")}
-                <CaretDown className="ml-1 h-3 w-3" weight="bold" />
+                <CaretDown className="ml-1 size-3" weight="bold" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[120px]">
@@ -429,14 +429,14 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="size-7"
           onClick={() =>
             editor?.chain().focus().setTextAlign("left").run()
           }
           aria-label={t("apps.textedit.alignLeft")}
         >
           <AlignLeft
-            className={`h-4 w-4 ${
+            className={`size-4 ${
               editor?.isActive({ textAlign: "left" })
                 ? "text-black"
                 : "text-neutral-500"
@@ -447,14 +447,14 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="size-7"
           onClick={() =>
             editor?.chain().focus().setTextAlign("center").run()
           }
           aria-label={t("apps.textedit.alignCenter")}
         >
           <AlignCenter
-            className={`h-4 w-4 ${
+            className={`size-4 ${
               editor?.isActive({ textAlign: "center" })
                 ? "text-black"
                 : "text-neutral-500"
@@ -465,14 +465,14 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="size-7"
           onClick={() =>
             editor?.chain().focus().setTextAlign("right").run()
           }
           aria-label={t("apps.textedit.alignRight")}
         >
           <AlignRight
-            className={`h-4 w-4 ${
+            className={`size-4 ${
               editor?.isActive({ textAlign: "right" })
                 ? "text-black"
                 : "text-neutral-500"
@@ -487,14 +487,14 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="size-7"
           onClick={() =>
             editor?.chain().focus().toggleBulletList().run()
           }
           aria-label={t("apps.textedit.bulletList")}
         >
           <ListIcon
-            className={`h-4 w-4 ${
+            className={`size-4 ${
               editor?.isActive("bulletList")
                 ? "text-black"
                 : "text-neutral-500"
@@ -505,14 +505,14 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="size-7"
           onClick={() =>
             editor?.chain().focus().toggleOrderedList().run()
           }
           aria-label={t("apps.textedit.numberedList")}
         >
           <ListOrdered
-            className={`h-4 w-4 ${
+            className={`size-4 ${
               editor?.isActive("orderedList")
                 ? "text-black"
                 : "text-neutral-500"
@@ -528,14 +528,14 @@ export function EditorToolbar({
           onTranscriptionComplete={onTranscriptionComplete}
           onTranscriptionStart={onTranscriptionStart}
           isLoading={isTranscribing}
-          className="h-7 w-7 inline-flex items-center justify-center text-neutral-500 hover:text-black"
+          className="size-7 inline-flex items-center justify-center text-neutral-500 hover:text-black"
           silenceThreshold={10000}
         />
         {speechEnabled && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="size-7"
             onClick={onSpeak}
             aria-label={isSpeaking ? t("apps.textedit.stopSpeech") : t("apps.textedit.speak")}
           >
@@ -544,7 +544,7 @@ export function EditorToolbar({
             ) : isSpeaking ? (
               <PlaybackBars color="black" />
             ) : (
-              <SpeakerHigh className="h-4 w-4 text-neutral-500" weight="bold" />
+              <SpeakerHigh className="size-4 text-neutral-500" weight="bold" />
             )}
           </Button>
         )}

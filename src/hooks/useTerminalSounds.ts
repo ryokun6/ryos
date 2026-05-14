@@ -573,6 +573,7 @@ export function useTerminalSounds() {
   // Generate a melodic sequence from the note pool - highly simplified for coherence
   const generateMelodySequence = useCallback(() => {
     const { notePool, timeMode } = elevatorMusicRef.current;
+    const noteToIndex = new Map(notePool.map((note, index) => [note, index] as const));
     
     // Future mode uses simple predictable patterns
     if (timeMode === "future") {
@@ -637,7 +638,7 @@ export function useTerminalSounds() {
       
       for (let i = 1; i < length; i++) {
         if (Math.random() < 0.6) {
-          const lastIndex = notePool.indexOf(melody[i - 1]);
+          const lastIndex = noteToIndex.get(melody[i - 1]) ?? -1;
           const stepUp = Math.random() < 0.5;
 
           if (stepUp && lastIndex < notePool.length - 1) {

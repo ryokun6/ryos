@@ -545,7 +545,7 @@ export function WindowFrame({
 
     const isAquaNoTitlebar = variant === "aqua" && isNoTitlebar;
     const buttonClass = cn(
-      variant === "aqua" ? "w-5 h-5" : "mr-2 w-5 h-5",
+      variant === "aqua" ? "size-5" : "mr-2 size-5",
       "flex items-center justify-center",
       isAquaNoTitlebar
         ? "text-white/80"
@@ -573,7 +573,7 @@ export function WindowFrame({
         : undefined;
 
     if (!onCoverFlowToggle && !onFullscreenToggle) {
-      return variant === "aqua" ? <div style={{ width: 52 }} /> : <div className="mr-2 w-4 h-4" />;
+      return variant === "aqua" ? <div style={{ width: 52 }} /> : <div className="mr-2 size-4" />;
     }
 
     return (
@@ -1037,7 +1037,7 @@ export function WindowFrame({
       }}
     >
       <div
-        className="w-full h-full"
+        className="size-full"
         style={{
           border: "3px solid rgba(255, 255, 255, 0.8)",
           backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -1115,7 +1115,7 @@ export function WindowFrame({
           }}
           exit={getExitAnimation()}
           className={cn(
-            "w-full h-full select-none",
+            "size-full select-none",
             // Disable all pointer events when window is closing
             isClosing && "pointer-events-none",
             // For keepMountedWhenMinimized apps, also disable pointer events when minimized
@@ -1134,7 +1134,7 @@ export function WindowFrame({
             transformOrigin: "center",
           }}
         >
-      <div className="relative w-full h-full">
+      <div className="relative size-full">
         {/* Drawer slot — rendered first so the window paints over it
             when collapsed. The drawer itself is responsible for sliding
             out from behind the right edge via transform. */}
@@ -1237,8 +1237,8 @@ export function WindowFrame({
               debugMode && "bg-red-500/50",
               isMobile && "hidden",
               resizeType === "ne"
-                ? "top-[-100px] right-[-100px] w-[200px] h-[200px]"
-                : "top-0 right-0 w-6 h-6"
+                ? "top-[-100px] right-[-100px] size-[200px]"
+                : "top-0 right-0 size-6"
             )}
             onMouseDown={(e) =>
               handleResizeStartWithForeground(e, "ne" as ResizeType)
@@ -1254,8 +1254,8 @@ export function WindowFrame({
               debugMode && "bg-red-500/50",
               isMobile && "hidden",
               resizeType === "sw"
-                ? "bottom-[-100px] left-[-100px] w-[200px] h-[200px]"
-                : "bottom-0 left-0 w-6 h-6"
+                ? "bottom-[-100px] left-[-100px] size-[200px]"
+                : "bottom-0 left-0 size-6"
             )}
             onMouseDown={(e) =>
               handleResizeStartWithForeground(e, "sw" as ResizeType)
@@ -1271,8 +1271,8 @@ export function WindowFrame({
               debugMode && "bg-red-500/50",
               isMobile && "hidden",
               resizeType === "se"
-                ? "bottom-[-100px] right-[-100px] w-[200px] h-[200px]"
-                : "bottom-0 right-0 w-6 h-6"
+                ? "bottom-[-100px] right-[-100px] size-[200px]"
+                : "bottom-0 right-0 size-6"
             )}
             onMouseDown={(e) =>
               handleResizeStartWithForeground(e, "se" as ResizeType)
@@ -1288,8 +1288,8 @@ export function WindowFrame({
             isXpTheme
               ? "window flex flex-col h-full" // Use xp.css window class with flex layout
               : isNoTitlebar && isMacOSTheme
-              ? "window w-full h-full flex flex-col rounded-os overflow-hidden relative" // No border for notitlebar
-              : "window w-full h-full flex flex-col border-[length:var(--os-metrics-border-width)] border-os-window rounded-os overflow-hidden relative",
+              ? "window size-full flex flex-col rounded-os overflow-hidden relative" // No border for notitlebar
+              : "window size-full flex flex-col border-[length:var(--os-metrics-border-width)] border-os-window rounded-os overflow-hidden relative",
             !effectiveTransparentBackground && !isXpTheme && "bg-os-window-bg",
             !isXpTheme && (!isSystem7Theme || isForeground)
               ? "shadow-os-window"
@@ -1448,7 +1448,7 @@ export function WindowFrame({
                 <ThemedIcon
                   name={getAppIconPath(appId)}
                   alt={title}
-                  className="w-4 h-4 mr-1 shrink-0 [image-rendering:pixelated]"
+                  className="size-4 mr-1 shrink-0 [image-rendering:pixelated]"
                   style={{
                     filter: !isForeground ? "grayscale(100%)" : "none",
                   }}
@@ -1702,13 +1702,13 @@ export function WindowFrame({
                 onClick={handleClose}
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
-                className="relative ml-2 w-4 h-4 cursor-default select-none"
+                className="relative ml-2 size-4 cursor-default select-none"
                 data-titlebar-controls
               >
                 <div className="absolute inset-0 -m-2" />{" "}
                 {/* Larger click area */}
                 <div
-                  className={`w-4 h-4 ${
+                  className={`size-4 ${
                     !isTransparent &&
                     "bg-os-button-face shadow-[0_0_0_1px_var(--os-color-button-face)]"
                   } border-2 border-os-window hover:bg-gray-200 active:bg-gray-300 flex items-center justify-center ${

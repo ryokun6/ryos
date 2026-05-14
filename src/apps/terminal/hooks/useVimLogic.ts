@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import type {
   ChangeEvent,
   Dispatch,
@@ -88,6 +88,15 @@ export const useVimLogic = ({
     key: "",
     time: 0,
   });
+  const filesByName = useMemo(() => {
+    const map = new Map<string, TerminalFileItem>();
+    for (const file of files) {
+      if (!map.has(file.name)) {
+        map.set(file.name, file);
+      }
+    }
+    return map;
+  }, [files]);
 
   const pushUndoBeforeMutation = () => {
     if (vimFile)
@@ -154,7 +163,7 @@ export const useVimLogic = ({
   const saveVimFile = async (vimFileToSave: { name: string; content: string }) => {
     try {
       // Find the file in the current files list to get its path
-      const fileObj = files.find((file) => file.name === vimFileToSave.name);
+      const fileObj = filesByName.get(vimFileToSave.name);
 
       if (!fileObj) {
         console.error(`Could not find file ${vimFileToSave.name} for saving`);

@@ -342,7 +342,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
   if (error && !data) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <Warning className="h-8 w-8 text-neutral-400" weight="bold" />
+        <Warning className="size-8 text-neutral-400" weight="bold" />
         <span className="text-[12px] text-neutral-600">{error}</span>
         <Button variant="outline" size="sm" onClick={fetchData}>
           {t("apps.admin.dashboard.retry")}
@@ -420,7 +420,7 @@ export function DashboardPanel({ onRefresh }: DashboardPanelProps) {
                 setServerReloadKey((k) => k + 1);
                 onRefresh?.();
               }}
-              className="h-7 w-7 shrink-0 p-0"
+              className="size-7 shrink-0 p-0"
             >
               {isLoading ? (
                 <ActivityIndicator size={14} />

@@ -334,7 +334,7 @@ export function StickyNote({
               e.stopPropagation();
               onDelete();
             }}
-            className="w-[9px] h-[9px] flex items-center justify-center"
+            className="size-[9px] flex items-center justify-center"
             style={{ 
               border: `1px solid ${colors.border}`,
               backgroundColor: colors.bg,
@@ -364,7 +364,7 @@ export function StickyNote({
       <div
         onMouseDown={handleResizeStart}
         onTouchStart={handleTouchResizeStart}
-        className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize opacity-70"
+        className="absolute bottom-0 right-0 size-3 cursor-se-resize opacity-70"
         style={{
           background: `linear-gradient(135deg, transparent 50%, ${colors.border} 50%)`,
           touchAction: "none",

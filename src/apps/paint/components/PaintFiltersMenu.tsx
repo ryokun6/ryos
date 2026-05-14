@@ -156,8 +156,8 @@ export const PaintFiltersMenu: React.FC<PaintFiltersMenuProps> = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Sliders className="h-4 w-4" weight="bold" />
+        <Button variant="ghost" size="icon" className="size-8">
+          <Sliders className="size-4" weight="bold" />
           <span className="sr-only">{t("apps.paint.filtersMenu.openFiltersMenu")}</span>
         </Button>
       </DropdownMenuTrigger>

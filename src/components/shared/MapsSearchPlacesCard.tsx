@@ -132,7 +132,7 @@ export function MapsSearchPlacesCard({
                 })}
               >
                 <div
-                  className="aqua-icon-badge flex h-9 w-9 shrink-0 items-center justify-center text-white"
+                  className="aqua-icon-badge flex size-9 shrink-0 items-center justify-center text-white"
                   style={{ backgroundImage: poiVisualGradient(visual) }}
                   aria-hidden="true"
                 >
@@ -154,7 +154,7 @@ export function MapsSearchPlacesCard({
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   className={cn(
-                    "shrink-0 -mr-0.5 flex h-7 w-7 items-center justify-center rounded-full",
+                    "shrink-0 -mr-0.5 flex size-7 items-center justify-center rounded-full",
                     "text-black/55 hover:bg-black/10 hover:text-black/85",
                     "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
                   )}

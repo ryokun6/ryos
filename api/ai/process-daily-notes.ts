@@ -249,6 +249,7 @@ async function _processDailyNotesForUserInner(
   let totalCreated = 0;
   let totalUpdated = 0;
   const processedDates: string[] = [];
+  const processedDateSet = new Set<string>();
   const skippedDates: string[] = [];
 
   // 2. Process each day as a separate batch
@@ -261,13 +262,13 @@ async function _processDailyNotesForUserInner(
         elapsedMs: elapsed,
         processedSoFar: totalProcessed,
         remainingDates: unprocessedNotes
-          .filter(n => !processedDates.includes(n.date))
+          .filter(n => !processedDateSet.has(n.date))
           .map(n => n.date),
       });
       // Track remaining dates as skipped (they'll be picked up next run)
       skippedDates.push(
         ...unprocessedNotes
-          .filter(n => !processedDates.includes(n.date))
+          .filter(n => !processedDateSet.has(n.date))
           .map(n => n.date)
       );
       break;
@@ -286,6 +287,7 @@ async function _processDailyNotesForUserInner(
       await markDailyNoteProcessed(redis, username, note.date);
       totalProcessed++;
       processedDates.push(note.date);
+      processedDateSet.add(note.date);
 
       log("[processDailyNotes] Day batch complete", {
         username,
@@ -386,6 +388,10 @@ async function _processSingleDayBatch(
   const currentCount = currentIndex?.memories.length || 0;
   const remainingSlots = MAX_MEMORIES_PER_USER - currentCount;
   const existingKeys = currentIndex?.memories.map(m => m.key) || [];
+  const existingKeySet = new Set(existingKeys);
+  const existingMemoryByKey = new Map(
+    (currentIndex?.memories || []).map((memory) => [memory.key, memory] as const)
+  );
   const existingMemoriesText = currentIndex && currentIndex.memories.length > 0
     ? currentIndex.memories.map(m => `- ${m.key}: ${m.summary}`).join("\n")
     : "";
@@ -428,9 +434,9 @@ async function _processSingleDayBatch(
 
     const relatedKeys = (mem.relatedKeys || [])
       .map(k => k.toLowerCase().replace(/[^a-z0-9_]/g, "_"))
-      .filter(k => k !== key && existingKeys.includes(k));
+      .filter(k => k !== key && existingKeySet.has(k));
 
-    const targetKeyExists = existingKeys.includes(key);
+    const targetKeyExists = existingKeySet.has(key);
 
     if (!targetKeyExists && relatedKeys.length === 0 && remainingSlots <= 0) {
       continue;
@@ -445,7 +451,7 @@ async function _processSingleDayBatch(
       const existingContents = await Promise.all(
         uniqueKeysToFetch.map(async (k) => {
           const detail = await getMemoryDetail(redis, username, k);
-          const entry = currentIndex?.memories.find(m => m.key === k);
+          const entry = existingMemoryByKey.get(k);
           return { key: k, summary: entry?.summary || "", content: detail?.content || "" };
         })
       );

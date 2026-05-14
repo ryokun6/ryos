@@ -295,6 +295,10 @@ export async function extractMemoriesFromConversation({
   const currentCount = currentIndex?.memories.length || 0;
   const remainingSlots = MAX_MEMORIES_PER_USER - currentCount;
   const existingKeys = currentIndex?.memories.map((memory) => memory.key) || [];
+  const existingKeySet = new Set(existingKeys);
+  const existingMemoryByKey = new Map(
+    (currentIndex?.memories || []).map((memory) => [memory.key, memory] as const)
+  );
   const existingMemoriesText =
     currentIndex && currentIndex.memories.length > 0
       ? currentIndex.memories.map((memory) => `- ${memory.key}: ${memory.summary}`).join("\n")
@@ -366,8 +370,8 @@ export async function extractMemoriesFromConversation({
       const keysToDelete: string[] = [];
       const relatedKeys = (mem.relatedKeys || [])
         .map((relatedKey) => relatedKey.toLowerCase().replace(/[^a-z0-9_]/g, "_"))
-        .filter((relatedKey) => relatedKey !== key && existingKeys.includes(relatedKey));
-      const targetKeyExists = existingKeys.includes(key);
+        .filter((relatedKey) => relatedKey !== key && existingKeySet.has(relatedKey));
+      const targetKeyExists = existingKeySet.has(key);
 
       if (relatedKeys.length > 0 || targetKeyExists) {
         const keysToFetch = targetKeyExists ? [key, ...relatedKeys] : relatedKeys;
@@ -382,7 +386,7 @@ export async function extractMemoriesFromConversation({
         const existingContents = await Promise.all(
           uniqueKeysToFetch.map(async (existingKey) => {
             const detail = await getMemoryDetail(redis, username, existingKey);
-            const entry = currentIndex?.memories.find((memory) => memory.key === existingKey);
+            const entry = existingMemoryByKey.get(existingKey);
             return {
               key: existingKey,
               summary: entry?.summary || "",

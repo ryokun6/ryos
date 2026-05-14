@@ -82,13 +82,13 @@ export function ListenSessionInvite({
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4" : "p-3"}>
       <div className="flex flex-col items-center space-y-3 w-full">
-        <div className="bg-white p-1.5 w-32 h-32 flex items-center justify-center">
+        <div className="bg-white p-1.5 size-32 flex items-center justify-center">
           <QRCodeSVG
             value={shareUrl || "placeholder"}
             size={112}
             level="M"
             includeMargin={false}
-            className="w-28 h-28"
+            className="size-28"
           />
         </div>
         <p

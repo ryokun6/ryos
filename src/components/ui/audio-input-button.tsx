@@ -2,6 +2,7 @@ import { Microphone } from "@phosphor-icons/react";
 import { useAudioTranscription } from "@/hooks/useAudioTranscription";
 import { AudioBars } from "./audio-bars";
 import { ActivityIndicator } from "./activity-indicator";
+import type { Ref } from "react";
 
 interface AudioInputButtonProps {
   onTranscriptionComplete: (text: string) => void;
@@ -28,9 +29,9 @@ export const AudioInputButton = (
     className = "",
     silenceThreshold = 1000,
     externalWaveform = false,
-    frequencyBands = 4
+    frequencyBands = 4,
   }: AudioInputButtonProps & {
-    ref?: React.Ref<HTMLButtonElement>;
+    ref?: Ref<HTMLButtonElement>;
   }
 ) => {
   const {
@@ -77,7 +78,7 @@ export const AudioInputButton = (
             isSilent={isSilent}
           />
         ) : (
-          <Microphone className="h-4 w-4" weight="bold" />
+          <Microphone className="size-4" weight="bold" />
         )}
       </button>
     </div>

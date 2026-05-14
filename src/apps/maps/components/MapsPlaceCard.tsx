@@ -200,7 +200,7 @@ function PlaceCardHeader({
   return (
     <div className="flex items-start gap-2.5">
       <div
-        className="aqua-icon-badge flex h-9 w-9 shrink-0 items-center justify-center text-white"
+        className="aqua-icon-badge flex size-9 shrink-0 items-center justify-center text-white"
         style={{ backgroundImage: poiVisualGradient(visual) }}
         aria-hidden="true"
       >
@@ -227,7 +227,7 @@ function PlaceCardHeader({
         type="button"
         onClick={onClose}
         className={cn(
-          "shrink-0 -mr-0.5 -mt-0.5 flex h-6 w-6 items-center justify-center rounded-full",
+          "shrink-0 -mr-0.5 -mt-0.5 flex size-6 items-center justify-center rounded-full",
           "text-black/55 hover:bg-black/10 hover:text-black/85",
           "focus:outline-none focus-visible:ring-1 focus-visible:ring-black/30"
         )}

@@ -208,7 +208,7 @@ const SelectItem = (
       }}
       {...props}
     >
-      <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
+      <span className="absolute right-2 flex size-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
           <Check size={12} weight="bold" />
         </SelectPrimitive.ItemIndicator>
@@ -250,7 +250,7 @@ const SelectItemWithDescription = (
       }}
       {...props}
     >
-      <span className="absolute right-2 top-2 flex h-3.5 w-3.5 items-center justify-center">
+      <span className="absolute right-2 top-2 flex size-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
           <Check size={12} weight="bold" />
         </SelectPrimitive.ItemIndicator>

@@ -103,6 +103,7 @@ function extractPaletteFromImage(img: HTMLImageElement): string[] {
 
   // Greedily pick N distinct colors
   const result: string[] = [];
+  const selectedHexes = new Set<string>();
   for (const c of sorted) {
     if (result.length >= COLOR_COUNT) break;
     const tooClose = result.some((hex) => {
@@ -114,7 +115,9 @@ function extractPaletteFromImage(img: HTMLImageElement): string[] {
       return colorDistSq(c.r, c.g, c.b, r2, g2, b2) < MIN_DISTINCT_SQ;
     });
     if (!tooClose) {
-      result.push(rgbToHex(c.r, c.g, c.b));
+      const hex = rgbToHex(c.r, c.g, c.b);
+      result.push(hex);
+      selectedHexes.add(hex);
     }
   }
 
@@ -122,7 +125,10 @@ function extractPaletteFromImage(img: HTMLImageElement): string[] {
   for (const c of sorted) {
     if (result.length >= COLOR_COUNT) break;
     const hex = rgbToHex(c.r, c.g, c.b);
-    if (!result.includes(hex)) result.push(hex);
+    if (!selectedHexes.has(hex)) {
+      result.push(hex);
+      selectedHexes.add(hex);
+    }
   }
 
   return result.length >= COLOR_COUNT ? result : DEFAULT_PALETTE;
