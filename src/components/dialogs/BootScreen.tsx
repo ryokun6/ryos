@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -22,7 +22,27 @@ export function BootScreen({
   debugMode = false,
 }: BootScreenProps) {
   const { play } = useSound(Sounds.BOOT, 0.5);
-  const [progress, setProgress] = useState(0);
+  type BootState = { progress: number };
+  type BootAction =
+    | { type: "reset" }
+    | { type: "setProgress"; value: number }
+    | { type: "increment"; amount: number };
+  const initialState: BootState = { progress: 0 };
+  const reducer = (state: BootState, action: BootAction): BootState => {
+    switch (action.type) {
+      case "reset":
+        return initialState;
+      case "setProgress":
+        return { progress: Math.max(0, Math.min(100, action.value)) };
+      case "increment":
+        return {
+          progress: Math.min(100, state.progress + action.amount),
+        };
+      default:
+        return state;
+    }
+  };
+  const [{ progress }, dispatch] = useReducer(reducer, initialState);
   const { t } = useTranslation();
   const {
     currentTheme,
@@ -53,17 +73,14 @@ export function BootScreen({
 
       // Simulate boot progress
       interval = window.setInterval(() => {
-        setProgress((prev) => {
-          const newProgress = prev + Math.random() * 10;
-          return newProgress >= 100 ? 100 : newProgress;
-        });
+        dispatch({ type: "increment", amount: Math.random() * 10 });
       }, 100);
 
       // Close after boot completes (2 seconds) - skip in debug mode
       if (!debugMode) {
         timer = window.setTimeout(() => {
           window.clearInterval(interval);
-          setProgress(100);
+          dispatch({ type: "setProgress", value: 100 });
 
           // Wait a moment at 100% before completing
           const completeTimer = window.setTimeout(() => {
@@ -75,7 +92,7 @@ export function BootScreen({
         }, 2000);
       }
     } else {
-      setProgress(0);
+      dispatch({ type: "reset" });
     }
 
     return () => {

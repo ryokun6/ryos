@@ -2,6 +2,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useReducer,
   useCallback,
   useEffect,
   forwardRef,
@@ -630,8 +631,34 @@ function MacDock() {
     y: number;
   } | null>(null);
   
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [isSwapping, setIsSwapping] = useState(false);
+  type HoverState = {
+    hoveredId: string | null;
+    isSwapping: boolean;
+  };
+  type HoverAction =
+    | { type: "hoverImmediate"; id: string }
+    | { type: "hoverUpdate"; id: string }
+    | { type: "clearHover" };
+  const hoverReducer = (state: HoverState, action: HoverAction): HoverState => {
+    switch (action.type) {
+      case "hoverImmediate":
+        return { hoveredId: action.id, isSwapping: true };
+      case "hoverUpdate":
+        return {
+          hoveredId: action.id,
+          isSwapping: state.hoveredId !== null && state.hoveredId !== action.id,
+        };
+      case "clearHover":
+        return { hoveredId: null, isSwapping: false };
+      default:
+        return state;
+    }
+  };
+  const [hoverState, dispatchHover] = useReducer(hoverReducer, {
+    hoveredId: null,
+    isSwapping: false,
+  });
+  const { hoveredId, isSwapping } = hoverState;
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Drag-and-drop state
@@ -663,26 +690,17 @@ function MacDock() {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
       hoverTimeoutRef.current = null;
-      setIsSwapping(true);
-      setHoveredId(id);
+      dispatchHover({ type: "hoverImmediate", id });
       return;
     }
-    
-    setHoveredId((prev) => {
-      if (prev !== null && prev !== id) {
-        setIsSwapping(true);
-      } else {
-        setIsSwapping(false);
-      }
-      return id;
-    });
+
+    dispatchHover({ type: "hoverUpdate", id });
   }, []);
 
   const handleIconLeave = useCallback(() => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredId(null);
-      setIsSwapping(false);
+      dispatchHover({ type: "clearHover" });
       hoverTimeoutRef.current = null;
     }, 50);
   }, []);

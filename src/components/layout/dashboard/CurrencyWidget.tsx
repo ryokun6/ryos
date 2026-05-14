@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useReducer, type ChangeEvent } from "react";
 import { useDashboardStore, type CurrencyWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
 import { ArrowsDownUp, ArrowsLeftRight } from "@phosphor-icons/react";
@@ -65,32 +65,79 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
   const config = widget?.config as CurrencyWidgetConfig | undefined;
 
-  const [fromCurrency, setFromCurrency] = useState(config?.fromCurrency ?? "USD");
-  const [toCurrency, setToCurrency] = useState(config?.toCurrency ?? "EUR");
-  const [amountStr, setAmountStr] = useState(() =>
-    normalizeAmountInput(
+  type CurrencyWidgetState = {
+    fromCurrency: string;
+    toCurrency: string;
+    amountStr: string;
+    rateData: RateCacheEntry | null;
+    loading: boolean;
+    error: string | null;
+    usingCache: boolean;
+  };
+  type CurrencyWidgetAction =
+    | { type: "set"; payload: Partial<CurrencyWidgetState> }
+    | { type: "swapCurrencies" };
+  const initialState: CurrencyWidgetState = {
+    fromCurrency: config?.fromCurrency ?? "USD",
+    toCurrency: config?.toCurrency ?? "EUR",
+    amountStr: normalizeAmountInput(
       config?.lastAmount ?? "100",
       getCurrencyMaxFractionDigits(config?.fromCurrency ?? "USD"),
       i18n.language
-    )
-  );
-  const [rateData, setRateData] = useState<RateCacheEntry | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [usingCache, setUsingCache] = useState(false);
+    ),
+    rateData: null,
+    loading: false,
+    error: null,
+    usingCache: false,
+  };
+  const reducer = (
+    state: CurrencyWidgetState,
+    action: CurrencyWidgetAction
+  ): CurrencyWidgetState => {
+    switch (action.type) {
+      case "set":
+        return { ...state, ...action.payload };
+      case "swapCurrencies":
+        return {
+          ...state,
+          fromCurrency: state.toCurrency,
+          toCurrency: state.fromCurrency,
+        };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    fromCurrency,
+    toCurrency,
+    amountStr,
+    rateData,
+    loading,
+    error,
+    usingCache,
+  } = state;
 
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (config?.fromCurrency && config.fromCurrency !== fromCurrency) setFromCurrency(config.fromCurrency);
-    if (config?.toCurrency && config.toCurrency !== toCurrency) setToCurrency(config.toCurrency);
+    const nextState: Partial<CurrencyWidgetState> = {};
+    if (config?.fromCurrency && config.fromCurrency !== fromCurrency) {
+      nextState.fromCurrency = config.fromCurrency;
+    }
+    if (config?.toCurrency && config.toCurrency !== toCurrency) {
+      nextState.toCurrency = config.toCurrency;
+    }
     if (config?.lastAmount != null) {
       const normalized = normalizeAmountInput(
         config.lastAmount,
         getCurrencyMaxFractionDigits(config.fromCurrency ?? fromCurrency),
         i18n.language
       );
-      if (normalized !== amountStr) setAmountStr(normalized);
+      if (normalized !== amountStr) nextState.amountStr = normalized;
+    }
+    if (Object.keys(nextState).length > 0) {
+      dispatch({ type: "set", payload: nextState });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config?.fromCurrency, config?.toCurrency, config?.lastAmount]);
@@ -112,20 +159,30 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
           rateDate: new Date().toISOString().slice(0, 10),
           fetchedAt: Date.now(),
         };
-        setRateData(self);
-        setError(null);
-        setUsingCache(false);
-        setLoading(false);
+        dispatch({
+          type: "set",
+          payload: {
+            rateData: self,
+            error: null,
+            usingCache: false,
+            loading: false,
+          },
+        });
         return;
       }
 
       const mem = rateMemoryCache.get(key);
       const now = Date.now();
       if (mem && now - mem.fetchedAt < RATE_STALE_MS) {
-        setRateData(mem);
-        setUsingCache(false);
-        setError(null);
-        setLoading(false);
+        dispatch({
+          type: "set",
+          payload: {
+            rateData: mem,
+            usingCache: false,
+            error: null,
+            loading: false,
+          },
+        });
         return;
       }
 
@@ -133,29 +190,41 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      setLoading(true);
-      setError(null);
-      setUsingCache(false);
+      dispatch({
+        type: "set",
+        payload: { loading: true, error: null, usingCache: false },
+      });
 
       try {
         const { rate, rateDate } = await fetchCurrencyRateForWidget(from, to, controller.signal);
         if (controller.signal.aborted) return;
         const entry: RateCacheEntry = { rate, rateDate, fetchedAt: Date.now() };
         rateMemoryCache.set(key, entry);
-        setRateData(entry);
-        setLoading(false);
+        dispatch({
+          type: "set",
+          payload: { rateData: entry, loading: false },
+        });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         const cached = rateMemoryCache.get(key);
         if (!controller.signal.aborted) {
           if (cached) {
-            setRateData(cached);
-            setUsingCache(true);
-            setError(null);
+            dispatch({
+              type: "set",
+              payload: { rateData: cached, usingCache: true, error: null },
+            });
           } else {
-            setError(t("apps.dashboard.currency.error", "Could not load exchange rate"));
+            dispatch({
+              type: "set",
+              payload: {
+                error: t(
+                  "apps.dashboard.currency.error",
+                  "Could not load exchange rate"
+                ),
+              },
+            });
           }
-          setLoading(false);
+          dispatch({ type: "set", payload: { loading: false } });
         }
       }
     },
@@ -195,18 +264,23 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
   }, [rateData, usingCache, i18n.language, t]);
 
   const handleFromChange = (code: string) => {
-    setFromCurrency(code);
     const renormalized = normalizeAmountInput(
       amountStr,
       getCurrencyMaxFractionDigits(code),
       i18n.language
     );
-    if (renormalized !== amountStr) setAmountStr(renormalized);
+    dispatch({
+      type: "set",
+      payload: {
+        fromCurrency: code,
+        amountStr: renormalized,
+      },
+    });
     persistFields({ fromCurrency: code, toCurrency, lastAmount: renormalized });
   };
 
   const handleToChange = (code: string) => {
-    setToCurrency(code);
+    dispatch({ type: "set", payload: { toCurrency: code } });
     persistFields({ fromCurrency, toCurrency: code, lastAmount: amountStr });
   };
 
@@ -237,7 +311,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
       i18n.language
     );
 
-    setAmountStr(normalized);
+    dispatch({ type: "set", payload: { amountStr: normalized } });
     persistFields({ fromCurrency, toCurrency, lastAmount: normalized });
 
     // Restore caret to sit after the same digit count in the formatted output.
@@ -255,8 +329,7 @@ export function CurrencyWidget({ widgetId }: CurrencyWidgetProps) {
   const handleSwap = () => {
     const nf = toCurrency;
     const nt = fromCurrency;
-    setFromCurrency(nf);
-    setToCurrency(nt);
+    dispatch({ type: "swapCurrencies" });
     persistFields({ fromCurrency: nf, toCurrency: nt, lastAmount: amountStr });
   };
 

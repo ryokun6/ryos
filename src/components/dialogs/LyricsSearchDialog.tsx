@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useReducer, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -67,32 +67,79 @@ export function LyricsSearchDialog({
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
-  const [query, setQuery] = useState(initialQuery || "");
-  const [results, setResults] = useState<LyricsSearchResult[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
-  const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  type LyricsSearchState = {
+    query: string;
+    results: LyricsSearchResult[];
+    selectedIndex: number;
+    isSearching: boolean;
+    error: string | null;
+  };
+  type LyricsSearchAction =
+    | { type: "reset"; query: string }
+    | { type: "setQuery"; query: string }
+    | { type: "searchStart" }
+    | { type: "searchSuccess"; results: LyricsSearchResult[] }
+    | { type: "searchError"; error: string }
+    | { type: "setSelectedIndex"; index: number };
+  const initialState: LyricsSearchState = {
+    query: initialQuery || "",
+    results: [],
+    selectedIndex: -1,
+    isSearching: false,
+    error: null,
+  };
+  const reducer = (
+    state: LyricsSearchState,
+    action: LyricsSearchAction
+  ): LyricsSearchState => {
+    switch (action.type) {
+      case "reset":
+        return { ...initialState, query: action.query };
+      case "setQuery":
+        return { ...state, query: action.query };
+      case "searchStart":
+        return {
+          ...state,
+          isSearching: true,
+          error: null,
+          results: [],
+          selectedIndex: -1,
+        };
+      case "searchSuccess":
+        return {
+          ...state,
+          isSearching: false,
+          results: action.results,
+          error: action.results.length === 0 ? t("apps.ipod.dialogs.lyricsSearchNoResults") : null,
+        };
+      case "searchError":
+        return { ...state, isSearching: false, error: action.error };
+      case "setSelectedIndex":
+        return { ...state, selectedIndex: action.index };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { query, results, selectedIndex, isSearching, error } = state;
 
   // Reset state when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
-      setQuery(initialQuery || "");
-      setResults([]);
-      setSelectedIndex(-1);
-      setError(null);
+      dispatch({ type: "reset", query: initialQuery || "" });
     }
   }, [isOpen, initialQuery]);
 
   const handleSearch = async () => {
     if (!query.trim()) {
-      setError(t("apps.ipod.dialogs.lyricsSearchEmptyQuery"));
+      dispatch({
+        type: "searchError",
+        error: t("apps.ipod.dialogs.lyricsSearchEmptyQuery"),
+      });
       return;
     }
 
-    setIsSearching(true);
-    setError(null);
-    setResults([]);
-    setSelectedIndex(-1);
+    dispatch({ type: "searchStart" });
 
     try {
       const response = await abortableFetch(
@@ -120,22 +167,19 @@ export function LyricsSearchDialog({
 
       const data = await response.json();
       if (data.results && Array.isArray(data.results)) {
-        setResults(data.results);
-        if (data.results.length === 0) {
-          setError(t("apps.ipod.dialogs.lyricsSearchNoResults"));
-        }
+        dispatch({ type: "searchSuccess", results: data.results });
       } else {
         throw new Error(t("apps.ipod.dialogs.lyricsSearchInvalidResponse"));
       }
     } catch (err) {
       console.error("Lyrics search error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("apps.ipod.dialogs.lyricsSearchError")
-      );
-    } finally {
-      setIsSearching(false);
+      dispatch({
+        type: "searchError",
+        error:
+          err instanceof Error
+            ? err.message
+            : t("apps.ipod.dialogs.lyricsSearchError"),
+      });
     }
   };
 
@@ -148,7 +192,7 @@ export function LyricsSearchDialog({
 
   const handleSelectAndUse = useCallback((index: number) => {
     if (index >= 0 && index < results.length) {
-      setSelectedIndex(index);
+      dispatch({ type: "setSelectedIndex", index });
       onSelect(results[index]);
       onOpenChange(false);
     }
@@ -190,7 +234,9 @@ export function LyricsSearchDialog({
         <Input
           autoFocus
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) =>
+            dispatch({ type: "setQuery", query: e.target.value })
+          }
           onKeyDown={(e) => {
             e.stopPropagation();
             if (e.key === "Enter" && !isSearching) {
@@ -352,7 +398,9 @@ export function LyricsSearchDialog({
                 return (
                   <div
                     key={result.hash}
-                    onClick={() => setSelectedIndex(index)}
+                    onClick={() =>
+                      dispatch({ type: "setSelectedIndex", index })
+                    }
                     onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();

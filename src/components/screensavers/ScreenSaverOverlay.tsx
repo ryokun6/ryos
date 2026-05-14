@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useReducer, useCallback, lazy, Suspense } from "react";
 import { useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ScreenSaverType } from "./index";
@@ -33,15 +33,45 @@ export function ScreenSaverOverlay() {
     screenSaverIdleTime: s.screenSaverIdleTime,
   }));
 
-  const [isActive, setIsActive] = useState(false);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [previewType, setPreviewType] = useState<string | null>(null);
+  type ScreenSaverState = {
+    isActive: boolean;
+    isPreviewMode: boolean;
+    previewType: string | null;
+  };
+  type ScreenSaverAction =
+    | { type: "dismiss" }
+    | { type: "activateIdle" }
+    | { type: "activatePreview"; previewType: string };
+  const initialState: ScreenSaverState = {
+    isActive: false,
+    isPreviewMode: false,
+    previewType: null,
+  };
+  const reducer = (
+    state: ScreenSaverState,
+    action: ScreenSaverAction
+  ): ScreenSaverState => {
+    switch (action.type) {
+      case "dismiss":
+        return initialState;
+      case "activateIdle":
+        return { ...state, isActive: true, isPreviewMode: false, previewType: null };
+      case "activatePreview":
+        return {
+          isActive: true,
+          isPreviewMode: true,
+          previewType: action.previewType,
+        };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { isActive, isPreviewMode, previewType } = state;
 
   // Dismiss screen saver
   const dismiss = useCallback(() => {
-    setIsActive(false);
-    setIsPreviewMode(false);
-    setPreviewType(null);
+    dispatch({ type: "dismiss" });
     window.dispatchEvent(new CustomEvent("screenSaverDismiss"));
   }, []);
 
@@ -64,7 +94,7 @@ export function ScreenSaverOverlay() {
       const idleTimeMs = screenSaverIdleTime * 60 * 1000;
 
       if (idleTime >= idleTimeMs && !isActive) {
-        setIsActive(true);
+        dispatch({ type: "activateIdle" });
       }
 
       timeoutId = setTimeout(checkIdle, 1000);
@@ -90,9 +120,7 @@ export function ScreenSaverOverlay() {
   // Handle preview mode
   useEffect(() => {
     const handlePreview = (e: CustomEvent<{ type: string }>) => {
-      setPreviewType(e.detail.type);
-      setIsPreviewMode(true);
-      setIsActive(true);
+      dispatch({ type: "activatePreview", previewType: e.detail.type });
     };
 
     window.addEventListener("screenSaverPreview", handlePreview as EventListener);

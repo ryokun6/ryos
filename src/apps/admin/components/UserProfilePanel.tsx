@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useReducer } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -102,29 +102,103 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 }) => {
   const { t } = useTranslation();
   const { username: currentUser, isAuthenticated } = useAuth();
+  type UserProfileUiState = {
+    expandedMemories: Set<string>;
+    expandedDailyNotes: Set<string>;
+    expandedHeartbeats: Set<string>;
+    banReason: string;
+    showBanInput: boolean;
+    isRoomsOpen: boolean;
+    isMessagesOpen: boolean;
+    isMemoriesOpen: boolean;
+    isHeartbeatsOpen: boolean;
+    hasLoadedMessages: boolean;
+    hasLoadedMemories: boolean;
+    hasLoadedHeartbeats: boolean;
+    isMessagesLoading: boolean;
+    isMemoriesLoading: boolean;
+    isHeartbeatsLoading: boolean;
+  };
+  type UserProfileUiAction =
+    | { type: "resetForUsername" }
+    | { type: "set"; payload: Partial<UserProfileUiState> }
+    | { type: "toggleMemory"; key: string }
+    | { type: "toggleDailyNote"; date: string }
+    | { type: "toggleHeartbeat"; id: string };
+  const initialUiState: UserProfileUiState = {
+    expandedMemories: new Set(),
+    expandedDailyNotes: new Set(),
+    expandedHeartbeats: new Set(),
+    banReason: "",
+    showBanInput: false,
+    isRoomsOpen: false,
+    isMessagesOpen: false,
+    isMemoriesOpen: false,
+    isHeartbeatsOpen: false,
+    hasLoadedMessages: false,
+    hasLoadedMemories: false,
+    hasLoadedHeartbeats: false,
+    isMessagesLoading: false,
+    isMemoriesLoading: false,
+    isHeartbeatsLoading: false,
+  };
+  const reducer = (
+    state: UserProfileUiState,
+    action: UserProfileUiAction
+  ): UserProfileUiState => {
+    switch (action.type) {
+      case "resetForUsername":
+        return initialUiState;
+      case "set":
+        return { ...state, ...action.payload };
+      case "toggleMemory": {
+        const next = new Set(state.expandedMemories);
+        if (next.has(action.key)) next.delete(action.key);
+        else next.add(action.key);
+        return { ...state, expandedMemories: next };
+      }
+      case "toggleDailyNote": {
+        const next = new Set(state.expandedDailyNotes);
+        if (next.has(action.date)) next.delete(action.date);
+        else next.add(action.date);
+        return { ...state, expandedDailyNotes: next };
+      }
+      case "toggleHeartbeat": {
+        const next = new Set(state.expandedHeartbeats);
+        if (next.has(action.id)) next.delete(action.id);
+        else next.add(action.id);
+        return { ...state, expandedHeartbeats: next };
+      }
+      default:
+        return state;
+    }
+  };
+  const [uiState, dispatchUi] = useReducer(reducer, initialUiState);
+  const {
+    expandedMemories,
+    expandedDailyNotes,
+    expandedHeartbeats,
+    banReason,
+    showBanInput,
+    isRoomsOpen,
+    isMessagesOpen,
+    isMemoriesOpen,
+    isHeartbeatsOpen,
+    hasLoadedMessages,
+    hasLoadedMemories,
+    hasLoadedHeartbeats,
+    isMessagesLoading,
+    isMemoriesLoading,
+    isHeartbeatsLoading,
+  } = uiState;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [memories, setMemories] = useState<UserMemory[]>([]);
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
   const [heartbeats, setHeartbeats] = useState<HeartbeatRecord[]>([]);
-  const [expandedMemories, setExpandedMemories] = useState<Set<string>>(new Set());
-  const [expandedDailyNotes, setExpandedDailyNotes] = useState<Set<string>>(new Set());
-  const [expandedHeartbeats, setExpandedHeartbeats] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
-  const [banReason, setBanReason] = useState("");
-  const [showBanInput, setShowBanInput] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBanDialogOpen, setIsBanDialogOpen] = useState(false);
-  const [isRoomsOpen, setIsRoomsOpen] = useState(false);
-  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
-  const [isMemoriesOpen, setIsMemoriesOpen] = useState(false);
-  const [isHeartbeatsOpen, setIsHeartbeatsOpen] = useState(false);
-  const [hasLoadedMessages, setHasLoadedMessages] = useState(false);
-  const [hasLoadedMemories, setHasLoadedMemories] = useState(false);
-  const [hasLoadedHeartbeats, setHasLoadedHeartbeats] = useState(false);
-  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
-  const [isMemoriesLoading, setIsMemoriesLoading] = useState(false);
-  const [isHeartbeatsLoading, setIsHeartbeatsLoading] = useState(false);
   const [isClearMemoryDialogOpen, setIsClearMemoryDialogOpen] = useState(false);
   const [isForceProcessDialogOpen, setIsForceProcessDialogOpen] = useState(false);
   const [isClearingMemory, setIsClearingMemory] = useState(false);
@@ -187,39 +261,15 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   }, [username, isAuthenticated, currentUser]);
 
   const toggleMemory = useCallback((key: string) => {
-    setExpandedMemories((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
+    dispatchUi({ type: "toggleMemory", key });
   }, []);
 
   const toggleDailyNote = useCallback((date: string) => {
-    setExpandedDailyNotes((prev) => {
-      const next = new Set(prev);
-      if (next.has(date)) {
-        next.delete(date);
-      } else {
-        next.add(date);
-      }
-      return next;
-    });
+    dispatchUi({ type: "toggleDailyNote", date });
   }, []);
 
   const toggleHeartbeat = useCallback((id: string) => {
-    setExpandedHeartbeats((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    dispatchUi({ type: "toggleHeartbeat", id });
   }, []);
 
   useEffect(() => {
@@ -228,21 +278,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     setMemories([]);
     setDailyNotes([]);
     setHeartbeats([]);
-    setExpandedMemories(new Set());
-    setExpandedDailyNotes(new Set());
-    setExpandedHeartbeats(new Set());
-    setShowBanInput(false);
-    setBanReason("");
-    setIsRoomsOpen(false);
-    setIsMessagesOpen(false);
-    setIsMemoriesOpen(false);
-    setIsHeartbeatsOpen(false);
-    setHasLoadedMessages(false);
-    setHasLoadedMemories(false);
-    setHasLoadedHeartbeats(false);
-    setIsMessagesLoading(false);
-    setIsMemoriesLoading(false);
-    setIsHeartbeatsLoading(false);
+    dispatchUi({ type: "resetForUsername" });
     setIsLoading(true);
     fetchProfile().finally(() => {
       setIsLoading(false);
@@ -251,46 +287,46 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
   const loadMessages = useCallback(async () => {
     if (hasLoadedMessages || isMessagesLoading) return;
-    setIsMessagesLoading(true);
+    dispatchUi({ type: "set", payload: { isMessagesLoading: true } });
     try {
       const didLoad = await fetchMessages();
       if (didLoad) {
-        setHasLoadedMessages(true);
+        dispatchUi({ type: "set", payload: { hasLoadedMessages: true } });
       }
     } finally {
-      setIsMessagesLoading(false);
+      dispatchUi({ type: "set", payload: { isMessagesLoading: false } });
     }
   }, [fetchMessages, hasLoadedMessages, isMessagesLoading]);
 
   const loadMemories = useCallback(async () => {
     if (hasLoadedMemories || isMemoriesLoading) return;
-    setIsMemoriesLoading(true);
+    dispatchUi({ type: "set", payload: { isMemoriesLoading: true } });
     try {
       const didLoad = await fetchMemories();
       if (didLoad) {
-        setHasLoadedMemories(true);
+        dispatchUi({ type: "set", payload: { hasLoadedMemories: true } });
       }
     } finally {
-      setIsMemoriesLoading(false);
+      dispatchUi({ type: "set", payload: { isMemoriesLoading: false } });
     }
   }, [fetchMemories, hasLoadedMemories, isMemoriesLoading]);
 
   const loadHeartbeats = useCallback(async () => {
     if (hasLoadedHeartbeats || isHeartbeatsLoading) return;
-    setIsHeartbeatsLoading(true);
+    dispatchUi({ type: "set", payload: { isHeartbeatsLoading: true } });
     try {
       const didLoad = await fetchHeartbeats();
       if (didLoad) {
-        setHasLoadedHeartbeats(true);
+        dispatchUi({ type: "set", payload: { hasLoadedHeartbeats: true } });
       }
     } finally {
-      setIsHeartbeatsLoading(false);
+      dispatchUi({ type: "set", payload: { isHeartbeatsLoading: false } });
     }
   }, [fetchHeartbeats, hasLoadedHeartbeats, isHeartbeatsLoading]);
 
   const toggleMessagesSection = useCallback(() => {
     const nextIsOpen = !isMessagesOpen;
-    setIsMessagesOpen(nextIsOpen);
+    dispatchUi({ type: "set", payload: { isMessagesOpen: nextIsOpen } });
     if (nextIsOpen && !hasLoadedMessages && !isMessagesLoading) {
       void loadMessages();
     }
@@ -298,7 +334,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
   const toggleMemoriesSection = useCallback(() => {
     const nextIsOpen = !isMemoriesOpen;
-    setIsMemoriesOpen(nextIsOpen);
+    dispatchUi({ type: "set", payload: { isMemoriesOpen: nextIsOpen } });
     if (nextIsOpen && !hasLoadedMemories && !isMemoriesLoading) {
       void loadMemories();
     }
@@ -306,7 +342,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
   const toggleHeartbeatsSection = useCallback(() => {
     const nextIsOpen = !isHeartbeatsOpen;
-    setIsHeartbeatsOpen(nextIsOpen);
+    dispatchUi({ type: "set", payload: { isHeartbeatsOpen: nextIsOpen } });
     if (nextIsOpen && !hasLoadedHeartbeats && !isHeartbeatsLoading) {
       void loadHeartbeats();
     }
@@ -317,8 +353,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     try {
       await banAdminUser<{ success: boolean }>(username, banReason || undefined);
       toast.success(t("apps.admin.messages.userBanned", { username }));
-      setShowBanInput(false);
-      setBanReason("");
+      dispatchUi({
+        type: "set",
+        payload: { showBanInput: false, banReason: "" },
+      });
       fetchProfile();
     } catch (error) {
       console.error("Failed to ban user:", error);
@@ -610,7 +648,12 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                           <Input
                             placeholder={t("apps.admin.profile.banReasonPlaceholder")}
                             value={banReason}
-                            onChange={(e) => setBanReason(e.target.value)}
+                            onChange={(e) =>
+                              dispatchUi({
+                                type: "set",
+                                payload: { banReason: e.target.value },
+                              })
+                            }
                             className="h-7 text-[11px] flex-1"
                           />
                           <button
@@ -622,8 +665,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                           </button>
                           <button
                             onClick={() => {
-                              setShowBanInput(false);
-                              setBanReason("");
+                              dispatchUi({
+                                type: "set",
+                                payload: { showBanInput: false, banReason: "" },
+                              });
                             }}
                             className="aqua-button secondary h-7 px-3 text-[11px]"
                           >
@@ -632,7 +677,12 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                         </div>
                       ) : (
                         <button
-                          onClick={() => setShowBanInput(true)}
+                          onClick={() =>
+                            dispatchUi({
+                              type: "set",
+                              payload: { showBanInput: true },
+                            })
+                          }
                           className={adminAquaIconButtonClass("orange")}
                           style={{ color: "#000", textShadow: "none" }}
                         >
@@ -996,7 +1046,12 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           ) : (
             <div className="space-y-2">
               <SectionHeader
-                onClick={() => setIsRoomsOpen((prev) => !prev)}
+                onClick={() =>
+                  dispatchUi({
+                    type: "set",
+                    payload: { isRoomsOpen: !isRoomsOpen },
+                  })
+                }
                 isOpen={isRoomsOpen}
                 showCaret={true}
               >

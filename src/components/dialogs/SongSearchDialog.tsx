@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useReducer, useEffect, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -76,15 +76,112 @@ export function SongSearchDialog({
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
-  const [query, setQuery] = useState(initialQuery);
-  const [results, setResults] = useState<SongSearchResult[]>([]);
-  const [appleMusicResults, setAppleMusicResults] = useState<Track[]>([]);
-  const [activeAppleMusicTab, setActiveAppleMusicTab] =
-    useState<AppleMusicSearchScope>("catalog");
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  type SongSearchState = {
+    query: string;
+    results: SongSearchResult[];
+    appleMusicResults: Track[];
+    activeAppleMusicTab: AppleMusicSearchScope;
+    selectedIndex: number;
+    isSearching: boolean;
+    isAdding: boolean;
+    error: string | null;
+  };
+  type SongSearchAction =
+    | { type: "resetOnOpen"; query: string }
+    | { type: "setQuery"; query: string }
+    | { type: "setActiveAppleMusicTab"; tab: AppleMusicSearchScope }
+    | { type: "setSelectedIndex"; index: number }
+    | { type: "searchStart" }
+    | {
+        type: "searchFinish";
+        mode: "youtube" | "appleMusic";
+        results: SongSearchResult[] | Track[];
+        error: string | null;
+      }
+    | { type: "searchError"; error: string }
+    | { type: "setAdding"; isAdding: boolean }
+    | { type: "setError"; error: string | null };
+  const initialState: SongSearchState = {
+    query: initialQuery,
+    results: [],
+    appleMusicResults: [],
+    activeAppleMusicTab: "catalog",
+    selectedIndex: -1,
+    isSearching: false,
+    isAdding: false,
+    error: null,
+  };
+  const reducer = (
+    state: SongSearchState,
+    action: SongSearchAction
+  ): SongSearchState => {
+    switch (action.type) {
+      case "resetOnOpen":
+        return {
+          ...state,
+          query: action.query,
+          results: [],
+          appleMusicResults: [],
+          selectedIndex: -1,
+          error: null,
+        };
+      case "setQuery":
+        return { ...state, query: action.query };
+      case "setActiveAppleMusicTab":
+        return {
+          ...state,
+          activeAppleMusicTab: action.tab,
+          appleMusicResults: [],
+          selectedIndex: -1,
+          error: null,
+        };
+      case "setSelectedIndex":
+        return { ...state, selectedIndex: action.index };
+      case "searchStart":
+        return {
+          ...state,
+          isSearching: true,
+          error: null,
+          results: [],
+          appleMusicResults: [],
+          selectedIndex: -1,
+        };
+      case "searchFinish":
+        if (action.mode === "appleMusic") {
+          return {
+            ...state,
+            isSearching: false,
+            appleMusicResults: action.results as Track[],
+            error: action.error,
+          };
+        }
+        return {
+          ...state,
+          isSearching: false,
+          results: action.results as SongSearchResult[],
+          error: action.error,
+        };
+      case "searchError":
+        return { ...state, isSearching: false, error: action.error };
+      case "setAdding":
+        return { ...state, isAdding: action.isAdding };
+      case "setError":
+        return { ...state, error: action.error };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    query,
+    results,
+    appleMusicResults,
+    activeAppleMusicTab,
+    selectedIndex,
+    isSearching,
+    isAdding,
+    error,
+  } = state;
   const isAppleMusicMode = mode === "appleMusic";
 
   // Detect if input is a YouTube URL
@@ -92,40 +189,39 @@ export function SongSearchDialog({
 
   useEffect(() => {
     if (isOpen) {
-      setQuery(initialQuery);
-      setResults([]);
-      setAppleMusicResults([]);
-      setSelectedIndex(-1);
-      setError(null);
+      dispatch({ type: "resetOnOpen", query: initialQuery });
     }
   }, [isOpen, initialQuery]);
-
-  useEffect(() => {
-    setAppleMusicResults([]);
-    setSelectedIndex(-1);
-    setError(null);
-  }, [activeAppleMusicTab]);
 
   const handleAddUrl = async () => {
     if (!onAddUrl || !query.trim()) return;
     
-    setIsAdding(true);
-    setError(null);
+    dispatch({ type: "setAdding", isAdding: true });
+    dispatch({ type: "setError", error: null });
     
     try {
       await onAddUrl(query.trim());
       onOpenChange(false);
     } catch (err) {
       console.error("Add URL error:", err);
-      setError(err instanceof Error ? err.message : t("apps.ipod.dialogs.songSearchError"));
+      dispatch({
+        type: "setError",
+        error:
+          err instanceof Error
+            ? err.message
+            : t("apps.ipod.dialogs.songSearchError"),
+      });
     } finally {
-      setIsAdding(false);
+      dispatch({ type: "setAdding", isAdding: false });
     }
   };
 
   const handleSearch = async () => {
     if (!query.trim()) {
-      setError(t("apps.ipod.dialogs.songSearchEmptyQuery"));
+      dispatch({
+        type: "searchError",
+        error: t("apps.ipod.dialogs.songSearchEmptyQuery"),
+      });
       return;
     }
 
@@ -135,11 +231,7 @@ export function SongSearchDialog({
       return;
     }
 
-    setIsSearching(true);
-    setError(null);
-    setResults([]);
-    setAppleMusicResults([]);
-    setSelectedIndex(-1);
+    dispatch({ type: "searchStart" });
 
     try {
       if (isAppleMusicMode) {
@@ -163,10 +255,15 @@ export function SongSearchDialog({
           query.trim(),
           activeAppleMusicTab
         );
-        setAppleMusicResults(appleResults);
-        if (appleResults.length === 0) {
-          setError(t("apps.ipod.dialogs.songSearchNoResults"));
-        }
+        dispatch({
+          type: "searchFinish",
+          mode: "appleMusic",
+          results: appleResults,
+          error:
+            appleResults.length === 0
+              ? t("apps.ipod.dialogs.songSearchNoResults")
+              : null,
+        });
         return;
       }
 
@@ -188,16 +285,27 @@ export function SongSearchDialog({
 
       const data = await response.json();
       if (data.results && Array.isArray(data.results)) {
-        setResults(data.results);
-        if (data.results.length === 0) setError(t("apps.ipod.dialogs.songSearchNoResults"));
+        dispatch({
+          type: "searchFinish",
+          mode: "youtube",
+          results: data.results,
+          error:
+            data.results.length === 0
+              ? t("apps.ipod.dialogs.songSearchNoResults")
+              : null,
+        });
       } else {
         throw new Error(t("apps.ipod.dialogs.songSearchInvalidResponse"));
       }
     } catch (err) {
       console.error("Song search error:", err);
-      setError(err instanceof Error ? err.message : t("apps.ipod.dialogs.songSearchError"));
-    } finally {
-      setIsSearching(false);
+      dispatch({
+        type: "searchError",
+        error:
+          err instanceof Error
+            ? err.message
+            : t("apps.ipod.dialogs.songSearchError"),
+      });
     }
   };
 
@@ -208,18 +316,20 @@ export function SongSearchDialog({
         selectedIndex < appleMusicResults.length &&
         onAppleMusicSelect
       ) {
-        setIsAdding(true);
+        dispatch({ type: "setAdding", isAdding: true });
         try {
           await onAppleMusicSelect(appleMusicResults[selectedIndex]);
           onOpenChange(false);
         } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : t("apps.ipod.dialogs.songSearchError")
-          );
+          dispatch({
+            type: "setError",
+            error:
+              err instanceof Error
+                ? err.message
+                : t("apps.ipod.dialogs.songSearchError"),
+          });
         } finally {
-          setIsAdding(false);
+          dispatch({ type: "setAdding", isAdding: false });
         }
       }
       return;
@@ -243,26 +353,28 @@ export function SongSearchDialog({
   const handleSelectAndAdd = useCallback(async (index: number) => {
     if (isAppleMusicMode) {
       if (index >= 0 && index < appleMusicResults.length && onAppleMusicSelect) {
-        setSelectedIndex(index);
-        setIsAdding(true);
+        dispatch({ type: "setSelectedIndex", index });
+        dispatch({ type: "setAdding", isAdding: true });
         try {
           await onAppleMusicSelect(appleMusicResults[index]);
           onOpenChange(false);
         } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : t("apps.ipod.dialogs.songSearchError")
-          );
+          dispatch({
+            type: "setError",
+            error:
+              err instanceof Error
+                ? err.message
+                : t("apps.ipod.dialogs.songSearchError"),
+          });
         } finally {
-          setIsAdding(false);
+          dispatch({ type: "setAdding", isAdding: false });
         }
       }
       return;
     }
 
     if (index >= 0 && index < results.length) {
-      setSelectedIndex(index);
+      dispatch({ type: "setSelectedIndex", index });
       onSelect(results[index]);
       onOpenChange(false);
     }
@@ -293,7 +405,10 @@ export function SongSearchDialog({
         <Tabs
           value={activeAppleMusicTab}
           onValueChange={(value) =>
-            setActiveAppleMusicTab(value as AppleMusicSearchScope)
+            dispatch({
+              type: "setActiveAppleMusicTab",
+              tab: value as AppleMusicSearchScope,
+            })
           }
           className="w-full"
         >
@@ -312,7 +427,9 @@ export function SongSearchDialog({
         <Input
           autoFocus
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) =>
+            dispatch({ type: "setQuery", query: e.target.value })
+          }
           onKeyDown={(e) => {
             e.stopPropagation();
             if (e.key === "Enter" && !isSearching && !isAdding) handleSearch();
@@ -355,7 +472,7 @@ export function SongSearchDialog({
       return (
         <div
           key={`${result.id}-${index}`}
-          onClick={() => setSelectedIndex(index)}
+          onClick={() => dispatch({ type: "setSelectedIndex", index })}
           onDoubleClick={() => void handleSelectAndAdd(index)}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -415,7 +532,7 @@ export function SongSearchDialog({
     return (
       <div
         key={result.videoId}
-        onClick={() => setSelectedIndex(index)}
+        onClick={() => dispatch({ type: "setSelectedIndex", index })}
         onDoubleClick={() => void handleSelectAndAdd(index)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
