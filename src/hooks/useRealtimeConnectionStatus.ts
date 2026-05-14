@@ -1,9 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import {
   getPusherClient,
   getRealtimeConnectionState,
   type RealtimeConnectionState,
 } from "@/lib/pusherClient";
+
+interface RealtimeConnectionStatusState {
+  connectionState: RealtimeConnectionState;
+}
+
+const initialState: RealtimeConnectionStatusState = {
+  connectionState: getRealtimeConnectionState(),
+};
+
+type RealtimeConnectionStatusAction = {
+  type: "setConnectionState";
+  value: RealtimeConnectionState;
+};
+
+function reducer(
+  state: RealtimeConnectionStatusState,
+  action: RealtimeConnectionStatusAction
+): RealtimeConnectionStatusState {
+  switch (action.type) {
+    case "setConnectionState":
+      return { ...state, connectionState: action.value };
+    default:
+      return state;
+  }
+}
 
 /**
  * Subscribes to the shared realtime client and returns the current
@@ -11,22 +36,26 @@ import {
  * "disconnected".
  */
 export function useRealtimeConnectionStatus(): RealtimeConnectionState {
-  const [state, setState] = useState<RealtimeConnectionState>(
-    getRealtimeConnectionState
-  );
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     const client = getPusherClient();
 
-    const onConnected = () => setState("connected");
-    const onConnecting = () => setState("connecting");
-    const onDisconnected = () => setState("disconnected");
+    const onConnected = () =>
+      dispatch({ type: "setConnectionState", value: "connected" });
+    const onConnecting = () =>
+      dispatch({ type: "setConnectionState", value: "connecting" });
+    const onDisconnected = () =>
+      dispatch({ type: "setConnectionState", value: "disconnected" });
 
     client.connection.bind("connected", onConnected);
     client.connection.bind("connecting", onConnecting);
     client.connection.bind("disconnected", onDisconnected);
 
-    setState(getRealtimeConnectionState());
+    dispatch({
+      type: "setConnectionState",
+      value: getRealtimeConnectionState(),
+    });
 
     return () => {
       client.connection.unbind("connected", onConnected);
@@ -35,5 +64,5 @@ export function useRealtimeConnectionStatus(): RealtimeConnectionState {
     };
   }, []);
 
-  return state;
+  return state.connectionState;
 }

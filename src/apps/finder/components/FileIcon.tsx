@@ -1,5 +1,5 @@
 import { useSound, Sounds } from "@/hooks/useSound";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { isTouchDevice } from "@/utils/device";
 import { useLongPress } from "@/hooks/useLongPress";
@@ -42,8 +42,32 @@ export function FileIcon({
   const { isWinXp: isXpTheme, isWin98: isWin98Theme, isMacOSTheme: isMacOSXTheme } =
     useThemeFlags();
   const isFinderContext = context === "finder";
-  const [imgSrc, setImgSrc] = useState<string | undefined>(contentUrl);
-  const [fallbackToIcon, setFallbackToIcon] = useState(false);
+  type PreviewState = {
+    imgSrc: string | undefined;
+    fallbackToIcon: boolean;
+  };
+  type PreviewAction =
+    | { type: "reset"; imgSrc: string | undefined }
+    | { type: "setImage"; imgSrc: string | undefined }
+    | { type: "fallback" };
+  const initialState: PreviewState = {
+    imgSrc: contentUrl,
+    fallbackToIcon: false,
+  };
+  const reducer = (state: PreviewState, action: PreviewAction): PreviewState => {
+    switch (action.type) {
+      case "reset":
+        return { imgSrc: action.imgSrc, fallbackToIcon: false };
+      case "setImage":
+        return { ...state, imgSrc: action.imgSrc };
+      case "fallback":
+        return { ...state, fallbackToIcon: true };
+      default:
+        return state;
+    }
+  };
+  const [previewState, dispatch] = useReducer(reducer, initialState);
+  const { imgSrc, fallbackToIcon } = previewState;
   const attemptedUrlsRef = useRef<Set<string>>(new Set());
   const blobUrlRef = useRef<string | null>(null);
   const contentRef = useRef(content);
@@ -68,6 +92,10 @@ export function FileIcon({
 
   // Setup image source once on mount, or when key props change
   useEffect(() => {
+    dispatch({ type: "reset", imgSrc: contentUrl });
+  }, [contentUrl, content]);
+
+  useEffect(() => {
     // Skip if we're already showing the icon
     if (fallbackToIcon) return;
 
@@ -77,7 +105,7 @@ export function FileIcon({
     // Try contentUrl first if available
     if (contentUrl && !attemptedUrlsRef.current.has(contentUrl)) {
       attemptedUrlsRef.current.add(contentUrl);
-      setImgSrc(contentUrl);
+      dispatch({ type: "setImage", imgSrc: contentUrl });
       return;
     }
 
@@ -93,13 +121,13 @@ export function FileIcon({
         const url = URL.createObjectURL(content);
         blobUrlRef.current = url;
         attemptedUrlsRef.current.add(url);
-        setImgSrc(url);
+        dispatch({ type: "setImage", imgSrc: url });
       } else if (
         typeof content === "string" &&
         !attemptedUrlsRef.current.has(content)
       ) {
         attemptedUrlsRef.current.add(content);
-        setImgSrc(content);
+        dispatch({ type: "setImage", imgSrc: content });
       }
     }
   }, [contentUrl, content, fallbackToIcon]);
@@ -176,7 +204,7 @@ export function FileIcon({
         // Create new URL from the same blob
         const newUrl = URL.createObjectURL(contentRef.current);
         blobUrlRef.current = newUrl;
-        setImgSrc(newUrl);
+        dispatch({ type: "setImage", imgSrc: newUrl });
         console.log(
           `[FileIcon] Created new URL for ${name}: ${newUrl.substring(
             0,
@@ -189,7 +217,7 @@ export function FileIcon({
 
     // Otherwise fall back to icon
     console.log(`[FileIcon] Falling back to icon for ${name}`);
-    setFallbackToIcon(true);
+    dispatch({ type: "fallback" });
   };
 
   const renderIcon = () => {

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useReducer, useRef, useEffect, useCallback } from "react";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useCacheBustTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
@@ -92,11 +92,43 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
   auth,
   debugLabel = "StreamingFetch",
 }: StreamingFetchOptions<TResult, TLineData>): StreamingFetchResult<TResult> {
+  interface StreamingFetchState {
+    data: TResult | null;
+    isLoading: boolean;
+    progress: number | undefined;
+    error: string | undefined;
+    refetchCounter: number;
+  }
+
+  const initialState: StreamingFetchState = {
+    data: null,
+    isLoading: false,
+    progress: undefined,
+    error: undefined,
+    refetchCounter: 0,
+  };
+
+  type StreamingFetchAction =
+    | { type: "patch"; payload: Partial<StreamingFetchState> }
+    | { type: "incrementRefetchCounter" };
+
+  const reducer = (
+    state: StreamingFetchState,
+    action: StreamingFetchAction
+  ): StreamingFetchState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      case "incrementRefetchCounter":
+        return { ...state, refetchCounter: state.refetchCounter + 1 };
+      default:
+        return state;
+    }
+  };
+
   // State
-  const [data, setData] = useState<TResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState<number | undefined>();
-  const [error, setError] = useState<string | undefined>();
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { data, isLoading, progress, error, refetchCounter } = state;
 
   // Refs for tracking state
   const cacheKeyRef = useRef<string>("");
@@ -116,16 +148,14 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
   const onErrorRef = useLatestRef(onError);
 
   // Manual refetch trigger
-  const [refetchCounter, setRefetchCounter] = useState(0);
   const refetch = useCallback(() => {
-    setRefetchCounter((c) => c + 1);
+    dispatch({ type: "incrementRefetchCounter" });
   }, []);
 
   // Clear data
   const clear = useCallback(() => {
-    setData(null);
+    dispatch({ type: "patch", payload: { data: null, error: undefined } });
     cacheKeyRef.current = "";
-    setError(undefined);
   }, []);
 
   // Clear request ref when resourceId changes
@@ -136,9 +166,8 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
   // Clear data when cache bust trigger changes
   useEffect(() => {
     if (isCacheBustRequest) {
-      setData(null);
+      dispatch({ type: "patch", payload: { data: null, error: undefined } });
       cacheKeyRef.current = "";
-      setError(undefined);
       requestRef.current = null;
     }
   }, [isCacheBustRequest]);
@@ -152,12 +181,17 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
     if (!effectResourceId || !enabled || !cacheKey) {
       const resourceChanged = effectResourceId !== lastResourceIdRef.current;
       if (resourceChanged && cacheKeyRef.current !== "") {
-        setData(null);
+        dispatch({
+          type: "patch",
+          payload: {
+            data: null,
+            isLoading: false,
+            progress: undefined,
+            error: undefined,
+          },
+        });
         cacheKeyRef.current = "";
         lastResourceIdRef.current = effectResourceId || "";
-        setIsLoading(false);
-        setProgress(undefined);
-        setError(undefined);
       }
       return;
     }
@@ -166,8 +200,13 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
 
     // Check if offline
     if (isOffline()) {
-      setError("Requires an internet connection");
-      setIsLoading(false);
+      dispatch({
+        type: "patch",
+        payload: {
+          error: "Requires an internet connection",
+          isLoading: false,
+        },
+      });
       return;
     }
 
@@ -178,9 +217,11 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
 
     // Use prefetched data if available and not forcing
     if (prefetchedData?.cached && prefetchedData.data && !isCacheBustRequest) {
-      setData(prefetchedData.data);
+      dispatch({
+        type: "patch",
+        payload: { data: prefetchedData.data, isLoading: false },
+      });
       cacheKeyRef.current = cacheKey;
-      setIsLoading(false);
       onCompleteRef.current?.(prefetchedData.data);
       return;
     }
@@ -198,9 +239,14 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
     const requestId = `${effectResourceId}-${lyricsCacheBustTrigger}-${Date.now()}`;
 
     // Start loading
-    setIsLoading(true);
-    setProgress(0);
-    setError(undefined);
+    dispatch({
+      type: "patch",
+      payload: {
+        isLoading: true,
+        progress: 0,
+        error: undefined,
+      },
+    });
 
     const controller = new AbortController();
     requestRef.current = { controller, requestId };
@@ -215,7 +261,7 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
       onProgress: (prog) => {
         if (controller.signal.aborted) return;
         if (effectResourceId !== currentResourceIdRef.current) return;
-        setProgress(prog.percentage);
+        dispatch({ type: "patch", payload: { progress: prog.percentage } });
       },
       onLine: (lineIndex, lineData) => {
         if (controller.signal.aborted) return;
@@ -227,7 +273,7 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
         if (controller.signal.aborted) return;
         if (effectResourceId !== currentResourceIdRef.current) return;
 
-        setData(result.data);
+        dispatch({ type: "patch", payload: { data: result.data } });
         cacheKeyRef.current = cacheKey;
         markCacheBustHandled();
         onCompleteRef.current?.(result.data);
@@ -242,7 +288,7 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
 
         console.error(`[${debugLabel}] Fetch error:`, err);
         const errorMsg = err instanceof Error ? err.message : "Unknown error";
-        setError(errorMsg);
+        dispatch({ type: "patch", payload: { error: errorMsg } });
         onErrorRef.current?.(err instanceof Error ? err : new Error(errorMsg));
       })
       .finally(() => {
@@ -251,8 +297,13 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
         }
 
         if (!controller.signal.aborted && effectResourceId === currentResourceIdRef.current) {
-          setIsLoading(false);
-          setProgress(undefined);
+          dispatch({
+            type: "patch",
+            payload: {
+              isLoading: false,
+              progress: undefined,
+            },
+          });
         }
       });
 
@@ -261,8 +312,13 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
       if (requestRef.current?.requestId === requestId) {
         requestRef.current = null;
       }
-      setIsLoading(false);
-      setProgress(undefined);
+      dispatch({
+        type: "patch",
+        payload: {
+          isLoading: false,
+          progress: undefined,
+        },
+      });
     };
   }, [
     resourceId,

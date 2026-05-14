@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useReducer } from "react";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,62 @@ interface CreateRoomDialogProps {
   initialUsers?: string[]; // Optional prop to prefill users
 }
 
+interface IrcServerFormState {
+  showAddServerForm: boolean;
+  newServerHost: string;
+  newServerPort: number;
+  newServerTls: boolean;
+  newServerLabel: string;
+  isAddingServer: boolean;
+  addServerError: string | null;
+}
+
+const initialIrcServerFormState: IrcServerFormState = {
+  showAddServerForm: false,
+  newServerHost: "",
+  newServerPort: 6667,
+  newServerTls: false,
+  newServerLabel: "",
+  isAddingServer: false,
+  addServerError: null,
+};
+
+type IrcServerFormAction =
+  | { type: "setShowAddServerForm"; value: boolean }
+  | { type: "setNewServerHost"; value: string }
+  | { type: "setNewServerPort"; value: number }
+  | { type: "setNewServerTls"; value: boolean }
+  | { type: "setNewServerLabel"; value: string }
+  | { type: "setIsAddingServer"; value: boolean }
+  | { type: "setAddServerError"; value: string | null }
+  | { type: "resetForm" };
+
+function ircServerFormReducer(
+  state: IrcServerFormState,
+  action: IrcServerFormAction
+): IrcServerFormState {
+  switch (action.type) {
+    case "setShowAddServerForm":
+      return { ...state, showAddServerForm: action.value };
+    case "setNewServerHost":
+      return { ...state, newServerHost: action.value };
+    case "setNewServerPort":
+      return { ...state, newServerPort: action.value };
+    case "setNewServerTls":
+      return { ...state, newServerTls: action.value };
+    case "setNewServerLabel":
+      return { ...state, newServerLabel: action.value };
+    case "setIsAddingServer":
+      return { ...state, isAddingServer: action.value };
+    case "setAddServerError":
+      return { ...state, addServerError: action.value };
+    case "resetForm":
+      return initialIrcServerFormState;
+    default:
+      return state;
+  }
+}
+
 export function CreateRoomDialog({
   isOpen,
   onOpenChange,
@@ -89,13 +145,40 @@ export function CreateRoomDialog({
   const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
   const [isLoadingServers, setIsLoadingServers] = useState(false);
   const [serversError, setServersError] = useState<string | null>(null);
-  const [showAddServerForm, setShowAddServerForm] = useState(false);
-  const [newServerHost, setNewServerHost] = useState("");
-  const [newServerPort, setNewServerPort] = useState(6667);
-  const [newServerTls, setNewServerTls] = useState(false);
-  const [newServerLabel, setNewServerLabel] = useState("");
-  const [isAddingServer, setIsAddingServer] = useState(false);
-  const [addServerError, setAddServerError] = useState<string | null>(null);
+  const [ircServerFormState, dispatchIrcServerForm] = useReducer(
+    ircServerFormReducer,
+    initialIrcServerFormState
+  );
+  const {
+    showAddServerForm,
+    newServerHost,
+    newServerPort,
+    newServerTls,
+    newServerLabel,
+    isAddingServer,
+    addServerError,
+  } = ircServerFormState;
+  const setShowAddServerForm = useCallback((value: boolean) => {
+    dispatchIrcServerForm({ type: "setShowAddServerForm", value });
+  }, []);
+  const setNewServerHost = useCallback((value: string) => {
+    dispatchIrcServerForm({ type: "setNewServerHost", value });
+  }, []);
+  const setNewServerPort = useCallback((value: number) => {
+    dispatchIrcServerForm({ type: "setNewServerPort", value });
+  }, []);
+  const setNewServerTls = useCallback((value: boolean) => {
+    dispatchIrcServerForm({ type: "setNewServerTls", value });
+  }, []);
+  const setNewServerLabel = useCallback((value: string) => {
+    dispatchIrcServerForm({ type: "setNewServerLabel", value });
+  }, []);
+  const setIsAddingServer = useCallback((value: boolean) => {
+    dispatchIrcServerForm({ type: "setIsAddingServer", value });
+  }, []);
+  const setAddServerError = useCallback((value: string | null) => {
+    dispatchIrcServerForm({ type: "setAddServerError", value });
+  }, []);
 
   // IRC channel browser state
   const [ircChannels, setIrcChannels] = useState<IrcChannelEntry[]>([]);
@@ -128,13 +211,7 @@ export function CreateRoomDialog({
     setIrcServers([]);
     setSelectedServerId(null);
     setServersError(null);
-    setShowAddServerForm(false);
-    setNewServerHost("");
-    setNewServerPort(6667);
-    setNewServerTls(false);
-    setNewServerLabel("");
-    setIsAddingServer(false);
-    setAddServerError(null);
+    dispatchIrcServerForm({ type: "resetForm" });
     setIrcChannels([]);
     setChannelsError(null);
     setChannelFilter("");
@@ -305,11 +382,7 @@ export function CreateRoomDialog({
         return next;
       });
       setSelectedServerId(data.server.id);
-      setShowAddServerForm(false);
-      setNewServerHost("");
-      setNewServerPort(6667);
-      setNewServerTls(false);
-      setNewServerLabel("");
+      dispatchIrcServerForm({ type: "resetForm" });
     } catch (err) {
       console.error("Failed to add IRC server:", err);
       setAddServerError(
@@ -687,8 +760,7 @@ export function CreateRoomDialog({
                       variant="retro"
                       size="sm"
                       onClick={() => {
-                        setShowAddServerForm(false);
-                        setAddServerError(null);
+                        dispatchIrcServerForm({ type: "resetForm" });
                       }}
                       disabled={isAddingServer}
                       className={cn("h-7", themeFont)}

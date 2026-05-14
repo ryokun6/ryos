@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useReducer } from "react";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
@@ -23,8 +23,28 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const nextStartRef = useRef(0);
   // Keep track of in-flight requests so we can cancel them if needed
   const controllersRef = useRef<Set<AbortController>>(new Set());
+  interface TtsQueueState {
+    isSpeaking: boolean;
+  }
+
+  const initialState: TtsQueueState = {
+    isSpeaking: false,
+  };
+
+  type TtsQueueAction = { type: "setIsSpeaking"; value: boolean };
+
+  const reducer = (state: TtsQueueState, action: TtsQueueAction): TtsQueueState => {
+    switch (action.type) {
+      case "setIsSpeaking":
+        return { ...state, isSpeaking: action.value };
+      default:
+        return state;
+    }
+  };
+
   // Expose whether any TTS audio is currently playing
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { isSpeaking } = state;
   // Track any sources currently playing so we can stop them
   const playingSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   // Promise chain that guarantees *scheduling* order while still allowing
@@ -246,7 +266,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
           // Keep track of active sources so we can stop them later
           playingSourcesRef.current.add(src);
-          setIsSpeaking(true);
+          dispatch({ type: "setIsSpeaking", value: true });
 
           src.onended = () => {
             // Disconnect the source node to prevent memory leaks
@@ -257,7 +277,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
             }
             playingSourcesRef.current.delete(src);
             if (playingSourcesRef.current.size === 0) {
-              setIsSpeaking(false);
+              dispatch({ type: "setIsSpeaking", value: false });
             }
             if (onEnd) onEnd();
           };
@@ -316,7 +336,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       });
       playingSourcesRef.current.clear();
-      setIsSpeaking(false);
+      dispatch({ type: "setIsSpeaking", value: false });
       if (ctxRef.current) {
         nextStartRef.current = ctxRef.current.currentTime;
       }

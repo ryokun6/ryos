@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useReducer, useEffect, useRef, useCallback } from "react";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 
 /** Duration each landscape video plays before crossfading to the next (ms) */
@@ -24,17 +24,74 @@ export function LandscapeVideoBackground({
   isActive,
   className = "",
 }: LandscapeVideoBackgroundProps) {
-  const [videos, setVideos] = useState<string[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showB, setShowB] = useState(false);
-  const [activeVideoDurationMs, setActiveVideoDurationMs] = useState<number | null>(null);
+  type BackgroundState = {
+    videos: string[];
+    currentIndex: number;
+    showB: boolean;
+    activeVideoDurationMs: number | null;
+    srcA: string;
+    srcB: string;
+  };
+  type BackgroundAction =
+    | { type: "initializeVideos"; videos: string[] }
+    | { type: "advanceVideo" }
+    | { type: "setActiveVideoDuration"; durationMs: number | null };
+  const initialState: BackgroundState = {
+    videos: [],
+    currentIndex: 0,
+    showB: false,
+    activeVideoDurationMs: null,
+    srcA: "",
+    srcB: "",
+  };
+  const reducer = (
+    state: BackgroundState,
+    action: BackgroundAction
+  ): BackgroundState => {
+    switch (action.type) {
+      case "initializeVideos": {
+        const videos = action.videos;
+        return {
+          ...state,
+          videos,
+          currentIndex: 0,
+          showB: false,
+          activeVideoDurationMs: null,
+          srcA: videos[0] ?? "",
+          srcB: videos[1] ?? "",
+        };
+      }
+      case "advanceVideo": {
+        if (state.videos.length <= 1) return state;
+        const nextIdx = (state.currentIndex + 1) % state.videos.length;
+        if (state.showB) {
+          return {
+            ...state,
+            currentIndex: nextIdx,
+            showB: false,
+            srcA: state.videos[nextIdx],
+            activeVideoDurationMs: null,
+          };
+        }
+        return {
+          ...state,
+          currentIndex: nextIdx,
+          showB: true,
+          srcB: state.videos[nextIdx],
+          activeVideoDurationMs: null,
+        };
+      }
+      case "setActiveVideoDuration":
+        return { ...state, activeVideoDurationMs: action.durationMs };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { videos, showB, activeVideoDurationMs, srcA, srcB } = state;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoARef = useRef<HTMLVideoElement | null>(null);
   const videoBRef = useRef<HTMLVideoElement | null>(null);
-
-  // Track which src each slot holds
-  const [srcA, setSrcA] = useState<string>("");
-  const [srcB, setSrcB] = useState<string>("");
 
   // Load video wallpaper list from manifest
   useEffect(() => {
@@ -45,13 +102,7 @@ export function LandscapeVideoBackground({
         const videoPaths = manifest.videos.map((p) => `/wallpapers/${p}`);
         // Shuffle so it's different each session
         const shuffled = [...videoPaths].sort(() => Math.random() - 0.5);
-        setVideos(shuffled);
-        if (shuffled.length > 0) {
-          setSrcA(shuffled[0]);
-          if (shuffled.length > 1) {
-            setSrcB(shuffled[1]);
-          }
-        }
+        dispatch({ type: "initializeVideos", videos: shuffled });
       })
       .catch((err) => {
         console.warn("[LandscapeVideoBackground] Failed to load manifest:", err);
@@ -86,23 +137,8 @@ export function LandscapeVideoBackground({
 
   // Advance to next video with crossfade
   const advanceVideo = useCallback(() => {
-    if (videos.length <= 1) return;
-
-    const nextIdx = (currentIndex + 1) % videos.length;
-    setActiveVideoDurationMs(null);
-
-    if (showB) {
-      // B is visible → load next into A, then show A
-      setSrcA(videos[nextIdx]);
-      setShowB(false);
-    } else {
-      // A is visible → load next into B, then show B
-      setSrcB(videos[nextIdx]);
-      setShowB(true);
-    }
-
-    setCurrentIndex(nextIdx);
-  }, [videos, currentIndex, showB]);
+    dispatch({ type: "advanceVideo" });
+  }, []);
 
   // Schedule periodic advancement
   useEffect(() => {
@@ -176,7 +212,10 @@ export function LandscapeVideoBackground({
           if (showB) return;
           const durationMs = e.currentTarget.duration * 1000;
           if (Number.isFinite(durationMs) && durationMs > 0) {
-            setActiveVideoDurationMs(durationMs);
+            dispatch({
+              type: "setActiveVideoDuration",
+              durationMs,
+            });
           }
         }}
         className="absolute inset-0 w-full h-full object-cover"
@@ -206,7 +245,10 @@ export function LandscapeVideoBackground({
             if (!showB) return;
             const durationMs = e.currentTarget.duration * 1000;
             if (Number.isFinite(durationMs) && durationMs > 0) {
-              setActiveVideoDurationMs(durationMs);
+              dispatch({
+                type: "setActiveVideoDuration",
+                durationMs,
+              });
             }
           }}
           className="absolute inset-0 w-full h-full object-cover"

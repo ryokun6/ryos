@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef, useReducer } from "react";
 import { useDashboardStore, type ClockWidgetConfig } from "@/stores/useDashboardStore";
 import { MapPin, MagnifyingGlass, NavigationArrow } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
@@ -232,19 +232,49 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<CityResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  type ClockSearchState = {
+    searchQuery: string;
+    searchResults: CityResult[];
+    searching: boolean;
+  };
+  type ClockSearchAction =
+    | { type: "setQuery"; query: string }
+    | { type: "searchIdle" }
+    | { type: "searchStart" }
+    | { type: "searchResults"; results: CityResult[] };
+  const initialSearchState: ClockSearchState = {
+    searchQuery: "",
+    searchResults: [],
+    searching: false,
+  };
+  const searchReducer = (
+    state: ClockSearchState,
+    action: ClockSearchAction
+  ): ClockSearchState => {
+    switch (action.type) {
+      case "setQuery":
+        return { ...state, searchQuery: action.query };
+      case "searchIdle":
+        return { ...state, searchResults: [], searching: false };
+      case "searchStart":
+        return { ...state, searching: true };
+      case "searchResults":
+        return { ...state, searchResults: action.results, searching: false };
+      default:
+        return state;
+    }
+  };
+  const [searchState, dispatch] = useReducer(searchReducer, initialSearchState);
+  const { searchQuery, searchResults, searching } = searchState;
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const searchCities = useCallback(async (query: string) => {
     if (query.length < 2) {
-      setSearchResults([]);
-      setSearching(false);
+      dispatch({ type: "searchIdle" });
       return;
     }
-    setSearching(true);
+    dispatch({ type: "searchStart" });
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`
@@ -263,12 +293,13 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
             lat: parseFloat(r.lat),
             lon: parseFloat(r.lon),
           }));
-        setSearchResults(results);
+        dispatch({ type: "searchResults", results });
+        return;
       }
     } catch {
       // search failed silently
     }
-    setSearching(false);
+    dispatch({ type: "searchResults", results: [] });
   }, []);
 
   useEffect(() => {
@@ -279,7 +310,7 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
 
   const handleSearchInput = useCallback(
     (value: string) => {
-      setSearchQuery(value);
+      dispatch({ type: "setQuery", query: value });
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
       searchTimerRef.current = setTimeout(() => searchCities(value), 300);
     },

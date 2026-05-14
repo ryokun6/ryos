@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -188,7 +188,6 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
   const [users, setUsers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -199,13 +198,72 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     totalMessages: 0,
   });
 
-  const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
+  type AdminNavigationState = {
+    activeSection: AdminSection;
+    selectedRoomId: string | null;
+    selectedUserProfile: string | null;
+    selectedSongId: string | null;
+  };
+  type AdminNavigationAction =
+    | { type: "setActiveSection"; activeSection: AdminSection }
+    | { type: "setSelectedRoomId"; selectedRoomId: string | null }
+    | { type: "setSelectedUserProfile"; selectedUserProfile: string | null }
+    | { type: "setSelectedSongId"; selectedSongId: string | null }
+    | {
+        type: "applyClearedSelection";
+        payload: Pick<
+          AdminNavigationState,
+          "selectedRoomId" | "selectedUserProfile" | "selectedSongId"
+        >;
+      };
+  const initialNavigationState: AdminNavigationState = {
+    activeSection: "dashboard",
+    selectedRoomId: null,
+    selectedUserProfile: null,
+    selectedSongId: null,
+  };
+  const navigationReducer = (
+    state: AdminNavigationState,
+    action: AdminNavigationAction
+  ): AdminNavigationState => {
+    switch (action.type) {
+      case "setActiveSection":
+        return { ...state, activeSection: action.activeSection };
+      case "setSelectedRoomId":
+        return { ...state, selectedRoomId: action.selectedRoomId };
+      case "setSelectedUserProfile":
+        return { ...state, selectedUserProfile: action.selectedUserProfile };
+      case "setSelectedSongId":
+        return { ...state, selectedSongId: action.selectedSongId };
+      case "applyClearedSelection":
+        return { ...state, ...action.payload };
+      default:
+        return state;
+    }
+  };
+  const [navigationState, dispatchNavigation] = useReducer(
+    navigationReducer,
+    initialNavigationState
+  );
+  const { activeSection, selectedRoomId, selectedUserProfile, selectedSongId } =
+    navigationState;
+  const setActiveSection = useCallback((nextSection: AdminSection) => {
+    dispatchNavigation({ type: "setActiveSection", activeSection: nextSection });
+  }, []);
+  const setSelectedRoomId = useCallback((roomId: string | null) => {
+    dispatchNavigation({ type: "setSelectedRoomId", selectedRoomId: roomId });
+  }, []);
+  const setSelectedUserProfile = useCallback((profile: string | null) => {
+    dispatchNavigation({
+      type: "setSelectedUserProfile",
+      selectedUserProfile: profile,
+    });
+  }, []);
+  const setSelectedSongId = useCallback((songId: string | null) => {
+    dispatchNavigation({ type: "setSelectedSongId", selectedSongId: songId });
+  }, []);
   const [cursorAgentsRefreshSignal, setCursorAgentsRefreshSignal] = useState(0);
   const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
-  const [selectedUserProfile, setSelectedUserProfile] = useState<string | null>(
-    null
-  );
-  const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [songs, setSongs] = useState<CachedSongMetadata[]>([]);
   const [songSearch, setSongSearch] = useState("");
   const [songsFilterByRyoOnly, setSongsFilterByRyoOnly] = useState(false);
@@ -1022,16 +1080,14 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       selectedUserProfile,
       selectedSongId,
     });
-
-    if (nextSelectionState.selectedSongId !== selectedSongId) {
-      setSelectedSongId(nextSelectionState.selectedSongId);
-    }
-    if (nextSelectionState.selectedUserProfile !== selectedUserProfile) {
-      setSelectedUserProfile(nextSelectionState.selectedUserProfile);
-    }
-    if (nextSelectionState.selectedRoomId !== selectedRoomId) {
-      setSelectedRoomId(nextSelectionState.selectedRoomId);
-    }
+    dispatchNavigation({
+      type: "applyClearedSelection",
+      payload: {
+        selectedSongId: nextSelectionState.selectedSongId,
+        selectedUserProfile: nextSelectionState.selectedUserProfile,
+        selectedRoomId: nextSelectionState.selectedRoomId,
+      },
+    });
   }, [activeSection, selectedSongId, selectedUserProfile, selectedRoomId]);
 
   const handleRefresh = useCallback(() => {

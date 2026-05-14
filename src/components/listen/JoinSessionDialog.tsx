@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useReducer, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -54,35 +54,75 @@ export function JoinSessionDialog({
   onJoin,
 }: JoinSessionDialogProps) {
   const { t } = useTranslation();
-  const [value, setValue] = useState("");
-  const [sessions, setSessions] = useState<ListenSessionSummary[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  type JoinDialogState = {
+    value: string;
+    sessions: ListenSessionSummary[];
+    selectedIndex: number;
+    isLoading: boolean;
+    error: string | null;
+  };
+  type JoinDialogAction =
+    | { type: "resetOnOpen" }
+    | { type: "setValue"; value: string }
+    | { type: "setSelectedIndex"; index: number }
+    | { type: "loadStart" }
+    | { type: "loadSuccess"; sessions: ListenSessionSummary[] }
+    | { type: "loadError"; error: string }
+    | { type: "clearValue" };
+  const initialState: JoinDialogState = {
+    value: "",
+    sessions: [],
+    selectedIndex: -1,
+    isLoading: false,
+    error: null,
+  };
+  const reducer = (
+    state: JoinDialogState,
+    action: JoinDialogAction
+  ): JoinDialogState => {
+    switch (action.type) {
+      case "resetOnOpen":
+        return { ...state, value: "", selectedIndex: -1, error: null };
+      case "setValue":
+        return { ...state, value: action.value };
+      case "setSelectedIndex":
+        return { ...state, selectedIndex: action.index };
+      case "loadStart":
+        return { ...state, isLoading: true, error: null };
+      case "loadSuccess":
+        return { ...state, isLoading: false, sessions: action.sessions };
+      case "loadError":
+        return { ...state, isLoading: false, error: action.error, sessions: [] };
+      case "clearValue":
+        return { ...state, value: "" };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { value, sessions, selectedIndex, isLoading, error } = state;
 
   const { isWindowsTheme: isXpTheme, isMacOSTheme: isMacTheme } =
     useThemeFlags();
   const fetchSessions = useListenSessionStore((state) => state.fetchSessions);
 
   const loadSessions = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    dispatch({ type: "loadStart" });
     const result = await fetchSessions();
     if (result.ok && result.sessions) {
-      setSessions(result.sessions);
+      dispatch({ type: "loadSuccess", sessions: result.sessions });
     } else {
-      setError(result.error || "Failed to load sessions");
-      setSessions([]);
+      dispatch({
+        type: "loadError",
+        error: result.error || "Failed to load sessions",
+      });
     }
-    setIsLoading(false);
   }, [fetchSessions]);
 
   // Reset state when dialog opens
   useEffect(() => {
     if (isOpen) {
-      setValue("");
-      setSelectedIndex(-1);
-      setError(null);
+      dispatch({ type: "resetOnOpen" });
       loadSessions();
     }
   }, [isOpen, loadSessions]);
@@ -92,7 +132,7 @@ export function JoinSessionDialog({
       const id = sessionId || extractSessionId(value);
       if (!id) return;
       onJoin(id);
-      setValue("");
+      dispatch({ type: "clearValue" });
       onClose();
     },
     [value, onJoin, onClose]
@@ -107,7 +147,7 @@ export function JoinSessionDialog({
   const handleSelectAndJoin = useCallback(
     (index: number) => {
       if (index >= 0 && index < sessions.length) {
-        setSelectedIndex(index);
+        dispatch({ type: "setSelectedIndex", index });
         handleJoin(sessions[index].id);
       }
     },
@@ -182,7 +222,7 @@ export function JoinSessionDialog({
               sessions.map((session, index) => (
                 <div
                   key={session.id}
-                  onClick={() => setSelectedIndex(index)}
+                  onClick={() => dispatch({ type: "setSelectedIndex", index })}
                   onDoubleClick={() => handleSelectAndJoin(index)}
                   onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -267,7 +307,9 @@ export function JoinSessionDialog({
       <div className="flex gap-2">
         <Input
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) =>
+            dispatch({ type: "setValue", value: e.target.value })
+          }
           onKeyDown={(e) => {
             e.stopPropagation();
             if (e.key === "Enter" && value.trim()) {

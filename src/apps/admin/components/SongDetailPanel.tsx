@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useReducer } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -81,6 +81,92 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const { t } = useTranslation();
   const { username, isAuthenticated } = useAuth();
   const launchApp = useLaunchApp();
+  type SongEditState = {
+    isEditingTitle: boolean;
+    isEditingArtist: boolean;
+    isEditingAlbum: boolean;
+    isEditingOffset: boolean;
+    editTitle: string;
+    editArtist: string;
+    editAlbum: string;
+    editOffset: string;
+    isSaving: boolean;
+  };
+  type SongEditAction =
+    | { type: "startEdit"; field: "title" | "artist" | "album" | "offset"; value: string }
+    | {
+        type: "setValue";
+        field: "editTitle" | "editArtist" | "editAlbum" | "editOffset";
+        value: string;
+      }
+    | { type: "stopEditing"; field?: "title" | "artist" | "album" | "offset" }
+    | { type: "setSaving"; isSaving: boolean };
+  const initialEditState: SongEditState = {
+    isEditingTitle: false,
+    isEditingArtist: false,
+    isEditingAlbum: false,
+    isEditingOffset: false,
+    editTitle: "",
+    editArtist: "",
+    editAlbum: "",
+    editOffset: "",
+    isSaving: false,
+  };
+  const editReducer = (
+    state: SongEditState,
+    action: SongEditAction
+  ): SongEditState => {
+    switch (action.type) {
+      case "startEdit":
+        return {
+          ...state,
+          isEditingTitle: action.field === "title",
+          isEditingArtist: action.field === "artist",
+          isEditingAlbum: action.field === "album",
+          isEditingOffset: action.field === "offset",
+          editTitle: action.field === "title" ? action.value : state.editTitle,
+          editArtist:
+            action.field === "artist" ? action.value : state.editArtist,
+          editAlbum: action.field === "album" ? action.value : state.editAlbum,
+          editOffset:
+            action.field === "offset" ? action.value : state.editOffset,
+        };
+      case "setValue":
+        return { ...state, [action.field]: action.value };
+      case "stopEditing":
+        if (!action.field) {
+          return {
+            ...state,
+            isEditingTitle: false,
+            isEditingArtist: false,
+            isEditingAlbum: false,
+            isEditingOffset: false,
+          };
+        }
+        if (action.field === "title") return { ...state, isEditingTitle: false };
+        if (action.field === "artist") {
+          return { ...state, isEditingArtist: false };
+        }
+        if (action.field === "album") return { ...state, isEditingAlbum: false };
+        return { ...state, isEditingOffset: false };
+      case "setSaving":
+        return { ...state, isSaving: action.isSaving };
+      default:
+        return state;
+    }
+  };
+  const [editState, dispatchEdit] = useReducer(editReducer, initialEditState);
+  const {
+    isEditingTitle,
+    isEditingArtist,
+    isEditingAlbum,
+    isEditingOffset,
+    editTitle,
+    editArtist,
+    editAlbum,
+    editOffset,
+    isSaving,
+  } = editState;
   const [song, setSong] = useState<SongDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [youtubeOembedTitle, setYoutubeOembedTitle] = useState<string | null>(null);
@@ -90,17 +176,6 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const [isUnsharing, setIsUnsharing] = useState(false);
   const [isForceRefreshing, setIsForceRefreshing] = useState(false);
   const [isLyricsSearchDialogOpen, setIsLyricsSearchDialogOpen] = useState(false);
-  
-  // Edit states
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingArtist, setIsEditingArtist] = useState(false);
-  const [isEditingAlbum, setIsEditingAlbum] = useState(false);
-  const [isEditingOffset, setIsEditingOffset] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editArtist, setEditArtist] = useState("");
-  const [editAlbum, setEditAlbum] = useState("");
-  const [editOffset, setEditOffset] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
 
   const fetchSong = useCallback(async () => {
     setIsLoading(true);
@@ -437,7 +512,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const saveField = async (field: "title" | "artist" | "album" | "lyricOffset", value: string) => {
     if (!song || !username || !isAuthenticated) return;
 
-    setIsSaving(true);
+    dispatchEdit({ type: "setSaving", isSaving: true });
     try {
       const updatedMetadata = {
         youtubeId: song.id,
@@ -460,11 +535,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       console.error("Failed to update song:", error);
       toast.error(t("apps.admin.errors.failedToUpdateSong", "Failed to update song"));
     } finally {
-      setIsSaving(false);
-      setIsEditingTitle(false);
-      setIsEditingArtist(false);
-      setIsEditingAlbum(false);
-      setIsEditingOffset(false);
+      dispatchEdit({ type: "setSaving", isSaving: false });
+      dispatchEdit({ type: "stopEditing" });
     }
   };
 
@@ -668,7 +740,13 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div className="flex items-center gap-1 mt-1">
                       <Input
                         value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
+                        onChange={(e) =>
+                          dispatchEdit({
+                            type: "setValue",
+                            field: "editTitle",
+                            value: e.target.value,
+                          })
+                        }
                         className="h-6 text-[11px] flex-1"
                         autoFocus
                       />
@@ -683,7 +761,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setIsEditingTitle(false)}
+                        onClick={() =>
+                          dispatchEdit({ type: "stopEditing", field: "title" })
+                        }
                         className="h-6 px-2 text-[10px]"
                       >
                         {t("common.dialog.cancel")}
@@ -693,8 +773,11 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div
                       className="text-[11px] cursor-pointer hover:text-blue-600 mt-0.5"
                       onClick={() => {
-                        setEditTitle(song?.title || "");
-                        setIsEditingTitle(true);
+                        dispatchEdit({
+                          type: "startEdit",
+                          field: "title",
+                          value: song?.title || "",
+                        });
                       }}
                     >
                       {song?.title}
@@ -714,7 +797,13 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div className="flex items-center gap-1 mt-1">
                       <Input
                         value={editArtist}
-                        onChange={(e) => setEditArtist(e.target.value)}
+                        onChange={(e) =>
+                          dispatchEdit({
+                            type: "setValue",
+                            field: "editArtist",
+                            value: e.target.value,
+                          })
+                        }
                         className="h-6 text-[11px] flex-1"
                         autoFocus
                       />
@@ -729,7 +818,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setIsEditingArtist(false)}
+                        onClick={() =>
+                          dispatchEdit({ type: "stopEditing", field: "artist" })
+                        }
                         className="h-6 px-2 text-[10px]"
                       >
                         {t("common.dialog.cancel")}
@@ -739,8 +830,11 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div
                       className="text-[11px] cursor-pointer hover:text-blue-600 mt-0.5"
                       onClick={() => {
-                        setEditArtist(song?.artist || "");
-                        setIsEditingArtist(true);
+                        dispatchEdit({
+                          type: "startEdit",
+                          field: "artist",
+                          value: song?.artist || "",
+                        });
                       }}
                     >
                       {song?.artist || <span className="text-neutral-400">-</span>}
@@ -760,7 +854,13 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div className="flex items-center gap-1 mt-1">
                       <Input
                         value={editAlbum}
-                        onChange={(e) => setEditAlbum(e.target.value)}
+                        onChange={(e) =>
+                          dispatchEdit({
+                            type: "setValue",
+                            field: "editAlbum",
+                            value: e.target.value,
+                          })
+                        }
                         className="h-6 text-[11px] flex-1"
                         autoFocus
                       />
@@ -775,7 +875,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setIsEditingAlbum(false)}
+                        onClick={() =>
+                          dispatchEdit({ type: "stopEditing", field: "album" })
+                        }
                         className="h-6 px-2 text-[10px]"
                       >
                         {t("common.dialog.cancel")}
@@ -785,8 +887,11 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div
                       className="text-[11px] cursor-pointer hover:text-blue-600 mt-0.5"
                       onClick={() => {
-                        setEditAlbum(song?.album || "");
-                        setIsEditingAlbum(true);
+                        dispatchEdit({
+                          type: "startEdit",
+                          field: "album",
+                          value: song?.album || "",
+                        });
                       }}
                     >
                       {song?.album || <span className="text-neutral-400">-</span>}
@@ -807,7 +912,13 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                       <Input
                         type="number"
                         value={editOffset}
-                        onChange={(e) => setEditOffset(e.target.value)}
+                        onChange={(e) =>
+                          dispatchEdit({
+                            type: "setValue",
+                            field: "editOffset",
+                            value: e.target.value,
+                          })
+                        }
                         className="h-6 text-[11px] flex-1"
                         autoFocus
                       />
@@ -823,7 +934,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setIsEditingOffset(false)}
+                        onClick={() =>
+                          dispatchEdit({ type: "stopEditing", field: "offset" })
+                        }
                         className="h-6 px-2 text-[10px]"
                       >
                         {t("common.dialog.cancel")}
@@ -833,8 +946,11 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                     <div
                       className="text-[11px] cursor-pointer hover:text-blue-600 mt-0.5"
                       onClick={() => {
-                        setEditOffset(String(song?.lyricOffset || 0));
-                        setIsEditingOffset(true);
+                        dispatchEdit({
+                          type: "startEdit",
+                          field: "offset",
+                          value: String(song?.lyricOffset || 0),
+                        });
                       }}
                     >
                       {formatOffset(song?.lyricOffset)}

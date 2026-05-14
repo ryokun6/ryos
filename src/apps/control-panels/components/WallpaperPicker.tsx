@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useReducer, useEffect, useRef, useMemo, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -166,10 +166,62 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   const displayMode = useDisplaySettingsStore((s) => s.displayMode);
   const setDisplayMode = useDisplaySettingsStore((s) => s.setDisplayMode);
   const { t } = useTranslation();
-  const [customWallpaperRefs, setCustomWallpaperRefs] = useState<string[]>([]);
-  const [customWallpaperPreviews, setCustomWallpaperPreviews] = useState<
-    Record<string, string>
-  >({});
+  const deriveCategoryFromWallpaper = (
+    wallpaper: string
+  ): "tiles" | PhotoCategory => {
+    if (wallpaper.includes("/wallpapers/tiles/")) return "tiles";
+    if (wallpaper.startsWith(INDEXEDDB_PREFIX)) return "custom";
+    if (wallpaper.includes("/wallpapers/videos/")) return "videos";
+    const match = wallpaper.match(/\/wallpapers\/photos\/([^/]+)\//);
+    if (match) return match[1];
+    return "tiles";
+  };
+  type PickerState = {
+    customWallpaperRefs: string[];
+    customWallpaperPreviews: Record<string, string>;
+    selectedCategory: "tiles" | PhotoCategory;
+  };
+  type PickerAction =
+    | {
+        type: "setCustomData";
+        refs: string[];
+        previews: Record<string, string>;
+      }
+    | { type: "removeCustomWallpaper"; ref: string }
+    | { type: "setSelectedCategory"; category: "tiles" | PhotoCategory };
+  const initialState: PickerState = {
+    customWallpaperRefs: [],
+    customWallpaperPreviews: {},
+    selectedCategory: deriveCategoryFromWallpaper(currentWallpaper),
+  };
+  const reducer = (state: PickerState, action: PickerAction): PickerState => {
+    switch (action.type) {
+      case "setCustomData":
+        return {
+          ...state,
+          customWallpaperRefs: action.refs,
+          customWallpaperPreviews: action.previews,
+        };
+      case "removeCustomWallpaper": {
+        const nextPreviews = { ...state.customWallpaperPreviews };
+        delete nextPreviews[action.ref];
+        return {
+          ...state,
+          customWallpaperRefs: state.customWallpaperRefs.filter(
+            (ref) => ref !== action.ref
+          ),
+          customWallpaperPreviews: nextPreviews,
+        };
+      }
+      case "setSelectedCategory":
+        return { ...state, selectedCategory: action.category };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { customWallpaperRefs, customWallpaperPreviews, selectedCategory } =
+    state;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [manifest, setManifest] = useState<WallpaperManifestType | null>(null);
@@ -180,18 +232,26 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   }, []);
 
   const tileWallpapers = useMemo(
-    () => (manifest ? manifest.tiles.map((p) => `/wallpapers/${p}`) : []),
+    () =>
+      manifest
+        ? (manifest.tiles as string[]).map((p: string) => `/wallpapers/${p}`)
+        : [],
     [manifest]
   );
   const videoWallpapers = useMemo(
-    () => (manifest ? manifest.videos.map((p) => `/wallpapers/${p}`) : []),
+    () =>
+      manifest
+        ? (manifest.videos as string[]).map((p: string) => `/wallpapers/${p}`)
+        : [],
     [manifest]
   );
   const photoWallpapers = useMemo(() => {
     if (!manifest) return {} as Record<string, string[]>;
     const r: Record<string, string[]> = {};
-    for (const [cat, arr] of Object.entries(manifest.photos)) {
-      r[cat] = arr.map((p) => `/wallpapers/${p}`);
+    for (const [cat, arr] of Object.entries(
+      manifest.photos as Record<string, string[]>
+    )) {
+      r[cat] = arr.map((p: string) => `/wallpapers/${p}`);
     }
     return r;
   }, [manifest]);
@@ -219,17 +279,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return cats.filter((c) => !mac.has(c)).sort((a, b) => a.localeCompare(b));
   }, [photoWallpapers]);
 
-  const [selectedCategory, setSelectedCategory] = useState<
-    "tiles" | PhotoCategory
-  >(() => {
-    if (currentWallpaper.includes("/wallpapers/tiles/")) return "tiles";
-    if (currentWallpaper.startsWith(INDEXEDDB_PREFIX)) return "custom";
-    if (currentWallpaper.includes("/wallpapers/videos/")) return "videos";
-    const match = currentWallpaper.match(/\/wallpapers\/photos\/([^/]+)\//);
-    if (match) return match[1];
-    return "tiles";
-  });
-
   // Load custom wallpapers from IndexedDB (just the references)
   useEffect(() => {
     let isActive = true;
@@ -238,8 +287,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
       try {
         const refs = await loadCustomWallpapers();
         if (!isActive) return;
-
-        setCustomWallpaperRefs(refs);
 
         // Load preview data in parallel
         const previewEntries = await Promise.all(
@@ -259,7 +306,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
           )
         ) as Record<string, string>;
 
-        setCustomWallpaperPreviews(previews);
+        dispatch({ type: "setCustomData", refs, previews });
       } catch (error) {
         if (!isActive) return;
         console.error("Error fetching custom wallpapers:", error);
@@ -288,12 +335,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     e.stopPropagation();
     playClick();
     await deleteCustomWallpaper(ref);
-    setCustomWallpaperRefs((prev) => prev.filter((r) => r !== ref));
-    setCustomWallpaperPreviews((prev) => {
-      const next = { ...prev };
-      delete next[ref];
-      return next;
-    });
+    dispatch({ type: "removeCustomWallpaper", ref });
   };
 
   const handleFileUpload = async (
@@ -315,7 +357,6 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
       // Refresh the custom wallpapers list
       const refs = await loadCustomWallpapers();
-      setCustomWallpaperRefs(refs);
 
       // Refresh previews in one batch to avoid sequential requests and rerenders
       const previewEntries = await Promise.all(
@@ -330,10 +371,10 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
           (entry): entry is readonly [string, string] => entry !== null
         )
       ) as Record<string, string>;
-      setCustomWallpaperPreviews(previews);
+      dispatch({ type: "setCustomData", refs, previews });
 
       // Switch to custom category
-      setSelectedCategory("custom");
+      dispatch({ type: "setSelectedCategory", category: "custom" });
     } catch (error) {
       console.error("Error uploading wallpaper:", error);
       alert(t("apps.control-panels.alerts.errorUploadingWallpaper"));
@@ -347,16 +388,10 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
   // Force rerender when wallpaper changes
   useEffect(() => {
-    if (currentWallpaper.includes("/wallpapers/tiles/")) {
-      setSelectedCategory("tiles");
-    } else if (currentWallpaper.startsWith(INDEXEDDB_PREFIX)) {
-      setSelectedCategory("custom");
-    } else if (currentWallpaper.includes("/wallpapers/videos/")) {
-      setSelectedCategory("videos");
-    } else {
-      const match = currentWallpaper.match(/\/wallpapers\/photos\/([^/]+)\//);
-      if (match) setSelectedCategory(match[1]);
-    }
+    dispatch({
+      type: "setSelectedCategory",
+      category: deriveCategoryFromWallpaper(currentWallpaper),
+    });
   }, [currentWallpaper, INDEXEDDB_PREFIX]);
 
   const formatCategoryLabel = (category: string) => {
@@ -386,7 +421,10 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
           <Select
             value={selectedCategory}
             onValueChange={(value) =>
-              setSelectedCategory(value as typeof selectedCategory)
+              dispatch({
+                type: "setSelectedCategory",
+                category: value as typeof selectedCategory,
+              })
             }
           >
             <SelectTrigger>

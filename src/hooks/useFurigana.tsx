@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useReducer, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { useCacheBustTrigger } from "@/hooks/useCacheBustTrigger";
@@ -88,14 +88,75 @@ export function useFurigana({
   prefetchedSoramimiInfo,
   auth,
 }: UseFuriganaParams): UseFuriganaReturn {
-  const [furiganaMap, setFuriganaMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
-  const [soramimiMap, setSoramimiMap] = useState<Map<string, FuriganaSegment[]>>(new Map());
-  const [isFetchingFurigana, setIsFetchingFurigana] = useState(false);
-  const [isFetchingSoramimi, setIsFetchingSoramimi] = useState(false);
-  const [progress, setProgress] = useState<number | undefined>();
-  const [furiganaProgress, setFuriganaProgress] = useState<number | undefined>();
-  const [soramimiProgress, setSoramimiProgress] = useState<number | undefined>();
-  const [error, setError] = useState<string>();
+  interface FuriganaState {
+    furiganaMap: Map<string, FuriganaSegment[]>;
+    soramimiMap: Map<string, FuriganaSegment[]>;
+    isFetchingFurigana: boolean;
+    isFetchingSoramimi: boolean;
+    progress: number | undefined;
+    furiganaProgress: number | undefined;
+    soramimiProgress: number | undefined;
+    error: string | undefined;
+  }
+
+  const initialState: FuriganaState = {
+    furiganaMap: new Map(),
+    soramimiMap: new Map(),
+    isFetchingFurigana: false,
+    isFetchingSoramimi: false,
+    progress: undefined,
+    furiganaProgress: undefined,
+    soramimiProgress: undefined,
+    error: undefined,
+  };
+
+  type FuriganaAction = { type: "patch"; payload: Partial<FuriganaState> };
+
+  const reducer = (state: FuriganaState, action: FuriganaAction): FuriganaState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      default:
+        return state;
+    }
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    furiganaMap,
+    soramimiMap,
+    isFetchingFurigana,
+    isFetchingSoramimi,
+    progress,
+    furiganaProgress,
+    soramimiProgress,
+    error,
+  } = state;
+
+  const setFuriganaMap = useCallback((value: Map<string, FuriganaSegment[]>) => {
+    dispatch({ type: "patch", payload: { furiganaMap: value } });
+  }, []);
+  const setSoramimiMap = useCallback((value: Map<string, FuriganaSegment[]>) => {
+    dispatch({ type: "patch", payload: { soramimiMap: value } });
+  }, []);
+  const setIsFetchingFurigana = useCallback((value: boolean) => {
+    dispatch({ type: "patch", payload: { isFetchingFurigana: value } });
+  }, []);
+  const setIsFetchingSoramimi = useCallback((value: boolean) => {
+    dispatch({ type: "patch", payload: { isFetchingSoramimi: value } });
+  }, []);
+  const setProgress = useCallback((value: number | undefined) => {
+    dispatch({ type: "patch", payload: { progress: value } });
+  }, []);
+  const setFuriganaProgress = useCallback((value: number | undefined) => {
+    dispatch({ type: "patch", payload: { furiganaProgress: value } });
+  }, []);
+  const setSoramimiProgress = useCallback((value: number | undefined) => {
+    dispatch({ type: "patch", payload: { soramimiProgress: value } });
+  }, []);
+  const setError = useCallback((value: string | undefined) => {
+    dispatch({ type: "patch", payload: { error: value } });
+  }, []);
   
   // Combined fetching state for backwards compatibility
   const isFetching = isFetchingFurigana || isFetchingSoramimi;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useReducer } from "react";
 import {
   Dialog,
   DialogContent,
@@ -61,17 +61,51 @@ export function ChangePasswordDialog({
     isMacOSTheme: isMacTheme,
   } = useThemeFlags();
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [localError, setLocalError] = useState<string | null>(null);
+  type PasswordFormState = {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+    localError: string | null;
+  };
+  type PasswordFormAction =
+    | { type: "reset" }
+    | {
+        type: "setField";
+        field: "currentPassword" | "newPassword" | "confirmPassword";
+        value: string;
+      }
+    | { type: "setLocalError"; value: string | null };
+  const initialState: PasswordFormState = {
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    localError: null,
+  };
+  const reducer = (
+    state: PasswordFormState,
+    action: PasswordFormAction
+  ): PasswordFormState => {
+    switch (action.type) {
+      case "reset":
+        return initialState;
+      case "setField":
+        return {
+          ...state,
+          [action.field]: action.value,
+          localError: null,
+        };
+      case "setLocalError":
+        return { ...state, localError: action.value };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { currentPassword, newPassword, confirmPassword, localError } = state;
 
   useEffect(() => {
     if (isOpen) {
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setLocalError(null);
+      dispatch({ type: "reset" });
     }
   }, [isOpen]);
 
@@ -94,11 +128,10 @@ export function ChangePasswordDialog({
     : t("apps.control-panels.setPasswordDialog.description");
 
   const handleInputChange = (
-    setter: (value: string) => void,
+    field: "currentPassword" | "newPassword" | "confirmPassword",
     value: string
   ) => {
-    setter(value);
-    setLocalError(null);
+    dispatch({ type: "setField", field, value });
     onAnyInputChange?.();
   };
 
@@ -107,22 +140,34 @@ export function ChangePasswordDialog({
     if (isLoading) return;
 
     if (hasPassword && currentPassword.length === 0) {
-      setLocalError(t("common.auth.changePassword.currentPasswordRequired"));
+      dispatch({
+        type: "setLocalError",
+        value: t("common.auth.changePassword.currentPasswordRequired"),
+      });
       return;
     }
 
     if (newPassword.length < 8) {
-      setLocalError(t("common.auth.changePassword.tooShort"));
+      dispatch({
+        type: "setLocalError",
+        value: t("common.auth.changePassword.tooShort"),
+      });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setLocalError(t("common.auth.changePassword.mismatch"));
+      dispatch({
+        type: "setLocalError",
+        value: t("common.auth.changePassword.mismatch"),
+      });
       return;
     }
 
     if (hasPassword && currentPassword === newPassword) {
-      setLocalError(t("common.auth.changePassword.sameAsCurrent"));
+      dispatch({
+        type: "setLocalError",
+        value: t("common.auth.changePassword.sameAsCurrent"),
+      });
       return;
     }
 
@@ -158,7 +203,7 @@ export function ChangePasswordDialog({
             autoFocus
             value={currentPassword}
             onChange={(e) =>
-              handleInputChange(setCurrentPassword, e.target.value)
+              handleInputChange("currentPassword", e.target.value)
             }
             className={cn("shadow-none h-8", themeFont)}
             style={themeFontStyle}
@@ -181,7 +226,7 @@ export function ChangePasswordDialog({
           autoComplete="new-password"
           autoFocus={!hasPassword}
           value={newPassword}
-          onChange={(e) => handleInputChange(setNewPassword, e.target.value)}
+          onChange={(e) => handleInputChange("newPassword", e.target.value)}
           className={cn("shadow-none h-8", themeFont)}
           style={themeFontStyle}
           disabled={isLoading}
@@ -202,7 +247,7 @@ export function ChangePasswordDialog({
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(e) =>
-            handleInputChange(setConfirmPassword, e.target.value)
+            handleInputChange("confirmPassword", e.target.value)
           }
           className={cn("shadow-none h-8", themeFont)}
           style={themeFontStyle}

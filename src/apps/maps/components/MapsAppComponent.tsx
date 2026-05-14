@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useReducer, useState } from "react";
 import { MapPin, Minus, NavigationArrow, Plus } from "@phosphor-icons/react";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -201,6 +201,87 @@ interface MapsSearchResult {
   place?: MapKitPlace;
 }
 
+interface MapsUiState {
+  searchQuery: string;
+  searchResults: MapsSearchResult[];
+  isSearching: boolean;
+  searchError: string | null;
+  selectedResultId: string | null;
+  isShowingResults: boolean;
+  isPlacesDrawerOpen: boolean;
+  showLoadingOverlay: boolean;
+}
+
+type MapsUiAction =
+  | { type: "setSearchQuery"; query: string }
+  | { type: "searchReset" }
+  | { type: "searchStart" }
+  | { type: "searchSuccess"; results: MapsSearchResult[] }
+  | { type: "searchError"; error: string }
+  | { type: "setSelectedResultId"; id: string | null }
+  | { type: "setShowingResults"; isShowingResults: boolean }
+  | { type: "setPlacesDrawerOpen"; isOpen: boolean }
+  | { type: "togglePlacesDrawer" }
+  | { type: "setShowLoadingOverlay"; show: boolean };
+
+const initialUiState: MapsUiState = {
+  searchQuery: "",
+  searchResults: [],
+  isSearching: false,
+  searchError: null,
+  selectedResultId: null,
+  isShowingResults: false,
+  isPlacesDrawerOpen: false,
+  showLoadingOverlay: false,
+};
+
+function mapsUiReducer(state: MapsUiState, action: MapsUiAction): MapsUiState {
+  switch (action.type) {
+    case "setSearchQuery":
+      return { ...state, searchQuery: action.query };
+    case "searchReset":
+      return {
+        ...state,
+        searchResults: [],
+        searchError: null,
+        isSearching: false,
+        isShowingResults: false,
+      };
+    case "searchStart":
+      return {
+        ...state,
+        isSearching: true,
+        searchError: null,
+        isShowingResults: true,
+      };
+    case "searchSuccess":
+      return {
+        ...state,
+        isSearching: false,
+        searchResults: action.results,
+      };
+    case "searchError":
+      return {
+        ...state,
+        isSearching: false,
+        searchResults: [],
+        searchError: action.error,
+      };
+    case "setSelectedResultId":
+      return { ...state, selectedResultId: action.id };
+    case "setShowingResults":
+      return { ...state, isShowingResults: action.isShowingResults };
+    case "setPlacesDrawerOpen":
+      return { ...state, isPlacesDrawerOpen: action.isOpen };
+    case "togglePlacesDrawer":
+      return { ...state, isPlacesDrawerOpen: !state.isPlacesDrawerOpen };
+    case "setShowLoadingOverlay":
+      return { ...state, showLoadingOverlay: action.show };
+    default:
+      return state;
+  }
+}
+
 // Coordinate-degree span used when focusing on a single place (search hit,
 // saved-place tap, persisted selection re-center). ~0.012° ≈ 1.3 km wide
 // at the equator — neighborhood / street level — which mirrors how the
@@ -321,13 +402,17 @@ export function MapsAppComponent({
   // when status flipped to "ready" mid-render.
   const [mapReadyTick, setMapReadyTick] = useState(0);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<MapsSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
-  const [isShowingResults, setIsShowingResults] = useState(false);
-  const [isPlacesDrawerOpen, setIsPlacesDrawerOpen] = useState(false);
+  const [uiState, dispatchUi] = useReducer(mapsUiReducer, initialUiState);
+  const {
+    searchQuery,
+    searchResults,
+    isSearching,
+    searchError,
+    selectedResultId,
+    isShowingResults,
+    isPlacesDrawerOpen,
+    showLoadingOverlay,
+  } = uiState;
 
   // Persistent Home / Work / Favorites / Recents + currently-open place.
   const homePlace = useMapsStore((s) => s.home);
@@ -514,9 +599,7 @@ export function MapsAppComponent({
     (query: string) => {
       const trimmed = query.trim();
       if (!trimmed) {
-        setSearchResults([]);
-        setSearchError(null);
-        setIsShowingResults(false);
+        dispatchUi({ type: "searchReset" });
         return;
       }
       const mk = getMapKit();
@@ -570,9 +653,7 @@ export function MapsAppComponent({
         : undefined;
 
       const requestId = ++searchRequestIdRef.current;
-      setIsSearching(true);
-      setSearchError(null);
-      setIsShowingResults(true);
+      dispatchUi({ type: "searchStart" });
       track(MAPS_ANALYTICS.SEARCH, {
         appId: "maps",
         queryLength: trimmed.length,
@@ -586,13 +667,13 @@ export function MapsAppComponent({
           // meantime). MapKit doesn't expose a cancel API, so we discard.
           if (requestId !== searchRequestIdRef.current) return;
 
-          setIsSearching(false);
           if (err) {
-            setSearchResults([]);
-            setSearchError(
-              err.message ||
-                t("apps.maps.searchFailed", { defaultValue: "Search failed" })
-            );
+            dispatchUi({
+              type: "searchError",
+              error:
+                err.message ||
+                t("apps.maps.searchFailed", { defaultValue: "Search failed" }),
+            });
             track("maps:search_error", {
               appId: "maps",
               queryLength: trimmed.length,
@@ -626,7 +707,7 @@ export function MapsAppComponent({
             },
             []
           );
-          setSearchResults(mapped);
+          dispatchUi({ type: "searchSuccess", results: mapped });
         },
         region
           ? regionPriorityValue
@@ -676,7 +757,7 @@ export function MapsAppComponent({
 
       const coord = new mk.Coordinate(place.latitude, place.longitude);
       if (!alreadySaved) {
-        setSelectedResultId(place.id);
+        dispatchUi({ type: "setSelectedResultId", id: place.id });
         const annotation = new mk.MarkerAnnotation(
           coord,
           withMapPlaceClustering(
@@ -694,7 +775,7 @@ export function MapsAppComponent({
         map.addAnnotation(annotation);
         annotationRef.current = annotation;
       } else {
-        setSelectedResultId(null);
+        dispatchUi({ type: "setSelectedResultId", id: null });
       }
 
       const span = new mk.CoordinateSpan(
@@ -709,7 +790,7 @@ export function MapsAppComponent({
 
   const handleSelectResult = useCallback(
     (result: MapsSearchResult) => {
-      setIsShowingResults(false);
+      dispatchUi({ type: "setShowingResults", isShowingResults: false });
       track(MAPS_ANALYTICS.PLACE_SELECT, {
         appId: "maps",
         source: "search",
@@ -768,7 +849,7 @@ export function MapsAppComponent({
           // ignore
         }
         annotationRef.current = null;
-        setSelectedResultId(null);
+        dispatchUi({ type: "setSelectedResultId", id: null });
       }
       // Highlight the matching saved annotation so it's obvious which
       // pin corresponds to the now-open place card. `selected = true`
@@ -823,7 +904,7 @@ export function MapsAppComponent({
       }
     }
     annotationRef.current = null;
-    setSelectedResultId(null);
+    dispatchUi({ type: "setSelectedResultId", id: null });
   }, []);
 
   const handleClosePlaceCard = useCallback(() => {
@@ -1042,7 +1123,7 @@ export function MapsAppComponent({
       // ignore
     }
     annotationRef.current = null;
-    setSelectedResultId(null);
+    dispatchUi({ type: "setSelectedResultId", id: null });
   }, [selectedResultId, isPlaceSaved]);
 
   // On first map ready, frame the viewport so the user immediately sees
@@ -1271,10 +1352,7 @@ export function MapsAppComponent({
     if (!trimmed) {
       // Bump request id so any in-flight callback is ignored once it returns.
       searchRequestIdRef.current += 1;
-      setSearchResults([]);
-      setSearchError(null);
-      setIsSearching(false);
-      setIsShowingResults(false);
+      dispatchUi({ type: "searchReset" });
       return;
     }
     if (status !== "ready") return;
@@ -1294,7 +1372,7 @@ export function MapsAppComponent({
         e.preventDefault();
         performSearch(searchQuery);
       } else if (e.key === "Escape") {
-        setIsShowingResults(false);
+        dispatchUi({ type: "setShowingResults", isShowingResults: false });
       }
     },
     [performSearch, searchQuery]
@@ -1319,14 +1397,13 @@ export function MapsAppComponent({
   // loading overlay until we've actually been loading for `LOADING_OVERLAY_DELAY_MS`.
   // Error and missing-token states still render immediately.
   const LOADING_OVERLAY_DELAY_MS = 600;
-  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   useEffect(() => {
     if (status !== "loading") {
-      setShowLoadingOverlay(false);
+      dispatchUi({ type: "setShowLoadingOverlay", show: false });
       return;
     }
     const id = window.setTimeout(() => {
-      setShowLoadingOverlay(true);
+      dispatchUi({ type: "setShowLoadingOverlay", show: true });
     }, LOADING_OVERLAY_DELAY_MS);
     return () => window.clearTimeout(id);
   }, [status]);
@@ -1364,7 +1441,9 @@ export function MapsAppComponent({
         drawer={
           <MapsPlacesDrawer
             isOpen={isPlacesDrawerOpen}
-            onClose={() => setIsPlacesDrawerOpen(false)}
+            onClose={() =>
+              dispatchUi({ type: "setPlacesDrawerOpen", isOpen: false })
+            }
             home={homePlace}
             work={workPlace}
             favorites={favoritePlaces}
@@ -1527,11 +1606,9 @@ export function MapsAppComponent({
               <SearchInput
                 value={searchQuery}
                 onChange={(value) => {
-                  setSearchQuery(value);
+                  dispatchUi({ type: "setSearchQuery", query: value });
                   if (!value) {
-                    setSearchResults([]);
-                    setSearchError(null);
-                    setIsShowingResults(false);
+                    dispatchUi({ type: "searchReset" });
                   }
                 }}
                 onKeyDown={handleSearchKeyDown}
@@ -1598,7 +1675,7 @@ export function MapsAppComponent({
                   type="button"
                   variant={isMacOSTheme ? "aqua" : "retro"}
                   size="sm"
-                  onClick={() => setIsPlacesDrawerOpen((v) => !v)}
+                  onClick={() => dispatchUi({ type: "togglePlacesDrawer" })}
                   aria-pressed={isPlacesDrawerOpen}
                   title={t("apps.maps.places.title", { defaultValue: "Places" })}
                   aria-label={t("apps.maps.places.title", {

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useReducer } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import * as Tone from "tone";
 import {
@@ -71,14 +71,82 @@ export const useSynthLogic = ({
   const handleKeyDownRef = useRef<(e: KeyboardEvent) => void>(() => {});
   const handleKeyUpRef = useRef<(e: KeyboardEvent) => void>(() => {});
 
-  // UI state
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [isPresetDialogOpen, setIsPresetDialogOpen] = useState(false);
-  const [isSavingNewPreset, setIsSavingNewPreset] = useState(true);
-  const [presetName, setPresetName] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [isControlsVisible, setIsControlsVisible] = useState(false);
+  interface SynthUiState {
+    isHelpOpen: boolean;
+    isAboutOpen: boolean;
+    isPresetDialogOpen: boolean;
+    isSavingNewPreset: boolean;
+    presetName: string;
+    statusMessage: string;
+    isControlsVisible: boolean;
+    visibleKeyCount: number;
+  }
+
+  const initialState: SynthUiState = {
+    isHelpOpen: false,
+    isAboutOpen: false,
+    isPresetDialogOpen: false,
+    isSavingNewPreset: true,
+    presetName: "",
+    statusMessage: "",
+    isControlsVisible: false,
+    visibleKeyCount: 8,
+  };
+
+  type SynthUiAction = { type: "patch"; payload: Partial<SynthUiState> };
+
+  const reducer = (state: SynthUiState, action: SynthUiAction): SynthUiState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      default:
+        return state;
+    }
+  };
+
+  const [uiState, dispatchUi] = useReducer(reducer, initialState);
+  const {
+    isHelpOpen,
+    isAboutOpen,
+    isPresetDialogOpen,
+    isSavingNewPreset,
+    presetName,
+    statusMessage,
+    isControlsVisible,
+    visibleKeyCount,
+  } = uiState;
+  const setIsHelpOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isHelpOpen: value } });
+  }, []);
+  const setIsAboutOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isAboutOpen: value } });
+  }, []);
+  const setIsPresetDialogOpen = useCallback((value: boolean) => {
+    dispatchUi({ type: "patch", payload: { isPresetDialogOpen: value } });
+  }, []);
+  const setPresetName = useCallback((value: string) => {
+    dispatchUi({ type: "patch", payload: { presetName: value } });
+  }, []);
+  const setStatusMessage = useCallback((value: string) => {
+    dispatchUi({ type: "patch", payload: { statusMessage: value } });
+  }, []);
+  const setIsControlsVisible = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      dispatchUi({
+        type: "patch",
+        payload: {
+          isControlsVisible:
+            typeof value === "function"
+              ? value(uiState.isControlsVisible)
+              : value,
+        },
+      });
+    },
+    [uiState.isControlsVisible]
+  );
+  const setVisibleKeyCount = useCallback((value: number) => {
+    dispatchUi({ type: "patch", payload: { visibleKeyCount: value } });
+  }, []);
 
   // Use labelType and preset state from persisted store
   const {
@@ -175,9 +243,6 @@ export const useSynthLogic = ({
     null,
     "F#5",
   ];
-
-  // State for responsive keyboard
-  const [visibleKeyCount, setVisibleKeyCount] = useState(8);
 
   // Reference to the app container
   const appContainerRef = useRef<HTMLDivElement>(null);
@@ -693,9 +758,14 @@ export const useSynthLogic = ({
 
   // Preset handlers
   const addPreset = () => {
-    setIsSavingNewPreset(true);
-    setPresetName("");
-    setIsPresetDialogOpen(true);
+    dispatchUi({
+      type: "patch",
+      payload: {
+        isSavingNewPreset: true,
+        presetName: "",
+        isPresetDialogOpen: true,
+      },
+    });
     play();
   };
 

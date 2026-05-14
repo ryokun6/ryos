@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useReducer, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkle, Export } from "@phosphor-icons/react";
@@ -37,6 +37,70 @@ interface TimeMachineViewProps {
   currentSelectedYear: string; // Add prop for the initially selected year
 }
 
+interface TimeMachineUiState {
+  activeYearIndex: number;
+  navigationDirection: "forward" | "backward" | "none";
+  previewYear: string | null;
+  previewContent: string | null;
+  previewSourceType: PreviewSource | null;
+  previewStatus: "idle" | "loading" | "success" | "error";
+  previewError: string | null;
+  isIframeLoaded: boolean;
+}
+
+const initialState: TimeMachineUiState = {
+  activeYearIndex: 0,
+  navigationDirection: "none",
+  previewYear: null,
+  previewContent: null,
+  previewSourceType: null,
+  previewStatus: "idle",
+  previewError: null,
+  isIframeLoaded: false,
+};
+
+type TimeMachineUiAction =
+  | { type: "setActiveYearIndex"; value: number | ((prev: number) => number) }
+  | { type: "setNavigationDirection"; value: "forward" | "backward" | "none" }
+  | { type: "setPreviewYear"; value: string | null }
+  | { type: "setPreviewContent"; value: string | null }
+  | { type: "setPreviewSourceType"; value: PreviewSource | null }
+  | { type: "setPreviewStatus"; value: "idle" | "loading" | "success" | "error" }
+  | { type: "setPreviewError"; value: string | null }
+  | { type: "setIsIframeLoaded"; value: boolean };
+
+function reducer(
+  state: TimeMachineUiState,
+  action: TimeMachineUiAction
+): TimeMachineUiState {
+  switch (action.type) {
+    case "setActiveYearIndex":
+      return {
+        ...state,
+        activeYearIndex:
+          typeof action.value === "function"
+            ? action.value(state.activeYearIndex)
+            : action.value,
+      };
+    case "setNavigationDirection":
+      return { ...state, navigationDirection: action.value };
+    case "setPreviewYear":
+      return { ...state, previewYear: action.value };
+    case "setPreviewContent":
+      return { ...state, previewContent: action.value };
+    case "setPreviewSourceType":
+      return { ...state, previewSourceType: action.value };
+    case "setPreviewStatus":
+      return { ...state, previewStatus: action.value };
+    case "setPreviewError":
+      return { ...state, previewError: action.value };
+    case "setIsIframeLoaded":
+      return { ...state, isIframeLoaded: action.value };
+    default:
+      return state;
+  }
+}
+
 const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   isOpen,
   onClose,
@@ -47,29 +111,55 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isMacOSTheme: isMacTheme } = useThemeFlags();
-  // Index of the year currently in focus (0 is the newest/frontmost)
-  const [activeYearIndex, setActiveYearIndex] = useState<number>(0);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    activeYearIndex,
+    navigationDirection,
+    previewYear,
+    previewContent,
+    previewSourceType,
+    previewStatus,
+    previewError,
+    isIframeLoaded,
+  } = state;
+  const setActiveYearIndex = useCallback(
+    (value: number | ((prev: number) => number)) => {
+      dispatch({ type: "setActiveYearIndex", value });
+    },
+    []
+  );
+  const setNavigationDirection = useCallback(
+    (value: "forward" | "backward" | "none") => {
+      dispatch({ type: "setNavigationDirection", value });
+    },
+    []
+  );
+  const setPreviewYear = useCallback((value: string | null) => {
+    dispatch({ type: "setPreviewYear", value });
+  }, []);
+  const setPreviewContent = useCallback((value: string | null) => {
+    dispatch({ type: "setPreviewContent", value });
+  }, []);
+  const setPreviewSourceType = useCallback((value: PreviewSource | null) => {
+    dispatch({ type: "setPreviewSourceType", value });
+  }, []);
+  const setPreviewStatus = useCallback(
+    (value: "idle" | "loading" | "success" | "error") => {
+      dispatch({ type: "setPreviewStatus", value });
+    },
+    []
+  );
+  const setPreviewError = useCallback((value: string | null) => {
+    dispatch({ type: "setPreviewError", value });
+  }, []);
+  const setIsIframeLoaded = useCallback((value: boolean) => {
+    dispatch({ type: "setIsIframeLoaded", value });
+  }, []);
   const [scrollState, setScrollState] = useState({
     isTop: true,
     isBottom: false,
     canScroll: false,
   });
-  // State to track navigation direction for animations
-  const [navigationDirection, setNavigationDirection] = useState<
-    "forward" | "backward" | "none"
-  >("none");
-
-  // --- Time Machine Local Preview State ---
-  const [previewYear, setPreviewYear] = useState<string | null>(null);
-  const [previewContent, setPreviewContent] = useState<string | null>(null);
-  const [previewSourceType, setPreviewSourceType] =
-    useState<PreviewSource | null>(null);
-  const [previewStatus, setPreviewStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const [isIframeLoaded, setIsIframeLoaded] = useState<boolean>(false); // State for iframe load status
-  // --- End Local Preview State ---
 
   const timelineRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);

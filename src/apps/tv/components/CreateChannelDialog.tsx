@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,41 @@ interface CreateChannelDialogProps {
 
 type DialogStage = "idle" | "loading" | "error";
 
+interface CreateChannelDialogState {
+  description: string;
+  stage: DialogStage;
+  error: string | null;
+  statusText: string;
+}
+
+const initialState: CreateChannelDialogState = {
+  description: "",
+  stage: "idle",
+  error: null,
+  statusText: "",
+};
+
+type CreateChannelDialogAction =
+  | { type: "patch"; payload: Partial<CreateChannelDialogState> }
+  | { type: "resetForOpen"; initialDescription: string };
+
+function reducer(
+  state: CreateChannelDialogState,
+  action: CreateChannelDialogAction
+): CreateChannelDialogState {
+  switch (action.type) {
+    case "patch":
+      return { ...state, ...action.payload };
+    case "resetForOpen":
+      return {
+        ...initialState,
+        description: action.initialDescription,
+      };
+    default:
+      return state;
+  }
+}
+
 const SUGGESTIONS = [
   "Skateboarding tricks and parks",
   "80s synthwave music",
@@ -49,10 +84,11 @@ export function CreateChannelDialog({
 
   const { create } = useCreateTvChannel();
 
-  const [description, setDescription] = useState(initialDescription);
-  const [stage, setStage] = useState<DialogStage>("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [statusText, setStatusText] = useState<string>("");
+  const [state, dispatch] = useReducer(reducer, {
+    ...initialState,
+    description: initialDescription,
+  });
+  const { description, stage, error, statusText } = state;
 
   // Cycle status messages so the loading state feels alive during the
   // ~5-15s round-trip (AI plan + 2-4 YouTube searches).
@@ -71,10 +107,10 @@ export function CreateChannelDialog({
       t("apps.tv.create.statusTuning"),
     ];
     let i = 0;
-    setStatusText(messages[0]);
+    dispatch({ type: "patch", payload: { statusText: messages[0] } });
     statusIntervalRef.current = setInterval(() => {
       i = (i + 1) % messages.length;
-      setStatusText(messages[i]);
+      dispatch({ type: "patch", payload: { statusText: messages[i] } });
     }, 1800);
     return () => {
       if (statusIntervalRef.current) {
@@ -86,29 +122,30 @@ export function CreateChannelDialog({
 
   useEffect(() => {
     if (isOpen) {
-      setError(null);
-      setStage("idle");
-      setDescription(initialDescription);
+      dispatch({ type: "resetForOpen", initialDescription });
     }
   }, [isOpen, initialDescription]);
 
   const isLoading = stage === "loading";
 
   const handleSubmit = async () => {
-    setError(null);
-    setStage("loading");
+    dispatch({ type: "patch", payload: { error: null, stage: "loading" } });
 
     try {
       const { channel } = await create(description);
-      setDescription("");
+      dispatch({ type: "patch", payload: { description: "" } });
       onOpenChange(false);
       onChannelCreated?.(channel.id);
     } catch (err) {
       console.error("Create channel failed:", err);
-      setError(
-        err instanceof Error ? err.message : t("apps.tv.create.errorGeneric")
-      );
-      setStage("error");
+      dispatch({
+        type: "patch",
+        payload: {
+          error:
+            err instanceof Error ? err.message : t("apps.tv.create.errorGeneric"),
+          stage: "error",
+        },
+      });
     }
   };
 
@@ -128,7 +165,9 @@ export function CreateChannelDialog({
       <Input
         autoFocus
         value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        onChange={(e) =>
+          dispatch({ type: "patch", payload: { description: e.target.value } })
+        }
         onKeyDown={(e) => {
           e.stopPropagation();
           if (e.key === "Enter" && !isLoading) handleSubmit();
@@ -145,7 +184,9 @@ export function CreateChannelDialog({
             key={s}
             type="button"
             disabled={isLoading}
-            onClick={() => setDescription(s)}
+            onClick={() =>
+              dispatch({ type: "patch", payload: { description: s } })
+            }
             className={cn(
               "px-2 py-0.5 rounded-full border text-gray-700",
               "border-gray-300 hover:bg-gray-100 disabled:opacity-50"

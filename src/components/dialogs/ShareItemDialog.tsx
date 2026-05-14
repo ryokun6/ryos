@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useReducer, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -41,8 +41,24 @@ export function ShareItemDialog({
   overlayClassName,
 }: ShareItemDialogProps) {
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
+  type ShareDialogState = {
+    isLoading: boolean;
+    shareUrl: string;
+  };
+  type ShareDialogAction =
+    | { type: "reset" }
+    | { type: "set"; payload: Partial<ShareDialogState> };
+  const initialState: ShareDialogState = { isLoading: false, shareUrl: "" };
+  const reducer = (
+    state: ShareDialogState,
+    action: ShareDialogAction
+  ): ShareDialogState => {
+    if (action.type === "reset") return initialState;
+    return { ...state, ...action.payload };
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { isLoading, shareUrl } = state;
   const inputRef = useRef<HTMLInputElement>(null);
   const {
     isWindowsTheme: isXpTheme,
@@ -56,24 +72,25 @@ export function ShareItemDialog({
   // Generate the share link when the dialog opens or identifiers change
   useEffect(() => {
     if (isOpen && itemIdentifier) {
-      setIsLoading(true);
+      dispatch({ type: "set", payload: { isLoading: true, shareUrl: "" } });
       try {
         const generated = generateShareUrl(itemIdentifier, secondaryIdentifier);
-        setShareUrl(generated);
+        dispatch({
+          type: "set",
+          payload: { shareUrl: generated, isLoading: false },
+        });
       } catch (error) {
         console.error("Error generating share link:", error);
         toast.error(t("common.dialog.share.failedToGenerateShareLink", { itemType: translatedItemType }), {
           description: t("common.dialog.share.pleaseTryAgainLater"),
         });
-        setShareUrl(""); // Clear potentially stale URL
-      } finally {
-        setIsLoading(false);
+        dispatch({ type: "set", payload: { shareUrl: "", isLoading: false } });
       }
     }
     return () => {
       // Reset state when dialog closes
       if (!isOpen) {
-        setShareUrl("");
+        dispatch({ type: "reset" });
       }
     };
     // Include all dependencies that affect URL generation

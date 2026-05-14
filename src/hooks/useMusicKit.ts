@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 
 /**
  * Apple MusicKit JS v3 lazy loader / configurer.
@@ -377,19 +377,35 @@ export function useMusicKit(
 ): UseMusicKitResult {
   const { enabled = true, app = DEFAULT_APP_METADATA } = options;
 
-  const [status, setStatus] = useState<MusicKitStatus>(() =>
-    configuredInstance ? "ready" : "idle"
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [hasToken, setHasToken] = useState<boolean>(() =>
-    Boolean(cachedDeveloperToken || getEnvFallbackToken())
-  );
-  const [instance, setInstance] = useState<MusicKit.MusicKitInstance | null>(
-    () => configuredInstance
-  );
-  const [isAuthorized, setIsAuthorized] = useState<boolean>(
-    () => configuredInstance?.isAuthorized ?? false
-  );
+  interface MusicKitState {
+    status: MusicKitStatus;
+    error: string | null;
+    hasToken: boolean;
+    instance: MusicKit.MusicKitInstance | null;
+    isAuthorized: boolean;
+  }
+
+  const initialState: MusicKitState = {
+    status: configuredInstance ? "ready" : "idle",
+    error: null,
+    hasToken: Boolean(cachedDeveloperToken || getEnvFallbackToken()),
+    instance: configuredInstance,
+    isAuthorized: configuredInstance?.isAuthorized ?? false,
+  };
+
+  type MusicKitAction = { type: "patch"; payload: Partial<MusicKitState> };
+
+  const reducer = (state: MusicKitState, action: MusicKitAction): MusicKitState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      default:
+        return state;
+    }
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { status, error, hasToken, instance, isAuthorized } = state;
 
   // Track auth state changes via authorizationStatusDidChange events. The
   // event payload isn't strongly typed by MusicKit, so we re-read the
@@ -399,7 +415,7 @@ export function useMusicKit(
     if (!instance) return;
     const refresh = (event?: unknown) => {
       const authorized = Boolean(instance.isAuthorized);
-      setIsAuthorized(authorized);
+      dispatch({ type: "patch", payload: { isAuthorized: authorized } });
       if (!authorized) return;
 
       const tokenFromEvent =
@@ -427,22 +443,26 @@ export function useMusicKit(
   useEffect(() => {
     if (!enabled) return;
     if (configuredInstance) {
-      setStatus("ready");
-      setHasToken(true);
-      setInstance(configuredInstance);
-      setIsAuthorized(Boolean(configuredInstance.isAuthorized));
+      dispatch({
+        type: "patch",
+        payload: {
+          status: "ready",
+          hasToken: true,
+          instance: configuredInstance,
+          isAuthorized: Boolean(configuredInstance.isAuthorized),
+        },
+      });
       return;
     }
 
     let cancelled = false;
-    setStatus("loading");
-    setError(null);
+    dispatch({ type: "patch", payload: { status: "loading", error: null } });
 
     (async () => {
       try {
         const token = await resolveDeveloperToken();
         if (cancelled) return;
-        setHasToken(true);
+        dispatch({ type: "patch", payload: { hasToken: true } });
 
         const musicUserToken = await fetchSyncedMusicUserToken();
         if (cancelled) return;
@@ -453,23 +473,40 @@ export function useMusicKit(
         try {
           const inst = await configureMusicKit(token, app, musicUserToken);
           if (cancelled) return;
-          setInstance(inst);
-          setIsAuthorized(Boolean(inst.isAuthorized));
-          setStatus("ready");
+          dispatch({
+            type: "patch",
+            payload: {
+              instance: inst,
+              isAuthorized: Boolean(inst.isAuthorized),
+              status: "ready",
+            },
+          });
         } catch (err) {
-          setError(err instanceof Error ? err.message : String(err));
-          setStatus("error");
+          dispatch({
+            type: "patch",
+            payload: {
+              error: err instanceof Error ? err.message : String(err),
+              status: "error",
+            },
+          });
         }
       } catch (err) {
         if (cancelled) return;
         const fallback = getEnvFallbackToken();
         if (!fallback) {
-          setHasToken(false);
-          setStatus("missing-token");
+          dispatch({
+            type: "patch",
+            payload: { hasToken: false, status: "missing-token" },
+          });
           return;
         }
-        setError(err instanceof Error ? err.message : String(err));
-        setStatus("error");
+        dispatch({
+          type: "patch",
+          payload: {
+            error: err instanceof Error ? err.message : String(err),
+            status: "error",
+          },
+        });
       }
     })();
 
@@ -487,7 +524,10 @@ export function useMusicKit(
     if (!inst) return null;
     try {
       const token = await inst.authorize();
-      setIsAuthorized(Boolean(inst.isAuthorized));
+      dispatch({
+        type: "patch",
+        payload: { isAuthorized: Boolean(inst.isAuthorized) },
+      });
       if (token) {
         void saveSyncedMusicUserToken(token).catch((err) => {
           console.warn("[musickit] failed to save synced user token", err);
@@ -496,7 +536,10 @@ export function useMusicKit(
       return token ?? null;
     } catch (err) {
       console.error("[musickit] authorize failed", err);
-      setError(err instanceof Error ? err.message : String(err));
+      dispatch({
+        type: "patch",
+        payload: { error: err instanceof Error ? err.message : String(err) },
+      });
       throw err;
     }
   }, [instance]);
@@ -506,7 +549,7 @@ export function useMusicKit(
     if (!inst) return;
     try {
       await inst.unauthorize();
-      setIsAuthorized(false);
+      dispatch({ type: "patch", payload: { isAuthorized: false } });
       void deleteSyncedMusicUserToken().catch((err) => {
         console.warn("[musickit] failed to delete synced user token", err);
       });

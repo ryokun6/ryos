@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
 
@@ -84,21 +84,75 @@ export interface UseCursorAgentRunPollResult {
 export function useCursorAgentRunPoll(
   initialRunId: string
 ): UseCursorAgentRunPollResult {
-  const [events, setEvents] = useState<unknown[]>([]);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [meta, setMeta] = useState<CursorAgentRunMeta>({});
-  const [activeRunId, setActiveRunId] = useState(initialRunId);
-  const [isSendingFollowup, setIsSendingFollowup] = useState(false);
-  const [followupError, setFollowupError] = useState<string | null>(null);
+  interface CursorAgentRunPollState {
+    events: unknown[];
+    done: boolean;
+    error: string | null;
+    meta: CursorAgentRunMeta;
+    activeRunId: string;
+    isSendingFollowup: boolean;
+    followupError: string | null;
+  }
+
+  const initialState: CursorAgentRunPollState = {
+    events: [],
+    done: false,
+    error: null,
+    meta: {},
+    activeRunId: initialRunId,
+    isSendingFollowup: false,
+    followupError: null,
+  };
+
+  type CursorAgentRunPollAction =
+    | { type: "patch"; payload: Partial<CursorAgentRunPollState> }
+    | { type: "resetForInitialRun"; initialRunId: string }
+    | { type: "mergeMeta"; payload: CursorAgentRunMeta };
+
+  const reducer = (
+    state: CursorAgentRunPollState,
+    action: CursorAgentRunPollAction
+  ): CursorAgentRunPollState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      case "resetForInitialRun":
+        return {
+          ...state,
+          activeRunId: action.initialRunId,
+          events: [],
+          done: false,
+          error: null,
+          meta: {},
+        };
+      case "mergeMeta": {
+        const merged: CursorAgentRunMeta = { ...state.meta, ...action.payload };
+        if (!merged.agentTitle && state.meta.agentTitle) {
+          merged.agentTitle = state.meta.agentTitle;
+        }
+        if (!merged.prUrl && state.meta.prUrl) merged.prUrl = state.meta.prUrl;
+        if (!merged.agentId && state.meta.agentId) merged.agentId = state.meta.agentId;
+        return { ...state, meta: merged };
+      }
+      default:
+        return state;
+    }
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    events,
+    done,
+    error,
+    meta,
+    activeRunId,
+    isSendingFollowup,
+    followupError,
+  } = state;
   const tickRef = useRef<(force?: boolean) => Promise<void>>(async () => {});
 
   useEffect(() => {
-    setActiveRunId(initialRunId);
-    setEvents([]);
-    setDone(false);
-    setError(null);
-    setMeta({});
+    dispatch({ type: "resetForInitialRun", initialRunId });
   }, [initialRunId]);
 
   useEffect(() => {
@@ -121,36 +175,37 @@ export function useCursorAgentRunPoll(
         if (cancelled) return;
 
         const newEvents = Array.isArray(data.events) ? data.events : [];
-        setEvents(newEvents);
-        setError(null);
+        dispatch({
+          type: "patch",
+          payload: { events: newEvents, error: null },
+        });
 
         const m = pickMeta(data);
-        setMeta((prev) => {
-          const merged: CursorAgentRunMeta = { ...prev, ...m };
-          // Title once-set should not flip to undefined just because a poll missed it.
-          if (!merged.agentTitle && prev.agentTitle) {
-            merged.agentTitle = prev.agentTitle;
-          }
-          if (!merged.prUrl && prev.prUrl) merged.prUrl = prev.prUrl;
-          if (!merged.agentId && prev.agentId) merged.agentId = prev.agentId;
-          return merged;
-        });
+        dispatch({ type: "mergeMeta", payload: m });
 
         // If a follow-up has been queued, swap to it on the next tick.
         if (m.nextRunId && m.nextRunId !== activeRunId) {
-          setActiveRunId(m.nextRunId);
-          setDone(false);
-          setEvents([]);
+          dispatch({
+            type: "patch",
+            payload: {
+              activeRunId: m.nextRunId,
+              done: false,
+              events: [],
+            },
+          });
           return;
         }
 
-        if (data.done) setDone(true);
+        if (data.done) dispatch({ type: "patch", payload: { done: true } });
         // After a force-refresh ping, if the server reports the run is now
         // done, stop polling immediately on this tick.
-        if (force && data.done) setDone(true);
+        if (force && data.done) dispatch({ type: "patch", payload: { done: true } });
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : String(e));
+          dispatch({
+            type: "patch",
+            payload: { error: e instanceof Error ? e.message : String(e) },
+          });
         }
       }
     }
@@ -170,15 +225,23 @@ export function useCursorAgentRunPoll(
     async (prompt: string) => {
       const trimmed = prompt.trim();
       if (!trimmed) {
-        setFollowupError("Prompt is required");
+        dispatch({
+          type: "patch",
+          payload: { followupError: "Prompt is required" },
+        });
         return;
       }
       if (!activeRunId) {
-        setFollowupError("No active run");
+        dispatch({
+          type: "patch",
+          payload: { followupError: "No active run" },
+        });
         return;
       }
-      setIsSendingFollowup(true);
-      setFollowupError(null);
+      dispatch({
+        type: "patch",
+        payload: { isSendingFollowup: true, followupError: null },
+      });
       try {
         const res = await abortableFetch(
           getApiUrl("/api/ai/cursor-run-followup"),
@@ -202,24 +265,32 @@ export function useCursorAgentRunPoll(
         if (typeof data.runId !== "string" || data.runId.length === 0) {
           throw new Error("Server did not return a new runId");
         }
-        setActiveRunId(data.runId);
-        setEvents([]);
-        setDone(false);
-        setMeta((prev) => ({
-          ...prev,
-          nextRunId: undefined,
-          activeRunId: data.runId,
-          terminalStatus: undefined,
-        }));
+        dispatch({
+          type: "patch",
+          payload: {
+            activeRunId: data.runId,
+            events: [],
+            done: false,
+            meta: {
+              ...meta,
+              nextRunId: undefined,
+              activeRunId: data.runId,
+              terminalStatus: undefined,
+            },
+          },
+        });
         // Kick a quick refresh so the spinner shows immediately.
         void tickRef.current?.(true);
       } catch (e) {
-        setFollowupError(e instanceof Error ? e.message : String(e));
+        dispatch({
+          type: "patch",
+          payload: { followupError: e instanceof Error ? e.message : String(e) },
+        });
       } finally {
-        setIsSendingFollowup(false);
+        dispatch({ type: "patch", payload: { isSendingFollowup: false } });
       }
     },
-    [activeRunId]
+    [activeRunId, meta]
   );
 
   return {

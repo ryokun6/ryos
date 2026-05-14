@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import { cn } from "@/lib/utils";
 import type { BatteryManager } from "../../types";
 
@@ -8,14 +8,71 @@ interface BatteryIndicatorProps {
   variant?: "classic" | "modern";
 }
 
+interface BatteryIndicatorState {
+  batteryLevel: number | null;
+  isCharging: boolean;
+  animationFrame: number;
+}
+
+const initialState: BatteryIndicatorState = {
+  batteryLevel: null,
+  isCharging: false,
+  animationFrame: 1,
+};
+
+type BatteryIndicatorAction =
+  | { type: "setBatteryLevel"; value: number | null }
+  | { type: "setIsCharging"; value: boolean }
+  | { type: "setAnimationFrame"; value: number | ((prev: number) => number) }
+  | { type: "setBatteryStatus"; batteryLevel: number; isCharging: boolean };
+
+function reducer(
+  state: BatteryIndicatorState,
+  action: BatteryIndicatorAction
+): BatteryIndicatorState {
+  switch (action.type) {
+    case "setBatteryLevel":
+      return { ...state, batteryLevel: action.value };
+    case "setIsCharging":
+      return { ...state, isCharging: action.value };
+    case "setAnimationFrame":
+      return {
+        ...state,
+        animationFrame:
+          typeof action.value === "function"
+            ? action.value(state.animationFrame)
+            : action.value,
+      };
+    case "setBatteryStatus":
+      return {
+        ...state,
+        batteryLevel: action.batteryLevel,
+        isCharging: action.isCharging,
+      };
+    default:
+      return state;
+  }
+}
+
 export function BatteryIndicator({
   backlightOn,
   variant = "classic",
 }: BatteryIndicatorProps) {
   const isModern = variant === "modern";
-  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
-  const [isCharging, setIsCharging] = useState<boolean>(false);
-  const [animationFrame, setAnimationFrame] = useState<number>(1);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { batteryLevel, isCharging, animationFrame } = state;
+  const setBatteryLevel = useCallback((value: number | null) => {
+    dispatch({ type: "setBatteryLevel", value });
+  }, []);
+  const setIsCharging = useCallback((value: boolean) => {
+    dispatch({ type: "setIsCharging", value });
+  }, []);
+  const setAnimationFrame = useCallback(
+    (value: number | ((prev: number) => number)) => {
+      dispatch({ type: "setAnimationFrame", value });
+    },
+    []
+  );
 
   useEffect(() => {
     let batteryRef: BatteryManager | null = null;
@@ -40,8 +97,11 @@ export function BatteryIndicator({
             navigator as unknown as { getBattery: () => Promise<BatteryManager> }
           ).getBattery();
           if (isDisposed) return;
-          setBatteryLevel(batteryRef.level);
-          setIsCharging(batteryRef.charging);
+          dispatch({
+            type: "setBatteryStatus",
+            batteryLevel: batteryRef.level,
+            isCharging: batteryRef.charging,
+          });
 
           batteryRef.addEventListener("levelchange", updateLevel);
           batteryRef.addEventListener("chargingchange", updateCharging);
@@ -49,8 +109,7 @@ export function BatteryIndicator({
       } catch {
         if (isDisposed) return;
         // Fallback to a default level
-        setBatteryLevel(1.0);
-        setIsCharging(false);
+        dispatch({ type: "setBatteryStatus", batteryLevel: 1.0, isCharging: false });
       }
     };
 

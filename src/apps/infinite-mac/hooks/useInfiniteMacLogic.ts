@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -57,15 +57,47 @@ interface UseInfiniteMacLogicProps {
   instanceId?: string;
 }
 
+interface InfiniteMacUiState {
+  selectedPreset: MacPreset | null;
+  isEmulatorLoaded: boolean;
+  isPaused: boolean;
+}
+
+const initialState: InfiniteMacUiState = {
+  selectedPreset: null,
+  isEmulatorLoaded: false,
+  isPaused: false,
+};
+
+type InfiniteMacUiAction =
+  | { type: "setSelectedPreset"; value: MacPreset | null }
+  | { type: "setIsEmulatorLoaded"; value: boolean }
+  | { type: "setIsPaused"; value: boolean };
+
+function reducer(
+  state: InfiniteMacUiState,
+  action: InfiniteMacUiAction
+): InfiniteMacUiState {
+  switch (action.type) {
+    case "setSelectedPreset":
+      return { ...state, selectedPreset: action.value };
+    case "setIsEmulatorLoaded":
+      return { ...state, isEmulatorLoaded: action.value };
+    case "setIsPaused":
+      return { ...state, isPaused: action.value };
+    default:
+      return state;
+  }
+}
+
 export function useInfiniteMacLogic({
   isWindowOpen: _isWindowOpen,
   instanceId,
 }: UseInfiniteMacLogicProps) {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [selectedPreset, setSelectedPresetLocal] = useState<MacPreset | null>(null);
-  const [isEmulatorLoaded, setIsEmulatorLoadedLocal] = useState(false);
-  const [isPaused, setIsPausedLocal] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { selectedPreset, isEmulatorLoaded, isPaused } = state;
   const { 
     scale: currentScale, 
     setScale: setCurrentScale,
@@ -91,17 +123,17 @@ export function useInfiniteMacLogic({
 
   // Sync local state with store for AI tool access
   const setSelectedPreset = useCallback((preset: MacPreset | null) => {
-    setSelectedPresetLocal(preset);
+    dispatch({ type: "setSelectedPreset", value: preset });
     setSelectedPresetStore(preset);
   }, [setSelectedPresetStore]);
 
   const setIsEmulatorLoaded = useCallback((loaded: boolean) => {
-    setIsEmulatorLoadedLocal(loaded);
+    dispatch({ type: "setIsEmulatorLoaded", value: loaded });
     setIsEmulatorLoadedStore(loaded);
   }, [setIsEmulatorLoadedStore]);
 
   const setIsPaused = useCallback((paused: boolean) => {
-    setIsPausedLocal(paused);
+    dispatch({ type: "setIsPaused", value: paused });
     setIsPausedStore(paused);
   }, [setIsPausedStore]);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useReducer, useRef, useCallback, useMemo } from "react";
 import type { LyricLine } from "@/types/lyrics";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCacheBustTrigger, useRefetchTrigger } from "@/hooks/useCacheBustTrigger";
@@ -97,18 +97,117 @@ export function useLyrics({
   selectedMatch,
   auth,
 }: UseLyricsParams): LyricsState {
-  // State
-  const [originalLines, setOriginalLines] = useState<LyricLine[]>([]);
-  const [translatedLines, setTranslatedLines] = useState<LyricLine[] | null>(null);
-  const [currentLine, setCurrentLine] = useState(-1);
-  const [isFetchingOriginal, setIsFetchingOriginal] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [translationProgress, setTranslationProgress] = useState<number | undefined>();
-  const [error, setError] = useState<string | undefined>();
-  const [errorSongId, setErrorSongId] = useState<string | null>(null);
-  const [loadedSongId, setLoadedSongId] = useState<string | null>(null);
-  const [furiganaInfo, setFuriganaInfo] = useState<FuriganaStreamInfo | undefined>();
-  const [soramimiInfo, setSoramimiInfo] = useState<SoramimiStreamInfo | undefined>();
+  interface LyricsLocalState {
+    originalLines: LyricLine[];
+    translatedLines: LyricLine[] | null;
+    currentLine: number;
+    isFetchingOriginal: boolean;
+    isTranslating: boolean;
+    translationProgress: number | undefined;
+    error: string | undefined;
+    errorSongId: string | null;
+    loadedSongId: string | null;
+    furiganaInfo: FuriganaStreamInfo | undefined;
+    soramimiInfo: SoramimiStreamInfo | undefined;
+  }
+
+  const initialState: LyricsLocalState = {
+    originalLines: [],
+    translatedLines: null,
+    currentLine: -1,
+    isFetchingOriginal: false,
+    isTranslating: false,
+    translationProgress: undefined,
+    error: undefined,
+    errorSongId: null,
+    loadedSongId: null,
+    furiganaInfo: undefined,
+    soramimiInfo: undefined,
+  };
+
+  type LyricsAction =
+    | { type: "patch"; payload: Partial<LyricsLocalState> }
+    | {
+        type: "setTranslatedLines";
+        updater:
+          | LyricLine[]
+          | null
+          | ((prev: LyricLine[] | null) => LyricLine[] | null);
+      }
+    | { type: "setCurrentLine"; updater: number | ((prev: number) => number) };
+
+  const reducer = (state: LyricsLocalState, action: LyricsAction): LyricsLocalState => {
+    switch (action.type) {
+      case "patch":
+        return { ...state, ...action.payload };
+      case "setTranslatedLines": {
+        const next =
+          typeof action.updater === "function"
+            ? (
+                action.updater as (prev: LyricLine[] | null) => LyricLine[] | null
+              )(state.translatedLines)
+            : action.updater;
+        return { ...state, translatedLines: next };
+      }
+      case "setCurrentLine": {
+        const next =
+          typeof action.updater === "function"
+            ? (action.updater as (prev: number) => number)(state.currentLine)
+            : action.updater;
+        return { ...state, currentLine: next };
+      }
+      default:
+        return state;
+    }
+  };
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    originalLines,
+    translatedLines,
+    currentLine,
+    isFetchingOriginal,
+    isTranslating,
+    translationProgress,
+    error,
+    errorSongId,
+    loadedSongId,
+    furiganaInfo,
+    soramimiInfo,
+  } = state;
+
+  const setOriginalLines = useCallback((value: LyricLine[]) => {
+    dispatch({ type: "patch", payload: { originalLines: value } });
+  }, []);
+  const setTranslatedLines = useCallback(
+    (
+      value:
+        | LyricLine[]
+        | null
+        | ((prev: LyricLine[] | null) => LyricLine[] | null)
+    ) => {
+      dispatch({ type: "setTranslatedLines", updater: value });
+    },
+    []
+  );
+  const setCurrentLine = useCallback((value: number | ((prev: number) => number)) => {
+    dispatch({ type: "setCurrentLine", updater: value });
+  }, []);
+  const setIsFetchingOriginal = useCallback((value: boolean) => {
+    dispatch({ type: "patch", payload: { isFetchingOriginal: value } });
+  }, []);
+  const setTranslationProgress = useCallback((value: number | undefined) => {
+    dispatch({ type: "patch", payload: { translationProgress: value } });
+  }, []);
+  const setError = useCallback((value: string | undefined) => {
+    dispatch({ type: "patch", payload: { error: value } });
+  }, []);
+  const setFuriganaInfo = useCallback((value: FuriganaStreamInfo | undefined) => {
+    dispatch({ type: "patch", payload: { furiganaInfo: value } });
+  }, []);
+  const setSoramimiInfo = useCallback((value: SoramimiStreamInfo | undefined) => {
+    dispatch({ type: "patch", payload: { soramimiInfo: value } });
+  }, []);
 
   // Refs for tracking state across renders.
   //
@@ -143,10 +242,14 @@ export function useLyrics({
   useEffect(() => {
     if (isCacheBustRequest) {
       translationInfoRef.current = undefined;
-      setTranslatedLines(null);
-      // Also clear furigana and soramimi info so useFurigana refetches
-      setFuriganaInfo(undefined);
-      setSoramimiInfo(undefined);
+      dispatch({
+        type: "patch",
+        payload: {
+          translatedLines: null,
+          furiganaInfo: undefined,
+          soramimiInfo: undefined,
+        },
+      });
     }
   }, [isCacheBustRequest]);
 
@@ -167,24 +270,34 @@ export function useLyrics({
     const effectSongId = songId;
 
     if (!effectSongId) {
-      setOriginalLines([]);
-      setTranslatedLines(null);
-      setCurrentLine(-1);
-      setIsFetchingOriginal(false);
-      setError(undefined);
-      setErrorSongId(null);
-      setLoadedSongId(null);
-      setFuriganaInfo(undefined);
-      setSoramimiInfo(undefined);
+      dispatch({
+        type: "patch",
+        payload: {
+          originalLines: [],
+          translatedLines: null,
+          currentLine: -1,
+          isFetchingOriginal: false,
+          error: undefined,
+          errorSongId: null,
+          loadedSongId: null,
+          furiganaInfo: undefined,
+          soramimiInfo: undefined,
+        },
+      });
       cachedKeyRef.current = null;
       translationInfoRef.current = undefined;
       return;
     }
 
     if (isOffline()) {
-      setError("iPod requires an internet connection");
-      setErrorSongId(effectSongId);
-      setLoadedSongId(null);
+      dispatch({
+        type: "patch",
+        payload: {
+          error: "iPod requires an internet connection",
+          errorSongId: effectSongId,
+          loadedSongId: null,
+        },
+      });
       return;
     }
 
@@ -197,16 +310,21 @@ export function useLyrics({
     }
 
     // Clear ALL state before fetching to prevent stale data from previous song
-    setOriginalLines([]);
-    setTranslatedLines(null);
-    setCurrentLine(-1);
-    setIsFetchingOriginal(true);
-    setIsTranslating(false);
-    setError(undefined);
-    setErrorSongId(null);
-    setLoadedSongId(null);
-    setFuriganaInfo(undefined);
-    setSoramimiInfo(undefined);
+    dispatch({
+      type: "patch",
+      payload: {
+        originalLines: [],
+        translatedLines: null,
+        currentLine: -1,
+        isFetchingOriginal: true,
+        isTranslating: false,
+        error: undefined,
+        errorSongId: null,
+        loadedSongId: null,
+        furiganaInfo: undefined,
+        soramimiInfo: undefined,
+      },
+    });
     translationInfoRef.current = undefined;
 
     const controller = new AbortController();
@@ -263,9 +381,14 @@ export function useLyrics({
           wordTimings: line.wordTimings,
         }));
 
-        setOriginalLines(parsed);
-        setLoadedSongId(effectSongId);
-        setErrorSongId(null);
+        dispatch({
+          type: "patch",
+          payload: {
+            originalLines: parsed,
+            loadedSongId: effectSongId,
+            errorSongId: null,
+          },
+        });
         cachedKeyRef.current = cacheKey;
         useIpodStore.setState({ currentLyrics: { lines: parsed } });
 
@@ -279,7 +402,7 @@ export function useLyrics({
         // Store furigana info for useFurigana to use (or clear if not included)
         // This ensures we don't show stale furigana from a previous song
         setFuriganaInfo(json.furigana ?? undefined);
-        
+
         // Store soramimi info for useFurigana to use (or clear if not included)
         // This ensures we don't show stale soramimi from a previous song
         setSoramimiInfo(json.soramimi ?? undefined);
@@ -288,11 +411,15 @@ export function useLyrics({
         if (controller.signal.aborted) return;
         if (effectSongId !== currentSongIdRef.current) return;
         handleLyricsError(err, setError, setOriginalLines, setCurrentLine);
-        setErrorSongId(effectSongId);
-        setLoadedSongId(null);
-        // Clear furigana/soramimi info on error to avoid showing stale data
-        setFuriganaInfo(undefined);
-        setSoramimiInfo(undefined);
+        dispatch({
+          type: "patch",
+          payload: {
+            errorSongId: effectSongId,
+            loadedSongId: null,
+            furiganaInfo: undefined,
+            soramimiInfo: undefined,
+          },
+        });
       })
       .finally(() => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
@@ -315,20 +442,30 @@ export function useLyrics({
     const effectSongId = songId;
 
     if (!effectSongId || !translateTo || originalLines.length === 0) {
-      setTranslatedLines(null);
-      setIsTranslating(false);
-      setTranslationProgress(undefined);
+      dispatch({
+        type: "patch",
+        payload: {
+          translatedLines: null,
+          isTranslating: false,
+          translationProgress: undefined,
+        },
+      });
       return;
     }
 
     if (isFetchingOriginal) {
-      setIsTranslating(false);
+      dispatch({ type: "patch", payload: { isTranslating: false } });
       return;
     }
 
     if (isOffline()) {
-      setIsTranslating(false);
-      setError("iPod requires an internet connection");
+      dispatch({
+        type: "patch",
+        payload: {
+          isTranslating: false,
+          error: "iPod requires an internet connection",
+        },
+      });
       return;
     }
 
@@ -343,14 +480,24 @@ export function useLyrics({
         ...line,
         words: translations[index] || line.words,
       }));
-      setTranslatedLines(translatedLines);
-      setIsTranslating(false);
+      dispatch({
+        type: "patch",
+        payload: {
+          translatedLines,
+          isTranslating: false,
+        },
+      });
       return;
     }
 
-    setIsTranslating(true);
-    setTranslationProgress(0);
-    setError(undefined);
+    dispatch({
+      type: "patch",
+      payload: {
+        isTranslating: true,
+        translationProgress: 0,
+        error: undefined,
+      },
+    });
 
     const controller = new AbortController();
 
@@ -395,8 +542,13 @@ export function useLyrics({
       })
       .finally(() => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
-          setIsTranslating(false);
-          setTranslationProgress(undefined);
+          dispatch({
+            type: "patch",
+            payload: {
+              isTranslating: false,
+              translationProgress: undefined,
+            },
+          });
           markCacheBustHandled();
         }
       });
@@ -404,8 +556,13 @@ export function useLyrics({
     return () => {
       controller.abort();
       // Reset loading state on cleanup to prevent stuck indicators
-      setIsTranslating(false);
-      setTranslationProgress(undefined);
+      dispatch({
+        type: "patch",
+        payload: {
+          isTranslating: false,
+          translationProgress: undefined,
+        },
+      });
     };
   }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled, authCredentials]);
 

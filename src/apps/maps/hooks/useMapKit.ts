@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 
 /**
  * Apple MapKit JS lazy loader.
@@ -220,26 +220,48 @@ export interface UseMapKitResult {
 export function useMapKit(options: UseMapKitOptions = {}): UseMapKitResult {
   const { enabled = true, language } = options;
 
-  const [status, setStatus] = useState<MapKitStatus>(() =>
-    initialized ? "ready" : "idle"
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [hasToken, setHasToken] = useState<boolean>(() =>
-    Boolean(cachedServerToken || getEnvFallbackToken())
-  );
+  type MapKitHookState = {
+    status: MapKitStatus;
+    error: string | null;
+    hasToken: boolean;
+  };
+  type MapKitHookAction =
+    | { type: "set"; payload: Partial<MapKitHookState> }
+    | { type: "readyInitialized" }
+    | { type: "missingToken" };
+  const initialState: MapKitHookState = {
+    status: initialized ? "ready" : "idle",
+    error: null,
+    hasToken: Boolean(cachedServerToken || getEnvFallbackToken()),
+  };
+  const reducer = (
+    state: MapKitHookState,
+    action: MapKitHookAction
+  ): MapKitHookState => {
+    switch (action.type) {
+      case "set":
+        return { ...state, ...action.payload };
+      case "readyInitialized":
+        return { ...state, status: "ready", hasToken: true, error: null };
+      case "missingToken":
+        return { ...state, status: "missing-token", hasToken: false, error: null };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { status, error, hasToken } = state;
 
   useEffect(() => {
     if (!enabled) return;
 
     if (initialized) {
-      setStatus("ready");
-      setHasToken(true);
+      dispatch({ type: "readyInitialized" });
       return;
     }
 
     let cancelled = false;
-    setStatus("loading");
-    setError(null);
+    dispatch({ type: "set", payload: { status: "loading", error: null } });
 
     (async () => {
       try {
@@ -247,28 +269,37 @@ export function useMapKit(options: UseMapKitOptions = {}): UseMapKitResult {
         // bothering to load the MapKit script when nothing is configured.
         await resolveToken();
         if (cancelled) return;
-        setHasToken(true);
+        dispatch({ type: "set", payload: { hasToken: true } });
 
         await loadScript();
         if (cancelled) return;
 
         try {
           initMapKitWithCallback(language);
-          setStatus("ready");
+          dispatch({ type: "set", payload: { status: "ready", error: null } });
         } catch (err) {
-          setError(err instanceof Error ? err.message : String(err));
-          setStatus("error");
+          dispatch({
+            type: "set",
+            payload: {
+              error: err instanceof Error ? err.message : String(err),
+              status: "error",
+            },
+          });
         }
       } catch (err) {
         if (cancelled) return;
         const fallback = getEnvFallbackToken();
         if (!fallback) {
-          setHasToken(false);
-          setStatus("missing-token");
+          dispatch({ type: "missingToken" });
           return;
         }
-        setError(err instanceof Error ? err.message : String(err));
-        setStatus("error");
+        dispatch({
+          type: "set",
+          payload: {
+            error: err instanceof Error ? err.message : String(err),
+            status: "error",
+          },
+        });
       }
     })();
 

@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useEffect, useCallback } from "react";
+import { memo, useState, useRef, useEffect, useCallback, useReducer } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Square, Hand, At, Microphone, ImageSquare, X } from "@phosphor-icons/react";
@@ -93,6 +93,49 @@ interface ChatInputProps {
   resetTrigger?: number;
 }
 
+interface ComposerState {
+  input: string;
+  historyIndex: number;
+  selectedImage: string | null;
+}
+
+const composerInitialState: ComposerState = {
+  input: "",
+  historyIndex: -1,
+  selectedImage: null,
+};
+
+type ComposerAction =
+  | { type: "setInput"; value: string }
+  | { type: "setHistoryIndex"; value: number }
+  | { type: "setSelectedImage"; value: string | null }
+  | { type: "setInputAndResetHistory"; value: string }
+  | { type: "setHistoryNavigation"; value: { index: number; input: string } }
+  | { type: "clearComposer" };
+
+function composerReducer(state: ComposerState, action: ComposerAction): ComposerState {
+  switch (action.type) {
+    case "setInput":
+      return { ...state, input: action.value };
+    case "setHistoryIndex":
+      return { ...state, historyIndex: action.value };
+    case "setSelectedImage":
+      return { ...state, selectedImage: action.value };
+    case "setInputAndResetHistory":
+      return { ...state, input: action.value, historyIndex: -1 };
+    case "setHistoryNavigation":
+      return {
+        ...state,
+        historyIndex: action.value.index,
+        input: action.value.input,
+      };
+    case "clearComposer":
+      return { ...state, input: "", selectedImage: null };
+    default:
+      return state;
+  }
+}
+
 export const ChatInput = memo(function ChatInput({
   isLoading,
   isForeground = false,
@@ -113,7 +156,20 @@ export const ChatInput = memo(function ChatInput({
   resetTrigger = 0,
 }: ChatInputProps) {
   const { t } = useTranslation();
-  const [input, setInput] = useState("");
+  const [composerState, dispatchComposer] = useReducer(
+    composerReducer,
+    composerInitialState
+  );
+  const { input, historyIndex, selectedImage } = composerState;
+  const setInput = useCallback((value: string) => {
+    dispatchComposer({ type: "setInput", value });
+  }, []);
+  const setHistoryIndex = useCallback((value: number) => {
+    dispatchComposer({ type: "setHistoryIndex", value });
+  }, []);
+  const setSelectedImage = useCallback((value: string | null) => {
+    dispatchComposer({ type: "setSelectedImage", value });
+  }, []);
   const [isFocused, setIsFocused] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -122,8 +178,6 @@ export const ChatInput = memo(function ChatInput({
   );
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [lastTypingTime, setLastTypingTime] = useState(0);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [waveformFrequencies, setWaveformFrequencies] = useState<number[]>(
     Array(WAVEFORM_BANDS).fill(0)
@@ -173,14 +227,21 @@ export const ChatInput = memo(function ChatInput({
         e.preventDefault();
         const nextIndex = historyIndex + 1;
         if (nextIndex < previousMessages.length) {
-          setHistoryIndex(nextIndex);
-          setInput(previousMessages[nextIndex]);
+          dispatchComposer({
+            type: "setHistoryNavigation",
+            value: { index: nextIndex, input: previousMessages[nextIndex] },
+          });
         }
       } else if (e.key === "ArrowDown" && historyIndex > -1) {
         e.preventDefault();
         const nextIndex = historyIndex - 1;
-        setHistoryIndex(nextIndex);
-        setInput(nextIndex === -1 ? "" : previousMessages[nextIndex]);
+        dispatchComposer({
+          type: "setHistoryNavigation",
+          value: {
+            index: nextIndex,
+            input: nextIndex === -1 ? "" : previousMessages[nextIndex],
+          },
+        });
       }
     };
 
@@ -204,8 +265,7 @@ export const ChatInput = memo(function ChatInput({
       didMountRef.current = true;
       return;
     }
-    setInput("");
-    setSelectedImage(null);
+    dispatchComposer({ type: "clearComposer" });
   }, [resetTrigger]);
 
   // Keep Talking Mode: Auto-start recording after AI response completes
@@ -237,8 +297,7 @@ export const ChatInput = memo(function ChatInput({
   const handleInputChangeWithSound = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setInput(e.target.value);
-    setHistoryIndex(-1);
+    dispatchComposer({ type: "setInputAndResetHistory", value: e.target.value });
 
     const now = Date.now();
     if (typingSynthEnabled && now - lastTypingTime > 50) {
@@ -558,8 +617,7 @@ export const ChatInput = memo(function ChatInput({
             e.preventDefault();
             const didSubmit = await onSubmitMessage(input, selectedImage);
             if (didSubmit) {
-              setInput("");
-              setSelectedImage(null);
+              dispatchComposer({ type: "clearComposer" });
             }
           }}
           className={`flex ${isMacTheme ? "gap-2" : "gap-1"}`}

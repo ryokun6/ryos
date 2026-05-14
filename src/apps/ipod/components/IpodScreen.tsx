@@ -3,6 +3,7 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useReducer,
   useState,
   useCallback,
   type CSSProperties,
@@ -103,6 +104,34 @@ const SPLIT_LAYOUT_TRANSITION_TIMING =
 // Render this many extra items above and below the visible window so
 // scrolling doesn't reveal blank rows before React reconciles.
 const OVERSCAN_ITEMS = 6;
+
+interface MenuScrollState {
+  scrollTop: number;
+  containerHeight: number;
+}
+
+const menuScrollInitialState: MenuScrollState = {
+  scrollTop: 0,
+  containerHeight: 0,
+};
+
+type MenuScrollAction =
+  | { type: "setScrollTop"; value: number }
+  | { type: "setContainerHeight"; value: number };
+
+function menuScrollReducer(
+  state: MenuScrollState,
+  action: MenuScrollAction
+): MenuScrollState {
+  switch (action.type) {
+    case "setScrollTop":
+      return { ...state, scrollTop: action.value };
+    case "setContainerHeight":
+      return { ...state, containerHeight: action.value };
+    default:
+      return state;
+  }
+}
 
 function formatPlaybackTime(totalSeconds: number): string {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
@@ -442,8 +471,17 @@ export function IpodScreen({
 
   // Track scroll position + container height so we can compute the
   // visible window for virtualization.
-  const [scrollTop, setScrollTop] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(0);
+  const [menuScrollState, dispatchMenuScroll] = useReducer(
+    menuScrollReducer,
+    menuScrollInitialState
+  );
+  const { scrollTop, containerHeight } = menuScrollState;
+  const setScrollTop = useCallback((value: number) => {
+    dispatchMenuScroll({ type: "setScrollTop", value });
+  }, []);
+  const setContainerHeight = useCallback((value: number) => {
+    dispatchMenuScroll({ type: "setContainerHeight", value });
+  }, []);
 
   useEffect(() => {
     const el = menuScrollRef.current;

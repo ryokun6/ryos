@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import {
@@ -149,6 +149,60 @@ function TrayFieldRow({
 // EVENT TRAY (iCal-inspired: title block, fields, notes)
 // ============================================================================
 
+interface EventEditorState {
+  title: string;
+  location: string;
+  notes: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
+const getEventEditorState = (event: CalendarEvent): EventEditorState => ({
+  title: event.title,
+  location: event.location || "",
+  notes: event.notes || "",
+  date: event.date,
+  startTime: event.startTime || "09:00",
+  endTime: event.endTime || "10:00",
+});
+
+type EventEditorAction =
+  | { type: "resetFromEvent"; event: CalendarEvent }
+  | { type: "setTitle"; value: string }
+  | { type: "setLocation"; value: string }
+  | { type: "setNotes"; value: string }
+  | { type: "setDate"; value: string }
+  | { type: "setStartTime"; value: string }
+  | { type: "setEndTime"; value: string }
+  | { type: "setTimes"; startTime: string; endTime: string };
+
+function eventEditorReducer(
+  state: EventEditorState,
+  action: EventEditorAction
+): EventEditorState {
+  switch (action.type) {
+    case "resetFromEvent":
+      return getEventEditorState(action.event);
+    case "setTitle":
+      return { ...state, title: action.value };
+    case "setLocation":
+      return { ...state, location: action.value };
+    case "setNotes":
+      return { ...state, notes: action.value };
+    case "setDate":
+      return { ...state, date: action.value };
+    case "setStartTime":
+      return { ...state, startTime: action.value };
+    case "setEndTime":
+      return { ...state, endTime: action.value };
+    case "setTimes":
+      return { ...state, startTime: action.startTime, endTime: action.endTime };
+    default:
+      return state;
+  }
+}
+
 function EventTrayEditor({
   event,
   calendars,
@@ -172,20 +226,15 @@ function EventTrayEditor({
   onUpdate: (id: string, updates: Partial<CalendarEvent>) => void;
   onDelete: (id: string) => void;
 }) {
-  const [title, setTitle] = useState(event.title);
-  const [location, setLocation] = useState(event.location || "");
-  const [notes, setNotes] = useState(event.notes || "");
-  const [date, setDate] = useState(event.date);
-  const [startTime, setStartTime] = useState(event.startTime || "09:00");
-  const [endTime, setEndTime] = useState(event.endTime || "10:00");
+  const [state, dispatch] = useReducer(eventEditorReducer, event, getEventEditorState);
+  const { title, location, notes, date, startTime, endTime } = state;
+  const setTitle = (value: string) => dispatch({ type: "setTitle", value });
+  const setLocation = (value: string) => dispatch({ type: "setLocation", value });
+  const setNotes = (value: string) => dispatch({ type: "setNotes", value });
+  const setDate = (value: string) => dispatch({ type: "setDate", value });
   const allDay = !event.startTime;
   useEffect(() => {
-    setTitle(event.title);
-    setLocation(event.location || "");
-    setNotes(event.notes || "");
-    setDate(event.date);
-    setStartTime(event.startTime || "09:00");
-    setEndTime(event.endTime || "10:00");
+    dispatch({ type: "resetFromEvent", event });
   }, [
     event.id,
     event.updatedAt,
@@ -237,8 +286,7 @@ function EventTrayEditor({
   };
 
   const commitTimes = (st: string, et: string) => {
-    setStartTime(st);
-    setEndTime(et);
+    dispatch({ type: "setTimes", startTime: st, endTime: et });
     if (!allDay && (st !== event.startTime || et !== (event.endTime || ""))) {
       onUpdate(event.id, { startTime: st, endTime: et });
     }

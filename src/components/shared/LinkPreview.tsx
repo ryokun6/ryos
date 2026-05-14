@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useReducer, useEffect } from "react";
 import { motion } from "framer-motion";
 import { WarningCircle, MusicNote, ArrowSquareOut, Microphone } from "@phosphor-icons/react";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
@@ -31,13 +31,56 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
     );
   };
 
-  const [metadata, setMetadata] = useState<LinkMetadata | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isFullWidthThumbnail, setIsFullWidthThumbnail] = useState(() => {
-    // YouTube links should always start as full width
-    return isYouTubeUrl(url);
-  });
+  type LinkPreviewState = {
+    metadata: LinkMetadata | null;
+    loading: boolean;
+    error: string | null;
+    isFullWidthThumbnail: boolean;
+  };
+  type LinkPreviewAction =
+    | { type: "resetForUrl"; isFullWidthThumbnail: boolean }
+    | { type: "fetchStart" }
+    | { type: "fetchSuccess"; metadata: LinkMetadata }
+    | { type: "fetchFailure"; error: string; metadata: LinkMetadata }
+    | { type: "setFullWidthThumbnail"; enabled: boolean };
+  const initialState: LinkPreviewState = {
+    metadata: null,
+    loading: true,
+    error: null,
+    isFullWidthThumbnail: isYouTubeUrl(url),
+  };
+  const reducer = (
+    state: LinkPreviewState,
+    action: LinkPreviewAction
+  ): LinkPreviewState => {
+    switch (action.type) {
+      case "resetForUrl":
+        return {
+          ...state,
+          isFullWidthThumbnail: action.isFullWidthThumbnail,
+          metadata: null,
+          loading: true,
+          error: null,
+        };
+      case "fetchStart":
+        return { ...state, loading: true, error: null };
+      case "fetchSuccess":
+        return { ...state, metadata: action.metadata, loading: false, error: null };
+      case "fetchFailure":
+        return {
+          ...state,
+          metadata: action.metadata,
+          loading: false,
+          error: action.error,
+        };
+      case "setFullWidthThumbnail":
+        return { ...state, isFullWidthThumbnail: action.enabled };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { metadata, loading, error, isFullWidthThumbnail } = state;
   const launchApp = useLaunchApp();
   const { isMacOSTheme } = useThemeFlags();
 
@@ -168,14 +211,17 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
   };
 
   useEffect(() => {
+    dispatch({
+      type: "resetForUrl",
+      isFullWidthThumbnail: isYouTubeUrl(url),
+    });
     const abortController = new AbortController();
     let isActive = true;
 
     const fetchMetadata = async () => {
       try {
         if (!isActive || abortController.signal.aborted) return;
-        setLoading(true);
-        setError(null);
+        dispatch({ type: "fetchStart" });
 
         // Handle /ipod/ or /karaoke/ links specially - use YouTube metadata
         if (url.includes("/ipod/") || url.includes("/karaoke/")) {
@@ -196,14 +242,17 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
 
               const youtubeData = await youtubeResponse.json();
               if (!youtubeData.error && isActive && !abortController.signal.aborted) {
-                setMetadata({
-                  title: youtubeData.title,
-                  description: youtubeData.description,
-                  image:
-                    youtubeData.image ||
-                    `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                  siteName: "YouTube",
-                  url: url,
+                dispatch({
+                  type: "fetchSuccess",
+                  metadata: {
+                    title: youtubeData.title,
+                    description: youtubeData.description,
+                    image:
+                      youtubeData.image ||
+                      `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                    siteName: "YouTube",
+                    url: url,
+                  },
                 });
                 return;
               }
@@ -222,12 +271,15 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
 
             // Fallback to basic YouTube-style metadata
             if (!isActive || abortController.signal.aborted) return;
-            setMetadata({
-              title: `YouTube Video ${videoId}`,
-              description: "Watch on YouTube",
-              image: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-              siteName: "YouTube",
-              url: url,
+            dispatch({
+              type: "fetchSuccess",
+              metadata: {
+                title: `YouTube Video ${videoId}`,
+                description: "Watch on YouTube",
+                image: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                siteName: "YouTube",
+                url: url,
+              },
             });
             return;
           }
@@ -250,12 +302,15 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           throw new Error(data.error);
         }
 
-        setMetadata({
-          title: data.title,
-          description: data.description,
-          image: data.image,
-          siteName: data.siteName,
-          url: url,
+        dispatch({
+          type: "fetchSuccess",
+          metadata: {
+            title: data.title,
+            description: data.description,
+            image: data.image,
+            siteName: data.siteName,
+            url: url,
+          },
         });
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
@@ -263,16 +318,14 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         }
         if (!isActive || abortController.signal.aborted) return;
         console.error("Error fetching link metadata:", err);
-        setError("Failed to load preview");
-        // Set basic metadata with just the URL
-        setMetadata({
-          title: url,
-          url: url,
+        dispatch({
+          type: "fetchFailure",
+          error: "Failed to load preview",
+          metadata: {
+            title: url,
+            url: url,
+          },
         });
-      } finally {
-        if (isActive && !abortController.signal.aborted) {
-          setLoading(false);
-        }
       }
     };
 
@@ -613,7 +666,10 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       isYouTubeUrl(url) || aspectRatio > 1.5;
 
                     if (shouldBeFullWidth) {
-                      setIsFullWidthThumbnail(true);
+                      dispatch({
+                        type: "setFullWidthThumbnail",
+                        enabled: true,
+                      });
                     }
                   }}
                 />

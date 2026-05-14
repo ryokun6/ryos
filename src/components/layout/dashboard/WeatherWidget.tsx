@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useCallback, useRef, useMemo, useSyncExternalStore, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useDashboardStore, type WeatherWidgetConfig } from "@/stores/useDashboardStore";
@@ -135,10 +135,42 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const cityConfig = widget?.config as WeatherWidgetConfig | undefined;
 
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [geoLocationName, setGeoLocationName] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  type WeatherWidgetState = {
+    weather: WeatherData | null;
+    geoLocationName: string;
+    error: string | null;
+    loading: boolean;
+  };
+  type WeatherWidgetAction =
+    | { type: "reset" }
+    | { type: "setGeoLocationName"; geoLocationName: string }
+    | { type: "fetchSuccess"; weather: WeatherData }
+    | { type: "fetchError"; error: string };
+  const initialState: WeatherWidgetState = {
+    weather: null,
+    geoLocationName: "",
+    error: null,
+    loading: true,
+  };
+  const reducer = (
+    state: WeatherWidgetState,
+    action: WeatherWidgetAction
+  ): WeatherWidgetState => {
+    switch (action.type) {
+      case "reset":
+        return initialState;
+      case "setGeoLocationName":
+        return { ...state, geoLocationName: action.geoLocationName };
+      case "fetchSuccess":
+        return { ...state, weather: action.weather, loading: false, error: null };
+      case "fetchError":
+        return { ...state, loading: false, error: action.error };
+      default:
+        return state;
+    }
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { weather, geoLocationName, error, loading } = state;
 
   const locationName = useMemo(() => {
     if (cityConfig?.cityKey) return t(cityConfig.cityKey);
@@ -175,13 +207,13 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
         temperatureMin: Math.round(data.daily.temperature_2m_min[0]),
         forecast,
       };
-      setWeather(weatherData);
+      dispatch({ type: "fetchSuccess", weather: weatherData });
       setWeatherCacheEntry(widgetId, weatherData);
-
-      setLoading(false);
     } catch {
-      setError(t("apps.dashboard.weather.unavailable"));
-      setLoading(false);
+      dispatch({
+        type: "fetchError",
+        error: t("apps.dashboard.weather.unavailable"),
+      });
     }
   }, [locale, t, widgetId]);
 
@@ -198,7 +230,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
           geoData.address?.village ||
           geoData.address?.county ||
           "";
-        setGeoLocationName(city);
+        dispatch({ type: "setGeoLocationName", geoLocationName: city });
       }
     } catch {
       // Location name optional
@@ -206,16 +238,16 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
   }, []);
 
   useEffect(() => {
-    setWeather(null);
-    setError(null);
-    setLoading(true);
-    setGeoLocationName("");
+    dispatch({ type: "reset" });
 
     const SF_LAT = 37.7749;
     const SF_LON = -122.4194;
 
     const fallbackToSF = () => {
-      setGeoLocationName(t("apps.dashboard.cities.sanFrancisco"));
+      dispatch({
+        type: "setGeoLocationName",
+        geoLocationName: t("apps.dashboard.cities.sanFrancisco"),
+      });
       fetchWeather(SF_LAT, SF_LON);
     };
 
@@ -439,19 +471,52 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
   const { isWindowsTheme: isXpTheme } = useThemeFlags();
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<CityResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  type WeatherSearchState = {
+    searchQuery: string;
+    searchResults: CityResult[];
+    searching: boolean;
+  };
+  type WeatherSearchAction =
+    | { type: "setQuery"; query: string }
+    | { type: "searchIdle" }
+    | { type: "searchStart" }
+    | { type: "searchResults"; results: CityResult[] };
+  const initialSearchState: WeatherSearchState = {
+    searchQuery: "",
+    searchResults: [],
+    searching: false,
+  };
+  const searchReducer = (
+    state: WeatherSearchState,
+    action: WeatherSearchAction
+  ): WeatherSearchState => {
+    switch (action.type) {
+      case "setQuery":
+        return { ...state, searchQuery: action.query };
+      case "searchIdle":
+        return { ...state, searchResults: [], searching: false };
+      case "searchStart":
+        return { ...state, searching: true };
+      case "searchResults":
+        return { ...state, searchResults: action.results, searching: false };
+      default:
+        return state;
+    }
+  };
+  const [searchState, dispatchSearch] = useReducer(
+    searchReducer,
+    initialSearchState
+  );
+  const { searchQuery, searchResults, searching } = searchState;
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const searchCities = useCallback(async (query: string) => {
     if (query.length < 2) {
-      setSearchResults([]);
-      setSearching(false);
+      dispatchSearch({ type: "searchIdle" });
       return;
     }
-    setSearching(true);
+    dispatchSearch({ type: "searchStart" });
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&featuretype=city`
@@ -470,12 +535,13 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
             lat: parseFloat(r.lat),
             lon: parseFloat(r.lon),
           }));
-        setSearchResults(results);
+        dispatchSearch({ type: "searchResults", results });
+        return;
       }
     } catch {
       // search failed silently
     }
-    setSearching(false);
+    dispatchSearch({ type: "searchResults", results: [] });
   }, []);
 
   useEffect(() => {
@@ -486,7 +552,7 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
 
   const handleSearchInput = useCallback(
     (value: string) => {
-      setSearchQuery(value);
+      dispatchSearch({ type: "setQuery", query: value });
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
       searchTimerRef.current = setTimeout(() => searchCities(value), 300);
     },
