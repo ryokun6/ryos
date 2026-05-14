@@ -92,6 +92,12 @@ const trackFinderFileOperation = (
 const arePathArraysEqual = (first: readonly string[], second: readonly string[]) =>
   first.length === second.length &&
   first.every((path, index) => path === second[index]);
+const DEFAULT_FILE_PATHS = new Set([
+  "/Documents/README.md",
+  "/Documents/Quick Tips.md",
+  "/Images/steve-jobs.png",
+  "/Images/susan-kare.png",
+]);
 
 const getCloudSyncDomainForContentStore = (
   storeName: string
@@ -2113,12 +2119,7 @@ export function useFileSystem(
             if (!item.createdAt || !item.modifiedAt) {
               const now = Date.now();
               // For default files, use a date in the past
-              const isDefaultFile = [
-                "/Documents/README.md",
-                "/Documents/Quick Tips.md",
-                "/Images/steve-jobs.png",
-                "/Images/susan-kare.png",
-              ].includes(item.path);
+              const isDefaultFile = DEFAULT_FILE_PATHS.has(item.path);
 
               const baseTime = isDefaultFile
                 ? now - 30 * 24 * 60 * 60 * 1000 // 30 days ago for default files
