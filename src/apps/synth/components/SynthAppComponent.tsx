@@ -224,16 +224,16 @@ export function SynthAppComponent({
               )}
             >
               <div className="flex justify-between items-center">
-                <div className="flex gap-0">
+                <div className="flex gap-0 items-center min-w-0">
                   {/* Mobile preset selector */}
-                  <div className="md:hidden w-48">
+                  <div className="md:hidden flex-1 min-w-0 max-w-[min(100%,12rem)] sm:max-w-[min(100%,14rem)]">
                     <Select
                       value={currentPreset.id}
                       onValueChange={loadPresetById}
                     >
                       <SelectTrigger
                         className={cn(
-                          "w-full h-[22px] font-geneva-12 text-[12px] p-2",
+                          "w-full min-w-0 h-[22px] font-geneva-12 text-[11px] leading-none px-2 py-0 gap-1 [&>span]:truncate",
                           isClassicTheme && "text-black bg-transparent",
                           !isClassicTheme &&
                             "bg-black border-[#3a3a3a] text-white"
@@ -253,7 +253,7 @@ export function SynthAppComponent({
                             key={preset.id}
                             value={preset.id}
                             className={cn(
-                              "font-geneva-12 text-[12px] select-none",
+                              "font-geneva-12 text-[11px] select-none",
                               isClassicTheme && "text-black"
                             )}
                           >
@@ -264,26 +264,28 @@ export function SynthAppComponent({
                     </Select>
                   </div>
 
-                  {/* Desktop preset buttons */}
+                  {/* Desktop only: keep `metal-inset-btn-group` inner — its global `display:flex` breaks `hidden` on the same element. */}
                   {isMacOSTheme ? (
-                    <div className="hidden md:flex metal-inset-btn-group">
-                      {presets.length > 0 ? (
-                        presets.map((preset) => (
-                          <button
-                            key={preset.id}
-                            type="button"
-                            className="metal-inset-btn font-geneva-12 !text-[11px] whitespace-nowrap uppercase select-none"
-                            data-state={currentPreset.id === preset.id ? "on" : "off"}
-                            onClick={() => loadPreset(preset)}
-                          >
-                            {preset.name}
-                          </button>
-                        ))
-                      ) : (
-                        <p className="text-xs text-gray-400 font-geneva-12 select-none px-2">
-                          {t("apps.synth.noPresetsYet")}
-                        </p>
-                      )}
+                    <div className="hidden md:flex items-center min-w-0">
+                      <div className="metal-inset-btn-group">
+                        {presets.length > 0 ? (
+                          presets.map((preset) => (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              className="metal-inset-btn font-geneva-12 !text-[11px] whitespace-nowrap uppercase select-none"
+                              data-state={currentPreset.id === preset.id ? "on" : "off"}
+                              onClick={() => loadPreset(preset)}
+                            >
+                              {preset.name}
+                            </button>
+                          ))
+                        ) : (
+                          <p className="text-xs text-gray-400 font-geneva-12 select-none px-2">
+                            {t("apps.synth.noPresetsYet")}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="hidden md:flex gap-0">
