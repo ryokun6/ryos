@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, useReducer } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -588,6 +588,49 @@ const showBackgroundedMessageNotification = (message: UIMessage) => {
   });
 };
 
+interface ChatUiState {
+  input: string;
+  selectedImage: string | null;
+  isClearDialogOpen: boolean;
+  isSaveDialogOpen: boolean;
+  saveFileName: string;
+}
+
+const initialChatUiState: ChatUiState = {
+  input: "",
+  selectedImage: null,
+  isClearDialogOpen: false,
+  isSaveDialogOpen: false,
+  saveFileName: "",
+};
+
+type ChatUiAction =
+  | { type: "setInput"; value: string }
+  | { type: "setSelectedImage"; value: string | null }
+  | { type: "setClearDialogOpen"; value: boolean }
+  | { type: "setSaveDialogOpen"; value: boolean }
+  | { type: "setSaveFileName"; value: string }
+  | { type: "clearComposer" };
+
+function chatUiReducer(state: ChatUiState, action: ChatUiAction): ChatUiState {
+  switch (action.type) {
+    case "setInput":
+      return { ...state, input: action.value };
+    case "setSelectedImage":
+      return { ...state, selectedImage: action.value };
+    case "setClearDialogOpen":
+      return { ...state, isClearDialogOpen: action.value };
+    case "setSaveDialogOpen":
+      return { ...state, isSaveDialogOpen: action.value };
+    case "setSaveFileName":
+      return { ...state, saveFileName: action.value };
+    case "clearComposer":
+      return { ...state, input: "", selectedImage: null };
+    default:
+      return state;
+  }
+}
+
 export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, isAuthenticated } =
     useChatsStoreShallow((state) => ({
@@ -603,8 +646,32 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   // Local input state (SDK v5 no longer provides this)
   const { t } = useTranslation();
-  const [input, setInput] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [chatUiState, dispatchChatUi] = useReducer(
+    chatUiReducer,
+    initialChatUiState
+  );
+  const {
+    input,
+    selectedImage,
+    isClearDialogOpen,
+    isSaveDialogOpen,
+    saveFileName,
+  } = chatUiState;
+  const setInput = useCallback((value: string) => {
+    dispatchChatUi({ type: "setInput", value });
+  }, []);
+  const setSelectedImage = useCallback((value: string | null) => {
+    dispatchChatUi({ type: "setSelectedImage", value });
+  }, []);
+  const setIsClearDialogOpen = useCallback((value: boolean) => {
+    dispatchChatUi({ type: "setClearDialogOpen", value });
+  }, []);
+  const setIsSaveDialogOpen = useCallback((value: boolean) => {
+    dispatchChatUi({ type: "setSaveDialogOpen", value });
+  }, []);
+  const setSaveFileName = useCallback((value: string) => {
+    dispatchChatUi({ type: "setSaveFileName", value });
+  }, []);
   const handleInputChange = useCallback(
     (
       e:
@@ -2274,14 +2341,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       e.preventDefault();
       const didSubmit = await handleSubmitMessage(input, selectedImage);
       if (didSubmit) {
-        setInput(""); // Clear input after sending
-        setSelectedImage(null); // Clear image after sending
+        dispatchChatUi({ type: "clearComposer" }); // Clear input and image after sending
       }
     },
     [
       handleSubmitMessage,
       input,
       selectedImage,
+      dispatchChatUi,
     ],
   );
 
@@ -2423,11 +2490,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     setAiMessages([initialMessage]);
     setSdkMessages([initialMessage]);
   }, [setAiMessages, setSdkMessages, stopTts, aiMessages, username, isAuthenticated]);
-
-  // --- Dialog States & Handlers ---
-  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
-  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
-  const [saveFileName, setSaveFileName] = useState("");
 
   const confirmClearChats = useCallback(() => {
     setIsClearDialogOpen(false);

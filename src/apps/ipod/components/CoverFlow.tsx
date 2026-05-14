@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef, useMemo } from "react";
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useImperativeHandle,
+  forwardRef,
+  useMemo,
+  useReducer,
+} from "react";
 import { motion, AnimatePresence, PanInfo, useMotionValue, animate } from "framer-motion";
 import {
   getYouTubeVideoId,
@@ -31,6 +39,59 @@ const MODERN_TITLEBAR_HEIGHT = 17;
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
+
+interface CoverFlowUiState {
+  selectedIndex: number;
+  showCD: boolean;
+  isFlipped: boolean;
+  isFlipAnimating: boolean;
+  selectedTrackInAlbum: number;
+}
+
+type CoverFlowUiAction =
+  | {
+      type: "setSelectedIndex";
+      value: number | ((prev: number) => number);
+    }
+  | { type: "setShowCD"; value: boolean }
+  | { type: "setIsFlipped"; value: boolean }
+  | { type: "setIsFlipAnimating"; value: boolean }
+  | {
+      type: "setSelectedTrackInAlbum";
+      value: number | ((prev: number) => number);
+    };
+
+function coverFlowUiReducer(
+  state: CoverFlowUiState,
+  action: CoverFlowUiAction
+): CoverFlowUiState {
+  switch (action.type) {
+    case "setSelectedIndex":
+      return {
+        ...state,
+        selectedIndex:
+          typeof action.value === "function"
+            ? action.value(state.selectedIndex)
+            : action.value,
+      };
+    case "setShowCD":
+      return { ...state, showCD: action.value };
+    case "setIsFlipped":
+      return { ...state, isFlipped: action.value };
+    case "setIsFlipAnimating":
+      return { ...state, isFlipAnimating: action.value };
+    case "setSelectedTrackInAlbum":
+      return {
+        ...state,
+        selectedTrackInAlbum:
+          typeof action.value === "function"
+            ? action.value(state.selectedTrackInAlbum)
+            : action.value,
+      };
+    default:
+      return state;
+  }
+}
 
 // Format a track duration in milliseconds as `m:ss`. Returns an empty
 // string when the duration is unknown so the tracklist row collapses
@@ -1109,13 +1170,33 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
     return index >= 0 ? index : Math.min(currentIndex, coverItems.length - 1);
   }, [coverItems, currentIndex]);
 
-  const [selectedIndex, setSelectedIndex] = useState(currentCoverIndex);
-  const [showCD, setShowCD] = useState(false);
+  const [uiState, dispatch] = useReducer(coverFlowUiReducer, {
+    selectedIndex: currentCoverIndex,
+    showCD: false,
+    isFlipped: false,
+    isFlipAnimating: false,
+    selectedTrackInAlbum: 0,
+  });
+  const {
+    selectedIndex,
+    showCD,
+    isFlipped,
+    isFlipAnimating,
+    selectedTrackInAlbum,
+  } = uiState;
+  const setSelectedIndex = useCallback(
+    (value: number | ((prev: number) => number)) => {
+      dispatch({ type: "setSelectedIndex", value });
+    },
+    []
+  );
+  const setShowCD = useCallback((value: boolean) => {
+    dispatch({ type: "setShowCD", value });
+  }, []);
   // When the user presses the wheel center on an album cover, the
   // cover flips over to reveal that album's tracklist. The flip is
   // album-scoped: navigating to a different cover snaps back to the
   // un-flipped state (matches the iPod nano/classic 6G behavior).
-  const [isFlipped, setIsFlipped] = useState(false);
   // True while the album-flip overlay is mid-rotation (in either
   // direction). Lets us keep the underlying carousel center sleeve
   // hidden for the full back-flip duration so the reverse animation
@@ -1123,7 +1204,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   // sleeve pops back to visible the instant Menu is pressed and the
   // reverse rotation reads as "the tracklist just disappeared". Same
   // pattern the dashboard widget flip uses (`WidgetChrome.tsx`).
-  const [isFlipAnimating, setIsFlipAnimating] = useState(false);
+  const setIsFlipped = useCallback((value: boolean) => {
+    dispatch({ type: "setIsFlipped", value });
+  }, []);
+  const setIsFlipAnimating = useCallback((value: boolean) => {
+    dispatch({ type: "setIsFlipAnimating", value });
+  }, []);
   const flipAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -1142,7 +1228,12 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   // the active album changes so wheel rotation always starts at the
   // currently-playing track (or the first track if none of this album
   // is playing).
-  const [selectedTrackInAlbum, setSelectedTrackInAlbum] = useState(0);
+  const setSelectedTrackInAlbum = useCallback(
+    (value: number | ((prev: number) => number)) => {
+      dispatch({ type: "setSelectedTrackInAlbum", value });
+    },
+    []
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const { isMacOSTheme: isMacTheme } = useThemeFlags();
   const uiVariant = useIpodStore((s) => s.uiVariant);

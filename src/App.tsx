@@ -1,6 +1,6 @@
 import { AppManager } from "./apps/base/AppManager";
 import { appRegistry } from "./config/appRegistry";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useReducer, useCallback } from "react";
 import { applyDisplayMode } from "./utils/displayMode";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
@@ -25,6 +25,36 @@ import { ReactScanDebug } from "@/components/ReactScanDebug";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
+
+interface BootUiState {
+  bootScreenMessage: string | null;
+  showBootScreen: boolean;
+  bootDebugMode: boolean;
+}
+
+const bootUiInitialState: BootUiState = {
+  bootScreenMessage: null,
+  showBootScreen: false,
+  bootDebugMode: false,
+};
+
+type BootUiAction =
+  | { type: "setMessage"; value: string | null }
+  | { type: "setVisible"; value: boolean }
+  | { type: "setDebugMode"; value: boolean };
+
+function bootUiReducer(state: BootUiState, action: BootUiAction): BootUiState {
+  switch (action.type) {
+    case "setMessage":
+      return { ...state, bootScreenMessage: action.value };
+    case "setVisible":
+      return { ...state, showBootScreen: action.value };
+    case "setDebugMode":
+      return { ...state, bootDebugMode: action.value };
+    default:
+      return state;
+  }
+}
 
 export function App() {
   const { t } = useTranslation();
@@ -73,11 +103,20 @@ export function App() {
     }
   }, [isWindowsTheme, isMacOSTheme, isSystem7Theme, isMobile]);
 
-  const [bootScreenMessage, setBootScreenMessage] = useState<string | null>(
-    null
+  const [bootUiState, dispatchBootUi] = useReducer(
+    bootUiReducer,
+    bootUiInitialState
   );
-  const [showBootScreen, setShowBootScreen] = useState(false);
-  const [bootDebugMode, setBootDebugMode] = useState(false);
+  const { bootScreenMessage, showBootScreen, bootDebugMode } = bootUiState;
+  const setBootScreenMessage = useCallback((value: string | null) => {
+    dispatchBootUi({ type: "setMessage", value });
+  }, []);
+  const setShowBootScreen = useCallback((value: boolean) => {
+    dispatchBootUi({ type: "setVisible", value });
+  }, []);
+  const setBootDebugMode = useCallback((value: boolean) => {
+    dispatchBootUi({ type: "setDebugMode", value });
+  }, []);
 
   useEffect(() => {
     applyDisplayMode(displayMode);

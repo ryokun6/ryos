@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, useReducer } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -21,16 +21,99 @@ interface AppStoreProps {
   focusWindow?: () => void;
 }
 
+interface AppStoreUiState {
+  isLoading: boolean;
+  searchQuery: string;
+  selectedApplet: Applet | null;
+  selectedAppletContent: string;
+  isSharedApplet: boolean;
+  showListView: boolean;
+  isBulkUpdating: boolean;
+}
+
+const initialState: AppStoreUiState = {
+  isLoading: true,
+  searchQuery: "",
+  selectedApplet: null,
+  selectedAppletContent: "",
+  isSharedApplet: false,
+  showListView: false,
+  isBulkUpdating: false,
+};
+
+type AppStoreUiAction =
+  | { type: "setLoading"; value: boolean }
+  | { type: "setSearchQuery"; value: string }
+  | { type: "setSelectedApplet"; value: Applet | null }
+  | { type: "setSelectedAppletContent"; value: string }
+  | { type: "setShowListView"; value: boolean }
+  | { type: "setBulkUpdating"; value: boolean }
+  | { type: "setSelectedAppletDetail"; applet: Applet; content: string; isShared: boolean }
+  | { type: "clearSelectedAppletDetail" };
+
+function reducer(state: AppStoreUiState, action: AppStoreUiAction): AppStoreUiState {
+  switch (action.type) {
+    case "setLoading":
+      return { ...state, isLoading: action.value };
+    case "setSearchQuery":
+      return { ...state, searchQuery: action.value };
+    case "setSelectedApplet":
+      return { ...state, selectedApplet: action.value };
+    case "setSelectedAppletContent":
+      return { ...state, selectedAppletContent: action.value };
+    case "setShowListView":
+      return { ...state, showListView: action.value };
+    case "setBulkUpdating":
+      return { ...state, isBulkUpdating: action.value };
+    case "setSelectedAppletDetail":
+      return {
+        ...state,
+        selectedApplet: action.applet,
+        selectedAppletContent: action.content,
+        isSharedApplet: action.isShared,
+      };
+    case "clearSelectedAppletDetail":
+      return {
+        ...state,
+        selectedApplet: null,
+        isSharedApplet: false,
+      };
+    default:
+      return state;
+  }
+}
+
 export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) {
   const { t } = useTranslation();
   const [applets, setApplets] = useState<Applet[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedApplet, setSelectedApplet] = useState<Applet | null>(null);
-  const [selectedAppletContent, setSelectedAppletContent] = useState<string>("");
-  const [isSharedApplet, setIsSharedApplet] = useState(false);
-  const [showListView, setShowListView] = useState(false);
-  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    isLoading,
+    searchQuery,
+    selectedApplet,
+    selectedAppletContent,
+    isSharedApplet,
+    showListView,
+    isBulkUpdating,
+  } = state;
+  const setIsLoading = useCallback((value: boolean) => {
+    dispatch({ type: "setLoading", value });
+  }, []);
+  const setSearchQuery = useCallback((value: string) => {
+    dispatch({ type: "setSearchQuery", value });
+  }, []);
+  const setSelectedApplet = useCallback((value: Applet | null) => {
+    dispatch({ type: "setSelectedApplet", value });
+  }, []);
+  const setSelectedAppletContent = useCallback((value: string) => {
+    dispatch({ type: "setSelectedAppletContent", value });
+  }, []);
+  const setShowListView = useCallback((value: boolean) => {
+    dispatch({ type: "setShowListView", value });
+  }, []);
+  const setIsBulkUpdating = useCallback((value: boolean) => {
+    dispatch({ type: "setBulkUpdating", value });
+  }, []);
   const feedRef = useRef<AppStoreFeedRef>(null);
   const username = useChatsStore((state) => state.username);
   const isAuthenticated = useChatsStore((state) => state.isAuthenticated);
@@ -225,9 +308,12 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             createdAt: data.createdAt || Date.now(),
             createdBy: data.createdBy,
           };
-          setSelectedApplet(applet);
-          setSelectedAppletContent(data.content || "");
-          setIsSharedApplet(true);
+          dispatch({
+            type: "setSelectedAppletDetail",
+            applet,
+            content: data.content || "",
+            isShared: true,
+          });
         } catch (error) {
           if (error instanceof Error && error.name === "AbortError") {
             return;
@@ -671,8 +757,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               variant="ghost"
               size="icon"
               onClick={() => {
-                setSelectedApplet(null);
-                setIsSharedApplet(false);
+                dispatch({ type: "clearSelectedAppletDetail" });
               }}
               className="h-7 w-7 flex-shrink-0"
             >

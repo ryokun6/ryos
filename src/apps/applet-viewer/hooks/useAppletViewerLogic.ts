@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { helpItems, AppletViewerInitialData } from "../index";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -39,19 +39,116 @@ interface UseAppletViewerLogicProps {
   initialData?: AppletViewerInitialData;
 }
 
+interface ViewerUiState {
+  isHelpDialogOpen: boolean;
+  isAboutDialogOpen: boolean;
+  isShareDialogOpen: boolean;
+  shareId: string;
+  sharedContent: string;
+  sharedName: string | undefined;
+  sharedTitle: string | undefined;
+  sharedCreatedBy: string | null;
+}
+
+const initialState: ViewerUiState = {
+  isHelpDialogOpen: false,
+  isAboutDialogOpen: false,
+  isShareDialogOpen: false,
+  shareId: "",
+  sharedContent: "",
+  sharedName: undefined,
+  sharedTitle: undefined,
+  sharedCreatedBy: null,
+};
+
+type ViewerUiAction =
+  | { type: "setHelpDialogOpen"; value: boolean }
+  | { type: "setAboutDialogOpen"; value: boolean }
+  | { type: "setShareDialogOpen"; value: boolean }
+  | { type: "setShareId"; value: string }
+  | { type: "setSharedContent"; value: string }
+  | { type: "setSharedName"; value: string | undefined }
+  | { type: "setSharedTitle"; value: string | undefined }
+  | { type: "setSharedCreatedBy"; value: string | null }
+  | { type: "openShareDialog"; shareId: string }
+  | {
+      type: "setSharedAppletMeta";
+      content: string;
+      name: string | undefined;
+      title: string | undefined;
+      createdBy: string | null;
+    }
+  | { type: "resetSharedAppletMeta" };
+
+function reducer(state: ViewerUiState, action: ViewerUiAction): ViewerUiState {
+  switch (action.type) {
+    case "setHelpDialogOpen":
+      return { ...state, isHelpDialogOpen: action.value };
+    case "setAboutDialogOpen":
+      return { ...state, isAboutDialogOpen: action.value };
+    case "setShareDialogOpen":
+      return { ...state, isShareDialogOpen: action.value };
+    case "setShareId":
+      return { ...state, shareId: action.value };
+    case "setSharedContent":
+      return { ...state, sharedContent: action.value };
+    case "setSharedName":
+      return { ...state, sharedName: action.value };
+    case "setSharedTitle":
+      return { ...state, sharedTitle: action.value };
+    case "setSharedCreatedBy":
+      return { ...state, sharedCreatedBy: action.value };
+    case "openShareDialog":
+      return { ...state, shareId: action.shareId, isShareDialogOpen: true };
+    case "setSharedAppletMeta":
+      return {
+        ...state,
+        sharedContent: action.content,
+        sharedName: action.name,
+        sharedTitle: action.title,
+        sharedCreatedBy: action.createdBy,
+      };
+    case "resetSharedAppletMeta":
+      return {
+        ...state,
+        sharedContent: "",
+        sharedName: undefined,
+        sharedTitle: undefined,
+        sharedCreatedBy: null,
+      };
+    default:
+      return state;
+  }
+}
+
 export function useAppletViewerLogic({
   instanceId,
   initialData,
 }: UseAppletViewerLogicProps) {
   const translatedHelpItems = useTranslatedHelpItems("applet-viewer", helpItems);
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [shareId, setShareId] = useState<string>("");
-  const [sharedContent, setSharedContent] = useState<string>("");
-  const [sharedName, setSharedName] = useState<string | undefined>(undefined);
-  const [sharedTitle, setSharedTitle] = useState<string | undefined>(undefined);
-  const [sharedCreatedBy, setSharedCreatedBy] = useState<string | null>(null);
+  const [uiState, dispatch] = useReducer(reducer, initialState);
+  const {
+    isHelpDialogOpen,
+    isAboutDialogOpen,
+    isShareDialogOpen,
+    shareId,
+    sharedContent,
+    sharedName,
+    sharedTitle,
+    sharedCreatedBy,
+  } = uiState;
+  const setIsHelpDialogOpen = useCallback((value: boolean) => {
+    dispatch({ type: "setHelpDialogOpen", value });
+  }, []);
+  const setIsAboutDialogOpen = useCallback((value: boolean) => {
+    dispatch({ type: "setAboutDialogOpen", value });
+  }, []);
+  const setIsShareDialogOpen = useCallback((value: boolean) => {
+    dispatch({ type: "setShareDialogOpen", value });
+  }, []);
+  const setShareId = useCallback((value: string) => {
+    dispatch({ type: "setShareId", value });
+  }, []);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -1190,8 +1287,7 @@ export function useAppletViewerLogic({
         fileCreatedBy.toLowerCase() === username.toLowerCase();
 
       if (existingShareId && !isAuthor) {
-        setShareId(existingShareId);
-        setIsShareDialogOpen(true);
+        dispatch({ type: "openShareDialog", shareId: existingShareId });
         toast.success(t("apps.applet-viewer.dialogs.appletAlreadyShared"), {
           description: t("apps.applet-viewer.dialogs.showingExistingShareLink"),
         });
@@ -1223,8 +1319,7 @@ export function useAppletViewerLogic({
       });
 
       const data = await response.json();
-      setShareId(data.id);
-      setIsShareDialogOpen(true);
+      dispatch({ type: "openShareDialog", shareId: data.id });
 
       if (appletPath && data.id) {
         const currentFileItem = getFileItem(appletPath);
@@ -1273,7 +1368,7 @@ export function useAppletViewerLogic({
 
   useEffect(() => {
     if (shareCode && appletPath) {
-      setSharedContent("");
+      dispatch({ type: "resetSharedAppletMeta" });
       const controller = new AbortController();
       let isActive = true;
 
@@ -1291,12 +1386,13 @@ export function useAppletViewerLogic({
 
           const data = await response.json();
           if (!isActive || controller.signal.aborted) return;
-          setSharedContent(data.content);
-          setSharedName(data.name);
-          setSharedTitle(data.title);
-          setSharedCreatedBy(
-            typeof data.createdBy === "string" ? data.createdBy : null
-          );
+          dispatch({
+            type: "setSharedAppletMeta",
+            content: data.content,
+            name: data.name,
+            title: data.title,
+            createdBy: typeof data.createdBy === "string" ? data.createdBy : null,
+          });
 
           if (instanceId && data.windowWidth && data.windowHeight) {
             const appStore = useAppStore.getState();
@@ -1421,10 +1517,7 @@ export function useAppletViewerLogic({
         controller.abort();
       };
     } else if (!shareCode) {
-      setSharedContent("");
-      setSharedName(undefined);
-      setSharedTitle(undefined);
-      setSharedCreatedBy(null);
+      dispatch({ type: "resetSharedAppletMeta" });
     }
   }, [
     shareCode,

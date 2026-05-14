@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -69,19 +69,67 @@ const INITIAL_PROGRESS: PcLoadProgress = {
   fileCount: 0,
 };
 
+interface InfinitePcUiState {
+  selectedPreset: PcPreset | null;
+  isEmulatorLoaded: boolean;
+  loadProgress: PcLoadProgress;
+  loadError: string | null;
+}
+
+const initialState: InfinitePcUiState = {
+  selectedPreset: null,
+  isEmulatorLoaded: false,
+  loadProgress: INITIAL_PROGRESS,
+  loadError: null,
+};
+
+type InfinitePcUiAction =
+  | { type: "setSelectedPreset"; value: PcPreset | null }
+  | { type: "setIsEmulatorLoaded"; value: boolean }
+  | { type: "setLoadProgress"; value: PcLoadProgress | ((prev: PcLoadProgress) => PcLoadProgress) }
+  | { type: "setLoadError"; value: string | null };
+
+function reducer(
+  state: InfinitePcUiState,
+  action: InfinitePcUiAction
+): InfinitePcUiState {
+  switch (action.type) {
+    case "setSelectedPreset":
+      return { ...state, selectedPreset: action.value };
+    case "setIsEmulatorLoaded":
+      return { ...state, isEmulatorLoaded: action.value };
+    case "setLoadProgress":
+      return {
+        ...state,
+        loadProgress:
+          typeof action.value === "function"
+            ? action.value(state.loadProgress)
+            : action.value,
+      };
+    case "setLoadError":
+      return { ...state, loadError: action.value };
+    default:
+      return state;
+  }
+}
+
 export function useInfinitePcLogic({
   isWindowOpen: _isWindowOpen,
   instanceId,
 }: UseInfinitePcLogicProps) {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [selectedPreset, setSelectedPresetLocal] = useState<PcPreset | null>(
-    null
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { selectedPreset, isEmulatorLoaded, loadProgress, loadError } = state;
+  const setLoadProgress = useCallback(
+    (value: PcLoadProgress | ((prev: PcLoadProgress) => PcLoadProgress)) => {
+      dispatch({ type: "setLoadProgress", value });
+    },
+    []
   );
-  const [isEmulatorLoaded, setIsEmulatorLoadedLocal] = useState(false);
-  const [loadProgress, setLoadProgress] =
-    useState<PcLoadProgress>(INITIAL_PROGRESS);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const setLoadError = useCallback((value: string | null) => {
+    dispatch({ type: "setLoadError", value });
+  }, []);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const { setSelectedPreset: setSelectedPresetStore, setIsEmulatorLoaded: setIsEmulatorLoadedStore } =
@@ -94,7 +142,7 @@ export function useInfinitePcLogic({
 
   const setSelectedPreset = useCallback(
     (preset: PcPreset | null) => {
-      setSelectedPresetLocal(preset);
+      dispatch({ type: "setSelectedPreset", value: preset });
       setSelectedPresetStore(preset);
     },
     [setSelectedPresetStore]
@@ -102,7 +150,7 @@ export function useInfinitePcLogic({
 
   const setIsEmulatorLoaded = useCallback(
     (loaded: boolean) => {
-      setIsEmulatorLoadedLocal(loaded);
+      dispatch({ type: "setIsEmulatorLoaded", value: loaded });
       setIsEmulatorLoadedStore(loaded);
     },
     [setIsEmulatorLoadedStore]

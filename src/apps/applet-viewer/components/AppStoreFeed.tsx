@@ -1,4 +1,12 @@
-import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+  useCallback,
+  useReducer,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useLatestRef } from "@/hooks/useLatestRef";
@@ -26,13 +34,55 @@ export interface AppStoreFeedRef {
   goToPrevious: () => void;
 }
 
+interface FeedUiState {
+  isLoading: boolean;
+  currentIndex: number;
+  navigationDirection: "forward" | "backward" | "none";
+}
+
+const initialState: FeedUiState = {
+  isLoading: true,
+  currentIndex: 0,
+  navigationDirection: "none",
+};
+
+type FeedUiAction =
+  | { type: "setLoading"; value: boolean }
+  | {
+      type: "setIndexWithDirection";
+      index: number;
+      previousIndex: number;
+    };
+
+function reducer(state: FeedUiState, action: FeedUiAction): FeedUiState {
+  switch (action.type) {
+    case "setLoading":
+      return { ...state, isLoading: action.value };
+    case "setIndexWithDirection":
+      return {
+        ...state,
+        currentIndex: action.index,
+        navigationDirection:
+          action.index > action.previousIndex
+            ? "forward"
+            : action.index < action.previousIndex
+            ? "backward"
+            : "none",
+      };
+    default:
+      return state;
+  }
+}
+
 export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   ({ theme, focusWindow, onAppletSelect }, ref) => {
   const { t } = useTranslation();
   const [applets, setApplets] = useState<Applet[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [navigationDirection, setNavigationDirection] = useState<"forward" | "backward" | "none">("none");
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { isLoading, currentIndex, navigationDirection } = state;
+  const setIsLoading = useCallback((value: boolean) => {
+    dispatch({ type: "setLoading", value });
+  }, []);
   const [appletContents, setAppletContents] = useState<Map<string, string>>(new Map());
   const [loadingContents, setLoadingContents] = useState<Set<string>>(new Set());
   const feedRef = useRef<HTMLDivElement>(null);
@@ -344,17 +394,8 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const scrollToIndex = useCallback((index: number) => {
     if (index >= 0 && index < appletsLengthRef.current) {
       const prevIndex = currentIndexRef.current;
-      setCurrentIndex(index);
+      dispatch({ type: "setIndexWithDirection", index, previousIndex: prevIndex });
       // Note: currentIndexRef.current is automatically updated by useLatestRef
-      
-      // Determine navigation direction
-      if (index > prevIndex) {
-        setNavigationDirection("forward");
-      } else if (index < prevIndex) {
-        setNavigationDirection("backward");
-      } else {
-        setNavigationDirection("none");
-      }
     }
   }, [appletsLengthRef, currentIndexRef]);
 

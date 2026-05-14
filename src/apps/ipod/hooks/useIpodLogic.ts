@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, useReducer } from "react";
 import ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -539,9 +539,75 @@ export function useIpodLogic({
     return !hasValidTrack;
   }, []);
 
-  const [menuMode, setMenuMode] = useState(initialMenuMode);
-  const [selectedMenuItem, setSelectedMenuItem] = useState(0);
-  const [menuDirection, setMenuDirection] = useState<"forward" | "backward">("forward");
+  const [menuUiState, dispatchMenuUi] = useReducer(
+    (
+      state: {
+        menuMode: boolean;
+        selectedMenuItem: number;
+        menuDirection: "forward" | "backward";
+        cameFromNowPlayingMenuItem: boolean;
+      },
+      action:
+        | {
+            type: "setMenuMode";
+            value: boolean | ((prev: boolean) => boolean);
+          }
+        | {
+            type: "setSelectedMenuItem";
+            value: number | ((prev: number) => number);
+          }
+        | { type: "setMenuDirection"; value: "forward" | "backward" }
+        | { type: "setCameFromNowPlayingMenuItem"; value: boolean }
+    ) => {
+      switch (action.type) {
+        case "setMenuMode":
+          return {
+            ...state,
+            menuMode:
+              typeof action.value === "function"
+                ? action.value(state.menuMode)
+                : action.value,
+          };
+        case "setSelectedMenuItem":
+          return {
+            ...state,
+            selectedMenuItem:
+              typeof action.value === "function"
+                ? action.value(state.selectedMenuItem)
+                : action.value,
+          };
+        case "setMenuDirection":
+          return { ...state, menuDirection: action.value };
+        case "setCameFromNowPlayingMenuItem":
+          return { ...state, cameFromNowPlayingMenuItem: action.value };
+        default:
+          return state;
+      }
+    },
+    {
+      menuMode: initialMenuMode,
+      selectedMenuItem: 0,
+      menuDirection: "forward",
+      cameFromNowPlayingMenuItem: false,
+    }
+  );
+  const { menuMode, selectedMenuItem, menuDirection, cameFromNowPlayingMenuItem } =
+    menuUiState;
+  const setMenuMode = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      dispatchMenuUi({ type: "setMenuMode", value });
+    },
+    []
+  );
+  const setSelectedMenuItem = useCallback(
+    (value: number | ((prev: number) => number)) => {
+      dispatchMenuUi({ type: "setSelectedMenuItem", value });
+    },
+    []
+  );
+  const setMenuDirection = useCallback((value: "forward" | "backward") => {
+    dispatchMenuUi({ type: "setMenuDirection", value });
+  }, []);
   const [menuHistory, setMenuHistory] = useState<
     {
       title: string;
@@ -555,7 +621,9 @@ export function useIpodLogic({
       selectedIndex: number;
     }[]
   >([]);
-  const [cameFromNowPlayingMenuItem, setCameFromNowPlayingMenuItem] = useState(false);
+  const setCameFromNowPlayingMenuItem = useCallback((value: boolean) => {
+    dispatchMenuUi({ type: "setCameFromNowPlayingMenuItem", value });
+  }, []);
   // Save menu history before entering Now Playing from a song selection
   const menuHistoryBeforeNowPlayingRef = useRef<typeof menuHistory | null>(null);
 

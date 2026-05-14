@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import {
   useMemo,
   useRef,
+  useReducer,
   useState,
   useEffect,
   useCallback,
@@ -1308,8 +1309,21 @@ function LyricsLineRowContent({
     timeMsForInterludeDots !== undefined &&
     interludeInlineCountdownStartMs !== undefined
   );
-  const [dotsExitDone, setDotsExitDone] = useState(true);
-  if (dotsActive && dotsExitDone) setDotsExitDone(false);
+  const [dotsState, dispatchDotsState] = useReducer(
+    (state: { dotsExitDone: boolean }, action: { type: "setDotsExitDone"; value: boolean }) => {
+      if (action.type === "setDotsExitDone") {
+        return { dotsExitDone: action.value };
+      }
+      return state;
+    },
+    { dotsExitDone: true }
+  );
+  const dotsExitDone = dotsState.dotsExitDone;
+  useEffect(() => {
+    if (dotsActive && dotsExitDone) {
+      dispatchDotsState({ type: "setDotsExitDone", value: false });
+    }
+  }, [dotsActive, dotsExitDone]);
 
   return (
     <>
@@ -1653,7 +1667,9 @@ function LyricsLineRowContent({
             >
               <AnimatePresence
                 initial={false}
-                onExitComplete={() => setDotsExitDone(true)}
+                onExitComplete={() =>
+                  dispatchDotsState({ type: "setDotsExitDone", value: true })
+                }
               >
                 {dotsActive && (
                   <motion.div

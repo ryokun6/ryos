@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, useMemo, useCallback, useImperativeHandle, forwardRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  useImperativeHandle,
+  forwardRef,
+  useReducer,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
@@ -51,6 +59,80 @@ type Phase =
   | "playing"
   | "feedback"
   | "finished";
+
+interface QuizUiState {
+  phase: Phase;
+  round: MusicQuizRound | null;
+  roundNumber: number;
+  score: number;
+  lastRoundPoints: number;
+  selectedIndex: number;
+  isPlayerReady: boolean;
+}
+
+const initialState: QuizUiState = {
+  phase: "idle",
+  round: null,
+  roundNumber: 0,
+  score: 0,
+  lastRoundPoints: 0,
+  selectedIndex: 0,
+  isPlayerReady: false,
+};
+
+type QuizUiAction =
+  | { type: "setPhase"; value: Phase }
+  | {
+      type: "setRound";
+      value: MusicQuizRound | null | ((prev: MusicQuizRound | null) => MusicQuizRound | null);
+    }
+  | { type: "setRoundNumber"; value: number | ((prev: number) => number) }
+  | { type: "setScore"; value: number | ((prev: number) => number) }
+  | { type: "setLastRoundPoints"; value: number }
+  | { type: "setSelectedIndex"; value: number | ((prev: number) => number) }
+  | { type: "setIsPlayerReady"; value: boolean };
+
+function reducer(state: QuizUiState, action: QuizUiAction): QuizUiState {
+  switch (action.type) {
+    case "setPhase":
+      return { ...state, phase: action.value };
+    case "setRound":
+      return {
+        ...state,
+        round: typeof action.value === "function" ? action.value(state.round) : action.value,
+      };
+    case "setRoundNumber":
+      return {
+        ...state,
+        roundNumber:
+          typeof action.value === "function"
+            ? action.value(state.roundNumber)
+            : action.value,
+      };
+    case "setScore":
+      return {
+        ...state,
+        score:
+          typeof action.value === "function"
+            ? action.value(state.score)
+            : action.value,
+      };
+    case "setLastRoundPoints":
+      return { ...state, lastRoundPoints: action.value };
+    case "setSelectedIndex":
+      return {
+        ...state,
+        selectedIndex:
+          typeof action.value === "function"
+            ? action.value(state.selectedIndex)
+            : action.value,
+      };
+    case "setIsPlayerReady":
+      return { ...state, isPlayerReady: action.value };
+    default:
+      return state;
+  }
+}
 
 export interface MusicQuizRef {
   /** Move selection up/down. Returns true if handled. */
@@ -121,13 +203,48 @@ export const MusicQuiz = forwardRef<MusicQuizRef, MusicQuizProps>(function Music
   const ipodVolume = useAudioSettingsStore((s) => s.ipodVolume);
   const finalVolume = ipodVolume * masterVolume;
 
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [round, setRound] = useState<MusicQuizRound | null>(null);
-  const [roundNumber, setRoundNumber] = useState(0);
-  const [score, setScore] = useState(0);
-  const [lastRoundPoints, setLastRoundPoints] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    phase,
+    round,
+    roundNumber,
+    score,
+    lastRoundPoints,
+    selectedIndex,
+    isPlayerReady,
+  } = state;
+  const setPhase = useCallback((value: Phase) => {
+    dispatch({ type: "setPhase", value });
+  }, []);
+  const setRound = useCallback(
+    (
+      value:
+        | MusicQuizRound
+        | null
+        | ((prev: MusicQuizRound | null) => MusicQuizRound | null)
+    ) => {
+      dispatch({ type: "setRound", value });
+    },
+    []
+  );
+  const setRoundNumber = useCallback((value: number | ((prev: number) => number)) => {
+    dispatch({ type: "setRoundNumber", value });
+  }, []);
+  const setScore = useCallback((value: number | ((prev: number) => number)) => {
+    dispatch({ type: "setScore", value });
+  }, []);
+  const setLastRoundPoints = useCallback((value: number) => {
+    dispatch({ type: "setLastRoundPoints", value });
+  }, []);
+  const setSelectedIndex = useCallback(
+    (value: number | ((prev: number) => number)) => {
+      dispatch({ type: "setSelectedIndex", value });
+    },
+    []
+  );
+  const setIsPlayerReady = useCallback((value: boolean) => {
+    dispatch({ type: "setIsPlayerReady", value });
+  }, []);
 
   const youtubePlayerRef = useRef<ReactPlayer | null>(null);
   const appleMusicPlayerRef = useRef<AppleMusicPlayerBridgeHandle | null>(null);

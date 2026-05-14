@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AnyApp } from "./types";
 import { MenuBar } from "@/components/layout/MenuBar";
@@ -33,6 +33,42 @@ interface AppManagerProps {
 }
 
 const BASE_Z_INDEX = 1;
+
+interface SwitcherState {
+  visible: boolean;
+  apps: SwitcherApp[];
+  index: number;
+}
+
+const switcherInitialState: SwitcherState = {
+  visible: false,
+  apps: [],
+  index: 0,
+};
+
+type SwitcherAction =
+  | { type: "setVisible"; value: boolean }
+  | { type: "setApps"; value: SwitcherApp[] }
+  | { type: "setIndex"; value: number }
+  | { type: "open"; apps: SwitcherApp[]; index: number }
+  | { type: "reset" };
+
+function switcherReducer(state: SwitcherState, action: SwitcherAction): SwitcherState {
+  switch (action.type) {
+    case "setVisible":
+      return { ...state, visible: action.value };
+    case "setApps":
+      return { ...state, apps: action.value };
+    case "setIndex":
+      return { ...state, index: action.value };
+    case "open":
+      return { visible: true, apps: action.apps, index: action.index };
+    case "reset":
+      return switcherInitialState;
+    default:
+      return state;
+  }
+}
 
 export function AppManager({ apps }: AppManagerProps) {
   const { t } = useTranslation();
@@ -86,9 +122,13 @@ export function AppManager({ apps }: AppManagerProps) {
   useGlobalUndoRedo();
 
   // App switcher state
-  const [switcherVisible, setSwitcherVisible] = useState(false);
-  const [switcherApps, setSwitcherApps] = useState<SwitcherApp[]>([]);
-  const [switcherIndex, setSwitcherIndex] = useState(0);
+  const [switcherState, dispatchSwitcher] = useReducer(
+    switcherReducer,
+    switcherInitialState
+  );
+  const switcherVisible = switcherState.visible;
+  const switcherApps = switcherState.apps;
+  const switcherIndex = switcherState.index;
 
   // Refs for stable event listener closures
   const instancesRef = useRef(instances);
@@ -357,9 +397,7 @@ export function AppManager({ apps }: AppManagerProps) {
         switcherVisibleRef.current = false;
         switcherIndexRef.current = 0;
         switcherAppsRef.current = [];
-        setSwitcherVisible(false);
-        setSwitcherIndex(0);
-        setSwitcherApps([]);
+        dispatchSwitcher({ type: "reset" });
         return;
       }
 
@@ -396,9 +434,7 @@ export function AppManager({ apps }: AppManagerProps) {
       switcherVisibleRef.current = false;
       switcherIndexRef.current = 0;
       switcherAppsRef.current = [];
-      setSwitcherVisible(false);
-      setSwitcherIndex(0);
-      setSwitcherApps([]);
+      dispatchSwitcher({ type: "reset" });
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -492,20 +528,18 @@ export function AppManager({ apps }: AppManagerProps) {
           const mruApps = buildMruApps();
           if (mruApps.length === 0) return;
           switcherAppsRef.current = mruApps;
-          setSwitcherApps(mruApps);
           switcherVisibleRef.current = true;
-          setSwitcherVisible(true);
           const startIndex =
             ((e.shiftKey ? -1 : 1) + mruApps.length) % mruApps.length;
           switcherIndexRef.current = startIndex;
-          setSwitcherIndex(startIndex);
+          dispatchSwitcher({ type: "open", apps: mruApps, index: startIndex });
         } else {
           // Subsequent press — cycle selection
           const len = switcherAppsRef.current.length;
           const cur = switcherIndexRef.current;
           const next = e.shiftKey ? (cur - 1 + len) % len : (cur + 1) % len;
           switcherIndexRef.current = next;
-          setSwitcherIndex(next);
+          dispatchSwitcher({ type: "setIndex", value: next });
         }
       }
     };

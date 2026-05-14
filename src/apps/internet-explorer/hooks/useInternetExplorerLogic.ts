@@ -1,6 +1,7 @@
 import React, {
   useEffect,
   useRef,
+  useReducer,
   useState,
   useCallback,
   useMemo,
@@ -156,6 +157,63 @@ type SuggestionItem = {
   favicon?: string;
   normalizedUrl?: string; // Optional prop for internal use
 };
+
+interface UrlBarUiState {
+  isUrlDropdownOpen: boolean;
+  filteredSuggestions: SuggestionItem[];
+  localUrl: string;
+  isSelectingText: boolean;
+  selectedSuggestionIndex: number;
+  dropdownStyle: CSSProperties;
+}
+
+const urlBarUiInitialState: UrlBarUiState = {
+  isUrlDropdownOpen: false,
+  filteredSuggestions: [],
+  localUrl: "",
+  isSelectingText: false,
+  selectedSuggestionIndex: 0,
+  dropdownStyle: {},
+};
+
+type UrlBarUiAction =
+  | { type: "setIsUrlDropdownOpen"; value: boolean }
+  | { type: "setFilteredSuggestions"; value: SuggestionItem[] }
+  | { type: "setLocalUrl"; value: string }
+  | { type: "setIsSelectingText"; value: boolean }
+  | { type: "setSelectedSuggestionIndex"; value: number }
+  | {
+      type: "setDropdownStyle";
+      value: CSSProperties | ((prev: CSSProperties) => CSSProperties);
+    };
+
+function urlBarUiReducer(
+  state: UrlBarUiState,
+  action: UrlBarUiAction
+): UrlBarUiState {
+  switch (action.type) {
+    case "setIsUrlDropdownOpen":
+      return { ...state, isUrlDropdownOpen: action.value };
+    case "setFilteredSuggestions":
+      return { ...state, filteredSuggestions: action.value };
+    case "setLocalUrl":
+      return { ...state, localUrl: action.value };
+    case "setIsSelectingText":
+      return { ...state, isSelectingText: action.value };
+    case "setSelectedSuggestionIndex":
+      return { ...state, selectedSuggestionIndex: action.value };
+    case "setDropdownStyle":
+      return {
+        ...state,
+        dropdownStyle:
+          typeof action.value === "function"
+            ? action.value(state.dropdownStyle)
+            : action.value,
+      };
+    default:
+      return state;
+  }
+}
 
 interface UseInternetExplorerLogicProps {
   isWindowOpen: boolean;
@@ -323,14 +381,39 @@ export function useInternetExplorerLogic({
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const [hasMoreToScroll] = useState(false);
-  const [isUrlDropdownOpen, setIsUrlDropdownOpen] = useState(false);
-  const [filteredSuggestions, setFilteredSuggestions] = useState<
-    Array<SuggestionItem>
-  >([]);
-  const [localUrl, setLocalUrl] = useState<string>("");
-  const [isSelectingText, setIsSelectingText] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
-  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
+  const [urlBarUiState, dispatchUrlBarUi] = useReducer(
+    urlBarUiReducer,
+    urlBarUiInitialState
+  );
+  const {
+    isUrlDropdownOpen,
+    filteredSuggestions,
+    localUrl,
+    isSelectingText,
+    selectedSuggestionIndex,
+    dropdownStyle,
+  } = urlBarUiState;
+  const setIsUrlDropdownOpen = useCallback((value: boolean) => {
+    dispatchUrlBarUi({ type: "setIsUrlDropdownOpen", value });
+  }, []);
+  const setFilteredSuggestions = useCallback((value: SuggestionItem[]) => {
+    dispatchUrlBarUi({ type: "setFilteredSuggestions", value });
+  }, []);
+  const setLocalUrl = useCallback((value: string) => {
+    dispatchUrlBarUi({ type: "setLocalUrl", value });
+  }, []);
+  const setIsSelectingText = useCallback((value: boolean) => {
+    dispatchUrlBarUi({ type: "setIsSelectingText", value });
+  }, []);
+  const setSelectedSuggestionIndex = useCallback((value: number) => {
+    dispatchUrlBarUi({ type: "setSelectedSuggestionIndex", value });
+  }, []);
+  const setDropdownStyle = useCallback(
+    (value: CSSProperties | ((prev: CSSProperties) => CSSProperties)) => {
+      dispatchUrlBarUi({ type: "setDropdownStyle", value });
+    },
+    []
+  );
 
   useEffect(() => {
     const updateDropdownStyle = () => {
